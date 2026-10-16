@@ -748,3 +748,33 @@ export const companyMissionProgress = pgTable(
   },
   (t) => [primaryKey({ columns: [t.companyId, t.periodKey, t.missionId] })],
 );
+
+// ── Real-money payments (Stripe Checkout) ────────────────────────────────
+
+export const payments = pgTable(
+  'payments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+    provider: text('provider').notNull().default('stripe'),
+    productId: text('product_id').notNull(),
+    coins: integer('coins').notNull().default(0),
+    vipDays: integer('vip_days').notNull().default(0),
+    /** What the buyer pays, in the smallest currency unit. */
+    amountCents: integer('amount_cents').notNull(),
+    currency: text('currency').notNull().default('eur'),
+    status: text('status').notNull().default('pending'), // pending | paid | failed | expired | refunded
+    checkoutSessionId: text('checkout_session_id'),
+    paymentIntentId: text('payment_intent_id'),
+    /** When the buyer agreed that delivery starts at once (EU right of withdrawal for digital content). */
+    consentAt: ts('consent_at').notNull(),
+    createdAt: createdAt(),
+    paidAt: ts('paid_at'),
+    refundedAt: ts('refunded_at'),
+  },
+  (t) => [
+    uniqueIndex('payments_session_idx').on(t.checkoutSessionId),
+    index('payments_intent_idx').on(t.paymentIntentId),
+    index('payments_user_idx').on(t.userId, t.createdAt),
+  ],
+);

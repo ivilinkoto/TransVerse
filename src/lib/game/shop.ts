@@ -42,12 +42,5 @@ export const shopItem = (id: string) => SHOP_ITEMS.find((i) => i.id === id);
 
 export const VIP_DAYS: Partial<Record<ShopItemId, number>> = { vip_7: 7, vip_30: 30, vip_90: 90, gift_vip_30: 30 };
 
-/** Packages for real money (stage 2 — not on sale until a payment provider is connected). */
-export const COIN_PACKAGES = [
-  { id: 'tc_100', coins: 100, bonus: 0, priceEur: 1.99 },
-  { id: 'tc_550', coins: 500, bonus: 50, priceEur: 9.99 },
-  { id: 'tc_1200', coins: 1000, bonus: 200, priceEur: 19.99 },
-  { id: 'tc_3200', coins: 2500, bonus: 700, priceEur: 49.99 },
-] as const;
 
 export const PLATE_PATTERN = /^[A-ZА-Я0-9][A-ZА-Я0-9 -]{0,8}[A-ZА-Я0-9]$/u;

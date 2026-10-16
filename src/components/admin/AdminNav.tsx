@@ -1,6 +1,6 @@
 'use client';
 
-import { ClipboardList, Gauge, LifeBuoy, LogOut, PartyPopper, Siren, Users } from 'lucide-react';
+import { ClipboardList, CreditCard, Gauge, LifeBuoy, LogOut, PartyPopper, Siren, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -10,6 +10,7 @@ const ITEMS = [
   { href: '/admin/tickets', label: 'Поддръжка', icon: LifeBuoy },
   { href: '/admin/urgent', label: 'Спешни доставки', icon: Siren },
   { href: '/admin/events', label: 'Ивенти', icon: PartyPopper },
+  { href: '/admin/payments', label: 'Плащания', icon: CreditCard },
   { href: '/admin/audit', label: 'Одит дневник', icon: ClipboardList },
 ];
 

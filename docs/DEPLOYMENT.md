@@ -60,3 +60,28 @@ journalctl -u transverse-web -n 100                  # последни лого
 sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 ```
 Препоръка: ежедневен cron и копие извън сървъра.
+
+
+## Плащания (Stripe)
+
+Покупките на ТрансКоин и VIP с реални пари минават през **Stripe Checkout**: играчът плаща на защитената страница на Stripe (карта, PayPal, Apple Pay, Google Pay, Revolut Pay — каквото е включено в таблото на Stripe), а Stripe уведомява сървъра чрез подписан webhook и покупката се добавя автоматично. Данни за карти не минават през сървъра. Докато настройките по-долу липсват, магазинът показва пакетите като „Скоро“ и нищо не може да се плати.
+
+1. **Домейн и HTTPS** (задължително за реални плащания): насочи домейна към сървъра и включи HTTPS в Caddy (виж по-горе), после `COOKIE_SECURE=true`.
+2. **Акаунт в Stripe**: регистрация на stripe.com (физическо лице/ЕТ/фирма), попълване на данните и банковата сметка. В Settings → Payment methods включи PayPal и останалите желани методи. В Settings → Emails включи разписките до клиентите.
+3. **Webhook**: Developers → Webhooks → Add endpoint, адрес `https://ДОМЕЙН/api/payments/stripe`, събития `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`. Копирай „Signing secret“ (`whsec_…`).
+4. **Настройки на сървъра** — само във файла `/etc/transverse/transverse.env` (никога в кода, GitHub или чат):
+   ```
+   STRIPE_SECRET_KEY=sk_test_…   # първо тестов ключ; после sk_live_…
+   STRIPE_WEBHOOK_SECRET=whsec_…
+   APP_URL=https://ДОМЕЙН
+   SELLER_NAME=…                 # търговецът, както е регистриран в Stripe
+   SELLER_ID=…                   # ЕИК (ако има)
+   SELLER_ADDRESS=…
+   SUPPORT_EMAIL=…
+   STRIPE_AUTOMATIC_TAX=false    # true, ако си регистриран по ДДС и ползваш Stripe Tax
+   ```
+   След промяна: `sudo systemctl restart transverse-web`.
+5. **Тест**: с `sk_test_…` купи пакет с тестова карта `4242 4242 4242 4242` (всяка бъдеща дата, всеки CVC). В „Админ панел → Плащания“ трябва да се появи „платено“, а ТрансКоин — в профила. После смени с `sk_live_…` и webhook-а за live режим.
+
+Възстановяване на сума: от таблото на Stripe (Payments → Refund). Сървърът получава `charge.refunded` и сам премахва ТрансКоин / VIP дните.
+Тестовете (`tests/payments.test.ts`) проверяват подписа на webhook-а, еднократната доставка при повторени събития, отказ при различна сума, възстановяване и VIP.

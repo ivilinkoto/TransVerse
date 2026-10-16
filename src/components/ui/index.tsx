@@ -35,9 +35,9 @@ export function Stat({ label, value, hint, icon: Icon, tone = 'default' }: { lab
   );
 }
 
-export function Card({ title, actions, children, className = '' }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({ title, actions, children, className = '', id }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; id?: string }) {
   return (
-    <section className={`panel p-4 sm:p-5 ${className}`}>
+    <section id={id} className={`panel p-4 sm:p-5 ${className}`}>
       {(title || actions) && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="font-display text-base font-bold">{title}</h2>}

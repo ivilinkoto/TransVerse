@@ -71,6 +71,13 @@
       "when": 1792186928313,
       "tag": "0009_awesome_black_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792188632021,
+      "tag": "0010_demonic_dorian_gray",
+      "breakpoints": true
     }
   ]
 }
