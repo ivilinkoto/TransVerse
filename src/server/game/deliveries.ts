@@ -57,10 +57,14 @@ async function vehicleBundle(db: DbOrTx, companyId: string, vehicleId: string, l
   return { vehicle: vehicle!, trailer: trailer ?? null, driver: driver ?? null };
 }
 
+/** Urgent shipments: the empty run to the pickup city takes this long, wherever the truck is. */
+export const URGENT_RELOCATION_MS = 60_000;
+
 /**
  * Player accepts a market contract with one of their vehicles. Routes are
- * resolved first (network), then everything is committed atomically. Only one
- * company can ever win a contract (conditional status update).
+ * resolved first (network), then everything is committed atomically. An
+ * ordinary contract has one winner (conditional status update); an urgent one
+ * stays open until it expires and every player may take it once.
  */
 export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date()) {
   const company = await companyForUser(db, userId);
@@ -88,37 +92,55 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     if (missing.length) fail('licence_required', `Нужен е лиценз: ${licenceNames(missing)}. Купува се от раздел „Лицензи“.`);
     if (bundle.vehicle.cityId !== (emptyRoute ? emptyRoute.fromCityId : contract!.originCityId)) fail('vehicle_moved', 'Превозното средство смени местоположението си. Опитайте отново.', 409);
 
-    const claimed = await tx
-      .update(contracts)
-      .set({ status: 'accepted', acceptedByCompanyId: company.id, acceptedAt: now })
-      .where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`))
-      .returning({ id: contracts.id });
-    if (!claimed.length) fail('contract_unavailable', 'Друга компания току-що пое тази поръчка.', 409);
+    if (contract!.urgent) {
+      // Open to everyone until it expires — each player once.
+      const [still] = await tx.select({ id: contracts.id }).from(contracts).where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`)).for('share');
+      if (!still) fail('contract_unavailable', 'Спешната поръчка вече изтече.', 409);
+      const [mine] = await tx.select({ id: deliveries.id }).from(deliveries).where(and(eq(deliveries.contractId, contractId), eq(deliveries.companyId, company.id)));
+      if (mine) fail('already_taken', 'Вече сте поели тази спешна поръчка.', 409);
+    } else {
+      const claimed = await tx
+        .update(contracts)
+        .set({ status: 'accepted', acceptedByCompanyId: company.id, acceptedAt: now })
+        .where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`))
+        .returning({ id: contracts.id });
+      if (!claimed.length) fail('contract_unavailable', 'Друга компания току-що пое тази поръчка.', 409);
+    }
 
     const unit = powerUnitModel(bundle.vehicle.modelId);
     const trailer = bundle.trailer ? trailerModel(bundle.trailer.modelId) : null;
     const speedFactor = unit.kind === 'van' ? 1.15 : 1;
-    const schedule = buildGameSchedule({
-      startAt: now.getTime(),
-      empty: emptyRoute ? { km: emptyRoute.distanceKm, durationS: emptyRoute.durationS, borderKms: emptyRoute.borders.map((b) => b.km) } : null,
-      loaded: { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km) },
-      speedFactor,
-      // Urgent shipments run faster than normal game time.
-      timeScale: timeScale() * Math.max(1, contract!.speedFactor),
-    });
+    const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km) };
+    // Urgent shipments run faster than normal game time.
+    const scale = timeScale() * Math.max(1, contract!.speedFactor);
+    const schedule: Segment[] = contract!.urgent
+      ? [
+          // The truck is moved to the pickup city in one minute, then drives the cargo.
+          ...(emptyRoute ? [{ kind: 'drive' as const, leg: 'empty' as const, start: now.getTime(), end: now.getTime() + URGENT_RELOCATION_MS, fromKm: 0, toKm: emptyRoute.distanceKm }] : []),
+          ...buildGameSchedule({ startAt: now.getTime() + (emptyRoute ? URGENT_RELOCATION_MS : 0), empty: null, loaded: loadedLeg, speedFactor, timeScale: scale }),
+        ]
+      : buildGameSchedule({
+          startAt: now.getTime(),
+          empty: emptyRoute ? { km: emptyRoute.distanceKm, durationS: emptyRoute.durationS, borderKms: emptyRoute.borders.map((b) => b.km) } : null,
+          loaded: loadedLeg,
+          speedFactor,
+          timeScale: scale,
+        });
     const rented = bundle.vehicle.ownership === 'rented';
-    const totalKm = (emptyRoute?.distanceKm ?? 0) + loadedRoute!.distanceKm;
+    // The urgent one-minute relocation costs nothing; only the cargo leg is paid for.
+    const chargedEmptyKm = contract!.urgent ? 0 : (emptyRoute?.distanceKm ?? 0);
+    const totalKm = chargedEmptyKm + loadedRoute!.distanceKm;
     const running = tripCosts({
       unit,
       trailer,
       upgrades: bundle.vehicle.upgrades,
       condition: bundle.vehicle.condition,
       driverSkill: bundle.driver!.skill,
-      emptyKm: emptyRoute?.distanceKm ?? 0,
+      emptyKm: chargedEmptyKm,
       loadedKm: loadedRoute!.distanceKm,
       tons: contract!.weightTons,
       payloadTons: combinationCapability({ unit, trailer }).payloadTons,
-      tolledRoute: { empty: emptyRoute?.hasToll ?? false, loaded: loadedRoute!.hasToll },
+      tolledRoute: { empty: !contract!.urgent && (emptyRoute?.hasToll ?? false), loaded: loadedRoute!.hasToll },
     });
     // Rented vehicles: the rental company covers fuel, tolls, maintenance and wear for a fee.
     const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, totalCents: 0, wear: 0 } : running;

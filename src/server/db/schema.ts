@@ -333,7 +333,8 @@ export const deliveries = pgTable(
     scheduleVersion: integer('schedule_version').notNull().default(1),
   },
   (t) => [
-    uniqueIndex('deliveries_contract_idx').on(t.contractId),
+    // One delivery per contract and player; ordinary contracts are additionally single-winner (status claim), urgent ones are open to everyone.
+    uniqueIndex('deliveries_contract_company_idx').on(t.contractId, t.companyId),
     index('deliveries_due_idx').on(t.status, t.etaAt),
     index('deliveries_company_idx').on(t.companyId, t.status),
   ],

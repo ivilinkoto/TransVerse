@@ -35,6 +35,8 @@ export interface BoardContract {
   /** Urgent shipment from the game administration: listed first, driven faster. */
   urgent: boolean;
   speedFactor: number;
+  /** Urgent shipment this player has already taken (each player may take it once). */
+  alreadyTaken: boolean;
   /** Short names of licences the player still needs for this contract. */
   missingLicences: string[];
   options: { vehicleId: string; label: string; error: string | null; emptyKm: number; costCents: number; rented: boolean; profitCents: number; minutes: number }[];
@@ -57,7 +59,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
       (c) =>
         (!cargo || c.cargoType === cargo) &&
         (!q || c.origin.name.toLowerCase().includes(q) || c.destination.name.toLowerCase().includes(q) || c.goods.toLowerCase().includes(q)) &&
-        (!doable || (!c.locked && !c.missingLicences.length && c.options.some((o) => !o.error))),
+        (!doable || (!c.locked && !c.alreadyTaken && !c.missingLicences.length && c.options.some((o) => !o.error))),
     );
     const key: Record<Sort, (c: BoardContract) => number> = {
       reward: (c) => -c.rewardCents,
@@ -67,7 +69,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
     };
     // Own city first — jobs the player can take right now before the rest.
     // Urgent shipments first, then the player's own city.
-    const takeable = (c: BoardContract) => !c.locked && !c.missingLicences.length && c.options.some((o) => !o.error);
+    const takeable = (c: BoardContract) => !c.locked && !c.alreadyTaken && !c.missingLicences.length && c.options.some((o) => !o.error);
     const rank = (c: BoardContract) => (c.urgent ? 0 : c.local ? (takeable(c) ? 1 : 2) : 3);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
   }, [contracts, cargo, query, doable, sort]);
@@ -144,7 +146,8 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
             <Badge tone={CARGO_TONE[c.cargoType]}>{c.cargoLabel}</Badge>
             <span className="truncate font-semibold">{c.goods}</span>
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
-            {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо</Badge>}
+            {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
+            {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
             {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />Във вашия град</Badge>}
             {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />Лиценз: {c.missingLicences.join(', ')}</Badge>}
             {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />ниво {c.minLevel}</Badge>}
@@ -176,7 +179,14 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
             <div><dt className="label">Изтича от борсата</dt><dd className="mt-1">{dateTime(c.expiresAt)}</dd></div>
           </dl>
 
-          {c.locked ? (
+          {c.urgent && (
+            <p className="mt-3 rounded-lg border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-mist-200">
+              Спешна поръчка: камионът стига до {c.origin.name} за 1 минута, където и да е, а курсът върви ×{dec(c.speedFactor)} по-бързо. Може да я поеме всеки играч със свободен камион (по веднъж), докато не изтече от борсата.
+            </p>
+          )}
+          {c.alreadyTaken ? (
+            <p className="mt-4 text-sm text-profit">Вече сте поели тази спешна поръчка — следете я в „Автопарк“.</p>
+          ) : c.locked ? (
             <p className="mt-4 flex items-center gap-2 text-sm text-prestige"><Lock className="h-4 w-4" />Достигнете ниво {c.minLevel}, за да поемате такива товари.</p>
           ) : c.missingLicences.length ? (
             <p className="mt-4 flex flex-wrap items-center gap-2 text-sm text-amber-sig">
@@ -201,7 +211,7 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
               </div>
               {option && !option.error && (
                 <div className="grid gap-2 text-sm sm:grid-cols-4">
-                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Празен курс </span><span className="num">≈ {int(option.emptyKm)} км</span></div>
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Празен курс </span><span className="num">≈ {int(option.emptyKm)} км{c.urgent && option.emptyKm > 0 ? ' · 1 мин' : ''}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{option.rented ? 'Наем ' : 'Разходи (оценка) '}</span><span className="num text-loss">{money(option.costCents)}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Печалба (оценка) </span><span className={`num ${option.profitCents >= 0 ? 'text-profit' : 'text-loss'}`}>{money(option.profitCents)}</span></div>
                   <div className={`rounded-lg px-3 py-2 ${option.minutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>

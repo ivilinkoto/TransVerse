@@ -1,9 +1,9 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { CARGO, CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
 import { gameDurationMinutes } from '@/lib/game/schedule';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { adminAudit, cities, companies, contracts, notifications, users } from '@/server/db/schema';
+import { adminAudit, cities, contracts, notifications, users } from '@/server/db/schema';
 import { requireAdminRole, type Staff } from '@/server/admin';
 import { fail } from '@/server/game/errors';
 import { broadcast } from '@/server/game/notify';
@@ -74,7 +74,7 @@ export async function createUrgentContract(db: Database, actor: Staff, raw: Urge
     if (input.announce) {
       // One notification per active player, in a single statement.
       const title = `Спешна доставка: ${input.goods}`;
-      const body = `${from!.nameBg} → ${to!.nameBg} · ${(contract!.rewardCents / 100).toLocaleString('bg-BG')} € · ×${input.speedFactor} по-бързо. Първият, който я поеме, я печели.`;
+      const body = `${from!.nameBg} → ${to!.nameBg} · ${(contract!.rewardCents / 100).toLocaleString('bg-BG')} € · ×${input.speedFactor} по-бързо, до товара за 1 мин. Може да я поеме всеки със свободен камион, докато не изтече.`;
       await tx.execute(sql`insert into ${notifications} (user_id, kind, title, body, href) select ${users.id}, 'warning', ${title}, ${body}, '/game/contracts' from ${users} where ${users.bannedAt} is null`);
     }
     await broadcast(tx, 'market');
@@ -84,11 +84,13 @@ export async function createUrgentContract(db: Database, actor: Staff, raw: Urge
 
 export async function urgentContracts(db: DbOrTx, limit = 30) {
   const rows = await db
-    .select({ contract: contracts, acceptedBy: users.username })
+    .select({
+      contract: contracts,
+      takers: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts.id})`,
+      delivered: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts.id} and d.status = 'completed')`,
+    })
     .from(contracts)
-    .leftJoin(companies, eq(companies.id, contracts.acceptedByCompanyId))
-    .leftJoin(users, eq(users.id, companies.ownerId))
-    .where(and(eq(contracts.urgent, true)))
+    .where(eq(contracts.urgent, true))
     .orderBy(desc(contracts.createdAt))
     .limit(limit);
   const ids = [...new Set(rows.flatMap((r) => [r.contract.originCityId, r.contract.destCityId]))];

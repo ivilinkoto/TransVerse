@@ -152,7 +152,7 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
     .from(contracts)
     .innerJoin(routes, eq(routes.id, contracts.routeId))
     .innerJoin(cities, eq(cities.id, contracts.destCityId))
-    .where(and(eq(contracts.status, 'open'), eq(contracts.originCityId, need.cityId), gt(contracts.expiresAt, now), lte(contracts.weightTons, need.payloadTons), lte(contracts.minLevel, need.level), inArray(contracts.cargoType, compatible)))
+    .where(and(eq(contracts.status, 'open'), eq(contracts.urgent, false), eq(contracts.originCityId, need.cityId), gt(contracts.expiresAt, now), lte(contracts.weightTons, need.payloadTons), lte(contracts.minLevel, need.level), inArray(contracts.cargoType, compatible)))
     .limit(50);
   const [here] = await db.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, need.cityId));
   if (!here) return 0;
