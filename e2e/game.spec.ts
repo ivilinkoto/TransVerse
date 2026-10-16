@@ -68,9 +68,14 @@ test.describe('core loop', () => {
     await expect(page.getByRole('region', { name: 'Обучение' })).toContainText('Проследи камиона на картата');
   });
 
-  test('company features are locked until a company is founded', async ({ page }) => {
+  test('the market is open without a company; hiring drivers still needs one', async ({ page }) => {
     await register(page);
     await page.goto('/game/market');
+    await expect(page.getByRole('heading', { name: 'Пазар на техника' })).toBeVisible();
+    await expect(page.getByText('Първо открий депо')).toBeVisible();
+    await page.goto('/game/licences');
+    await expect(page.getByRole('heading', { name: 'Международен лиценз' })).toBeVisible();
+    await page.goto('/game/staff');
     await expect(page.getByText('изисква транспортна компания')).toBeVisible();
     await page.getByRole('link', { name: 'Към основаването на компания' }).click();
     await expect(page.getByText('Изисквания за основаване')).toBeVisible();

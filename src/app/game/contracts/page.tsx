@@ -9,6 +9,8 @@ import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
 import { compatibilityError } from '@/server/game/deliveries';
 import { fleetView } from '@/server/game/queries';
+import { LICENCES } from '@/lib/game/licences';
+import { heldLicences, missingFor } from '@/server/game/licences';
 
 export const metadata = { title: 'Транспортни поръчки' };
 
@@ -16,7 +18,7 @@ export default async function ContractsPage() {
   const { db, user, company, now } = await gameContext();
   // Every free vehicle always has at least one job it can take in its own city.
   await ensureLocalJobsForFleet(db, now, company.id).catch((e) => console.warn('[contracts] local jobs', e));
-  const fleet = await fleetView(db, company.id);
+  const [fleet, licences] = await Promise.all([fleetView(db, company.id), heldLicences(db, user.id)]);
   const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
   const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250 }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50 }))]);
   const seen = new Set<string>();
@@ -34,7 +36,7 @@ export default async function ContractsPage() {
       const emptyKm = v.cityId === c.originCityId ? 0 : haversineKm([v.city.lat, v.city.lon], [c.origin.lat, c.origin.lon]) * 1.25;
       const cap = combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null });
       const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: v.driver?.skill ?? 1, emptyKm, loadedKm: c.distanceKm, tons: c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: true, loaded: c.route.hasToll } });
-      const minutes = gameDurationMinutes(emptyKm + c.distanceKm);
+      const minutes = gameDurationMinutes(emptyKm + c.distanceKm) / Math.max(1, c.speedFactor);
       const rented = v.ownership === 'rented';
       const cost = rented ? rentalFeeCents(c.rewardCents, emptyKm + c.distanceKm) : costs.totalCents;
       return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''} · ${v.city.nameBg}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: c.rewardCents - cost, minutes };
@@ -60,6 +62,9 @@ export default async function ContractsPage() {
       minLevel: Math.max(c.minLevel, cargo.minLevel),
       locked: user.level < Math.max(c.minLevel, cargo.minLevel),
       local: localCities.includes(c.originCityId),
+      urgent: c.urgent,
+      speedFactor: c.speedFactor,
+      missingLicences: missingFor({ cargoType: c.cargoType, originCountry: c.origin.countryCode, destCountry: c.destination.countryCode, routeCountries: c.route.countries }, licences).map((id) => LICENCES[id].short),
       options,
     };
   });

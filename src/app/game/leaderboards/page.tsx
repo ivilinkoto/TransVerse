@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Card, PageHeader, Table } from '@/components/ui';
 import { hasUnlock } from '@/lib/game/company';
+import { isVip } from '@/lib/game/vip';
+import { PlayerName } from '@/components/game/PlayerName';
 import { int, money } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
@@ -35,7 +37,7 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
 }
 
 async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<LeaderboardKind, 'companies'>; unit: string; companyId: string }) {
-  const { db } = await gameContext();
+  const { db, now } = await gameContext();
   const { rows } = await leaderboard(db, kind, 100);
   return (
     <Card>
@@ -44,7 +46,7 @@ async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<Leaderboar
           <tr key={r.companyId} className={r.companyId === companyId ? 'bg-volt-500/10' : ''}>
             <td className="num px-3 py-2 font-bold">{medal(i)}</td>
             <td className="px-3 py-2 font-semibold">{r.company}</td>
-            <td className="px-3 py-2 text-mist-400">{r.owner}</td>
+            <td className="px-3 py-2 text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /></td>
             <td className="num px-3 py-2">{r.level}</td>
             <td className="num px-3 py-2 text-gold-400">{kind === 'wealth' ? money(r.value) : int(r.value)}</td>
           </tr>
@@ -56,7 +58,7 @@ async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<Leaderboar
 }
 
 async function CompanyBoard({ userId }: { userId: string }) {
-  const { db } = await gameContext();
+  const { db, now } = await gameContext();
   const [rows, mine] = await Promise.all([companyLeaderboard(db, 100), membershipOf(db, userId)]);
   return (
     <Card>
@@ -70,7 +72,7 @@ async function CompanyBoard({ userId }: { userId: string }) {
                 {r.company}
               </Link>
             </td>
-            <td className="px-3 py-2 text-mist-400">{r.owner}</td>
+            <td className="px-3 py-2 text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /></td>
             <td className="num px-3 py-2">{r.level}</td>
             <td className="num px-3 py-2">{int(r.members)}</td>
             <td className="num px-3 py-2 text-gold-400">{int(r.value)}</td>

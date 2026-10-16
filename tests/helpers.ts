@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { register } from '@/server/auth/accounts';
 import { getDb } from '@/server/db/client';
-import { cities, companies, contracts, routes, users } from '@/server/db/schema';
+import { cities, companies, contracts, routes, userLicences, users } from '@/server/db/schema';
 import { foundCompany } from '@/server/game/company';
 import { post } from '@/server/game/finance';
 import { getRoute } from '@/server/geo/route-service';
@@ -56,4 +56,9 @@ export async function makeContract(from: string, to: string, overrides: Partial<
 export async function routeById(id: number) {
   const [r] = await db().select().from(routes).where(eq(routes.id, id));
   return r!;
+}
+
+/** Gives a player licences directly (tests that are not about licences). */
+export async function grantLicences(userId: string, ...licences: string[]) {
+  await db().insert(userLicences).values(licences.map((licence) => ({ userId, licence, source: 'admin' }))).onConflictDoNothing();
 }

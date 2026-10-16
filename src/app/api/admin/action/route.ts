@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { adjustBalance, adminReplenishMarket, adminResetCompanyBranding, requireStaff, setBan, setUserRole } from '@/server/admin';
+import { adjustBalance, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
+import { createUrgentContract, urgentSchema } from '@/server/urgent';
 
 const id = z.string().uuid('Невалиден идентификатор.');
 
@@ -16,6 +17,8 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ticketReply'), ticketId: id, body: replySchema }),
   z.object({ type: z.literal('ticketStatus'), ticketId: id, status: z.enum(['open', 'answered', 'closed']) }),
   z.object({ type: z.literal('ticketAssign'), ticketId: id }),
+  z.object({ type: z.literal('createUrgentContract'), contract: urgentSchema }),
+  z.object({ type: z.literal('setVip'), userId: id, days: z.coerce.number().int('Срокът е в цели дни.').min(0).max(3650) }),
   z.object({ type: z.literal('resetCompanyBranding'), companyId: id, reason: z.string().trim().max(300) }),
 ]);
 
@@ -46,6 +49,10 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'ticketAssign':
       await assignTicket(db, user, input.ticketId);
       return { ok: true };
+    case 'createUrgentContract':
+      return { ok: true, id: (await createUrgentContract(db, user, input.contract)).id };
+    case 'setVip':
+      return { ok: true, until: await setVip(db, user, input.userId, input.days) };
     case 'resetCompanyBranding':
       await adminResetCompanyBranding(db, user, input.companyId, input.reason);
       return { ok: true };

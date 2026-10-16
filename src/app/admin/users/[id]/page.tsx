@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { AdjustBalanceForm } from '@/components/admin/AdjustBalanceForm';
 import { BanForm } from '@/components/admin/BanForm';
 import { ResetBrandingForm } from '@/components/admin/ResetBrandingForm';
+import { VipForm } from '@/components/admin/VipForm';
+import { isVip } from '@/lib/game/vip';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { date, dateTime, int, km, money } from '@/lib/format';
@@ -16,7 +18,7 @@ export const metadata = { title: 'Потребител' };
 export default async function AdminUser({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
-  const { db, user: actor } = await adminContext();
+  const { db, user: actor, now } = await adminContext();
   const detail = await userDetail(db, id).catch((e) => {
     if (e instanceof GameError) notFound();
     throw e;
@@ -25,7 +27,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
   const roleOptions = (['player', 'support', 'admin'] as const).filter((r) => r === user.role || canChangeRole(actor.role, actor.id, user.role, user.id, r));
   return (
     <div className="space-y-6">
-      <PageHeader title={user.username} subtitle={<span className="inline-flex flex-wrap items-center gap-2">{user.email}<Badge tone={user.role === 'player' ? 'neutral' : 'violet'}>{ROLE_LABELS[user.role as Role]}</Badge>{user.bannedAt && <Badge tone="red">блокиран от {date(user.bannedAt)}</Badge>}</span>} />
+      <PageHeader title={user.username} subtitle={<span className="inline-flex flex-wrap items-center gap-2">{user.email}<Badge tone={user.role === 'player' ? 'neutral' : 'violet'}>{ROLE_LABELS[user.role as Role]}</Badge>{isVip(user.vipUntil, now) && <Badge tone="gold">VIP до {date(user.vipUntil!)}</Badge>}{user.bannedAt && <Badge tone="red">блокиран от {date(user.bannedAt)}</Badge>}</span>} />
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="Профил и игра">
           <dl className="grid grid-cols-2 gap-3 text-sm">
@@ -58,6 +60,12 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="label mb-1.5">Модерация на компанията (<a className="text-cyan-glow hover:underline" href={`/game/companies/${org.id}`}>публичен профил</a>)</div>
                 <ResetBrandingForm companyId={org.id} />
+              </div>
+            )}
+            {isAdmin(actor.role) && (
+              <div>
+                <div className="label mb-1.5">VIP статус</div>
+                <VipForm userId={user.id} activeUntil={isVip(user.vipUntil, now) ? user.vipUntil!.toISOString() : null} today={now.toISOString()} />
               </div>
             )}
             {isAdmin(actor.role) && company && (

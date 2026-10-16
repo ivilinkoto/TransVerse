@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, ArrowRight, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Siren, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -32,6 +32,11 @@ export interface BoardContract {
   locked: boolean;
   /** Starts in a city where one of the player's free vehicles stands. */
   local: boolean;
+  /** Urgent shipment from the game administration: listed first, driven faster. */
+  urgent: boolean;
+  speedFactor: number;
+  /** Short names of licences the player still needs for this contract. */
+  missingLicences: string[];
   options: { vehicleId: string; label: string; error: string | null; emptyKm: number; costCents: number; rented: boolean; profitCents: number; minutes: number }[];
 }
 
@@ -52,7 +57,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
       (c) =>
         (!cargo || c.cargoType === cargo) &&
         (!q || c.origin.name.toLowerCase().includes(q) || c.destination.name.toLowerCase().includes(q) || c.goods.toLowerCase().includes(q)) &&
-        (!doable || (!c.locked && c.options.some((o) => !o.error))),
+        (!doable || (!c.locked && !c.missingLicences.length && c.options.some((o) => !o.error))),
     );
     const key: Record<Sort, (c: BoardContract) => number> = {
       reward: (c) => -c.rewardCents,
@@ -61,7 +66,9 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
       expires: (c) => new Date(c.expiresAt).getTime(),
     };
     // Own city first — jobs the player can take right now before the rest.
-    const rank = (c: BoardContract) => (c.local ? (!c.locked && c.options.some((o) => !o.error) ? 0 : 1) : 2);
+    // Urgent shipments first, then the player's own city.
+    const takeable = (c: BoardContract) => !c.locked && !c.missingLicences.length && c.options.some((o) => !o.error);
+    const rank = (c: BoardContract) => (c.urgent ? 0 : c.local ? (takeable(c) ? 1 : 2) : 3);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
   }, [contracts, cargo, query, doable, sort]);
 
@@ -130,14 +137,16 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
   };
 
   return (
-    <li className={`panel overflow-hidden transition ${open ? 'border-volt-500/60' : c.local ? 'border-gold-400/40 hover:border-gold-400/70' : 'hover:border-asphalt-500'} ${c.locked ? 'opacity-60' : ''}`}>
+    <li className={`panel overflow-hidden transition ${open ? 'border-volt-500/60' : c.urgent ? 'border-loss/60 hover:border-loss' : c.local ? 'border-gold-400/40 hover:border-gold-400/70' : 'hover:border-asphalt-500'} ${c.locked || c.missingLicences.length ? 'opacity-60' : ''}`}>
       <button className="grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 text-left sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto]" onClick={onToggle} aria-expanded={open}>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={CARGO_TONE[c.cargoType]}>{c.cargoLabel}</Badge>
             <span className="truncate font-semibold">{c.goods}</span>
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
+            {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо</Badge>}
             {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />Във вашия град</Badge>}
+            {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />Лиценз: {c.missingLicences.join(', ')}</Badge>}
             {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />ниво {c.minLevel}</Badge>}
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
@@ -169,6 +178,11 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
 
           {c.locked ? (
             <p className="mt-4 flex items-center gap-2 text-sm text-prestige"><Lock className="h-4 w-4" />Достигнете ниво {c.minLevel}, за да поемате такива товари.</p>
+          ) : c.missingLicences.length ? (
+            <p className="mt-4 flex flex-wrap items-center gap-2 text-sm text-amber-sig">
+              <BadgeCheck className="h-4 w-4" />Нужен е лиценз: {c.missingLicences.join(', ')}.
+              <Link href="/game/licences" className="text-cyan-glow hover:underline">Към лицензите →</Link>
+            </p>
           ) : (
             <div className="mt-4 space-y-3">
               <div className="flex flex-wrap items-center gap-3">

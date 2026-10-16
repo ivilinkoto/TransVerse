@@ -12,6 +12,7 @@ import { fail } from './errors';
 import { post, postTreasury, type Posting } from './finance';
 import { broadcast, logActivity, notify } from './notify';
 import { awardXp, checkAchievements } from './progression';
+import { heldLicences, licenceNames, missingFor } from './licences';
 import { addCompanyXp, bonusesForUser } from './membership';
 import { addSeasonScore } from './seasons';
 
@@ -81,6 +82,10 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       user?.level ?? 1,
     );
     if (error) fail('incompatible', error);
+    const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
+    const [to] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.destCityId));
+    const missing = missingFor({ cargoType: contract!.cargoType, originCountry: from!.country, destCountry: to!.country, routeCountries: loadedRoute!.countries }, await heldLicences(tx, userId));
+    if (missing.length) fail('licence_required', `Нужен е лиценз: ${licenceNames(missing)}. Купува се от раздел „Лицензи“.`);
     if (bundle.vehicle.cityId !== (emptyRoute ? emptyRoute.fromCityId : contract!.originCityId)) fail('vehicle_moved', 'Превозното средство смени местоположението си. Опитайте отново.', 409);
 
     const claimed = await tx
@@ -98,7 +103,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       empty: emptyRoute ? { km: emptyRoute.distanceKm, durationS: emptyRoute.durationS, borderKms: emptyRoute.borders.map((b) => b.km) } : null,
       loaded: { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km) },
       speedFactor,
-      timeScale: timeScale(),
+      // Urgent shipments run faster than normal game time.
+      timeScale: timeScale() * Math.max(1, contract!.speedFactor),
     });
     const rented = bundle.vehicle.ownership === 'rented';
     const totalKm = (emptyRoute?.distanceKm ?? 0) + loadedRoute!.distanceKm;
@@ -316,7 +322,8 @@ export async function migrateToGameTime(db: Database): Promise<number> {
       .set({ schedule, etaAt: new Date(scheduleEnd(schedule)), deadlineAt: new Date(d.startedAt.getTime() + contractWindowMinutes(contract.distanceKm) * 60_000), scheduleVersion: SCHEDULE_VERSION })
       .where(and(eq(deliveries.id, d.id), lt(deliveries.scheduleVersion, SCHEDULE_VERSION)));
   }
-  const open = await db.select({ id: contracts.id, distanceKm: contracts.distanceKm, windowMinutes: contracts.windowMinutes }).from(contracts).where(eq(contracts.status, 'open'));
+  // Urgent shipments keep the deadline their administrator set.
+  const open = await db.select({ id: contracts.id, distanceKm: contracts.distanceKm, windowMinutes: contracts.windowMinutes }).from(contracts).where(and(eq(contracts.status, 'open'), eq(contracts.urgent, false)));
   for (const c of open) {
     const window = contractWindowMinutes(c.distanceKm);
     if (c.windowMinutes > window) await db.update(contracts).set({ windowMinutes: window }).where(eq(contracts.id, c.id));

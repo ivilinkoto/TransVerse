@@ -1,14 +1,15 @@
 import { Star, Wallet } from 'lucide-react';
 import { levelProgress } from '@/lib/game/progression';
 import { money } from '@/lib/format';
+import { PlayerName } from './PlayerName';
 
-export function TopBar({ title, kind, company, user, hqName }: { title: string; kind: string; company: { balanceCents: number; reputation: number }; user: { username: string; xp: number }; hqName: string }) {
+export function TopBar({ title, kind, company, user, vip, hqName }: { title: string; kind: string; company: { balanceCents: number; reputation: number }; user: { username: string; xp: number; role: string }; vip: boolean; hqName: string }) {
   const lp = levelProgress(user.xp);
   return (
     <header className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-asphalt-800 bg-asphalt-950/80 px-4 py-3 backdrop-blur sm:px-6">
       <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
         <div className="truncate font-display text-lg font-bold">{title}</div>
-        <div className="text-xs text-mist-400">{kind === 'company' ? `Собствен автопарк · база ${hqName}` : `Самостоятелен шофьор · база ${hqName}`} · {user.username}</div>
+        <div className="flex flex-wrap items-center gap-1 text-xs text-mist-400">{kind === 'company' ? `Собствен автопарк · база ${hqName}` : `Самостоятелен шофьор · база ${hqName}`} · <PlayerName name={user.username} role={user.role} vip={vip} /></div>
       </div>
       <div className="flex items-center gap-2" title="Наличност">
         <Wallet className="h-4 w-4 text-gold-400" />

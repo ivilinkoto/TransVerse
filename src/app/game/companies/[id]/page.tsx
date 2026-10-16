@@ -1,3 +1,5 @@
+import { PlayerName } from '@/components/game/PlayerName';
+import { isVip } from '@/lib/game/vip';
 import { Building2, ScrollText } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -14,7 +16,7 @@ export const metadata = { title: 'Компания' };
 export default async function PublicCompanyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { db, user } = await gameContext();
+  const { db, user, now } = await gameContext();
   const row = await publicCompany(db, id);
   if (!row) notFound();
   const c = row.company;
@@ -45,7 +47,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
             <Table head={['Играч', 'Длъжност', 'Ниво', 'Курсове']}>
               {members.map((m) => (
                 <tr key={m.userId}>
-                  <td className="px-3 py-2 font-semibold">{m.username}</td>
+                  <td className="px-3 py-2 font-semibold"><PlayerName name={m.username} role={m.role} vip={isVip(m.vipUntil, now)} /></td>
                   <td className="px-3 py-2"><Badge tone={m.rank.isOwner ? 'gold' : 'neutral'}>{m.rank.name}</Badge></td>
                   <td className="num px-3 py-2">{m.level}</td>
                   <td className="num px-3 py-2">{int(m.member.deliveries)}</td>

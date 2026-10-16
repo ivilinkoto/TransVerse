@@ -6,7 +6,6 @@ import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/
 import { money } from '@/lib/format';
 import { UPGRADES, canCouple } from '@/lib/game/catalog';
 import { repairCostCents } from '@/lib/game/economy';
-import { CompanyRequired } from '@/components/game/CompanyRequired';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
 
@@ -14,7 +13,6 @@ export const metadata = { title: 'Гараж' };
 
 export default async function GaragePage() {
   const { db, company } = await gameContext();
-  if (company.kind !== 'company') return <CompanyRequired what="Гаражът" />;
   const fleet = await fleetView(db, company.id);
 
   return (

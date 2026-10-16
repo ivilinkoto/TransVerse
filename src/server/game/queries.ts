@@ -94,6 +94,8 @@ export async function companyLeaderboard(db: DbOrTx, limit = 50) {
       tag: organizations.tag,
       color: organizations.color,
       owner: users.username,
+      ownerRole: users.role,
+      ownerVipUntil: users.vipUntil,
       level: organizations.companyLevel,
       value: organizations.companyXp,
       members: sql<number>`(select count(*)::int from company_members m where m.company_id = ${organizations.id})`,
@@ -108,7 +110,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   if (kind === 'season') {
     const season = await activeSeason(db);
     const rows = await db
-      .select({ companyId: companies.id, company: playerLabel, owner: users.username, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
+      .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
       .from(seasonScores)
       .innerJoin(companies, eq(companies.id, seasonScores.companyId))
       .innerJoin(users, eq(users.id, companies.ownerId))
@@ -119,7 +121,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   }
   if (kind === 'deliveries') {
     const rows = await db
-      .select({ companyId: companies.id, company: playerLabel, owner: users.username, level: users.level, value: companies.deliveries, deliveries: companies.deliveries })
+      .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, level: users.level, value: companies.deliveries, deliveries: companies.deliveries })
       .from(companies)
       .innerJoin(users, eq(users.id, companies.ownerId))
       .orderBy(desc(companies.deliveries), desc(companies.totalKm))
@@ -127,18 +129,21 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
     return { season: null, rows };
   }
   // Wealth: balance plus depreciated fleet value, computed in SQL for ranking.
+  const wealth = sql<number>`(${companies.balanceCents} + coalesce((select sum(v.purchase_price_cents * 0.65 * (0.4 + 0.6 * v.condition / 100)) from vehicles v where v.company_id = ${companies.id} and v.sold_at is null and v.ownership = 'owned'), 0))::bigint`;
   const rows = await db
     .select({
       companyId: companies.id,
       company: playerLabel,
       owner: users.username,
+      ownerRole: users.role,
+      ownerVipUntil: users.vipUntil,
       level: users.level,
-      value: sql<number>`(${companies.balanceCents} + coalesce((select sum(v.purchase_price_cents * 0.65 * (0.4 + 0.6 * v.condition / 100)) from vehicles v where v.company_id = ${companies.id} and v.sold_at is null and v.ownership = 'owned'), 0))::bigint`,
+      value: wealth,
       deliveries: companies.deliveries,
     })
     .from(companies)
     .innerJoin(users, eq(users.id, companies.ownerId))
-    .orderBy(sql`5 desc`)
+    .orderBy(desc(wealth))
     .limit(limit);
   return { season: null, rows: rows.map((r) => ({ ...r, value: Number(r.value) })) };
 }

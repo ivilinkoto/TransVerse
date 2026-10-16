@@ -19,6 +19,9 @@ export default async function FleetPage() {
   const { db, company } = await gameContext();
   const fleet = await fleetView(db, company.id);
   const loose = fleet.trailers.filter((t) => !t.vehicleId);
+  // The player drives one truck themselves and can switch to another idle one.
+  const self = fleet.drivers.find((d) => d.isOwner);
+  const selfBusy = !!self?.vehicleId && fleet.vehicles.some((x) => x.id === self.vehicleId && x.status !== 'idle');
 
   return (
     <div className="space-y-6">
@@ -61,10 +64,17 @@ export default async function FleetPage() {
               <div><dt className="label">Надстройка</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? BODY_LABELS[v.trailer.model.body] : <span className="text-amber-sig">без ремарке</span>) : BODY_LABELS[v.model.body!]}</dd></div>
               <div><dt className="label">Шофьор</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5" />{v.driver.name}</> : <span className="text-amber-sig">няма</span>}</dd></div>
             </dl>
+            {!v.driver && !v.delivery && self && !selfBusy && (
+              <div className="mt-3">
+                <ActionButton action={{ type: 'assignDriver', driverId: self.id, vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">
+                  <UserRound className="h-4 w-4" />Карай този камион сам
+                </ActionButton>
+              </div>
+            )}
             {v.ownership === 'rented' && (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
                 <span>Наем: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Без разходи за гориво, такси и сервиз.</span>
-                {company.kind === 'company' && !v.delivery && !v.driver?.isOwner && (
+                {fleet.vehicles.length > 1 && !v.delivery && !v.driver?.isOwner && (
                   <ActionButton action={{ type: 'returnRental', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm="Да върнем ли камиона на наемодателя?">Върни</ActionButton>
                 )}
               </div>

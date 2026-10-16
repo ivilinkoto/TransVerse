@@ -1,4 +1,4 @@
-import { Award, Bell, Building2, LifeBuoy, CalendarClock, ClipboardList, Gauge, Landmark, Map, Medal, Settings, ShoppingCart, Truck, UserRound, Users, Warehouse, Wrench } from 'lucide-react';
+import { Award, BadgeCheck, Bell, Building2, LifeBuoy, CalendarClock, ClipboardList, Gauge, Landmark, Map, Medal, Settings, ShoppingCart, Truck, UserRound, Users, Warehouse, Wrench } from 'lucide-react';
 
 export const NAV = [
   { href: '/game', label: 'Обзор', icon: Gauge },
@@ -7,6 +7,7 @@ export const NAV = [
   { href: '/game/fleet', label: 'Автопарк', icon: Truck },
   { href: '/game/garage', label: 'Гараж', icon: Wrench },
   { href: '/game/market', label: 'Пазар', icon: ShoppingCart },
+  { href: '/game/licences', label: 'Лицензи', icon: BadgeCheck },
   { href: '/game/staff', label: 'Служители', icon: UserRound },
   { href: '/game/logistics', label: 'Логистика', icon: Warehouse },
   { href: '/game/company', label: 'Транспортна компания', icon: Building2 },
@@ -20,5 +21,5 @@ export const NAV = [
   { href: '/game/profile', label: 'Профил и настройки', icon: Settings },
 ] as const;
 
-/** Sections that need a founded company (shown with a lock for independent drivers). */
-export const COMPANY_ONLY = new Set(['/game/garage', '/game/market', '/game/staff', '/game/logistics']);
+/** Sections that need the operator licence from founding a company (shown with a lock otherwise). */
+export const COMPANY_ONLY = new Set(['/game/staff']);

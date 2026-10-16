@@ -3,6 +3,7 @@ import type { Segment } from '@/lib/game/schedule';
 import type { DbOrTx } from '@/server/db/client';
 import { cities, companies, companyMembers, contracts, deliveries, organizations, routes, users, vehicles } from '@/server/db/schema';
 import { onlineUserIds } from '@/server/realtime';
+import { isVip } from '@/lib/game/vip';
 
 /** A leg of another player's trip; the geometry is shared through `routes` to keep the payload small. */
 export interface WorldLeg {
@@ -15,6 +16,8 @@ export interface WorldLeg {
 export interface WorldTruck {
   id: string;
   player: string;
+  role: string;
+  vip: boolean;
   company: string | null;
   tag: string | null;
   color: string | null;
@@ -51,6 +54,8 @@ export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<World
       status: vehicles.status,
       userId: users.id,
       player: users.username,
+      role: users.role,
+      vipUntil: users.vipUntil,
       company: organizations.name,
       tag: organizations.tag,
       color: organizations.color,
@@ -111,6 +116,8 @@ export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<World
     return {
       id: r.id,
       player: r.player,
+      role: r.role,
+      vip: isVip(r.vipUntil, now),
       company: r.company,
       tag: r.tag,
       color: r.color,
