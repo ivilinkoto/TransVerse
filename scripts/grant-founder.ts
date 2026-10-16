@@ -2,8 +2,8 @@
 import { closeDb, getDb } from '../src/server/db/client';
 import { bootstrapFounder } from '../src/server/admin';
 
-// Comma-separated list, e.g. "ANGELov,vesichaa".
-const list = process.argv[2] ?? process.env.FOUNDER_USERNAMES ?? process.env.FOUNDER_USERNAME ?? 'ANGELov,vesichaa';
+// Comma-separated list, e.g. "ANGELov,V3s1chaa".
+const list = process.argv[2] ?? process.env.FOUNDER_USERNAMES ?? process.env.FOUNDER_USERNAME ?? 'ANGELov,V3s1chaa';
 for (const username of list.split(',').map((u) => u.trim()).filter(Boolean)) {
   const result = await bootstrapFounder(getDb(), username);
   console.log(
