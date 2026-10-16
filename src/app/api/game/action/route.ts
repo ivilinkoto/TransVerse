@@ -10,7 +10,9 @@ import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver } from '@/server/game/staff';
 import { handler } from '@/server/http';
 import { buyLicence } from '@/server/game/licences';
-import { claimMission } from '@/server/game/missions';
+import { claimMission, rerollMission } from '@/server/game/missions';
+import { reserveContract } from '@/server/game/contracts';
+import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
 import {
   buyCompanyUpgrade,
   createRank,
@@ -77,6 +79,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean() }),
   z.object({ type: z.literal('dissolveCompany') }),
   z.object({ type: z.literal('buyLicence'), licence: z.string().max(30) }),
+  z.object({ type: z.literal('rerollMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
+  z.object({ type: z.literal('reserveContract'), contractId: id }),
+  z.object({ type: z.literal('shopBuy'), purchase: shopPurchaseSchema }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
 ]);
 
@@ -180,6 +185,12 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'transferOwnership':
       await transferOwnership(db, user.id, input.userId, input.leave);
       return { ok: true };
+    case 'rerollMission':
+      return { ok: true, ...(await rerollMission(db, user.id, input.periodKey, input.missionId)) };
+    case 'shopBuy':
+      return { ok: true, ...(await buyShopItem(db, user.id, input.purchase)) };
+    case 'reserveContract':
+      return { ok: true, until: await reserveContract(db, user.id, input.contractId) };
     case 'claimMission':
       return { ok: true, reward: await claimMission(db, user.id, input.periodKey, input.missionId) };
     case 'buyLicence':

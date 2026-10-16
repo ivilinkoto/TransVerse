@@ -3,6 +3,7 @@ import { AdjustBalanceForm } from '@/components/admin/AdjustBalanceForm';
 import { BanForm } from '@/components/admin/BanForm';
 import { ResetBrandingForm } from '@/components/admin/ResetBrandingForm';
 import { VipForm } from '@/components/admin/VipForm';
+import { CoinsForm } from '@/components/admin/CoinsForm';
 import { isVip } from '@/lib/game/vip';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { SelectAction } from '@/components/ui/SelectAction';
@@ -60,6 +61,12 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="label mb-1.5">Модерация на компанията (<a className="text-cyan-glow hover:underline" href={`/game/companies/${org.id}`}>публичен профил</a>)</div>
                 <ResetBrandingForm companyId={org.id} />
+              </div>
+            )}
+            {isAdmin(actor.role) && (
+              <div>
+                <div className="label mb-1.5">ТрансКоин</div>
+                <CoinsForm userId={user.id} balance={user.coins} />
               </div>
             )}
             {isAdmin(actor.role) && (

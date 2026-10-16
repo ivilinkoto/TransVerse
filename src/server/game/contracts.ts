@@ -4,6 +4,7 @@ import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/
 import { rewardCents } from '@/lib/game/economy';
 import { haversineKm } from '@/lib/geo/geometry';
 import { contractCountries, missingLicences, requiredLicences } from '@/lib/game/licences';
+import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -274,3 +275,24 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
 }
 
 export type ContractView = Awaited<ReturnType<typeof openContracts>>[number];
+
+/** VIP: holds an open (non-urgent) contract for the player for a few minutes. One reservation at a time. */
+export async function reserveContract(db: Database, userId: string, contractId: string, now = new Date()) {
+  const { companyForUser } = await import('./company');
+  const { fail } = await import('./errors');
+  return db.transaction(async (tx) => {
+    const [user] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
+    if (!isVip(user?.vipUntil, now)) fail('vip_only', 'Запазването на поръчки е VIP възможност.', 403);
+    const account = await companyForUser(tx, userId);
+    const [c] = await tx.select().from(contracts).where(eq(contracts.id, contractId)).for('update');
+    if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
+    if (c!.urgent) fail('urgent', 'Спешните поръчки не се запазват — може да ги поеме всеки.');
+    if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', 'Поръчката вече е запазена от друг играч.', 409);
+    // Only one reservation at a time: release any other one.
+    await tx.update(contracts).set({ reservedByCompanyId: null, reservedUntil: null }).where(and(eq(contracts.reservedByCompanyId, account.id), sql`${contracts.id} <> ${contractId}`));
+    const until = new Date(now.getTime() + VIP_PERKS.reservationMinutes * 60_000);
+    await tx.update(contracts).set({ reservedByCompanyId: account.id, reservedUntil: until }).where(eq(contracts.id, contractId));
+    await broadcast(tx, 'market');
+    return until;
+  });
+}

@@ -15,6 +15,7 @@ import { awardXp, checkAchievements } from './progression';
 import { heldLicences, licenceNames, missingFor } from './licences';
 import { addCompanyXp, bonusesForUser } from './membership';
 import { recordMissionProgress } from './missions';
+import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractCountries } from '@/lib/game/licences';
 import { addSeasonScore } from './seasons';
 
@@ -80,7 +81,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   const emptyRoute = vehicle.cityId !== contract!.originCityId ? await getRoute(db, vehicle.cityId, contract!.originCityId, 'truck') : null;
 
   return db.transaction(async (tx) => {
-    const [user] = await tx.select({ level: users.level }).from(users).where(eq(users.id, userId));
+    const [user] = await tx.select({ level: users.level, vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
+    const vip = isVip(user?.vipUntil, now);
     const bundle = await vehicleBundle(tx, company.id, vehicleId, true);
     const error = compatibilityError(
       { modelId: bundle.vehicle.modelId, trailerModelId: bundle.trailer?.modelId ?? null, condition: bundle.vehicle.condition, hasDriver: !!bundle.driver, status: bundle.vehicle.status },
@@ -94,6 +96,12 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     if (missing.length) fail('licence_required', `Нужен е лиценз: ${licenceNames(missing)}. Купува се от раздел „Лицензи“.`);
     if (bundle.vehicle.cityId !== (emptyRoute ? emptyRoute.fromCityId : contract!.originCityId)) fail('vehicle_moved', 'Превозното средство смени местоположението си. Опитайте отново.', 409);
 
+    // VIP early access to urgent shipments.
+    if (contract!.urgent && !vip && now.getTime() < contract!.createdAt.getTime() + VIP_PERKS.urgentEarlyMs) {
+      fail('vip_early_access', `Спешната поръчка се отваря за всички в ${new Date(contract!.createdAt.getTime() + VIP_PERKS.urgentEarlyMs).toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' })}. VIP играчите я виждат 5 минути по-рано.`, 409);
+    }
+    // A contract reserved by a VIP is theirs until the reservation ends.
+    if (contract!.reservedUntil && contract!.reservedUntil > now && contract!.reservedByCompanyId !== company.id) fail('reserved', 'Поръчката е запазена от друг играч за няколко минути.', 409);
     if (contract!.urgent) {
       // Open to everyone until it expires — each player once.
       const [still] = await tx.select({ id: contracts.id }).from(contracts).where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`)).for('share');
@@ -148,7 +156,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, totalCents: 0, wear: 0 } : running;
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
-    const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, perks?.bonuses.rentalShareReduction ?? 0) : null;
+    const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     const [delivery] = await tx
       .insert(deliveries)
@@ -226,7 +234,11 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const payout = result.rewardCents + result.bonusCents - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
-  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1));
+  // XP bonuses: company training, VIP and the shop's double-XP booster.
+  const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
+  const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;
+  const boostXp = owner?.xpBoostUntil && owner.xpBoostUntil > now ? 2 : 1;
+  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp);
   if (perks) {
     await tx
       .update(companyMembers)

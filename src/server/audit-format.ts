@@ -24,6 +24,10 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return `${actor ?? who} получи длъжност ${ROLE_LABELS.founder} (при публикуване)`;
     case 'set_vip':
       return `Даде VIP на ${who} за ${Number(d.days ?? 0)} дни${d.until ? ` (до ${new Date(String(d.until)).toLocaleDateString('bg-BG')})` : ''}`;
+    case 'grant_coins':
+      return `Даде ${Number(d.amount ?? 0)} ТрансКоин на ${who}${d.reason ? ` — ${String(d.reason)}` : ''}`;
+    case 'remove_coins':
+      return `Отне ${-Number(d.amount ?? 0)} ТрансКоин от ${who}${d.reason ? ` — ${String(d.reason)}` : ''}`;
     case 'remove_vip':
       return `Премахна VIP статуса на ${who}`;
     case 'create_urgent_contract':

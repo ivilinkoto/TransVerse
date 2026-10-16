@@ -150,11 +150,14 @@ export function scaledReward(m: MissionDefinition, level: number): { cents: numb
 }
 
 /** Deterministic pick: different players get different sets, the same player keeps theirs for the period. */
-export function pickMissions(period: MissionPeriod, profile: PlayerProfile, seed: string): MissionDefinition[] {
-  const pool = MISSIONS.filter((m) => m.period === period && (!m.eligible || m.eligible(profile)));
+export function pickMissions(period: MissionPeriod, profile: PlayerProfile, seed: string, count = MISSIONS_PER_PERIOD[period], exclude: ReadonlySet<string> = new Set()): MissionDefinition[] {
+  const pool = MISSIONS.filter((m) => m.period === period && !exclude.has(m.id) && (!m.eligible || m.eligible(profile)));
   const scored = pool.map((m) => ({ m, h: hash(`${seed}:${m.id}`) })).sort((a, b) => a.h - b.h);
-  return scored.slice(0, MISSIONS_PER_PERIOD[period]).map((x) => x.m);
+  return scored.slice(0, count).map((x) => x.m);
 }
+
+/** ТрансКоин price of swapping a mission (VIPs get one free swap a day). */
+export const MISSION_REROLL_COINS = 20;
 
 function hash(s: string): number {
   let h = 2166136261;
