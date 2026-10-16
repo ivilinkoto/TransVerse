@@ -8,13 +8,15 @@ import { dateTime, km, money } from '@/lib/format';
 import { ACHIEVEMENTS, levelProgress } from '@/lib/game/progression';
 import { achievements, ledgerEntries } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
+import { missionBoard } from '@/server/game/missions';
+import { missionById } from '@/lib/game/missions';
 import { companyStats } from '@/server/game/progression';
 import { fleetView, latestNotifications, netWorthCents } from '@/server/game/queries';
 
 export default async function OverviewPage() {
   const { db, user, company, now } = await gameContext();
   const since = new Date(now.getTime() - 7 * 86_400_000);
-  const [fleet, stats, unlocked, recent, worth, flows] = await Promise.all([
+  const [fleet, stats, unlocked, recent, worth, flows, missions] = await Promise.all([
     fleetView(db, company.id),
     companyStats(db, company.id),
     db.select().from(achievements).where(eq(achievements.userId, user.id)),
@@ -27,7 +29,10 @@ export default async function OverviewPage() {
       })
       .from(ledgerEntries)
       .where(and(eq(ledgerEntries.companyId, company.id), gte(ledgerEntries.createdAt, since))),
+    missionBoard(db, user.id, now),
   ]);
+  const dailyKey = missions.windows.find((w) => w.period === 'daily')!.key;
+  const today = missions.current.filter((m) => m.periodKey === dailyKey);
   const income = Number(flows[0]?.income ?? 0);
   const expense = Number(flows[0]?.expense ?? 0);
   const active = fleet.vehicles.filter((v) => v.delivery);
@@ -76,6 +81,22 @@ export default async function OverviewPage() {
         </Card>
 
         <div className="space-y-6">
+          <Card title="Днешни мисии" actions={<Link href="/game/missions" className="text-sm text-cyan-glow hover:underline">Всички мисии →</Link>}>
+            <ul className="space-y-3">
+              {today.map((m) => {
+                const def = missionById(m.missionId);
+                return (
+                  <li key={m.missionId}>
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <span className="min-w-0 truncate">{m.completedAt ? '✓ ' : ''}{def?.title(m.target) ?? m.missionId}</span>
+                      <span className="num shrink-0 text-xs text-gold-400">{money(m.rewardCents)}</span>
+                    </div>
+                    <Meter value={(m.progress / m.target) * 100} tone={m.completedAt ? 'auto' : 'cyan'} className="mt-1" />
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
           <Card title="Текущи цели" actions={<Target className="h-4 w-4 text-gold-400" />}>
             <ul className="space-y-3">
               {goals.map((g) => (

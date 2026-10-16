@@ -29,7 +29,8 @@ export type LedgerCategory =
   | 'company_upgrade'
   | 'treasury_deposit'
   | 'company_dissolution'
-  | 'licences';
+  | 'licences'
+  | 'mission_reward';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -58,6 +59,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   treasury_deposit: 'Внесени в касата на компанията',
   company_dissolution: 'Остатък от касата при закриване',
   licences: 'Лицензи',
+  mission_reward: 'Награди от мисии',
 };
 
 export interface Posting {

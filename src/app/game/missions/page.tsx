@@ -1,0 +1,98 @@
+import { CalendarClock, CheckCircle2, Coins, Gift, Star, Target } from 'lucide-react';
+import { Badge, Card, Meter, PageHeader } from '@/components/ui';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { dateTime, duration, int, money } from '@/lib/format';
+import { MISSION_PERIODS, PERIOD_LABELS, missionById, type MissionPeriod } from '@/lib/game/missions';
+import { gameContext } from '@/server/game/context';
+import { missionBoard } from '@/server/game/missions';
+
+export const metadata = { title: 'Мисии' };
+
+type Row = Awaited<ReturnType<typeof missionBoard>>['current'][number];
+
+const PERIOD_HINT: Record<MissionPeriod, string> = {
+  daily: 'Нови всеки ден в 00:00 (българско време).',
+  weekly: 'Нови всеки понеделник.',
+  monthly: 'Нови на 1-во число.',
+  season: 'За целия игрови сезон.',
+};
+
+function format(row: Row, value: number) {
+  const def = missionById(row.missionId);
+  return def?.metric === 'earned_cents' ? money(value) : int(Math.floor(value));
+}
+
+function MissionCard({ row }: { row: Row }) {
+  const def = missionById(row.missionId);
+  const share = row.target ? (row.progress / row.target) * 100 : 0;
+  return (
+    <li className={`rounded-xl border p-4 ${row.claimedAt ? 'border-asphalt-700 opacity-70' : row.completedAt ? 'border-profit/50 bg-profit/5' : 'border-asphalt-700'}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 font-semibold">
+            {row.completedAt ? <CheckCircle2 className="h-4 w-4 shrink-0 text-profit" /> : <Target className="h-4 w-4 shrink-0 text-cyan-glow" />}
+            <span>{def ? def.title(row.target) : row.missionId}</span>
+          </div>
+          {def?.metric === 'countries' && row.data.countries?.length ? <div className="mt-1 text-xs text-mist-400">Държави: {row.data.countries.join(', ')}</div> : null}
+        </div>
+        <div className="shrink-0 text-right text-xs">
+          <div className="num font-semibold text-gold-400">{money(row.rewardCents)}</div>
+          <div className="num text-prestige">+{int(row.rewardXp)} опит</div>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center justify-between text-xs text-mist-400">
+        <span className="num">{format(row, row.progress)} / {format(row, row.target)}</span>
+        <span className="num">{Math.floor(Math.min(100, share))}%</span>
+      </div>
+      <Meter value={share} tone={row.completedAt ? 'auto' : 'cyan'} className="mt-1" />
+      {row.completedAt && !row.claimedAt && (
+        <div className="mt-3">
+          <ActionButton action={{ type: 'claimMission', periodKey: row.periodKey, missionId: row.missionId }} className="btn-gold px-4 py-2 text-sm">
+            <Gift className="h-4 w-4" />Вземи наградата
+          </ActionButton>
+        </div>
+      )}
+      {row.claimedAt && <p className="mt-3 text-xs text-profit">Наградата е взета · {dateTime(row.claimedAt)}</p>}
+    </li>
+  );
+}
+
+export default async function MissionsPage() {
+  const { db, user, now } = await gameContext();
+  const { windows, current, unclaimed } = await missionBoard(db, user.id, now);
+  const done = current.filter((r) => r.completedAt).length;
+  const waiting = [...current, ...unclaimed].filter((r) => r.completedAt && !r.claimedAt);
+  const waitingCents = waiting.reduce((s, r) => s + r.rewardCents, 0);
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Мисии" subtitle="Цели за деня, седмицата, месеца и сезона. Прогресът се отчита автоматично при всяка доставка; наградата се взима с бутон. Мисиите се подбират според нивото и лицензите ти." />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="panel flex items-center gap-3 p-4"><Target className="h-5 w-5 text-cyan-glow" /><div><div className="label">Изпълнени сега</div><div className="num font-display text-xl font-bold">{done} / {current.length}</div></div></div>
+        <div className="panel flex items-center gap-3 p-4"><Coins className="h-5 w-5 text-gold-400" /><div><div className="label">Чакащи награди</div><div className="num font-display text-xl font-bold text-gold-400">{money(waitingCents)}</div></div></div>
+        <div className="panel flex items-center gap-3 p-4"><Star className="h-5 w-5 text-prestige" /><div><div className="label">Опит за взимане</div><div className="num font-display text-xl font-bold text-prestige">{int(waiting.reduce((s, r) => s + r.rewardXp, 0))}</div></div></div>
+      </div>
+      {unclaimed.length > 0 && (
+        <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-gold-400" />Невзети награди от минали периоди</span>}>
+          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{unclaimed.map((r) => <MissionCard key={`${r.periodKey}:${r.missionId}`} row={r} />)}</ul>
+        </Card>
+      )}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {MISSION_PERIODS.map((period) => {
+          const w = windows.find((x) => x.period === period)!;
+          const rows = current.filter((r) => r.periodKey === w.key);
+          const left = Math.max(0, (w.endsAt.getTime() - now.getTime()) / 60_000);
+          return (
+            <Card
+              key={period}
+              title={<span className="inline-flex items-center gap-2"><CalendarClock className="h-4 w-4 text-mist-400" />{PERIOD_LABELS[period]} мисии</span>}
+              actions={<Badge tone="cyan">остават {duration(left)}</Badge>}
+            >
+              <p className="mb-3 text-xs text-mist-400">{PERIOD_HINT[period]}</p>
+              {rows.length ? <ul className="space-y-3">{rows.map((r) => <MissionCard key={r.missionId} row={r} />)}</ul> : <p className="text-sm text-mist-400">Няма мисии за този период.</p>}
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

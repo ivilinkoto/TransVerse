@@ -488,6 +488,31 @@ export const userLicences = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.licence] })],
 );
 
+// ── Missions ───────────────────────────────────────────────────────────────
+
+/** A mission given to a player for one period (target and reward frozen at assignment). */
+export const missionProgress = pgTable(
+  'mission_progress',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** e.g. D2026-10-16, W2026-42, M2026-10, S3 */
+    periodKey: text('period_key').notNull(),
+    missionId: text('mission_id').notNull(),
+    period: text('period').notNull(), // daily | weekly | monthly | season
+    target: real('target').notNull(),
+    progress: real('progress').notNull().default(0),
+    rewardCents: money('reward_cents').notNull(),
+    rewardXp: integer('reward_xp').notNull(),
+    /** Extra state, e.g. the countries already delivered to. */
+    data: jsonb('data').$type<{ countries?: string[] }>().notNull().default({}),
+    endsAt: ts('ends_at').notNull(),
+    completedAt: ts('completed_at'),
+    claimedAt: ts('claimed_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.periodKey, t.missionId] }), index('mission_progress_user_idx').on(t.userId, t.endsAt)],
+);
+
 // ── Player companies (organisations with members and their own treasury) ──
 
 export const organizations = pgTable(
