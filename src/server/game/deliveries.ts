@@ -14,6 +14,8 @@ import { broadcast, logActivity, notify } from './notify';
 import { awardXp, checkAchievements } from './progression';
 import { heldLicences, licenceNames, missingFor } from './licences';
 import { addCompanyXp, bonusesForUser } from './membership';
+import { recordCompanyMissionProgress } from './company-missions';
+import { recordEventProgress } from './events';
 import { recordMissionProgress } from './missions';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractCountries } from '@/lib/game/licences';
@@ -281,21 +283,20 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // Missions: what this delivery contributes (route countries plus both ends).
   const [origin] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract.originCityId));
   const [route] = await tx.select({ countries: routes.countries }).from(routes).where(eq(routes.id, d.routeId));
-  await recordMissionProgress(
-    tx,
-    company!.ownerId,
-    {
-      loadedKm: d.loadedKm,
-      tons: contract.weightTons,
-      onTime,
-      rewardCents: result.rewardCents,
-      cargoType: contract.cargoType,
-      countries: contractCountries(origin!.country, dest!.countryCode, route?.countries),
-      urgent: contract.urgent,
-      inCompany: !!perks,
-    },
-    now,
-  );
+  const facts = {
+    loadedKm: d.loadedKm,
+    tons: contract.weightTons,
+    onTime,
+    rewardCents: result.rewardCents,
+    cargoType: contract.cargoType,
+    countries: contractCountries(origin!.country, dest!.countryCode, route?.countries),
+    urgent: contract.urgent,
+    inCompany: !!perks,
+  };
+  await recordMissionProgress(tx, company!.ownerId, facts, now);
+  // Global events count by arrival time; company missions by the member's company.
+  await recordEventProgress(tx, company!.ownerId, org?.id ?? null, facts, completedAt);
+  if (org) await recordCompanyMissionProgress(tx, org.id, company!.ownerId, facts, now);
   await addSeasonScore(tx, d.companyId, seasonPoints(d.loadedKm, contract.weightTons, onTime), result.rewardCents, now);
   await notify(
     tx,

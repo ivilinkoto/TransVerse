@@ -64,6 +64,13 @@
       "when": 1792177171285,
       "tag": "0008_white_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792186928313,
+      "tag": "0009_awesome_black_tarantula",
+      "breakpoints": true
     }
   ]
 }

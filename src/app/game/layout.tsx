@@ -1,9 +1,9 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, lte, sql } from 'drizzle-orm';
 import type { Metadata } from 'next';
 import { LiveUpdates } from '@/components/game/LiveUpdates';
 import { Sidebar } from '@/components/game/Sidebar';
 import { TopBar } from '@/components/game/TopBar';
-import { notifications } from '@/server/db/schema';
+import { globalEvents, notifications } from '@/server/db/schema';
 import { TutorialCoach } from '@/components/game/TutorialCoach';
 import { isStaff } from '@/server/auth/roles';
 import { displayName } from '@/server/game/company';
@@ -20,9 +20,10 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const { db, user, company, hq, now } = await gameContext();
   const [tutorial, membership, missions] = await Promise.all([tutorialState(db, user.id), membershipOf(db, user.id), claimableCount(db, user.id)]);
   const [{ unread = 0 } = {}] = await db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt)));
+  const [live] = await db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1);
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
-      <Sidebar independent={company.kind !== 'company' && !membership} missions={missions} />
+      <Sidebar independent={company.kind !== 'company' && !membership} missions={missions} eventLive={!!live} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={displayName(membership?.company.name, user.username, company.kind)} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} />
         {tutorial.active && tutorial.step && <TutorialCoach step={tutorial.step} index={tutorial.index} total={tutorial.total} />}

@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Logo } from '@/components/brand/Logo';
 import { COMPANY_ONLY, NAV } from './nav';
 
-export function Sidebar({ independent, missions = 0 }: { independent: boolean; missions?: number }) {
+export function Sidebar({ independent, missions = 0, eventLive = false }: { independent: boolean; missions?: number; eventLive?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -26,6 +26,7 @@ export function Sidebar({ independent, missions = 0 }: { independent: boolean; m
             <item.icon className={`h-4 w-4 ${active ? 'text-cyan-glow' : ''}`} />
             <span className="flex-1">{item.label}</span>
             {independent && COMPANY_ONLY.has(item.href) && <Lock className="h-3.5 w-3.5 text-mist-400" aria-label="Изисква компания" />}
+            {item.href === '/game/events' && eventLive && <span className="rounded-full bg-gold-400 px-1.5 text-[10px] font-bold uppercase text-asphalt-950" title="Тече ивент">live</span>}
             {item.href === '/game/missions' && missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[11px] font-bold text-asphalt-950" title="Награди за взимане">{missions}</span>}
           </Link>
         );

@@ -159,7 +159,7 @@ export function pickMissions(period: MissionPeriod, profile: PlayerProfile, seed
 /** ТрансКоин price of swapping a mission (VIPs get one free swap a day). */
 export const MISSION_REROLL_COINS = 20;
 
-function hash(s: string): number {
+export function hash(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
@@ -172,7 +172,7 @@ function hash(s: string): number {
 
 const TZ = 'Europe/Sofia';
 
-function sofiaParts(now: Date): { y: number; m: number; d: number } {
+export function sofiaParts(now: Date): { y: number; m: number; d: number } {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
   const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
   return { y: get('year'), m: get('month'), d: get('day') };
@@ -187,7 +187,7 @@ function sofiaOffsetMin(at: Date): number {
 }
 
 /** UTC instant of local midnight (Sofia) on a calendar date. */
-function sofiaMidnight(y: number, m: number, d: number): Date {
+export function sofiaMidnight(y: number, m: number, d: number): Date {
   const guess = new Date(Date.UTC(y, m - 1, d));
   return new Date(guess.getTime() - sofiaOffsetMin(guess) * 60_000);
 }

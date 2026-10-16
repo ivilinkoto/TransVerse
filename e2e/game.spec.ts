@@ -163,6 +163,14 @@ test('top bar: ☰ menu opens account pages and logs out', async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
 });
 
+test('the global events page is reachable from the menu', async ({ page }) => {
+  await register(page);
+  await page.locator('aside').getByRole('link', { name: /Ивенти/ }).click();
+  await expect(page.getByRole('heading', { name: 'Ивенти', exact: true })).toBeVisible();
+  // Either a running/announced event with its goal or the empty state.
+  await expect(page.getByText(/Награди, ако целта бъде постигната|В момента няма ивент/).first()).toBeVisible();
+});
+
 test('@mobile dashboard is usable on a phone without horizontal scrolling', async ({ page }) => {
   await register(page);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

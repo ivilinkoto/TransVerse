@@ -670,3 +670,81 @@ export const companyAssets = pgTable(
   },
   (t) => [primaryKey({ columns: [t.companyId, t.kind] })],
 );
+
+// ── Global events (community goals for all players) ──────────────────────
+
+export interface GlobalEventRewards {
+  /** Every participant who reached the minimum contribution (only when the goal is reached). */
+  participant: { cents: number; xp: number; coins: number };
+  /** Extra rewards for places 1..N by contribution. */
+  top: { cents: number; xp: number; coins: number; vipDays: number }[];
+}
+
+export const globalEvents = pgTable(
+  'global_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    /** What counts: tons | deliveries | km | on_time | international | heavy | long_haul | earned_cents */
+    metric: text('metric').notNull(),
+    /** Optional filters: only this cargo type / only routes touching this country. */
+    cargoType: text('cargo_type'),
+    countryCode: text('country_code'),
+    target: doublePrecision('target').notNull(),
+    progress: doublePrecision('progress').notNull().default(0),
+    /** Smallest contribution that counts as taking part. */
+    minContribution: doublePrecision('min_contribution').notNull(),
+    rewards: jsonb('rewards').$type<GlobalEventRewards>().notNull(),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    /** Game time the goal was reached; contributions after it do not count. */
+    completedAt: ts('completed_at'),
+    settledAt: ts('settled_at'),
+    outcome: text('outcome'), // success | failed | cancelled
+    /** Template id for automatic events, null for ones made by an administrator. */
+    template: text('template'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('global_events_time_idx').on(t.endsAt, t.startsAt)],
+);
+
+export const globalEventContributions = pgTable(
+  'global_event_contributions',
+  {
+    eventId: uuid('event_id').notNull().references(() => globalEvents.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** The player's company when they last contributed (for the company table). */
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'set null' }),
+    amount: doublePrecision('amount').notNull().default(0),
+    deliveries: integer('deliveries').notNull().default(0),
+    firstAt: ts('first_at').notNull().defaultNow(),
+    /** Set at settlement. */
+    rank: integer('rank'),
+    reward: jsonb('reward').$type<{ cents: number; xp: number; coins: number; vipDays: number }>(),
+  },
+  (t) => [primaryKey({ columns: [t.eventId, t.userId] }), index('global_event_contributions_rank_idx').on(t.eventId, t.amount)],
+);
+
+// ── Company missions (weekly goals for the whole company) ────────────────
+
+export const companyMissionProgress = pgTable(
+  'company_mission_progress',
+  {
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    /** Week key, e.g. W2026-42 */
+    periodKey: text('period_key').notNull(),
+    missionId: text('mission_id').notNull(),
+    target: real('target').notNull(),
+    progress: real('progress').notNull().default(0),
+    rewardCents: money('reward_cents').notNull(),
+    rewardXp: integer('reward_xp').notNull(),
+    /** Contribution by member (user id → amount). */
+    data: jsonb('data').$type<{ members?: Record<string, number> }>().notNull().default({}),
+    endsAt: ts('ends_at').notNull(),
+    completedAt: ts('completed_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.companyId, t.periodKey, t.missionId] })],
+);
