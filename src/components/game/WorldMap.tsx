@@ -79,7 +79,7 @@ function truckPoint(t: WorldTruck, routes: WorldSnapshot['routes'], now: number)
   const s = stateAt(t.delivery.schedule, now);
   if (s.done) return { point: t.delivery.loaded.to, moving: false };
   const leg = s.leg === 'empty' && t.delivery.empty ? t.delivery.empty : t.delivery.loaded;
-  const { line, cum } = cachedLine(`${leg.routeId}`, routes[leg.routeId] ?? null, leg.from, leg.to);
+  const { line, cum } = cachedLine(`${leg.routeId}:${routes[leg.routeId]?.length ?? 0}`, routes[leg.routeId] ?? null, leg.from, leg.to);
   return { point: pointAlong(line, leg.km > 0 ? s.km / leg.km : 0, cum), moving: s.segment?.kind === 'drive' };
 }
 
