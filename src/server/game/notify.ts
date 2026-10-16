@@ -1,0 +1,20 @@
+import { sql } from 'drizzle-orm';
+import type { DbOrTx } from '@/server/db/client';
+import { activity, notifications } from '@/server/db/schema';
+
+export type NotificationKind = 'success' | 'info' | 'warning' | 'achievement';
+
+/** Stores a notification and wakes up connected clients (delivered after commit by Postgres). */
+export async function notify(db: DbOrTx, userId: string, kind: NotificationKind, title: string, body: string, href?: string) {
+  await db.insert(notifications).values({ userId, kind, title, body, href });
+  await db.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ userId, type: 'notification' })})`);
+}
+
+/** Broadcast that shared world data changed (e.g. the freight market). */
+export async function broadcast(db: DbOrTx, type: 'market' | 'leaderboard') {
+  await db.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type })})`);
+}
+
+export async function logActivity(db: DbOrTx, userId: string, action: string, details: Record<string, unknown> = {}) {
+  await db.insert(activity).values({ userId, action, details });
+}

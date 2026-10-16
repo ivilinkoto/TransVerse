@@ -1,0 +1,264 @@
+import { and, asc, desc, eq, inArray, lte, sql } from 'drizzle-orm';
+import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
+import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
+import { ECONOMY, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
+import { deliveryXp, reputationAfter, seasonPoints } from '@/lib/game/progression';
+import { buildSchedule, scheduleEnd, type Segment } from '@/lib/game/schedule';
+import type { Database, DbOrTx, Tx } from '@/server/db/client';
+import { cities, cityMarkets, companies, contracts, deliveries, drivers, trailers, users, vehicles } from '@/server/db/schema';
+import { getRoute } from '@/server/geo/route-service';
+import { companyForUser } from './company';
+import { fail } from './errors';
+import { post, type Posting } from './finance';
+import { broadcast, logActivity, notify } from './notify';
+import { awardXp, checkAchievements } from './progression';
+import { addSeasonScore } from './seasons';
+
+const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
+
+/** Validates that a vehicle (with its trailer and driver) can legally take a contract. */
+export function compatibilityError(
+  input: { modelId: string; trailerModelId: string | null; condition: number; hasDriver: boolean; status: string },
+  contract: { cargoType: string; weightTons: number; minLevel: number },
+  level: number,
+): string | null {
+  const unit = powerUnitModel(input.modelId);
+  const trailer = input.trailerModelId ? trailerModel(input.trailerModelId) : null;
+  const cargo = contract.cargoType as CargoType;
+  if (input.status !== 'idle') return 'Превозното средство е заето.';
+  if (!input.hasDriver) return 'Няма назначен шофьор.';
+  if (unit.kind === 'tractor' && !trailer) return 'Влекачът няма прикачено ремарке.';
+  const cap = combinationCapability({ unit, trailer });
+  if (!canCarry(cap.bodies, cargo)) return `Нужна е надстройка: ${CARGO[cargo].bodies.map((b) => BODY_LABELS[b]).join(' или ')}.`;
+  if (contract.weightTons > cap.payloadTons) return `Товарът (${contract.weightTons} т) надвишава капацитета (${cap.payloadTons} т).`;
+  if (input.condition < ECONOMY.minConditionForJobs) return 'Техниката е в лошо състояние — нужен е ремонт.';
+  if (level < Math.max(contract.minLevel, CARGO[cargo].minLevel)) return `Изисква ниво ${Math.max(contract.minLevel, CARGO[cargo].minLevel)}.`;
+  return null;
+}
+
+export const BODY_LABELS: Record<string, string> = {
+  box: 'фургон',
+  curtain: 'завеса',
+  reefer: 'хладилна',
+  tipper: 'самосвал',
+  tanker: 'цистерна',
+  container: 'контейнерно шаси',
+  lowbed: 'нискорамно ремарке',
+};
+
+async function vehicleBundle(db: DbOrTx, companyId: string, vehicleId: string, lock = false) {
+  const q = db.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, companyId)));
+  const [vehicle] = lock ? await q.for('update') : await q;
+  if (!vehicle) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
+  const [trailer] = await db.select().from(trailers).where(eq(trailers.vehicleId, vehicleId));
+  const [driver] = await db.select().from(drivers).where(eq(drivers.vehicleId, vehicleId));
+  return { vehicle: vehicle!, trailer: trailer ?? null, driver: driver ?? null };
+}
+
+/**
+ * Player accepts a market contract with one of their vehicles. Routes are
+ * resolved first (network), then everything is committed atomically. Only one
+ * company can ever win a contract (conditional status update).
+ */
+export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date()) {
+  const company = await companyForUser(db, userId);
+  const contract = await db.query.contracts.findFirst({ where: eq(contracts.id, contractId) });
+  if (!contract || contract.status !== 'open' || contract.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
+  const { vehicle } = await vehicleBundle(db, company.id, vehicleId);
+  if (vehicle.status !== 'idle') fail('vehicle_busy', 'Превозното средство е заето.', 409);
+
+  // Network work outside the transaction (may take seconds).
+  const loadedRoute = await db.query.routes.findFirst({ where: (r, { eq: e }) => e(r.id, contract!.routeId) });
+  const emptyRoute = vehicle.cityId !== contract!.originCityId ? await getRoute(db, vehicle.cityId, contract!.originCityId, 'truck') : null;
+
+  return db.transaction(async (tx) => {
+    const [user] = await tx.select({ level: users.level }).from(users).where(eq(users.id, userId));
+    const bundle = await vehicleBundle(tx, company.id, vehicleId, true);
+    const error = compatibilityError(
+      { modelId: bundle.vehicle.modelId, trailerModelId: bundle.trailer?.modelId ?? null, condition: bundle.vehicle.condition, hasDriver: !!bundle.driver, status: bundle.vehicle.status },
+      contract!,
+      user?.level ?? 1,
+    );
+    if (error) fail('incompatible', error);
+    if (bundle.vehicle.cityId !== (emptyRoute ? emptyRoute.fromCityId : contract!.originCityId)) fail('vehicle_moved', 'Превозното средство смени местоположението си. Опитайте отново.', 409);
+
+    const claimed = await tx
+      .update(contracts)
+      .set({ status: 'accepted', acceptedByCompanyId: company.id, acceptedAt: now })
+      .where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`))
+      .returning({ id: contracts.id });
+    if (!claimed.length) fail('contract_unavailable', 'Друга компания току-що пое тази поръчка.', 409);
+
+    const unit = powerUnitModel(bundle.vehicle.modelId);
+    const trailer = bundle.trailer ? trailerModel(bundle.trailer.modelId) : null;
+    const speedFactor = unit.kind === 'van' ? 1.15 : 1;
+    const schedule = buildSchedule({
+      startAt: now.getTime(),
+      empty: emptyRoute ? { km: emptyRoute.distanceKm, durationS: emptyRoute.durationS, borderKms: emptyRoute.borders.map((b) => b.km) } : null,
+      loaded: { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km) },
+      speedFactor,
+      timeScale: timeScale(),
+    });
+    const costs = tripCosts({
+      unit,
+      trailer,
+      upgrades: bundle.vehicle.upgrades,
+      condition: bundle.vehicle.condition,
+      driverSkill: bundle.driver!.skill,
+      emptyKm: emptyRoute?.distanceKm ?? 0,
+      loadedKm: loadedRoute!.distanceKm,
+      tons: contract!.weightTons,
+      payloadTons: combinationCapability({ unit, trailer }).payloadTons,
+      tolledRoute: { empty: emptyRoute?.hasToll ?? false, loaded: loadedRoute!.hasToll },
+    });
+
+    const [delivery] = await tx
+      .insert(deliveries)
+      .values({
+        contractId,
+        companyId: company.id,
+        vehicleId,
+        trailerId: bundle.trailer?.id ?? null,
+        driverId: bundle.driver!.id,
+        emptyRouteId: emptyRoute?.id ?? null,
+        routeId: loadedRoute!.id,
+        emptyKm: emptyRoute?.distanceKm ?? 0,
+        loadedKm: loadedRoute!.distanceKm,
+        schedule,
+        estimatedCosts: costs,
+        startedAt: now,
+        etaAt: new Date(scheduleEnd(schedule)),
+        deadlineAt: new Date(now.getTime() + (contract!.windowMinutes * 60_000) / timeScale()),
+      })
+      .returning();
+    await tx.update(vehicles).set({ status: 'on_delivery' }).where(eq(vehicles.id, vehicleId));
+    await logActivity(tx, userId, 'contract_accepted', { contractId, vehicleId, deliveryId: delivery!.id });
+    await broadcast(tx, 'market');
+    return delivery!;
+  });
+}
+
+type DeliveryRow = typeof deliveries.$inferSelect;
+
+/** Settles one finished delivery exactly once. Returns false if it was not due or already settled. */
+export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date()): Promise<boolean> {
+  const [d] = await tx
+    .select()
+    .from(deliveries)
+    .where(and(eq(deliveries.id, deliveryId), eq(deliveries.status, 'in_progress'), lte(deliveries.etaAt, now)))
+    .for('update', { skipLocked: true });
+  if (!d) return false;
+  const contract = (await tx.query.contracts.findFirst({ where: eq(contracts.id, d.contractId) }))!;
+  const [company] = await tx.select().from(companies).where(eq(companies.id, d.companyId));
+  const [vehicle] = await tx.select().from(vehicles).where(eq(vehicles.id, d.vehicleId));
+  const costs = d.estimatedCosts as ReturnType<typeof tripCosts>;
+  const completedAt = d.etaAt; // the truck arrived at ETA even if we settle later
+  const result = settle(contract.rewardCents, d.startedAt.getTime(), d.deadlineAt.getTime(), completedAt.getTime());
+  const [dest] = await tx.select().from(cities).where(eq(cities.id, contract.destCityId));
+  const key = (k: string) => `delivery:${d.id}:${k}`;
+
+  const postings: Posting[] = [
+    { category: 'freight', amountCents: result.rewardCents, description: `${contract.goods} → ${dest!.nameBg}`, idempotencyKey: key('freight'), refType: 'delivery', refId: d.id },
+    { category: 'fuel', amountCents: -costs.fuelCents, description: `Гориво (${Math.round(d.emptyKm + d.loadedKm)} км)`, idempotencyKey: key('fuel'), refType: 'delivery', refId: d.id },
+    { category: 'maintenance', amountCents: -costs.maintenanceCents, description: 'Поддръжка по курса', idempotencyKey: key('maintenance'), refType: 'delivery', refId: d.id },
+  ];
+  if (costs.tollCents) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: 'Пътни такси', idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
+  if (result.bonusCents) postings.push({ category: 'bonus', amountCents: result.bonusCents, description: 'Бонус за ранна доставка', idempotencyKey: key('bonus'), refType: 'delivery', refId: d.id });
+  if (result.penaltyCents) postings.push({ category: 'penalty', amountCents: -result.penaltyCents, description: 'Неустойка за закъснение', idempotencyKey: key('penalty'), refType: 'delivery', refId: d.id });
+  await post(tx, d.companyId, postings);
+
+  const payout = result.rewardCents + result.bonusCents - result.penaltyCents - costs.totalCents;
+  const onTime = !result.late;
+  const xp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
+
+  await tx
+    .update(deliveries)
+    .set({ status: 'completed', completedAt, late: result.late, payoutCents: payout, xpAwarded: xp })
+    .where(eq(deliveries.id, d.id));
+  await tx
+    .update(vehicles)
+    .set({ status: 'idle', cityId: contract.destCityId, condition: sql`greatest(0, ${vehicles.condition} - ${costs.wear})`, odometerKm: sql`${vehicles.odometerKm} + ${d.emptyKm + d.loadedKm}` })
+    .where(eq(vehicles.id, d.vehicleId));
+  if (d.trailerId) await tx.update(trailers).set({ cityId: contract.destCityId, condition: sql`greatest(0, ${trailers.condition} - ${costs.wear * 0.6})` }).where(eq(trailers.id, d.trailerId));
+  // Drivers grow with experience: one skill level per 8 000 XP, never downwards.
+  await tx
+    .update(drivers)
+    .set({ xp: sql`${drivers.xp} + ${xp}`, skill: sql`greatest(${drivers.skill}, least(5, 1 + floor((${drivers.xp} + ${xp}) / 8000.0)::int))` })
+    .where(eq(drivers.id, d.driverId));
+  await tx
+    .update(companies)
+    .set({
+      deliveries: sql`${companies.deliveries} + 1`,
+      onTimeDeliveries: sql`${companies.onTimeDeliveries} + ${onTime ? 1 : 0}`,
+      totalKm: sql`${companies.totalKm} + ${d.emptyKm + d.loadedKm}`,
+      reputation: reputationAfter(company!.reputation, onTime),
+    })
+    .where(eq(companies.id, d.companyId));
+
+  // Shared economy: deliveries saturate the destination market for everyone.
+  await tx
+    .update(cityMarkets)
+    .set({ demand: sql`greatest(${ECONOMY.demandFloor}, ${cityMarkets.demand} - ${contract.weightTons * ECONOMY.demandDropPerTon})`, updatedAt: now })
+    .where(and(eq(cityMarkets.cityId, contract.destCityId), eq(cityMarkets.cargoType, contract.cargoType)));
+
+  await awardXp(tx, company!.ownerId, xp);
+  await addSeasonScore(tx, d.companyId, seasonPoints(d.loadedKm, contract.weightTons, onTime), result.rewardCents, now);
+  await notify(
+    tx,
+    company!.ownerId,
+    onTime ? 'success' : 'warning',
+    onTime ? `Доставено: ${contract.goods} в ${dest!.nameBg}` : `Закъсняла доставка в ${dest!.nameBg}`,
+    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${xp} опит.`,
+    '/game/finance',
+  );
+  await checkAchievements(tx, company!.ownerId, d.companyId);
+  return true;
+}
+
+/** Settles every delivery whose ETA has passed. Safe to run concurrently (row locks + status checks). */
+export async function settleDueDeliveries(db: Database, now = new Date(), companyId?: string): Promise<number> {
+  const conditions = [eq(deliveries.status, 'in_progress'), lte(deliveries.etaAt, now)];
+  if (companyId) conditions.push(eq(deliveries.companyId, companyId));
+  const due = await db.select({ id: deliveries.id }).from(deliveries).where(and(...conditions)).orderBy(asc(deliveries.etaAt)).limit(200);
+  let settled = 0;
+  for (const { id } of due) if (await db.transaction((tx) => settleDelivery(tx, id, now))) settled++;
+  if (settled) await broadcast(db, 'leaderboard');
+  return settled;
+}
+
+export async function activeDeliveries(db: DbOrTx, companyId: string) {
+  return deliveryViews(db, and(eq(deliveries.companyId, companyId), eq(deliveries.status, 'in_progress'))!, 50);
+}
+
+export async function recentDeliveries(db: DbOrTx, companyId: string, limit = 20) {
+  return deliveryViews(db, and(eq(deliveries.companyId, companyId), eq(deliveries.status, 'completed'))!, limit, true);
+}
+
+async function deliveryViews(db: DbOrTx, where: ReturnType<typeof and>, limit: number, newestFirst = false) {
+  const rows: DeliveryRow[] = await db.select().from(deliveries).where(where).orderBy(newestFirst ? desc(deliveries.completedAt) : asc(deliveries.etaAt)).limit(limit);
+  if (!rows.length) return [];
+  const contractRows = await db.select().from(contracts).where(inArray(contracts.id, rows.map((r) => r.contractId)));
+  const cityIds = [...new Set(contractRows.flatMap((c) => [c.originCityId, c.destCityId]))];
+  const cityRows = await db.select().from(cities).where(inArray(cities.id, cityIds));
+  const vehicleRows = await db.select().from(vehicles).where(inArray(vehicles.id, rows.map((r) => r.vehicleId)));
+  const cMap = new Map(contractRows.map((c) => [c.id, c]));
+  const cityMap = new Map(cityRows.map((c) => [c.id, c]));
+  const vMap = new Map(vehicleRows.map((v) => [v.id, v]));
+  return rows.map((d) => {
+    const contract = cMap.get(d.contractId)!;
+    return { ...d, schedule: d.schedule as Segment[], contract, origin: cityMap.get(contract.originCityId)!, destination: cityMap.get(contract.destCityId)!, vehicle: vMap.get(d.vehicleId)! };
+  });
+}
+
+export type DeliveryView = Awaited<ReturnType<typeof activeDeliveries>>[number];
+
+/** Hourly drift of the shared market back toward neutral demand. */
+export async function recoverDemand(db: DbOrTx, hours: number) {
+  const step = ECONOMY.demandRecoveryPerHour * hours;
+  await db.execute(sql`
+    update city_markets set demand = case
+      when demand < 1 then least(1, demand + ${step})
+      when demand > 1 then greatest(1, demand - ${step})
+      else demand end, updated_at = now()
+    where demand <> 1`);
+}

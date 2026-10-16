@@ -1,0 +1,113 @@
+import { CARGO, type CargoType } from './cargo';
+import { UPGRADES, type PowerUnitModel, type TrailerModel, type UpgradeId } from './catalog';
+
+/**
+ * Economic formulas. All money is integer euro cents. These functions are
+ * pure so they can be unit-tested and shown in the UI as estimates; the server
+ * re-computes them when it settles anything.
+ */
+export const ECONOMY = {
+  startingBalanceCents: 60_000_00,
+  handlingFeeCents: 80_00,
+  fuelPriceCentsPerLitre: 155,
+  /** Game estimate of heavy-vehicle tolls on tolled routes. */
+  tollCentsPerKm: 13,
+  latePenaltyShare: 0.3,
+  earlyBonusShare: 0.05,
+  /** Share of the delivery window left to earn the punctuality bonus. */
+  earlyBonusThreshold: 0.25,
+  wearPerThousandKm: 1.6,
+  minConditionForJobs: 25,
+  repairCentsPerPointPerThousandValue: 1.2,
+  resaleShare: 0.65,
+  demandFloor: 0.5,
+  demandCeiling: 1.6,
+  demandDropPerTon: 0.012,
+  demandRecoveryPerHour: 0.01,
+  depotSlotsDefault: 3,
+  depotPriceCents: 45_000_00,
+  depotSlotUpgradeCents: 18_000_00,
+} as const;
+
+export function rewardCents(cargo: CargoType, tons: number, km: number, marketMultiplier: number): number {
+  const def = CARGO[cargo];
+  const perKm = def.baseCentsPerKm + def.centsPerTonKm * tons;
+  return Math.round(ECONOMY.handlingFeeCents + km * perKm * marketMultiplier);
+}
+
+export function upgradeFactor(upgrades: readonly string[], key: 'fuel' | 'wear' | 'xp'): number {
+  return upgrades.reduce((f, id) => f * (UPGRADES[id as UpgradeId]?.[key] ?? 1), 1);
+}
+
+export interface TripCostInput {
+  unit: PowerUnitModel;
+  trailer: TrailerModel | null;
+  upgrades: readonly string[];
+  condition: number;
+  /** Driver skill 1..5 */
+  driverSkill: number;
+  emptyKm: number;
+  loadedKm: number;
+  tons: number;
+  payloadTons: number;
+  tolledRoute: { empty: boolean; loaded: boolean };
+}
+
+export interface TripCosts {
+  fuelCents: number;
+  tollCents: number;
+  maintenanceCents: number;
+  totalCents: number;
+  wear: number;
+}
+
+export function tripCosts(input: TripCostInput): TripCosts {
+  const { unit, trailer } = input;
+  const loadShare = input.payloadTons > 0 ? Math.min(1, input.tons / input.payloadTons) : 0;
+  const efficiency = upgradeFactor(input.upgrades, 'fuel') * (1 - 0.03 * (input.driverSkill - 1)) * (1 + (100 - input.condition) / 400);
+  const drag = trailer ? trailer.dragFuel : 0;
+  const emptyL = (input.emptyKm / 100) * (unit.fuelEmpty + drag * 0.5);
+  const loadedL = (input.loadedKm / 100) * (unit.fuelEmpty + (unit.fuelFull - unit.fuelEmpty) * loadShare + drag);
+  const fuelCents = Math.round((emptyL + loadedL) * efficiency * ECONOMY.fuelPriceCentsPerLitre);
+
+  const tolledKm = unit.tolled ? (input.tolledRoute.empty ? input.emptyKm : 0) + (input.tolledRoute.loaded ? input.loadedKm : 0) : 0;
+  const tollCents = Math.round(tolledKm * ECONOMY.tollCentsPerKm);
+  const km = input.emptyKm + input.loadedKm;
+  const maintenanceCents = Math.round(km * unit.maintenanceCentsPerKm);
+  const wear = (km / 1000) * ECONOMY.wearPerThousandKm * upgradeFactor(input.upgrades, 'wear');
+  return { fuelCents, tollCents, maintenanceCents, totalCents: fuelCents + tollCents + maintenanceCents, wear };
+}
+
+export interface Settlement {
+  rewardCents: number;
+  bonusCents: number;
+  penaltyCents: number;
+  late: boolean;
+}
+
+/** Final payout for a delivery that finished at `completedAt`. */
+export function settle(reward: number, startedAt: number, deadlineAt: number, completedAt: number): Settlement {
+  const late = completedAt > deadlineAt;
+  const window = deadlineAt - startedAt;
+  const spare = window > 0 ? (deadlineAt - completedAt) / window : 0;
+  return {
+    rewardCents: reward,
+    late,
+    penaltyCents: late ? Math.round(reward * ECONOMY.latePenaltyShare) : 0,
+    bonusCents: !late && spare >= ECONOMY.earlyBonusThreshold ? Math.round(reward * ECONOMY.earlyBonusShare) : 0,
+  };
+}
+
+export function repairCostCents(vehiclePriceCents: number, condition: number): number {
+  const missing = Math.max(0, 100 - condition);
+  return Math.round((missing * vehiclePriceCents * ECONOMY.repairCentsPerPointPerThousandValue) / 1000);
+}
+
+export function resaleValueCents(priceCents: number, condition: number, ageDays: number): number {
+  const ageFactor = Math.max(0.35, 1 - ageDays / 3650);
+  return Math.round(priceCents * ECONOMY.resaleShare * (0.4 + 0.6 * (condition / 100)) * ageFactor);
+}
+
+export function clampDemand(value: number): number {
+  return Math.min(ECONOMY.demandCeiling, Math.max(ECONOMY.demandFloor, value));
+}
