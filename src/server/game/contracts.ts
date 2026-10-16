@@ -1,11 +1,12 @@
-import { and, asc, desc, eq, gt, inArray, lte, sql } from 'drizzle-orm';
-import { CARGO, CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
+import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { CARGO, CARGO_TYPES, type BodyType, type CargoType } from '@/lib/game/cargo';
+import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { rewardCents } from '@/lib/game/economy';
 import { haversineKm } from '@/lib/geo/geometry';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cities, cityMarkets, companies, contracts, marketEvents, routes } from '@/server/db/schema';
+import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { shipperName } from './names';
@@ -93,28 +94,11 @@ export async function generateContracts(db: Database, options: GenerateOptions =
     );
     if (!destination) continue;
 
-    const route = await getRoute(db, origin.id, destination.id, 'truck', options.provider);
     const [minT, maxT] = CARGO[cargo].tons;
     const hi = Math.min(maxT, size.maxTons);
     const lo = Math.min(hi, size.id === 'full' ? Math.max(minT, 8) : minT);
     const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
-
-    const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo));
-
-    await db.insert(contracts).values({
-      shipper: shipperName(),
-      goods: pick(CARGO[cargo].goods),
-      cargoType: cargo,
-      weightTons: tons,
-      originCityId: origin.id,
-      destCityId: destination.id,
-      routeId: route.id,
-      distanceKm: route.distanceKm,
-      rewardCents: rewardCents(cargo, tons, route.distanceKm, market),
-      windowMinutes: contractWindowMinutes(route.distanceKm),
-      minLevel: CARGO[cargo].minLevel,
-      expiresAt: new Date(now.getTime() + randInt(6, 30) * 3_600_000),
-    });
+    await insertContract(db, origin, destination, cargo, tons, now, randInt(6, 30) * 3_600_000, options.provider);
     created++;
   }
   if (created) await broadcast(db, 'market');
@@ -138,6 +122,100 @@ export async function replenishMarket(db: Database, now = new Date(), provider?:
 
   const hqs = await db.selectDistinct({ cityId: companies.hqCityId }).from(companies);
   for (const { cityId } of hqs) created += await ensureStarterJobs(db, cityId, now, provider);
+  return created;
+}
+
+export interface LocalNeed {
+  cityId: number;
+  bodies: BodyType[];
+  payloadTons: number;
+  level: number;
+}
+
+/**
+ * Guarantee: wherever a player's free vehicle stands, there is at least one
+ * open contract from that city it can actually take — whatever the reward or
+ * the distance. Creates one when missing. Returns how many were created.
+ */
+export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Date(), provider?: RoutingProvider): Promise<number> {
+  const compatible = CARGO_TYPES.filter((c) => CARGO[c].minLevel <= need.level && CARGO[c].bodies.some((b) => need.bodies.includes(b)));
+  if (!compatible.length || need.payloadTons <= 0) return 0;
+  const [existing] = await db
+    .select({ id: contracts.id })
+    .from(contracts)
+    .where(and(eq(contracts.status, 'open'), eq(contracts.originCityId, need.cityId), gt(contracts.expiresAt, now), lte(contracts.weightTons, need.payloadTons), lte(contracts.minLevel, need.level), inArray(contracts.cargoType, compatible)))
+    .limit(1);
+  if (existing) return 0;
+
+  const hubs = await loadHubs(db);
+  let origin = hubs.find((h) => h.id === need.cityId);
+  if (!origin) {
+    const [city] = await db.select().from(cities).where(eq(cities.id, need.cityId));
+    if (!city) return 0;
+    origin = { id: city.id, countryCode: city.countryCode, lat: city.lat, lon: city.lon, population: city.population, produces: new Set(), consumes: new Map() };
+  }
+  const local = compatible.filter((c) => origin!.produces.has(c));
+  const cargo = pick(local.length ? local : compatible);
+  const others = hubs.filter((h) => h.id !== origin!.id);
+  const weight = (h: Hub) => {
+    const km = haversineKm([origin!.lat, origin!.lon], [h.lat, h.lon]);
+    return km < 15 ? 0 : Math.sqrt(h.population) / (1 + km / 400);
+  };
+  // Any distance is fine; consumers of the cargo first, otherwise any city.
+  const destination = pickWeighted(others.filter((h) => h.consumes.has(cargo)), weight) ?? pickWeighted(others, weight);
+  if (!destination) return 0;
+
+  const [minT, maxT] = CARGO[cargo].tons;
+  const hi = Math.min(maxT, need.payloadTons);
+  const lo = Math.min(hi, Math.max(0.2, minT));
+  const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
+  await insertContract(db, origin, destination, cargo, tons, now, 12 * 3_600_000, provider);
+  await broadcast(db, 'market');
+  return 1;
+}
+
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider) {
+  const route = await getRoute(db, origin.id, destination.id, 'truck', provider);
+  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo));
+  await db.insert(contracts).values({
+    shipper: shipperName(),
+    goods: pick(CARGO[cargo].goods),
+    cargoType: cargo,
+    weightTons: tons,
+    originCityId: origin.id,
+    destCityId: destination.id,
+    routeId: route.id,
+    distanceKm: route.distanceKm,
+    rewardCents: rewardCents(cargo, tons, route.distanceKm, market),
+    windowMinutes: contractWindowMinutes(route.distanceKm),
+    minLevel: CARGO[cargo].minLevel,
+    expiresAt: new Date(now.getTime() + ttlMs),
+  });
+}
+
+/** Runs the local-job guarantee for every free, crewed vehicle (optionally of one company). */
+export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit = 40): Promise<number> {
+  const rows = await db
+    .select({ cityId: vehicles.cityId, modelId: vehicles.modelId, vehicleId: vehicles.id, level: users.level })
+    .from(vehicles)
+    .innerJoin(drivers, eq(drivers.vehicleId, vehicles.id))
+    .innerJoin(companies, eq(companies.id, vehicles.companyId))
+    .innerJoin(users, eq(users.id, companies.ownerId))
+    .where(and(eq(vehicles.status, 'idle'), isNull(vehicles.soldAt), companyId ? eq(vehicles.companyId, companyId) : undefined))
+    .limit(limit);
+  if (!rows.length) return 0;
+  const coupled = await db.select().from(trailers).where(inArray(trailers.vehicleId, rows.map((r) => r.vehicleId)));
+  const seen = new Set<string>();
+  let created = 0;
+  for (const r of rows) {
+    const unit = powerUnitModel(r.modelId);
+    const t = coupled.find((x) => x.vehicleId === r.vehicleId);
+    const cap = combinationCapability({ unit, trailer: t ? trailerModel(t.modelId) : null });
+    const key = `${r.cityId}:${cap.bodies.join(',')}:${cap.payloadTons}:${r.level}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level }, now, provider);
+  }
   return created;
 }
 

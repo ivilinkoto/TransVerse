@@ -6,7 +6,7 @@ import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
 import { gameDurationMinutes } from '@/lib/game/schedule';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
-import { openContracts } from '@/server/game/contracts';
+import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
 import { compatibilityError } from '@/server/game/deliveries';
 import { fleetView } from '@/server/game/queries';
 
@@ -14,7 +14,13 @@ export const metadata = { title: 'Транспортни поръчки' };
 
 export default async function ContractsPage() {
   const { db, user, company, now } = await gameContext();
-  const [contracts, fleet] = await Promise.all([openContracts(db, { limit: 250 }), fleetView(db, company.id)]);
+  // Every free vehicle always has at least one job it can take in its own city.
+  await ensureLocalJobsForFleet(db, now, company.id).catch((e) => console.warn('[contracts] local jobs', e));
+  const fleet = await fleetView(db, company.id);
+  const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
+  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250 }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50 }))]);
+  const seen = new Set<string>();
+  const contracts = [...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];
@@ -53,6 +59,7 @@ export default async function ContractsPage() {
       expiresInMin: Math.round((c.expiresAt.getTime() - now.getTime()) / 60_000),
       minLevel: Math.max(c.minLevel, cargo.minLevel),
       locked: user.level < Math.max(c.minLevel, cargo.minLevel),
+      local: localCities.includes(c.originCityId),
       options,
     };
   });
@@ -63,7 +70,7 @@ export default async function ContractsPage() {
         title="Транспортни поръчки"
         subtitle="Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
-      <ContractBoard contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

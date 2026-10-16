@@ -196,3 +196,37 @@ describe('audit log wording', () => {
     expect(describeAudit({ action: 'adjust_balance', details: { amountCents: 25000, reason: 'компенсация' } }, 'a', 'b')).toContain('+250,00');
   });
 });
+
+describe('player feedback fixes', () => {
+  it('accepts a 6-character password and rejects 5', async () => {
+    const { registerSchema } = await import('@/server/auth/accounts');
+    const base = { email: 'six@example.com', username: 'six_chars', startCityId: 1 };
+    expect(registerSchema.safeParse({ ...base, password: '123456' }).success).toBe(true);
+    expect(registerSchema.safeParse({ ...base, password: '12345' }).success).toBe(false);
+  });
+
+  it('always offers a doable job in the city where the free truck stands', async () => {
+    const { ensureLocalJobsForFleet } = await import('@/server/game/contracts');
+    const { approximateProvider } = await import('@/server/geo/routing');
+    const { cityByName } = await import('./helpers');
+    const { contracts } = await import('@/server/db/schema');
+    const p = await newPlayer();
+    const company = await companyOf(p.userId);
+    const [truck] = await fleetOf(company.id);
+    // Park the truck in a small town with no open contracts at all.
+    const town = await cityByName('Vidin');
+    await db().update(contracts).set({ status: 'expired' }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
+    await db().update(vehicles).set({ cityId: town.id }).where(eq(vehicles.id, truck!.id));
+
+    expect(await ensureLocalJobsForFleet(db(), new Date(), company.id, approximateProvider)).toBe(1);
+    const local = await db().select().from(contracts).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
+    expect(local).toHaveLength(1);
+    expect(local[0]!.weightTons).toBeLessThanOrEqual(7.5);
+    expect(local[0]!.cargoType).toBe('pallets');
+    // Idempotent while the job is still there.
+    expect(await ensureLocalJobsForFleet(db(), new Date(), company.id, approximateProvider)).toBe(0);
+    // And the truck can really take it.
+    const d = await acceptContract(db(), p.userId, local[0]!.id, truck!.id);
+    expect(d.status).toBe('in_progress');
+  });
+});

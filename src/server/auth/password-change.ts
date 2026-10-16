@@ -8,7 +8,7 @@ import { hashPassword, verifyPassword } from './password';
 
 export const passwordSchema = z.object({
   current: z.string().min(1, 'Въведете текущата парола.').max(200),
-  next: z.string().min(10, 'Новата парола трябва да е поне 10 символа.').max(200),
+  next: z.string().min(6, 'Новата парола трябва да е поне 6 символа.').max(200),
 });
 
 /** Changes the password and signs out every other session. */

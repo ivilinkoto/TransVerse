@@ -7,7 +7,7 @@ async function register(page: Page) {
   await page.goto('/register');
   await page.fill('#username', `e2e_${tag}`.slice(0, 20));
   await page.fill('#email', `e2e${tag}@example.com`);
-  await page.fill('#password', 'e2e password long');
+  await page.fill('#password', 'abc123'); // 6 characters are enough
   await page.click('button[type=submit]');
   await page.waitForURL('**/game');
   await expect(page.getByRole('heading', { name: 'Обзор' })).toBeVisible();
@@ -96,6 +96,16 @@ test.describe('core loop', () => {
     const box = await page.locator('canvas.maplibregl-canvas').boundingBox();
     expect(box!.height).toBeGreaterThan(300);
   });
+});
+
+test('opening notifications marks them as read', async ({ page }) => {
+  await register(page);
+  const badge = page.locator('aside').getByRole('link', { name: /Известия/ });
+  await expect(badge).toContainText('1');
+  await badge.click();
+  await expect(page.getByText('Ново').first()).toBeVisible();
+  await page.goto('/game');
+  await expect(page.locator('aside').getByRole('link', { name: /Известия/ })).not.toContainText(/\d/);
 });
 
 test('@mobile dashboard is usable on a phone without horizontal scrolling', async ({ page }) => {

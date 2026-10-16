@@ -15,7 +15,7 @@ export const registerSchema = z.object({
     .min(3, 'Потребителското име трябва да е поне 3 символа.')
     .max(20, 'Потребителското име трябва да е до 20 символа.')
     .regex(/^[\p{L}\p{N}_.-]+$/u, 'Само букви, цифри, точка, тире и долна черта.'),
-  password: z.string().min(10, 'Паролата трябва да е поне 10 символа.').max(200),
+  password: z.string().min(6, 'Паролата трябва да е поне 6 символа.').max(200),
   /** Real Bulgarian city where the player's rented truck waits. */
   startCityId: z.coerce.number().int().positive(),
 });

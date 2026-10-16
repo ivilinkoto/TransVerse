@@ -3,7 +3,7 @@ import type { Database } from '@/server/db/client';
 import { countries, jobState, marketEvents, rateLimits, sessions } from '@/server/db/schema';
 import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
-import { replenishMarket } from './contracts';
+import { ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { broadcast } from './notify';
 import { pick, randInt } from './random';
@@ -67,6 +67,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await migrateToGameTime(db);
     const settled = await settleDueDeliveries(db, now);
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
+    await every(db, 'local-jobs', 60_000, now, () => ensureLocalJobsForFleet(db, now, undefined, provider));
     await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));
     await every(db, 'demand', 60 * 60_000, now, (elapsed) => recoverDemand(db, Math.min(48, elapsed / 3_600_000)));
     await every(db, 'events', 6 * 60 * 60_000, now, () => spawnMarketEvent(db, now));

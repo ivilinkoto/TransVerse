@@ -26,7 +26,7 @@ export function PasswordForm() {
   return (
     <form onSubmit={submit} className="space-y-3">
       <input id="current" name="current" type="password" className="input" placeholder="Текуща парола" autoComplete="current-password" required />
-      <input id="next" name="next" type="password" className="input" placeholder="Нова парола (поне 10 символа)" autoComplete="new-password" required minLength={10} />
+      <input id="next" name="next" type="password" className="input" placeholder="Нова парола (поне 6 символа)" autoComplete="new-password" required minLength={6} />
       <button className="btn-primary" disabled={busy}><KeyRound className="h-4 w-4" />{busy ? '…' : 'Смени паролата'}</button>
       {message && <p role="status" className={`text-sm ${message.ok ? 'text-profit' : 'text-loss'}`}>{message.text}</p>}
     </form>

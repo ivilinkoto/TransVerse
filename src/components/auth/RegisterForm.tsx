@@ -37,8 +37,8 @@ export function RegisterForm({ cities }: { cities: { id: number; nameBg: string;
           <Input id="email" name="email" type="email" autoComplete="email" required />
         </Field>
       </div>
-      <Field label="Парола" hint="Поне 10 символа.">
-        <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={10} />
+      <Field label="Парола" hint="Поне 6 символа.">
+        <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={6} />
       </Field>
       <Field label="Начален град" hint="Реален град в България. Там те чака наетият камион.">
         <select id="startCityId" name="startCityId" className="input" defaultValue={cities[0]?.id}>

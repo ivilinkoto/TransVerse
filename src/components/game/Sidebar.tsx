@@ -34,7 +34,7 @@ export function Sidebar({ unread, staff, independent }: { unread: number; staff:
             <item.icon className={`h-4 w-4 ${active ? 'text-cyan-glow' : ''}`} />
             <span className="flex-1">{item.label}</span>
             {independent && COMPANY_ONLY.has(item.href) && <Lock className="h-3.5 w-3.5 text-mist-400" aria-label="Изисква компания" />}
-            {item.href === '/game/notifications' && unread > 0 && <span className="num rounded-full bg-amber-sig px-1.5 text-[11px] font-bold text-asphalt-950">{unread}</span>}
+            {item.href === '/game/notifications' && unread > 0 && !pathname.startsWith('/game/notifications') && <span className="num rounded-full bg-amber-sig px-1.5 text-[11px] font-bold text-asphalt-950">{unread}</span>}
           </Link>
         );
       })}
