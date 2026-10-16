@@ -1,4 +1,4 @@
-import { subscribe } from '@/server/realtime';
+import { subscribe, trackOnline } from '@/server/realtime';
 import { errorResponse, requireUser } from '@/server/http';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   }
   const encoder = new TextEncoder();
   let unsubscribe = () => {};
+  const offline = trackOnline(user.id);
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   const stream = new ReadableStream({
     start(controller) {
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
       heartbeat = setInterval(() => controller.enqueue(encoder.encode(': ping\n\n')), 25_000);
       request.signal.addEventListener('abort', () => {
         unsubscribe();
+        offline();
         clearInterval(heartbeat);
         try {
           controller.close();
@@ -35,6 +37,7 @@ export async function GET(request: Request) {
     },
     cancel() {
       unsubscribe();
+      offline();
       clearInterval(heartbeat);
     },
   });

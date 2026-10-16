@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { int } from '@/lib/format';
 import { cumulativeKm, greatCircle, pointAlong, type LatLon } from '@/lib/geo/geometry';
 import { stateAt, type Segment } from '@/lib/game/schedule';
+import type { WorldSnapshot, WorldTruck } from '@/server/game/world-map';
 
 export interface MapLeg {
   geometry: string | null;
@@ -60,6 +61,41 @@ function vehiclePoint(v: MapVehicle, now: number): LatLon {
   return pointAlong(line, leg.km > 0 ? s.km / leg.km : 0, cumulativeKm(line));
 }
 
+/** Decoded route lines are cached: other players' trucks are re-positioned every few seconds. */
+type Line = { line: LatLon[]; cum: number[] };
+const lineCache = new Map<string, Line>();
+function cachedLine(key: string, geometry: string | null, from: LatLon, to: LatLon): Line {
+  let hit = lineCache.get(key);
+  if (!hit) {
+    const line = geometry ? (polyline.decode(geometry, 6) as LatLon[]) : greatCircle(from, to);
+    hit = { line, cum: cumulativeKm(line) };
+    lineCache.set(key, hit);
+  }
+  return hit;
+}
+
+function truckPoint(t: WorldTruck, routes: WorldSnapshot['routes'], now: number): { point: LatLon; moving: boolean } {
+  if (!t.delivery) return { point: t.position, moving: false };
+  const s = stateAt(t.delivery.schedule, now);
+  if (s.done) return { point: t.delivery.loaded.to, moving: false };
+  const leg = s.leg === 'empty' && t.delivery.empty ? t.delivery.empty : t.delivery.loaded;
+  const { line, cum } = cachedLine(`${leg.routeId}`, routes[leg.routeId] ?? null, leg.from, leg.to);
+  return { point: pointAlong(line, leg.km > 0 ? s.km / leg.km : 0, cum), moving: s.segment?.kind === 'drive' };
+}
+
+function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: world.trucks
+      .filter((t) => !ownIds.has(t.id))
+      .map((t) => {
+        const { point, moving } = truckPoint(t, world.routes, now);
+        const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
+        return { type: 'Feature', properties: { id: t.id, label, color: t.color ?? '#f8fafc', online: t.online, moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+      }),
+  };
+}
+
 function routeFeatures(vehicles: MapVehicle[], preview: MapProps['preview']): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = [];
   for (const v of vehicles) {
@@ -81,6 +117,10 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
   const [ready, setReady] = useState(false);
   const [city, setCity] = useState<CityDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [world, setWorld] = useState<WorldSnapshot | null>(null);
+  const [showPlayers, setShowPlayers] = useState(true);
+  const [picked, setPicked] = useState<WorldTruck | null>(null);
+  const worldRef = useRef<WorldSnapshot | null>(null);
   // Latest props for the one-time initialisation (data updates are applied by effects below).
   const initial = useRef({ center, preview });
 
@@ -138,6 +178,16 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
       map.addLayer({ id: 'vehicles', type: 'circle', source: 'vehicles', paint: { 'circle-radius': 6.5, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#22d3ee', 'circle-stroke-width': 2.5 } });
       map.addLayer({ id: 'vehicles-label', type: 'symbol', source: 'vehicles', layout: { 'text-field': ['get', 'plate'], 'text-size': 11, 'text-offset': [0, -1.6], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#22d3ee', 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } });
 
+      map.addSource('players', { type: 'geojson', data: empty });
+      map.addLayer({ id: 'players', type: 'circle', source: 'players', paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 3.5, 8, 5.5],
+        'circle-color': ['get', 'color'],
+        'circle-opacity': ['case', ['get', 'moving'], 1, 0.7],
+        'circle-stroke-color': ['case', ['get', 'online'], '#34d399', '#f6c343'],
+        'circle-stroke-width': 1.8,
+      } }, 'vehicles-halo');
+      map.addLayer({ id: 'players-label', type: 'symbol', source: 'players', minzoom: 6.5, layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.3], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#f6c343', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'vehicles-halo');
+
       const p = initial.current.preview;
       if (p) {
         const line = legLine(p.leg).map(toLngLat);
@@ -148,13 +198,26 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
       void loadCities();
     });
     map.on('moveend', () => void loadCities());
+    map.on('mouseenter', 'players', () => (map.getCanvas().style.cursor = 'pointer'));
+    map.on('mouseleave', 'players', () => (map.getCanvas().style.cursor = ''));
+    map.on('click', 'players', (e) => {
+      const id = e.features?.[0]?.properties?.id;
+      const truck = worldRef.current?.trucks.find((t) => t.id === id);
+      if (truck) {
+        setCity(null);
+        setPicked(truck);
+      }
+    });
     map.on('mouseenter', 'cities-dot', () => (map.getCanvas().style.cursor = 'pointer'));
     map.on('mouseleave', 'cities-dot', () => (map.getCanvas().style.cursor = ''));
     map.on('click', 'cities-dot', async (e) => {
       const id = e.features?.[0]?.properties?.id;
       if (!id) return;
       const res = await fetch(`/api/geo/city/${id}`);
-      if (res.ok) setCity((await res.json()) as CityDetails);
+      if (res.ok) {
+        setPicked(null);
+        setCity((await res.json()) as CityDetails);
+      }
     });
     return () => {
       observer.disconnect();
@@ -169,6 +232,46 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
     (mapRef.current?.getSource('routes') as GeoJSONSource | undefined)?.setData(routeFeatures(vehicles, preview));
     (mapRef.current?.getSource('depots') as GeoJSONSource | undefined)?.setData(depotFeatures(depots));
   }, [ready, vehicles, depots, preview]);
+
+  // Other players: loaded from the server when something changes in the world (live event),
+  // with a slow safety refresh; positions are animated locally from their schedules.
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const load = async () => {
+      const res = await fetch('/api/world');
+      if (!res.ok || cancelled) return;
+      const data = (await res.json()) as WorldSnapshot;
+      worldRef.current = data;
+      setWorld(data);
+    };
+    const soon = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => void load(), 1500);
+    };
+    void load();
+    window.addEventListener('tv:world', soon);
+    const interval = setInterval(() => void load(), 45_000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      clearInterval(interval);
+      window.removeEventListener('tv:world', soon);
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const ownIds = new Set(vehicles.map((v) => v.id));
+    const tick = () => {
+      const src = mapRef.current?.getSource('players') as GeoJSONSource | undefined;
+      src?.setData(world && showPlayers ? playerFeatures(world, ownIds, Date.now()) : { type: 'FeatureCollection', features: [] });
+    };
+    tick();
+    const id = setInterval(tick, 2000);
+    return () => clearInterval(id);
+  }, [ready, world, showPlayers, vehicles]);
 
   // Animate vehicle positions from their schedules.
   useEffect(() => {
@@ -192,7 +295,26 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-cyan-glow" />С товар</span>
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 border-t-2 border-dotted border-mist-400" />Празен курс</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-prestige" />Депо</span>
+        <label className="flex cursor-pointer items-center gap-1.5">
+          <input type="checkbox" checked={showPlayers} onChange={(e) => setShowPlayers(e.target.checked)} className="accent-[var(--color-gold-400)]" />
+          <span className="h-2.5 w-2.5 rounded-full border-2 border-gold-400 bg-white" />
+          Други играчи{world ? ` (${world.players}, ${world.online} в играта)` : ''}
+          <span className="h-2.5 w-2.5 rounded-full border-2 border-profit bg-white" aria-label="в играта сега" />
+        </label>
       </div>
+      {picked && (
+        <aside className="absolute right-3 top-14 w-[min(300px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Играч">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="font-display text-lg font-bold">{picked.player}</div>
+              <div className="text-xs text-mist-400">{picked.company ? `${picked.tag ? `[${picked.tag}] ` : ''}${picked.company}` : 'Самостоятелен шофьор'}</div>
+            </div>
+            <button className="text-mist-400 hover:text-white" onClick={() => setPicked(null)} aria-label="Затвори">✕</button>
+          </div>
+          <p className="mt-3 text-sm">{picked.delivery ? `На курс към ${picked.delivery.destination}` : `Паркиран в ${picked.city}`}</p>
+          <p className={`mt-1 text-xs ${picked.online ? 'text-profit' : 'text-mist-400'}`}>{picked.online ? '● В играта сега' : '○ Не е в играта в момента'}</p>
+        </aside>
+      )}
       {city && (
         <aside className="absolute right-3 top-14 w-[min(320px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur">
           <div className="flex items-start justify-between gap-2">
