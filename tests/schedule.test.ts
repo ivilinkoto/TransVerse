@@ -44,7 +44,8 @@ describe('game time', () => {
     expect(gameDurationMinutes(150)).toBe(15);
     expect(gameDurationMinutes(500)).toBe(30);
     expect(gameDurationMinutes(1200)).toBe(60);
-    expect(gameDurationMinutes(10_000)).toBe(120);
+    expect(gameDurationMinutes(3000)).toBe(130); // long hauls keep growing — no cap
+    expect(gameDurationMinutes(4000)).toBeGreaterThan(gameDurationMinutes(3000));
     const s = buildGameSchedule({ startAt: 1000, empty: { km: 100, durationS: 5000, borderKms: [] }, loaded: { km: 1100, durationS: 14 * 3600, borderKms: [500] }, speedFactor: 1 });
     expect((end(s) - 1000) / MIN).toBeCloseTo(gameDurationMinutes(1200), 5);
     expect(s.some((x) => x.kind === 'rest')).toBe(true);

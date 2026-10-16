@@ -71,7 +71,7 @@ describe('game time', () => {
     const minutes = (d.etaAt.getTime() - d.startedAt.getTime()) / 60_000;
     expect(minutes).toBeCloseTo(gameDurationMinutes(d.emptyKm + d.loadedKm), 0);
     expect(minutes).toBeLessThanOrEqual(60);
-    expect(d.scheduleVersion).toBe(3);
+    expect(d.scheduleVersion).toBe(4);
   });
 
   it('rescales deliveries from older game-time rules once', async () => {
@@ -84,7 +84,7 @@ describe('game time', () => {
     await db().update(deliveries).set({ scheduleVersion: 1, etaAt: longEta }).where(eq(deliveries.id, d.id));
     expect(await migrateToGameTime(db())).toBeGreaterThanOrEqual(1);
     const [after] = await db().select().from(deliveries).where(eq(deliveries.id, d.id));
-    expect(after!.scheduleVersion).toBe(3);
+    expect(after!.scheduleVersion).toBe(4);
     expect((after!.etaAt.getTime() - after!.startedAt.getTime()) / 60_000).toBeCloseTo(gameDurationMinutes(after!.emptyKm + after!.loadedKm), 0);
     expect(after!.etaAt.getTime()).toBeLessThan(longEta.getTime());
     expect(await migrateToGameTime(db())).toBe(0);

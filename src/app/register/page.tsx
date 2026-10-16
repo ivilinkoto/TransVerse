@@ -22,7 +22,7 @@ export default async function RegisterPage() {
         <ul className="max-w-md space-y-3 text-mist-300">
           <li className="font-display text-2xl font-bold text-mist-100">Какво те чака</li>
           <li>Нает камион без разходи за гориво и сервиз — плащаш наем от всеки курс</li>
-          <li>Реални градове и пътни маршрути в 9 държави, курсове от 10 минути до 2 часа</li>
+          <li>Реални градове и пътни маршрути в 9 държави, време за курс според разстоянието</li>
           <li>{`Собствена компания от ниво ${ECONOMY.foundingMinLevel} срещу ${money(ECONOMY.foundingFeeCents)}`}</li>
           <li>Общ пазар, сезонни класации, обучение за първите стъпки</li>
         </ul>
