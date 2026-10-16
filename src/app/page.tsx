@@ -195,7 +195,7 @@ export default async function HomePage() {
             <p className="mt-4 text-mist-300">Всички играчи споделят един и същ товарен пазар. Поръчката, която вземеш ти, никой друг не може да изпълни. Светът продължава да работи и когато не си онлайн.</p>
           </div>
           {[
-            { icon: Globe2, color: 'text-cyan-glow', title: 'Постоянен свят', text: 'Доставките се изпълняват в реално време на сървъра. Камионите ти пристигат и докато спиш.' },
+            { icon: Globe2, color: 'text-cyan-glow', title: 'Постоянен свят', text: 'Курсовете траят от около час до няколко часа според разстоянието и се изпълняват на сървъра. Камионите ти пристигат и докато не си в играта.' },
             { icon: Trophy, color: 'text-gold-400', title: `Сезони от ${DEFAULT_SEASON_RULES.lengthDays} дни`, text: `Сезонни точки, класации и награден фонд до ${money(DEFAULT_SEASON_RULES.prizesCents[0]!)} за първото място. Компанията и активите ти остават.` },
             { icon: ShieldCheck, color: 'text-profit', title: 'Честна игра', text: 'Цените, наградите и балансът се изчисляват само от сървъра. Без купуване на предимство в класациите.' },
             { icon: Users, color: 'text-prestige', title: 'Компании и шофьори', text: 'Наемай шофьори с различни умения. Те растат с опита и искат по-висока заплата.' },
@@ -218,10 +218,10 @@ export default async function HomePage() {
           <div className="relative flex flex-wrap items-center justify-between gap-6">
             <div>
               <h2 className="font-display text-2xl font-bold sm:text-3xl">Първият курс е на една регистрация разстояние.</h2>
-              <p className="mt-2 text-mist-300">Започваш с {money(ECONOMY.startingBalanceCents)}, употребяван ван и шофьор в избран от теб български град.</p>
+              <p className="mt-2 text-mist-300">Започваш като самостоятелен шофьор с нает камион в избран от теб български град. После основаваш своя компания.</p>
             </div>
             <Link href="/register" className="btn-gold px-6 py-3 text-base">
-              <Coins className="h-4 w-4" /> Създай компания
+              <Coins className="h-4 w-4" /> Започни като шофьор
             </Link>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 
 /** Purchase with depot selection (vehicles are delivered to one of your depots). */
-export function BuyButton({ type, modelId, depots, disabledReason, label }: { type: 'buyVehicle' | 'buyTrailer'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string }) {
+export function BuyButton({ type, modelId, depots, disabledReason, label }: { type: 'buyVehicle' | 'buyTrailer' | 'rentVehicle'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string }) {
   const router = useRouter();
   const [cityId, setCityId] = useState(depots[0]?.cityId ?? 0);
   const [busy, setBusy] = useState(false);
@@ -15,8 +15,8 @@ export function BuyButton({ type, modelId, depots, disabledReason, label }: { ty
     setBusy(true);
     setMessage(null);
     try {
-      await api('/api/game/action', { type, modelId, cityId });
-      setMessage({ ok: true, text: 'Купено! Вижте го в автопарка.' });
+      await api('/api/game/action', type === 'rentVehicle' ? { type, offerId: modelId, cityId } : { type, modelId, cityId });
+      setMessage({ ok: true, text: type === 'rentVehicle' ? 'Наето! Назначете шофьор в „Служители“.' : 'Купено! Вижте го в автопарка.' });
       router.refresh();
     } catch (e) {
       setMessage({ ok: false, text: (e as Error).message });
@@ -30,7 +30,7 @@ export function BuyButton({ type, modelId, depots, disabledReason, label }: { ty
         <select className="input w-auto min-w-0 flex-1 py-2 text-sm" value={cityId} onChange={(e) => setCityId(Number(e.target.value))} aria-label="Депо за доставка">
           {depots.map((d) => (
             <option key={d.cityId} value={d.cityId}>
-              Депо {d.name}{type === 'buyVehicle' ? ` (${d.free} свободни)` : ''}
+              Депо {d.name}{type !== 'buyTrailer' ? ` (${d.free} свободни)` : ''}
             </option>
           ))}
         </select>

@@ -32,10 +32,11 @@ export async function fleetView(db: DbOrTx, companyId: string) {
       trailer: trailer ? { ...trailer, model: trailerModel(trailer.modelId) } : null,
       driver,
       delivery: delivery && contract ? { ...delivery, schedule: delivery.schedule as Segment[], contract, origin: cityMap.get(contract.originCityId)!, destination: cityMap.get(contract.destCityId)! } : null,
-      resaleCents: resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt)),
+      // Rented vehicles are not assets of the player.
+      resaleCents: v.ownership === 'rented' ? 0 : resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt)),
     };
   });
-  const trailersOut = ts.map((t) => ({ ...t, model: trailerModel(t.modelId), city: cityMap.get(t.cityId)!, resaleCents: resaleValueCents(trailerModel(t.modelId).priceCents, t.condition, ageDays(t.purchasedAt)) }));
+  const trailersOut = ts.map((t) => ({ ...t, model: trailerModel(t.modelId), city: cityMap.get(t.cityId)!, resaleCents: t.ownership === 'rented' ? 0 : resaleValueCents(trailerModel(t.modelId).priceCents, t.condition, ageDays(t.purchasedAt)) }));
   return { vehicles: vehiclesOut, trailers: trailersOut, drivers: ds };
 }
 
@@ -85,7 +86,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   if (kind === 'season') {
     const season = await activeSeason(db);
     const rows = await db
-      .select({ companyId: companies.id, company: companies.name, owner: users.username, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
+      .select({ companyId: companies.id, company: sql<string>`coalesce(${companies.name}, ${users.username} || ' · самостоятелен шофьор')`, owner: users.username, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
       .from(seasonScores)
       .innerJoin(companies, eq(companies.id, seasonScores.companyId))
       .innerJoin(users, eq(users.id, companies.ownerId))
@@ -96,7 +97,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   }
   if (kind === 'deliveries') {
     const rows = await db
-      .select({ companyId: companies.id, company: companies.name, owner: users.username, level: users.level, value: companies.deliveries, deliveries: companies.deliveries })
+      .select({ companyId: companies.id, company: sql<string>`coalesce(${companies.name}, ${users.username} || ' · самостоятелен шофьор')`, owner: users.username, level: users.level, value: companies.deliveries, deliveries: companies.deliveries })
       .from(companies)
       .innerJoin(users, eq(users.id, companies.ownerId))
       .orderBy(desc(companies.deliveries), desc(companies.totalKm))
@@ -107,10 +108,10 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   const rows = await db
     .select({
       companyId: companies.id,
-      company: companies.name,
+      company: sql<string>`coalesce(${companies.name}, ${users.username} || ' · самостоятелен шофьор')`,
       owner: users.username,
       level: users.level,
-      value: sql<number>`(${companies.balanceCents} + coalesce((select sum(v.purchase_price_cents * 0.65 * (0.4 + 0.6 * v.condition / 100)) from vehicles v where v.company_id = ${companies.id} and v.sold_at is null), 0))::bigint`,
+      value: sql<number>`(${companies.balanceCents} + coalesce((select sum(v.purchase_price_cents * 0.65 * (0.4 + 0.6 * v.condition / 100)) from vehicles v where v.company_id = ${companies.id} and v.sold_at is null and v.ownership = 'owned'), 0))::bigint`,
       deliveries: companies.deliveries,
     })
     .from(companies)

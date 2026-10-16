@@ -30,7 +30,7 @@ export interface BoardContract {
   expiresInMin: number;
   minLevel: number;
   locked: boolean;
-  options: { vehicleId: string; label: string; error: string | null; emptyKm: number; costCents: number; profitCents: number; minutes: number }[];
+  options: { vehicleId: string; label: string; error: string | null; emptyKm: number; costCents: number; rented: boolean; profitCents: number; minutes: number }[];
 }
 
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet' };
@@ -177,7 +177,7 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
               {option && !option.error && (
                 <div className="grid gap-2 text-sm sm:grid-cols-4">
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Празен курс </span><span className="num">≈ {int(option.emptyKm)} км</span></div>
-                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Разходи (оценка) </span><span className="num text-loss">{money(option.costCents)}</span></div>
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{option.rented ? 'Наем ' : 'Разходи (оценка) '}</span><span className="num text-loss">{money(option.costCents)}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Печалба (оценка) </span><span className={`num ${option.profitCents >= 0 ? 'text-profit' : 'text-loss'}`}>{money(option.profitCents)}</span></div>
                   <div className={`rounded-lg px-3 py-2 ${option.minutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>
                     <span className="text-mist-400">Пристигане след </span><span className="num">≈ {duration(option.minutes)}</span>

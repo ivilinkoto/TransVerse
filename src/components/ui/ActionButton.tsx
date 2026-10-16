@@ -5,7 +5,7 @@ import { useState, useTransition, type ReactNode } from 'react';
 import { api } from '@/lib/client/api';
 
 /** Posts a game action, shows the server's message on failure and refreshes data on success. */
-export function ActionButton({ action, children, className = 'btn-ghost', confirm, onDone, disabled }: { action: Record<string, unknown>; children: ReactNode; className?: string; confirm?: string; onDone?: () => void; disabled?: boolean }) {
+export function ActionButton({ action, children, className = 'btn-ghost', confirm, onDone, disabled, endpoint = '/api/game/action' }: { action: Record<string, unknown>; children: ReactNode; className?: string; confirm?: string; onDone?: () => void; disabled?: boolean; endpoint?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
@@ -16,7 +16,7 @@ export function ActionButton({ action, children, className = 'btn-ghost', confir
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', action);
+      await api(endpoint, action);
       setAsking(false);
       onDone?.();
       startTransition(() => router.refresh());

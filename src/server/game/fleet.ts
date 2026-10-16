@@ -3,7 +3,7 @@ import { POWER_UNITS, TRAILERS, UPGRADES, canCouple, powerUnitModel, trailerMode
 import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cityMarkets, depots, drivers, trailers, users, vehicles } from '@/server/db/schema';
-import { companyForUser } from './company';
+import { companyForUser, requireFoundedCompany } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { plate, VEHICLE_COLORS } from './names';
@@ -32,7 +32,7 @@ export async function buyVehicle(db: Database, userId: string, modelId: string, 
   const model = POWER_UNITS.find((m) => m.id === modelId);
   if (!model) fail('unknown_model', 'Непознат модел.');
   return db.transaction(async (tx) => {
-    const company = await companyForUser(tx, userId);
+    const company = await requireFoundedCompany(tx, userId);
     if ((await level(tx, userId)) < model!.minLevel) fail('level', `Изисква ниво ${model!.minLevel}.`);
     await depotInCity(tx, company.id, depotCityId);
     const cap = await fleetCapacity(tx, company.id);
@@ -49,7 +49,7 @@ export async function buyTrailer(db: Database, userId: string, modelId: string, 
   const model = TRAILERS.find((m) => m.id === modelId);
   if (!model) fail('unknown_model', 'Непознат модел.');
   return db.transaction(async (tx) => {
-    const company = await companyForUser(tx, userId);
+    const company = await requireFoundedCompany(tx, userId);
     if ((await level(tx, userId)) < model!.minLevel) fail('level', `Изисква ниво ${model!.minLevel}.`);
     await depotInCity(tx, company.id, depotCityId);
     const [trailer] = await tx.insert(trailers).values({ companyId: company.id, modelId: model!.id, plate: plate(), cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
@@ -77,6 +77,7 @@ export async function sellVehicle(db: Database, userId: string, vehicleId: strin
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
+    if (v.ownership === 'rented') fail('rented', 'Наетите превозни средства се връщат, не се продават.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Не можете да продадете превозно средство по време на курс.');
     const model = powerUnitModel(v.modelId);
     const value = resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt));
@@ -93,6 +94,7 @@ export async function sellTrailer(db: Database, userId: string, trailerId: strin
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const t = await ownedTrailer(tx, company.id, trailerId);
+    if (t.ownership === 'rented') fail('rented', 'Наетите ремаркета се връщат заедно с влекача.');
     if (t.vehicleId) {
       const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t.vehicleId));
       if (v?.status === 'on_delivery') fail('trailer_busy', 'Ремаркето е на курс.');
@@ -109,6 +111,7 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
+    if (v.ownership === 'rented') fail('rented', 'Поддръжката на наетите превозни средства е за сметка на наемодателя.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Ремонт е възможен само между курсовете.');
     const [trailer] = await tx.select().from(trailers).where(eq(trailers.vehicleId, v.id));
     const cost = repairCostCents(powerUnitModel(v.modelId).priceCents, v.condition) + (trailer ? repairCostCents(trailerModel(trailer.modelId).priceCents, trailer.condition) : 0);
@@ -126,6 +129,7 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
+    if (v.ownership === 'rented') fail('rented', 'Наетите превозни средства не могат да се модифицират.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Подобрения се монтират само между курсовете.');
     if (!upgrade!.appliesTo.includes(powerUnitModel(v.modelId).kind)) fail('not_applicable', 'Подобрението не е приложимо за този тип превозно средство.');
     if (v.upgrades.includes(upgrade!.id)) fail('already_installed', 'Вече е монтирано.');
@@ -157,7 +161,7 @@ export async function coupleTrailer(db: Database, userId: string, vehicleId: str
 
 export async function buyDepot(db: Database, userId: string, cityId: number) {
   return db.transaction(async (tx) => {
-    const company = await companyForUser(tx, userId);
+    const company = await requireFoundedCompany(tx, userId);
     const [hub] = await tx.select().from(cityMarkets).where(eq(cityMarkets.cityId, cityId)).limit(1);
     if (!hub) fail('not_hub', 'Депо може да се открие само в град, участващ в товарния пазар.');
     const [existing] = await tx.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, cityId)));
@@ -172,7 +176,7 @@ export async function buyDepot(db: Database, userId: string, cityId: number) {
 
 export async function expandDepot(db: Database, userId: string, depotId: string) {
   return db.transaction(async (tx) => {
-    const company = await companyForUser(tx, userId);
+    const company = await requireFoundedCompany(tx, userId);
     const [depot] = await tx.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id))).for('update');
     if (!depot) fail('depot_not_found', 'Депото не е намерено.', 404);
     if (depot!.slots >= 20) fail('max_slots', 'Депото е с максимален капацитет.');

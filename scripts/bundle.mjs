@@ -8,6 +8,7 @@ const entries = {
   migrate: 'scripts/migrate.ts',
   'import-geonames': 'scripts/import-geonames.ts',
   seed: 'scripts/seed.ts',
+  'grant-founder': 'scripts/grant-founder.ts',
 };
 
 await build({

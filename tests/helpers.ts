@@ -1,25 +1,34 @@
 import { eq, sql } from 'drizzle-orm';
 import { register } from '@/server/auth/accounts';
 import { getDb } from '@/server/db/client';
-import { cities, contracts, routes } from '@/server/db/schema';
+import { cities, companies, contracts, routes, users } from '@/server/db/schema';
+import { foundCompany } from '@/server/game/company';
+import { post } from '@/server/game/finance';
 import { getRoute } from '@/server/geo/route-service';
 import { approximateProvider } from '@/server/geo/routing';
 
 export const db = () => getDb();
 
 let counter = 0;
-export async function newPlayer(hq = 'Sofia') {
+/** A freshly registered player: an independent driver with a rented truck. */
+export async function newPlayer(start = 'Sofia') {
   counter++;
-  const city = await cityByName(hq);
+  const city = await cityByName(start);
   const tag = `${Date.now().toString(36)}${counter}`;
-  const userId = await register(db(), {
-    email: `p${tag}@example.com`,
-    username: `player_${tag}`.slice(0, 20),
-    password: 'correct horse battery',
-    companyName: `Тест ${tag}`,
-    hqCityId: city.id,
-  });
-  return { userId, hq: city };
+  const username = `player_${tag}`.slice(0, 20);
+  const userId = await register(db(), { email: `p${tag}@example.com`, username, password: 'correct horse battery', startCityId: city.id });
+  return { userId, hq: city, username };
+}
+
+/** Meets the founding criteria (via real ledger postings) and founds a company. */
+export async function playerWithCompany(start = 'Sofia', extraCents = 0) {
+  const p = await newPlayer(start);
+  await db().update(users).set({ level: 2, xp: 800 }).where(eq(users.id, p.userId));
+  const [company] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+  await db().update(companies).set({ deliveries: 3 }).where(eq(companies.id, company!.id));
+  await db().transaction((tx) => post(tx, company!.id, [{ category: 'admin_adjustment', amountCents: 5_000_00 + extraCents, description: 'test funds', idempotencyKey: `test:${company!.id}` }]));
+  await foundCompany(db(), p.userId, { name: `Тест ${p.username}`, hqCityId: p.hq.id });
+  return p;
 }
 
 export async function cityByName(name: string) {

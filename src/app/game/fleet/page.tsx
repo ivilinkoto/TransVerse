@@ -8,6 +8,8 @@ import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
 import { UPGRADES, type UpgradeId } from '@/lib/game/catalog';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { ECONOMY } from '@/lib/game/economy';
 
 export const metadata = { title: 'Автопарк' };
 
@@ -30,6 +32,7 @@ export default async function FleetPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-display text-lg font-bold">{v.model.name}</span>
                   <Badge>{KIND[v.model.kind]}</Badge>
+                  {v.ownership === 'rented' && <Badge tone="gold">Нает</Badge>}
                   {v.delivery ? <Badge tone="cyan">На курс</Badge> : <Badge tone="green">Свободен</Badge>}
                 </div>
                 <div className="mt-0.5 font-mono text-xs text-mist-400">{v.plate} · {v.model.brand}</div>
@@ -58,6 +61,14 @@ export default async function FleetPage() {
               <div><dt className="label">Надстройка</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? BODY_LABELS[v.trailer.model.body] : <span className="text-amber-sig">без ремарке</span>) : BODY_LABELS[v.model.body!]}</dd></div>
               <div><dt className="label">Шофьор</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5" />{v.driver.name}</> : <span className="text-amber-sig">няма</span>}</dd></div>
             </dl>
+            {v.ownership === 'rented' && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
+                <span>Наем: {Math.round(ECONOMY.rentalShare * 100)}% от навлото + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Без разходи за гориво, такси и сервиз.</span>
+                {company.kind === 'company' && !v.delivery && !v.driver?.isOwner && (
+                  <ActionButton action={{ type: 'returnRental', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm="Да върнем ли камиона на наемодателя?">Върни</ActionButton>
+                )}
+              </div>
+            )}
             {v.upgrades.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">{v.upgrades.map((u) => <Badge key={u} tone="violet">{UPGRADES[u as UpgradeId]?.label ?? u}</Badge>)}</div>
             )}

@@ -12,7 +12,7 @@ import { rotateSeasons } from '@/server/game/seasons';
 import { runPayroll } from '@/server/game/staff';
 import { worldTick } from '@/server/game/world';
 import { approximateProvider, valhallaProvider } from '@/server/geo/routing';
-import { cityByName, db, makeContract, newPlayer } from './helpers';
+import { cityByName, db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(async () => closeDb());
 
@@ -24,26 +24,32 @@ const expectGameError = async (p: Promise<unknown>, code: string) => {
 };
 
 describe('registration and authentication', () => {
-  it('registers a player with a company and a starter kit', async () => {
-    const { userId, hq } = await newPlayer('Plovdiv');
+  it('registers an independent driver with a rented truck and no company', async () => {
+    const { userId, hq, username } = await newPlayer('Plovdiv');
     const company = await companyOf(userId);
-    expect(company.balanceCents).toBe(60_000_00);
+    expect(company.kind).toBe('independent');
+    expect(company.name).toBeNull();
+    expect(company.balanceCents).toBe(1_500_00);
     expect(company.hqCityId).toBe(hq.id);
     const fleet = await fleetOf(company.id);
     expect(fleet).toHaveLength(1);
+    expect(fleet[0]!.ownership).toBe('rented');
     const [driver] = await db().select().from(drivers).where(eq(drivers.companyId, company.id));
     expect(driver?.vehicleId).toBe(fleet[0]!.id);
+    expect(driver?.isOwner).toBe(true);
+    expect(driver?.name).toBe(username);
+    expect(driver?.salaryCentsPerDay).toBe(0);
     const ledger = await db().select().from(ledgerEntries).where(eq(ledgerEntries.companyId, company.id));
     expect(ledger.map((l) => l.category)).toEqual(['starting_capital']);
   });
 
   it('validates input and rejects duplicates', async () => {
-    expect(registerSchema.safeParse({ email: 'x', username: 'a', password: 'short', companyName: 'X', hqCityId: 1 }).success).toBe(false);
+    expect(registerSchema.safeParse({ email: 'x', username: 'a', password: 'short', startCityId: 1 }).success).toBe(false);
     const { userId } = await newPlayer();
     const [user] = await db().execute<{ email: string; username: string }>(sql`select email, username from users where id = ${userId}`).then((r) => r.rows);
     const { register } = await import('@/server/auth/accounts');
     const sofia = await cityByName('Sofia');
-    await expectGameError(register(db(), { email: user!.email.toUpperCase(), username: 'someone_else', password: 'correct horse battery', companyName: 'Друга', hqCityId: sofia.id }), 'email_taken');
+    await expectGameError(register(db(), { email: user!.email.toUpperCase(), username: 'someone_else', password: 'correct horse battery', startCityId: sofia.id }), 'email_taken');
   });
 
   it('authenticates with correct password only and validates sessions', async () => {
@@ -57,10 +63,10 @@ describe('registration and authentication', () => {
     expect(await validateSession(db(), 'forged-token')).toBeNull();
   });
 
-  it('rejects a headquarters outside Bulgaria', async () => {
+  it('rejects a start city outside Bulgaria', async () => {
     const { register } = await import('@/server/auth/accounts');
     const bucharest = await cityByName('Bucharest');
-    await expectGameError(register(db(), { email: 'hq@example.com', username: 'hq_test', password: 'correct horse battery', companyName: 'HQ Тест', hqCityId: bucharest.id }), 'invalid_hq');
+    await expectGameError(register(db(), { email: 'hq@example.com', username: 'hq_test', password: 'correct horse battery', startCityId: bucharest.id }), 'invalid_hq');
   });
 });
 
@@ -116,7 +122,7 @@ describe('freight market and deliveries', () => {
     const [van] = await fleetOf(company.id);
     const bulk = await makeContract('Sofia', 'Plovdiv', { cargoType: 'bulk', weightTons: 20, goods: 'Зърно' });
     await expectGameError(acceptContract(db(), userId, bulk.id, van!.id), 'incompatible');
-    const heavy = await makeContract('Sofia', 'Plovdiv', { weightTons: 5 });
+    const heavy = await makeContract('Sofia', 'Plovdiv', { weightTons: 10 });
     await expectGameError(acceptContract(db(), userId, heavy.id, van!.id), 'incompatible');
 
     const ok = await makeContract('Sofia', 'Plovdiv');
@@ -157,6 +163,11 @@ describe('freight market and deliveries', () => {
     const freight = await db().select().from(ledgerEntries).where(and(eq(ledgerEntries.companyId, company.id), eq(ledgerEntries.category, 'freight')));
     expect(freight).toHaveLength(1);
     expect(freight[0]!.amountCents).toBe(400_00);
+    // Rented truck: one rental fee, no fuel / tolls / maintenance.
+    const categories = (await db().select().from(ledgerEntries).where(eq(ledgerEntries.companyId, company.id))).map((l) => l.category);
+    expect(categories.filter((c) => c === 'rental')).toHaveLength(1);
+    expect(categories).not.toContain('fuel');
+    expect(categories).not.toContain('tolls');
 
     const after = await companyOf(userId);
     const [{ sum }] = (await db().execute<{ sum: string }>(sql`select sum(amount_cents) as sum from ledger_entries where company_id = ${company.id}`)).rows as [{ sum: string }];
@@ -167,7 +178,7 @@ describe('freight market and deliveries', () => {
     const [movedVan] = await fleetOf(company.id);
     expect(movedVan!.status).toBe('idle');
     expect(movedVan!.cityId).toBe(contract.destCityId);
-    expect(movedVan!.condition).toBeLessThan(van!.condition);
+    expect(movedVan!.condition).toBe(van!.condition); // rented: wear is the lessor's problem
 
     const unlocked = await db().select().from(achievements).where(eq(achievements.userId, userId));
     expect(unlocked.map((a) => a.key)).toContain('first_delivery');
@@ -203,21 +214,25 @@ describe('freight market and deliveries', () => {
 });
 
 describe('fleet, finance and staff', () => {
-  it('buys vehicles, enforces funds and depot capacity', async () => {
-    const { userId, hq } = await newPlayer();
-    const company = await companyOf(userId);
+  it('requires a company to buy, then enforces funds and depot capacity', async () => {
+    const solo = await newPlayer();
+    await expectGameError(buyVehicle(db(), solo.userId, 'sokol-courier', solo.hq.id), 'company_required');
+
+    const { userId, hq } = await playerWithCompany('Sofia', 34_000_00);
+    const before = (await companyOf(userId)).balanceCents;
     await buyVehicle(db(), userId, 'sokol-courier', hq.id);
-    // 60 000 − 34 000 + 2 000 reward for the "second vehicle" achievement
-    expect((await companyOf(userId)).balanceCents).toBe(60_000_00 - 34_000_00 + 2_000_00);
+    // − 34 000 + 2 000 reward for the "second vehicle" achievement
+    expect((await companyOf(userId)).balanceCents).toBe(before - 34_000_00 + 2_000_00);
     await expectGameError(buyVehicle(db(), userId, 'hemus-r12-box', hq.id), 'insufficient_funds');
+    const company = await companyOf(userId);
     await db().update(companies).set({ balanceCents: 200_000_00 }).where(eq(companies.id, company.id));
-    await buyVehicle(db(), userId, 'sokol-courier', hq.id);
+    await expectGameError(buyVehicle(db(), userId, 'danubia-t500-eco', hq.id), 'level');
+    await buyVehicle(db(), userId, 'sokol-courier', hq.id); // 3 of 3 slots (rental counts)
     await expectGameError(buyVehicle(db(), userId, 'sokol-courier', hq.id), 'no_capacity');
-    await expectGameError(buyVehicle(db(), userId, 'danubia-t440', hq.id), 'level');
   });
 
   it('couples trailers, installs upgrades and repairs', async () => {
-    const { userId, hq } = await newPlayer();
+    const { userId, hq } = await playerWithCompany();
     const company = await companyOf(userId);
     await db().update(companies).set({ balanceCents: 1_000_000_00 }).where(eq(companies.id, company.id));
     await db().execute(sql`update users set level = 3, xp = 99999 where id = ${userId}`);
@@ -231,13 +246,20 @@ describe('fleet, finance and staff', () => {
     expect(await repairVehicle(db(), userId, tractor.id)).toBeGreaterThan(0);
   });
 
-  it('runs payroll once per day', async () => {
-    const { userId } = await newPlayer();
+  it('runs payroll once per day (owner-drivers draw no salary)', async () => {
+    const solo = await newPlayer();
+    const { userId } = await playerWithCompany();
     const company = await companyOf(userId);
+    const { candidates, hireDriver } = await import('@/server/game/staff');
+    const [candidate] = await candidates(db(), company.id);
+    await hireDriver(db(), userId, candidate!.id);
     await runPayroll(db(), '2026-01-01');
     await runPayroll(db(), '2026-01-01');
     const salaries = await db().select().from(ledgerEntries).where(and(eq(ledgerEntries.companyId, company.id), eq(ledgerEntries.category, 'salaries')));
     expect(salaries).toHaveLength(1);
+    const soloCompany = await companyOf(solo.userId);
+    const soloSalaries = await db().select().from(ledgerEntries).where(and(eq(ledgerEntries.companyId, soloCompany.id), eq(ledgerEntries.category, 'salaries')));
+    expect(soloSalaries).toHaveLength(0);
   });
 });
 

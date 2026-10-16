@@ -139,3 +139,23 @@ export function combinationCapability({ unit, trailer }: Combination): { bodies:
 export function canCouple(unit: PowerUnitModel, trailer: TrailerModel): boolean {
   return unit.kind === 'tractor' && (!trailer.requiresHeavyHaul || unit.heavyHaul);
 }
+
+/** Vehicles available for rent (no purchase price, a fee per delivery instead). */
+export interface RentalOffer {
+  id: string;
+  unitId: string;
+  trailerId: string | null;
+  minLevel: number;
+  /** Only companies can rent; the starter rental of an independent driver is automatic. */
+  label: string;
+}
+
+export const RENTAL_OFFERS: RentalOffer[] = [
+  { id: 'rent-van', unitId: 'sokol-courier', trailerId: null, minLevel: 1, label: 'Ван под наем' },
+  { id: 'rent-rigid', unitId: 'hemus-r12-box', trailerId: null, minLevel: 1, label: 'Соло камион под наем' },
+  { id: 'rent-frigo', unitId: 'hemus-r12-frigo', trailerId: null, minLevel: 2, label: 'Хладилен камион под наем' },
+  { id: 'rent-curtain', unitId: 'danubia-t440', trailerId: 'curtain-13', minLevel: 2, label: 'Влекач + завеса под наем' },
+];
+
+/** The truck every new player starts with. */
+export const STARTER_RENTAL = 'rent-rigid';

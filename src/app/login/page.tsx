@@ -13,7 +13,7 @@ export default async function LoginPage() {
     <AuthShell
       title="Добре дошъл обратно"
       subtitle="Камионите ти продължиха да карат, докато те нямаше."
-      aside={<p className="max-w-md font-display text-2xl font-bold leading-snug">Доставките се изпълняват на сървъра в реално време, дори когато браузърът е затворен.</p>}
+      aside={<p className="max-w-md font-display text-2xl font-bold leading-snug">Курсовете продължават на сървъра, дори когато браузърът е затворен.</p>}
     >
       <Suspense>
         <LoginForm />

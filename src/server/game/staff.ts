@@ -1,7 +1,7 @@
 import { and, eq, gt, isNull, lte, sql } from 'drizzle-orm';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { driverCandidates, drivers, vehicles } from '@/server/db/schema';
-import { companyForUser } from './company';
+import { companyForUser, requireFoundedCompany } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { driverName } from './names';
@@ -27,7 +27,7 @@ export async function candidates(db: DbOrTx, companyId: string, now = new Date()
 
 export async function hireDriver(db: Database, userId: string, candidateId: string) {
   return db.transaction(async (tx) => {
-    const company = await companyForUser(tx, userId);
+    const company = await requireFoundedCompany(tx, userId);
     const [c] = await tx.delete(driverCandidates).where(and(eq(driverCandidates.id, candidateId), eq(driverCandidates.companyId, company.id))).returning();
     if (!c) fail('candidate_not_found', 'Кандидатът вече не е наличен.', 404);
     const [driver] = await tx.insert(drivers).values({ companyId: company.id, name: c!.name, skill: c!.skill, salaryCentsPerDay: c!.salaryCentsPerDay }).returning();
@@ -42,6 +42,7 @@ export async function fireDriver(db: Database, userId: string, driverId: string)
     const company = await companyForUser(tx, userId);
     const [d] = await tx.select().from(drivers).where(and(eq(drivers.id, driverId), eq(drivers.companyId, company.id))).for('update');
     if (!d) fail('driver_not_found', 'Шофьорът не е намерен.', 404);
+    if (d!.isOwner) fail('owner_driver', 'Не можете да освободите себе си.');
     if (d!.vehicleId) {
       const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, d!.vehicleId));
       if (v?.status === 'on_delivery') fail('driver_busy', 'Шофьорът е на курс.');
@@ -80,6 +81,7 @@ export async function runPayroll(db: Database, day: string) {
     .groupBy(drivers.companyId);
   let charged = 0;
   for (const r of rows) {
+    if (r.total <= 0) continue; // owner-drivers draw no salary
     charged += await db.transaction((tx) =>
       post(tx, r.companyId, [{ category: 'salaries', amountCents: -r.total, description: `Заплати за ${day} (${r.n} шофьори)`, idempotencyKey: `payroll:${r.companyId}:${day}` }]),
     );

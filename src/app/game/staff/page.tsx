@@ -3,6 +3,7 @@ import { Badge, Card, Empty, PageHeader, Table } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { int, money } from '@/lib/format';
+import { CompanyRequired } from '@/components/game/CompanyRequired';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
 import { candidates } from '@/server/game/staff';
@@ -13,6 +14,7 @@ const Stars = ({ n }: { n: number }) => <span className="text-gold-400" aria-lab
 
 export default async function StaffPage() {
   const { db, company } = await gameContext();
+  if (company.kind !== 'company') return <CompanyRequired what="Наемането на шофьори" />;
   const [fleet, pool] = await Promise.all([fleetView(db, company.id), candidates(db, company.id)]);
   const payroll = fleet.drivers.reduce((s, d) => s + d.salaryCentsPerDay, 0);
   const vehicleOptions = [{ value: '', label: '— без превозно средство —' }, ...fleet.vehicles.map((v) => ({ value: v.id, label: `${v.plate} · ${v.model.name}${v.driver ? ` (сега: ${v.driver.name})` : ''}`, disabled: !!v.delivery }))];

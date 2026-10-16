@@ -8,7 +8,7 @@ import { api } from '@/lib/client/api';
  * A select whose choice is sent as a game action: `action` plus `{ [field]: value }`.
  * Empty choice becomes null; `numeric` converts the value to a number.
  */
-export function SelectAction({ label, options, value, action, field, numeric = false, ariaLabel }: { label: string; options: { value: string; label: string; disabled?: boolean }[]; value: string; action: Record<string, unknown>; field: string; numeric?: boolean; ariaLabel: string }) {
+export function SelectAction({ label, options, value, action, field, numeric = false, ariaLabel, endpoint = '/api/game/action' }: { label: string; options: { value: string; label: string; disabled?: boolean }[]; value: string; action: Record<string, unknown>; field: string; numeric?: boolean; ariaLabel: string; endpoint?: string }) {
   const router = useRouter();
   const [current, setCurrent] = useState(value);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export function SelectAction({ label, options, value, action, field, numeric = f
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', { ...action, [field]: current === '' ? null : numeric ? Number(current) : current });
+      await api(endpoint, { ...action, [field]: current === '' ? null : numeric ? Number(current) : current });
       router.refresh();
     } catch (e) {
       setError((e as Error).message);

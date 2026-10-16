@@ -1,5 +1,8 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { BuyButton } from '@/components/game/BuyButton';
+import { CompanyRequired } from '@/components/game/CompanyRequired';
+import { RENTAL_OFFERS } from '@/lib/game/catalog';
+import { ECONOMY } from '@/lib/game/economy';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { money } from '@/lib/format';
@@ -15,6 +18,7 @@ const DEMO_TRAILER: Record<string, string | undefined> = { 'danubia-t440': 'curt
 
 export default async function MarketPage() {
   const { db, user, company } = await gameContext();
+  if (company.kind !== 'company') return <CompanyRequired what="Пазарът на техника" />;
   const depotRows = await db
     .select({ cityId: depots.cityId, name: cities.nameBg, slots: depots.slots })
     .from(depots)
@@ -29,7 +33,30 @@ export default async function MarketPage() {
     <div className="space-y-8">
       <PageHeader title="Пазар на техника" subtitle={`Нови превозни средства и ремаркета. Капацитет на депата: ${used} / ${totalSlots} превозни средства. Ремаркетата не заемат място.`} />
       <section>
-        <h2 className="mb-3 font-display text-lg font-bold">Превозни средства</h2>
+        <h2 className="mb-1 font-display text-lg font-bold">Под наем</h2>
+        <p className="mb-3 text-sm text-mist-400">Без първоначална вноска: от всяка доставка се удържат {Math.round(ECONOMY.rentalShare * 100)}% от навлото + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Горивото, таксите и сервизът са за сметка на наемодателя. Нужен е шофьор и свободно място в депо.</p>
+        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+          {RENTAL_OFFERS.map((o) => {
+            const unit = POWER_UNITS.find((m) => m.id === o.unitId)!;
+            const reason = user.level < o.minLevel ? `Изисква ниво ${o.minLevel}.` : freeSlots <= 0 ? 'Няма свободно място в депата.' : null;
+            return (
+              <Card key={o.id} className="flex flex-col">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-display font-bold">{o.label}</div>
+                    <div className="text-xs text-mist-400">{unit.name}{o.trailerId ? ' + завеса 13.6 м' : ''}</div>
+                  </div>
+                  <Badge tone={user.level >= o.minLevel ? 'cyan' : 'violet'}>ниво {o.minLevel}</Badge>
+                </div>
+                <div className="my-3 flex h-20 items-end"><VehicleIllustration modelId={o.unitId} trailerModelId={o.trailerId} color="#f8fafc" className="max-h-20 w-full" /></div>
+                <div className="mt-auto"><BuyButton type="rentVehicle" modelId={o.id} depots={depotOptions} disabledReason={reason} label="Наеми" /></div>
+              </Card>
+            );
+          })}
+        </div>
+      </section>
+      <section>
+        <h2 className="mb-3 font-display text-lg font-bold">Превозни средства за покупка</h2>
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {POWER_UNITS.map((m) => {
             const reason = user.level < m.minLevel ? `Изисква ниво ${m.minLevel}.` : company.balanceCents < m.priceCents ? 'Недостатъчни средства.' : freeSlots <= 0 ? 'Няма свободно място в депата.' : null;

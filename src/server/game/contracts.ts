@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gt, inArray, lte, sql } from 'drizzle-orm';
 import { CARGO, CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
 import { rewardCents } from '@/lib/game/economy';
 import { haversineKm } from '@/lib/geo/geometry';
-import { estimateMinutes } from '@/lib/game/schedule';
+import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, marketEvents, routes } from '@/server/db/schema';
@@ -100,7 +100,6 @@ export async function generateContracts(db: Database, options: GenerateOptions =
     const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
 
     const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo));
-    const minutes = estimateMinutes({ empty: null, loaded: { km: route.distanceKm, durationS: route.durationS, borderKms: route.borders.map((b) => b.km) }, speedFactor: 1 });
 
     await db.insert(contracts).values({
       shipper: shipperName(),
@@ -112,7 +111,7 @@ export async function generateContracts(db: Database, options: GenerateOptions =
       routeId: route.id,
       distanceKm: route.distanceKm,
       rewardCents: rewardCents(cargo, tons, route.distanceKm, market),
-      windowMinutes: Math.round((minutes * 1.5 + 6 * 60) / 30) * 30,
+      windowMinutes: contractWindowMinutes(route.distanceKm),
       minLevel: CARGO[cargo].minLevel,
       expiresAt: new Date(now.getTime() + randInt(6, 30) * 3_600_000),
     });

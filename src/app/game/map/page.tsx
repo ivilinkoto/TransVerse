@@ -3,14 +3,16 @@ import { PageHeader } from '@/components/ui';
 import type { MapProps, MapVehicle } from '@/components/game/WorldMap';
 import { km } from '@/lib/format';
 import { cities, contracts, depots, routes } from '@/server/db/schema';
+import { TutorialVisit } from '@/components/game/TutorialVisit';
 import { gameContext } from '@/server/game/context';
+import { tutorialPending } from '@/server/game/tutorial-flags';
 import { fleetView, routeGeometries } from '@/server/game/queries';
 import { MapClient } from './MapClient';
 
 export const metadata = { title: 'Карта на света' };
 
 export default async function MapPage({ searchParams }: { searchParams: Promise<{ contract?: string }> }) {
-  const { db, company, hq } = await gameContext();
+  const { db, user, company, hq } = await gameContext();
   const fleet = await fleetView(db, company.id);
   const routeIds = fleet.vehicles.flatMap((v) => (v.delivery ? [v.delivery.routeId, v.delivery.emptyRouteId].filter((x): x is number => !!x) : []));
   const geoms = await routeGeometries(db, routeIds);
@@ -50,8 +52,10 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
     }
   }
 
+  const visitPending = await tutorialPending(db, user.id, 'track_map');
   return (
     <div>
+      <TutorialVisit step="track_map" pending={visitPending} />
       <PageHeader
         title="Карта на света"
         subtitle={preview ? `Преглед на маршрут — ${preview.title}${preview.approximate ? ' (приблизителна линия, пътният маршрут не е наличен)' : ' (реален пътен маршрут за камион)'}` : 'Реални държави, градове и пътни маршрути. Камионите се движат по изчислените си разписания в реално време.'}

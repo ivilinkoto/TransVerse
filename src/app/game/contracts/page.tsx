@@ -2,8 +2,8 @@ import { ContractBoard, type BoardContract } from '@/components/game/ContractBoa
 import { PageHeader } from '@/components/ui';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
-import { tripCosts } from '@/lib/game/economy';
-import { estimateMinutes } from '@/lib/game/schedule';
+import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
+import { gameDurationMinutes } from '@/lib/game/schedule';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { openContracts } from '@/server/game/contracts';
@@ -28,8 +28,10 @@ export default async function ContractsPage() {
       const emptyKm = v.cityId === c.originCityId ? 0 : haversineKm([v.city.lat, v.city.lon], [c.origin.lat, c.origin.lon]) * 1.25;
       const cap = combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null });
       const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: v.driver?.skill ?? 1, emptyKm, loadedKm: c.distanceKm, tons: c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: true, loaded: c.route.hasToll } });
-      const minutes = estimateMinutes({ empty: emptyKm ? { km: emptyKm, durationS: (emptyKm / 70) * 3600, borderKms: [] } : null, loaded: { km: c.distanceKm, durationS: c.route.durationS, borderKms: c.route.borders.map((b) => b.km) }, speedFactor: v.model.kind === 'van' ? 1.15 : 1 });
-      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''} · ${v.city.nameBg}`, error, emptyKm: Math.round(emptyKm), costCents: costs.totalCents, profitCents: c.rewardCents - costs.totalCents, minutes };
+      const minutes = gameDurationMinutes(emptyKm + c.distanceKm);
+      const rented = v.ownership === 'rented';
+      const cost = rented ? rentalFeeCents(c.rewardCents, emptyKm + c.distanceKm) : costs.totalCents;
+      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''} · ${v.city.nameBg}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: c.rewardCents - cost, minutes };
     });
     return {
       id: c.id,

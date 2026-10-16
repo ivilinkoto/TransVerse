@@ -4,7 +4,7 @@ import { countries, jobState, marketEvents, rateLimits, sessions } from '@/serve
 import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { replenishMarket } from './contracts';
-import { recoverDemand, settleDueDeliveries } from './deliveries';
+import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { broadcast } from './notify';
 import { pick, randInt } from './random';
 import { activeSeason, rotateSeasons } from './seasons';
@@ -64,6 +64,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
   const { rows } = await db.execute<{ locked: boolean }>(sql`select pg_try_advisory_lock(424242) as locked`);
   if (!rows[0]?.locked) return { skipped: true };
   try {
+    await migrateToGameTime(db);
     const settled = await settleDueDeliveries(db, now);
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
     await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));
