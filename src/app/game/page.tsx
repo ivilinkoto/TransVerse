@@ -1,6 +1,7 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { ArrowRight, ClipboardList, Gauge, Landmark, Route, Star, Target, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { EventBanner } from '@/components/events/EventBanner';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { Badge, Card, Empty, Meter, PageHeader, Stat } from '@/components/ui';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
@@ -8,6 +9,7 @@ import { dateTime, km, money } from '@/lib/format';
 import { ACHIEVEMENTS, levelProgress } from '@/lib/game/progression';
 import { achievements, ledgerEntries } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
+import { runningEvents } from '@/server/game/events';
 import { missionBoard } from '@/server/game/missions';
 import { missionById } from '@/lib/game/missions';
 import { companyStats } from '@/server/game/progression';
@@ -16,7 +18,7 @@ import { fleetView, latestNotifications, netWorthCents } from '@/server/game/que
 export default async function OverviewPage() {
   const { db, user, company, now } = await gameContext();
   const since = new Date(now.getTime() - 7 * 86_400_000);
-  const [fleet, stats, unlocked, recent, worth, flows, missions] = await Promise.all([
+  const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
     companyStats(db, company.id),
     db.select().from(achievements).where(eq(achievements.userId, user.id)),
@@ -30,6 +32,7 @@ export default async function OverviewPage() {
       .from(ledgerEntries)
       .where(and(eq(ledgerEntries.companyId, company.id), gte(ledgerEntries.createdAt, since))),
     missionBoard(db, user.id, now),
+    runningEvents(db, user.id, now),
   ]);
   const dailyKey = missions.windows.find((w) => w.period === 'daily')!.key;
   const today = missions.current.filter((m) => m.periodKey === dailyKey);
@@ -45,6 +48,8 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Обзор" subtitle={company.kind === 'company' ? 'Твоят бизнес и автопарк в реално време. Данните се обновяват автоматично.' : 'Твоят старт като самостоятелен шофьор. Данните се обновяват автоматично.'} actions={<Link href="/game/contracts" className="btn-primary"><ClipboardList className="h-4 w-4" />Поръчки</Link>} />
+
+      <EventBanner events={events} now={now} />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Наличност" value={money(company.balanceCents)} tone={company.balanceCents < 0 ? 'loss' : 'gold'} icon={Landmark} hint={`Нетна стойност ${money(worth)}`} />

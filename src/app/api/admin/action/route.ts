@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
+import { cancelEvent, createEvent, eventSchema } from '@/server/game/events';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
 import { createUrgentContract, urgentSchema } from '@/server/urgent';
@@ -21,6 +22,8 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('adjustCoins'), userId: id, amount: z.coerce.number().int('Цяло число.'), reason: z.string().trim().max(300) }),
   z.object({ type: z.literal('setVip'), userId: id, days: z.coerce.number().int('Срокът е в цели дни.').min(0).max(3650) }),
   z.object({ type: z.literal('resetCompanyBranding'), companyId: id, reason: z.string().trim().max(300) }),
+  z.object({ type: z.literal('createEvent'), event: eventSchema }),
+  z.object({ type: z.literal('cancelEvent'), eventId: id }),
 ]);
 
 export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input }) => {
@@ -59,6 +62,11 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true, until: await setVip(db, user, input.userId, input.days) };
     case 'resetCompanyBranding':
       await adminResetCompanyBranding(db, user, input.companyId, input.reason);
+      return { ok: true };
+    case 'createEvent':
+      return { ok: true, id: (await createEvent(db, user, input.event)).id };
+    case 'cancelEvent':
+      await cancelEvent(db, user, input.eventId);
       return { ok: true };
   }
 });

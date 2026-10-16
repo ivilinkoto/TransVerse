@@ -22,6 +22,10 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return `Попълни товарния пазар ръчно (${Number(d.created ?? 0)} нови поръчки)`;
     case 'bootstrap_founder':
       return `${actor ?? who} получи длъжност ${ROLE_LABELS.founder} (при публикуване)`;
+    case 'create_global_event':
+      return `Създаде ивент „${String(d.name ?? '')}“${d.startsAt ? ` (от ${new Date(String(d.startsAt)).toLocaleString('bg-BG')})` : ''}`;
+    case 'cancel_global_event':
+      return `Отмени ивент „${String(d.name ?? '')}“`;
     case 'set_vip':
       return `Даде VIP на ${who} за ${Number(d.days ?? 0)} дни${d.until ? ` (до ${new Date(String(d.until)).toLocaleDateString('bg-BG')})` : ''}`;
     case 'grant_coins':

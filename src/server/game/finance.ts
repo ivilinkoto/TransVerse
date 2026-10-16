@@ -30,7 +30,8 @@ export type LedgerCategory =
   | 'treasury_deposit'
   | 'company_dissolution'
   | 'licences'
-  | 'mission_reward';
+  | 'mission_reward'
+  | 'event_reward';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -60,6 +61,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   company_dissolution: 'Остатък от касата при закриване',
   licences: 'Лицензи',
   mission_reward: 'Награди от мисии',
+  event_reward: 'Награди от ивенти',
 };
 
 export interface Posting {
@@ -105,7 +107,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   member_contribution: 'Вноска от курс',
@@ -113,6 +115,7 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   company_upgrade: 'Развитие на компанията',
   dissolution: 'Закриване на компанията',
   admin_adjustment: 'Корекция от администратор',
+  company_mission: 'Фирмени мисии',
 };
 
 export interface TreasuryPosting {

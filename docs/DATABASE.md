@@ -11,6 +11,8 @@
 | Компании на играчите | `organizations` (име, профил, ниво, подобрения, собственик и **каса**), `treasury_entries` (регистър на касата, уникален `idempotency_key`) |
 | ТрансКоин | `coin_entries` (регистър на премиум валутата; баланс в `users.coins`) |
 | Мисии | `mission_progress` (играч + период + мисия: цел, прогрес, награда, изпълнена/взета) |
+| Ивенти | `global_events` (цел, прогрес, филтри, награди jsonb, начало/край, постигнат/разплатен, резултат, шаблон), `global_event_contributions` (ивент + играч: принос, доставки, компания, място и награда) |
+| Фирмени мисии | `company_mission_progress` (компания + седмица + мисия: цел, прогрес, награда за касата, принос по членове) |
 | Лицензи | `user_licences` (играч + лиценз, цена, източник purchase/legacy/admin) |
 | Чат на компаниите | `company_messages` (компания, автор, текст, изтриване) |
 | Членство в компании | `company_ranks` (длъжности, права, старшинство), `company_members` (един играч — една компания), `company_applications`, `company_assets` (лого/банер като bytea, проверени по съдържание) |
@@ -29,3 +31,4 @@
 Миграция `0006`: `mission_progress`.
 Миграция `0007`: `coin_entries`, `users.coins / xp_boost_until / vip_reroll_key`, `contracts.reserved_by_company_id / reserved_until`.
 Миграция `0008`: `company_messages`.
+Миграция `0009`: `global_events`, `global_event_contributions`, `company_mission_progress`.
