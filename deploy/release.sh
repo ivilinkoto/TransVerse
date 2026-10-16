@@ -4,6 +4,17 @@
 set -euo pipefail
 RELEASE=${1:?release directory}
 APP_DIR=/var/www/transverse
+
+# First deployment on a fresh server: files are uploaded, but the server is not prepared yet.
+if ! command -v node >/dev/null || [ ! -r /etc/transverse/transverse.env ]; then
+  echo "============================================================"
+  echo " Сървърът още не е подготвен (липсва Node.js или настройките)."
+  echo " Файловете са качени. Влез като root и изпълни:"
+  echo "   bash $RELEASE/deploy/setup-server.sh"
+  echo " След това пусни отново Deploy в GitHub (Re-run jobs)."
+  echo "============================================================"
+  exit 1
+fi
 set -a; . /etc/transverse/transverse.env; set +a
 
 cd "$RELEASE"
