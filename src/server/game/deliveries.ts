@@ -5,13 +5,14 @@ import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib
 import { deliveryXp, reputationAfter, seasonPoints } from '@/lib/game/progression';
 import { buildGameSchedule, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, cityMarkets, companies, contracts, deliveries, drivers, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post, type Posting } from './finance';
 import { broadcast, logActivity, notify } from './notify';
 import { awardXp, checkAchievements } from './progression';
+import { addCompanyXp, bonusesForUser } from './membership';
 import { addSeasonScore } from './seasons';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
@@ -115,7 +116,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     });
     // Rented vehicles: the rental company covers fuel, tolls, maintenance and wear for a fee.
     const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, totalCents: 0, wear: 0 } : running;
-    const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm) : null;
+    // Company members get a cheaper rental through the company's rental partner.
+    const perks = rented ? await bonusesForUser(tx, userId) : null;
+    const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, perks?.bonuses.rentalShareReduction ?? 0) : null;
 
     const [delivery] = await tx
       .insert(deliveries)
@@ -173,11 +176,32 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (result.bonusCents) postings.push({ category: 'bonus', amountCents: result.bonusCents, description: 'Бонус за ранна доставка', idempotencyKey: key('bonus'), refType: 'delivery', refId: d.id });
   if (d.rentalFeeCents) postings.push({ category: 'rental', amountCents: -d.rentalFeeCents, description: `Наем на камиона (${Math.round(d.emptyKm + d.loadedKm)} км)`, idempotencyKey: key('rental'), refType: 'delivery', refId: d.id });
   if (result.penaltyCents) postings.push({ category: 'penalty', amountCents: -result.penaltyCents, description: 'Неустойка за закъснение', idempotencyKey: key('penalty'), refType: 'delivery', refId: d.id });
+  // Company membership: bonus from the company's upgrades and a contribution to its treasury.
+  const perks = await bonusesForUser(tx, company!.ownerId);
+  const companyBonus = perks ? Math.round(result.rewardCents * (perks.bonuses.rewardMultiplier - 1)) : 0;
+  const ownCompany = perks?.membership.company.id === d.companyId;
+  const contribution = perks && !ownCompany ? Math.round(result.rewardCents * perks.membership.company.contributionRate) : 0;
+  if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: `Бонус от „${perks!.membership.company.name}“`, idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
+  if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към „${perks!.membership.company.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
+  if (contribution) {
+    const [member] = await tx.select({ username: users.username }).from(users).where(eq(users.id, company!.ownerId));
+    await post(tx, perks!.membership.company.id, [
+      { category: 'member_contributions', amountCents: contribution, description: `Вноска от ${member!.username}`, idempotencyKey: key('contribution-in'), refType: 'delivery', refId: d.id },
+    ]);
+  }
 
-  const payout = result.rewardCents + result.bonusCents - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0);
+  const payout = result.rewardCents + result.bonusCents - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
-  const xp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
+  const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
+  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1));
+  if (perks) {
+    await tx
+      .update(companyMembers)
+      .set({ deliveries: sql`${companyMembers.deliveries} + 1`, contributedCents: sql`${companyMembers.contributedCents} + ${contribution}`, xpContributed: sql`${companyMembers.xpContributed} + ${baseXp}` })
+      .where(eq(companyMembers.userId, company!.ownerId));
+    await addCompanyXp(tx, perks.membership.company.id, baseXp);
+  }
 
   await tx
     .update(deliveries)

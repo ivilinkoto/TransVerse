@@ -22,7 +22,11 @@ export type LedgerCategory =
   | 'rental'
   | 'company_founding'
   | 'tutorial_reward'
-  | 'admin_adjustment';
+  | 'admin_adjustment'
+  | 'company_bonus'
+  | 'company_contribution'
+  | 'member_contributions'
+  | 'company_upgrade';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -44,6 +48,10 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   company_founding: 'Регистрация на компания',
   tutorial_reward: 'Награда от обучението',
   admin_adjustment: 'Корекция от администратор',
+  company_bonus: 'Бонус от компанията',
+  company_contribution: 'Вноска към компанията',
+  member_contributions: 'Вноски от членове',
+  company_upgrade: 'Развитие на компанията',
 };
 
 export interface Posting {

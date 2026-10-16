@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { AdjustBalanceForm } from '@/components/admin/AdjustBalanceForm';
 import { BanForm } from '@/components/admin/BanForm';
+import { ResetBrandingForm } from '@/components/admin/ResetBrandingForm';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { date, dateTime, int, km, money } from '@/lib/format';
@@ -51,6 +52,12 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="label mb-1.5">Достъп</div>
                 <BanForm userId={user.id} banned={!!user.bannedAt} />
+              </div>
+            )}
+            {company?.kind === 'company' && (
+              <div>
+                <div className="label mb-1.5">Модерация на компанията (<a className="text-cyan-glow hover:underline" href={`/game/companies/${company.id}`}>публичен профил</a>)</div>
+                <ResetBrandingForm companyId={company.id} />
               </div>
             )}
             {isAdmin(actor.role) && company && (

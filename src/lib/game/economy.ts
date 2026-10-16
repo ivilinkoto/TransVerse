@@ -124,6 +124,7 @@ export function clampDemand(value: number): number {
 }
 
 /** Per-delivery fee for a rented vehicle — replaces fuel, tolls, maintenance and wear. */
-export function rentalFeeCents(rewardCents: number, totalKm: number): number {
-  return Math.round(rewardCents * ECONOMY.rentalShare + totalKm * ECONOMY.rentalCentsPerKm);
+export function rentalFeeCents(rewardCents: number, totalKm: number, shareReduction = 0): number {
+  const share = Math.max(0.2, ECONOMY.rentalShare - shareReduction);
+  return Math.round(rewardCents * share + totalKm * ECONOMY.rentalCentsPerKm);
 }

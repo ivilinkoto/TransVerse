@@ -15,6 +15,13 @@
       "when": 1792156605385,
       "tag": "0001_breezy_fabian_cortez",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792165071119,
+      "tag": "0002_thick_quicksilver",
+      "breakpoints": true
     }
   ]
 }

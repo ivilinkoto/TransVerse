@@ -93,6 +93,8 @@ export async function foundCompany(db: Database, userId: string, input: { name: 
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     if (company.kind === 'company') fail('already_founded', 'Вече имате компания.');
+    const { membershipOf, setupCompanyMembership } = await import('./membership');
+    if (await membershipOf(tx, userId)) fail('already_member', 'Членувате в компания. Напуснете я, преди да основете своя.');
     const check = await foundingCheck(tx, userId);
     if (!check.level.ok) fail('founding_level', `Нужно е ниво ${check.level.required}.`);
     if (!check.deliveries.ok) fail('founding_deliveries', `Нужни са поне ${check.deliveries.required} изпълнени доставки.`);
@@ -106,6 +108,7 @@ export async function foundCompany(db: Database, userId: string, input: { name: 
     await post(tx, company.id, [{ category: 'company_founding', amountCents: -ECONOMY.foundingFeeCents, description: `Регистрация на „${input.name}“`, idempotencyKey: `founding:${company.id}` }], { requireFunds: true });
     await tx.update(companies).set({ kind: 'company', name: input.name, hqCityId: input.hqCityId, foundedAt: new Date() }).where(eq(companies.id, company.id));
     await tx.insert(depots).values({ companyId: company.id, cityId: input.hqCityId, slots: ECONOMY.depotSlotsDefault }).onConflictDoNothing();
+    await setupCompanyMembership(tx, company.id, userId);
     await logActivity(tx, userId, 'company_founded', { name: input.name, hqCityId: input.hqCityId });
     await notify(tx, userId, 'achievement', `Основахте „${input.name}“!`, 'Вече можете да купувате и наемате техника, да наемате шофьори и да откривате депа.', '/game/market');
     await checkAchievements(tx, userId, company.id);

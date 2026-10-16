@@ -5,6 +5,7 @@ import { adminAudit, companies, contracts, deliveries, routes, sessions, support
 import { replenishMarket } from '@/server/game/contracts';
 import { fail } from '@/server/game/errors';
 import { post } from '@/server/game/finance';
+import { resetBranding } from '@/server/game/membership';
 import { notify } from '@/server/game/notify';
 
 export interface Staff {
@@ -105,6 +106,18 @@ export async function adminReplenishMarket(db: Database, actor: Staff) {
   const created = await replenishMarket(db);
   await audit(db, actor.id, 'replenish_market', null, { created });
   return created;
+}
+
+/** Moderation: removes a company's logo, banner, description, rules and tag. */
+export async function adminResetCompanyBranding(db: Database, actor: Staff, companyId: string, reason: string) {
+  if (reason.trim().length < 5) fail('reason_required', 'Посочете причина (поне 5 символа).');
+  return db.transaction(async (tx) => {
+    const [company] = await tx.select({ id: companies.id, name: companies.name, ownerId: companies.ownerId }).from(companies).where(eq(companies.id, companyId));
+    if (!company) fail('company_not_found', 'Компанията не е намерена.', 404);
+    await resetBranding(tx, companyId);
+    await audit(tx, actor.id, 'reset_company_branding', company!.ownerId, { company: company!.name, reason });
+    await notify(tx, company!.ownerId, 'warning', 'Профилът на компанията е изчистен', `Модератор премахна лого, банер и текстове. Причина: ${reason}`, '/game/company/profile');
+  });
 }
 
 export async function auditLog(db: DbOrTx, limit = 100) {

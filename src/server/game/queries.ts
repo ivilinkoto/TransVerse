@@ -80,7 +80,27 @@ export async function latestNotifications(db: DbOrTx, userId: string, limit = 50
   return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.id)).limit(limit);
 }
 
-export type LeaderboardKind = 'season' | 'wealth' | 'deliveries';
+export type LeaderboardKind = 'season' | 'wealth' | 'deliveries' | 'companies';
+
+/** Player companies ranked by development (level and experience from all members). */
+export async function companyLeaderboard(db: DbOrTx, limit = 50) {
+  return db
+    .select({
+      companyId: companies.id,
+      company: companies.name,
+      tag: companies.tag,
+      color: companies.color,
+      owner: users.username,
+      level: companies.companyLevel,
+      value: companies.companyXp,
+      members: sql<number>`(select count(*)::int from company_members m where m.company_id = ${companies.id})`,
+    })
+    .from(companies)
+    .innerJoin(users, eq(users.id, companies.ownerId))
+    .where(eq(companies.kind, 'company'))
+    .orderBy(desc(companies.companyXp), desc(companies.deliveries))
+    .limit(limit);
+}
 
 export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50) {
   if (kind === 'season') {
