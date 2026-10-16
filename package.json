@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/copy-vendor.mjs && next build",
     "start": "next start",
     "worker": "tsx src/worker/index.ts",
     "lint": "eslint .",
@@ -21,7 +21,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
     "geo:import": "tsx scripts/import-geonames.ts",
-    "check": "pnpm typecheck && pnpm lint && pnpm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
+    "postinstall": "node scripts/copy-vendor.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

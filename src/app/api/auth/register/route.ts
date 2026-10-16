@@ -8,7 +8,7 @@ import { clientIp, handler } from '@/server/http';
 
 export const POST = handler({ auth: false, schema: registerSchema, perMinute: 20 }, async ({ input, request }) => {
   const db = getDb();
-  await rateLimit(db, `register:${await clientIp()}`, 5, 3600);
+  await rateLimit(db, `register:${await clientIp()}`, Number(process.env.REGISTER_LIMIT_PER_HOUR ?? 5), 3600);
   const userId = await register(db, input);
   const { token, expiresAt } = await createSession(db, userId, request.headers.get('user-agent'));
   // Two van-sized jobs from the new HQ so the first delivery is one click away.

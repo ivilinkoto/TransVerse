@@ -13,3 +13,4 @@ next-env.d.ts
 data/raw/
 *.log
 .DS_Store
+public/vendor/
