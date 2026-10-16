@@ -593,6 +593,21 @@ export const treasuryEntries = pgTable(
   (t) => [uniqueIndex('treasury_idempotency_idx').on(t.idempotencyKey), index('treasury_org_idx').on(t.organizationId, t.createdAt)],
 );
 
+/** Company chat. Only members read and write; deleted messages keep a placeholder. */
+export const companyMessages = pgTable(
+  'company_messages',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: createdAt(),
+    deletedAt: ts('deleted_at'),
+    deletedBy: uuid('deleted_by').references(() => users.id, { onDelete: 'set null' }),
+  },
+  (t) => [index('company_messages_company_idx').on(t.companyId, t.id)],
+);
+
 // ── Company membership ────────────────────────────────────────────────────
 
 export const companyRanks = pgTable(

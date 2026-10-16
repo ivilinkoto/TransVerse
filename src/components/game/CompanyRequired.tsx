@@ -10,7 +10,7 @@ export function CompanyRequired({ what }: { what: string }) {
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-prestige/15"><Lock className="h-6 w-6 text-prestige" /></span>
       <h2 className="mt-4 font-display text-xl font-bold">{what} изисква транспортна компания</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-mist-300">
-        Камиони и депа можеш да купуваш и без компания. Наемането на шофьори и на допълнителни камиони изисква основана компания (ниво {ECONOMY.foundingMinLevel}, поне {ECONOMY.foundingMinDeliveries} доставки, такса {money(ECONOMY.foundingFeeCents)}).
+        Камиони и депа можеш да купуваш и без компания. Наемането на шофьори е възможно, ако членуваш в компания на друг играч или основеш своя (ниво {ECONOMY.foundingMinLevel}, поне {ECONOMY.foundingMinDeliveries} доставки, такса {money(ECONOMY.foundingFeeCents)}).
       </p>
       <Link href="/game/company" className="btn-primary mt-6"><Building2 className="h-4 w-4" />Към основаването на компания</Link>
     </div>

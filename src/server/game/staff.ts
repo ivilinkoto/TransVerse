@@ -1,7 +1,7 @@
 import { and, eq, gt, isNull, lte, sql } from 'drizzle-orm';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { driverCandidates, drivers, vehicles } from '@/server/db/schema';
-import { companyForUser, requireFoundedCompany } from './company';
+import { canHireStaff, companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { driverName } from './names';
@@ -27,7 +27,8 @@ export async function candidates(db: DbOrTx, companyId: string, now = new Date()
 
 export async function hireDriver(db: Database, userId: string, candidateId: string) {
   return db.transaction(async (tx) => {
-    const company = await requireFoundedCompany(tx, userId);
+    const company = await companyForUser(tx, userId);
+    if (!(await canHireStaff(tx, userId, company))) fail('company_required', 'Наемането на шофьори изисква да членуваш в компания (или да имаш своя).', 403);
     const [c] = await tx.delete(driverCandidates).where(and(eq(driverCandidates.id, candidateId), eq(driverCandidates.companyId, company.id))).returning();
     if (!c) fail('candidate_not_found', 'Кандидатът вече не е наличен.', 404);
     const [driver] = await tx.insert(drivers).values({ companyId: company.id, name: c!.name, skill: c!.skill, salaryCentsPerDay: c!.salaryCentsPerDay }).returning();

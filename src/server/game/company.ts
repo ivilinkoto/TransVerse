@@ -3,7 +3,7 @@ import { RENTAL_OFFERS, STARTER_RENTAL } from '@/lib/game/catalog';
 import { ECONOMY } from '@/lib/game/economy';
 import { isFreightHub } from '@/lib/game/markets';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, companies, depots, drivers, organizations, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, companies, companyMembers, depots, drivers, organizations, trailers, users, vehicles } from '@/server/db/schema';
 import { fail } from './errors';
 import { post } from './finance';
 import { plate } from './names';
@@ -28,6 +28,13 @@ export async function requireFoundedCompany(db: DbOrTx, userId: string): Promise
   const company = await companyForUser(db, userId);
   if (company.kind !== 'company') fail('company_required', 'Тази възможност изисква лиценз от основана (или поета) транспортна компания.', 403);
   return company;
+}
+
+/** Hiring drivers: open to licensed operators and to members of any player company. */
+export async function canHireStaff(db: DbOrTx, userId: string, company: Pick<Company, 'kind'>): Promise<boolean> {
+  if (company.kind === 'company') return true;
+  const [member] = await db.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.userId, userId));
+  return !!member;
 }
 
 /** Real Bulgarian cities taking part in the freight market (start city / headquarters). */

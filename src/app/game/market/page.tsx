@@ -17,7 +17,23 @@ import { gameContext } from '@/server/game/context';
 export const metadata = { title: 'Пазар' };
 
 const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влекач' } as const;
-const DEMO_TRAILER: Record<string, string | undefined> = { 'danubia-t440': 'curtain-13', 'danubia-t500-eco': 'reefer-13', 'rila-xt620': 'lowbed-4' };
+
+/** What the market shows (URL ?show=…) and in which order (?sort=…). */
+const SHOW = [
+  { id: 'all', label: 'Всичко' },
+  { id: 'rentals', label: 'Под наем' },
+  { id: 'van', label: 'Ванове' },
+  { id: 'rigid', label: 'Соло камиони' },
+  { id: 'tractor', label: 'Влекачи' },
+  { id: 'trailers', label: 'Ремаркета' },
+] as const;
+const SORT = [
+  { id: 'price_asc', label: 'Цена ↑' },
+  { id: 'price_desc', label: 'Цена ↓' },
+  { id: 'level', label: 'Ниво' },
+] as const;
+type Show = (typeof SHOW)[number]['id'];
+type SortId = (typeof SORT)[number]['id'];
 
 /** Licence needed for the cargo a body type carries (shown as a hint, buying is still allowed). */
 const BODY_LICENCE: Record<string, LicenceId> = { reefer: 'reefer', tanker: 'adr', lowbed: 'oversize' };
@@ -28,8 +44,16 @@ function LicenceHint({ body, held }: { body: string | null | undefined; held: Se
   return <p className="mb-2 text-xs text-amber-sig">Товарите за тази надстройка изискват {LICENCES[need].label} — <Link href="/game/licences" className="text-cyan-glow hover:underline">лицензи</Link>.</p>;
 }
 
-export default async function MarketPage() {
+export default async function MarketPage({ searchParams }: { searchParams: Promise<{ show?: string; sort?: string }> }) {
   const { db, user, company } = await gameContext();
+  const params = await searchParams;
+  const show: Show = SHOW.some((x) => x.id === params.show) ? (params.show as Show) : 'all';
+  const sort: SortId = SORT.some((x) => x.id === params.sort) ? (params.sort as SortId) : 'price_asc';
+  const order = <T extends { priceCents: number; minLevel: number }>(list: readonly T[]) =>
+    [...list].sort((a, b) => (sort === 'price_desc' ? b.priceCents - a.priceCents : sort === 'level' ? a.minLevel - b.minLevel || a.priceCents - b.priceCents : a.priceCents - b.priceCents));
+  const units = order(POWER_UNITS.filter((m) => show === 'all' || m.kind === show));
+  const showUnits = show === 'all' || show === 'van' || show === 'rigid' || show === 'tractor';
+  const href = (next: Partial<{ show: Show; sort: SortId }>) => `/game/market?show=${next.show ?? show}&sort=${next.sort ?? sort}`;
   const held = await heldLicences(db, user.id);
   const depotRows = await db
     .select({ cityId: depots.cityId, name: cities.nameBg, slots: depots.slots })
@@ -48,6 +72,16 @@ export default async function MarketPage() {
           Купената техника се паркира в депо. Първо открий депо в раздел <Link href="/game/logistics" className="font-semibold text-cyan-glow hover:underline">Логистика</Link>.
         </p>
       )}
+      <div className="panel flex flex-wrap items-center gap-2 p-3">
+        <nav className="flex flex-wrap gap-1.5" aria-label="Вид техника">
+          {SHOW.map((x) => <Link key={x.id} href={href({ show: x.id })} aria-current={show === x.id ? 'page' : undefined} className={`${show === x.id ? 'btn-primary' : 'btn-ghost'} px-3 py-1.5 text-sm`}>{x.label}</Link>)}
+        </nav>
+        <nav className="ml-auto flex flex-wrap items-center gap-1.5" aria-label="Подреждане">
+          <span className="text-xs text-mist-400">Подреди:</span>
+          {SORT.map((x) => <Link key={x.id} href={href({ sort: x.id })} aria-current={sort === x.id ? 'page' : undefined} className={`${sort === x.id ? 'btn-primary' : 'btn-ghost'} px-3 py-1.5 text-xs`}>{x.label}</Link>)}
+        </nav>
+      </div>
+      {(show === 'all' || show === 'rentals') && (
       <section>
         <h2 className="mb-1 font-display text-lg font-bold">Под наем</h2>
         <p className="mb-3 text-sm text-mist-400">Без първоначална вноска: от всяка доставка се удържат {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Горивото, таксите и сервизът са за сметка на наемодателя. Нужен е шофьор и свободно място в депо.</p>
@@ -73,10 +107,12 @@ export default async function MarketPage() {
           })}
         </div>
       </section>
+      )}
+      {showUnits && (
       <section>
-        <h2 className="mb-3 font-display text-lg font-bold">Превозни средства за покупка</h2>
+        <h2 className="mb-3 font-display text-lg font-bold">{show === 'tractor' ? 'Влекачи' : show === 'van' ? 'Ванове' : show === 'rigid' ? 'Соло камиони' : 'Превозни средства за покупка'}</h2>
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {POWER_UNITS.map((m) => {
+          {units.map((m) => {
             const reason = user.level < m.minLevel ? `Изисква ниво ${m.minLevel}.` : company.balanceCents < m.priceCents ? 'Недостатъчни средства.' : freeSlots <= 0 ? 'Няма свободно място в депата.' : null;
             return (
               <Card key={m.id} className="flex flex-col">
@@ -91,8 +127,10 @@ export default async function MarketPage() {
                   </div>
                 </div>
                 <div className="my-3 flex h-28 items-end rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
-                  <VehicleIllustration modelId={m.id} trailerModelId={DEMO_TRAILER[m.id]} color="#1d4ed8" className="max-h-28 w-full" />
+                  {/* Tractors are drawn alone: the trailer is a separate purchase. */}
+                  <VehicleIllustration modelId={m.id} color="#1d4ed8" className="max-h-28 w-full" />
                 </div>
+                {m.kind === 'tractor' && <p className="-mt-1 mb-3 text-xs text-amber-sig">Само влекач — ремаркето се купува отделно (раздел „Ремаркета“).</p>}
                 <dl className="mb-4 grid grid-cols-3 gap-2 text-xs">
                   <div><dt className="text-mist-400">Тип</dt><dd>{KIND[m.kind]}</dd></div>
                   <div><dt className="text-mist-400">Мощност</dt><dd className="num">{m.powerHp} к.с.</dd></div>
@@ -108,10 +146,12 @@ export default async function MarketPage() {
           })}
         </div>
       </section>
+      )}
+      {(show === 'all' || show === 'trailers') && (
       <section>
         <h2 className="mb-3 font-display text-lg font-bold">Полуремаркета</h2>
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {TRAILERS.map((t) => {
+          {order(TRAILERS).map((t) => {
             const reason = user.level < t.minLevel ? `Изисква ниво ${t.minLevel}.` : company.balanceCents < t.priceCents ? 'Недостатъчни средства.' : null;
             return (
               <Card key={t.id} className="flex flex-col">
@@ -136,6 +176,7 @@ export default async function MarketPage() {
           })}
         </div>
       </section>
+      )}
     </div>
   );
 }

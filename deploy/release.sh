@@ -24,7 +24,7 @@ echo "==> Real-world geography (idempotent)"
 node dist/import-geonames.js data/geo/launch-region.json
 
 echo "==> Founder account"
-node dist/grant-founder.js "${FOUNDER_USERNAME:-ANGELov}" || echo "Founder bootstrap failed (non-fatal)"
+node dist/grant-founder.js "${FOUNDER_USERNAMES:-ANGELov,vesichaa}" || echo "Founder bootstrap failed (non-fatal)"
 
 echo "==> Switching release"
 ln -sfn "$RELEASE" "$APP_DIR/current.new" && mv -Tf "$APP_DIR/current.new" "$APP_DIR/current"
