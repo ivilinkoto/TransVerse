@@ -2,6 +2,7 @@ name: Deploy
 
 # Builds a self-contained release and installs it on the VPS over SSH.
 # Required repository secrets: VPS_HOST, VPS_USER, VPS_PORT, VPS_SSH_KEY.
+# Optional payment secrets (written to the server, never into the build): PAYPAL_*, STRIPE_*, APP_URL, SELLER_*, SUPPORT_EMAIL.
 on:
   push:
     branches: [main]
@@ -53,6 +54,18 @@ jobs:
           USER: ${{ secrets.VPS_USER }}
           PORT: ${{ secrets.VPS_PORT }}
           KEY: ${{ secrets.VPS_SSH_KEY }}
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
+          PAYPAL_ENV: ${{ secrets.PAYPAL_ENV }}
+          PAYPAL_WEBHOOK_ID: ${{ secrets.PAYPAL_WEBHOOK_ID }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_AUTOMATIC_TAX: ${{ secrets.STRIPE_AUTOMATIC_TAX }}
+          APP_URL: ${{ secrets.APP_URL }}
+          SELLER_NAME: ${{ secrets.SELLER_NAME }}
+          SELLER_ID: ${{ secrets.SELLER_ID }}
+          SELLER_ADDRESS: ${{ secrets.SELLER_ADDRESS }}
+          SUPPORT_EMAIL: ${{ secrets.SUPPORT_EMAIL }}
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
@@ -61,4 +74,12 @@ jobs:
           SSH="ssh -p ${PORT:-22} -o BatchMode=yes $USER@$HOST"
           $SSH "mkdir -p /var/www/transverse/releases/$ID"
           scp -P "${PORT:-22}" -o BatchMode=yes release.tgz "$USER@$HOST:/var/www/transverse/releases/$ID/release.tgz"
+          # Payment settings from GitHub Secrets → a file only the deploy user can read (loaded by the app and the worker).
+          : > secrets.env
+          for k in PAYPAL_CLIENT_ID PAYPAL_CLIENT_SECRET PAYPAL_ENV PAYPAL_WEBHOOK_ID STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_AUTOMATIC_TAX APP_URL SELLER_NAME SELLER_ID SELLER_ADDRESS SUPPORT_EMAIL; do
+            v="${!k}"; v="${v//$'\r'/}"; v="${v//$'\n'/ }"
+            if [ -n "$v" ]; then printf '%s=%s\n' "$k" "$v" >> secrets.env; fi
+          done
+          $SSH "umask 077 && mkdir -p /var/www/transverse/shared && cat > /var/www/transverse/shared/secrets.env.new && mv -f /var/www/transverse/shared/secrets.env.new /var/www/transverse/shared/secrets.env" < secrets.env
+          rm -f secrets.env
           $SSH "cd /var/www/transverse/releases/$ID && tar -xzf release.tgz && rm release.tgz && bash deploy/release.sh /var/www/transverse/releases/$ID"

@@ -171,6 +171,14 @@ test('the global events page is reachable from the menu', async ({ page }) => {
   await expect(page.getByText(/Награди, ако целта бъде постигната|В момента няма ивент/).first()).toBeVisible();
 });
 
+test('terms and privacy pages are public', async ({ page }) => {
+  await page.goto('/terms');
+  await expect(page.getByRole('heading', { name: 'Общи условия за ползване и покупки' })).toBeVisible();
+  await expect(page.getByText('Право на отказ')).toBeVisible();
+  await page.goto('/privacy');
+  await expect(page.getByRole('heading', { name: 'Политика за поверителност' })).toBeVisible();
+});
+
 test('@mobile dashboard is usable on a phone without horizontal scrolling', async ({ page }) => {
   await register(page);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

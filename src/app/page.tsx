@@ -239,6 +239,8 @@ export default async function HomePage() {
               <li><Link href="/register" className="hover:text-white">Регистрация</Link></li>
               <li><Link href="/login" className="hover:text-white">Вход</Link></li>
               <li><a href="#map" className="hover:text-white"><MapPinned className="mr-1 inline h-3.5 w-3.5" />Картата</a></li>
+              <li><Link href="/terms" className="hover:text-white">Общи условия</Link></li>
+              <li><Link href="/privacy" className="hover:text-white">Поверителност</Link></li>
             </ul>
           </div>
           <div>

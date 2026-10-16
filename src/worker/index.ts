@@ -4,12 +4,14 @@
  * rotates seasons. Run as a separate process: `pnpm worker`.
  */
 import { closeDb, getDb } from '../server/db/client';
+import { loadSecretsFile } from '../server/secrets';
 import { worldTick } from '../server/game/world';
 
 const INTERVAL_MS = Number(process.env.WORKER_INTERVAL_MS ?? 15_000);
 let running = true;
 
 async function loop() {
+  loadSecretsFile();
   const db = getDb();
   console.log(`[worker] started, tick every ${INTERVAL_MS} ms`);
   while (running) {

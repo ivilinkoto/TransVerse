@@ -24,6 +24,8 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return `${actor ?? who} получи длъжност ${ROLE_LABELS.founder} (при публикуване)`;
     case 'create_global_event':
       return `Създаде ивент „${String(d.name ?? '')}“${d.startsAt ? ` (от ${new Date(String(d.startsAt)).toLocaleString('bg-BG')})` : ''}`;
+    case 'refund_payment':
+      return `Върна плащане от ${eur(d.amountCents)} на ${who} (${String(d.provider ?? '')})`;
     case 'cancel_global_event':
       return `Отмени ивент „${String(d.name ?? '')}“`;
     case 'set_vip':

@@ -9,6 +9,7 @@
 | Акаунти | `users`, `sessions` (SHA-256 на токена), `rate_limits` |
 | Компании и активи | `companies`, `depots`, `vehicles`, `trailers`, `drivers`, `driver_candidates` |
 | Компании на играчите | `organizations` (име, профил, ниво, подобрения, собственик и **каса**), `treasury_entries` (регистър на касата, уникален `idempotency_key`) |
+| Плащания | `payments` (играч, доставчик, продукт, ТрансКоин/VIP дни, сума, статус, Stripe session/payment intent, PayPal order/capture, съгласие, платено/възстановено) |
 | ТрансКоин | `coin_entries` (регистър на премиум валутата; баланс в `users.coins`) |
 | Мисии | `mission_progress` (играч + период + мисия: цел, прогрес, награда, изпълнена/взета) |
 | Ивенти | `global_events` (цел, прогрес, филтри, награди jsonb, начало/край, постигнат/разплатен, резултат, шаблон), `global_event_contributions` (ивент + играч: принос, доставки, компания, място и награда) |
@@ -32,3 +33,5 @@
 Миграция `0007`: `coin_entries`, `users.coins / xp_boost_until / vip_reroll_key`, `contracts.reserved_by_company_id / reserved_until`.
 Миграция `0008`: `company_messages`.
 Миграция `0009`: `global_events`, `global_event_contributions`, `company_mission_progress`.
+Миграция `0010`: `payments`.
+Миграция `0011`: `payments.order_id / capture_id` (PayPal).
