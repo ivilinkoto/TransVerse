@@ -6,6 +6,7 @@ import { SelectAction } from '@/components/ui/SelectAction';
 import { date, dateTime, int, km, money } from '@/lib/format';
 import { userDetail } from '@/server/admin';
 import { adminContext } from '@/server/admin-context';
+import { describeAudit } from '@/server/audit-format';
 import { canBan, canChangeRole, isAdmin, ROLE_LABELS, type Role } from '@/server/auth/roles';
 import { GameError } from '@/server/game/errors';
 
@@ -63,7 +64,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
       </div>
       <Card title="Одит за този потребител">
         <ul className="space-y-1.5 text-sm">
-          {detail.audit.map((a) => <li key={a.id} className="flex justify-between gap-3"><span>{a.action} <span className="text-mist-400">{JSON.stringify(a.details)}</span></span><span className="text-xs text-mist-400">{dateTime(a.createdAt)}</span></li>)}
+          {detail.audit.map((a) => <li key={a.id} className="flex justify-between gap-3"><span>{describeAudit(a, null, user.username)}</span><span className="shrink-0 text-xs text-mist-400">{dateTime(a.createdAt)}</span></li>)}
           {detail.audit.length === 0 && <li className="text-mist-400">Няма записи.</li>}
         </ul>
       </Card>

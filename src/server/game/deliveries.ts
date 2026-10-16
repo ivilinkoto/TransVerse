@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, inArray, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { deliveryXp, reputationAfter, seasonPoints } from '@/lib/game/progression';
-import { buildGameSchedule, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, type Segment } from '@/lib/game/schedule';
+import { buildGameSchedule, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, deliveries, drivers, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
@@ -132,7 +132,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         schedule,
         estimatedCosts: costs,
         rentalFeeCents: rentalFee,
-        scheduleVersion: 2,
+        scheduleVersion: SCHEDULE_VERSION,
         startedAt: now,
         etaAt: new Date(scheduleEnd(schedule)),
         deadlineAt: new Date(now.getTime() + (contract!.windowMinutes * 60_000) / timeScale()),
@@ -272,19 +272,20 @@ export async function recoverDemand(db: DbOrTx, hours: number) {
 }
 
 /**
- * One-off migration to game time: deliveries started under the old real-time
- * schedule (version 1) are compressed, and open contracts get game-time windows.
+ * Keeps running deliveries on the current game-time rules: deliveries started
+ * under an older schedule version (real time, or a previous GAME_TIME) are
+ * rescaled from their start, and open contracts get the current windows.
  * Idempotent — safe to call on every worker tick.
  */
 export async function migrateToGameTime(db: Database): Promise<number> {
-  const legacy = await db.select().from(deliveries).where(and(eq(deliveries.status, 'in_progress'), eq(deliveries.scheduleVersion, 1))).limit(200);
+  const legacy = await db.select().from(deliveries).where(and(eq(deliveries.status, 'in_progress'), lt(deliveries.scheduleVersion, SCHEDULE_VERSION))).limit(200);
   for (const d of legacy) {
     const contract = (await db.query.contracts.findFirst({ where: eq(contracts.id, d.contractId) }))!;
     const schedule = compressSchedule(d.schedule as Segment[], d.startedAt.getTime(), gameDurationMinutes(d.emptyKm + d.loadedKm));
     await db
       .update(deliveries)
-      .set({ schedule, etaAt: new Date(scheduleEnd(schedule)), deadlineAt: new Date(d.startedAt.getTime() + contractWindowMinutes(contract.distanceKm) * 60_000), scheduleVersion: 2 })
-      .where(and(eq(deliveries.id, d.id), eq(deliveries.scheduleVersion, 1)));
+      .set({ schedule, etaAt: new Date(scheduleEnd(schedule)), deadlineAt: new Date(d.startedAt.getTime() + contractWindowMinutes(contract.distanceKm) * 60_000), scheduleVersion: SCHEDULE_VERSION })
+      .where(and(eq(deliveries.id, d.id), lt(deliveries.scheduleVersion, SCHEDULE_VERSION)));
   }
   const open = await db.select({ id: contracts.id, distanceKm: contracts.distanceKm, windowMinutes: contracts.windowMinutes }).from(contracts).where(eq(contracts.status, 'open'));
   for (const c of open) {

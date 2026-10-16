@@ -134,16 +134,20 @@ export function estimateMinutes(input: Omit<ScheduleInput, 'startAt' | 'timeScal
 }
 
 /**
- * Game time. Deliveries do not take real days: the whole trip is compressed to
- * roughly 30 min + 0.18 min per km (≈1 h for 150 km, ≈2 h for 500 km, ≈4 h for
- * 1 200 km), capped at 8 h. Phases keep their real proportions, so breaks,
- * rests and border waits stay visible — just shorter.
+ * Game time. Short trips keep players coming back: the whole trip is compressed
+ * to 10 min + 0.04 min per km (≈15 min for 150 km, ≈30 min for 500 km, ≈1 h for
+ * 1 200 km, ≈2 h 10 min for 3 000 km) — always proportional to distance, with
+ * no upper cap. Phases keep their real proportions, so breaks, rests and
+ * border waits stay visible — just shorter.
  */
-export const GAME_TIME = { baseMin: 30, perKmMin: 0.18, minMin: 20, maxMin: 480, roundToMin: 5 } as const;
+export const GAME_TIME = { baseMin: 10, perKmMin: 0.04, minMin: 10, roundToMin: 5 } as const;
+
+/** Bump when GAME_TIME changes: running deliveries are rescaled to the current rules. */
+export const SCHEDULE_VERSION = 4;
 
 export function gameDurationMinutes(totalKm: number): number {
   const raw = GAME_TIME.baseMin + GAME_TIME.perKmMin * Math.max(0, totalKm);
-  const clamped = Math.min(GAME_TIME.maxMin, Math.max(GAME_TIME.minMin, raw));
+  const clamped = Math.max(GAME_TIME.minMin, raw);
   return Math.round(clamped / GAME_TIME.roundToMin) * GAME_TIME.roundToMin;
 }
 

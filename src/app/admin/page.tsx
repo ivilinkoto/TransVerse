@@ -5,6 +5,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { dateTime, int } from '@/lib/format';
 import { adminStats, auditLog } from '@/server/admin';
 import { adminContext } from '@/server/admin-context';
+import { describeAudit } from '@/server/audit-format';
 import { isAdmin } from '@/server/auth/roles';
 import { staffTicketList, TICKET_STATUS } from '@/server/game/support';
 
@@ -33,7 +34,12 @@ export default async function AdminDashboard() {
         {isAdmin(user.role) && (
           <Card title="Последни административни действия" actions={<Activity className="h-4 w-4 text-prestige" />}>
             <ul className="space-y-2 text-sm">
-              {audit.map((a) => <li key={a.entry.id} className="flex justify-between gap-3"><span>{a.actor} · {a.entry.action}{a.target ? ` → ${a.target}` : ''}</span><span className="text-xs text-mist-400">{dateTime(a.entry.createdAt)}</span></li>)}
+              {audit.map((a) => (
+                <li key={a.entry.id} className="flex justify-between gap-3">
+                  <span className="min-w-0"><span className="font-semibold">{a.actor}</span> <span className="text-mist-300">{describeAudit(a.entry, a.actor, a.target)}</span></span>
+                  <span className="shrink-0 text-xs text-mist-400">{dateTime(a.entry.createdAt)}</span>
+                </li>
+              ))}
               {audit.length === 0 && <li className="text-mist-400">Няма действия.</li>}
             </ul>
           </Card>

@@ -63,7 +63,7 @@ export default async function FleetPage() {
             </dl>
             {v.ownership === 'rented' && (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
-                <span>Наем: {Math.round(ECONOMY.rentalShare * 100)}% от навлото + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Без разходи за гориво, такси и сервиз.</span>
+                <span>Наем: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Без разходи за гориво, такси и сервиз.</span>
                 {company.kind === 'company' && !v.delivery && !v.driver?.isOwner && (
                   <ActionButton action={{ type: 'returnRental', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm="Да върнем ли камиона на наемодателя?">Върни</ActionButton>
                 )}
