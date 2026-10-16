@@ -136,12 +136,31 @@ test.describe('core loop', () => {
 
 test('opening notifications marks them as read', async ({ page }) => {
   await register(page);
-  const badge = page.locator('aside').getByRole('link', { name: /Известия/ });
+  const badge = page.locator('header').getByRole('link', { name: /Известия/ });
   await expect(badge).toContainText('1');
   await badge.click();
   await expect(page.getByText('Ново').first()).toBeVisible();
   await page.goto('/game');
-  await expect(page.locator('aside').getByRole('link', { name: /Известия/ })).not.toContainText(/\d/);
+  await expect(page.locator('header').getByRole('link', { name: /Известия/ })).not.toContainText(/\d/);
+});
+
+test('top bar: ☰ menu opens account pages and logs out', async ({ page }) => {
+  await register(page);
+  const header = page.locator('header');
+  await expect(header.getByRole('link', { name: 'Класации' })).toBeVisible();
+  await expect(header.getByRole('link', { name: 'Сезони' })).toBeVisible();
+  await expect(header.getByRole('link', { name: 'Магазин · VIP' })).toBeVisible();
+  await expect(page.locator('aside').getByRole('link', { name: 'Финанси' })).toHaveCount(0);
+  await header.getByRole('button', { name: 'Профил и още' }).click();
+  await page.getByRole('menuitem', { name: 'Финанси' }).click();
+  await expect(page).toHaveURL(/\/game\/finance$/);
+  await expect(page.getByRole('menuitem', { name: 'Финанси' })).toHaveCount(0);
+  await header.getByRole('button', { name: 'Профил и още' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await header.getByRole('button', { name: 'Профил и още' }).click();
+  await page.getByRole('menuitem', { name: 'Изход' }).click();
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test('@mobile dashboard is usable on a phone without horizontal scrolling', async ({ page }) => {

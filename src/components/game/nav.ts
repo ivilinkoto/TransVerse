@@ -1,4 +1,4 @@
-import { Award, BadgeCheck, Gem, Target, Bell, Building2, LifeBuoy, CalendarClock, ClipboardList, Gauge, Landmark, Map, Medal, Settings, ShoppingCart, Truck, UserRound, Users, Warehouse, Wrench } from 'lucide-react';
+import { Award, BadgeCheck, Target, Building2, LifeBuoy, ClipboardList, Gauge, Landmark, Map, Settings, ShoppingCart, Truck, UserRound, Users, Warehouse, Wrench } from 'lucide-react';
 
 export const NAV = [
   { href: '/game', label: 'Обзор', icon: Gauge },
@@ -12,15 +12,15 @@ export const NAV = [
   { href: '/game/logistics', label: 'Логистика', icon: Warehouse },
   { href: '/game/company', label: 'Транспортна компания', icon: Building2 },
   { href: '/game/companies', label: 'Компании на играчите', icon: Users },
-  { href: '/game/finance', label: 'Финанси', icon: Landmark },
   { href: '/game/missions', label: 'Мисии', icon: Target },
-  { href: '/game/shop', label: 'Магазин · VIP', icon: Gem },
+] as const;
+
+/** Account pages in the ☰ menu of the top bar. */
+export const ACCOUNT_MENU = [
+  { href: '/game/finance', label: 'Финанси', icon: Landmark },
   { href: '/game/progress', label: 'Прогрес и постижения', icon: Award },
-  { href: '/game/seasons', label: 'Сезони', icon: CalendarClock },
-  { href: '/game/leaderboards', label: 'Класации', icon: Medal },
-  { href: '/game/notifications', label: 'Известия', icon: Bell },
-  { href: '/game/support', label: 'Поддръжка', icon: LifeBuoy },
   { href: '/game/profile', label: 'Профил и настройки', icon: Settings },
+  { href: '/game/support', label: 'Поддръжка', icon: LifeBuoy },
 ] as const;
 
 /** Sections that need the operator licence from founding a company (shown with a lock otherwise). */
