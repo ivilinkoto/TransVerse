@@ -3,7 +3,7 @@
 import { LogOut, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Logo } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
 import { NAV } from './nav';
@@ -12,7 +12,6 @@ export function Sidebar({ unread }: { unread: number }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  useEffect(() => setOpen(false), [pathname]);
 
   const logout = async () => {
     await api('/api/auth/logout', {});
@@ -29,6 +28,7 @@ export function Sidebar({ unread }: { unread: number }) {
             key={item.href}
             href={item.href}
             aria-current={active ? 'page' : undefined}
+            onClick={() => setOpen(false)}
             className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${active ? 'bg-volt-500/15 text-white shadow-[inset_2px_0_0_0_var(--color-cyan-glow)]' : 'text-mist-300 hover:bg-asphalt-800 hover:text-white'}`}
           >
             <item.icon className={`h-4 w-4 ${active ? 'text-cyan-glow' : ''}`} />

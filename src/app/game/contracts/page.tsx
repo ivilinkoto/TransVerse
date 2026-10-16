@@ -13,7 +13,7 @@ import { fleetView } from '@/server/game/queries';
 export const metadata = { title: 'Транспортни поръчки' };
 
 export default async function ContractsPage() {
-  const { db, user, company } = await gameContext();
+  const { db, user, company, now } = await gameContext();
   const [contracts, fleet] = await Promise.all([openContracts(db, { limit: 250 }), fleetView(db, company.id)]);
 
   const board: BoardContract[] = contracts.map((c) => {
@@ -48,6 +48,7 @@ export default async function ContractsPage() {
       rewardCents: c.rewardCents,
       windowMinutes: c.windowMinutes,
       expiresAt: c.expiresAt.toISOString(),
+      expiresInMin: Math.round((c.expiresAt.getTime() - now.getTime()) / 60_000),
       minLevel: Math.max(c.minLevel, cargo.minLevel),
       locked: user.level < Math.max(c.minLevel, cargo.minLevel),
       options,

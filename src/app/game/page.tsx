@@ -12,8 +12,8 @@ import { companyStats } from '@/server/game/progression';
 import { fleetView, latestNotifications, netWorthCents } from '@/server/game/queries';
 
 export default async function OverviewPage() {
-  const { db, user, company } = await gameContext();
-  const since = new Date(Date.now() - 7 * 86_400_000);
+  const { db, user, company, now } = await gameContext();
+  const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows] = await Promise.all([
     fleetView(db, company.id),
     companyStats(db, company.id),

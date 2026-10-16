@@ -26,6 +26,8 @@ export interface BoardContract {
   rewardCents: number;
   windowMinutes: number;
   expiresAt: string;
+  /** Minutes until the offer leaves the board, computed by the server at render time. */
+  expiresInMin: number;
   minLevel: number;
   locked: boolean;
   options: { vehicleId: string; label: string; error: string | null; emptyKm: number; costCents: number; profitCents: number; minutes: number }[];
@@ -103,7 +105,6 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const option = c.options.find((o) => o.vehicleId === vehicleId);
-  const expiresMin = (new Date(c.expiresAt).getTime() - Date.now()) / 60_000;
 
   const accept = async () => {
     setBusy(true);
@@ -138,7 +139,7 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
         </div>
         <div className="hidden text-xs text-mist-400 sm:block">
           <div className="flex items-center gap-1.5"><Route className="h-3.5 w-3.5" /><span className="num">{km(c.distanceKm)}</span>{c.provider === 'approximate' && <Badge tone="orange">приблизително</Badge>}</div>
-          <div className="mt-1 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />срок {duration(c.windowMinutes)}{expiresMin < 120 && <span className="text-amber-sig">· изтича скоро</span>}</div>
+          <div className="mt-1 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />срок {duration(c.windowMinutes)}{c.expiresInMin < 120 && <span className="text-amber-sig">· изтича скоро</span>}</div>
         </div>
         <div className="text-right">
           <div className="num font-display text-lg font-bold text-profit">{money(c.rewardCents)}</div>

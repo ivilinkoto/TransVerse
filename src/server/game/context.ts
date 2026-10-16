@@ -17,5 +17,6 @@ export const gameContext = cache(async () => {
   const base = await userWithCompany(db, user.id);
   await settleDueDeliveries(db, new Date(), base.company.id);
   const fresh = await userWithCompany(db, user.id);
-  return { db, user: fresh.user, company: fresh.company, hq: fresh.hq };
+  // One timestamp per request keeps every page render consistent (and pure).
+  return { db, user: fresh.user, company: fresh.company, hq: fresh.hq, now: new Date() };
 });
