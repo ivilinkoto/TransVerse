@@ -39,10 +39,10 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Обзор" subtitle="Състоянието на компанията в реално време. Данните се обновяват автоматично." actions={<Link href="/game/contracts" className="btn-primary"><ClipboardList className="h-4 w-4" />Поръчки</Link>} />
+      <PageHeader title="Обзор" subtitle={company.kind === 'company' ? 'Състоянието на компанията в реално време. Данните се обновяват автоматично.' : 'Твоят старт като самостоятелен шофьор. Данните се обновяват автоматично.'} actions={<Link href="/game/contracts" className="btn-primary"><ClipboardList className="h-4 w-4" />Поръчки</Link>} />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Наличност" value={money(company.balanceCents)} tone={company.balanceCents < 0 ? 'loss' : 'gold'} icon={Landmark} hint={`Стойност на компанията ${money(worth)}`} />
+        <Stat label="Наличност" value={money(company.balanceCents)} tone={company.balanceCents < 0 ? 'loss' : 'gold'} icon={Landmark} hint={`${company.kind === 'company' ? 'Стойност на компанията' : 'Нетна стойност'} ${money(worth)}`} />
         <Stat label="Приходи · 7 дни" value={money(income)} tone="profit" icon={TrendingUp} hint={<>Разходи <span className="text-loss">{money(expense)}</span> · нето {money(income - expense)}</>} />
         <Stat label="Активни доставки" value={`${active.length} / ${fleet.vehicles.length}`} tone="cyan" icon={Route} hint={`${idle.length} свободни превозни средства`} />
         <Stat label="Ниво" value={lp.level} tone="prestige" icon={Star} hint={<><Meter value={lp.share * 100} tone="violet" className="mt-1" /><span className="mt-1 block">{user.xp} / {lp.next} опит · репутация {company.reputation.toFixed(1)}</span></>} />

@@ -33,6 +33,8 @@ GitHub (push в main) ──► Actions: build + bundle ──► scp ──► 
 4. Слей работния клон в `main` в GitHub (Pull Request → Merge). Това стартира **Deploy** workflow. Можеш да го пуснеш и ръчно: GitHub → **Actions** → **Deploy** → **Run workflow**.
 5. Отвори `http://IP_НА_СЪРВЪРА` в браузъра.
 
+Основател: при всяко публикуване акаунтът **ANGELov** (ако е регистриран) получава длъжност „Основател / Главен администратор“. Админ панелът е на `/admin`.
+
 Полезни команди на сървъра:
 ```bash
 systemctl status transverse-web transverse-worker   # състояние

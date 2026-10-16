@@ -6,6 +6,7 @@ import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/
 import { money } from '@/lib/format';
 import { UPGRADES, canCouple } from '@/lib/game/catalog';
 import { repairCostCents } from '@/lib/game/economy';
+import { CompanyRequired } from '@/components/game/CompanyRequired';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
 
@@ -13,6 +14,7 @@ export const metadata = { title: 'Гараж' };
 
 export default async function GaragePage() {
   const { db, company } = await gameContext();
+  if (company.kind !== 'company') return <CompanyRequired what="Гаражът" />;
   const fleet = await fleetView(db, company.id);
 
   return (
@@ -47,6 +49,13 @@ export default async function GaragePage() {
                     )}
                   </div>
                 </div>
+                {v.ownership === 'rented' ? (
+                  <div className="space-y-3 text-sm text-mist-300">
+                    <Badge tone="gold">Нает</Badge>
+                    <p>Поддръжката, ремонтите и горивото са за сметка на наемодателя. Наетите превозни средства не се модифицират и не се продават.</p>
+                    {!busy && !v.driver?.isOwner && <ActionButton action={{ type: 'returnRental', vehicleId: v.id }} className="btn-ghost" confirm="Да върнем ли камиона?">Върни на наемодателя</ActionButton>}
+                  </div>
+                ) : (
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <ActionButton action={{ type: 'repairVehicle', vehicleId: v.id }} className="btn-primary" disabled={busy || repair <= 0}>
@@ -93,6 +102,7 @@ export default async function GaragePage() {
                     </ul>
                   </div>
                 </div>
+                )}
               </div>
             </Card>
           );
@@ -102,7 +112,7 @@ export default async function GaragePage() {
       {fleet.trailers.length > 0 && (
         <Card title="Ремаркета">
           <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {fleet.trailers.map((t) => {
+            {fleet.trailers.filter((t) => t.ownership !== 'rented').map((t) => {
               const tractor = fleet.vehicles.find((v) => v.id === t.vehicleId);
               return (
                 <li key={t.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-3 text-sm">

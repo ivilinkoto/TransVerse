@@ -1,9 +1,9 @@
 import { and, asc, desc, eq, inArray, lte, sql } from 'drizzle-orm';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
-import { ECONOMY, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
+import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { deliveryXp, reputationAfter, seasonPoints } from '@/lib/game/progression';
-import { buildSchedule, scheduleEnd, type Segment } from '@/lib/game/schedule';
+import { buildGameSchedule, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, deliveries, drivers, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
@@ -92,14 +92,16 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const unit = powerUnitModel(bundle.vehicle.modelId);
     const trailer = bundle.trailer ? trailerModel(bundle.trailer.modelId) : null;
     const speedFactor = unit.kind === 'van' ? 1.15 : 1;
-    const schedule = buildSchedule({
+    const schedule = buildGameSchedule({
       startAt: now.getTime(),
       empty: emptyRoute ? { km: emptyRoute.distanceKm, durationS: emptyRoute.durationS, borderKms: emptyRoute.borders.map((b) => b.km) } : null,
       loaded: { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km) },
       speedFactor,
       timeScale: timeScale(),
     });
-    const costs = tripCosts({
+    const rented = bundle.vehicle.ownership === 'rented';
+    const totalKm = (emptyRoute?.distanceKm ?? 0) + loadedRoute!.distanceKm;
+    const running = tripCosts({
       unit,
       trailer,
       upgrades: bundle.vehicle.upgrades,
@@ -111,6 +113,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       payloadTons: combinationCapability({ unit, trailer }).payloadTons,
       tolledRoute: { empty: emptyRoute?.hasToll ?? false, loaded: loadedRoute!.hasToll },
     });
+    // Rented vehicles: the rental company covers fuel, tolls, maintenance and wear for a fee.
+    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, totalCents: 0, wear: 0 } : running;
+    const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm) : null;
 
     const [delivery] = await tx
       .insert(deliveries)
@@ -126,6 +131,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         loadedKm: loadedRoute!.distanceKm,
         schedule,
         estimatedCosts: costs,
+        rentalFeeCents: rentalFee,
+        scheduleVersion: 2,
         startedAt: now,
         etaAt: new Date(scheduleEnd(schedule)),
         deadlineAt: new Date(now.getTime() + (contract!.windowMinutes * 60_000) / timeScale()),
@@ -164,10 +171,11 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   ];
   if (costs.tollCents) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: 'Пътни такси', idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
   if (result.bonusCents) postings.push({ category: 'bonus', amountCents: result.bonusCents, description: 'Бонус за ранна доставка', idempotencyKey: key('bonus'), refType: 'delivery', refId: d.id });
+  if (d.rentalFeeCents) postings.push({ category: 'rental', amountCents: -d.rentalFeeCents, description: `Наем на камиона (${Math.round(d.emptyKm + d.loadedKm)} км)`, idempotencyKey: key('rental'), refType: 'delivery', refId: d.id });
   if (result.penaltyCents) postings.push({ category: 'penalty', amountCents: -result.penaltyCents, description: 'Неустойка за закъснение', idempotencyKey: key('penalty'), refType: 'delivery', refId: d.id });
-  await post(tx, d.companyId, postings);
+  await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
 
-  const payout = result.rewardCents + result.bonusCents - result.penaltyCents - costs.totalCents;
+  const payout = result.rewardCents + result.bonusCents - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0);
   const onTime = !result.late;
   const xp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
 
@@ -261,4 +269,27 @@ export async function recoverDemand(db: DbOrTx, hours: number) {
       when demand > 1 then greatest(1, demand - ${step})
       else demand end, updated_at = now()
     where demand <> 1`);
+}
+
+/**
+ * One-off migration to game time: deliveries started under the old real-time
+ * schedule (version 1) are compressed, and open contracts get game-time windows.
+ * Idempotent — safe to call on every worker tick.
+ */
+export async function migrateToGameTime(db: Database): Promise<number> {
+  const legacy = await db.select().from(deliveries).where(and(eq(deliveries.status, 'in_progress'), eq(deliveries.scheduleVersion, 1))).limit(200);
+  for (const d of legacy) {
+    const contract = (await db.query.contracts.findFirst({ where: eq(contracts.id, d.contractId) }))!;
+    const schedule = compressSchedule(d.schedule as Segment[], d.startedAt.getTime(), gameDurationMinutes(d.emptyKm + d.loadedKm));
+    await db
+      .update(deliveries)
+      .set({ schedule, etaAt: new Date(scheduleEnd(schedule)), deadlineAt: new Date(d.startedAt.getTime() + contractWindowMinutes(contract.distanceKm) * 60_000), scheduleVersion: 2 })
+      .where(and(eq(deliveries.id, d.id), eq(deliveries.scheduleVersion, 1)));
+  }
+  const open = await db.select({ id: contracts.id, distanceKm: contracts.distanceKm, windowMinutes: contracts.windowMinutes }).from(contracts).where(eq(contracts.status, 'open'));
+  for (const c of open) {
+    const window = contractWindowMinutes(c.distanceKm);
+    if (c.windowMinutes > window) await db.update(contracts).set({ windowMinutes: window }).where(eq(contracts.id, c.id));
+  }
+  return legacy.length;
 }

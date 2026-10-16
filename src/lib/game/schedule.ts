@@ -132,3 +132,39 @@ export function estimateMinutes(input: Omit<ScheduleInput, 'startAt' | 'timeScal
   const segments = buildSchedule({ ...input, startAt: 0, timeScale: 1 });
   return scheduleEnd(segments) / MIN;
 }
+
+/**
+ * Game time. Deliveries do not take real days: the whole trip is compressed to
+ * roughly 30 min + 0.18 min per km (≈1 h for 150 km, ≈2 h for 500 km, ≈4 h for
+ * 1 200 km), capped at 8 h. Phases keep their real proportions, so breaks,
+ * rests and border waits stay visible — just shorter.
+ */
+export const GAME_TIME = { baseMin: 30, perKmMin: 0.18, minMin: 20, maxMin: 480, roundToMin: 5 } as const;
+
+export function gameDurationMinutes(totalKm: number): number {
+  const raw = GAME_TIME.baseMin + GAME_TIME.perKmMin * Math.max(0, totalKm);
+  const clamped = Math.min(GAME_TIME.maxMin, Math.max(GAME_TIME.minMin, raw));
+  return Math.round(clamped / GAME_TIME.roundToMin) * GAME_TIME.roundToMin;
+}
+
+/** Linearly rescales a schedule so it starts at `startAt` and lasts `minutes`. */
+export function compressSchedule(segments: readonly Segment[], startAt: number, minutes: number): Segment[] {
+  const first = segments[0];
+  const last = segments.at(-1);
+  if (!first || !last) return [];
+  const span = last.end - first.start;
+  const factor = span > 0 ? (minutes * MIN) / span : 0;
+  return segments.map((s) => ({ ...s, start: startAt + (s.start - first.start) * factor, end: startAt + (s.end - first.start) * factor }));
+}
+
+/** Full game-time schedule for a trip (empty leg + loaded leg). */
+export function buildGameSchedule(input: Omit<ScheduleInput, 'timeScale'> & { timeScale?: number }): Segment[] {
+  const real = buildSchedule({ ...input, timeScale: 1 });
+  const km = (input.empty?.km ?? 0) + input.loaded.km;
+  return compressSchedule(real, input.startAt, gameDurationMinutes(km) / (input.timeScale ?? 1));
+}
+
+/** Delivery window offered on a contract, counted from acceptance (allows a typical empty run). */
+export function contractWindowMinutes(loadedKm: number): number {
+  return Math.round((gameDurationMinutes(loadedKm + 150) * 1.6 + 20) / 5) * 5;
+}

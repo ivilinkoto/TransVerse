@@ -1,4 +1,4 @@
-import { Award, Bell, Building2, CalendarClock, ClipboardList, Gauge, Landmark, Map, Medal, Settings, ShoppingCart, Truck, UserRound, Warehouse, Wrench } from 'lucide-react';
+import { Award, Bell, Building2, LifeBuoy, CalendarClock, ClipboardList, Gauge, Landmark, Map, Medal, Settings, ShoppingCart, Truck, UserRound, Warehouse, Wrench } from 'lucide-react';
 
 export const NAV = [
   { href: '/game', label: 'Обзор', icon: Gauge },
@@ -15,5 +15,9 @@ export const NAV = [
   { href: '/game/seasons', label: 'Сезони', icon: CalendarClock },
   { href: '/game/leaderboards', label: 'Класации', icon: Medal },
   { href: '/game/notifications', label: 'Известия', icon: Bell },
+  { href: '/game/support', label: 'Поддръжка', icon: LifeBuoy },
   { href: '/game/profile', label: 'Профил и настройки', icon: Settings },
 ] as const;
+
+/** Sections that need a founded company (shown with a lock for independent drivers). */
+export const COMPANY_ONLY = new Set(['/game/garage', '/game/market', '/game/staff', '/game/logistics']);

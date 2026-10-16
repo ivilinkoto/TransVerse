@@ -16,15 +16,15 @@ export default async function RegisterPage() {
   const cities = await headquarterOptions(getDb());
   return (
     <AuthShell
-      title="Основи своята компания"
-      subtitle={`Стартов капитал ${money(ECONOMY.startingBalanceCents)}, употребяван ван и опитен шофьор.`}
+      title="Стани шофьор в TransVerse"
+      subtitle={`Започваш като самостоятелен шофьор с нает камион и ${money(ECONOMY.startingBalanceCents)}. Компанията основаваш по-късно.`}
       aside={
         <ul className="max-w-md space-y-3 text-mist-300">
           <li className="font-display text-2xl font-bold text-mist-100">Какво те чака</li>
-          <li>Реални градове и пътни маршрути в 9 държави</li>
-          <li>Общ товарен пазар с други играчи</li>
-          <li>Депа, шофьори, ремаркета, подобрения</li>
-          <li>Сезонни класации без нулиране на компанията</li>
+          <li>Нает камион без разходи за гориво и сервиз — плащаш наем от всеки курс</li>
+          <li>Реални градове и пътни маршрути в 9 държави, курсове от 1 до няколко часа</li>
+          <li>{`Собствена компания от ниво ${ECONOMY.foundingMinLevel} срещу ${money(ECONOMY.foundingFeeCents)}`}</li>
+          <li>Общ пазар, сезонни класации, обучение за първите стъпки</li>
         </ul>
       }
     >

@@ -123,6 +123,12 @@ export const users = pgTable(
     passwordHash: text('password_hash').notNull(),
     xp: integer('xp').notNull().default(0),
     level: integer('level').notNull().default(1),
+    /** player | support | admin | founder */
+    role: text('role').notNull().default('player'),
+    bannedAt: ts('banned_at'),
+    banReason: text('ban_reason'),
+    /** Onboarding progress: completed step keys and whether it was dismissed. */
+    tutorial: jsonb('tutorial').$type<{ done: string[]; dismissed?: boolean; rewarded?: boolean }>().notNull().default({ done: [] }),
     createdAt: createdAt(),
     lastSeenAt: ts('last_seen_at'),
   },
@@ -155,8 +161,16 @@ export const companies = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    name: text('name').notNull(),
+    /**
+     * independent — a self-employed driver with a rented truck (every new player);
+     * company — a founded transport company (name, HQ depot, fleet, staff).
+     */
+    kind: text('kind').notNull().default('company'),
+    /** Set when the company is founded; null for independent drivers. */
+    name: text('name'),
+    /** Company HQ, or the home city of an independent driver. */
     hqCityId: integer('hq_city_id').notNull().references(() => cities.id),
+    foundedAt: ts('founded_at'),
     balanceCents: money('balance_cents').notNull(),
     reputation: real('reputation').notNull().default(0),
     deliveries: integer('deliveries').notNull().default(0),
@@ -193,9 +207,11 @@ export const vehicles = pgTable(
     condition: real('condition').notNull().default(100),
     odometerKm: real('odometer_km').notNull().default(0),
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
+    /** owned | rented — rented vehicles pay a fee per delivery instead of running costs. */
+    ownership: text('ownership').notNull().default('owned'),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
-    /** Sold vehicles stay for delivery history but are no longer part of the fleet. */
+    /** Sold (or returned) vehicles stay for delivery history but are no longer part of the fleet. */
     soldAt: ts('sold_at'),
   },
   (t) => [index('vehicles_company_idx').on(t.companyId)],
@@ -212,6 +228,7 @@ export const trailers = pgTable(
     /** Coupled tractor, if any. A tractor tows at most one trailer. */
     vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
     condition: real('condition').notNull().default(100),
+    ownership: text('ownership').notNull().default('owned'),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
     soldAt: ts('sold_at'),
@@ -228,6 +245,8 @@ export const drivers = pgTable(
     skill: integer('skill').notNull(),
     xp: integer('xp').notNull().default(0),
     salaryCentsPerDay: integer('salary_cents_per_day').notNull(),
+    /** The player themself (no salary, cannot be dismissed). */
+    isOwner: boolean('is_owner').notNull().default(false),
     /** Assigned vehicle. One driver per vehicle. */
     vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
     hiredAt: createdAt(),
@@ -298,6 +317,10 @@ export const deliveries = pgTable(
     late: boolean('late'),
     payoutCents: money('payout_cents'),
     xpAwarded: integer('xp_awarded'),
+    /** Per-delivery fee for rented vehicles (replaces fuel, tolls and maintenance). */
+    rentalFeeCents: money('rental_fee_cents'),
+    /** 1 = real-time schedule (legacy), 2 = compressed game time. */
+    scheduleVersion: integer('schedule_version').notNull().default(1),
   },
   (t) => [
     uniqueIndex('deliveries_contract_idx').on(t.contractId),
@@ -393,3 +416,48 @@ export const jobState = pgTable('job_state', {
   value: jsonb('value').notNull(),
   updatedAt: ts('updated_at').notNull().defaultNow(),
 });
+
+// ── Support and administration ────────────────────────────────────────────
+
+export const supportTickets = pgTable(
+  'support_tickets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    subject: text('subject').notNull(),
+    category: text('category').notNull(), // account | bug | gameplay | payment | other
+    status: text('status').notNull().default('open'), // open | answered | closed
+    assignedTo: uuid('assigned_to').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('support_tickets_user_idx').on(t.userId, t.updatedAt), index('support_tickets_status_idx').on(t.status, t.updatedAt)],
+);
+
+export const supportMessages = pgTable(
+  'support_messages',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    ticketId: uuid('ticket_id').notNull().references(() => supportTickets.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** Written by staff (support/admin/founder) rather than the player. */
+    staff: boolean('staff').notNull(),
+    body: text('body').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('support_messages_ticket_idx').on(t.ticketId, t.id)],
+);
+
+/** Every administrative action, for accountability. */
+export const adminAudit = pgTable(
+  'admin_audit',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    actorId: uuid('actor_id').notNull().references(() => users.id),
+    action: text('action').notNull(),
+    targetUserId: uuid('target_user_id').references(() => users.id, { onDelete: 'set null' }),
+    details: jsonb('details').notNull().default({}),
+    createdAt: createdAt(),
+  },
+  (t) => [index('admin_audit_created_idx').on(t.createdAt)],
+);

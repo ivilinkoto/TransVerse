@@ -1,14 +1,14 @@
 'use client';
 
-import { LogOut, Menu, X } from 'lucide-react';
+import { Lock, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Logo } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
-import { NAV } from './nav';
+import { COMPANY_ONLY, NAV } from './nav';
 
-export function Sidebar({ unread }: { unread: number }) {
+export function Sidebar({ unread, staff, independent }: { unread: number; staff: boolean; independent: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -33,10 +33,16 @@ export function Sidebar({ unread }: { unread: number }) {
           >
             <item.icon className={`h-4 w-4 ${active ? 'text-cyan-glow' : ''}`} />
             <span className="flex-1">{item.label}</span>
+            {independent && COMPANY_ONLY.has(item.href) && <Lock className="h-3.5 w-3.5 text-mist-400" aria-label="Изисква компания" />}
             {item.href === '/game/notifications' && unread > 0 && <span className="num rounded-full bg-amber-sig px-1.5 text-[11px] font-bold text-asphalt-950">{unread}</span>}
           </Link>
         );
       })}
+      {staff && (
+        <Link href="/admin" className="mt-3 flex items-center gap-3 rounded-xl border border-prestige/40 px-3 py-2 text-sm text-prestige hover:bg-prestige/10">
+          <ShieldCheck className="h-4 w-4" /> Админ панел
+        </Link>
+      )}
       <button onClick={logout} className="mt-3 flex items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-mist-400 hover:bg-asphalt-800 hover:text-white">
         <LogOut className="h-4 w-4" /> Изход
       </button>

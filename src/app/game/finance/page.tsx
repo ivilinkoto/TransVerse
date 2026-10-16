@@ -2,22 +2,26 @@ import { Landmark, TrendingDown, TrendingUp } from 'lucide-react';
 import { CashflowChart } from '@/components/game/CashflowChart';
 import { Card, PageHeader, Stat, Table } from '@/components/ui';
 import { dateTime, money, moneyPrecise } from '@/lib/format';
+import { TutorialVisit } from '@/components/game/TutorialVisit';
 import { gameContext } from '@/server/game/context';
+import { tutorialPending } from '@/server/game/tutorial-flags';
 import { LEDGER_LABELS, type LedgerCategory } from '@/server/game/finance';
 import { financeSummary, ledgerPage } from '@/server/game/queries';
 
 export const metadata = { title: 'Финанси' };
 
 export default async function FinancePage() {
-  const { db, company } = await gameContext();
+  const { db, user, company } = await gameContext();
   const [summary, entries] = await Promise.all([financeSummary(db, company.id, 30), ledgerPage(db, company.id, 120)]);
   const income = summary.byCategory.filter((c) => c.total > 0 && c.category !== 'starting_capital').reduce((s, c) => s + c.total, 0);
   const expense = -summary.byCategory.filter((c) => c.total < 0).reduce((s, c) => s + c.total, 0);
   const sorted = [...summary.byCategory].filter((c) => c.category !== 'starting_capital').sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
   const maxAbs = Math.max(1, ...sorted.map((c) => Math.abs(c.total)));
 
+  const visitPending = await tutorialPending(db, user.id, 'finances');
   return (
     <div className="space-y-6">
+      <TutorialVisit step="finances" pending={visitPending} />
       <PageHeader title="Финанси" subtitle="Счетоводна книга: всяко движение на пари е запис с баланс след него. Всички суми се изчисляват от сървъра." />
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat label="Наличност" value={money(company.balanceCents)} tone={company.balanceCents < 0 ? 'loss' : 'gold'} icon={Landmark} />

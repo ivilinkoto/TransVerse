@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import { companyNameSchema } from '@/server/auth/accounts';
+import { foundCompany, rentVehicle, returnRental } from '@/server/game/company';
+import { createTicket, replySchema, replyToTicket, setTicketStatus, ticketSchema } from '@/server/game/support';
+import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutorial';
 import { getDb } from '@/server/db/client';
 import { acceptContract } from '@/server/game/deliveries';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle } from '@/server/game/fleet';
@@ -25,6 +29,14 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyDepot'), cityId }),
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('markNotificationsRead') }),
+  z.object({ type: z.literal('foundCompany'), name: companyNameSchema, hqCityId: cityId }),
+  z.object({ type: z.literal('rentVehicle'), offerId: z.string().max(40), cityId }),
+  z.object({ type: z.literal('returnRental'), vehicleId: id }),
+  z.object({ type: z.literal('tutorialStep'), step: z.string().max(40) }),
+  z.object({ type: z.literal('tutorialDismiss'), dismissed: z.boolean() }),
+  z.object({ type: z.literal('createTicket'), ticket: ticketSchema }),
+  z.object({ type: z.literal('replyTicket'), ticketId: id, body: replySchema }),
+  z.object({ type: z.literal('closeTicket'), ticketId: id }),
 ]);
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -64,6 +76,28 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, costCents: await expandDepot(db, user.id, input.depotId) };
     case 'markNotificationsRead':
       await markNotificationsRead(db, user.id);
+      return { ok: true };
+    case 'foundCompany':
+      await foundCompany(db, user.id, { name: input.name, hqCityId: input.hqCityId });
+      return { ok: true };
+    case 'rentVehicle':
+      return { ok: true, id: (await rentVehicle(db, user.id, input.offerId, input.cityId)).id };
+    case 'returnRental':
+      await returnRental(db, user.id, input.vehicleId);
+      return { ok: true };
+    case 'tutorialStep':
+      await completeTutorialStep(db, user.id, input.step);
+      return { ok: true };
+    case 'tutorialDismiss':
+      await setTutorialDismissed(db, user.id, input.dismissed);
+      return { ok: true };
+    case 'createTicket':
+      return { ok: true, id: (await createTicket(db, user, input.ticket)).id };
+    case 'replyTicket':
+      await replyToTicket(db, user, input.ticketId, input.body);
+      return { ok: true };
+    case 'closeTicket':
+      await setTicketStatus(db, user, input.ticketId, 'closed');
       return { ok: true };
   }
 });

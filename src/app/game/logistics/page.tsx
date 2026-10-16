@@ -6,6 +6,7 @@ import { SelectAction } from '@/components/ui/SelectAction';
 import { int, money } from '@/lib/format';
 import { ECONOMY } from '@/lib/game/economy';
 import { cities, cityMarkets, depots, ports, vehicles } from '@/server/db/schema';
+import { CompanyRequired } from '@/components/game/CompanyRequired';
 import { gameContext } from '@/server/game/context';
 import { depotSlotCostCents } from '@/server/game/fleet';
 
@@ -13,6 +14,7 @@ export const metadata = { title: 'Логистика' };
 
 export default async function LogisticsPage() {
   const { db, company } = await gameContext();
+  if (company.kind !== 'company') return <CompanyRequired what="Логистичната мрежа" />;
   const myDepots = await db
     .select({ id: depots.id, slots: depots.slots, cityId: depots.cityId, name: cities.nameBg, country: cities.countryCode, createdAt: depots.createdAt })
     .from(depots)

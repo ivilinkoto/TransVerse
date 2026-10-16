@@ -8,7 +8,6 @@ async function register(page: Page) {
   await page.fill('#username', `e2e_${tag}`.slice(0, 20));
   await page.fill('#email', `e2e${tag}@example.com`);
   await page.fill('#password', 'e2e password long');
-  await page.fill('#companyName', `E2E ${tag}`);
   await page.click('button[type=submit]');
   await page.waitForURL('**/game');
   await expect(page.getByRole('heading', { name: 'Обзор' })).toBeVisible();
@@ -52,27 +51,42 @@ test.describe('access control', () => {
 });
 
 test.describe('core loop', () => {
-  test('register, accept a contract and see the truck on its way', async ({ page }) => {
+  test('register as an independent driver, follow the tutorial and send the rented truck', async ({ page }) => {
     await register(page);
-    await expect(page.getByText('60 000 €').first()).toBeVisible();
+    await expect(page.getByText('1500 €').or(page.getByText('1 500 €')).first()).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Обучение' })).toContainText('стъпка 1 от 6');
+    await page.getByRole('button', { name: 'Да започваме' }).click();
+    await expect(page.getByRole('region', { name: 'Обучение' })).toContainText('Приеми първата си поръчка');
     await page.goto('/game/contracts');
     await page.getByLabel('Само изпълними с моя автопарк').check();
     await page.locator('li.panel button[aria-expanded]').first().click();
     await page.getByRole('button', { name: 'Приеми и изпрати' }).click();
     await page.waitForURL('**/game/fleet');
     await expect(page.getByText('На курс')).toBeVisible();
+    await expect(page.getByText('Нает').first()).toBeVisible();
     await expect(page.getByText(/остават/)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Обучение' })).toContainText('Проследи камиона на картата');
   });
 
-  test('buying a vehicle updates the balance', async ({ page }) => {
+  test('company features are locked until a company is founded', async ({ page }) => {
     await register(page);
     await page.goto('/game/market');
-    const van = page.locator('section').filter({ hasText: 'Sokol Courier 3.5' }).first();
-    await van.getByRole('button', { name: 'Купи' }).first().click();
-    await expect(page.getByRole('status').first()).toContainText('Купено');
-    await expect(page.getByText('28 000 €').first()).toBeVisible(); // 60 000 − 34 000 + 2 000 achievement
-    await page.goto('/game/finance');
-    await expect(page.getByText('Покупка на техника').first()).toBeVisible();
+    await expect(page.getByText('изисква транспортна компания')).toBeVisible();
+    await page.getByRole('link', { name: 'Към основаването на компания' }).click();
+    await expect(page.getByText('Изисквания за основаване')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Основи компания/ })).toBeDisabled();
+  });
+
+  test('players can contact support; the admin panel is staff-only', async ({ page }) => {
+    await register(page);
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/game$/);
+    await page.goto('/game/support');
+    await page.fill('#subject', 'Въпрос за наема');
+    await page.fill('#body', 'Колко точно се удържа за наем при всеки курс?');
+    await page.getByRole('button', { name: 'Изпрати запитване' }).click();
+    await page.waitForURL(/\/game\/support\/[0-9a-f-]{36}/);
+    await expect(page.getByText('Колко точно се удържа')).toBeVisible();
   });
 
   test('the world map renders real cities', async ({ page }) => {

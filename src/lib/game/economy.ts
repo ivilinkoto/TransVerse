@@ -7,7 +7,18 @@ import { UPGRADES, type PowerUnitModel, type TrailerModel, type UpgradeId } from
  * re-computes them when it settles anything.
  */
 export const ECONOMY = {
-  startingBalanceCents: 60_000_00,
+  /** New players start as independent drivers with a rented truck and a little cash. */
+  startingBalanceCents: 1_500_00,
+  /** Rental: share of the freight reward plus a per-km charge (incl. empty km). */
+  rentalShare: 0.45,
+  rentalCentsPerKm: 10,
+  /** Founding a transport company. */
+  foundingFeeCents: 5_000_00,
+  foundingMinLevel: 2,
+  foundingMinDeliveries: 3,
+  /** One-off bonus for finishing the onboarding tutorial. */
+  tutorialRewardCents: 1_000_00,
+  tutorialRewardXp: 200,
   handlingFeeCents: 80_00,
   fuelPriceCentsPerLitre: 155,
   /** Game estimate of heavy-vehicle tolls on tolled routes. */
@@ -110,4 +121,9 @@ export function resaleValueCents(priceCents: number, condition: number, ageDays:
 
 export function clampDemand(value: number): number {
   return Math.min(ECONOMY.demandCeiling, Math.max(ECONOMY.demandFloor, value));
+}
+
+/** Per-delivery fee for a rented vehicle — replaces fuel, tolls, maintenance and wear. */
+export function rentalFeeCents(rewardCents: number, totalKm: number): number {
+  return Math.round(rewardCents * ECONOMY.rentalShare + totalKm * ECONOMY.rentalCentsPerKm);
 }
