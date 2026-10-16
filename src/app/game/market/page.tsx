@@ -34,7 +34,7 @@ export default async function MarketPage() {
       <PageHeader title="Пазар на техника" subtitle={`Нови превозни средства и ремаркета. Капацитет на депата: ${used} / ${totalSlots} превозни средства. Ремаркетата не заемат място.`} />
       <section>
         <h2 className="mb-1 font-display text-lg font-bold">Под наем</h2>
-        <p className="mb-3 text-sm text-mist-400">Без първоначална вноска: от всяка доставка се удържат {Math.round(ECONOMY.rentalShare * 100)}% от навлото + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Горивото, таксите и сервизът са за сметка на наемодателя. Нужен е шофьор и свободно място в депо.</p>
+        <p className="mb-3 text-sm text-mist-400">Без първоначална вноска: от всяка доставка се удържат {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Горивото, таксите и сервизът са за сметка на наемодателя. Нужен е шофьор и свободно място в депо.</p>
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
           {RENTAL_OFFERS.map((o) => {
             const unit = POWER_UNITS.find((m) => m.id === o.unitId)!;

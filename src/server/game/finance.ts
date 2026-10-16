@@ -26,7 +26,7 @@ export type LedgerCategory =
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
-  freight: 'Навло',
+  freight: 'Възнаграждения за курсове',
   bonus: 'Бонус за точност',
   penalty: 'Неустойка',
   fuel: 'Гориво',
