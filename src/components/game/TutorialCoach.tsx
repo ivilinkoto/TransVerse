@@ -34,7 +34,7 @@ export function TutorialCoach({ step, index, total }: { step: TutorialStep; inde
           <p className="mt-1 font-semibold">{step.title}</p>
           <p className="max-w-3xl text-sm text-mist-300">{step.body}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 pl-8 sm:w-auto sm:pl-0">
           {step.completion === 'ack' ? (
             <button className="btn-primary py-2" disabled={busy} onClick={() => send({ type: 'tutorialStep', step: step.key })}>{step.cta}</button>
           ) : (
