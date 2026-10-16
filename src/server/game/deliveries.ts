@@ -5,7 +5,7 @@ import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib
 import { deliveryXp, reputationAfter, seasonPoints } from '@/lib/game/progression';
 import { buildGameSchedule, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -14,6 +14,8 @@ import { broadcast, logActivity, notify } from './notify';
 import { awardXp, checkAchievements } from './progression';
 import { heldLicences, licenceNames, missingFor } from './licences';
 import { addCompanyXp, bonusesForUser } from './membership';
+import { recordMissionProgress } from './missions';
+import { contractCountries } from '@/lib/game/licences';
 import { addSeasonScore } from './seasons';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
@@ -264,6 +266,24 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .where(and(eq(cityMarkets.cityId, contract.destCityId), eq(cityMarkets.cargoType, contract.cargoType)));
 
   await awardXp(tx, company!.ownerId, xp);
+  // Missions: what this delivery contributes (route countries plus both ends).
+  const [origin] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract.originCityId));
+  const [route] = await tx.select({ countries: routes.countries }).from(routes).where(eq(routes.id, d.routeId));
+  await recordMissionProgress(
+    tx,
+    company!.ownerId,
+    {
+      loadedKm: d.loadedKm,
+      tons: contract.weightTons,
+      onTime,
+      rewardCents: result.rewardCents,
+      cargoType: contract.cargoType,
+      countries: contractCountries(origin!.country, dest!.countryCode, route?.countries),
+      urgent: contract.urgent,
+      inCompany: !!perks,
+    },
+    now,
+  );
   await addSeasonScore(tx, d.companyId, seasonPoints(d.loadedKm, contract.weightTons, onTime), result.rewardCents, now);
   await notify(
     tx,

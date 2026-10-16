@@ -43,6 +43,13 @@
       "when": 1792171973340,
       "tag": "0005_whole_natasha_romanoff",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792172644200,
+      "tag": "0006_complete_thor_girl",
+      "breakpoints": true
     }
   ]
 }

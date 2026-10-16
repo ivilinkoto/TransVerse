@@ -73,6 +73,10 @@ test.describe('core loop', () => {
     await page.goto('/game/market');
     await expect(page.getByRole('heading', { name: 'Пазар на техника' })).toBeVisible();
     await expect(page.getByText('Първо открий депо')).toBeVisible();
+    await page.goto('/game/missions');
+    await expect(page.getByRole('heading', { name: 'Мисии', exact: true })).toBeVisible();
+    await expect(page.getByText('Дневни мисии')).toBeVisible();
+    await expect(page.getByText('Сезонни мисии')).toBeVisible();
     await page.goto('/game/licences');
     await expect(page.getByRole('heading', { name: 'Международен лиценз' })).toBeVisible();
     await page.goto('/game/staff');

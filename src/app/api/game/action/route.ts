@@ -10,6 +10,7 @@ import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver } from '@/server/game/staff';
 import { handler } from '@/server/http';
 import { buyLicence } from '@/server/game/licences';
+import { claimMission } from '@/server/game/missions';
 import {
   buyCompanyUpgrade,
   createRank,
@@ -76,6 +77,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean() }),
   z.object({ type: z.literal('dissolveCompany') }),
   z.object({ type: z.literal('buyLicence'), licence: z.string().max(30) }),
+  z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
 ]);
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -178,6 +180,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'transferOwnership':
       await transferOwnership(db, user.id, input.userId, input.leave);
       return { ok: true };
+    case 'claimMission':
+      return { ok: true, reward: await claimMission(db, user.id, input.periodKey, input.missionId) };
     case 'buyLicence':
       return { ok: true, licence: await buyLicence(db, user.id, input.licence) };
     case 'dissolveCompany':
