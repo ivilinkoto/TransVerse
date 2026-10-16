@@ -8,6 +8,7 @@ import { gameContext } from '@/server/game/context';
 import { tutorialPending } from '@/server/game/tutorial-flags';
 import { fleetView, routeGeometries } from '@/server/game/queries';
 import { MapClient } from './MapClient';
+import { isVip } from '@/lib/game/vip';
 
 export const metadata = { title: 'Карта на света' };
 
@@ -60,7 +61,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
         title="Карта на света"
         subtitle={preview ? `Преглед на маршрут — ${preview.title}${preview.approximate ? ' (приблизителна линия, пътният маршрут не е наличен)' : ' (реален пътен маршрут за камион)'}` : 'Реални държави, градове и пътни маршрути. Твоите камиони и тези на всички играчи се движат по разписанията си в реално време.'}
       />
-      <MapClient styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} vehicles={vehicles} depots={depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] }))} preview={preview} />
+      <MapClient ownVip={isVip(user.vipUntil, (await gameContext()).now)} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} vehicles={vehicles} depots={depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] }))} preview={preview} />
     </div>
   );
 }

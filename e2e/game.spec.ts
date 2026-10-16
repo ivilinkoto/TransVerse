@@ -77,6 +77,10 @@ test.describe('core loop', () => {
     await expect(page.getByRole('heading', { name: 'Мисии', exact: true })).toBeVisible();
     await expect(page.getByText('Дневни мисии')).toBeVisible();
     await expect(page.getByText('Сезонни мисии')).toBeVisible();
+    await page.goto('/game/shop');
+    await expect(page.getByRole('heading', { name: 'Магазин', exact: true })).toBeVisible();
+    await expect(page.getByText('VIP · 30 дни', { exact: true })).toBeVisible();
+    await expect(page.getByText('Купи ТрансКоин')).toBeVisible();
     await page.goto('/game/licences');
     await expect(page.getByRole('heading', { name: 'Международен лиценз' })).toBeVisible();
     await page.goto('/game/staff');

@@ -9,6 +9,7 @@
 | Акаунти | `users`, `sessions` (SHA-256 на токена), `rate_limits` |
 | Компании и активи | `companies`, `depots`, `vehicles`, `trailers`, `drivers`, `driver_candidates` |
 | Компании на играчите | `organizations` (име, профил, ниво, подобрения, собственик и **каса**), `treasury_entries` (регистър на касата, уникален `idempotency_key`) |
+| ТрансКоин | `coin_entries` (регистър на премиум валутата; баланс в `users.coins`) |
 | Мисии | `mission_progress` (играч + период + мисия: цел, прогрес, награда, изпълнена/взета) |
 | Лицензи | `user_licences` (играч + лиценз, цена, източник purchase/legacy/admin) |
 | Членство в компании | `company_ranks` (длъжности, права, старшинство), `company_members` (един играч — една компания), `company_applications`, `company_assets` (лого/банер като bytea, проверени по съдържание) |
@@ -25,3 +26,4 @@
 Миграция `0004`: `user_licences`, `users.vip_until`, `contracts.urgent / speed_factor / created_by` и еднократно даване на лицензи на съществуващите играчи.
 Миграция `0005`: уникалният индекс на доставките става (поръчка, играч), за да може спешна поръчка да се поема от много играчи.
 Миграция `0006`: `mission_progress`.
+Миграция `0007`: `coin_entries`, `users.coins / xp_boost_until / vip_reroll_key`, `contracts.reserved_by_company_id / reserved_until`.

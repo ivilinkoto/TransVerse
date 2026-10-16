@@ -1,9 +1,10 @@
-import { Star, Wallet } from 'lucide-react';
+import { Coins, Star, Wallet } from 'lucide-react';
+import Link from 'next/link';
 import { levelProgress } from '@/lib/game/progression';
 import { money } from '@/lib/format';
 import { PlayerName } from './PlayerName';
 
-export function TopBar({ title, kind, company, user, vip, hqName }: { title: string; kind: string; company: { balanceCents: number; reputation: number }; user: { username: string; xp: number; role: string }; vip: boolean; hqName: string }) {
+export function TopBar({ title, kind, company, user, vip, hqName }: { title: string; kind: string; company: { balanceCents: number; reputation: number }; user: { username: string; xp: number; role: string; coins: number }; vip: boolean; hqName: string }) {
   const lp = levelProgress(user.xp);
   return (
     <header className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-asphalt-800 bg-asphalt-950/80 px-4 py-3 backdrop-blur sm:px-6">
@@ -15,6 +16,10 @@ export function TopBar({ title, kind, company, user, vip, hqName }: { title: str
         <Wallet className="h-4 w-4 text-gold-400" />
         <span className={`num font-display text-lg font-bold ${company.balanceCents < 0 ? 'text-loss' : 'text-gold-400'}`}>{money(company.balanceCents)}</span>
       </div>
+      <Link href="/game/shop" className="flex items-center gap-1.5 rounded-full border border-cyan-glow/30 bg-cyan-glow/10 px-2.5 py-1 hover:bg-cyan-glow/20" title="ТрансКоин — магазин">
+        <Coins className="h-4 w-4 text-cyan-glow" />
+        <span className="num font-display text-sm font-bold text-cyan-glow">{user.coins.toLocaleString('bg-BG')} TC</span>
+      </Link>
       <div className="w-40" title={`Опит ${lp.current} / ${lp.next}`}>
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold">Ниво {lp.level}</span>

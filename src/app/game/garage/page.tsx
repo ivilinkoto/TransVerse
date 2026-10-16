@@ -6,13 +6,16 @@ import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/
 import { money } from '@/lib/format';
 import { UPGRADES, canCouple } from '@/lib/game/catalog';
 import { repairCostCents } from '@/lib/game/economy';
+import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
 
 export const metadata = { title: 'Гараж' };
 
 export default async function GaragePage() {
-  const { db, company } = await gameContext();
+  const { db, user, company, now } = await gameContext();
+  // VIP: discount on repairs and upgrades.
+  const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
   const fleet = await fleetView(db, company.id);
 
   return (
@@ -22,7 +25,7 @@ export default async function GaragePage() {
       <div className="space-y-4">
         {fleet.vehicles.map((v) => {
           const busy = !!v.delivery;
-          const repair = repairCostCents(v.model.priceCents, v.condition) + (v.trailer ? repairCostCents(v.trailer.model.priceCents, v.trailer.condition) : 0);
+          const repair = Math.round((repairCostCents(v.model.priceCents, v.condition) + (v.trailer ? repairCostCents(v.trailer.model.priceCents, v.trailer.condition) : 0)) * discount);
           const trailerOptions = fleet.trailers.filter((t) => t.cityId === v.cityId && canCouple(v.model, t.model));
           return (
             <Card key={v.id}>
@@ -89,8 +92,8 @@ export default async function GaragePage() {
                               <div className="text-xs text-mist-400">{u.description}</div>
                               <div className="mt-2">
                                 {has ? <Badge tone="violet">монтирано</Badge> : (
-                                  <ActionButton action={{ type: 'installUpgrade', vehicleId: v.id, upgradeId: u.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={busy || company.balanceCents < u.priceCents}>
-                                    Монтирай · {money(u.priceCents)}
+                                  <ActionButton action={{ type: 'installUpgrade', vehicleId: v.id, upgradeId: u.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={busy || company.balanceCents < Math.round(u.priceCents * discount)}>
+                                    Монтирай · {money(Math.round(u.priceCents * discount))}
                                   </ActionButton>
                                 )}
                               </div>

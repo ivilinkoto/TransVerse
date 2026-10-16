@@ -133,8 +133,14 @@ export const users = pgTable(
     tutorial: jsonb('tutorial').$type<{ done: string[]; dismissed?: boolean; rewarded?: boolean }>().notNull().default({ done: [] }),
     createdAt: createdAt(),
     lastSeenAt: ts('last_seen_at'),
-    /** VIP status granted by an administrator; active while in the future. */
+    /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
+    /** ТрансКоин — premium currency balance (whole coins). Changes only through coin_entries. */
+    coins: integer('coins').notNull().default(0),
+    /** Double delivery XP while in the future (shop booster). */
+    xpBoostUntil: ts('xp_boost_until'),
+    /** Daily mission period of the last free VIP mission swap. */
+    vipRerollKey: text('vip_reroll_key'),
   },
   (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`)],
 );
@@ -295,6 +301,9 @@ export const contracts = pgTable(
     acceptedAt: ts('accepted_at'),
     /** Urgent shipment created by an administrator: shown first and driven faster. */
     urgent: boolean('urgent').notNull().default(false),
+    /** VIP reservation: only this player may take the contract until reservedUntil. */
+    reservedByCompanyId: uuid('reserved_by_company_id').references(() => companies.id, { onDelete: 'set null' }),
+    reservedUntil: ts('reserved_until'),
     /** How much faster than normal game time the trip runs (urgent shipments). */
     speedFactor: real('speed_factor').notNull().default(1),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
@@ -486,6 +495,26 @@ export const userLicences = pgTable(
     acquiredAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.licence] })],
+);
+
+// ── ТрансКоин (premium currency) ───────────────────────────────────────────
+
+/** Every movement of ТрансКоин, written exactly once (idempotency key). */
+export const coinEntries = pgTable(
+  'coin_entries',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amount: integer('amount').notNull(),
+    balanceAfter: integer('balance_after').notNull(),
+    /** admin_grant | admin_remove | purchase | shop | gift_received | refund */
+    reason: text('reason').notNull(),
+    description: text('description').notNull(),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    idempotencyKey: text('idempotency_key').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('coin_entries_idempotency_idx').on(t.idempotencyKey), index('coin_entries_user_idx').on(t.userId, t.createdAt)],
 );
 
 // ── Missions ───────────────────────────────────────────────────────────────

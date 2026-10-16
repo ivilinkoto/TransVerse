@@ -1,8 +1,9 @@
-import { CalendarClock, CheckCircle2, Coins, Gift, Star, Target } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Coins, Gift, Shuffle, Star, Target } from 'lucide-react';
+import { isVip } from '@/lib/game/vip';
 import { Badge, Card, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { dateTime, duration, int, money } from '@/lib/format';
-import { MISSION_PERIODS, PERIOD_LABELS, missionById, type MissionPeriod } from '@/lib/game/missions';
+import { MISSION_PERIODS, MISSION_REROLL_COINS, PERIOD_LABELS, missionById, type MissionPeriod } from '@/lib/game/missions';
 import { gameContext } from '@/server/game/context';
 import { missionBoard } from '@/server/game/missions';
 
@@ -22,7 +23,7 @@ function format(row: Row, value: number) {
   return def?.metric === 'earned_cents' ? money(value) : int(Math.floor(value));
 }
 
-function MissionCard({ row }: { row: Row }) {
+function MissionCard({ row, reroll }: { row: Row; reroll?: { label: string; disabled: boolean } }) {
   const def = missionById(row.missionId);
   const share = row.target ? (row.progress / row.target) * 100 : 0;
   return (
@@ -53,6 +54,13 @@ function MissionCard({ row }: { row: Row }) {
         </div>
       )}
       {row.claimedAt && <p className="mt-3 text-xs text-profit">Наградата е взета · {dateTime(row.claimedAt)}</p>}
+      {reroll && !row.completedAt && (
+        <div className="mt-3">
+          <ActionButton action={{ type: 'rerollMission', periodKey: row.periodKey, missionId: row.missionId }} className="btn-ghost px-3 py-1.5 text-xs" disabled={reroll.disabled} confirm="Да сменим ли тази мисия с друга?">
+            <Shuffle className="h-3.5 w-3.5" />{reroll.label}
+          </ActionButton>
+        </div>
+      )}
     </li>
   );
 }
@@ -63,9 +71,14 @@ export default async function MissionsPage() {
   const done = current.filter((r) => r.completedAt).length;
   const waiting = [...current, ...unclaimed].filter((r) => r.completedAt && !r.claimedAt);
   const waitingCents = waiting.reduce((s, r) => s + r.rewardCents, 0);
+  // Mission swap: one free per day for VIP, otherwise ТрансКоин.
+  const vip = isVip(user.vipUntil, now);
+  const dailyKey = windows.find((w) => w.period === 'daily')!.key;
+  const freeSwap = vip && user.vipRerollKey !== dailyKey;
+  const reroll = { label: freeSwap ? 'Смени · безплатно (VIP)' : `Смени · ${MISSION_REROLL_COINS} TC`, disabled: !freeSwap && user.coins < MISSION_REROLL_COINS };
   return (
     <div className="space-y-6">
-      <PageHeader title="Мисии" subtitle="Цели за деня, седмицата, месеца и сезона. Прогресът се отчита автоматично при всяка доставка; наградата се взима с бутон. Мисиите се подбират според нивото и лицензите ти." />
+      <PageHeader title="Мисии" subtitle="Цели за деня, седмицата, месеца и сезона. Прогресът се отчита автоматично при всяка доставка; наградата се взима с бутон (VIP — автоматично). Мисиите се подбират според нивото и лицензите ти; VIP получава +1 дневна и +1 седмична мисия." />
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="panel flex items-center gap-3 p-4"><Target className="h-5 w-5 text-cyan-glow" /><div><div className="label">Изпълнени сега</div><div className="num font-display text-xl font-bold">{done} / {current.length}</div></div></div>
         <div className="panel flex items-center gap-3 p-4"><Coins className="h-5 w-5 text-gold-400" /><div><div className="label">Чакащи награди</div><div className="num font-display text-xl font-bold text-gold-400">{money(waitingCents)}</div></div></div>
@@ -88,7 +101,7 @@ export default async function MissionsPage() {
               actions={<Badge tone="cyan">остават {duration(left)}</Badge>}
             >
               <p className="mb-3 text-xs text-mist-400">{PERIOD_HINT[period]}</p>
-              {rows.length ? <ul className="space-y-3">{rows.map((r) => <MissionCard key={r.missionId} row={r} />)}</ul> : <p className="text-sm text-mist-400">Няма мисии за този период.</p>}
+              {rows.length ? <ul className="space-y-3">{rows.map((r) => <MissionCard key={r.missionId} row={r} reroll={reroll} />)}</ul> : <p className="text-sm text-mist-400">Няма мисии за този период.</p>}
             </Card>
           );
         })}

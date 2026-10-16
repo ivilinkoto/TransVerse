@@ -3,6 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { BuyButton } from '@/components/game/BuyButton';
 import { LICENCES, type LicenceId } from '@/lib/game/licences';
 import { heldLicences } from '@/server/game/licences';
+import { fleetCapacity } from '@/server/game/fleet';
 import { RENTAL_OFFERS } from '@/lib/game/catalog';
 import { ECONOMY } from '@/lib/game/economy';
 import { Badge, Card, PageHeader } from '@/components/ui';
@@ -35,8 +36,7 @@ export default async function MarketPage() {
     .from(depots)
     .innerJoin(cities, eq(cities.id, depots.cityId))
     .where(eq(depots.companyId, company.id));
-  const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, company.id), isNull(vehicles.soldAt)));
-  const totalSlots = depotRows.reduce((s, d) => s + d.slots, 0);
+  const { used, slots: totalSlots } = await fleetCapacity(db, company.id);
   const freeSlots = totalSlots - used;
   const depotOptions = depotRows.map((d) => ({ cityId: d.cityId, name: d.name, free: freeSlots }));
 

@@ -2,7 +2,8 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { POWER_UNITS, TRAILERS, UPGRADES, canCouple, powerUnitModel, trailerModel, type UpgradeId } from '@/lib/game/catalog';
 import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cityMarkets, depots, drivers, trailers, users, vehicles } from '@/server/db/schema';
+import { cityMarkets, companies, depots, drivers, trailers, users, vehicles } from '@/server/db/schema';
+import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
@@ -16,10 +17,21 @@ async function level(db: DbOrTx, userId: string) {
   return u?.level ?? 1;
 }
 
+/** Whether the owner of a player account is VIP right now. */
+export async function ownerIsVip(db: DbOrTx, companyId: string, now = new Date()): Promise<boolean> {
+  const [row] = await db.select({ vipUntil: users.vipUntil }).from(companies).innerJoin(users, eq(users.id, companies.ownerId)).where(eq(companies.id, companyId));
+  return isVip(row?.vipUntil, now);
+}
+
 async function fleetCapacity(db: DbOrTx, companyId: string) {
-  const [{ slots = 0 } = {}] = await db.select({ slots: sql<number>`coalesce(sum(${depots.slots}), 0)::int` }).from(depots).where(eq(depots.companyId, companyId));
+  const [{ slots = 0, depots: n = 0 } = {}] = await db
+    .select({ slots: sql<number>`coalesce(sum(${depots.slots}), 0)::int`, depots: sql<number>`count(*)::int` })
+    .from(depots)
+    .where(eq(depots.companyId, companyId));
   const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt)));
-  return { slots, used };
+  // VIP: one extra place in every depot.
+  const extra = (await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0;
+  return { slots: slots + extra, used, extra };
 }
 
 async function depotInCity(db: DbOrTx, companyId: string, cityId: number) {
@@ -114,8 +126,9 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
     if (v.ownership === 'rented') fail('rented', 'Поддръжката на наетите превозни средства е за сметка на наемодателя.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Ремонт е възможен само между курсовете.');
     const [trailer] = await tx.select().from(trailers).where(eq(trailers.vehicleId, v.id));
-    const cost = repairCostCents(powerUnitModel(v.modelId).priceCents, v.condition) + (trailer ? repairCostCents(trailerModel(trailer.modelId).priceCents, trailer.condition) : 0);
-    if (cost <= 0) fail('nothing_to_repair', 'Няма нужда от ремонт.');
+    const full = repairCostCents(powerUnitModel(v.modelId).priceCents, v.condition) + (trailer ? repairCostCents(trailerModel(trailer.modelId).priceCents, trailer.condition) : 0);
+    if (full <= 0) fail('nothing_to_repair', 'Няма нужда от ремонт.');
+    const cost = Math.round(full * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
     await post(tx, company.id, [{ category: 'repairs', amountCents: -cost, description: `Ремонт ${v.plate}`, idempotencyKey: `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}` }], { requireFunds: true });
     await tx.update(vehicles).set({ condition: 100 }).where(eq(vehicles.id, v.id));
     if (trailer) await tx.update(trailers).set({ condition: 100 }).where(eq(trailers.id, trailer.id));
@@ -133,7 +146,8 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
     if (v.status !== 'idle') fail('vehicle_busy', 'Подобрения се монтират само между курсовете.');
     if (!upgrade!.appliesTo.includes(powerUnitModel(v.modelId).kind)) fail('not_applicable', 'Подобрението не е приложимо за този тип превозно средство.');
     if (v.upgrades.includes(upgrade!.id)) fail('already_installed', 'Вече е монтирано.');
-    await post(tx, company.id, [{ category: 'upgrades', amountCents: -upgrade!.priceCents, description: `${upgrade!.label} — ${v.plate}`, idempotencyKey: `upgrade:${v.id}:${upgrade!.id}` }], { requireFunds: true });
+    const price = Math.round(upgrade!.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
+    await post(tx, company.id, [{ category: 'upgrades', amountCents: -price, description: `${upgrade!.label} — ${v.plate}`, idempotencyKey: `upgrade:${v.id}:${upgrade!.id}` }], { requireFunds: true });
     await tx.update(vehicles).set({ upgrades: [...v.upgrades, upgrade!.id] }).where(eq(vehicles.id, v.id));
   });
 }

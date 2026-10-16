@@ -125,21 +125,23 @@ describe('urgent shipments', () => {
     const [note] = await db().select().from(notifications).where(and(eq(notifications.userId, admin.id), sql`${notifications.title} like 'Спешна доставка%'`));
     expect(note).toBeDefined();
 
+    // Non-VIP players may take it once the 5-minute VIP head start is over.
+    const open = new Date(urgent.createdAt.getTime() + 6 * 60_000);
     const truck = await truckOf((await accountOf(player.userId)).id);
-    const d = await acceptContract(db(), player.userId, urgent.id, truck.id);
+    const d = await acceptContract(db(), player.userId, urgent.id, truck.id, open);
     const minutes = (d.etaAt.getTime() - d.startedAt.getTime()) / 60_000;
     expect(minutes).toBeCloseTo(gameDurationMinutes(d.loadedKm) / 2, 0);
     expect((d.deadlineAt.getTime() - d.startedAt.getTime()) / 60_000).toBe(60);
     // The same player cannot take it twice; it stays open for everyone else.
     const [second] = await db().insert(vehicles).values({ companyId: truck.companyId, modelId: 'hemus-r12-box', plate: 'TEST-2', color: '#fff', cityId: truck.cityId, purchasePriceCents: 0 }).returning();
     await db().update(drivers).set({ vehicleId: second!.id }).where(eq(drivers.vehicleId, truck.id));
-    expect(await code(acceptContract(db(), player.userId, urgent.id, second!.id))).toBe('already_taken');
+    expect(await code(acceptContract(db(), player.userId, urgent.id, second!.id, open))).toBe('already_taken');
     expect((await db().select().from(contracts).where(eq(contracts.id, urgent.id)))[0]!.status).toBe('open');
 
     // A truck in another city reaches the pickup in one minute, then drives the cargo.
     const far = await newPlayer('Varna');
     const farTruck = await truckOf((await accountOf(far.userId)).id);
-    const d2 = await acceptContract(db(), far.userId, urgent.id, farTruck.id);
+    const d2 = await acceptContract(db(), far.userId, urgent.id, farTruck.id, open);
     const segments = d2.schedule as { leg: string; start: number; end: number }[];
     const empty = segments.filter((x) => x.leg === 'empty');
     expect(d2.emptyKm).toBeGreaterThan(300);
@@ -150,8 +152,8 @@ describe('urgent shipments', () => {
     expect(d2.rentalFeeCents).toBe(rentalFeeCents(3000_00, d2.loadedKm));
 
     // After it leaves the board nobody else can take it.
-    await db().update(contracts).set({ expiresAt: new Date(Date.now() - 1000) }).where(eq(contracts.id, urgent.id));
+    await db().update(contracts).set({ expiresAt: new Date(open.getTime() - 1000) }).where(eq(contracts.id, urgent.id));
     const late = await newPlayer('Sofia');
-    expect(await code(acceptContract(db(), late.userId, urgent.id, (await truckOf((await accountOf(late.userId)).id)).id))).toBe('contract_unavailable');
+    expect(await code(acceptContract(db(), late.userId, urgent.id, (await truckOf((await accountOf(late.userId)).id)).id, open))).toBe('contract_unavailable');
   });
 });

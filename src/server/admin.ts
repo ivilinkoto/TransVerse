@@ -7,6 +7,7 @@ import { fail } from '@/server/game/errors';
 import { post } from '@/server/game/finance';
 import { resetBranding } from '@/server/game/membership';
 import { notify } from '@/server/game/notify';
+import { postCoins } from '@/server/game/coins';
 import { VIP_MAX_DAYS } from '@/lib/game/vip';
 
 export interface Staff {
@@ -127,6 +128,18 @@ export async function setVip(db: Database, actor: Staff, targetId: string, days:
     if (until) await notify(tx, targetId, 'achievement', 'Вече сте VIP!', `VIP статусът ви е активен до ${until.toLocaleDateString('bg-BG')}.`, '/game/profile');
     else await notify(tx, targetId, 'info', 'VIP статусът е премахнат', 'Администратор премахна VIP статуса ви.', '/game/profile');
     return until;
+  });
+}
+
+/** Gives (or with a negative amount takes away) ТрансКоин. Audited; the player is notified. */
+export async function adjustCoins(db: Database, actor: Staff, targetId: string, amount: number, reason: string) {
+  requireAdminRole(actor);
+  if (!Number.isSafeInteger(amount) || amount === 0 || Math.abs(amount) > 1_000_000) fail('invalid_amount', 'Невалидно количество ТрансКоин.');
+  if (reason.trim().length < 3) fail('reason_required', 'Посочете причина (поне 3 символа).');
+  return db.transaction(async (tx) => {
+    const auditId = await audit(tx, actor.id, amount > 0 ? 'grant_coins' : 'remove_coins', targetId, { amount, reason });
+    await postCoins(tx, targetId, { amount, reason: amount > 0 ? 'admin_grant' : 'admin_remove', description: reason, idempotencyKey: `admin-coins:${auditId}`, actorUserId: actor.id }, { requireFunds: amount < 0 });
+    await notify(tx, targetId, 'info', amount > 0 ? `Получихте ${amount} ТрансКоин` : `Отнети ${-amount} ТрансКоин`, reason, '/game/shop');
   });
 }
 

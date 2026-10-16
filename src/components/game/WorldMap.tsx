@@ -31,6 +31,8 @@ export interface MapProps {
   vehicles: MapVehicle[];
   depots: { name: string; position: LatLon }[];
   preview: null | { leg: MapLeg; title: string; approximate: boolean };
+  /** The player is VIP: golden glow on their own trucks. */
+  ownVip?: boolean;
 }
 
 interface CityDetails {
@@ -67,10 +69,10 @@ function vehiclePoint(v: MapVehicle, now: number): LatLon {
  * company colour with an outline that marks whose truck it is. The icon id carries
  * the colours, e.g. "truck|#f8fafc|#34d399", and is created on first use.
  */
-const truckIcon = (fill: string, ring: string) => `truck|${fill}|${ring}`;
+const truckIcon = (fill: string, ring: string, vip = false) => `truck|${fill}|${ring}|${vip ? 'v' : ''}`;
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
-function drawTruck(fill: string, ring: string): ImageData | null {
+function drawTruck(fill: string, ring: string, vip = false): ImageData | null {
   const r = 2; // pixel ratio
   const canvas = document.createElement('canvas');
   canvas.width = 34 * r;
@@ -79,6 +81,11 @@ function drawTruck(fill: string, ring: string): ImageData | null {
   if (!ctx) return null;
   ctx.scale(r, r);
   ctx.lineJoin = 'round';
+  if (vip) {
+    // VIP: a golden glow around the whole truck.
+    ctx.shadowColor = '#d4af37';
+    ctx.shadowBlur = 4;
+  }
   const shape = (draw: () => void, color: string, stroke = true) => {
     ctx.beginPath();
     draw();
@@ -142,7 +149,7 @@ function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number):
         const { point, moving } = truckPoint(t, world.routes, now);
         const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
         const fill = t.color && HEX.test(t.color) ? t.color : '#e8eef7';
-        return { type: 'Feature', properties: { id: t.id, label, icon: truckIcon(fill, t.online ? '#34d399' : '#ef4444'), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+        return { type: 'Feature', properties: { id: t.id, label, icon: truckIcon(fill, t.vip ? '#d4af37' : t.online ? '#34d399' : '#ef4444', t.vip), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
       }),
   };
 }
@@ -162,7 +169,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false }: MapProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -187,9 +194,9 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     map.on('styleimagemissing', (e) => {
-      const [kind, fill, ring] = e.id.split('|');
+      const [kind, fill, ring, flag] = e.id.split('|');
       if (kind !== 'truck' || !fill || !ring || !HEX.test(fill) || !HEX.test(ring) || map.hasImage(e.id)) return;
-      const image = drawTruck(fill, ring);
+      const image = drawTruck(fill, ring, flag === 'v');
       if (image) map.addImage(e.id, image, { pixelRatio: 2 });
     });
     map.on('error', (e) => {
@@ -334,12 +341,12 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
     const tick = () => {
       const src = mapRef.current?.getSource('vehicles') as GeoJSONSource | undefined;
       const now = Date.now();
-      src?.setData({ type: 'FeatureCollection', features: vehicles.map((v) => ({ type: 'Feature', properties: { plate: v.plate, icon: truckIcon(HEX.test(v.color) ? v.color : '#f8fafc', '#22d3ee') }, geometry: { type: 'Point', coordinates: toLngLat(vehiclePoint(v, now)) } })) });
+      src?.setData({ type: 'FeatureCollection', features: vehicles.map((v) => ({ type: 'Feature', properties: { plate: v.plate, icon: truckIcon(HEX.test(v.color) ? v.color : '#f8fafc', '#22d3ee', ownVip) }, geometry: { type: 'Point', coordinates: toLngLat(vehiclePoint(v, now)) } })) });
     };
     tick();
     const id = setInterval(tick, 2000);
     return () => clearInterval(id);
-  }, [ready, vehicles]);
+  }, [ready, vehicles, ownVip]);
 
   return (
     <div className="relative h-[calc(100dvh-210px)] min-h-[420px] overflow-hidden rounded-2xl border border-asphalt-700">
@@ -358,6 +365,9 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
         </label>
         <span className="flex items-center gap-1.5">
           <TruckGlyph ring="#34d399" />в играта сега
+        </span>
+        <span className="flex items-center gap-1.5">
+          <TruckGlyph ring="#d4af37" />VIP
         </span>
       </div>
       {picked && (

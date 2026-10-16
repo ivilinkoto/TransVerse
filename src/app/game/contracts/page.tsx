@@ -12,6 +12,7 @@ import { and, eq } from 'drizzle-orm';
 import { contracts as contractsTable, deliveries } from '@/server/db/schema';
 import { fleetView } from '@/server/game/queries';
 import { LICENCES } from '@/lib/game/licences';
+import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { heldLicences, missingFor } from '@/server/game/licences';
 
 export const metadata = { title: 'Транспортни поръчки' };
@@ -27,6 +28,8 @@ export default async function ContractsPage() {
     db.select({ contractId: deliveries.contractId }).from(deliveries).innerJoin(contractsTable, eq(contractsTable.id, deliveries.contractId)).where(and(eq(deliveries.companyId, company.id), eq(contractsTable.urgent, true))),
   ]);
   const takenIds = new Set(taken.map((t) => t.contractId));
+  const vip = isVip(user.vipUntil, now);
+  const hhmm = (d: Date) => d.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' });
   const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
   const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250 }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50 }))]);
   const seen = new Set<string>();
@@ -75,6 +78,11 @@ export default async function ContractsPage() {
       local: localCities.includes(c.originCityId),
       urgent: c.urgent,
       alreadyTaken: takenIds.has(c.id),
+      reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,
+      reservedByOther: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId !== company.id,
+      reservedUntil: c.reservedUntil && c.reservedUntil > now ? hhmm(c.reservedUntil) : null,
+      // Urgent shipments open for non-VIP players a few minutes later.
+      opensAt: c.urgent && !vip && now.getTime() < c.createdAt.getTime() + VIP_PERKS.urgentEarlyMs ? hhmm(new Date(c.createdAt.getTime() + VIP_PERKS.urgentEarlyMs)) : null,
       speedFactor: c.speedFactor,
       missingLicences: missingFor({ cargoType: c.cargoType, originCountry: c.origin.countryCode, destCountry: c.destination.countryCode, routeCountries: c.route.countries }, licences).map((id) => LICENCES[id].short),
       options,
@@ -87,7 +95,7 @@ export default async function ContractsPage() {
         title="Транспортни поръчки"
         subtitle="Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
-      <ContractBoard localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

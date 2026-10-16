@@ -3,7 +3,7 @@
 import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Siren, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge, Empty, type BadgeTone } from '@/components/ui';
 import { api } from '@/lib/client/api';
 import { dateTime, dec, duration, int, km, money } from '@/lib/format';
@@ -37,6 +37,12 @@ export interface BoardContract {
   speedFactor: number;
   /** Urgent shipment this player has already taken (each player may take it once). */
   alreadyTaken: boolean;
+  /** VIP reservation (time shown as HH:MM). */
+  reservedByMe: boolean;
+  reservedByOther: boolean;
+  reservedUntil: string | null;
+  /** Urgent shipment not yet open for this (non-VIP) player — opens at HH:MM. */
+  opensAt: string | null;
   /** Short names of licences the player still needs for this contract. */
   missingLicences: string[];
   options: { vehicleId: string; label: string; error: string | null; emptyKm: number; costCents: number; rented: boolean; profitCents: number; minutes: number }[];
@@ -46,12 +52,39 @@ const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
 
-export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[] }) {
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean }) {
   const [cargo, setCargo] = useState<string>('');
   const [query, setQuery] = useState('');
   const [doable, setDoable] = useState(false);
   const [sort, setSort] = useState<Sort>('reward');
   const [open, setOpen] = useState<string | null>(null);
+  const [savedNote, setSavedNote] = useState<string | null>(null);
+
+  // VIP: saved board filters (kept in this browser).
+  useEffect(() => {
+    if (!vip) return;
+    try {
+      const raw = localStorage.getItem('tv:board-filter');
+      if (!raw) return;
+      const f = JSON.parse(raw) as { cargo?: string; query?: string; doable?: boolean; sort?: Sort };
+      /* eslint-disable react-hooks/set-state-in-effect -- one-time restore from storage */
+      if (f.cargo !== undefined) setCargo(f.cargo);
+      if (f.query !== undefined) setQuery(f.query);
+      if (f.doable !== undefined) setDoable(f.doable);
+      if (f.sort) setSort(f.sort);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    } catch {
+      /* storage unavailable */
+    }
+  }, [vip]);
+  const saveFilter = () => {
+    try {
+      localStorage.setItem('tv:board-filter', JSON.stringify({ cargo, query, doable, sort }));
+      setSavedNote('Филтърът е запазен.');
+    } catch {
+      setSavedNote('Браузърът не позволява запазване.');
+    }
+  };
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -59,7 +92,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
       (c) =>
         (!cargo || c.cargoType === cargo) &&
         (!q || c.origin.name.toLowerCase().includes(q) || c.destination.name.toLowerCase().includes(q) || c.goods.toLowerCase().includes(q)) &&
-        (!doable || (!c.locked && !c.alreadyTaken && !c.missingLicences.length && c.options.some((o) => !o.error))),
+        (!doable || (!c.locked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error))),
     );
     const key: Record<Sort, (c: BoardContract) => number> = {
       reward: (c) => -c.rewardCents,
@@ -69,7 +102,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
     };
     // Own city first — jobs the player can take right now before the rest.
     // Urgent shipments first, then the player's own city.
-    const takeable = (c: BoardContract) => !c.locked && !c.alreadyTaken && !c.missingLicences.length && c.options.some((o) => !o.error);
+    const takeable = (c: BoardContract) => !c.locked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error);
     const rank = (c: BoardContract) => (c.urgent ? 0 : c.local ? (takeable(c) ? 1 : 2) : 3);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
   }, [contracts, cargo, query, doable, sort]);
@@ -95,6 +128,11 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
           <input type="checkbox" checked={doable} onChange={(e) => setDoable(e.target.checked)} className="h-4 w-4 accent-cyan-500" />
           Само изпълними с моя автопарк
         </label>
+        {vip && (
+          <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={saveFilter} title="VIP: запомни тези филтри">
+            Запази филтъра{savedNote ? ' ✓' : ''}
+          </button>
+        )}
         <span className="num ml-auto text-xs text-mist-400">{list.length} от {contracts.length}</span>
       </div>
 
@@ -109,7 +147,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
       ) : (
         <ul className="space-y-2">
           {list.map((c) => (
-            <ContractRow key={c.id} contract={c} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} />
+            <ContractRow key={c.id} contract={c} vip={vip} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} />
           ))}
         </ul>
       )}
@@ -117,7 +155,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames }: { contr
   );
 }
 
-function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract; open: boolean; onToggle: () => void }) {
+function ContractRow({ contract: c, vip, open, onToggle }: { contract: BoardContract; vip: boolean; open: boolean; onToggle: () => void }) {
   const router = useRouter();
   const usable = c.options.filter((o) => !o.error);
   const [vehicleId, setVehicleId] = useState(usable[0]?.vehicleId ?? '');
@@ -148,6 +186,9 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
             {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
+            {c.reservedByMe && <Badge tone="gold">Запазена за теб до {c.reservedUntil}</Badge>}
+            {c.reservedByOther && <Badge tone="neutral">Запазена до {c.reservedUntil}</Badge>}
+            {c.opensAt && <Badge tone="violet">VIP · за всички от {c.opensAt}</Badge>}
             {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />Във вашия град</Badge>}
             {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />Лиценз: {c.missingLicences.join(', ')}</Badge>}
             {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />ниво {c.minLevel}</Badge>}
@@ -186,6 +227,10 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
           )}
           {c.alreadyTaken ? (
             <p className="mt-4 text-sm text-profit">Вече сте поели тази спешна поръчка — следете я в „Автопарк“.</p>
+          ) : c.opensAt ? (
+            <p className="mt-4 text-sm text-prestige">VIP играчите поемат спешните доставки 5 минути по-рано. За всички се отваря в {c.opensAt}.</p>
+          ) : c.reservedByOther ? (
+            <p className="mt-4 text-sm text-mist-300">Друг играч е запазил тази поръчка до {c.reservedUntil}. След това отново е свободна.</p>
           ) : c.locked ? (
             <p className="mt-4 flex items-center gap-2 text-sm text-prestige"><Lock className="h-4 w-4" />Достигнете ниво {c.minLevel}, за да поемате такива товари.</p>
           ) : c.missingLicences.length ? (
@@ -208,6 +253,7 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
                   <ShieldCheck className="h-4 w-4" />{busy ? 'Изпращане…' : 'Приеми и изпрати'}
                 </button>
                 <Link href={`/game/map?contract=${c.id}`} className="btn-ghost"><MapPinned className="h-4 w-4" />На картата</Link>
+                {vip && !c.urgent && !c.reservedByMe && <ReserveButton contractId={c.id} />}
               </div>
               {option && !option.error && (
                 <div className="grid gap-2 text-sm sm:grid-cols-4">
@@ -227,5 +273,32 @@ function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract;
         </div>
       )}
     </li>
+  );
+}
+
+/** VIP: hold the contract for ten minutes while deciding. */
+function ReserveButton({ contractId }: { contractId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const reserve = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/api/game/action', { type: 'reserveContract', contractId });
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <span className="inline-flex flex-col">
+      <button className="btn-ghost border-gold-400/40 text-gold-400" onClick={reserve} disabled={busy} title="VIP: само ти можеш да я поемеш следващите 10 минути">
+        {busy ? '…' : 'Запази за 10 мин'}
+      </button>
+      {error && <span role="alert" className="text-xs text-loss">{error}</span>}
+    </span>
   );
 }

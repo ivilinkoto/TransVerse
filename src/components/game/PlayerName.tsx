@@ -7,7 +7,7 @@ export function PlayerName({ name, role, vip, className = '' }: { name: string; 
   const staff = role ? STAFF_SHORT[role] : undefined;
   return (
     <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
-      <span>{name}</span>
+      <span className={vip ? 'font-semibold text-gold-400' : undefined}>{name}</span>
       {staff && (
         <span className="inline-flex items-center gap-0.5 rounded-full border border-prestige/40 bg-prestige/10 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-prestige" title={staff}>
           <ShieldCheck className="h-3 w-3" />{staff}

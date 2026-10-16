@@ -1,0 +1,117 @@
+import { and, eq, isNull, sql } from 'drizzle-orm';
+import { CheckCircle2, Clock, Coins, Crown, History } from 'lucide-react';
+import { ShopBuy, type VehicleOption } from '@/components/shop/ShopBuy';
+import { Badge, Card, PageHeader } from '@/components/ui';
+import { dateTime } from '@/lib/format';
+import { isFreightHub } from '@/lib/game/markets';
+import { COIN_PACKAGES, SHOP_CATEGORIES, SHOP_ITEMS, type ShopCategory } from '@/lib/game/shop';
+import { isVip, STANDARD_COLORS, VIP_BENEFITS, VIP_COLORS } from '@/lib/game/vip';
+import { cities, vehicles } from '@/server/db/schema';
+import { coinHistory, COIN_REASON_LABELS, type CoinReason } from '@/server/game/coins';
+import { gameContext } from '@/server/game/context';
+
+export const metadata = { title: 'Магазин' };
+
+export default async function ShopPage() {
+  const { db, user, company, now } = await gameContext();
+  const vip = isVip(user.vipUntil, now);
+  const [fleet, cityRows, history] = await Promise.all([
+    db
+      .select({ id: vehicles.id, plate: vehicles.plate, modelId: vehicles.modelId, ownership: vehicles.ownership, status: vehicles.status, city: cities.nameBg })
+      .from(vehicles)
+      .innerJoin(cities, eq(cities.id, vehicles.cityId))
+      .where(and(eq(vehicles.companyId, company.id), isNull(vehicles.soldAt))),
+    db.select({ id: cities.id, name: cities.nameBg, country: cities.countryCode, population: cities.population }).from(cities).orderBy(cities.countryCode, sql`${cities.population} desc`),
+    coinHistory(db, user.id, 20),
+  ]);
+  const vehicleOptions: VehicleOption[] = fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${v.city}${v.ownership === 'rented' ? ' (нает)' : ''}${v.status !== 'idle' ? ' · на курс' : ''}`, owned: v.ownership === 'owned', idle: v.status === 'idle' }));
+  const hubs = cityRows.filter((c) => isFreightHub({ population: c.population, country: c.country })).map((c) => ({ id: c.id, name: `${c.name} (${c.country})` }));
+  const boostActive = user.xpBoostUntil && user.xpBoostUntil > now;
+  const categories = (Object.keys(SHOP_CATEGORIES) as ShopCategory[]).filter((c) => c !== 'vip');
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Магазин"
+        subtitle="ТрансКоин (TC) е премиум валутата на TransVerse. С нея се купуват VIP, удобства и козметика — никога игрови пари, за да е честно за всички."
+        actions={<span className="flex items-center gap-2 rounded-xl border border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2"><Coins className="h-5 w-5 text-cyan-glow" /><span className="num font-display text-xl font-bold text-cyan-glow">{user.coins.toLocaleString('bg-BG')} TC</span></span>}
+      />
+
+      <Card title={<span className="inline-flex items-center gap-2"><Crown className="h-4 w-4 text-gold-400" />VIP</span>} actions={vip ? <Badge tone="gold">Активен до {user.vipUntil!.toLocaleDateString('bg-BG')}</Badge> : <Badge>Нямаш VIP</Badge>}>
+        <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {VIP_BENEFITS.map((b) => (
+              <div key={b.group}>
+                <div className="label mb-1.5">{b.group}</div>
+                <ul className="space-y-1 text-sm">
+                  {b.items.map((i) => <li key={i} className="flex gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />{i}</li>)}
+                </ul>
+              </div>
+            ))}
+            <p className="text-xs text-mist-400 sm:col-span-2">VIP не дава сезонни точки и не влияе на класациите — предимствата са умерени, за да е честно за всички.</p>
+          </div>
+          <div className="space-y-3">
+            {SHOP_ITEMS.filter((i) => i.category === 'vip').map((i) => (
+              <div key={i.id} className="rounded-xl border border-gold-400/30 bg-gold-400/5 p-3">
+                <div className="flex items-center justify-between gap-2"><span className="font-semibold">{i.label}</span><span className="num font-bold text-cyan-glow">{i.price} TC</span></div>
+                <p className="mb-2 mt-1 text-xs text-mist-400">{i.description}</p>
+                <ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={VIP_COLORS} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      {categories.map((cat) => (
+        <section key={cat}>
+          <h2 className="mb-3 font-display text-lg font-bold">{SHOP_CATEGORIES[cat]}</h2>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {SHOP_ITEMS.filter((i) => i.category === cat).map((i) => (
+              <Card key={i.id} className="flex flex-col">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-display font-bold">{i.label}</div>
+                  <span className="num shrink-0 font-bold text-cyan-glow">{i.id === 'paint' && vip ? '0' : i.price} TC</span>
+                </div>
+                <p className="mb-3 mt-1 text-sm text-mist-300">{i.description}</p>
+                {i.id === 'xp_boost_24h' && boostActive && <p className="mb-2 text-xs text-profit">Активен до {user.xpBoostUntil!.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia' })} — нова покупка го удължава.</p>}
+                <div className="mt-auto"><ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={VIP_COLORS} /></div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title={<span className="inline-flex items-center gap-2"><Coins className="h-4 w-4 text-cyan-glow" />Купи ТрансКоин</span>} actions={<Badge tone="violet"><Clock className="h-3 w-3" />Скоро</Badge>}>
+          <ul className="grid grid-cols-2 gap-3">
+            {COIN_PACKAGES.map((p) => (
+              <li key={p.id} className="rounded-xl border border-asphalt-700 p-3 text-center opacity-80">
+                <div className="num font-display text-xl font-bold text-cyan-glow">{(p.coins + p.bonus).toLocaleString('bg-BG')} TC</div>
+                {p.bonus > 0 && <div className="text-xs text-profit">+{p.bonus} подарък</div>}
+                <div className="num mt-1 text-sm text-mist-300">{p.priceEur.toFixed(2).replace('.', ',')} €</div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-mist-400">Плащанията с карта още не са включени. Дотогава ТрансКоин се получават като награди от екипа на играта.</p>
+        </Card>
+        <Card title={<span className="inline-flex items-center gap-2"><History className="h-4 w-4 text-mist-400" />Движения по ТрансКоин</span>}>
+          {history.length === 0 ? (
+            <p className="text-sm text-mist-400">Още няма движения.</p>
+          ) : (
+            <ul className="max-h-72 space-y-1.5 overflow-y-auto pr-2 text-sm">
+              {history.map((h) => (
+                <li key={h.id} className="flex items-start justify-between gap-3 border-b border-asphalt-800 pb-1.5">
+                  <span className="min-w-0">
+                    <span className="block truncate">{h.description}</span>
+                    <span className="text-xs text-mist-400">{COIN_REASON_LABELS[h.reason as CoinReason] ?? h.reason} · {dateTime(h.createdAt)}</span>
+                  </span>
+                  <span className={`num shrink-0 font-semibold ${h.amount >= 0 ? 'text-profit' : 'text-loss'}`}>{h.amount > 0 ? '+' : ''}{h.amount} TC</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
