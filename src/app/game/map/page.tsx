@@ -58,7 +58,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
       <TutorialVisit step="track_map" pending={visitPending} />
       <PageHeader
         title="Карта на света"
-        subtitle={preview ? `Преглед на маршрут — ${preview.title}${preview.approximate ? ' (приблизителна линия, пътният маршрут не е наличен)' : ' (реален пътен маршрут за камион)'}` : 'Реални държави, градове и пътни маршрути. Камионите се движат по изчислените си разписания в реално време.'}
+        subtitle={preview ? `Преглед на маршрут — ${preview.title}${preview.approximate ? ' (приблизителна линия, пътният маршрут не е наличен)' : ' (реален пътен маршрут за камион)'}` : 'Реални държави, градове и пътни маршрути. Твоите камиони и тези на всички играчи се движат по разписанията си в реално време.'}
       />
       <MapClient styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} vehicles={vehicles} depots={depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] }))} preview={preview} />
     </div>

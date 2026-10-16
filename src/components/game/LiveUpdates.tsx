@@ -12,6 +12,11 @@ export function LiveUpdates() {
     source.onmessage = (event) => {
       const data = JSON.parse(event.data) as { type: string };
       if (data.type === 'hello') return;
+      // Other players' trucks only matter to the map, which reloads them itself.
+      if (data.type === 'world') {
+        window.dispatchEvent(new Event('tv:world'));
+        return;
+      }
       clearTimeout(timer.current);
       timer.current = setTimeout(() => router.refresh(), 600);
     };

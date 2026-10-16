@@ -144,6 +144,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     await tx.update(vehicles).set({ status: 'on_delivery' }).where(eq(vehicles.id, vehicleId));
     await logActivity(tx, userId, 'contract_accepted', { contractId, vehicleId, deliveryId: delivery!.id });
     await broadcast(tx, 'market');
+    await broadcast(tx, 'world');
     return delivery!;
   });
 }
@@ -254,7 +255,10 @@ export async function settleDueDeliveries(db: Database, now = new Date(), compan
   const due = await db.select({ id: deliveries.id }).from(deliveries).where(and(...conditions)).orderBy(asc(deliveries.etaAt)).limit(200);
   let settled = 0;
   for (const { id } of due) if (await db.transaction((tx) => settleDelivery(tx, id, now))) settled++;
-  if (settled) await broadcast(db, 'leaderboard');
+  if (settled) {
+    await broadcast(db, 'leaderboard');
+    await broadcast(db, 'world');
+  }
   return settled;
 }
 

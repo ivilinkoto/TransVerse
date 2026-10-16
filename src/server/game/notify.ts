@@ -11,7 +11,7 @@ export async function notify(db: DbOrTx, userId: string, kind: NotificationKind,
 }
 
 /** Broadcast that shared world data changed (e.g. the freight market). */
-export async function broadcast(db: DbOrTx, type: 'market' | 'leaderboard') {
+export async function broadcast(db: DbOrTx, type: 'market' | 'leaderboard' | 'world') {
   await db.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type })})`);
 }
 

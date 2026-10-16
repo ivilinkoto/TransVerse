@@ -112,6 +112,12 @@ test.describe('core loop', () => {
     await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
     const box = await page.locator('canvas.maplibregl-canvas').boundingBox();
     expect(box!.height).toBeGreaterThan(300);
+    // Other players' trucks come from the shared world snapshot .
+    await expect(page.getByText(/Други играчи \(\d+, \d+ в играта\)/)).toBeVisible({ timeout: 15_000 });
+    const world = await page.request.get('/api/world');
+    expect(world.status()).toBe(200);
+    const body = (await world.json()) as { trucks: { player: string }[] };
+    expect(body.trucks.length).toBeGreaterThan(0);
   });
 });
 
