@@ -1,0 +1,21 @@
+[Unit]
+Description=TransVerse world worker (deliveries, market, payroll, seasons)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/var/www/transverse/current
+EnvironmentFile=/etc/transverse/transverse.env
+ExecStart=/usr/bin/node --enable-source-maps dist/worker.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+MemoryMax=400M
+
+[Install]
+WantedBy=multi-user.target

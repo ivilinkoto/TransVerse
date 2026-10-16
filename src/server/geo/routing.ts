@@ -79,10 +79,13 @@ export function valhallaProvider(baseUrl: string, timeoutMs = 20_000): RoutingPr
   return {
     name: 'valhalla',
     async route(from, to, profile) {
+      // City centres are often closed to heavy trucks; real freight is loaded on the
+      // nearest major road / industrial area, so snap to secondary roads or better.
+      const snap = profile === 'truck' ? { radius: 3000, search_filter: { min_road_class: 'secondary' } } : {};
       const body = {
         locations: [
-          { lat: from.lat, lon: from.lon },
-          { lat: to.lat, lon: to.lon },
+          { lat: from.lat, lon: from.lon, ...snap },
+          { lat: to.lat, lon: to.lon, ...snap },
         ],
         costing: profile === 'truck' ? 'truck' : 'auto',
         costing_options: profile === 'truck' ? { truck: { height: 4, width: 2.55, length: 16.5, weight: 40, axle_load: 11.5 } } : undefined,

@@ -1,0 +1,64 @@
+name: Deploy
+
+# Builds a self-contained release and installs it on the VPS over SSH.
+# Required repository secrets: VPS_HOST, VPS_USER, VPS_PORT, VPS_SSH_KEY.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check deployment secrets
+        id: secrets
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$KEY" ]; then echo "Deployment secrets are not configured — skipping."; echo "ok=false" >> "$GITHUB_OUTPUT"; else echo "ok=true" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.secrets.outputs.ok == 'true'
+        uses: actions/checkout@v4
+      - if: steps.secrets.outputs.ok == 'true'
+        uses: pnpm/action-setup@v4
+      - if: steps.secrets.outputs.ok == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Build release
+        if: steps.secrets.outputs.ok == 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm bundle
+          REL=release
+          mkdir -p $REL/app
+          cp -r .next/standalone/. $REL/app/
+          mkdir -p $REL/app/.next && cp -r .next/static $REL/app/.next/static
+          cp -r public $REL/app/public
+          cp -r dist drizzle deploy $REL/
+          mkdir -p $REL/data && cp -r data/geo $REL/data/geo
+          echo "${GITHUB_SHA}" > $REL/REVISION
+          tar -czf release.tgz -C $REL .
+      - name: Upload and activate
+        if: steps.secrets.outputs.ok == 'true'
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          PORT: ${{ secrets.VPS_PORT }}
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${PORT:-22}" -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ID=$(date -u +%Y%m%d%H%M%S)-${GITHUB_SHA::7}
+          SSH="ssh -p ${PORT:-22} -o BatchMode=yes $USER@$HOST"
+          $SSH "mkdir -p /var/www/transverse/releases/$ID"
+          scp -P "${PORT:-22}" -o BatchMode=yes release.tgz "$USER@$HOST:/var/www/transverse/releases/$ID/release.tgz"
+          $SSH "cd /var/www/transverse/releases/$ID && tar -xzf release.tgz && rm release.tgz && bash deploy/release.sh /var/www/transverse/releases/$ID"

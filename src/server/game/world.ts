@@ -1,6 +1,7 @@
 import { and, eq, gt, lte, sql } from 'drizzle-orm';
 import type { Database } from '@/server/db/client';
 import { countries, jobState, marketEvents, rateLimits, sessions } from '@/server/db/schema';
+import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { replenishMarket } from './contracts';
 import { recoverDemand, settleDueDeliveries } from './deliveries';
@@ -65,6 +66,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
   try {
     const settled = await settleDueDeliveries(db, now);
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
+    await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));
     await every(db, 'demand', 60 * 60_000, now, (elapsed) => recoverDemand(db, Math.min(48, elapsed / 3_600_000)));
     await every(db, 'events', 6 * 60 * 60_000, now, () => spawnMarketEvent(db, now));
     await every(db, 'seasons', 10 * 60_000, now, async () => {

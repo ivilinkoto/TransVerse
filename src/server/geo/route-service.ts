@@ -62,3 +62,15 @@ export async function getRoute(db: DbOrTx, fromCityId: number, toCityId: number,
     .returning();
   return stored!;
 }
+
+/** Retries routing for cached approximations so they become real road routes over time. */
+export async function upgradeApproximateRoutes(db: DbOrTx, limit = 5, provider: RoutingProvider = configuredProvider()): Promise<number> {
+  if (provider.name === 'approximate') return 0;
+  const pending = await db.select().from(routes).where(eq(routes.provider, 'approximate')).limit(limit);
+  let upgraded = 0;
+  for (const r of pending) {
+    const fresh = await getRoute(db, r.fromCityId, r.toCityId, r.profile as RouteProfile, provider);
+    if (fresh.provider !== 'approximate') upgraded++;
+  }
+  return upgraded;
+}

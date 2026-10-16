@@ -22,7 +22,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "geo:import": "tsx scripts/import-geonames.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "postinstall": "node scripts/copy-vendor.mjs"
+    "postinstall": "node scripts/copy-vendor.mjs",
+    "bundle": "node scripts/bundle.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -53,6 +54,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "drizzle-kit": "0.31.11",
+    "esbuild": "0.25.12",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.3.8",
     "tailwindcss": "4.3.3",

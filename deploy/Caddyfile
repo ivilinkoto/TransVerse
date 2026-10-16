@@ -1,0 +1,16 @@
+# TransVerse reverse proxy.
+# Today: plain HTTP on the server IP. When transverse.bg points here, replace ":80"
+# with "transverse.bg, www.transverse.bg" and reload Caddy — HTTPS certificates are
+# obtained automatically. Then set COOKIE_SECURE=true in /etc/transverse/transverse.env.
+:80 {
+	encode zstd gzip
+	@sse path /api/events
+	reverse_proxy @sse 127.0.0.1:3000 {
+		flush_interval -1
+	}
+	reverse_proxy 127.0.0.1:3000
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+}

@@ -94,6 +94,9 @@ describe('real geography', () => {
     expect(r.distanceKm).toBeLessThan(180);
     expect(r.geometry).toBeTruthy();
     expect(r.borders).toHaveLength(0);
+    // German city centres restrict heavy trucks; snapping to major roads must still find a route.
+    const de = await valhallaProvider('https://valhalla1.openstreetmap.de').route({ lat: 48.137, lon: 11.575, country: 'DE' }, { lat: 52.52, lon: 13.405, country: 'DE' }, 'truck');
+    expect(de.distanceKm).toBeGreaterThan(550);
   });
 });
 
