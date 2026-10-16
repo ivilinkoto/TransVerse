@@ -48,11 +48,12 @@ const coinsOf = async (userId: string) => (await db().select({ coins: users.coin
 
 describe('payments', () => {
   it('is switched off until every setting is present', () => {
-    expect(paymentConfig().enabled).toBe(true);
-    expect(paymentConfig().testMode).toBe(true);
+    expect(paymentConfig().stripe.enabled).toBe(true);
+    expect(paymentConfig().stripe.testMode).toBe(true);
     const saved = process.env.SELLER_NAME;
     delete process.env.SELLER_NAME;
-    expect(paymentConfig()).toMatchObject({ enabled: false, missing: ['SELLER_NAME'] });
+    expect(paymentConfig().stripe).toMatchObject({ enabled: false, missing: ['SELLER_NAME'] });
+    expect(paymentConfig().enabled).toBe(false);
     process.env.SELLER_NAME = saved;
   });
 

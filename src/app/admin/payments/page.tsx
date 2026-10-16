@@ -1,4 +1,5 @@
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Undo2 } from 'lucide-react';
+import { ActionButton } from '@/components/ui/ActionButton';
 import Link from 'next/link';
 import { Badge, Card, PageHeader, Stat, Table } from '@/components/ui';
 import { dateTime, int } from '@/lib/format';
@@ -17,18 +18,28 @@ export default async function AdminPaymentsPage() {
   const { rows, totals } = await adminPayments(db);
   return (
     <div className="space-y-6">
-      <PageHeader title="Плащания" subtitle="Покупки на ТрансКоин и VIP с реални пари през Stripe. Доставката е автоматична; възстановяванията се правят от таблото на Stripe и се отразяват тук сами." />
+      <PageHeader title="Плащания" subtitle="Покупки на ТрансКоин и VIP с реални пари (PayPal; Stripe — по-късно). Доставката е автоматична. Плащане с PayPal може да се върне оттук; ТрансКоин и VIP дните от покупката се премахват автоматично." />
       <Card title="Настройка">
-        {config.enabled ? (
-          <p className="flex items-center gap-2 text-sm text-profit"><CheckCircle2 className="h-4 w-4" />Плащанията са включени{config.testMode ? ' — ТЕСТОВ режим (sk_test), не се теглят истински пари' : ' — реален режим'}.</p>
-        ) : (
-          <div className="text-sm">
-            <p className="flex items-center gap-2 text-amber-sig"><AlertTriangle className="h-4 w-4" />Плащанията са изключени. Липсват настройки на сървъра:</p>
-            <p className="num mt-2 text-mist-300">{config.missing.join(', ')}</p>
-            {isAdmin(user.role) && <p className="mt-2 text-mist-400">Добавят се във файла <code>/etc/transverse/transverse.env</code> на сървъра (виж docs/DEPLOYMENT.md, раздел „Плащания“). Ключовете никога не се пишат в кода или в чат.</p>}
-          </div>
-        )}
-        <p className="mt-2 text-xs text-mist-400">Webhook адрес за Stripe: <code>{(process.env.APP_URL ?? 'https://ДОМЕЙН').replace(/\/$/, '')}/api/payments/stripe</code> · Публични страници: <Link className="underline" href="/terms">/terms</Link>, <Link className="underline" href="/privacy">/privacy</Link></p>
+        <ul className="space-y-2 text-sm">
+          <li className="flex flex-wrap items-center gap-2">
+            <span className="w-20 font-semibold">PayPal</span>
+            {config.paypal.enabled ? (
+              <span className="flex items-center gap-1.5 text-profit"><CheckCircle2 className="h-4 w-4" />включен · {config.paypal.sandbox ? 'ТЕСТОВ режим (sandbox)' : 'реален режим (live)'}{config.paypal.webhook ? ' · webhook' : ' · без webhook (сверката е от фоновия процес)'}</span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-amber-sig"><AlertTriangle className="h-4 w-4" />изключен — липсват: <span className="num text-mist-300">{config.paypal.missing.join(', ')}</span></span>
+            )}
+          </li>
+          <li className="flex flex-wrap items-center gap-2">
+            <span className="w-20 font-semibold">Stripe</span>
+            {config.stripe.enabled ? (
+              <span className="flex items-center gap-1.5 text-profit"><CheckCircle2 className="h-4 w-4" />включен · {config.stripe.testMode ? 'ТЕСТОВ режим' : 'реален режим'}</span>
+            ) : (
+              <span className="text-mist-400">изключен (за след домейна) — липсват: <span className="num">{config.stripe.missing.join(', ')}</span></span>
+            )}
+          </li>
+        </ul>
+        {isAdmin(user.role) && <p className="mt-3 text-xs text-mist-400">Ключовете се добавят в GitHub → Settings → Secrets and variables → Actions и се записват на сървъра при следващия Deploy (виж docs/DEPLOYMENT.md, „Плащания“). Никога в кода или в чат.</p>}
+        <p className="mt-1 text-xs text-mist-400">Webhook адреси (по избор, изискват HTTPS): <code>/api/payments/paypal</code>, <code>/api/payments/stripe</code> · Публични страници: <Link className="underline" href="/terms">/terms</Link>, <Link className="underline" href="/privacy">/privacy</Link></p>
       </Card>
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat label="Платени общо" value={euro(totals.paid)} hint={`${int(totals.paidCount)} покупки`} tone="profit" />
@@ -36,7 +47,7 @@ export default async function AdminPaymentsPage() {
         <Stat label="Възстановени" value={euro(totals.refunded)} tone="loss" />
       </div>
       <Card title="Последни плащания">
-        <Table head={['Дата', 'Играч', 'Продукт', 'Сума', 'Статус', 'Stripe']}>
+        <Table head={['Дата', 'Играч', 'Продукт', 'Сума', 'Статус', 'Доставчик', '']}>
           {rows.map(({ payment: p, username }) => (
             <tr key={p.id}>
               <td className="px-3 py-2 text-mist-400">{dateTime(p.createdAt)}</td>
@@ -44,7 +55,14 @@ export default async function AdminPaymentsPage() {
               <td className="px-3 py-2">{paidProduct(p.productId)?.label ?? p.productId}</td>
               <td className="num px-3 py-2">{euro(p.amountCents)}</td>
               <td className="px-3 py-2"><Badge tone={TONE[p.status] ?? 'neutral'}>{PAYMENT_STATUS_LABELS[p.status] ?? p.status}</Badge></td>
-              <td className="px-3 py-2 font-mono text-xs text-mist-400">{p.paymentIntentId ?? p.checkoutSessionId?.slice(0, 18) ?? '—'}</td>
+              <td className="px-3 py-2 text-xs text-mist-400">{p.provider === 'paypal' ? 'PayPal' : 'Stripe'} <span className="font-mono">{p.captureId ?? p.orderId ?? p.paymentIntentId ?? p.checkoutSessionId?.slice(0, 18) ?? ''}</span></td>
+              <td className="px-3 py-2">
+                {isAdmin(user.role) && p.provider === 'paypal' && p.status === 'paid' && (
+                  <ActionButton endpoint="/api/admin/action" action={{ type: 'refundPayment', paymentId: p.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm={`Да върнем ли ${euro(p.amountCents)} на ${username}? ТрансКоин / VIP дните от покупката ще бъдат премахнати.`}>
+                    <Undo2 className="h-3.5 w-3.5" />Върни сумата
+                  </ActionButton>
+                )}
+              </td>
             </tr>
           ))}
         </Table>

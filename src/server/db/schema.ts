@@ -766,6 +766,9 @@ export const payments = pgTable(
     status: text('status').notNull().default('pending'), // pending | paid | failed | expired | refunded
     checkoutSessionId: text('checkout_session_id'),
     paymentIntentId: text('payment_intent_id'),
+    /** PayPal: the order and its capture. */
+    orderId: text('order_id'),
+    captureId: text('capture_id'),
     /** When the buyer agreed that delivery starts at once (EU right of withdrawal for digital content). */
     consentAt: ts('consent_at').notNull(),
     createdAt: createdAt(),
@@ -775,6 +778,9 @@ export const payments = pgTable(
   (t) => [
     uniqueIndex('payments_session_idx').on(t.checkoutSessionId),
     index('payments_intent_idx').on(t.paymentIntentId),
+    uniqueIndex('payments_order_idx').on(t.orderId),
+    index('payments_capture_idx').on(t.captureId),
+    index('payments_pending_idx').on(t.provider, t.status, t.createdAt),
     index('payments_user_idx').on(t.userId, t.createdAt),
   ],
 );

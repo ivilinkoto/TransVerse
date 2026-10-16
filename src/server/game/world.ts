@@ -6,6 +6,7 @@ import type { RoutingProvider } from '@/server/geo/routing';
 import { ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { ensureAutoEvent, settleDueEvents } from './events';
+import { paymentConfig, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
 import { pick, randInt } from './random';
 import { activeSeason, rotateSeasons } from './seasons';
@@ -70,6 +71,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // Global events: settle finished ones (after the deliveries above), keep the automatic ones going.
     await settleDueEvents(db, now);
     await every(db, 'global-events', 10 * 60_000, now, () => ensureAutoEvent(db, now));
+    // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
+    if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
     await every(db, 'local-jobs', 60_000, now, () => ensureLocalJobsForFleet(db, now, undefined, provider));
     await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));

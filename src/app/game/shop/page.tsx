@@ -91,7 +91,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <Card id="buy" title={<span className="inline-flex items-center gap-2"><Coins className="h-4 w-4 text-cyan-glow" />Купи ТрансКоин и VIP</span>} actions={payment.enabled ? undefined : <Badge tone="violet"><Clock className="h-3 w-3" />Скоро</Badge>}>
           {cancelled && <p role="status" className="mb-3 rounded-lg border border-asphalt-600 bg-asphalt-800 px-3 py-2 text-sm text-mist-300">Плащането беше отказано — нищо не е таксувано.</p>}
           {payment.enabled ? (
-            <BuyWithMoney products={PAID_PRODUCTS} testMode={payment.testMode} />
+            <BuyWithMoney products={PAID_PRODUCTS} testMode={payment.testMode} providers={payment.providers} />
           ) : (
             <>
               <ul className="grid grid-cols-2 gap-3">
