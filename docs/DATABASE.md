@@ -12,6 +12,7 @@
 | ТрансКоин | `coin_entries` (регистър на премиум валутата; баланс в `users.coins`) |
 | Мисии | `mission_progress` (играч + период + мисия: цел, прогрес, награда, изпълнена/взета) |
 | Лицензи | `user_licences` (играч + лиценз, цена, източник purchase/legacy/admin) |
+| Чат на компаниите | `company_messages` (компания, автор, текст, изтриване) |
 | Членство в компании | `company_ranks` (длъжности, права, старшинство), `company_members` (един играч — една компания), `company_applications`, `company_assets` (лого/банер като bytea, проверени по съдържание) |
 | Пазар и доставки | `contracts`, `deliveries` (разписание jsonb, един запис на поръчка) |
 | Финанси | `ledger_entries` (уникален `idempotency_key`, `balance_after_cents`) |
@@ -27,3 +28,4 @@
 Миграция `0005`: уникалният индекс на доставките става (поръчка, играч), за да може спешна поръчка да се поема от много играчи.
 Миграция `0006`: `mission_progress`.
 Миграция `0007`: `coin_entries`, `users.coins / xp_boost_until / vip_reroll_key`, `contracts.reserved_by_company_id / reserved_until`.
+Миграция `0008`: `company_messages`.

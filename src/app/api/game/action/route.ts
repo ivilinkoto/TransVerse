@@ -13,6 +13,7 @@ import { buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
 import { reserveContract } from '@/server/game/contracts';
 import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
+import { chatBodySchema, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
 import {
   buyCompanyUpgrade,
   createRank,
@@ -82,6 +83,8 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('rerollMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
   z.object({ type: z.literal('reserveContract'), contractId: id }),
   z.object({ type: z.literal('shopBuy'), purchase: shopPurchaseSchema }),
+  z.object({ type: z.literal('sendChat'), body: chatBodySchema }),
+  z.object({ type: z.literal('deleteChat'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
 ]);
 
@@ -187,6 +190,11 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'rerollMission':
       return { ok: true, ...(await rerollMission(db, user.id, input.periodKey, input.missionId)) };
+    case 'sendChat':
+      return { ok: true, id: await sendChatMessage(db, user.id, input.body) };
+    case 'deleteChat':
+      await deleteChatMessage(db, user.id, input.messageId);
+      return { ok: true };
     case 'shopBuy':
       return { ok: true, ...(await buyShopItem(db, user.id, input.purchase)) };
     case 'reserveContract':

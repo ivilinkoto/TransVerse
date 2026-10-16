@@ -22,7 +22,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const [{ unread = 0 } = {}] = await db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt)));
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
-      <Sidebar unread={unread} staff={isStaff(user.role)} independent={company.kind !== 'company'} missions={missions} />
+      <Sidebar unread={unread} staff={isStaff(user.role)} independent={company.kind !== 'company' && !membership} missions={missions} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={displayName(membership?.company.name, user.username, company.kind)} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} />
         {tutorial.active && tutorial.step && <TutorialCoach step={tutorial.step} index={tutorial.index} total={tutorial.total} />}

@@ -6,8 +6,10 @@ import pg from 'pg';
  * notifications (sent by the API and by the world worker) to SSE clients.
  */
 export interface WorldEvent {
-  type: 'notification' | 'market' | 'leaderboard' | 'world';
+  type: 'notification' | 'market' | 'leaderboard' | 'world' | 'chat';
   userId?: string;
+  /** Company chat: only that company's members are told. */
+  companyId?: string;
 }
 
 const g = globalThis as unknown as { tvBus?: EventEmitter; tvListen?: Promise<void>; tvOnline?: Map<string, number> };

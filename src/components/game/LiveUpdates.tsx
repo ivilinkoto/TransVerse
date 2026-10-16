@@ -17,6 +17,11 @@ export function LiveUpdates() {
         window.dispatchEvent(new Event('tv:world'));
         return;
       }
+      // Company chat reloads itself; other pages are not refreshed.
+      if (data.type === 'chat') {
+        window.dispatchEvent(new Event('tv:chat'));
+        return;
+      }
       clearTimeout(timer.current);
       timer.current = setTimeout(() => router.refresh(), 600);
     };

@@ -57,6 +57,13 @@
       "when": 1792175108685,
       "tag": "0007_brief_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792177171285,
+      "tag": "0008_white_saracen",
+      "breakpoints": true
     }
   ]
 }

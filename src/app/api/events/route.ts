@@ -1,4 +1,6 @@
 import { subscribe, trackOnline } from '@/server/realtime';
+import { getDb } from '@/server/db/client';
+import { membershipOf } from '@/server/game/membership';
 import { errorResponse, requireUser } from '@/server/http';
 
 export const dynamic = 'force-dynamic';
@@ -19,8 +21,20 @@ export async function GET(request: Request) {
     start(controller) {
       const send = (data: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       send({ type: 'hello' });
+      // Which company this player belongs to (re-checked at most every 30 s) — chat events go to members only.
+      let member: { companyId: string | null; at: number } = { companyId: null, at: 0 };
+      const myCompany = async () => {
+        if (Date.now() - member.at > 30_000) member = { companyId: (await membershipOf(getDb(), user.id))?.company.id ?? null, at: Date.now() };
+        return member.companyId;
+      };
       unsubscribe = subscribe((event) => {
         if (event.type === 'notification' && event.userId !== user.id) return;
+        if (event.type === 'chat') {
+          void myCompany().then((id) => {
+            if (id && id === event.companyId) send({ type: 'chat' });
+          }).catch(() => {});
+          return;
+        }
         send({ type: event.type });
       });
       heartbeat = setInterval(() => controller.enqueue(encoder.encode(': ping\n\n')), 25_000);
