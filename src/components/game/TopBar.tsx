@@ -6,7 +6,7 @@ export function TopBar({ company, user, hqName }: { company: { name: string; bal
   const lp = levelProgress(user.xp);
   return (
     <header className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-asphalt-800 bg-asphalt-950/80 px-4 py-3 backdrop-blur sm:px-6">
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
         <div className="truncate font-display text-lg font-bold">{company.name}</div>
         <div className="text-xs text-mist-400">Седалище: {hqName} · {user.username}</div>
       </div>
