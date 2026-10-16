@@ -70,11 +70,11 @@ describe('game time', () => {
     const d = await acceptContract(db(), p.userId, contract.id, truck!.id);
     const minutes = (d.etaAt.getTime() - d.startedAt.getTime()) / 60_000;
     expect(minutes).toBeCloseTo(gameDurationMinutes(d.emptyKm + d.loadedKm), 0);
-    expect(minutes).toBeLessThan(3 * 60);
-    expect(d.scheduleVersion).toBe(2);
+    expect(minutes).toBeLessThanOrEqual(60);
+    expect(d.scheduleVersion).toBe(3);
   });
 
-  it('migrates legacy real-time deliveries to game time once', async () => {
+  it('rescales deliveries from older game-time rules once', async () => {
     const p = await newPlayer();
     const [truck] = await fleetOf((await companyOf(p.userId)).id);
     const contract = await makeContract('Sofia', 'Varna');
@@ -84,7 +84,8 @@ describe('game time', () => {
     await db().update(deliveries).set({ scheduleVersion: 1, etaAt: longEta }).where(eq(deliveries.id, d.id));
     expect(await migrateToGameTime(db())).toBeGreaterThanOrEqual(1);
     const [after] = await db().select().from(deliveries).where(eq(deliveries.id, d.id));
-    expect(after!.scheduleVersion).toBe(2);
+    expect(after!.scheduleVersion).toBe(3);
+    expect((after!.etaAt.getTime() - after!.startedAt.getTime()) / 60_000).toBeCloseTo(gameDurationMinutes(after!.emptyKm + after!.loadedKm), 0);
     expect(after!.etaAt.getTime()).toBeLessThan(longEta.getTime());
     expect(await migrateToGameTime(db())).toBe(0);
   });
@@ -183,5 +184,15 @@ describe('support and administration', () => {
     expect((await companyOf(victim.userId)).balanceCents).toBe(before + 250_00);
     const audit = await db().select().from(adminAudit).where(and(eq(adminAudit.targetUserId, victim.userId), eq(adminAudit.action, 'adjust_balance')));
     expect(audit).toHaveLength(1);
+  });
+});
+
+describe('audit log wording', () => {
+  it('describes administrative actions in Bulgarian', async () => {
+    const { describeAudit } = await import('@/server/audit-format');
+    expect(describeAudit({ action: 'set_role', details: { from: 'player', to: 'support' } }, 'ANGELov', 'vesichaa')).toBe('Смени длъжността на vesichaa: Играч → Техническа поддръжка');
+    expect(describeAudit({ action: 'replenish_market', details: { created: 12 } }, 'ANGELov', null)).toBe('Попълни товарния пазар ръчно (12 нови поръчки)');
+    expect(describeAudit({ action: 'bootstrap_founder', details: {} }, 'ANGELov', 'ANGELov')).toContain('Основател');
+    expect(describeAudit({ action: 'adjust_balance', details: { amountCents: 25000, reason: 'компенсация' } }, 'a', 'b')).toContain('+250,00');
   });
 });

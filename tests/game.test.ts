@@ -190,7 +190,7 @@ describe('freight market and deliveries', () => {
     const { userId } = await newPlayer();
     const company = await companyOf(userId);
     const [van] = await fleetOf(company.id);
-    const contract = await makeContract('Sofia', 'Burgas', { windowMinutes: 30 });
+    const contract = await makeContract('Sofia', 'Burgas', { windowMinutes: 5 });
     const d = await acceptContract(db(), userId, contract.id, van!.id);
     await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1), company.id);
     const [row] = await db().select().from(deliveries).where(eq(deliveries.id, d.id));
