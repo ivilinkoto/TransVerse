@@ -27,7 +27,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 <div className="text-xs text-mist-400">{u.email}</div>
               </td>
               <td className="px-3 py-2">{u.role === 'player' ? <span className="text-mist-400">Играч</span> : <Badge tone="violet">{ROLE_LABELS[u.role as Role]}</Badge>}{u.bannedAt && <Badge tone="red">блокиран</Badge>}</td>
-              <td className="px-3 py-2">{u.kind === 'company' ? u.company : <span className="text-mist-400">самостоятелен шофьор</span>}</td>
+              <td className="px-3 py-2">{u.company ?? <span className="text-mist-400">без компания</span>}</td>
               <td className="num px-3 py-2">{u.level}</td>
               <td className="num px-3 py-2">{u.balance != null ? money(u.balance) : '—'}</td>
               <td className="px-3 py-2 text-mist-400">{date(u.createdAt)}</td>

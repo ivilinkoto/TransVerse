@@ -195,3 +195,61 @@ export function RankForm({ rank, permissions, grantable, minPriority, submitLabe
     </form>
   );
 }
+
+export function DepositForm() {
+  const [amount, setAmount] = useState('');
+  const { error, saved, busy, run } = useSubmit();
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    run(async () => {
+      await api('/api/game/action', { type: 'depositTreasury', amountEur: Number(amount) });
+      setAmount('');
+    });
+  };
+  return (
+    <form onSubmit={submit} className="space-y-2">
+      <label className="block text-sm font-medium text-mist-300" htmlFor="deposit">Внеси от личните си пари</label>
+      <div className="flex gap-2">
+        <input id="deposit" name="deposit" type="number" min={1} step={1} inputMode="numeric" className="input min-w-0 flex-1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Сума в €" required />
+        <button className="btn-gold" disabled={busy || !amount}>{busy ? '…' : 'Внеси'}</button>
+      </div>
+      <Feedback error={error} saved={saved} okText="Внесено в касата." />
+    </form>
+  );
+}
+
+/** Owner hands the company over to a member, optionally leaving it right away. */
+export function TransferOwnershipForm({ members }: { members: { userId: string; label: string }[] }) {
+  const [target, setTarget] = useState(members[0]?.userId ?? '');
+  const [leave, setLeave] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const { error, busy, run } = useSubmit();
+  if (!members.length) return <p className="text-sm text-mist-400">В компанията няма други членове, на които да предадете собствеността.</p>;
+  const name = members.find((m) => m.userId === target)?.label ?? '';
+  return (
+    <div className="space-y-3">
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium text-mist-300">Нов собственик</span>
+        <select className="input" value={target} onChange={(e) => { setTarget(e.target.value); setConfirming(false); }} aria-label="Нов собственик">
+          {members.map((m) => <option key={m.userId} value={m.userId}>{m.label}</option>)}
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={leave} onChange={(e) => setLeave(e.target.checked)} />
+        Напускам компанията след предаването
+      </label>
+      {confirming ? (
+        <div className="space-y-2 rounded-xl border border-loss/40 bg-loss/10 p-3 text-sm">
+          <p>Предавате „{name}“ всички права на собственик{leave ? ' и напускате компанията' : ' и ставате заместник'}. Това не може да се отмени от вас.</p>
+          <div className="flex gap-2">
+            <button className="btn-danger" disabled={busy} onClick={() => run(() => api('/api/game/action', { type: 'transferOwnership', userId: target, leave }))}>{busy ? '…' : 'Потвърди'}</button>
+            <button className="btn-ghost" onClick={() => setConfirming(false)}>Отказ</button>
+          </div>
+        </div>
+      ) : (
+        <button className="btn-primary" onClick={() => setConfirming(true)} disabled={!target}>Предай собствеността</button>
+      )}
+      <Feedback error={error} saved={false} />
+    </div>
+  );
+}

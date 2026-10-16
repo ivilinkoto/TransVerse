@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import type { Tx } from '@/server/db/client';
-import { companies, ledgerEntries } from '@/server/db/schema';
+import { companies, ledgerEntries, organizations, treasuryEntries } from '@/server/db/schema';
 import { fail } from './errors';
 
 export type LedgerCategory =
@@ -26,7 +26,9 @@ export type LedgerCategory =
   | 'company_bonus'
   | 'company_contribution'
   | 'member_contributions'
-  | 'company_upgrade';
+  | 'company_upgrade'
+  | 'treasury_deposit'
+  | 'company_dissolution';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -52,6 +54,8 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   company_contribution: 'Вноска към компанията',
   member_contributions: 'Вноски от членове',
   company_upgrade: 'Развитие на компанията',
+  treasury_deposit: 'Внесени в касата на компанията',
+  company_dissolution: 'Остатък от касата при закриване',
 };
 
 export interface Posting {
@@ -92,5 +96,56 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
     }
   }
   if (applied) await tx.update(companies).set({ balanceCents: sql`${balance}` }).where(eq(companies.id, companyId));
+  return applied;
+}
+
+// ── Company treasury ─────────────────────────────────────────────────────
+
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment';
+
+export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
+  member_contribution: 'Вноска от курс',
+  deposit: 'Внесени от член',
+  company_upgrade: 'Развитие на компанията',
+  dissolution: 'Закриване на компанията',
+  admin_adjustment: 'Корекция от администратор',
+};
+
+export interface TreasuryPosting {
+  category: TreasuryCategory;
+  amountCents: number;
+  description: string;
+  idempotencyKey: string;
+  actorUserId?: string | null;
+  refType?: string;
+  refId?: string;
+}
+
+/**
+ * The only way company (treasury) money moves — the same guarantees as `post()`:
+ * row lock, exactly-once postings, balance updated in the same transaction.
+ */
+export async function postTreasury(tx: Tx, organizationId: string, postings: TreasuryPosting[], options: { requireFunds?: boolean } = {}): Promise<number> {
+  const [org] = await tx.select({ balance: organizations.treasuryCents }).from(organizations).where(eq(organizations.id, organizationId)).for('update');
+  if (!org) fail('company_not_found', 'Компанията не е намерена.', 404);
+  let balance = org!.balance;
+  const total = postings.reduce((s, p) => s + p.amountCents, 0);
+  if (options.requireFunds && total < 0 && balance + total < 0) fail('insufficient_treasury', 'В касата на компанията няма достатъчно средства.');
+
+  let applied = 0;
+  for (const p of postings) {
+    if (!Number.isSafeInteger(p.amountCents)) throw new Error(`Invalid amount ${p.amountCents}`);
+    const next = balance + p.amountCents;
+    const inserted = await tx
+      .insert(treasuryEntries)
+      .values({ organizationId, category: p.category, amountCents: p.amountCents, balanceAfterCents: next, description: p.description, actorUserId: p.actorUserId ?? null, idempotencyKey: p.idempotencyKey, refType: p.refType, refId: p.refId })
+      .onConflictDoNothing({ target: treasuryEntries.idempotencyKey })
+      .returning({ id: treasuryEntries.id });
+    if (inserted.length) {
+      balance = next;
+      applied++;
+    }
+  }
+  if (applied) await tx.update(organizations).set({ treasuryCents: sql`${balance}` }).where(eq(organizations.id, organizationId));
   return applied;
 }

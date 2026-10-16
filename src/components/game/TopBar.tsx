@@ -8,7 +8,7 @@ export function TopBar({ title, kind, company, user, hqName }: { title: string; 
     <header className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-asphalt-800 bg-asphalt-950/80 px-4 py-3 backdrop-blur sm:px-6">
       <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
         <div className="truncate font-display text-lg font-bold">{title}</div>
-        <div className="text-xs text-mist-400">{kind === 'company' ? `Седалище: ${hqName}` : `Самостоятелен шофьор · база ${hqName}`} · {user.username}</div>
+        <div className="text-xs text-mist-400">{kind === 'company' ? `Собствен автопарк · база ${hqName}` : `Самостоятелен шофьор · база ${hqName}`} · {user.username}</div>
       </div>
       <div className="flex items-center gap-2" title="Наличност">
         <Wallet className="h-4 w-4 text-gold-400" />

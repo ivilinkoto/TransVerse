@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
@@ -17,13 +18,14 @@ import {
   type UpgradeLevels,
 } from '@/lib/game/company';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { companies, companyApplications, companyAssets, companyMembers, companyRanks, users } from '@/server/db/schema';
+import { cities, companies, companyApplications, companyAssets, companyMembers, companyRanks, depots, organizations, treasuryEntries, users } from '@/server/db/schema';
+import { ECONOMY } from '@/lib/game/economy';
 import { fail } from './errors';
-import { post } from './finance';
+import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
 
 export type Rank = typeof companyRanks.$inferSelect;
-type CompanyRow = typeof companies.$inferSelect;
+export type Organization = typeof organizations.$inferSelect;
 
 // ── Validation (shared by the API route) ─────────────────────────────────
 
@@ -56,7 +58,7 @@ export const settingsSchema = z.object({
 // ── Lookups ──────────────────────────────────────────────────────────────
 
 export interface Membership {
-  company: CompanyRow;
+  company: Organization;
   rank: Rank;
   member: typeof companyMembers.$inferSelect;
 }
@@ -64,7 +66,7 @@ export interface Membership {
 export async function membershipOf(db: DbOrTx, userId: string, lock = false): Promise<Membership | null> {
   const [m] = await db.select().from(companyMembers).where(eq(companyMembers.userId, userId));
   if (!m) return null;
-  const q = db.select().from(companies).where(eq(companies.id, m.companyId));
+  const q = db.select().from(organizations).where(eq(organizations.id, m.companyId));
   const [company] = lock ? await q.for('update') : await q;
   const [rank] = await db.select().from(companyRanks).where(eq(companyRanks.id, m.rankId));
   return { company: company!, rank: rank!, member: m };
@@ -127,7 +129,7 @@ export async function setupCompanyMembership(tx: Tx, companyId: string, ownerId:
 export async function joinCompany(db: Database, userId: string, companyId: string, message = ''): Promise<'joined' | 'applied'> {
   return db.transaction(async (tx) => {
     if (await membershipOf(tx, userId)) fail('already_member', 'Вече членувате в компания. Първо я напуснете.', 409);
-    const [company] = await tx.select().from(companies).where(and(eq(companies.id, companyId), eq(companies.kind, 'company'))).for('update');
+    const [company] = await tx.select().from(organizations).where(eq(organizations.id, companyId)).for('update');
     if (!company) fail('company_not_found', 'Компанията не е намерена.', 404);
     const [user] = await tx.select({ level: users.level, username: users.username }).from(users).where(eq(users.id, userId));
     if (company!.recruitment === 'closed') fail('recruitment_closed', 'Компанията не приема нови членове.');
@@ -197,7 +199,7 @@ export async function leaveCompany(db: Database, userId: string) {
   return db.transaction(async (tx) => {
     const m = await membershipOf(tx, userId);
     if (!m) fail('not_member', 'Не членувате в компания.');
-    if (m!.rank.isOwner) fail('owner_cannot_leave', 'Собственикът не може да напусне собствената си компания.');
+    if (m!.rank.isOwner) fail('owner_must_transfer', 'Като собственик първо предайте собствеността на друг член (или закрийте компанията, ако сте единственият член).');
     await tx.delete(companyMembers).where(eq(companyMembers.userId, userId));
     await logActivity(tx, userId, 'company_left', { companyId: m!.company.id });
     await notify(tx, m!.company.ownerId, 'info', 'Член напусна компанията', 'Един от членовете напусна компанията.', '/game/company/members');
@@ -301,9 +303,9 @@ export async function updateProfile(db: Database, actorId: string, input: z.infe
     if (input.tag && !hasUnlock(level, 'tag')) fail('locked', 'Тагът се отключва на ниво 5 на компанията.');
     if (input.color && !hasUnlock(level, 'banner')) fail('locked', 'Фирменият цвят се отключва на ниво 3 на компанията.');
     await tx
-      .update(companies)
+      .update(organizations)
       .set({ description: input.description || null, rules: input.rules || null, tag: input.tag || null, color: input.color || null })
-      .where(eq(companies.id, actor.company.id));
+      .where(eq(organizations.id, actor.company.id));
     await logActivity(tx, actorId, 'company_profile_updated', { companyId: actor.company.id });
   });
 }
@@ -311,7 +313,7 @@ export async function updateProfile(db: Database, actorId: string, input: z.infe
 export async function updateSettings(db: Database, actorId: string, input: z.infer<typeof settingsSchema>) {
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
-    await tx.update(companies).set(input).where(eq(companies.id, actor.company.id));
+    await tx.update(organizations).set(input).where(eq(organizations.id, actor.company.id));
     await logActivity(tx, actorId, 'company_settings_updated', { companyId: actor.company.id, ...input });
   });
 }
@@ -327,16 +329,16 @@ export async function buyCompanyUpgrade(db: Database, actorId: string, upgradeId
     const next = upgrade!.levels[current];
     if (!next) fail('max_level', 'Подобрението е на максимално ниво.');
     if (actor.company.companyLevel < next!.minCompanyLevel) fail('company_level', `Нужно е ниво ${next!.minCompanyLevel} на компанията.`);
-    await post(
+    await postTreasury(
       tx,
       actor.company.id,
-      [{ category: 'company_upgrade', amountCents: -next!.costCents, description: `${upgrade!.label} — ниво ${current + 1}`, idempotencyKey: `company-upgrade:${actor.company.id}:${upgrade!.id}:${current + 1}` }],
+      [{ category: 'company_upgrade', amountCents: -next!.costCents, description: `${upgrade!.label} — ниво ${current + 1}`, idempotencyKey: `company-upgrade:${actor.company.id}:${upgrade!.id}:${current + 1}`, actorUserId: actorId }],
       { requireFunds: true },
     );
     await tx
-      .update(companies)
+      .update(organizations)
       .set({ upgrades: { ...levels, [upgrade!.id]: current + 1 } })
-      .where(eq(companies.id, actor.company.id));
+      .where(eq(organizations.id, actor.company.id));
     await logActivity(tx, actorId, 'company_upgrade', { upgradeId, level: current + 1 });
     await notifyMembers(tx, actor.company.id, null, 'Компанията се развива', `${upgrade!.label} достигна ниво ${current + 1}: ${upgrade!.description(current + 1)}.`, '/game/company/development');
     return current + 1;
@@ -345,10 +347,10 @@ export async function buyCompanyUpgrade(db: Database, actorId: string, upgradeId
 
 /** Adds company experience from a member's delivery and announces level-ups. */
 export async function addCompanyXp(tx: Tx, companyId: string, xp: number) {
-  const [row] = await tx.update(companies).set({ companyXp: sql`${companies.companyXp} + ${xp}` }).where(eq(companies.id, companyId)).returning({ xp: companies.companyXp, level: companies.companyLevel, name: companies.name });
+  const [row] = await tx.update(organizations).set({ companyXp: sql`${organizations.companyXp} + ${xp}` }).where(eq(organizations.id, companyId)).returning({ xp: organizations.companyXp, level: organizations.companyLevel, name: organizations.name });
   const level = companyLevelForXp(row!.xp);
   if (level > row!.level) {
-    await tx.update(companies).set({ companyLevel: level }).where(eq(companies.id, companyId));
+    await tx.update(organizations).set({ companyLevel: level }).where(eq(organizations.id, companyId));
     await notifyMembers(tx, companyId, null, `„${row!.name}“ достигна ниво ${level}!`, 'Вижте новите възможности в „Развитие“.', '/game/company/development');
   }
 }
@@ -370,7 +372,7 @@ export async function uploadAsset(db: Database, actorId: string, kind: AssetKind
       .insert(companyAssets)
       .values({ companyId: actor.company.id, kind, mime: mime!, data })
       .onConflictDoUpdate({ target: [companyAssets.companyId, companyAssets.kind], set: { mime: mime!, data, updatedAt: new Date() } });
-    await tx.update(companies).set({ brandingVersion: sql`${companies.brandingVersion} + 1` }).where(eq(companies.id, actor.company.id));
+    await tx.update(organizations).set({ brandingVersion: sql`${organizations.brandingVersion} + 1` }).where(eq(organizations.id, actor.company.id));
     await logActivity(tx, actorId, 'company_asset_uploaded', { kind, bytes: bytes.length });
   });
 }
@@ -379,7 +381,7 @@ export async function removeAsset(db: Database, actorId: string, kind: AssetKind
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'edit_profile');
     await tx.delete(companyAssets).where(and(eq(companyAssets.companyId, actor.company.id), eq(companyAssets.kind, kind)));
-    await tx.update(companies).set({ brandingVersion: sql`${companies.brandingVersion} + 1` }).where(eq(companies.id, actor.company.id));
+    await tx.update(organizations).set({ brandingVersion: sql`${organizations.brandingVersion} + 1` }).where(eq(organizations.id, actor.company.id));
   });
 }
 
@@ -395,31 +397,31 @@ export async function assetKinds(db: DbOrTx, companyId: string): Promise<Set<Ass
 
 // ── Views ────────────────────────────────────────────────────────────────
 
-const membersCount = sql<number>`(select count(*)::int from company_members m where m.company_id = ${companies.id})`;
+const membersCount = sql<number>`(select count(*)::int from company_members m where m.company_id = ${organizations.id})`;
+const memberDeliveries = sql<number>`(select coalesce(sum(m.deliveries), 0)::int from company_members m where m.company_id = ${organizations.id})`;
 
 export async function companyDirectory(db: DbOrTx, search = '', limit = 60) {
-  const conditions = [eq(companies.kind, 'company')];
-  if (search.trim()) conditions.push(ilike(companies.name, `%${search.trim().replace(/[%_\\]/g, '')}%`));
+  const term = search.trim().replace(/[%_\\]/g, '');
   return db
     .select({
-      id: companies.id,
-      name: companies.name,
-      tag: companies.tag,
-      color: companies.color,
-      recruitment: companies.recruitment,
-      minJoinLevel: companies.minJoinLevel,
-      companyLevel: companies.companyLevel,
-      upgrades: companies.upgrades,
-      brandingVersion: companies.brandingVersion,
-      description: companies.description,
-      deliveries: companies.deliveries,
+      id: organizations.id,
+      name: organizations.name,
+      tag: organizations.tag,
+      color: organizations.color,
+      recruitment: organizations.recruitment,
+      minJoinLevel: organizations.minJoinLevel,
+      companyLevel: organizations.companyLevel,
+      upgrades: organizations.upgrades,
+      brandingVersion: organizations.brandingVersion,
+      description: organizations.description,
+      deliveries: memberDeliveries,
       owner: users.username,
       members: membersCount,
     })
-    .from(companies)
-    .innerJoin(users, eq(users.id, companies.ownerId))
-    .where(and(...conditions))
-    .orderBy(desc(companies.companyLevel), desc(companies.companyXp))
+    .from(organizations)
+    .innerJoin(users, eq(users.id, organizations.ownerId))
+    .where(term ? ilike(organizations.name, `%${term}%`) : undefined)
+    .orderBy(desc(organizations.companyLevel), desc(organizations.companyXp))
     .limit(limit);
 }
 
@@ -448,19 +450,120 @@ export async function pendingApplications(db: DbOrTx, companyId: string) {
 
 export async function myApplications(db: DbOrTx, userId: string) {
   return db
-    .select({ application: companyApplications, company: companies.name })
+    .select({ application: companyApplications, company: organizations.name })
     .from(companyApplications)
-    .innerJoin(companies, eq(companies.id, companyApplications.companyId))
+    .innerJoin(organizations, eq(organizations.id, companyApplications.companyId))
     .where(and(eq(companyApplications.userId, userId), eq(companyApplications.status, 'pending')));
 }
 
 export async function publicCompany(db: DbOrTx, companyId: string) {
   const [row] = await db
-    .select({ company: companies, owner: users.username, members: membersCount })
-    .from(companies)
-    .innerJoin(users, eq(users.id, companies.ownerId))
-    .where(and(eq(companies.id, companyId), eq(companies.kind, 'company')));
+    .select({ company: organizations, owner: users.username, members: membersCount, deliveries: memberDeliveries })
+    .from(organizations)
+    .innerJoin(users, eq(users.id, organizations.ownerId))
+    .where(eq(organizations.id, companyId));
   return row ?? null;
+}
+
+// ── Treasury and ownership ───────────────────────────────────────────────
+
+export const depositSchema = z.coerce.number().int('Сумата е в цели евро.').min(1, 'Минимум 1 €.').max(10_000_000, 'Твърде голяма сума.');
+
+/** A member moves personal money into the company treasury (one-way: the treasury has no personal withdrawals). */
+export async function depositToTreasury(db: Database, userId: string, amountEur: number) {
+  const amountCents = Math.round(depositSchema.parse(amountEur) * 100);
+  return db.transaction(async (tx) => {
+    const m = await membershipOf(tx, userId);
+    if (!m) fail('not_member', 'Не членувате в компания.', 403);
+    const account = await accountOf(tx, userId);
+    const [user] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
+    const op = randomUUID();
+    // Personal account first, then the treasury — the same lock order as delivery settlement.
+    await post(tx, account.id, [{ category: 'treasury_deposit', amountCents: -amountCents, description: `Внесени в касата на „${m!.company.name}“`, idempotencyKey: `deposit:${op}:out` }], { requireFunds: true });
+    await postTreasury(tx, m!.company.id, [{ category: 'deposit', amountCents, description: `Внесени от ${user!.username}`, idempotencyKey: `deposit:${op}:in`, actorUserId: userId }]);
+    await tx.update(companyMembers).set({ contributedCents: sql`${companyMembers.contributedCents} + ${amountCents}` }).where(eq(companyMembers.userId, userId));
+    await logActivity(tx, userId, 'treasury_deposit', { companyId: m!.company.id, amountCents });
+    return amountCents;
+  });
+}
+
+async function accountOf(tx: Tx, userId: string) {
+  const [account] = await tx.select().from(companies).where(eq(companies.ownerId, userId));
+  if (!account) fail('company_not_found', 'Профилът няма игрови акаунт.', 404);
+  return account!;
+}
+
+/**
+ * The owner hands the company over to another member. The new owner gets the
+ * operator licence (fleet, staff, depots) and, if needed, a depot in the
+ * company's HQ city. The previous owner becomes the most senior other rank,
+ * or leaves the company when `leave` is set.
+ */
+export async function transferOwnership(db: Database, ownerId: string, targetUserId: string, leave: boolean) {
+  return db.transaction(async (tx) => {
+    const owner = await membershipOf(tx, ownerId, true);
+    if (!owner) fail('not_member', 'Не членувате в компания.', 403);
+    if (!owner!.rank.isOwner) fail('forbidden', 'Само собственикът може да предаде компанията.', 403);
+    if (targetUserId === ownerId) fail('invalid_target', 'Изберете друг член.');
+    const [target] = await tx.select().from(companyMembers).where(and(eq(companyMembers.userId, targetUserId), eq(companyMembers.companyId, owner!.company.id)));
+    if (!target) fail('member_not_found', 'Новият собственик трябва да е член на компанията.', 404);
+    const [heir] = await tx.select({ username: users.username, bannedAt: users.bannedAt }).from(users).where(eq(users.id, targetUserId));
+    if (heir!.bannedAt) fail('invalid_target', 'Този играч е блокиран.');
+
+    const [senior] = await tx
+      .select()
+      .from(companyRanks)
+      .where(and(eq(companyRanks.companyId, owner!.company.id), eq(companyRanks.isOwner, false)))
+      .orderBy(asc(companyRanks.priority))
+      .limit(1);
+    if (!senior) fail('no_entry_rank', 'Компанията няма друга длъжност.');
+
+    await tx.update(companyMembers).set({ rankId: owner!.rank.id }).where(eq(companyMembers.userId, targetUserId));
+    if (leave) await tx.delete(companyMembers).where(eq(companyMembers.userId, ownerId));
+    else await tx.update(companyMembers).set({ rankId: senior!.id }).where(eq(companyMembers.userId, ownerId));
+    await tx.update(organizations).set({ ownerId: targetUserId }).where(eq(organizations.id, owner!.company.id));
+
+    // Running a company comes with the operator licence.
+    const account = await accountOf(tx, targetUserId);
+    if (account.kind !== 'company') {
+      await tx.update(companies).set({ kind: 'company', foundedAt: new Date() }).where(eq(companies.id, account.id));
+      await tx.insert(depots).values({ companyId: account.id, cityId: owner!.company.hqCityId, slots: ECONOMY.depotSlotsDefault }).onConflictDoNothing();
+    }
+    await logActivity(tx, ownerId, 'company_transferred', { companyId: owner!.company.id, to: targetUserId, left: leave });
+    await notify(tx, targetUserId, 'achievement', `Вече сте собственик на „${owner!.company.name}“`, 'Собствеността ви беше предадена. Имате всички права в компанията.', '/game/company');
+    await notifyMembers(tx, owner!.company.id, null, 'Нов собственик', `${heir!.username} е новият собственик на „${owner!.company.name}“.`, '/game/company/members');
+  });
+}
+
+/** Closes a company that has no other members; whatever is left in the treasury goes to the owner. */
+export async function dissolveCompany(db: Database, ownerId: string) {
+  return db.transaction(async (tx) => {
+    // Lock the personal account before the company row (same order as settlement and deposits).
+    await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, ownerId)).for('update');
+    const owner = await membershipOf(tx, ownerId, true);
+    if (!owner) fail('not_member', 'Не членувате в компания.', 403);
+    if (!owner!.rank.isOwner) fail('forbidden', 'Само собственикът може да закрие компанията.', 403);
+    if ((await memberCount(tx, owner!.company.id)) > 1) fail('has_members', 'Компанията има други членове — предайте собствеността на някой от тях.');
+    const left = owner!.company.treasuryCents;
+    if (left > 0) {
+      const account = await accountOf(tx, ownerId);
+      await postTreasury(tx, owner!.company.id, [{ category: 'dissolution', amountCents: -left, description: 'Изплатено на собственика при закриване', idempotencyKey: `dissolve:${owner!.company.id}:out`, actorUserId: ownerId }]);
+      await post(tx, account.id, [{ category: 'company_dissolution', amountCents: left, description: `Остатък от касата на „${owner!.company.name}“`, idempotencyKey: `dissolve:${owner!.company.id}:in` }]);
+    }
+    await tx.delete(organizations).where(eq(organizations.id, owner!.company.id));
+    await logActivity(tx, ownerId, 'company_dissolved', { companyId: owner!.company.id, name: owner!.company.name, refundCents: left });
+    return left;
+  });
+}
+
+export async function treasuryHistory(db: DbOrTx, companyId: string, limit = 30) {
+  return db
+    .select({ entry: treasuryEntries, actor: users.username })
+    .from(treasuryEntries)
+    .leftJoin(users, eq(users.id, treasuryEntries.actorUserId))
+    .where(eq(treasuryEntries.organizationId, companyId))
+    .orderBy(desc(treasuryEntries.id))
+    .limit(limit);
 }
 
 // ── Staff moderation ─────────────────────────────────────────────────────
@@ -469,19 +572,25 @@ export async function publicCompany(db: DbOrTx, companyId: string) {
 export async function resetBranding(tx: Tx, companyId: string) {
   await tx.delete(companyAssets).where(eq(companyAssets.companyId, companyId));
   await tx
-    .update(companies)
-    .set({ description: null, rules: null, tag: null, brandingVersion: sql`${companies.brandingVersion} + 1` })
-    .where(eq(companies.id, companyId));
+    .update(organizations)
+    .set({ description: null, rules: null, tag: null, brandingVersion: sql`${organizations.brandingVersion} + 1` })
+    .where(eq(organizations.id, companyId));
 }
 
 /** Everything the company section needs about the player's own company. */
 export async function companyHub(db: DbOrTx, userId: string) {
   const m = await membershipOf(db, userId);
   if (!m) return null;
-  const [assets, members, pending] = await Promise.all([
+  const [assets, members, pending, [extra]] = await Promise.all([
     assetKinds(db, m.company.id),
     memberCount(db, m.company.id),
     can(m.rank, 'manage_members') ? pendingApplications(db, m.company.id) : Promise.resolve([]),
+    db
+      .select({ owner: users.username, hq: cities.nameBg, memberDeliveries: memberDeliveries })
+      .from(organizations)
+      .innerJoin(users, eq(users.id, organizations.ownerId))
+      .innerJoin(cities, eq(cities.id, organizations.hqCityId))
+      .where(eq(organizations.id, m.company.id)),
   ]);
-  return { ...m, assets, members, pending };
+  return { ...m, assets, members, pending, owner: extra!.owner, hq: extra!.hq, memberDeliveries: extra!.memberDeliveries };
 }

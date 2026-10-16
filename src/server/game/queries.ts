@@ -3,7 +3,7 @@ import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { resaleValueCents } from '@/lib/game/economy';
 import type { Segment } from '@/lib/game/schedule';
 import type { DbOrTx } from '@/server/db/client';
-import { cities, companies, deliveries, depots, drivers, ledgerEntries, notifications, routes, seasonScores, trailers, users, vehicles, contracts } from '@/server/db/schema';
+import { cities, companies, deliveries, depots, drivers, ledgerEntries, notifications, organizations, routes, seasonScores, trailers, users, vehicles, contracts } from '@/server/db/schema';
 import { activeSeason } from './seasons';
 
 const ageDays = (d: Date) => (Date.now() - d.getTime()) / 86_400_000;
@@ -80,25 +80,27 @@ export async function latestNotifications(db: DbOrTx, userId: string, limit = 50
   return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.id)).limit(limit);
 }
 
+/** The player's company name (via membership), or the player as an independent driver. */
+const playerLabel = sql<string>`coalesce((select o.name from company_members m join organizations o on o.id = m.company_id where m.user_id = ${users.id}), ${users.username} || ' · самостоятелен шофьор')`;
+
 export type LeaderboardKind = 'season' | 'wealth' | 'deliveries' | 'companies';
 
 /** Player companies ranked by development (level and experience from all members). */
 export async function companyLeaderboard(db: DbOrTx, limit = 50) {
   return db
     .select({
-      companyId: companies.id,
-      company: companies.name,
-      tag: companies.tag,
-      color: companies.color,
+      companyId: organizations.id,
+      company: organizations.name,
+      tag: organizations.tag,
+      color: organizations.color,
       owner: users.username,
-      level: companies.companyLevel,
-      value: companies.companyXp,
-      members: sql<number>`(select count(*)::int from company_members m where m.company_id = ${companies.id})`,
+      level: organizations.companyLevel,
+      value: organizations.companyXp,
+      members: sql<number>`(select count(*)::int from company_members m where m.company_id = ${organizations.id})`,
     })
-    .from(companies)
-    .innerJoin(users, eq(users.id, companies.ownerId))
-    .where(eq(companies.kind, 'company'))
-    .orderBy(desc(companies.companyXp), desc(companies.deliveries))
+    .from(organizations)
+    .innerJoin(users, eq(users.id, organizations.ownerId))
+    .orderBy(desc(organizations.companyXp), desc(organizations.foundedAt))
     .limit(limit);
 }
 
@@ -106,7 +108,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   if (kind === 'season') {
     const season = await activeSeason(db);
     const rows = await db
-      .select({ companyId: companies.id, company: sql<string>`coalesce(${companies.name}, ${users.username} || ' · самостоятелен шофьор')`, owner: users.username, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
+      .select({ companyId: companies.id, company: playerLabel, owner: users.username, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
       .from(seasonScores)
       .innerJoin(companies, eq(companies.id, seasonScores.companyId))
       .innerJoin(users, eq(users.id, companies.ownerId))
@@ -117,7 +119,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   }
   if (kind === 'deliveries') {
     const rows = await db
-      .select({ companyId: companies.id, company: sql<string>`coalesce(${companies.name}, ${users.username} || ' · самостоятелен шофьор')`, owner: users.username, level: users.level, value: companies.deliveries, deliveries: companies.deliveries })
+      .select({ companyId: companies.id, company: playerLabel, owner: users.username, level: users.level, value: companies.deliveries, deliveries: companies.deliveries })
       .from(companies)
       .innerJoin(users, eq(users.id, companies.ownerId))
       .orderBy(desc(companies.deliveries), desc(companies.totalKm))
@@ -128,7 +130,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   const rows = await db
     .select({
       companyId: companies.id,
-      company: sql<string>`coalesce(${companies.name}, ${users.username} || ' · самостоятелен шофьор')`,
+      company: playerLabel,
       owner: users.username,
       level: users.level,
       value: sql<number>`(${companies.balanceCents} + coalesce((select sum(v.purchase_price_cents * 0.65 * (0.4 + 0.6 * v.condition / 100)) from vehicles v where v.company_id = ${companies.id} and v.sold_at is null and v.ownership = 'owned'), 0))::bigint`,

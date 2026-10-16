@@ -28,7 +28,6 @@ describe('registration and authentication', () => {
     const { userId, hq, username } = await newPlayer('Plovdiv');
     const company = await companyOf(userId);
     expect(company.kind).toBe('independent');
-    expect(company.name).toBeNull();
     expect(company.balanceCents).toBe(1_500_00);
     expect(company.hqCityId).toBe(hq.id);
     const fleet = await fleetOf(company.id);

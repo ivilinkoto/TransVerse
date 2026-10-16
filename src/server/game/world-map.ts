@@ -1,8 +1,7 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
 import type { Segment } from '@/lib/game/schedule';
 import type { DbOrTx } from '@/server/db/client';
-import { cities, companies, companyMembers, contracts, deliveries, routes, users, vehicles } from '@/server/db/schema';
+import { cities, companies, companyMembers, contracts, deliveries, organizations, routes, users, vehicles } from '@/server/db/schema';
 import { onlineUserIds } from '@/server/realtime';
 
 /** A leg of another player's trip; the geometry is shared through `routes` to keep the payload small. */
@@ -45,7 +44,6 @@ const MAX_TRUCKS = 3000;
  * money or contract terms — only who drives where.
  */
 export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<WorldSnapshot> {
-  const memberCo = alias(companies, 'member_co');
   const activeSince = new Date(now.getTime() - IDLE_ACTIVE_DAYS * 86_400_000);
   const rows = await db
     .select({
@@ -53,11 +51,9 @@ export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<World
       status: vehicles.status,
       userId: users.id,
       player: users.username,
-      ownName: companies.name,
-      ownKind: companies.kind,
-      memberName: memberCo.name,
-      tag: sql<string | null>`coalesce(${memberCo.tag}, ${companies.tag})`,
-      color: sql<string | null>`coalesce(${memberCo.color}, ${companies.color})`,
+      company: organizations.name,
+      tag: organizations.tag,
+      color: organizations.color,
       lat: cities.lat,
       lon: cities.lon,
       city: cities.nameBg,
@@ -67,7 +63,7 @@ export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<World
     .innerJoin(users, eq(users.id, companies.ownerId))
     .innerJoin(cities, eq(cities.id, vehicles.cityId))
     .leftJoin(companyMembers, eq(companyMembers.userId, users.id))
-    .leftJoin(memberCo, eq(memberCo.id, companyMembers.companyId))
+    .leftJoin(organizations, eq(organizations.id, companyMembers.companyId))
     .where(
       and(
         isNull(vehicles.soldAt),
@@ -115,7 +111,7 @@ export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<World
     return {
       id: r.id,
       player: r.player,
-      company: r.memberName ?? (r.ownKind === 'company' ? r.ownName : null),
+      company: r.company,
       tag: r.tag,
       color: r.color,
       online: online.has(r.userId),

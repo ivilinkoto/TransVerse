@@ -26,6 +26,9 @@ import {
   updateRank,
   updateSettings,
   withdrawApplication,
+  depositToTreasury,
+  dissolveCompany,
+  transferOwnership,
 } from '@/server/game/membership';
 
 const id = z.string().uuid('Невалиден идентификатор.');
@@ -68,6 +71,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('updateCompanySettings'), settings: settingsSchema }),
   z.object({ type: z.literal('buyCompanyUpgrade'), upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('removeCompanyAsset'), kind: z.enum(['logo', 'banner']) }),
+  z.object({ type: z.literal('depositTreasury'), amountEur: z.coerce.number() }),
+  z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean() }),
+  z.object({ type: z.literal('dissolveCompany') }),
 ]);
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -165,5 +171,12 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'removeCompanyAsset':
       await removeAsset(db, user.id, input.kind);
       return { ok: true };
+    case 'depositTreasury':
+      return { ok: true, amountCents: await depositToTreasury(db, user.id, input.amountEur) };
+    case 'transferOwnership':
+      await transferOwnership(db, user.id, input.userId, input.leave);
+      return { ok: true };
+    case 'dissolveCompany':
+      return { ok: true, refundCents: await dissolveCompany(db, user.id) };
   }
 });

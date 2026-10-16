@@ -4,7 +4,7 @@ import { companyLevelForXp, companyXpForLevel, maxRanks, memberBonuses, memberCa
 import { rentalFeeCents } from '@/lib/game/economy';
 import { adminResetCompanyBranding } from '@/server/admin';
 import { closeDb } from '@/server/db/client';
-import { companies, companyAssets, companyMembers, companyRanks, ledgerEntries, users, vehicles } from '@/server/db/schema';
+import { companies, companyAssets, companyMembers, companyRanks, ledgerEntries, organizations, treasuryEntries, users, vehicles } from '@/server/db/schema';
 import { foundCompany } from '@/server/game/company';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
@@ -19,6 +19,9 @@ import {
   membershipOf,
   pendingApplications,
   setMemberRank,
+  depositToTreasury,
+  dissolveCompany,
+  transferOwnership,
   updateProfile,
   updateRank,
   updateSettings,
@@ -28,7 +31,10 @@ import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(async () => closeDb());
 
-const companyOf = async (userId: string) => (await db().select().from(companies).where(eq(companies.ownerId, userId)))[0]!;
+const accountOf = async (userId: string) => (await db().select().from(companies).where(eq(companies.ownerId, userId)))[0]!;
+/** The organisation owned by a player. */
+const companyOf = async (userId: string) => (await db().select().from(organizations).where(eq(organizations.ownerId, userId)))[0]!;
+const orgById = async (id: string) => (await db().select().from(organizations).where(eq(organizations.id, id)))[0];
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : String(e)));
 const ranksOf = async (companyId: string) => db().select().from(companyRanks).where(eq(companyRanks.companyId, companyId)).orderBy(companyRanks.priority);
 const truckOf = async (companyId: string) => (await db().select().from(vehicles).where(and(eq(vehicles.companyId, companyId), sql`${vehicles.soldAt} is null`)))[0]!;
@@ -67,7 +73,7 @@ describe('company membership', () => {
     expect(ranks.map((r) => r.name)).toEqual(['Собственик', 'Заместник', 'Диспечер', 'Шофьор']);
     const m = await membershipOf(db(), owner.userId);
     expect(m?.rank.isOwner).toBe(true);
-    expect(await code(leaveCompany(db(), owner.userId))).toBe('owner_cannot_leave');
+    expect(await code(leaveCompany(db(), owner.userId))).toBe('owner_must_transfer');
   });
 
   it('applications: apply, approve, ranks and kicking follow the hierarchy', async () => {
@@ -130,7 +136,7 @@ describe('company membership', () => {
     const owner = await playerWithCompany();
     const company = await companyOf(owner.userId);
     expect(await code(createRank(db(), owner.userId, { name: 'Стажант', priority: 40, permissions: [] }))).toBe('rank_limit');
-    await db().update(companies).set({ companyLevel: 2 }).where(eq(companies.id, company.id));
+    await db().update(organizations).set({ companyLevel: 2 }).where(eq(organizations.id, company.id));
     const intern = await createRank(db(), owner.userId, { name: 'Стажант', priority: 40, permissions: [] });
     expect(intern.name).toBe('Стажант');
 
@@ -179,22 +185,32 @@ describe('company membership', () => {
     expect((await companyOf(owner.userId)).description).toBeNull();
   });
 
-  it('members get bonuses and pay contributions; deliveries develop the company', async () => {
+  it('the company has its own treasury, separate from the owner’s money', async () => {
     const owner = await playerWithCompany('Sofia', 20_000_00);
     const company = await companyOf(owner.userId);
+    expect(company.treasuryCents).toBe(0);
     await updateSettings(db(), owner.userId, { recruitment: 'open', minJoinLevel: 1, contributionRate: 0.1 });
-    const start = (await companyOf(owner.userId)).balanceCents;
+
+    // Upgrades are paid only from the treasury — never from the owner's personal balance.
+    expect(await code(buyCompanyUpgrade(db(), owner.userId, 'logistics'))).toBe('insufficient_treasury');
+    const personalBefore = (await accountOf(owner.userId)).balanceCents;
+    expect(await code(depositToTreasury(db(), owner.userId, 1_000_000))).toBe('insufficient_funds');
+    await depositToTreasury(db(), owner.userId, 20_000);
+    expect((await accountOf(owner.userId)).balanceCents).toBe(personalBefore - 20_000_00);
+    expect((await orgById(company.id))!.treasuryCents).toBe(20_000_00);
+
     expect(await code(buyCompanyUpgrade(db(), owner.userId, 'logistics'))).toBe('ok');
     expect(await code(buyCompanyUpgrade(db(), owner.userId, 'logistics'))).toBe('company_level'); // level 2 needs company level 2
     await buyCompanyUpgrade(db(), owner.userId, 'rental_partner');
-    const treasuryBefore = (await companyOf(owner.userId)).balanceCents;
-    expect(treasuryBefore).toBe(start - 8_000_00 - 10_000_00);
-    const upgrades = await db().select().from(ledgerEntries).where(and(eq(ledgerEntries.companyId, company.id), eq(ledgerEntries.category, 'company_upgrade')));
-    expect(upgrades).toHaveLength(2);
+    const treasuryBefore = (await orgById(company.id))!.treasuryCents;
+    expect(treasuryBefore).toBe(20_000_00 - 8_000_00 - 10_000_00);
+    expect((await accountOf(owner.userId)).balanceCents).toBe(personalBefore - 20_000_00);
+    const spent = await db().select().from(treasuryEntries).where(and(eq(treasuryEntries.organizationId, company.id), eq(treasuryEntries.category, 'company_upgrade')));
+    expect(spent).toHaveLength(2);
 
     const member = await newPlayer();
     await joinCompany(db(), member.userId, company.id);
-    const account = await companyOf(member.userId);
+    const account = await accountOf(member.userId);
     const contract = await makeContract('Sofia', 'Plovdiv', { rewardCents: 1000_00 });
     const d = await acceptContract(db(), member.userId, contract.id, (await truckOf(account.id)).id);
     expect(d.rentalFeeCents).toBe(rentalFeeCents(1000_00, d.emptyKm + d.loadedKm, 0.05));
@@ -204,16 +220,63 @@ describe('company membership', () => {
     const amount = (key: string) => entries.find((e) => e.idempotencyKey === `delivery:${d.id}:${key}`)?.amountCents;
     expect(amount('company-bonus')).toBe(20_00); // +2 % of 1 000 €
     expect(amount('contribution')).toBe(-100_00); // 10 % to the treasury
-    expect(amount('contribution-in')).toBe(100_00);
-    expect(entries.find((e) => e.idempotencyKey.endsWith(':contribution-in'))?.companyId).toBe(company.id);
-    expect((await companyOf(owner.userId)).balanceCents).toBe(treasuryBefore + 100_00);
+    const [inflow] = await db().select().from(treasuryEntries).where(eq(treasuryEntries.idempotencyKey, `delivery:${d.id}:contribution-in`));
+    expect(inflow?.amountCents).toBe(100_00);
+    expect(inflow?.organizationId).toBe(company.id);
+    expect((await orgById(company.id))!.treasuryCents).toBe(treasuryBefore + 100_00);
+    expect((await accountOf(owner.userId)).balanceCents).toBe(personalBefore - 20_000_00); // owner's money untouched
 
     const [stats] = await db().select().from(companyMembers).where(eq(companyMembers.userId, member.userId));
     expect(stats?.deliveries).toBe(1);
     expect(stats?.contributedCents).toBe(100_00);
-    expect((await companyOf(owner.userId)).companyXp).toBe(stats!.xpContributed);
+    expect((await orgById(company.id))!.companyXp).toBe(stats!.xpContributed);
     // Settlement is exactly-once: a second pass changes nothing.
     await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 2000));
-    expect((await companyOf(owner.userId)).balanceCents).toBe(treasuryBefore + 100_00);
+    expect((await orgById(company.id))!.treasuryCents).toBe(treasuryBefore + 100_00);
+  });
+
+  it('an owner can leave only by handing the company over to a member', async () => {
+    const owner = await playerWithCompany();
+    const company = await companyOf(owner.userId);
+    await updateSettings(db(), owner.userId, { recruitment: 'open', minJoinLevel: 1, contributionRate: 0.05 });
+    const heir = await newPlayer('Varna');
+    const outsider = await newPlayer();
+    await joinCompany(db(), heir.userId, company.id);
+
+    expect(await code(leaveCompany(db(), owner.userId))).toBe('owner_must_transfer');
+    expect(await code(transferOwnership(db(), heir.userId, owner.userId, false))).toBe('forbidden');
+    expect(await code(transferOwnership(db(), owner.userId, outsider.userId, true))).toBe('member_not_found');
+    expect(await code(dissolveCompany(db(), owner.userId))).toBe('has_members');
+
+    await transferOwnership(db(), owner.userId, heir.userId, true);
+    const org = (await orgById(company.id))!;
+    expect(org.ownerId).toBe(heir.userId);
+    expect((await membershipOf(db(), heir.userId))?.rank.isOwner).toBe(true);
+    expect(await membershipOf(db(), owner.userId)).toBeNull();
+    // The new owner gets the operator licence and a depot in the company's HQ city.
+    const heirAccount = await accountOf(heir.userId);
+    expect(heirAccount.kind).toBe('company');
+    // The old owner keeps their licence, fleet and money, and may found a new company later.
+    expect((await accountOf(owner.userId)).kind).toBe('company');
+  });
+
+  it('the owner can stay as the most senior rank, or close a company with no other members', async () => {
+    const owner = await playerWithCompany();
+    const company = await companyOf(owner.userId);
+    await updateSettings(db(), owner.userId, { recruitment: 'open', minJoinLevel: 1, contributionRate: 0.05 });
+    const heir = await newPlayer();
+    await joinCompany(db(), heir.userId, company.id);
+    await transferOwnership(db(), owner.userId, heir.userId, false);
+    expect((await membershipOf(db(), owner.userId))?.rank.name).toBe('Заместник');
+
+    // A solo owner closes the company; the treasury is paid out to them.
+    const solo = await playerWithCompany('Plovdiv', 1_000_00);
+    const soloOrg = await companyOf(solo.userId);
+    await depositToTreasury(db(), solo.userId, 500);
+    const before = (await accountOf(solo.userId)).balanceCents;
+    expect(await dissolveCompany(db(), solo.userId)).toBe(500_00);
+    expect((await accountOf(solo.userId)).balanceCents).toBe(before + 500_00);
+    expect(await orgById(soloOrg.id)).toBeUndefined();
+    expect(await membershipOf(db(), solo.userId)).toBeNull();
   });
 });

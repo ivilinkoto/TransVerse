@@ -20,7 +20,7 @@ export default async function DevelopmentPage() {
     <div className="space-y-6">
       <Card title="Как се развива компанията">
         <p className="text-sm text-mist-300">
-          Всеки курс на член носи опит на компанията и тя качва нива. Подобренията се купуват от касата на компанията (баланса на собственика), която се пълни и от вноските на членовете. Каса: <span className="num font-semibold text-gold-400">{money(c.balanceCents)}</span>
+          Всеки курс на член носи опит на компанията и тя качва нива. Подобренията се купуват от касата на компанията — отделна от личните пари на всеки член, включително собственика. Касата се пълни от вноските от курсовете и от доброволни вноски на членовете. Каса: <span className="num font-semibold text-gold-400">{money(c.treasuryCents)}</span>
         </p>
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -39,7 +39,7 @@ export default async function DevelopmentPage() {
                     <div className="mt-0.5 text-mist-400">Цена <span className="num text-gold-400">{money(next.costCents)}</span>{next.minCompanyLevel > 1 && ` · изисква ниво ${next.minCompanyLevel} на компанията`}</div>
                   </div>
                   {manage ? (
-                    <ActionButton action={{ type: 'buyCompanyUpgrade', upgradeId: u.id }} className="btn-gold px-4 py-2 text-sm" disabled={!!lockedByLevel || c.balanceCents < next.costCents} confirm={`Да платите ${money(next.costCents)} от касата?`}>
+                    <ActionButton action={{ type: 'buyCompanyUpgrade', upgradeId: u.id }} className="btn-gold px-4 py-2 text-sm" disabled={!!lockedByLevel || c.treasuryCents < next.costCents} confirm={`Да платите ${money(next.costCents)} от касата?`}>
                       {lockedByLevel ? `Ниво ${next.minCompanyLevel}` : 'Подобри'}
                     </ActionButton>
                   ) : (

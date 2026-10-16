@@ -32,7 +32,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
     : null;
   return (
     <div className="space-y-6">
-      <CompanyBrand company={c} hasLogo={assets.has('logo')} hasBanner={assets.has('banner')} subtitle={`Собственик ${row.owner} · ${int(row.members)} / ${capacity} членове · ${int(c.deliveries)} доставки на собственика`} actions={<Link href="/game/companies" className="btn-ghost">← Всички компании</Link>} />
+      <CompanyBrand company={c} hasLogo={assets.has('logo')} hasBanner={assets.has('banner')} subtitle={`Собственик ${row.owner} · ${int(row.members)} / ${capacity} членове · ${int(row.deliveries)} курса на членовете`} actions={<Link href="/game/companies" className="btn-ghost">← Всички компании</Link>} />
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">
           <Card title={<span className="inline-flex items-center gap-2"><Building2 className="h-4 w-4 text-mist-400" />За компанията</span>}>
@@ -68,7 +68,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
             <ul className="mt-4 space-y-1 border-t border-asphalt-800 pt-3 text-xs text-mist-400">
               {COMPANY_UPGRADES.map((u) => <li key={u.id}>{u.label}: ниво {(c.upgrades as UpgradeLevels)[u.id] ?? 0} / {u.levels.length}</li>)}
             </ul>
-            <p className="mt-3 text-xs text-mist-400">Каса на компанията: {money(c.balanceCents)}</p>
+            <p className="mt-3 text-xs text-mist-400">Каса на компанията: {money(c.treasuryCents)}</p>
           </Card>
         </div>
       </div>

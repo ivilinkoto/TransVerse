@@ -6,7 +6,7 @@ import { authenticate } from '@/server/auth/accounts';
 import { canBan, canChangeRole } from '@/server/auth/roles';
 import { createSession, validateSession } from '@/server/auth/session';
 import { closeDb } from '@/server/db/client';
-import { adminAudit, companies, deliveries, depots, ledgerEntries, notifications, users, vehicles } from '@/server/db/schema';
+import { adminAudit, companies, organizations, deliveries, depots, ledgerEntries, notifications, users, vehicles } from '@/server/db/schema';
 import { foundCompany, rentVehicle, returnRental } from '@/server/game/company';
 import { acceptContract, migrateToGameTime, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
@@ -34,14 +34,16 @@ describe('company founding', () => {
     const founded = await playerWithCompany('Varna');
     const company = await companyOf(founded.userId);
     expect(company.kind).toBe('company');
-    expect(company.name).toContain('Тест');
+    const [org] = await db().select().from(organizations).where(eq(organizations.ownerId, founded.userId));
+    expect(org?.name).toContain('Тест');
+    expect(org?.treasuryCents).toBe(0);
     expect(company.foundedAt).not.toBeNull();
     const [depot] = await db().select().from(depots).where(eq(depots.companyId, company.id));
     expect(depot?.cityId).toBe(founded.hq.id);
     const fee = await db().select().from(ledgerEntries).where(and(eq(ledgerEntries.companyId, company.id), eq(ledgerEntries.category, 'company_founding')));
     expect(fee).toHaveLength(1);
     expect(fee[0]!.amountCents).toBe(-5_000_00);
-    expect(await code(foundCompany(db(), founded.userId, { name: 'Втора', hqCityId: founded.hq.id }))).toBe('already_founded');
+    expect(await code(foundCompany(db(), founded.userId, { name: 'Втора', hqCityId: founded.hq.id }))).toBe('already_member');
   });
 });
 
