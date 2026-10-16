@@ -133,6 +133,8 @@ export const users = pgTable(
     tutorial: jsonb('tutorial').$type<{ done: string[]; dismissed?: boolean; rewarded?: boolean }>().notNull().default({ done: [] }),
     createdAt: createdAt(),
     lastSeenAt: ts('last_seen_at'),
+    /** VIP status granted by an administrator; active while in the future. */
+    vipUntil: ts('vip_until'),
   },
   (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`)],
 );
@@ -291,6 +293,11 @@ export const contracts = pgTable(
     status: text('status').notNull().default('open'), // open | accepted | expired
     acceptedByCompanyId: uuid('accepted_by_company_id').references(() => companies.id),
     acceptedAt: ts('accepted_at'),
+    /** Urgent shipment created by an administrator: shown first and driven faster. */
+    urgent: boolean('urgent').notNull().default(false),
+    /** How much faster than normal game time the trip runs (urgent shipments). */
+    speedFactor: real('speed_factor').notNull().default(1),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
   },
@@ -463,6 +470,21 @@ export const adminAudit = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('admin_audit_created_idx').on(t.createdAt)],
+);
+
+// ── Carrier licences ──────────────────────────────────────────────────────
+
+export const userLicences = pgTable(
+  'user_licences',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    licence: text('licence').notNull(),
+    /** Price paid; 0 when granted (e.g. kept from before licences existed). */
+    priceCents: money('price_cents').notNull().default(0),
+    source: text('source').notNull().default('purchase'), // purchase | legacy | admin
+    acquiredAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.licence] })],
 );
 
 // ── Player companies (organisations with members and their own treasury) ──

@@ -12,7 +12,7 @@ import { rotateSeasons } from '@/server/game/seasons';
 import { runPayroll } from '@/server/game/staff';
 import { worldTick } from '@/server/game/world';
 import { approximateProvider, valhallaProvider } from '@/server/geo/routing';
-import { cityByName, db, makeContract, newPlayer, playerWithCompany } from './helpers';
+import { cityByName, db, makeContract, newPlayer, playerWithCompany, grantLicences } from './helpers';
 
 afterAll(async () => closeDb());
 
@@ -200,6 +200,7 @@ describe('freight market and deliveries', () => {
 
   it('drives empty to the pickup first and follows EU rest rules on long hauls', async () => {
     const { userId } = await newPlayer();
+    await grantLicences(userId, 'international');
     const company = await companyOf(userId);
     const [van] = await fleetOf(company.id);
     const contract = await makeContract('Plovdiv', 'Munich');
@@ -213,9 +214,9 @@ describe('freight market and deliveries', () => {
 });
 
 describe('fleet, finance and staff', () => {
-  it('requires a company to buy, then enforces funds and depot capacity', async () => {
+  it('anyone may buy (a depot is needed first), then funds and depot capacity are enforced', async () => {
     const solo = await newPlayer();
-    await expectGameError(buyVehicle(db(), solo.userId, 'sokol-courier', solo.hq.id), 'company_required');
+    await expectGameError(buyVehicle(db(), solo.userId, 'sokol-courier', solo.hq.id), 'no_depot');
 
     const { userId, hq } = await playerWithCompany('Sofia', 34_000_00);
     const before = (await companyOf(userId)).balanceCents;

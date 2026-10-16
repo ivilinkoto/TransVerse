@@ -73,10 +73,10 @@ export default async function CompanyPage() {
             <div className="mt-6 rounded-xl border border-asphalt-700 bg-asphalt-850 p-4 text-sm text-mist-300">
               <p className="font-semibold text-mist-100">Какво получаваш с компания</p>
               <ul className="mt-2 list-inside list-disc space-y-1">
-                <li>Седалище и депо с {ECONOMY.depotSlotsDefault} места</li>
-                <li>Покупка и наем на още превозни средства и ремаркета</li>
+                <li>Седалище и безплатно депо с {ECONOMY.depotSlotsDefault} места</li>
+                <li>Наем на допълнителни камиони</li>
                 <li>Наемане на шофьори — повече курсове едновременно</li>
-                <li>Нови депа в реални градове из региона</li>
+                <li>Каса, членове, длъжности и бонуси за екипа</li>
                 <li>Други играчи могат да се присъединят към теб — с длъжности, права и общо развитие</li>
               </ul>
               <p className="mt-3 flex items-center gap-2 text-xs text-mist-400"><Truck className="h-3.5 w-3.5" />Наетият ти камион остава и след основаването.</p>

@@ -9,6 +9,7 @@ import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUp
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver } from '@/server/game/staff';
 import { handler } from '@/server/http';
+import { buyLicence } from '@/server/game/licences';
 import {
   buyCompanyUpgrade,
   createRank,
@@ -74,6 +75,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('depositTreasury'), amountEur: z.coerce.number() }),
   z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean() }),
   z.object({ type: z.literal('dissolveCompany') }),
+  z.object({ type: z.literal('buyLicence'), licence: z.string().max(30) }),
 ]);
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -176,6 +178,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'transferOwnership':
       await transferOwnership(db, user.id, input.userId, input.leave);
       return { ok: true };
+    case 'buyLicence':
+      return { ok: true, licence: await buyLicence(db, user.id, input.licence) };
     case 'dissolveCompany':
       return { ok: true, refundCents: await dissolveCompany(db, user.id) };
   }

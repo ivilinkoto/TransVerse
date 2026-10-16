@@ -9,6 +9,7 @@ import { int } from '@/lib/format';
 import { cumulativeKm, greatCircle, pointAlong, type LatLon } from '@/lib/geo/geometry';
 import { stateAt, type Segment } from '@/lib/game/schedule';
 import type { WorldSnapshot, WorldTruck } from '@/server/game/world-map';
+import { PlayerName } from './PlayerName';
 
 export interface MapLeg {
   geometry: string | null;
@@ -141,7 +142,7 @@ function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number):
         const { point, moving } = truckPoint(t, world.routes, now);
         const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
         const fill = t.color && HEX.test(t.color) ? t.color : '#e8eef7';
-        return { type: 'Feature', properties: { id: t.id, label, icon: truckIcon(fill, t.online ? '#34d399' : '#f6c343'), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+        return { type: 'Feature', properties: { id: t.id, label, icon: truckIcon(fill, t.online ? '#34d399' : '#ef4444'), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
       }),
   };
 }
@@ -240,7 +241,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
         'icon-size': ['interpolate', ['linear'], ['zoom'], 4, 0.75, 9, 1.05],
         'icon-allow-overlap': true,
       }, paint: { 'icon-opacity': ['case', ['get', 'moving'], 1, 0.75] } }, 'vehicles-halo');
-      map.addLayer({ id: 'players-label', type: 'symbol', source: 'players', minzoom: 6.5, layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.5], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#f6c343', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'vehicles-halo');
+      map.addLayer({ id: 'players-label', type: 'symbol', source: 'players', minzoom: 6.5, layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.5], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#e8eef7', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'vehicles-halo');
 
       const p = initial.current.preview;
       if (p) {
@@ -352,7 +353,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-prestige" />Депо</span>
         <label className="flex cursor-pointer items-center gap-1.5">
           <input type="checkbox" checked={showPlayers} onChange={(e) => setShowPlayers(e.target.checked)} className="accent-[var(--color-gold-400)]" />
-          <TruckGlyph ring="#f6c343" />
+          <TruckGlyph ring="#ef4444" />
           Други играчи{world ? ` (${world.players}, ${world.online} в играта)` : ''}
         </label>
         <span className="flex items-center gap-1.5">
@@ -363,7 +364,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
         <aside className="absolute right-3 top-14 w-[min(300px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Играч">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <div className="font-display text-lg font-bold">{picked.player}</div>
+              <div className="font-display text-lg font-bold"><PlayerName name={picked.player} role={picked.role} vip={picked.vip} /></div>
               <div className="text-xs text-mist-400">{picked.company ? `${picked.tag ? `[${picked.tag}] ` : ''}${picked.company}` : 'Самостоятелен шофьор'}</div>
             </div>
             <button className="text-mist-400 hover:text-white" onClick={() => setPicked(null)} aria-label="Затвори">✕</button>

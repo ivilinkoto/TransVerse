@@ -1,6 +1,6 @@
 'use client';
 
-import { ClipboardList, Gauge, LifeBuoy, LogOut, Users } from 'lucide-react';
+import { ClipboardList, Gauge, LifeBuoy, LogOut, Siren, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -8,6 +8,7 @@ const ITEMS = [
   { href: '/admin', label: 'Табло', icon: Gauge },
   { href: '/admin/users', label: 'Потребители', icon: Users },
   { href: '/admin/tickets', label: 'Поддръжка', icon: LifeBuoy },
+  { href: '/admin/urgent', label: 'Спешни доставки', icon: Siren },
   { href: '/admin/audit', label: 'Одит дневник', icon: ClipboardList },
 ];
 

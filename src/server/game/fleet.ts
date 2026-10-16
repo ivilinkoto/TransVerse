@@ -3,7 +3,7 @@ import { POWER_UNITS, TRAILERS, UPGRADES, canCouple, powerUnitModel, trailerMode
 import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cityMarkets, depots, drivers, trailers, users, vehicles } from '@/server/db/schema';
-import { companyForUser, requireFoundedCompany } from './company';
+import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { plate, VEHICLE_COLORS } from './names';
@@ -32,7 +32,7 @@ export async function buyVehicle(db: Database, userId: string, modelId: string, 
   const model = POWER_UNITS.find((m) => m.id === modelId);
   if (!model) fail('unknown_model', 'Непознат модел.');
   return db.transaction(async (tx) => {
-    const company = await requireFoundedCompany(tx, userId);
+    const company = await companyForUser(tx, userId);
     if ((await level(tx, userId)) < model!.minLevel) fail('level', `Изисква ниво ${model!.minLevel}.`);
     await depotInCity(tx, company.id, depotCityId);
     const cap = await fleetCapacity(tx, company.id);
@@ -49,7 +49,7 @@ export async function buyTrailer(db: Database, userId: string, modelId: string, 
   const model = TRAILERS.find((m) => m.id === modelId);
   if (!model) fail('unknown_model', 'Непознат модел.');
   return db.transaction(async (tx) => {
-    const company = await requireFoundedCompany(tx, userId);
+    const company = await companyForUser(tx, userId);
     if ((await level(tx, userId)) < model!.minLevel) fail('level', `Изисква ниво ${model!.minLevel}.`);
     await depotInCity(tx, company.id, depotCityId);
     const [trailer] = await tx.insert(trailers).values({ companyId: company.id, modelId: model!.id, plate: plate(), cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
@@ -161,7 +161,7 @@ export async function coupleTrailer(db: Database, userId: string, vehicleId: str
 
 export async function buyDepot(db: Database, userId: string, cityId: number) {
   return db.transaction(async (tx) => {
-    const company = await requireFoundedCompany(tx, userId);
+    const company = await companyForUser(tx, userId);
     const [hub] = await tx.select().from(cityMarkets).where(eq(cityMarkets.cityId, cityId)).limit(1);
     if (!hub) fail('not_hub', 'Депо може да се открие само в град, участващ в товарния пазар.');
     const [existing] = await tx.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, cityId)));
@@ -176,7 +176,7 @@ export async function buyDepot(db: Database, userId: string, cityId: number) {
 
 export async function expandDepot(db: Database, userId: string, depotId: string) {
   return db.transaction(async (tx) => {
-    const company = await requireFoundedCompany(tx, userId);
+    const company = await companyForUser(tx, userId);
     const [depot] = await tx.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id))).for('update');
     if (!depot) fail('depot_not_found', 'Депото не е намерено.', 404);
     if (depot!.slots >= 20) fail('max_slots', 'Депото е с максимален капацитет.');

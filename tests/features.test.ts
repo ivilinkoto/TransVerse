@@ -12,7 +12,7 @@ import { acceptContract, migrateToGameTime, settleDueDeliveries } from '@/server
 import { GameError } from '@/server/game/errors';
 import { createTicket, replyToTicket, ticketThread } from '@/server/game/support';
 import { completeTutorialStep, tutorialState } from '@/server/game/tutorial';
-import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
+import { db, makeContract, newPlayer, playerWithCompany, grantLicences } from './helpers';
 
 afterAll(async () => closeDb());
 
@@ -67,6 +67,7 @@ describe('rentals', () => {
 describe('game time', () => {
   it('deliveries take hours, not days', async () => {
     const p = await newPlayer();
+    await grantLicences(p.userId, 'international');
     const [truck] = await fleetOf((await companyOf(p.userId)).id);
     const contract = await makeContract('Sofia', 'Thessaloníki');
     const d = await acceptContract(db(), p.userId, contract.id, truck!.id);

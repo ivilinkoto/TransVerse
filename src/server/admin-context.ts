@@ -9,5 +9,6 @@ export const adminContext = cache(async () => {
   const user = await currentUser();
   if (!user) redirect('/login?next=/admin');
   if (!isStaff(user.role)) redirect('/game');
-  return { db: getDb(), user };
+  // One timestamp per request keeps renders pure.
+  return { db: getDb(), user, now: new Date() };
 });

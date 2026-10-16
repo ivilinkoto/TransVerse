@@ -427,7 +427,7 @@ export async function companyDirectory(db: DbOrTx, search = '', limit = 60) {
 
 export async function companyMembersView(db: DbOrTx, companyId: string) {
   return db
-    .select({ userId: users.id, username: users.username, level: users.level, member: companyMembers, rank: companyRanks })
+    .select({ userId: users.id, username: users.username, role: users.role, vipUntil: users.vipUntil, level: users.level, member: companyMembers, rank: companyRanks })
     .from(companyMembers)
     .innerJoin(users, eq(users.id, companyMembers.userId))
     .innerJoin(companyRanks, eq(companyRanks.id, companyMembers.rankId))

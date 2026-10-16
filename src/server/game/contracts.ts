@@ -3,10 +3,11 @@ import { CARGO, CARGO_TYPES, type BodyType, type CargoType } from '@/lib/game/ca
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { rewardCents } from '@/lib/game/economy';
 import { haversineKm } from '@/lib/geo/geometry';
+import { contractCountries, missingLicences, requiredLicences } from '@/lib/game/licences';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, userLicences, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { shipperName } from './names';
@@ -62,6 +63,8 @@ export interface GenerateOptions {
   /** Force origin (used for onboarding near a new company). */
   originCityId?: number;
   sizeClass?: (typeof SIZE_CLASSES)[number]['id'];
+  /** Only destinations in the origin's country (jobs that need no cross-border licence). */
+  domestic?: boolean;
   provider?: RoutingProvider;
 }
 
@@ -85,7 +88,7 @@ export async function generateContracts(db: Database, options: GenerateOptions =
     const cargo = pick(candidatesCargo);
 
     const destination = pickWeighted(
-      hubs.filter((h) => h.id !== origin.id && h.consumes.has(cargo)),
+      hubs.filter((h) => h.id !== origin.id && h.consumes.has(cargo) && (!options.domestic || h.countryCode === origin.countryCode)),
       (h) => {
         const km = haversineKm([origin.lat, origin.lon], [h.lat, h.lon]) * 1.25;
         if (km > size.maxKm || km < 20) return 0;
@@ -130,6 +133,8 @@ export interface LocalNeed {
   bodies: BodyType[];
   payloadTons: number;
   level: number;
+  /** Licences the player holds; jobs needing others do not count. */
+  licences: ReadonlySet<string>;
 }
 
 /**
@@ -138,14 +143,21 @@ export interface LocalNeed {
  * the distance. Creates one when missing. Returns how many were created.
  */
 export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Date(), provider?: RoutingProvider): Promise<number> {
-  const compatible = CARGO_TYPES.filter((c) => CARGO[c].minLevel <= need.level && CARGO[c].bodies.some((b) => need.bodies.includes(b)));
+  const compatible = CARGO_TYPES.filter(
+    (c) => CARGO[c].minLevel <= need.level && CARGO[c].bodies.some((b) => need.bodies.includes(b)) && missingLicences(requiredLicences(c, []), need.licences).length === 0,
+  );
   if (!compatible.length || need.payloadTons <= 0) return 0;
-  const [existing] = await db
-    .select({ id: contracts.id })
+  const candidates = await db
+    .select({ cargoType: contracts.cargoType, routeCountries: routes.countries, destCountry: cities.countryCode })
     .from(contracts)
+    .innerJoin(routes, eq(routes.id, contracts.routeId))
+    .innerJoin(cities, eq(cities.id, contracts.destCityId))
     .where(and(eq(contracts.status, 'open'), eq(contracts.originCityId, need.cityId), gt(contracts.expiresAt, now), lte(contracts.weightTons, need.payloadTons), lte(contracts.minLevel, need.level), inArray(contracts.cargoType, compatible)))
-    .limit(1);
-  if (existing) return 0;
+    .limit(50);
+  const [here] = await db.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, need.cityId));
+  if (!here) return 0;
+  const doable = candidates.some((c) => missingLicences(requiredLicences(c.cargoType, contractCountries(here.country, c.destCountry, c.routeCountries)), need.licences).length === 0);
+  if (doable) return 0;
 
   const hubs = await loadHubs(db);
   let origin = hubs.find((h) => h.id === need.cityId);
@@ -156,7 +168,9 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
   }
   const local = compatible.filter((c) => origin!.produces.has(c));
   const cargo = pick(local.length ? local : compatible);
-  const others = hubs.filter((h) => h.id !== origin!.id);
+  // Without cross-border licences the guaranteed job stays inside the country.
+  const domesticOnly = !need.licences.has('international') || !need.licences.has('customs');
+  const others = hubs.filter((h) => h.id !== origin!.id && (!domesticOnly || h.countryCode === origin!.countryCode));
   const weight = (h: Hub) => {
     const km = haversineKm([origin!.lat, origin!.lon], [h.lat, h.lon]);
     return km < 15 ? 0 : Math.sqrt(h.population) / (1 + km / 400);
@@ -196,7 +210,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
 /** Runs the local-job guarantee for every free, crewed vehicle (optionally of one company). */
 export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit = 40): Promise<number> {
   const rows = await db
-    .select({ cityId: vehicles.cityId, modelId: vehicles.modelId, vehicleId: vehicles.id, level: users.level })
+    .select({ cityId: vehicles.cityId, modelId: vehicles.modelId, vehicleId: vehicles.id, level: users.level, userId: users.id })
     .from(vehicles)
     .innerJoin(drivers, eq(drivers.vehicleId, vehicles.id))
     .innerJoin(companies, eq(companies.id, vehicles.companyId))
@@ -205,16 +219,20 @@ export async function ensureLocalJobsForFleet(db: Database, now = new Date(), co
     .limit(limit);
   if (!rows.length) return 0;
   const coupled = await db.select().from(trailers).where(inArray(trailers.vehicleId, rows.map((r) => r.vehicleId)));
+  const held = await db.select().from(userLicences).where(inArray(userLicences.userId, [...new Set(rows.map((r) => r.userId))]));
+  const licencesByUser = new Map<string, Set<string>>();
+  for (const h of held) licencesByUser.set(h.userId, (licencesByUser.get(h.userId) ?? new Set()).add(h.licence));
   const seen = new Set<string>();
   let created = 0;
   for (const r of rows) {
     const unit = powerUnitModel(r.modelId);
     const t = coupled.find((x) => x.vehicleId === r.vehicleId);
     const cap = combinationCapability({ unit, trailer: t ? trailerModel(t.modelId) : null });
-    const key = `${r.cityId}:${cap.bodies.join(',')}:${cap.payloadTons}:${r.level}`;
+    const licences = licencesByUser.get(r.userId) ?? new Set<string>();
+    const key = `${r.cityId}:${cap.bodies.join(',')}:${cap.payloadTons}:${r.level}:${[...licences].sort().join(',')}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level }, now, provider);
+    created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level, licences }, now, provider);
   }
   return created;
 }
@@ -225,7 +243,7 @@ export async function ensureStarterJobs(db: Database, cityId: number, now = new 
     .select({ n: sql<number>`count(*)::int` })
     .from(contracts)
     .where(and(eq(contracts.status, 'open'), eq(contracts.originCityId, cityId), lte(contracts.weightTons, 1.3), eq(contracts.cargoType, 'pallets'), gt(contracts.expiresAt, now)));
-  return n < 2 ? generateContracts(db, { now, max: 2 - n, originCityId: cityId, sizeClass: 'van', provider }) : 0;
+  return n < 2 ? generateContracts(db, { now, max: 2 - n, originCityId: cityId, sizeClass: 'van', domestic: true, provider }) : 0;
 }
 
 export interface ContractFilter {
@@ -241,7 +259,7 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (filter.originCityId) conditions.push(eq(contracts.originCityId, filter.originCityId));
   const rows = await db.query.contracts.findMany({
     where: and(...conditions),
-    orderBy: [desc(contracts.rewardCents), asc(contracts.expiresAt)],
+    orderBy: [desc(contracts.urgent), desc(contracts.rewardCents), asc(contracts.expiresAt)],
     limit: Math.min(filter.limit ?? 150, 300),
   });
   const cityIds = [...new Set(rows.flatMap((r) => [r.originCityId, r.destCityId]))];
