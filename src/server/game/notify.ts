@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import { activity, notifications } from '@/server/db/schema';
 
@@ -17,4 +17,8 @@ export async function broadcast(db: DbOrTx, type: 'market' | 'leaderboard') {
 
 export async function logActivity(db: DbOrTx, userId: string, action: string, details: Record<string, unknown> = {}) {
   await db.insert(activity).values({ userId, action, details });
+}
+
+export async function markNotificationsRead(db: DbOrTx, userId: string) {
+  await db.update(notifications).set({ readAt: new Date() }).where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
 }

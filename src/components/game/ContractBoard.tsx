@@ -1,0 +1,195 @@
+'use client';
+
+import { AlertTriangle, ArrowRight, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Truck } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
+import { Badge, Empty, type BadgeTone } from '@/components/ui';
+import { api } from '@/lib/client/api';
+import { dateTime, dec, duration, int, km, money } from '@/lib/format';
+import type { CargoType } from '@/lib/game/cargo';
+
+export interface BoardContract {
+  id: string;
+  shipper: string;
+  goods: string;
+  cargoType: CargoType;
+  cargoLabel: string;
+  tons: number;
+  origin: { id: number; name: string; country: string };
+  destination: { id: number; name: string; country: string };
+  distanceKm: number;
+  provider: string;
+  hasToll: boolean;
+  borders: number;
+  countries: string[];
+  rewardCents: number;
+  windowMinutes: number;
+  expiresAt: string;
+  minLevel: number;
+  locked: boolean;
+  options: { vehicleId: string; label: string; error: string | null; emptyKm: number; costCents: number; profitCents: number; minutes: number }[];
+}
+
+const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet' };
+
+type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
+
+export function ContractBoard({ contracts, cargoTypes }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[] }) {
+  const [cargo, setCargo] = useState<string>('');
+  const [query, setQuery] = useState('');
+  const [doable, setDoable] = useState(false);
+  const [sort, setSort] = useState<Sort>('reward');
+  const [open, setOpen] = useState<string | null>(null);
+
+  const list = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = contracts.filter(
+      (c) =>
+        (!cargo || c.cargoType === cargo) &&
+        (!q || c.origin.name.toLowerCase().includes(q) || c.destination.name.toLowerCase().includes(q) || c.goods.toLowerCase().includes(q)) &&
+        (!doable || (!c.locked && c.options.some((o) => !o.error))),
+    );
+    const key: Record<Sort, (c: BoardContract) => number> = {
+      reward: (c) => -c.rewardCents,
+      perKm: (c) => -c.rewardCents / c.distanceKm,
+      distance: (c) => c.distanceKm,
+      expires: (c) => new Date(c.expiresAt).getTime(),
+    };
+    return filtered.sort((a, b) => key[sort](a) - key[sort](b));
+  }, [contracts, cargo, query, doable, sort]);
+
+  return (
+    <div className="space-y-4">
+      <div className="panel flex flex-wrap items-center gap-3 p-3">
+        <label className="relative min-w-[200px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
+          <input className="input pl-9" placeholder="Град или стока…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Търсене" />
+        </label>
+        <select className="input w-auto" value={cargo} onChange={(e) => setCargo(e.target.value)} aria-label="Вид товар">
+          <option value="">Всички товари</option>
+          {cargoTypes.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+        </select>
+        <select className="input w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Подреждане">
+          <option value="reward">Най-високо възнаграждение</option>
+          <option value="perKm">Най-добре платени на км</option>
+          <option value="distance">Най-къси</option>
+          <option value="expires">Изтичат скоро</option>
+        </select>
+        <label className="flex items-center gap-2 text-sm text-mist-300">
+          <input type="checkbox" checked={doable} onChange={(e) => setDoable(e.target.checked)} className="h-4 w-4 accent-cyan-500" />
+          Само изпълними с моя автопарк
+        </label>
+        <span className="num ml-auto text-xs text-mist-400">{list.length} от {contracts.length}</span>
+      </div>
+
+      {list.length === 0 ? (
+        <Empty icon={Truck} title="Няма поръчки по тези критерии">Пазарът се обновява на всеки няколко минути.</Empty>
+      ) : (
+        <ul className="space-y-2">
+          {list.map((c) => (
+            <ContractRow key={c.id} contract={c} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ContractRow({ contract: c, open, onToggle }: { contract: BoardContract; open: boolean; onToggle: () => void }) {
+  const router = useRouter();
+  const usable = c.options.filter((o) => !o.error);
+  const [vehicleId, setVehicleId] = useState(usable[0]?.vehicleId ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const option = c.options.find((o) => o.vehicleId === vehicleId);
+  const expiresMin = (new Date(c.expiresAt).getTime() - Date.now()) / 60_000;
+
+  const accept = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId });
+      router.push('/game/fleet');
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <li className={`panel overflow-hidden transition ${open ? 'border-volt-500/60' : 'hover:border-asphalt-500'} ${c.locked ? 'opacity-60' : ''}`}>
+      <button className="grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 text-left sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto]" onClick={onToggle} aria-expanded={open}>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={CARGO_TONE[c.cargoType]}>{c.cargoLabel}</Badge>
+            <span className="truncate font-semibold">{c.goods}</span>
+            <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
+            {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />ниво {c.minLevel}</Badge>}
+          </div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
+            <span className="font-medium">{c.origin.name}</span>
+            <span className="text-[11px] text-mist-400">{c.origin.country}</span>
+            <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
+            <span className="font-medium">{c.destination.name}</span>
+            <span className="text-[11px] text-mist-400">{c.destination.country}</span>
+          </div>
+        </div>
+        <div className="hidden text-xs text-mist-400 sm:block">
+          <div className="flex items-center gap-1.5"><Route className="h-3.5 w-3.5" /><span className="num">{km(c.distanceKm)}</span>{c.provider === 'approximate' && <Badge tone="orange">приблизително</Badge>}</div>
+          <div className="mt-1 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />срок {duration(c.windowMinutes)}{expiresMin < 120 && <span className="text-amber-sig">· изтича скоро</span>}</div>
+        </div>
+        <div className="text-right">
+          <div className="num font-display text-lg font-bold text-profit">{money(c.rewardCents)}</div>
+          <div className="num text-[11px] text-mist-400">{dec(c.rewardCents / 100 / c.distanceKm)} €/км</div>
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">
+          <dl className="grid gap-3 text-sm sm:grid-cols-4">
+            <div><dt className="label">Възложител</dt><dd className="mt-1">{c.shipper}</dd></div>
+            <div><dt className="label">Маршрут</dt><dd className="mt-1">{c.countries.join(' → ')} · {c.borders ? `${c.borders} граница` : 'без граница'}{c.hasToll ? ' · тол' : ''}</dd></div>
+            <div><dt className="label">Срок за доставка</dt><dd className="mt-1">{duration(c.windowMinutes)} от приемането</dd></div>
+            <div><dt className="label">Изтича от борсата</dt><dd className="mt-1">{dateTime(c.expiresAt)}</dd></div>
+          </dl>
+
+          {c.locked ? (
+            <p className="mt-4 flex items-center gap-2 text-sm text-prestige"><Lock className="h-4 w-4" />Достигнете ниво {c.minLevel}, за да поемате такива товари.</p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <select className="input min-w-0 flex-1" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label="Превозно средство">
+                  <option value="">— изберете превозно средство —</option>
+                  {c.options.map((o) => (
+                    <option key={o.vehicleId} value={o.vehicleId} disabled={!!o.error}>
+                      {o.label}{o.error ? ` — ${o.error}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy} onClick={accept}>
+                  <ShieldCheck className="h-4 w-4" />{busy ? 'Изпращане…' : 'Приеми и изпрати'}
+                </button>
+                <Link href={`/game/map?contract=${c.id}`} className="btn-ghost"><MapPinned className="h-4 w-4" />На картата</Link>
+              </div>
+              {option && !option.error && (
+                <div className="grid gap-2 text-sm sm:grid-cols-4">
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Празен курс </span><span className="num">≈ {int(option.emptyKm)} км</span></div>
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Разходи (оценка) </span><span className="num text-loss">{money(option.costCents)}</span></div>
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Печалба (оценка) </span><span className={`num ${option.profitCents >= 0 ? 'text-profit' : 'text-loss'}`}>{money(option.profitCents)}</span></div>
+                  <div className={`rounded-lg px-3 py-2 ${option.minutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>
+                    <span className="text-mist-400">Пристигане след </span><span className="num">≈ {duration(option.minutes)}</span>
+                    {option.minutes > c.windowMinutes && <span className="ml-1 inline-flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" />риск от закъснение</span>}
+                  </div>
+                </div>
+              )}
+              {usable.length === 0 && <p className="text-sm text-amber-sig">Нито едно от вашите превозни средства не може да поеме тази поръчка. Причините са посочени в списъка.</p>}
+              {error && <p role="alert" className="text-sm text-loss">{error}</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}

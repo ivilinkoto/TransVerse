@@ -137,16 +137,18 @@ export async function replenishMarket(db: Database, now = new Date(), provider?:
   let created = 0;
   if (open < target) created += await generateContracts(db, { now, max: Math.min(25, target - open), provider });
 
-  // Onboarding guarantee: every HQ has at least two van-sized jobs available.
   const hqs = await db.selectDistinct({ cityId: companies.hqCityId }).from(companies);
-  for (const { cityId } of hqs) {
-    const [{ n = 0 } = {}] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(contracts)
-      .where(and(eq(contracts.status, 'open'), eq(contracts.originCityId, cityId), lte(contracts.weightTons, 1.3), eq(contracts.cargoType, 'pallets')));
-    if (n < 2) created += await generateContracts(db, { now, max: 2 - n, originCityId: cityId, sizeClass: 'van', provider });
-  }
+  for (const { cityId } of hqs) created += await ensureStarterJobs(db, cityId, now, provider);
   return created;
+}
+
+/** Onboarding guarantee: a company HQ always has at least two van-sized jobs available. */
+export async function ensureStarterJobs(db: Database, cityId: number, now = new Date(), provider?: RoutingProvider) {
+  const [{ n = 0 } = {}] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(contracts)
+    .where(and(eq(contracts.status, 'open'), eq(contracts.originCityId, cityId), lte(contracts.weightTons, 1.3), eq(contracts.cargoType, 'pallets'), gt(contracts.expiresAt, now)));
+  return n < 2 ? generateContracts(db, { now, max: 2 - n, originCityId: cityId, sizeClass: 'van', provider }) : 0;
 }
 
 export interface ContractFilter {

@@ -1,0 +1,18 @@
+import { NextResponse } from 'next/server';
+import { authenticate, loginSchema } from '@/server/auth/accounts';
+import { rateLimit } from '@/server/auth/rate-limit';
+import { createSession, sessionCookie } from '@/server/auth/session';
+import { getDb } from '@/server/db/client';
+import { clientIp, handler } from '@/server/http';
+
+export const POST = handler({ auth: false, schema: loginSchema, perMinute: 30 }, async ({ input, request }) => {
+  const db = getDb();
+  // Brute-force protection per IP and per account name.
+  await rateLimit(db, `login:ip:${await clientIp()}`, 20, 900);
+  await rateLimit(db, `login:id:${input.login.toLowerCase()}`, 8, 900);
+  const userId = await authenticate(db, input);
+  const { token, expiresAt } = await createSession(db, userId, request.headers.get('user-agent'));
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(sessionCookie(token, expiresAt));
+  return response;
+});

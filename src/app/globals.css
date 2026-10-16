@@ -1,0 +1,95 @@
+@import 'tailwindcss';
+
+/*
+ * TransVerse visual identity — "night dispatch": graphite asphalt, electric
+ * route-light blue/cyan, sodium-gold for money, green for profit, violet for prestige.
+ */
+@theme {
+  --color-asphalt-950: #05070b;
+  --color-asphalt-900: #0a0e14;
+  --color-asphalt-850: #0e131b;
+  --color-asphalt-800: #121924;
+  --color-asphalt-700: #1a2433;
+  --color-asphalt-600: #263347;
+  --color-asphalt-500: #3a4a63;
+  --color-mist-400: #8d9bb3;
+  --color-mist-300: #b4c0d3;
+  --color-mist-100: #e8eef7;
+  --color-volt-500: #2f7bff;
+  --color-volt-400: #4f93ff;
+  --color-cyan-glow: #22d3ee;
+  --color-gold-400: #f6c343;
+  --color-gold-500: #f5a524;
+  --color-amber-sig: #ff8a1f;
+  --color-profit: #2fd27a;
+  --color-loss: #ff5a6a;
+  --color-prestige: #a66bff;
+
+  --font-display: var(--font-display-face), 'Arial Black', system-ui, sans-serif;
+  --font-sans: var(--font-onest), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background: var(--color-asphalt-950);
+  }
+  body {
+    @apply bg-asphalt-950 font-sans text-mist-100 antialiased;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-cyan-glow);
+    outline-offset: 2px;
+  }
+}
+
+@utility panel {
+  @apply rounded-2xl border border-asphalt-700 bg-asphalt-900/80 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset];
+}
+@utility label {
+  @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-mist-400;
+}
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45;
+}
+@utility btn-primary {
+  @apply btn bg-volt-500 text-white shadow-[0_8px_30px_-8px_rgba(47,123,255,0.7)] hover:bg-volt-400;
+}
+@utility btn-gold {
+  @apply btn bg-gold-400 text-asphalt-950 hover:brightness-110;
+}
+@utility btn-ghost {
+  @apply btn border border-asphalt-600 bg-asphalt-800/60 text-mist-100 hover:border-volt-500/60;
+}
+@utility btn-danger {
+  @apply btn border border-loss/40 text-loss hover:bg-loss/10;
+}
+@utility input {
+  @apply w-full rounded-xl border border-asphalt-600 bg-asphalt-850 px-3.5 py-2.5 text-mist-100 placeholder:text-mist-400/60 focus:border-volt-500 focus:outline-none;
+}
+@utility road-grid {
+  background-image: linear-gradient(rgba(79, 147, 255, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(79, 147, 255, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes dash {
+  to { stroke-dashoffset: -400; }
+}
+.route-anim {
+  stroke-dasharray: 10 14;
+  animation: dash 12s linear infinite;
+}

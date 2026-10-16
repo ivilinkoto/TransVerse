@@ -69,17 +69,20 @@ export function buildSchedule(input: ScheduleInput): Segment[] {
     if (totalMin <= 0 || input_.km <= 0) return;
     const kmPerMin = input_.km / totalMin;
     const borders = [...input_.borderKms].filter((b) => b > 0 && b < input_.km).sort((a, b) => a - b);
+    const EPS_MIN = 1e-6; // minutes; guards against floating-point creep near the limits
     let km = 0;
-    while (km < input_.km - 1e-9) {
-      if (today >= DRIVING_RULES.dailyDrivingMin) {
+    let guard = 0;
+    while (km < input_.km - 1e-6) {
+      if (++guard > 10_000) throw new Error('schedule did not converge');
+      if (today >= DRIVING_RULES.dailyDrivingMin - EPS_MIN) {
         push('rest', leg, DRIVING_RULES.dailyRestMin, km);
         today = 0;
         sinceBreak = 0;
-      } else if (sinceBreak >= DRIVING_RULES.breakAfterMin) {
+      } else if (sinceBreak >= DRIVING_RULES.breakAfterMin - EPS_MIN) {
         push('break', leg, DRIVING_RULES.breakMin, km);
         sinceBreak = 0;
       }
-      const nextBorder = borders.find((b) => b > km + 1e-9);
+      const nextBorder = borders.find((b) => b > km + 1e-6);
       const limitMin = Math.min(DRIVING_RULES.breakAfterMin - sinceBreak, DRIVING_RULES.dailyDrivingMin - today);
       let targetKm = Math.min(input_.km, km + limitMin * kmPerMin);
       if (nextBorder !== undefined && nextBorder < targetKm) targetKm = nextBorder;
@@ -88,7 +91,7 @@ export function buildSchedule(input: ScheduleInput): Segment[] {
       sinceBreak += minutes;
       today += minutes;
       km = targetKm;
-      if (nextBorder !== undefined && Math.abs(km - nextBorder) < 1e-9) push('border', leg, DRIVING_RULES.borderWaitMin, km);
+      if (nextBorder !== undefined && Math.abs(km - nextBorder) < 1e-6) push('border', leg, DRIVING_RULES.borderWaitMin, km);
     }
   };
 
