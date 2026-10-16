@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  customType,
   bigint,
   bigserial,
   boolean,
@@ -18,6 +19,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 const money = (name: string) => bigint(name, { mode: 'number' });
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 const createdAt = () => ts('created_at').notNull().defaultNow();
 
@@ -171,6 +173,21 @@ export const companies = pgTable(
     /** Company HQ, or the home city of an independent driver. */
     hqCityId: integer('hq_city_id').notNull().references(() => cities.id),
     foundedAt: ts('founded_at'),
+    // ── Company profile (founded companies) ──
+    tag: text('tag'),
+    description: text('description'),
+    rules: text('rules'),
+    color: text('color'),
+    /** open | application | closed */
+    recruitment: text('recruitment').notNull().default('application'),
+    minJoinLevel: integer('min_join_level').notNull().default(1),
+    /** Share of each member's freight reward paid into the company treasury. */
+    contributionRate: real('contribution_rate').notNull().default(0.05),
+    companyXp: integer('company_xp').notNull().default(0),
+    companyLevel: integer('company_level').notNull().default(1),
+    /** Purchased upgrade levels, e.g. { logistics: 2 }. */
+    upgrades: jsonb('upgrades').$type<Record<string, number>>().notNull().default({}),
+    brandingVersion: integer('branding_version').notNull().default(0),
     balanceCents: money('balance_cents').notNull(),
     reputation: real('reputation').notNull().default(0),
     deliveries: integer('deliveries').notNull().default(0),
@@ -460,4 +477,67 @@ export const adminAudit = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('admin_audit_created_idx').on(t.createdAt)],
+);
+
+// ── Company membership ────────────────────────────────────────────────────
+
+export const companyRanks = pgTable(
+  'company_ranks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** Lower = more senior. The owner rank is 0 and unique. */
+    priority: integer('priority').notNull(),
+    permissions: text('permissions').array().notNull().default(sql`'{}'::text[]`),
+    isOwner: boolean('is_owner').notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [index('company_ranks_company_idx').on(t.companyId, t.priority)],
+);
+
+export const companyMembers = pgTable(
+  'company_members',
+  {
+    /** A player belongs to at most one company. */
+    userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    rankId: uuid('rank_id').notNull().references(() => companyRanks.id),
+    joinedAt: createdAt(),
+    deliveries: integer('deliveries').notNull().default(0),
+    contributedCents: money('contributed_cents').notNull().default(0),
+    xpContributed: integer('xp_contributed').notNull().default(0),
+  },
+  (t) => [index('company_members_company_idx').on(t.companyId)],
+);
+
+export const companyApplications = pgTable(
+  'company_applications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    message: text('message').notNull().default(''),
+    status: text('status').notNull().default('pending'), // pending | accepted | rejected | withdrawn
+    decidedBy: uuid('decided_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    decidedAt: ts('decided_at'),
+  },
+  (t) => [
+    index('company_applications_company_idx').on(t.companyId, t.status),
+    uniqueIndex('company_applications_pending_idx').on(t.companyId, t.userId).where(sql`${t.status} = 'pending'`),
+  ],
+);
+
+/** Logo and banner images (validated PNG/JPEG/WebP, size-limited). */
+export const companyAssets = pgTable(
+  'company_assets',
+  {
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(), // logo | banner
+    mime: text('mime').notNull(),
+    data: bytea('data').notNull(),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.companyId, t.kind] })],
 );

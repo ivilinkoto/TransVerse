@@ -77,6 +77,23 @@ test.describe('core loop', () => {
     await expect(page.getByRole('button', { name: /Основи компания/ })).toBeDisabled();
   });
 
+  test('independent drivers can browse player companies and see how to join', async ({ page }) => {
+    await register(page);
+    await page.goto('/game/company');
+    await expect(page.getByRole('heading', { name: 'Присъедини се към компания' })).toBeVisible();
+    await page.getByRole('link', { name: 'Разгледай компаниите' }).click();
+    await page.waitForURL('**/game/companies');
+    await expect(page.getByRole('heading', { name: 'Компании', exact: true })).toBeVisible();
+    const first = page.locator('a[href^="/game/companies/"]').first();
+    if (await first.count()) {
+      await first.click();
+      await expect(page.getByRole('heading', { name: 'Присъединяване' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Какво получават членовете' })).toBeVisible();
+    }
+    await page.goto('/game/leaderboards?tab=companies');
+    await expect(page.getByRole('link', { name: 'Компании', exact: true })).toHaveClass(/btn-primary/);
+  });
+
   test('players can contact support; the admin panel is staff-only', async ({ page }) => {
     await register(page);
     await page.goto('/admin');

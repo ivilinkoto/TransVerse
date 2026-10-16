@@ -9,6 +9,24 @@ import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUp
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver } from '@/server/game/staff';
 import { handler } from '@/server/http';
+import {
+  buyCompanyUpgrade,
+  createRank,
+  decideApplication,
+  deleteRank,
+  joinCompany,
+  kickMember,
+  leaveCompany,
+  profileSchema,
+  rankInputSchema,
+  removeAsset,
+  setMemberRank,
+  settingsSchema,
+  updateProfile,
+  updateRank,
+  updateSettings,
+  withdrawApplication,
+} from '@/server/game/membership';
 
 const id = z.string().uuid('Невалиден идентификатор.');
 const cityId = z.coerce.number().int().positive();
@@ -37,6 +55,19 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('createTicket'), ticket: ticketSchema }),
   z.object({ type: z.literal('replyTicket'), ticketId: id, body: replySchema }),
   z.object({ type: z.literal('closeTicket'), ticketId: id }),
+  z.object({ type: z.literal('joinCompany'), companyId: id, message: z.string().max(500).default('') }),
+  z.object({ type: z.literal('withdrawApplication'), applicationId: id }),
+  z.object({ type: z.literal('decideApplication'), applicationId: id, accept: z.boolean() }),
+  z.object({ type: z.literal('leaveCompany') }),
+  z.object({ type: z.literal('kickMember'), userId: id }),
+  z.object({ type: z.literal('setMemberRank'), userId: id, rankId: id }),
+  z.object({ type: z.literal('createRank'), rank: rankInputSchema }),
+  z.object({ type: z.literal('updateRank'), rankId: id, rank: rankInputSchema }),
+  z.object({ type: z.literal('deleteRank'), rankId: id }),
+  z.object({ type: z.literal('updateCompanyProfile'), profile: profileSchema }),
+  z.object({ type: z.literal('updateCompanySettings'), settings: settingsSchema }),
+  z.object({ type: z.literal('buyCompanyUpgrade'), upgradeId: z.string().max(40) }),
+  z.object({ type: z.literal('removeCompanyAsset'), kind: z.enum(['logo', 'banner']) }),
 ]);
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -98,6 +129,41 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'closeTicket':
       await setTicketStatus(db, user, input.ticketId, 'closed');
+      return { ok: true };
+    case 'joinCompany':
+      return { ok: true, result: await joinCompany(db, user.id, input.companyId, input.message) };
+    case 'withdrawApplication':
+      await withdrawApplication(db, user.id, input.applicationId);
+      return { ok: true };
+    case 'decideApplication':
+      return { ok: true, result: await decideApplication(db, user.id, input.applicationId, input.accept) };
+    case 'leaveCompany':
+      await leaveCompany(db, user.id);
+      return { ok: true };
+    case 'kickMember':
+      await kickMember(db, user.id, input.userId);
+      return { ok: true };
+    case 'setMemberRank':
+      await setMemberRank(db, user.id, input.userId, input.rankId);
+      return { ok: true };
+    case 'createRank':
+      return { ok: true, id: (await createRank(db, user.id, input.rank)).id };
+    case 'updateRank':
+      await updateRank(db, user.id, input.rankId, input.rank);
+      return { ok: true };
+    case 'deleteRank':
+      await deleteRank(db, user.id, input.rankId);
+      return { ok: true };
+    case 'updateCompanyProfile':
+      await updateProfile(db, user.id, input.profile);
+      return { ok: true };
+    case 'updateCompanySettings':
+      await updateSettings(db, user.id, input.settings);
+      return { ok: true };
+    case 'buyCompanyUpgrade':
+      return { ok: true, level: await buyCompanyUpgrade(db, user.id, input.upgradeId) };
+    case 'removeCompanyAsset':
+      await removeAsset(db, user.id, input.kind);
       return { ok: true };
   }
 });

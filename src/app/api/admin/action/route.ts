@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { adjustBalance, adminReplenishMarket, requireStaff, setBan, setUserRole } from '@/server/admin';
+import { adjustBalance, adminReplenishMarket, adminResetCompanyBranding, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
@@ -16,6 +16,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ticketReply'), ticketId: id, body: replySchema }),
   z.object({ type: z.literal('ticketStatus'), ticketId: id, status: z.enum(['open', 'answered', 'closed']) }),
   z.object({ type: z.literal('ticketAssign'), ticketId: id }),
+  z.object({ type: z.literal('resetCompanyBranding'), companyId: id, reason: z.string().trim().max(300) }),
 ]);
 
 export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input }) => {
@@ -44,6 +45,9 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true };
     case 'ticketAssign':
       await assignTicket(db, user, input.ticketId);
+      return { ok: true };
+    case 'resetCompanyBranding':
+      await adminResetCompanyBranding(db, user, input.companyId, input.reason);
       return { ok: true };
   }
 });

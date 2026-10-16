@@ -22,7 +22,7 @@ export function Sidebar({ unread, staff, independent }: { unread: number; staff:
   const links = (
     <nav className="flex flex-col gap-0.5" aria-label="Игрова навигация">
       {NAV.map((item) => {
-        const active = item.href === '/game' ? pathname === '/game' : pathname.startsWith(item.href);
+        const active = item.href === '/game' ? pathname === '/game' : (pathname === item.href || pathname.startsWith(item.href + '/'));
         return (
           <Link
             key={item.href}

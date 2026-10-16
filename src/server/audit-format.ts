@@ -22,6 +22,8 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return `Попълни товарния пазар ръчно (${Number(d.created ?? 0)} нови поръчки)`;
     case 'bootstrap_founder':
       return `${actor ?? who} получи длъжност ${ROLE_LABELS.founder} (при публикуване)`;
+    case 'reset_company_branding':
+      return `Изчисти профила на компанията „${String(d.company ?? '—')}“ на ${who}${d.reason ? ` — ${String(d.reason)}` : ''}`;
     default:
       return entry.action;
   }
