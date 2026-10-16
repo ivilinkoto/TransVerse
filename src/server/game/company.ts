@@ -3,7 +3,7 @@ import { RENTAL_OFFERS, STARTER_RENTAL } from '@/lib/game/catalog';
 import { ECONOMY } from '@/lib/game/economy';
 import { isFreightHub } from '@/lib/game/markets';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, companies, depots, drivers, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, companies, depots, drivers, organizations, trailers, users, vehicles } from '@/server/db/schema';
 import { fail } from './errors';
 import { post } from './finance';
 import { plate } from './names';
@@ -12,9 +12,9 @@ import { checkAchievements } from './progression';
 
 export type Company = typeof companies.$inferSelect;
 
-/** Name shown for a player's business: the company name, or the player as an independent driver. */
-export function displayName(company: Pick<Company, 'name' | 'kind'>, username: string): string {
-  return company.kind === 'company' && company.name ? company.name : `${username} · самостоятелен шофьор`;
+/** Name shown for a player: their company's name, or the player as a carrier / independent driver. */
+export function displayName(companyName: string | null | undefined, username: string, kind = 'independent'): string {
+  return companyName ?? `${username} · ${kind === 'company' ? 'частен превозвач' : 'самостоятелен шофьор'}`;
 }
 
 export async function companyForUser(db: DbOrTx, userId: string): Promise<Company> {
@@ -26,7 +26,7 @@ export async function companyForUser(db: DbOrTx, userId: string): Promise<Compan
 /** Fails unless the player has founded a company (used to gate company-only features). */
 export async function requireFoundedCompany(db: DbOrTx, userId: string): Promise<Company> {
   const company = await companyForUser(db, userId);
-  if (company.kind !== 'company') fail('company_required', 'Тази възможност изисква основана транспортна компания.', 403);
+  if (company.kind !== 'company') fail('company_required', 'Тази възможност изисква лиценз от основана (или поета) транспортна компания.', 403);
   return company;
 }
 
@@ -62,7 +62,7 @@ export async function createIndependent(tx: Tx, input: { userId: string; usernam
   const options = await headquarterOptions(tx);
   if (!options.some((c) => c.id === input.startCityId)) fail('invalid_hq', 'Изберете начален град в България.');
 
-  const [account] = await tx.insert(companies).values({ ownerId: input.userId, kind: 'independent', name: null, hqCityId: input.startCityId, balanceCents: 0 }).returning();
+  const [account] = await tx.insert(companies).values({ ownerId: input.userId, kind: 'independent', hqCityId: input.startCityId, balanceCents: 0 }).returning();
   await post(tx, account!.id, [{ category: 'starting_capital', amountCents: ECONOMY.startingBalanceCents, description: 'Начални средства', idempotencyKey: `start:${account!.id}` }]);
   const truck = await addRental(tx, account!.id, STARTER_RENTAL, input.startCityId);
   await tx.insert(drivers).values({ companyId: account!.id, name: input.username, skill: 1, salaryCentsPerDay: 0, isOwner: true, vehicleId: truck.id });
@@ -88,13 +88,16 @@ export async function foundingCheck(db: DbOrTx, userId: string): Promise<Foundin
   return { level, deliveries, funds, ok: level.ok && deliveries.ok && funds.ok };
 }
 
-/** Turns an independent driver into a transport company with a headquarters depot. */
+/**
+ * Founds a transport company: a new organisation with its own (empty) treasury,
+ * owned by the player, plus the operator licence and an HQ depot for the
+ * player's own fleet. The fee is paid from the player's personal balance.
+ */
 export async function foundCompany(db: Database, userId: string, input: { name: string; hqCityId: number }) {
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
-    if (company.kind === 'company') fail('already_founded', 'Вече имате компания.');
     const { membershipOf, setupCompanyMembership } = await import('./membership');
-    if (await membershipOf(tx, userId)) fail('already_member', 'Членувате в компания. Напуснете я, преди да основете своя.');
+    if (await membershipOf(tx, userId)) fail('already_member', 'Вече членувате в компания. Напуснете я (или предайте собствеността), преди да основете нова.');
     const check = await foundingCheck(tx, userId);
     if (!check.level.ok) fail('founding_level', `Нужно е ниво ${check.level.required}.`);
     if (!check.deliveries.ok) fail('founding_deliveries', `Нужни са поне ${check.deliveries.required} изпълнени доставки.`);
@@ -102,17 +105,18 @@ export async function foundCompany(db: Database, userId: string, input: { name: 
 
     const options = await headquarterOptions(tx);
     if (!options.some((c) => c.id === input.hqCityId)) fail('invalid_hq', 'Изберете град в България за седалище.');
-    const [taken] = await tx.select({ id: companies.id }).from(companies).where(sql`lower(${companies.name}) = lower(${input.name})`);
+    const [taken] = await tx.select({ id: organizations.id }).from(organizations).where(sql`lower(${organizations.name}) = lower(${input.name})`);
     if (taken) fail('company_name_taken', 'Компания с такова име вече съществува.', 409);
 
-    await post(tx, company.id, [{ category: 'company_founding', amountCents: -ECONOMY.foundingFeeCents, description: `Регистрация на „${input.name}“`, idempotencyKey: `founding:${company.id}` }], { requireFunds: true });
-    await tx.update(companies).set({ kind: 'company', name: input.name, hqCityId: input.hqCityId, foundedAt: new Date() }).where(eq(companies.id, company.id));
+    const [org] = await tx.insert(organizations).values({ ownerId: userId, name: input.name, hqCityId: input.hqCityId }).returning();
+    await post(tx, company.id, [{ category: 'company_founding', amountCents: -ECONOMY.foundingFeeCents, description: `Регистрация на „${input.name}“`, idempotencyKey: `founding:${org!.id}` }], { requireFunds: true });
+    if (company.kind !== 'company') await tx.update(companies).set({ kind: 'company', hqCityId: input.hqCityId, foundedAt: new Date() }).where(eq(companies.id, company.id));
     await tx.insert(depots).values({ companyId: company.id, cityId: input.hqCityId, slots: ECONOMY.depotSlotsDefault }).onConflictDoNothing();
-    await setupCompanyMembership(tx, company.id, userId);
+    await setupCompanyMembership(tx, org!.id, userId);
     await logActivity(tx, userId, 'company_founded', { name: input.name, hqCityId: input.hqCityId });
     await notify(tx, userId, 'achievement', `Основахте „${input.name}“!`, 'Вече можете да купувате и наемате техника, да наемате шофьори и да откривате депа.', '/game/market');
     await checkAchievements(tx, userId, company.id);
-    return company.id;
+    return org!.id;
   });
 }
 

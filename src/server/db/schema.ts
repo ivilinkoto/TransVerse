@@ -165,29 +165,15 @@ export const companies = pgTable(
     ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     /**
      * independent — a self-employed driver with a rented truck (every new player);
-     * company — a founded transport company (name, HQ depot, fleet, staff).
+     * company — a licensed operator who founded (or took over) a transport company:
+     * may buy and rent vehicles, hire drivers and open depots. The company itself
+     * (name, members, treasury) lives in `organizations`.
      */
     kind: text('kind').notNull().default('company'),
-    /** Set when the company is founded; null for independent drivers. */
-    name: text('name'),
-    /** Company HQ, or the home city of an independent driver. */
+    /** Home city of the player's own business (first depot). */
     hqCityId: integer('hq_city_id').notNull().references(() => cities.id),
+    /** When the player got the operator licence (founded a company). */
     foundedAt: ts('founded_at'),
-    // ── Company profile (founded companies) ──
-    tag: text('tag'),
-    description: text('description'),
-    rules: text('rules'),
-    color: text('color'),
-    /** open | application | closed */
-    recruitment: text('recruitment').notNull().default('application'),
-    minJoinLevel: integer('min_join_level').notNull().default(1),
-    /** Share of each member's freight reward paid into the company treasury. */
-    contributionRate: real('contribution_rate').notNull().default(0.05),
-    companyXp: integer('company_xp').notNull().default(0),
-    companyLevel: integer('company_level').notNull().default(1),
-    /** Purchased upgrade levels, e.g. { logistics: 2 }. */
-    upgrades: jsonb('upgrades').$type<Record<string, number>>().notNull().default({}),
-    brandingVersion: integer('branding_version').notNull().default(0),
     balanceCents: money('balance_cents').notNull(),
     reputation: real('reputation').notNull().default(0),
     deliveries: integer('deliveries').notNull().default(0),
@@ -195,7 +181,7 @@ export const companies = pgTable(
     totalKm: real('total_km').notNull().default(0),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex('companies_owner_idx').on(t.ownerId), uniqueIndex('companies_name_idx').on(sql`lower(${t.name})`)],
+  (t) => [uniqueIndex('companies_owner_idx').on(t.ownerId)],
 );
 
 export const depots = pgTable(
@@ -479,13 +465,64 @@ export const adminAudit = pgTable(
   (t) => [index('admin_audit_created_idx').on(t.createdAt)],
 );
 
+// ── Player companies (organisations with members and their own treasury) ──
+
+export const organizations = pgTable(
+  'organizations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Current owner; ownership can be handed over to another member. */
+    ownerId: uuid('owner_id').notNull().references(() => users.id),
+    name: text('name').notNull(),
+    hqCityId: integer('hq_city_id').notNull().references(() => cities.id),
+    tag: text('tag'),
+    description: text('description'),
+    rules: text('rules'),
+    color: text('color'),
+    /** open | application | closed */
+    recruitment: text('recruitment').notNull().default('application'),
+    minJoinLevel: integer('min_join_level').notNull().default(1),
+    /** Share of each member's freight reward paid into the treasury. */
+    contributionRate: real('contribution_rate').notNull().default(0.05),
+    companyXp: integer('company_xp').notNull().default(0),
+    companyLevel: integer('company_level').notNull().default(1),
+    /** Purchased upgrade levels, e.g. { logistics: 2 }. */
+    upgrades: jsonb('upgrades').$type<Record<string, number>>().notNull().default({}),
+    brandingVersion: integer('branding_version').notNull().default(0),
+    /** The company's own money — separate from every member's (and the owner's) personal balance. */
+    treasuryCents: money('treasury_cents').notNull().default(0),
+    foundedAt: ts('founded_at').notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('organizations_name_idx').on(sql`lower(${t.name})`), uniqueIndex('organizations_owner_idx').on(t.ownerId)],
+);
+
+/** Treasury ledger: every movement of company money, written exactly once (idempotency key). */
+export const treasuryEntries = pgTable(
+  'treasury_entries',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    amountCents: money('amount_cents').notNull(),
+    balanceAfterCents: money('balance_after_cents').notNull(),
+    description: text('description').notNull(),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    idempotencyKey: text('idempotency_key').notNull(),
+    refType: text('ref_type'),
+    refId: text('ref_id'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('treasury_idempotency_idx').on(t.idempotencyKey), index('treasury_org_idx').on(t.organizationId, t.createdAt)],
+);
+
 // ── Company membership ────────────────────────────────────────────────────
 
 export const companyRanks = pgTable(
   'company_ranks',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     /** Lower = more senior. The owner rank is 0 and unique. */
     priority: integer('priority').notNull(),
@@ -501,7 +538,7 @@ export const companyMembers = pgTable(
   {
     /** A player belongs to at most one company. */
     userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
-    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
     rankId: uuid('rank_id').notNull().references(() => companyRanks.id),
     joinedAt: createdAt(),
     deliveries: integer('deliveries').notNull().default(0),
@@ -515,7 +552,7 @@ export const companyApplications = pgTable(
   'company_applications',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     message: text('message').notNull().default(''),
     status: text('status').notNull().default('pending'), // pending | accepted | rejected | withdrawn
@@ -533,7 +570,7 @@ export const companyApplications = pgTable(
 export const companyAssets = pgTable(
   'company_assets',
   {
-    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(), // logo | banner
     mime: text('mime').notNull(),
     data: bytea('data').notNull(),

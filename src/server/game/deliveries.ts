@@ -9,7 +9,7 @@ import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, 
 import { getRoute } from '@/server/geo/route-service';
 import { companyForUser } from './company';
 import { fail } from './errors';
-import { post, type Posting } from './finance';
+import { post, postTreasury, type Posting } from './finance';
 import { broadcast, logActivity, notify } from './notify';
 import { awardXp, checkAchievements } from './progression';
 import { addCompanyXp, bonusesForUser } from './membership';
@@ -179,16 +179,17 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (result.penaltyCents) postings.push({ category: 'penalty', amountCents: -result.penaltyCents, description: 'Неустойка за закъснение', idempotencyKey: key('penalty'), refType: 'delivery', refId: d.id });
   // Company membership: bonus from the company's upgrades and a contribution to its treasury.
   const perks = await bonusesForUser(tx, company!.ownerId);
+  const org = perks?.membership.company;
   const companyBonus = perks ? Math.round(result.rewardCents * (perks.bonuses.rewardMultiplier - 1)) : 0;
-  const ownCompany = perks?.membership.company.id === d.companyId;
-  const contribution = perks && !ownCompany ? Math.round(result.rewardCents * perks.membership.company.contributionRate) : 0;
-  if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: `Бонус от „${perks!.membership.company.name}“`, idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
-  if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към „${perks!.membership.company.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
+  const contribution = org ? Math.round(result.rewardCents * org.contributionRate) : 0;
+  if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: `Бонус от „${org!.name}“`, idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
+  if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към касата на „${org!.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
   if (contribution) {
+    // Personal account first, then the treasury (fixed lock order).
     const [member] = await tx.select({ username: users.username }).from(users).where(eq(users.id, company!.ownerId));
-    await post(tx, perks!.membership.company.id, [
-      { category: 'member_contributions', amountCents: contribution, description: `Вноска от ${member!.username}`, idempotencyKey: key('contribution-in'), refType: 'delivery', refId: d.id },
+    await postTreasury(tx, org!.id, [
+      { category: 'member_contribution', amountCents: contribution, description: `${member!.username}: ${contract.goods} → ${dest!.nameBg}`, idempotencyKey: key('contribution-in'), actorUserId: company!.ownerId, refType: 'delivery', refId: d.id },
     ]);
   }
 

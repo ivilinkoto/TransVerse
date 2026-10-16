@@ -1,48 +1,34 @@
-import { desc, eq } from 'drizzle-orm';
-import { Building2, CalendarDays, CheckCircle2, Circle, Coins, Gift, MapPin, Route, ScrollText, Star, Timer, Truck, Users } from 'lucide-react';
+import { Building2, CalendarDays, CheckCircle2, Circle, Coins, Gift, Landmark, MapPin, Route, ScrollText, Star, Truck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { companyXpForLevel, COMPANY_UNLOCKS, memberBonuses, type UpgradeLevels } from '@/lib/game/company';
-import { companyHub, myApplications } from '@/server/game/membership';
+import { companyXpForLevel, COMPANY_UNLOCKS, memberBonuses, memberCapacity, type UpgradeLevels } from '@/lib/game/company';
+import { DepositForm } from '@/components/company/forms';
+import { companyHub, myApplications, treasuryHistory } from '@/server/game/membership';
+import { TREASURY_LABELS, type TreasuryCategory } from '@/server/game/finance';
 import { FoundCompanyForm } from '@/components/game/FoundCompanyForm';
 import { TutorialVisit } from '@/components/game/TutorialVisit';
 import { Badge, Card, Meter, PageHeader, Stat } from '@/components/ui';
 import { ECONOMY } from '@/lib/game/economy';
 import { foundingCheck, headquarterOptions } from '@/server/game/company';
 import { tutorialPending } from '@/server/game/tutorial-flags';
-import { date, dateTime, int, km, money } from '@/lib/format';
-import { activity } from '@/server/db/schema';
+import { date, dateTime, int, money } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
-import { companyStats } from '@/server/game/progression';
-import { fleetView, netWorthCents } from '@/server/game/queries';
 
 export const metadata = { title: 'Транспортна компания' };
 
-const ACTION_LABEL: Record<string, string> = {
-  registered: 'Регистрация',
-  registered_independent: 'Регистрация като самостоятелен шофьор',
-  company_founded: 'Основана компания',
-  vehicle_rented: 'Нает камион',
-  rental_returned: 'Върнат нает камион',
-  company_joined: 'Присъединяване към компания',
-  company_applied: 'Кандидатура към компания',
-  company_left: 'Напускане на компания',
-  company_application_accepted: 'Одобрена кандидатура',
-  company_member_removed: 'Изключен член',
-  company_profile_updated: 'Редактиран профил на компанията',
-  company_settings_updated: 'Променени настройки на компанията',
-  company_upgrade: 'Развитие на компанията',
-  company_asset_uploaded: 'Качено изображение на компанията',
-  password_changed: 'Сменена парола', login: 'Вход', company_created: 'Създадена компания', contract_accepted: 'Приета поръчка', vehicle_bought: 'Купено превозно средство',
-  trailer_bought: 'Купено ремарке', vehicle_sold: 'Продадено превозно средство', driver_hired: 'Нает шофьор', driver_fired: 'Освободен шофьор',
-};
 
 export default async function CompanyPage() {
-  const { db, user, company, hq } = await gameContext();
+  const { db, user, company } = await gameContext();
   const visitPending = await tutorialPending(db, user.id, 'company_goal');
   const hub = await companyHub(db, user.id);
-  if (hub && hub.company.id !== company.id) return <MemberOverview hub={hub} />;
-  if (company.kind !== 'company') {
+  if (hub) {
+    return (
+      <>
+        <TutorialVisit step="company_goal" pending={visitPending} />
+        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} />
+      </>
+    );
+  }
     const [check, cities, applications] = await Promise.all([foundingCheck(db, user.id), headquarterOptions(db), myApplications(db, user.id)]);
     const rows = [
       { label: `Ниво ${check.level.required}`, ok: check.level.ok, value: `сега ${check.level.current}`, share: check.level.current / check.level.required },
@@ -52,7 +38,7 @@ export default async function CompanyPage() {
     return (
       <div className="space-y-6">
         <TutorialVisit step="company_goal" pending={visitPending} />
-        <PageHeader title="Транспортна компания" subtitle="Засега работиш като самостоятелен шофьор с нает камион. Присъедини се към компания на друг играч или основи своя." />
+        <PageHeader title="Транспортна компания" subtitle={company.kind === 'company' ? 'В момента не членуваш в компания. Твоят автопарк и лиценз остават твои — присъедини се към компания на друг играч или основи нова.' : 'Засега работиш като самостоятелен шофьор с нает камион. Присъедини се към компания на друг играч или основи своя.'} />
         <Card title="Присъедини се към компания">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="max-w-2xl text-sm text-mist-300">
@@ -103,48 +89,6 @@ export default async function CompanyPage() {
       </div>
     );
   }
-  const [stats, worth, fleet, history] = await Promise.all([
-    companyStats(db, company.id),
-    netWorthCents(db, company.id),
-    fleetView(db, company.id),
-    db.select().from(activity).where(eq(activity.userId, user.id)).orderBy(desc(activity.id)).limit(30),
-  ]);
-  const fleetValue = fleet.vehicles.reduce((s, v) => s + v.resaleCents, 0) + fleet.trailers.reduce((s, t) => s + t.resaleCents, 0);
-  const onTime = stats.deliveries ? (stats.onTimeDeliveries / stats.deliveries) * 100 : 0;
-  return (
-    <div className="space-y-6">
-      <TutorialVisit step="company_goal" pending={visitPending} />
-      <p className="flex flex-wrap items-center gap-3 text-sm text-mist-400"><span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />Седалище {hq.nameBg}</span><span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />Основана {date(company.foundedAt ?? company.createdAt)}</span></p>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Стойност на компанията" value={money(worth)} tone="gold" icon={Building2} hint={`Пари ${money(company.balanceCents)} · техника ${money(fleetValue)}`} />
-        <Stat label="Доставки" value={int(stats.deliveries)} tone="cyan" icon={Route} hint={`${int(stats.countriesServed)} държави обслужени`} />
-        <Stat label="Точност" value={`${onTime.toFixed(0)}%`} tone="profit" icon={Timer} hint={`${stats.onTimeDeliveries} навреме`} />
-        <Stat label="Репутация" value={company.reputation.toFixed(1)} tone="prestige" icon={Star} hint={`${km(stats.totalKm)} изминати`} />
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Структура">
-          <dl className="grid grid-cols-2 gap-4 text-sm">
-            <div><dt className="label">Превозни средства</dt><dd className="num mt-1 text-xl font-bold">{stats.vehicles}</dd></div>
-            <div><dt className="label">Ремаркета</dt><dd className="num mt-1 text-xl font-bold">{fleet.trailers.length}</dd></div>
-            <div><dt className="label">Шофьори</dt><dd className="num mt-1 text-xl font-bold">{stats.drivers}</dd></div>
-            <div><dt className="label">Депа</dt><dd className="num mt-1 text-xl font-bold">{stats.depots}</dd></div>
-          </dl>
-        </Card>
-        {hub && <CompanyProgress hub={hub} />}
-        <Card title="История на действията">
-          <ul className="max-h-80 space-y-2 overflow-y-auto pr-2 text-sm">
-            {history.map((h) => (
-              <li key={h.id} className="flex justify-between gap-3 border-b border-asphalt-800 pb-2">
-                <span>{ACTION_LABEL[h.action] ?? h.action}</span>
-                <span className="text-xs text-mist-400">{dateTime(h.createdAt)}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
-    </div>
-  );
-}
 
 type Hub = NonNullable<Awaited<ReturnType<typeof companyHub>>>;
 
@@ -160,7 +104,7 @@ function CompanyProgress({ hub }: { hub: Hub }) {
   const next = COMPANY_UNLOCKS.find((u) => u.level > c.companyLevel);
   return (
     <Card title="Развитие и бонуси за членовете" actions={<Link href="/game/company/development" className="text-sm text-cyan-glow hover:underline">Развитие →</Link>}>
-      <div className="flex items-center justify-between text-sm"><span>Ниво {c.companyLevel}</span><span className="num text-mist-400">{int(c.companyXp - from)} / {int(to - from)} опит</span></div>
+      <div className="flex items-center justify-between text-sm"><span>Ниво {c.companyLevel}</span><span className="num text-mist-400">{int(Math.max(0, c.companyXp - from))} / {int(to - from)} опит</span></div>
       <Meter value={Math.min(1, Math.max(0, (c.companyXp - from) / (to - from))) * 100} tone="violet" className="mt-1.5" />
       <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
         <li className="rounded-xl border border-asphalt-700 p-3"><div className="label">Възнаграждение</div><div className="num mt-1 text-lg font-bold text-profit">+{pct(bonuses.rewardMultiplier - 1)}</div></li>
@@ -180,29 +124,69 @@ function TextBlock({ title, icon: Icon, text, empty }: { title: string; icon: ty
   );
 }
 
-/** What a regular member sees: profile, rules, perks and their own contribution. */
-function MemberOverview({ hub }: { hub: Hub }) {
+type History = Awaited<ReturnType<typeof treasuryHistory>>;
+
+/** What every member (the owner included) sees: the company, its treasury, perks and their own share. */
+function CompanyOverview({ hub, history }: { hub: Hub; history: History }) {
   const c = hub.company;
+  const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Stat label="Моите курсове за компанията" value={int(hub.member.deliveries)} tone="cyan" icon={Route} hint={`Член от ${date(hub.member.joinedAt)}`} />
-        <Stat label="Моите вноски" value={money(hub.member.contributedCents)} tone="gold" icon={Coins} hint={`Вноска ${Math.round(c.contributionRate * 100)}% от възнаграждението`} />
-        <Stat label="Донесен опит" value={int(hub.member.xpContributed)} tone="prestige" icon={Star} hint="Развива компанията" />
+      <p className="flex flex-wrap items-center gap-3 text-sm text-mist-400">
+        <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />Седалище {hub.hq}</span>
+        <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />Основана {date(c.foundedAt)}</span>
+        <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />Собственик {hub.owner}</span>
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Каса на компанията" value={money(c.treasuryCents)} tone="gold" icon={Landmark} hint="Отделно от личните пари на членовете" />
+        <Stat label="Членове" value={`${int(hub.members)} / ${capacity}`} tone="cyan" icon={Users} hint={`Набиране: ${c.recruitment === 'open' ? 'отворено' : c.recruitment === 'application' ? 'с кандидатура' : 'затворено'}`} />
+        <Stat label="Курсове на членовете" value={int(hub.memberDeliveries)} tone="profit" icon={Route} hint={`Вноска ${Math.round(c.contributionRate * 100)}% от възнаграждението`} />
+        <Stat label="Ниво на компанията" value={c.companyLevel} tone="prestige" icon={Star} hint={`${int(c.companyXp)} опит`} />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <TextBlock title="За компанията" icon={Building2} text={c.description} empty="Компанията още няма описание." />
         <TextBlock title="Правила" icon={ScrollText} text={c.rules} empty="Няма публикувани правила." />
         <CompanyProgress hub={hub} />
-        <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-mist-400" />Моята длъжност</span>}>
-          <p className="text-sm">
-            <Badge tone="violet">{hub.rank.name}</Badge>
-          </p>
-          <p className="mt-3 text-sm text-mist-300">
-            {hub.rank.permissions.length ? 'Имате права за управление — разделите са отгоре.' : 'Карате курсове за компанията и получавате бонусите ѝ. Собственият ви камион и парите ви остават ваши.'}
-          </p>
-          <div className="mt-5">
-            <ActionButton action={{ type: 'leaveCompany' }} className="btn-ghost text-loss" confirm="Да напуснете компанията? Губите бонусите ѝ.">Напусни компанията</ActionButton>
+        <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-mist-400" />Моето членство</span>}>
+          <div className="flex flex-wrap items-center gap-2 text-sm"><Badge tone={hub.rank.isOwner ? 'gold' : 'violet'}>{hub.rank.name}</Badge><span className="text-mist-400">член от {date(hub.member.joinedAt)}</span></div>
+          <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
+            <div><dt className="label">Курсове</dt><dd className="num mt-1 text-lg font-bold">{int(hub.member.deliveries)}</dd></div>
+            <div><dt className="label">Внесени</dt><dd className="num mt-1 text-lg font-bold text-gold-400">{money(hub.member.contributedCents)}</dd></div>
+            <div><dt className="label">Опит</dt><dd className="num mt-1 text-lg font-bold text-prestige">{int(hub.member.xpContributed)}</dd></div>
+          </dl>
+          <div className="mt-5 border-t border-asphalt-800 pt-4">
+            {hub.rank.isOwner ? (
+              <p className="text-sm text-mist-300">Като собственик можете да напуснете само след като предадете собствеността на друг член. <Link href="/game/company/settings#ownership" className="text-cyan-glow hover:underline">Собственост →</Link></p>
+            ) : (
+              <ActionButton action={{ type: 'leaveCompany' }} className="btn-ghost text-loss" confirm="Да напуснете компанията? Губите бонусите ѝ.">Напусни компанията</ActionButton>
+            )}
+          </div>
+        </Card>
+        <Card title={<span className="inline-flex items-center gap-2"><Coins className="h-4 w-4 text-mist-400" />Каса</span>} className="lg:col-span-2">
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+            <div>
+              <div className="num font-display text-3xl font-bold text-gold-400">{money(c.treasuryCents)}</div>
+              <p className="mt-2 text-sm text-mist-300">Касата е на компанията, не на собственика. Пълни се от вноските от всеки курс на член и от доброволни вноски, а се харчи само за развитие на компанията. Пари от касата не могат да се теглят лично.</p>
+              <div className="mt-4"><DepositForm /></div>
+            </div>
+            <div>
+              <div className="label mb-2">Последни движения</div>
+              {history.length === 0 ? (
+                <p className="text-sm text-mist-400">Още няма движения.</p>
+              ) : (
+                <ul className="max-h-72 space-y-1.5 overflow-y-auto pr-2 text-sm">
+                  {history.map(({ entry, actor }) => (
+                    <li key={entry.id} className="flex items-start justify-between gap-3 border-b border-asphalt-800 pb-1.5">
+                      <span className="min-w-0">
+                        <span className="block truncate">{entry.description}</span>
+                        <span className="text-xs text-mist-400">{TREASURY_LABELS[entry.category as TreasuryCategory] ?? entry.category}{actor ? ` · ${actor}` : ''} · {dateTime(entry.createdAt)}</span>
+                      </span>
+                      <span className={`num shrink-0 font-semibold ${entry.amountCents >= 0 ? 'text-profit' : 'text-loss'}`}>{entry.amountCents >= 0 ? '+' : ''}{money(entry.amountCents)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </Card>
       </div>

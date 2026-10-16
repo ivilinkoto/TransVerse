@@ -61,6 +61,55 @@ function vehiclePoint(v: MapVehicle, now: number): LatLon {
   return pointAlong(line, leg.km > 0 ? s.km / leg.km : 0, cumulativeKm(line));
 }
 
+/**
+ * Truck icons are drawn in the browser (no image files): a side-view lorry in the
+ * company colour with an outline that marks whose truck it is. The icon id carries
+ * the colours, e.g. "truck|#f8fafc|#34d399", and is created on first use.
+ */
+const truckIcon = (fill: string, ring: string) => `truck|${fill}|${ring}`;
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+function drawTruck(fill: string, ring: string): ImageData | null {
+  const r = 2; // pixel ratio
+  const canvas = document.createElement('canvas');
+  canvas.width = 34 * r;
+  canvas.height = 22 * r;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.scale(r, r);
+  ctx.lineJoin = 'round';
+  const shape = (draw: () => void, color: string, stroke = true) => {
+    ctx.beginPath();
+    draw();
+    ctx.fillStyle = color;
+    ctx.fill();
+    if (stroke) {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = ring;
+      ctx.stroke();
+    }
+  };
+  // Trailer box, cab (facing right), window and wheels.
+  shape(() => ctx.roundRect(2, 3, 20, 12, 1.5), fill);
+  shape(() => {
+    ctx.moveTo(23, 15);
+    ctx.lineTo(23, 6);
+    ctx.lineTo(28.5, 6);
+    ctx.lineTo(32, 10);
+    ctx.lineTo(32, 15);
+    ctx.closePath();
+  }, fill);
+  shape(() => {
+    ctx.moveTo(25, 7.5);
+    ctx.lineTo(28, 7.5);
+    ctx.lineTo(30.3, 10);
+    ctx.lineTo(25, 10);
+    ctx.closePath();
+  }, '#0b1220', false);
+  for (const x of [7, 13, 28]) shape(() => ctx.arc(x, 17, 2.6, 0, Math.PI * 2), '#0b1220');
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
 /** Decoded route lines are cached: other players' trucks are re-positioned every few seconds. */
 type Line = { line: LatLon[]; cum: number[] };
 const lineCache = new Map<string, Line>();
@@ -91,7 +140,8 @@ function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number):
       .map((t) => {
         const { point, moving } = truckPoint(t, world.routes, now);
         const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
-        return { type: 'Feature', properties: { id: t.id, label, color: t.color ?? '#f8fafc', online: t.online, moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+        const fill = t.color && HEX.test(t.color) ? t.color : '#e8eef7';
+        return { type: 'Feature', properties: { id: t.id, label, icon: truckIcon(fill, t.online ? '#34d399' : '#f6c343'), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
       }),
   };
 }
@@ -135,6 +185,12 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
     });
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.on('styleimagemissing', (e) => {
+      const [kind, fill, ring] = e.id.split('|');
+      if (kind !== 'truck' || !fill || !ring || !HEX.test(fill) || !HEX.test(ring) || map.hasImage(e.id)) return;
+      const image = drawTruck(fill, ring);
+      if (image) map.addImage(e.id, image, { pixelRatio: 2 });
+    });
     map.on('error', (e) => {
       if (e.error?.message?.includes('could not be loaded')) return; // missing sprite icons are harmless
       setError(e.error?.message ?? 'Грешка при зареждане на картата');
@@ -175,18 +231,16 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
       map.addLayer({ id: 'depots', type: 'circle', source: 'depots', paint: { 'circle-radius': 11, 'circle-color': 'rgba(166,107,255,0.15)', 'circle-stroke-color': '#a66bff', 'circle-stroke-width': 2 } });
       map.addSource('vehicles', { type: 'geojson', data: empty });
       map.addLayer({ id: 'vehicles-halo', type: 'circle', source: 'vehicles', paint: { 'circle-radius': 12, 'circle-color': '#22d3ee', 'circle-opacity': 0.25 } });
-      map.addLayer({ id: 'vehicles', type: 'circle', source: 'vehicles', paint: { 'circle-radius': 6.5, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#22d3ee', 'circle-stroke-width': 2.5 } });
-      map.addLayer({ id: 'vehicles-label', type: 'symbol', source: 'vehicles', layout: { 'text-field': ['get', 'plate'], 'text-size': 11, 'text-offset': [0, -1.6], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#22d3ee', 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } });
+      map.addLayer({ id: 'vehicles', type: 'symbol', source: 'vehicles', layout: { 'icon-image': ['get', 'icon'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 4, 0.9, 9, 1.25], 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
+      map.addLayer({ id: 'vehicles-label', type: 'symbol', source: 'vehicles', layout: { 'text-field': ['get', 'plate'], 'text-size': 11, 'text-offset': [0, -1.9], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#22d3ee', 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } });
 
       map.addSource('players', { type: 'geojson', data: empty });
-      map.addLayer({ id: 'players', type: 'circle', source: 'players', paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 3.5, 8, 5.5],
-        'circle-color': ['get', 'color'],
-        'circle-opacity': ['case', ['get', 'moving'], 1, 0.7],
-        'circle-stroke-color': ['case', ['get', 'online'], '#34d399', '#f6c343'],
-        'circle-stroke-width': 1.8,
-      } }, 'vehicles-halo');
-      map.addLayer({ id: 'players-label', type: 'symbol', source: 'players', minzoom: 6.5, layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.3], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#f6c343', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'vehicles-halo');
+      map.addLayer({ id: 'players', type: 'symbol', source: 'players', layout: {
+        'icon-image': ['get', 'icon'],
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 4, 0.75, 9, 1.05],
+        'icon-allow-overlap': true,
+      }, paint: { 'icon-opacity': ['case', ['get', 'moving'], 1, 0.75] } }, 'vehicles-halo');
+      map.addLayer({ id: 'players-label', type: 'symbol', source: 'players', minzoom: 6.5, layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.5], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#f6c343', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'vehicles-halo');
 
       const p = initial.current.preview;
       if (p) {
@@ -279,7 +333,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
     const tick = () => {
       const src = mapRef.current?.getSource('vehicles') as GeoJSONSource | undefined;
       const now = Date.now();
-      src?.setData({ type: 'FeatureCollection', features: vehicles.map((v) => ({ type: 'Feature', properties: { plate: v.plate, color: v.color }, geometry: { type: 'Point', coordinates: toLngLat(vehiclePoint(v, now)) } })) });
+      src?.setData({ type: 'FeatureCollection', features: vehicles.map((v) => ({ type: 'Feature', properties: { plate: v.plate, icon: truckIcon(HEX.test(v.color) ? v.color : '#f8fafc', '#22d3ee') }, geometry: { type: 'Point', coordinates: toLngLat(vehiclePoint(v, now)) } })) });
     };
     tick();
     const id = setInterval(tick, 2000);
@@ -292,15 +346,18 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
       {error && <div className="absolute left-3 top-3 rounded-lg bg-loss/90 px-3 py-2 text-sm text-white">{error}</div>}
       <div className="absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-xl bg-asphalt-950/85 px-3 py-2 text-[11px] text-mist-300 backdrop-blur">
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-gold-400" />Град с товарен пазар (число = поръчки)</span>
+        <span className="flex items-center gap-1.5"><TruckGlyph ring="#22d3ee" fill="#f8fafc" />Твоите камиони</span>
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-cyan-glow" />С товар</span>
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 border-t-2 border-dotted border-mist-400" />Празен курс</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-prestige" />Депо</span>
         <label className="flex cursor-pointer items-center gap-1.5">
           <input type="checkbox" checked={showPlayers} onChange={(e) => setShowPlayers(e.target.checked)} className="accent-[var(--color-gold-400)]" />
-          <span className="h-2.5 w-2.5 rounded-full border-2 border-gold-400 bg-white" />
+          <TruckGlyph ring="#f6c343" />
           Други играчи{world ? ` (${world.players}, ${world.online} в играта)` : ''}
-          <span className="h-2.5 w-2.5 rounded-full border-2 border-profit bg-white" aria-label="в играта сега" />
         </label>
+        <span className="flex items-center gap-1.5">
+          <TruckGlyph ring="#34d399" />в играта сега
+        </span>
       </div>
       {picked && (
         <aside className="absolute right-3 top-14 w-[min(300px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Играч">
@@ -347,5 +404,18 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview }: MapPro
         </aside>
       )}
     </div>
+  );
+}
+
+/** Legend sample of the map truck icon (same shape as drawTruck). */
+function TruckGlyph({ ring, fill = '#e8eef7' }: { ring: string; fill?: string }) {
+  return (
+    <svg width="22" height="14" viewBox="0 0 34 22" aria-hidden="true">
+      <g stroke={ring} strokeWidth="2" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="12" rx="1.5" fill={fill} />
+        <path d="M23 15V6h5.5L32 10v5z" fill={fill} />
+        {[7, 13, 28].map((x) => <circle key={x} cx={x} cy="17" r="2.6" fill="#0b1220" />)}
+      </g>
+    </svg>
   );
 }

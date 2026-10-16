@@ -1,7 +1,7 @@
 import { desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { canBan, canChangeRole, isAdmin, isStaff, ROLES, type Role } from '@/server/auth/roles';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { adminAudit, companies, contracts, deliveries, routes, sessions, supportTickets, users } from '@/server/db/schema';
+import { adminAudit, companies, companyMembers, organizations, contracts, deliveries, routes, sessions, supportTickets, users } from '@/server/db/schema';
 import { replenishMarket } from '@/server/game/contracts';
 import { fail } from '@/server/game/errors';
 import { post } from '@/server/game/finance';
@@ -49,10 +49,10 @@ export async function adminStats(db: DbOrTx) {
 export async function searchUsers(db: DbOrTx, q: string) {
   const term = `%${q.trim().replace(/[%_]/g, '')}%`;
   return db
-    .select({ id: users.id, username: users.username, email: users.email, role: users.role, level: users.level, bannedAt: users.bannedAt, createdAt: users.createdAt, kind: companies.kind, company: companies.name, balance: companies.balanceCents })
+    .select({ id: users.id, username: users.username, email: users.email, role: users.role, level: users.level, bannedAt: users.bannedAt, createdAt: users.createdAt, kind: companies.kind, company: sql<string | null>`(select o.name from company_members m join organizations o on o.id = m.company_id where m.user_id = ${users.id})`, balance: companies.balanceCents })
     .from(users)
     .leftJoin(companies, eq(companies.ownerId, users.id))
-    .where(q.trim() ? or(ilike(users.username, term), ilike(users.email, term), ilike(companies.name, term)) : undefined)
+    .where(q.trim() ? or(ilike(users.username, term), ilike(users.email, term), sql`exists (select 1 from company_members m join organizations o on o.id = m.company_id where m.user_id = ${users.id} and o.name ilike ${term})`) : undefined)
     .orderBy(desc(users.createdAt))
     .limit(100);
 }
@@ -60,8 +60,13 @@ export async function searchUsers(db: DbOrTx, q: string) {
 export async function userDetail(db: DbOrTx, userId: string) {
   const [row] = await db.select({ user: users, company: companies }).from(users).leftJoin(companies, eq(companies.ownerId, users.id)).where(eq(users.id, userId));
   if (!row) fail('user_not_found', 'Потребителят не е намерен.', 404);
+  const [org] = await db
+    .select({ id: organizations.id, name: organizations.name, ownerId: organizations.ownerId, treasuryCents: organizations.treasuryCents })
+    .from(companyMembers)
+    .innerJoin(organizations, eq(organizations.id, companyMembers.companyId))
+    .where(eq(companyMembers.userId, userId));
   const recentAudit = await db.select().from(adminAudit).where(eq(adminAudit.targetUserId, userId)).orderBy(desc(adminAudit.id)).limit(20);
-  return { ...row!, audit: recentAudit };
+  return { ...row!, org: org ?? null, audit: recentAudit };
 }
 
 export async function setUserRole(db: Database, actor: Staff, targetId: string, newRole: string) {
@@ -112,7 +117,7 @@ export async function adminReplenishMarket(db: Database, actor: Staff) {
 export async function adminResetCompanyBranding(db: Database, actor: Staff, companyId: string, reason: string) {
   if (reason.trim().length < 5) fail('reason_required', 'Посочете причина (поне 5 символа).');
   return db.transaction(async (tx) => {
-    const [company] = await tx.select({ id: companies.id, name: companies.name, ownerId: companies.ownerId }).from(companies).where(eq(companies.id, companyId));
+    const [company] = await tx.select({ id: organizations.id, name: organizations.name, ownerId: organizations.ownerId }).from(organizations).where(eq(organizations.id, companyId));
     if (!company) fail('company_not_found', 'Компанията не е намерена.', 404);
     await resetBranding(tx, companyId);
     await audit(tx, actor.id, 'reset_company_branding', company!.ownerId, { company: company!.name, reason });
