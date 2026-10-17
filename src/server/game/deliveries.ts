@@ -25,6 +25,9 @@ import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractCountries } from '@/lib/game/licences';
 import { addOrganizationSeasonScore, addSeasonScore } from './seasons';
 import { rewardReferral } from './referrals';
+import { addLeaguePoints } from './leagues';
+import { addPassPoints } from './season-pass';
+import { settleTradeLot } from './trade';
 import { applyRoadEvents } from './road-events';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
@@ -81,7 +84,10 @@ export const URGENT_RELOCATION_MS = 60_000;
 export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date()) {
   const company = await companyForUser(db, userId);
   const contract = await db.query.contracts.findFirst({ where: eq(contracts.id, contractId) });
-  if (!contract || contract.status !== 'open' || contract.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
+  // Own goods (trading) are hauled only by their owner and never appear on the board.
+  const openStatus = contract?.tradeCompanyId ? 'trade' : 'open';
+  if (!contract || contract.status !== openStatus || contract.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
+  if (contract!.tradeCompanyId && contract!.tradeCompanyId !== company.id) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
   const { vehicle } = await vehicleBundle(db, company.id, vehicleId);
   if (vehicle.status !== 'idle') fail('vehicle_busy', 'Превозното средство е заето.', 409);
 
@@ -129,7 +135,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       const claimed = await tx
         .update(contracts)
         .set({ status: 'accepted', acceptedByCompanyId: company.id, acceptedAt: now })
-        .where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`))
+        .where(and(eq(contracts.id, contractId), eq(contracts.status, openStatus), sql`${contracts.expiresAt} > ${now}`))
         .returning({ id: contracts.id });
       if (!claimed.length) fail('contract_unavailable', 'Друга компания току-що пое тази поръчка.', 409);
     }
@@ -302,8 +308,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     })
     .where(eq(companies.id, d.companyId));
 
-  // Shared economy: deliveries saturate the destination market for everyone.
-  await tx
+  // Own goods: sold at the destination market (at today's price, before this lot lowers demand) or stored there.
+  if (contract.trade) await settleTradeLot(tx, contract, d.companyId, company!.ownerId, completedAt);
+  // Shared economy: deliveries saturate the destination market for everyone (goods put into a warehouse do not).
+  if (contract.trade?.mode !== 'store') await tx
     .update(cityMarkets)
     .set({ demand: sql`greatest(${ECONOMY.demandFloor}, ${cityMarkets.demand} - ${contract.weightTons * ECONOMY.demandDropPerTon})`, updatedAt: now })
     .where(and(eq(cityMarkets.cityId, contract.destCityId), eq(cityMarkets.cargoType, contract.cargoType)));
@@ -329,8 +337,11 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const points = seasonPoints(d.loadedKm, contract.weightTons, onTime);
   await addSeasonScore(tx, d.companyId, points, result.rewardCents, now);
   if (org) await addOrganizationSeasonScore(tx, org.id, points, now);
+  await addLeaguePoints(tx, company!.ownerId, points, now);
+  await addPassPoints(tx, company!.ownerId, points, now);
   await rewardReferral(tx, company!.ownerId, now);
-  await notify(
+  // Own goods get their own message (sale or warehouse) from settleTradeLot.
+  if (!contract.trade) await notify(
     tx,
     company!.ownerId,
     onTime ? 'success' : 'warning',

@@ -156,6 +156,10 @@ export const users = pgTable(
     /** When the invite for this (invited) player was settled, and how: rewarded | declined. */
     referralRewardedAt: ts('referral_rewarded_at'),
     referralOutcome: text('referral_outcome'),
+    /** Moderation: no chat or private messages until then. */
+    chatMutedUntil: ts('chat_muted_until'),
+    /** Weekly league tier: 0 Бронз … 4 Диамант. */
+    leagueTier: integer('league_tier').notNull().default(0),
     /** SHA-256 of the sign-up IP with a server salt — only compared for invite rewards. */
     signupIpHash: text('signup_ip_hash'),
   },
@@ -331,6 +335,9 @@ export const contracts = pgTable(
     speedFactor: real('speed_factor').notNull().default(1),
     /** Load of a company tender: only members of that company may take it. */
     tenderId: uuid('tender_id'),
+    /** Own goods hauled by a player (trading): only that player's account may take it; never on the public board. */
+    tradeCompanyId: uuid('trade_company_id'),
+    trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null }>(),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -1018,4 +1025,101 @@ export const chatMessages = pgTable(
     deletedBy: uuid('deleted_by').references(() => users.id, { onDelete: 'set null' }),
   },
   (t) => [index('chat_messages_channel_idx').on(t.channel, t.id)],
+);
+
+// ── Trading, moderation, leagues, season pass ─────────────────────────────
+
+/** Goods a player keeps in the warehouse of one of their depots. */
+export const warehouseStock = pgTable(
+  'warehouse_stock',
+  {
+    depotId: uuid('depot_id').notNull().references(() => depots.id, { onDelete: 'cascade' }),
+    cargoType: text('cargo_type').notNull(),
+    tons: real('tons').notNull(),
+    /** What the goods in stock cost in total (average cost × tons). */
+    costCents: money('cost_cents').notNull(),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.depotId, t.cargoType] })],
+);
+
+/** A player hides another player: no messages, requests or invites between them; their chat lines are hidden. */
+export const userBlocks = pgTable(
+  'user_blocks',
+  {
+    blockerId: uuid('blocker_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    blockedId: uuid('blocked_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.blockerId, t.blockedId] }), index('user_blocks_blocked_idx').on(t.blockedId)],
+);
+
+/** Reports about players or chat messages, handled in the admin panel. */
+export const reports = pgTable(
+  'reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reporterId: uuid('reporter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    targetUserId: uuid('target_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** player | channel | company | dm */
+    kind: text('kind').notNull(),
+    messageId: bigint('message_id', { mode: 'number' }),
+    /** The reported message as it was when reported. */
+    snippet: text('snippet'),
+    reason: text('reason').notNull(),
+    details: text('details'),
+    /** open | resolved | dismissed */
+    status: text('status').notNull().default('open'),
+    resolution: text('resolution'),
+    resolvedBy: uuid('resolved_by').references(() => users.id, { onDelete: 'set null' }),
+    resolvedAt: ts('resolved_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('reports_status_idx').on(t.status, t.createdAt), index('reports_target_idx').on(t.targetUserId)],
+);
+
+/** One group of up to 20 players in a weekly league tier. */
+export const leagueGroups = pgTable(
+  'league_groups',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Monday of the week, Sofia time, e.g. W2026-10-12. */
+    weekKey: text('week_key').notNull(),
+    tier: integer('tier').notNull(),
+    createdAt: createdAt(),
+    settledAt: ts('settled_at'),
+  },
+  (t) => [index('league_groups_week_idx').on(t.weekKey, t.tier)],
+);
+
+export const leagueMembers = pgTable(
+  'league_members',
+  {
+    weekKey: text('week_key').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    groupId: uuid('group_id').notNull().references(() => leagueGroups.id, { onDelete: 'cascade' }),
+    tier: integer('tier').notNull(),
+    points: integer('points').notNull().default(0),
+    deliveries: integer('deliveries').notNull().default(0),
+    joinedAt: createdAt(),
+    finalRank: integer('final_rank'),
+    /** up | down | stay */
+    outcome: text('outcome'),
+  },
+  (t) => [primaryKey({ columns: [t.weekKey, t.userId] }), index('league_members_group_idx').on(t.groupId, t.points)],
+);
+
+/** A player's season pass: points from deliveries, the premium track and claimed levels. */
+export const seasonPasses = pgTable(
+  'season_passes',
+  {
+    seasonId: integer('season_id').notNull().references(() => seasons.id),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    points: integer('points').notNull().default(0),
+    premium: boolean('premium').notNull().default(false),
+    claimedFree: integer('claimed_free').array().notNull().default(sql`'{}'::int[]`),
+    claimedPremium: integer('claimed_premium').array().notNull().default(sql`'{}'::int[]`),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.seasonId, t.userId] })],
 );

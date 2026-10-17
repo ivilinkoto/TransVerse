@@ -134,6 +134,13 @@
       "when": 1792267979440,
       "tag": "0018_charming_the_hood",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792270634268,
+      "tag": "0019_harsh_wolf_cub",
+      "breakpoints": true
     }
   ]
 }

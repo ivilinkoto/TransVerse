@@ -7,6 +7,7 @@ import { siteUrl } from '@/server/payments/common';
 import { requireAdminRole } from '@/server/admin';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
+import { resolveReport, unmute } from '@/server/game/moderation';
 import { createUrgentContract, urgentSchema } from '@/server/urgent';
 
 const id = z.string().uuid('Невалиден идентификатор.');
@@ -30,12 +31,20 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('refundPayment'), paymentId: id }),
   z.object({ type: z.literal('checkPaypal') }),
   z.object({ type: z.literal('resetLink'), userId: id }),
+  z.object({ type: z.literal('resolveReport'), reportId: id, action: z.enum(['dismiss', 'warn', 'delete_message', 'mute_h24', 'mute_d7']) }),
+  z.object({ type: z.literal('unmute'), userId: id }),
 ]);
 
 export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input, request }) => {
   requireStaff(user);
   const db = getDb();
   switch (input.type) {
+    case 'resolveReport':
+      await resolveReport(db, user, input.reportId, input.action);
+      return { ok: true };
+    case 'unmute':
+      await unmute(db, user, input.userId);
+      return { ok: true };
     case 'setRole':
       await setUserRole(db, user, input.userId, input.role);
       return { ok: true };

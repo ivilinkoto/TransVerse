@@ -4,7 +4,8 @@ import { levelProgress, reputationTier } from '@/lib/game/progression';
 import { isOnline, lastSeenLabel } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, users } from '@/server/db/schema';
+import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, userBlocks, users } from '@/server/db/schema';
+import { assertNotBlocked } from './moderation';
 import { fail } from './errors';
 import { can, entryRank, memberCount, membershipOf, notifyMembers, requirePermission } from './membership';
 import { logActivity, notify } from './notify';
@@ -36,6 +37,7 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
   const relation: Relation = u.id === viewerId ? 'self' : !pair ? 'none' : pair.status === 'accepted' ? 'friends' : pair.requesterId === viewerId ? 'sent' : 'received';
   const viewerM = u.id === viewerId ? null : await membershipOf(db, viewerId);
   const [invited] = viewerM && !m ? await db.select({ id: companyInvites.id }).from(companyInvites).where(and(eq(companyInvites.companyId, viewerM.company.id), eq(companyInvites.userId, u.id), eq(companyInvites.status, 'pending'))) : [];
+  const [blockRow] = u.id === viewerId ? [] : await db.select({ x: userBlocks.blockerId }).from(userBlocks).where(and(eq(userBlocks.blockerId, viewerId), eq(userBlocks.blockedId, u.id)));
   const [{ friends = 0 } = {}] = await db.select({ friends: sql<number>`count(*)::int` }).from(friendships).where(and(eq(friendships.status, 'accepted'), or(eq(friendships.requesterId, u.id), eq(friendships.addresseeId, u.id))));
   return {
     id: u.id,
@@ -58,6 +60,8 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     /** The viewer can invite this player to their company. */
     canInvite: !!viewerM && !m && can(viewerM.rank, 'manage_members') && !invited,
     invited: !!invited,
+    /** The viewer has blocked this player. */
+    blocked: !!blockRow,
   };
 }
 export type PlayerCard = NonNullable<Awaited<ReturnType<typeof playerCard>>>;
@@ -66,6 +70,7 @@ export type PlayerCard = NonNullable<Awaited<ReturnType<typeof playerCard>>>;
 
 export async function sendFriendRequest(db: Database, userId: string, targetId: string) {
   if (userId === targetId) fail('self', 'Не можеш да добавиш себе си.');
+  await assertNotBlocked(db, userId, targetId);
   return db.transaction(async (tx) => {
     const [target] = await tx.select({ id: users.id, username: users.username, bannedAt: users.bannedAt }).from(users).where(eq(users.id, targetId));
     if (!target || target.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
@@ -131,6 +136,7 @@ export async function inviteToCompany(db: Database, actorId: string, targetId: s
     const actor = await requirePermission(tx, actorId, 'manage_members');
     const [target] = await tx.select({ id: users.id, username: users.username, bannedAt: users.bannedAt }).from(users).where(eq(users.id, targetId));
     if (!target || target.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
+    await assertNotBlocked(tx, actorId, targetId);
     if (await membershipOf(tx, targetId)) fail('already_member', 'Играчът вече е в компания.', 409);
     if ((await memberCount(tx, actor.company.id)) >= memberCapacity(actor.company.upgrades as UpgradeLevels)) fail('company_full', 'Компанията няма свободни места.');
     const inserted = await tx.insert(companyInvites).values({ companyId: actor.company.id, userId: targetId, invitedBy: actorId }).onConflictDoNothing().returning({ id: companyInvites.id });

@@ -7,6 +7,7 @@ import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { chatMessages, directMessages, users } from '@/server/db/schema';
 import { fail } from './errors';
+import { assertNotBlocked, assertNotMuted } from './moderation';
 import { notify } from './notify';
 
 export const messageBodySchema = z.string().trim().min(1, 'Напиши съобщение.').max(MESSAGE_MAX, `Най-много ${MESSAGE_MAX} символа.`);
@@ -41,6 +42,7 @@ export async function channelFeed(db: DbOrTx, channel: Channel, afterId = 0, lim
 
 export async function postToChannel(db: Database, userId: string, channel: Channel, raw: string) {
   const body = messageBodySchema.parse(raw);
+  await assertNotMuted(db, userId);
   await rateLimit(db, `channel:${channel}:${userId}`, CHANNELS[channel].perMinute, 60);
   return db.transaction(async (tx) => {
     const [row] = await tx.insert(chatMessages).values({ channel, userId, body }).returning({ id: chatMessages.id });
@@ -69,6 +71,8 @@ const visibleTo = (me: string) => or(and(eq(directMessages.senderId, me), eq(dir
 export async function sendDirectMessage(db: Database, userId: string, toId: string, raw: string, now = new Date()) {
   const body = messageBodySchema.parse(raw);
   if (userId === toId) fail('self', 'Не можеш да пишеш на себе си.');
+  await assertNotMuted(db, userId, now);
+  await assertNotBlocked(db, userId, toId);
   await rateLimit(db, `dm:${userId}`, 20, 60);
   return db.transaction(async (tx) => {
     const [to] = await tx.select({ id: users.id, bannedAt: users.bannedAt, lastSeenAt: users.lastSeenAt }).from(users).where(eq(users.id, toId));

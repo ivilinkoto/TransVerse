@@ -1,10 +1,11 @@
 'use client';
 
-import { Building2, Globe2, MessageCircle, Send, Store, Trash2, X } from 'lucide-react';
+import { Building2, Flag, Globe2, MessageCircle, Send, Store, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import type { FeedMessage } from '@/server/game/messages';
 import { PlayerName, openPlayerCard } from './PlayerName';
+import { openReport } from './ReportDialog';
 
 interface Conversation {
   userId: string;
@@ -286,6 +287,9 @@ export function ChatDock() {
                       {!dm && <PlayerName name={m.username} role={m.role} vip={m.vip} className="font-semibold" />}
                       <span className="text-mist-400">{time(m.createdAt)}</span>
                       {mine && dm && m.read && !m.deleted && <span className="text-cyan-glow">· видяно</span>}
+                      {!m.deleted && !mine && (
+                        <button type="button" className="text-mist-400 opacity-60 transition hover:text-loss group-hover:opacity-100" onClick={() => openReport({ targetUserId: m.userId, username: m.username, kind: dm ? 'dm' : tab === 'company' ? 'company' : 'channel', messageId: m.id, snippet: m.body })} aria-label="Докладвай съобщението"><Flag className="h-3 w-3" /></button>
+                      )}
                       {!m.deleted && (mine || canModerate) && (
                         <button type="button" className="text-mist-400 opacity-60 transition hover:text-loss group-hover:opacity-100" onClick={() => void remove(m)} aria-label="Изтрий съобщението"><Trash2 className="h-3 w-3" /></button>
                       )}

@@ -36,7 +36,11 @@ export type LedgerCategory =
   | 'road_events'
   | 'market_fee'
   | 'referral_reward'
-  | 'reputation_bonus';
+  | 'reputation_bonus'
+  | 'trade_purchase'
+  | 'trade_sale'
+  | 'league_reward'
+  | 'season_pass';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -72,6 +76,10 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   market_fee: 'Такса на пазара за употребявана техника',
   referral_reward: 'Награди за поканени приятели',
   reputation_bonus: 'Бонус за репутация',
+  trade_purchase: 'Покупка на стоки',
+  trade_sale: 'Продажба на стоки',
+  league_reward: 'Награди от лигата',
+  season_pass: 'Сезонен пропуск',
 };
 
 export interface Posting {

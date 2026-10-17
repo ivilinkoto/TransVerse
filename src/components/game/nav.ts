@@ -21,7 +21,16 @@ export interface NavSection {
 export const SECTIONS: NavSection[] = [
   { key: 'home', href: '/game', label: 'Табло', icon: LayoutDashboard },
   { key: 'map', href: '/game/map', label: 'Карта', icon: Map },
-  { key: 'jobs', href: '/game/contracts', label: 'Поръчки', icon: ClipboardList },
+  {
+    key: 'jobs',
+    href: '/game/contracts',
+    label: 'Поръчки',
+    icon: ClipboardList,
+    tabs: [
+      { href: '/game/contracts', label: 'Поръчки' },
+      { href: '/game/trade', label: 'Търговия със стоки' },
+    ],
+  },
   {
     key: 'fleet',
     href: '/game/fleet',
@@ -53,6 +62,8 @@ export const SECTIONS: NavSection[] = [
     icon: Trophy,
     tabs: [
       { href: '/game/missions', label: 'Мисии' },
+      { href: '/game/league', label: 'Лига' },
+      { href: '/game/pass', label: 'Пропуск' },
       { href: '/game/events', label: 'Ивенти' },
       { href: '/game/leaderboards', label: 'Класации' },
       { href: '/game/seasons', label: 'Сезони' },

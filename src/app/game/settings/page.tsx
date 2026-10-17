@@ -1,5 +1,7 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
-import { Bell } from 'lucide-react';
+import { Ban, Bell } from 'lucide-react';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { blockList } from '@/server/game/moderation';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { PushSettings } from '@/components/game/PushSettings';
 import { Badge, Card, PageHeader } from '@/components/ui';
@@ -14,7 +16,7 @@ export const metadata = { title: 'Настройки' };
 export default async function SettingsPage() {
   const { db, user } = await gameContext();
   const [u] = await db.select({ email: users.email, createdAt: users.createdAt, verified: users.emailVerifiedAt, pushPrefs: users.pushPrefs }).from(users).where(eq(users.id, user.id));
-  const [keys, devices] = await Promise.all([vapidKeys(db), deviceCount(db, user.id)]);
+  const [keys, devices, blocked] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id)]);
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(sessions).where(and(eq(sessions.userId, user.id), gt(sessions.expiresAt, new Date())));
   return (
     <div className="space-y-6">
@@ -36,6 +38,20 @@ export default async function SettingsPage() {
           </dl>
         </Card>
         <Card title="Сигурност"><PasswordForm /></Card>
+        <Card title={<span className="inline-flex items-center gap-2"><Ban className="h-4 w-4 text-mist-400" />Блокирани играчи</span>} className="lg:col-span-2">
+          {blocked.length === 0 ? (
+            <p className="text-sm text-mist-400">Няма блокирани играчи. Блокира се от картата на играча (натисни името му).</p>
+          ) : (
+            <ul className="divide-y divide-asphalt-800">
+              {blocked.map((b) => (
+                <li key={b.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <span className="font-semibold">{b.username} <span className="font-normal text-mist-400">· от {date(b.at)}</span></span>
+                  <ActionButton action={{ type: 'unblockUser', userId: b.id }} className="btn-ghost px-3 py-1.5 text-xs">Отблокирай</ActionButton>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
         <Card title={<span className="inline-flex items-center gap-2"><Bell className="h-4 w-4 text-mist-400" />Известия на телефона и компютъра</span>} className="lg:col-span-2">
           <p className="mb-4 text-sm text-mist-400">Получавай известие, когато камионът пристигне, има спешна доставка, започва ивент или ти пишат в компанията — дори когато играта е затворена.</p>
           <PushSettings publicKey={keys.publicKey} categories={PUSH_CATEGORIES} prefs={u?.pushPrefs ?? {}} devices={devices} />

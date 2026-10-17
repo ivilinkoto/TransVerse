@@ -5,6 +5,7 @@ import { rateLimit } from '@/server/auth/rate-limit';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyMembers, companyMessages, companyRanks, users } from '@/server/db/schema';
 import { fail } from './errors';
+import { assertNotMuted } from './moderation';
 import { can, membershipOf } from './membership';
 import { logActivity } from './notify';
 
@@ -57,6 +58,7 @@ export async function sendChatMessage(db: Database, userId: string, raw: string)
   const body = chatBodySchema.parse(raw);
   const m = await membershipOf(db, userId);
   if (!m) fail('not_member', 'Чатът е само за членове на компанията.', 403);
+  await assertNotMuted(db, userId);
   // Anti-spam: at most 10 messages a minute per player.
   await rateLimit(db, `chat:${userId}`, 10, 60);
   return db.transaction(async (tx) => {
