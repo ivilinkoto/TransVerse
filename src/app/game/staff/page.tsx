@@ -9,7 +9,7 @@ import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
 import { candidates } from '@/server/game/staff';
 
-export const metadata = { title: 'Служители' };
+export const metadata = { title: 'Шофьори' };
 
 const Stars = ({ n }: { n: number }) => <span className="text-gold-400" aria-label={`Умение ${n} от 5`}>{'★'.repeat(n)}<span className="text-asphalt-500">{'★'.repeat(5 - n)}</span></span>;
 
@@ -22,7 +22,7 @@ export default async function StaffPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Служители" subtitle={`Шофьорите карат, трупат опит и растат в умения: по-малко гориво и по-бърза доставка. Дневни заплати: ${money(payroll)}.`} />
+      <PageHeader title="Шофьори" subtitle={`Наети шофьори, които карат вместо теб. Дневни заплати: ${money(payroll)}.`} help="Шофьорите карат, трупат опит и растат в умения: по-малко гориво и по-бърза доставка." />
       <Card title={`Шофьори (${fleet.drivers.length})`}>
         {fleet.drivers.length === 0 ? (
           <Empty icon={UserRound} title="Нямате шофьори">Без шофьор превозното средство не може да тръгне. Наемете от кандидатите по-долу.</Empty>

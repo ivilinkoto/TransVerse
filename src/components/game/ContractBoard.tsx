@@ -112,17 +112,17 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   return (
     <div className="space-y-4">
       <div className="panel flex flex-wrap items-center gap-3 p-3">
-        <label className="relative min-w-[200px] flex-1">
+        <label className="relative w-full min-w-[200px] flex-1 sm:w-auto">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
           <input className="input pl-9" placeholder="Град или стока…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Търсене" />
         </label>
-        <select className="input w-auto" value={cargo} onChange={(e) => setCargo(e.target.value)} aria-label="Вид товар">
+        <select className="input w-[calc(50%-0.375rem)] text-sm sm:w-auto" value={cargo} onChange={(e) => setCargo(e.target.value)} aria-label="Вид товар">
           <option value="">Всички товари</option>
           {cargoTypes.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
-        <select className="input w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Подреждане">
-          <option value="reward">Най-високо възнаграждение</option>
-          <option value="perKm">Най-добре платени на км</option>
+        <select className="input w-[calc(50%-0.375rem)] text-sm sm:w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Подреждане">
+          <option value="reward">Най-доходни</option>
+          <option value="perKm">Най-добре на км</option>
           <option value="distance">Най-къси</option>
           <option value="expires">Изтичат скоро</option>
         </select>

@@ -25,7 +25,7 @@ export default async function FleetPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Автопарк" subtitle="Всички превозни средства, техният статус, местоположение и активни доставки." actions={<><Link href="/game/market" className="btn-primary"><Truck className="h-4 w-4" />Купи техника</Link><Link href="/game/garage" className="btn-ghost"><Wrench className="h-4 w-4" />Гараж</Link></>} />
+      <PageHeader title="Автопарк" subtitle="Твоите превозни средства, къде са и какво правят." actions={<Link href="/game/market" className="btn-primary"><Truck className="h-4 w-4" />Купи техника</Link>} />
       {fleet.vehicles.length === 0 && <Empty icon={Truck} title="Нямате превозни средства">Купете първото си превозно средство от пазара.</Empty>}
       <div className="grid gap-4 xl:grid-cols-2">
         {fleet.vehicles.map((v) => (

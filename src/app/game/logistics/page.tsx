@@ -9,7 +9,7 @@ import { cities, cityMarkets, depots, ports, vehicles } from '@/server/db/schema
 import { gameContext } from '@/server/game/context';
 import { depotSlotCostCents } from '@/server/game/fleet';
 
-export const metadata = { title: 'Логистика' };
+export const metadata = { title: 'Депа' };
 
 export default async function LogisticsPage() {
   const { db, company } = await gameContext();
@@ -30,7 +30,8 @@ export default async function LogisticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Логистика" subtitle="Депата (гаражите) определят къде купувате и паркирате техника и колко превозни средства можете да имате. Може да ги откривате и без компания." />
+      <PageHeader title="Депа" subtitle="Къде паркираш и купуваш техника."
+        help="Депата (гаражите) определят къде купувате и паркирате техника и колко превозни средства можете да имате. Може да ги откривате и без компания." />
       <Card title="Вашите депа">
         <Table head={['Град', 'Капацитет', 'Паркирани сега', 'Открито', '']}>
           {myDepots.map((d) => (

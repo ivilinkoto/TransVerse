@@ -1,14 +1,27 @@
 import type { LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({ title, subtitle, help, actions }: { title: ReactNode; subtitle?: ReactNode; help?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="font-display text-2xl font-bold sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 max-w-3xl text-sm text-mist-400">{subtitle}</p>}
+    <div className="mb-5 sm:mb-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-[28px]">{title}</h1>
+          {subtitle && <p className="mt-1 max-w-3xl text-sm text-mist-400">{subtitle}</p>}
+        </div>
+        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {help && (
+        <details className="group mt-2 max-w-3xl text-sm">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-cyan-glow/90 hover:text-cyan-glow [&::-webkit-details-marker]:hidden">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full border border-cyan-glow/50 text-[10px] font-bold">?</span>
+            <span className="group-open:hidden">Как работи?</span>
+            <span className="hidden group-open:inline">Скрий</span>
+          </summary>
+          <div className="mt-2 rounded-xl border border-asphalt-700 bg-asphalt-900/70 p-3 text-mist-300">{help}</div>
+        </details>
+      )}
     </div>
   );
 }
@@ -24,12 +37,12 @@ const TONES = {
 
 export function Stat({ label, value, hint, icon: Icon, tone = 'default' }: { label: string; value: ReactNode; hint?: ReactNode; icon?: LucideIcon; tone?: keyof typeof TONES }) {
   return (
-    <div className="panel p-4">
-      <div className="flex items-center justify-between">
-        <span className="label">{label}</span>
+    <div className="panel min-w-0 p-3 sm:p-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="label truncate">{label}</span>
         {Icon && <Icon className={`h-4 w-4 ${TONES[tone]}`} />}
       </div>
-      <div className={`num mt-2 font-display text-2xl font-bold ${TONES[tone]}`}>{value}</div>
+      <div className={`num mt-1.5 truncate font-display text-xl font-bold sm:mt-2 sm:text-2xl ${TONES[tone]}`}>{value}</div>
       {hint && <div className="mt-1 text-xs text-mist-400">{hint}</div>}
     </div>
   );
@@ -37,7 +50,7 @@ export function Stat({ label, value, hint, icon: Icon, tone = 'default' }: { lab
 
 export function Card({ title, actions, children, className = '', id }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; id?: string }) {
   return (
-    <section id={id} className={`panel p-4 sm:p-5 ${className}`}>
+    <section id={id} className={`panel min-w-0 p-4 sm:p-5 ${className}`}>
       {(title || actions) && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="font-display text-base font-bold">{title}</h2>}
@@ -99,5 +112,20 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
         <tbody className="divide-y divide-asphalt-800">{children}</tbody>
       </table>
     </div>
+  );
+}
+
+/** In-page switch between views of the same data (e.g. leaderboard kinds); links keep it server-rendered. */
+export function Segmented({ items, active, label }: { items: { id: string; label: ReactNode; href: string }[]; active: string; label: string }) {
+  return (
+    <nav aria-label={label} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+      <div className="inline-flex min-w-max gap-1 rounded-full border border-asphalt-700 bg-asphalt-900/70 p-1">
+        {items.map((t) => (
+          <Link key={t.id} href={t.href} aria-current={t.id === active ? 'page' : undefined} className={`rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition ${t.id === active ? 'bg-volt-500 text-white shadow-[0_6px_20px_-8px_rgba(47,123,255,0.8)]' : 'text-mist-400 hover:text-white'}`}>
+            {t.label}
+          </Link>
+        ))}
+      </div>
+    </nav>
   );
 }

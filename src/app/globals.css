@@ -37,6 +37,9 @@
   }
   body {
     @apply bg-asphalt-950 font-sans text-mist-100 antialiased;
+    background-image: radial-gradient(1200px 500px at 70% -10%, rgba(47, 123, 255, 0.09), transparent 60%), radial-gradient(900px 400px at -10% 0%, rgba(34, 211, 238, 0.05), transparent 60%);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
   }
   h1, h2, h3 {
     text-wrap: balance;
@@ -48,7 +51,7 @@
 }
 
 @utility panel {
-  @apply rounded-2xl border border-asphalt-700 bg-asphalt-900/80 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset];
+  @apply rounded-2xl border border-asphalt-700/80 bg-asphalt-900/75 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_12px_32px_-16px_rgba(0,0,0,0.6)];
 }
 @utility label {
   @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-mist-400;

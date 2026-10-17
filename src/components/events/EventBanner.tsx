@@ -9,7 +9,7 @@ import type { runningEvents } from '@/server/game/events';
 export function EventBanner({ events, now }: { events: Awaited<ReturnType<typeof runningEvents>>; now: Date }) {
   if (!events.length) return null;
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
+    <div className={`grid gap-3 ${events.length > 1 ? 'lg:grid-cols-2' : ''}`}>
       {events.map(({ event: e, mine }) => {
         const metric = e.metric as EventMetric;
         const share = e.target ? Math.min(100, (e.progress / e.target) * 100) : 0;

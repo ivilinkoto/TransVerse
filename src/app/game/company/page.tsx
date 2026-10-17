@@ -139,7 +139,7 @@ function CompanyOverview({ hub, history, licences }: { hub: Hub; history: Histor
         <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />Основана {date(c.foundedAt)}</span>
         <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />Собственик {hub.owner}</span>
       </p>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         <Stat label="Каса на компанията" value={money(c.treasuryCents)} tone="gold" icon={Landmark} hint="Отделно от личните пари на членовете" />
         <Stat label="Членове" value={`${int(hub.members)} / ${capacity}`} tone="cyan" icon={Users} hint={`Набиране: ${c.recruitment === 'open' ? 'отворено' : c.recruitment === 'application' ? 'с кандидатура' : 'затворено'}`} />
         <Stat label="Курсове на членовете" value={int(hub.memberDeliveries)} tone="profit" icon={Route} hint={`Вноска ${Math.round(c.contributionRate * 100)}% от възнаграждението`} />

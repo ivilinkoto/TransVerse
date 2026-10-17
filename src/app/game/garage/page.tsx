@@ -10,7 +10,7 @@ import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
 
-export const metadata = { title: 'Гараж' };
+export const metadata = { title: 'Сервиз' };
 
 export default async function GaragePage() {
   const { db, user, company, now } = await gameContext();
@@ -20,8 +20,8 @@ export default async function GaragePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Гараж" subtitle="Ремонти, подобрения, ремаркета и продажба. Работа по техниката е възможна само между курсовете." />
-      {fleet.vehicles.length === 0 && <Empty icon={Wrench} title="Гаражът е празен" />}
+      <PageHeader title="Сервиз" subtitle="Ремонти, подобрения, ремаркета и продажба — между курсовете." />
+      {fleet.vehicles.length === 0 && <Empty icon={Wrench} title="Няма техника за сервиз" />}
       <div className="space-y-4">
         {fleet.vehicles.map((v) => {
           const busy = !!v.delivery;

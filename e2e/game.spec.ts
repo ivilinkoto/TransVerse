@@ -10,7 +10,7 @@ async function register(page: Page) {
   await page.fill('#password', 'abc123'); // 6 characters are enough
   await page.click('button[type=submit]');
   await page.waitForURL('**/game');
-  await expect(page.getByRole('heading', { name: 'Обзор' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Табло' })).toBeVisible();
   return tag;
 }
 
@@ -104,7 +104,7 @@ test.describe('core loop', () => {
       await expect(page.getByRole('heading', { name: 'Какво получават членовете' })).toBeVisible();
     }
     await page.goto('/game/leaderboards?tab=companies');
-    await expect(page.getByRole('link', { name: 'Компании', exact: true })).toHaveClass(/btn-primary/);
+    await expect(page.getByRole('navigation', { name: 'Вид класация' }).getByRole('link', { name: 'Компании', exact: true })).toHaveAttribute('aria-current', 'page');
   });
 
   test('players can contact support; the admin panel is staff-only', async ({ page }) => {
@@ -144,13 +144,13 @@ test('opening notifications marks them as read', async ({ page }) => {
   await expect(page.locator('header').getByRole('link', { name: /Известия/ })).not.toContainText(/\d/);
 });
 
-test('top bar: ☰ menu opens account pages and logs out', async ({ page }) => {
+test('navigation: six sections in the sidebar, account pages in the avatar menu', async ({ page }) => {
   await register(page);
+  const aside = page.locator('aside');
+  for (const name of ['Табло', 'Карта', 'Поръчки', 'Автопарк', 'Компания', 'Състезание']) await expect(aside.getByRole('link', { name })).toBeVisible();
+  await expect(aside.getByRole('link', { name: /Магазин и VIP/ })).toBeVisible();
+  await expect(aside.getByRole('link', { name: 'Финанси' })).toHaveCount(0);
   const header = page.locator('header');
-  await expect(header.getByRole('link', { name: 'Класации' })).toBeVisible();
-  await expect(header.getByRole('link', { name: 'Сезони' })).toBeVisible();
-  await expect(header.getByRole('link', { name: 'Магазин · VIP' })).toBeVisible();
-  await expect(page.locator('aside').getByRole('link', { name: 'Финанси' })).toHaveCount(0);
   await header.getByRole('button', { name: 'Профил и още' }).click();
   await page.getByRole('menuitem', { name: 'Финанси' }).click();
   await expect(page).toHaveURL(/\/game\/finance$/);
@@ -163,9 +163,15 @@ test('top bar: ☰ menu opens account pages and logs out', async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
 });
 
-test('the global events page is reachable from the menu', async ({ page }) => {
+test('section tabs: Автопарк and Състезание group their pages', async ({ page }) => {
   await register(page);
-  await page.locator('aside').getByRole('link', { name: /Ивенти/ }).click();
+  await page.locator('aside').getByRole('link', { name: 'Автопарк' }).click();
+  const fleetTabs = page.getByRole('navigation', { name: 'Автопарк' });
+  await fleetTabs.getByRole('link', { name: 'Сервиз' }).click();
+  await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
+  await expect(page.locator('aside').getByRole('link', { name: 'Автопарк' })).toHaveAttribute('aria-current', 'page');
+  await page.locator('aside').getByRole('link', { name: 'Състезание' }).click();
+  await page.getByRole('navigation', { name: 'Състезание' }).getByRole('link', { name: 'Ивенти' }).click();
   await expect(page.getByRole('heading', { name: 'Ивенти', exact: true })).toBeVisible();
   // Either a running/announced event with its goal or the empty state.
   await expect(page.getByText(/Награди, ако целта бъде постигната|В момента няма ивент/).first()).toBeVisible();
@@ -194,7 +200,11 @@ test('@mobile dashboard is usable on a phone without horizontal scrolling', asyn
   await register(page);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);
-  await page.getByRole('button', { name: 'Меню' }).click();
-  await page.getByRole('link', { name: 'Транспортни поръчки' }).click();
-  await expect(page.getByRole('heading', { name: 'Транспортни поръчки' })).toBeVisible();
+  const bottom = page.getByRole('navigation', { name: 'Основна навигация' });
+  await bottom.getByRole('link', { name: 'Поръчки' }).click();
+  await expect(page.getByRole('heading', { name: 'Поръчки', exact: true })).toBeVisible();
+  await bottom.getByRole('button', { name: 'Още', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: 'Класации' }).click();
+  await expect(page.getByRole('heading', { name: 'Класации', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });

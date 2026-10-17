@@ -5,7 +5,7 @@ import { LICENCES, type LicenceId } from '@/lib/game/licences';
 import { heldLicences } from '@/server/game/licences';
 import { fleetCapacity } from '@/server/game/fleet';
 import { ECONOMY } from '@/lib/game/economy';
-import { Badge, Card, PageHeader } from '@/components/ui';
+import { Badge, Card, PageHeader, Segmented } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { money } from '@/lib/format';
 import { POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
@@ -63,20 +63,18 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
   const depotOptions = depotRows.map((d) => ({ cityId: d.cityId, name: d.name, free: freeSlots }));
 
   return (
-    <div className="space-y-8">
-      <PageHeader title="Пазар на техника" subtitle={`Нови превозни средства и ремаркета — за всеки играч, със или без компания. Капацитет на депата: ${used} / ${totalSlots} превозни средства. Ремаркетата не заемат място.`} />
+    <div className="space-y-6">
+      <PageHeader title="Пазар на техника" subtitle={`Нови превозни средства и ремаркета. Места в депата: ${used} / ${totalSlots}.`} help="Купуват се от всеки играч — със или без компания. Ремаркетата не заемат място в депото." />
       {depotRows.length === 0 && (
         <p className="rounded-xl border border-gold-400/40 bg-gold-400/10 px-4 py-3 text-sm text-mist-200">
-          Купената техника се паркира в депо. Първо открий депо в раздел <Link href="/game/logistics" className="font-semibold text-cyan-glow hover:underline">Логистика</Link>.
+          Купената техника се паркира в депо. Първо открий депо в раздел <Link href="/game/logistics" className="font-semibold text-cyan-glow hover:underline">Автопарк → Депа</Link>.
         </p>
       )}
-      <div className="panel flex flex-wrap items-center gap-2 p-3">
-        <nav className="flex flex-wrap gap-1.5" aria-label="Вид техника">
-          {SHOW.map((x) => <Link key={x.id} href={href({ show: x.id })} aria-current={show === x.id ? 'page' : undefined} className={`${show === x.id ? 'btn-primary' : 'btn-ghost'} px-3 py-1.5 text-sm`}>{x.label}</Link>)}
-        </nav>
-        <nav className="ml-auto flex flex-wrap items-center gap-1.5" aria-label="Подреждане">
+      <div className="flex flex-wrap items-center gap-3">
+        <Segmented label="Вид техника" active={show} items={SHOW.map((x) => ({ id: x.id, label: x.label, href: href({ show: x.id }) }))} />
+        <nav className="flex flex-wrap items-center gap-1.5 sm:ml-auto" aria-label="Подреждане">
           <span className="text-xs text-mist-400">Подреди:</span>
-          {SORT.map((x) => <Link key={x.id} href={href({ sort: x.id })} aria-current={sort === x.id ? 'page' : undefined} className={`${sort === x.id ? 'btn-primary' : 'btn-ghost'} px-3 py-1.5 text-xs`}>{x.label}</Link>)}
+          {SORT.map((x) => <Link key={x.id} href={href({ sort: x.id })} aria-current={sort === x.id ? 'page' : undefined} className={`rounded-full border px-3 py-1 text-xs font-medium transition ${sort === x.id ? 'border-cyan-glow/50 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>{x.label}</Link>)}
         </nav>
       </div>
       {showUnits && (
