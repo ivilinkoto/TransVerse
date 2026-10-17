@@ -6,7 +6,7 @@ import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, companyMembers, depots, drivers, organizations, trailers, users, vehicles } from '@/server/db/schema';
 import { fail } from './errors';
 import { post } from './finance';
-import { plate } from './names';
+import { uniquePlate } from './names';
 import { logActivity, notify } from './notify';
 import { checkAchievements } from './progression';
 
@@ -53,10 +53,10 @@ export async function addRental(tx: Tx, companyId: string, offerId: string, city
   if (!offer) fail('unknown_offer', 'Непозната оферта за наем.');
   const [vehicle] = await tx
     .insert(vehicles)
-    .values({ companyId, modelId: offer!.unitId, plate: plate(), color: '#f8fafc', cityId, ownership: 'rented', purchasePriceCents: 0 })
+    .values({ companyId, modelId: offer!.unitId, plate: await uniquePlate(tx), color: '#f8fafc', cityId, ownership: 'rented', purchasePriceCents: 0 })
     .returning();
   if (offer!.trailerId) {
-    await tx.insert(trailers).values({ companyId, modelId: offer!.trailerId, plate: plate(), cityId, vehicleId: vehicle!.id, ownership: 'rented', purchasePriceCents: 0 });
+    await tx.insert(trailers).values({ companyId, modelId: offer!.trailerId, plate: await uniquePlate(tx), cityId, vehicleId: vehicle!.id, ownership: 'rented', purchasePriceCents: 0 });
   }
   return vehicle!;
 }
@@ -124,42 +124,6 @@ export async function foundCompany(db: Database, userId: string, input: { name: 
     await notify(tx, userId, 'achievement', `Основахте „${input.name}“!`, 'Вече можете да купувате и наемате техника, да наемате шофьори и да откривате депа.', '/game/market');
     await checkAchievements(tx, userId, company.id);
     return org!.id;
-  });
-}
-
-/** Returns a rented vehicle (and its rented trailer) when it is idle. */
-export async function returnRental(db: Database, userId: string, vehicleId: string) {
-  return db.transaction(async (tx) => {
-    const company = await companyForUser(tx, userId);
-    const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id))).for('update');
-    if (!v || v.soldAt) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
-    if (v!.ownership !== 'rented') fail('not_rented', 'Това превозно средство е собствено.');
-    if (v!.status !== 'idle') fail('vehicle_busy', 'Не можете да върнете камиона по време на курс.');
-    const active = await tx.select({ id: vehicles.id }).from(vehicles).where(and(eq(vehicles.companyId, company.id), sql`${vehicles.soldAt} is null`));
-    if (company.kind === 'independent' && active.length <= 1) fail('last_vehicle', 'Без камион не можете да работите. Първо основете компания или купете собствен.');
-    await tx.update(drivers).set({ vehicleId: null }).where(eq(drivers.vehicleId, v!.id));
-    await tx.update(trailers).set({ vehicleId: null, soldAt: new Date() }).where(and(eq(trailers.vehicleId, v!.id), eq(trailers.ownership, 'rented')));
-    await tx.update(vehicles).set({ status: 'returned', soldAt: new Date() }).where(eq(vehicles.id, v!.id));
-    await logActivity(tx, userId, 'rental_returned', { vehicleId });
-  });
-}
-
-/** A company rents an additional vehicle into one of its depots. */
-export async function rentVehicle(db: Database, userId: string, offerId: string, depotCityId: number) {
-  return db.transaction(async (tx) => {
-    const company = await requireFoundedCompany(tx, userId);
-    const offer = RENTAL_OFFERS.find((o) => o.id === offerId);
-    if (!offer) fail('unknown_offer', 'Непозната оферта за наем.');
-    const [user] = await tx.select({ level: users.level }).from(users).where(eq(users.id, userId));
-    if ((user?.level ?? 1) < offer!.minLevel) fail('level', `Изисква ниво ${offer!.minLevel}.`);
-    const [depot] = await tx.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, depotCityId)));
-    if (!depot) fail('no_depot', 'Нямате депо в този град.');
-    const { fleetCapacity } = await import('./fleet');
-    const cap = await fleetCapacity(tx, company.id);
-    if (cap.used >= cap.slots) fail('no_capacity', 'Нямате свободни места в депата.');
-    const vehicle = await addRental(tx, company.id, offer!.id, depotCityId);
-    await logActivity(tx, userId, 'vehicle_rented', { offerId, vehicleId: vehicle.id });
-    return vehicle;
   });
 }
 

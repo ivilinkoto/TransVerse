@@ -128,3 +128,11 @@ export function rentalFeeCents(rewardCents: number, totalKm: number, shareReduct
   const share = Math.max(0.2, ECONOMY.rentalShare - shareReduction);
   return Math.round(rewardCents * share + totalKm * ECONOMY.rentalCentsPerKm);
 }
+
+/** Service advice from a vehicle's condition: below 50 % soon, below the job minimum it must be repaired. */
+export const SERVICE_SOON_BELOW = 50;
+export function serviceState(condition: number): 'ok' | 'soon' | 'required' {
+  if (condition < ECONOMY.minConditionForJobs) return 'required';
+  if (condition < SERVICE_SOON_BELOW) return 'soon';
+  return 'ok';
+}

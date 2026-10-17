@@ -75,7 +75,7 @@ export async function membershipOf(db: DbOrTx, userId: string, lock = false): Pr
 export const can = (rank: Pick<Rank, 'isOwner' | 'permissions'>, permission: Permission) => rank.isOwner || rank.permissions.includes(permission);
 
 /** The actor's membership, failing unless they hold the permission. Locks the company row. */
-async function requirePermission(tx: Tx, userId: string, permission: Permission): Promise<Membership> {
+export async function requirePermission(tx: Tx, userId: string, permission: Permission): Promise<Membership> {
   const m = await membershipOf(tx, userId, true);
   if (!m) fail('not_member', 'Не членувате в компания.', 403);
   if (!can(m!.rank, permission)) fail('forbidden', 'Длъжността ви няма това право.', 403);

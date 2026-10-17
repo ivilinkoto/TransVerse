@@ -17,6 +17,7 @@ import { addCompanyXp, bonusesForUser } from './membership';
 import { recordCompanyMissionProgress } from './company-missions';
 import { recordEventProgress } from './events';
 import { recordMissionProgress } from './missions';
+import { afterRentedTrip } from './rentals';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractCountries } from '@/lib/game/licences';
 import { addSeasonScore } from './seasons';
@@ -306,6 +307,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${xp} опит.`,
     '/game/finance',
   );
+  // Starter rental: returned now if the player bought their own truck, or offered for buy-out.
+  if (vehicle!.ownership === 'rented') await afterRentedTrip(tx, vehicle!.id, company!.ownerId, now);
   await checkAchievements(tx, company!.ownerId, d.companyId);
   return true;
 }

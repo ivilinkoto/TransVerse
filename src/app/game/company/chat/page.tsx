@@ -11,10 +11,10 @@ export default async function CompanyChatPage() {
   const { db, user, now } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
-  const { messages, canModerate } = await companyChat(db, user.id, 0, 80, now);
+  const { messages, canModerate, canClear } = await companyChat(db, user.id, 0, 80, now);
   return (
     <Card title="Чат на компанията" actions={<span className="text-xs text-mist-400">Вижда се само от членовете · обновява се на живо</span>}>
-      <CompanyChat me={user.id} initial={messages} canModerate={canModerate} />
+      <CompanyChat me={user.id} initial={messages} canModerate={canModerate} canClear={canClear} />
     </Card>
   );
 }

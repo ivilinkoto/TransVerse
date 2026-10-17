@@ -6,7 +6,7 @@ import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useRef, useState } from 'react';
 import { int } from '@/lib/format';
-import { cumulativeKm, greatCircle, pointAlong, type LatLon } from '@/lib/geo/geometry';
+import { cumulativeKm, greatCircle, headingWest, pointAlong, type LatLon } from '@/lib/geo/geometry';
 import { stateAt, type Segment } from '@/lib/game/schedule';
 import type { WorldSnapshot, WorldTruck } from '@/server/game/world-map';
 import { PlayerName } from './PlayerName';
@@ -55,13 +55,15 @@ maplibregl.setWorkerUrl('/vendor/maplibre-gl-worker.mjs');
 const legLine = (leg: MapLeg): LatLon[] => (leg.geometry ? (polyline.decode(leg.geometry, 6) as LatLon[]) : greatCircle(leg.from, leg.to));
 const toLngLat = (p: LatLon): [number, number] => [p[1], p[0]];
 
-function vehiclePoint(v: MapVehicle, now: number): LatLon {
-  if (!v.delivery) return v.position;
+function vehiclePoint(v: MapVehicle, now: number): { point: LatLon; west: boolean } {
+  if (!v.delivery) return { point: v.position, west: false };
   const s = stateAt(v.delivery.schedule, now);
   const leg = s.leg === 'empty' && v.delivery.empty ? v.delivery.empty : v.delivery.loaded;
-  if (s.done) return v.delivery.loaded.to;
+  if (s.done) return { point: v.delivery.loaded.to, west: false };
   const line = legLine(leg);
-  return pointAlong(line, leg.km > 0 ? s.km / leg.km : 0, cumulativeKm(line));
+  const cum = cumulativeKm(line);
+  const f = leg.km > 0 ? s.km / leg.km : 0;
+  return { point: pointAlong(line, f, cum), west: headingWest(line, f, cum) };
 }
 
 /**
@@ -69,10 +71,11 @@ function vehiclePoint(v: MapVehicle, now: number): LatLon {
  * company colour with an outline that marks whose truck it is. The icon id carries
  * the colours, e.g. "truck|#f8fafc|#34d399", and is created on first use.
  */
-const truckIcon = (fill: string, ring: string, vip = false) => `truck|${fill}|${ring}|${vip ? 'v' : ''}`;
+const truckIcon = (fill: string, ring: string, vip = false, west = false) => `truck|${fill}|${ring}|${vip ? 'v' : ''}|${west ? 'w' : 'e'}`;
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
-function drawTruck(fill: string, ring: string, vip = false): ImageData | null {
+/** The cab faces east; `west` mirrors the icon so a truck heading west drives cab first. */
+function drawTruck(fill: string, ring: string, vip = false, west = false): ImageData | null {
   const r = 2; // pixel ratio
   const canvas = document.createElement('canvas');
   canvas.width = 34 * r;
@@ -80,6 +83,10 @@ function drawTruck(fill: string, ring: string, vip = false): ImageData | null {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
   ctx.scale(r, r);
+  if (west) {
+    ctx.translate(34, 0);
+    ctx.scale(-1, 1);
+  }
   ctx.lineJoin = 'round';
   if (vip) {
     // VIP: a golden glow around the whole truck.
@@ -131,13 +138,14 @@ function cachedLine(key: string, geometry: string | null, from: LatLon, to: LatL
   return hit;
 }
 
-function truckPoint(t: WorldTruck, routes: WorldSnapshot['routes'], now: number): { point: LatLon; moving: boolean } {
-  if (!t.delivery) return { point: t.position, moving: false };
+function truckPoint(t: WorldTruck, routes: WorldSnapshot['routes'], now: number): { point: LatLon; moving: boolean; west: boolean } {
+  if (!t.delivery) return { point: t.position, moving: false, west: false };
   const s = stateAt(t.delivery.schedule, now);
-  if (s.done) return { point: t.delivery.loaded.to, moving: false };
+  if (s.done) return { point: t.delivery.loaded.to, moving: false, west: false };
   const leg = s.leg === 'empty' && t.delivery.empty ? t.delivery.empty : t.delivery.loaded;
   const { line, cum } = cachedLine(`${leg.routeId}:${routes[leg.routeId]?.length ?? 0}`, routes[leg.routeId] ?? null, leg.from, leg.to);
-  return { point: pointAlong(line, leg.km > 0 ? s.km / leg.km : 0, cum), moving: s.segment?.kind === 'drive' };
+  const f = leg.km > 0 ? s.km / leg.km : 0;
+  return { point: pointAlong(line, f, cum), moving: s.segment?.kind === 'drive', west: headingWest(line, f, cum) };
 }
 
 function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number): GeoJSON.FeatureCollection {
@@ -146,10 +154,10 @@ function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number):
     features: world.trucks
       .filter((t) => !ownIds.has(t.id))
       .map((t) => {
-        const { point, moving } = truckPoint(t, world.routes, now);
+        const { point, moving, west } = truckPoint(t, world.routes, now);
         const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
         const fill = t.color && HEX.test(t.color) ? t.color : '#e8eef7';
-        return { type: 'Feature', properties: { id: t.id, label, icon: truckIcon(fill, t.vip ? '#d4af37' : t.online ? '#34d399' : '#ef4444', t.vip), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+        return { type: 'Feature', properties: { id: t.id, label, icon: truckIcon(fill, t.vip ? '#d4af37' : t.online ? '#34d399' : '#ef4444', t.vip, west), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
       }),
   };
 }
@@ -194,9 +202,9 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     map.on('styleimagemissing', (e) => {
-      const [kind, fill, ring, flag] = e.id.split('|');
+      const [kind, fill, ring, flag, side] = e.id.split('|');
       if (kind !== 'truck' || !fill || !ring || !HEX.test(fill) || !HEX.test(ring) || map.hasImage(e.id)) return;
-      const image = drawTruck(fill, ring, flag === 'v');
+      const image = drawTruck(fill, ring, flag === 'v', side === 'w');
       if (image) map.addImage(e.id, image, { pixelRatio: 2 });
     });
     map.on('error', (e) => {
@@ -341,7 +349,13 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     const tick = () => {
       const src = mapRef.current?.getSource('vehicles') as GeoJSONSource | undefined;
       const now = Date.now();
-      src?.setData({ type: 'FeatureCollection', features: vehicles.map((v) => ({ type: 'Feature', properties: { plate: v.plate, icon: truckIcon(HEX.test(v.color) ? v.color : '#f8fafc', '#22d3ee', ownVip) }, geometry: { type: 'Point', coordinates: toLngLat(vehiclePoint(v, now)) } })) });
+      src?.setData({
+        type: 'FeatureCollection',
+        features: vehicles.map((v) => {
+          const { point, west } = vehiclePoint(v, now);
+          return { type: 'Feature', properties: { plate: v.plate, icon: truckIcon(HEX.test(v.color) ? v.color : '#f8fafc', '#22d3ee', ownVip, west) }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+        }),
+      });
     };
     tick();
     const id = setInterval(tick, 2000);

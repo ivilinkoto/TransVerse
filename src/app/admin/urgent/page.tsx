@@ -20,7 +20,7 @@ export default async function UrgentPage() {
   const options = cityRows.filter((c) => isFreightHub({ population: c.population, country: c.country })).map((c) => ({ id: c.id, name: c.name, country: c.country }));
   return (
     <div className="space-y-6">
-      <PageHeader title="Спешни доставки" subtitle="Публикувай спешна поръчка: показва се най-отгоре на борсата с бадж „СПЕШНО“, камионът стига до товара за 1 минута, а курсът върви по-бързо. Докато не изтече, може да я поеме всеки играч със свободен подходящ камион и лицензи — всеки по веднъж и всеки получава цената." />
+      <PageHeader title="Спешни доставки" subtitle="Публикувай спешна поръчка: показва се най-отгоре на борсата с бадж „СПЕШНО“, камионът стига до товара за 1 минута, а курсът върви по-бързо. Докато не изтече, може да я поеме всеки играч със свободен подходящ камион и лицензи — всеки по веднъж и всеки получава цената. Освен тук, системата сама пуска спешни доставки през произволни интервали (1,5–5 часа)." />
       {isAdmin(user.role) ? (
         <Card title="Нова спешна доставка">
           <UrgentContractForm cities={options} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label, maxTons: c.tons[1] }))} />
@@ -33,7 +33,7 @@ export default async function UrgentPage() {
           {recent.map(({ contract: c, takers, delivered, from, to }) => (
             <tr key={c.id}>
               <td className="px-3 py-2 text-mist-400">{dateTime(c.createdAt)}</td>
-              <td className="px-3 py-2 font-semibold">{c.goods} <span className="text-xs font-normal text-mist-400">{c.weightTons} т</span></td>
+              <td className="px-3 py-2 font-semibold">{c.goods} <span className="text-xs font-normal text-mist-400">{c.weightTons} т</span>{!c.createdBy && <span className="ml-1.5"><Badge tone="violet">автоматична</Badge></span>}</td>
               <td className="px-3 py-2">{from} → {to} <span className="text-xs text-mist-400">{km(c.distanceKm)}</span></td>
               <td className="num px-3 py-2 text-profit">{money(c.rewardCents)}</td>
               <td className="px-3 py-2">{duration(c.windowMinutes)}</td>

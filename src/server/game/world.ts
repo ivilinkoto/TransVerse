@@ -5,6 +5,7 @@ import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
+import { autoUrgentTick } from './auto-urgent';
 import { ensureAutoEvent, settleDueEvents } from './events';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
@@ -78,6 +79,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));
     await every(db, 'demand', 60 * 60_000, now, (elapsed) => recoverDemand(db, Math.min(48, elapsed / 3_600_000)));
     await every(db, 'events', 6 * 60 * 60_000, now, () => spawnMarketEvent(db, now));
+    // Urgent shipments from the automatic dispatcher, at random intervals.
+    await autoUrgentTick(db, now, provider);
     await every(db, 'seasons', 10 * 60_000, now, async () => {
       await activeSeason(db, now);
       await rotateSeasons(db, now);

@@ -14,6 +14,7 @@
 | Мисии | `mission_progress` (играч + период + мисия: цел, прогрес, награда, изпълнена/взета) |
 | Ивенти | `global_events` (цел, прогрес, филтри, награди jsonb, начало/край, постигнат/разплатен, резултат, шаблон), `global_event_contributions` (ивент + играч: принос, доставки, компания, място и награда) |
 | Фирмени мисии | `company_mission_progress` (компания + седмица + мисия: цел, прогрес, награда за касата, принос по членове) |
+| Лицензи на компаниите | `company_licences` (компания + лиценз, цена, купил) |
 | Лицензи | `user_licences` (играч + лиценз, цена, източник purchase/legacy/admin) |
 | Чат на компаниите | `company_messages` (компания, автор, текст, изтриване) |
 | Членство в компании | `company_ranks` (длъжности, права, старшинство), `company_members` (един играч — една компания), `company_applications`, `company_assets` (лого/банер като bytea, проверени по съдържание) |
@@ -35,3 +36,6 @@
 Миграция `0009`: `global_events`, `global_event_contributions`, `company_mission_progress`.
 Миграция `0010`: `payments`.
 Миграция `0011`: `payments.order_id / capture_id` (PayPal).
+Миграция `0012`: `payments.failure_reason`.
+Миграция `0013`: `vehicles.return_pending` (наетият камион се връща след курса).
+Миграция `0014`: `company_licences`; правото `manage_chat` за длъжността „Заместник“.

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { companyNameSchema } from '@/server/auth/accounts';
-import { foundCompany, rentVehicle, returnRental } from '@/server/game/company';
+import { foundCompany } from '@/server/game/company';
+import { buyoutRental, returnRental } from '@/server/game/rentals';
 import { createTicket, replySchema, replyToTicket, setTicketStatus, ticketSchema } from '@/server/game/support';
 import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutorial';
 import { getDb } from '@/server/db/client';
@@ -9,11 +10,11 @@ import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUp
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver } from '@/server/game/staff';
 import { handler } from '@/server/http';
-import { buyLicence } from '@/server/game/licences';
+import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
 import { reserveContract } from '@/server/game/contracts';
 import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
-import { chatBodySchema, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
+import { chatBodySchema, clearCompanyChat, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
 import {
   buyCompanyUpgrade,
   createRank,
@@ -56,8 +57,8 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('markNotificationsRead') }),
   z.object({ type: z.literal('foundCompany'), name: companyNameSchema, hqCityId: cityId }),
-  z.object({ type: z.literal('rentVehicle'), offerId: z.string().max(40), cityId }),
   z.object({ type: z.literal('returnRental'), vehicleId: id }),
+  z.object({ type: z.literal('buyoutRental'), vehicleId: id }),
   z.object({ type: z.literal('tutorialStep'), step: z.string().max(40) }),
   z.object({ type: z.literal('tutorialDismiss'), dismissed: z.boolean() }),
   z.object({ type: z.literal('createTicket'), ticket: ticketSchema }),
@@ -80,11 +81,13 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean() }),
   z.object({ type: z.literal('dissolveCompany') }),
   z.object({ type: z.literal('buyLicence'), licence: z.string().max(30) }),
+  z.object({ type: z.literal('buyCompanyLicence'), licenceId: z.string().max(20) }),
   z.object({ type: z.literal('rerollMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
   z.object({ type: z.literal('reserveContract'), contractId: id }),
   z.object({ type: z.literal('shopBuy'), purchase: shopPurchaseSchema }),
   z.object({ type: z.literal('sendChat'), body: chatBodySchema }),
   z.object({ type: z.literal('deleteChat'), messageId: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('clearChat') }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
 ]);
 
@@ -129,8 +132,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'foundCompany':
       await foundCompany(db, user.id, { name: input.name, hqCityId: input.hqCityId });
       return { ok: true };
-    case 'rentVehicle':
-      return { ok: true, id: (await rentVehicle(db, user.id, input.offerId, input.cityId)).id };
+    case 'buyoutRental':
+      return { ok: true, ...(await buyoutRental(db, user.id, input.vehicleId)) };
     case 'returnRental':
       await returnRental(db, user.id, input.vehicleId);
       return { ok: true };
@@ -195,6 +198,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'deleteChat':
       await deleteChatMessage(db, user.id, input.messageId);
       return { ok: true };
+    case 'clearChat':
+      return { ok: true, removed: await clearCompanyChat(db, user.id) };
     case 'shopBuy':
       return { ok: true, ...(await buyShopItem(db, user.id, input.purchase)) };
     case 'reserveContract':
@@ -203,6 +208,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, reward: await claimMission(db, user.id, input.periodKey, input.missionId) };
     case 'buyLicence':
       return { ok: true, licence: await buyLicence(db, user.id, input.licence) };
+    case 'buyCompanyLicence':
+      return { ok: true, licence: await buyCompanyLicence(db, user.id, input.licenceId) };
     case 'dissolveCompany':
       return { ok: true, refundCents: await dissolveCompany(db, user.id) };
   }

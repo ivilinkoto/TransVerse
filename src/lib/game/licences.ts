@@ -103,3 +103,7 @@ export function missingLicences(needed: readonly LicenceId[], held: ReadonlySet<
 export function contractCountries(originCountry: string, destCountry: string, routeCountries: readonly string[] | null | undefined): string[] {
   return [...new Set([originCountry, destCountry, ...(routeCountries ?? [])])];
 }
+
+/** Companies pay double; in exchange every member may use the licence. */
+export const COMPANY_LICENCE_MULTIPLIER = 2;
+export const companyLicencePrice = (id: LicenceId) => LICENCES[id].priceCents * COMPANY_LICENCE_MULTIPLIER;

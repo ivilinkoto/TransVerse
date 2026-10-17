@@ -159,3 +159,14 @@ export const RENTAL_OFFERS: RentalOffer[] = [
 
 /** The truck every new player starts with. */
 export const STARTER_RENTAL = 'rent-rigid';
+
+/** After this many deliveries with a rented truck the player may buy it out. */
+export const RENTAL_BUYOUT_DELIVERIES = 5;
+/** Buy-out price as a share of the new price (rounded to 100 €). */
+export const RENTAL_BUYOUT_SHARE = 0.5;
+
+export function rentalBuyoutCents(unitId: string, trailerId?: string | null): number {
+  const unit = POWER_UNITS.find((m) => m.id === unitId)?.priceCents ?? 0;
+  const trailer = trailerId ? (TRAILERS.find((t) => t.id === trailerId)?.priceCents ?? 0) : 0;
+  return Math.round(((unit + trailer) * RENTAL_BUYOUT_SHARE) / 100_00) * 100_00;
+}

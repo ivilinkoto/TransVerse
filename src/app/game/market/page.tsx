@@ -4,7 +4,6 @@ import { BuyButton } from '@/components/game/BuyButton';
 import { LICENCES, type LicenceId } from '@/lib/game/licences';
 import { heldLicences } from '@/server/game/licences';
 import { fleetCapacity } from '@/server/game/fleet';
-import { RENTAL_OFFERS } from '@/lib/game/catalog';
 import { ECONOMY } from '@/lib/game/economy';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
@@ -21,7 +20,6 @@ const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влек
 /** What the market shows (URL ?show=…) and in which order (?sort=…). */
 const SHOW = [
   { id: 'all', label: 'Всичко' },
-  { id: 'rentals', label: 'Под наем' },
   { id: 'van', label: 'Ванове' },
   { id: 'rigid', label: 'Соло камиони' },
   { id: 'tractor', label: 'Влекачи' },
@@ -81,33 +79,6 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
           {SORT.map((x) => <Link key={x.id} href={href({ sort: x.id })} aria-current={sort === x.id ? 'page' : undefined} className={`${sort === x.id ? 'btn-primary' : 'btn-ghost'} px-3 py-1.5 text-xs`}>{x.label}</Link>)}
         </nav>
       </div>
-      {(show === 'all' || show === 'rentals') && (
-      <section>
-        <h2 className="mb-1 font-display text-lg font-bold">Под наем</h2>
-        <p className="mb-3 text-sm text-mist-400">Без първоначална вноска: от всяка доставка се удържат {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Горивото, таксите и сервизът са за сметка на наемодателя. Нужен е шофьор и свободно място в депо.</p>
-        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-          {RENTAL_OFFERS.map((o) => {
-            const unit = POWER_UNITS.find((m) => m.id === o.unitId)!;
-            const reason =
-              company.kind !== 'company' ? 'Допълнителен наем изисква основана компания.' : user.level < o.minLevel ? `Изисква ниво ${o.minLevel}.` : freeSlots <= 0 ? 'Няма свободно място в депата.' : null;
-            return (
-              <Card key={o.id} className="flex flex-col">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-display font-bold">{o.label}</div>
-                    <div className="text-xs text-mist-400">{unit.name}{o.trailerId ? ' + завеса 13.6 м' : ''}</div>
-                  </div>
-                  <Badge tone={user.level >= o.minLevel ? 'cyan' : 'violet'}>ниво {o.minLevel}</Badge>
-                </div>
-                <div className="my-3 flex h-20 items-end"><VehicleIllustration modelId={o.unitId} trailerModelId={o.trailerId} color="#f8fafc" className="max-h-20 w-full" /></div>
-                <LicenceHint body={unit.body} held={held} />
-                <div className="mt-auto"><BuyButton type="rentVehicle" modelId={o.id} depots={depotOptions} disabledReason={reason} label="Наеми" /></div>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-      )}
       {showUnits && (
       <section>
         <h2 className="mb-3 font-display text-lg font-bold">{show === 'tractor' ? 'Влекачи' : show === 'van' ? 'Ванове' : show === 'rigid' ? 'Соло камиони' : 'Превозни средства за покупка'}</h2>

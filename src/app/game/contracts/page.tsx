@@ -15,6 +15,8 @@ import { LICENCES } from '@/lib/game/licences';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { heldLicences, missingFor } from '@/server/game/licences';
 
+import { FleetCondition } from '@/components/game/FleetCondition';
+
 export const metadata = { title: 'Транспортни поръчки' };
 
 export default async function ContractsPage() {
@@ -53,7 +55,7 @@ export default async function ContractsPage() {
       const minutes = c.urgent ? (emptyKm > 0 ? URGENT_RELOCATION_MS / 60_000 : 0) + gameDurationMinutes(c.distanceKm) / Math.max(1, c.speedFactor) : gameDurationMinutes(emptyKm + c.distanceKm);
       const rented = v.ownership === 'rented';
       const cost = rented ? rentalFeeCents(c.rewardCents, chargedEmptyKm + c.distanceKm) : costs.totalCents;
-      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''} · ${v.city.nameBg}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: c.rewardCents - cost, minutes };
+      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: c.rewardCents - cost, minutes };
     });
     return {
       id: c.id,
@@ -95,6 +97,7 @@ export default async function ContractsPage() {
         title="Транспортни поръчки"
         subtitle="Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
+      <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
       <ContractBoard vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );

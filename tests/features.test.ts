@@ -7,7 +7,8 @@ import { canBan, canChangeRole } from '@/server/auth/roles';
 import { createSession, validateSession } from '@/server/auth/session';
 import { closeDb } from '@/server/db/client';
 import { adminAudit, companies, organizations, deliveries, depots, ledgerEntries, notifications, users, vehicles } from '@/server/db/schema';
-import { foundCompany, rentVehicle, returnRental } from '@/server/game/company';
+import { foundCompany } from '@/server/game/company';
+import { returnRental } from '@/server/game/rentals';
 import { acceptContract, migrateToGameTime, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
 import { createTicket, replyToTicket, ticketThread } from '@/server/game/support';
@@ -48,19 +49,10 @@ describe('company founding', () => {
 });
 
 describe('rentals', () => {
-  it('companies can rent more trucks; the last truck of an independent cannot be returned', async () => {
+  it('the last truck of a player cannot be returned', async () => {
     const solo = await newPlayer();
-    expect(await code(rentVehicle(db(), solo.userId, 'rent-van', solo.hq.id))).toBe('company_required');
     const [starter] = await fleetOf((await companyOf(solo.userId)).id);
     expect(await code(returnRental(db(), solo.userId, starter!.id))).toBe('last_vehicle');
-
-    const p = await playerWithCompany();
-    const company = await companyOf(p.userId);
-    const rented = await rentVehicle(db(), p.userId, 'rent-van', p.hq.id);
-    expect(rented.ownership).toBe('rented');
-    expect((await fleetOf(company.id)).length).toBe(2);
-    await returnRental(db(), p.userId, rented.id);
-    expect((await fleetOf(company.id)).length).toBe(1);
   });
 });
 
