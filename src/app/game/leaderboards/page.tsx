@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Card, PageHeader, Table } from '@/components/ui';
+import { Card, PageHeader, Segmented } from '@/components/ui';
 import { hasUnlock } from '@/lib/game/company';
 import { isVip } from '@/lib/game/vip';
 import { PlayerName } from '@/components/game/PlayerName';
@@ -24,13 +24,9 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
   const requested = (await searchParams).tab;
   const tab = TABS.find((t) => t.id === requested) ?? TABS[0]!;
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader title="Класации" subtitle="Само реални играчи и техните компании. Няма измислени конкуренти." />
-      <nav className="flex flex-wrap gap-2" aria-label="Вид класация">
-        {TABS.map((t) => (
-          <Link key={t.id} href={`/game/leaderboards?tab=${t.id}`} className={t.id === tab.id ? 'btn-primary' : 'btn-ghost'}>{t.label}</Link>
-        ))}
-      </nav>
+      <Segmented label="Вид класация" active={tab.id} items={TABS.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
       {tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
     </div>
   );
@@ -40,19 +36,23 @@ async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<Leaderboar
   const { db, now } = await gameContext();
   const { rows } = await leaderboard(db, kind, 100);
   return (
-    <Card>
-      <Table head={['#', 'Компания', 'Играч', 'Ниво', unit]}>
+    <Card className="p-2 sm:p-3">
+      <ol className="divide-y divide-asphalt-800">
         {rows.map((r, i) => (
-          <tr key={r.companyId} className={r.companyId === companyId ? 'bg-volt-500/10' : ''}>
-            <td className="num px-3 py-2 font-bold">{medal(i)}</td>
-            <td className="px-3 py-2 font-semibold">{r.company}</td>
-            <td className="px-3 py-2 text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /></td>
-            <td className="num px-3 py-2">{r.level}</td>
-            <td className="num px-3 py-2 text-gold-400">{kind === 'wealth' ? money(r.value) : int(r.value)}</td>
-          </tr>
+          <li key={r.companyId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.companyId === companyId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
+            <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-semibold">{r.company}</div>
+              <div className="flex items-center gap-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>· ниво {r.level}</span></div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="num font-display font-bold text-gold-400">{kind === 'wealth' ? money(r.value) : int(r.value)}</div>
+              <div className="text-[11px] text-mist-400">{unit}</div>
+            </div>
+          </li>
         ))}
-      </Table>
-      {rows.length === 0 && <p className="mt-3 text-sm text-mist-400">Все още няма данни.</p>}
+      </ol>
+      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">Все още няма данни.</p>}
     </Card>
   );
 }
@@ -61,25 +61,26 @@ async function CompanyBoard({ userId }: { userId: string }) {
   const { db, now } = await gameContext();
   const [rows, mine] = await Promise.all([companyLeaderboard(db, 100), membershipOf(db, userId)]);
   return (
-    <Card>
-      <Table head={['#', 'Компания', 'Собственик', 'Ниво', 'Членове', 'опит']}>
+    <Card className="p-2 sm:p-3">
+      <ol className="divide-y divide-asphalt-800">
         {rows.map((r, i) => (
-          <tr key={r.companyId} className={r.companyId === mine?.company.id ? 'bg-volt-500/10' : ''}>
-            <td className="num px-3 py-2 font-bold">{medal(i)}</td>
-            <td className="px-3 py-2 font-semibold">
-              <Link href={`/game/companies/${r.companyId}`} className="hover:underline">
+          <li key={r.companyId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.companyId === mine?.company.id ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
+            <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
+            <div className="min-w-0 flex-1">
+              <Link href={`/game/companies/${r.companyId}`} className="block truncate font-semibold hover:underline">
                 {r.tag && hasUnlock(r.level, 'tag') && <span style={{ color: r.color ?? undefined }}>[{r.tag}] </span>}
                 {r.company}
               </Link>
-            </td>
-            <td className="px-3 py-2 text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /></td>
-            <td className="num px-3 py-2">{r.level}</td>
-            <td className="num px-3 py-2">{int(r.members)}</td>
-            <td className="num px-3 py-2 text-gold-400">{int(r.value)}</td>
-          </tr>
+              <div className="flex flex-wrap items-center gap-x-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>· ниво {r.level} · {int(r.members)} членове</span></div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="num font-display font-bold text-gold-400">{int(r.value)}</div>
+              <div className="text-[11px] text-mist-400">опит</div>
+            </div>
+          </li>
         ))}
-      </Table>
-      {rows.length === 0 && <p className="mt-3 text-sm text-mist-400">Все още няма основани компании.</p>}
+      </ol>
+      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">Все още няма основани компании.</p>}
     </Card>
   );
 }

@@ -18,7 +18,7 @@ import { heldLicences, missingFor } from '@/server/game/licences';
 import { FleetCondition } from '@/components/game/FleetCondition';
 import { membershipOf } from '@/server/game/membership';
 
-export const metadata = { title: 'Транспортни поръчки' };
+export const metadata = { title: 'Поръчки' };
 
 export default async function ContractsPage() {
   const { db, user, company, now } = await gameContext();
@@ -98,8 +98,9 @@ export default async function ContractsPage() {
   return (
     <div>
       <PageHeader
-        title="Транспортни поръчки"
-        subtitle="Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
+        title="Поръчки"
+        subtitle="Избери товар, камион и тръгвай. Поръчките са общи за всички играчи."
+        help="Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
       <ContractBoard vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />

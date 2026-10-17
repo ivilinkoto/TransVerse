@@ -39,7 +39,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     <div className="space-y-6">
       <PageHeader
         title="Магазин"
-        subtitle="ТрансКоин (TC) е премиум валутата на TransVerse. С нея се купуват VIP, удобства и козметика — никога игрови пари, за да е честно за всички."
+        subtitle="VIP, удобства и стил за твоята компания."
+        help="ТрансКоин (TC) е премиум валутата на TransVerse. С нея се купуват VIP, удобства и козметика — никога игрови пари, за да е честно за всички."
         actions={<span className="flex items-center gap-2 rounded-xl border border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2"><Coins className="h-5 w-5 text-cyan-glow" /><span className="num font-display text-xl font-bold text-cyan-glow">{user.coins.toLocaleString('bg-BG')} TC</span></span>}
       />
 

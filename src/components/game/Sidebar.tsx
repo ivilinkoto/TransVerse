@@ -1,54 +1,186 @@
 'use client';
 
-import { LayoutGrid, Lock, X } from 'lucide-react';
+import { Gem, LogOut, MoreHorizontal, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { Logo } from '@/components/brand/Logo';
-import { COMPANY_ONLY, NAV } from './nav';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { Logo, LogoMark } from '@/components/brand/Logo';
+import { api } from '@/lib/client/api';
+import { ACCOUNT_MENU, SECTIONS, activeTab, sectionFor, type NavSection } from './nav';
 
-export function Sidebar({ independent, missions = 0, eventLive = false }: { independent: boolean; missions?: number; eventLive?: boolean }) {
+export interface NavBadges {
+  /** Mission rewards waiting to be claimed. */
+  missions: number;
+  /** A global event is running. */
+  eventLive: boolean;
+}
+
+function SectionBadge({ section, badges, compact = false }: { section: NavSection; badges: NavBadges; compact?: boolean }) {
+  if (section.key !== 'compete') return null;
+  if (badges.missions > 0)
+    return compact ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-gold-400" aria-label={`${badges.missions} награди`} /> : <span className="num rounded-full bg-gold-400 px-1.5 text-[11px] font-bold text-asphalt-950" title="Награди за взимане">{badges.missions}</span>;
+  if (badges.eventLive)
+    return compact ? <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-cyan-glow" aria-label="Тече ивент" /> : <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-glow" title="Тече ивент" />;
+  return null;
+}
+
+/** Desktop navigation: an icon rail on small laptops, a full sidebar from xl up. */
+export function Sidebar({ badges }: { badges: NavBadges }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const current = sectionFor(pathname);
+  return (
+    <aside className="sticky top-0 hidden h-dvh w-[84px] shrink-0 flex-col border-r border-asphalt-800/80 bg-asphalt-900/60 px-3 py-5 backdrop-blur lg:flex xl:w-60">
+      <div className="mb-8 flex justify-center xl:justify-start xl:px-2">
+        <span className="xl:hidden"><Link href="/game" aria-label="TransVerse — табло"><LogoMark className="h-9 w-9" /></Link></span>
+        <span className="hidden xl:block"><Logo href="/game" /></span>
+      </div>
+      <nav className="flex flex-col gap-1" aria-label="Игрова навигация">
+        {SECTIONS.map((s) => {
+          const active = current?.key === s.key;
+          return (
+            <Link
+              key={s.key}
+              href={s.href}
+              title={s.label}
+              aria-current={active ? 'page' : undefined}
+              className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition max-xl:flex-col max-xl:gap-1 max-xl:px-1 max-xl:text-[10px] ${active ? 'bg-gradient-to-r from-volt-500/25 to-volt-500/5 text-white' : 'text-mist-300 hover:bg-asphalt-800/80 hover:text-white'}`}
+            >
+              {active && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-cyan-glow max-xl:-left-3" aria-hidden="true" />}
+              <s.icon className={`h-5 w-5 shrink-0 ${active ? 'text-cyan-glow' : 'text-mist-400 group-hover:text-mist-100'}`} />
+              <span className="flex-1 max-xl:leading-none">{s.label}</span>
+              <span className="max-xl:hidden"><SectionBadge section={s} badges={badges} /></span>
+              <span className="xl:hidden"><SectionBadge section={s} badges={badges} compact /></span>
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="mt-auto">
+        <Link href="/game/shop" title="Магазин и VIP" className="flex items-center gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-br from-gold-400/15 to-transparent p-3 text-gold-400 transition hover:border-gold-400/60 max-xl:justify-center">
+          <Gem className="h-5 w-5 shrink-0" />
+          <span className="max-xl:sr-only">
+            <span className="block text-sm font-semibold">Магазин и VIP</span>
+            <span className="block text-xs text-mist-400">ТрансКоин, бонуси, стил</span>
+          </span>
+        </Link>
+      </div>
+    </aside>
+  );
+}
 
-  const links = (
-    <nav className="flex flex-col gap-0.5" aria-label="Игрова навигация">
-      {NAV.map((item) => {
-        const active = item.href === '/game' ? pathname === '/game' : (pathname === item.href || pathname.startsWith(item.href + '/'));
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? 'page' : undefined}
-            onClick={() => setOpen(false)}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${active ? 'bg-volt-500/15 text-white shadow-[inset_2px_0_0_0_var(--color-cyan-glow)]' : 'text-mist-300 hover:bg-asphalt-800 hover:text-white'}`}
-          >
-            <item.icon className={`h-4 w-4 ${active ? 'text-cyan-glow' : ''}`} />
-            <span className="flex-1">{item.label}</span>
-            {independent && COMPANY_ONLY.has(item.href) && <Lock className="h-3.5 w-3.5 text-mist-400" aria-label="Изисква компания" />}
-            {item.href === '/game/events' && eventLive && <span className="rounded-full bg-gold-400 px-1.5 text-[10px] font-bold uppercase text-asphalt-950" title="Тече ивент">live</span>}
-            {item.href === '/game/missions' && missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[11px] font-bold text-asphalt-950" title="Награди за взимане">{missions}</span>}
-          </Link>
-        );
-      })}
+/** Tabs for the pages of the current section (e.g. Автопарк → Сервиз, Пазар, Шофьори…). */
+export function SectionTabs() {
+  const pathname = usePathname();
+  const box = useRef<HTMLElement>(null);
+  const section = sectionFor(pathname);
+  const tab = section ? activeTab(section, pathname) : undefined;
+  // Keep the open tab in view when the row scrolls sideways on a phone.
+  useEffect(() => {
+    box.current?.querySelector('[aria-current=page]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [tab?.href]);
+  if (!section?.tabs) return null;
+  return (
+    <nav ref={box} aria-label={section.label} className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+      <div className="inline-flex min-w-max gap-1 rounded-2xl border border-asphalt-800 bg-asphalt-900/70 p-1">
+        {section.tabs.map((t) => {
+          const active = t.href === tab?.href;
+          return (
+            <Link key={t.href} href={t.href} aria-current={active ? 'page' : undefined} className={`rounded-xl px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition sm:px-3.5 sm:py-2 sm:text-sm ${active ? 'bg-asphalt-700 text-white shadow-sm' : 'text-mist-400 hover:text-white'}`}>
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
+}
+
+/** Phone and tablet navigation: a bottom bar with the four main sections and "Още" for everything else. */
+export function MobileNav({ badges, staff }: { badges: NavBadges; staff: boolean }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const current = sectionFor(pathname);
+  const main = SECTIONS.filter((s) => ['home', 'jobs', 'map', 'fleet'].includes(s.key));
+  const inMore = !current || !main.some((s) => s.key === current.key);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  const logout = async () => {
+    await api('/api/auth/logout', {});
+    router.replace('/');
+    router.refresh();
+  };
+
+  const tile = 'flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-asphalt-700 bg-asphalt-850 px-2 py-3 text-center text-xs font-medium text-mist-100 transition active:scale-95';
 
   return (
     <>
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r border-asphalt-800 bg-asphalt-900/70 px-3 py-5 lg:flex">
-        <div className="px-2">
-          <Logo href="/game" />
+      <nav aria-label="Основна навигация" className="fixed inset-x-0 bottom-0 z-40 border-t border-asphalt-800 bg-asphalt-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+        <div className="mx-auto grid max-w-xl grid-cols-5">
+          {main.map((s) => {
+            const active = current?.key === s.key && !open;
+            return (
+              <Link key={s.key} href={s.href} aria-current={active ? 'page' : undefined} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${active ? 'text-cyan-glow' : 'text-mist-400'}`}>
+                {active && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-cyan-glow" aria-hidden="true" />}
+                <s.icon className="h-5 w-5" />
+                {s.label}
+              </Link>
+            );
+          })}
+          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Още" className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
+            {(badges.missions > 0 || badges.eventLive) && !open && <span className="absolute right-[calc(50%-14px)] top-2 h-2 w-2 rounded-full bg-gold-400" aria-hidden="true" />}
+            {open ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}
+            Още
+          </button>
         </div>
-        {links}
-      </aside>
-      <div className="flex items-center justify-between border-b border-asphalt-800 bg-asphalt-900/80 px-4 py-3 lg:hidden">
-        <Logo href="/game" />
-        <button className="btn-ghost px-3" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Меню">
-          {open ? <X className="h-5 w-5" /> : <LayoutGrid className="h-5 w-5" />}
-        </button>
-      </div>
-      {open && <div className="border-b border-asphalt-800 bg-asphalt-900 px-3 py-3 lg:hidden">{links}</div>}
+      </nav>
+
+      {open && (
+        <div className="fixed inset-0 z-30 lg:hidden" role="dialog" aria-modal="true" aria-label="Още раздели">
+          <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="Затвори" onClick={() => setOpen(false)} />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-asphalt-700 bg-asphalt-900 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-asphalt-600" aria-hidden="true" />
+            {SECTIONS.filter((s) => s.key === 'company' || s.key === 'compete').map((s) => (
+              <section key={s.key} className="mb-5">
+                <h2 className="label mb-2 flex items-center gap-2"><s.icon className="h-3.5 w-3.5" />{s.label}</h2>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {s.tabs!.map((t) => (
+                    <Link key={t.href} href={t.href} onClick={() => setOpen(false)} className={`${tile} ${activeTab(s, pathname)?.href === t.href ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
+                      {t.label}
+                      {t.href === '/game/missions' && badges.missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[10px] font-bold text-asphalt-950">{badges.missions} награди</span>}
+                      {t.href === '/game/events' && badges.eventLive && <span className="rounded-full bg-cyan-glow/20 px-1.5 text-[10px] font-bold text-cyan-glow">тече сега</span>}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ))}
+            <section>
+              <h2 className="label mb-2">Профил</h2>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {ACCOUNT_MENU.map((item) => (
+                  <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`${tile} ${pathname.startsWith(item.href) ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
+                    <item.icon className={`h-5 w-5 ${item.href === '/game/shop' ? 'text-gold-400' : 'text-mist-400'}`} />
+                    {item.label}
+                  </Link>
+                ))}
+                {staff && (
+                  <Link href="/admin" onClick={() => setOpen(false)} className={`${tile} text-prestige`}><ShieldCheck className="h-5 w-5" />Админ панел</Link>
+                )}
+                <button type="button" onClick={logout} className={`${tile} text-mist-400`}><LogOut className="h-5 w-5" />Изход</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      )}
     </>
   );
 }

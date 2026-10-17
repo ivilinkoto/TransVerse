@@ -26,7 +26,8 @@ export default async function ProgressPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Прогрес и постижения" subtitle="Опитът идва от доставки — повече за дълги, тежки и навременни курсове. Наградите се дават само за проверени от сървъра действия." />
+      <PageHeader title="Постижения" subtitle="Нивото, опитът и постиженията ти."
+        help="Опитът идва от доставки — повече за дълги, тежки и навременни курсове. Наградите се дават само за проверени от сървъра действия." />
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

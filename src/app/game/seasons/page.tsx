@@ -22,8 +22,9 @@ export default async function SeasonsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={season!.name} subtitle="Сезонните точки идват от доставки (километри × тонаж, повече за навреме). В края на сезона първите места получават награди. Компанията, парите и техниката остават." />
-      <div className="grid gap-3 sm:grid-cols-3">
+      <PageHeader title={season!.name} subtitle="Сезонно класиране с награди за първите места."
+        help="Сезонните точки идват от доставки (километри × тонаж, повече за навреме). В края на сезона първите места получават награди. Компанията, парите и техниката остават." />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         <Stat label="Остават" value={`${daysLeft} дни`} icon={CalendarClock} tone="cyan" hint={`${date(season!.startsAt)} – ${date(season!.endsAt)}`} />
         <Stat label="Вашето място" value={myIndex >= 0 ? `#${myIndex + 1}` : '—'} icon={Trophy} tone="gold" hint={myIndex >= 0 ? `${int(rows[myIndex]!.value)} точки` : 'Направете доставка, за да влезете в класацията'} />
         <Stat label="Награден фонд" value={money(rules.prizesCents.reduce((a, b) => a + b, 0))} tone="prestige" hint={`за първите ${rules.prizesCents.length} места`} />

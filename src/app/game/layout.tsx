@@ -6,12 +6,11 @@ import { LiveUpdates } from '@/components/game/LiveUpdates';
 import { InstallAppBanner, RegisterServiceWorker } from '@/components/game/PushSettings';
 import { mailConfig } from '@/server/mail';
 import { dailyState } from '@/lib/game/daily';
-import { Sidebar } from '@/components/game/Sidebar';
+import { MobileNav, SectionTabs, Sidebar } from '@/components/game/Sidebar';
 import { TopBar } from '@/components/game/TopBar';
 import { globalEvents, notifications } from '@/server/db/schema';
 import { TutorialCoach } from '@/components/game/TutorialCoach';
 import { isStaff } from '@/server/auth/roles';
-import { displayName } from '@/server/game/company';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
 import { claimableCount } from '@/server/game/missions';
@@ -28,9 +27,9 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const [live] = await db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1);
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
-      <Sidebar independent={company.kind !== 'company' && !membership} missions={missions} eventLive={!!live} />
+      <Sidebar badges={{ missions, eventLive: !!live }} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={displayName(membership?.company.name, user.username, company.kind)} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
+        <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
         <InstallAppBanner />
         {!user.emailVerifiedAt && mailConfig().enabled && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
@@ -40,8 +39,12 @@ export default async function GameLayout({ children }: { children: React.ReactNo
           </div>
         )}
         {tutorial.active && tutorial.step && <TutorialCoach step={tutorial.step} index={tutorial.index} total={tutorial.total} />}
-        <main className="flex-1 px-4 py-6 sm:px-6">{children}</main>
+        <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-6">
+          <SectionTabs />
+          {children}
+        </main>
       </div>
+      <MobileNav badges={{ missions, eventLive: !!live }} staff={isStaff(user.role)} />
       <LiveUpdates />
       <RegisterServiceWorker />
     </div>

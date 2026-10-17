@@ -1,10 +1,10 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { ArrowRight, ClipboardList, Gauge, Landmark, Route, Star, Target, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { ClipboardList, Landmark, Map as MapIcon, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
-import { Badge, Card, Empty, Meter, PageHeader, Stat } from '@/components/ui';
+import { Badge, Card, Empty, Meter } from '@/components/ui';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { dateTime, km, money } from '@/lib/format';
 import { ACHIEVEMENTS, levelProgress } from '@/lib/game/progression';
@@ -23,7 +23,7 @@ export default async function OverviewPage() {
     fleetView(db, company.id),
     companyStats(db, company.id),
     db.select().from(achievements).where(eq(achievements.userId, user.id)),
-    latestNotifications(db, user.id, 6),
+    latestNotifications(db, user.id, 5),
     netWorthCents(db, company.id),
     db
       .select({
@@ -46,57 +46,108 @@ export default async function OverviewPage() {
   const done = new Set(unlocked.map((a) => a.key));
   const goals = ACHIEVEMENTS.filter((a) => !done.has(a.key)).sort((a, b) => b.progress(stats) - a.progress(stats)).slice(0, 3);
 
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Sofia' }).format(now));
+  const greeting = hour < 11 ? 'Добро утро' : hour < 18 ? 'Добър ден' : 'Добър вечер';
+  const worn = fleet.vehicles.filter((v) => v.condition < 50 && !v.delivery);
+  const next =
+    fleet.vehicles.length === 0
+      ? { text: 'Нямаш превозно средство. Купи първото си и започни да печелиш.', href: '/game/market', cta: 'Към пазара', icon: Truck }
+      : idle.length > 0
+        ? { text: idle.length === 1 ? 'Имаш свободно превозно средство — намери му поръчка.' : `${idle.length} свободни превозни средства чакат поръчка.`, href: '/game/contracts', cta: 'Намери поръчка', icon: ClipboardList }
+        : { text: 'Всички превозни средства са на път. Проследи ги на картата.', href: '/game/map', cta: 'Към картата', icon: MapIcon };
+  const hero = fleet.vehicles[0];
+
   return (
-    <div className="space-y-6">
-      <PageHeader title="Обзор" subtitle={company.kind === 'company' ? 'Твоят бизнес и автопарк в реално време. Данните се обновяват автоматично.' : 'Твоят старт като самостоятелен шофьор. Данните се обновяват автоматично.'} actions={<Link href="/game/contracts" className="btn-primary"><ClipboardList className="h-4 w-4" />Поръчки</Link>} />
+    <div className="space-y-5 sm:space-y-6">
+      <section className="panel relative overflow-hidden p-5 sm:p-6">
+        <div className="road-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:linear-gradient(to_left,black,transparent_70%)]" aria-hidden="true" />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt-500/20 blur-3xl" aria-hidden="true" />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-center">
+          <div className="min-w-0 flex-1">
+            <h1 className="label text-cyan-glow">Табло</h1>
+            <p className="mt-1 font-display text-2xl font-bold sm:text-3xl">{greeting}, {user.username}</p>
+            <p className="mt-2 max-w-xl text-mist-300">{next.text}</p>
+            {worn.length > 0 && (
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-amber-sig"><TrendingDown className="h-4 w-4" />{worn.length === 1 ? 'Едно превозно средство е' : `${worn.length} превозни средства са`} под 50% състояние. <Link href="/game/garage" className="underline">Към сервиза</Link></p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href={next.href} className="btn-primary"><next.icon className="h-4 w-4" />{next.cta}</Link>
+              {next.href !== '/game/map' && fleet.vehicles.length > 0 && <Link href="/game/map" className="btn-ghost"><MapIcon className="h-4 w-4" />Карта</Link>}
+            </div>
+          </div>
+          {hero && (
+            <div className="hidden shrink-0 md:block">
+              <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
+            </div>
+          )}
+        </div>
+        <dl className="relative mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-asphalt-700/80 bg-asphalt-700/60 md:grid-cols-4">
+          <div className="bg-asphalt-900/90 p-3">
+            <dt className="label flex items-center gap-1.5"><Landmark className="h-3.5 w-3.5 text-gold-400" />Наличност</dt>
+            <dd className={`num mt-1 font-display text-lg font-bold sm:text-xl ${company.balanceCents < 0 ? 'text-loss' : 'text-gold-400'}`}>{money(company.balanceCents)}</dd>
+            <dd className="text-[11px] text-mist-400">нетна стойност {money(worth)}</dd>
+          </div>
+          <div className="bg-asphalt-900/90 p-3">
+            <dt className="label flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5 text-profit" />Нето · 7 дни</dt>
+            <dd className={`num mt-1 font-display text-lg font-bold sm:text-xl ${income - expense < 0 ? 'text-loss' : 'text-profit'}`}>{money(income - expense)}</dd>
+            <dd className="text-[11px] text-mist-400">приходи {money(income)}</dd>
+          </div>
+          <div className="bg-asphalt-900/90 p-3">
+            <dt className="label flex items-center gap-1.5"><Route className="h-3.5 w-3.5 text-cyan-glow" />На път</dt>
+            <dd className="num mt-1 font-display text-lg font-bold text-cyan-glow sm:text-xl">{active.length} / {fleet.vehicles.length}</dd>
+            <dd className="text-[11px] text-mist-400">състояние {avgCondition.toFixed(0)}% · {km(stats.totalKm)}</dd>
+          </div>
+          <div className="bg-asphalt-900/90 p-3">
+            <dt className="label flex items-center gap-1.5"><Star className="h-3.5 w-3.5 text-prestige" />Ниво {lp.level}</dt>
+            <dd className="mt-2"><Meter value={lp.share * 100} tone="violet" /></dd>
+            <dd className="num mt-1.5 text-[11px] text-mist-400">{user.xp} / {lp.next} опит · реп. {company.reputation.toFixed(1)}</dd>
+          </div>
+        </dl>
+      </section>
 
       <DailyRewardCard streak={user.loginStreak} lastKey={user.dailyClaimKey} now={now} />
 
       <EventBanner events={events} now={now} />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Наличност" value={money(company.balanceCents)} tone={company.balanceCents < 0 ? 'loss' : 'gold'} icon={Landmark} hint={`Нетна стойност ${money(worth)}`} />
-        <Stat label="Приходи · 7 дни" value={money(income)} tone="profit" icon={TrendingUp} hint={<>Разходи <span className="text-loss">{money(expense)}</span> · нето {money(income - expense)}</>} />
-        <Stat label="Активни доставки" value={`${active.length} / ${fleet.vehicles.length}`} tone="cyan" icon={Route} hint={`${idle.length} свободни превозни средства`} />
-        <Stat label="Ниво" value={lp.level} tone="prestige" icon={Star} hint={<><Meter value={lp.share * 100} tone="violet" className="mt-1" /><span className="mt-1 block">{user.xp} / {lp.next} опит · репутация {company.reputation.toFixed(1)}</span></>} />
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-        <Card title="Доставки в момента" actions={<Link href="/game/map" className="text-sm text-cyan-glow hover:underline">На картата →</Link>}>
-          {active.length === 0 ? (
-            <Empty icon={Truck} title="Няма камиони на път">
-              Изберете поръчка от борсата и изпратете свободно превозно средство. <Link href="/game/contracts" className="text-cyan-glow underline">Към поръчките</Link>
-            </Empty>
-          ) : (
-            <ul className="space-y-4">
-              {active.map((v) => (
-                <li key={v.id} className="flex flex-col gap-3 rounded-xl border border-asphalt-700 bg-asphalt-850 p-3 sm:flex-row sm:items-center">
-                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} className="h-12 w-auto max-w-[180px] shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="font-semibold">{v.delivery!.origin.nameBg} → {v.delivery!.destination.nameBg}</span>
-                      <Badge tone="blue">{v.delivery!.contract.goods}</Badge>
-                      <span className="text-mist-400">{v.plate}</span>
+      <div className="grid gap-5 sm:gap-6 xl:grid-cols-[1.6fr_1fr]">
+        <div className="space-y-5 sm:space-y-6">
+          <Card title="На път сега" actions={active.length > 0 && <Link href="/game/map" className="text-sm text-cyan-glow hover:underline">На картата →</Link>}>
+            {active.length === 0 ? (
+              <Empty icon={Truck} title="Няма камиони на път">
+                Избери поръчка и изпрати свободно превозно средство. <Link href="/game/contracts" className="text-cyan-glow underline">Към поръчките</Link>
+              </Empty>
+            ) : (
+              <ul className="space-y-3">
+                {active.map((v) => (
+                  <li key={v.id} className="flex flex-col gap-3 rounded-xl border border-asphalt-700/80 bg-asphalt-850/80 p-3 sm:flex-row sm:items-center">
+                    <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} className="h-11 w-auto max-w-[170px] shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                        <span className="font-semibold">{v.delivery!.origin.nameBg} → {v.delivery!.destination.nameBg}</span>
+                        <Badge tone="blue">{v.delivery!.contract.goods}</Badge>
+                        <span className="text-xs text-mist-400">{v.plate}</span>
+                      </div>
+                      <div className="mt-2">
+                        <DeliveryProgress schedule={v.delivery!.schedule} etaAt={v.delivery!.etaAt} deadlineAt={v.delivery!.deadlineAt} />
+                      </div>
                     </div>
-                    <div className="mt-2">
-                      <DeliveryProgress schedule={v.delivery!.schedule} etaAt={v.delivery!.etaAt} deadlineAt={v.delivery!.deadlineAt} />
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
 
-        <div className="space-y-6">
-          <Card title="Днешни мисии" actions={<Link href="/game/missions" className="text-sm text-cyan-glow hover:underline">Всички мисии →</Link>}>
+        </div>
+
+        <div className="space-y-5 sm:space-y-6">
+          <Card title="Днешни мисии" actions={<Link href="/game/missions" className="text-sm text-cyan-glow hover:underline">Всички →</Link>}>
             <ul className="space-y-3">
               {today.map((m) => {
                 const def = missionById(m.missionId);
                 return (
                   <li key={m.missionId}>
                     <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="min-w-0 truncate">{m.completedAt ? '✓ ' : ''}{def?.title(m.target) ?? m.missionId}</span>
+                      <span className={`min-w-0 truncate ${m.completedAt ? 'text-profit' : ''}`}>{m.completedAt ? '✓ ' : ''}{def?.title(m.target) ?? m.missionId}</span>
                       <span className="num shrink-0 text-xs text-gold-400">{money(m.rewardCents)}</span>
                     </div>
                     <Meter value={(m.progress / m.target) * 100} tone={m.completedAt ? 'auto' : 'cyan'} className="mt-1" />
@@ -105,13 +156,13 @@ export default async function OverviewPage() {
               })}
             </ul>
           </Card>
-          <Card title="Текущи цели" actions={<Target className="h-4 w-4 text-gold-400" />}>
+          <Card title="Следващи цели" actions={<Link href="/game/progress" className="text-sm text-cyan-glow hover:underline">Постижения →</Link>}>
             <ul className="space-y-3">
               {goals.map((g) => (
                 <li key={g.key}>
                   <div className="flex items-center justify-between gap-2 text-sm">
                     <span className="font-semibold">{g.title}</span>
-                    <span className="text-xs text-gold-400">{g.rewardCents ? money(g.rewardCents) : ''} {g.rewardXp ? `+${g.rewardXp} опит` : ''}</span>
+                    <span className="shrink-0 text-xs text-gold-400">{g.rewardCents ? money(g.rewardCents) : ''} {g.rewardXp ? `+${g.rewardXp} опит` : ''}</span>
                   </div>
                   <p className="text-xs text-mist-400">{g.description}</p>
                   <Meter value={g.progress(stats) * 100} tone="gold" className="mt-1.5" />
@@ -119,44 +170,27 @@ export default async function OverviewPage() {
               ))}
             </ul>
           </Card>
-          <Card title="Автопарк">
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div><div className="num font-display text-xl font-bold">{fleet.vehicles.length}</div><div className="text-xs text-mist-400">превозни средства</div></div>
-              <div><div className="num font-display text-xl font-bold">{fleet.trailers.length}</div><div className="text-xs text-mist-400">ремаркета</div></div>
-              <div><div className="num font-display text-xl font-bold">{fleet.drivers.length}</div><div className="text-xs text-mist-400">шофьори</div></div>
-            </div>
-            <div className="mt-4 flex items-center justify-between text-xs text-mist-400"><span>Средно техническо състояние</span><span className="num">{avgCondition.toFixed(0)}%</span></div>
-            <Meter value={avgCondition} className="mt-1" />
-            <div className="mt-3 flex items-center justify-between text-xs text-mist-400"><span>Изминати километри</span><span className="num">{km(stats.totalKm)}</span></div>
-            <Link href="/game/fleet" className="mt-4 inline-flex items-center gap-1 text-sm text-cyan-glow hover:underline">Управление <ArrowRight className="h-3.5 w-3.5" /></Link>
+          <Card title="Последни събития" actions={<Link href="/game/notifications" className="text-sm text-cyan-glow hover:underline">Всички →</Link>}>
+            {recent.length === 0 ? (
+              <p className="text-sm text-mist-400">Още няма събития.</p>
+            ) : (
+              <ul className="divide-y divide-asphalt-800">
+                {recent.map((n) => (
+                  <li key={n.id} className="flex gap-3 py-2.5 text-sm first:pt-0 last:pb-0">
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.kind === 'success' ? 'bg-profit' : n.kind === 'warning' ? 'bg-amber-sig' : n.kind === 'achievement' ? 'bg-prestige' : 'bg-volt-400'}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <span className="font-semibold">{n.title}</span>
+                        <span className="text-[11px] text-mist-400">{dateTime(n.createdAt)}</span>
+                      </div>
+                      <div className="text-mist-400">{n.body}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Последни събития" actions={<Link href="/game/notifications" className="text-sm text-cyan-glow hover:underline">Всички</Link>}>
-          <ul className="space-y-3">
-            {recent.map((n) => (
-              <li key={n.id} className="flex gap-3 text-sm">
-                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.kind === 'success' ? 'bg-profit' : n.kind === 'warning' ? 'bg-amber-sig' : n.kind === 'achievement' ? 'bg-prestige' : 'bg-volt-400'}`} />
-                <div className="min-w-0">
-                  <div className="font-semibold">{n.title}</div>
-                  <div className="text-mist-400">{n.body}</div>
-                  <div className="text-[11px] text-mist-400">{dateTime(n.createdAt)}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-        <Card title="Възможности">
-          <ul className="space-y-2 text-sm">
-            {idle.length > 0 && <li className="flex items-center gap-2"><Gauge className="h-4 w-4 text-cyan-glow" />{idle.length} свободни превозни средства чакат поръчка. <Link className="text-cyan-glow underline" href="/game/contracts">Изпрати ги</Link></li>}
-            {fleet.vehicles.some((v) => v.condition < 50) && <li className="flex items-center gap-2"><TrendingDown className="h-4 w-4 text-amber-sig" />Има техника под 50% състояние. <Link className="text-cyan-glow underline" href="/game/garage">Ремонт</Link></li>}
-            {company.balanceCents > 80_000_00 && <li className="flex items-center gap-2"><Truck className="h-4 w-4 text-profit" />Имате средства за нов камион. <Link className="text-cyan-glow underline" href="/game/market">Към пазара</Link></li>}
-            <li className="flex items-center gap-2"><Star className="h-4 w-4 text-prestige" />Ниво {lp.level + 1} отключва нови видове товари и техника. <Link className="text-cyan-glow underline" href="/game/progress">Прогрес</Link></li>
-          </ul>
-          <p className="mt-4 text-xs text-mist-400">Последни доставки: {stats.deliveries} · навреме {stats.onTimeDeliveries}</p>
-        </Card>
       </div>
     </div>
   );

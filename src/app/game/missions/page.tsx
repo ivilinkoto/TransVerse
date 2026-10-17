@@ -78,11 +78,12 @@ export default async function MissionsPage() {
   const reroll = { label: freeSwap ? 'Смени · безплатно (VIP)' : `Смени · ${MISSION_REROLL_COINS} TC`, disabled: !freeSwap && user.coins < MISSION_REROLL_COINS };
   return (
     <div className="space-y-6">
-      <PageHeader title="Мисии" subtitle="Цели за деня, седмицата, месеца и сезона. Прогресът се отчита автоматично при всяка доставка; наградата се взима с бутон (VIP — автоматично). Мисиите се подбират според нивото и лицензите ти; VIP получава +1 дневна и +1 седмична мисия." />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="panel flex items-center gap-3 p-4"><Target className="h-5 w-5 text-cyan-glow" /><div><div className="label">Изпълнени сега</div><div className="num font-display text-xl font-bold">{done} / {current.length}</div></div></div>
-        <div className="panel flex items-center gap-3 p-4"><Coins className="h-5 w-5 text-gold-400" /><div><div className="label">Чакащи награди</div><div className="num font-display text-xl font-bold text-gold-400">{money(waitingCents)}</div></div></div>
-        <div className="panel flex items-center gap-3 p-4"><Star className="h-5 w-5 text-prestige" /><div><div className="label">Опит за взимане</div><div className="num font-display text-xl font-bold text-prestige">{int(waiting.reduce((s, r) => s + r.rewardXp, 0))}</div></div></div>
+      <PageHeader title="Мисии" subtitle="Цели за деня, седмицата, месеца и сезона."
+        help="Прогресът се отчита автоматично при всяка доставка; наградата се взима с бутон (VIP — автоматично). Мисиите се подбират според нивото и лицензите ти; VIP получава +1 дневна и +1 седмична мисия." />
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="panel flex items-center gap-3 p-3 sm:p-4"><Target className="hidden h-5 w-5 shrink-0 sm:block text-cyan-glow" /><div><div className="label">Изпълнени сега</div><div className="num font-display text-lg font-bold sm:text-xl">{done} / {current.length}</div></div></div>
+        <div className="panel flex items-center gap-3 p-3 sm:p-4"><Coins className="hidden h-5 w-5 shrink-0 sm:block text-gold-400" /><div><div className="label">Чакащи награди</div><div className="num font-display text-lg font-bold sm:text-xl text-gold-400">{money(waitingCents)}</div></div></div>
+        <div className="panel flex items-center gap-3 p-3 sm:p-4"><Star className="hidden h-5 w-5 shrink-0 sm:block text-prestige" /><div><div className="label">Опит за взимане</div><div className="num font-display text-lg font-bold sm:text-xl text-prestige">{int(waiting.reduce((s, r) => s + r.rewardXp, 0))}</div></div></div>
       </div>
       {unclaimed.length > 0 && (
         <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-gold-400" />Невзети награди от минали периоди</span>}>
