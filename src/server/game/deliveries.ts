@@ -18,6 +18,7 @@ import { recordCompanyMissionProgress } from './company-missions';
 import { recordEventProgress } from './events';
 import { recordMissionProgress } from './missions';
 import { afterRentedTrip } from './rentals';
+import { checkTenderLoad, recordTenderLoad } from './tenders';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractCountries } from '@/lib/game/licences';
 import { addSeasonScore } from './seasons';
@@ -105,6 +106,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // A contract reserved by a VIP is theirs until the reservation ends.
     if (contract!.reservedUntil && contract!.reservedUntil > now && contract!.reservedByCompanyId !== company.id) fail('reserved', 'Поръчката е запазена от друг играч за няколко минути.', 409);
+    // Tender loads: only members of the company that runs the tender.
+    if (contract!.tenderId) await checkTenderLoad(tx, contract!.tenderId, userId, now);
     if (contract!.urgent) {
       // Open to everyone until it expires — each player once.
       const [still] = await tx.select({ id: contracts.id }).from(contracts).where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`)).for('share');
@@ -307,6 +310,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${xp} опит.`,
     '/game/finance',
   );
+  // A load of a company tender.
+  if (contract.tenderId) await recordTenderLoad(tx, contract.tenderId, company!.ownerId, completedAt);
   // Starter rental: returned now if the player bought their own truck, or offered for buy-out.
   if (vehicle!.ownership === 'rented') await afterRentedTrip(tx, vehicle!.id, company!.ownerId, now);
   await checkAchievements(tx, company!.ownerId, d.companyId);

@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { companyNameSchema } from '@/server/auth/accounts';
 import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental } from '@/server/game/rentals';
+import { acceptTender } from '@/server/game/tenders';
+import { claimDaily } from '@/server/game/daily';
 import { createTicket, replySchema, replyToTicket, setTicketStatus, ticketSchema } from '@/server/game/support';
 import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutorial';
 import { getDb } from '@/server/db/client';
@@ -88,6 +90,8 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sendChat'), body: chatBodySchema }),
   z.object({ type: z.literal('deleteChat'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('clearChat') }),
+  z.object({ type: z.literal('acceptTender'), tenderId: id }),
+  z.object({ type: z.literal('claimDaily') }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
 ]);
 
@@ -198,6 +202,10 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'deleteChat':
       await deleteChatMessage(db, user.id, input.messageId);
       return { ok: true };
+    case 'claimDaily':
+      return { ok: true, ...(await claimDaily(db, user.id)) };
+    case 'acceptTender':
+      return { ok: true, id: await acceptTender(db, user.id, input.tenderId) };
     case 'clearChat':
       return { ok: true, removed: await clearCompanyChat(db, user.id) };
     case 'shopBuy':

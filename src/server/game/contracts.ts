@@ -154,7 +154,7 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
     .from(contracts)
     .innerJoin(routes, eq(routes.id, contracts.routeId))
     .innerJoin(cities, eq(cities.id, contracts.destCityId))
-    .where(and(eq(contracts.status, 'open'), eq(contracts.urgent, false), eq(contracts.originCityId, need.cityId), gt(contracts.expiresAt, now), lte(contracts.weightTons, need.payloadTons), lte(contracts.minLevel, need.level), inArray(contracts.cargoType, compatible)))
+    .where(and(eq(contracts.status, 'open'), eq(contracts.urgent, false), isNull(contracts.tenderId), eq(contracts.originCityId, need.cityId), gt(contracts.expiresAt, now), lte(contracts.weightTons, need.payloadTons), lte(contracts.minLevel, need.level), inArray(contracts.cargoType, compatible)))
     .limit(50);
   const [here] = await db.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, need.cityId));
   if (!here) return 0;
@@ -243,7 +243,7 @@ export async function ensureStarterJobs(db: Database, cityId: number, now = new 
   const [{ n = 0 } = {}] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(contracts)
-    .where(and(eq(contracts.status, 'open'), eq(contracts.originCityId, cityId), lte(contracts.weightTons, 1.3), eq(contracts.cargoType, 'pallets'), gt(contracts.expiresAt, now)));
+    .where(and(eq(contracts.status, 'open'), isNull(contracts.tenderId), eq(contracts.originCityId, cityId), lte(contracts.weightTons, 1.3), eq(contracts.cargoType, 'pallets'), gt(contracts.expiresAt, now)));
   return n < 2 ? generateContracts(db, { now, max: 2 - n, originCityId: cityId, sizeClass: 'van', domestic: true, provider }) : 0;
 }
 
@@ -252,10 +252,18 @@ export interface ContractFilter {
   originCityId?: number;
   countryCode?: string;
   limit?: number;
+  /** Player company of the viewer: its tender loads are included. */
+  memberOfCompanyId?: string | null;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
   const conditions = [eq(contracts.status, 'open'), gt(contracts.expiresAt, now)];
+  // Tender loads are only for the members of the company that accepted the tender.
+  conditions.push(
+    filter.memberOfCompanyId
+      ? sql`(${contracts.tenderId} is null or ${contracts.tenderId} in (select id from company_tenders where company_id = ${filter.memberOfCompanyId}))`
+      : isNull(contracts.tenderId),
+  );
   if (filter.cargoType && CARGO_TYPES.includes(filter.cargoType)) conditions.push(eq(contracts.cargoType, filter.cargoType));
   if (filter.originCityId) conditions.push(eq(contracts.originCityId, filter.originCityId));
   const rows = await db.query.contracts.findMany({

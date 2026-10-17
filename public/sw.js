@@ -17,6 +17,9 @@ self.addEventListener('push', (event) => {
       badge: '/icons/badge-96.png',
       tag: data.tag || undefined,
       renotify: Boolean(data.tag),
+      // Sound is the device's notification sound; phones also vibrate.
+      silent: false,
+      vibrate: [120, 60, 120, 60, 240],
       data: { url: typeof data.url === 'string' && data.url.startsWith('/') ? data.url : '/game' },
       lang: 'bg',
     }),

@@ -7,6 +7,8 @@ import { ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { dispatchPush, pruneSubscriptions } from '@/server/push';
 import { autoUrgentTick } from './auto-urgent';
+import { settleTenders } from './tenders';
+import { dailyReminders } from './daily';
 import { ensureAutoEvent, settleDueEvents } from './events';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
@@ -72,6 +74,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     const settled = await settleDueDeliveries(db, now);
     // Global events: settle finished ones (after the deliveries above), keep the automatic ones going.
     await settleDueEvents(db, now);
+    await settleTenders(db, now);
     await every(db, 'global-events', 10 * 60_000, now, () => ensureAutoEvent(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
@@ -95,6 +98,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     }
     // Push notifications for whatever happened above (in-game notifications and company chat).
     await dispatchPush(db, now).catch((e) => console.error('[push] dispatch failed', e));
+    await every(db, 'daily-reminders', 10 * 60_000, now, () => dailyReminders(db, now));
     await every(db, 'push-prune', 24 * 60 * 60_000, now, () => pruneSubscriptions(db, now));
     await every(db, 'cleanup', 60 * 60_000, now, async () => {
       await db.delete(sessions).where(lte(sessions.expiresAt, now));

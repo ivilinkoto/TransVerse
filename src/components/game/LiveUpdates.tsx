@@ -2,12 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { playChime, soundEnabled, unlockSound } from '@/lib/client/sound';
 
 /** Listens to server events and refreshes server-rendered data (debounced). */
 export function LiveUpdates() {
   const router = useRouter();
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
+    // Sound needs one user gesture before the browser allows it.
+    window.addEventListener('pointerdown', unlockSound, { once: true });
+    window.addEventListener('keydown', unlockSound, { once: true });
     const source = new EventSource('/api/events');
     source.onmessage = (event) => {
       const data = JSON.parse(event.data) as { type: string };
@@ -22,6 +26,8 @@ export function LiveUpdates() {
         window.dispatchEvent(new Event('tv:chat'));
         return;
       }
+      // A new notification for this player: a short chime while the game is in view.
+      if (data.type === 'notification' && soundEnabled() && document.visibilityState === 'visible') playChime();
       clearTimeout(timer.current);
       timer.current = setTimeout(() => router.refresh(), 600);
     };

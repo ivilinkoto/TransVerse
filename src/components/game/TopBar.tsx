@@ -1,4 +1,4 @@
-import { CalendarClock, Coins, Gem, Medal, Star, Wallet } from 'lucide-react';
+import { CalendarClock, Coins, Gem, Gift, Medal, Star, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { levelProgress } from '@/lib/game/progression';
 import { money } from '@/lib/format';
@@ -7,7 +7,7 @@ import { PlayerName } from './PlayerName';
 
 const pill = 'flex h-9 items-center gap-1.5 rounded-full border border-asphalt-700 px-3 text-sm text-mist-300 transition hover:bg-asphalt-800 hover:text-white';
 
-export function TopBar({ title, kind, company, user, vip, hqName, unread, staff }: { title: string; kind: string; company: { balanceCents: number; reputation: number }; user: { username: string; xp: number; role: string; coins: number }; vip: boolean; hqName: string; unread: number; staff: boolean }) {
+export function TopBar({ title, kind, company, user, vip, hqName, unread, staff, dailyReady = false }: { title: string; kind: string; company: { balanceCents: number; reputation: number }; user: { username: string; xp: number; role: string; coins: number }; vip: boolean; hqName: string; unread: number; staff: boolean; dailyReady?: boolean }) {
   const lp = levelProgress(user.xp);
   return (
     <header className="relative z-40 flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-asphalt-800 bg-asphalt-950/80 px-4 py-3 backdrop-blur sm:px-6">
@@ -47,6 +47,12 @@ export function TopBar({ title, kind, company, user, vip, hqName, unread, staff 
           <div className="h-full rounded-full bg-gradient-to-r from-cyan-glow to-volt-500" style={{ width: `${Math.max(2, lp.share * 100)}%` }} />
         </div>
       </div>
+      {dailyReady && (
+        <Link href="/game#daily" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-gold-400/50 bg-gold-400/10 text-gold-400 transition hover:bg-gold-400/20" title="Дневната награда те чака" aria-label="Дневната награда те чака">
+          <Gift className="h-4 w-4" />
+          <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full bg-gold-400" />
+        </Link>
+      )}
       <NotificationBell unread={unread} />
       <div className="flex items-center gap-1.5 text-sm" title="Репутация">
         <Star className="h-4 w-4 text-prestige" />
