@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Siren, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Siren, Star, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -30,6 +30,10 @@ export interface BoardContract {
   expiresInMin: number;
   minLevel: number;
   locked: boolean;
+  /** Premium contract: reputation needed (0 = ordinary). */
+  minReputation: number;
+  /** The player's reputation is below what this premium contract needs. */
+  reputationLocked: boolean;
   /** Starts in a city where one of the player's free vehicles stands. */
   local: boolean;
   /** Urgent shipment from the game administration: listed first, driven faster. */
@@ -94,7 +98,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       (c) =>
         (!cargo || c.cargoType === cargo) &&
         (!q || c.origin.name.toLowerCase().includes(q) || c.destination.name.toLowerCase().includes(q) || c.goods.toLowerCase().includes(q)) &&
-        (!doable || (!c.locked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error))),
+        (!doable || (!c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error))),
     );
     const key: Record<Sort, (c: BoardContract) => number> = {
       reward: (c) => -c.rewardCents,
@@ -104,7 +108,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
     };
     // Own city first — jobs the player can take right now before the rest.
     // Urgent shipments first, then the player's own city.
-    const takeable = (c: BoardContract) => !c.locked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error);
+    const takeable = (c: BoardContract) => !c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error);
     const rank = (c: BoardContract) => (c.urgent ? 0 : c.tender && takeable(c) ? 1 : c.local ? (takeable(c) ? 1 : 2) : 3);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
   }, [contracts, cargo, query, doable, sort]);
@@ -179,7 +183,7 @@ function ContractRow({ contract: c, vip, open, onToggle }: { contract: BoardCont
   };
 
   return (
-    <li className={`panel overflow-hidden transition ${open ? 'border-volt-500/60' : c.urgent ? 'border-loss/60 hover:border-loss' : c.local ? 'border-gold-400/40 hover:border-gold-400/70' : 'hover:border-asphalt-500'} ${c.locked || c.missingLicences.length ? 'opacity-60' : ''}`}>
+    <li className={`panel overflow-hidden transition ${open ? 'border-volt-500/60' : c.urgent ? 'border-loss/60 hover:border-loss' : c.local ? 'border-gold-400/40 hover:border-gold-400/70' : 'hover:border-asphalt-500'} ${c.locked || c.reputationLocked || c.missingLicences.length ? 'opacity-60' : ''}`}>
       <button className="grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 text-left sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto]" onClick={onToggle} aria-expanded={open}>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -188,6 +192,7 @@ function ContractRow({ contract: c, vip, open, onToggle }: { contract: BoardCont
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
+            {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />ПРЕМИУМ · репутация {c.minReputation}</Badge>}
             {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
             {c.reservedByMe && <Badge tone="gold">Запазена за теб до {c.reservedUntil}</Badge>}
             {c.reservedByOther && <Badge tone="neutral">Запазена до {c.reservedUntil}</Badge>}
@@ -236,6 +241,8 @@ function ContractRow({ contract: c, vip, open, onToggle }: { contract: BoardCont
             <p className="mt-4 text-sm text-mist-300">Друг играч е запазил тази поръчка до {c.reservedUntil}. След това отново е свободна.</p>
           ) : c.locked ? (
             <p className="mt-4 flex items-center gap-2 text-sm text-prestige"><Lock className="h-4 w-4" />Достигнете ниво {c.minLevel}, за да поемате такива товари.</p>
+          ) : c.reputationLocked ? (
+            <p className="mt-4 flex items-center gap-2 text-sm text-gold-400"><Star className="h-4 w-4" />Премиум поръчка — плаща повече, но е само за превозвачи с репутация {c.minReputation}+. Репутацията расте с всяка доставка навреме.</p>
           ) : c.missingLicences.length ? (
             <p className="mt-4 flex flex-wrap items-center gap-2 text-sm text-amber-sig">
               <BadgeCheck className="h-4 w-4" />Нужен е лиценз: {c.missingLicences.join(', ')}.

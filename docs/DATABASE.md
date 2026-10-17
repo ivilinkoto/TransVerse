@@ -50,3 +50,13 @@
 - `deliveries.road_events` (jsonb) и `deliveries.next_event_at` — планираните пътни събития и времето на следващото (индекс за работника).
 - `users.referral_code` (уникален), `referred_by_id`, `referral_rewarded_at`, `referral_outcome` (`rewarded` | `declined`), `signup_ip_hash` (SHA-256 със сол от `job_state` `ip-salt`).
 - `organization_season_scores` — сезонни точки, доставки, крайно място и награда на всяка компания.
+
+## Социални функции и репутация (миграция 0018)
+- `friendships` — заявка и приятелство: един ред на двойка (уникален индекс по least/greatest), статус `pending` | `accepted`.
+- `company_invites` — покана от компания към играч без компания: `pending` | `accepted` | `declined` | `cancelled`, една чакаща на двойка.
+- `direct_messages` — лични съобщения:
+  - `read_at` — кога получателят ги е прочел;
+  - `deleted_at` — изпращачът ги е изтрил за двамата;
+  - `hidden_for_sender`, `hidden_for_recipient` — разговорът е изтрит само за единия.
+- `chat_messages` — общите канали `global` и `trade`.
+- `contracts.min_reputation` — премиум поръчка (0 = обикновена).

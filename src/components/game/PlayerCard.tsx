@@ -1,0 +1,146 @@
+'use client';
+
+import { Building2, CalendarDays, Check, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+import { api } from '@/lib/client/api';
+import type { PlayerCard as Card } from '@/server/game/social';
+import { PlayerName } from './PlayerName';
+
+/** Opens a private chat in the chat dock. */
+export function openDirectChat(userId: string, username: string) {
+  window.dispatchEvent(new CustomEvent('tv:chat-open', { detail: { tab: `dm:${userId}`, title: username } }));
+}
+
+function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
+  return (
+    <div className="rounded-xl bg-asphalt-850 px-3 py-2">
+      <div className="text-[11px] text-mist-400">{label}</div>
+      <div className="num font-display text-lg font-bold">{value}</div>
+      {sub && <div className="text-[11px] text-mist-400">{sub}</div>}
+    </div>
+  );
+}
+
+/** A player's profile card: who they are, how they play, and what you can do with them. */
+export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChange?: () => void; onClose?: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const act = async (action: Record<string, unknown>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/api/game/action', action);
+      onChange?.();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const since = new Date(card.memberSince).toLocaleDateString('bg-BG', { month: 'long', year: 'numeric' });
+  return (
+    <div>
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-volt-500/40 to-cyan-glow/20 font-display text-2xl font-bold ${card.vip ? 'text-gold-400' : 'text-white'}`}>{card.username.slice(0, 1).toUpperCase()}</div>
+          <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-asphalt-900 ${card.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={card.online ? 'Онлайн' : `Последно: ${card.lastSeen}`} />
+        </div>
+        <div className="min-w-0">
+          <PlayerName name={card.username} role={card.role} vip={card.vip} card={false} className="font-display text-xl font-bold" />
+          <div className={`text-sm ${card.online ? 'text-profit' : 'text-mist-400'}`}>{card.online ? 'Онлайн сега' : `Последно онлайн: ${card.lastSeen}`}</div>
+          <div className="mt-0.5 flex items-center gap-1 text-xs text-mist-400"><CalendarDays className="h-3.5 w-3.5" />В играта от {since}</div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Stat label="Ниво" value={card.level} sub={<span className="mt-1 block h-1 overflow-hidden rounded-full bg-asphalt-700"><span className="block h-full bg-cyan-glow" style={{ width: `${Math.max(3, card.levelShare * 100)}%` }} /></span>} />
+        <Stat label="Репутация" value={<span className="inline-flex items-center gap-1"><Star className="h-4 w-4 text-prestige" />{Math.floor(card.reputation)}</span>} sub={card.reputationTier} />
+        <Stat label="Доставки" value={card.deliveries.toLocaleString('bg-BG')} sub={card.kind === 'company' ? 'собствен автопарк' : 'шофьор'} />
+        <Stat label="Приятели" value={card.friends} />
+      </div>
+
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-asphalt-700 px-3 py-2 text-sm">
+        <Building2 className="h-4 w-4 shrink-0 text-mist-400" />
+        {card.company ? (
+          <Link href={`/game/companies/${card.company.id}`} onClick={onClose} className="min-w-0 truncate hover:underline">
+            {card.company.tag && <span style={{ color: card.company.color ?? undefined }}>[{card.company.tag}] </span>}
+            <span className="font-semibold">{card.company.name}</span> <span className="text-mist-400">· {card.company.rank}</span>
+          </Link>
+        ) : (
+          <span className="text-mist-400">Не е в компания</span>
+        )}
+      </div>
+
+      {card.relation === 'self' ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/game/profile" onClick={onClose} className="btn-ghost"><Truck className="h-4 w-4" />Моят профил</Link>
+          <Link href="/game/settings" onClick={onClose} className="btn-ghost"><Settings className="h-4 w-4" />Настройки</Link>
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" className="btn-primary" onClick={() => { openDirectChat(card.id, card.username); onClose?.(); }}><MessageSquare className="h-4 w-4" />Съобщение</button>
+          {card.relation === 'none' && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'friendRequest', userId: card.id })}><UserPlus className="h-4 w-4" />Добави приятел</button>}
+          {card.relation === 'sent' && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'friendRemove', userId: card.id })}><X className="h-4 w-4" />Отмени поканата</button>}
+          {card.relation === 'received' && card.friendshipId && (
+            <>
+              <button type="button" className="btn-gold" disabled={busy} onClick={() => void act({ type: 'friendRespond', friendshipId: card.friendshipId, accept: true })}><Check className="h-4 w-4" />Приеми приятелството</button>
+              <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'friendRespond', friendshipId: card.friendshipId, accept: false })}>Откажи</button>
+            </>
+          )}
+          {card.relation === 'friends' && (
+            <button type="button" className="btn-ghost" disabled={busy} onClick={() => { if (window.confirm(`Да премахнем ли ${card.username} от приятелите?`)) void act({ type: 'friendRemove', userId: card.id }); }}>
+              <UserCheck className="h-4 w-4 text-profit" />Приятели<UserMinus className="h-3.5 w-3.5 text-mist-400" />
+            </button>
+          )}
+          {card.canInvite && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'companyInvite', userId: card.id })}><Users className="h-4 w-4" />Покани в компанията</button>}
+          {card.invited && <span className="inline-flex items-center gap-1 px-2 text-sm text-mist-400"><Check className="h-4 w-4" />Поканен в компанията</span>}
+        </div>
+      )}
+      {error && <p role="alert" className="mt-3 text-sm text-loss">{error}</p>}
+    </div>
+  );
+}
+
+/** Listens for clicks on player names and shows their card in a dialog. Mounted once in the game layout. */
+export function PlayerCardHost() {
+  const [username, setUsername] = useState<string | null>(null);
+  const [card, setCard] = useState<Card | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async (name: string) => {
+    try {
+      setCard(await api<Card>(`/api/players/card?u=${encodeURIComponent(name)}`));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, []);
+
+  useEffect(() => {
+    const open = (e: Event) => {
+      const name = (e as CustomEvent<{ username: string }>).detail.username;
+      setUsername(name);
+      setCard(null);
+      setError(null);
+      void load(name);
+    };
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && setUsername(null);
+    window.addEventListener('tv:player', open);
+    document.addEventListener('keydown', key);
+    return () => {
+      window.removeEventListener('tv:player', open);
+      document.removeEventListener('keydown', key);
+    };
+  }, [load]);
+
+  if (!username) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={`Профил на ${username}`}>
+      <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="Затвори" onClick={() => setUsername(null)} />
+      <div className="relative w-full max-w-lg rounded-t-3xl border border-asphalt-700 bg-asphalt-900 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:rounded-3xl sm:pb-5">
+        <button type="button" className="absolute right-3 top-3 rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" onClick={() => setUsername(null)} aria-label="Затвори"><X className="h-5 w-5" /></button>
+        {card ? <PlayerCardView card={card} onChange={() => void load(username)} onClose={() => setUsername(null)} /> : error ? <p className="py-6 text-center text-sm text-loss">{error}</p> : <p className="py-10 text-center text-sm text-mist-400">Зареждане…</p>}
+      </div>
+    </div>
+  );
+}

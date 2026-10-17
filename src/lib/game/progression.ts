@@ -26,6 +26,31 @@ export function seasonPoints(loadedKm: number, tons: number, onTime: boolean): n
   return Math.round(((loadedKm * Math.sqrt(Math.max(tons, 0.5))) / 10) * (onTime ? 1 : 0.4));
 }
 
+/**
+ * Reputation (0–100) grows with on-time deliveries and drops with late ones. It
+ * pays: a bonus on every reward and access to premium contracts.
+ */
+export const REPUTATION_TIERS = [
+  { min: 0, label: 'Нов превозвач' },
+  { min: 20, label: 'Надежден' },
+  { min: 50, label: 'Доверен' },
+  { min: 80, label: 'Елитен' },
+] as const;
+
+export function reputationTier(reputation: number) {
+  return [...REPUTATION_TIERS].reverse().find((t) => reputation >= t.min)!;
+}
+
+/** Bonus on the freight reward: +1 % per 10 reputation, up to +10 %. */
+export const reputationBonusShare = (reputation: number) => Math.min(0.1, Math.max(0, reputation) / 1000);
+
+/** Premium contracts: who may take them and how much more they pay. */
+export const PREMIUM_LEVELS = [
+  { minReputation: 20, multiplier: 1.15 },
+  { minReputation: 50, multiplier: 1.25 },
+  { minReputation: 80, multiplier: 1.4 },
+] as const;
+
 export function reputationAfter(reputation: number, onTime: boolean): number {
   const next = onTime ? reputation + Math.max(0.25, (100 - reputation) / 40) : reputation - 3;
   return Math.round(Math.min(100, Math.max(0, next)) * 100) / 100;

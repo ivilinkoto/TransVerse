@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { MailWarning } from 'lucide-react';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { LiveUpdates } from '@/components/game/LiveUpdates';
+import { ChatDock } from '@/components/game/ChatDock';
+import { PlayerCardHost } from '@/components/game/PlayerCard';
 import { InstallAppBanner, RegisterServiceWorker } from '@/components/game/PushSettings';
 import { mailConfig } from '@/server/mail';
 import { dailyState } from '@/lib/game/daily';
@@ -46,6 +48,8 @@ export default async function GameLayout({ children }: { children: React.ReactNo
       </div>
       <MobileNav badges={{ missions, eventLive: !!live }} staff={isStaff(user.role)} />
       <LiveUpdates />
+      <ChatDock />
+      <PlayerCardHost />
       <RegisterServiceWorker />
     </div>
   );

@@ -127,6 +127,13 @@
       "when": 1792264940844,
       "tag": "0017_easy_freak",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792267979440,
+      "tag": "0018_charming_the_hood",
+      "breakpoints": true
     }
   ]
 }

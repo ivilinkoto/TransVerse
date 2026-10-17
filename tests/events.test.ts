@@ -5,7 +5,7 @@ import { autoTarget, DEFAULT_REWARDS, EVENT_METRIC_INFO, eventIncrement, EVENT_T
 import type { DeliveryFacts } from '@/lib/game/missions';
 import { isVip } from '@/lib/game/vip';
 import { closeDb } from '@/server/db/client';
-import { companies, companyMembers, companyMissionProgress, globalEventContributions, globalEvents, ledgerEntries, notifications, treasuryEntries, users, vehicles } from '@/server/db/schema';
+import { coinEntries, companies, companyMembers, companyMissionProgress, globalEventContributions, globalEvents, ledgerEntries, notifications, treasuryEntries, users, vehicles } from '@/server/db/schema';
 import { companyMissionBoard, ensureCompanyMissions } from '@/server/game/company-missions';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
@@ -126,7 +126,9 @@ describe('global events', () => {
     expect(rb.reward).toMatchObject({ cents: 1000_00, coins: 5, vipDays: 0 });
     const [ua] = await db().select().from(users).where(eq(users.id, a.userId));
     expect(isVip(ua!.vipUntil, later)).toBe(true);
-    expect(ua!.coins).toBe(55);
+    // Only this event's coins (other events in the shared test database may pay too).
+    const coins = await db().select().from(coinEntries).where(and(eq(coinEntries.userId, a.userId), sql`${coinEntries.idempotencyKey} like ${'%' + event.id + '%'}`));
+    expect(coins.reduce((s, c) => s + c.amount, 0)).toBe(55);
 
     // Settling again changes nothing.
     await settleDueEvents(db(), later);

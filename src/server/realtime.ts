@@ -6,8 +6,13 @@ import pg from 'pg';
  * notifications (sent by the API and by the world worker) to SSE clients.
  */
 export interface WorldEvent {
-  type: 'notification' | 'market' | 'leaderboard' | 'world' | 'chat';
+  type: 'notification' | 'market' | 'leaderboard' | 'world' | 'chat' | 'dm' | 'channel';
+  /** Notification / private message: the receiving player. */
   userId?: string;
+  /** Private message: the sender. */
+  fromId?: string;
+  /** World chat: which channel changed. */
+  channel?: string;
   /** Company chat: only that company's members are told. */
   companyId?: string;
 }

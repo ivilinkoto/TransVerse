@@ -317,6 +317,8 @@ export const contracts = pgTable(
     /** Delivery window, counted from acceptance. */
     windowMinutes: integer('window_minutes').notNull(),
     minLevel: integer('min_level').notNull().default(1),
+    /** Premium contracts: only players with at least this reputation can take them (they pay more). */
+    minReputation: integer('min_reputation').notNull().default(0),
     status: text('status').notNull().default('open'), // open | accepted | expired
     acceptedByCompanyId: uuid('accepted_by_company_id').references(() => companies.id),
     acceptedAt: ts('accepted_at'),
@@ -941,4 +943,79 @@ export const vehicleListings = pgTable(
     uniqueIndex('vehicle_listings_vehicle_open_idx').on(t.vehicleId).where(sql`status = 'open'`),
     uniqueIndex('vehicle_listings_trailer_open_idx').on(t.trailerId).where(sql`status = 'open'`),
   ],
+);
+
+// ── Social: friends, company invites, private messages, world chat ───────
+
+/** Friendship requests and friendships (one row per pair, requester → addressee). */
+export const friendships = pgTable(
+  'friendships',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requesterId: uuid('requester_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    addresseeId: uuid('addressee_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** pending | accepted */
+    status: text('status').notNull().default('pending'),
+    createdAt: createdAt(),
+    respondedAt: ts('responded_at'),
+  },
+  (t) => [
+    // One row per pair, whichever player asked first.
+    uniqueIndex('friendships_pair_idx').on(sql`least(${t.requesterId}, ${t.addresseeId})`, sql`greatest(${t.requesterId}, ${t.addresseeId})`),
+    index('friendships_addressee_idx').on(t.addresseeId, t.status),
+    index('friendships_requester_idx').on(t.requesterId, t.status),
+  ],
+);
+
+/** A company invites a player who is not in a company yet. */
+export const companyInvites = pgTable(
+  'company_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    invitedBy: uuid('invited_by').references(() => users.id, { onDelete: 'set null' }),
+    /** pending | accepted | declined | cancelled */
+    status: text('status').notNull().default('pending'),
+    createdAt: createdAt(),
+    decidedAt: ts('decided_at'),
+  },
+  (t) => [uniqueIndex('company_invites_pending_idx').on(t.companyId, t.userId).where(sql`status = 'pending'`), index('company_invites_user_idx').on(t.userId, t.status)],
+);
+
+/** Private messages between two players. Each side can hide the conversation; the sender can unsend a message. */
+export const directMessages = pgTable(
+  'direct_messages',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    senderId: uuid('sender_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    recipientId: uuid('recipient_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: createdAt(),
+    readAt: ts('read_at'),
+    /** Unsent by the sender: gone for both. */
+    deletedAt: ts('deleted_at'),
+    hiddenForSender: boolean('hidden_for_sender').notNull().default(false),
+    hiddenForRecipient: boolean('hidden_for_recipient').notNull().default(false),
+  },
+  (t) => [
+    index('direct_messages_pair_idx').on(sql`least(${t.senderId}, ${t.recipientId})`, sql`greatest(${t.senderId}, ${t.recipientId})`, t.id),
+    index('direct_messages_unread_idx').on(t.recipientId, t.readAt),
+  ],
+);
+
+/** World chat channels shared by every player: global and trade. */
+export const chatMessages = pgTable(
+  'chat_messages',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    /** global | trade */
+    channel: text('channel').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: createdAt(),
+    deletedAt: ts('deleted_at'),
+    deletedBy: uuid('deleted_by').references(() => users.id, { onDelete: 'set null' }),
+  },
+  (t) => [index('chat_messages_channel_idx').on(t.channel, t.id)],
 );

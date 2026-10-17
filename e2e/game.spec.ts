@@ -194,6 +194,27 @@ test('invite link opens sign-up with the inviter; used market and company season
   await friend.close();
 });
 
+test('chat dock: global message, player card, profile and settings are separate', async ({ page }) => {
+  const tag = await register(page);
+  await page.getByRole('button', { name: /^Чат/ }).click();
+  const dock = page.getByRole('region', { name: 'Чат' });
+  await expect(dock.getByRole('button', { name: 'Глобален' })).toBeVisible();
+  await expect(dock.getByRole('button', { name: 'Търговия' })).toBeVisible();
+  const text = `Здравейте от e2e ${tag}`;
+  await dock.getByRole('textbox', { name: 'Съобщение' }).fill(text);
+  await dock.getByRole('button', { name: 'Изпрати' }).click();
+  await expect(dock.getByText(text)).toBeVisible();
+  // Clicking a name opens that player's card.
+  await dock.getByRole('button', { name: `e2e_${tag}`.slice(0, 20) }).first().click();
+  const card = page.getByRole('dialog', { name: /Профил на/ });
+  await expect(card.getByText('Онлайн сега')).toBeVisible();
+  await card.getByRole('link', { name: 'Настройки' }).click();
+  await expect(page.getByRole('heading', { name: 'Настройки', exact: true })).toBeVisible();
+  await page.goto('/game/profile');
+  await expect(page.getByRole('heading', { name: 'Профил', exact: true })).toBeVisible();
+  await expect(page.getByText(/Приятели · \d+ онлайн/)).toBeVisible();
+});
+
 test('terms and privacy pages are public', async ({ page }) => {
   await page.goto('/terms');
   await expect(page.getByRole('heading', { name: 'Общи условия за ползване и покупки' })).toBeVisible();
