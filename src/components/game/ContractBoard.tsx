@@ -34,6 +34,8 @@ export interface BoardContract {
   local: boolean;
   /** Urgent shipment from the game administration: listed first, driven faster. */
   urgent: boolean;
+  /** Load of a tender of the player's company (only members see it). */
+  tender: boolean;
   speedFactor: number;
   /** Urgent shipment this player has already taken (each player may take it once). */
   alreadyTaken: boolean;
@@ -103,7 +105,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
     // Own city first — jobs the player can take right now before the rest.
     // Urgent shipments first, then the player's own city.
     const takeable = (c: BoardContract) => !c.locked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error);
-    const rank = (c: BoardContract) => (c.urgent ? 0 : c.local ? (takeable(c) ? 1 : 2) : 3);
+    const rank = (c: BoardContract) => (c.urgent ? 0 : c.tender && takeable(c) ? 1 : c.local ? (takeable(c) ? 1 : 2) : 3);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
   }, [contracts, cargo, query, doable, sort]);
 
@@ -185,6 +187,7 @@ function ContractRow({ contract: c, vip, open, onToggle }: { contract: BoardCont
             <span className="truncate font-semibold">{c.goods}</span>
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
+            {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
             {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
             {c.reservedByMe && <Badge tone="gold">Запазена за теб до {c.reservedUntil}</Badge>}
             {c.reservedByOther && <Badge tone="neutral">Запазена до {c.reservedUntil}</Badge>}

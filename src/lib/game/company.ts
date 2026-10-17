@@ -10,6 +10,7 @@ export const PERMISSIONS = {
   manage_upgrades: 'Развитие на компанията (покупка на подобрения)',
   manage_settings: 'Настройки (набиране, вноска, минимално ниво)',
   manage_chat: 'Чат (изтриване на съобщения и изчистване на целия чат)',
+  manage_tenders: 'Търгове (приемане на големи фирмени поръчки от касата)',
 } as const;
 export type Permission = keyof typeof PERMISSIONS;
 export const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as Permission[];
@@ -24,8 +25,8 @@ export interface RankTemplate {
 /** Ranks every new company starts with. Lower priority = higher rank. */
 export const DEFAULT_RANKS: RankTemplate[] = [
   { name: 'Собственик', priority: 0, permissions: [...ALL_PERMISSIONS], isOwner: true },
-  { name: 'Заместник', priority: 10, permissions: ['edit_profile', 'manage_members', 'manage_upgrades', 'manage_settings', 'manage_chat'], isOwner: false },
-  { name: 'Диспечер', priority: 20, permissions: ['manage_members'], isOwner: false },
+  { name: 'Заместник', priority: 10, permissions: ['edit_profile', 'manage_members', 'manage_upgrades', 'manage_settings', 'manage_chat', 'manage_tenders'], isOwner: false },
+  { name: 'Диспечер', priority: 20, permissions: ['manage_members', 'manage_tenders'], isOwner: false },
   { name: 'Шофьор', priority: 30, permissions: [], isOwner: false },
 ];
 

@@ -2,6 +2,7 @@ import { and, eq, gte, sql } from 'drizzle-orm';
 import { ArrowRight, ClipboardList, Gauge, Landmark, Route, Star, Target, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
+import { DailyRewardCard } from '@/components/game/DailyRewardCard';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { Badge, Card, Empty, Meter, PageHeader, Stat } from '@/components/ui';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
@@ -48,6 +49,8 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Обзор" subtitle={company.kind === 'company' ? 'Твоят бизнес и автопарк в реално време. Данните се обновяват автоматично.' : 'Твоят старт като самостоятелен шофьор. Данните се обновяват автоматично.'} actions={<Link href="/game/contracts" className="btn-primary"><ClipboardList className="h-4 w-4" />Поръчки</Link>} />
+
+      <DailyRewardCard streak={user.loginStreak} lastKey={user.dailyClaimKey} now={now} />
 
       <EventBanner events={events} now={now} />
 

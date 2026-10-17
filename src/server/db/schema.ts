@@ -135,6 +135,9 @@ export const users = pgTable(
     /** When the player clicked the link in the confirmation e-mail. */
     emailVerifiedAt: ts('email_verified_at'),
     /** Which push notifications the player wants (missing = on). */
+    /** Daily reward: consecutive days claimed and the last claimed day (Sofia, e.g. D2026-10-17). */
+    loginStreak: integer('login_streak').notNull().default(0),
+    dailyClaimKey: text('daily_claim_key'),
     pushPrefs: jsonb('push_prefs').$type<Partial<Record<string, boolean>>>().notNull().default({}),
     lastSeenAt: ts('last_seen_at'),
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
@@ -312,11 +315,13 @@ export const contracts = pgTable(
     reservedUntil: ts('reserved_until'),
     /** How much faster than normal game time the trip runs (urgent shipments). */
     speedFactor: real('speed_factor').notNull().default(1),
+    /** Load of a company tender: only members of that company may take it. */
+    tenderId: uuid('tender_id'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
   },
-  (t) => [index('contracts_status_idx').on(t.status, t.expiresAt), index('contracts_origin_idx').on(t.originCityId)],
+  (t) => [index('contracts_status_idx').on(t.status, t.expiresAt), index('contracts_origin_idx').on(t.originCityId), index('contracts_tender_idx').on(t.tenderId)],
 );
 
 export const deliveries = pgTable(
@@ -837,4 +842,44 @@ export const emailTokens = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('email_tokens_hash_idx').on(t.tokenHash), index('email_tokens_user_idx').on(t.userId, t.kind)],
+);
+
+// ── Company tenders (big orders the members deliver together) ───────────
+
+export const companyTenders = pgTable(
+  'company_tenders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    /** offer → active (accepted) → completed | failed; offers that are not taken expire. */
+    status: text('status').notNull().default('offer'),
+    title: text('title').notNull(),
+    goods: text('goods').notNull(),
+    cargoType: text('cargo_type').notNull(),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    routeId: integer('route_id').notNull().references(() => routes.id),
+    distanceKm: real('distance_km').notNull(),
+    loads: integer('loads').notNull(),
+    loadTons: real('load_tons').notNull(),
+    /** Paid to the member who drives each load (like a normal contract). */
+    rewardPerLoadCents: money('reward_per_load_cents').notNull(),
+    /** Paid into the treasury when every load arrives in time. */
+    bonusCents: money('bonus_cents').notNull(),
+    /** Taken from the treasury on acceptance, returned on success, lost on failure. */
+    depositCents: money('deposit_cents').notNull(),
+    xp: integer('xp').notNull(),
+    /** Time to deliver every load once accepted. */
+    durationHours: integer('duration_hours').notNull(),
+    offerExpiresAt: ts('offer_expires_at').notNull(),
+    acceptedBy: uuid('accepted_by').references(() => users.id, { onDelete: 'set null' }),
+    acceptedAt: ts('accepted_at'),
+    deadlineAt: ts('deadline_at'),
+    deliveredLoads: integer('delivered_loads').notNull().default(0),
+    /** Member → loads delivered. */
+    drivers: jsonb('drivers').$type<Record<string, number>>().notNull().default({}),
+    finishedAt: ts('finished_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('company_tenders_company_idx').on(t.companyId, t.status)],
 );

@@ -16,6 +16,7 @@ import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { heldLicences, missingFor } from '@/server/game/licences';
 
 import { FleetCondition } from '@/components/game/FleetCondition';
+import { membershipOf } from '@/server/game/membership';
 
 export const metadata = { title: 'Транспортни поръчки' };
 
@@ -33,7 +34,9 @@ export default async function ContractsPage() {
   const vip = isVip(user.vipUntil, now);
   const hhmm = (d: Date) => d.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' });
   const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
-  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250 }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50 }))]);
+  const membership = await membershipOf(db, user.id);
+  const memberOfCompanyId = membership?.company.id ?? null;
+  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId }))]);
   const seen = new Set<string>();
   const contracts = [...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
@@ -79,6 +82,7 @@ export default async function ContractsPage() {
       locked: user.level < Math.max(c.minLevel, cargo.minLevel),
       local: localCities.includes(c.originCityId),
       urgent: c.urgent,
+      tender: !!c.tenderId,
       alreadyTaken: takenIds.has(c.id),
       reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,
       reservedByOther: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId !== company.id,

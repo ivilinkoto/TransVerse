@@ -14,6 +14,7 @@
 | Мисии | `mission_progress` (играч + период + мисия: цел, прогрес, награда, изпълнена/взета) |
 | Ивенти | `global_events` (цел, прогрес, филтри, награди jsonb, начало/край, постигнат/разплатен, резултат, шаблон), `global_event_contributions` (ивент + играч: принос, доставки, компания, място и награда) |
 | Фирмени мисии | `company_mission_progress` (компания + седмица + мисия: цел, прогрес, награда за касата, принос по членове) |
+| Търгове | `company_tenders` (оферта/активен/изпълнен/провален, курсове, тонове, плащане на курс, бонус, депозит, срок, доставени, шофьори), `contracts.tender_id` |
 | Известия и имейл | `push_subscriptions` (устройства за Web Push), `email_tokens` (хеш, вид verify/reset, валидност, използван), `users.email_verified_at`, `users.push_prefs` |
 | Лицензи на компаниите | `company_licences` (компания + лиценз, цена, купил) |
 | Лицензи | `user_licences` (играч + лиценз, цена, източник purchase/legacy/admin) |
@@ -41,3 +42,4 @@
 Миграция `0013`: `vehicles.return_pending` (наетият камион се връща след курса).
 Миграция `0014`: `company_licences`; правото `manage_chat` за длъжността „Заместник“.
 Миграция `0015`: `push_subscriptions`, `email_tokens`, `users.email_verified_at / push_prefs`.
+Миграция `0016`: `company_tenders`, `contracts.tender_id`, `users.login_streak / daily_claim_key`; правото `manage_tenders` за „Заместник“ и „Диспечер“.

@@ -3,7 +3,7 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { coinEntries, users } from '@/server/db/schema';
 import { fail } from './errors';
 
-export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund';
+export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward';
 
 export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   admin_grant: 'Дадени от администратор',
@@ -14,6 +14,7 @@ export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   refund: 'Възстановени',
   event_reward: 'Награда от ивент',
   payment_refund: 'Върнато плащане',
+  daily_reward: 'Дневна награда',
 };
 
 /**

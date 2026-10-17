@@ -1,17 +1,98 @@
 'use client';
 
-import { Bell, BellOff, Download, Send, Smartphone } from 'lucide-react';
+import { Bell, BellOff, Download, Send, Smartphone, Volume2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
+import { playChime, setSoundEnabled, soundEnabled, unlockSound } from '@/lib/client/sound';
 
 const supported = () => typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+/** The browser's install offer, kept from the moment it fires (it may come before any banner mounts). */
+type InstallPromptEvent = Event & { prompt: () => Promise<void> };
+declare global {
+  interface Window {
+    __tvInstall?: InstallPromptEvent | null;
+  }
+}
 
 /** Registers the service worker on game pages (needed to install the app and receive notifications). */
 export function RegisterServiceWorker() {
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+    const keep = (e: Event) => {
+      e.preventDefault();
+      window.__tvInstall = e as InstallPromptEvent;
+      window.dispatchEvent(new Event('tv:installable'));
+    };
+    const installed = () => {
+      window.__tvInstall = null;
+      window.dispatchEvent(new Event('tv:installable'));
+    };
+    window.addEventListener('beforeinstallprompt', keep);
+    window.addEventListener('appinstalled', installed);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', keep);
+      window.removeEventListener('appinstalled', installed);
+    };
   }, []);
   return null;
+}
+
+const DISMISS_KEY = 'tv-install-dismissed';
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
+
+/** Banner for players in a normal browser tab: "we have an app" with an install button (or iPhone steps). */
+export function InstallAppBanner() {
+  const [mode, setMode] = useState<'hidden' | 'prompt' | 'ios'>('hidden');
+  useEffect(() => {
+    const decide = () => {
+      if (isStandalone()) return setMode('hidden');
+      try {
+        const until = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
+        if (until > Date.now()) return setMode('hidden');
+      } catch {
+        /* storage blocked — show anyway */
+      }
+      if (window.__tvInstall) return setMode('prompt');
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS/.test(navigator.userAgent);
+      setMode(ios ? 'ios' : 'hidden');
+    };
+    void Promise.resolve().then(decide);
+    window.addEventListener('tv:installable', decide);
+    return () => window.removeEventListener('tv:installable', decide);
+  }, []);
+
+  const dismiss = () => {
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now() + 14 * 86_400_000));
+    } catch {
+      /* ignore */
+    }
+    setMode('hidden');
+  };
+  const install = async () => {
+    const e = window.__tvInstall;
+    if (!e) return;
+    await e.prompt().catch(() => undefined);
+    window.__tvInstall = null;
+    setMode('hidden');
+  };
+
+  if (mode === 'hidden') return null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2 text-sm sm:px-6" role="region" aria-label="Приложение TransVerse">
+      <Smartphone className="h-4 w-4 shrink-0 text-cyan-glow" />
+      {mode === 'prompt' ? (
+        <>
+          <span className="flex-1">TransVerse има приложение — по-бързо стартиране, цял екран и известия, когато камионът пристигне.</span>
+          <button type="button" className="btn-primary px-3 py-1.5 text-sm" onClick={() => void install()}><Download className="h-4 w-4" />Изтегли приложението</button>
+        </>
+      ) : (
+        <span className="flex-1">Инсталирай TransVerse на iPhone: натисни <span className="font-semibold">Сподели</span> (квадратчето със стрелка) → <span className="font-semibold">Добави към началния екран</span>. Така ще получаваш и известия.</span>
+      )}
+      <button type="button" className="text-mist-400 hover:text-white" onClick={dismiss} aria-label="Скрий">✕</button>
+    </div>
+  );
 }
 
 function keyBytes(base64: string): Uint8Array<ArrayBuffer> {
@@ -33,14 +114,14 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [install, setInstall] = useState<InstallEvent | null>(null);
+  const [sound, setSound] = useState(true);
 
   useEffect(() => {
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstall(e as InstallEvent);
-    };
-    window.addEventListener('beforeinstallprompt', onPrompt);
+    const onPrompt = () => setInstall(window.__tvInstall ?? null);
+    window.addEventListener('tv:installable', onPrompt);
     (async () => {
+      onPrompt();
+      setSound(soundEnabled());
       const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
       const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
       if (!supported()) return setState(ios && !standalone ? 'ios' : 'unsupported');
@@ -49,7 +130,7 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
       const sub = await reg?.pushManager.getSubscription();
       setState(sub && Notification.permission === 'granted' ? 'on' : 'off');
     })().catch(() => setState('unsupported'));
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+    return () => window.removeEventListener('tv:installable', onPrompt);
   }, []);
 
   const enable = async () => {
@@ -141,8 +222,30 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
         <p className="text-xs text-mist-400">Съобщения от чата не идват, докато си в играта — само когато я няма отворена.</p>
       </fieldset>
 
+      <fieldset className="space-y-1.5 border-t border-asphalt-800 pt-3">
+        <legend className="label mb-1">Звук</legend>
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={sound}
+            onChange={(e) => {
+              setSound(e.target.checked);
+              setSoundEnabled(e.target.checked);
+              if (e.target.checked) {
+                unlockSound();
+                setTimeout(playChime, 50);
+              }
+            }}
+          />
+          <span>Кратък звук при ново известие, докато играта е отворена (на това устройство)</span>
+        </label>
+        <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => { unlockSound(); setTimeout(playChime, 50); }}><Volume2 className="h-3.5 w-3.5" />Чуй звука</button>
+        <p className="text-xs text-mist-400">Когато играта е затворена, известието идва със звука и вибрацията на телефона (настройват се от известията на телефона за TransVerse).</p>
+      </fieldset>
+
       {install && (
-        <button type="button" className="btn-ghost" onClick={() => void install.prompt().then(() => setInstall(null))}><Download className="h-4 w-4" />Инсталирай TransVerse като приложение</button>
+        <button type="button" className="btn-ghost" onClick={() => void install.prompt().then(() => { window.__tvInstall = null; setInstall(null); })}><Download className="h-4 w-4" />Инсталирай TransVerse като приложение</button>
       )}
     </div>
   );

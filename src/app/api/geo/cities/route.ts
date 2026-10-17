@@ -24,7 +24,7 @@ export const GET = handler({ schema: Query, perMinute: 240 }, async ({ input }) 
       lat: cities.lat,
       lon: cities.lon,
       hub: sql<boolean>`exists (select 1 from ${cityMarkets} m where m.city_id = "cities"."id")`,
-      open: sql<number>`(select count(*) from ${contracts} c where c.origin_city_id = "cities"."id" and c.status = 'open' and c.expires_at > now())::int`,
+      open: sql<number>`(select count(*) from ${contracts} c where c.origin_city_id = "cities"."id" and c.status = 'open' and c.tender_id is null and c.expires_at > now())::int`,
     })
     .from(cities)
     .where(and(between(cities.lat, minLat, maxLat), between(cities.lon, minLon, maxLon), gte(cities.population, minPopulation(input.zoom))))

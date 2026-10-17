@@ -7,6 +7,7 @@ const TABS = [
   { href: '/game/company', label: 'Обзор' },
   { href: '/game/company/chat', label: 'Чат' },
   { href: '/game/company/missions', label: 'Мисии' },
+  { href: '/game/company/tenders', label: 'Търгове' },
   { href: '/game/company/members', label: 'Членове' },
   { href: '/game/company/ranks', label: 'Длъжности' },
   { href: '/game/company/development', label: 'Развитие' },
