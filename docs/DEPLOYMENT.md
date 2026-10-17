@@ -80,6 +80,8 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 | `SUPPORT_EMAIL` | имейл за връзка с купувачите |
 | `APP_URL` | по избор — публичният адрес, напр. `https://transverse-bg.com` (пълен, с `https://`) |
 | `COOKIE_SECURE` | `true`, когато сайтът е на HTTPS (бисквитката за вход минава само по защитена връзка) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | имейли (потвърждаване, забравена парола) — от доставчика, напр. Brevo: `smtp-relay.brevo.com`, порт `587`; `MAIL_FROM` напр. `TransVerse <no-reply@transverse-bg.com>` |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | по избор — ключове за push известия (без тях се генерират автоматично) |
 | `PAYPAL_WEBHOOK_ID` | по избор, след HTTPS — за възстановявания/оспорвания, направени в PayPal |
 
 След добавяне или промяна: GitHub → Actions → Deploy → Run workflow (или следващото обединяване в main).

@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
+import { adminResetLink, adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
 import { cancelEvent, createEvent, eventSchema } from '@/server/game/events';
 import { diagnosePaypal, refundPaypalPayment } from '@/server/payments';
+import { siteUrl } from '@/server/payments/common';
 import { requireAdminRole } from '@/server/admin';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
@@ -28,9 +29,10 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cancelEvent'), eventId: id }),
   z.object({ type: z.literal('refundPayment'), paymentId: id }),
   z.object({ type: z.literal('checkPaypal') }),
+  z.object({ type: z.literal('resetLink'), userId: id }),
 ]);
 
-export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input }) => {
+export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input, request }) => {
   requireStaff(user);
   const db = getDb();
   switch (input.type) {
@@ -78,5 +80,7 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'checkPaypal':
       requireAdminRole(user);
       return diagnosePaypal();
+    case 'resetLink':
+      return { ok: true, url: await adminResetLink(db, user, input.userId, siteUrl(request.headers.get('origin'))) };
   }
 });

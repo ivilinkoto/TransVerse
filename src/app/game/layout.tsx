@@ -1,6 +1,10 @@
 import { and, eq, isNull, lte, sql } from 'drizzle-orm';
 import type { Metadata } from 'next';
+import { MailWarning } from 'lucide-react';
+import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { LiveUpdates } from '@/components/game/LiveUpdates';
+import { RegisterServiceWorker } from '@/components/game/PushSettings';
+import { mailConfig } from '@/server/mail';
 import { Sidebar } from '@/components/game/Sidebar';
 import { TopBar } from '@/components/game/TopBar';
 import { globalEvents, notifications } from '@/server/db/schema';
@@ -26,10 +30,18 @@ export default async function GameLayout({ children }: { children: React.ReactNo
       <Sidebar independent={company.kind !== 'company' && !membership} missions={missions} eventLive={!!live} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={displayName(membership?.company.name, user.username, company.kind)} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} />
+        {!user.emailVerifiedAt && mailConfig().enabled && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
+            <MailWarning className="h-4 w-4 text-amber-sig" />
+            <span>Потвърди имейла си <span className="font-semibold">{user.email}</span> — така ще можеш да си върнеш профила и да пазаруваш.</span>
+            <ResendVerification />
+          </div>
+        )}
         {tutorial.active && tutorial.step && <TutorialCoach step={tutorial.step} index={tutorial.index} total={tutorial.total} />}
         <main className="flex-1 px-4 py-6 sm:px-6">{children}</main>
       </div>
       <LiveUpdates />
+      <RegisterServiceWorker />
     </div>
   );
 }

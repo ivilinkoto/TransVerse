@@ -52,7 +52,8 @@ export function handler<T = undefined>(options: HandlerOptions<T>, fn: (ctx: { u
     try {
       await assertSameOrigin(request);
       const user = options.auth === false ? (null as unknown as SessionUser) : await requireUser();
-      await rateLimit(getDb(), `api:${user?.id ?? await clientIp()}`, options.perMinute ?? 120, 60);
+      // Each endpoint has its own budget, so one busy route cannot lock a player out of another.
+      await rateLimit(getDb(), `api:${new URL(request.url).pathname}:${user?.id ?? await clientIp()}`, options.perMinute ?? 120, 60);
       let input = undefined as T;
       if (options.schema) {
         const raw = request.method === 'GET' ? Object.fromEntries(new URL(request.url).searchParams) : await request.json().catch(() => ({}));

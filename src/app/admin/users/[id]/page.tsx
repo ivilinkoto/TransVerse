@@ -4,6 +4,7 @@ import { BanForm } from '@/components/admin/BanForm';
 import { ResetBrandingForm } from '@/components/admin/ResetBrandingForm';
 import { VipForm } from '@/components/admin/VipForm';
 import { CoinsForm } from '@/components/admin/CoinsForm';
+import { ResetLinkButton } from '@/components/admin/ResetLinkButton';
 import { isVip } from '@/lib/game/vip';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { SelectAction } from '@/components/ui/SelectAction';
@@ -73,6 +74,12 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="label mb-1.5">VIP статус</div>
                 <VipForm userId={user.id} activeUntil={isVip(user.vipUntil, now) ? user.vipUntil!.toISOString() : null} today={now.toISOString()} />
+              </div>
+            )}
+            {isAdmin(actor.role) && canBan(actor.role, actor.id, user.role, user.id) && (
+              <div>
+                <div className="label mb-1.5">Достъп до профила (имейл {user.emailVerifiedAt ? 'потвърден' : 'непотвърден'})</div>
+                <ResetLinkButton userId={user.id} />
               </div>
             )}
             {isAdmin(actor.role) && company && (

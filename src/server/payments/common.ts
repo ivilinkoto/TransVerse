@@ -11,6 +11,7 @@ import { payments, users } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
 import { fail } from '@/server/game/errors';
 import { notify } from '@/server/game/notify';
+import { mailConfig } from '@/server/mail';
 
 export type Payment = typeof payments.$inferSelect;
 export type Provider = 'paypal' | 'stripe';
@@ -64,8 +65,10 @@ export function siteUrl(requestOrigin?: string | null): string {
 export async function startPayment(db: Database, userId: string, input: z.output<typeof checkoutSchema>, now: Date) {
   const product = paidProduct(input.productId);
   if (!product) fail('unknown_product', 'Непознат продукт.');
-  const [user] = await db.select({ email: users.email, bannedAt: users.bannedAt }).from(users).where(eq(users.id, userId));
+  const [user] = await db.select({ email: users.email, bannedAt: users.bannedAt, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId));
   if (!user || user.bannedAt) fail('forbidden', 'Профилът не може да прави покупки.', 403);
+  // With e-mail switched on, purchases need a confirmed address (receipts, account recovery).
+  if (mailConfig().enabled && !user!.verified) fail('email_unverified', 'Първо потвърди имейла си — линкът е в пощата ти (или го изпрати отново от „Профил и настройки“).', 403);
   // At most a few unfinished checkouts at a time (stops spamming the provider).
   const [{ open = 0 } = {}] = await db
     .select({ open: sql<number>`count(*)::int` })

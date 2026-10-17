@@ -179,6 +179,17 @@ test('terms and privacy pages are public', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Политика за поверителност' })).toBeVisible();
 });
 
+test('forgot password is reachable from the login page and never reveals accounts', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByRole('link', { name: 'Забравена парола?' }).click();
+  await expect(page.getByRole('heading', { name: 'Забравена парола' })).toBeVisible();
+  await page.fill('#email', `nobody${Date.now()}@example.com`);
+  await page.getByRole('button', { name: 'Изпрати линк за нова парола' }).click();
+  await expect(page.getByRole('status')).toBeVisible();
+  await page.goto('/reset-password?token=not-a-real-token-1234567890');
+  await expect(page.getByText('Линкът е невалиден, изтекъл или вече използван.')).toBeVisible();
+});
+
 test('@mobile dashboard is usable on a phone without horizontal scrolling', async ({ page }) => {
   await register(page);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
