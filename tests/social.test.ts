@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { lastSeenLabel, isOnline } from '@/lib/game/social';
 import { reputationBonusShare, reputationTier } from '@/lib/game/progression';
 import { closeDb } from '@/server/db/client';
+import { getAvatar, removeAvatar, setAvatar } from '@/server/game/avatars';
 import { companies, companyMembers, ledgerEntries, notifications, organizations, users, vehicles } from '@/server/db/schema';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
@@ -13,6 +14,23 @@ import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 afterAll(async () => closeDb());
 
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : String(e)));
+
+describe('avatars', () => {
+  it('stores a checked image, bumps the version, can be removed; the card shows it and the league', async () => {
+    const p = await newPlayer();
+    // 1×1 PNG.
+    const png = Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'));
+    expect(await code(setAvatar(db(), p.userId, new TextEncoder().encode('<svg onload=alert(1)>')))).toBe('bad_image');
+    await setAvatar(db(), p.userId, png);
+    await setAvatar(db(), p.userId, png);
+    expect((await getAvatar(db(), p.userId))!.mime).toBe('image/png');
+    await db().update(users).set({ leagueTier: 3 }).where(eq(users.id, p.userId));
+    expect((await playerCard(db(), p.userId, p.username))!).toMatchObject({ avatarVersion: 2, leagueTier: 3 });
+    await removeAvatar(db(), p.userId);
+    expect(await getAvatar(db(), p.userId)).toBeNull();
+    expect((await playerCard(db(), p.userId, p.username))!.avatarVersion).toBe(0);
+  });
+});
 
 describe('online status', () => {
   it('labels the last time a player was seen', () => {

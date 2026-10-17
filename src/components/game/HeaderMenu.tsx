@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { ACCOUNT_MENU } from './nav';
+import { Avatar } from './Avatar';
 import { PlayerName } from './PlayerName';
 
 /** Bell with the unread count; the count is hidden while the notifications page is open (it marks them read). */
@@ -28,7 +29,7 @@ export function NotificationBell({ unread }: { unread: number }) {
 }
 
 /** The avatar menu: level, reputation, account pages, admin and logout. */
-export function AccountMenu({ staff, user, level, reputation }: { staff: boolean; user: { username: string; role: string; vip: boolean }; level: { level: number; share: number; current: number; next: number }; reputation: number }) {
+export function AccountMenu({ staff, user, level, reputation }: { staff: boolean; user: { id: string; username: string; role: string; vip: boolean; avatarVersion: number }; level: { level: number; share: number; current: number; next: number }; reputation: number }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -69,7 +70,7 @@ export function AccountMenu({ staff, user, level, reputation }: { staff: boolean
         className="relative flex h-9 w-9 items-center justify-center rounded-full p-[2px] transition hover:brightness-125"
         style={{ background: `conic-gradient(var(--color-cyan-glow) ${pct}%, var(--color-asphalt-700) 0)` }}
       >
-        <span className={`flex h-full w-full items-center justify-center rounded-full bg-asphalt-900 font-display text-sm font-bold ${user.vip ? 'text-gold-400' : 'text-white'}`}>{user.username.slice(0, 1).toUpperCase()}</span>
+        <span className="flex h-full w-full overflow-hidden rounded-full bg-asphalt-900"><Avatar userId={user.id} username={user.username} version={user.avatarVersion} vip={user.vip} className="h-full w-full text-sm" /></span>
         <span className="num absolute -bottom-1 -right-1 min-w-[18px] rounded-full border border-asphalt-950 bg-volt-500 px-1 text-center text-[10px] font-bold leading-4 text-white">{level.level}</span>
       </button>
       {open && (

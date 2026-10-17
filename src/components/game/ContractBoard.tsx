@@ -64,6 +64,8 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   const [doable, setDoable] = useState(false);
   const [sort, setSort] = useState<Sort>('reward');
   const [open, setOpen] = useState<string | null>(null);
+  // After accepting, the player stays on the board; a short note says where the truck went.
+  const [sent, setSent] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState<string | null>(null);
 
   // VIP: saved board filters (kept in this browser).
@@ -115,6 +117,15 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
 
   return (
     <div className="space-y-4">
+      {sent && (
+        <div role="status" className="sticky top-16 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-profit/40 bg-asphalt-900/95 px-4 py-3 text-sm shadow-lg backdrop-blur lg:top-20">
+          <Truck className="h-4 w-4 shrink-0 text-profit" />
+          <span className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">{sent}</span>
+          <Link href="/game/fleet" className="text-cyan-glow hover:underline">Автопарк</Link>
+          <Link href="/game/map" className="text-cyan-glow hover:underline">Карта</Link>
+          <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSent(null)} aria-label="Скрий">✕</button>
+        </div>
+      )}
       <div className="panel flex flex-wrap items-center gap-3 p-3">
         <label className="relative w-full min-w-[200px] flex-1 sm:w-auto">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
@@ -153,7 +164,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       ) : (
         <ul className="space-y-2">
           {list.map((c) => (
-            <ContractRow key={c.id} contract={c} vip={vip} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} />
+            <ContractRow key={c.id} contract={c} vip={vip} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text) => { setSent(text); setOpen(null); }} />
           ))}
         </ul>
       )}
@@ -161,7 +172,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   );
 }
 
-function ContractRow({ contract: c, vip, open, onToggle }: { contract: BoardContract; vip: boolean; open: boolean; onToggle: () => void }) {
+function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
   const router = useRouter();
   const usable = c.options.filter((o) => !o.error);
   const [vehicleId, setVehicleId] = useState(usable[0]?.vehicleId ?? '');
@@ -174,7 +185,8 @@ function ContractRow({ contract: c, vip, open, onToggle }: { contract: BoardCont
     setError(null);
     try {
       await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId });
-      router.push('/game/fleet');
+      onAccepted(`Камионът тръгна: ${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
+      setBusy(false);
       router.refresh();
     } catch (e) {
       setError((e as Error).message);

@@ -1,5 +1,6 @@
 import { Building2, Star, Users } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import { AvatarUpload } from '@/components/game/AvatarUpload';
 import { FriendsPanel } from '@/components/game/FriendsPanel';
 import { PlayerCardView } from '@/components/game/PlayerCard';
 import { Card, PageHeader } from '@/components/ui';
@@ -23,6 +24,7 @@ export default async function ProfilePage() {
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <div className="space-y-6">
           <Card><PlayerCardView card={card} /></Card>
+          <Card title="Снимка на профила"><AvatarUpload userId={user.id} username={user.username} version={user.avatarVersion} vip={card.vip} /></Card>
           {invites.length > 0 && (
             <Card id="invites" title={<span className="inline-flex items-center gap-2"><Building2 className="h-4 w-4 text-gold-400" />Покани за компании</span>}>
               <ul className="divide-y divide-asphalt-800">

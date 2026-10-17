@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Clock, Shield, Trophy } from 'lucide-react';
 import Link from 'next/link';
+import { Avatar } from '@/components/game/Avatar';
 import { PlayerName } from '@/components/game/PlayerName';
 import { Card, Empty, PageHeader } from '@/components/ui';
 import { duration, int, money } from '@/lib/format';
@@ -26,22 +27,25 @@ export default async function LeaguePage() {
 
       <section className="panel relative overflow-hidden p-5 sm:p-6" style={{ borderColor: `${tier.color}66` }}>
         <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full blur-3xl" style={{ background: `${tier.color}33` }} aria-hidden="true" />
-        <div className="relative flex flex-wrap items-center gap-5">
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl border-2" style={{ borderColor: tier.color, background: `${tier.color}22` }}>
-            <Shield className="h-10 w-10" style={{ color: tier.color }} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="label">Твоята лига</div>
-            <div className="font-display text-3xl font-bold" style={{ color: tier.color }}>{tier.name}</div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-mist-300">
-              <span className="inline-flex items-center gap-1"><Clock className="h-4 w-4" />остават {duration(left / 60_000)}</span>
-              {me && <span>Място <span className="num font-semibold text-white">#{me.rank}</span> от {n} · <span className="num font-semibold text-gold-400">{int(me.points)}</span> точки</span>}
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border-2 sm:h-20 sm:w-20" style={{ borderColor: tier.color, background: `${tier.color}22` }}>
+              <Shield className="h-8 w-8 sm:h-10 sm:w-10" style={{ color: tier.color }} />
+            </div>
+            <div className="min-w-0">
+              <div className="label">Твоята лига</div>
+              <div className="font-display text-2xl font-bold sm:text-3xl" style={{ color: tier.color }}>{tier.name}</div>
+              <div className="mt-1 space-y-0.5 text-sm text-mist-300 sm:flex sm:flex-wrap sm:gap-x-4 sm:space-y-0">
+                <div className="flex items-center gap-1"><Clock className="h-4 w-4 shrink-0" />остават {duration(left / 60_000)}</div>
+                {me && <div>Място <span className="num font-semibold text-white">#{me.rank}</span> от {n} · <span className="num font-semibold text-gold-400">{int(me.points)}</span> точки</div>}
+              </div>
             </div>
           </div>
-          <ol className="flex gap-1.5" aria-label="Лиги">
+          <ol className="flex justify-between gap-1.5 sm:justify-start" aria-label="Лиги">
             {LEAGUE_TIERS.map((t, i) => (
-              <li key={t.name} title={t.name} className={`flex h-9 w-9 items-center justify-center rounded-xl border text-[10px] font-bold ${i === v.tier ? 'scale-110' : 'opacity-50'}`} style={{ borderColor: t.color, color: t.color, background: i === v.tier ? `${t.color}26` : undefined }}>
-                {t.name.slice(0, 2)}
+              <li key={t.name} title={t.name} className={`flex h-9 min-w-9 flex-1 items-center justify-center rounded-xl border px-1 text-[10px] font-bold sm:flex-none ${i === v.tier ? 'ring-2 ring-offset-2 ring-offset-asphalt-900' : 'opacity-50'}`} style={{ borderColor: t.color, color: t.color, background: i === v.tier ? `${t.color}26` : undefined, ['--tw-ring-color' as string]: t.color }}>
+                <span className="sm:hidden">{t.name}</span>
+                <span className="hidden sm:inline">{t.name.slice(0, 2)}</span>
               </li>
             ))}
           </ol>
@@ -60,7 +64,10 @@ export default async function LeaguePage() {
               {v.members.map((m) => (
                 <li key={m.userId} className={`flex items-center gap-3 rounded-xl px-2 py-2 sm:px-3 ${m.me ? 'ring-1 ring-volt-500/50' : ''} ${m.outcome === 'up' ? 'bg-profit/8' : m.outcome === 'down' ? 'bg-loss/8' : 'bg-asphalt-850/50'}`}>
                   <span className="num w-7 shrink-0 text-center font-display font-bold text-mist-300">{m.rank}</span>
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${m.online ? 'bg-profit' : 'bg-asphalt-500'}`} />
+                  <span className="relative shrink-0">
+                    <Avatar userId={m.userId} username={m.username} version={m.avatarVersion} vip={m.vip} className="h-8 w-8 text-xs" />
+                    <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-asphalt-900 ${m.online ? 'bg-profit' : 'bg-asphalt-500'}`} />
+                  </span>
                   <div className="min-w-0 flex-1 text-sm">
                     <PlayerName name={m.username} role={m.role} vip={m.vip} className="font-semibold" />
                     <div className="text-xs text-mist-400">ниво {m.level} · {m.deliveries} доставки</div>
