@@ -14,6 +14,8 @@ import { paymentConfig, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
 import { pick, randInt } from './random';
 import { activeSeason, rotateSeasons } from './seasons';
+import { applyDueRoadEvents } from './road-events';
+import { expireListings } from './used-market';
 import { runPayroll } from './staff';
 
 /**
@@ -71,6 +73,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
   if (!rows[0]?.locked) return { skipped: true };
   try {
     await migrateToGameTime(db);
+    // Road events first: a jam or a breakdown can push an arrival past this tick.
+    await applyDueRoadEvents(db, now);
     const settled = await settleDueDeliveries(db, now);
     // Global events: settle finished ones (after the deliveries above), keep the automatic ones going.
     await settleDueEvents(db, now);
@@ -99,6 +103,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // Push notifications for whatever happened above (in-game notifications and company chat).
     await dispatchPush(db, now).catch((e) => console.error('[push] dispatch failed', e));
     await every(db, 'daily-reminders', 10 * 60_000, now, () => dailyReminders(db, now));
+    await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
     await every(db, 'push-prune', 24 * 60 * 60_000, now, () => pruneSubscriptions(db, now));
     await every(db, 'cleanup', 60 * 60_000, now, async () => {
       await db.delete(sessions).where(lte(sessions.expiresAt, now));

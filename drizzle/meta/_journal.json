@@ -120,6 +120,13 @@
       "when": 1792260134732,
       "tag": "0016_overjoyed_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792264940844,
+      "tag": "0017_easy_freak",
+      "breakpoints": true
     }
   ]
 }

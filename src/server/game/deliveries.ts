@@ -2,6 +2,8 @@ import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
+import { legFuelPriceCents } from '@/lib/game/fuel';
+import { planRoadEvents } from '@/lib/game/road-events';
 import { deliveryXp, reputationAfter, seasonPoints } from '@/lib/game/progression';
 import { buildGameSchedule, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -21,7 +23,9 @@ import { afterRentedTrip } from './rentals';
 import { checkTenderLoad, recordTenderLoad } from './tenders';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractCountries } from '@/lib/game/licences';
-import { addSeasonScore } from './seasons';
+import { addOrganizationSeasonScore, addSeasonScore } from './seasons';
+import { rewardReferral } from './referrals';
+import { applyRoadEvents } from './road-events';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -34,6 +38,7 @@ export function compatibilityError(
   const unit = powerUnitModel(input.modelId);
   const trailer = input.trailerModelId ? trailerModel(input.trailerModelId) : null;
   const cargo = contract.cargoType as CargoType;
+  if (input.status === 'listed') return 'Обявено за продажба — свали обявата, за да кара.';
   if (input.status !== 'idle') return 'Превозното средство е заето.';
   if (!input.hasDriver) return 'Няма назначен шофьор.';
   if (unit.kind === 'tractor' && !trailer) return 'Влекачът няма прикачено ремарке.';
@@ -95,6 +100,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     );
     if (error) fail('incompatible', error);
     const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
+    const [parked] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, bundle.vehicle.cityId));
     const [to] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.destCityId));
     const missing = missingFor({ cargoType: contract!.cargoType, originCountry: from!.country, destCountry: to!.country, routeCountries: loadedRoute!.countries }, await heldLicences(tx, userId));
     if (missing.length) fail('licence_required', `Нужен е лиценз: ${licenceNames(missing)}. Купува се от раздел „Лицензи“.`);
@@ -157,6 +163,11 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       tons: contract!.weightTons,
       payloadTons: combinationCapability({ unit, trailer }).payloadTons,
       tolledRoute: { empty: !contract!.urgent && (emptyRoute?.hasToll ?? false), loaded: loadedRoute!.hasToll },
+      // Diesel is bought along the way: each leg pays the prices of the countries it crosses.
+      fuelPrice: {
+        empty: legFuelPriceCents(parked!.country, chargedEmptyKm, emptyRoute?.borders ?? [], now),
+        loaded: legFuelPriceCents(from!.country, loadedRoute!.distanceKm, loadedRoute!.borders, now),
+      },
     });
     // Rented vehicles: the rental company covers fuel, tolls, maintenance and wear for a fee.
     const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, totalCents: 0, wear: 0 } : running;
@@ -164,6 +175,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const perks = rented ? await bonusesForUser(tx, userId) : null;
     const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
+    // Surprises on the way, decided now and revealed when the truck gets there.
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random });
     const [delivery] = await tx
       .insert(deliveries)
       .values({
@@ -180,6 +193,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         estimatedCosts: costs,
         rentalFeeCents: rentalFee,
         scheduleVersion: SCHEDULE_VERSION,
+        roadEvents,
+        nextEventAt: roadEvents[0] ? new Date(roadEvents[0].at) : null,
         startedAt: now,
         etaAt: new Date(scheduleEnd(schedule)),
         deadlineAt: new Date(now.getTime() + (contract!.windowMinutes * 60_000) / timeScale()),
@@ -203,6 +218,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .where(and(eq(deliveries.id, deliveryId), eq(deliveries.status, 'in_progress'), lte(deliveries.etaAt, now)))
     .for('update', { skipLocked: true });
   if (!d) return false;
+  // Road events the worker has not applied yet happen first and may push the arrival later.
+  if (d.nextEventAt && d.nextEventAt <= now && (await applyRoadEvents(tx, d, now)) > now.getTime()) return false;
   const contract = (await tx.query.contracts.findFirst({ where: eq(contracts.id, d.contractId) }))!;
   const [company] = await tx.select().from(companies).where(eq(companies.id, d.companyId));
   const [vehicle] = await tx.select().from(vehicles).where(eq(vehicles.id, d.vehicleId));
@@ -301,7 +318,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // Global events count by arrival time; company missions by the member's company.
   await recordEventProgress(tx, company!.ownerId, org?.id ?? null, facts, completedAt);
   if (org) await recordCompanyMissionProgress(tx, org.id, company!.ownerId, facts, now);
-  await addSeasonScore(tx, d.companyId, seasonPoints(d.loadedKm, contract.weightTons, onTime), result.rewardCents, now);
+  const points = seasonPoints(d.loadedKm, contract.weightTons, onTime);
+  await addSeasonScore(tx, d.companyId, points, result.rewardCents, now);
+  if (org) await addOrganizationSeasonScore(tx, org.id, points, now);
+  await rewardReferral(tx, company!.ownerId, now);
   await notify(
     tx,
     company!.ownerId,

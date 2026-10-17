@@ -62,10 +62,14 @@ export interface TripCostInput {
   tons: number;
   payloadTons: number;
   tolledRoute: { empty: boolean; loaded: boolean };
+  /** Diesel price on each leg (cents per litre, by the countries it crosses); default ECONOMY.fuelPriceCentsPerLitre. */
+  fuelPrice?: { empty: number; loaded: number };
 }
 
 export interface TripCosts {
   fuelCents: number;
+  /** Litres burnt on the whole trip. */
+  fuelLitres?: number;
   tollCents: number;
   maintenanceCents: number;
   totalCents: number;
@@ -79,14 +83,15 @@ export function tripCosts(input: TripCostInput): TripCosts {
   const drag = trailer ? trailer.dragFuel : 0;
   const emptyL = (input.emptyKm / 100) * (unit.fuelEmpty + drag * 0.5);
   const loadedL = (input.loadedKm / 100) * (unit.fuelEmpty + (unit.fuelFull - unit.fuelEmpty) * loadShare + drag);
-  const fuelCents = Math.round((emptyL + loadedL) * efficiency * ECONOMY.fuelPriceCentsPerLitre);
+  const price = input.fuelPrice ?? { empty: ECONOMY.fuelPriceCentsPerLitre, loaded: ECONOMY.fuelPriceCentsPerLitre };
+  const fuelCents = Math.round((emptyL * price.empty + loadedL * price.loaded) * efficiency);
 
   const tolledKm = unit.tolled ? (input.tolledRoute.empty ? input.emptyKm : 0) + (input.tolledRoute.loaded ? input.loadedKm : 0) : 0;
   const tollCents = Math.round(tolledKm * ECONOMY.tollCentsPerKm);
   const km = input.emptyKm + input.loadedKm;
   const maintenanceCents = Math.round(km * unit.maintenanceCentsPerKm);
   const wear = (km / 1000) * ECONOMY.wearPerThousandKm * upgradeFactor(input.upgrades, 'wear');
-  return { fuelCents, tollCents, maintenanceCents, totalCents: fuelCents + tollCents + maintenanceCents, wear };
+  return { fuelCents, fuelLitres: Math.round((emptyL + loadedL) * efficiency), tollCents, maintenanceCents, totalCents: fuelCents + tollCents + maintenanceCents, wear };
 }
 
 export interface Settlement {

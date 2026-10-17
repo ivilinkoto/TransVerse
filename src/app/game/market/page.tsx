@@ -12,6 +12,8 @@ import { POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
 import { cities, depots, vehicles } from '@/server/db/schema';
 import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
+import { openListings } from '@/server/game/used-market';
+import { UsedListings } from '@/components/game/UsedListings';
 
 export const metadata = { title: 'Пазар' };
 
@@ -20,6 +22,7 @@ const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влек
 /** What the market shows (URL ?show=…) and in which order (?sort=…). */
 const SHOW = [
   { id: 'all', label: 'Всичко' },
+  { id: 'used', label: 'Употребявани' },
   { id: 'van', label: 'Ванове' },
   { id: 'rigid', label: 'Соло камиони' },
   { id: 'tractor', label: 'Влекачи' },
@@ -31,6 +34,8 @@ const SORT = [
   { id: 'level', label: 'Ниво' },
 ] as const;
 type Show = (typeof SHOW)[number]['id'];
+/** The same three sort buttons, read differently for used listings. */
+const USED_SORT_LABELS = { price_asc: 'Най-евтини', price_desc: 'Най-нови обяви', level: 'Най-добро състояние' } as const;
 type SortId = (typeof SORT)[number]['id'];
 
 /** Licence needed for the cargo a body type carries (shown as a hint, buying is still allowed). */
@@ -43,7 +48,7 @@ function LicenceHint({ body, held }: { body: string | null | undefined; held: Se
 }
 
 export default async function MarketPage({ searchParams }: { searchParams: Promise<{ show?: string; sort?: string }> }) {
-  const { db, user, company } = await gameContext();
+  const { db, user, company, now } = await gameContext();
   const params = await searchParams;
   const show: Show = SHOW.some((x) => x.id === params.show) ? (params.show as Show) : 'all';
   const sort: SortId = SORT.some((x) => x.id === params.sort) ? (params.sort as SortId) : 'price_asc';
@@ -58,13 +63,14 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
     .from(depots)
     .innerJoin(cities, eq(cities.id, depots.cityId))
     .where(eq(depots.companyId, company.id));
-  const { used, slots: totalSlots } = await fleetCapacity(db, company.id);
-  const freeSlots = totalSlots - used;
+  const { used: usedSlots, slots: totalSlots } = await fleetCapacity(db, company.id);
+  const freeSlots = totalSlots - usedSlots;
   const depotOptions = depotRows.map((d) => ({ cityId: d.cityId, name: d.name, free: freeSlots }));
+  const used = show === 'used' ? await openListings(db, { sort: sort === 'price_asc' ? 'cheap' : sort === 'level' ? 'condition' : 'new' }) : [];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Пазар на техника" subtitle={`Нови превозни средства и ремаркета. Места в депата: ${used} / ${totalSlots}.`} help="Купуват се от всеки играч — със или без компания. Ремаркетата не заемат място в депото." />
+      <PageHeader title="Пазар на техника" subtitle={`Нови превозни средства и ремаркета. Места в депата: ${usedSlots} / ${totalSlots}.`} help="Купуват се от всеки играч — със или без компания. Ремаркетата не заемат място в депото." />
       {depotRows.length === 0 && (
         <p className="rounded-xl border border-gold-400/40 bg-gold-400/10 px-4 py-3 text-sm text-mist-200">
           Купената техника се паркира в депо. Първо открий депо в раздел <Link href="/game/logistics" className="font-semibold text-cyan-glow hover:underline">Автопарк → Депа</Link>.
@@ -74,9 +80,16 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         <Segmented label="Вид техника" active={show} items={SHOW.map((x) => ({ id: x.id, label: x.label, href: href({ show: x.id }) }))} />
         <nav className="flex flex-wrap items-center gap-1.5 sm:ml-auto" aria-label="Подреждане">
           <span className="text-xs text-mist-400">Подреди:</span>
-          {SORT.map((x) => <Link key={x.id} href={href({ sort: x.id })} aria-current={sort === x.id ? 'page' : undefined} className={`rounded-full border px-3 py-1 text-xs font-medium transition ${sort === x.id ? 'border-cyan-glow/50 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>{x.label}</Link>)}
+          {SORT.map((x) => <Link key={x.id} href={href({ sort: x.id })} aria-current={sort === x.id ? 'page' : undefined} className={`rounded-full border px-3 py-1 text-xs font-medium transition ${sort === x.id ? 'border-cyan-glow/50 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>{show === 'used' ? USED_SORT_LABELS[x.id] : x.label}</Link>)}
         </nav>
       </div>
+      {show === 'used' && (
+        <section>
+          <h2 className="mb-1 font-display text-lg font-bold">Употребявана техника от играчи</h2>
+          <p className="mb-3 text-sm text-mist-400">По-евтино от новото — с пробега и състоянието, които има. Продавачът плаща 5% такса. Своята техника обявяваш от Автопарк → Сервиз.</p>
+          <UsedListings listings={used} companyId={company.id} level={user.level} balanceCents={company.balanceCents} freeSlots={freeSlots} now={now} />
+        </section>
+      )}
       {showUnits && (
       <section>
         <h2 className="mb-3 font-display text-lg font-bold">{show === 'tractor' ? 'Влекачи' : show === 'van' ? 'Ванове' : show === 'rigid' ? 'Соло камиони' : 'Превозни средства за покупка'}</h2>

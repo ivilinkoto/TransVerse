@@ -10,6 +10,7 @@ import { int, money } from '@/lib/format';
 import { COMPANY_UPGRADES, memberBonuses, memberCapacity, RECRUITMENT, type UpgradeLevels } from '@/lib/game/company';
 import { gameContext } from '@/server/game/context';
 import { CompanyLicences } from '@/components/company/CompanyLicences';
+import { CompanySeason } from '@/components/company/CompanySeason';
 import { companyLicenceSet } from '@/server/game/licences';
 import { assetKinds, companyMembersView, membershipOf, myApplications, publicCompany } from '@/server/game/membership';
 
@@ -63,6 +64,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
             <p className="mb-4 text-sm text-mist-300">{RECRUITMENT[c.recruitment as keyof typeof RECRUITMENT] ?? c.recruitment}. Вноска към компанията: <span className="num font-semibold">{Math.round(c.contributionRate * 100)}%</span> от възнаграждението за курс.</p>
             <JoinCompanyForm companyId={c.id} mode={c.recruitment === 'open' ? 'open' : 'application'} disabled={blocker} />
           </Card>
+          <CompanySeason db={db} organizationId={c.id} />
           <CompanyLicences held={licences} />
           <Card title="Какво получават членовете">
             <ul className="space-y-2 text-sm">

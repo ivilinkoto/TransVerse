@@ -1,5 +1,6 @@
 import { ContractBoard, type BoardContract } from '@/components/game/ContractBoard';
 import { PageHeader } from '@/components/ui';
+import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
 import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
@@ -53,7 +54,7 @@ export default async function ContractsPage() {
       const cap = combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null });
       // The urgent one-minute relocation is free; only the cargo leg costs.
       const chargedEmptyKm = c.urgent ? 0 : emptyKm;
-      const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: v.driver?.skill ?? 1, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm, tons: c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll } });
+      const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: v.driver?.skill ?? 1, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm, tons: c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });
       // Urgent: one minute to the pickup city, then the cargo leg at the shipment's speed.
       const minutes = c.urgent ? (emptyKm > 0 ? URGENT_RELOCATION_MS / 60_000 : 0) + gameDurationMinutes(c.distanceKm) / Math.max(1, c.speedFactor) : gameDurationMinutes(emptyKm + c.distanceKm);
       const rented = v.ownership === 'rented';
@@ -100,7 +101,7 @@ export default async function ContractsPage() {
       <PageHeader
         title="Поръчки"
         subtitle="Избери товар, камион и тръгвай. Поръчките са общи за всички играчи."
-        help="Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
+        help="Горивото се плаща по цените на държавите по маршрута (виж Финанси → Дизел днес). По пътя може да се случи задръстване, ремонт, повреда или опашка на границата — това забавя курса, а повредата струва пари за пътна помощ (при наетия камион плаща наемодателят). Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
       <ContractBoard vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />

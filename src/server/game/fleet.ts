@@ -93,6 +93,7 @@ export async function sellVehicle(db: Database, userId: string, vehicleId: strin
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
     if (v.ownership === 'rented') fail('rented', 'Наетите превозни средства се връщат, не се продават.');
+    if (v.status === 'listed') fail('listed', 'Превозното средство е обявено на пазара — първо свали обявата.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Не можете да продадете превозно средство по време на курс.');
     const model = powerUnitModel(v.modelId);
     const value = resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt));
@@ -110,6 +111,7 @@ export async function sellTrailer(db: Database, userId: string, trailerId: strin
     const company = await companyForUser(tx, userId);
     const t = await ownedTrailer(tx, company.id, trailerId);
     if (t.ownership === 'rented') fail('rented', 'Наетите ремаркета се връщат заедно с влекача.');
+    if (t.listed) fail('listed', 'Ремаркето е обявено на пазара — първо свали обявата.');
     if (t.vehicleId) {
       const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t.vehicleId));
       if (v?.status === 'on_delivery') fail('trailer_busy', 'Ремаркето е на курс.');
@@ -166,6 +168,7 @@ export async function coupleTrailer(db: Database, userId: string, vehicleId: str
     await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v.id));
     if (!trailerId) return;
     const t = await ownedTrailer(tx, company.id, trailerId);
+    if (t.listed) fail('listed', 'Ремаркето е обявено на пазара.');
     if (t.cityId !== v.cityId) fail('different_city', 'Ремаркето и влекачът трябва да са в един град.');
     if (t.vehicleId) {
       const [other] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t.vehicleId));

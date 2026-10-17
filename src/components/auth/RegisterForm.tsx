@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { Field, Input } from './Field';
 
-export function RegisterForm({ cities }: { cities: { id: number; nameBg: string; population: number }[] }) {
+export function RegisterForm({ cities, referralCode = null }: { cities: { id: number; nameBg: string; population: number }[]; referralCode?: string | null }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -29,6 +29,7 @@ export function RegisterForm({ cities }: { cities: { id: number; nameBg: string;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      {referralCode && <input type="hidden" name="ref" value={referralCode} />}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Потребителско име">
           <Input id="username" name="username" autoComplete="username" required minLength={3} maxLength={20} />

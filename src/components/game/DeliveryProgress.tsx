@@ -11,6 +11,7 @@ export const PHASE_LABEL: Record<string, string> = {
   border: 'Граничен контрол',
   loading: 'Товарене',
   unloading: 'Разтоварване',
+  incident: 'Спрял по пътя',
 };
 
 /** Live progress computed from the server's schedule — no polling needed. */
@@ -23,7 +24,7 @@ export function DeliveryProgress({ schedule, etaAt, deadlineAt, compact = false 
   const s = stateAt(schedule, now);
   const eta = new Date(etaAt).getTime();
   const late = eta > new Date(deadlineAt).getTime();
-  const phase = s.done ? 'Пристигнал — уреждане…' : s.segment ? `${PHASE_LABEL[s.segment.kind]}${s.segment.kind === 'drive' ? (s.leg === 'empty' ? ' · празен към товара' : ' · с товар') : ''}` : '';
+  const phase = s.done ? 'Пристигнал — уреждане…' : s.segment ? `${s.segment.note ?? PHASE_LABEL[s.segment.kind]}${s.segment.kind === 'drive' ? (s.leg === 'empty' ? ' · празен към товара' : ' · с товар') : ''}` : '';
   return (
     <div className="w-full">
       <div className="flex items-center justify-between gap-2 text-xs">

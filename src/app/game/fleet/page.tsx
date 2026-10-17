@@ -36,7 +36,7 @@ export default async function FleetPage() {
                   <span className="font-display text-lg font-bold">{v.model.name}</span>
                   <Badge>{KIND[v.model.kind]}</Badge>
                   {v.ownership === 'rented' && <Badge tone="gold">Нает</Badge>}
-                  {v.delivery ? <Badge tone="cyan">На курс</Badge> : <Badge tone="green">Свободен</Badge>}
+                  {v.delivery ? <Badge tone="cyan">На курс</Badge> : v.status === 'listed' ? <Badge tone="gold">Обявен за продажба</Badge> : <Badge tone="green">Свободен</Badge>}
                 </div>
                 <div className="mt-0.5 font-mono text-xs text-mist-400">{v.plate} · {v.model.brand}</div>
               </div>

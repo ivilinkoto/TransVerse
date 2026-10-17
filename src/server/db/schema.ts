@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { RoadEventPlan } from '@/lib/game/road-events';
 import {
   customType,
   bigint,
@@ -148,8 +149,17 @@ export const users = pgTable(
     xpBoostUntil: ts('xp_boost_until'),
     /** Daily mission period of the last free VIP mission swap. */
     vipRerollKey: text('vip_reroll_key'),
+    /** Personal invite code (created when first needed). */
+    referralCode: text('referral_code'),
+    /** Player whose invite link was used to sign up. */
+    referredById: uuid('referred_by_id'),
+    /** When the invite for this (invited) player was settled, and how: rewarded | declined. */
+    referralRewardedAt: ts('referral_rewarded_at'),
+    referralOutcome: text('referral_outcome'),
+    /** SHA-256 of the sign-up IP with a server salt — only compared for invite rewards. */
+    signupIpHash: text('signup_ip_hash'),
   },
-  (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`)],
+  (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`), uniqueIndex('users_referral_code_idx').on(t.referralCode), index('users_referred_by_idx').on(t.referredById)],
 );
 
 export const sessions = pgTable(
@@ -249,6 +259,8 @@ export const trailers = pgTable(
     vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
     condition: real('condition').notNull().default(100),
     ownership: text('ownership').notNull().default('owned'),
+    /** Offered on the used-vehicle market (cannot be coupled meanwhile). */
+    listed: boolean('listed').notNull().default(false),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
     soldAt: ts('sold_at'),
@@ -351,8 +363,13 @@ export const deliveries = pgTable(
     rentalFeeCents: money('rental_fee_cents'),
     /** 1 = real-time schedule (legacy), 2 = compressed game time. */
     scheduleVersion: integer('schedule_version').notNull().default(1),
+    /** Road events planned at acceptance (server only) and applied when the truck gets there. */
+    roadEvents: jsonb('road_events').$type<RoadEventPlan[]>().notNull().default([]),
+    /** Time of the next unapplied road event (null when none is left). */
+    nextEventAt: ts('next_event_at'),
   },
   (t) => [
+    index('deliveries_next_event_idx').on(t.nextEventAt),
     // One delivery per contract and player; ordinary contracts are additionally single-winner (status claim), urgent ones are open to everyone.
     uniqueIndex('deliveries_contract_company_idx').on(t.contractId, t.companyId),
     index('deliveries_due_idx').on(t.status, t.etaAt),
@@ -412,6 +429,20 @@ export const seasonScores = pgTable(
     finalRank: integer('final_rank'),
   },
   (t) => [primaryKey({ columns: [t.seasonId, t.companyId] }), index('season_scores_points_idx').on(t.seasonId, t.points)],
+);
+
+/** Season points of player companies (organizations): the sum of their members' points earned while members. */
+export const organizationSeasonScores = pgTable(
+  'organization_season_scores',
+  {
+    seasonId: integer('season_id').notNull().references(() => seasons.id),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    points: integer('points').notNull().default(0),
+    deliveries: integer('deliveries').notNull().default(0),
+    finalRank: integer('final_rank'),
+    prizeCents: money('prize_cents'),
+  },
+  (t) => [primaryKey({ columns: [t.seasonId, t.organizationId] }), index('organization_season_scores_points_idx').on(t.seasonId, t.points)],
 );
 
 export const notifications = pgTable(
@@ -882,4 +913,32 @@ export const companyTenders = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('company_tenders_company_idx').on(t.companyId, t.status)],
+);
+
+/** Used vehicles and trailers offered by players to other players. */
+export const vehicleListings = pgTable(
+  'vehicle_listings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sellerCompanyId: uuid('seller_company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    /** vehicle | trailer */
+    kind: text('kind').notNull(),
+    vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'cascade' }),
+    trailerId: uuid('trailer_id').references(() => trailers.id, { onDelete: 'cascade' }),
+    modelId: text('model_id').notNull(),
+    priceCents: money('price_cents').notNull(),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    /** open | sold | cancelled | expired */
+    status: text('status').notNull().default('open'),
+    buyerCompanyId: uuid('buyer_company_id').references(() => companies.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    expiresAt: ts('expires_at').notNull(),
+    closedAt: ts('closed_at'),
+  },
+  (t) => [
+    index('vehicle_listings_open_idx').on(t.status, t.createdAt),
+    index('vehicle_listings_seller_idx').on(t.sellerCompanyId, t.status),
+    uniqueIndex('vehicle_listings_vehicle_open_idx').on(t.vehicleId).where(sql`status = 'open'`),
+    uniqueIndex('vehicle_listings_trailer_open_idx').on(t.trailerId).where(sql`status = 'open'`),
+  ],
 );
