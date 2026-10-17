@@ -221,13 +221,14 @@ describe('fleet, finance and staff', () => {
     const { userId, hq } = await playerWithCompany('Sofia', 34_000_00);
     const before = (await companyOf(userId)).balanceCents;
     await buyVehicle(db(), userId, 'sokol-courier', hq.id);
-    // − 34 000 + 2 000 reward for the "second vehicle" achievement
-    expect((await companyOf(userId)).balanceCents).toBe(before - 34_000_00 + 2_000_00);
+    // The own truck replaces the starter rental, so the fleet is still one vehicle.
+    expect((await companyOf(userId)).balanceCents).toBe(before - 34_000_00);
     await expectGameError(buyVehicle(db(), userId, 'hemus-r12-box', hq.id), 'insufficient_funds');
     const company = await companyOf(userId);
     await db().update(companies).set({ balanceCents: 200_000_00 }).where(eq(companies.id, company.id));
     await expectGameError(buyVehicle(db(), userId, 'danubia-t500-eco', hq.id), 'level');
-    await buyVehicle(db(), userId, 'sokol-courier', hq.id); // 3 of 3 slots (rental counts)
+    await buyVehicle(db(), userId, 'sokol-courier', hq.id);
+    await buyVehicle(db(), userId, 'sokol-courier', hq.id); // 3 of 3 slots
     await expectGameError(buyVehicle(db(), userId, 'sokol-courier', hq.id), 'no_capacity');
   });
 

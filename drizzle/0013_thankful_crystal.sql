@@ -1,0 +1,1 @@
+ALTER TABLE "vehicles" ADD COLUMN "return_pending" boolean DEFAULT false NOT NULL;

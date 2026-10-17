@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { companyXpForLevel, COMPANY_UNLOCKS, memberBonuses, memberCapacity, type UpgradeLevels } from '@/lib/game/company';
 import { DepositForm } from '@/components/company/forms';
+import { CompanyLicences } from '@/components/company/CompanyLicences';
+import { companyLicenceSet } from '@/server/game/licences';
 import { companyHub, myApplications, treasuryHistory } from '@/server/game/membership';
 import { TREASURY_LABELS, type TreasuryCategory } from '@/server/game/finance';
 import { FoundCompanyForm } from '@/components/game/FoundCompanyForm';
@@ -25,7 +27,7 @@ export default async function CompanyPage() {
     return (
       <>
         <TutorialVisit step="company_goal" pending={visitPending} />
-        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} />
+        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} />
       </>
     );
   }
@@ -127,7 +129,7 @@ function TextBlock({ title, icon: Icon, text, empty }: { title: string; icon: ty
 type History = Awaited<ReturnType<typeof treasuryHistory>>;
 
 /** What every member (the owner included) sees: the company, its treasury, perks and their own share. */
-function CompanyOverview({ hub, history }: { hub: Hub; history: History }) {
+function CompanyOverview({ hub, history, licences }: { hub: Hub; history: History; licences: { licence: string; acquiredAt: Date }[] }) {
   const c = hub.company;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   return (
@@ -147,6 +149,7 @@ function CompanyOverview({ hub, history }: { hub: Hub; history: History }) {
         <TextBlock title="За компанията" icon={Building2} text={c.description} empty="Компанията още няма описание." />
         <TextBlock title="Правила" icon={ScrollText} text={c.rules} empty="Няма публикувани правила." />
         <CompanyProgress hub={hub} />
+        <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} />
         <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-mist-400" />Моето членство</span>}>
           <div className="flex flex-wrap items-center gap-2 text-sm"><Badge tone={hub.rank.isOwner ? 'gold' : 'violet'}>{hub.rank.name}</Badge><span className="text-mist-400">член от {date(hub.member.joinedAt)}</span></div>
           <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">

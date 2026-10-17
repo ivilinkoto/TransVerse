@@ -220,6 +220,8 @@ export const vehicles = pgTable(
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
     /** owned | rented — rented vehicles pay a fee per delivery instead of running costs. */
     ownership: text('ownership').notNull().default('owned'),
+    /** Rented truck to be returned as soon as its current trip ends (the player bought their own). */
+    returnPending: boolean('return_pending').notNull().default(false),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
     /** Sold (or returned) vehicles stay for delivery history but are no longer part of the fleet. */
@@ -785,4 +787,17 @@ export const payments = pgTable(
     index('payments_pending_idx').on(t.provider, t.status, t.createdAt),
     index('payments_user_idx').on(t.userId, t.createdAt),
   ],
+);
+
+/** Licences bought by a player company (at double price) — every member may use them. */
+export const companyLicences = pgTable(
+  'company_licences',
+  {
+    companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    licence: text('licence').notNull(),
+    priceCents: money('price_cents').notNull().default(0),
+    boughtBy: uuid('bought_by').references(() => users.id, { onDelete: 'set null' }),
+    acquiredAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.companyId, t.licence] })],
 );

@@ -9,6 +9,8 @@ import { Badge, Card, Table } from '@/components/ui';
 import { int, money } from '@/lib/format';
 import { COMPANY_UPGRADES, memberBonuses, memberCapacity, RECRUITMENT, type UpgradeLevels } from '@/lib/game/company';
 import { gameContext } from '@/server/game/context';
+import { CompanyLicences } from '@/components/company/CompanyLicences';
+import { companyLicenceSet } from '@/server/game/licences';
 import { assetKinds, companyMembersView, membershipOf, myApplications, publicCompany } from '@/server/game/membership';
 
 export const metadata = { title: 'Компания' };
@@ -20,7 +22,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
   const row = await publicCompany(db, id);
   if (!row) notFound();
   const c = row.company;
-  const [assets, members, mine, applications] = await Promise.all([assetKinds(db, c.id), companyMembersView(db, c.id), membershipOf(db, user.id), myApplications(db, user.id)]);
+  const [assets, members, mine, applications, licences] = await Promise.all([assetKinds(db, c.id), companyMembersView(db, c.id), membershipOf(db, user.id), myApplications(db, user.id), companyLicenceSet(db, c.id)]);
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   const bonuses = memberBonuses(c.upgrades as UpgradeLevels);
   const applied = applications.some((a) => a.application.companyId === c.id);
@@ -61,6 +63,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
             <p className="mb-4 text-sm text-mist-300">{RECRUITMENT[c.recruitment as keyof typeof RECRUITMENT] ?? c.recruitment}. Вноска към компанията: <span className="num font-semibold">{Math.round(c.contributionRate * 100)}%</span> от възнаграждението за курс.</p>
             <JoinCompanyForm companyId={c.id} mode={c.recruitment === 'open' ? 'open' : 'application'} disabled={blocker} />
           </Card>
+          <CompanyLicences held={licences} />
           <Card title="Какво получават членовете">
             <ul className="space-y-2 text-sm">
               <li className="flex justify-between"><span>Бонус към възнаграждението</span><span className="num font-semibold text-profit">+{Math.round((bonuses.rewardMultiplier - 1) * 100)}%</span></li>

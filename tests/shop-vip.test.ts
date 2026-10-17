@@ -97,8 +97,8 @@ describe('shop', () => {
     await buyShopItem(db(), p.userId, { item: 'instant_repair', vehicleId: own.id });
     expect((await db().select().from(vehicles).where(eq(vehicles.id, own.id)))[0]!.condition).toBe(100);
     const varna = await cityByName('Varna');
-    await buyShopItem(db(), p.userId, { item: 'instant_relocate', vehicleId: rented.id, cityId: varna.id });
-    expect((await db().select().from(vehicles).where(eq(vehicles.id, rented.id)))[0]!.cityId).toBe(varna.id);
+    await buyShopItem(db(), p.userId, { item: 'instant_relocate', vehicleId: own.id, cityId: varna.id });
+    expect((await db().select().from(vehicles).where(eq(vehicles.id, own.id)))[0]!.cityId).toBe(varna.id);
 
     // Renaming.
     expect(await code(buyShopItem(db(), p.userId, { item: 'rename', username: other.username }))).toBe('username_taken');
@@ -135,6 +135,13 @@ describe('VIP perks', () => {
     await setVip(db(), admin, p.userId, 5);
     expect((await fleetCapacity(db(), account.id)).slots).toBe(4);
 
+    // Cheaper rental for the starter truck (before an own truck replaces it).
+    const rented = (await db().select().from(vehicles).where(and(eq(vehicles.companyId, account.id), eq(vehicles.ownership, 'rented'))))[0]!;
+    const c = await makeContract('Sofia', 'Plovdiv', { rewardCents: 1000_00 });
+    const d = await acceptContract(db(), p.userId, c.id, rented.id);
+    expect(d.rentalFeeCents).toBe(rentalFeeCents(1000_00, d.emptyKm + d.loadedKm, 0.05));
+    await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000));
+
     const own = await buyVehicle(db(), p.userId, 'sokol-courier', p.hq.id);
     await db().update(vehicles).set({ condition: 50 }).where(eq(vehicles.id, own.id));
     const vipCost = await repairVehicle(db(), p.userId, own.id);
@@ -144,11 +151,6 @@ describe('VIP perks', () => {
     const fullCost = await repairVehicle(db(), p.userId, own.id);
     expect(vipCost).toBe(Math.round(fullCost * 0.9));
 
-    await setVip(db(), admin, p.userId, 5);
-    const rented = (await db().select().from(vehicles).where(and(eq(vehicles.companyId, account.id), eq(vehicles.ownership, 'rented'))))[0]!;
-    const c = await makeContract('Sofia', 'Plovdiv', { rewardCents: 1000_00 });
-    const d = await acceptContract(db(), p.userId, c.id, rented.id);
-    expect(d.rentalFeeCents).toBe(rentalFeeCents(1000_00, d.emptyKm + d.loadedKm, 0.05));
   });
 
   it('urgent shipments open 5 minutes earlier for VIP; VIPs can reserve contracts', async () => {

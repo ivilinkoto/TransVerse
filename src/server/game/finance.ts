@@ -107,7 +107,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   member_contribution: 'Вноска от курс',
@@ -116,6 +116,7 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   dissolution: 'Закриване на компанията',
   admin_adjustment: 'Корекция от администратор',
   company_mission: 'Фирмени мисии',
+  company_licence: 'Лицензи на компанията',
 };
 
 export interface TreasuryPosting {

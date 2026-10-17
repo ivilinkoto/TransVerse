@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
-import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
+import { powerUnitModel, rentalBuyoutCents, trailerModel } from '@/lib/game/catalog';
 import { resaleValueCents } from '@/lib/game/economy';
 import type { Segment } from '@/lib/game/schedule';
 import type { DbOrTx } from '@/server/db/client';
@@ -14,6 +14,10 @@ export async function fleetView(db: DbOrTx, companyId: string) {
   const ds = await db.select().from(drivers).where(eq(drivers.companyId, companyId)).orderBy(drivers.hiredAt);
   const active = await db.select().from(deliveries).where(and(eq(deliveries.companyId, companyId), eq(deliveries.status, 'in_progress')));
   const contractRows = active.length ? await db.select().from(contracts).where(inArray(contracts.id, active.map((a) => a.contractId))) : [];
+  const rentedIds = vs.filter((v) => v.ownership === 'rented').map((v) => v.id);
+  const rentalTrips = rentedIds.length
+    ? await db.select({ vehicleId: deliveries.vehicleId, n: sql<number>`count(*)::int` }).from(deliveries).where(and(inArray(deliveries.vehicleId, rentedIds), eq(deliveries.status, 'completed'))).groupBy(deliveries.vehicleId)
+    : [];
   const cityIds = [...new Set([...vs.map((v) => v.cityId), ...ts.map((t) => t.cityId), ...contractRows.flatMap((c) => [c.originCityId, c.destCityId])])];
   const cityRows = cityIds.length ? await db.select().from(cities).where(inArray(cities.id, cityIds)) : [];
   const cityMap = new Map(cityRows.map((c) => [c.id, c]));
@@ -34,6 +38,7 @@ export async function fleetView(db: DbOrTx, companyId: string) {
       delivery: delivery && contract ? { ...delivery, schedule: delivery.schedule as Segment[], contract, origin: cityMap.get(contract.originCityId)!, destination: cityMap.get(contract.destCityId)! } : null,
       // Rented vehicles are not assets of the player.
       resaleCents: v.ownership === 'rented' ? 0 : resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt)),
+      rental: v.ownership === 'rented' ? { trips: rentalTrips.find((r) => r.vehicleId === v.id)?.n ?? 0, buyoutCents: rentalBuyoutCents(v.modelId, trailer?.ownership === 'rented' ? trailer.modelId : null) } : null,
     };
   });
   const trailersOut = ts.map((t) => ({ ...t, model: trailerModel(t.modelId), city: cityMap.get(t.cityId)!, resaleCents: t.ownership === 'rented' ? 0 : resaleValueCents(trailerModel(t.modelId).priceCents, t.condition, ageDays(t.purchasedAt)) }));

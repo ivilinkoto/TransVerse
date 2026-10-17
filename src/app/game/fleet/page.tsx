@@ -1,4 +1,4 @@
-import { Gauge, MapPin, Truck, UserRound, Wrench } from 'lucide-react';
+import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
@@ -7,7 +7,7 @@ import { dec, int, km, money } from '@/lib/format';
 import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
-import { UPGRADES, type UpgradeId } from '@/lib/game/catalog';
+import { RENTAL_BUYOUT_DELIVERIES, UPGRADES, type UpgradeId } from '@/lib/game/catalog';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { ECONOMY } from '@/lib/game/economy';
 
@@ -71,10 +71,30 @@ export default async function FleetPage() {
                 </ActionButton>
               </div>
             )}
-            {v.ownership === 'rented' && (
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
-                <span>Наем: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км. Без разходи за гориво, такси и сервиз.</span>
-                {fleet.vehicles.length > 1 && !v.delivery && !v.driver?.isOwner && (
+            {v.rental && (
+              <div className="mt-3 space-y-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
+                <p>Нает камион: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км; без разходи за гориво, такси и сервиз.</p>
+                {v.returnPending ? (
+                  <p className="font-semibold text-amber-sig">Вече имаш собствен камион — този ще бъде върнат на наемодателя, щом приключи курса.</p>
+                ) : (
+                  <>
+                    <p>Когато купиш собствен камион, наетият се връща автоматично.</p>
+                    {v.rental.trips >= RENTAL_BUYOUT_DELIVERIES ? (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span>Наемодателят ти предлага да го откупиш за <span className="num font-bold text-gold-400">{money(v.rental.buyoutCents)}</span> <span className="text-mist-400">(нов: {money(v.model.priceCents)})</span>.</span>
+                        <ActionButton action={{ type: 'buyoutRental', vehicleId: v.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={company.balanceCents < v.rental.buyoutCents} confirm={`Да откупим ли ${v.model.name} (${v.plate}) за ${money(v.rental.buyoutCents)}?`}>
+                          <BadgeEuro className="h-3.5 w-3.5" />Откупи
+                        </ActionButton>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex justify-between"><span>До предложение за откупуване</span><span className="num">{v.rental.trips} / {RENTAL_BUYOUT_DELIVERIES} доставки</span></div>
+                        <Meter value={(v.rental.trips / RENTAL_BUYOUT_DELIVERIES) * 100} tone="gold" className="mt-1" />
+                      </div>
+                    )}
+                  </>
+                )}
+                {fleet.vehicles.length > 1 && !v.delivery && !v.driver?.isOwner && !v.returnPending && (
                   <ActionButton action={{ type: 'returnRental', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm="Да върнем ли камиона на наемодателя?">Върни</ActionButton>
                 )}
               </div>

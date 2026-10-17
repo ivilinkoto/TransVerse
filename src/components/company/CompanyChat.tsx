@@ -9,7 +9,7 @@ import type { ChatMessage } from '@/server/game/chat';
 const time = (iso: string) => new Date(iso).toLocaleString('bg-BG', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' });
 
 /** Company chat: live via the events stream (tv:chat), with a slow safety refresh. */
-export function CompanyChat({ me, initial, canModerate }: { me: string; initial: ChatMessage[]; canModerate: boolean }) {
+export function CompanyChat({ me, initial, canModerate, canClear = false }: { me: string; initial: ChatMessage[]; canModerate: boolean; canClear?: boolean }) {
   const [messages, setMessages] = useState(initial);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -59,6 +59,17 @@ export function CompanyChat({ me, initial, canModerate }: { me: string; initial:
     }
   };
 
+  const clearAll = async () => {
+    if (!window.confirm('Да изтрием ли всички съобщения в чата на компанията? Това не може да се върне.')) return;
+    setError(null);
+    try {
+      await api('/api/game/action', { type: 'clearChat' });
+      await reload();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   const remove = async (id: number) => {
     try {
       await api('/api/game/action', { type: 'deleteChat', messageId: id });
@@ -70,6 +81,13 @@ export function CompanyChat({ me, initial, canModerate }: { me: string; initial:
 
   return (
     <div className="flex h-[min(70dvh,640px)] flex-col">
+      {canClear && messages.length > 0 && (
+        <div className="mb-2 flex justify-end">
+          <button type="button" className="btn-ghost px-3 py-1 text-xs text-loss" onClick={clearAll}>
+            <Trash2 className="h-3.5 w-3.5" />Изчисти целия чат
+          </button>
+        </div>
+      )}
       <div
         ref={list}
         onScroll={(e) => {

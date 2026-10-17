@@ -7,7 +7,8 @@ import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
-import { plate, VEHICLE_COLORS } from './names';
+import { uniquePlate, VEHICLE_COLORS } from './names';
+import { retireRentalFor } from './rentals';
 import { logActivity, notify } from './notify';
 import { checkAchievements } from './progression';
 import { pick } from './random';
@@ -49,9 +50,11 @@ export async function buyVehicle(db: Database, userId: string, modelId: string, 
     await depotInCity(tx, company.id, depotCityId);
     const cap = await fleetCapacity(tx, company.id);
     if (cap.used >= cap.slots) fail('no_capacity', 'Нямате свободни места в депата. Разширете депо или открийте ново.');
-    const [vehicle] = await tx.insert(vehicles).values({ companyId: company.id, modelId: model!.id, plate: plate(), color: pick(VEHICLE_COLORS), cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
+    const [vehicle] = await tx.insert(vehicles).values({ companyId: company.id, modelId: model!.id, plate: await uniquePlate(tx), color: pick(VEHICLE_COLORS), cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
     await post(tx, company.id, [{ category: 'vehicle_purchase', amountCents: -model!.priceCents, description: `${model!.name} (${vehicle!.plate})`, idempotencyKey: `buy:vehicle:${vehicle!.id}`, refType: 'vehicle', refId: vehicle!.id }], { requireFunds: true });
-    await logActivity(tx, userId, 'vehicle_bought', { vehicleId: vehicle!.id, modelId });
+    // A truck of their own replaces the rented one (now, or when its current trip ends).
+    const rental = await retireRentalFor(tx, company.id, vehicle!.id);
+    await logActivity(tx, userId, 'vehicle_bought', { vehicleId: vehicle!.id, modelId, rental });
     await checkAchievements(tx, userId, company.id);
     return vehicle!;
   });
@@ -64,7 +67,7 @@ export async function buyTrailer(db: Database, userId: string, modelId: string, 
     const company = await companyForUser(tx, userId);
     if ((await level(tx, userId)) < model!.minLevel) fail('level', `Изисква ниво ${model!.minLevel}.`);
     await depotInCity(tx, company.id, depotCityId);
-    const [trailer] = await tx.insert(trailers).values({ companyId: company.id, modelId: model!.id, plate: plate(), cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
+    const [trailer] = await tx.insert(trailers).values({ companyId: company.id, modelId: model!.id, plate: await uniquePlate(tx), cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
     await post(tx, company.id, [{ category: 'vehicle_purchase', amountCents: -model!.priceCents, description: `${model!.name} (${trailer!.plate})`, idempotencyKey: `buy:trailer:${trailer!.id}`, refType: 'trailer', refId: trailer!.id }], { requireFunds: true });
     await logActivity(tx, userId, 'trailer_bought', { trailerId: trailer!.id, modelId });
     return trailer!;

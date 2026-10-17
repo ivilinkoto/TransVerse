@@ -8,9 +8,10 @@ import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, userLicences, users, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
+import { licencesForUsers } from './licences';
 import { shipperName } from './names';
 import { broadcast } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
@@ -220,9 +221,8 @@ export async function ensureLocalJobsForFleet(db: Database, now = new Date(), co
     .limit(limit);
   if (!rows.length) return 0;
   const coupled = await db.select().from(trailers).where(inArray(trailers.vehicleId, rows.map((r) => r.vehicleId)));
-  const held = await db.select().from(userLicences).where(inArray(userLicences.userId, [...new Set(rows.map((r) => r.userId))]));
-  const licencesByUser = new Map<string, Set<string>>();
-  for (const h of held) licencesByUser.set(h.userId, (licencesByUser.get(h.userId) ?? new Set()).add(h.licence));
+  // Personal licences plus those of the player's company.
+  const licencesByUser: Map<string, Set<string>> = await licencesForUsers(db, [...new Set(rows.map((r) => r.userId))]);
   const seen = new Set<string>();
   let created = 0;
   for (const r of rows) {

@@ -3,7 +3,8 @@ import { MISSION_PERIODS, MISSION_REROLL_COINS, MISSIONS_PER_PERIOD, metricIncre
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { postCoins } from './coins';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { companyMembers, missionProgress, userLicences, users } from '@/server/db/schema';
+import { companyMembers, missionProgress, users } from '@/server/db/schema';
+import { heldLicences } from './licences';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
@@ -38,7 +39,7 @@ export async function ensureMissions(db: DbOrTx, userId: string, now: Date): Pro
   const missing = windows.filter((w) => have.filter((h) => h.key === w.key).length < wanted(w.period));
   if (!missing.length) return windows;
 
-  const licences = new Set((await db.select({ l: userLicences.licence }).from(userLicences).where(eq(userLicences.userId, userId))).map((r) => r.l));
+  const licences: ReadonlySet<string> = await heldLicences(db, userId);
   const [member] = await db.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.userId, userId));
   const profile = { level: user?.level ?? 1, licences, inCompany: !!member };
   for (const w of missing) {
@@ -149,7 +150,7 @@ export async function rerollMission(db: Database, userId: string, periodKey: str
     const free = isVip(user!.vipUntil, now) && user!.vipRerollKey !== dailyKey;
 
     const assigned = new Set((await tx.select({ id: missionProgress.missionId }).from(missionProgress).where(and(eq(missionProgress.userId, userId), eq(missionProgress.periodKey, periodKey)))).map((r) => r.id));
-    const licences = new Set((await tx.select({ l: userLicences.licence }).from(userLicences).where(eq(userLicences.userId, userId))).map((r) => r.l));
+    const licences: ReadonlySet<string> = await heldLicences(tx, userId);
     const [member] = await tx.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.userId, userId));
     const profile = { level: user!.level, licences, inCompany: !!member };
     const [next] = pickMissions(w!.period, profile, `${userId}:${periodKey}:reroll:${assigned.size}:${now.getTime()}`, 1, assigned);

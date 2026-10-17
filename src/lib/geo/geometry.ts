@@ -35,6 +35,21 @@ export function pointAlong(points: readonly LatLon[], fraction: number, cumulati
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
+/**
+ * True when travel at `fraction` along the line goes west (the longitude falls):
+ * compares the position with a point a few kilometres ahead, so small road
+ * wiggles do not flip a side-view icon back and forth.
+ */
+export function headingWest(points: readonly LatLon[], fraction: number, cumulative = cumulativeKm(points), lookAheadKm = 4): boolean {
+  if (points.length < 2) return false;
+  const total = cumulative.at(-1)!;
+  if (total <= 0) return points.at(-1)![1] < points[0]![1];
+  const f = Math.min(1, Math.max(0, fraction));
+  const step = Math.min(1, lookAheadKm / total);
+  const [a, b] = f + step <= 1 ? [f, f + step] : [Math.max(0, 1 - step), 1];
+  return pointAlong(points, b, cumulative)[1] < pointAlong(points, a, cumulative)[1];
+}
+
 /** Ramer–Douglas–Peucker simplification (tolerance in degrees, iterative). */
 export function simplify(points: readonly LatLon[], tolerance: number): LatLon[] {
   if (points.length <= 2) return [...points];

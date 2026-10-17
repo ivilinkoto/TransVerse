@@ -96,7 +96,10 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         const v = await ownVehicle(tx, account.id, input.vehicleId);
         const plate = (input.plate ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
         if (!PLATE_PATTERN.test(plate)) fail('invalid_plate', 'Табелата е 2–10 главни букви, цифри, интервал или тире.');
-        const [taken] = await tx.select({ id: vehicles.id }).from(vehicles).where(and(sql`upper(${vehicles.plate}) = ${plate}`, isNull(vehicles.soldAt)));
+        const { rows: clash } = await tx.execute<{ taken: boolean }>(
+          sql`select exists(select 1 from vehicles where upper(plate) = ${plate} and sold_at is null) or exists(select 1 from trailers where upper(plate) = ${plate} and sold_at is null) as taken`,
+        );
+        const taken = clash[0]?.taken;
         if (taken) fail('plate_taken', 'Такава табела вече има.', 409);
         await tx.update(vehicles).set({ plate }).where(eq(vehicles.id, v.id));
         summary = `Табела „${plate}“ за ${v.plate}`;

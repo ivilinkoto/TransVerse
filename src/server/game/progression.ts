@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { ACHIEVEMENTS, levelForXp, type CompanyStats } from '@/lib/game/progression';
 import type { DbOrTx, Tx } from '@/server/db/client';
 import { achievements, companies, deliveries, depots, drivers, cities, users, vehicles } from '@/server/db/schema';
@@ -10,7 +10,7 @@ export async function companyStats(db: DbOrTx, companyId: string): Promise<Compa
   if (!company) throw new Error('company not found');
   const [user] = await db.select({ level: users.level }).from(users).where(eq(users.id, company.ownerId));
   const count = async (q: Promise<{ n: number }[]>) => (await q)[0]?.n ?? 0;
-  const vehiclesN = await count(db.select({ n: sql<number>`count(*)::int` }).from(vehicles).where(eq(vehicles.companyId, companyId)));
+  const vehiclesN = await count(db.select({ n: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt))));
   const driversN = await count(db.select({ n: sql<number>`count(*)::int` }).from(drivers).where(eq(drivers.companyId, companyId)));
   const depotsN = await count(db.select({ n: sql<number>`count(*)::int` }).from(depots).where(eq(depots.companyId, companyId)));
   const countriesN = await count(

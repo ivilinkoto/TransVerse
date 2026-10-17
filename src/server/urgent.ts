@@ -2,7 +2,7 @@ import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { CARGO, CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
 import { gameDurationMinutes } from '@/lib/game/schedule';
-import type { Database, DbOrTx } from '@/server/db/client';
+import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { adminAudit, cities, contracts, notifications, users } from '@/server/db/schema';
 import { requireAdminRole, type Staff } from '@/server/admin';
 import { fail } from '@/server/game/errors';
@@ -45,41 +45,73 @@ export async function createUrgentContract(db: Database, actor: Staff, raw: Urge
   if (input.windowMinutes < fastest) fail('window_too_short', `Курсът с товар трае около ${fastest} мин при ×${input.speedFactor}. Дайте поне толкова срок (плюс време за празния курс до товара).`);
 
   return db.transaction(async (tx) => {
-    const [contract] = await tx
-      .insert(contracts)
-      .values({
-        shipper: 'Спешна поръчка · Диспечерски център TransVerse',
-        goods: input.goods,
-        cargoType: input.cargoType,
-        weightTons: Math.round(input.weightTons * 10) / 10,
-        originCityId: input.originCityId,
-        destCityId: input.destCityId,
-        routeId: route.id,
-        distanceKm: route.distanceKm,
-        rewardCents: Math.round(input.rewardEur * 100),
-        windowMinutes: input.windowMinutes,
-        minLevel: cargo.minLevel,
-        urgent: true,
-        speedFactor: input.speedFactor,
-        createdBy: actor.id,
-        expiresAt: new Date(Date.now() + input.expiresHours * 3_600_000),
-      })
-      .returning();
+    const contract = await insertUrgent(
+      tx,
+      { goods: input.goods, cargoType: input.cargoType, weightTons: input.weightTons, originCityId: input.originCityId, destCityId: input.destCityId, routeId: route.id, distanceKm: route.distanceKm, rewardCents: Math.round(input.rewardEur * 100), windowMinutes: input.windowMinutes, speedFactor: input.speedFactor, expiresAt: new Date(Date.now() + input.expiresHours * 3_600_000), createdBy: actor.id },
+      { from: from!.nameBg, to: to!.nameBg },
+      input.announce ? 'all' : 'none',
+    );
     await tx.insert(adminAudit).values({
       actorId: actor.id,
       action: 'create_urgent_contract',
       targetUserId: null,
-      details: { contractId: contract!.id, goods: input.goods, from: from!.nameBg, to: to!.nameBg, rewardCents: contract!.rewardCents, windowMinutes: input.windowMinutes, speedFactor: input.speedFactor },
+      details: { contractId: contract.id, goods: input.goods, from: from!.nameBg, to: to!.nameBg, rewardCents: contract.rewardCents, windowMinutes: input.windowMinutes, speedFactor: input.speedFactor },
     });
-    if (input.announce) {
-      // One notification per active player, in a single statement.
-      const title = `Спешна доставка: ${input.goods}`;
-      const body = `${from!.nameBg} → ${to!.nameBg} · ${(contract!.rewardCents / 100).toLocaleString('bg-BG')} € · ×${input.speedFactor} по-бързо, до товара за 1 мин. Може да я поеме всеки със свободен камион, докато не изтече.`;
-      await tx.execute(sql`insert into ${notifications} (user_id, kind, title, body, href) select ${users.id}, 'warning', ${title}, ${body}, '/game/contracts' from ${users} where ${users.bannedAt} is null`);
-    }
-    await broadcast(tx, 'market');
-    return contract!;
+    return contract;
   });
+}
+
+export interface UrgentValues {
+  goods: string;
+  cargoType: CargoType;
+  weightTons: number;
+  originCityId: number;
+  destCityId: number;
+  routeId: number;
+  distanceKm: number;
+  rewardCents: number;
+  windowMinutes: number;
+  speedFactor: number;
+  expiresAt: Date;
+  /** Administrator, or null for the automatic dispatcher. */
+  createdBy: string | null;
+}
+
+/**
+ * Writes an urgent shipment and tells players about it: everyone ('all'), only
+ * players seen in the last 3 days ('active', used by the automatic dispatcher)
+ * or nobody.
+ */
+export async function insertUrgent(tx: Tx, v: UrgentValues, names: { from: string; to: string }, announce: 'all' | 'active' | 'none') {
+  const [contract] = await tx
+    .insert(contracts)
+    .values({
+      shipper: 'Спешна поръчка · Диспечерски център TransVerse',
+      goods: v.goods,
+      cargoType: v.cargoType,
+      weightTons: Math.round(v.weightTons * 10) / 10,
+      originCityId: v.originCityId,
+      destCityId: v.destCityId,
+      routeId: v.routeId,
+      distanceKm: v.distanceKm,
+      rewardCents: v.rewardCents,
+      windowMinutes: v.windowMinutes,
+      minLevel: CARGO[v.cargoType].minLevel,
+      urgent: true,
+      speedFactor: v.speedFactor,
+      createdBy: v.createdBy,
+      expiresAt: v.expiresAt,
+    })
+    .returning();
+  if (announce !== 'none') {
+    // One notification per player, in a single statement.
+    const title = `Спешна доставка: ${v.goods}`;
+    const body = `${names.from} → ${names.to} · ${(v.rewardCents / 100).toLocaleString('bg-BG')} € · ×${v.speedFactor} по-бързо, до товара за 1 мин. Може да я поеме всеки със свободен камион, докато не изтече.`;
+    const active = announce === 'active' ? sql`and ${users.lastSeenAt} > now() - interval '3 days'` : sql``;
+    await tx.execute(sql`insert into ${notifications} (user_id, kind, title, body, href) select ${users.id}, 'warning', ${title}, ${body}, '/game/contracts' from ${users} where ${users.bannedAt} is null ${active}`);
+  }
+  await broadcast(tx, 'market');
+  return contract!;
 }
 
 export async function urgentContracts(db: DbOrTx, limit = 30) {
