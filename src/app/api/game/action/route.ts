@@ -4,6 +4,7 @@ import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental } from '@/server/game/rentals';
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
+import { buyListing, cancelListing, createListing } from '@/server/game/used-market';
 import { createTicket, replySchema, replyToTicket, setTicketStatus, ticketSchema } from '@/server/game/support';
 import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutorial';
 import { getDb } from '@/server/db/client';
@@ -92,6 +93,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearChat') }),
   z.object({ type: z.literal('acceptTender'), tenderId: id }),
   z.object({ type: z.literal('claimDaily') }),
+  z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели евро.').positive().max(10_000_000) }),
+  z.object({ type: z.literal('cancelListing'), listingId: id }),
+  z.object({ type: z.literal('buyListing'), listingId: id }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
 ]);
 
@@ -201,6 +205,14 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, id: await sendChatMessage(db, user.id, input.body) };
     case 'deleteChat':
       await deleteChatMessage(db, user.id, input.messageId);
+      return { ok: true };
+    case 'listUsed':
+      return { ok: true, listing: await createListing(db, user.id, { kind: input.kind, id: input.itemId, priceCents: input.priceEur * 100 }) };
+    case 'cancelListing':
+      await cancelListing(db, user.id, input.listingId);
+      return { ok: true };
+    case 'buyListing':
+      await buyListing(db, user.id, input.listingId);
       return { ok: true };
     case 'claimDaily':
       return { ok: true, ...(await claimDaily(db, user.id)) };

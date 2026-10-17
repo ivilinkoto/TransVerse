@@ -1,8 +1,10 @@
-import { Landmark, TrendingDown, TrendingUp } from 'lucide-react';
+import { Fuel, Landmark, TrendingDown, TrendingUp } from 'lucide-react';
 import { CashflowChart } from '@/components/game/CashflowChart';
 import { Card, PageHeader, Stat } from '@/components/ui';
 import { dateTime, money, moneyPrecise } from '@/lib/format';
 import { TutorialVisit } from '@/components/game/TutorialVisit';
+import { fuelPriceCents } from '@/lib/game/fuel';
+import { countries } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { tutorialPending } from '@/server/game/tutorial-flags';
 import { LEDGER_LABELS, type LedgerCategory } from '@/server/game/finance';
@@ -11,7 +13,7 @@ import { financeSummary, ledgerPage } from '@/server/game/queries';
 export const metadata = { title: 'Финанси' };
 
 export default async function FinancePage() {
-  const { db, user, company } = await gameContext();
+  const { db, user, company, now } = await gameContext();
   const [summary, entries] = await Promise.all([financeSummary(db, company.id, 30), ledgerPage(db, company.id, 120)]);
   const income = summary.byCategory.filter((c) => c.total > 0 && c.category !== 'starting_capital').reduce((s, c) => s + c.total, 0);
   const expense = -summary.byCategory.filter((c) => c.total < 0).reduce((s, c) => s + c.total, 0);
@@ -19,6 +21,10 @@ export default async function FinancePage() {
   const maxAbs = Math.max(1, ...sorted.map((c) => Math.abs(c.total)));
 
   const visitPending = await tutorialPending(db, user.id, 'finances');
+  const countryRows = await db.select({ code: countries.code }).from(countries).orderBy(countries.code);
+  const fuel = countryRows.map((c) => ({ code: c.code, cents: fuelPriceCents(c.code, now) }));
+  const cheapest = Math.min(...fuel.map((f) => f.cents));
+  const dearest = Math.max(...fuel.map((f) => f.cents));
   return (
     <div className="space-y-6">
       <TutorialVisit step="finances" pending={visitPending} />
@@ -42,6 +48,14 @@ export default async function FinancePage() {
           </ul>
         </Card>
       </div>
+      <Card title={<span className="inline-flex items-center gap-2"><Fuel className="h-4 w-4 text-mist-400" />Дизел днес</span>} actions={<span className="text-xs text-mist-400">игрови цени · сменят се всеки ден</span>}>
+        <p className="mb-3 text-sm text-mist-400">Горивото за курса се плаща по цените на държавите, през които минава камионът — пропорционално на километрите във всяка.</p>
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+          {fuel.map((f) => (
+            <li key={f.code} className="flex items-center justify-between rounded-lg bg-asphalt-850 px-3 py-2 text-sm"><span className="text-mist-300">{f.code}</span><span className={`num font-semibold ${f.cents <= cheapest * 1.05 ? 'text-profit' : f.cents >= dearest * 0.95 ? 'text-loss' : ''}`}>{(f.cents / 100).toFixed(2)} €/л</span></li>
+          ))}
+        </ul>
+      </Card>
       <Card title="Счетоводна книга">
         <ul className="divide-y divide-asphalt-800">
           {entries.map((e) => (

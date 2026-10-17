@@ -177,6 +177,23 @@ test('section tabs: Автопарк and Състезание group their pages'
   await expect(page.getByText(/Награди, ако целта бъде постигната|В момента няма ивент/).first()).toBeVisible();
 });
 
+test('invite link opens sign-up with the inviter; used market and company seasons are reachable', async ({ page, browser }) => {
+  const tag = await register(page);
+  await page.goto('/game/invite');
+  const link = await page.getByRole('textbox', { name: 'Твоят линк за покана' }).inputValue();
+  expect(link).toMatch(/\/r\/[A-Z2-9]{8}$/);
+  await page.goto('/game/market?show=used');
+  await expect(page.getByRole('heading', { name: 'Употребявана техника от играчи' })).toBeVisible();
+  await page.goto('/game/seasons?tab=companies');
+  await expect(page.getByRole('heading', { name: 'Класация на компаниите' })).toBeVisible();
+  const friend = await browser.newContext();
+  const p2 = await friend.newPage();
+  await p2.goto(new URL(link).pathname);
+  await expect(p2).toHaveURL(/\/register\?ref=/);
+  await expect(p2.getByText(`e2e_${tag}`.slice(0, 20))).toBeVisible();
+  await friend.close();
+});
+
 test('terms and privacy pages are public', async ({ page }) => {
   await page.goto('/terms');
   await expect(page.getByRole('heading', { name: 'Общи условия за ползване и покупки' })).toBeVisible();

@@ -18,6 +18,8 @@ export const registerSchema = z.object({
   password: z.string().min(6, 'Паролата трябва да е поне 6 символа.').max(200),
   /** Real Bulgarian city where the player's rented truck waits. */
   startCityId: z.coerce.number().int().positive(),
+  /** Invite code from a friend's link (optional; unknown codes are ignored). */
+  ref: z.string().trim().max(16).optional(),
 });
 
 export const companyNameSchema = z.string().trim().min(3, 'Името на компанията трябва да е поне 3 символа.').max(40, 'До 40 символа.');

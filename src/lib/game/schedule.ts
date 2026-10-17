@@ -16,7 +16,7 @@ export const DRIVING_RULES = {
   borderWaitMin: 60,
 } as const;
 
-export type SegmentKind = 'drive' | 'break' | 'rest' | 'border' | 'loading' | 'unloading';
+export type SegmentKind = 'drive' | 'break' | 'rest' | 'border' | 'loading' | 'unloading' | 'incident';
 export type LegKind = 'empty' | 'loaded';
 
 export interface Segment {
@@ -28,6 +28,8 @@ export interface Segment {
   /** Distance along the leg (km) at segment start/end. */
   fromKm: number;
   toKm: number;
+  /** Short label for an unplanned stop (road events). */
+  note?: string;
 }
 
 export interface LegInput {

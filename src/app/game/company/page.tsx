@@ -1,5 +1,7 @@
 import { Building2, CalendarDays, CheckCircle2, Circle, Coins, Gift, Landmark, MapPin, Route, ScrollText, Star, Truck, Users } from 'lucide-react';
 import Link from 'next/link';
+import { CompanySeason } from '@/components/company/CompanySeason';
+import { getDb } from '@/server/db/client';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { companyXpForLevel, COMPANY_UNLOCKS, memberBonuses, memberCapacity, type UpgradeLevels } from '@/lib/game/company';
 import { DepositForm } from '@/components/company/forms';
@@ -149,6 +151,7 @@ function CompanyOverview({ hub, history, licences }: { hub: Hub; history: Histor
         <TextBlock title="За компанията" icon={Building2} text={c.description} empty="Компанията още няма описание." />
         <TextBlock title="Правила" icon={ScrollText} text={c.rules} empty="Няма публикувани правила." />
         <CompanyProgress hub={hub} />
+        <CompanySeason db={getDb()} organizationId={c.id} />
         <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} />
         <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-mist-400" />Моето членство</span>}>
           <div className="flex flex-wrap items-center gap-2 text-sm"><Badge tone={hub.rank.isOwner ? 'gold' : 'violet'}>{hub.rank.name}</Badge><span className="text-mist-400">член от {date(hub.member.joinedAt)}</span></div>

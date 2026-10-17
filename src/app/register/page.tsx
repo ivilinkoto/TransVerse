@@ -1,19 +1,27 @@
 import type { Metadata } from 'next';
+import { eq } from 'drizzle-orm';
+import { Gift } from 'lucide-react';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { money } from '@/lib/format';
 import { ECONOMY } from '@/lib/game/economy';
+import { REFERRAL, REFERRAL_CODE } from '@/lib/game/referrals';
 import { getDb } from '@/server/db/client';
+import { users } from '@/server/db/schema';
 import { headquarterOptions } from '@/server/game/company';
 import { currentUser } from '@/server/http';
 
 export const metadata: Metadata = { title: 'Регистрация' };
 export const dynamic = 'force-dynamic';
 
-export default async function RegisterPage() {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
   if (await currentUser()) redirect('/game');
   const cities = await headquarterOptions(getDb());
+  const raw = ((await searchParams).ref ?? (await cookies()).get('tv_ref')?.value ?? '').toUpperCase();
+  const code = REFERRAL_CODE.test(raw) ? raw : null;
+  const [inviter] = code ? await getDb().select({ username: users.username }).from(users).where(eq(users.referralCode, code)) : [];
   return (
     <AuthShell
       title="Стани шофьор в TransVerse"
@@ -28,7 +36,13 @@ export default async function RegisterPage() {
         </ul>
       }
     >
-      <RegisterForm cities={cities.map(({ id, nameBg, population }) => ({ id, nameBg, population }))} />
+      {inviter && (
+        <p className="mb-4 flex items-center gap-2 rounded-xl border border-gold-400/40 bg-gold-400/10 px-3 py-2 text-sm">
+          <Gift className="h-4 w-4 shrink-0 text-gold-400" />
+          <span><span className="font-semibold">{inviter.username}</span> те кани в TransVerse. След първите {REFERRAL.deliveriesNeeded} доставки получаваш {money(REFERRAL.inviteeCents)} бонус.</span>
+        </p>
+      )}
+      <RegisterForm referralCode={inviter ? code : null} cities={cities.map(({ id, nameBg, population }) => ({ id, nameBg, population }))} />
     </AuthShell>
   );
 }

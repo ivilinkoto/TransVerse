@@ -3,7 +3,10 @@ import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
-import { money } from '@/lib/format';
+import { dateTime, money } from '@/lib/format';
+import { USED_MARKET } from '@/lib/game/used-market';
+import { ListForSale } from '@/components/game/ListForSale';
+import { boundsFor, myListings } from '@/server/game/used-market';
 import { UPGRADES, canCouple } from '@/lib/game/catalog';
 import { repairCostCents } from '@/lib/game/economy';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
@@ -16,15 +19,18 @@ export default async function GaragePage() {
   const { db, user, company, now } = await gameContext();
   // VIP: discount on repairs and upgrades.
   const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
-  const fleet = await fleetView(db, company.id);
+  const [fleet, listings] = await Promise.all([fleetView(db, company.id), myListings(db, company.id)]);
+  const listingOf = (id: string) => listings.find((l) => l.vehicleId === id || l.trailerId === id);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Сервиз" subtitle="Ремонти, подобрения, ремаркета и продажба — между курсовете." />
+      <PageHeader title="Сервиз" subtitle="Ремонти, подобрения, ремаркета и продажба — между курсовете."
+        help="Продажбата веднага става на търговец. Ако обявиш техниката на пазара, друг играч може да я купи на твоята цена (такса 5%); докато е обявена, не кара. Обявата изтича след 7 дни." />
       {fleet.vehicles.length === 0 && <Empty icon={Wrench} title="Няма техника за сервиз" />}
       <div className="space-y-4">
         {fleet.vehicles.map((v) => {
-          const busy = !!v.delivery;
+          const listing = listingOf(v.id);
+          const busy = !!v.delivery || !!listing;
           const repair = Math.round((repairCostCents(v.model.priceCents, v.condition) + (v.trailer ? repairCostCents(v.trailer.model.priceCents, v.trailer.condition) : 0)) * discount);
           const trailerOptions = fleet.trailers.filter((t) => t.cityId === v.cityId && canCouple(v.model, t.model));
           return (
@@ -34,7 +40,7 @@ export default async function GaragePage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-lg font-bold">{v.model.name}</span>
                     <span className="font-mono text-xs text-mist-400">{v.plate}</span>
-                    {busy ? <Badge tone="cyan">на курс</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
+                    {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
                   </div>
                   <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} className="my-3 h-24 w-full" />
                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -62,10 +68,18 @@ export default async function GaragePage() {
                     <ActionButton action={{ type: 'repairVehicle', vehicleId: v.id }} className="btn-primary" disabled={busy || repair <= 0}>
                       <Wrench className="h-4 w-4" />Ремонт · {money(repair)}
                     </ActionButton>
-                    <ActionButton action={{ type: 'sellVehicle', vehicleId: v.id }} className="btn-danger" confirm={`Продажба за ${money(v.resaleCents)}?`} disabled={busy}>
-                      Продай · {money(v.resaleCents)}
-                    </ActionButton>
+                    {listing ? (
+                      <ActionButton action={{ type: 'cancelListing', listingId: listing.id }} className="btn-ghost">Свали обявата</ActionButton>
+                    ) : (
+                      <>
+                        <ActionButton action={{ type: 'sellVehicle', vehicleId: v.id }} className="btn-danger" confirm={`Продажба на търговец за ${money(v.resaleCents)}?`} disabled={busy}>
+                          Продай веднага · {money(v.resaleCents)}
+                        </ActionButton>
+                        <ListForSale kind="vehicle" itemId={v.id} bounds={boundsFor('vehicle', v, now)} feeShare={USED_MARKET.feeShare} disabled={busy} />
+                      </>
+                    )}
                   </div>
+                  {listing && <p className="text-xs text-mist-400">Докато е обявено, превозното средство не поема поръчки. Обявата изтича на {dateTime(listing.expiresAt)}.</p>}
                   {v.model.kind === 'tractor' && (
                     <div>
                       <div className="label mb-1.5">Ремарке (в {v.city.nameBg})</div>
@@ -115,15 +129,26 @@ export default async function GaragePage() {
           <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {fleet.trailers.filter((t) => t.ownership !== 'rented').map((t) => {
               const tractor = fleet.vehicles.find((v) => v.id === t.vehicleId);
+              const listing = listingOf(t.id);
               return (
                 <li key={t.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-3 text-sm">
                   <TrailerIllustration modelId={t.modelId} className="h-14 w-full" />
                   <div className="mt-2 flex items-center justify-between"><span className="font-semibold">{t.model.name}</span><span className="font-mono text-xs text-mist-400">{t.plate}</span></div>
                   <div className="mt-1 text-xs text-mist-400">{tractor ? `Прикачено към ${tractor.plate}` : `Паркирано в ${t.city.nameBg}`} · {Math.round(t.condition)}%</div>
-                  <div className="mt-2">
-                    <ActionButton action={{ type: 'sellTrailer', trailerId: t.id }} className="btn-danger px-3 py-1.5 text-xs" confirm={`Продажба за ${money(t.resaleCents)}?`} disabled={!!tractor?.delivery}>
-                      Продай · {money(t.resaleCents)}
-                    </ActionButton>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {listing ? (
+                      <>
+                        <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge>
+                        <ActionButton action={{ type: 'cancelListing', listingId: listing.id }} className="btn-ghost px-3 py-1.5 text-xs">Свали обявата</ActionButton>
+                      </>
+                    ) : (
+                      <>
+                        <ActionButton action={{ type: 'sellTrailer', trailerId: t.id }} className="btn-danger px-3 py-1.5 text-xs" confirm={`Продажба на търговец за ${money(t.resaleCents)}?`} disabled={!!tractor?.delivery}>
+                          Продай веднага · {money(t.resaleCents)}
+                        </ActionButton>
+                        <ListForSale kind="trailer" itemId={t.id} small bounds={boundsFor('trailer', t, now)} feeShare={USED_MARKET.feeShare} disabled={!!tractor?.delivery} />
+                      </>
+                    )}
                   </div>
                 </li>
               );

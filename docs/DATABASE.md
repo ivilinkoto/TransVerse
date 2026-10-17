@@ -43,3 +43,10 @@
 Миграция `0014`: `company_licences`; правото `manage_chat` за длъжността „Заместник“.
 Миграция `0015`: `push_subscriptions`, `email_tokens`, `users.email_verified_at / push_prefs`.
 Миграция `0016`: `company_tenders`, `contracts.tender_id`, `users.login_streak / daily_claim_key`; правото `manage_tenders` за „Заместник“ и „Диспечер“.
+
+## Пазар, пътни събития, покани, сезони на компании (миграция 0017)
+- `vehicle_listings` — обяви за употребявана техника: продавач, вид (`vehicle` | `trailer`), id на превозното средство или ремаркето, модел, цена, град, статус (`open` | `sold` | `cancelled` | `expired`), купувач, срок. Една отворена обява на превозно средство или ремарке (частични уникални индекси).
+- `trailers.listed` — ремаркето е обявено. Превозните средства използват `vehicles.status = 'listed'`.
+- `deliveries.road_events` (jsonb) и `deliveries.next_event_at` — планираните пътни събития и времето на следващото (индекс за работника).
+- `users.referral_code` (уникален), `referred_by_id`, `referral_rewarded_at`, `referral_outcome` (`rewarded` | `declined`), `signup_ip_hash` (SHA-256 със сол от `job_state` `ip-salt`).
+- `organization_season_scores` — сезонни точки, доставки, крайно място и награда на всяка компания.
