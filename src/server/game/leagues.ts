@@ -72,7 +72,7 @@ export async function leagueView(db: DbOrTx, userId: string, now = new Date()) {
   const tier = me?.tier ?? u?.tier ?? 0;
   const rows = me
     ? await db
-        .select({ userId: leagueMembers.userId, points: leagueMembers.points, deliveries: leagueMembers.deliveries, username: users.username, role: users.role, vipUntil: users.vipUntil, lastSeenAt: users.lastSeenAt, level: users.level })
+        .select({ userId: leagueMembers.userId, points: leagueMembers.points, deliveries: leagueMembers.deliveries, username: users.username, role: users.role, vipUntil: users.vipUntil, lastSeenAt: users.lastSeenAt, level: users.level, avatarVersion: users.avatarVersion })
         .from(leagueMembers)
         .innerJoin(users, eq(users.id, leagueMembers.userId))
         .where(eq(leagueMembers.groupId, me.groupId))

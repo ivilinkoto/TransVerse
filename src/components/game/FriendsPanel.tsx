@@ -4,6 +4,7 @@ import { Check, MessageSquare, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { Avatar } from './Avatar';
 import { openDirectChat } from './PlayerCard';
 import { PlayerName } from './PlayerName';
 
@@ -14,6 +15,7 @@ interface Friend {
   role: string;
   level: number;
   vip: boolean;
+  avatarVersion: number;
   online: boolean;
   lastSeen: string;
 }
@@ -33,7 +35,10 @@ export function FriendsPanel({ friends, received, sent }: { friends: Friend[]; r
   };
   const row = (f: Friend, actions: React.ReactNode) => (
     <li key={f.friendshipId} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${f.online ? 'bg-profit' : 'bg-asphalt-500'}`} aria-hidden="true" />
+      <span className="relative shrink-0">
+        <Avatar userId={f.id} username={f.username} version={f.avatarVersion} vip={f.vip} className="h-9 w-9 text-sm" />
+        <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-asphalt-900 ${f.online ? 'bg-profit' : 'bg-asphalt-500'}`} aria-hidden="true" />
+      </span>
       <div className="min-w-0 flex-1 text-sm">
         <PlayerName name={f.username} role={f.role} vip={f.vip} className="font-semibold" />
         <div className={`text-xs ${f.online ? 'text-profit' : 'text-mist-400'}`}>ниво {f.level} · {f.lastSeen}</div>

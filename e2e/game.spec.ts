@@ -61,7 +61,10 @@ test.describe('core loop', () => {
     await page.getByLabel('Само изпълними с моя автопарк').check();
     await page.locator('li.panel button[aria-expanded]').first().click();
     await page.getByRole('button', { name: 'Приеми и изпрати' }).click();
-    await page.waitForURL('**/game/fleet');
+    // The player stays on the board; a note links to the fleet.
+    await expect(page.getByRole('status').filter({ hasText: 'Камионът тръгна' })).toBeVisible();
+    await expect(page).toHaveURL(/\/game\/contracts/);
+    await page.goto('/game/fleet');
     await expect(page.getByText('На курс')).toBeVisible();
     await expect(page.getByText('Нает').first()).toBeVisible();
     await expect(page.getByText(/остават/)).toBeVisible();

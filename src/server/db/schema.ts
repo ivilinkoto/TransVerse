@@ -160,6 +160,8 @@ export const users = pgTable(
     chatMutedUntil: ts('chat_muted_until'),
     /** Weekly league tier: 0 Бронз … 4 Диамант. */
     leagueTier: integer('league_tier').notNull().default(0),
+    /** Profile picture: 0 = none; bumped on every upload (cache busting in the image URL). */
+    avatarVersion: integer('avatar_version').notNull().default(0),
     /** SHA-256 of the sign-up IP with a server salt — only compared for invite rewards. */
     signupIpHash: text('signup_ip_hash'),
   },
@@ -1123,3 +1125,11 @@ export const seasonPasses = pgTable(
   },
   (t) => [primaryKey({ columns: [t.seasonId, t.userId] })],
 );
+
+/** Profile pictures (small square images, checked by content). */
+export const userAvatars = pgTable('user_avatars', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  mime: text('mime').notNull(),
+  data: bytea('data').notNull(),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});

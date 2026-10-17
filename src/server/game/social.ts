@@ -43,6 +43,8 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     id: u.id,
     username: u.username,
     role: u.role,
+    avatarVersion: u.avatarVersion,
+    leagueTier: u.leagueTier,
     vip: isVip(u.vipUntil, now),
     level: u.level,
     levelShare: levelProgress(u.xp).share,
@@ -115,7 +117,7 @@ export async function removeFriend(db: Database, userId: string, otherId: string
 /** Friends with their online status, and pending requests both ways. */
 export async function friendsOf(db: DbOrTx, userId: string, now = new Date()) {
   const rows = await db
-    .select({ f: friendships, other: { id: users.id, username: users.username, role: users.role, level: users.level, lastSeenAt: users.lastSeenAt, vipUntil: users.vipUntil } })
+    .select({ f: friendships, other: { id: users.id, username: users.username, role: users.role, level: users.level, lastSeenAt: users.lastSeenAt, vipUntil: users.vipUntil, avatarVersion: users.avatarVersion } })
     .from(friendships)
     .innerJoin(users, sql`${users.id} = case when ${friendships.requesterId} = ${userId} then ${friendships.addresseeId} else ${friendships.requesterId} end`)
     .where(or(eq(friendships.requesterId, userId), eq(friendships.addresseeId, userId)))

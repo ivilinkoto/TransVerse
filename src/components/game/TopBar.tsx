@@ -8,7 +8,7 @@ import { AccountMenu, NotificationBell } from './HeaderMenu';
 const chip = 'flex h-9 items-center gap-1.5 rounded-full border px-3 transition';
 
 /** Slim top bar: who you are on the left; money, ТрансКоин, gift, bell and the avatar menu on the right. */
-export function TopBar({ title, kind, company, user, vip, hqName, unread, staff, dailyReady = false }: { title: string; kind: string; company: { balanceCents: number; reputation: number }; user: { username: string; xp: number; role: string; coins: number }; vip: boolean; hqName: string; unread: number; staff: boolean; dailyReady?: boolean }) {
+export function TopBar({ title, kind, company, user, vip, hqName, unread, staff, dailyReady = false }: { title: string; kind: string; company: { balanceCents: number; reputation: number }; user: { id: string; username: string; xp: number; role: string; coins: number; avatarVersion: number }; vip: boolean; hqName: string; unread: number; staff: boolean; dailyReady?: boolean }) {
   const lp = levelProgress(user.xp);
   return (
     <header className="sticky top-0 z-40 border-b border-asphalt-800/80 bg-asphalt-950/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
@@ -35,7 +35,7 @@ export function TopBar({ title, kind, company, user, vip, hqName, unread, staff,
             </Link>
           )}
           <NotificationBell unread={unread} />
-          <AccountMenu staff={staff} user={{ username: user.username, role: user.role, vip }} level={{ level: lp.level, share: lp.share, current: lp.current, next: lp.next }} reputation={company.reputation} />
+          <AccountMenu staff={staff} user={{ id: user.id, username: user.username, role: user.role, vip, avatarVersion: user.avatarVersion }} level={{ level: lp.level, share: lp.share, current: lp.current, next: lp.next }} reputation={company.reputation} />
         </div>
       </div>
     </header>

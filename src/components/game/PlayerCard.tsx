@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import type { PlayerCard as Card } from '@/server/game/social';
+import { Avatar } from './Avatar';
+import { LeagueBadge } from './LeagueBadge';
 import { PlayerName } from './PlayerName';
 import { openReport } from './ReportDialog';
 
@@ -44,11 +46,12 @@ export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChan
     <div>
       <div className="flex items-center gap-4">
         <div className="relative">
-          <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-volt-500/40 to-cyan-glow/20 font-display text-2xl font-bold ${card.vip ? 'text-gold-400' : 'text-white'}`}>{card.username.slice(0, 1).toUpperCase()}</div>
+          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className="h-16 w-16 text-2xl" rounded="rounded-2xl" />
           <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-asphalt-900 ${card.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={card.online ? 'Онлайн' : `Последно: ${card.lastSeen}`} />
         </div>
         <div className="min-w-0">
           <PlayerName name={card.username} role={card.role} vip={card.vip} card={false} className="font-display text-xl font-bold" />
+          <div className="mt-1"><LeagueBadge tier={card.leagueTier} /></div>
           <div className={`text-sm ${card.online ? 'text-profit' : 'text-mist-400'}`}>{card.online ? 'Онлайн сега' : `Последно онлайн: ${card.lastSeen}`}</div>
           <div className="mt-0.5 flex items-center gap-1 text-xs text-mist-400"><CalendarDays className="h-3.5 w-3.5" />В играта от {since}</div>
         </div>
