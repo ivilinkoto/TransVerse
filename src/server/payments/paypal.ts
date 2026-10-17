@@ -16,7 +16,7 @@ import type { Database } from '@/server/db/client';
 import { adminAudit, payments } from '@/server/db/schema';
 import { requireAdminRole, type Staff } from '@/server/admin';
 import { fail } from '@/server/game/errors';
-import { checkoutSchema, markPaymentFailed, paymentConfig, refundLocked, settlePaid, siteUrl, startPayment, toCents, type CheckoutInput, type Payment } from './common';
+import { checkoutSchema, describeFailure, markPaymentFailed, paymentConfig, paypalMode, refundLocked, settlePaid, siteUrl, startPayment, toCents, type CheckoutInput, type Payment } from './common';
 
 // ── API client ────────────────────────────────────────────────────────────
 
@@ -42,6 +42,7 @@ export class PayPalError extends Error {
     readonly status: number,
     readonly issue: string | null,
     message: string,
+    readonly debugId: string | null = null,
   ) {
     super(message);
   }
@@ -62,7 +63,7 @@ function realApi(): PayPalApi {
   const id = process.env.PAYPAL_CLIENT_ID;
   const secret = process.env.PAYPAL_CLIENT_SECRET;
   if (!id || !secret) fail('payments_disabled', 'Плащанията с PayPal още не са включени.', 503);
-  const base = process.env.PAYPAL_ENV === 'live' ? API.live : API.sandbox;
+  const base = API[paypalMode()];
   let token: { value: string; until: number } | null = null;
 
   async function accessToken() {
@@ -73,7 +74,7 @@ function realApi(): PayPalApi {
       body: 'grant_type=client_credentials',
       signal: AbortSignal.timeout(20_000),
     });
-    if (!res.ok) throw new PayPalError(res.status, 'AUTH', `PayPal authentication failed (${res.status})`);
+    if (!res.ok) throw new PayPalError(res.status, 'AUTHENTICATION_FAILED', `PayPal authentication failed (${res.status}, ${paypalMode()})`);
     const data = (await res.json()) as { access_token: string; expires_in: number };
     token = { value: data.access_token, until: Date.now() + data.expires_in * 1000 };
     return token.value;
@@ -92,7 +93,7 @@ function realApi(): PayPalApi {
       signal: AbortSignal.timeout(30_000),
     });
     const data = (await res.json().catch(() => ({}))) as T & { name?: string; message?: string; details?: { issue?: string }[]; debug_id?: string };
-    if (!res.ok) throw new PayPalError(res.status, data.details?.[0]?.issue ?? data.name ?? null, `PayPal ${method} ${path} → ${res.status} ${data.name ?? ''} ${data.debug_id ?? ''}`);
+    if (!res.ok) throw new PayPalError(res.status, data.details?.[0]?.issue ?? data.name ?? null, `PayPal ${method} ${path} → ${res.status} ${data.name ?? ''} ${data.debug_id ?? ''}`, data.debug_id ?? null);
     return data;
   }
 
@@ -120,6 +121,39 @@ let cached: PayPalApi | null = null;
 export const paypalApi = (): PayPalApi => (cached ??= realApi());
 
 const amount = (cents: number): Money => ({ currency_code: 'EUR', value: (cents / 100).toFixed(2) });
+
+/**
+ * Admin check: can we log in to PayPal with the configured keys, and in which
+ * environment? When the configured one fails, the other one is tried too, so a
+ * sandbox/live mix-up is named directly. Only access tokens are requested.
+ */
+export async function diagnosePaypal(fetcher: typeof fetch = fetch) {
+  const id = process.env.PAYPAL_CLIENT_ID?.trim();
+  const secret = process.env.PAYPAL_CLIENT_SECRET?.trim();
+  const mode = paypalMode();
+  if (!id || !secret) return { mode, ok: false, message: 'Липсват PAYPAL_CLIENT_ID или PAYPAL_CLIENT_SECRET.' };
+  const tryLogin = async (m: 'live' | 'sandbox') => {
+    try {
+      const res = await fetcher(`${API[m]}/v1/oauth2/token`, {
+        method: 'POST',
+        headers: { Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'grant_type=client_credentials',
+        signal: AbortSignal.timeout(15_000),
+      });
+      return res.status;
+    } catch {
+      return 0;
+    }
+  };
+  const status = await tryLogin(mode);
+  if (status === 200) return { mode, ok: true, message: `Връзката с PayPal (${mode}) работи — ключовете са верни.` };
+  if (status === 0) return { mode, ok: false, message: 'Сървърът не успя да се свърже с PayPal (мрежа). Опитайте отново.' };
+  const other = mode === 'live' ? 'sandbox' : 'live';
+  if ((await tryLogin(other)) === 200) {
+    return { mode, ok: false, message: `Ключовете са за ${other}, а PAYPAL_ENV е „${mode}“. ${other === 'live' ? 'Задайте PAYPAL_ENV=live' : 'Сложете Live ключовете (Client ID и Secret от раздел Live) или задайте PAYPAL_ENV=sandbox'} и пуснете Deploy.` };
+  }
+  return { mode, ok: false, message: `PayPal отхвърли ключовете (HTTP ${status}) и в live, и в sandbox. Проверете дали Client ID и Secret са копирани изцяло, без интервали, от едно и също приложение.` };
+}
 
 // ── Checkout ──────────────────────────────────────────────────────────────
 
@@ -161,7 +195,7 @@ export async function createPaypalCheckout(db: Database, userId: string, raw: Ch
     );
   } catch (error) {
     console.error('[payments] paypal order failed', error);
-    await markPaymentFailed(db, payment.id);
+    await markPaymentFailed(db, payment.id, describeFailure(error));
     fail('checkout_failed', 'Плащането не можа да започне. Опитайте отново по-късно.', 502);
   }
   const url = order!.links?.find((l) => l.rel === 'payer-action' || l.rel === 'approve')?.href;
@@ -220,7 +254,7 @@ export async function confirmPaypalOrder(db: Database, orderId: string, options:
         else if (error.status === 422) {
           // e.g. the card or PayPal balance was declined — the buyer can start again.
           console.warn('[payments] paypal capture refused', error.issue, error.message);
-          await markPaymentFailed(db, p.id);
+          await markPaymentFailed(db, p.id, describeFailure(error));
           order = { id: orderId, status: 'FAILED' };
         } else throw error;
       }

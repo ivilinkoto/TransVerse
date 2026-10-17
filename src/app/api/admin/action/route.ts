@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
 import { cancelEvent, createEvent, eventSchema } from '@/server/game/events';
-import { refundPaypalPayment } from '@/server/payments';
+import { diagnosePaypal, refundPaypalPayment } from '@/server/payments';
+import { requireAdminRole } from '@/server/admin';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
 import { createUrgentContract, urgentSchema } from '@/server/urgent';
@@ -26,6 +27,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('createEvent'), event: eventSchema }),
   z.object({ type: z.literal('cancelEvent'), eventId: id }),
   z.object({ type: z.literal('refundPayment'), paymentId: id }),
+  z.object({ type: z.literal('checkPaypal') }),
 ]);
 
 export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input }) => {
@@ -73,5 +75,8 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'refundPayment':
       await refundPaypalPayment(db, user, input.paymentId);
       return { ok: true };
+    case 'checkPaypal':
+      requireAdminRole(user);
+      return diagnosePaypal();
   }
 });

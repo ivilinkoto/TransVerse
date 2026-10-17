@@ -8,7 +8,7 @@ import { and, eq } from 'drizzle-orm';
 import type { Database } from '@/server/db/client';
 import { payments } from '@/server/db/schema';
 import { fail } from '@/server/game/errors';
-import { checkoutSchema, markPaymentFailed, paymentConfig, refundLocked, settlePaid, siteUrl, startPayment, type CheckoutInput } from './common';
+import { checkoutSchema, describeFailure, markPaymentFailed, paymentConfig, refundLocked, settlePaid, siteUrl, startPayment, type CheckoutInput } from './common';
 
 /** The part of the Stripe client we use (an interface so tests can pass a fake). */
 export interface StripeLike {
@@ -65,7 +65,7 @@ export async function createCheckout(db: Database, userId: string, raw: Checkout
     );
   } catch (error) {
     console.error('[payments] stripe checkout failed', error);
-    await markPaymentFailed(db, payment.id);
+    await markPaymentFailed(db, payment.id, describeFailure(error));
     fail('checkout_failed', 'Плащането не можа да започне. Опитайте отново по-късно.', 502);
   }
   await db.update(payments).set({ checkoutSessionId: session!.id }).where(eq(payments.id, payment.id));

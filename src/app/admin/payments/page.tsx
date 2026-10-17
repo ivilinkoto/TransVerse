@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, Undo2 } from 'lucide-react';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { PaypalCheck } from '@/components/admin/PaypalCheck';
 import Link from 'next/link';
 import { Badge, Card, PageHeader, Stat, Table } from '@/components/ui';
 import { dateTime, int } from '@/lib/format';
@@ -38,6 +39,8 @@ export default async function AdminPaymentsPage() {
             )}
           </li>
         </ul>
+        {config.appUrlInvalid && <p className="mt-2 text-sm text-amber-sig">APP_URL не е пълен адрес (трябва да започва с https://) — пренебрегва се и се ползва адресът, от който играчът отваря сайта.</p>}
+        {isAdmin(user.role) && config.paypal.enabled && <PaypalCheck />}
         {isAdmin(user.role) && <p className="mt-3 text-xs text-mist-400">Ключовете се добавят в GitHub → Settings → Secrets and variables → Actions и се записват на сървъра при следващия Deploy (виж docs/DEPLOYMENT.md, „Плащания“). Никога в кода или в чат.</p>}
         <p className="mt-1 text-xs text-mist-400">Webhook адреси (по избор, изискват HTTPS): <code>/api/payments/paypal</code>, <code>/api/payments/stripe</code> · Публични страници: <Link className="underline" href="/terms">/terms</Link>, <Link className="underline" href="/privacy">/privacy</Link></p>
       </Card>
@@ -54,7 +57,10 @@ export default async function AdminPaymentsPage() {
               <td className="px-3 py-2"><Link href={`/admin/users/${p.userId}`} className="hover:underline">{username}</Link></td>
               <td className="px-3 py-2">{paidProduct(p.productId)?.label ?? p.productId}</td>
               <td className="num px-3 py-2">{euro(p.amountCents)}</td>
-              <td className="px-3 py-2"><Badge tone={TONE[p.status] ?? 'neutral'}>{PAYMENT_STATUS_LABELS[p.status] ?? p.status}</Badge></td>
+              <td className="px-3 py-2">
+                <Badge tone={TONE[p.status] ?? 'neutral'}>{PAYMENT_STATUS_LABELS[p.status] ?? p.status}</Badge>
+                {p.failureReason && <div className="mt-1 max-w-xs font-mono text-[11px] text-loss" title="Отговор от платежния доставчик">{p.failureReason}</div>}
+              </td>
               <td className="px-3 py-2 text-xs text-mist-400">{p.provider === 'paypal' ? 'PayPal' : 'Stripe'} <span className="font-mono">{p.captureId ?? p.orderId ?? p.paymentIntentId ?? p.checkoutSessionId?.slice(0, 18) ?? ''}</span></td>
               <td className="px-3 py-2">
                 {isAdmin(user.role) && p.provider === 'paypal' && p.status === 'paid' && (

@@ -78,7 +78,8 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 | `SELLER_ID` | ЕИК |
 | `SELLER_ADDRESS` | адрес на управление |
 | `SUPPORT_EMAIL` | имейл за връзка с купувачите |
-| `APP_URL` | по избор — публичният адрес (напр. `http://203.161.47.213`, после `https://домейн`) |
+| `APP_URL` | по избор — публичният адрес, напр. `https://transverse-bg.com` (пълен, с `https://`) |
+| `COOKIE_SECURE` | `true`, когато сайтът е на HTTPS (бисквитката за вход минава само по защитена връзка) |
 | `PAYPAL_WEBHOOK_ID` | по избор, след HTTPS — за възстановявания/оспорвания, направени в PayPal |
 
 След добавяне или промяна: GitHub → Actions → Deploy → Run workflow (или следващото обединяване в main).
@@ -91,6 +92,8 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 5. По желание в настройките на PayPal бизнес сметката: Website payments → включи плащане с карта без PayPal сметка (PayPal account optional), ако е налично за страната.
 
 Как работи: сървърът създава поръчка в PayPal с цената от сървъра → играчът одобрява в PayPal → при връщането сървърът потвърждава плащането (capture) директно с PayPal и доставя само при статус COMPLETED и точно същата сума. Ако играчът затвори браузъра след одобрението, фоновият процес довършва поръчката до 2 минути; неодобрени поръчки изтичат след 3 часа. Webhook не е задължителен.
+
+Ако плащане не започва: „Админ панел → Плащания“ показва под всяко неуспешно плащане кода на грешката от PayPal (напр. `AUTHENTICATION_FAILED`, `PAYEE_ACCOUNT_RESTRICTED`) и debug_id за поддръжката на PayPal, а бутонът „Провери връзката с PayPal“ казва дали ключовете са верни и дали не са за другия режим (sandbox ↔ live).
 
 Връщане на сума: „Админ панел → Плащания → Върни сумата“ — връща парите през PayPal и премахва ТрансКоин / VIP дните (балансът може да стане отрицателен, ако вече са похарчени). Ако сумата се върне директно в PayPal или купувачът оспори плащането, това се отразява автоматично само при настроен webhook (`https://домейн/api/payments/paypal`, събития `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.CAPTURE.REVERSED`, `PAYMENT.CAPTURE.DENIED`, `CHECKOUT.ORDER.APPROVED`; Webhook ID → `PAYPAL_WEBHOOK_ID`) — иначе използвай бутона в админ панела.
 

@@ -2,7 +2,7 @@ name: Deploy
 
 # Builds a self-contained release and installs it on the VPS over SSH.
 # Required repository secrets: VPS_HOST, VPS_USER, VPS_PORT, VPS_SSH_KEY.
-# Optional payment secrets (written to the server, never into the build): PAYPAL_*, STRIPE_*, APP_URL, SELLER_*, SUPPORT_EMAIL.
+# Optional secrets (written to the server, never into the build): PAYPAL_*, STRIPE_*, APP_URL, COOKIE_SECURE, SELLER_*, SUPPORT_EMAIL.
 on:
   push:
     branches: [main]
@@ -62,6 +62,7 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           STRIPE_AUTOMATIC_TAX: ${{ secrets.STRIPE_AUTOMATIC_TAX }}
           APP_URL: ${{ secrets.APP_URL }}
+          COOKIE_SECURE: ${{ secrets.COOKIE_SECURE }}
           SELLER_NAME: ${{ secrets.SELLER_NAME }}
           SELLER_ID: ${{ secrets.SELLER_ID }}
           SELLER_ADDRESS: ${{ secrets.SELLER_ADDRESS }}
@@ -76,7 +77,7 @@ jobs:
           scp -P "${PORT:-22}" -o BatchMode=yes release.tgz "$USER@$HOST:/var/www/transverse/releases/$ID/release.tgz"
           # Payment settings from GitHub Secrets → a file only the deploy user can read (loaded by the app and the worker).
           : > secrets.env
-          for k in PAYPAL_CLIENT_ID PAYPAL_CLIENT_SECRET PAYPAL_ENV PAYPAL_WEBHOOK_ID STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_AUTOMATIC_TAX APP_URL SELLER_NAME SELLER_ID SELLER_ADDRESS SUPPORT_EMAIL; do
+          for k in PAYPAL_CLIENT_ID PAYPAL_CLIENT_SECRET PAYPAL_ENV PAYPAL_WEBHOOK_ID STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_AUTOMATIC_TAX APP_URL COOKIE_SECURE SELLER_NAME SELLER_ID SELLER_ADDRESS SUPPORT_EMAIL; do
             v="${!k}"; v="${v//$'\r'/}"; v="${v//$'\n'/ }"
             if [ -n "$v" ]; then printf '%s=%s\n' "$k" "$v" >> secrets.env; fi
           done
