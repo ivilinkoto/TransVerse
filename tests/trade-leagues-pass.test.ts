@@ -48,7 +48,7 @@ describe('league rules', () => {
 describe('weekly leagues', () => {
   it('places players in groups on their first delivery and settles the week', async () => {
     const lastWeek = new Date(Date.now() - 7 * 86_400_000);
-    const players = [];
+    const players: Awaited<ReturnType<typeof newPlayer>>[] = [];
     for (let i = 0; i < 5; i++) players.push(await newPlayer());
     // A fresh tier of their own so the group is just them: Silver.
     for (const p of players) await db().update(users).set({ leagueTier: 1 }).where(eq(users.id, p.userId));
