@@ -14,6 +14,7 @@
 | Мисии | `mission_progress` (играч + период + мисия: цел, прогрес, награда, изпълнена/взета) |
 | Ивенти | `global_events` (цел, прогрес, филтри, награди jsonb, начало/край, постигнат/разплатен, резултат, шаблон), `global_event_contributions` (ивент + играч: принос, доставки, компания, място и награда) |
 | Фирмени мисии | `company_mission_progress` (компания + седмица + мисия: цел, прогрес, награда за касата, принос по членове) |
+| Известия и имейл | `push_subscriptions` (устройства за Web Push), `email_tokens` (хеш, вид verify/reset, валидност, използван), `users.email_verified_at`, `users.push_prefs` |
 | Лицензи на компаниите | `company_licences` (компания + лиценз, цена, купил) |
 | Лицензи | `user_licences` (играч + лиценз, цена, източник purchase/legacy/admin) |
 | Чат на компаниите | `company_messages` (компания, автор, текст, изтриване) |
@@ -39,3 +40,4 @@
 Миграция `0012`: `payments.failure_reason`.
 Миграция `0013`: `vehicles.return_pending` (наетият камион се връща след курса).
 Миграция `0014`: `company_licences`; правото `manage_chat` за длъжността „Заместник“.
+Миграция `0015`: `push_subscriptions`, `email_tokens`, `users.email_verified_at / push_prefs`.

@@ -9,6 +9,7 @@ import { resetBranding } from '@/server/game/membership';
 import { notify } from '@/server/game/notify';
 import { postCoins } from '@/server/game/coins';
 import { VIP_MAX_DAYS } from '@/lib/game/vip';
+import { createLinkToken } from '@/server/auth/email-links';
 
 export interface Staff {
   id: string;
@@ -171,3 +172,17 @@ export async function bootstrapFounder(db: Database, username: string): Promise<
   return 'promoted';
 }
 
+
+/**
+ * Administrator creates a password-reset link for a player who cannot get the
+ * e-mail (to hand over through support). Valid 1 hour, single use, audited.
+ */
+export async function adminResetLink(db: Database, actor: Staff, targetId: string, base: string) {
+  requireAdminRole(actor);
+  const [target] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.id, targetId));
+  if (!target) fail('user_not_found', 'Потребителят не е намерен.', 404);
+  if (!canBan(actor.role, actor.id, target!.role, target!.id)) fail('forbidden', 'Нямате право да създавате линк за този профил.', 403);
+  const token = await createLinkToken(db, targetId, 'reset');
+  await audit(db, actor.id, 'password_reset_link', targetId);
+  return `${base}/reset-password?token=${token}`;
+}

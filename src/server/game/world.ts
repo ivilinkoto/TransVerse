@@ -5,6 +5,7 @@ import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
+import { dispatchPush, pruneSubscriptions } from '@/server/push';
 import { autoUrgentTick } from './auto-urgent';
 import { ensureAutoEvent, settleDueEvents } from './events';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
@@ -92,6 +93,9 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await runPayroll(db, yesterday);
       await db.insert(jobState).values({ key: 'payroll', value: { day: yesterday } }).onConflictDoUpdate({ target: jobState.key, set: { value: { day: yesterday }, updatedAt: now } });
     }
+    // Push notifications for whatever happened above (in-game notifications and company chat).
+    await dispatchPush(db, now).catch((e) => console.error('[push] dispatch failed', e));
+    await every(db, 'push-prune', 24 * 60 * 60_000, now, () => pruneSubscriptions(db, now));
     await every(db, 'cleanup', 60 * 60_000, now, async () => {
       await db.delete(sessions).where(lte(sessions.expiresAt, now));
       await db.delete(rateLimits).where(lte(rateLimits.windowStart, new Date(now.getTime() - 86_400_000)));

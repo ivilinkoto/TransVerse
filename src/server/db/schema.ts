@@ -132,6 +132,10 @@ export const users = pgTable(
     /** Onboarding progress: completed step keys and whether it was dismissed. */
     tutorial: jsonb('tutorial').$type<{ done: string[]; dismissed?: boolean; rewarded?: boolean }>().notNull().default({ done: [] }),
     createdAt: createdAt(),
+    /** When the player clicked the link in the confirmation e-mail. */
+    emailVerifiedAt: ts('email_verified_at'),
+    /** Which push notifications the player wants (missing = on). */
+    pushPrefs: jsonb('push_prefs').$type<Partial<Record<string, boolean>>>().notNull().default({}),
     lastSeenAt: ts('last_seen_at'),
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
@@ -800,4 +804,37 @@ export const companyLicences = pgTable(
     acquiredAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.companyId, t.licence] })],
+);
+
+// ── Push notifications and e-mail links ──────────────────────────────────
+
+/** A browser/phone that receives push notifications for a player (Web Push). */
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    userAgent: text('user_agent'),
+    createdAt: createdAt(),
+    lastSuccessAt: ts('last_success_at'),
+  },
+  (t) => [uniqueIndex('push_subscriptions_endpoint_idx').on(t.endpoint), index('push_subscriptions_user_idx').on(t.userId)],
+);
+
+/** One-time links sent by e-mail (confirm address, reset password). Only a hash of the token is stored. */
+export const emailTokens = pgTable(
+  'email_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(), // verify | reset
+    tokenHash: text('token_hash').notNull(),
+    expiresAt: ts('expires_at').notNull(),
+    usedAt: ts('used_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('email_tokens_hash_idx').on(t.tokenHash), index('email_tokens_user_idx').on(t.userId, t.kind)],
 );

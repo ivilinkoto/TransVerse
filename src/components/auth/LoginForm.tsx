@@ -34,7 +34,7 @@ export function LoginForm() {
       <Field label="Имейл или потребителско име">
         <Input id="login" name="login" autoComplete="username" required />
       </Field>
-      <Field label="Парола">
+      <Field label="Парола" hint={<Link href="/forgot-password" className="text-cyan-glow hover:underline">Забравена парола?</Link>}>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </Field>
       {error && <p role="alert" className="rounded-lg border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-loss">{error}</p>}
