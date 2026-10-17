@@ -30,12 +30,16 @@ async function makeOffer(db: Database, org: { id: string; hqCityId: number; comp
   const hubs = (await db.select({ id: cities.id, nameBg: cities.nameBg, country: cities.countryCode, population: cities.population, lat: cities.lat, lon: cities.lon }).from(cities)).filter((c) => isFreightHub(c));
   const hq = hubs.find((c) => c.id === org.hqCityId) ?? (await db.select({ id: cities.id, nameBg: cities.nameBg, country: cities.countryCode, population: cities.population, lat: cities.lat, lon: cities.lon }).from(cities).where(eq(cities.id, org.hqCityId)))[0]!;
   // Start near the headquarters; go 150–800 km (inside the country for most offers).
-  const near = hubs.filter((c) => haversineKm([hq.lat, hq.lon], [c.lat, c.lon]) <= 200);
-  const origin = rand() < 0.5 ? hq : (pickWeighted(near, (c) => Math.sqrt(c.population)) ?? hq);
-  const dests = hubs.filter((c) => c.id !== origin.id && (!domestic || c.country === origin.country)).filter((c) => {
-    const d = haversineKm([origin.lat, origin.lon], [c.lat, c.lon]);
-    return d >= 150 && d <= 800;
-  });
+  // Domestic offers start in the headquarters' country (a nearby city across the border may have no domestic destinations).
+  const near = hubs.filter((c) => haversineKm([hq.lat, hq.lon], [c.lat, c.lon]) <= 200 && (!domestic || c.country === hq.country));
+  const destsFrom = (from: typeof hq) =>
+    hubs.filter((c) => c.id !== from.id && (!domestic || c.country === from.country)).filter((c) => {
+      const d = haversineKm([from.lat, from.lon], [c.lat, c.lon]);
+      return d >= 150 && d <= 800;
+    });
+  let origin = rand() < 0.5 ? hq : (pickWeighted(near, (c) => Math.sqrt(c.population)) ?? hq);
+  let dests = destsFrom(origin);
+  if (!dests.length && origin.id !== hq.id) dests = destsFrom((origin = hq));
   const dest = pickWeighted(dests, (c) => Math.sqrt(c.population));
   if (!dest) return null;
   const kind = pick(TENDER_KINDS);
