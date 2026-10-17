@@ -1,11 +1,12 @@
 'use client';
 
-import { Building2, CalendarDays, Check, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
+import { Ban, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import type { PlayerCard as Card } from '@/server/game/social';
 import { PlayerName } from './PlayerName';
+import { openReport } from './ReportDialog';
 
 /** Opens a private chat in the chat dock. */
 export function openDirectChat(userId: string, username: string) {
@@ -95,6 +96,17 @@ export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChan
           )}
           {card.canInvite && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'companyInvite', userId: card.id })}><Users className="h-4 w-4" />Покани в компанията</button>}
           {card.invited && <span className="inline-flex items-center gap-1 px-2 text-sm text-mist-400"><Check className="h-4 w-4" />Поканен в компанията</span>}
+        </div>
+      )}
+      {card.relation !== 'self' && (
+        <div className="mt-3 flex flex-wrap gap-3 border-t border-asphalt-800 pt-3 text-xs">
+          {card.blocked ? (
+            <button type="button" className="inline-flex items-center gap-1 text-mist-300 hover:text-white" disabled={busy} onClick={() => void act({ type: 'unblockUser', userId: card.id })}><Ban className="h-3.5 w-3.5" />Отблокирай</button>
+          ) : (
+            <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" disabled={busy} onClick={() => { if (window.confirm(`Да блокираме ли ${card.username}? Няма да виждаш съобщенията му и той няма да може да ти пише.`)) void act({ type: 'blockUser', userId: card.id }); }}><Ban className="h-3.5 w-3.5" />Блокирай</button>
+          )}
+          <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" onClick={() => { onClose?.(); openReport({ targetUserId: card.id, username: card.username, kind: 'player' }); }}><Flag className="h-3.5 w-3.5" />Докладвай</button>
+          {card.blocked && <span className="text-loss">Блокиран от теб</span>}
         </div>
       )}
       {error && <p role="alert" className="mt-3 text-sm text-loss">{error}</p>}

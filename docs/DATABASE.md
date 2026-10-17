@@ -60,3 +60,12 @@
   - `hidden_for_sender`, `hidden_for_recipient` — разговорът е изтрит само за единия.
 - `chat_messages` — общите канали `global` и `trade`.
 - `contracts.min_reputation` — премиум поръчка (0 = обикновена).
+
+## Търговия, лиги, пропуск, модерация (миграция 0019)
+- `warehouse_stock` (депо, стока) — тонове и обща покупна цена.
+- `contracts.trade_company_id`, `contracts.trade` — лична поръчка за собствена стока (статус `trade` до приемането).
+- `user_blocks` (блокиращ, блокиран).
+- `reports` — доклади със статус `open` | `resolved` | `dismissed` и решение.
+- `users.chat_muted_until`, `users.league_tier`.
+- `league_groups` (седмица, ниво) и `league_members` (седмица, играч, група, точки, крайно място, `up` | `down` | `stay`).
+- `season_passes` (сезон, играч) — точки, премиум, взети безплатни и премиум нива.

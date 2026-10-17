@@ -4,6 +4,10 @@ import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental } from '@/server/game/rentals';
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
+import { CARGO_TYPES } from '@/lib/game/cargo';
+import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
+import { buyGoods, shipGoods } from '@/server/game/trade';
+import { buyPremiumPass, claimPassRewards } from '@/server/game/season-pass';
 import { deleteChannelMessage, deleteConversation, messageBodySchema, postToChannel, sendDirectMessage, unsendDirectMessage } from '@/server/game/messages';
 import { inviteToCompany, removeFriend, respondCompanyInvite, respondFriendRequest, sendFriendRequest } from '@/server/game/social';
 import { buyListing, cancelListing, createListing } from '@/server/game/used-market';
@@ -95,6 +99,13 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearChat') }),
   z.object({ type: z.literal('acceptTender'), tenderId: id }),
   z.object({ type: z.literal('claimDaily') }),
+  z.object({ type: z.literal('blockUser'), userId: id }),
+  z.object({ type: z.literal('unblockUser'), userId: id }),
+  z.object({ type: z.literal('report'), report: reportSchema }),
+  z.object({ type: z.literal('buyGoods'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500) }),
+  z.object({ type: z.literal('shipGoods'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500), destCityId: cityId, vehicleId: id, mode: z.enum(['sell', 'store']) }),
+  z.object({ type: z.literal('buySeasonPass') }),
+  z.object({ type: z.literal('claimSeasonPass') }),
   z.object({ type: z.literal('friendRequest'), userId: id }),
   z.object({ type: z.literal('friendRespond'), friendshipId: id, accept: z.boolean() }),
   z.object({ type: z.literal('friendRemove'), userId: id }),
@@ -250,6 +261,23 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'deleteChannel':
       await deleteChannelMessage(db, user.id, user.role, input.messageId);
       return { ok: true };
+    case 'blockUser':
+      await blockUser(db, user.id, input.userId);
+      return { ok: true };
+    case 'unblockUser':
+      await unblockUser(db, user.id, input.userId);
+      return { ok: true };
+    case 'report':
+      return { ok: true, id: await reportPlayer(db, user.id, input.report) };
+    case 'buyGoods':
+      return { ok: true, costCents: await buyGoods(db, user.id, input) };
+    case 'shipGoods':
+      return { ok: true, id: (await shipGoods(db, user.id, input)).id };
+    case 'buySeasonPass':
+      await buyPremiumPass(db, user.id);
+      return { ok: true };
+    case 'claimSeasonPass':
+      return { ok: true, claimed: await claimPassRewards(db, user.id) };
     case 'claimDaily':
       return { ok: true, ...(await claimDaily(db, user.id)) };
     case 'acceptTender':

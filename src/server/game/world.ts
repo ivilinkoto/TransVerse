@@ -16,6 +16,7 @@ import { pick, randInt } from './random';
 import { activeSeason, rotateSeasons } from './seasons';
 import { applyDueRoadEvents } from './road-events';
 import { expireListings } from './used-market';
+import { settleLeagues } from './leagues';
 import { runPayroll } from './staff';
 
 /**
@@ -104,6 +105,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await dispatchPush(db, now).catch((e) => console.error('[push] dispatch failed', e));
     await every(db, 'daily-reminders', 10 * 60_000, now, () => dailyReminders(db, now));
     await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
+    await every(db, 'leagues', 10 * 60_000, now, () => settleLeagues(db, now));
     await every(db, 'push-prune', 24 * 60 * 60_000, now, () => pruneSubscriptions(db, now));
     await every(db, 'cleanup', 60 * 60_000, now, async () => {
       await db.delete(sessions).where(lte(sessions.expiresAt, now));
