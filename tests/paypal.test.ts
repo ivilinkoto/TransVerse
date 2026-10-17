@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb } from '@/server/db/client';
 import { adminAudit, coinEntries, payments, users } from '@/server/db/schema';
 import { GameError } from '@/server/game/errors';
-import { confirmPaypalOrder, createPaypalCheckout, handlePaypalWebhook, paymentConfig, PayPalError, reconcilePaypal, refundPaypalPayment, type PayPalApi, type PayPalOrder } from '@/server/payments';
+import { confirmPaypalOrder, createPaypalCheckout, diagnosePaypal, handlePaypalWebhook, paymentConfig, PayPalError, paypalMode, siteUrl, reconcilePaypal, refundPaypalPayment, type PayPalApi, type PayPalOrder } from '@/server/payments';
 import { loadSecretsFile } from '@/server/secrets';
 import { db, newPlayer } from './helpers';
 
@@ -193,6 +193,40 @@ describe('PayPal payments', () => {
     expect(await handlePaypalWebhook(db(), {}, chargeback, pp.api)).toBe('refunded');
     expect(await coinsOf(p.userId)).toBe(0);
     delete process.env.PAYPAL_WEBHOOK_ID;
+  });
+});
+
+describe('PayPal diagnostics', () => {
+  it('records why PayPal refused an order, for the admin panel', async () => {
+    const p = await newPlayer();
+    const pp = fakePaypal();
+    pp.api.createOrder = async () => {
+      throw new PayPalError(422, 'PAYEE_ACCOUNT_RESTRICTED', 'restricted', 'dbg-123');
+    };
+    expect(await code(createPaypalCheckout(db(), p.userId, { productId: 'tc_100', consent: true }, pp.api, new Date(), ORIGIN))).toBe('checkout_failed');
+    const [row] = await db().select().from(payments).where(eq(payments.userId, p.userId));
+    expect(row!.status).toBe('failed');
+    expect(row!.failureReason).toContain('PAYEE_ACCOUNT_RESTRICTED');
+    expect(row!.failureReason).toContain('dbg-123');
+  });
+
+  it('names a sandbox/live mix-up and tolerates sloppy settings', async () => {
+    const fake = (okFor: string) => (async (url: string | URL | Request) => new Response('{}', { status: String(url).includes(okFor) ? 200 : 401 })) as typeof fetch;
+    process.env.PAYPAL_ENV = 'sandbox';
+    expect(await diagnosePaypal(fake('api-m.sandbox'))).toMatchObject({ ok: true });
+    const mixed = await diagnosePaypal(fake('api-m.paypal.com'));
+    expect(mixed.ok).toBe(false);
+    expect(mixed.message).toContain('Ключовете са за live');
+    expect((await diagnosePaypal(fake('nowhere'))).message).toContain('HTTP 401');
+    process.env.PAYPAL_ENV = ' Live ';
+    expect(paypalMode()).toBe('live');
+    delete process.env.PAYPAL_ENV;
+    process.env.APP_URL = 'transverse-bg.com';
+    expect(paymentConfig().appUrlInvalid).toBe(true);
+    expect(siteUrl(ORIGIN)).toBe(ORIGIN);
+    process.env.APP_URL = 'https://transverse-bg.com/';
+    expect(siteUrl(ORIGIN)).toBe('https://transverse-bg.com');
+    delete process.env.APP_URL;
   });
 });
 

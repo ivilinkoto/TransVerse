@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 
 /**
- * Payment settings managed from GitHub Secrets: the Deploy workflow writes them
+ * Payment (and HTTPS cookie) settings managed from GitHub Secrets: the Deploy workflow writes them
  * to a file only the deploy user can read, and both the web app and the worker
  * load it at start. Only these names are accepted; values are never logged.
  */
-const MANAGED = /^(PAYPAL_(CLIENT_ID|CLIENT_SECRET|ENV|WEBHOOK_ID)|STRIPE_(SECRET_KEY|WEBHOOK_SECRET|AUTOMATIC_TAX)|APP_URL|SELLER_(NAME|ID|ADDRESS)|SUPPORT_EMAIL)$/;
+const MANAGED = /^(PAYPAL_(CLIENT_ID|CLIENT_SECRET|ENV|WEBHOOK_ID)|STRIPE_(SECRET_KEY|WEBHOOK_SECRET|AUTOMATIC_TAX)|APP_URL|COOKIE_SECURE|SELLER_(NAME|ID|ADDRESS)|SUPPORT_EMAIL)$/;
 export const DEFAULT_SECRETS_FILE = '/var/www/transverse/shared/secrets.env';
 
 /** Parses KEY=value lines (no shell expansion); returns how many settings were applied. */

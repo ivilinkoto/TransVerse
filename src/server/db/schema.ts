@@ -769,6 +769,8 @@ export const payments = pgTable(
     /** PayPal: the order and its capture. */
     orderId: text('order_id'),
     captureId: text('capture_id'),
+    /** Why the provider refused (error code and reference) — for the admin panel. */
+    failureReason: text('failure_reason'),
     /** When the buyer agreed that delivery starts at once (EU right of withdrawal for digital content). */
     consentAt: ts('consent_at').notNull(),
     createdAt: createdAt(),

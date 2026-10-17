@@ -21,7 +21,7 @@ export function paymentConfig() {
   const sellerMissing = [!env.SELLER_NAME && 'SELLER_NAME', !env.SUPPORT_EMAIL && 'SUPPORT_EMAIL'].filter((x): x is string => !!x);
   const paypalMissing = [!env.PAYPAL_CLIENT_ID && 'PAYPAL_CLIENT_ID', !env.PAYPAL_CLIENT_SECRET && 'PAYPAL_CLIENT_SECRET'].filter((x): x is string => !!x);
   const stripeMissing = [!env.STRIPE_SECRET_KEY && 'STRIPE_SECRET_KEY', !env.STRIPE_WEBHOOK_SECRET && 'STRIPE_WEBHOOK_SECRET'].filter((x): x is string => !!x);
-  const paypal = { enabled: !sellerMissing.length && !paypalMissing.length, sandbox: env.PAYPAL_ENV !== 'live', webhook: !!env.PAYPAL_WEBHOOK_ID, missing: [...sellerMissing, ...paypalMissing] };
+  const paypal = { enabled: !sellerMissing.length && !paypalMissing.length, sandbox: paypalMode() === 'sandbox', webhook: !!env.PAYPAL_WEBHOOK_ID, missing: [...sellerMissing, ...paypalMissing] };
   const stripe = { enabled: !sellerMissing.length && !stripeMissing.length, testMode: env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ?? false, missing: [...sellerMissing, ...stripeMissing] };
   const providers = [paypal.enabled && ('paypal' as const), stripe.enabled && ('stripe' as const)].filter((x): x is Provider => !!x);
   return {
@@ -31,6 +31,8 @@ export function paymentConfig() {
     stripe,
     /** Test money only (PayPal sandbox / Stripe test keys). */
     testMode: (paypal.enabled && paypal.sandbox) || (stripe.enabled && stripe.testMode),
+    /** APP_URL is set but is not a full address (it is then ignored). */
+    appUrlInvalid: !!env.APP_URL && !validAppUrl(env.APP_URL),
     seller: { name: env.SELLER_NAME ?? '', id: env.SELLER_ID ?? '', address: env.SELLER_ADDRESS ?? '', email: env.SUPPORT_EMAIL ?? '' },
   };
 }
@@ -43,9 +45,17 @@ export const checkoutSchema = z.object({
 });
 export type CheckoutInput = z.input<typeof checkoutSchema>;
 
-/** Public address for return pages: APP_URL, else the (same-origin checked) address the player used. */
+/** PayPal environment; anything but "live" (any case, spaces ignored) means sandbox. */
+export function paypalMode(): 'live' | 'sandbox' {
+  return process.env.PAYPAL_ENV?.trim().toLowerCase() === 'live' ? 'live' : 'sandbox';
+}
+
+const validAppUrl = (url: string) => /^https?:\/\/[^\s/]+(\/.*)?$/i.test(url.trim());
+
+/** Public address for return pages: APP_URL when it is a full address, else the (same-origin checked) address the player used. */
 export function siteUrl(requestOrigin?: string | null): string {
-  const base = process.env.APP_URL || requestOrigin;
+  const configured = process.env.APP_URL?.trim();
+  const base = configured && validAppUrl(configured) ? configured : requestOrigin;
   if (!base) fail('payments_disabled', 'Липсва адресът на сайта (APP_URL).', 503);
   return base!.replace(/\/$/, '');
 }
@@ -69,8 +79,22 @@ export async function startPayment(db: Database, userId: string, input: z.output
   return { payment: payment!, product: product!, email: user!.email };
 }
 
-export async function markPaymentFailed(db: DbOrTx, paymentId: string) {
-  await db.update(payments).set({ status: 'failed' }).where(and(eq(payments.id, paymentId), eq(payments.status, 'pending')));
+export async function markPaymentFailed(db: DbOrTx, paymentId: string, reason?: string) {
+  await db
+    .update(payments)
+    .set({ status: 'failed', ...(reason ? { failureReason: reason.slice(0, 300) } : {}) })
+    .where(and(eq(payments.id, paymentId), eq(payments.status, 'pending')));
+}
+
+/** A short, secret-free description of a provider error for the admin panel. */
+export function describeFailure(error: unknown): string {
+  if (error && typeof error === 'object') {
+    const e = error as { issue?: string | null; status?: number; debugId?: string | null; code?: string; type?: string; message?: string };
+    if (e.issue !== undefined) return [e.issue, e.status && `HTTP ${e.status}`, e.debugId && `debug_id ${e.debugId}`].filter(Boolean).join(' · ');
+    if (e.type || e.code) return [e.type, e.code].filter(Boolean).join(' · ');
+    if (e.message) return e.message.slice(0, 200);
+  }
+  return String(error).slice(0, 200);
 }
 
 const DAY = 86_400_000;
