@@ -1,4 +1,5 @@
 import { PlayerName } from '@/components/game/PlayerName';
+import { isOnline, lastSeenLabel } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import { redirect } from 'next/navigation';
 import { Badge, Card, Table } from '@/components/ui';
@@ -47,7 +48,15 @@ export default async function MembersPage() {
             const manageable = manage && !m.rank.isOwner && m.rank.priority > hub.rank.priority;
             return (
               <tr key={m.userId} className={m.userId === user.id ? 'bg-volt-500/10' : ''}>
-                <td className="px-3 py-2 font-semibold"><PlayerName name={m.username} role={m.role} vip={isVip(m.vipUntil, now)} /></td>
+                <td className="px-3 py-2 font-semibold">
+                  <span className="inline-flex items-center gap-2">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${isOnline(m.lastSeenAt, now) ? 'bg-profit' : 'bg-asphalt-500'}`} title={lastSeenLabel(m.lastSeenAt, now)} />
+                    <span>
+                      <PlayerName name={m.username} role={m.role} vip={isVip(m.vipUntil, now)} />
+                      <span className={`block text-[11px] font-normal ${isOnline(m.lastSeenAt, now) ? 'text-profit' : 'text-mist-400'}`}>{lastSeenLabel(m.lastSeenAt, now)}</span>
+                    </span>
+                  </span>
+                </td>
                 <td className="px-3 py-2">
                   {manageable && assignable.length > 1 ? (
                     <SelectAction label="OK" ariaLabel={`Длъжност на ${m.username}`} value={m.rank.id} options={assignable.map((r) => ({ value: r.id, label: r.name }))} action={{ type: 'setMemberRank', userId: m.userId }} field="rankId" />

@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { CARGO, CARGO_TYPES, type BodyType, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { rewardCents } from '@/lib/game/economy';
+import { PREMIUM_LEVELS } from '@/lib/game/progression';
 import { haversineKm } from '@/lib/geo/geometry';
 import { contractCountries, missingLicences, requiredLicences } from '@/lib/game/licences';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
@@ -103,7 +104,9 @@ export async function generateContracts(db: Database, options: GenerateOptions =
     const hi = Math.min(maxT, size.maxTons);
     const lo = Math.min(hi, size.id === 'full' ? Math.max(minT, 8) : minT);
     const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
-    await insertContract(db, origin, destination, cargo, tons, now, randInt(6, 30) * 3_600_000, options.provider);
+    // Some market jobs are premium: better paid, only for players with enough reputation.
+    const premium = rand() < PREMIUM_SHARE ? pickWeighted(PREMIUM_LEVELS.map((l, i) => ({ ...l, weight: [6, 3, 1][i] ?? 1 })), (l) => l.weight) ?? null : null;
+    await insertContract(db, origin, destination, cargo, tons, now, randInt(6, 30) * 3_600_000, options.provider, premium);
     created++;
   }
   if (created) await broadcast(db, 'market');
@@ -190,7 +193,10 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
   return 1;
 }
 
-async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider) {
+/** Share of market contracts that are premium (reputation required, better pay). */
+export const PREMIUM_SHARE = 0.12;
+
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null) {
   const route = await getRoute(db, origin.id, destination.id, 'truck', provider);
   const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo));
   await db.insert(contracts).values({
@@ -202,9 +208,10 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     destCityId: destination.id,
     routeId: route.id,
     distanceKm: route.distanceKm,
-    rewardCents: rewardCents(cargo, tons, route.distanceKm, market),
+    rewardCents: rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1)),
     windowMinutes: contractWindowMinutes(route.distanceKm),
     minLevel: CARGO[cargo].minLevel,
+    minReputation: premium?.minReputation ?? 0,
     expiresAt: new Date(now.getTime() + ttlMs),
   });
 }

@@ -18,7 +18,7 @@ export const PUSH_CATEGORIES = {
   urgent: 'Спешни доставки',
   events: 'Ивенти и мисии',
   company: 'Компания (членове, касата, фирмени мисии)',
-  chat: 'Чат на компанията',
+  chat: 'Чат на компанията и лични съобщения',
   general: 'Всичко останало (ниво, постижения, поддръжка, плащания)',
 } as const;
 export type PushCategory = keyof typeof PUSH_CATEGORIES;
@@ -28,6 +28,7 @@ export const PUSH_CATEGORY_IDS = Object.keys(PUSH_CATEGORIES) as PushCategory[];
 export function categoryOf(href: string | null | undefined): PushCategory {
   if (!href) return 'general';
   if (href.startsWith('/game/contracts')) return 'urgent';
+  if (href.includes('chat=dm:')) return 'chat';
   if (href.startsWith('/game/finance') || href.startsWith('/game/fleet') || href.startsWith('/game/garage')) return 'deliveries';
   if (href.startsWith('/game/events') || href.startsWith('/game/missions')) return 'events';
   if (href.startsWith('/game/company/chat')) return 'chat';

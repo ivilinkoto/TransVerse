@@ -89,13 +89,13 @@ export async function bonusesForUser(db: DbOrTx, userId: string): Promise<{ memb
   return { membership: m, bonuses: memberBonuses(m.company.upgrades as UpgradeLevels) };
 }
 
-async function memberCount(db: DbOrTx, companyId: string): Promise<number> {
+export async function memberCount(db: DbOrTx, companyId: string): Promise<number> {
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(companyMembers).where(eq(companyMembers.companyId, companyId));
   return n;
 }
 
 /** The rank new members receive: the most junior non-owner rank. */
-async function entryRank(db: DbOrTx, companyId: string): Promise<Rank> {
+export async function entryRank(db: DbOrTx, companyId: string): Promise<Rank> {
   const [rank] = await db
     .select()
     .from(companyRanks)
@@ -427,7 +427,7 @@ export async function companyDirectory(db: DbOrTx, search = '', limit = 60) {
 
 export async function companyMembersView(db: DbOrTx, companyId: string) {
   return db
-    .select({ userId: users.id, username: users.username, role: users.role, vipUntil: users.vipUntil, level: users.level, member: companyMembers, rank: companyRanks })
+    .select({ userId: users.id, username: users.username, role: users.role, vipUntil: users.vipUntil, level: users.level, lastSeenAt: users.lastSeenAt, member: companyMembers, rank: companyRanks })
     .from(companyMembers)
     .innerJoin(users, eq(users.id, companyMembers.userId))
     .innerJoin(companyRanks, eq(companyRanks.id, companyMembers.rankId))

@@ -80,6 +80,8 @@ export default async function ContractsPage() {
       expiresAt: c.expiresAt.toISOString(),
       expiresInMin: Math.round((c.expiresAt.getTime() - now.getTime()) / 60_000),
       minLevel: Math.max(c.minLevel, cargo.minLevel),
+      minReputation: c.minReputation,
+      reputationLocked: company.reputation < c.minReputation,
       locked: user.level < Math.max(c.minLevel, cargo.minLevel),
       local: localCities.includes(c.originCityId),
       urgent: c.urgent,

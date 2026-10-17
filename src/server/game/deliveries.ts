@@ -4,7 +4,7 @@ import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/
 import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
-import { deliveryXp, reputationAfter, seasonPoints } from '@/lib/game/progression';
+import { deliveryXp, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
 import { buildGameSchedule, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
@@ -112,6 +112,11 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // A contract reserved by a VIP is theirs until the reservation ends.
     if (contract!.reservedUntil && contract!.reservedUntil > now && contract!.reservedByCompanyId !== company.id) fail('reserved', 'Поръчката е запазена от друг играч за няколко минути.', 409);
+    // Premium contracts need reputation.
+    if (contract!.minReputation > 0) {
+      const [acct] = await tx.select({ reputation: companies.reputation }).from(companies).where(eq(companies.id, company.id));
+      if ((acct?.reputation ?? 0) < contract!.minReputation) fail('reputation_required', `Премиум поръчка: нужна е репутация ${contract!.minReputation} (твоята е ${Math.floor(acct?.reputation ?? 0)}). Репутацията расте с доставки навреме.`);
+    }
     // Tender loads: only members of the company that runs the tender.
     if (contract!.tenderId) await checkTenderLoad(tx, contract!.tenderId, userId, now);
     if (contract!.urgent) {
@@ -236,6 +241,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   ];
   if (costs.tollCents) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: 'Пътни такси', idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
   if (result.bonusCents) postings.push({ category: 'bonus', amountCents: result.bonusCents, description: 'Бонус за ранна доставка', idempotencyKey: key('bonus'), refType: 'delivery', refId: d.id });
+  // Reputation pays: +1 % of the reward per 10 points (up to +10 %), by the reputation before this delivery.
+  const reputationBonus = Math.round(result.rewardCents * reputationBonusShare(company!.reputation));
+  if (reputationBonus) postings.push({ category: 'reputation_bonus', amountCents: reputationBonus, description: `Бонус за репутация (${Math.floor(company!.reputation)})`, idempotencyKey: key('reputation'), refType: 'delivery', refId: d.id });
   if (d.rentalFeeCents) postings.push({ category: 'rental', amountCents: -d.rentalFeeCents, description: `Наем на камиона (${Math.round(d.emptyKm + d.loadedKm)} км)`, idempotencyKey: key('rental'), refType: 'delivery', refId: d.id });
   if (result.penaltyCents) postings.push({ category: 'penalty', amountCents: -result.penaltyCents, description: 'Неустойка за закъснение', idempotencyKey: key('penalty'), refType: 'delivery', refId: d.id });
   // Company membership: bonus from the company's upgrades and a contribution to its treasury.
@@ -254,7 +262,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = result.rewardCents + result.bonusCents - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = result.rewardCents + result.bonusCents + reputationBonus - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
   // XP bonuses: company training, VIP and the shop's double-XP booster.

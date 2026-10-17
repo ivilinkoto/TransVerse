@@ -14,11 +14,20 @@ export function LiveUpdates() {
     window.addEventListener('keydown', unlockSound, { once: true });
     const source = new EventSource('/api/events');
     source.onmessage = (event) => {
-      const data = JSON.parse(event.data) as { type: string };
+      const data = JSON.parse(event.data) as { type: string; channel?: string; with?: string };
       if (data.type === 'hello') return;
       // Other players' trucks only matter to the map, which reloads them itself.
       if (data.type === 'world') {
         window.dispatchEvent(new Event('tv:world'));
+        return;
+      }
+      // World chat and private messages: the chat dock reloads itself.
+      if (data.type === 'channel') {
+        window.dispatchEvent(new CustomEvent('tv:channel', { detail: { channel: data.channel } }));
+        return;
+      }
+      if (data.type === 'dm') {
+        window.dispatchEvent(new CustomEvent('tv:dm', { detail: { with: data.with } }));
         return;
       }
       // Company chat reloads itself; other pages are not refreshed.

@@ -4,6 +4,8 @@ import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental } from '@/server/game/rentals';
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
+import { deleteChannelMessage, deleteConversation, messageBodySchema, postToChannel, sendDirectMessage, unsendDirectMessage } from '@/server/game/messages';
+import { inviteToCompany, removeFriend, respondCompanyInvite, respondFriendRequest, sendFriendRequest } from '@/server/game/social';
 import { buyListing, cancelListing, createListing } from '@/server/game/used-market';
 import { createTicket, replySchema, replyToTicket, setTicketStatus, ticketSchema } from '@/server/game/support';
 import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutorial';
@@ -93,6 +95,16 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearChat') }),
   z.object({ type: z.literal('acceptTender'), tenderId: id }),
   z.object({ type: z.literal('claimDaily') }),
+  z.object({ type: z.literal('friendRequest'), userId: id }),
+  z.object({ type: z.literal('friendRespond'), friendshipId: id, accept: z.boolean() }),
+  z.object({ type: z.literal('friendRemove'), userId: id }),
+  z.object({ type: z.literal('companyInvite'), userId: id }),
+  z.object({ type: z.literal('companyInviteRespond'), inviteId: id, accept: z.boolean() }),
+  z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema }),
+  z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('deleteConversation'), userId: id }),
+  z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema }),
+  z.object({ type: z.literal('deleteChannel'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели евро.').positive().max(10_000_000) }),
   z.object({ type: z.literal('cancelListing'), listingId: id }),
   z.object({ type: z.literal('buyListing'), listingId: id }),
@@ -213,6 +225,30 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'buyListing':
       await buyListing(db, user.id, input.listingId);
+      return { ok: true };
+    case 'friendRequest':
+      return { ok: true, result: await sendFriendRequest(db, user.id, input.userId) };
+    case 'friendRespond':
+      return { ok: true, result: await respondFriendRequest(db, user.id, input.friendshipId, input.accept) };
+    case 'friendRemove':
+      await removeFriend(db, user.id, input.userId);
+      return { ok: true };
+    case 'companyInvite':
+      return { ok: true, id: await inviteToCompany(db, user.id, input.userId) };
+    case 'companyInviteRespond':
+      return { ok: true, result: await respondCompanyInvite(db, user.id, input.inviteId, input.accept) };
+    case 'sendDirect':
+      return { ok: true, id: await sendDirectMessage(db, user.id, input.userId, input.body) };
+    case 'unsendDirect':
+      await unsendDirectMessage(db, user.id, input.messageId);
+      return { ok: true };
+    case 'deleteConversation':
+      await deleteConversation(db, user.id, input.userId);
+      return { ok: true };
+    case 'sendChannel':
+      return { ok: true, id: await postToChannel(db, user.id, input.channel, input.body) };
+    case 'deleteChannel':
+      await deleteChannelMessage(db, user.id, user.role, input.messageId);
       return { ok: true };
     case 'claimDaily':
       return { ok: true, ...(await claimDaily(db, user.id)) };
