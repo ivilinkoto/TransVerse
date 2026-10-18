@@ -6,6 +6,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { blockList } from '@/server/game/moderation';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { PushSettings } from '@/components/game/PushSettings';
+import { QuietHours } from '@/components/game/QuietHours';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { deviceCount, PUSH_CATEGORIES, vapidKeys } from '@/server/push';
 import { PasswordForm } from '@/components/game/PasswordForm';
@@ -66,6 +67,7 @@ export default async function SettingsPage() {
         <Card title={<span className="inline-flex items-center gap-2"><Bell className="h-4 w-4 text-mist-400" />Известия на телефона и компютъра</span>} className="lg:col-span-2">
           <p className="mb-4 text-sm text-mist-400">Получавай известие, когато камионът пристигне, има спешна доставка, започва ивент или ти пишат в компанията — дори когато играта е затворена.</p>
           <PushSettings publicKey={keys.publicKey} categories={PUSH_CATEGORIES} prefs={u?.pushPrefs ?? {}} devices={devices} />
+          <div className="mt-4 border-t border-asphalt-800 pt-4"><QuietHours value={user.quietHours ?? null} /></div>
         </Card>
       </div>
     </div>

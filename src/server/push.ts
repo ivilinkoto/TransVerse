@@ -19,6 +19,11 @@ export const PUSH_CATEGORIES = {
   events: 'Ивенти и мисии',
   company: 'Компания (членове, касата, фирмени мисии)',
   chat: 'Чат на компанията и лични съобщения',
+  favorites: 'Нови поръчки по любимите ми линии',
+  clients: 'Договори с клиенти',
+  fines: 'Глоби',
+  news: 'Седмичник (нов брой)',
+  holiday: 'Празници (Хелуин, призрачният камион)',
   general: 'Всичко останало (ниво, постижения, поддръжка, плащания)',
 } as const;
 export type PushCategory = keyof typeof PUSH_CATEGORIES;
@@ -27,7 +32,12 @@ export const PUSH_CATEGORY_IDS = Object.keys(PUSH_CATEGORIES) as PushCategory[];
 /** Which category an in-game notification belongs to (by the page it links to). */
 export function categoryOf(href: string | null | undefined): PushCategory {
   if (!href) return 'general';
+  if (href.startsWith('/game/contracts?fav=1')) return 'favorites';
   if (href.startsWith('/game/contracts')) return 'urgent';
+  if (href.startsWith('/game/finance#fines')) return 'fines';
+  if (href.startsWith('/game/clients')) return 'clients';
+  if (href.startsWith('/game/news')) return 'news';
+  if (href.startsWith('/game/halloween')) return 'holiday';
   if (href.includes('chat=dm:')) return 'chat';
   if (href.startsWith('/game/finance') || href.startsWith('/game/fleet') || href.startsWith('/game/garage')) return 'deliveries';
   if (href.startsWith('/game/events') || href.startsWith('/game/missions')) return 'events';
@@ -37,6 +47,19 @@ export function categoryOf(href: string | null | undefined): PushCategory {
 }
 
 export const wants = (prefs: Partial<Record<string, boolean>> | null | undefined, category: PushCategory) => prefs?.[category] !== false;
+
+/** Quiet hours (Sofia time): no phone notifications from `from` to `to` (may cross midnight). */
+export function inQuietHours(q: { from: number; to: number } | null | undefined, now: Date): boolean {
+  if (!q || q.from === q.to) return false;
+  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', hour: '2-digit', hourCycle: 'h23' }).format(now));
+  return q.from < q.to ? h >= q.from && h < q.to : h >= q.from || h < q.to;
+}
+
+export const quietHoursSchema = z.object({ from: z.number().int().min(0).max(23), to: z.number().int().min(0).max(23) }).nullable();
+
+export async function setQuietHours(db: DbOrTx, userId: string, q: z.infer<typeof quietHoursSchema>) {
+  await db.update(users).set({ quietHours: q && q.from !== q.to ? q : null }).where(eq(users.id, userId));
+}
 
 // ── Keys ──────────────────────────────────────────────────────────────────
 
@@ -172,14 +195,15 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
   // Up to the newest id right now, so nothing inserted meanwhile is skipped.
   const upTo = Number((await db.execute<{ m: number }>(sql`select coalesce(max(id), 0)::bigint as m from notifications`)).rows[0]?.m ?? from);
   const rows = await db
-    .select({ id: notifications.id, userId: notifications.userId, title: notifications.title, body: notifications.body, href: notifications.href, prefs: users.pushPrefs })
+    .select({ id: notifications.id, userId: notifications.userId, title: notifications.title, body: notifications.body, href: notifications.href, prefs: users.pushPrefs, quiet: users.quietHours })
     .from(notifications)
     .innerJoin(users, eq(users.id, notifications.userId))
     .where(and(gt(notifications.id, from), lte(notifications.id, upTo), sql`exists (select 1 from push_subscriptions s where s.user_id = ${notifications.userId})`))
     .orderBy(notifications.id)
     .limit(1000);
   const byUser = new Map<string, typeof rows>();
-  for (const r of rows) if (wants(r.prefs, categoryOf(r.href))) byUser.set(r.userId, [...(byUser.get(r.userId) ?? []), r]);
+  // Quiet hours: nothing reaches the phone (the notifications stay in the game).
+  for (const r of rows) if (wants(r.prefs, categoryOf(r.href)) && !inQuietHours(r.quiet, now)) byUser.set(r.userId, [...(byUser.get(r.userId) ?? []), r]);
   for (const [userId, list] of byUser) {
     const message: PushMessage =
       list.length === 1
@@ -203,7 +227,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
   if (messages.length) {
     const companies = [...new Set(messages.map((m) => m.companyId))];
     const members = await db
-      .select({ userId: companyMembers.userId, companyId: companyMembers.companyId, prefs: users.pushPrefs })
+      .select({ userId: companyMembers.userId, companyId: companyMembers.companyId, prefs: users.pushPrefs, quiet: users.quietHours })
       .from(companyMembers)
       .innerJoin(users, eq(users.id, companyMembers.userId))
       .where(
@@ -214,7 +238,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
         ),
       );
     for (const m of members) {
-      if (!wants(m.prefs, 'chat')) continue;
+      if (!wants(m.prefs, 'chat') || inQuietHours(m.quiet, now)) continue;
       const mine = messages.filter((x) => x.companyId === m.companyId && x.authorId !== m.userId);
       if (!mine.length) continue;
       const last = mine.at(-1)!;

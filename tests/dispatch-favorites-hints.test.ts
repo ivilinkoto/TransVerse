@@ -8,6 +8,7 @@ import { favoriteLanesOf, notifyFavoriteLane, toggleFavoriteLane } from '@/serve
 import { notifications } from '@/server/db/schema';
 import { cityByName } from './helpers';
 import { dismissHint } from '@/server/game/releases';
+import { categoryOf, inQuietHours } from '@/server/push';
 import { db, makeContract, newPlayer } from './helpers';
 
 afterAll(async () => closeDb());
@@ -69,5 +70,22 @@ describe('hints', () => {
     await dismissHint(db(), p.userId, 'board');
     const [u] = await db().select({ seen: users.seenHints }).from(users).where(eq(users.id, p.userId));
     expect(u!.seen).toEqual(['crew', 'board']);
+  });
+});
+
+describe('phone notifications', () => {
+  it('new categories and quiet hours across midnight', () => {
+    expect(categoryOf('/game/contracts?fav=1')).toBe('favorites');
+    expect(categoryOf('/game/contracts')).toBe('urgent');
+    expect(categoryOf('/game/finance#fines')).toBe('fines');
+    expect(categoryOf('/game/finance')).toBe('deliveries');
+    expect(categoryOf('/game/clients')).toBe('clients');
+    expect(categoryOf('/game/news')).toBe('news');
+    expect(categoryOf('/game/halloween')).toBe('holiday');
+    const q = { from: 23, to: 8 };
+    expect(inQuietHours(q, new Date('2026-10-18T22:30:00Z'))).toBe(true); // 01:30 Sofia
+    expect(inQuietHours(q, new Date('2026-10-18T10:00:00Z'))).toBe(false); // 13:00
+    expect(inQuietHours({ from: 13, to: 15 }, new Date('2026-10-18T10:30:00Z'))).toBe(true);
+    expect(inQuietHours(null, new Date())).toBe(false);
   });
 });
