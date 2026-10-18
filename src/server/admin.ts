@@ -25,6 +25,8 @@ export function requireAdminRole(user: { role: string }) {
   if (!isAdmin(user.role)) fail('forbidden', 'Действието изисква права на администратор.', 403);
 }
 
+export { audit as recordAudit };
+
 async function audit(db: DbOrTx, actorId: string, action: string, targetUserId: string | null, details: Record<string, unknown> = {}) {
   const [row] = await db.insert(adminAudit).values({ actorId, action, targetUserId, details }).returning({ id: adminAudit.id });
   return row!.id;

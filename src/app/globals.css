@@ -96,3 +96,90 @@
   stroke-dasharray: 10 14;
   animation: dash 12s linear infinite;
 }
+
+/*
+ * Seasonal look: Halloween. Only active under html[data-season="halloween"]
+ * (src/lib/game/seasonal.ts); remove the attribute and the base design is back.
+ * Colours are re-mapped, layout and components stay the same.
+ */
+html[data-season='halloween'] {
+  --color-asphalt-950: #07040b;
+  --color-asphalt-900: #0e0814;
+  --color-asphalt-850: #130b1b;
+  --color-asphalt-800: #1a0f24;
+  --color-asphalt-700: #2a1938;
+  --color-asphalt-600: #3b2550;
+  --color-asphalt-500: #56396f;
+  --color-mist-400: #a495b8;
+  --color-mist-300: #c8bcd8;
+  --color-mist-100: #f3ecfa;
+  --color-volt-500: #ea580c;
+  --color-volt-400: #f97316;
+  --color-cyan-glow: #fb923c;
+  --color-prestige: #c084fc;
+  --color-profit: #84cc16;
+}
+html[data-season='halloween'] body {
+  background-image: radial-gradient(1100px 520px at 75% -12%, rgba(234, 88, 12, 0.16), transparent 60%), radial-gradient(900px 480px at -10% 0%, rgba(147, 51, 234, 0.14), transparent 60%), radial-gradient(700px 400px at 50% 110%, rgba(132, 204, 22, 0.05), transparent 70%);
+}
+html[data-season='halloween'] .panel {
+  /* a faint cobweb in the top right corner of every card */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23ffffff' stroke-opacity='0.07' stroke-width='1'%3E%3Cpath d='M100 0L0 0M100 0L5 31M100 0L19 59M100 0L41 81M100 0L69 95M100 0L100 100M78 0Q84 7 79 7Q85 14 82 16Q90 18 89 21Q94 21 98 22M58 0Q66 12 60 13Q70 25 65 30Q80 33 78 39Q88 41 96 42M38 0Q49 19 41 20Q55 37 49 44Q71 50 66 57Q84 60 98 62'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: top right;
+  background-size: 110px 110px;
+}
+html[data-season='halloween'] .btn-primary {
+  box-shadow: 0 8px 30px -8px rgba(249, 115, 22, 0.75);
+}
+html[data-season='halloween'] .brand-mark {
+  position: relative;
+}
+html[data-season='halloween'] .brand-mark::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  width: 55%;
+  height: 55%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6c-1-2.4-.4-4 1.6-4.6l.5 1.6c-.9.3-1.1 1-.6 2.4z' fill='%234d7c0f'/%3E%3Cellipse cx='10.5' cy='18' rx='7.5' ry='10' fill='%23ea580c'/%3E%3Cellipse cx='21.5' cy='18' rx='7.5' ry='10' fill='%23ea580c'/%3E%3Cellipse cx='16' cy='18' rx='6.5' ry='10.5' fill='%23f97316'/%3E%3Cpath d='M10 15l3 2.5-3.5.5zM22 15l-3 2.5 3.5.5z' fill='%231c1917'/%3E%3Cpath d='M9.5 21.5c2 2.4 4.3 3.2 6.5 3.2s4.5-.8 6.5-3.2l-2 .4-1.4 1.2-1.4-1.2-1.7 1.4-1.7-1.4-1.4 1.2-1.4-1.2z' fill='%231c1917'/%3E%3C/svg%3E") no-repeat center / contain;
+  filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.6));
+}
+.season-fog {
+  background: linear-gradient(to top, rgba(147, 51, 234, 0.1), transparent);
+  filter: blur(8px);
+  animation: season-fog 14s ease-in-out infinite alternate;
+}
+.season-bat {
+  top: 12%;
+  left: -60px;
+  opacity: 0;
+  animation: season-bat 26s linear infinite;
+}
+.season-bat-1 {
+  top: 26%;
+  animation-delay: 9s;
+  animation-duration: 31s;
+}
+.season-bat-2 {
+  top: 6%;
+  animation-delay: 18s;
+  animation-duration: 23s;
+}
+@keyframes season-bat {
+  0% { transform: translate(0, 0) scale(0.8); opacity: 0; }
+  4% { opacity: 0.9; }
+  25% { transform: translate(25vw, 40px) scale(0.9); }
+  50% { transform: translate(50vw, -10px) scale(0.75); }
+  75% { transform: translate(78vw, 30px) scale(0.9); }
+  96% { opacity: 0.9; }
+  100% { transform: translate(calc(100vw + 120px), 0) scale(0.8); opacity: 0; }
+}
+@keyframes season-fog {
+  from { transform: translateX(-3%); opacity: 0.7; }
+  to { transform: translateX(3%); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .season-bat { display: none; }
+  .season-fog { animation: none; }
+}

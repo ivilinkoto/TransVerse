@@ -1,5 +1,7 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
-import { Ban, Bell } from 'lucide-react';
+import { Ban, Bell, Sparkles } from 'lucide-react';
+import { SEASONS, activeSeason } from '@/lib/game/seasonal';
+import { seasonMode } from '@/server/seasonal';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { blockList } from '@/server/game/moderation';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
@@ -14,7 +16,8 @@ import { gameContext } from '@/server/game/context';
 export const metadata = { title: 'Настройки' };
 
 export default async function SettingsPage() {
-  const { db, user } = await gameContext();
+  const { db, user, now } = await gameContext();
+  const site = activeSeason(now, await seasonMode(db));
   const [u] = await db.select({ email: users.email, createdAt: users.createdAt, verified: users.emailVerifiedAt, pushPrefs: users.pushPrefs }).from(users).where(eq(users.id, user.id));
   const [keys, devices, blocked] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id)]);
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(sessions).where(and(eq(sessions.userId, user.id), gt(sessions.expiresAt, new Date())));
@@ -38,6 +41,14 @@ export default async function SettingsPage() {
           </dl>
         </Card>
         <Card title="Сигурност"><PasswordForm /></Card>
+        <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />Празнична украса</span>} className="lg:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+            <p className="max-w-xl text-mist-300">
+              По празници (сега: {SEASONS.halloween.label}, {SEASONS.halloween.from.split('-').reverse().join('.')} – {SEASONS.halloween.to.split('-').reverse().join('.')}) играта сменя цветовете и добавя украса. {site ? `В момента е включена: ${SEASONS[site].label}.` : 'В момента няма празнична тема.'}
+            </p>
+            <ActionButton action={{ type: 'seasonalTheme', on: !user.seasonalTheme }} className="btn-ghost">{user.seasonalTheme ? 'Изключи украсата' : 'Включи украсата'}</ActionButton>
+          </div>
+        </Card>
         <Card title={<span className="inline-flex items-center gap-2"><Ban className="h-4 w-4 text-mist-400" />Блокирани играчи</span>} className="lg:col-span-2">
           {blocked.length === 0 ? (
             <p className="text-sm text-mist-400">Няма блокирани играчи. Блокира се от картата на играча (натисни името му).</p>
