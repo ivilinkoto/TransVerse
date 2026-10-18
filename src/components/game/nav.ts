@@ -41,6 +41,7 @@ export const SECTIONS: NavSection[] = [
     icon: Truck,
     tabs: [
       { href: '/game/fleet', label: 'Моите превозни средства' },
+      { href: '/game/analytics', label: 'Анализ' },
       { href: '/game/garage', label: 'Сервиз' },
       { href: '/game/market', label: 'Пазар' },
       { href: '/game/staff', label: 'Шофьори' },

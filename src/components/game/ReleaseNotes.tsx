@@ -1,4 +1,4 @@
-import { Bell, Map, Paintbrush, ScrollText, Shield, Sparkles, Trophy, Truck } from 'lucide-react';
+import { BarChart3, Bell, Gavel, Map, Newspaper, Paintbrush, ScrollText, Shield, Sparkles, Trophy, Truck } from 'lucide-react';
 import type { Release, ReleaseIcon } from '@/lib/game/releases';
 import { GhostTruckIcon, PumpkinIcon } from '@/components/seasonal/icons';
 
@@ -13,6 +13,9 @@ const ICONS: Record<ReleaseIcon, React.ComponentType<{ className?: string }>> = 
   map: Map,
   bell: Bell,
   shield: Shield,
+  chart: BarChart3,
+  news: Newspaper,
+  gavel: Gavel,
 };
 
 const released = (r: Release) => new Date(r.publishedAt).toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Sofia' });
