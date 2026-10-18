@@ -1,8 +1,22 @@
 /** Levels, experience, reputation and achievements. Pure rules. */
 
+/**
+ * Level curve (v1.1): steeper than before, so levels mean weeks of play, not a
+ * day — level 10 ≈ 125 000 XP, level 20 ≈ 650 000, level 30 ≈ 1 660 000.
+ */
+export const XP_CURVE = { base: 1000, power: 2.2 } as const;
+
 export function xpForLevel(level: number): number {
+  return level <= 1 ? 0 : Math.round(XP_CURVE.base * (level - 1) ** XP_CURVE.power);
+}
+
+/** The curve before v1.1 (used once to carry players over to the new one). */
+export function legacyXpForLevel(level: number): number {
   return level <= 1 ? 0 : Math.round(800 * (level - 1) ** 1.7);
 }
+
+/** Share of a hired driver's delivery XP that also goes to the player (their own driving gives it all). */
+export const FLEET_XP_SHARE = 0.25;
 
 export function levelForXp(xp: number): number {
   let level = 1;
@@ -17,8 +31,9 @@ export function levelProgress(xp: number): { level: number; current: number; nex
   return { level, current, next, share: (xp - current) / (next - current) };
 }
 
+/** XP of one delivery: a little for every trip, more for distance and weight (≈ 300 for 500 km with 20 t). */
 export function deliveryXp(loadedKm: number, tons: number, onTime: boolean, xpFactor: number): number {
-  const base = loadedKm * (1 + Math.min(tons, 40) / 24);
+  const base = 40 + loadedKm * 0.35 * (1 + Math.min(tons, 40) / 40);
   return Math.round(base * (onTime ? 1 : 0.5) * xpFactor);
 }
 

@@ -6,7 +6,7 @@ import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
 import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/game/fines';
-import { deliveryXp, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
+import { deliveryXp, FLEET_XP_SHARE, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
 import { buildGameTrip, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
@@ -308,6 +308,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;
   const boostXp = owner?.xpBoostUntil && owner.xpBoostUntil > now ? 2 : 1;
   const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp);
+  // The player's own driving gives all of the XP; a hired driver's trip only a share (the driver learns from all of it).
+  const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, d.coDriverId ? [d.driverId, d.coDriverId] : [d.driverId]), eq(drivers.isOwner, true)))).length > 0;
+  const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);
   if (perks) {
     await tx
       .update(companyMembers)
@@ -318,7 +321,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
 
   await tx
     .update(deliveries)
-    .set({ status: 'completed', completedAt, late: result.late, payoutCents: payout, xpAwarded: xp })
+    .set({ status: 'completed', completedAt, late: result.late, payoutCents: payout, xpAwarded: playerXp })
     .where(eq(deliveries.id, d.id));
   await tx
     .update(vehicles)
@@ -356,7 +359,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .set({ demand: sql`greatest(${ECONOMY.demandFloor}, ${cityMarkets.demand} - ${contract.weightTons * ECONOMY.demandDropPerTon})`, updatedAt: now })
     .where(and(eq(cityMarkets.cityId, contract.destCityId), eq(cityMarkets.cargoType, contract.cargoType)));
 
-  await awardXp(tx, company!.ownerId, xp);
+  await awardXp(tx, company!.ownerId, playerXp);
   // Missions: what this delivery contributes (route countries plus both ends).
   const [origin] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract.originCityId));
   const [route] = await tx.select({ countries: routes.countries }).from(routes).where(eq(routes.id, d.routeId));
@@ -387,7 +390,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     company!.ownerId,
     onTime ? 'success' : 'warning',
     onTime ? `Доставено: ${contract.goods} в ${dest!.nameBg}` : `Закъсняла доставка в ${dest!.nameBg}`,
-    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${xp} опит.`,
+    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${playerXp} опит.`,
     '/game/finance',
   );
   // Halloween quests: holiday loads, night arrivals.
