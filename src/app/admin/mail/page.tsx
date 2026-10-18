@@ -68,7 +68,7 @@ export default async function AdminMail() {
             })}
           </ul>
         )}
-        <p className="p-2 text-xs text-mist-400">„Приет“ означава, че нашият пощенски сървър (напр. Brevo) е поел писмото. Ако после то не стигне до пощата, причината обикновено е липсващ SPF/DKIM/DMARC — виж горе, а в Brevo → Transactional → Logs се вижда и крайният отговор на abv.bg / mail.bg.</p>
+        <p className="p-2 text-xs text-mist-400">„Приет“ означава, че нашият пощенски сървър (Spacemail) е поел писмото. Ако после то не стигне до получателя, причината обикновено е липсващ SPF/DKIM/DMARC — виж горе. Върнатите писма (bounce) пристигат обратно в пощенската кутия на подателя в Spacemail — там се вижда и отговорът на abv.bg / mail.bg.</p>
       </Card>
     </div>
   );

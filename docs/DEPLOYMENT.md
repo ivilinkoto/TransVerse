@@ -104,13 +104,29 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 
 Тестовете (`tests/payments.test.ts`, `tests/paypal.test.ts`) проверяват подписите/проверката на уведомленията, еднократната доставка при повторения, отказ при различна сума, сверката от фоновия процес, възстановяванията и зареждането на ключовете.
 
+## Имейли през Spacemail (Spaceship)
+
+GitHub Secrets:
+- `SMTP_HOST` = `mail.spacemail.com`
+- `SMTP_PORT` = `465` (SSL/TLS се включва автоматично при 465)
+- `SMTP_USER` = пълният адрес на пощенската кутия, напр. `no-reply@transverse-bg.com`
+- `SMTP_PASS` = паролата на тази кутия
+- `MAIL_FROM` = `TransVerse <no-reply@transverse-bg.com>`. Трябва да е същият адрес като `SMTP_USER` — Spacemail праща само от кутията, с която се влиза.
+
+DNS записи (в Spaceship → домейнът → Advanced DNS; при DNS на Spaceship повечето се добавят сами):
+- **MX:** `mx1.spacemail.com` и `mx2.spacemail.com`, приоритет 0.
+- **SPF:** TXT на `@`: `v=spf1 include:spf.spacemail.com ~all`. Записът трябва да е само един. Ако има друг SPF запис, слей ги в един.
+- **DKIM:** TXT `spacemail._domainkey`. Стойността е лична за акаунта: в Advanced DNS → Inactive records (започва с `v=DKIM1; k=rsa;`), там трябва да се активира. Започва да работи след няколко часа.
+- **DMARC:** TXT на `_dmarc`: `v=DMARC1; p=none; rua=mailto:<твой имейл>`.
+
 ## Имейлите стигат до Gmail, но не и до abv.bg / mail.bg
 
 Пощите abv.bg, mail.bg и dir.bg са строги: приемат писма само от домейн, който е удостоверен. Gmail понякога пропуска и неудостоверени писма. Затова писмата стигат до Gmail, но не и до abv.bg / mail.bg.
 
 1. **MAIL_FROM** трябва да е адрес на твоя домейн, например `TransVerse <no-reply@transverse-bg.com>`.
-   - Не @gmail.com, @abv.bg и т.н. Писма „от“ тези домейни, пратени през Brevo, не минават проверката.
-   - Адресът трябва да е добавен като подател в Brevo (Senders).
+   - Не @gmail.com, @abv.bg и т.н. Писма „от“ тези домейни, пратени през чужд сървър, не минават проверката.
+   - При Spacemail адресът трябва да е същият като `SMTP_USER`. При Brevo трябва да е добавен като подател (Senders).
+   - Записите при Spacemail са в раздела по-горе. Следващите две стъпки са само ако ползваш Brevo.
 2. **В Brevo:** Senders, Domains & Dedicated IPs → Domains → Add a domain → `transverse-bg.com`. Brevo показва 3–4 DNS записа.
 3. **При регистратора** (DNS на домейна) добави точно показаните записи:
    - DKIM: `brevo1._domainkey` и `brevo2._domainkey` (CNAME) или TXT `mail._domainkey`;
