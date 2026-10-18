@@ -20,12 +20,15 @@ import { heldLicences, missingFor } from '@/server/game/licences';
 
 import { FleetCondition } from '@/components/game/FleetCondition';
 import { DispatchPanel } from '@/components/game/DispatchPanel';
+import { favoriteLanesOf } from '@/server/game/favorites';
 import { membershipOf } from '@/server/game/membership';
 
 export const metadata = { title: 'Поръчки' };
 
-export default async function ContractsPage() {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string }> }) {
+  const onlyFavorites = (await searchParams).fav === '1';
   const { db, user, company, now } = await gameContext();
+  const favorites = await favoriteLanesOf(db, user.id);
   // Every free vehicle always has at least one job it can take in its own city.
   await ensureLocalJobsForFleet(db, now, company.id).catch((e) => console.warn('[contracts] local jobs', e));
   const [fleet, licences, taken] = await Promise.all([
@@ -95,6 +98,7 @@ export default async function ContractsPage() {
       local: localCities.includes(c.originCityId),
       urgent: c.urgent,
       holiday: c.holiday,
+      favorite: favorites.some((f) => f.originCityId === c.originCityId && f.destCityId === c.destCityId),
       tender: !!c.tenderId,
       alreadyTaken: takenIds.has(c.id),
       reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,
@@ -117,7 +121,7 @@ export default async function ContractsPage() {
       />
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
-      <ContractBoard vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard initialChips={onlyFavorites ? ['fav'] : []} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

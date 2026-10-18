@@ -42,6 +42,8 @@ export interface BoardContract {
   urgent: boolean;
   /** Holiday load ('halloween'): themed goods, better pay. */
   holiday: string | null;
+  /** The player starred this lane (origin → destination). */
+  favorite: boolean;
   /** Load of a tender of the player's company (only members see it). */
   tender: boolean;
   speedFactor: number;
@@ -74,8 +76,24 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
+type Chip = 'fav' | 'halloween' | 'licence' | 'fast' | 'perKm';
 
-export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean }) {
+const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
+  { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
+  { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
+  { id: 'licence', label: 'Без нужда от лиценз', test: (c) => c.missingLicences.length === 0 },
+  { id: 'fast', label: 'До 2 часа', test: (c) => c.options.some((o) => !o.error && o.minutes <= 120) },
+  { id: 'perKm', label: 'Над 3 €/км', test: (c) => c.rewardCents / c.distanceKm >= 300 },
+];
+
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [] }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[] }) {
+  const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
+  const toggleChip = (id: Chip) => setChips((s) => {
+    const next = new Set(s);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
   const [cargo, setCargo] = useState<string>('');
   const [query, setQuery] = useState('');
   const [doable, setDoable] = useState(false);
@@ -117,7 +135,8 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       (c) =>
         (!cargo || c.cargoType === cargo) &&
         (!q || c.origin.name.toLowerCase().includes(q) || c.destination.name.toLowerCase().includes(q) || c.goods.toLowerCase().includes(q)) &&
-        (!doable || (!c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error))),
+        (!doable || (!c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error))) &&
+        CHIPS.every((chip) => !chips.has(chip.id) || chip.test(c)),
     );
     const key: Record<Sort, (c: BoardContract) => number> = {
       reward: (c) => -c.rewardCents,
@@ -128,9 +147,10 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
     // Own city first — jobs the player can take right now before the rest.
     // Urgent shipments first, then the player's own city.
     const takeable = (c: BoardContract) => !c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error);
-    const rank = (c: BoardContract) => (c.urgent ? 0 : c.tender && takeable(c) ? 1 : c.local ? (takeable(c) ? 1 : 2) : 3);
+    // Favourite lanes the player can take come right after urgent shipments.
+    const rank = (c: BoardContract) => (c.urgent ? 0 : c.favorite && takeable(c) ? 1 : c.tender && takeable(c) ? 2 : c.local ? (takeable(c) ? 2 : 3) : 4);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
-  }, [contracts, cargo, query, doable, sort]);
+  }, [contracts, cargo, query, doable, sort, chips]);
 
   return (
     <div className="space-y-4">
@@ -170,6 +190,13 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         <span className="num ml-auto text-xs text-mist-400">{list.length} от {contracts.length}</span>
       </div>
 
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Бързи филтри">
+        {CHIPS.filter((chip) => chip.id !== 'halloween' || contracts.some(chip.test)).map((chip) => (
+          <button key={chip.id} type="button" aria-pressed={chips.has(chip.id)} onClick={() => toggleChip(chip.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${chips.has(chip.id) ? 'border-volt-500 bg-volt-500/20 text-white' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}>
+            {chip.label}
+          </button>
+        ))}
+      </div>
       {localCityNames.length > 0 && (
         <p className="flex items-center gap-2 text-sm text-mist-300">
           <MapPinned className="h-4 w-4 text-gold-400" />
@@ -201,6 +228,19 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
   const needsOverload = !!option && option.overloadPercent > 0;
   const shownMinutes = option ? (rush && option.rushMinutes != null ? option.rushMinutes : option.minutes) : 0;
 
+  const [favBusy, setFavBusy] = useState(false);
+  const toggleFavorite = async () => {
+    setFavBusy(true);
+    try {
+      await api('/api/game/action', { type: 'favoriteLane', originCityId: c.origin.id, destCityId: c.destination.id });
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setFavBusy(false);
+    }
+  };
+
   const accept = async () => {
     setBusy(true);
     setError(null);
@@ -225,6 +265,7 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
+            {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />ПРЕМИУМ · репутация {c.minReputation}</Badge>}
             {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
@@ -261,6 +302,12 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
             <div><dt className="label">Срок за доставка</dt><dd className="mt-1">{duration(c.windowMinutes)} от приемането</dd></div>
             <div><dt className="label">Изтича от борсата</dt><dd className="mt-1">{dateTime(c.expiresAt)}</dd></div>
           </dl>
+          <div className="mt-3">
+            <button type="button" className="inline-flex items-center gap-1.5 text-sm text-mist-300 hover:text-gold-400" onClick={toggleFavorite} disabled={favBusy}>
+              <Star className={`h-4 w-4 ${c.favorite ? 'fill-gold-400 text-gold-400' : ''}`} />
+              {c.favorite ? `Любима линия ${c.origin.name} → ${c.destination.name} (премахни)` : `Направи ${c.origin.name} → ${c.destination.name} любима линия — първа в списъка и известие за нови поръчки`}
+            </button>
+          </div>
 
           {c.urgent && (
             <p className="mt-3 rounded-lg border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-mist-200">

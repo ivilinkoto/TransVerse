@@ -4,6 +4,9 @@ import { closeDb } from '@/server/db/client';
 import { companies, deliveries, users, vehicles } from '@/server/db/schema';
 import { GameError } from '@/server/game/errors';
 import { autoDispatchTick, planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispatch';
+import { favoriteLanesOf, notifyFavoriteLane, toggleFavoriteLane } from '@/server/game/favorites';
+import { notifications } from '@/server/db/schema';
+import { cityByName } from './helpers';
 import { db, makeContract, newPlayer } from './helpers';
 
 afterAll(async () => closeDb());
@@ -36,5 +39,23 @@ describe('dispatcher', () => {
     await autoDispatchTick(db());
     const auto = await db().select().from(deliveries).where(and(eq(deliveries.companyId, account!.id), eq(deliveries.autoDispatched, true)));
     expect(auto).toHaveLength(1);
+  });
+});
+
+describe('favourite lanes', () => {
+  it('star and un-star a lane; a new job on it tells the player at most once an hour', async () => {
+    const p = await newPlayer();
+    const sofia = await cityByName('Sofia');
+    const plovdiv = await cityByName('Plovdiv');
+    expect(await toggleFavoriteLane(db(), p.userId, sofia.id, plovdiv.id)).toBe(true);
+    expect(await favoriteLanesOf(db(), p.userId)).toHaveLength(1);
+    const lane = { originCityId: sofia.id, destCityId: plovdiv.id, originName: 'София', destName: 'Пловдив', goods: 'Мебели', rewardCents: 500_00 };
+    const now = new Date();
+    expect(await notifyFavoriteLane(db(), lane, now)).toBeGreaterThanOrEqual(1);
+    await notifyFavoriteLane(db(), lane, new Date(now.getTime() + 60_000)); // within the hour: quiet
+    const notes = await db().select().from(notifications).where(and(eq(notifications.userId, p.userId), eq(notifications.title, 'Нова поръчка: София → Пловдив')));
+    expect(notes).toHaveLength(1);
+    expect(await toggleFavoriteLane(db(), p.userId, sofia.id, plovdiv.id)).toBe(false);
+    expect(await favoriteLanesOf(db(), p.userId)).toHaveLength(0);
   });
 });
