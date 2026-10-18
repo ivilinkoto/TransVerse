@@ -187,3 +187,14 @@ describe('e-mail links', () => {
     }
   });
 });
+
+describe('mail sender address', () => {
+  it('reads the address and domain from MAIL_FROM', async () => {
+    const { fromAddress, fromDomain } = await import('@/server/mail');
+    expect(fromAddress('TransVerse <No-Reply@Transverse-BG.com>')).toBe('no-reply@transverse-bg.com');
+    expect(fromDomain('TransVerse <no-reply@transverse-bg.com>')).toBe('transverse-bg.com');
+    expect(fromDomain('someone@gmail.com')).toBe('gmail.com');
+    expect(fromDomain('')).toBe('');
+  });
+});
+

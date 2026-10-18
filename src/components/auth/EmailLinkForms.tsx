@@ -30,7 +30,7 @@ export function ForgotPasswordForm() {
       <div className="space-y-4">
         <p role="status" className="flex items-start gap-2 rounded-lg border border-profit/40 bg-profit/10 px-3 py-3 text-sm text-profit">
           <MailCheck className="mt-0.5 h-4 w-4 shrink-0" />
-          {done.mailEnabled ? 'Ако имейлът е регистриран, изпратихме линк за нова парола. Провери входящата поща (и папката „Спам“). Линкът важи 1 час.' : 'Изпращането на имейли още не е включено. Пиши на поддръжката на играта — администратор ще ти изпрати линк за нова парола.'}
+          {done.mailEnabled ? 'Ако имейлът е регистриран, изпратихме линк за нова парола. Провери входящата поща и папката „Спам“ / „Нежелана поща“ — abv.bg и mail.bg често слагат писмата там. Линкът важи 1 час. Ако не дойде до 10 минути, пиши на поддръжката.' : 'Изпращането на имейли още не е включено. Пиши на поддръжката на играта — администратор ще ти изпрати линк за нова парола.'}
         </p>
         <Link href="/login" className="btn-ghost w-full justify-center">Към входа</Link>
       </div>

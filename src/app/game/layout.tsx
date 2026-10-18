@@ -39,6 +39,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
             <MailWarning className="h-4 w-4 text-amber-sig" />
             <span>Потвърди имейла си <span className="font-semibold">{user.email}</span> — така ще можеш да си върнеш профила и да пазаруваш.</span>
             <ResendVerification />
+            <span className="basis-full text-xs text-mist-400 sm:basis-auto">Не виждаш писмото? Провери „Спам“ / „Нежелана поща“.</span>
           </div>
         )}
         {tutorial.active && tutorial.step && <TutorialCoach step={tutorial.step} index={tutorial.index} total={tutorial.total} />}

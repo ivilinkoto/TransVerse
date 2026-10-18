@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { adminResetLink, adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
+import { adminResetLink, adminVerifyEmail, sendTestMail, adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
 import { cancelEvent, createEvent, eventSchema } from '@/server/game/events';
 import { diagnosePaypal, refundPaypalPayment } from '@/server/payments';
@@ -33,6 +33,8 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('resetLink'), userId: id }),
   z.object({ type: z.literal('resolveReport'), reportId: id, action: z.enum(['dismiss', 'warn', 'delete_message', 'mute_h24', 'mute_d7']) }),
   z.object({ type: z.literal('unmute'), userId: id }),
+  z.object({ type: z.literal('testMail'), to: z.string().trim().toLowerCase().email('Невалиден имейл.') }),
+  z.object({ type: z.literal('verifyUserEmail'), userId: id }),
 ]);
 
 export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input, request }) => {
@@ -41,6 +43,11 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
   switch (input.type) {
     case 'resolveReport':
       await resolveReport(db, user, input.reportId, input.action);
+      return { ok: true };
+    case 'testMail':
+      return { ok: true, sent: await sendTestMail(user, input.to, siteUrl(request.headers.get('origin'))) };
+    case 'verifyUserEmail':
+      await adminVerifyEmail(db, user, input.userId);
       return { ok: true };
     case 'unmute':
       await unmute(db, user, input.userId);
