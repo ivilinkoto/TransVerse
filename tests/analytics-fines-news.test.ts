@@ -4,10 +4,13 @@ import { analyze, type DeliveryRow } from '@/lib/game/analytics';
 import { canOverload, FINE_RULES, fineCents, insurancePriceCents } from '@/lib/game/fines';
 import { planRoadEvents } from '@/lib/game/road-events';
 import { closeDb } from '@/server/db/client';
-import { companies, deliveries, drivers, fines, ledgerEntries, vehicles } from '@/server/db/schema';
-import { acceptContract } from '@/server/game/deliveries';
+import { companies, deliveries, drivers, fines, ledgerEntries, newspapers, notifications, vehicles } from '@/server/db/schema';
+import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
 import { appealFine, buyInsurance, collectOverdueFines, payFine } from '@/server/game/fines';
+import { latestIssues, publishWeeklyNews } from '@/server/game/news';
+import { headline } from '@/lib/game/news';
+import { weekKey } from '@/lib/game/leagues';
 import { applyDueRoadEvents } from '@/server/game/road-events';
 import { db, makeContract, newPlayer } from './helpers';
 
@@ -107,5 +110,28 @@ describe('fines and insurance', () => {
     await applyDueRoadEvents(db(), new Date(at + 5_000));
     const bills = await db().select().from(ledgerEntries).where(and(eq(ledgerEntries.companyId, account!.id), eq(ledgerEntries.category, 'road_events')));
     expect(bills).toHaveLength(0);
+  });
+});
+
+describe('weekly newspaper', () => {
+  it('is published once for the week that ended, with this week\'s deliveries, and tells the players', async () => {
+    const p = await newPlayer();
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const [truck] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
+    const job = await makeContract('Sofia', 'Varna');
+    const d = await acceptContract(db(), p.userId, job.id, truck!.id);
+    await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000), account!.id);
+    // A week after the delivery the issue for its week can be written.
+    const nextWeek = new Date(d.etaAt.getTime() + 7 * 86_400_000);
+    const key = weekKey(d.etaAt);
+    await db().delete(newspapers).where(eq(newspapers.weekKey, key));
+    const row = (await publishWeeklyNews(db(), nextWeek))!;
+    expect(row.weekKey).toBe(key);
+    expect(await publishWeeklyNews(db(), nextWeek)).toBeNull();
+    const [issue] = (await latestIssues(db(), 20)).filter((i) => i.weekKey === key);
+    expect(issue!.content.totals.deliveries).toBeGreaterThanOrEqual(1);
+    expect(issue!.content.topDrivers.length).toBeGreaterThan(0);
+    const notes = await db().select().from(notifications).where(and(eq(notifications.userId, p.userId), eq(notifications.title, `Седмичник TransVerse, брой ${row.number}`)));
+    expect(notes[0]!.body).toBe(headline(issue!.content));
   });
 });

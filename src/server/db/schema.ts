@@ -1256,3 +1256,11 @@ export const fines = pgTable(
   },
   (t) => [index('fines_company_idx').on(t.companyId, t.status), index('fines_due_idx').on(t.status, t.dueAt), uniqueIndex('fines_delivery_violation_idx').on(t.deliveryId, t.violation)],
 );
+
+/** The weekly newspaper: one issue per finished week (Monday, Sofia), written by the worker from game data. */
+export const newspapers = pgTable('newspapers', {
+  weekKey: text('week_key').primaryKey(),
+  number: integer('number').notNull(),
+  content: jsonb('content').notNull(),
+  publishedAt: ts('published_at').notNull().defaultNow(),
+});

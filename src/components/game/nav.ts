@@ -71,6 +71,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/pass', label: 'Пропуск' },
       { href: '/game/events', label: 'Ивенти' },
       { href: '/game/leaderboards', label: 'Класации' },
+      { href: '/game/news', label: 'Седмичник' },
       { href: '/game/seasons', label: 'Сезони' },
       { href: '/game/progress', label: 'Постижения' },
     ],
