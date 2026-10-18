@@ -188,8 +188,12 @@ export async function adminResetLink(db: Database, actor: Staff, targetId: strin
   return `${base}/reset-password?token=${token}`;
 }
 
-/** Marks a player's e-mail as confirmed by hand (when their mailbox does not receive our mail). */
+/**
+ * Marks an e-mail as confirmed by hand (when the mailbox does not receive our mail). Admins and founders may do it
+ * for anyone, themselves and other founders included: it only unlocks features and is audited.
+ */
 export async function adminVerifyEmail(db: Database, actor: Staff, targetId: string) {
+  requireAdminRole(actor);
   return db.transaction(async (tx) => {
     const [u] = await tx.select({ id: users.id }).from(users).where(eq(users.id, targetId));
     if (!u) fail('user_not_found', 'Потребителят не е намерен.', 404);

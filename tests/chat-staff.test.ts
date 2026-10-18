@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
-import { bootstrapFounder, setBan } from '@/server/admin';
+import { adminVerifyEmail, bootstrapFounder, setBan } from '@/server/admin';
 import { closeDb } from '@/server/db/client';
 import { companies, organizations, users } from '@/server/db/schema';
 import { companyChat, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
@@ -99,5 +99,19 @@ describe('founders', () => {
     const roles = await db().select({ role: users.role }).from(users).where(eq(users.id, b.userId));
     expect(roles[0]!.role).toBe('founder');
     expect(await code(setBan(db(), { id: a.userId, role: 'founder', username: a.username }, b.userId, true, 'тест'))).toBe('forbidden');
+  });
+
+  it('founders confirm e-mails by hand, their own and other founders\' included; support cannot', async () => {
+    const a = await newPlayer();
+    const b = await newPlayer();
+    const helper = await newPlayer();
+    await db().update(users).set({ role: 'founder', emailVerifiedAt: null }).where(eq(users.id, a.userId));
+    await db().update(users).set({ role: 'founder', emailVerifiedAt: null }).where(eq(users.id, b.userId));
+    const founder = { id: a.userId, role: 'founder', username: a.username };
+    expect(await code(adminVerifyEmail(db(), { id: helper.userId, role: 'support', username: helper.username }, b.userId))).toBe('forbidden');
+    await adminVerifyEmail(db(), founder, a.userId);
+    await adminVerifyEmail(db(), founder, b.userId);
+    const rows = await db().select({ verified: users.emailVerifiedAt }).from(users).where(inArray(users.id, [a.userId, b.userId]));
+    expect(rows.every((r) => r.verified !== null)).toBe(true);
   });
 });
