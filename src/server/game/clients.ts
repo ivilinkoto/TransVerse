@@ -196,7 +196,7 @@ export async function recordClientLoad(tx: Tx, clientContractId: string, late: b
   const bonus = clientBonusCents(cc.bonusCents, cc.loadsTotal, lateLoads);
   if (bonus > 0) await post(tx, cc.companyId, [{ category: 'client_bonus', amountCents: bonus, description: `Бонус от „${cc.client}“ за изпълнен договор`, idempotencyKey: `client:${cc.id}:bonus`, refType: 'client_contract', refId: cc.id }]);
   await tx.update(companies).set({ reputation: sql`least(100, ${companies.reputation} + ${CLIENT_RULES.successReputation})` }).where(eq(companies.id, cc.companyId));
-  await notify(tx, ownerId, 'success', `Договорът с „${cc.client}“ е изпълнен`, `${cc.loadsTotal} товара${lateLoads ? ` (${lateLoads} със закъснение)` : ''}. Бонус ${(bonus / 100).toLocaleString('bg-BG')} € и +${CLIENT_RULES.successReputation} репутация.`, '/game/clients');
+  await notify(tx, ownerId, 'success', `Договорът с „${cc.client}“ е изпълнен`, `${cc.loadsTotal} товара${lateLoads ? ` (${lateLoads} със закъснение)` : ''}. Бонус ${(bonus / 100).toLocaleString('bg-BG')} лв. и +${CLIENT_RULES.successReputation} репутация.`, '/game/clients');
 }
 
 /** Worker: old offers expire; active contracts past their deadline fail once no load is still on the road. */

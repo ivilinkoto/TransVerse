@@ -9,7 +9,7 @@ import { post } from './finance';
 import { notify } from './notify';
 import { checkAchievements } from './progression';
 
-const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} €`;
+const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} лв.`;
 
 /** A roadside check found a risk the player took: the fine waits to be paid or appealed (once per delivery and violation). */
 export async function issueFine(tx: Tx, f: { companyId: string; userId: string; deliveryId: string; violation: Violation; amountCents: number; at: Date }) {

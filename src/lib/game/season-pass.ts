@@ -16,7 +16,7 @@ export interface PassReward {
 
 export function rewardLabel(r: PassReward): string {
   const parts: string[] = [];
-  if (r.cents) parts.push(`${(r.cents / 100).toLocaleString('bg-BG')} €`);
+  if (r.cents) parts.push(`${(r.cents / 100).toLocaleString('bg-BG')} лв.`);
   if (r.coins) parts.push(`${r.coins} TC`);
   if (r.vipDays) parts.push(`VIP ${r.vipDays} ${r.vipDays === 1 ? 'ден' : 'дни'}`);
   if (r.xpBoostHours) parts.push(`×2 опит ${r.xpBoostHours} ч`);

@@ -24,15 +24,15 @@ const Bar = ({ share, color = 'bg-cyan-glow' }: { share: number; color?: string 
 
 function BoardShot() {
   const rows = [
-    { lane: 'София → Букурещ', goods: 'Палети с напитки', t: 18, km: 388, pay: '1 420 €', fav: true },
-    { lane: 'Пловдив → Истанбул', goods: 'Мебели', t: 12, km: 412, pay: '1 380 €', fav: false },
-    { lane: 'Варна → Констанца', goods: 'Замразена риба', t: 20, km: 152, pay: '760 €', fav: false, urgent: true },
-    { lane: 'Мюнхен → Виена', goods: 'Авточасти', t: 9, km: 435, pay: '1 190 €', fav: true },
+    { lane: 'София → Букурещ', goods: 'Палети с напитки', t: 18, km: 388, pay: '1 420 лв.', fav: true },
+    { lane: 'Пловдив → Истанбул', goods: 'Мебели', t: 12, km: 412, pay: '1 380 лв.', fav: false },
+    { lane: 'Варна → Констанца', goods: 'Замразена риба', t: 20, km: 152, pay: '760 лв.', fav: false, urgent: true },
+    { lane: 'Мюнхен → Виена', goods: 'Авточасти', t: 9, km: 435, pay: '1 190 лв.', fav: true },
   ];
   return (
     <Shot caption="Борса за поръчки · примерни данни">
       <div className="mb-2 flex flex-wrap gap-1.5 text-[10px]">
-        {['★ Любими', 'Без лиценз', 'До 2 ч път', 'Над 3 €/км'].map((c, i) => <span key={c} className={`rounded-full border px-2 py-0.5 ${i === 0 ? 'border-gold-400/50 text-gold-400' : 'border-asphalt-700 text-mist-300'}`}>{c}</span>)}
+        {['★ Любими', 'Без лиценз', 'До 2 ч път', 'Над 3 лв./км'].map((c, i) => <span key={c} className={`rounded-full border px-2 py-0.5 ${i === 0 ? 'border-gold-400/50 text-gold-400' : 'border-asphalt-700 text-mist-300'}`}>{c}</span>)}
       </div>
       <div className="space-y-1.5">
         {rows.map((r) => (
@@ -119,12 +119,12 @@ function AuctionShot() {
         <div className="flex items-center justify-between"><span className="font-semibold">Трансформатор за подстанция</span><span className="num rounded bg-loss/15 px-1.5 py-0.5 text-loss">04:12</span></div>
         <div className="mt-1 text-mist-400">Русе → Белград · 34 т · 512 км · +40 TC при доставка</div>
         <div className="mt-3 flex items-end justify-between">
-          <div><div className="text-[10px] text-mist-400">Най-ниска оферта</div><div className="num font-display text-xl font-bold text-profit">6 480 €</div></div>
-          <span className="rounded-md bg-gold-400 px-2.5 py-1 text-[11px] font-semibold text-asphalt-950">Оферирай 6 410 €</span>
+          <div><div className="text-[10px] text-mist-400">Най-ниска оферта</div><div className="num font-display text-xl font-bold text-profit">6 480 лв.</div></div>
+          <span className="rounded-md bg-gold-400 px-2.5 py-1 text-[11px] font-semibold text-asphalt-950">Оферирай 6 410 лв.</span>
         </div>
       </div>
       <div className="mt-2 space-y-1">
-        {[['Балкан Карго', '6 480 €'], ['Север Транс', '6 560 €'], ['Еко Лоджистик', '6 900 €']].map(([n, v]) => <Row key={n}><span>{n}</span><span className="num">{v}</span></Row>)}
+        {[['Балкан Карго', '6 480 лв.'], ['Север Транс', '6 560 лв.'], ['Еко Лоджистик', '6 900 лв.']].map(([n, v]) => <Row key={n}><span>{n}</span><span className="num">{v}</span></Row>)}
       </div>
     </Shot>
   );
@@ -132,9 +132,9 @@ function AuctionShot() {
 
 function TradeShot() {
   const stock = [
-    { goods: 'Зърно', city: 'Русе', share: 0.8, price: '210 €/т', trend: '▲', tone: 'text-profit' },
-    { goods: 'Вино', city: 'Мелник', share: 0.35, price: '1 450 €/т', trend: '▼', tone: 'text-loss' },
-    { goods: 'Цимент', city: 'Девня', share: 0.55, price: '95 €/т', trend: '▲', tone: 'text-profit' },
+    { goods: 'Зърно', city: 'Русе', share: 0.8, price: '210 лв./т', trend: '▲', tone: 'text-profit' },
+    { goods: 'Вино', city: 'Мелник', share: 0.35, price: '1 450 лв./т', trend: '▼', tone: 'text-loss' },
+    { goods: 'Цимент', city: 'Девня', share: 0.55, price: '95 лв./т', trend: '▲', tone: 'text-profit' },
   ];
   return (
     <Shot caption="Складове и търговия · примерни данни">
@@ -145,7 +145,7 @@ function TradeShot() {
             <div className="mt-1.5"><Bar share={s.share} color="bg-gold-400" /></div>
           </div>
         ))}
-        <Row><span>Пазар на употребявана техника</span><span className="text-cyan-glow">Danubia T440 · 2 г. · 61 000 €</span></Row>
+        <Row><span>Пазар на употребявана техника</span><span className="text-cyan-glow">Danubia T440 · 2 г. · 61 000 лв.</span></Row>
       </div>
     </Shot>
   );
@@ -159,11 +159,11 @@ function AnalyticsShot() {
         {days.map((d, i) => <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-volt-500 to-cyan-glow" style={{ height: `${d * 100}%` }} />)}
       </div>
       <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-        {[['Нетно / км', '0.94 €'], ['Навреме', '96 %'], ['л / 100 км', '29.8']].map(([k, v]) => (
+        {[['Нетно / км', '0.94 лв.'], ['Навреме', '96 %'], ['л / 100 км', '29.8']].map(([k, v]) => (
           <div key={k} className="rounded-lg border border-asphalt-800 bg-asphalt-900/50 px-2.5 py-1.5"><div className="text-[10px] text-mist-400">{k}</div><div className="num font-bold">{v}</div></div>
         ))}
       </div>
-      <div className="mt-2 space-y-1"><Row><span>Най-печеливша линия: София → Букурещ</span><span className="num text-profit">+18 240 €</span></Row></div>
+      <div className="mt-2 space-y-1"><Row><span>Най-печеливша линия: София → Букурещ</span><span className="num text-profit">+18 240 лв.</span></Row></div>
     </Shot>
   );
 }
@@ -177,7 +177,7 @@ export function tourTabs(livery?: 'pumpkin'): TourTab[] {
       id: 'board', label: 'Борса и диспечер', icon: icon(Package),
       title: 'Общ пазар на поръчки',
       text: 'Всички играчи виждат една и съща борса. Поръчката, която вземеш ти, изчезва за останалите. Избираш товар по цена, разстояние, срок и вид ремарке — или оставяш диспечера да предложи най-изгодния курс за всеки свободен камион.',
-      points: ['Любими линии със звезда и известие за нова поръчка по тях', 'Бързи филтри: без лиценз, до 2 часа път, над 3 €/км', 'Спешни поръчки с по-висока цена и кратък срок', 'Рискове по избор: претоварване или каране без почивка — с шанс за глоба'],
+      points: ['Любими линии със звезда и известие за нова поръчка по тях', 'Бързи филтри: без лиценз, до 2 часа път, над 3 лв./км', 'Спешни поръчки с по-висока цена и кратък срок', 'Рискове по избор: претоварване или каране без почивка — с шанс за глоба'],
       mockup: <BoardShot />,
     },
     {

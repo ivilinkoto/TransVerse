@@ -11,7 +11,7 @@ import { AUCTION_RULES } from '@/lib/game/auctions';
 export const metadata = { title: 'Помощ и правила' };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
-const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} €`;
+const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} лв.`;
 
 const SECTIONS: { id: string; title: string; items: React.ReactNode[] }[] = [
   {
@@ -30,7 +30,7 @@ const SECTIONS: { id: string; title: string; items: React.ReactNode[] }[] = [
       'Диспечер: „Предложи курсове“ избира за всеки свободен камион най-изгодната обикновена поръчка (печалба за минута път), която ще стигне навреме. Ти избираш кои да тръгнат.',
       `VIP диспечер (Автопарк): камионът сам поема следващия курс, щом е свободен — до ${AUTO_DISPATCH_PER_DAY} курса на ден.`,
       'Любими линии: звездата в отворена поръчка — поръчките по линията са най-отгоре и получаваш известие за нова (до веднъж на час).',
-      'Бързи филтри: любими, празнични, без нужда от лиценз, до 2 часа, над 3 €/км.',
+      'Бързи филтри: любими, празнични, без нужда от лиценз, до 2 часа, над 3 лв./км.',
       `Специални товари (Поръчки → Специални товари): търг всеки ден в ${AUCTION_RULES.hours.map((h) => `${h}:00`).join(', ')} за ${AUCTION_RULES.minutes} минути. Печели най-ниската цена; победителят има ${AUCTION_RULES.sendHours} часа да изпрати камион, иначе губи товара и ${AUCTION_RULES.forfeitReputation} репутация.`,
     ],
   },

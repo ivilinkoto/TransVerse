@@ -181,7 +181,7 @@ export const STARTER_RENTAL = 'rent-rigid';
 
 /** After this many deliveries with a rented truck the player may buy it out. */
 export const RENTAL_BUYOUT_DELIVERIES = 5;
-/** Buy-out price as a share of the new price (rounded to 100 €). */
+/** Buy-out price as a share of the new price (rounded to 100 лв.). */
 export const RENTAL_BUYOUT_SHARE = 0.5;
 
 export function rentalBuyoutCents(unitId: string, trailerId?: string | null): number {

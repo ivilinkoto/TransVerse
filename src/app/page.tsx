@@ -428,8 +428,8 @@ function PhoneMockup() {
           <p className="text-center text-xs text-mist-400">понеделник</p>
           <div className="mt-8 space-y-2">
             {[
-              { title: 'Камионът пристигна', body: 'СВ 4821 КТ достави плодове във Виена · +3 860 €' },
-              { title: 'Нова поръчка по любима линия', body: 'София → Букурещ · 18 т · 1 420 €' },
+              { title: 'Камионът пристигна', body: 'СВ 4821 КТ достави плодове във Виена · +3 860 лв.' },
+              { title: 'Нова поръчка по любима линия', body: 'София → Букурещ · 18 т · 1 420 лв.' },
               { title: 'Седмичник TransVerse', body: 'Излезе новият брой — виж шофьорите на седмицата.' },
             ].map((n) => (
               <div key={n.title} className="rounded-2xl border border-asphalt-700/80 bg-asphalt-850/90 p-2.5 backdrop-blur">

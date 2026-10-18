@@ -1,7 +1,7 @@
 /**
  * What can be bought for real money. Pure data shared by server and UI; the
  * server always charges these prices — never an amount sent by the browser.
- * Game money (€ in the game) is never sold.
+ * Game money (лв. in the game) is never sold; real prices are in euro.
  */
 
 export type PaidProductId = 'tc_100' | 'tc_550' | 'tc_1200' | 'tc_3200' | 'vip_30_direct';

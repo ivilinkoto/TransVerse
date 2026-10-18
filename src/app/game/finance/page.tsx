@@ -77,7 +77,7 @@ export default async function FinancePage() {
         <p className="mb-3 text-sm text-mist-400">Горивото за курса се плаща по цените на държавите, през които минава камионът — пропорционално на километрите във всяка.</p>
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           {fuel.map((f) => (
-            <li key={f.code} className="flex items-center justify-between rounded-lg bg-asphalt-850 px-3 py-2 text-sm"><span className="text-mist-300">{f.code}</span><span className={`num font-semibold ${f.cents <= cheapest * 1.05 ? 'text-profit' : f.cents >= dearest * 0.95 ? 'text-loss' : ''}`}>{(f.cents / 100).toFixed(2)} €/л</span></li>
+            <li key={f.code} className="flex items-center justify-between rounded-lg bg-asphalt-850 px-3 py-2 text-sm"><span className="text-mist-300">{f.code}</span><span className={`num font-semibold ${f.cents <= cheapest * 1.05 ? 'text-profit' : f.cents >= dearest * 0.95 ? 'text-loss' : ''}`}>{(f.cents / 100).toFixed(2)} лв./л</span></li>
           ))}
         </ul>
       </Card>

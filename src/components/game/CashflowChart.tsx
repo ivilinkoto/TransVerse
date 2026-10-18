@@ -16,7 +16,7 @@ export function CashflowChart({ days }: { days: { day: string; income: number; e
         {[0, 0.5, 1].map((f) => (
           <g key={f}>
             <line x1={pad} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="#263347" strokeDasharray="3 4" />
-            <text x={0} y={y(max * f) + 4} fontSize="10" fill="#8d9bb3">{f === 0 ? '0' : money(max * f).replace(/\s?€/, '')}</text>
+            <text x={0} y={y(max * f) + 4} fontSize="10" fill="#8d9bb3">{f === 0 ? '0' : money(max * f).replace(/\s?лв\.$/, '')}</text>
           </g>
         ))}
         {days.map((d, i) => {

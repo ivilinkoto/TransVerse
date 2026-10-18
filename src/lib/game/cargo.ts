@@ -14,7 +14,7 @@ export interface CargoDefinition {
   label: string;
   /** Body types that may legally carry this cargo. */
   bodies: BodyType[];
-  /** €/km base plus €/(t·km), both in euro cents. */
+  /** лв./km base plus лв./(t·km), both in stotinki. */
   baseCentsPerKm: number;
   centsPerTonKm: number;
   /** Player level needed to see/accept. */

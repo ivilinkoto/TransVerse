@@ -75,7 +75,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               <section>
                 <h3 className="label mb-2 flex items-center gap-1.5"><Fuel className="h-3.5 w-3.5 text-mist-400" />Пазарът</h3>
                 <ul className="space-y-1.5 text-sm">
-                  {issue.content.fuel && <li>Най-евтин дизел: <b>{issue.content.fuel.cheapest.country}</b> ({(issue.content.fuel.cheapest.cents / 100).toFixed(2)} €/л); най-скъп: <b>{issue.content.fuel.dearest.country}</b> ({(issue.content.fuel.dearest.cents / 100).toFixed(2)} €/л).</li>}
+                  {issue.content.fuel && <li>Най-евтин дизел: <b>{issue.content.fuel.cheapest.country}</b> ({(issue.content.fuel.cheapest.cents / 100).toFixed(2)} лв./л); най-скъп: <b>{issue.content.fuel.dearest.country}</b> ({(issue.content.fuel.dearest.cents / 100).toFixed(2)} лв./л).</li>}
                   {issue.content.demand.hot && <li className="flex items-center gap-1.5"><TrendingUp className="h-4 w-4 text-profit" />Най-търсени: {issue.content.demand.hot.cargo}</li>}
                   {issue.content.demand.cold && <li className="flex items-center gap-1.5"><TrendingDown className="h-4 w-4 text-loss" />Най-малко търсени: {issue.content.demand.cold.cargo}</li>}
                   {issue.content.marketEvents.map((e) => <li key={e.title}>{e.title} <span className="text-mist-400">(до {d(e.endsAt)})</span></li>)}

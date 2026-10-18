@@ -93,7 +93,7 @@ export interface MissionDefinition {
   fixed?: boolean;
 }
 
-const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} €`;
+const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} лв.`;
 const num = (n: number) => n.toLocaleString('bg-BG');
 const international = (p: PlayerProfile) => p.licences.has('international');
 

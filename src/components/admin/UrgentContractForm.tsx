@@ -63,7 +63,7 @@ export function UrgentContractForm({ cities, cargoTypes }: { cities: CityOption[
       <label className="block"><span className={field}>Тегло (т)</span><input name="weightTons" type="number" step="0.1" min={0.1} max={40} defaultValue={1} className="input" required /></label>
       <label className="block"><span className={field}>Начална точка</span><select name="originCityId" className="input" required defaultValue="">{[<option key="" value="" disabled>— град —</option>, ...options]}</select></label>
       <label className="block"><span className={field}>Крайна точка</span><select name="destCityId" className="input" required defaultValue="">{[<option key="" value="" disabled>— град —</option>, ...options]}</select></label>
-      <label className="block"><span className={field}>Цена на доставката (€)</span><input name="rewardEur" type="number" min={1} step={1} defaultValue={2500} className="input" required /></label>
+      <label className="block"><span className={field}>Цена на доставката (лв.)</span><input name="rewardEur" type="number" min={1} step={1} defaultValue={2500} className="input" required /></label>
       <label className="block"><span className={field}>Срок за доставка (минути от приемането)</span><input name="windowMinutes" type="number" min={5} max={2880} defaultValue={60} className="input" required /></label>
       <label className="block"><span className={field}>Колко по-бързо върви товарът</span>
         <select name="speedFactor" className="input" defaultValue="2"><option value="1">Нормално (×1)</option><option value="1.5">×1,5</option><option value="2">×2</option><option value="3">×3</option><option value="5">×5</option></select>

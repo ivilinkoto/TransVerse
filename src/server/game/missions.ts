@@ -107,7 +107,7 @@ export async function recordMissionProgress(tx: Tx, userId: string, facts: Deliv
     if (vip) {
       // VIP: rewards are claimed automatically.
       await payMission(tx, userId, { ...row, progress: row.target, completedAt: now });
-      await notify(tx, userId, 'achievement', `Мисията е изпълнена: ${def.title(row.target)}`, `Наградата е взета автоматично (VIP): +${(row.rewardCents / 100).toLocaleString('bg-BG')} €, +${row.rewardXp} опит.`, '/game/missions');
+      await notify(tx, userId, 'achievement', `Мисията е изпълнена: ${def.title(row.target)}`, `Наградата е взета автоматично (VIP): +${(row.rewardCents / 100).toLocaleString('bg-BG')} лв., +${row.rewardXp} опит.`, '/game/missions');
     } else {
       await notify(tx, userId, 'achievement', `Мисията е изпълнена: ${def.title(row.target)}`, 'Вземи наградата от раздел „Мисии“.', '/game/missions');
     }

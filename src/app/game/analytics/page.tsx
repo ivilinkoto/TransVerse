@@ -26,7 +26,7 @@ function NetChart({ days }: { days: { day: string; netCents: number; trips: numb
     <div className="overflow-x-auto">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-44 w-full min-w-[420px]" role="img" aria-label="Нетен резултат по дни">
         <line x1={pad} x2={W} y1={zero} y2={zero} stroke="var(--color-asphalt-600)" />
-        <text x={0} y={14} fontSize="10" fill="var(--color-mist-400)">{money(max).replace(/\s?€/, '')}</text>
+        <text x={0} y={14} fontSize="10" fill="var(--color-mist-400)">{money(max).replace(/\s?лв\.$/, '')}</text>
         {days.map((d, i) => {
           const x = pad + i * step + step / 2;
           const h = Math.abs(d.netCents) * scale;

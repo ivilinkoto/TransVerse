@@ -143,7 +143,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('deleteConversation'), userId: id }),
   z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema }),
   z.object({ type: z.literal('deleteChannel'), messageId: z.coerce.number().int().positive() }),
-  z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели евро.').positive().max(10_000_000) }),
+  z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели лева.').positive().max(10_000_000) }),
   z.object({ type: z.literal('cancelListing'), listingId: id }),
   z.object({ type: z.literal('buyListing'), listingId: id }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),

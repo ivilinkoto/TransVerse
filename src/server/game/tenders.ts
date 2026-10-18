@@ -141,7 +141,7 @@ export async function recordTenderLoad(tx: Tx, tenderId: string, driverUserId: s
   ]);
   await addCompanyXp(tx, t.companyId, t.xp);
   await tx.update(companyTenders).set({ status: 'completed', finishedAt: arrivedAt }).where(eq(companyTenders.id, t.id));
-  await notifyMembers(tx, t.companyId, null, `Търгът е изпълнен: ${t.title}`, `+${(t.bonusCents / 100).toLocaleString('bg-BG')} € бонус в касата, депозитът е върнат, +${t.xp} опит за компанията.`, '/game/company/tenders');
+  await notifyMembers(tx, t.companyId, null, `Търгът е изпълнен: ${t.title}`, `+${(t.bonusCents / 100).toLocaleString('bg-BG')} лв. бонус в касата, депозитът е върнат, +${t.xp} опит за компанията.`, '/game/company/tenders');
 }
 
 /**
@@ -164,7 +164,7 @@ export async function settleTenders(db: Database, now = new Date()) {
       const [row] = await tx.update(companyTenders).set({ status: 'failed', finishedAt: now }).where(and(eq(companyTenders.id, t.id), eq(companyTenders.status, 'active'))).returning({ id: companyTenders.id });
       if (!row) return false;
       await tx.update(contracts).set({ status: 'expired' }).where(and(eq(contracts.tenderId, t.id), eq(contracts.status, 'open')));
-      await notifyMembers(tx, t.companyId, null, `Търгът не е изпълнен: ${t.title}`, `Доставени ${t.deliveredLoads} от ${t.loads} курса навреме. Депозитът от ${(t.depositCents / 100).toLocaleString('bg-BG')} € е загубен.`, '/game/company/tenders');
+      await notifyMembers(tx, t.companyId, null, `Търгът не е изпълнен: ${t.title}`, `Доставени ${t.deliveredLoads} от ${t.loads} курса навреме. Депозитът от ${(t.depositCents / 100).toLocaleString('bg-BG')} лв. е загубен.`, '/game/company/tenders');
       return true;
     });
     if (changed) failed++;

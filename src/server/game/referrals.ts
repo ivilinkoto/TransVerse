@@ -99,8 +99,8 @@ export async function rewardReferral(tx: Tx, userId: string, now = new Date()) {
   if (mine) await post(tx, mine.id, [{ category: 'referral_reward', amountCents: REFERRAL.inviteeCents, description: `Награда: поканен от ${inviter.username}`, idempotencyKey: `${key}:invitee` }]);
   if (theirs) await post(tx, theirs.id, [{ category: 'referral_reward', amountCents: REFERRAL.inviterCents, description: `Награда за поканен приятел: ${me.username}`, idempotencyKey: `${key}:inviter` }]);
   await postCoins(tx, inviter.id, { amount: REFERRAL.inviterCoins, reason: 'referral_reward', description: `Поканен приятел: ${me.username}`, idempotencyKey: `${key}:coins` });
-  await notify(tx, userId, 'success', 'Награда за добър старт', `${inviter.username} те покани в TransVerse — получаваш ${(REFERRAL.inviteeCents / 100).toLocaleString('bg-BG')} €.`, '/game/finance');
-  await notify(tx, inviter.id, 'success', `${me.username} вече кара!`, `Поканеният ти приятел направи ${REFERRAL.deliveriesNeeded} доставки. Получаваш ${(REFERRAL.inviterCents / 100).toLocaleString('bg-BG')} € и ${REFERRAL.inviterCoins} TC.`, '/game/invite');
+  await notify(tx, userId, 'success', 'Награда за добър старт', `${inviter.username} те покани в TransVerse — получаваш ${(REFERRAL.inviteeCents / 100).toLocaleString('bg-BG')} лв..`, '/game/finance');
+  await notify(tx, inviter.id, 'success', `${me.username} вече кара!`, `Поканеният ти приятел направи ${REFERRAL.deliveriesNeeded} доставки. Получаваш ${(REFERRAL.inviterCents / 100).toLocaleString('bg-BG')} лв. и ${REFERRAL.inviterCoins} TC.`, '/game/invite');
   return true;
 }
 

@@ -82,7 +82,7 @@ export default async function FleetPage() {
             )}
             {v.rental && (
               <div className="mt-3 space-y-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
-                <p>Нает камион: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км; без разходи за гориво, такси и сервиз.</p>
+                <p>Нает камион: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} лв./км; без разходи за гориво, такси и сервиз.</p>
                 {v.returnPending ? (
                   <p className="font-semibold text-amber-sig">Вече имаш собствен камион — този ще бъде върнат на наемодателя, щом приключи курса.</p>
                 ) : (

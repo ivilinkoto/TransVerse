@@ -79,7 +79,7 @@ export async function afterRentedTrip(tx: Tx, vehicleId: string, ownerUserId: st
   }
   if ((await deliveriesWith(tx, v.id)) === RENTAL_BUYOUT_DELIVERIES) {
     const price = rentalBuyoutCents(v.modelId);
-    await notify(tx, ownerUserId, 'success', 'Можеш да откупиш наетия камион', `След ${RENTAL_BUYOUT_DELIVERIES} доставки наемодателят ти предлага ${powerUnitModel(v.modelId).name} (${v.plate}) за ${(price / 100).toLocaleString('bg-BG')} € — наполовина от цената на нов.`, '/game/fleet');
+    await notify(tx, ownerUserId, 'success', 'Можеш да откупиш наетия камион', `След ${RENTAL_BUYOUT_DELIVERIES} доставки наемодателят ти предлага ${powerUnitModel(v.modelId).name} (${v.plate}) за ${(price / 100).toLocaleString('bg-BG')} лв. — наполовина от цената на нов.`, '/game/fleet');
   }
 }
 

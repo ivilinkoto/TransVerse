@@ -243,7 +243,7 @@ export async function createEvent(db: Database, actor: Staff, raw: EventInput, n
   const input = eventSchema.parse(raw);
   const startsAt = input.startsAt && input.startsAt > now ? input.startsAt : now;
   if (startsAt.getTime() - now.getTime() > 60 * DAY) fail('too_far', 'Ивентът може да започва най-много след 60 дни.');
-  // Targets in € are entered in euros; stored in cents like every amount of money.
+  // Targets in лв. are entered in euros; stored in cents like every amount of money.
   const scale = input.metric === 'earned_cents' ? 100 : 1;
   const cents = (eur: number) => Math.round(eur * 100);
   const rewards: EventRewards = {

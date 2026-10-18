@@ -106,7 +106,7 @@ export function EventForm({ metrics, cargoTypes, countries, templates, defaults 
       <fieldset className="rounded-xl border border-asphalt-700 p-4">
         <legend className="px-1 text-sm font-semibold">Награда за всеки участник (само при постигната цел)</legend>
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="block"><span className={field}>Пари (€)</span><input className="input" type="number" min={0} value={participant.eur} onChange={(e) => setParticipant({ ...participant, eur: num(e.target.value) })} /></label>
+          <label className="block"><span className={field}>Пари (лв.)</span><input className="input" type="number" min={0} value={participant.eur} onChange={(e) => setParticipant({ ...participant, eur: num(e.target.value) })} /></label>
           <label className="block"><span className={field}>Опит</span><input className="input" type="number" min={0} value={participant.xp} onChange={(e) => setParticipant({ ...participant, xp: num(e.target.value) })} /></label>
           <label className="block"><span className={field}>ТрансКоин</span><input className="input" type="number" min={0} value={participant.coins} onChange={(e) => setParticipant({ ...participant, coins: num(e.target.value) })} /></label>
         </div>
@@ -119,7 +119,7 @@ export function EventForm({ metrics, cargoTypes, countries, templates, defaults 
         </label>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-sm">
-            <thead><tr className="text-left text-xs text-mist-400"><th className="py-1 pr-2">Място</th><th className="pr-2">VIP (дни)</th><th className="pr-2">ТрансКоин</th><th className="pr-2">Пари (€)</th><th>Опит</th></tr></thead>
+            <thead><tr className="text-left text-xs text-mist-400"><th className="py-1 pr-2">Място</th><th className="pr-2">VIP (дни)</th><th className="pr-2">ТрансКоин</th><th className="pr-2">Пари (лв.)</th><th>Опит</th></tr></thead>
             <tbody>
               {top.map((p, i) => (
                 <tr key={i}>

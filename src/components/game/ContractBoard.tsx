@@ -83,7 +83,7 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
   { id: 'licence', label: 'Без нужда от лиценз', test: (c) => c.missingLicences.length === 0 },
   { id: 'fast', label: 'До 2 часа', test: (c) => c.options.some((o) => !o.error && o.minutes <= 120) },
-  { id: 'perKm', label: 'Над 3 €/км', test: (c) => c.rewardCents / c.distanceKm >= 300 },
+  { id: 'perKm', label: 'Над 3 лв./км', test: (c) => c.rewardCents / c.distanceKm >= 300 },
 ];
 
 export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [] }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[] }) {
@@ -290,7 +290,7 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
         </div>
         <div className="text-right">
           <div className="num font-display text-lg font-bold text-profit">{money(c.rewardCents)}</div>
-          <div className="num text-[11px] text-mist-400">{dec(c.rewardCents / 100 / c.distanceKm)} €/км</div>
+          <div className="num text-[11px] text-mist-400">{dec(c.rewardCents / 100 / c.distanceKm)} лв./км</div>
         </div>
       </button>
 

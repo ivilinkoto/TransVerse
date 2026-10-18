@@ -22,7 +22,7 @@ export interface CompanyMissionDefinition {
 }
 
 const num = (n: number) => n.toLocaleString('bg-BG');
-const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} €`;
+const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} лв.`;
 
 export const COMPANY_MISSIONS: CompanyMissionDefinition[] = [
   { id: 'c_deliveries', metric: 'deliveries', perMember: 10, rewardCents: 4_000_00, rewardXp: 400, title: (t) => `Членовете да изпълнят ${num(t)} доставки` },

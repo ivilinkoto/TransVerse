@@ -47,7 +47,7 @@ export async function createListing(db: Database, userId: string, input: { kind:
       row = t!;
     }
     const bounds = boundsFor(input.kind, row, now);
-    if (input.priceCents < bounds.min || input.priceCents > bounds.max) fail('bad_price', `Цената трябва да е между ${(bounds.min / 100).toLocaleString('bg-BG')} € и ${(bounds.max / 100).toLocaleString('bg-BG')} €.`);
+    if (input.priceCents < bounds.min || input.priceCents > bounds.max) fail('bad_price', `Цената трябва да е между ${(bounds.min / 100).toLocaleString('bg-BG')} лв. и ${(bounds.max / 100).toLocaleString('bg-BG')} лв..`);
     const [listing] = await tx
       .insert(vehicleListings)
       .values({
@@ -125,7 +125,7 @@ export async function buyListing(db: Database, userId: string, listingId: string
       await tx.update(trailers).set({ companyId: buyer.id, listed: false, vehicleId: null, purchasePriceCents: listing!.priceCents }).where(eq(trailers.id, listing!.trailerId));
     }
     await tx.update(vehicleListings).set({ status: 'sold', buyerCompanyId: buyer.id, closedAt: now }).where(eq(vehicleListings.id, listing!.id));
-    await notify(tx, seller!.ownerId, 'success', `Продадено: ${model.name}`, `Получи ${((listing!.priceCents - fee) / 100).toLocaleString('bg-BG')} € след таксата на пазара.`, '/game/finance');
+    await notify(tx, seller!.ownerId, 'success', `Продадено: ${model.name}`, `Получи ${((listing!.priceCents - fee) / 100).toLocaleString('bg-BG')} лв. след таксата на пазара.`, '/game/finance');
     await logActivity(tx, userId, 'listing_bought', { listingId: listing!.id });
     await checkAchievements(tx, userId, buyer.id);
     await broadcast(tx, 'market');

@@ -65,7 +65,7 @@ test.describe('access control', () => {
 test.describe('core loop', () => {
   test('register as an independent driver, follow the tutorial and send the rented truck', async ({ page }) => {
     await register(page);
-    await expect(page.getByText('1500 €').or(page.getByText('1 500 €')).first()).toBeVisible();
+    await expect(page.getByText('1500 лв.').or(page.getByText('1 500 лв.')).first()).toBeVisible();
     await expect(page.getByRole('region', { name: 'Обучение' })).toContainText('стъпка 1 от 6');
     await page.getByRole('button', { name: 'Да започваме' }).click();
     await expect(page.getByRole('region', { name: 'Обучение' })).toContainText('Приеми първата си поръчка');

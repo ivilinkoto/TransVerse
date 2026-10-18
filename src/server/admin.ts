@@ -108,7 +108,7 @@ export async function adjustBalance(db: Database, actor: Staff, targetId: string
     if (!company) fail('company_not_found', 'Потребителят няма игрови акаунт.', 404);
     const auditId = await audit(tx, actor.id, 'adjust_balance', targetId, { amountCents, reason });
     await post(tx, company!.id, [{ category: 'admin_adjustment', amountCents, description: `Корекция: ${reason}`, idempotencyKey: `admin:${auditId}` }]);
-    await notify(tx, targetId, 'info', 'Корекция на баланса', `${amountCents > 0 ? '+' : ''}${(amountCents / 100).toFixed(2)} € — ${reason}`, '/game/finance');
+    await notify(tx, targetId, 'info', 'Корекция на баланса', `${amountCents > 0 ? '+' : ''}${(amountCents / 100).toFixed(2)} лв. — ${reason}`, '/game/finance');
   });
 }
 
