@@ -252,3 +252,25 @@ test('@mobile dashboard is usable on a phone without horizontal scrolling', asyn
   await expect(page.getByRole('heading', { name: 'Класации', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });
+
+test('v1.1 pages: dispatcher, special loads, analytics, newspaper, help, updates', async ({ page }) => {
+  await register(page);
+  await page.goto('/game/contracts');
+  await expect(page.getByText('Диспечер', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Предложи курсове' }).click();
+  await expect(page.getByRole('button', { name: /Изпрати \d/ }).or(page.getByText('Няма подходящи поръчки'))).toBeVisible();
+  await page.getByRole('button', { name: '★ Любими линии' }).click();
+  await expect(page.getByRole('button', { name: '★ Любими линии' })).toHaveAttribute('aria-pressed', 'true');
+  for (const [path, heading] of [
+    ['/game/auctions', 'Специални товари'],
+    ['/game/analytics', 'Анализ'],
+    ['/game/news', 'Седмичник TransVerse'],
+    ['/game/help', 'Помощ и правила'],
+    ['/game/updates', 'Обновления'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  }
+  await expect(page.getByRole('heading', { name: 'Нощта на тиквите' }).first()).toBeVisible();
+});
