@@ -5,7 +5,8 @@ import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib
 import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
-import { deliveryXp, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
+import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/game/fines';
+import { deliveryXp, FLEET_XP_SHARE, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
 import { buildGameTrip, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
@@ -31,6 +32,9 @@ import { addPassPoints } from './season-pass';
 import { settleTradeLot } from './trade';
 import { applyRoadEvents } from './road-events';
 import { recordClientLoad } from './clients';
+import { deliverAuctionLoad } from './auctions';
+import { recordHalloweenDelivery } from './halloween';
+import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -39,6 +43,8 @@ export function compatibilityError(
   input: { modelId: string; trailerModelId: string | null; condition: number; hasDriver: boolean; status: string; trailerCondition?: number | null },
   contract: { cargoType: string; weightTons: number; minLevel: number },
   level: number,
+  /** The player chose to load up to 10 % over the payload (risk of a fine). */
+  overload = false,
 ): string | null {
   const unit = powerUnitModel(input.modelId);
   const trailer = input.trailerModelId ? trailerModel(input.trailerModelId) : null;
@@ -49,7 +55,9 @@ export function compatibilityError(
   if (unit.kind === 'tractor' && !trailer) return 'Влекачът няма прикачено ремарке.';
   const cap = combinationCapability({ unit, trailer });
   if (!canCarry(cap.bodies, cargo)) return `Нужна е надстройка: ${CARGO[cargo].bodies.map((b) => BODY_LABELS[b]).join(' или ')}.`;
-  if (contract.weightTons > cap.payloadTons) return `Товарът (${contract.weightTons} т) надвишава капацитета (${cap.payloadTons} т).`;
+  if (contract.weightTons > cap.payloadTons && !(overload && canOverload(contract.weightTons, cap.payloadTons))) {
+    return `Товарът (${contract.weightTons} т) надвишава капацитета (${cap.payloadTons} т)${canOverload(contract.weightTons, cap.payloadTons) ? ' — може само с претоварване' : ''}.`;
+  }
   if (input.condition < ECONOMY.minConditionForJobs) return 'Техниката е в лошо състояние — нужен е ремонт.';
   if (trailer && input.trailerCondition != null && input.trailerCondition < ECONOMY.minConditionForJobs) return 'Ремаркето е в лошо състояние — нужен е ремонт.';
   if (level < Math.max(contract.minLevel, CARGO[cargo].minLevel)) return `Изисква ниво ${Math.max(contract.minLevel, CARGO[cargo].minLevel)}.`;
@@ -87,7 +95,7 @@ export const URGENT_RELOCATION_MS = 60_000;
  * ordinary contract has one winner (conditional status update); an urgent one
  * stays open until it expires and every player may take it once.
  */
-export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date()) {
+export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date(), risks: { rush?: boolean; overload?: boolean } = {}) {
   const company = await companyForUser(db, userId);
   const contract = await db.query.contracts.findFirst({ where: eq(contracts.id, contractId) });
   // Own goods (trading) are hauled only by their owner and never appear on the board.
@@ -109,6 +117,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       { modelId: bundle.vehicle.modelId, trailerModelId: bundle.trailer?.modelId ?? null, condition: bundle.vehicle.condition, hasDriver: !!bundle.driver, status: bundle.vehicle.status, trailerCondition: bundle.trailer?.condition ?? null },
       contract!,
       user?.level ?? 1,
+      !!risks.overload,
     );
     if (error) fail('incompatible', error);
     const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
@@ -150,7 +159,14 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const trailer = bundle.trailer ? trailerModel(bundle.trailer.modelId) : null;
     const speedFactor = unit.kind === 'van' ? 1.15 : 1;
     // The crew: hours left from the last trip, a second driver, skills.
-    const crew = crewEffects(bundle.driver!, bundle.coDriver, now);
+    const rested = crewEffects(bundle.driver!, bundle.coDriver, now);
+    // Risks the player chose: drive on without the due rest, load over the payload.
+    const violations: { violation: Violation; amount: number }[] = [];
+    if (risks.rush && rested.startDutyMin > 0) violations.push({ violation: 'hours', amount: rested.startDutyMin / 60 });
+    const payload = combinationCapability({ unit: powerUnitModel(bundle.vehicle.modelId), trailer: bundle.trailer ? trailerModel(bundle.trailer.modelId) : null }).payloadTons;
+    const overloaded = overloadPercent(contract!.weightTons, payload);
+    if (overloaded > 0) violations.push({ violation: 'overload', amount: overloaded });
+    const crew = { ...rested, startDutyMin: risks.rush ? 0 : rested.startDutyMin, wear: rested.wear * (overloaded > 0 ? FINE_RULES.overloadWear : 1) };
     const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km) };
     // Urgent shipments run faster than normal game time.
     const scale = timeScale() * Math.max(1, contract!.speedFactor);
@@ -201,7 +217,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     // Surprises on the way, decided now and revealed when the truck gets there.
-    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance });
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance, ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations });
     const [delivery] = await tx
       .insert(deliveries)
       .values({
@@ -211,6 +227,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         trailerId: bundle.trailer?.id ?? null,
         driverId: bundle.driver!.id,
         coDriverId: bundle.coDriver?.id ?? null,
+        violations: violations.map((v) => v.violation),
         endDutyMin: trip.endDutyMin,
         emptyRouteId: emptyRoute?.id ?? null,
         routeId: loadedRoute!.id,
@@ -292,6 +309,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;
   const boostXp = owner?.xpBoostUntil && owner.xpBoostUntil > now ? 2 : 1;
   const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp);
+  // The player's own driving gives all of the XP; a hired driver's trip only a share (the driver learns from all of it).
+  const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, d.coDriverId ? [d.driverId, d.coDriverId] : [d.driverId]), eq(drivers.isOwner, true)))).length > 0;
+  const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);
   if (perks) {
     await tx
       .update(companyMembers)
@@ -302,7 +322,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
 
   await tx
     .update(deliveries)
-    .set({ status: 'completed', completedAt, late: result.late, payoutCents: payout, xpAwarded: xp })
+    .set({ status: 'completed', completedAt, late: result.late, payoutCents: payout, xpAwarded: playerXp })
     .where(eq(deliveries.id, d.id));
   await tx
     .update(vehicles)
@@ -340,7 +360,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .set({ demand: sql`greatest(${ECONOMY.demandFloor}, ${cityMarkets.demand} - ${contract.weightTons * ECONOMY.demandDropPerTon})`, updatedAt: now })
     .where(and(eq(cityMarkets.cityId, contract.destCityId), eq(cityMarkets.cargoType, contract.cargoType)));
 
-  await awardXp(tx, company!.ownerId, xp);
+  await awardXp(tx, company!.ownerId, playerXp);
   // Missions: what this delivery contributes (route countries plus both ends).
   const [origin] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract.originCityId));
   const [route] = await tx.select({ countries: routes.countries }).from(routes).where(eq(routes.id, d.routeId));
@@ -353,6 +373,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     countries: contractCountries(origin!.country, dest!.countryCode, route?.countries),
     urgent: contract.urgent,
     inCompany: !!perks,
+    holiday: !!contract.holiday,
   };
   await recordMissionProgress(tx, company!.ownerId, facts, now);
   // Global events count by arrival time; company missions by the member's company.
@@ -370,9 +391,13 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     company!.ownerId,
     onTime ? 'success' : 'warning',
     onTime ? `Доставено: ${contract.goods} в ${dest!.nameBg}` : `Закъсняла доставка в ${dest!.nameBg}`,
-    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${xp} опит.`,
+    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${playerXp} опит.`,
     '/game/finance',
   );
+  // Halloween quests: holiday loads, night arrivals.
+  if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
+  // A special load won on auction.
+  if (contract.auctionId) await deliverAuctionLoad(tx, contract.auctionId, company!.ownerId);
   // A load of a long-term client contract.
   if (contract.clientContractId) await recordClientLoad(tx, contract.clientContractId, result.late, company!.ownerId, completedAt);
   // A load of a company tender.

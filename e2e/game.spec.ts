@@ -18,10 +18,22 @@ test.describe('public site', () => {
   test('landing page shows real data and auth entry points', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Пътищата са истински');
-    await expect(page.getByText('Реални градове').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'От първия курс до своя компания' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Търгове' }).click();
+    await expect(page.getByRole('heading', { name: 'Специални товари на търг', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Какво се случва на пътя в момента' })).toBeVisible();
+    await page.getByText('Безплатна ли е играта?').click();
+    await expect(page.getByText('Цялата игра е безплатна', { exact: false })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
     await expect(page.getByRole('link', { name: 'Регистрация' }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Вход' }).first()).toBeVisible();
-    await expect(page.getByText('София → Пловдив')).toBeVisible();
+    await expect(page.locator('#map').getByText('София → Пловдив')).toBeVisible();
+  });
+
+  test('release notes are public', async ({ page }) => {
+    await page.goto('/updates');
+    await expect(page.getByRole('heading', { name: 'Обновления', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Нощта на тиквите' })).toBeVisible();
   });
 });
 
@@ -251,4 +263,26 @@ test('@mobile dashboard is usable on a phone without horizontal scrolling', asyn
   await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: 'Класации' }).click();
   await expect(page.getByRole('heading', { name: 'Класации', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+});
+
+test('v1.1 pages: dispatcher, special loads, analytics, newspaper, help, updates', async ({ page }) => {
+  await register(page);
+  await page.goto('/game/contracts');
+  await expect(page.getByText('Диспечер', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Предложи курсове' }).click();
+  await expect(page.getByRole('button', { name: /Изпрати \d/ }).or(page.getByText('Няма подходящи поръчки'))).toBeVisible();
+  await page.getByRole('button', { name: '★ Любими линии' }).click();
+  await expect(page.getByRole('button', { name: '★ Любими линии' })).toHaveAttribute('aria-pressed', 'true');
+  for (const [path, heading] of [
+    ['/game/auctions', 'Специални товари'],
+    ['/game/analytics', 'Анализ'],
+    ['/game/news', 'Седмичник TransVerse'],
+    ['/game/help', 'Помощ и правила'],
+    ['/game/updates', 'Обновления'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  }
+  await expect(page.getByRole('heading', { name: 'Нощта на тиквите' }).first()).toBeVisible();
 });

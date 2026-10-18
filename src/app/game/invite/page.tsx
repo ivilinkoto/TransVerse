@@ -1,5 +1,4 @@
 import { CheckCircle2, Clock, Gift, UserPlus, XCircle } from 'lucide-react';
-import { headers } from 'next/headers';
 import { InviteLink } from '@/components/game/InviteLink';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { date, money } from '@/lib/format';
@@ -7,14 +6,14 @@ import { REFERRAL } from '@/lib/game/referrals';
 import { gameContext } from '@/server/game/context';
 import { ensureReferralCode, referralStats } from '@/server/game/referrals';
 import { mailConfig } from '@/server/mail';
+import { publicOrigin } from '@/server/site';
 
 export const metadata = { title: 'Покани приятел' };
 
 export default async function InvitePage() {
   const { db, user } = await gameContext();
   const code = await ensureReferralCode(db, user.id);
-  const h = await headers();
-  const origin = process.env.APP_URL?.trim().replace(/\/$/, '') || `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('x-forwarded-host') ?? h.get('host')}`;
+  const origin = await publicOrigin();
   const stats = await referralStats(db, user.id);
   const steps = [
     'Изпрати линка на приятел.',

@@ -1,10 +1,11 @@
 'use client';
 
-import { Ban, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
+import { Award, Ban, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import type { PlayerCard as Card } from '@/server/game/social';
+import { GhostTruckIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { Avatar } from './Avatar';
 import { LeagueBadge } from './LeagueBadge';
 import { PlayerName } from './PlayerName';
@@ -46,12 +47,20 @@ export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChan
     <div>
       <div className="flex items-center gap-4">
         <div className="relative">
-          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className="h-16 w-16 text-2xl" rounded="rounded-2xl" />
+          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`h-16 w-16 text-2xl ${card.badges.some((b) => b.id === 'pumpkin-2026') ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-asphalt-900' : ''}`} rounded="rounded-2xl" />
           <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-asphalt-900 ${card.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={card.online ? 'Онлайн' : `Последно: ${card.lastSeen}`} />
         </div>
         <div className="min-w-0">
           <PlayerName name={card.username} role={card.role} vip={card.vip} card={false} className="font-display text-xl font-bold" />
-          <div className="mt-1"><LeagueBadge tier={card.leagueTier} /></div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <LeagueBadge tier={card.leagueTier} />
+            {card.badges.map((b) => (
+              <span key={b.id} title={b.description} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${b.id === 'pumpkin-2026' ? 'border-orange-500/50 bg-orange-500/10 text-orange-300' : 'border-prestige/50 bg-prestige/10 text-prestige'}`}>
+                {b.id === 'pumpkin-2026' ? <PumpkinIcon className="h-3.5 w-3.5" /> : b.id === 'ghost-hunter' ? <GhostTruckIcon className="h-3.5 w-3.5" /> : <Award className="h-3.5 w-3.5" />}
+                {b.label}
+              </span>
+            ))}
+          </div>
           <div className={`text-sm ${card.online ? 'text-profit' : 'text-mist-400'}`}>{card.online ? 'Онлайн сега' : `Последно онлайн: ${card.lastSeen}`}</div>
           <div className="mt-0.5 flex items-center gap-1 text-xs text-mist-400"><CalendarDays className="h-3.5 w-3.5" />В играта от {since}</div>
         </div>

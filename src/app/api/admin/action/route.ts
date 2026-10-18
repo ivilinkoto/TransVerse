@@ -4,7 +4,9 @@ import { getDb } from '@/server/db/client';
 import { cancelEvent, createEvent, eventSchema } from '@/server/game/events';
 import { diagnosePaypal, refundPaypalPayment } from '@/server/payments';
 import { siteUrl } from '@/server/payments/common';
-import { requireAdminRole } from '@/server/admin';
+import { recordAudit, requireAdminRole } from '@/server/admin';
+import { parseSeasonMode } from '@/lib/game/seasonal';
+import { setSeasonMode } from '@/server/seasonal';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
 import { resolveReport, unmute } from '@/server/game/moderation';
@@ -35,6 +37,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('unmute'), userId: id }),
   z.object({ type: z.literal('testMail'), to: z.string().trim().toLowerCase().email('Невалиден имейл.') }),
   z.object({ type: z.literal('verifyUserEmail'), userId: id }),
+  z.object({ type: z.literal('seasonMode'), value: z.string().trim().max(40) }),
 ]);
 
 export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input, request }) => {
@@ -46,6 +49,14 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true };
     case 'testMail':
       return { ok: true, sent: await sendTestMail(user, input.to, siteUrl(request.headers.get('origin'))) };
+    case 'seasonMode': {
+      requireAdminRole(user);
+      const [mode, season] = input.value.split(':');
+      const parsed = parseSeasonMode({ mode, season });
+      await setSeasonMode(db, parsed);
+      await recordAudit(db, user.id, 'season_mode', null, { value: input.value });
+      return { ok: true };
+    }
     case 'verifyUserEmail':
       await adminVerifyEmail(db, user, input.userId);
       return { ok: true };

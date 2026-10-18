@@ -8,12 +8,14 @@ import { contractCountries, missingLicences, requiredLicences } from '@/lib/game
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
+import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { licencesForUsers } from './licences';
 import { shipperName } from './names';
+import { notifyFavoriteLane } from './favorites';
 import { broadcast } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
 
@@ -198,22 +200,31 @@ export const PREMIUM_SHARE = 0.12;
 
 async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null) {
   const route = await getRoute(db, origin.id, destination.id, 'truck', provider);
-  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo));
+  // Halloween: some pallet and refrigerated loads are holiday goods that pay better.
+  const holidayGoods = isHalloween(now) ? HALLOWEEN.goods[cargo] : undefined;
+  const holiday = holidayGoods && rand() < HALLOWEEN.contractShare ? 'halloween' : null;
+  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (holiday ? HALLOWEEN.rewardMultiplier : 1);
+  const goods = holiday ? pick(holidayGoods!) : pick(CARGO[cargo].goods);
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1));
   await db.insert(contracts).values({
     shipper: shipperName(),
-    goods: pick(CARGO[cargo].goods),
+    goods,
+    holiday,
     cargoType: cargo,
     weightTons: tons,
     originCityId: origin.id,
     destCityId: destination.id,
     routeId: route.id,
     distanceKm: route.distanceKm,
-    rewardCents: rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1)),
+    rewardCents: reward,
     windowMinutes: contractWindowMinutes(route.distanceKm),
     minLevel: CARGO[cargo].minLevel,
     minReputation: premium?.minReputation ?? 0,
     expiresAt: new Date(now.getTime() + ttlMs),
   });
+  const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));
+  const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
+  await notifyFavoriteLane(db, { originCityId: origin.id, destCityId: destination.id, originName: name(origin.id), destName: name(destination.id), goods, rewardCents: reward }, now);
 }
 
 /** Runs the local-job guarantee for every free, crewed vehicle (optionally of one company). */

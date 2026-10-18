@@ -1,6 +1,9 @@
-import { Fuel, Landmark, TrendingDown, TrendingUp } from 'lucide-react';
+import { Fuel, Gavel, Landmark, TrendingDown, TrendingUp } from 'lucide-react';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { FINE_RULES, VIOLATION_LABELS, type Violation } from '@/lib/game/fines';
+import { finesOf } from '@/server/game/fines';
 import { CashflowChart } from '@/components/game/CashflowChart';
-import { Card, PageHeader, Stat } from '@/components/ui';
+import { Badge, Card, PageHeader, Stat } from '@/components/ui';
 import { dateTime, money, moneyPrecise } from '@/lib/format';
 import { TutorialVisit } from '@/components/game/TutorialVisit';
 import { fuelPriceCents } from '@/lib/game/fuel';
@@ -14,7 +17,7 @@ export const metadata = { title: 'Финанси' };
 
 export default async function FinancePage() {
   const { db, user, company, now } = await gameContext();
-  const [summary, entries] = await Promise.all([financeSummary(db, company.id, 30), ledgerPage(db, company.id, 120)]);
+  const [summary, entries, fineRows] = await Promise.all([financeSummary(db, company.id, 30), ledgerPage(db, company.id, 120), finesOf(db, company.id)]);
   const income = summary.byCategory.filter((c) => c.total > 0 && c.category !== 'starting_capital').reduce((s, c) => s + c.total, 0);
   const expense = -summary.byCategory.filter((c) => c.total < 0).reduce((s, c) => s + c.total, 0);
   const sorted = [...summary.byCategory].filter((c) => c.category !== 'starting_capital').sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
@@ -48,6 +51,28 @@ export default async function FinancePage() {
           </ul>
         </Card>
       </div>
+      {fineRows.length > 0 && (
+        <Card id="fines" title={<span className="inline-flex items-center gap-2"><Gavel className="h-4 w-4 text-mist-400" />Глоби</span>} actions={<span className="text-xs text-mist-400">плащане до {FINE_RULES.dueHours} ч, после +{Math.round(FINE_RULES.latePayShare * 100)}%</span>}>
+          <ul className="divide-y divide-asphalt-800 text-sm">
+            {fineRows.map((f) => (
+              <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                <div className="min-w-0">
+                  <div className="font-medium">{VIOLATION_LABELS[f.violation as Violation]} <span className="num text-loss">{money(f.amountCents)}</span></div>
+                  <div className="text-xs text-mist-400">{dateTime(f.createdAt)}{f.status === 'unpaid' ? ` · срок ${dateTime(f.dueAt)}` : ''}{f.note ? ` · ${f.note}` : ''}</div>
+                </div>
+                {f.status === 'unpaid' ? (
+                  <div className="flex gap-2">
+                    <ActionButton action={{ type: 'payFine', fineId: f.id }} className="btn-primary px-3 py-1.5 text-xs">Плати</ActionButton>
+                    {!f.appealed && <ActionButton action={{ type: 'appealFine', fineId: f.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm={`Обжалване: ${Math.round(FINE_RULES.appealWinChance * 100)}% шанс глобата да отпадне, иначе става с ${Math.round(FINE_RULES.appealLossShare * 100)}% по-голяма. Обжалваш ли?`}>Обжалвай</ActionButton>}
+                  </div>
+                ) : (
+                  <Badge tone={f.status === 'dropped' ? 'green' : 'neutral'}>{f.status === 'dropped' ? 'отменена' : f.status === 'auto_paid' ? 'удържана' : 'платена'}</Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       <Card title={<span className="inline-flex items-center gap-2"><Fuel className="h-4 w-4 text-mist-400" />Дизел днес</span>} actions={<span className="text-xs text-mist-400">игрови цени · сменят се всеки ден</span>}>
         <p className="mb-3 text-sm text-mist-400">Горивото за курса се плаща по цените на държавите, през които минава камионът — пропорционално на километрите във всяка.</p>
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">

@@ -141,6 +141,14 @@ export const users = pgTable(
     dailyClaimKey: text('daily_claim_key'),
     pushPrefs: jsonb('push_prefs').$type<Partial<Record<string, boolean>>>().notNull().default({}),
     lastSeenAt: ts('last_seen_at'),
+    /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
+    seenVersion: text('seen_version'),
+    /** Seasonal decorations (Halloween…) on or off for this player. */
+    seasonalTheme: boolean('seasonal_theme').notNull().default(true),
+    /** One-time hints the player has closed. */
+    seenHints: text('seen_hints').array().notNull().default(sql`'{}'::text[]`),
+    /** No phone notifications between these hours (Sofia), e.g. { from: 23, to: 8 }; null = none. */
+    quietHours: jsonb('quiet_hours').$type<{ from: number; to: number } | null>(),
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
     /** ТрансКоин — premium currency balance (whole coins). Changes only through coin_entries. */
@@ -241,6 +249,12 @@ export const vehicles = pgTable(
     condition: real('condition').notNull().default(100),
     odometerKm: real('odometer_km').notNull().default(0),
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
+    /** Special paint scheme on top of the colour (e.g. 'pumpkin' from Halloween 2026); null = plain colour. */
+    livery: text('livery'),
+    /** Insurance paid up to this time (covers road-assistance bills of breakdowns). */
+    insuredUntil: ts('insured_until'),
+    /** VIP: the dispatcher sends this truck on its next job by itself when it is free. */
+    autoDispatch: boolean('auto_dispatch').notNull().default(false),
     /** owned | rented — rented vehicles pay a fee per delivery instead of running costs. */
     ownership: text('ownership').notNull().default('owned'),
     /** Rented truck to be returned as soon as its current trip ends (the player bought their own). */
@@ -347,6 +361,10 @@ export const contracts = pgTable(
     /** Own goods hauled by a player (trading): only that player's account may take it; never on the public board. */
     tradeCompanyId: uuid('trade_company_id'),
     trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null }>(),
+    /** Holiday load (e.g. 'halloween'): themed goods, better pay, counts for the holiday event and quests. */
+    holiday: text('holiday'),
+    /** A special load won on auction (private to the winner; ТрансКоин on delivery). */
+    auctionId: uuid('auction_id'),
     /** One load of a long-term client contract (private, like trade lots). */
     clientContractId: uuid('client_contract_id'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
@@ -366,6 +384,10 @@ export const deliveries = pgTable(
     trailerId: uuid('trailer_id').references(() => trailers.id),
     driverId: uuid('driver_id').notNull().references(() => drivers.id),
     coDriverId: uuid('co_driver_id').references(() => drivers.id, { onDelete: 'set null' }),
+    /** Sent by the VIP auto-dispatcher (counts toward its daily limit). */
+    autoDispatched: boolean('auto_dispatched').notNull().default(false),
+    /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
+    violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
     endDutyMin: real('end_duty_min').notNull().default(0),
     status: text('status').notNull().default('in_progress'), // in_progress | completed
@@ -1198,4 +1220,113 @@ export const clientContracts = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('client_contracts_company_idx').on(t.companyId, t.status), index('client_contracts_due_idx').on(t.status, t.dueAt)],
+);
+
+/** Progress of the holiday quests (e.g. Halloween 2026), one row per player and quest. */
+export const seasonalQuests = pgTable(
+  'seasonal_quests',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** '<season key>:<quest id>', e.g. 'halloween-2026:h_loads'. */
+    quest: text('quest').notNull(),
+    progress: doublePrecision('progress').notNull().default(0),
+    claimedAt: ts('claimed_at'),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.quest] })],
+);
+
+/** Badges a player keeps for good (shown on the player card). */
+export const userBadges = pgTable(
+  'user_badges',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    badge: text('badge').notNull(),
+    awardedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.badge] })],
+);
+
+/** Fines from roadside checks: unpaid → paid / dropped on appeal / paid automatically after the deadline. */
+export const fines = pgTable(
+  'fines',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id').references(() => deliveries.id, { onDelete: 'set null' }),
+    violation: text('violation').notNull(), // hours | overload
+    amountCents: money('amount_cents').notNull(),
+    status: text('status').notNull().default('unpaid'), // unpaid | paid | dropped | auto_paid
+    appealed: boolean('appealed').notNull().default(false),
+    note: text('note').notNull().default(''),
+    dueAt: ts('due_at').notNull(),
+    resolvedAt: ts('resolved_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('fines_company_idx').on(t.companyId, t.status), index('fines_due_idx').on(t.status, t.dueAt), uniqueIndex('fines_delivery_violation_idx').on(t.deliveryId, t.violation)],
+);
+
+/** The weekly newspaper: one issue per finished week (Monday, Sofia), written by the worker from game data. */
+export const newspapers = pgTable('newspapers', {
+  weekKey: text('week_key').primaryKey(),
+  number: integer('number').notNull(),
+  content: jsonb('content').notNull(),
+  publishedAt: ts('published_at').notNull().defaultNow(),
+});
+
+/** Lanes a player starred on the job board (first in the list, a notification for new jobs). */
+export const favoriteLanes = pgTable(
+  'favorite_lanes',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    /** Last time the player was told about a new job on this lane (at most one notice an hour). */
+    notifiedAt: ts('notified_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.originCityId, t.destCityId] }), index('favorite_lanes_lane_idx').on(t.originCityId, t.destCityId)],
+);
+
+/** Special loads on auction: lowest bid wins the job. */
+export const specialAuctions = pgTable(
+  'special_auctions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Start slot (one auction per slot), e.g. '2026-10-20T10'. */
+    slot: text('slot').notNull(),
+    loadId: text('load_id').notNull(),
+    title: text('title').notNull(),
+    goods: text('goods').notNull(),
+    cargoType: text('cargo_type').notNull(),
+    weightTons: real('weight_tons').notNull(),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    routeId: integer('route_id').notNull().references(() => routes.id),
+    distanceKm: real('distance_km').notNull(),
+    startPriceCents: money('start_price_cents').notNull(),
+    coins: integer('coins').notNull(),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    extensions: integer('extensions').notNull().default(0),
+    status: text('status').notNull().default('open'), // open | awarded | no_bids | delivered | forfeited
+    winnerCompanyId: uuid('winner_company_id').references(() => companies.id, { onDelete: 'set null' }),
+    winningBidCents: money('winning_bid_cents'),
+    contractId: uuid('contract_id'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('special_auctions_slot_idx').on(t.slot), index('special_auctions_status_idx').on(t.status, t.endsAt)],
+);
+
+export const auctionBids = pgTable(
+  'auction_bids',
+  {
+    auctionId: uuid('auction_id').notNull().references(() => specialAuctions.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amountCents: money('amount_cents').notNull(),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.auctionId, t.companyId] }), index('auction_bids_amount_idx').on(t.auctionId, t.amountCents)],
 );

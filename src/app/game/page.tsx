@@ -1,8 +1,12 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { ClipboardList, Landmark, Map as MapIcon, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronRight, ClipboardList, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
+import { headline } from '@/lib/game/news';
+import { latestIssues } from '@/server/game/news';
+import { PumpkinIcon } from '@/components/seasonal/icons';
+import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { Badge, Card, Empty, Meter } from '@/components/ui';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
@@ -18,6 +22,7 @@ import { fleetView, latestNotifications, netWorthCents } from '@/server/game/que
 
 export default async function OverviewPage() {
   const { db, user, company, now } = await gameContext();
+  const [paper] = await latestIssues(db, 1);
   const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
@@ -77,7 +82,7 @@ export default async function OverviewPage() {
           </div>
           {hero && (
             <div className="hidden shrink-0 md:block">
-              <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
+              <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
             </div>
           )}
         </div>
@@ -105,6 +110,26 @@ export default async function OverviewPage() {
         </dl>
       </section>
 
+      {isHalloween(now) && (
+        <Link href="/game/halloween" className="panel group flex items-center gap-4 border-orange-500/40 p-4 transition hover:border-orange-500/80">
+          <PumpkinIcon className="h-11 w-11 shrink-0 transition group-hover:scale-110" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold">Нощта на тиквите</span>
+            <span className="block text-sm text-mist-300">Празнични поръчки с +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%, общ ивент, хелуински мисии и значка, призрачен камион нощем.</span>
+          </span>
+          <span className="btn-primary max-sm:hidden">Към празника</span>
+        </Link>
+      )}
+      {paper && (
+        <Link href="/game/news" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
+          <Newspaper className="h-6 w-6 shrink-0 text-mist-300" />
+          <span className="min-w-0 flex-1">
+            <span className="label block">Седмичник · брой {paper.number}</span>
+            <span className="block truncate font-medium">{headline(paper.content)}</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-mist-400 transition group-hover:translate-x-0.5" />
+        </Link>
+      )}
       <DailyRewardCard streak={user.loginStreak} lastKey={user.dailyClaimKey} now={now} />
 
       <EventBanner events={events} now={now} />
@@ -120,7 +145,7 @@ export default async function OverviewPage() {
               <ul className="space-y-3">
                 {active.map((v) => (
                   <li key={v.id} className="flex flex-col gap-3 rounded-xl border border-asphalt-700/80 bg-asphalt-850/80 p-3 sm:flex-row sm:items-center">
-                    <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} className="h-11 w-auto max-w-[170px] shrink-0" />
+                    <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} className="h-11 w-auto max-w-[170px] shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                         <span className="font-semibold">{v.delivery!.origin.nameBg} → {v.delivery!.destination.nameBg}</span>

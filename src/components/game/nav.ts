@@ -1,8 +1,10 @@
-import { Building2, ClipboardList, Gem, LayoutDashboard, Landmark, LifeBuoy, Map, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { BookOpen, Building2, ClipboardList, Gem, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
   label: string;
+  /** Shown only while this holiday's content runs. */
+  holiday?: 'halloween';
 }
 
 export interface NavSection {
@@ -29,6 +31,7 @@ export const SECTIONS: NavSection[] = [
     tabs: [
       { href: '/game/contracts', label: 'Поръчки' },
       { href: '/game/clients', label: 'Клиенти' },
+      { href: '/game/auctions', label: 'Специални товари' },
       { href: '/game/trade', label: 'Търговия със стоки' },
     ],
   },
@@ -39,6 +42,7 @@ export const SECTIONS: NavSection[] = [
     icon: Truck,
     tabs: [
       { href: '/game/fleet', label: 'Моите превозни средства' },
+      { href: '/game/analytics', label: 'Анализ' },
       { href: '/game/garage', label: 'Сервиз' },
       { href: '/game/market', label: 'Пазар' },
       { href: '/game/staff', label: 'Шофьори' },
@@ -62,11 +66,13 @@ export const SECTIONS: NavSection[] = [
     label: 'Състезание',
     icon: Trophy,
     tabs: [
+      { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween' },
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/league', label: 'Лига' },
       { href: '/game/pass', label: 'Пропуск' },
       { href: '/game/events', label: 'Ивенти' },
       { href: '/game/leaderboards', label: 'Класации' },
+      { href: '/game/news', label: 'Седмичник' },
       { href: '/game/seasons', label: 'Сезони' },
       { href: '/game/progress', label: 'Постижения' },
     ],
@@ -79,11 +85,18 @@ export const ACCOUNT_MENU = [
   { href: '/game/finance', label: 'Финанси', icon: Landmark },
   { href: '/game/shop', label: 'Магазин и VIP', icon: Gem },
   { href: '/game/invite', label: 'Покани приятел', icon: UserPlus },
+  { href: '/game/updates', label: 'Обновления', icon: ScrollText },
   { href: '/game/settings', label: 'Настройки', icon: Settings },
+  { href: '/game/help', label: 'Помощ и правила', icon: BookOpen },
   { href: '/game/support', label: 'Поддръжка', icon: LifeBuoy },
 ] as const;
 
 const within = (pathname: string, href: string) => (href === '/game' ? pathname === '/game' : pathname === href || pathname.startsWith(href + '/'));
+
+/** The tabs to show: holiday tabs only during their holiday (and on their own page). */
+export function visibleTabs(section: NavSection, holiday: string | null, pathname: string): NavTab[] {
+  return (section.tabs ?? []).filter((t) => !t.holiday || t.holiday === holiday || within(pathname, t.href));
+}
 
 /** The tab of a section that matches the path (the longest match wins, so /game/company/chat stays on "Моята компания"). */
 export function activeTab(section: NavSection, pathname: string): NavTab | undefined {

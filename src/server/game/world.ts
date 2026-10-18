@@ -4,6 +4,11 @@ import { countries, jobState, marketEvents, rateLimits, sessions } from '@/serve
 import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { settleClientContracts } from './clients';
+import { ensureHalloweenEvent } from './halloween';
+import { collectOverdueFines } from './fines';
+import { publishWeeklyNews } from './news';
+import { autoDispatchTick } from './dispatch';
+import { ensureAuction, settleAuctions } from './auctions';
 import { ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { dispatchPush, pruneSubscriptions } from '@/server/push';
@@ -82,7 +87,15 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await settleDueEvents(db, now);
     await settleTenders(db, now);
     await every(db, 'client-contracts', 60_000, now, () => settleClientContracts(db, now));
+    await every(db, 'fines', 5 * 60_000, now, () => collectOverdueFines(db, now));
+    await every(db, 'newspaper', 10 * 60_000, now, () => publishWeeklyNews(db, now));
+    await every(db, 'auto-dispatch', 60_000, now, () => autoDispatchTick(db, now));
+    await every(db, 'auctions', 30_000, now, async () => {
+      await ensureAuction(db, now, provider);
+      await settleAuctions(db, now);
+    });
     await every(db, 'global-events', 10 * 60_000, now, () => ensureAutoEvent(db, now));
+    await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));

@@ -3,6 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { PLATE_PATTERN, shopItem, VIP_DAYS, type ShopItemId } from '@/lib/game/shop';
 import { isVip, STANDARD_COLORS, VIP_COLORS } from '@/lib/game/vip';
+import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { registerSchema } from '@/server/auth/accounts';
 import type { Database, Tx } from '@/server/db/client';
 import { cityMarkets, drivers, trailers, users, vehicles } from '@/server/db/schema';
@@ -112,8 +113,16 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         if (!standard && !VIP_COLORS.includes(color)) fail('invalid_color', 'Изберете цвят от палитрата.');
         if (!standard && !vip) fail('vip_only', 'Този цвят е ексклузивен за VIP играчите.', 403);
         if (vip) price = 0;
-        await tx.update(vehicles).set({ color }).where(eq(vehicles.id, v.id));
+        await tx.update(vehicles).set({ color, livery: null }).where(eq(vehicles.id, v.id));
         summary = `Пребоядисване на ${v.plate}`;
+        break;
+      }
+      case 'paint_pumpkin': {
+        if (!isHalloween(now)) fail('not_in_season', 'Боята „Тиква“ се продава само по Хелуин.');
+        const v = await ownVehicle(tx, account.id, input.vehicleId);
+        if (v.livery === 'pumpkin') fail('already_painted', 'Камионът вече е с боя „Тиква“.');
+        await tx.update(vehicles).set({ color: HALLOWEEN.pumpkinColor, livery: 'pumpkin' }).where(eq(vehicles.id, v.id));
+        summary = `Боя „Тиква“ за ${v.plate}`;
         break;
       }
       case 'rename': {

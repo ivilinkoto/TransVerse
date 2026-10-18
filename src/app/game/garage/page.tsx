@@ -1,4 +1,6 @@
-import { Wrench } from 'lucide-react';
+import { Hint } from '@/components/game/Hint';
+import { ShieldCheck, Wrench } from 'lucide-react';
+import { insurancePriceCents, isInsured } from '@/lib/game/fines';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
@@ -20,12 +22,14 @@ export default async function GaragePage() {
   // VIP: discount on repairs and upgrades.
   const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
   const [fleet, listings] = await Promise.all([fleetView(db, company.id), myListings(db, company.id)]);
+  const insurance = new Map(fleet.vehicles.map((v) => [v.id, insurancePriceCents(v.model.priceCents + (v.trailer?.model.priceCents ?? 0))]));
   const listingOf = (id: string) => listings.find((l) => l.vehicleId === id || l.trailerId === id);
 
   return (
     <div className="space-y-6">
       <PageHeader title="Сервиз" subtitle="Ремонти, подобрения, ремаркета и продажба — между курсовете."
         help="Продажбата веднага става на търговец. Ако обявиш техниката на пазара, друг играч може да я купи на твоята цена (такса 5%); докато е обявена, не кара. Обявата изтича след 7 дни." />
+      {!user.seenHints.includes('insurance') && <Hint id="insurance" />}
       {fleet.vehicles.length === 0 && <Empty icon={Wrench} title="Няма техника за сервиз" />}
       <div className="space-y-4">
         {fleet.vehicles.map((v) => {
@@ -42,7 +46,7 @@ export default async function GaragePage() {
                     <span className="font-mono text-xs text-mist-400">{v.plate}</span>
                     {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
                   </div>
-                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} className="my-3 h-24 w-full" />
+                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} className="my-3 h-24 w-full" />
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="flex justify-between text-xs text-mist-400"><span>Влекач / камион</span><span className="num">{Math.round(v.condition)}%</span></div>
@@ -80,6 +84,15 @@ export default async function GaragePage() {
                     )}
                   </div>
                   {listing && <p className="text-xs text-mist-400">Докато е обявено, превозното средство не поема поръчки. Обявата изтича на {dateTime(listing.expiresAt)}.</p>}
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-asphalt-700 bg-asphalt-850 px-3 py-2 text-sm">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <ShieldCheck className={`h-4 w-4 shrink-0 ${isInsured(v.insuredUntil, now) ? 'text-profit' : 'text-mist-400'}`} />
+                      {isInsured(v.insuredUntil, now) ? <span>Застрахован до {dateTime(v.insuredUntil!)}</span> : <span className="text-mist-300">Без застраховка — пътната помощ при повреда е за твоя сметка</span>}
+                    </span>
+                    <ActionButton action={{ type: 'buyInsurance', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={company.balanceCents < insurance.get(v.id)!}>
+                      {isInsured(v.insuredUntil, now) ? 'Удължи' : 'Застраховай'} 30 дни · {money(insurance.get(v.id)!)}
+                    </ActionButton>
+                  </div>
                   {(v.model.kind === 'tractor' || (v.model.kind === 'rigid' && TRAILERS.some((t) => canCouple(v.model, t)))) && (
                     <div>
                       <div className="label mb-1.5">{v.model.kind === 'rigid' ? 'Прикачно ремарке' : 'Ремарке'} (в {v.city.nameBg})</div>

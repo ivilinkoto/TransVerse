@@ -5,6 +5,7 @@ import { isOnline, lastSeenLabel } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, userBlocks, users } from '@/server/db/schema';
+import { badgesOf } from './halloween';
 import { assertNotBlocked } from './moderation';
 import { fail } from './errors';
 import { can, entryRank, memberCount, membershipOf, notifyMembers, requirePermission } from './membership';
@@ -45,6 +46,7 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     role: u.role,
     avatarVersion: u.avatarVersion,
     leagueTier: u.leagueTier,
+    badges: (await badgesOf(db, u.id)).map((b) => ({ id: b.id, label: b.label, description: b.description })),
     vip: isVip(u.vipUntil, now),
     level: u.level,
     levelShare: levelProgress(u.xp).share,

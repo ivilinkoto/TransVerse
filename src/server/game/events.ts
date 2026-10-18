@@ -203,7 +203,7 @@ export async function ensureAutoEvent(db: Database, now = new Date()) {
   });
 }
 
-async function announce(tx: Tx, e: GlobalEvent, now: Date) {
+export async function announce(tx: Tx, e: GlobalEvent, now: Date) {
   const [country] = e.countryCode ? await tx.select({ nameBg: countries.nameBg }).from(countries).where(eq(countries.code, e.countryCode)) : [];
   const when = e.startsAt <= now ? 'Започна' : `Започва на ${e.startsAt.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`;
   const title = `Ивент: ${e.name}`;

@@ -162,6 +162,55 @@
       "when": 1792333855629,
       "tag": "0022_sleepy_dazzler",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792341331600,
+      "tag": "0023_fearless_psynapse",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792342220763,
+      "tag": "0024_cold_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792344655385,
+      "tag": "0025_lying_tigra",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792344944709,
+      "tag": "0026_optimal_rick_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792346135336,
+      "tag": "0027_bitter_the_watchers",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792347902205,
+      "tag": "0028_rebalance_xp",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792348265575,
+      "tag": "0029_flimsy_black_panther",
+      "breakpoints": true
     }
   ]
 }

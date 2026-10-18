@@ -5,6 +5,7 @@ import { date, money } from '@/lib/format';
 import { CARGO } from '@/lib/game/cargo';
 import { POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
 import { ACHIEVEMENTS, levelProgress } from '@/lib/game/progression';
+import { BADGES } from '@/lib/game/halloween';
 import { achievements } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { companyStats } from '@/server/game/progression';
@@ -55,7 +56,7 @@ export default async function ProgressPage() {
                   <p className="mt-1 text-sm text-mist-400">{a.description}</p>
                   <Meter value={a.progress(stats) * 100} tone={at ? 'violet' : 'gold'} className="mt-3" />
                   <div className="mt-2 flex justify-between text-xs text-mist-400">
-                    <span>{a.rewardCents ? money(a.rewardCents) : ''}{a.rewardCents && a.rewardXp ? ' · ' : ''}{a.rewardXp ? `+${a.rewardXp} опит` : ''}</span>
+                    <span>{a.rewardCents ? money(a.rewardCents) : ''}{a.rewardCents && a.rewardXp ? ' · ' : ''}{a.rewardXp ? `+${a.rewardXp} опит` : ''}{a.badge && BADGES[a.badge] ? ` · значка „${BADGES[a.badge]!.label}“` : ''}</span>
                     <span>{at ? `отключено ${date(at)}` : `${Math.round(a.progress(stats) * 100)}%`}</span>
                   </div>
                 </li>

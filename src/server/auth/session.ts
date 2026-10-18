@@ -7,7 +7,9 @@ export const SESSION_COOKIE = 'tv_session';
 const SESSION_DAYS = 30;
 const RENEW_WHEN_DAYS_LEFT = 15;
 
-const digest = (token: string) => createHash('sha256').update(token).digest('hex');
+/** Sessions are stored by the SHA-256 of their token. */
+export const sessionDigest = (token: string) => createHash('sha256').update(token).digest('hex');
+const digest = sessionDigest;
 
 export async function createSession(db: DbOrTx, userId: string, userAgent?: string | null) {
   const token = randomBytes(32).toString('base64url');

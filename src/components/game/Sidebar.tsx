@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Logo, LogoMark } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
-import { ACCOUNT_MENU, SECTIONS, activeTab, sectionFor, type NavSection } from './nav';
+import { ACCOUNT_MENU, SECTIONS, activeTab, sectionFor, visibleTabs, type NavSection } from './nav';
 
 export interface NavBadges {
   /** Mission rewards waiting to be claimed. */
@@ -25,7 +25,7 @@ function SectionBadge({ section, badges, compact = false }: { section: NavSectio
 }
 
 /** Desktop navigation: an icon rail on small laptops, a full sidebar from xl up. */
-export function Sidebar({ badges }: { badges: NavBadges }) {
+export function Sidebar({ badges, version }: { badges: NavBadges; version: string }) {
   const pathname = usePathname();
   const current = sectionFor(pathname);
   return (
@@ -62,13 +62,14 @@ export function Sidebar({ badges }: { badges: NavBadges }) {
             <span className="block text-xs text-mist-400">ТрансКоин, бонуси, стил</span>
           </span>
         </Link>
+        <Link href="/game/updates" className="mt-2 block text-center text-[11px] text-mist-500 transition hover:text-cyan-glow" title="Обновления">v{version}</Link>
       </div>
     </aside>
   );
 }
 
 /** Tabs for the pages of the current section (e.g. Автопарк → Сервиз, Пазар, Шофьори…). */
-export function SectionTabs() {
+export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
   const pathname = usePathname();
   const box = useRef<HTMLElement>(null);
   const section = sectionFor(pathname);
@@ -81,7 +82,7 @@ export function SectionTabs() {
   return (
     <nav ref={box} aria-label={section.label} className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
       <div className="inline-flex min-w-max gap-1 rounded-2xl border border-asphalt-800 bg-asphalt-900/70 p-1">
-        {section.tabs.map((t) => {
+        {visibleTabs(section, holiday, pathname).map((t) => {
           const active = t.href === tab?.href;
           return (
             <Link key={t.href} href={t.href} aria-current={active ? 'page' : undefined} className={`rounded-xl px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition sm:px-3.5 sm:py-2 sm:text-sm ${active ? 'bg-asphalt-700 text-white shadow-sm' : 'text-mist-400 hover:text-white'}`}>
@@ -95,7 +96,7 @@ export function SectionTabs() {
 }
 
 /** Phone and tablet navigation: a bottom bar with the four main sections and "Още" for everything else. */
-export function MobileNav({ badges, staff }: { badges: NavBadges; staff: boolean }) {
+export function MobileNav({ badges, staff, holiday = null }: { badges: NavBadges; staff: boolean; holiday?: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -153,7 +154,7 @@ export function MobileNav({ badges, staff }: { badges: NavBadges; staff: boolean
               <section key={s.key} className="mb-5">
                 <h2 className="label mb-2 flex items-center gap-2"><s.icon className="h-3.5 w-3.5" />{s.label}</h2>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  {s.tabs!.map((t) => (
+                  {visibleTabs(s, holiday, pathname).map((t) => (
                     <Link key={t.href} href={t.href} onClick={() => setOpen(false)} className={`${tile} ${activeTab(s, pathname)?.href === t.href ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
                       {t.label}
                       {t.href === '/game/missions' && badges.missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[10px] font-bold text-asphalt-950">{badges.missions} награди</span>}

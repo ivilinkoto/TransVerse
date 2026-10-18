@@ -4,6 +4,9 @@ import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental } from '@/server/game/rentals';
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
+import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
+import { HINT_IDS, type HintId } from '@/lib/game/hints';
+import { claimHalloweenQuest } from '@/server/game/halloween';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { buyGoods, shipGoods } from '@/server/game/trade';
@@ -15,6 +18,11 @@ import { createTicket, replySchema, replyToTicket, setTicketStatus, ticketSchema
 import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutorial';
 import { getDb } from '@/server/db/client';
 import { acceptContract } from '@/server/game/deliveries';
+import { appealFine, buyInsurance, payFine } from '@/server/game/fines';
+import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispatch';
+import { toggleFavoriteLane } from '@/server/game/favorites';
+import { bidAuction } from '@/server/game/auctions';
+import { quietHoursSchema, setQuietHours } from '@/server/push';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle } from '@/server/game/fleet';
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
@@ -53,7 +61,17 @@ const cityId = z.coerce.number().int().positive();
 
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 const Action = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id }),
+  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false) }),
+  z.object({ type: z.literal('payFine'), fineId: id }),
+  z.object({ type: z.literal('dispatchPlan') }),
+  z.object({ type: z.literal('auctionBid'), auctionId: id, amountEur: z.coerce.number().positive().max(10_000_000) }),
+  z.object({ type: z.literal('quietHours'), hours: quietHoursSchema }),
+  z.object({ type: z.literal('dismissHint'), hint: z.enum(HINT_IDS as [HintId, ...HintId[]]) }),
+  z.object({ type: z.literal('favoriteLane'), originCityId: cityId, destCityId: cityId }),
+  z.object({ type: z.literal('dispatchRun'), plan: z.array(z.object({ vehicleId: id, contractId: id })).min(1).max(50) }),
+  z.object({ type: z.literal('autoDispatch'), vehicleId: id, on: z.boolean() }),
+  z.object({ type: z.literal('appealFine'), fineId: id }),
+  z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
   z.object({ type: z.literal('buyVehicle'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('buyTrailer'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('sellVehicle'), vehicleId: id }),
@@ -105,6 +123,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearChat') }),
   z.object({ type: z.literal('acceptTender'), tenderId: id }),
   z.object({ type: z.literal('claimDaily') }),
+  z.object({ type: z.literal('seenRelease'), version: z.string().trim().max(20) }),
+  z.object({ type: z.literal('seasonalTheme'), on: z.boolean() }),
+  z.object({ type: z.literal('claimHalloweenQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
@@ -132,9 +153,33 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
   const db = getDb();
   switch (input.type) {
     case 'acceptContract': {
-      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId);
+      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload });
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
+    case 'favoriteLane':
+      return { ok: true, favorite: await toggleFavoriteLane(db, user.id, input.originCityId, input.destCityId) };
+    case 'dismissHint':
+      await dismissHint(db, user.id, input.hint);
+      return { ok: true };
+    case 'quietHours':
+      await setQuietHours(db, user.id, input.hours);
+      return { ok: true };
+    case 'auctionBid':
+      return { ok: true, ...(await bidAuction(db, user.id, input.auctionId, Math.round(input.amountEur * 100))) };
+    case 'dispatchPlan':
+      return { ok: true, plan: await planDispatch(db, user.id) };
+    case 'dispatchRun':
+      return { ok: true, ...(await runDispatch(db, user.id, input.plan)) };
+    case 'autoDispatch':
+      await setAutoDispatch(db, user.id, input.vehicleId, input.on);
+      return { ok: true };
+    case 'payFine':
+      await payFine(db, user.id, input.fineId);
+      return { ok: true };
+    case 'appealFine':
+      return { ok: true, ...(await appealFine(db, user.id, input.fineId)) };
+    case 'buyInsurance':
+      return { ok: true, ...(await buyInsurance(db, user.id, input.vehicleId)) };
     case 'buyVehicle':
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId)).id };
     case 'buyTrailer':
@@ -295,6 +340,14 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'claimSeasonPass':
       return { ok: true, claimed: await claimPassRewards(db, user.id) };
+    case 'seenRelease':
+      await markReleaseSeen(db, user.id, input.version);
+      return { ok: true };
+    case 'claimHalloweenQuest':
+      return { ok: true, ...(await claimHalloweenQuest(db, user.id, input.questId)) };
+    case 'seasonalTheme':
+      await setSeasonalTheme(db, user.id, input.on);
+      return { ok: true };
     case 'claimDaily':
       return { ok: true, ...(await claimDaily(db, user.id)) };
     case 'acceptTender':

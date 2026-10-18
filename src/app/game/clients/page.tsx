@@ -1,3 +1,4 @@
+import { Hint } from '@/components/game/Hint';
 import { inArray } from 'drizzle-orm';
 import { ArrowRight, CalendarClock, Handshake, Lock, Star } from 'lucide-react';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
@@ -38,6 +39,7 @@ export default async function ClientsPage() {
         subtitle="Дългосрочни договори: няколко товара по една линия до срок. По-добро заплащане и бонус накрая."
         help={`Фирмите-клиенти са измислени (игрови данни). Всеки товар по договора се плаща с около ${Math.round((CLIENT_RULES.rewardMultiplier - 1) * 100)} % над борсата. Когато изпълниш всички товари до срока, получаваш бонус и +${CLIENT_RULES.successReputation} репутация; закъснелите товари намаляват бонуса. Ако срокът изтече, губиш репутация. Можеш да имаш до ${CLIENT_RULES.maxActive} активни договора (VIP — ${CLIENT_RULES.maxActive + CLIENT_RULES.vipExtraActive}). Новите оферти идват, когато старите изтекат.`}
       />
+      {!user.seenHints.includes('clients') && <Hint id="clients" />}
 
       <Card title={`Активни договори (${mine.active.length} / ${limit})`}>
         {mine.active.length === 0 ? (
