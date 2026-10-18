@@ -1,7 +1,7 @@
 import { ROLE_LABELS, type Role } from '@/server/auth/roles';
 
 const role = (r: unknown) => ROLE_LABELS[r as Role] ?? String(r ?? '—');
-const eur = (cents: unknown) => new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(Number(cents ?? 0) / 100);
+const eur = (cents: unknown) => `${new Intl.NumberFormat('bg-BG', { minimumFractionDigits: 2 }).format(Number(cents ?? 0) / 100)} лв.`;
 
 /** Human-readable Bulgarian description of an administrative action. */
 export function describeAudit(entry: { action: string; details: unknown }, actor: string | null, target: string | null): string {

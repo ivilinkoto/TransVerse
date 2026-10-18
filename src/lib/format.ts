@@ -1,11 +1,15 @@
-/** Formatting helpers (Bulgarian locale). Money values are euro cents. */
-const eur = new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-const eurPrecise = new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/**
+ * Formatting helpers (Bulgarian locale). Game money is in stotinki (1/100 of
+ * a lev) and shown in лв.; real-money prices (ТрансКоин, VIP) are in euro and
+ * use `euro()` from lib/game/payments.
+ */
+export const CURRENCY = 'лв.';
 const num = new Intl.NumberFormat('bg-BG', { maximumFractionDigits: 0 });
+const num2 = new Intl.NumberFormat('bg-BG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const num1 = new Intl.NumberFormat('bg-BG', { maximumFractionDigits: 1 });
 
-export const money = (cents: number) => eur.format(cents / 100);
-export const moneyPrecise = (cents: number) => eurPrecise.format(cents / 100);
+export const money = (cents: number) => `${num.format(Math.round(cents / 100))} ${CURRENCY}`;
+export const moneyPrecise = (cents: number) => `${num2.format(cents / 100)} ${CURRENCY}`;
 export const int = (n: number) => num.format(n);
 export const dec = (n: number) => num1.format(n);
 export const km = (n: number) => `${num.format(Math.round(n))} км`;

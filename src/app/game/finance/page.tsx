@@ -1,4 +1,4 @@
-import { Fuel, Gavel, Landmark, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Banknote, Fuel, Gavel, Landmark, TrendingDown, TrendingUp } from 'lucide-react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FINE_RULES, VIOLATION_LABELS, type Violation } from '@/lib/game/fines';
 import { finesOf } from '@/server/game/fines';
@@ -12,12 +12,25 @@ import { gameContext } from '@/server/game/context';
 import { tutorialPending } from '@/server/game/tutorial-flags';
 import { LEDGER_LABELS, type LedgerCategory } from '@/server/game/finance';
 import { financeSummary, ledgerPage } from '@/server/game/queries';
+import { PlayerName } from '@/components/game/PlayerName';
+import { TRANSFER_RULES } from '@/lib/game/transfers';
+import { users } from '@/server/db/schema';
+import { senderBlock, sentLast24h, transfersOf } from '@/server/game/transfers';
+import { eq } from 'drizzle-orm';
 
 export const metadata = { title: 'Финанси' };
 
 export default async function FinancePage() {
   const { db, user, company, now } = await gameContext();
-  const [summary, entries, fineRows] = await Promise.all([financeSummary(db, company.id, 30), ledgerPage(db, company.id, 120), finesOf(db, company.id)]);
+  const [summary, entries, fineRows, transfers, sent, [me]] = await Promise.all([
+    financeSummary(db, company.id, 30),
+    ledgerPage(db, company.id, 120),
+    finesOf(db, company.id),
+    transfersOf(db, user.id),
+    sentLast24h(db, user.id, now),
+    db.select({ level: users.level, createdAt: users.createdAt }).from(users).where(eq(users.id, user.id)),
+  ]);
+  const transferBlock = me ? senderBlock(me, now) : null;
   const income = summary.byCategory.filter((c) => c.total > 0 && c.category !== 'starting_capital').reduce((s, c) => s + c.total, 0);
   const expense = -summary.byCategory.filter((c) => c.total < 0).reduce((s, c) => s + c.total, 0);
   const sorted = [...summary.byCategory].filter((c) => c.category !== 'starting_capital').sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
@@ -73,6 +86,27 @@ export default async function FinancePage() {
           </ul>
         </Card>
       )}
+      <Card id="transfers" title={<span className="inline-flex items-center gap-2"><Banknote className="h-4 w-4 text-mist-400" />Преводи между играчи</span>} actions={<span className="text-xs text-mist-400">такса {Math.round(TRANSFER_RULES.feeShare * 100)} % · до {money(TRANSFER_RULES.dailyLimitCents)} за 24 ч</span>}>
+        <p className="mb-3 text-sm text-mist-400">
+          {transferBlock ?? `За да изпратиш пари, отвори профила на играча (натисни името му или го потърси горе) → „Изпрати пари“. За 24 часа можеш да изпратиш още ${money(Math.max(0, TRANSFER_RULES.dailyLimitCents - sent))}`}
+        </p>
+        {transfers.length === 0 ? <p className="text-sm text-mist-400">Още няма преводи.</p> : (
+          <ul className="divide-y divide-asphalt-800 text-sm">
+            {transfers.map((t) => (
+              <li key={t.id} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  {t.outgoing ? <ArrowUpRight className="h-4 w-4 shrink-0 text-loss" /> : <ArrowDownLeft className="h-4 w-4 shrink-0 text-profit" />}
+                  <div className="min-w-0">
+                    <div className="truncate">{t.outgoing ? 'До ' : 'От '}<PlayerName name={t.outgoing ? t.to : t.from} className="font-medium" />{t.note ? <span className="text-mist-400"> · „{t.note}“</span> : null}</div>
+                    <div className="text-xs text-mist-400">{dateTime(t.createdAt)}{t.outgoing ? ` · такса ${money(t.feeCents)}` : ''}</div>
+                  </div>
+                </div>
+                <span className={`num shrink-0 font-semibold ${t.outgoing ? 'text-loss' : 'text-profit'}`}>{t.outgoing ? '−' : '+'}{money(t.amountCents)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
       <Card title={<span className="inline-flex items-center gap-2"><Fuel className="h-4 w-4 text-mist-400" />Дизел днес</span>} actions={<span className="text-xs text-mist-400">игрови цени · сменят се всеки ден</span>}>
         <p className="mb-3 text-sm text-mist-400">Горивото за курса се плаща по цените на държавите, през които минава камионът — пропорционално на километрите във всяка.</p>
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">

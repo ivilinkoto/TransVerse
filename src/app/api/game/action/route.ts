@@ -28,7 +28,9 @@ import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
 import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
-import { handler } from '@/server/http';
+import { clientIp, handler } from '@/server/http';
+import { hashIp } from '@/server/game/referrals';
+import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
 import { reserveContract } from '@/server/game/contracts';
@@ -139,6 +141,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('companyInvite'), userId: id }),
   z.object({ type: z.literal('companyInviteRespond'), inviteId: id, accept: z.boolean() }),
   z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema }),
+  z.object({ type: z.literal('sendMoney'), transfer: transferSchema }),
   z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('deleteConversation'), userId: id }),
   z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema }),
@@ -312,6 +315,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, result: await respondCompanyInvite(db, user.id, input.inviteId, input.accept) };
     case 'sendDirect':
       return { ok: true, id: await sendDirectMessage(db, user.id, input.userId, input.body) };
+    case 'sendMoney':
+      return { ok: true, ...(await sendMoney(db, user.id, input.transfer, await hashIp(db, await clientIp()))) };
     case 'unsendDirect':
       await unsendDirectMessage(db, user.id, input.messageId);
       return { ok: true };

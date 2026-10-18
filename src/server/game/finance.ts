@@ -44,7 +44,9 @@ export type LedgerCategory =
   | 'client_bonus'
   | 'holiday_reward'
   | 'fines'
-  | 'insurance';
+  | 'insurance'
+  | 'transfer_out'
+  | 'transfer_in';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -88,6 +90,8 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   holiday_reward: 'Празнични награди',
   fines: 'Глоби',
   insurance: 'Застраховки',
+  transfer_out: 'Изпратени пари',
+  transfer_in: 'Получени пари',
 };
 
 export interface Posting {

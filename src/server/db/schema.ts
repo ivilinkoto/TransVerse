@@ -1333,3 +1333,18 @@ export const auctionBids = pgTable(
   },
   (t) => [primaryKey({ columns: [t.auctionId, t.companyId] }), index('auction_bids_amount_idx').on(t.auctionId, t.amountCents)],
 );
+
+/** Money sent from one player to another (game money; the fee leaves the game). */
+export const moneyTransfers = pgTable(
+  'money_transfers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amountCents: money('amount_cents').notNull(),
+    feeCents: money('fee_cents').notNull(),
+    note: text('note'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('money_transfers_from_idx').on(t.fromUserId, t.createdAt), index('money_transfers_to_idx').on(t.toUserId, t.createdAt)],
+);

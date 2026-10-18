@@ -1,6 +1,6 @@
 'use client';
 
-import { Award, Ban, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
+import { Award, Ban, Banknote, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
@@ -10,6 +10,7 @@ import { Avatar } from './Avatar';
 import { LeagueBadge } from './LeagueBadge';
 import { PlayerName } from './PlayerName';
 import { openReport } from './ReportDialog';
+import { SendMoneyForm } from './SendMoneyForm';
 
 /** Opens a private chat in the chat dock. */
 export function openDirectChat(userId: string, username: string) {
@@ -30,6 +31,7 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
 export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChange?: () => void; onClose?: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
   const act = async (action: Record<string, unknown>) => {
     setBusy(true);
     setError(null);
@@ -108,8 +110,10 @@ export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChan
           )}
           {card.canInvite && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'companyInvite', userId: card.id })}><Users className="h-4 w-4" />Покани в компанията</button>}
           {card.invited && <span className="inline-flex items-center gap-1 px-2 text-sm text-mist-400"><Check className="h-4 w-4" />Поканен в компанията</span>}
+          <button type="button" className="btn-ghost" aria-expanded={paying} onClick={() => setPaying((v) => !v)}><Banknote className="h-4 w-4 text-gold-400" />Изпрати пари</button>
         </div>
       )}
+      {paying && card.relation !== 'self' && <div className="mt-3"><SendMoneyForm userId={card.id} username={card.username} /></div>}
       {card.relation !== 'self' && (
         <div className="mt-3 flex flex-wrap gap-3 border-t border-asphalt-800 pt-3 text-xs">
           {card.blocked ? (
