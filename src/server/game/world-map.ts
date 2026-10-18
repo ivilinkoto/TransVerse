@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { Segment } from '@/lib/game/schedule';
 import type { DbOrTx } from '@/server/db/client';
-import { cities, companies, companyMembers, contracts, deliveries, organizations, routes, users, vehicles } from '@/server/db/schema';
+import { cities, companies, companyMembers, contracts, deliveries, friendships, organizations, routes, users, vehicles } from '@/server/db/schema';
 import { onlineUserIds } from '@/server/realtime';
 import { isVip } from '@/lib/game/vip';
 
@@ -22,6 +22,8 @@ export interface WorldTruck {
   tag: string | null;
   color: string | null;
   online: boolean;
+  /** How the viewer knows this player: a friend, a member of the viewer's company, or nobody. */
+  relation: 'friend' | 'company' | null;
   /** Parking position when idle. */
   position: [number, number];
   city: string;
@@ -46,7 +48,8 @@ const MAX_TRUCKS = 3000;
  * so the map moves in real time without polling every second. Contains no
  * money or contract terms — only who drives where.
  */
-export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<WorldSnapshot> {
+export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: string): Promise<WorldSnapshot> {
+  const { friends, mates } = viewerId ? await circleOf(db, viewerId) : { friends: new Set<string>(), mates: new Set<string>() };
   const activeSince = new Date(now.getTime() - IDLE_ACTIVE_DAYS * 86_400_000);
   const rows = await db
     .select({
@@ -122,6 +125,7 @@ export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<World
       tag: r.tag,
       color: r.color,
       online: online.has(r.userId),
+      relation: friends.has(r.userId) ? 'friend' : mates.has(r.userId) ? 'company' : null,
       position: [r.lat, r.lon],
       city: r.city,
       delivery,
@@ -134,4 +138,19 @@ export async function worldSnapshot(db: DbOrTx, now = new Date()): Promise<World
     players: players.size,
     online: [...players].filter((id) => online.has(id)).length,
   };
+}
+
+/** The viewer's friends and the other members of their company (user ids). */
+export async function circleOf(db: DbOrTx, userId: string) {
+  const [friendRows, mateRows] = await Promise.all([
+    db
+      .select({ id: sql<string>`case when ${friendships.requesterId} = ${userId} then ${friendships.addresseeId} else ${friendships.requesterId} end` })
+      .from(friendships)
+      .where(and(eq(friendships.status, 'accepted'), sql`(${friendships.requesterId} = ${userId} or ${friendships.addresseeId} = ${userId})`)),
+    db
+      .select({ id: companyMembers.userId })
+      .from(companyMembers)
+      .where(sql`${companyMembers.companyId} = (select company_id from company_members where user_id = ${userId}) and ${companyMembers.userId} <> ${userId}`),
+  ]);
+  return { friends: new Set(friendRows.map((r) => r.id)), mates: new Set(mateRows.map((r) => r.id)) };
 }
