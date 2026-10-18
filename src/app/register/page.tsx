@@ -12,16 +12,30 @@ import { getDb } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 import { headquarterOptions } from '@/server/game/company';
 import { currentUser } from '@/server/http';
+import { OG_IMAGE } from '@/server/site';
 
-export const metadata: Metadata = { title: 'Регистрация' };
 export const dynamic = 'force-dynamic';
+
+async function inviterOf(ref: string | undefined) {
+  const raw = (ref ?? (await cookies()).get('tv_ref')?.value ?? '').toUpperCase();
+  const code = REFERRAL_CODE.test(raw) ? raw : null;
+  const [inviter] = code ? await getDb().select({ username: users.username }).from(users).where(eq(users.referralCode, code)) : [];
+  return { code, inviter };
+}
+
+/** An invite link shared on Facebook, Viber… shows who invites and the bonus. */
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ ref?: string }> }): Promise<Metadata> {
+  const { inviter } = await inviterOf((await searchParams).ref).catch(() => ({ inviter: undefined }));
+  if (!inviter) return { title: 'Регистрация' };
+  const title = `${inviter.username} те кани в TransVerse`;
+  const description = `Транспортна стратегия върху реалната карта на Европа. Регистрирай се през поканата и след първите ${REFERRAL.deliveriesNeeded} доставки получаваш ${money(REFERRAL.inviteeCents)} бонус.`;
+  return { title: { absolute: title }, description, openGraph: { title, description, type: 'website', siteName: 'TransVerse', locale: 'bg_BG', images: [OG_IMAGE] }, twitter: { card: 'summary_large_image', title, description, images: [OG_IMAGE] } };
+}
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
   if (await currentUser()) redirect('/game');
   const cities = await headquarterOptions(getDb());
-  const raw = ((await searchParams).ref ?? (await cookies()).get('tv_ref')?.value ?? '').toUpperCase();
-  const code = REFERRAL_CODE.test(raw) ? raw : null;
-  const [inviter] = code ? await getDb().select({ username: users.username }).from(users).where(eq(users.referralCode, code)) : [];
+  const { code, inviter } = await inviterOf((await searchParams).ref);
   return (
     <AuthShell
       title="Стани шофьор в TransVerse"
