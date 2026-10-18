@@ -901,6 +901,9 @@ export const pushSubscriptions = pgTable(
     userAgent: text('user_agent'),
     createdAt: createdAt(),
     lastSuccessAt: ts('last_success_at'),
+    /** Last failed send: when, and what the push service answered (admin diagnostics). */
+    lastErrorAt: ts('last_error_at'),
+    lastError: text('last_error'),
   },
   (t) => [uniqueIndex('push_subscriptions_endpoint_idx').on(t.endpoint), index('push_subscriptions_user_idx').on(t.userId)],
 );

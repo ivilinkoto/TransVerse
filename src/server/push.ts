@@ -142,6 +142,8 @@ export const webPushSender: PushSender = async (sub, payload, keys) => {
   const res = await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, {
     vapidDetails: { subject: process.env.VAPID_SUBJECT || `mailto:${process.env.SUPPORT_EMAIL || 'support@transverse-bg.com'}`, publicKey: keys.publicKey, privateKey: keys.privateKey },
     TTL: 6 * 3600,
+    // High urgency: otherwise Android delivers the message only when the sleeping phone wakes up.
+    urgency: 'high',
     timeout: 10_000,
   });
   return res.statusCode;
@@ -162,9 +164,13 @@ export async function pushToUser(db: Database, userId: string, message: PushMess
         await db.update(pushSubscriptions).set({ lastSuccessAt: new Date() }).where(eq(pushSubscriptions.id, sub.id));
       }
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode;
-      if (status === 404 || status === 410) await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
-      else console.warn('[push] send failed', status ?? (error as Error).message);
+      const e = error as { statusCode?: number; body?: string; message?: string };
+      if (e.statusCode === 404 || e.statusCode === 410) await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
+      else {
+        const text = `${e.statusCode ?? ''} ${e.body || e.message || 'грешка'}`.trim().slice(0, 500);
+        console.warn('[push] send failed', text);
+        await db.update(pushSubscriptions).set({ lastErrorAt: new Date(), lastError: text }).where(eq(pushSubscriptions.id, sub.id));
+      }
     }
   }
   return sent;
@@ -258,3 +264,13 @@ export async function pruneSubscriptions(db: Database, now = new Date()) {
   await db.delete(pushSubscriptions).where(and(lt(pushSubscriptions.createdAt, new Date(now.getTime() - 120 * 86_400_000)), sql`coalesce(${pushSubscriptions.lastSuccessAt}, ${pushSubscriptions.createdAt}) < ${new Date(now.getTime() - 60 * 86_400_000)}`));
 }
 
+
+/** Admin diagnostics: every device with its last success and last error (newest first). */
+export async function pushDevices(db: DbOrTx, limit = 200) {
+  return db
+    .select({ id: pushSubscriptions.id, username: users.username, userAgent: pushSubscriptions.userAgent, createdAt: pushSubscriptions.createdAt, lastSuccessAt: pushSubscriptions.lastSuccessAt, lastErrorAt: pushSubscriptions.lastErrorAt, lastError: pushSubscriptions.lastError, prefs: users.pushPrefs, quiet: users.quietHours })
+    .from(pushSubscriptions)
+    .innerJoin(users, eq(users.id, pushSubscriptions.userId))
+    .orderBy(sql`coalesce(${pushSubscriptions.lastErrorAt}, ${pushSubscriptions.createdAt}) desc`)
+    .limit(limit);
+}
