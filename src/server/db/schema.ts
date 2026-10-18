@@ -145,6 +145,10 @@ export const users = pgTable(
     seenVersion: text('seen_version'),
     /** Seasonal decorations (Halloween…) on or off for this player. */
     seasonalTheme: boolean('seasonal_theme').notNull().default(true),
+    /** One-time hints the player has closed. */
+    seenHints: text('seen_hints').array().notNull().default(sql`'{}'::text[]`),
+    /** No phone notifications between these hours (Sofia), e.g. { from: 23, to: 8 }; null = none. */
+    quietHours: jsonb('quiet_hours').$type<{ from: number; to: number } | null>(),
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
     /** ТрансКоин — premium currency balance (whole coins). Changes only through coin_entries. */
@@ -249,6 +253,8 @@ export const vehicles = pgTable(
     livery: text('livery'),
     /** Insurance paid up to this time (covers road-assistance bills of breakdowns). */
     insuredUntil: ts('insured_until'),
+    /** VIP: the dispatcher sends this truck on its next job by itself when it is free. */
+    autoDispatch: boolean('auto_dispatch').notNull().default(false),
     /** owned | rented — rented vehicles pay a fee per delivery instead of running costs. */
     ownership: text('ownership').notNull().default('owned'),
     /** Rented truck to be returned as soon as its current trip ends (the player bought their own). */
@@ -376,6 +382,8 @@ export const deliveries = pgTable(
     trailerId: uuid('trailer_id').references(() => trailers.id),
     driverId: uuid('driver_id').notNull().references(() => drivers.id),
     coDriverId: uuid('co_driver_id').references(() => drivers.id, { onDelete: 'set null' }),
+    /** Sent by the VIP auto-dispatcher (counts toward its daily limit). */
+    autoDispatched: boolean('auto_dispatched').notNull().default(false),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
@@ -1264,3 +1272,17 @@ export const newspapers = pgTable('newspapers', {
   content: jsonb('content').notNull(),
   publishedAt: ts('published_at').notNull().defaultNow(),
 });
+
+/** Lanes a player starred on the job board (first in the list, a notification for new jobs). */
+export const favoriteLanes = pgTable(
+  'favorite_lanes',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    /** Last time the player was told about a new job on this lane (at most one notice an hour). */
+    notifiedAt: ts('notified_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.originCityId, t.destCityId] }), index('favorite_lanes_lane_idx').on(t.originCityId, t.destCityId)],
+);

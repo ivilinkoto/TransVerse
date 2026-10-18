@@ -10,13 +10,16 @@ import { fleetView } from '@/server/game/queries';
 import { RENTAL_BUYOUT_DELIVERIES, UPGRADES, combinationCapability, type UpgradeId } from '@/lib/game/catalog';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { ECONOMY } from '@/lib/game/economy';
+import { isVip } from '@/lib/game/vip';
+import { AUTO_DISPATCH_PER_DAY } from '@/server/game/dispatch';
 
 export const metadata = { title: 'Автопарк' };
 
 const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влекач' } as const;
 
 export default async function FleetPage() {
-  const { db, company } = await gameContext();
+  const { db, user, company, now } = await gameContext();
+  const vip = isVip(user.vipUntil, now);
   const fleet = await fleetView(db, company.id);
   const loose = fleet.trailers.filter((t) => !t.vehicleId);
   // The player drives one truck themselves and can switch to another idle one.
@@ -69,6 +72,12 @@ export default async function FleetPage() {
                 <ActionButton action={{ type: 'assignDriver', driverId: self.id, vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">
                   <UserRound className="h-4 w-4" />Карай този камион сам
                 </ActionButton>
+              </div>
+            )}
+            {vip && v.driver && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs">
+                <span className="text-mist-300"><span className="font-semibold text-gold-400">VIP диспечер:</span> {v.autoDispatch ? 'камионът сам поема следващия най-изгоден курс, щом е свободен' : 'изключен'} (до {AUTO_DISPATCH_PER_DAY} курса на ден)</span>
+                <ActionButton action={{ type: 'autoDispatch', vehicleId: v.id, on: !v.autoDispatch }} className="btn-ghost px-2.5 py-1 text-xs">{v.autoDispatch ? 'Изключи' : 'Включи'}</ActionButton>
               </div>
             )}
             {v.rental && (

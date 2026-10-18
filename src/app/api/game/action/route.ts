@@ -18,6 +18,7 @@ import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutori
 import { getDb } from '@/server/db/client';
 import { acceptContract } from '@/server/game/deliveries';
 import { appealFine, buyInsurance, payFine } from '@/server/game/fines';
+import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispatch';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle } from '@/server/game/fleet';
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
@@ -58,6 +59,9 @@ const cityId = z.coerce.number().int().positive();
 const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false) }),
   z.object({ type: z.literal('payFine'), fineId: id }),
+  z.object({ type: z.literal('dispatchPlan') }),
+  z.object({ type: z.literal('dispatchRun'), plan: z.array(z.object({ vehicleId: id, contractId: id })).min(1).max(50) }),
+  z.object({ type: z.literal('autoDispatch'), vehicleId: id, on: z.boolean() }),
   z.object({ type: z.literal('appealFine'), fineId: id }),
   z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
   z.object({ type: z.literal('buyVehicle'), modelId: z.string().max(40), cityId }),
@@ -144,6 +148,13 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload });
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
+    case 'dispatchPlan':
+      return { ok: true, plan: await planDispatch(db, user.id) };
+    case 'dispatchRun':
+      return { ok: true, ...(await runDispatch(db, user.id, input.plan)) };
+    case 'autoDispatch':
+      await setAutoDispatch(db, user.id, input.vehicleId, input.on);
+      return { ok: true };
     case 'payFine':
       await payFine(db, user.id, input.fineId);
       return { ok: true };
