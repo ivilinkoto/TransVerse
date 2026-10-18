@@ -18,7 +18,7 @@ export function SendMoneyForm({ userId, username, onDone }: { userId: string; us
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cents) return;
-    if (!window.confirm(`Да изпратим ли ${money(cents)} на ${username}? Таксата е ${money(fee)} — общо ${money(cents + fee)}.`)) return;
+    if (!window.confirm(`Да изпратим ли ${money(cents)} на ${username}? Таксата е ${money(fee)} — общо ${money(cents + fee)}`)) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -47,7 +47,7 @@ export function SendMoneyForm({ userId, username, onDone }: { userId: string; us
       </div>
       <input className="input w-full" maxLength={TRANSFER_RULES.noteMax} placeholder="Бележка (по избор)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Бележка" />
       <p className="text-xs text-mist-400">
-        {cents ? `Такса ${Math.round(TRANSFER_RULES.feeShare * 100)} %: ${money(fee)} · общо ${money(cents + fee)}. ` : ''}
+        {cents ? `Такса ${Math.round(TRANSFER_RULES.feeShare * 100)} %: ${money(fee)} · общо ${money(cents + fee)} ` : ''}
         От ниво {TRANSFER_RULES.minLevel}, до {money(TRANSFER_RULES.dailyLimitCents)} за 24 часа, не и към профил от същата мрежа.
       </p>
       {message && <p role="status" className={`text-sm ${message.ok ? 'text-profit' : 'text-loss'}`}>{message.text}</p>}

@@ -13,7 +13,7 @@ import { notify } from './notify';
 
 export const transferSchema = z.object({
   toUserId: z.string().uuid('Невалиден играч.'),
-  amount: z.coerce.number().int('Сумата е в цели лева.').min(TRANSFER_RULES.minCents / 100, `Най-малко ${money(TRANSFER_RULES.minCents)}.`).max(TRANSFER_RULES.dailyLimitCents / 100, `Най-много ${money(TRANSFER_RULES.dailyLimitCents)} на ден.`),
+  amount: z.coerce.number().int('Сумата е в цели лева.').min(TRANSFER_RULES.minCents / 100, `Най-малко ${money(TRANSFER_RULES.minCents)}`).max(TRANSFER_RULES.dailyLimitCents / 100, `Най-много ${money(TRANSFER_RULES.dailyLimitCents)} на ден.`),
   note: z.string().trim().max(TRANSFER_RULES.noteMax, `Бележката е до ${TRANSFER_RULES.noteMax} знака.`).optional().default(''),
 });
 

@@ -467,7 +467,7 @@ export async function publicCompany(db: DbOrTx, companyId: string) {
 
 // ── Treasury and ownership ───────────────────────────────────────────────
 
-export const depositSchema = z.coerce.number().int('Сумата е в цели лева.').min(1, 'Минимум 1 лв..').max(10_000_000, 'Твърде голяма сума.');
+export const depositSchema = z.coerce.number().int('Сумата е в цели лева.').min(1, 'Минимум 1 лв.').max(10_000_000, 'Твърде голяма сума.');
 
 /** A member moves personal money into the company treasury (one-way: the treasury has no personal withdrawals). */
 export async function depositToTreasury(db: Database, userId: string, amountEur: number) {

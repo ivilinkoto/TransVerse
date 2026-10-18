@@ -50,7 +50,7 @@ export async function applyRoadEvents(tx: Tx, d: DeliveryRow, now: Date): Promis
       continue;
     }
     if (company) {
-      const cost = e.costCents ? (insured ? ` Пътната помощ (${(e.costCents / 100).toLocaleString('bg-BG')} лв.) е за сметка на застраховката.` : ` Пътна помощ: ${(e.costCents / 100).toLocaleString('bg-BG')} лв..`) : '';
+      const cost = e.costCents ? (insured ? ` Пътната помощ (${(e.costCents / 100).toLocaleString('bg-BG')} лв.) е за сметка на застраховката.` : ` Пътна помощ: ${(e.costCents / 100).toLocaleString('bg-BG')} лв.`) : '';
       await notify(tx, company.ownerId, 'warning', `${def.title} по пътя${dest ? ` за ${dest.nameBg}` : ''}`, `${def.body} Закъснение около ${minutes} мин.${cost}`, '/game/fleet');
     }
   }

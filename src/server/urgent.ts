@@ -14,7 +14,7 @@ export const urgentSchema = z.object({
   goods: z.string().trim().min(2, 'Въведете име на товара.').max(60, 'Най-много 60 символа.'),
   cargoType: z.enum(CARGO_TYPES as unknown as [CargoType, ...CargoType[]]),
   weightTons: z.coerce.number().min(0.1, 'Минимум 0,1 т.').max(40, 'Най-много 40 т.'),
-  rewardEur: z.coerce.number().min(1, 'Цената е поне 1 лв..').max(1_000_000, 'Твърде висока цена.'),
+  rewardEur: z.coerce.number().min(1, 'Цената е поне 1 лв.').max(1_000_000, 'Твърде висока цена.'),
   originCityId: z.coerce.number().int().positive(),
   destCityId: z.coerce.number().int().positive(),
   /** Deadline for delivery, counted from acceptance. */

@@ -19,7 +19,7 @@ export async function issueFine(tx: Tx, f: { companyId: string; userId: string; 
     .onConflictDoNothing()
     .returning({ id: fines.id });
   if (!rows.length) return;
-  await notify(tx, f.userId, 'warning', `Глоба: ${VIOLATION_LABELS[f.violation].toLowerCase()}`, `Пътна полиция те спря: ${eur(f.amountCents)}. Плати или обжалвай до ${FINE_RULES.dueHours} часа — после се удържа автоматично с ${Math.round(FINE_RULES.latePayShare * 100)}% надбавка.`, '/game/finance#fines');
+  await notify(tx, f.userId, 'warning', `Глоба: ${VIOLATION_LABELS[f.violation].toLowerCase()}`, `Пътна полиция те спря: ${eur(f.amountCents)} Плати или обжалвай до ${FINE_RULES.dueHours} часа — после се удържа автоматично с ${Math.round(FINE_RULES.latePayShare * 100)}% надбавка.`, '/game/finance#fines');
 }
 
 async function ownFine(tx: Tx, userId: string, fineId: string) {

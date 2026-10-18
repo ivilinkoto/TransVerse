@@ -39,7 +39,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   return (
     <AuthShell
       title="Стани шофьор в TransVerse"
-      subtitle={`Започваш като самостоятелен шофьор с нает камион и ${money(ECONOMY.startingBalanceCents)}. Компанията основаваш по-късно.`}
+      subtitle={`Започваш като самостоятелен шофьор с нает камион и ${money(ECONOMY.startingBalanceCents)} Компанията основаваш по-късно.`}
       aside={
         <ul className="max-w-md space-y-3 text-mist-300">
           <li className="font-display text-2xl font-bold text-mist-100">Какво те чака</li>

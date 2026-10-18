@@ -53,7 +53,7 @@ export function AuctionBid({ auctionId, maxEur, floorEur }: { auctionId: string;
         </label>
         <button type="submit" className="btn-gold" disabled={busy || !value}>{busy ? '…' : 'Наддай'}</button>
       </div>
-      <p className="text-xs text-mist-400">Между {floorEur.toLocaleString('bg-BG')} лв. и {maxEur.toLocaleString('bg-BG')} лв.. Печели най-ниската цена.</p>
+      <p className="text-xs text-mist-400">Между {floorEur.toLocaleString('bg-BG')} лв. и {maxEur.toLocaleString('bg-BG')} лв. Печели най-ниската цена.</p>
       {message && <p role="status" className={`text-xs ${message.ok ? 'text-profit' : 'text-loss'}`}>{message.text}</p>}
     </form>
   );

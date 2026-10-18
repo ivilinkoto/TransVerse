@@ -47,7 +47,7 @@ export function UsedListings({ listings, companyId, level, balanceCents, freeSlo
               <div className="flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5 text-mist-400" />{l.seller}</div>
               <div className="text-mist-400">{ageMonths ? `на ${ageMonths} мес.` : 'почти нов'}{l.upgrades.length ? ` · ${l.upgrades.length} подобрения` : ''}</div>
             </dl>
-            <p className="mt-2 text-[11px] text-mist-400">Нов: {money(l.newPriceCents)}. Остава в {l.city.nameBg} — оттам поема първата си поръчка.</p>
+            <p className="mt-2 text-[11px] text-mist-400">Нов: {money(l.newPriceCents)} Остава в {l.city.nameBg} — оттам поема първата си поръчка.</p>
             <div className="mt-auto pt-3">
               {mine ? (
                 <ActionButton action={{ type: 'cancelListing', listingId: l.id }} className="btn-ghost w-full">Свали обявата</ActionButton>

@@ -47,7 +47,7 @@ export async function createListing(db: Database, userId: string, input: { kind:
       row = t!;
     }
     const bounds = boundsFor(input.kind, row, now);
-    if (input.priceCents < bounds.min || input.priceCents > bounds.max) fail('bad_price', `Цената трябва да е между ${(bounds.min / 100).toLocaleString('bg-BG')} лв. и ${(bounds.max / 100).toLocaleString('bg-BG')} лв..`);
+    if (input.priceCents < bounds.min || input.priceCents > bounds.max) fail('bad_price', `Цената трябва да е между ${(bounds.min / 100).toLocaleString('bg-BG')} лв. и ${(bounds.max / 100).toLocaleString('bg-BG')} лв.`);
     const [listing] = await tx
       .insert(vehicleListings)
       .values({
