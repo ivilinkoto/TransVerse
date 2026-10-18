@@ -24,6 +24,7 @@ export async function deliveriesWith(db: DbOrTx, vehicleId: string): Promise<num
 /** Hands an idle rented truck (and its rented trailer) back. Its driver, if any, becomes free. */
 export async function releaseRental(tx: Tx, v: Vehicle, now = new Date()) {
   await tx.update(drivers).set({ vehicleId: null }).where(eq(drivers.vehicleId, v.id));
+  await tx.update(drivers).set({ coVehicleId: null }).where(eq(drivers.coVehicleId, v.id));
   await tx.update(trailers).set({ vehicleId: null, soldAt: now }).where(and(eq(trailers.vehicleId, v.id), eq(trailers.ownership, 'rented')));
   await tx.update(vehicles).set({ status: 'returned', soldAt: now, returnPending: false }).where(eq(vehicles.id, v.id));
 }

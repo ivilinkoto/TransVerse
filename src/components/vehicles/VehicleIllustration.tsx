@@ -1,13 +1,13 @@
 import { useId } from 'react';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { Defs, GroundShadow, type Ids } from './parts';
-import { Trailer, type TrailerBody } from './trailers';
+import { DrawbarTrailer, Trailer, type TrailerBody } from './trailers';
 import { Rigid, Tractor, Van } from './units';
 
 export interface VehicleIllustrationProps {
   /** Power unit model id from the catalogue. */
   modelId: string;
-  /** Coupled trailer model id (tractors only). */
+  /** Coupled trailer model id (a semi-trailer behind a tractor, a drawbar trailer behind a rigid truck). */
   trailerModelId?: string | null;
   color?: string;
   trailerColor?: string;
@@ -25,7 +25,9 @@ export function VehicleIllustration({ modelId, trailerModelId, color = '#1d4ed8'
     body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}`,
   };
   const unit = powerUnitModel(modelId);
-  const trailer = unit.kind === 'tractor' && trailerModelId ? trailerModel(trailerModelId) : null;
+  const coupled = trailerModelId ? trailerModel(trailerModelId) : null;
+  const trailer = unit.kind === 'tractor' && coupled?.kind === 'semi' ? coupled : null;
+  const drawbar = unit.kind === 'rigid' && coupled?.kind === 'drawbar' ? coupled : null;
 
   let content;
   let width: number;
@@ -40,11 +42,16 @@ export function VehicleIllustration({ modelId, trailerModelId, color = '#1d4ed8'
       </>
     );
   } else if (unit.kind === 'rigid') {
-    width = 920;
+    const rigidX = drawbar ? 910 : 0;
+    const body = unit.body === 'reefer' ? 'reefer' : 'box';
+    width = rigidX + 920;
     content = (
       <>
-        <GroundShadow from={0} to={900} />
-        <Rigid ids={ids} color={color} body={unit.body === 'reefer' ? 'reefer' : 'box'} />
+        <GroundShadow from={0} to={rigidX + 900} />
+        {drawbar && <DrawbarTrailer body={body} ids={ids} color={trailerColor ?? color} />}
+        <g transform={`translate(${rigidX} 0)`}>
+          <Rigid ids={ids} color={color} body={body} />
+        </g>
       </>
     );
   } else {
@@ -64,7 +71,7 @@ export function VehicleIllustration({ modelId, trailerModelId, color = '#1d4ed8'
 
   return (
     <svg viewBox={`-10 ${-height} ${width + 20} ${height + 20}`} className={className} role="img" aria-label={title ?? unit.name} preserveAspectRatio="xMidYMax meet">
-      <title>{title ?? `${unit.brand} ${unit.name}${trailer ? ` + ${trailer.name}` : ''}`}</title>
+      <title>{title ?? `${unit.brand} ${unit.name}${coupled && (trailer || drawbar) ? ` + ${coupled.name}` : ''}`}</title>
       <Defs ids={ids} color={color} />
       {content}
     </svg>
@@ -77,6 +84,16 @@ export function TrailerIllustration({ modelId, color = '#1d4ed8', className }: {
   const ids: Ids = { body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}` };
   const t = trailerModel(modelId);
   const fill = t.body === 'container' ? '#b45309' : t.body === 'tipper' ? '#ca8a04' : color;
+  if (t.kind === 'drawbar') {
+    return (
+      <svg viewBox="-10 -450 940 470" className={className} role="img" aria-label={t.name} preserveAspectRatio="xMidYMax meet">
+        <title>{`${t.brand} ${t.name}`}</title>
+        <Defs ids={ids} color={color} />
+        <GroundShadow from={0} to={900} />
+        <DrawbarTrailer body={t.body === 'reefer' ? 'reefer' : 'box'} ids={ids} color={fill} />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="-10 -450 1420 470" className={className} role="img" aria-label={t.name} preserveAspectRatio="xMidYMax meet">
       <title>{`${t.brand} ${t.name}`}</title>

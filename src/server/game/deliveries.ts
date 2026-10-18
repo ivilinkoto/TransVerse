@@ -4,8 +4,9 @@ import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/
 import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
+import { CREW_RULES, crewEffects } from '@/lib/game/crew';
 import { deliveryXp, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
-import { buildGameSchedule, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
+import { buildGameTrip, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
@@ -29,12 +30,13 @@ import { addLeaguePoints } from './leagues';
 import { addPassPoints } from './season-pass';
 import { settleTradeLot } from './trade';
 import { applyRoadEvents } from './road-events';
+import { recordClientLoad } from './clients';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
 /** Validates that a vehicle (with its trailer and driver) can legally take a contract. */
 export function compatibilityError(
-  input: { modelId: string; trailerModelId: string | null; condition: number; hasDriver: boolean; status: string },
+  input: { modelId: string; trailerModelId: string | null; condition: number; hasDriver: boolean; status: string; trailerCondition?: number | null },
   contract: { cargoType: string; weightTons: number; minLevel: number },
   level: number,
 ): string | null {
@@ -49,6 +51,7 @@ export function compatibilityError(
   if (!canCarry(cap.bodies, cargo)) return `Нужна е надстройка: ${CARGO[cargo].bodies.map((b) => BODY_LABELS[b]).join(' или ')}.`;
   if (contract.weightTons > cap.payloadTons) return `Товарът (${contract.weightTons} т) надвишава капацитета (${cap.payloadTons} т).`;
   if (input.condition < ECONOMY.minConditionForJobs) return 'Техниката е в лошо състояние — нужен е ремонт.';
+  if (trailer && input.trailerCondition != null && input.trailerCondition < ECONOMY.minConditionForJobs) return 'Ремаркето е в лошо състояние — нужен е ремонт.';
   if (level < Math.max(contract.minLevel, CARGO[cargo].minLevel)) return `Изисква ниво ${Math.max(contract.minLevel, CARGO[cargo].minLevel)}.`;
   return null;
 }
@@ -61,6 +64,8 @@ export const BODY_LABELS: Record<string, string> = {
   tanker: 'цистерна',
   container: 'контейнерно шаси',
   lowbed: 'нискорамно ремарке',
+  flatbed: 'платформа',
+  car_carrier: 'автовоз',
 };
 
 async function vehicleBundle(db: DbOrTx, companyId: string, vehicleId: string, lock = false) {
@@ -69,7 +74,8 @@ async function vehicleBundle(db: DbOrTx, companyId: string, vehicleId: string, l
   if (!vehicle) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
   const [trailer] = await db.select().from(trailers).where(eq(trailers.vehicleId, vehicleId));
   const [driver] = await db.select().from(drivers).where(eq(drivers.vehicleId, vehicleId));
-  return { vehicle: vehicle!, trailer: trailer ?? null, driver: driver ?? null };
+  const [coDriver] = await db.select().from(drivers).where(eq(drivers.coVehicleId, vehicleId));
+  return { vehicle: vehicle!, trailer: trailer ?? null, driver: driver ?? null, coDriver: coDriver ?? null };
 }
 
 /** Urgent shipments: the empty run to the pickup city takes this long, wherever the truck is. */
@@ -100,7 +106,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const vip = isVip(user?.vipUntil, now);
     const bundle = await vehicleBundle(tx, company.id, vehicleId, true);
     const error = compatibilityError(
-      { modelId: bundle.vehicle.modelId, trailerModelId: bundle.trailer?.modelId ?? null, condition: bundle.vehicle.condition, hasDriver: !!bundle.driver, status: bundle.vehicle.status },
+      { modelId: bundle.vehicle.modelId, trailerModelId: bundle.trailer?.modelId ?? null, condition: bundle.vehicle.condition, hasDriver: !!bundle.driver, status: bundle.vehicle.status, trailerCondition: bundle.trailer?.condition ?? null },
       contract!,
       user?.level ?? 1,
     );
@@ -143,22 +149,28 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const unit = powerUnitModel(bundle.vehicle.modelId);
     const trailer = bundle.trailer ? trailerModel(bundle.trailer.modelId) : null;
     const speedFactor = unit.kind === 'van' ? 1.15 : 1;
+    // The crew: hours left from the last trip, a second driver, skills.
+    const crew = crewEffects(bundle.driver!, bundle.coDriver, now);
     const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km) };
     // Urgent shipments run faster than normal game time.
     const scale = timeScale() * Math.max(1, contract!.speedFactor);
-    const schedule: Segment[] = contract!.urgent
-      ? [
-          // The truck is moved to the pickup city in one minute, then drives the cargo.
-          ...(emptyRoute ? [{ kind: 'drive' as const, leg: 'empty' as const, start: now.getTime(), end: now.getTime() + URGENT_RELOCATION_MS, fromKm: 0, toKm: emptyRoute.distanceKm }] : []),
-          ...buildGameSchedule({ startAt: now.getTime() + (emptyRoute ? URGENT_RELOCATION_MS : 0), empty: null, loaded: loadedLeg, speedFactor, timeScale: scale }),
-        ]
-      : buildGameSchedule({
+    const trip = contract!.urgent
+      ? buildGameTrip({ startAt: now.getTime() + (emptyRoute ? URGENT_RELOCATION_MS : 0), empty: null, loaded: loadedLeg, speedFactor, timeScale: scale, crew })
+      : buildGameTrip({
           startAt: now.getTime(),
           empty: emptyRoute ? { km: emptyRoute.distanceKm, durationS: emptyRoute.durationS, borderKms: emptyRoute.borders.map((b) => b.km) } : null,
           loaded: loadedLeg,
           speedFactor,
           timeScale: scale,
+          crew,
         });
+    const schedule: Segment[] = contract!.urgent
+      ? [
+          // The truck is moved to the pickup city in one minute, then drives the cargo.
+          ...(emptyRoute ? [{ kind: 'drive' as const, leg: 'empty' as const, start: now.getTime(), end: now.getTime() + URGENT_RELOCATION_MS, fromKm: 0, toKm: emptyRoute.distanceKm }] : []),
+          ...trip.segments,
+        ]
+      : trip.segments;
     const rented = bundle.vehicle.ownership === 'rented';
     // The urgent one-minute relocation costs nothing; only the cargo leg is paid for.
     const chargedEmptyKm = contract!.urgent ? 0 : (emptyRoute?.distanceKm ?? 0);
@@ -168,7 +180,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       trailer,
       upgrades: bundle.vehicle.upgrades,
       condition: bundle.vehicle.condition,
-      driverSkill: bundle.driver!.skill,
+      driverSkill: Math.max(bundle.driver!.skill, bundle.coDriver?.skill ?? 0),
+      crewFuel: crew.fuel,
+      crewWear: crew.wear,
       emptyKm: chargedEmptyKm,
       loadedKm: loadedRoute!.distanceKm,
       tons: contract!.weightTons,
@@ -187,7 +201,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     // Surprises on the way, decided now and revealed when the truck gets there.
-    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random });
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance });
     const [delivery] = await tx
       .insert(deliveries)
       .values({
@@ -196,6 +210,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         vehicleId,
         trailerId: bundle.trailer?.id ?? null,
         driverId: bundle.driver!.id,
+        coDriverId: bundle.coDriver?.id ?? null,
+        endDutyMin: trip.endDutyMin,
         emptyRouteId: emptyRoute?.id ?? null,
         routeId: loadedRoute!.id,
         emptyKm: emptyRoute?.distanceKm ?? 0,
@@ -294,10 +310,18 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .where(eq(vehicles.id, d.vehicleId));
   if (d.trailerId) await tx.update(trailers).set({ cityId: contract.destCityId, condition: sql`greatest(0, ${trailers.condition} - ${costs.wear * 0.6})` }).where(eq(trailers.id, d.trailerId));
   // Drivers grow with experience: one skill level per 8 000 XP, never downwards.
+  // They also carry the driving hours of this trip until they have rested (a team shares them).
+  const crewIds = d.coDriverId ? [d.driverId, d.coDriverId] : [d.driverId];
+  const dutyEach = d.endDutyMin / crewIds.length;
   await tx
     .update(drivers)
-    .set({ xp: sql`${drivers.xp} + ${xp}`, skill: sql`greatest(${drivers.skill}, least(5, 1 + floor((${drivers.xp} + ${xp}) / 8000.0)::int))` })
-    .where(eq(drivers.id, d.driverId));
+    .set({
+      xp: sql`${drivers.xp} + ${xp}`,
+      skill: sql`greatest(${drivers.skill}, least(5, 1 + floor((${drivers.xp} + ${xp}) / 8000.0)::int))`,
+      dutyMin: dutyEach,
+      restedAt: new Date(completedAt.getTime() + (CREW_RULES.restGameMin * 60_000) / timeScale()),
+    })
+    .where(inArray(drivers.id, crewIds));
   await tx
     .update(companies)
     .set({
@@ -349,6 +373,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${xp} опит.`,
     '/game/finance',
   );
+  // A load of a long-term client contract.
+  if (contract.clientContractId) await recordClientLoad(tx, contract.clientContractId, result.late, company!.ownerId, completedAt);
   // A load of a company tender.
   if (contract.tenderId) await recordTenderLoad(tx, contract.tenderId, company!.ownerId, completedAt);
   // Starter rental: returned now if the player bought their own truck, or offered for buy-out.

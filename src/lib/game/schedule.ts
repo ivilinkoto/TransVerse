@@ -16,6 +16,8 @@ export const DRIVING_RULES = {
   borderWaitMin: 60,
 } as const;
 
+import { CREW_RULES, dailyLimitMin, type Crew } from './crew';
+
 export type SegmentKind = 'drive' | 'break' | 'rest' | 'border' | 'loading' | 'unloading' | 'incident';
 export type LegKind = 'empty' | 'loaded';
 
@@ -48,16 +50,36 @@ export interface ScheduleInput {
   speedFactor: number;
   /** >1 makes everything faster (testing / special events). */
   timeScale: number;
+  /** Who drives: hours carried over from the last trip, a team, skills. Default: one rested driver. */
+  crew?: Crew;
+}
+
+export interface PlannedTrip {
+  segments: Segment[];
+  /** Driving minutes since the last daily rest when the trip ends. */
+  endDutyMin: number;
 }
 
 const MIN = 60_000;
 
 export function buildSchedule(input: ScheduleInput): Segment[] {
+  return planTrip(input).segments;
+}
+
+/** The real-time schedule plus the driving hours it leaves the crew with. */
+export function planTrip(input: ScheduleInput): PlannedTrip {
   const segments: Segment[] = [];
   const scale = (minutes: number) => (minutes * MIN) / input.timeScale;
+  const crew = input.crew ?? { startDutyMin: 0, team: false, extraDailyMin: 0 };
+  // A team swaps at the wheel instead of taking breaks and rests for less.
+  const rules = {
+    breakAfterMin: crew.team ? Infinity : DRIVING_RULES.breakAfterMin,
+    dailyDrivingMin: dailyLimitMin(crew),
+    dailyRestMin: crew.team ? CREW_RULES.teamRestMin : DRIVING_RULES.dailyRestMin,
+  };
   let t = input.startAt;
   let sinceBreak = 0;
-  let today = 0;
+  let today = Math.max(0, crew.startDutyMin);
 
   const push = (kind: SegmentKind, leg: LegKind, minutes: number, fromKm: number, toKm = fromKm) => {
     if (minutes <= 0) return;
@@ -76,16 +98,16 @@ export function buildSchedule(input: ScheduleInput): Segment[] {
     let guard = 0;
     while (km < input_.km - 1e-6) {
       if (++guard > 10_000) throw new Error('schedule did not converge');
-      if (today >= DRIVING_RULES.dailyDrivingMin - EPS_MIN) {
-        push('rest', leg, DRIVING_RULES.dailyRestMin, km);
+      if (today >= rules.dailyDrivingMin - EPS_MIN) {
+        push('rest', leg, rules.dailyRestMin, km);
         today = 0;
         sinceBreak = 0;
-      } else if (sinceBreak >= DRIVING_RULES.breakAfterMin - EPS_MIN) {
+      } else if (sinceBreak >= rules.breakAfterMin - EPS_MIN) {
         push('break', leg, DRIVING_RULES.breakMin, km);
         sinceBreak = 0;
       }
       const nextBorder = borders.find((b) => b > km + 1e-6);
-      const limitMin = Math.min(DRIVING_RULES.breakAfterMin - sinceBreak, DRIVING_RULES.dailyDrivingMin - today);
+      const limitMin = Math.min(rules.breakAfterMin - sinceBreak, rules.dailyDrivingMin - today);
       let targetKm = Math.min(input_.km, km + limitMin * kmPerMin);
       if (nextBorder !== undefined && nextBorder < targetKm) targetKm = nextBorder;
       const minutes = (targetKm - km) / kmPerMin;
@@ -101,7 +123,7 @@ export function buildSchedule(input: ScheduleInput): Segment[] {
   push('loading', 'loaded', DRIVING_RULES.loadingMin, 0);
   driveLeg('loaded', input.loaded);
   push('unloading', 'loaded', DRIVING_RULES.unloadingMin, input.loaded.km);
-  return segments;
+  return { segments, endDutyMin: today };
 }
 
 export function scheduleEnd(segments: readonly Segment[]): number {
@@ -165,9 +187,39 @@ export function compressSchedule(segments: readonly Segment[], startAt: number, 
 
 /** Full game-time schedule for a trip (empty leg + loaded leg). */
 export function buildGameSchedule(input: Omit<ScheduleInput, 'timeScale'> & { timeScale?: number }): Segment[] {
-  const real = buildSchedule({ ...input, timeScale: 1 });
+  return buildGameTrip(input).segments;
+}
+
+/**
+ * Game-time trip. The game duration follows the distance; the crew stretches
+ * or shortens it by how much longer (an early rest) or shorter (a team) the
+ * real schedule is than with one rested driver.
+ */
+export function buildGameTrip(input: Omit<ScheduleInput, 'timeScale'> & { timeScale?: number }): PlannedTrip {
+  const real = planTrip({ ...input, timeScale: 1 });
   const km = (input.empty?.km ?? 0) + input.loaded.km;
-  return compressSchedule(real, input.startAt, gameDurationMinutes(km) / (input.timeScale ?? 1));
+  const minutes = gameDurationMinutes(km) * crewTimeFactor(input, real.segments);
+  return { segments: compressSchedule(real.segments, input.startAt, minutes / (input.timeScale ?? 1)), endDutyMin: real.endDutyMin };
+}
+
+function crewTimeFactor(input: Omit<ScheduleInput, 'timeScale'>, real: readonly Segment[]): number {
+  const crew = input.crew;
+  if (!crew || (!crew.team && crew.startDutyMin <= 0 && crew.extraDailyMin <= 0)) return 1;
+  const fresh = buildSchedule({ ...input, crew: undefined, startAt: 0, timeScale: 1 });
+  const base = scheduleEnd(fresh) - (fresh[0]?.start ?? 0);
+  const span = scheduleEnd(real) - (real[0]?.start ?? 0);
+  return base > 0 ? span / base : 1;
+}
+
+/** Average truck speed used for planning estimates before a route is known. */
+const PLANNING_KMH = 70;
+
+/** Planning estimate of the game minutes of a trip for a given crew (UI; no routes needed). */
+export function estimateGameMinutes(emptyKm: number, loadedKm: number, crew?: Crew): number {
+  const leg = (km: number): LegInput => ({ km, durationS: (km / PLANNING_KMH) * 3600, borderKms: [] });
+  const input = { startAt: 0, empty: emptyKm > 0 ? leg(emptyKm) : null, loaded: leg(Math.max(1, loadedKm)), speedFactor: 1, crew };
+  const real = planTrip({ ...input, timeScale: 1 });
+  return gameDurationMinutes(emptyKm + loadedKm) * crewTimeFactor(input, real.segments);
 }
 
 /** Delivery window offered on a contract, counted from acceptance (allows a typical empty run). */

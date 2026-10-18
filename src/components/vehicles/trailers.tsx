@@ -162,6 +162,59 @@ export function Trailer({ body, ids, color }: { body: TrailerBody; ids: Ids; col
           <Running ids={ids} />
         </g>
       );
+    case 'flatbed':
+      return (
+        <g>
+          <Chassis />
+          <rect x={0} y={-160} width={1360} height={22} rx={3} fill={color} stroke="#0b1220" strokeWidth="2" />
+          {/* stakes */}
+          {Array.from({ length: 9 }, (_, i) => (
+            <rect key={i} x={20 + i * 162} y={-250} width={10} height={92} fill="#374151" />
+          ))}
+          {/* load: steel coils on the front half, a bundle of beams on the rear */}
+          {[760, 960, 1160].map((x) => (
+            <g key={x}>
+              <circle cx={x} cy={-250} r={90} fill={`url(#${ids.metal})`} stroke="#475569" strokeWidth="3" />
+              <circle cx={x} cy={-250} r={34} fill="#1f2937" />
+              <circle cx={x} cy={-250} r={62} fill="none" stroke="#64748b" strokeWidth="2" opacity="0.6" />
+              <rect x={x - 60} y={-170} width={120} height={10} fill="#78350f" />
+            </g>
+          ))}
+          <rect x={60} y={-260} width={560} height={100} rx={4} fill="#a16207" />
+          {Array.from({ length: 5 }, (_, i) => (
+            <rect key={i} x={60} y={-256 + i * 20} width={560} height={3} fill="#000" opacity="0.25" />
+          ))}
+          {[160, 340, 520, 760, 960, 1160].map((x) => (
+            <path key={x} d={`M ${x} -160 L ${x} -${x >= 700 ? 340 : 262}`} stroke="#f59e0b" strokeWidth="6" opacity="0.9" />
+          ))}
+          <Running ids={ids} />
+        </g>
+      );
+    case 'car_carrier':
+      return (
+        <g>
+          <Chassis />
+          {/* two-deck frame */}
+          <rect x={0} y={-152} width={1360} height={14} fill={color} />
+          <rect x={0} y={-312} width={1360} height={12} fill={color} />
+          {[30, 330, 640, 950, 1250].map((x) => (
+            <rect key={x} x={x} y={-420} width={14} height={268} fill={color} stroke="#0b1220" strokeWidth="1" />
+          ))}
+          <rect x={0} y={-424} width={1360} height={8} fill={color} opacity="0.7" />
+          {/* cars: lower and upper deck */}
+          {[{ x: 60, y: -152 }, { x: 500, y: -152 }, { x: 940, y: -152 }, { x: 80, y: -312 }, { x: 520, y: -312 }, { x: 960, y: -312 }].map((c, i) => (
+            <g key={i} transform={`translate(${c.x} ${c.y})`}>
+              <path d="M 0 -20 L 0 -50 Q 4 -60 30 -64 L 110 -98 Q 130 -106 170 -106 L 250 -106 Q 280 -104 300 -80 L 330 -62 Q 380 -58 384 -44 L 384 -20 Z" fill={['#dc2626', '#e5e7eb', '#1e3a8a', '#4b5563', '#f59e0b', '#0f766e'][i]} stroke="#0b1220" strokeWidth="2" />
+              <path d="M 128 -92 L 168 -100 L 240 -100 L 262 -76 L 120 -70 Z" fill={`url(#${ids.glass})`} />
+              <circle cx={80} cy={-20} r={20} fill="#111827" />
+              <circle cx={310} cy={-20} r={20} fill="#111827" />
+              <circle cx={80} cy={-20} r={9} fill="#9ca3af" />
+              <circle cx={310} cy={-20} r={9} fill="#9ca3af" />
+            </g>
+          ))}
+          <Running ids={ids} />
+        </g>
+      );
     case 'lowbed':
       return (
         <g>
@@ -196,4 +249,43 @@ export function Trailer({ body, ids, color }: { body: TrailerBody; ids: Ids; col
         </g>
       );
   }
+}
+
+/**
+ * Drawbar trailer behind a rigid truck: box 770 cm, rear at x = 0, drawbar eye
+ * at x = 900, two axles.
+ */
+export function DrawbarTrailer({ body, ids, color }: { body: 'box' | 'reefer'; ids: Ids; color: string }) {
+  const len = 770;
+  return (
+    <g>
+      <rect x={10} y={-140} width={len - 20} height={18} rx={2} fill="#1f2937" />
+      {body === 'reefer' ? (
+        <g>
+          <rect x={0} y={-372} width={len} height={232} rx={6} fill={`url(#${ids.white})`} stroke="#94a3b8" strokeWidth="2" />
+          {Array.from({ length: 11 }, (_, i) => (
+            <rect key={i} x={30 + i * 66} y={-366} width={2} height={220} fill="#94a3b8" opacity="0.6" />
+          ))}
+          <text x={len / 2} y={-262} textAnchor="middle" fontSize="54" fontWeight="800" fill={color} fontFamily="system-ui, sans-serif" letterSpacing="4">FRIGO</text>
+        </g>
+      ) : (
+        <g>
+          <rect x={0} y={-372} width={len} height={232} rx={4} fill={`url(#${ids.white})`} stroke="#94a3b8" strokeWidth="2" />
+          <rect x={0} y={-372} width={len} height={14} fill="#94a3b8" />
+          <rect x={20} y={-300} width={len - 40} height={70} rx={8} fill={color} opacity="0.9" />
+          <text x={len / 2} y={-250} textAnchor="middle" fontSize="44" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif" letterSpacing="6">TRANSVERSE</text>
+        </g>
+      )}
+      <rect x={0} y={-136} width={8} height={14} fill="#dc2626" />
+      {/* drawbar */}
+      <path d={`M ${len - 40} -112 L 900 -84 L 900 -74 L ${len - 40} -100 Z`} fill="#374151" />
+      <circle cx={900} cy={-79} r={8} fill="#111827" />
+      {[170, len - 170].map((x) => (
+        <g key={x}>
+          <rect x={x - 54} y={-114} width={108} height={10} rx={3} fill="#111827" />
+          <Wheel x={x} r={48} ids={ids} twin />
+        </g>
+      ))}
+    </g>
+  );
 }

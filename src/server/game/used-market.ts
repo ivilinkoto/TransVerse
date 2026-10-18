@@ -117,6 +117,7 @@ export async function buyListing(db: Database, userId: string, listingId: string
     }
     if (listing!.vehicleId) {
       await tx.update(drivers).set({ vehicleId: null }).where(eq(drivers.vehicleId, listing!.vehicleId));
+      await tx.update(drivers).set({ coVehicleId: null }).where(eq(drivers.coVehicleId, listing!.vehicleId));
       await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, listing!.vehicleId));
       await tx.update(vehicles).set({ companyId: buyer.id, status: 'idle', purchasePriceCents: listing!.priceCents }).where(eq(vehicles.id, listing!.vehicleId));
       await retireRentalFor(tx, buyer.id, listing!.vehicleId);

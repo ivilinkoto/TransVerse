@@ -57,6 +57,9 @@ export interface TripCostInput {
   condition: number;
   /** Driver skill 1..5 */
   driverSkill: number;
+  /** Crew skills: fuel and wear factors (default 1). */
+  crewFuel?: number;
+  crewWear?: number;
   emptyKm: number;
   loadedKm: number;
   tons: number;
@@ -79,7 +82,7 @@ export interface TripCosts {
 export function tripCosts(input: TripCostInput): TripCosts {
   const { unit, trailer } = input;
   const loadShare = input.payloadTons > 0 ? Math.min(1, input.tons / input.payloadTons) : 0;
-  const efficiency = upgradeFactor(input.upgrades, 'fuel') * (1 - 0.03 * (input.driverSkill - 1)) * (1 + (100 - input.condition) / 400);
+  const efficiency = upgradeFactor(input.upgrades, 'fuel') * (1 - 0.03 * (input.driverSkill - 1)) * (input.crewFuel ?? 1) * (1 + (100 - input.condition) / 400);
   const drag = trailer ? trailer.dragFuel : 0;
   const emptyL = (input.emptyKm / 100) * (unit.fuelEmpty + drag * 0.5);
   const loadedL = (input.loadedKm / 100) * (unit.fuelEmpty + (unit.fuelFull - unit.fuelEmpty) * loadShare + drag);
@@ -90,7 +93,7 @@ export function tripCosts(input: TripCostInput): TripCosts {
   const tollCents = Math.round(tolledKm * ECONOMY.tollCentsPerKm);
   const km = input.emptyKm + input.loadedKm;
   const maintenanceCents = Math.round(km * unit.maintenanceCentsPerKm);
-  const wear = (km / 1000) * ECONOMY.wearPerThousandKm * upgradeFactor(input.upgrades, 'wear');
+  const wear = (km / 1000) * ECONOMY.wearPerThousandKm * upgradeFactor(input.upgrades, 'wear') * (input.crewWear ?? 1);
   return { fuelCents, fuelLitres: Math.round((emptyL + loadedL) * efficiency), tollCents, maintenanceCents, totalCents: fuelCents + tollCents + maintenanceCents, wear };
 }
 

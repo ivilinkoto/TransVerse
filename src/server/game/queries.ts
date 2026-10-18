@@ -27,6 +27,7 @@ export async function fleetView(db: DbOrTx, companyId: string) {
     const model = powerUnitModel(v.modelId);
     const trailer = ts.find((t) => t.vehicleId === v.id) ?? null;
     const driver = ds.find((d) => d.vehicleId === v.id) ?? null;
+    const coDriver = ds.find((d) => d.coVehicleId === v.id) ?? null;
     const delivery = active.find((a) => a.vehicleId === v.id) ?? null;
     const contract = delivery ? contractMap.get(delivery.contractId)! : null;
     return {
@@ -35,6 +36,7 @@ export async function fleetView(db: DbOrTx, companyId: string) {
       city: cityMap.get(v.cityId)!,
       trailer: trailer ? { ...trailer, model: trailerModel(trailer.modelId) } : null,
       driver,
+      coDriver,
       delivery: delivery && contract ? { ...delivery, schedule: delivery.schedule as Segment[], contract, origin: cityMap.get(contract.originCityId)!, destination: cityMap.get(contract.destCityId)! } : null,
       // Rented vehicles are not assets of the player.
       resaleCents: v.ownership === 'rented' ? 0 : resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt)),

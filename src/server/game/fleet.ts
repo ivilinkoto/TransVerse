@@ -1,5 +1,5 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
-import { POWER_UNITS, TRAILERS, UPGRADES, canCouple, powerUnitModel, trailerModel, type UpgradeId } from '@/lib/game/catalog';
+import { POWER_UNITS, TRAILERS, UPGRADES, couplingError, powerUnitModel, trailerModel, type UpgradeId } from '@/lib/game/catalog';
 import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cityMarkets, companies, depots, drivers, trailers, users, vehicles } from '@/server/db/schema';
@@ -99,6 +99,7 @@ export async function sellVehicle(db: Database, userId: string, vehicleId: strin
     const value = resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt));
     await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v.id));
     await tx.update(drivers).set({ vehicleId: null }).where(eq(drivers.vehicleId, v.id));
+    await tx.update(drivers).set({ coVehicleId: null }).where(eq(drivers.coVehicleId, v.id));
     await post(tx, company.id, [{ category: 'vehicle_sale', amountCents: value, description: `Продажба: ${model.name} (${v.plate})`, idempotencyKey: `sell:vehicle:${v.id}`, refType: 'vehicle', refId: v.id }]);
     await tx.update(vehicles).set({ status: 'sold', soldAt: new Date() }).where(eq(vehicles.id, v.id));
     await logActivity(tx, userId, 'vehicle_sold', { vehicleId: v.id, value });
@@ -157,24 +158,25 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
   });
 }
 
-/** Couples a trailer to a tractor in the same city (or uncouples when trailerId is null). */
+/** Couples a semi-trailer to a tractor or a drawbar trailer to a rigid truck in the same city (or uncouples when trailerId is null). */
 export async function coupleTrailer(db: Database, userId: string, vehicleId: string, trailerId: string | null) {
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
-    if (v.status !== 'idle') fail('vehicle_busy', 'Влекачът е на курс.');
+    if (v.status !== 'idle') fail('vehicle_busy', 'Камионът е на курс.');
     const unit = powerUnitModel(v.modelId);
-    if (unit.kind !== 'tractor') fail('not_tractor', 'Само влекачи теглят ремаркета.');
+    if (unit.kind === 'van') fail('not_tractor', 'Ванът не тегли ремарке.');
     await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v.id));
     if (!trailerId) return;
     const t = await ownedTrailer(tx, company.id, trailerId);
     if (t.listed) fail('listed', 'Ремаркето е обявено на пазара.');
-    if (t.cityId !== v.cityId) fail('different_city', 'Ремаркето и влекачът трябва да са в един град.');
+    if (t.cityId !== v.cityId) fail('different_city', 'Ремаркето и камионът трябва да са в един град.');
     if (t.vehicleId) {
       const [other] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t.vehicleId));
       if (other?.status !== 'idle') fail('trailer_busy', 'Ремаркето е на курс.');
     }
-    if (!canCouple(unit, trailerModel(t.modelId))) fail('incompatible_trailer', 'Това ремарке изисква тежкотоварен влекач.');
+    const why = couplingError(unit, trailerModel(t.modelId));
+    if (why) fail('incompatible_trailer', why);
     await tx.update(trailers).set({ vehicleId: v.id }).where(eq(trailers.id, t.id));
   });
 }

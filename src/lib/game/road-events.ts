@@ -48,14 +48,15 @@ export function seededRandom(seed: string): () => number {
 }
 
 /** Picks the events for a fresh schedule. `rented` trucks get delays but no repair bill. */
-export function planRoadEvents(schedule: readonly Segment[], opts: { totalKm: number; borders: number; rented: boolean; random: () => number }): RoadEventPlan[] {
+export function planRoadEvents(schedule: readonly Segment[], opts: { totalKm: number; borders: number; rented: boolean; random: () => number; /** Multiplier from the crew's safety skill (default 1). */ chance?: number }): RoadEventPlan[] {
   const drives = schedule.filter((s) => s.kind === 'drive' && s.end - s.start > 0);
   const first = schedule[0];
   const last = schedule.at(-1);
   if (!drives.length || !first || !last) return [];
   const span = last.end - first.start;
   const r = opts.random;
-  const count = r() < (opts.totalKm >= ROAD_EVENT_CHANCE.longTripKm ? ROAD_EVENT_CHANCE.oneLong : ROAD_EVENT_CHANCE.one) ? (opts.totalKm >= ROAD_EVENT_CHANCE.longTripKm && r() < ROAD_EVENT_CHANCE.second ? 2 : 1) : 0;
+  const chance = opts.chance ?? 1;
+  const count = r() < (opts.totalKm >= ROAD_EVENT_CHANCE.longTripKm ? ROAD_EVENT_CHANCE.oneLong : ROAD_EVENT_CHANCE.one) * chance ? (opts.totalKm >= ROAD_EVENT_CHANCE.longTripKm && r() < ROAD_EVENT_CHANCE.second * chance ? 2 : 1) : 0;
   const kinds: RoadEventKind[] = ['traffic', 'traffic', 'roadworks', 'roadworks', 'breakdown', 'weather', 'inspection', ...(opts.borders > 0 ? (['border_queue', 'border_queue'] as const) : [])];
   const events: RoadEventPlan[] = [];
   for (let i = 0; i < count; i++) {

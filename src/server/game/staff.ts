@@ -1,4 +1,6 @@
-import { and, eq, gt, isNull, lte, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { powerUnitModel } from '@/lib/game/catalog';
+import { TRAIT_MAX, TRAITS, traitLevel, traitPointsLeft, type TraitId } from '@/lib/game/crew';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { driverCandidates, drivers, vehicles } from '@/server/db/schema';
 import { canHireStaff, companyForUser } from './company';
@@ -44,33 +46,56 @@ export async function fireDriver(db: Database, userId: string, driverId: string)
     const [d] = await tx.select().from(drivers).where(and(eq(drivers.id, driverId), eq(drivers.companyId, company.id))).for('update');
     if (!d) fail('driver_not_found', 'Шофьорът не е намерен.', 404);
     if (d!.isOwner) fail('owner_driver', 'Не можете да освободите себе си.');
-    if (d!.vehicleId) {
-      const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, d!.vehicleId));
-      if (v?.status === 'on_delivery') fail('driver_busy', 'Шофьорът е на курс.');
-    }
+    await assertNotDriving(tx, d!);
     await post(tx, company.id, [{ category: 'severance', amountCents: -d!.salaryCentsPerDay * 3, description: `Обезщетение: ${d!.name}`, idempotencyKey: `severance:${d!.id}` }]);
     await tx.delete(drivers).where(eq(drivers.id, d!.id));
     await logActivity(tx, userId, 'driver_fired', { driverId });
   });
 }
 
-/** Assigns a driver to a vehicle (or unassigns with vehicleId = null). One driver per vehicle. */
-export async function assignDriver(db: Database, userId: string, driverId: string, vehicleId: string | null) {
+async function assertNotDriving(tx: DbOrTx, d: { vehicleId: string | null; coVehicleId: string | null }) {
+  const seats = [d.vehicleId, d.coVehicleId].filter((x): x is string => !!x);
+  if (!seats.length) return;
+  const busy = await tx.select({ id: vehicles.id }).from(vehicles).where(and(inArray(vehicles.id, seats), eq(vehicles.status, 'on_delivery')));
+  if (busy.length) fail('driver_busy', 'Шофьорът е на курс.');
+}
+
+/**
+ * Puts a driver on a vehicle (or takes them off with vehicleId = null). The
+ * main seat drives; the second seat makes a team (not in vans). A driver sits
+ * in one seat at a time.
+ */
+export async function assignDriver(db: Database, userId: string, driverId: string, vehicleId: string | null, seat: 'main' | 'co' = 'main') {
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const [d] = await tx.select().from(drivers).where(and(eq(drivers.id, driverId), eq(drivers.companyId, company.id))).for('update');
     if (!d) fail('driver_not_found', 'Шофьорът не е намерен.', 404);
-    if (d!.vehicleId) {
-      const [current] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, d!.vehicleId));
-      if (current?.status === 'on_delivery') fail('driver_busy', 'Шофьорът е на курс.');
-    }
+    await assertNotDriving(tx, d!);
     if (vehicleId) {
       const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id), isNull(vehicles.soldAt))).for('update');
       if (!v) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
       if (v!.status !== 'idle') fail('vehicle_busy', 'Превозното средство е на курс.');
-      await tx.update(drivers).set({ vehicleId: null }).where(eq(drivers.vehicleId, vehicleId));
+      if (seat === 'co' && powerUnitModel(v!.modelId).kind === 'van') fail('no_team_in_van', 'Във вана няма място за втори шофьор.');
+      if (seat === 'co' && v!.ownership === 'rented') fail('rented', 'Наетият камион се кара от един шофьор.');
+      if (seat === 'main') await tx.update(drivers).set({ vehicleId: null }).where(eq(drivers.vehicleId, vehicleId));
+      else await tx.update(drivers).set({ coVehicleId: null }).where(eq(drivers.coVehicleId, vehicleId));
     }
-    await tx.update(drivers).set({ vehicleId }).where(eq(drivers.id, d!.id));
+    await tx
+      .update(drivers)
+      .set(seat === 'main' || !vehicleId ? { vehicleId, coVehicleId: null } : { vehicleId: null, coVehicleId: vehicleId })
+      .where(eq(drivers.id, d!.id));
+  });
+}
+
+/** Spends one of a driver's skill points (one per skill level above the first). */
+export async function trainDriver(db: Database, userId: string, driverId: string, trait: TraitId) {
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [d] = await tx.select().from(drivers).where(and(eq(drivers.id, driverId), eq(drivers.companyId, company.id))).for('update');
+    if (!d) fail('driver_not_found', 'Шофьорът не е намерен.', 404);
+    if (traitPointsLeft(d!.skill, d!.traits) <= 0) fail('no_points', 'Няма свободни точки — шофьорът получава точка с всяко ново ниво на умение.');
+    if (traitLevel(d!.traits, trait) >= TRAIT_MAX) fail('max_trait', `${TRAITS[trait].short} е на максимум.`);
+    await tx.update(drivers).set({ traits: { ...d!.traits, [trait]: traitLevel(d!.traits, trait) + 1 } }).where(eq(drivers.id, d!.id));
   });
 }
 
