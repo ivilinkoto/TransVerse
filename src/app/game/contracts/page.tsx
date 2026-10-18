@@ -89,6 +89,7 @@ export default async function ContractsPage() {
       locked: user.level < Math.max(c.minLevel, cargo.minLevel),
       local: localCities.includes(c.originCityId),
       urgent: c.urgent,
+      holiday: c.holiday,
       tender: !!c.tenderId,
       alreadyTaken: takenIds.has(c.id),
       reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,

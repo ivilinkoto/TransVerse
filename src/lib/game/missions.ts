@@ -25,6 +25,8 @@ export interface DeliveryFacts {
   urgent: boolean;
   /** Delivered while a member of a company. */
   inCompany: boolean;
+  /** A holiday load (Halloween…). */
+  holiday?: boolean;
 }
 
 export type Metric =

@@ -1,6 +1,8 @@
 'use client';
 
 import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Siren, Star, Truck } from 'lucide-react';
+import { PumpkinIcon } from '@/components/seasonal/icons';
+import { HALLOWEEN } from '@/lib/game/halloween';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -38,6 +40,8 @@ export interface BoardContract {
   local: boolean;
   /** Urgent shipment from the game administration: listed first, driven faster. */
   urgent: boolean;
+  /** Holiday load ('halloween'): themed goods, better pay. */
+  holiday: string | null;
   /** Load of a tender of the player's company (only members see it). */
   tender: boolean;
   speedFactor: number;
@@ -204,6 +208,7 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
+            {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />ПРЕМИУМ · репутация {c.minReputation}</Badge>}
             {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
             {c.reservedByMe && <Badge tone="gold">Запазена за теб до {c.reservedUntil}</Badge>}

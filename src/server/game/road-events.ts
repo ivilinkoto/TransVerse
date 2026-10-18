@@ -4,6 +4,8 @@ import { scheduleEnd, type Segment } from '@/lib/game/schedule';
 import type { Database, Tx } from '@/server/db/client';
 import { cities, companies, contracts, deliveries } from '@/server/db/schema';
 import { post } from './finance';
+import { meetGhostTruck } from './halloween';
+import { HALLOWEEN } from '@/lib/game/halloween';
 import { broadcast, notify } from './notify';
 
 type DeliveryRow = typeof deliveries.$inferSelect;
@@ -30,6 +32,13 @@ export async function applyRoadEvents(tx: Tx, d: DeliveryRow, now: Date): Promis
     const minutes = Math.max(1, Math.round(e.delayMs / 60_000));
     if (e.costCents) {
       await post(tx, d.companyId, [{ category: 'road_events', amountCents: -e.costCents, description: `${def.title} — пътна помощ`, idempotencyKey: `delivery:${d.id}:event:${index(e)}`, refType: 'delivery', refId: d.id }]);
+    }
+    if (e.kind === 'ghost') {
+      if (company) {
+        await meetGhostTruck(tx, company.ownerId, d.id);
+        await notify(tx, company.ownerId, 'achievement', `${def.title}!`, `${def.body} +${HALLOWEEN.ghostCoins} TC.`, '/game/halloween');
+      }
+      continue;
     }
     if (company) {
       const cost = e.costCents ? ` Пътна помощ: ${(e.costCents / 100).toLocaleString('bg-BG')} €.` : '';

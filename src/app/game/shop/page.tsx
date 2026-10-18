@@ -5,6 +5,8 @@ import { Badge, Card, PageHeader } from '@/components/ui';
 import { dateTime } from '@/lib/format';
 import { isFreightHub } from '@/lib/game/markets';
 import { SHOP_CATEGORIES, SHOP_ITEMS, type ShopCategory } from '@/lib/game/shop';
+import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
+import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { isVip, STANDARD_COLORS, VIP_BENEFITS, VIP_COLORS } from '@/lib/game/vip';
 import { cities, vehicles } from '@/server/db/schema';
 import { coinHistory, COIN_REASON_LABELS, type CoinReason } from '@/server/game/coins';
@@ -73,8 +75,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <section key={cat}>
           <h2 className="mb-3 font-display text-lg font-bold">{SHOP_CATEGORIES[cat]}</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {SHOP_ITEMS.filter((i) => i.category === cat).map((i) => (
+            {SHOP_ITEMS.filter((i) => i.category === cat && (!i.seasonal || isHalloween(now))).map((i) => (
               <Card key={i.id} className="flex flex-col">
+                {i.id === 'paint_pumpkin' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={HALLOWEEN.pumpkinColor} livery="pumpkin" className="mb-3 h-16 w-full" />}
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-display font-bold">{i.label}</div>
                   <span className="num shrink-0 font-bold text-cyan-glow">{i.id === 'paint' && vip ? '0' : i.price} TC</span>

@@ -169,6 +169,13 @@
       "when": 1792341331600,
       "tag": "0023_fearless_psynapse",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792342220763,
+      "tag": "0024_cold_alex_power",
+      "breakpoints": true
     }
   ]
 }

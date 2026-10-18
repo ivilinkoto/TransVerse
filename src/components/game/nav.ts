@@ -3,6 +3,8 @@ import { Building2, ClipboardList, Gem, LayoutDashboard, Landmark, LifeBuoy, Map
 export interface NavTab {
   href: string;
   label: string;
+  /** Shown only while this holiday's content runs. */
+  holiday?: 'halloween';
 }
 
 export interface NavSection {
@@ -62,6 +64,7 @@ export const SECTIONS: NavSection[] = [
     label: 'Състезание',
     icon: Trophy,
     tabs: [
+      { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween' },
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/league', label: 'Лига' },
       { href: '/game/pass', label: 'Пропуск' },
@@ -85,6 +88,11 @@ export const ACCOUNT_MENU = [
 ] as const;
 
 const within = (pathname: string, href: string) => (href === '/game' ? pathname === '/game' : pathname === href || pathname.startsWith(href + '/'));
+
+/** The tabs to show: holiday tabs only during their holiday (and on their own page). */
+export function visibleTabs(section: NavSection, holiday: string | null, pathname: string): NavTab[] {
+  return (section.tabs ?? []).filter((t) => !t.holiday || t.holiday === holiday || within(pathname, t.href));
+}
 
 /** The tab of a section that matches the path (the longest match wins, so /game/company/chat stays on "Моята компания"). */
 export function activeTab(section: NavSection, pathname: string): NavTab | undefined {

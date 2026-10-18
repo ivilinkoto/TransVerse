@@ -8,6 +8,7 @@ import { contractCountries, missingLicences, requiredLicences } from '@/lib/game
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
+import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
@@ -198,10 +199,14 @@ export const PREMIUM_SHARE = 0.12;
 
 async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null) {
   const route = await getRoute(db, origin.id, destination.id, 'truck', provider);
-  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo));
+  // Halloween: some pallet and refrigerated loads are holiday goods that pay better.
+  const holidayGoods = isHalloween(now) ? HALLOWEEN.goods[cargo] : undefined;
+  const holiday = holidayGoods && rand() < HALLOWEEN.contractShare ? 'halloween' : null;
+  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (holiday ? HALLOWEEN.rewardMultiplier : 1);
   await db.insert(contracts).values({
     shipper: shipperName(),
-    goods: pick(CARGO[cargo].goods),
+    goods: holiday ? pick(holidayGoods!) : pick(CARGO[cargo].goods),
+    holiday,
     cargoType: cargo,
     weightTons: tons,
     originCityId: origin.id,

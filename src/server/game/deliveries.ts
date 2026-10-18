@@ -31,6 +31,8 @@ import { addPassPoints } from './season-pass';
 import { settleTradeLot } from './trade';
 import { applyRoadEvents } from './road-events';
 import { recordClientLoad } from './clients';
+import { recordHalloweenDelivery } from './halloween';
+import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -201,7 +203,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     // Surprises on the way, decided now and revealed when the truck gets there.
-    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance });
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance, ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0 });
     const [delivery] = await tx
       .insert(deliveries)
       .values({
@@ -353,6 +355,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     countries: contractCountries(origin!.country, dest!.countryCode, route?.countries),
     urgent: contract.urgent,
     inCompany: !!perks,
+    holiday: !!contract.holiday,
   };
   await recordMissionProgress(tx, company!.ownerId, facts, now);
   // Global events count by arrival time; company missions by the member's company.
@@ -373,6 +376,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} €, +${xp} опит.`,
     '/game/finance',
   );
+  // Halloween quests: holiday loads, night arrivals.
+  if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // A load of a long-term client contract.
   if (contract.clientContractId) await recordClientLoad(tx, contract.clientContractId, result.late, company!.ownerId, completedAt);
   // A load of a company tender.

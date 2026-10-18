@@ -42,7 +42,7 @@ export default async function GaragePage() {
                     <span className="font-mono text-xs text-mist-400">{v.plate}</span>
                     {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
                   </div>
-                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} className="my-3 h-24 w-full" />
+                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} className="my-3 h-24 w-full" />
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="flex justify-between text-xs text-mist-400"><span>Влекач / камион</span><span className="num">{Math.round(v.condition)}%</span></div>

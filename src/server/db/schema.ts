@@ -245,6 +245,8 @@ export const vehicles = pgTable(
     condition: real('condition').notNull().default(100),
     odometerKm: real('odometer_km').notNull().default(0),
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
+    /** Special paint scheme on top of the colour (e.g. 'pumpkin' from Halloween 2026); null = plain colour. */
+    livery: text('livery'),
     /** owned | rented — rented vehicles pay a fee per delivery instead of running costs. */
     ownership: text('ownership').notNull().default('owned'),
     /** Rented truck to be returned as soon as its current trip ends (the player bought their own). */
@@ -351,6 +353,8 @@ export const contracts = pgTable(
     /** Own goods hauled by a player (trading): only that player's account may take it; never on the public board. */
     tradeCompanyId: uuid('trade_company_id'),
     trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null }>(),
+    /** Holiday load (e.g. 'halloween'): themed goods, better pay, counts for the holiday event and quests. */
+    holiday: text('holiday'),
     /** One load of a long-term client contract (private, like trade lots). */
     clientContractId: uuid('client_contract_id'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
@@ -1202,4 +1206,29 @@ export const clientContracts = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('client_contracts_company_idx').on(t.companyId, t.status), index('client_contracts_due_idx').on(t.status, t.dueAt)],
+);
+
+/** Progress of the holiday quests (e.g. Halloween 2026), one row per player and quest. */
+export const seasonalQuests = pgTable(
+  'seasonal_quests',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** '<season key>:<quest id>', e.g. 'halloween-2026:h_loads'. */
+    quest: text('quest').notNull(),
+    progress: doublePrecision('progress').notNull().default(0),
+    claimedAt: ts('claimed_at'),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.quest] })],
+);
+
+/** Badges a player keeps for good (shown on the player card). */
+export const userBadges = pgTable(
+  'user_badges',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    badge: text('badge').notNull(),
+    awardedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.badge] })],
 );

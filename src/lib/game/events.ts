@@ -10,7 +10,7 @@
 import { CARGO, type CargoType } from './cargo';
 import { hash, LONG_HAUL_KM, sofiaMidnight, sofiaParts, type DeliveryFacts } from './missions';
 
-export const EVENT_METRICS = ['tons', 'deliveries', 'km', 'on_time', 'international', 'heavy', 'long_haul', 'earned_cents'] as const;
+export const EVENT_METRICS = ['tons', 'deliveries', 'km', 'on_time', 'international', 'heavy', 'long_haul', 'earned_cents', 'holiday'] as const;
 export type EventMetric = (typeof EVENT_METRICS)[number];
 
 export interface MetricInfo {
@@ -32,6 +32,7 @@ export const EVENT_METRIC_INFO: Record<EventMetric, MetricInfo> = {
   heavy: { label: 'Товари над 15 т', unit: 'товара', floor: 10, minContribution: 1 },
   long_haul: { label: `Курсове над ${LONG_HAUL_KM} км`, unit: 'курса', floor: 8, minContribution: 1 },
   earned_cents: { label: 'Спечелено навло', unit: '€', floor: 50_000_00, minContribution: 1_000_00 },
+  holiday: { label: 'Празнични доставки', unit: 'доставки', floor: 40, minContribution: 1 },
 };
 
 export interface EventFilter {
@@ -61,6 +62,8 @@ export function eventIncrement(e: EventFilter, f: DeliveryFacts): number {
       return f.loadedKm >= LONG_HAUL_KM ? 1 : 0;
     case 'earned_cents':
       return f.rewardCents;
+    case 'holiday':
+      return f.holiday ? 1 : 0;
   }
 }
 
@@ -85,7 +88,7 @@ export function goalText(e: EventFilter & { target: number }, countryName?: stri
       return `Спечелете заедно ${amount} навло${cargo ? ` от ${cargo}` : ''}${where}`;
     default: {
       const n = Math.round(e.target).toLocaleString('bg-BG');
-      const what: Record<string, string> = { deliveries: 'доставки', on_time: 'навременни доставки', international: 'международни доставки', heavy: 'доставки на товари над 15 т', long_haul: `курса над ${LONG_HAUL_KM} км` };
+      const what: Record<string, string> = { deliveries: 'доставки', on_time: 'навременни доставки', international: 'международни доставки', heavy: 'доставки на товари над 15 т', long_haul: `курса над ${LONG_HAUL_KM} км`, holiday: 'празнични доставки' };
       return `Изпълнете заедно ${n} ${what[e.metric]}${cargo ? ` (${cargo})` : ''}${where}`;
     }
   }
