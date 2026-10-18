@@ -1,3 +1,4 @@
+import { Hint } from '@/components/game/Hint';
 import { canHireStaff } from '@/server/game/company';
 import { Moon, Plus, UserPlus, UserRound, Users } from 'lucide-react';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
@@ -30,6 +31,7 @@ export default async function StaffPage() {
         subtitle={`Наети шофьори, които карат вместо теб. Дневни заплати: ${money(payroll)}.`}
         help={`Шофьорът може да кара 9 часа преди дневна почивка. Часовете от последния курс се пренасят: ако го пратиш веднага пак, ще спре за почивка по-рано и курсът ще е по-дълъг. След ${CREW_RULES.restGameMin} минути престой е отпочинал. Двоен екипаж (втори шофьор в същия камион) кара до 18 часа без почивки — дългите курсове стават много по-бързи. С всяко ниво на умение шофьорът получава точка за Икономичност, Безопасност или Издръжливост.`}
       />
+      {!user.seenHints.includes('crew') && <Hint id="crew" />}
       <Card title={`Шофьори (${fleet.drivers.length})`}>
         {fleet.drivers.length === 0 ? (
           <Empty icon={UserRound} title="Нямате шофьори">Без шофьор превозното средство не може да тръгне. Наемете от кандидатите по-долу.</Empty>

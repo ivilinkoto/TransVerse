@@ -1,3 +1,4 @@
+import { Hint } from '@/components/game/Hint';
 import { ContractBoard, type BoardContract } from '@/components/game/ContractBoard';
 import { PageHeader } from '@/components/ui';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
@@ -119,6 +120,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         subtitle="Избери товар, камион и тръгвай. Поръчките са общи за всички играчи."
         help="Горивото се плаща по цените на държавите по маршрута (виж Финанси → Дизел днес). По пътя може да се случи задръстване, ремонт, повреда или опашка на границата — това забавя курса, а повредата струва пари за пътна помощ (при наетия камион плаща наемодателят). Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
+      {!user.seenHints.includes('board') && <Hint id="board" />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
       <ContractBoard initialChips={onlyFavorites ? ['fav'] : []} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />

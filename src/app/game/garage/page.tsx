@@ -1,3 +1,4 @@
+import { Hint } from '@/components/game/Hint';
 import { ShieldCheck, Wrench } from 'lucide-react';
 import { insurancePriceCents, isInsured } from '@/lib/game/fines';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
@@ -28,6 +29,7 @@ export default async function GaragePage() {
     <div className="space-y-6">
       <PageHeader title="Сервиз" subtitle="Ремонти, подобрения, ремаркета и продажба — между курсовете."
         help="Продажбата веднага става на търговец. Ако обявиш техниката на пазара, друг играч може да я купи на твоята цена (такса 5%); докато е обявена, не кара. Обявата изтича след 7 дни." />
+      {!user.seenHints.includes('insurance') && <Hint id="insurance" />}
       {fleet.vehicles.length === 0 && <Empty icon={Wrench} title="Няма техника за сервиз" />}
       <div className="space-y-4">
         {fleet.vehicles.map((v) => {

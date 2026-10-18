@@ -1,4 +1,5 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import type { HintId } from '@/lib/game/hints';
 import { compareVersions, releaseByVersion } from '@/lib/game/releases';
 import type { DbOrTx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
@@ -14,4 +15,9 @@ export async function markReleaseSeen(db: DbOrTx, userId: string, version: strin
 
 export async function setSeasonalTheme(db: DbOrTx, userId: string, on: boolean) {
   await db.update(users).set({ seasonalTheme: on }).where(eq(users.id, userId));
+}
+
+/** The player closed a one-time hint. */
+export async function dismissHint(db: DbOrTx, userId: string, hint: HintId) {
+  await db.update(users).set({ seenHints: sql`array_append(array_remove(${users.seenHints}, ${hint}), ${hint})` }).where(eq(users.id, userId));
 }

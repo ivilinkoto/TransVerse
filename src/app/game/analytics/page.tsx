@@ -1,3 +1,4 @@
+import { Hint } from '@/components/game/Hint';
 import { BarChart3, Clock, Fuel, Route, TrendingUp, Truck } from 'lucide-react';
 import { Card, Empty, PageHeader, Segmented, Stat } from '@/components/ui';
 import { dec, int, km, money } from '@/lib/format';
@@ -67,7 +68,7 @@ function Ranking({ rows, name, sub }: { rows: Group[]; name: (g: Group) => React
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ d?: string }> }) {
   const requested = Number((await searchParams).d);
   const days = (PERIODS as readonly number[]).includes(requested) ? requested : 30;
-  const { db, company, now } = await gameContext();
+  const { db, user, company, now } = await gameContext();
   const a = await companyAnalytics(db, company.id, days, now);
 
   return (
@@ -78,6 +79,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         help="Броят се приключените доставки в периода. „Нетно“ е резултатът от курса след гориво, такси, поддръжка, наем, неустойки, бонуси и вноската към компанията — както е уреден от сървъра. Заплатите, ремонтите и покупките са в Финанси. При наети камиони горивото е в наема, затова не влиза в разхода на гориво."
         actions={<Segmented label="Период" active={String(days)} items={PERIODS.map((p) => ({ id: String(p), label: `${p} дни`, href: `/game/analytics?d=${p}` }))} />}
       />
+      {!user.seenHints.includes('analytics') && <Hint id="analytics" />}
       {a.trips === 0 ? (
         <Card><Empty icon={BarChart3} title="Още няма доставки за периода">Изпълни няколко поръчки и тук ще видиш кое носи най-много.</Empty></Card>
       ) : (

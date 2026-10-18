@@ -1,4 +1,4 @@
-import { Building2, ClipboardList, Gem, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { BookOpen, Building2, ClipboardList, Gem, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
@@ -86,6 +86,7 @@ export const ACCOUNT_MENU = [
   { href: '/game/invite', label: 'Покани приятел', icon: UserPlus },
   { href: '/game/updates', label: 'Обновления', icon: ScrollText },
   { href: '/game/settings', label: 'Настройки', icon: Settings },
+  { href: '/game/help', label: 'Помощ и правила', icon: BookOpen },
   { href: '/game/support', label: 'Поддръжка', icon: LifeBuoy },
 ] as const;
 

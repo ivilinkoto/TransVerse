@@ -7,6 +7,7 @@ import { autoDispatchTick, planDispatch, runDispatch, setAutoDispatch } from '@/
 import { favoriteLanesOf, notifyFavoriteLane, toggleFavoriteLane } from '@/server/game/favorites';
 import { notifications } from '@/server/db/schema';
 import { cityByName } from './helpers';
+import { dismissHint } from '@/server/game/releases';
 import { db, makeContract, newPlayer } from './helpers';
 
 afterAll(async () => closeDb());
@@ -57,5 +58,16 @@ describe('favourite lanes', () => {
     expect(notes).toHaveLength(1);
     expect(await toggleFavoriteLane(db(), p.userId, sofia.id, plovdiv.id)).toBe(false);
     expect(await favoriteLanesOf(db(), p.userId)).toHaveLength(0);
+  });
+});
+
+describe('hints', () => {
+  it('a closed hint is remembered once', async () => {
+    const p = await newPlayer();
+    await dismissHint(db(), p.userId, 'crew');
+    await dismissHint(db(), p.userId, 'crew');
+    await dismissHint(db(), p.userId, 'board');
+    const [u] = await db().select({ seen: users.seenHints }).from(users).where(eq(users.id, p.userId));
+    expect(u!.seen).toEqual(['crew', 'board']);
   });
 });
