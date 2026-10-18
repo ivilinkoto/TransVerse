@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { cache } from 'react';
 
 /** The live site, for link previews when APP_URL is not set. */
 export const DEFAULT_SITE_URL = 'https://transverse-bg.com';
@@ -24,3 +25,6 @@ export async function publicOrigin(): Promise<string> {
   if (!host) return DEFAULT_SITE_URL;
   return `${h.get('x-forwarded-proto')?.split(',')[0]?.trim() || 'http'}://${host}`;
 }
+
+/** The request's time for public pages (outside the game's context). */
+export const requestNow = cache(() => new Date());
