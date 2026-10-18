@@ -42,7 +42,9 @@ export type LedgerCategory =
   | 'league_reward'
   | 'season_pass'
   | 'client_bonus'
-  | 'holiday_reward';
+  | 'holiday_reward'
+  | 'fines'
+  | 'insurance';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -84,6 +86,8 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   season_pass: 'Сезонен пропуск',
   client_bonus: 'Бонуси от договори с клиенти',
   holiday_reward: 'Празнични награди',
+  fines: 'Глоби',
+  insurance: 'Застраховки',
 };
 
 export interface Posting {

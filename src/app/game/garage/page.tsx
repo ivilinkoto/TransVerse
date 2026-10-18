@@ -1,4 +1,5 @@
-import { Wrench } from 'lucide-react';
+import { ShieldCheck, Wrench } from 'lucide-react';
+import { insurancePriceCents, isInsured } from '@/lib/game/fines';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
@@ -20,6 +21,7 @@ export default async function GaragePage() {
   // VIP: discount on repairs and upgrades.
   const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
   const [fleet, listings] = await Promise.all([fleetView(db, company.id), myListings(db, company.id)]);
+  const insurance = new Map(fleet.vehicles.map((v) => [v.id, insurancePriceCents(v.model.priceCents + (v.trailer?.model.priceCents ?? 0))]));
   const listingOf = (id: string) => listings.find((l) => l.vehicleId === id || l.trailerId === id);
 
   return (
@@ -80,6 +82,15 @@ export default async function GaragePage() {
                     )}
                   </div>
                   {listing && <p className="text-xs text-mist-400">Докато е обявено, превозното средство не поема поръчки. Обявата изтича на {dateTime(listing.expiresAt)}.</p>}
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-asphalt-700 bg-asphalt-850 px-3 py-2 text-sm">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <ShieldCheck className={`h-4 w-4 shrink-0 ${isInsured(v.insuredUntil, now) ? 'text-profit' : 'text-mist-400'}`} />
+                      {isInsured(v.insuredUntil, now) ? <span>Застрахован до {dateTime(v.insuredUntil!)}</span> : <span className="text-mist-300">Без застраховка — пътната помощ при повреда е за твоя сметка</span>}
+                    </span>
+                    <ActionButton action={{ type: 'buyInsurance', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={company.balanceCents < insurance.get(v.id)!}>
+                      {isInsured(v.insuredUntil, now) ? 'Удължи' : 'Застраховай'} 30 дни · {money(insurance.get(v.id)!)}
+                    </ActionButton>
+                  </div>
                   {(v.model.kind === 'tractor' || (v.model.kind === 'rigid' && TRAILERS.some((t) => canCouple(v.model, t)))) && (
                     <div>
                       <div className="label mb-1.5">{v.model.kind === 'rigid' ? 'Прикачно ремарке' : 'Ремарке'} (в {v.city.nameBg})</div>

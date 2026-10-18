@@ -176,6 +176,13 @@
       "when": 1792342220763,
       "tag": "0024_cold_alex_power",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792344655385,
+      "tag": "0025_lying_tigra",
+      "breakpoints": true
     }
   ]
 }

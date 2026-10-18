@@ -55,7 +55,20 @@ export interface BoardContract {
   opensAt: string | null;
   /** Short names of licences the player still needs for this contract. */
   missingLicences: string[];
-  options: { vehicleId: string; label: string; error: string | null; emptyKm: number; costCents: number; rented: boolean; profitCents: number; minutes: number }[];
+  options: {
+    vehicleId: string;
+    label: string;
+    error: string | null;
+    emptyKm: number;
+    costCents: number;
+    rented: boolean;
+    profitCents: number;
+    minutes: number;
+    /** Trip time if the tired crew drives on without the due rest (null when rested). */
+    rushMinutes: number | null;
+    /** > 0 when the load fits only with an overload (percent over the payload). */
+    overloadPercent: number;
+  }[];
 }
 
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
@@ -183,12 +196,16 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const option = c.options.find((o) => o.vehicleId === vehicleId);
+  const [rush, setRush] = useState(false);
+  const [overload, setOverload] = useState(false);
+  const needsOverload = !!option && option.overloadPercent > 0;
+  const shownMinutes = option ? (rush && option.rushMinutes != null ? option.rushMinutes : option.minutes) : 0;
 
   const accept = async () => {
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId });
+      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload });
       onAccepted(`Камионът тръгна: ${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
       setBusy(false);
       router.refresh();
@@ -276,20 +293,36 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
                     </option>
                   ))}
                 </select>
-                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy} onClick={accept}>
+                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload)} onClick={accept}>
                   <ShieldCheck className="h-4 w-4" />{busy ? 'Изпращане…' : 'Приеми и изпрати'}
                 </button>
                 <Link href={`/game/map?contract=${c.id}`} className="btn-ghost"><MapPinned className="h-4 w-4" />На картата</Link>
                 {vip && !c.urgent && !c.reservedByMe && <ReserveButton contractId={c.id} />}
               </div>
+              {option && !option.error && (option.rushMinutes != null || needsOverload) && (
+                <div className="space-y-1.5 rounded-xl border border-amber-sig/30 bg-amber-sig/5 p-3 text-sm">
+                  {option.rushMinutes != null && (
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-0.5" checked={rush} onChange={(e) => setRush(e.target.checked)} />
+                      <span>Без задължителната почивка — пристига след ≈ {duration(option.rushMinutes)} вместо ≈ {duration(option.minutes)}. <span className="text-amber-sig">Риск от глоба при проверка на тахографа.</span></span>
+                    </label>
+                  )}
+                  {needsOverload && (
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-0.5" checked={overload} onChange={(e) => setOverload(e.target.checked)} />
+                      <span>Натовари с претоварване (+{option.overloadPercent}% над капацитета). <span className="text-amber-sig">Риск от глоба на кантар и по-бързо износване.</span></span>
+                    </label>
+                  )}
+                </div>
+              )}
               {option && !option.error && (
                 <div className="grid gap-2 text-sm sm:grid-cols-4">
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Празен курс </span><span className="num">≈ {int(option.emptyKm)} км{c.urgent && option.emptyKm > 0 ? ' · 1 мин' : ''}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{option.rented ? 'Наем ' : 'Разходи (оценка) '}</span><span className="num text-loss">{money(option.costCents)}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Печалба (оценка) </span><span className={`num ${option.profitCents >= 0 ? 'text-profit' : 'text-loss'}`}>{money(option.profitCents)}</span></div>
-                  <div className={`rounded-lg px-3 py-2 ${option.minutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>
-                    <span className="text-mist-400">Пристигане след </span><span className="num">≈ {duration(option.minutes)}</span>
-                    {option.minutes > c.windowMinutes && <span className="ml-1 inline-flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" />риск от закъснение</span>}
+                  <div className={`rounded-lg px-3 py-2 ${shownMinutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>
+                    <span className="text-mist-400">Пристигане след </span><span className="num">≈ {duration(shownMinutes)}</span>
+                    {shownMinutes > c.windowMinutes && <span className="ml-1 inline-flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" />риск от закъснение</span>}
                   </div>
                 </div>
               )}

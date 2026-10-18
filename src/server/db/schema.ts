@@ -247,6 +247,8 @@ export const vehicles = pgTable(
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
     /** Special paint scheme on top of the colour (e.g. 'pumpkin' from Halloween 2026); null = plain colour. */
     livery: text('livery'),
+    /** Insurance paid up to this time (covers road-assistance bills of breakdowns). */
+    insuredUntil: ts('insured_until'),
     /** owned | rented — rented vehicles pay a fee per delivery instead of running costs. */
     ownership: text('ownership').notNull().default('owned'),
     /** Rented truck to be returned as soon as its current trip ends (the player bought their own). */
@@ -374,6 +376,8 @@ export const deliveries = pgTable(
     trailerId: uuid('trailer_id').references(() => trailers.id),
     driverId: uuid('driver_id').notNull().references(() => drivers.id),
     coDriverId: uuid('co_driver_id').references(() => drivers.id, { onDelete: 'set null' }),
+    /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
+    violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
     endDutyMin: real('end_duty_min').notNull().default(0),
     status: text('status').notNull().default('in_progress'), // in_progress | completed
@@ -1231,4 +1235,24 @@ export const userBadges = pgTable(
     awardedAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.badge] })],
+);
+
+/** Fines from roadside checks: unpaid → paid / dropped on appeal / paid automatically after the deadline. */
+export const fines = pgTable(
+  'fines',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id').references(() => deliveries.id, { onDelete: 'set null' }),
+    violation: text('violation').notNull(), // hours | overload
+    amountCents: money('amount_cents').notNull(),
+    status: text('status').notNull().default('unpaid'), // unpaid | paid | dropped | auto_paid
+    appealed: boolean('appealed').notNull().default(false),
+    note: text('note').notNull().default(''),
+    dueAt: ts('due_at').notNull(),
+    resolvedAt: ts('resolved_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('fines_company_idx').on(t.companyId, t.status), index('fines_due_idx').on(t.status, t.dueAt), uniqueIndex('fines_delivery_violation_idx').on(t.deliveryId, t.violation)],
 );

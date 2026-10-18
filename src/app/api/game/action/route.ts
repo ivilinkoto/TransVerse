@@ -17,6 +17,7 @@ import { createTicket, replySchema, replyToTicket, setTicketStatus, ticketSchema
 import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutorial';
 import { getDb } from '@/server/db/client';
 import { acceptContract } from '@/server/game/deliveries';
+import { appealFine, buyInsurance, payFine } from '@/server/game/fines';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle } from '@/server/game/fleet';
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
@@ -55,7 +56,10 @@ const cityId = z.coerce.number().int().positive();
 
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 const Action = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id }),
+  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false) }),
+  z.object({ type: z.literal('payFine'), fineId: id }),
+  z.object({ type: z.literal('appealFine'), fineId: id }),
+  z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
   z.object({ type: z.literal('buyVehicle'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('buyTrailer'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('sellVehicle'), vehicleId: id }),
@@ -137,9 +141,16 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
   const db = getDb();
   switch (input.type) {
     case 'acceptContract': {
-      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId);
+      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload });
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
+    case 'payFine':
+      await payFine(db, user.id, input.fineId);
+      return { ok: true };
+    case 'appealFine':
+      return { ok: true, ...(await appealFine(db, user.id, input.fineId)) };
+    case 'buyInsurance':
+      return { ok: true, ...(await buyInsurance(db, user.id, input.vehicleId)) };
     case 'buyVehicle':
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId)).id };
     case 'buyTrailer':

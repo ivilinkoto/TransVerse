@@ -1,3 +1,4 @@
+import { FINE_RULES, fineCents, type Violation } from './fines';
 import { isNight } from './halloween';
 import type { Segment } from './schedule';
 
@@ -8,7 +9,7 @@ import type { Segment } from './schedule';
  * truck reaches that point: the schedule gets a stop and everything after it
  * moves later. All values are game data.
  */
-export type RoadEventKind = 'traffic' | 'roadworks' | 'breakdown' | 'border_queue' | 'weather' | 'inspection' | 'ghost';
+export type RoadEventKind = 'traffic' | 'roadworks' | 'breakdown' | 'border_queue' | 'weather' | 'inspection' | 'ghost' | 'police';
 
 export interface RoadEventPlan {
   kind: RoadEventKind;
@@ -19,6 +20,9 @@ export interface RoadEventPlan {
   /** Extra cost for the player (euro cents); 0 for rented trucks (the lessor pays). */
   costCents: number;
   applied: boolean;
+  /** Roadside check of a risk the player took ('police' events): what was found and the fine. */
+  violation?: Violation;
+  fineCents?: number;
 }
 
 export const ROAD_EVENTS: Record<RoadEventKind, { title: string; body: string; delay: [number, number]; costCentsPerKm?: number }> = {
@@ -29,6 +33,7 @@ export const ROAD_EVENTS: Record<RoadEventKind, { title: string; body: string; d
   weather: { title: 'Лошо време', body: 'Силен дъжд и мъгла — шофьорът кара по-бавно.', delay: [0.04, 0.09] },
   inspection: { title: 'Проверка на пътя', body: 'Пътна полиция проверява документите и тахографа.', delay: [0.03, 0.05] },
   // Halloween: a harmless night-time sighting that brings a few ТрансКоин.
+  police: { title: 'Пътна полиция', body: 'Камионът е спрян за проверка на кантар и тахограф.', delay: [0.03, 0.05] },
   ghost: { title: 'Призрачен камион', body: 'В мъглата се появи светещ камион без шофьор, мигна с фаровете и изчезна. Шофьорът ти спря за малко, за да си поеме дъх.', delay: [0.005, 0.01] },
 };
 
@@ -62,6 +67,8 @@ export function planRoadEvents(
     chance?: number;
     /** Halloween: chance of meeting the ghost truck when the trip drives through the night (Sofia 22:00–06:00). */
     ghostChance?: number;
+    /** Risks the player took (hours over the limit, percent overload): each may be checked by the police. */
+    risks?: { violation: Violation; amount: number }[];
   },
 ): RoadEventPlan[] {
   const drives = schedule.filter((s) => s.kind === 'drive' && s.end - s.start > 0);
@@ -85,6 +92,13 @@ export function planRoadEvents(
     const perKm = ROAD_EVENTS[kind].costCentsPerKm ?? 0;
     const costCents = opts.rented || !perKm ? 0 : Math.round(Math.min(800_00, Math.max(120_00, opts.totalKm * perKm)) / 100) * 100;
     events.push({ kind, at, delayMs, costCents, applied: false });
+  }
+  for (const v of opts.risks ?? []) {
+    // A roadside check of a risk the player chose: the fine is fixed now, revealed when the truck gets there.
+    if (r() >= FINE_RULES.checkChance[v.violation]) continue;
+    const seg = drives[Math.floor(r() * drives.length)]!;
+    const [lo, hi] = ROAD_EVENTS.police.delay;
+    events.push({ kind: 'police', at: Math.round(seg.start + (seg.end - seg.start) * (0.2 + 0.6 * r())), delayMs: Math.round(span * (lo + (hi - lo) * r())), costCents: 0, applied: false, violation: v.violation, fineCents: fineCents(v.violation, v.amount) });
   }
   if (opts.ghostChance) {
     // A moment in the middle of a night-time drive.

@@ -6,6 +6,7 @@ import { combinationCapability } from '@/lib/game/catalog';
 import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
 import { estimateGameMinutes } from '@/lib/game/schedule';
 import { crewEffects, restLeftMin } from '@/lib/game/crew';
+import { overloadPercent } from '@/lib/game/fines';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
@@ -45,11 +46,11 @@ export default async function ContractsPage() {
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];
     const options = fleet.vehicles.map((v) => {
-      const error = compatibilityError(
-        { modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, condition: v.condition, hasDriver: !!v.driver, status: v.status, trailerCondition: v.trailer?.condition ?? null },
-        c,
-        user.level,
-      );
+      const bundle = { modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, condition: v.condition, hasDriver: !!v.driver, status: v.status, trailerCondition: v.trailer?.condition ?? null };
+      const strict = compatibilityError(bundle, c, user.level);
+      // Up to 10 % over the payload is possible as a risk the player chooses.
+      const overloadable = !!strict && compatibilityError(bundle, c, user.level, true) === null;
+      const error = overloadable ? null : strict;
       // Planning estimates: empty leg by straight-line × 1.25, loaded leg from the real route.
       const emptyKm = v.cityId === c.originCityId ? 0 : haversineKm([v.city.lat, v.city.lon], [c.origin.lat, c.origin.lon]) * 1.25;
       const cap = combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null });
@@ -60,10 +61,13 @@ export default async function ContractsPage() {
       const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: Math.max(v.driver?.skill ?? 1, v.coDriver?.skill ?? 0), crewFuel: crew?.fuel, crewWear: crew?.wear, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm, tons: c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });
       // Urgent: one minute to the pickup city, then the cargo leg at the shipment's speed.
       // The crew changes the trip time: a tired driver rests early, a team drives on.
-      const minutes = c.urgent ? (emptyKm > 0 ? URGENT_RELOCATION_MS / 60_000 : 0) + estimateGameMinutes(0, c.distanceKm, crew) / Math.max(1, c.speedFactor) : estimateGameMinutes(emptyKm, c.distanceKm, crew);
+      const tripMinutes = (cr: typeof crew) => (c.urgent ? (emptyKm > 0 ? URGENT_RELOCATION_MS / 60_000 : 0) + estimateGameMinutes(0, c.distanceKm, cr) / Math.max(1, c.speedFactor) : estimateGameMinutes(emptyKm, c.distanceKm, cr));
+      const minutes = tripMinutes(crew);
+      // Without the due rest (a risk the player may take): the trip as with a rested crew.
+      const rushMinutes = crew && crew.startDutyMin > 0 ? tripMinutes({ ...crew, startDutyMin: 0 }) : null;
       const rented = v.ownership === 'rented';
       const cost = rented ? rentalFeeCents(c.rewardCents, chargedEmptyKm + c.distanceKm) : costs.totalCents;
-      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''}${v.coDriver ? ' · екипаж' : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? ` · почива още ${restMin} мин` : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: c.rewardCents - cost, minutes };
+      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''}${v.coDriver ? ' · екипаж' : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? ` · почива още ${restMin} мин` : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: c.rewardCents - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0 };
     });
     return {
       id: c.id,
