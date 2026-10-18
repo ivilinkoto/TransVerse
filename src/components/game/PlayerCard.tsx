@@ -1,11 +1,11 @@
 'use client';
 
-import { Ban, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
+import { Award, Ban, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import type { PlayerCard as Card } from '@/server/game/social';
-import { PumpkinIcon } from '@/components/seasonal/icons';
+import { GhostTruckIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { Avatar } from './Avatar';
 import { LeagueBadge } from './LeagueBadge';
 import { PlayerName } from './PlayerName';
@@ -55,7 +55,10 @@ export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChan
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <LeagueBadge tier={card.leagueTier} />
             {card.badges.map((b) => (
-              <span key={b.id} title={b.description} className="inline-flex items-center gap-1 rounded-full border border-orange-500/50 bg-orange-500/10 px-2 py-0.5 text-[11px] font-semibold text-orange-300"><PumpkinIcon className="h-3.5 w-3.5" />{b.label}</span>
+              <span key={b.id} title={b.description} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${b.id === 'pumpkin-2026' ? 'border-orange-500/50 bg-orange-500/10 text-orange-300' : 'border-prestige/50 bg-prestige/10 text-prestige'}`}>
+                {b.id === 'pumpkin-2026' ? <PumpkinIcon className="h-3.5 w-3.5" /> : b.id === 'ghost-hunter' ? <GhostTruckIcon className="h-3.5 w-3.5" /> : <Award className="h-3.5 w-3.5" />}
+                {b.label}
+              </span>
             ))}
           </div>
           <div className={`text-sm ${card.online ? 'text-profit' : 'text-mist-400'}`}>{card.online ? 'Онлайн сега' : `Последно онлайн: ${card.lastSeen}`}</div>

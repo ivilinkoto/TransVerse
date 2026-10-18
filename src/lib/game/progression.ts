@@ -82,6 +82,18 @@ export interface CompanyStats {
   level: number;
   balanceCents: number;
   maxSingleRewardCents: number;
+  /** v1.1 systems. */
+  teamTrips: number;
+  cleanTrips: number;
+  carTrips: number;
+  steelTrips: number;
+  tandemTons: number;
+  nightTrips: number;
+  clientContracts: number;
+  appealsWon: number;
+  insuredVehicles: number;
+  ghosts: number;
+  newsStar: boolean;
 }
 
 export interface AchievementDefinition {
@@ -94,6 +106,8 @@ export interface AchievementDefinition {
   check: (s: CompanyStats) => boolean;
   /** Progress 0..1 for goals UI. */
   progress: (s: CompanyStats) => number;
+  /** A badge for the profile that comes with it. */
+  badge?: string;
 }
 
 const ratio = (v: number, target: number) => Math.min(1, v / target);
@@ -119,4 +133,38 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     check: (s) => s.balanceCents >= 1_000_000_00, progress: (s) => ratio(s.balanceCents, 1_000_000_00) },
   { key: 'level_10', title: 'Ветеран на пътя', description: 'Достигни ниво 10.', tier: 'prestige', rewardCents: 50_000_00, rewardXp: 0,
     check: (s) => s.level >= 10, progress: (s) => ratio(s.level, 10) },
+
+  // ── v1.1 ──
+  { key: 'team_10', title: 'Двоен екипаж', description: '10 курса с двоен екипаж.', tier: 'silver', rewardCents: 4_000_00, rewardXp: 600,
+    check: (s) => s.teamTrips >= 10, progress: (s) => ratio(s.teamTrips, 10) },
+  { key: 'team_100', title: 'Неуморимите', description: '100 курса с двоен екипаж.', tier: 'gold', rewardCents: 20_000_00, rewardXp: 3_000,
+    check: (s) => s.teamTrips >= 100, progress: (s) => ratio(s.teamTrips, 100) },
+  { key: 'tandem_100t', title: 'Тежка категория', description: 'Превози 100 т със соло камион и прикачно ремарке.', tier: 'silver', rewardCents: 5_000_00, rewardXp: 700,
+    check: (s) => s.tandemTons >= 100, progress: (s) => ratio(s.tandemTons, 100) },
+  { key: 'cars_10', title: 'Автовоз', description: '10 доставки на нови автомобили.', tier: 'silver', rewardCents: 6_000_00, rewardXp: 800,
+    check: (s) => s.carTrips >= 10, progress: (s) => ratio(s.carTrips, 10) },
+  { key: 'steel_10', title: 'Стоманеният път', description: '10 доставки на метали и дървен материал.', tier: 'silver', rewardCents: 5_000_00, rewardXp: 700,
+    check: (s) => s.steelTrips >= 10, progress: (s) => ratio(s.steelTrips, 10) },
+  { key: 'client_1', title: 'Първи клиент', description: 'Изпълни договор с клиент.', tier: 'bronze', rewardCents: 2_000_00, rewardXp: 300,
+    check: (s) => s.clientContracts >= 1, progress: (s) => ratio(s.clientContracts, 1) },
+  { key: 'client_5', title: 'Верен партньор', description: 'Изпълни 5 договора с клиенти.', tier: 'gold', rewardCents: 15_000_00, rewardXp: 2_000, badge: 'partner',
+    check: (s) => s.clientContracts >= 5, progress: (s) => ratio(s.clientContracts, 5) },
+  { key: 'clean_30', title: 'Чиста книжка', description: '30 доставки навреме без никакъв риск (без претоварване и без пропусната почивка).', tier: 'silver', rewardCents: 6_000_00, rewardXp: 900,
+    check: (s) => s.cleanTrips >= 30, progress: (s) => ratio(s.cleanTrips, 30) },
+  { key: 'night_20', title: 'Нощна смяна', description: '20 доставки, пристигнали нощем (22:00–06:00).', tier: 'silver', rewardCents: 5_000_00, rewardXp: 800,
+    check: (s) => s.nightTrips >= 20, progress: (s) => ratio(s.nightTrips, 20) },
+  { key: 'appeal_won', title: 'Адвокат', description: 'Спечели обжалване на глоба.', tier: 'bronze', rewardCents: 1_000_00, rewardXp: 200,
+    check: (s) => s.appealsWon >= 1, progress: (s) => ratio(s.appealsWon, 1) },
+  { key: 'insured_3', title: 'Спокоен сън', description: '3 застраховани камиона едновременно.', tier: 'bronze', rewardCents: 2_000_00, rewardXp: 300,
+    check: (s) => s.insuredVehicles >= 3, progress: (s) => ratio(s.insuredVehicles, 3) },
+  { key: 'ghost_3', title: 'Ловец на призраци', description: 'Срещни призрачния камион 3 пъти.', tier: 'silver', rewardCents: 3_000_00, rewardXp: 500, badge: 'ghost-hunter',
+    check: (s) => s.ghosts >= 3, progress: (s) => ratio(s.ghosts, 3) },
+  { key: 'news_star', title: 'Звезда на седмичника', description: 'Попадни в класациите на Седмичника.', tier: 'gold', rewardCents: 10_000_00, rewardXp: 1_500, badge: 'news-star',
+    check: (s) => s.newsStar, progress: (s) => (s.newsStar ? 1 : 0) },
+  { key: 'deliveries_500', title: 'Пътен ветеран', description: 'Завърши 500 доставки.', tier: 'gold', rewardCents: 30_000_00, rewardXp: 4_000,
+    check: (s) => s.deliveries >= 500, progress: (s) => ratio(s.deliveries, 500) },
+  { key: 'km_100000', title: '100 000 километра', description: 'Измини общо 100 000 км.', tier: 'gold', rewardCents: 25_000_00, rewardXp: 3_500,
+    check: (s) => s.totalKm >= 100_000, progress: (s) => ratio(s.totalKm, 100_000) },
+  { key: 'level_20', title: 'Легенда на пътя', description: 'Достигни ниво 20.', tier: 'prestige', rewardCents: 100_000_00, rewardXp: 0, badge: 'legend',
+    check: (s) => s.level >= 20, progress: (s) => ratio(s.level, 20) },
 ];

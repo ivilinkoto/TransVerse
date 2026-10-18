@@ -7,6 +7,9 @@ import { companies, deliveries, driverCandidates, drivers, users, vehicles } fro
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { buyVehicle } from '@/server/game/fleet';
 import { assignDriver, hireDriver } from '@/server/game/staff';
+import { checkAchievements, companyStats } from '@/server/game/progression';
+import { achievements, userBadges } from '@/server/db/schema';
+import { and } from 'drizzle-orm';
 import { db, makeContract, playerWithCompany } from './helpers';
 
 afterAll(async () => closeDb());
@@ -51,5 +54,19 @@ describe('level curve (v1.1)', () => {
     expect(after - before).toBe(done!.xpAwarded);
     expect(done!.xpAwarded).toBe(Math.round(driver!.xp * FLEET_XP_SHARE));
     void vehicles;
+  });
+});
+
+describe('v1.1 achievements', () => {
+  it('count team trips and give a badge with the level-20 achievement', async () => {
+    const p = await playerWithCompany();
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const stats = await companyStats(db(), account!.id);
+    expect(stats).toMatchObject({ teamTrips: 0, clientContracts: 0, newsStar: false });
+    await db().update(users).set({ level: 20 }).where(eq(users.id, p.userId));
+    const unlocked = await db().transaction((tx) => checkAchievements(tx, p.userId, account!.id));
+    expect(unlocked).toContain('level_20');
+    expect(await db().select().from(achievements).where(and(eq(achievements.userId, p.userId), eq(achievements.key, 'level_20')))).toHaveLength(1);
+    expect((await db().select().from(userBadges).where(eq(userBadges.userId, p.userId))).map((b) => b.badge)).toContain('legend');
   });
 });

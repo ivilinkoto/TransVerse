@@ -7,6 +7,7 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
+import { checkAchievements } from './progression';
 
 const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} €`;
 
@@ -44,6 +45,7 @@ export async function appealFine(db: Database, userId: string, fineId: string, n
     if (f.appealed) fail('already_appealed', 'Глобата вече е обжалвана.', 409);
     if (roll < FINE_RULES.appealWinChance) {
       await tx.update(fines).set({ status: 'dropped', appealed: true, resolvedAt: now, note: 'Отменена след обжалване.' }).where(eq(fines.id, f.id));
+      await checkAchievements(tx, userId, f.companyId);
       return { won: true, amountCents: 0 };
     }
     const amount = Math.round(f.amountCents * (1 + FINE_RULES.appealLossShare));
@@ -87,6 +89,7 @@ export async function buyInsurance(db: Database, userId: string, vehicleId: stri
     if (until.getTime() - now.getTime() > 3 * INSURANCE.days * 86_400_000) fail('too_far', 'Застраховката може да се плати най-много 90 дни напред.');
     await post(tx, company.id, [{ category: 'insurance', amountCents: -price, description: `Застраховка ${v!.plate} до ${until.toLocaleDateString('bg-BG', { timeZone: 'Europe/Sofia' })}`, idempotencyKey: `insurance:${v!.id}:${until.toISOString()}`, refType: 'vehicle', refId: v!.id }], { requireFunds: true });
     await tx.update(vehicles).set({ insuredUntil: until }).where(eq(vehicles.id, v!.id));
+    await checkAchievements(tx, userId, company.id);
     return { until, price };
   });
 }

@@ -1,7 +1,7 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { ACHIEVEMENTS, levelForXp, type CompanyStats } from '@/lib/game/progression';
 import type { DbOrTx, Tx } from '@/server/db/client';
-import { achievements, companies, deliveries, depots, drivers, cities, users, vehicles } from '@/server/db/schema';
+import { achievements, companies, deliveries, depots, drivers, cities, userBadges, users, vehicles } from '@/server/db/schema';
 import { post } from './finance';
 import { notify } from './notify';
 
@@ -25,7 +25,37 @@ export async function companyStats(db: DbOrTx, companyId: string): Promise<Compa
     .select({ n: sql<number>`coalesce(max(${deliveries.payoutCents}), 0)::bigint` })
     .from(deliveries)
     .where(eq(deliveries.companyId, companyId));
+  const { rows: [trips] } = await db.execute<{ team: number; clean: number; cars: number; steel: number; tandem: number; night: number }>(sql`
+    select
+      count(*) filter (where d.co_driver_id is not null)::int as team,
+      count(*) filter (where not coalesce(d.late, false) and cardinality(d.violations) = 0)::int as clean,
+      count(*) filter (where c.cargo_type = 'vehicles')::int as cars,
+      count(*) filter (where c.cargo_type = 'steel')::int as steel,
+      coalesce(sum(c.weight_tons) filter (where t.model_id like 'drawbar-%'), 0)::float as tandem,
+      count(*) filter (where extract(hour from d.completed_at at time zone 'Europe/Sofia') >= 22 or extract(hour from d.completed_at at time zone 'Europe/Sofia') < 6)::int as night
+    from deliveries d
+    join contracts c on c.id = d.contract_id
+    left join trailers t on t.id = d.trailer_id
+    where d.company_id = ${companyId} and d.status = 'completed'`);
+  const { rows: [other] } = await db.execute<{ clients: number; appeals: number; insured: number; ghosts: number; star: boolean }>(sql`
+    select
+      (select count(*) from client_contracts where company_id = ${companyId} and status = 'completed')::int as clients,
+      (select count(*) from fines where company_id = ${companyId} and status = 'dropped' and appealed)::int as appeals,
+      (select count(*) from vehicles where company_id = ${companyId} and sold_at is null and insured_until > now())::int as insured,
+      (select count(*) from coin_entries where user_id = ${company.ownerId} and idempotency_key like 'delivery:%:ghost')::int as ghosts,
+      exists(select 1 from newspapers n, users u where u.id = ${company.ownerId} and (n.content -> 'topEarners' @> jsonb_build_array(jsonb_build_object('username', u.username)) or n.content -> 'topDrivers' @> jsonb_build_array(jsonb_build_object('username', u.username)))) as star`);
   return {
+    teamTrips: trips?.team ?? 0,
+    cleanTrips: trips?.clean ?? 0,
+    carTrips: trips?.cars ?? 0,
+    steelTrips: trips?.steel ?? 0,
+    tandemTons: trips?.tandem ?? 0,
+    nightTrips: trips?.night ?? 0,
+    clientContracts: other?.clients ?? 0,
+    appealsWon: other?.appeals ?? 0,
+    insuredVehicles: other?.insured ?? 0,
+    ghosts: other?.ghosts ?? 0,
+    newsStar: !!other?.star,
     deliveries: company.deliveries,
     onTimeDeliveries: company.onTimeDeliveries,
     totalKm: company.totalKm,
@@ -62,6 +92,7 @@ export async function checkAchievements(tx: Tx, userId: string, companyId: strin
     unlocked.push(a.key);
     if (a.rewardCents) await post(tx, companyId, [{ category: 'achievement_reward', amountCents: a.rewardCents, description: `Постижение: ${a.title}`, idempotencyKey: `achievement:${userId}:${a.key}` }]);
     if (a.rewardXp) await awardXp(tx, userId, a.rewardXp);
+    if (a.badge) await tx.insert(userBadges).values({ userId, badge: a.badge }).onConflictDoNothing();
     await notify(tx, userId, 'achievement', `Постижение: ${a.title}`, a.description, '/game/progress');
   }
   return unlocked;
