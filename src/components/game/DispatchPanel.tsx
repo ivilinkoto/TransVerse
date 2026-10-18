@@ -71,8 +71,8 @@ export function DispatchPanel({ freeTrucks }: { freeTrucks: number }) {
                   <label className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
                     <input type="checkbox" checked={chosen.has(p.vehicleId)} onChange={() => toggle(p.vehicleId)} />
                     <span className="font-mono text-xs text-mist-400">{p.plate}</span>
-                    <span className="min-w-0 flex-1 truncate"><span className="font-medium">{p.goods}</span> · {p.from} <ArrowRight className="inline h-3 w-3" /> {p.to}</span>
-                    <span className="num text-xs text-mist-400">≈ {duration(p.minutes)}</span>
+                    <span className="order-last min-w-0 basis-full pl-6 sm:order-none sm:basis-0 sm:flex-1 sm:truncate sm:pl-0"><span className="font-medium">{p.goods}</span> · {p.from} <ArrowRight className="inline h-3 w-3" /> {p.to}</span>
+                    <span className="num ml-auto text-xs text-mist-400 sm:ml-0">≈ {duration(p.minutes)}</span>
                     <span className="num font-semibold text-profit">{money(p.profitCents)}</span>
                   </label>
                 </li>
