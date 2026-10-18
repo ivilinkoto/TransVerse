@@ -6,6 +6,7 @@ import { FINE_RULES, INSURANCE } from '@/lib/game/fines';
 import { HALLOWEEN } from '@/lib/game/halloween';
 import { ECONOMY } from '@/lib/game/economy';
 import { AUTO_DISPATCH_PER_DAY } from '@/server/game/dispatch';
+import { AUCTION_RULES } from '@/lib/game/auctions';
 
 export const metadata = { title: 'Помощ и правила' };
 
@@ -30,6 +31,7 @@ const SECTIONS: { id: string; title: string; items: React.ReactNode[] }[] = [
       `VIP диспечер (Автопарк): камионът сам поема следващия курс, щом е свободен — до ${AUTO_DISPATCH_PER_DAY} курса на ден.`,
       'Любими линии: звездата в отворена поръчка — поръчките по линията са най-отгоре и получаваш известие за нова (до веднъж на час).',
       'Бързи филтри: любими, празнични, без нужда от лиценз, до 2 часа, над 3 €/км.',
+      `Специални товари (Поръчки → Специални товари): търг всеки ден в ${AUCTION_RULES.hours.map((h) => `${h}:00`).join(', ')} за ${AUCTION_RULES.minutes} минути. Печели най-ниската цена; победителят има ${AUCTION_RULES.sendHours} часа да изпрати камион, иначе губи товара и ${AUCTION_RULES.forfeitReputation} репутация.`,
     ],
   },
   {

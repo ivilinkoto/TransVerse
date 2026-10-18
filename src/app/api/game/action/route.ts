@@ -21,6 +21,7 @@ import { acceptContract } from '@/server/game/deliveries';
 import { appealFine, buyInsurance, payFine } from '@/server/game/fines';
 import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispatch';
 import { toggleFavoriteLane } from '@/server/game/favorites';
+import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle } from '@/server/game/fleet';
 import { markNotificationsRead } from '@/server/game/notify';
@@ -63,6 +64,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false) }),
   z.object({ type: z.literal('payFine'), fineId: id }),
   z.object({ type: z.literal('dispatchPlan') }),
+  z.object({ type: z.literal('auctionBid'), auctionId: id, amountEur: z.coerce.number().positive().max(10_000_000) }),
   z.object({ type: z.literal('quietHours'), hours: quietHoursSchema }),
   z.object({ type: z.literal('dismissHint'), hint: z.enum(HINT_IDS as [HintId, ...HintId[]]) }),
   z.object({ type: z.literal('favoriteLane'), originCityId: cityId, destCityId: cityId }),
@@ -162,6 +164,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'quietHours':
       await setQuietHours(db, user.id, input.hours);
       return { ok: true };
+    case 'auctionBid':
+      return { ok: true, ...(await bidAuction(db, user.id, input.auctionId, Math.round(input.amountEur * 100))) };
     case 'dispatchPlan':
       return { ok: true, plan: await planDispatch(db, user.id) };
     case 'dispatchRun':

@@ -32,6 +32,7 @@ import { addPassPoints } from './season-pass';
 import { settleTradeLot } from './trade';
 import { applyRoadEvents } from './road-events';
 import { recordClientLoad } from './clients';
+import { deliverAuctionLoad } from './auctions';
 import { recordHalloweenDelivery } from './halloween';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 
@@ -395,6 +396,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   );
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
+  // A special load won on auction.
+  if (contract.auctionId) await deliverAuctionLoad(tx, contract.auctionId, company!.ownerId);
   // A load of a long-term client contract.
   if (contract.clientContractId) await recordClientLoad(tx, contract.clientContractId, result.late, company!.ownerId, completedAt);
   // A load of a company tender.

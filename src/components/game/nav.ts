@@ -31,6 +31,7 @@ export const SECTIONS: NavSection[] = [
     tabs: [
       { href: '/game/contracts', label: 'Поръчки' },
       { href: '/game/clients', label: 'Клиенти' },
+      { href: '/game/auctions', label: 'Специални товари' },
       { href: '/game/trade', label: 'Търговия със стоки' },
     ],
   },

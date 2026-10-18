@@ -363,6 +363,8 @@ export const contracts = pgTable(
     trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null }>(),
     /** Holiday load (e.g. 'halloween'): themed goods, better pay, counts for the holiday event and quests. */
     holiday: text('holiday'),
+    /** A special load won on auction (private to the winner; ТрансКоин on delivery). */
+    auctionId: uuid('auction_id'),
     /** One load of a long-term client contract (private, like trade lots). */
     clientContractId: uuid('client_contract_id'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
@@ -1285,4 +1287,46 @@ export const favoriteLanes = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.originCityId, t.destCityId] }), index('favorite_lanes_lane_idx').on(t.originCityId, t.destCityId)],
+);
+
+/** Special loads on auction: lowest bid wins the job. */
+export const specialAuctions = pgTable(
+  'special_auctions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Start slot (one auction per slot), e.g. '2026-10-20T10'. */
+    slot: text('slot').notNull(),
+    loadId: text('load_id').notNull(),
+    title: text('title').notNull(),
+    goods: text('goods').notNull(),
+    cargoType: text('cargo_type').notNull(),
+    weightTons: real('weight_tons').notNull(),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    routeId: integer('route_id').notNull().references(() => routes.id),
+    distanceKm: real('distance_km').notNull(),
+    startPriceCents: money('start_price_cents').notNull(),
+    coins: integer('coins').notNull(),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    extensions: integer('extensions').notNull().default(0),
+    status: text('status').notNull().default('open'), // open | awarded | no_bids | delivered | forfeited
+    winnerCompanyId: uuid('winner_company_id').references(() => companies.id, { onDelete: 'set null' }),
+    winningBidCents: money('winning_bid_cents'),
+    contractId: uuid('contract_id'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('special_auctions_slot_idx').on(t.slot), index('special_auctions_status_idx').on(t.status, t.endsAt)],
+);
+
+export const auctionBids = pgTable(
+  'auction_bids',
+  {
+    auctionId: uuid('auction_id').notNull().references(() => specialAuctions.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amountCents: money('amount_cents').notNull(),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.auctionId, t.companyId] }), index('auction_bids_amount_idx').on(t.auctionId, t.amountCents)],
 );

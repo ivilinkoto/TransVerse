@@ -204,6 +204,13 @@
       "when": 1792347902205,
       "tag": "0028_rebalance_xp",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792348265575,
+      "tag": "0029_flimsy_black_panther",
+      "breakpoints": true
     }
   ]
 }
