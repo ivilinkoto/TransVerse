@@ -8,6 +8,7 @@ import { contractCountries, missingLicences, requiredLicences } from '@/lib/game
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
+import { isWinter, WINTER } from '@/lib/game/winter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
@@ -201,10 +202,13 @@ export const PREMIUM_SHARE = 0.12;
 async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null) {
   const route = await getRoute(db, origin.id, destination.id, 'truck', provider);
   // Halloween: some pallet and refrigerated loads are holiday goods that pay better.
-  const holidayGoods = isHalloween(now) ? HALLOWEEN.goods[cargo] : undefined;
-  const holiday = holidayGoods && rand() < HALLOWEEN.contractShare ? 'halloween' : null;
-  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (holiday ? HALLOWEEN.rewardMultiplier : 1);
-  const goods = holiday ? pick(holidayGoods!) : pick(CARGO[cargo].goods);
+  // Winter: some bulk, liquid and pallet loads are winter goods (salt, heating fuel, pellets…).
+  const halloweenGoods = isHalloween(now) ? HALLOWEEN.goods[cargo] : undefined;
+  const winterGoods = isWinter(now) ? WINTER.goods[cargo] : undefined;
+  const holiday = halloweenGoods && rand() < HALLOWEEN.contractShare ? 'halloween' : winterGoods && rand() < WINTER.contractShare ? 'winter' : null;
+  const holidayMultiplier = holiday === 'halloween' ? HALLOWEEN.rewardMultiplier : holiday === 'winter' ? WINTER.rewardMultiplier : 1;
+  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * holidayMultiplier;
+  const goods = holiday === 'halloween' ? pick(halloweenGoods!) : holiday === 'winter' ? pick(winterGoods!) : pick(CARGO[cargo].goods);
   const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1));
   await db.insert(contracts).values({
     shipper: shipperName(),

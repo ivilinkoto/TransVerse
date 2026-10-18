@@ -1,8 +1,9 @@
 'use client';
 
-import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Siren, Star, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Siren, Snowflake, Star, Truck } from 'lucide-react';
 import { PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN } from '@/lib/game/halloween';
+import { WINTER } from '@/lib/game/winter';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -42,6 +43,8 @@ export interface BoardContract {
   urgent: boolean;
   /** Holiday load ('halloween'): themed goods, better pay. */
   holiday: string | null;
+  /** Winter: the worst road condition on the way today (null when the roads are clear). */
+  weather: { condition: 'snow' | 'ice' | 'blizzard'; label: string; country: string } | null;
   /** The player starred this lane (origin → destination). */
   favorite: boolean;
   /** Load of a tender of the player's company (only members see it). */
@@ -76,15 +79,24 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'halloween' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'halloween' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
+  { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
+  { id: 'clear', label: 'Без сняг по пътя', test: (c) => !c.weather },
   { id: 'licence', label: 'Без нужда от лиценз', test: (c) => c.missingLicences.length === 0 },
   { id: 'fast', label: 'До 2 часа', test: (c) => c.options.some((o) => !o.error && o.minutes <= 120) },
   { id: 'perKm', label: 'Над 3 лв./км', test: (c) => c.rewardCents / c.distanceKm >= 300 },
 ];
+
+/** Chips that appear only in their season (when some contract matches). */
+const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
+  ['halloween', (c) => c.holiday === 'halloween'],
+  ['winter', (c) => c.holiday === 'winter'],
+  ['clear', (c) => !!c.weather],
+]);
 
 export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [] }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[] }) {
   const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
@@ -191,7 +203,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       </div>
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Бързи филтри">
-        {CHIPS.filter((chip) => chip.id !== 'halloween' || contracts.some(chip.test)).map((chip) => (
+        {CHIPS.filter((chip) => !SEASONAL_CHIPS.has(chip.id) || contracts.some(SEASONAL_CHIPS.get(chip.id)!)).map((chip) => (
           <button key={chip.id} type="button" aria-pressed={chips.has(chip.id)} onClick={() => toggleChip(chip.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${chips.has(chip.id) ? 'border-volt-500 bg-volt-500/20 text-white' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}>
             {chip.label}
           </button>
@@ -267,6 +279,8 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />ЗИМЕН ТОВАР · +{Math.round((WINTER.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{c.weather.label} ({c.weather.country})</Badge>}
             {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />ПРЕМИУМ · репутация {c.minReputation}</Badge>}
             {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
             {c.reservedByMe && <Badge tone="gold">Запазена за теб до {c.reservedUntil}</Badge>}

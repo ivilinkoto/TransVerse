@@ -3,6 +3,17 @@ import { BatIcon, Cobweb } from './icons';
 
 /** Decorations of a season: fixed, behind nothing important, ignored by screen readers and clicks. */
 export function SeasonalDecor({ season }: { season: SeasonId }) {
+  if (season === 'winter') {
+    // Light snowfall: a few flakes with their own size, place and speed (CSS only).
+    return (
+      <div className="season-decor pointer-events-none fixed inset-0 z-[5] overflow-hidden" aria-hidden="true">
+        {Array.from({ length: 24 }, (_, i) => (
+          <span key={i} className="season-flake absolute top-0 rounded-full bg-white" style={{ left: `${(i * 37) % 100}%`, width: 2 + (i % 4), height: 2 + (i % 4), opacity: 0.25 + (i % 5) * 0.1, animationDuration: `${11 + (i % 7) * 2}s`, animationDelay: `${-(i * 1.7) % 19}s` }} />
+        ))}
+        <div className="season-frost absolute inset-x-0 top-0 h-24" />
+      </div>
+    );
+  }
   if (season !== 'halloween') return null;
   return (
     <div className="season-decor pointer-events-none fixed inset-0 z-[5] overflow-hidden" aria-hidden="true">

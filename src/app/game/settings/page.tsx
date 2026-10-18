@@ -1,6 +1,6 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { Ban, Bell, Sparkles } from 'lucide-react';
-import { SEASONS, activeSeason } from '@/lib/game/seasonal';
+import { SEASON_IDS, SEASONS, activeSeason } from '@/lib/game/seasonal';
 import { seasonMode } from '@/server/seasonal';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { blockList } from '@/server/game/moderation';
@@ -45,7 +45,7 @@ export default async function SettingsPage() {
         <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />Празнична украса</span>} className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
             <p className="max-w-xl text-mist-300">
-              По празници (сега: {SEASONS.halloween.label}, {SEASONS.halloween.from.split('-').reverse().join('.')} – {SEASONS.halloween.to.split('-').reverse().join('.')}) играта сменя цветовете и добавя украса. {site ? `В момента е включена: ${SEASONS[site].label}.` : 'В момента няма празнична тема.'}
+              По празници и сезони ({SEASON_IDS.map((id) => `${SEASONS[id].label} ${SEASONS[id].from.split('-').reverse().join('.')} – ${SEASONS[id].to.split('-').reverse().join('.')}`).join(', ')}) играта сменя цветовете и добавя украса. {site ? `В момента е включена: ${SEASONS[site].label}.` : 'В момента няма празнична тема.'}
             </p>
             <ActionButton action={{ type: 'seasonalTheme', on: !user.seasonalTheme }} className="btn-ghost">{user.seasonalTheme ? 'Изключи украсата' : 'Включи украсата'}</ActionButton>
           </div>

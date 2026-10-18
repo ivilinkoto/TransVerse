@@ -1,6 +1,7 @@
 import { FINE_RULES, fineCents, type Violation } from './fines';
 import { isNight } from './halloween';
 import type { Segment } from './schedule';
+import { WINTER, WINTER_EVENT_CHANCE } from './winter';
 
 /**
  * Road events: things that happen on the way (traffic jams, roadworks, a
@@ -9,7 +10,7 @@ import type { Segment } from './schedule';
  * truck reaches that point: the schedule gets a stop and everything after it
  * moves later. All values are game data.
  */
-export type RoadEventKind = 'traffic' | 'roadworks' | 'breakdown' | 'border_queue' | 'weather' | 'inspection' | 'ghost' | 'police';
+export type RoadEventKind = 'traffic' | 'roadworks' | 'breakdown' | 'border_queue' | 'weather' | 'inspection' | 'ghost' | 'police' | 'snow' | 'ice' | 'pass_closed';
 
 export interface RoadEventPlan {
   kind: RoadEventKind;
@@ -34,6 +35,10 @@ export const ROAD_EVENTS: Record<RoadEventKind, { title: string; body: string; d
   inspection: { title: 'Проверка на пътя', body: 'Пътна полиция проверява документите и тахографа.', delay: [0.03, 0.05] },
   // Halloween: a harmless night-time sighting that brings a few ТрансКоин.
   police: { title: 'Пътна полиция', body: 'Камионът е спрян за проверка на кантар и тахограф.', delay: [0.03, 0.05] },
+  // Winter (December – mid-March): see lib/game/winter.ts.
+  snow: { title: 'Сняг на пътя', body: 'Пътят е покрит със сняг — колоната се движи зад снегорина.', delay: [0.08, 0.16] },
+  ice: { title: 'Заледен път', body: 'Камионът поднесе на поледицата и излезе в банкета — изтеглен е с влекач.', delay: [0.06, 0.12], costCentsPerKm: 10 },
+  pass_closed: { title: 'Затворен проход', body: 'Виелица затвори прохода — камионът чака снегорините и слага вериги.', delay: [0.15, 0.25] },
   ghost: { title: 'Призрачен камион', body: 'В мъглата се появи светещ камион без шофьор, мигна с фаровете и изчезна. Шофьорът ти спря за малко, за да си поеме дъх.', delay: [0.005, 0.01] },
 };
 
@@ -69,6 +74,8 @@ export function planRoadEvents(
     ghostChance?: number;
     /** Risks the player took (hours over the limit, percent overload): each may be checked by the police. */
     risks?: { violation: Violation; amount: number }[];
+    /** Winter: the worst road condition on the way, and whether the truck has winter tyres. */
+    winter?: { condition: 'clear' | 'snow' | 'ice' | 'blizzard'; tyres: boolean };
   },
 ): RoadEventPlan[] {
   const drives = schedule.filter((s) => s.kind === 'drive' && s.end - s.start > 0);
@@ -99,6 +106,19 @@ export function planRoadEvents(
     const seg = drives[Math.floor(r() * drives.length)]!;
     const [lo, hi] = ROAD_EVENTS.police.delay;
     events.push({ kind: 'police', at: Math.round(seg.start + (seg.end - seg.start) * (0.2 + 0.6 * r())), delayMs: Math.round(span * (lo + (hi - lo) * r())), costCents: 0, applied: false, violation: v.violation, fineCents: fineCents(v.violation, v.amount) });
+  }
+  if (opts.winter && opts.winter.condition !== 'clear') {
+    // At most one winter event, on the worst stretch; winter tyres halve the chance and the delay.
+    const { condition, tyres } = opts.winter;
+    const kind: RoadEventKind = condition === 'blizzard' ? 'pass_closed' : condition;
+    const factor = tyres ? WINTER.tyresFactor : 1;
+    if (r() < WINTER_EVENT_CHANCE[condition] * factor) {
+      const seg = drives[Math.floor(r() * drives.length)]!;
+      const [lo, hi] = ROAD_EVENTS[kind].delay;
+      const perKm = ROAD_EVENTS[kind].costCentsPerKm ?? 0;
+      const costCents = opts.rented || !perKm ? 0 : Math.round(Math.min(800_00, Math.max(120_00, opts.totalKm * perKm)) / 100) * 100;
+      events.push({ kind, at: Math.round(seg.start + (seg.end - seg.start) * (0.2 + 0.6 * r())), delayMs: Math.round(span * (lo + (hi - lo) * r()) * factor), costCents, applied: false });
+    }
   }
   if (opts.ghostChance) {
     // A moment in the middle of a night-time drive.

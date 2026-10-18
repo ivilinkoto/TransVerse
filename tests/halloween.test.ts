@@ -27,7 +27,11 @@ describe('halloween rules', () => {
     expect(isHalloween(new Date('2026-11-02T20:00:00Z'))).toBe(true);
     expect(isHalloween(new Date('2026-11-03T12:00:00Z'))).toBe(false);
     expect(activeSeason(new Date('2026-10-31T12:00:00Z'))).toBe('halloween');
-    expect(activeSeason(new Date('2026-12-10T12:00:00Z'))).toBeNull();
+    expect(activeSeason(new Date('2026-11-20T12:00:00Z'))).toBeNull();
+    // Winter look over the new year (the window wraps).
+    expect(activeSeason(new Date('2026-12-10T12:00:00Z'))).toBe('winter');
+    expect(activeSeason(new Date('2027-02-28T12:00:00Z'))).toBe('winter');
+    expect(activeSeason(new Date('2027-03-02T12:00:00Z'))).toBeNull();
     expect(activeSeason(new Date('2026-12-10T12:00:00Z'), { mode: 'on', season: 'halloween' })).toBe('halloween');
     expect(activeSeason(new Date('2026-10-31T12:00:00Z'), { mode: 'off' })).toBeNull();
     expect(isNight(new Date('2026-10-27T21:30:00Z'))).toBe(true); // 23:30 Sofia

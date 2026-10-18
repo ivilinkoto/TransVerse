@@ -2,6 +2,7 @@ import { Hint } from '@/components/game/Hint';
 import { ContractBoard, type BoardContract } from '@/components/game/ContractBoard';
 import { PageHeader } from '@/components/ui';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
+import { CONDITION_LABELS, routeCondition } from '@/lib/game/winter';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
 import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
@@ -99,6 +100,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       local: localCities.includes(c.originCityId),
       urgent: c.urgent,
       holiday: c.holiday,
+      weather: (() => {
+        const w = routeCondition(c.route.countries, now);
+        return w.condition === 'clear' ? null : { condition: w.condition, label: CONDITION_LABELS[w.condition], country: w.country! };
+      })(),
       favorite: favorites.some((f) => f.originCityId === c.originCityId && f.destCityId === c.destCityId),
       tender: !!c.tenderId,
       alreadyTaken: takenIds.has(c.id),
