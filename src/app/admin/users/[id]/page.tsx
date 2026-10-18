@@ -5,6 +5,7 @@ import { ResetBrandingForm } from '@/components/admin/ResetBrandingForm';
 import { VipForm } from '@/components/admin/VipForm';
 import { CoinsForm } from '@/components/admin/CoinsForm';
 import { ResetLinkButton } from '@/components/admin/ResetLinkButton';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { isVip } from '@/lib/game/vip';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { SelectAction } from '@/components/ui/SelectAction';
@@ -80,6 +81,9 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="label mb-1.5">Достъп до профила (имейл {user.emailVerifiedAt ? 'потвърден' : 'непотвърден'})</div>
                 <ResetLinkButton userId={user.id} />
+                {!user.emailVerifiedAt && (
+                  <div className="mt-2"><ActionButton endpoint="/api/admin/action" action={{ type: 'verifyUserEmail', userId: user.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm="Да маркираме ли имейла като потвърден? Направи го само ако играчът докаже, че адресът е негов.">Потвърди имейла ръчно</ActionButton></div>
+                )}
               </div>
             )}
             {isAdmin(actor.role) && company && (

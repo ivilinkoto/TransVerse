@@ -10,6 +10,7 @@ import { notify } from '@/server/game/notify';
 import { postCoins } from '@/server/game/coins';
 import { VIP_MAX_DAYS } from '@/lib/game/vip';
 import { createLinkToken } from '@/server/auth/email-links';
+import { layoutMail, sendMail } from '@/server/mail';
 
 export interface Staff {
   id: string;
@@ -185,4 +186,30 @@ export async function adminResetLink(db: Database, actor: Staff, targetId: strin
   const token = await createLinkToken(db, targetId, 'reset');
   await audit(db, actor.id, 'password_reset_link', targetId);
   return `${base}/reset-password?token=${token}`;
+}
+
+/** Marks a player's e-mail as confirmed by hand (when their mailbox does not receive our mail). */
+export async function adminVerifyEmail(db: Database, actor: Staff, targetId: string) {
+  return db.transaction(async (tx) => {
+    const [u] = await tx.select({ id: users.id }).from(users).where(eq(users.id, targetId));
+    if (!u) fail('user_not_found', 'Потребителят не е намерен.', 404);
+    await tx.update(users).set({ emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` }).where(eq(users.id, targetId));
+    await audit(tx, actor.id, 'verify_email', targetId);
+  });
+}
+
+/** Sends a test e-mail and returns the mail server's answer (or throws its error). */
+export async function sendTestMail(actor: Staff, to: string, base: string) {
+  if (!isStaff(actor.role)) fail('forbidden', 'Нямате достъп.', 403);
+  return sendMail(
+    layoutMail({
+      to,
+      subject: 'Проба от TransVerse',
+      heading: 'Пробно писмо',
+      lines: ['Това е проба от админ панела на TransVerse. Ако го виждаш във „Входящи“, писмата стигат до тази поща.'],
+      button: { label: 'Към играта', url: `${base}/game` },
+      footer: `Изпратено от ${actor.username}.`,
+    }),
+    'test',
+  );
 }

@@ -64,6 +64,8 @@ export async function sendVerification(db: Database, userId: string, base: strin
       button: { label: 'Потвърди имейла', url: `${base}/verify-email?token=${token}` },
       footer: 'Линкът важи 48 часа. Ако не си се регистрирал в TransVerse, просто игнорирай това писмо.',
     }),
+    'verify',
+    userId,
   );
 }
 
@@ -99,6 +101,8 @@ export async function requestPasswordReset(db: Database, raw: z.input<typeof for
       button: { label: 'Задай нова парола', url: `${base}/reset-password?token=${token}` },
       footer: 'Линкът важи 1 час и може да се използва веднъж. Ако не си искал нова парола, игнорирай писмото — старата остава.',
     }),
+    'reset',
+    u.id,
   ).catch((error) => console.error('[mail] reset mail failed', error));
   await logActivity(db, u.id, 'password_reset_requested', { ip });
   return { mailEnabled: mailConfig().enabled };

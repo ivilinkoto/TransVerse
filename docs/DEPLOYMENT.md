@@ -103,3 +103,23 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 Изисква домейн с HTTPS (Caddy, после `COOKIE_SECURE=true`). В Stripe: активиран акаунт на фирмата, включени методи на плащане (карти, Apple/Google Pay), разписки по имейл, webhook `https://домейн/api/payments/stripe` със събития `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`. Secrets: `STRIPE_SECRET_KEY` (sk_test_… / sk_live_…), `STRIPE_WEBHOOK_SECRET` (whsec_…), по избор `STRIPE_AUTOMATIC_TAX=true`. Тестова карта: 4242 4242 4242 4242. Възстановяване — от таблото на Stripe (отразява се автоматично).
 
 Тестовете (`tests/payments.test.ts`, `tests/paypal.test.ts`) проверяват подписите/проверката на уведомленията, еднократната доставка при повторения, отказ при различна сума, сверката от фоновия процес, възстановяванията и зареждането на ключовете.
+
+## Имейлите стигат до Gmail, но не и до abv.bg / mail.bg
+
+Пощите abv.bg, mail.bg и dir.bg са строги: приемат писма само от домейн, който е удостоверен. Gmail понякога пропуска и неудостоверени писма. Затова писмата стигат до Gmail, но не и до abv.bg / mail.bg.
+
+1. **MAIL_FROM** трябва да е адрес на твоя домейн, например `TransVerse <no-reply@transverse-bg.com>`.
+   - Не @gmail.com, @abv.bg и т.н. Писма „от“ тези домейни, пратени през Brevo, не минават проверката.
+   - Адресът трябва да е добавен като подател в Brevo (Senders).
+2. **В Brevo:** Senders, Domains & Dedicated IPs → Domains → Add a domain → `transverse-bg.com`. Brevo показва 3–4 DNS записа.
+3. **При регистратора** (DNS на домейна) добави точно показаните записи:
+   - DKIM: `brevo1._domainkey` и `brevo2._domainkey` (CNAME) или TXT `mail._domainkey`;
+   - кода за собственост `brevo-code:…` (TXT на `@`);
+   - SPF: TXT на `@`: `v=spf1 include:spf.brevo.com ~all`. Ако вече има SPF запис, добави само `include:spf.brevo.com` в него — трябва да има един SPF запис;
+   - DMARC: TXT на `_dmarc`: `v=DMARC1; p=none; rua=mailto:<твоя имейл>`.
+4. **Потвърждаване:** след 15–60 минути натисни Authenticate в Brevo. Всички записи трябва да светнат в зелено.
+5. **Проверка от играта:** в админ панела → **Имейли** се вижда дали SPF, DKIM и DMARC са намерени. Там изпрати пробно писмо до адрес в abv.bg и mail.bg. Дневникът показва отговора на сървъра за всяко писмо. В Brevo → Transactional → Logs се вижда и крайният отговор на получаващата поща.
+
+Докато това се оправи, играч без писмо може да бъде отключен от админ панела:
+- **Потребители** → играчът → **Потвърди имейла ръчно**;
+- или **Линк за нова парола**.

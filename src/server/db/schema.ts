@@ -1133,3 +1133,22 @@ export const userAvatars = pgTable('user_avatars', {
   data: bytea('data').notNull(),
   updatedAt: ts('updated_at').notNull().defaultNow(),
 });
+
+/** Every e-mail the game tried to send, with the mail server's answer (for delivery problems). */
+export const mailLog = pgTable(
+  'mail_log',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    /** verify | reset | test */
+    kind: text('kind').notNull(),
+    recipient: text('recipient').notNull(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    subject: text('subject').notNull(),
+    /** sent (accepted by our mail server) | rejected | failed */
+    status: text('status').notNull(),
+    messageId: text('message_id'),
+    response: text('response'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('mail_log_created_idx').on(t.createdAt), index('mail_log_recipient_idx').on(t.recipient)],
+);

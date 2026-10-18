@@ -3,13 +3,33 @@
  * mailbox…). Settings come from the environment / GitHub Secrets. Without them
  * nothing is sent: in development the message is printed to the console.
  */
+import { randomUUID } from 'node:crypto';
 import nodemailer, { type Transporter } from 'nodemailer';
+import { getDb } from '@/server/db/client';
+import { mailLog } from '@/server/db/schema';
 
 export interface Mail {
   to: string;
   subject: string;
   text: string;
   html: string;
+  /** For the delivery log: verify | reset | test. */
+  kind?: string;
+  userId?: string | null;
+}
+
+/** The address part of MAIL_FROM ("TransVerse <no-reply@x.com>" → no-reply@x.com). */
+export function fromAddress(from = process.env.MAIL_FROM ?? '') {
+  return (from.match(/<([^>]+)>/)?.[1] ?? from).trim().toLowerCase();
+}
+export const fromDomain = (from?: string) => fromAddress(from).split('@')[1] ?? '';
+
+async function record(mail: Mail, status: 'sent' | 'rejected' | 'failed', messageId: string | null, response: string | null) {
+  try {
+    await getDb().insert(mailLog).values({ kind: mail.kind ?? 'other', recipient: mail.to.toLowerCase(), userId: mail.userId ?? null, subject: mail.subject, status, messageId, response: response?.slice(0, 500) ?? null });
+  } catch (error) {
+    console.error('[mail] could not write the log', error);
+  }
 }
 export type MailSender = (mail: Mail) => Promise<void>;
 
@@ -27,7 +47,8 @@ export function setMailSender(sender: MailSender | null) {
   override = sender;
 }
 
-export async function sendMail(mail: Mail): Promise<boolean> {
+export async function sendMail(input: Mail, kind?: string, userId?: string | null): Promise<boolean> {
+  const mail: Mail = { ...input, kind: kind ?? input.kind, userId: userId ?? input.userId };
   if (override) {
     await override(mail);
     return true;
@@ -45,8 +66,29 @@ export async function sendMail(mail: Mail): Promise<boolean> {
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     connectionTimeout: 15_000,
   });
-  await transporter.sendMail({ from: config.from, to: mail.to, subject: mail.subject, text: mail.text, html: mail.html });
-  return true;
+  // Strict mailboxes (abv.bg, mail.bg…) check that the message looks like a proper transactional mail:
+  // a Message-ID on the sender's own domain, a reply address, a plain-text part and the auto-generated mark.
+  const domain = fromDomain(config.from) || 'transverse-bg.com';
+  const messageId = `<${randomUUID()}@${domain}>`;
+  try {
+    const info = await transporter.sendMail({
+      from: config.from,
+      to: mail.to,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      messageId,
+      replyTo: process.env.SUPPORT_EMAIL || undefined,
+      headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'All', 'X-Entity-Ref-ID': randomUUID() },
+    });
+    const rejected = (info.rejected ?? []).length > 0;
+    await record(mail, rejected ? 'rejected' : 'sent', info.messageId ?? messageId, String(info.response ?? ''));
+    if (rejected) throw new Error(`Пощенският сървър отказа адреса: ${String(info.response ?? '')}`);
+    return true;
+  } catch (error) {
+    if (!(error instanceof Error && error.message.startsWith('Пощенският сървър отказа'))) await record(mail, 'failed', messageId, error instanceof Error ? error.message : String(error));
+    throw error;
+  }
 }
 
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
