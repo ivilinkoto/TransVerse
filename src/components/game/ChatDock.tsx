@@ -6,6 +6,7 @@ import { api } from '@/lib/client/api';
 import type { FeedMessage } from '@/server/game/messages';
 import { PlayerName, openPlayerCard } from './PlayerName';
 import { openReport } from './ReportDialog';
+import { ScrollStrip } from './ScrollStrip';
 
 interface Conversation {
   userId: string;
@@ -239,7 +240,7 @@ export function ChatDock() {
           className="fixed inset-x-0 bottom-0 top-[calc(3.5rem+env(safe-area-inset-top))] z-50 flex flex-col border-t border-asphalt-700 bg-asphalt-900/98 shadow-2xl backdrop-blur lg:inset-x-auto lg:bottom-6 lg:right-6 lg:top-auto lg:h-[min(640px,calc(100dvh-7rem))] lg:w-[400px] lg:rounded-2xl lg:border"
         >
           <header className="flex items-center gap-2 border-b border-asphalt-800 px-2 pt-2">
-            <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-2 [scrollbar-width:none]" aria-label="Раздели на чата">
+            <ScrollStrip label="Раздели на чата" activeKey={current.id}>
               {tabs.map((t) => (
                 <button
                   key={t.id}
@@ -253,7 +254,7 @@ export function ChatDock() {
                   {!!t.unread && <span className="num rounded-full bg-amber-sig px-1.5 text-[10px] font-bold text-asphalt-950">{t.unread}</span>}
                 </button>
               ))}
-            </nav>
+            </ScrollStrip>
             <button type="button" onClick={() => setOpen(false)} className="mb-2 shrink-0 rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" aria-label="Затвори чата"><X className="h-5 w-5" /></button>
           </header>
 
