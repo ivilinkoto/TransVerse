@@ -25,7 +25,7 @@ function SectionBadge({ section, badges, compact = false }: { section: NavSectio
 }
 
 /** Desktop navigation: an icon rail on small laptops, a full sidebar from xl up. */
-export function Sidebar({ badges }: { badges: NavBadges }) {
+export function Sidebar({ badges, version }: { badges: NavBadges; version: string }) {
   const pathname = usePathname();
   const current = sectionFor(pathname);
   return (
@@ -62,6 +62,7 @@ export function Sidebar({ badges }: { badges: NavBadges }) {
             <span className="block text-xs text-mist-400">ТрансКоин, бонуси, стил</span>
           </span>
         </Link>
+        <Link href="/game/updates" className="mt-2 block text-center text-[11px] text-mist-500 transition hover:text-cyan-glow" title="Обновления">v{version}</Link>
       </div>
     </aside>
   );

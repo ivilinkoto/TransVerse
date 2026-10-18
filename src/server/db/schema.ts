@@ -141,6 +141,10 @@ export const users = pgTable(
     dailyClaimKey: text('daily_claim_key'),
     pushPrefs: jsonb('push_prefs').$type<Partial<Record<string, boolean>>>().notNull().default({}),
     lastSeenAt: ts('last_seen_at'),
+    /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
+    seenVersion: text('seen_version'),
+    /** Seasonal decorations (Halloween…) on or off for this player. */
+    seasonalTheme: boolean('seasonal_theme').notNull().default(true),
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
     /** ТрансКоин — premium currency balance (whole coins). Changes only through coin_entries. */

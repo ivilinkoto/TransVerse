@@ -162,6 +162,13 @@
       "when": 1792333855629,
       "tag": "0022_sleepy_dazzler",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792341331600,
+      "tag": "0023_fearless_psynapse",
+      "breakpoints": true
     }
   ]
 }

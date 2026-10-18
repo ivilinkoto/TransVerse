@@ -1,5 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { currentVersion } from '@/lib/game/releases';
 import type { Database } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 import { createIndependent } from '@/server/game/company';
@@ -53,7 +54,8 @@ function registerTx(db: Database, input: z.infer<typeof registerSchema>, passwor
       if (existing.email.toLowerCase() === input.email) fail('email_taken', 'Този имейл вече е регистриран.', 409);
       fail('username_taken', 'Това потребителско име е заето.', 409);
     }
-    const [user] = await tx.insert(users).values({ email: input.email, username: input.username, passwordHash }).returning({ id: users.id });
+    // New players start on the current version: the tutorial shows them around instead of the release notes.
+    const [user] = await tx.insert(users).values({ email: input.email, username: input.username, passwordHash, seenVersion: currentVersion(new Date()) }).returning({ id: users.id });
     await createIndependent(tx, { userId: user!.id, username: input.username, startCityId: input.startCityId });
     await logActivity(tx, user!.id, 'registered');
     return user!.id;

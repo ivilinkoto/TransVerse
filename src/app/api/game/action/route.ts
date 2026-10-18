@@ -4,6 +4,7 @@ import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental } from '@/server/game/rentals';
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
+import { markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { buyGoods, shipGoods } from '@/server/game/trade';
@@ -105,6 +106,8 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearChat') }),
   z.object({ type: z.literal('acceptTender'), tenderId: id }),
   z.object({ type: z.literal('claimDaily') }),
+  z.object({ type: z.literal('seenRelease'), version: z.string().trim().max(20) }),
+  z.object({ type: z.literal('seasonalTheme'), on: z.boolean() }),
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
@@ -295,6 +298,12 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'claimSeasonPass':
       return { ok: true, claimed: await claimPassRewards(db, user.id) };
+    case 'seenRelease':
+      await markReleaseSeen(db, user.id, input.version);
+      return { ok: true };
+    case 'seasonalTheme':
+      await setSeasonalTheme(db, user.id, input.on);
+      return { ok: true };
     case 'claimDaily':
       return { ok: true, ...(await claimDaily(db, user.id)) };
     case 'acceptTender':

@@ -13,6 +13,9 @@ import { MobileNav, SectionTabs, Sidebar } from '@/components/game/Sidebar';
 import { TopBar } from '@/components/game/TopBar';
 import { globalEvents, notifications } from '@/server/db/schema';
 import { TutorialCoach } from '@/components/game/TutorialCoach';
+import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
+import { WhatsNew } from '@/components/game/WhatsNew';
+import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isStaff } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
@@ -25,12 +28,14 @@ export const dynamic = 'force-dynamic';
 
 export default async function GameLayout({ children }: { children: React.ReactNode }) {
   const { db, user, company, hq, now } = await gameContext();
+  const staff = isStaff(user.role);
+  const fresh = unseenRelease(user.seenVersion, now, staff);
   const [tutorial, membership, missions] = await Promise.all([tutorialState(db, user.id), membershipOf(db, user.id), claimableCount(db, user.id)]);
   const [{ unread = 0 } = {}] = await db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt)));
   const [live] = await db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1);
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
-      <Sidebar badges={{ missions, eventLive: !!live }} />
+      <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
         <InstallAppBanner />
@@ -54,6 +59,12 @@ export default async function GameLayout({ children }: { children: React.ReactNo
       <PlayerCardHost />
       <ReportHost />
       <RegisterServiceWorker />
+      {fresh && !(tutorial.active && tutorial.step) && (
+        <WhatsNew version={fresh.version}>
+          <ReleaseTitle release={fresh} />
+          <div className="mt-5"><ReleaseBody release={fresh} /></div>
+        </WhatsNew>
+      )}
     </div>
   );
 }
