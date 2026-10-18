@@ -286,3 +286,17 @@ test('v1.1 pages: dispatcher, special loads, analytics, newspaper, help, updates
   }
   await expect(page.getByRole('heading', { name: 'Нощта на тиквите' }).first()).toBeVisible();
 });
+
+test('v1.2: search, money transfers, map filter', async ({ page }) => {
+  await register(page);
+  await page.getByRole('button', { name: 'Търси играч или компания' }).click();
+  await page.getByRole('textbox', { name: 'Име на играч или компания' }).fill('zz-nobody-here');
+  await expect(page.getByText('Няма играч или компания')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.goto('/game/finance');
+  await expect(page.getByText('Преводи между играчи')).toBeVisible();
+  await expect(page.getByText(/лв\./).first()).toBeVisible();
+  await page.goto('/game/map');
+  await expect(page.getByRole('radiogroup', { name: 'Кои играчи да се виждат' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+});
