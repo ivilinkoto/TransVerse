@@ -45,11 +45,7 @@ export function PlayerSearch() {
 
   useEffect(() => {
     const text = q.trim();
-    if (text.length < 2) {
-      setResult(null);
-      setError(null);
-      return;
-    }
+    if (text.length < 2) return;
     let live = true;
     const t = setTimeout(async () => {
       setBusy(true);
@@ -72,7 +68,10 @@ export function PlayerSearch() {
   }, [q]);
 
   const close = () => setOpen(false);
-  const empty = result && !result.players.length && !result.companies.length;
+  // Fewer than two letters: nothing is searched, older results are hidden.
+  const short = q.trim().length < 2;
+  const shown = short ? null : result;
+  const empty = shown && !shown.players.length && !shown.companies.length;
 
   return (
     <>
@@ -97,15 +96,15 @@ export function PlayerSearch() {
               <button type="button" onClick={close} className="rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" aria-label="Затвори"><X className="h-4 w-4" /></button>
             </div>
             <div className="max-h-[60dvh] overflow-y-auto p-2">
-              {q.trim().length < 2 && <p className="px-2 py-4 text-sm text-mist-400">Напиши поне 2 букви от името.</p>}
-              {busy && !result && <p className="px-2 py-4 text-sm text-mist-400">Търсене…</p>}
-              {error && <p className="px-2 py-4 text-sm text-loss">{error}</p>}
+              {short && <p className="px-2 py-4 text-sm text-mist-400">Напиши поне 2 букви от името.</p>}
+              {busy && !shown && <p className="px-2 py-4 text-sm text-mist-400">Търсене…</p>}
+              {!short && error && <p className="px-2 py-4 text-sm text-loss">{error}</p>}
               {empty && <p className="px-2 py-4 text-sm text-mist-400">Няма играч или компания с „{q.trim()}“.</p>}
-              {result && result.players.length > 0 && (
+              {shown && shown.players.length > 0 && (
                 <>
                   <p className="label px-2 pb-1 pt-2">Играчи</p>
                   <ul>
-                    {result.players.map((p) => (
+                    {shown.players.map((p) => (
                       <li key={p.id}>
                         <button type="button" onClick={() => { close(); openPlayerCard(p.username); }} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-asphalt-800">
                           <span className="relative">
@@ -125,11 +124,11 @@ export function PlayerSearch() {
                   </ul>
                 </>
               )}
-              {result && result.companies.length > 0 && (
+              {shown && shown.companies.length > 0 && (
                 <>
                   <p className="label px-2 pb-1 pt-3">Компании</p>
                   <ul>
-                    {result.companies.map((c) => (
+                    {shown.companies.map((c) => (
                       <li key={c.id}>
                         <Link href={`/game/companies/${c.id}`} onClick={close} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-asphalt-800">
                           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-asphalt-800" style={{ color: c.color ?? undefined }}><Building2 className="h-4 w-4" /></span>
