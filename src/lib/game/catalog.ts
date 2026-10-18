@@ -35,6 +35,8 @@ export interface PowerUnitModel {
 
 export interface TrailerModel {
   id: string;
+  /** Semi-trailers go behind tractors; drawbar trailers behind rigid trucks with the same body. */
+  kind: 'semi' | 'drawbar';
   body: BodyType;
   brand: string;
   name: string;
@@ -81,12 +83,16 @@ export const POWER_UNITS: PowerUnitModel[] = [
 ];
 
 export const TRAILERS: TrailerModel[] = [
-  { id: 'curtain-13', body: 'curtain', brand: 'Struma Trailers', name: 'Завеса 13.6 м', priceCents: 32_000_00, payloadTons: 24, axles: 3, requiresHeavyHaul: false, minLevel: 2, dragFuel: 0 },
-  { id: 'reefer-13', body: 'reefer', brand: 'Struma Trailers', name: 'Хладилно ремарке 13.6 м', priceCents: 58_000_00, payloadTons: 22, axles: 3, requiresHeavyHaul: false, minLevel: 2, dragFuel: 1.5 },
-  { id: 'tipper-26', body: 'tipper', brand: 'Iskar Steel', name: 'Самосвал 30 м³', priceCents: 44_000_00, payloadTons: 26, axles: 3, requiresHeavyHaul: false, minLevel: 3, dragFuel: 0.5 },
-  { id: 'container-40', body: 'container', brand: 'Iskar Steel', name: 'Контейнерно шаси 40′', priceCents: 29_000_00, payloadTons: 26, axles: 3, requiresHeavyHaul: false, minLevel: 4, dragFuel: 0.5 },
-  { id: 'tanker-32', body: 'tanker', brand: 'Iskar Steel', name: 'Цистерна 32 000 л', priceCents: 69_000_00, payloadTons: 25, axles: 3, requiresHeavyHaul: false, minLevel: 5, dragFuel: 0.5 },
-  { id: 'lowbed-4', body: 'lowbed', brand: 'Iskar Steel', name: 'Нискорамно ремарке 4 оси', priceCents: 86_000_00, payloadTons: 40, axles: 4, requiresHeavyHaul: true, minLevel: 7, dragFuel: 3 },
+  { id: 'curtain-13', kind: 'semi', body: 'curtain', brand: 'Struma Trailers', name: 'Завеса 13.6 м', priceCents: 32_000_00, payloadTons: 24, axles: 3, requiresHeavyHaul: false, minLevel: 2, dragFuel: 0 },
+  { id: 'reefer-13', kind: 'semi', body: 'reefer', brand: 'Struma Trailers', name: 'Хладилно ремарке 13.6 м', priceCents: 58_000_00, payloadTons: 22, axles: 3, requiresHeavyHaul: false, minLevel: 2, dragFuel: 1.5 },
+  { id: 'tipper-26', kind: 'semi', body: 'tipper', brand: 'Iskar Steel', name: 'Самосвал 30 м³', priceCents: 44_000_00, payloadTons: 26, axles: 3, requiresHeavyHaul: false, minLevel: 3, dragFuel: 0.5 },
+  { id: 'container-40', kind: 'semi', body: 'container', brand: 'Iskar Steel', name: 'Контейнерно шаси 40′', priceCents: 29_000_00, payloadTons: 26, axles: 3, requiresHeavyHaul: false, minLevel: 4, dragFuel: 0.5 },
+  { id: 'tanker-32', kind: 'semi', body: 'tanker', brand: 'Iskar Steel', name: 'Цистерна 32 000 л', priceCents: 69_000_00, payloadTons: 25, axles: 3, requiresHeavyHaul: false, minLevel: 5, dragFuel: 0.5 },
+  { id: 'lowbed-4', kind: 'semi', body: 'lowbed', brand: 'Iskar Steel', name: 'Нискорамно ремарке 4 оси', priceCents: 86_000_00, payloadTons: 40, axles: 4, requiresHeavyHaul: true, minLevel: 7, dragFuel: 3 },
+  { id: 'flatbed-13', kind: 'semi', body: 'flatbed', brand: 'Struma Trailers', name: 'Платформа 13.6 м', priceCents: 31_000_00, payloadTons: 26, axles: 3, requiresHeavyHaul: false, minLevel: 3, dragFuel: 0.5 },
+  { id: 'car-carrier', kind: 'semi', body: 'car_carrier', brand: 'Iskar Steel', name: 'Автовоз на 2 етажа', priceCents: 74_000_00, payloadTons: 16, axles: 3, requiresHeavyHaul: false, minLevel: 4, dragFuel: 2.5 },
+  { id: 'drawbar-box', kind: 'drawbar', body: 'box', brand: 'Struma Trailers', name: 'Прикачно ремарке фургон 7.7 м', priceCents: 24_000_00, payloadTons: 10, axles: 2, requiresHeavyHaul: false, minLevel: 2, dragFuel: 2 },
+  { id: 'drawbar-reefer', kind: 'drawbar', body: 'reefer', brand: 'Struma Trailers', name: 'Прикачно хладилно ремарке 7.7 м', priceCents: 36_000_00, payloadTons: 9, axles: 2, requiresHeavyHaul: false, minLevel: 3, dragFuel: 2.5 },
 ];
 
 export type UpgradeId = 'eco_tune' | 'aero_kit' | 'premium_tyres' | 'comfort_cab';
@@ -133,11 +139,24 @@ export function combinationCapability({ unit, trailer }: Combination): { bodies:
     if (!trailer) return { bodies: [], payloadTons: 0 };
     return { bodies: [trailer.body], payloadTons: trailer.payloadTons };
   }
-  return { bodies: unit.body ? [unit.body] : [], payloadTons: unit.payloadTons };
+  // A rigid truck with a drawbar trailer of the same body: one load split over both.
+  const drawbar = trailer && canCouple(unit, trailer) ? trailer.payloadTons : 0;
+  return { bodies: unit.body ? [unit.body] : [], payloadTons: Math.round((unit.payloadTons + drawbar) * 10) / 10 };
 }
 
 export function canCouple(unit: PowerUnitModel, trailer: TrailerModel): boolean {
-  return unit.kind === 'tractor' && (!trailer.requiresHeavyHaul || unit.heavyHaul);
+  if (unit.kind === 'tractor') return trailer.kind === 'semi' && (!trailer.requiresHeavyHaul || unit.heavyHaul);
+  if (unit.kind === 'rigid') return trailer.kind === 'drawbar' && trailer.body === unit.body;
+  return false;
+}
+
+/** Why a trailer cannot go behind this vehicle (null when it can). */
+export function couplingError(unit: PowerUnitModel, trailer: TrailerModel): string | null {
+  if (canCouple(unit, trailer)) return null;
+  if (unit.kind === 'van') return 'Ванът не тегли ремарке.';
+  if (unit.kind === 'rigid') return trailer.kind === 'semi' ? 'Полуремаркетата се теглят от влекач.' : 'Прикачното ремарке трябва да е със същата надстройка като камиона.';
+  if (trailer.kind === 'drawbar') return 'Прикачните ремаркета са за соло камиони.';
+  return 'Това ремарке изисква тежкотоварен влекач.';
 }
 
 /** Vehicles available for rent (no purchase price, a fee per delivery instead). */

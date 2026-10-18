@@ -76,3 +76,10 @@
 
 ## Дневник на имейлите (миграция 0021)
 - `mail_log` — вид (`verify` | `reset` | `test`), получател, играч, тема, статус (`sent` | `rejected` | `failed`), Message-ID и отговор на SMTP сървъра.
+
+## Шофьори, ремаркета, клиенти (миграция 0022)
+- `drivers.co_vehicle_id` — втори шофьор (двоен екипаж), уникален; `drivers.duty_min` и `drivers.rested_at` — часове кормуване след последната почивка, валидни до `rested_at`; `drivers.traits` — точки в умения (`eco`, `safe`, `long`).
+- `deliveries.co_driver_id`, `deliveries.end_duty_min` — екипажът на курса и часовете, с които приключва.
+- `client_contracts` — договор с клиент на играч: линия (`route_id`), товари (`loads_total`, `loads_done`, `loads_late`), плащане на товар, бонус, нужна репутация, статус `offer` | `active` | `completed` | `failed` | `expired` | `declined`, срокове.
+- `contracts.client_contract_id` — товар по договор с клиент (лична поръчка със статус `trade`).
+- Нови видове товар `steel` и `vehicles` в `city_markets` (добавят се от импорта на географията при всяко публикуване).

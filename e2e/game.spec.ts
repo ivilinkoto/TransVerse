@@ -86,6 +86,9 @@ test.describe('core loop', () => {
     await expect(page.getByText('Купи ТрансКоин')).toBeVisible();
     await page.goto('/game/licences');
     await expect(page.getByRole('heading', { name: 'Международен лиценз' })).toBeVisible();
+    await page.goto('/game/clients');
+    await expect(page.getByRole('heading', { name: 'Клиенти', exact: true })).toBeVisible();
+    await expect(page.getByText('Оферти', { exact: true })).toBeVisible();
     await page.goto('/game/staff');
     await expect(page.getByText('изисква транспортна компания')).toBeVisible();
     await page.getByRole('link', { name: 'Към основаването на компания' }).click();

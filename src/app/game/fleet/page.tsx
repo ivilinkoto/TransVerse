@@ -7,7 +7,7 @@ import { dec, int, km, money } from '@/lib/format';
 import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
-import { RENTAL_BUYOUT_DELIVERIES, UPGRADES, type UpgradeId } from '@/lib/game/catalog';
+import { RENTAL_BUYOUT_DELIVERIES, UPGRADES, combinationCapability, type UpgradeId } from '@/lib/game/catalog';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { ECONOMY } from '@/lib/game/economy';
 
@@ -60,9 +60,9 @@ export default async function FleetPage() {
             )}
             <dl className="mt-auto grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <div><dt className="label">Състояние</dt><dd className="num mt-1">{Math.round(v.condition)}%<Meter value={v.condition} className="mt-1" /></dd></div>
-              <div><dt className="label">Капацитет</dt><dd className="num mt-1">{v.model.kind === 'tractor' ? (v.trailer ? `${v.trailer.model.payloadTons} т` : '—') : `${v.model.payloadTons} т`}</dd></div>
-              <div><dt className="label">Надстройка</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? BODY_LABELS[v.trailer.model.body] : <span className="text-amber-sig">без ремарке</span>) : BODY_LABELS[v.model.body!]}</dd></div>
-              <div><dt className="label">Шофьор</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5" />{v.driver.name}</> : <span className="text-amber-sig">няма</span>}</dd></div>
+              <div><dt className="label">Капацитет</dt><dd className="num mt-1">{v.model.kind === 'tractor' && !v.trailer ? '—' : `${combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null }).payloadTons} т`}</dd></div>
+              <div><dt className="label">Надстройка</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? BODY_LABELS[v.trailer.model.body] : <span className="text-amber-sig">без ремарке</span>) : `${BODY_LABELS[v.model.body!]}${v.trailer ? ' + прикачно' : ''}`}</dd></div>
+              <div><dt className="label">Шофьор</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{v.driver.name}{v.coDriver ? ` + ${v.coDriver.name}` : ''}</span></> : <span className="text-amber-sig">няма</span>}</dd></div>
             </dl>
             {!v.driver && !v.delivery && self && !selfBusy && (
               <div className="mt-3">

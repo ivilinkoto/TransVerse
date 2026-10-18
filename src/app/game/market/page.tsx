@@ -131,7 +131,8 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
       )}
       {(show === 'all' || show === 'trailers') && (
       <section>
-        <h2 className="mb-3 font-display text-lg font-bold">Полуремаркета</h2>
+        <h2 className="mb-1 font-display text-lg font-bold">Ремаркета</h2>
+        <p className="mb-3 text-sm text-mist-400">Полуремаркетата се теглят от влекач. Прикачните ремаркета вървят зад соло камион със същата надстройка и почти удвояват товара му.</p>
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {order(TRAILERS).map((t) => {
             const reason = user.level < t.minLevel ? `Изисква ниво ${t.minLevel}.` : company.balanceCents < t.priceCents ? 'Недостатъчни средства.' : null;
@@ -149,7 +150,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                 </div>
                 <TrailerIllustration modelId={t.id} className="my-3 h-20 w-full" />
                 <div className="mb-4 flex flex-wrap gap-3 text-xs text-mist-300">
-                  <span className="num">{t.payloadTons} т</span><span>{t.axles} оси</span>{t.requiresHeavyHaul && <Badge tone="violet">изисква тежък влекач 6×4</Badge>}
+                  <span className="num">{t.payloadTons} т</span><span>{t.axles} оси</span>{t.kind === 'drawbar' ? <Badge tone="cyan">прикачно — за соло камион</Badge> : <Badge tone="neutral">полуремарке — за влекач</Badge>}{t.requiresHeavyHaul && <Badge tone="violet">изисква тежък влекач 6×4</Badge>}
                 </div>
                 <LicenceHint body={t.body} held={held} />
                 <div className="mt-auto"><BuyButton type="buyTrailer" modelId={t.id} depots={depotOptions} disabledReason={reason} label="Купи" /></div>

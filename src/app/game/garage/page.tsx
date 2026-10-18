@@ -7,7 +7,7 @@ import { dateTime, money } from '@/lib/format';
 import { USED_MARKET } from '@/lib/game/used-market';
 import { ListForSale } from '@/components/game/ListForSale';
 import { boundsFor, myListings } from '@/server/game/used-market';
-import { UPGRADES, canCouple } from '@/lib/game/catalog';
+import { TRAILERS, UPGRADES, canCouple } from '@/lib/game/catalog';
 import { repairCostCents } from '@/lib/game/economy';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { gameContext } from '@/server/game/context';
@@ -80,14 +80,14 @@ export default async function GaragePage() {
                     )}
                   </div>
                   {listing && <p className="text-xs text-mist-400">Докато е обявено, превозното средство не поема поръчки. Обявата изтича на {dateTime(listing.expiresAt)}.</p>}
-                  {v.model.kind === 'tractor' && (
+                  {(v.model.kind === 'tractor' || (v.model.kind === 'rigid' && TRAILERS.some((t) => canCouple(v.model, t)))) && (
                     <div>
-                      <div className="label mb-1.5">Ремарке (в {v.city.nameBg})</div>
+                      <div className="label mb-1.5">{v.model.kind === 'rigid' ? 'Прикачно ремарке' : 'Ремарке'} (в {v.city.nameBg})</div>
                       <SelectAction
                         label="Прикачи"
                         ariaLabel="Ремарке"
                         value={v.trailer?.id ?? ''}
-                        options={[{ value: '', label: '— без ремарке —' }, ...trailerOptions.map((t) => ({ value: t.id, label: `${t.model.name} · ${t.plate}${t.vehicleId && t.vehicleId !== v.id ? ' (при друг влекач)' : ''}` }))]}
+                        options={[{ value: '', label: '— без ремарке —' }, ...trailerOptions.map((t) => ({ value: t.id, label: `${t.model.name} · ${t.plate}${t.vehicleId && t.vehicleId !== v.id ? ' (при друг камион)' : ''}` }))]}
                         action={{ type: 'coupleTrailer', vehicleId: v.id }}
                         field="trailerId"
                       />

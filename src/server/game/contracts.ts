@@ -24,7 +24,7 @@ const SIZE_CLASSES = [
   { id: 'full', maxTons: 40, maxKm: 1800, weight: 0.4 },
 ] as const;
 
-interface Hub {
+export interface Hub {
   id: number;
   countryCode: string;
   lat: number;
@@ -34,7 +34,7 @@ interface Hub {
   consumes: Map<CargoType, number>; // demand
 }
 
-async function loadHubs(db: DbOrTx): Promise<Hub[]> {
+export async function loadHubs(db: DbOrTx): Promise<Hub[]> {
   const rows = await db
     .select({ id: cities.id, countryCode: cities.countryCode, lat: cities.lat, lon: cities.lon, population: cities.population, cargoType: cityMarkets.cargoType, produces: cityMarkets.produces, consumes: cityMarkets.consumes, demand: cityMarkets.demand })
     .from(cityMarkets)

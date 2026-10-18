@@ -32,6 +32,8 @@ export function deriveMarketProfile(city: { id: number; population: number }, ha
     { cargoType: 'container', produces: hasPort || p >= 500_000, consumes: hasPort || p >= 500_000 },
     { cargoType: 'liquid', produces: (hasPort && h(6) < 0.6) || h(7) < 0.12, consumes: p >= 80_000 || h(8) < 0.3 },
     { cargoType: 'special', produces: p >= 200_000 && h(9) < 0.5, consumes: p >= 300_000 || h(10) < 0.25 },
+    { cargoType: 'steel', produces: (p >= 80_000 && h(11) < 0.35) || (hasPort && h(12) < 0.3), consumes: p >= 100_000 || h(13) < 0.35 },
+    { cargoType: 'vehicles', produces: (p >= 300_000 && h(14) < 0.3) || (hasPort && h(15) < 0.4), consumes: p >= 120_000 || h(16) < 0.3 },
   ];
   return entries.filter((e) => e.produces || e.consumes);
 }

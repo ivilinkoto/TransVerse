@@ -287,9 +287,16 @@ export const drivers = pgTable(
     isOwner: boolean('is_owner').notNull().default(false),
     /** Assigned vehicle. One driver per vehicle. */
     vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
+    /** Second seat: a co-driver makes the vehicle a team (one per vehicle). */
+    coVehicleId: uuid('co_vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
+    /** Driving minutes since the last daily rest, as left by the last trip; void once restedAt has passed. */
+    dutyMin: real('duty_min').notNull().default(0),
+    restedAt: ts('rested_at'),
+    /** Skill points spent: eco / safe / long, 0..3 each. */
+    traits: jsonb('traits').$type<Partial<Record<'eco' | 'safe' | 'long', number>>>().notNull().default({}),
     hiredAt: createdAt(),
   },
-  (t) => [index('drivers_company_idx').on(t.companyId), uniqueIndex('drivers_vehicle_idx').on(t.vehicleId)],
+  (t) => [index('drivers_company_idx').on(t.companyId), uniqueIndex('drivers_vehicle_idx').on(t.vehicleId), uniqueIndex('drivers_co_vehicle_idx').on(t.coVehicleId)],
 );
 
 export const driverCandidates = pgTable(
@@ -340,6 +347,8 @@ export const contracts = pgTable(
     /** Own goods hauled by a player (trading): only that player's account may take it; never on the public board. */
     tradeCompanyId: uuid('trade_company_id'),
     trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null }>(),
+    /** One load of a long-term client contract (private, like trade lots). */
+    clientContractId: uuid('client_contract_id'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -356,6 +365,9 @@ export const deliveries = pgTable(
     vehicleId: uuid('vehicle_id').notNull().references(() => vehicles.id),
     trailerId: uuid('trailer_id').references(() => trailers.id),
     driverId: uuid('driver_id').notNull().references(() => drivers.id),
+    coDriverId: uuid('co_driver_id').references(() => drivers.id, { onDelete: 'set null' }),
+    /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
+    endDutyMin: real('end_duty_min').notNull().default(0),
     status: text('status').notNull().default('in_progress'), // in_progress | completed
     emptyRouteId: integer('empty_route_id').references(() => routes.id),
     routeId: integer('route_id').notNull().references(() => routes.id),
@@ -1151,4 +1163,39 @@ export const mailLog = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('mail_log_created_idx').on(t.createdAt), index('mail_log_recipient_idx').on(t.recipient)],
+);
+
+/**
+ * Long-term contracts with (fictional) client companies: N loads on one lane
+ * within a deadline. Offered per player account, then active, then completed
+ * (bonus) or failed (reputation loss).
+ */
+export const clientContracts = pgTable(
+  'client_contracts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    client: text('client').notNull(),
+    cargoType: text('cargo_type').notNull(),
+    goods: text('goods').notNull(),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    routeId: integer('route_id').notNull().references(() => routes.id),
+    distanceKm: real('distance_km').notNull(),
+    tonsPerLoad: real('tons_per_load').notNull(),
+    loadsTotal: integer('loads_total').notNull(),
+    loadsDone: integer('loads_done').notNull().default(0),
+    loadsLate: integer('loads_late').notNull().default(0),
+    rewardPerLoadCents: money('reward_per_load_cents').notNull(),
+    bonusCents: money('bonus_cents').notNull(),
+    minReputation: integer('min_reputation').notNull().default(0),
+    durationHours: integer('duration_hours').notNull(),
+    status: text('status').notNull().default('offer'), // offer | active | completed | failed | expired | declined
+    offerExpiresAt: ts('offer_expires_at').notNull(),
+    acceptedAt: ts('accepted_at'),
+    dueAt: ts('due_at'),
+    finishedAt: ts('finished_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('client_contracts_company_idx').on(t.companyId, t.status), index('client_contracts_due_idx').on(t.status, t.dueAt)],
 );

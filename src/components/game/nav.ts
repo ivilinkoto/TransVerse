@@ -28,6 +28,7 @@ export const SECTIONS: NavSection[] = [
     icon: ClipboardList,
     tabs: [
       { href: '/game/contracts', label: 'Поръчки' },
+      { href: '/game/clients', label: 'Клиенти' },
       { href: '/game/trade', label: 'Търговия със стоки' },
     ],
   },

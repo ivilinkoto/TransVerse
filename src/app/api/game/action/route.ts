@@ -17,7 +17,9 @@ import { getDb } from '@/server/db/client';
 import { acceptContract } from '@/server/game/deliveries';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle } from '@/server/game/fleet';
 import { markNotificationsRead } from '@/server/game/notify';
-import { assignDriver, fireDriver, hireDriver } from '@/server/game/staff';
+import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
+import { TRAIT_IDS } from '@/lib/game/crew';
+import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
 import { handler } from '@/server/http';
 import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
@@ -61,7 +63,11 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('coupleTrailer'), vehicleId: id, trailerId: id.nullable() }),
   z.object({ type: z.literal('hireDriver'), candidateId: id }),
   z.object({ type: z.literal('fireDriver'), driverId: id }),
-  z.object({ type: z.literal('assignDriver'), driverId: id, vehicleId: id.nullable() }),
+  z.object({ type: z.literal('assignDriver'), driverId: id, vehicleId: id.nullable(), seat: z.enum(['main', 'co']).default('main') }),
+  z.object({ type: z.literal('trainDriver'), driverId: id, trait: z.enum(TRAIT_IDS) }),
+  z.object({ type: z.literal('clientAccept'), clientContractId: id }),
+  z.object({ type: z.literal('clientDecline'), clientContractId: id }),
+  z.object({ type: z.literal('clientLoad'), clientContractId: id, vehicleId: id }),
   z.object({ type: z.literal('buyDepot'), cityId }),
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('markNotificationsRead') }),
@@ -151,7 +157,18 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       await fireDriver(db, user.id, input.driverId);
       return { ok: true };
     case 'assignDriver':
-      await assignDriver(db, user.id, input.driverId, input.vehicleId);
+      await assignDriver(db, user.id, input.driverId, input.vehicleId, input.seat);
+      return { ok: true };
+    case 'clientAccept':
+      await acceptClientContract(db, user.id, input.clientContractId);
+      return { ok: true };
+    case 'clientDecline':
+      await declineClientContract(db, user.id, input.clientContractId);
+      return { ok: true };
+    case 'clientLoad':
+      return { ok: true, id: (await sendClientLoad(db, user.id, input.clientContractId, input.vehicleId)).id };
+    case 'trainDriver':
+      await trainDriver(db, user.id, input.driverId, input.trait);
       return { ok: true };
     case 'buyDepot':
       return { ok: true, id: (await buyDepot(db, user.id, input.cityId)).id };
