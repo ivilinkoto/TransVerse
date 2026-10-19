@@ -94,7 +94,12 @@ export function describeFailure(error: unknown): string {
   if (error && typeof error === 'object') {
     const e = error as { issue?: string | null; status?: number; debugId?: string | null; code?: string; type?: string; message?: string };
     if (e.issue !== undefined) return [e.issue, e.status && `HTTP ${e.status}`, e.debugId && `debug_id ${e.debugId}`].filter(Boolean).join(' · ');
-    if (e.type || e.code) return [e.type, e.code].filter(Boolean).join(' · ');
+    // Stripe: the type, code, the field it refers to and Stripe's own explanation (keys masked).
+    if (e.type || e.code) {
+      const se = error as { param?: string; requestId?: string };
+      const text = e.message?.replace(/\b(sk|rk|pk|whsec)_[A-Za-z0-9_*]+/g, '[ключ]').slice(0, 160);
+      return [e.type, e.code, se.param && `поле ${se.param}`, text, se.requestId].filter(Boolean).join(' · ').slice(0, 300);
+    }
     if (e.message) return e.message.slice(0, 200);
   }
   return String(error).slice(0, 200);

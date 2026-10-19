@@ -135,3 +135,15 @@ describe('payments', () => {
     expect(Math.round((u!.vipUntil!.getTime() - Date.now()) / 86_400_000)).toBe(30);
   });
 });
+
+describe('provider errors for the admin panel', () => {
+  it('Stripe errors keep the explanation but never a key', async () => {
+    const { describeFailure } = await import('@/server/payments');
+    const text = describeFailure({ type: 'StripeInvalidRequestError', code: 'parameter_invalid', param: 'locale', message: 'Invalid API Key provided: rk_live_********abcd. In order to use Checkout, you must set an account or business name.', requestId: 'req_123' });
+    expect(text).toContain('StripeInvalidRequestError');
+    expect(text).toContain('поле locale');
+    expect(text).toContain('business name');
+    expect(text).toContain('req_123');
+    expect(text).not.toContain('rk_live');
+  });
+});
