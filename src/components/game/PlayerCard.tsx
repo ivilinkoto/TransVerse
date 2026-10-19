@@ -28,7 +28,7 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
 }
 
 /** A player's profile card: who they are, how they play, and what you can do with them. */
-export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChange?: () => void; onClose?: () => void }) {
+export function PlayerCardView({ card, onChange, onClose, careerLink = true }: { card: Card; onChange?: () => void; onClose?: () => void; careerLink?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
@@ -74,6 +74,8 @@ export function PlayerCardView({ card, onChange, onClose }: { card: Card; onChan
         <Stat label="Доставки" value={card.deliveries.toLocaleString('bg-BG')} sub={card.kind === 'company' ? 'собствен автопарк' : 'шофьор'} />
         <Stat label="Приятели" value={card.friends} />
       </div>
+
+      {careerLink && <Link href={`/game/players/${encodeURIComponent(card.username)}`} onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan-glow hover:underline"><Truck className="h-4 w-4" />Кариера: курсове, рекорди, любими линии →</Link>}
 
       <div className="mt-3 flex items-center gap-2 rounded-xl border border-asphalt-700 px-3 py-2 text-sm">
         <Building2 className="h-4 w-4 shrink-0 text-mist-400" />
