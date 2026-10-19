@@ -34,7 +34,7 @@ async function seatOwner(tx: Tx, companyId: string, ownerDriverId: string, prefe
   const candidates = await tx
     .select({ id: vehicles.id })
     .from(vehicles)
-    .where(and(eq(vehicles.companyId, companyId), eq(vehicles.ownership, 'owned'), isNull(vehicles.soldAt), sql`not exists (select 1 from drivers d where d.vehicle_id = ${vehicles.id})`))
+    .where(and(eq(vehicles.companyId, companyId), eq(vehicles.ownership, 'owned'), isNull(vehicles.soldAt), sql`not exists (select 1 from drivers d where d.vehicle_id = ${vehicles}.id)`))
     .orderBy(desc(vehicles.purchasedAt));
   const target = candidates.find((c) => c.id === preferredVehicleId) ?? candidates[0];
   if (target) await tx.update(drivers).set({ vehicleId: target.id }).where(eq(drivers.id, ownerDriverId));

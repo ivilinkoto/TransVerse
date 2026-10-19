@@ -118,8 +118,8 @@ export async function urgentContracts(db: DbOrTx, limit = 30) {
   const rows = await db
     .select({
       contract: contracts,
-      takers: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts.id})`,
-      delivered: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts.id} and d.status = 'completed')`,
+      takers: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts}.id)`,
+      delivered: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts}.id and d.status = 'completed')`,
     })
     .from(contracts)
     .where(eq(contracts.urgent, true))
