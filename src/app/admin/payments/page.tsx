@@ -3,7 +3,8 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { PaypalCheck } from '@/components/admin/PaypalCheck';
 import Link from 'next/link';
 import { Badge, Card, PageHeader, Stat, Table } from '@/components/ui';
-import { dateTime, int } from '@/lib/format';
+import { dateTime, int, money } from '@/lib/format';
+import { recentTransfers } from '@/server/game/transfers';
 import { euro, paidProduct, PAYMENT_STATUS_LABELS } from '@/lib/game/payments';
 import { adminContext } from '@/server/admin-context';
 import { isAdmin } from '@/server/auth/roles';
@@ -17,9 +18,10 @@ export default async function AdminPaymentsPage() {
   const { db, user } = await adminContext();
   const config = paymentConfig();
   const { rows, totals } = await adminPayments(db);
+  const transfers = await recentTransfers(db, 100);
   return (
     <div className="space-y-6">
-      <PageHeader title="Плащания" subtitle="Покупки на ТрансКоин и VIP с реални пари (PayPal; Stripe — по-късно). Доставката е автоматична. Плащане с PayPal може да се върне оттук; ТрансКоин и VIP дните от покупката се премахват автоматично." />
+      <PageHeader title="Плащания" subtitle="Покупки на ТрансКоин и VIP с реални пари (PayPal и карта през Stripe). Доставката е автоматична. Плащане с PayPal се връща оттук, а със Stripe — от таблото на Stripe (Payments → Refund); и в двата случая ТрансКоин и VIP дните от покупката се премахват автоматично." />
       <Card title="Настройка">
         <ul className="space-y-2 text-sm">
           <li className="flex flex-wrap items-center gap-2">
@@ -35,7 +37,7 @@ export default async function AdminPaymentsPage() {
             {config.stripe.enabled ? (
               <span className="flex items-center gap-1.5 text-profit"><CheckCircle2 className="h-4 w-4" />включен · {config.stripe.testMode ? 'ТЕСТОВ режим' : 'реален режим'}</span>
             ) : (
-              <span className="text-mist-400">изключен (за след домейна) — липсват: <span className="num">{config.stripe.missing.join(', ')}</span></span>
+              <span className="text-mist-400">изключен — липсват: <span className="num">{config.stripe.missing.join(', ')}</span></span>
             )}
           </li>
         </ul>
@@ -73,6 +75,22 @@ export default async function AdminPaymentsPage() {
           ))}
         </Table>
         {rows.length === 0 && <p className="mt-3 text-sm text-mist-400">Все още няма плащания.</p>}
+      </Card>
+      <Card title="Преводи между играчи (игрови пари)" className="p-2 sm:p-3">
+        {transfers.length === 0 ? <p className="p-3 text-sm text-mist-400">Още няма преводи.</p> : (
+          <Table head={['Кога', 'От', 'До', 'Сума', 'Такса', 'Бележка']}>
+            {transfers.map((t) => (
+              <tr key={t.id}>
+                <td className="px-3 py-2 text-mist-400">{dateTime(t.createdAt)}</td>
+                <td className="px-3 py-2"><Link href={`/admin/users/${t.fromId}`} className="hover:underline">{t.from}</Link></td>
+                <td className="px-3 py-2"><Link href={`/admin/users/${t.toId}`} className="hover:underline">{t.to}</Link></td>
+                <td className="num px-3 py-2">{money(t.amountCents)}</td>
+                <td className="num px-3 py-2 text-mist-400">{money(t.feeCents)}</td>
+                <td className="max-w-xs truncate px-3 py-2 text-mist-300">{t.note}</td>
+              </tr>
+            ))}
+          </Table>
+        )}
       </Card>
     </div>
   );

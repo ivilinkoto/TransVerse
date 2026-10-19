@@ -62,7 +62,7 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     relation,
     friendshipId: pair?.id ?? null,
     /** The viewer can invite this player to their company. */
-    canInvite: !!viewerM && !m && can(viewerM.rank, 'manage_members') && !invited,
+    canInvite: !!viewerM && !m && can(viewerM.rank, 'recruit') && !invited,
     invited: !!invited,
     /** The viewer has blocked this player. */
     blocked: !!blockRow,
@@ -134,10 +134,10 @@ export async function friendsOf(db: DbOrTx, userId: string, now = new Date()) {
 
 // ── Company invites ───────────────────────────────────────────────────────
 
-/** A member with the "members" right invites a player who is not in a company. */
+/** A member with the "recruit" right invites a player who is not in a company. */
 export async function inviteToCompany(db: Database, actorId: string, targetId: string) {
   return db.transaction(async (tx) => {
-    const actor = await requirePermission(tx, actorId, 'manage_members');
+    const actor = await requirePermission(tx, actorId, 'recruit');
     const [target] = await tx.select({ id: users.id, username: users.username, bannedAt: users.bannedAt }).from(users).where(eq(users.id, targetId));
     if (!target || target.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
     await assertNotBlocked(tx, actorId, targetId);
@@ -173,7 +173,7 @@ export async function respondCompanyInvite(db: Database, userId: string, inviteI
     await tx.update(companyInvites).set({ status: 'cancelled', decidedAt: new Date() }).where(and(eq(companyInvites.userId, userId), eq(companyInvites.status, 'pending')));
     await tx.update(companyApplications).set({ status: 'withdrawn', decidedAt: new Date() }).where(and(eq(companyApplications.userId, userId), eq(companyApplications.status, 'pending')));
     await logActivity(tx, userId, 'company_joined', { companyId: company!.id, invite: invite!.id });
-    await notifyMembers(tx, company!.id, 'manage_members', 'Нов член', `${me!.username} прие поканата и се присъедини към „${company!.name}“.`, '/game/company/members');
+    await notifyMembers(tx, company!.id, 'recruit', 'Нов член', `${me!.username} прие поканата и се присъедини към „${company!.name}“.`, '/game/company/members');
     return 'joined' as const;
   });
 }

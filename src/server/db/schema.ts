@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { ContractStop } from '@/lib/game/multistop';
 import type { RoadEventPlan } from '@/lib/game/road-events';
 import {
   customType,
@@ -145,6 +146,10 @@ export const users = pgTable(
     seenVersion: text('seen_version'),
     /** Seasonal decorations (Halloween…) on or off for this player. */
     seasonalTheme: boolean('seasonal_theme').notNull().default(true),
+    /** Available to drive loads handed over by companies (for a commission). */
+    forHire: boolean('for_hire').notNull().default(false),
+    /** Offers to mentor new players (level 15+). */
+    mentorOpen: boolean('mentor_open').notNull().default(false),
     /** One-time hints the player has closed. */
     seenHints: text('seen_hints').array().notNull().default(sql`'{}'::text[]`),
     /** No phone notifications between these hours (Sofia), e.g. { from: 23, to: 8 }; null = none. */
@@ -367,6 +372,8 @@ export const contracts = pgTable(
     auctionId: uuid('auction_id'),
     /** One load of a long-term client contract (private, like trade lots). */
     clientContractId: uuid('client_contract_id'),
+    /** Groupage: drops on the way before the destination (null for an ordinary load). */
+    stops: jsonb('stops').$type<ContractStop[]>(),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -386,6 +393,8 @@ export const deliveries = pgTable(
     coDriverId: uuid('co_driver_id').references(() => drivers.id, { onDelete: 'set null' }),
     /** Sent by the VIP auto-dispatcher (counts toward its daily limit). */
     autoDispatched: boolean('auto_dispatched').notNull().default(false),
+    /** The other trip of a convoy (a friend or company member on the same lane); both get a bonus on time. */
+    convoyWith: uuid('convoy_with'),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
@@ -901,6 +910,9 @@ export const pushSubscriptions = pgTable(
     userAgent: text('user_agent'),
     createdAt: createdAt(),
     lastSuccessAt: ts('last_success_at'),
+    /** Last failed send: when, and what the push service answered (admin diagnostics). */
+    lastErrorAt: ts('last_error_at'),
+    lastError: text('last_error'),
   },
   (t) => [uniqueIndex('push_subscriptions_endpoint_idx').on(t.endpoint), index('push_subscriptions_user_idx').on(t.userId)],
 );
@@ -1329,4 +1341,193 @@ export const auctionBids = pgTable(
     updatedAt: ts('updated_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.auctionId, t.companyId] }), index('auction_bids_amount_idx').on(t.auctionId, t.amountCents)],
+);
+
+/** Money sent from one player to another (game money; the fee leaves the game). */
+export const moneyTransfers = pgTable(
+  'money_transfers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amountCents: money('amount_cents').notNull(),
+    feeCents: money('fee_cents').notNull(),
+    note: text('note'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('money_transfers_from_idx').on(t.fromUserId, t.createdAt), index('money_transfers_to_idx').on(t.toUserId, t.createdAt)],
+);
+
+/** A company hands a board load to a free player for a commission (lib/game/hire.ts). */
+export const jobOffers = pgTable(
+  'job_offers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    offeredBy: uuid('offered_by').references(() => users.id, { onDelete: 'set null' }),
+    toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** Share of the reward the driver pays to the company's treasury. */
+    share: real('share').notNull(),
+    status: text('status').notNull().default('pending'), // pending | accepted | declined | done
+    expiresAt: ts('expires_at').notNull(),
+    deliveryId: uuid('delivery_id'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('job_offers_to_idx').on(t.toUserId, t.status), index('job_offers_org_idx').on(t.organizationId, t.status), index('job_offers_delivery_idx').on(t.deliveryId)],
+);
+
+/** A company project: the members haul X tonnes of a cargo to a city within a week (lib/game/projects.ts). */
+export const companyProjects = pgTable(
+  'company_projects',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    templateId: text('template_id').notNull(),
+    title: text('title').notNull(),
+    cargoType: text('cargo_type').notNull(),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    targetTons: real('target_tons').notNull(),
+    progressTons: real('progress_tons').notNull().default(0),
+    /** Tonnes per member: { userId: tons }. */
+    contributions: jsonb('contributions').$type<Record<string, number>>().notNull().default({}),
+    rewardCents: money('reward_cents').notNull(),
+    rewardXp: integer('reward_xp').notNull(),
+    status: text('status').notNull().default('active'), // active | done | failed
+    startedBy: uuid('started_by').references(() => users.id, { onDelete: 'set null' }),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    completedAt: ts('completed_at'),
+  },
+  (t) => [index('company_projects_org_idx').on(t.organizationId, t.status), index('company_projects_due_idx').on(t.status, t.endsAt)],
+);
+
+/** A mentor (level 15+) helping a new player to level 5. One active mentorship per newcomer. */
+export const mentorships = pgTable(
+  'mentorships',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    mentorId: uuid('mentor_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    menteeId: uuid('mentee_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('active'), // active | done | ended | expired
+    createdAt: createdAt(),
+    endsAt: ts('ends_at').notNull(),
+    finishedAt: ts('finished_at'),
+  },
+  (t) => [uniqueIndex('mentorships_active_mentee_idx').on(t.menteeId).where(sql`status = 'active'`), index('mentorships_mentor_idx').on(t.mentorId, t.status)],
+);
+
+/** Help on the road: a friend or colleague shortened another player's stop (once per stop). */
+export const roadsideHelps = pgTable(
+  'roadside_helps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    deliveryId: uuid('delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+    /** Start of the stop that was shortened. */
+    stopAt: ts('stop_at').notNull(),
+    helperId: uuid('helper_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    savedMs: integer('saved_ms').notNull(),
+    feeCents: integer('fee_cents').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('roadside_helps_stop_idx').on(t.deliveryId, t.stopAt), index('roadside_helps_helper_idx').on(t.helperId, t.createdAt)],
+);
+
+/** Every XP grant to a player: how much and from where (admin view, balance checks). */
+export const xpEntries = pgTable(
+  'xp_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amount: integer('amount').notNull(),
+    reason: text('reason').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('xp_entries_user_idx').on(t.userId, t.createdAt)],
+);
+
+/** Weekly battle of two companies of similar level: tonnes delivered by their members. */
+export const companyBattles = pgTable(
+  'company_battles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    weekKey: text('week_key').notNull(),
+    aId: uuid('a_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    bId: uuid('b_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    aTons: real('a_tons').notNull().default(0),
+    bTons: real('b_tons').notNull().default(0),
+    status: text('status').notNull().default('active'), // active | done
+    /** The winner; null for a draw or when nobody delivered. */
+    winnerId: uuid('winner_id').references(() => organizations.id, { onDelete: 'set null' }),
+    endsAt: ts('ends_at').notNull(),
+    settledAt: ts('settled_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('company_battles_a_idx').on(t.weekKey, t.aId), uniqueIndex('company_battles_b_idx').on(t.weekKey, t.bId), index('company_battles_status_idx').on(t.status, t.endsAt)],
+);
+
+/** The friends feed: notable moments of a player (or a company), shown to friends and company members. */
+export const feedEntries = pgTable(
+  'feed_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    text: text('text').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('feed_entries_user_idx').on(t.userId, t.createdAt), index('feed_entries_org_idx').on(t.organizationId, t.createdAt)],
+);
+
+/** "Браво" on a feed entry (once per player). */
+export const feedCheers = pgTable(
+  'feed_cheers',
+  {
+    entryId: uuid('entry_id').notNull().references(() => feedEntries.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.entryId, t.userId] })],
+);
+
+/** The player's own goal for a week (chosen from three sized to their pace). */
+export const weeklyGoals = pgTable(
+  'weekly_goals',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    weekKey: text('week_key').notNull(),
+    difficulty: text('difficulty').notNull(),
+    metric: text('metric').notNull(),
+    target: real('target').notNull(),
+    progress: real('progress').notNull().default(0),
+    rewardCents: money('reward_cents').notNull(),
+    rewardCoins: integer('reward_coins').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    claimedAt: ts('claimed_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.weekKey] })],
+);
+
+/** A truck bought on lease: a down payment, then weekly instalments; missed ones end with repossession. */
+export const vehicleLeases = pgTable(
+  'vehicle_leases',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    vehicleId: uuid('vehicle_id').notNull().references(() => vehicles.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    priceCents: money('price_cents').notNull(),
+    downCents: money('down_cents').notNull(),
+    weeklyCents: money('weekly_cents').notNull(),
+    payments: integer('payments').notNull(),
+    paid: integer('paid').notNull().default(0),
+    /** Instalments missed in a row (not enough money on the due date). */
+    missed: integer('missed').notNull().default(0),
+    status: text('status').notNull().default('active'), // active | paid | repossessed
+    nextDueAt: ts('next_due_at').notNull(),
+    endedAt: ts('ended_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('vehicle_leases_vehicle_idx').on(t.vehicleId).where(sql`${t.status} = 'active'`), index('vehicle_leases_due_idx').on(t.status, t.nextDueAt), index('vehicle_leases_company_idx').on(t.companyId)],
 );

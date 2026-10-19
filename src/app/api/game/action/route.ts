@@ -7,6 +7,7 @@ import { claimDaily } from '@/server/game/daily';
 import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
 import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
+import { claimChristmasQuest } from '@/server/game/christmas';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { buyGoods, shipGoods } from '@/server/game/trade';
@@ -28,7 +29,19 @@ import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
 import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
-import { handler } from '@/server/http';
+import { clientIp, handler } from '@/server/http';
+import { hashIp } from '@/server/game/referrals';
+import { payOffLease } from '@/server/game/leasing';
+import { bonusSchema, payBonus } from '@/server/game/bonuses';
+import { sendMoney, transferSchema } from '@/server/game/transfers';
+import { helpOnRoad } from '@/server/game/roadside';
+import { cheer } from '@/server/game/feed';
+import type { FeatureId } from '@/lib/game/features';
+import { requireFeature } from '@/server/features';
+import { chooseWeeklyGoal, claimWeeklyGoal } from '@/server/game/weekly-goal';
+import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
+import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
+import { startProject } from '@/server/game/projects';
 import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
 import { reserveContract } from '@/server/game/contracts';
@@ -73,6 +86,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('appealFine'), fineId: id }),
   z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
   z.object({ type: z.literal('buyVehicle'), modelId: z.string().max(40), cityId }),
+  z.object({ type: z.literal('leaseVehicle'), modelId: z.string().max(40), cityId }),
+  z.object({ type: z.literal('payOffLease'), leaseId: id }),
+  z.object({ type: z.literal('payBonus'), bonus: bonusSchema }),
   z.object({ type: z.literal('buyTrailer'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('sellVehicle'), vehicleId: id }),
   z.object({ type: z.literal('sellTrailer'), trailerId: id }),
@@ -126,6 +142,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('seenRelease'), version: z.string().trim().max(20) }),
   z.object({ type: z.literal('seasonalTheme'), on: z.boolean() }),
   z.object({ type: z.literal('claimHalloweenQuest'), questId: z.string().max(30) }),
+  z.object({ type: z.literal('claimChristmasQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
@@ -139,18 +156,51 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('companyInvite'), userId: id }),
   z.object({ type: z.literal('companyInviteRespond'), inviteId: id, accept: z.boolean() }),
   z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema }),
+  z.object({ type: z.literal('sendMoney'), transfer: transferSchema }),
+  z.object({ type: z.literal('mentorOpen'), on: z.boolean() }),
+  z.object({ type: z.literal('cheer'), entryId: z.string().uuid() }),
+  z.object({ type: z.literal('chooseWeeklyGoal'), difficulty: z.enum(['easy', 'normal', 'hard']) }),
+  z.object({ type: z.literal('claimWeeklyGoal'), week: z.string().regex(/^W\d{4}-\d{2}$/) }),
+  z.object({ type: z.literal('helpOnRoad'), deliveryId: z.string().uuid() }),
+  z.object({ type: z.literal('chooseMentor'), mentorId: z.string().uuid() }),
+  z.object({ type: z.literal('endMentorship'), id: z.string().uuid() }),
+  z.object({ type: z.literal('offerJob'), offer: offerSchema }),
+  z.object({ type: z.literal('declineJob'), offerId: id }),
+  z.object({ type: z.literal('forHire'), on: z.boolean() }),
+  z.object({ type: z.literal('startProject'), templateId: z.string().max(40) }),
   z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('deleteConversation'), userId: id }),
   z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema }),
   z.object({ type: z.literal('deleteChannel'), messageId: z.coerce.number().int().positive() }),
-  z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели евро.').positive().max(10_000_000) }),
+  z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели лева.').positive().max(10_000_000) }),
   z.object({ type: z.literal('cancelListing'), listingId: id }),
   z.object({ type: z.literal('buyListing'), listingId: id }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
 ]);
 
+/** Actions of features that go live with a release (staff can use them earlier, to test). */
+const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
+  sendMoney: 'transfers',
+  offerJob: 'hire',
+  declineJob: 'hire',
+  forHire: 'hire',
+  startProject: 'projects',
+  mentorOpen: 'mentor',
+  chooseMentor: 'mentor',
+  endMentorship: 'mentor',
+  helpOnRoad: 'roadside',
+  cheer: 'feed',
+  chooseWeeklyGoal: 'weekly_goal',
+  claimWeeklyGoal: 'weekly_goal',
+  leaseVehicle: 'leasing',
+  payOffLease: 'leasing',
+  payBonus: 'company_roles',
+};
+
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
   const db = getDb();
+  const feature = ACTION_FEATURE[input.type];
+  if (feature) requireFeature(feature, user.role);
   switch (input.type) {
     case 'acceptContract': {
       const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload });
@@ -182,6 +232,12 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, ...(await buyInsurance(db, user.id, input.vehicleId)) };
     case 'buyVehicle':
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId)).id };
+    case 'leaseVehicle':
+      return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId, { lease: true })).id };
+    case 'payOffLease':
+      return { ok: true, amountCents: await payOffLease(db, user.id, input.leaseId) };
+    case 'payBonus':
+      return { ok: true, ...(await payBonus(db, user.id, input.bonus, await hashIp(db, await clientIp()))) };
     case 'buyTrailer':
       return { ok: true, id: (await buyTrailer(db, user.id, input.modelId, input.cityId)).id };
     case 'sellVehicle':
@@ -312,6 +368,36 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, result: await respondCompanyInvite(db, user.id, input.inviteId, input.accept) };
     case 'sendDirect':
       return { ok: true, id: await sendDirectMessage(db, user.id, input.userId, input.body) };
+    case 'offerJob':
+      return { ok: true, ...(await offerJob(db, user.id, input.offer)) };
+    case 'declineJob':
+      await declineJob(db, user.id, input.offerId);
+      return { ok: true };
+    case 'startProject':
+      await startProject(db, user.id, input.templateId);
+      return { ok: true };
+    case 'forHire':
+      await setForHire(db, user.id, input.on);
+      return { ok: true };
+    case 'helpOnRoad':
+      return { ok: true, ...(await helpOnRoad(db, user.id, input.deliveryId)) };
+    case 'chooseWeeklyGoal':
+      await chooseWeeklyGoal(db, user.id, input.difficulty);
+      return { ok: true };
+    case 'claimWeeklyGoal':
+      return { ok: true, ...(await claimWeeklyGoal(db, user.id, input.week)) };
+    case 'cheer':
+      return { ok: true, ...(await cheer(db, user.id, input.entryId)) };
+    case 'mentorOpen':
+      await setMentorOpen(db, user.id, input.on);
+      return { ok: true };
+    case 'chooseMentor':
+      return { ok: true, ...(await chooseMentor(db, user.id, input.mentorId, await hashIp(db, await clientIp()))) };
+    case 'endMentorship':
+      await endMentorship(db, user.id, input.id);
+      return { ok: true };
+    case 'sendMoney':
+      return { ok: true, ...(await sendMoney(db, user.id, input.transfer, await hashIp(db, await clientIp()))) };
     case 'unsendDirect':
       await unsendDirectMessage(db, user.id, input.messageId);
       return { ok: true };
@@ -345,6 +431,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'claimHalloweenQuest':
       return { ok: true, ...(await claimHalloweenQuest(db, user.id, input.questId)) };
+    case 'claimChristmasQuest':
+      return { ok: true, ...(await claimChristmasQuest(db, user.id, input.questId)) };
     case 'seasonalTheme':
       await setSeasonalTheme(db, user.id, input.on);
       return { ok: true };

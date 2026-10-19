@@ -5,6 +5,7 @@ import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { settleClientContracts } from './clients';
 import { ensureHalloweenEvent } from './halloween';
+import { ensureChristmasEvent } from './christmas';
 import { collectOverdueFines } from './fines';
 import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
@@ -16,6 +17,7 @@ import { autoUrgentTick } from './auto-urgent';
 import { settleTenders } from './tenders';
 import { dailyReminders } from './daily';
 import { ensureAutoEvent, settleDueEvents } from './events';
+import { expireMentorships } from './mentor';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
 import { pick, randInt } from './random';
@@ -23,6 +25,12 @@ import { activeSeason, rotateSeasons } from './seasons';
 import { applyDueRoadEvents } from './road-events';
 import { expireListings } from './used-market';
 import { settleLeagues } from './leagues';
+import { expireProjects } from './projects';
+import { ensureWeeklyBattles, settleBattles } from './battles';
+import { pruneFeed } from './feed';
+import { settleEcoWeek } from './eco';
+import { collectLeases } from './leasing';
+import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 
 /**
@@ -49,11 +57,53 @@ async function markRun(db: Database, key: string, at: number) {
   await db.insert(jobState).values({ key, value: { at } }).onConflictDoUpdate({ target: jobState.key, set: { value: { at }, updatedAt: new Date() } });
 }
 
+/** Last outcome of every worker job (admin "Система" page): when it ran, and the last error if it failed. */
+export interface JobHealth {
+  okAt: number | null;
+  errorAt: number | null;
+  error: string | null;
+  failures: number;
+}
+const HEALTH_PREFIX = 'health:';
+
+async function recordHealth(db: Database, key: string, error: unknown, at: number) {
+  const [row] = await db.select().from(jobState).where(eq(jobState.key, HEALTH_PREFIX + key));
+  const prev = (row?.value as JobHealth | undefined) ?? { okAt: null, errorAt: null, error: null, failures: 0 };
+  const value: JobHealth = error
+    ? { ...prev, errorAt: at, error: String((error as Error)?.stack ?? error).slice(0, 2000), failures: prev.failures + 1 }
+    : { ...prev, okAt: at, failures: 0 };
+  // Success is recorded at most once a minute per job (keeps writes low on a 15 s tick).
+  if (!error && prev.okAt && at - prev.okAt < 60_000 && !prev.failures) return;
+  await db.insert(jobState).values({ key: HEALTH_PREFIX + key, value }).onConflictDoUpdate({ target: jobState.key, set: { value, updatedAt: new Date(at) } });
+}
+
+/**
+ * Runs one job of the tick. A failing job is logged and recorded but never
+ * stops the others (one broken job used to stop everything after it,
+ * phone notifications included).
+ */
+export async function job(db: Database, key: string, now: Date, fn: () => Promise<unknown>) {
+  try {
+    await fn();
+    await recordHealth(db, key, null, now.getTime());
+  } catch (error) {
+    console.error(`[worker] ${key} failed`, error);
+    await recordHealth(db, key, error, now.getTime()).catch(() => undefined);
+  }
+}
+
 async function every(db: Database, key: string, intervalMs: number, now: Date, fn: (elapsedMs: number) => Promise<unknown>) {
   const last = await lastRun(db, key);
   if (now.getTime() - last < intervalMs) return;
-  await fn(last ? now.getTime() - last : intervalMs);
-  await markRun(db, key, now.getTime());
+  await job(db, key, now, async () => {
+    await fn(last ? now.getTime() - last : intervalMs);
+    await markRun(db, key, now.getTime());
+  });
+}
+
+export async function jobHealth(db: Database) {
+  const rows = await db.select().from(jobState).where(sql`${jobState.key} like ${HEALTH_PREFIX + '%'}`);
+  return rows.map((r) => ({ key: r.key.slice(HEALTH_PREFIX.length), ...(r.value as JobHealth) })).sort((a, b) => (b.errorAt ?? 0) - (a.errorAt ?? 0) || a.key.localeCompare(b.key));
 }
 
 export async function spawnMarketEvent(db: Database, now: Date) {
@@ -79,13 +129,16 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
   const { rows } = await db.execute<{ locked: boolean }>(sql`select pg_try_advisory_lock(424242) as locked`);
   if (!rows[0]?.locked) return { skipped: true };
   try {
-    await migrateToGameTime(db);
+    let settled = 0;
+    await job(db, 'game-time', now, () => migrateToGameTime(db));
     // Road events first: a jam or a breakdown can push an arrival past this tick.
-    await applyDueRoadEvents(db, now);
-    const settled = await settleDueDeliveries(db, now);
+    await job(db, 'road-events', now, () => applyDueRoadEvents(db, now));
+    await job(db, 'deliveries', now, async () => {
+      settled = await settleDueDeliveries(db, now);
+    });
     // Global events: settle finished ones (after the deliveries above), keep the automatic ones going.
-    await settleDueEvents(db, now);
-    await settleTenders(db, now);
+    await job(db, 'events-settle', now, () => settleDueEvents(db, now));
+    await job(db, 'tenders', now, () => settleTenders(db, now));
     await every(db, 'client-contracts', 60_000, now, () => settleClientContracts(db, now));
     await every(db, 'fines', 5 * 60_000, now, () => collectOverdueFines(db, now));
     await every(db, 'newspaper', 10 * 60_000, now, () => publishWeeklyNews(db, now));
@@ -96,6 +149,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     await every(db, 'global-events', 10 * 60_000, now, () => ensureAutoEvent(db, now));
     await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
+    await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));
+    await every(db, 'mentorships', 10 * 60_000, now, () => expireMentorships(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
@@ -104,23 +159,35 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'demand', 60 * 60_000, now, (elapsed) => recoverDemand(db, Math.min(48, elapsed / 3_600_000)));
     await every(db, 'events', 6 * 60 * 60_000, now, () => spawnMarketEvent(db, now));
     // Urgent shipments from the automatic dispatcher, at random intervals.
-    await autoUrgentTick(db, now, provider);
+    await job(db, 'auto-urgent', now, () => autoUrgentTick(db, now, provider));
     await every(db, 'seasons', 10 * 60_000, now, async () => {
       await activeSeason(db, now);
       await rotateSeasons(db, now);
     });
     // Payroll for the previous UTC day, once per day (idempotent per company/day).
-    const yesterday = new Date(now.getTime() - 86_400_000).toISOString().slice(0, 10);
-    const [payroll] = await db.select().from(jobState).where(eq(jobState.key, 'payroll'));
-    if ((payroll?.value as { day?: string } | undefined)?.day !== yesterday) {
+    await job(db, 'payroll', now, async () => {
+      const yesterday = new Date(now.getTime() - 86_400_000).toISOString().slice(0, 10);
+      const [payroll] = await db.select().from(jobState).where(eq(jobState.key, 'payroll'));
+      if ((payroll?.value as { day?: string } | undefined)?.day === yesterday) return;
       await runPayroll(db, yesterday);
       await db.insert(jobState).values({ key: 'payroll', value: { day: yesterday } }).onConflictDoUpdate({ target: jobState.key, set: { value: { day: yesterday }, updatedAt: now } });
-    }
-    // Push notifications for whatever happened above (in-game notifications and company chat).
-    await dispatchPush(db, now).catch((e) => console.error('[push] dispatch failed', e));
+    });
     await every(db, 'daily-reminders', 10 * 60_000, now, () => dailyReminders(db, now));
     await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
     await every(db, 'leagues', 10 * 60_000, now, () => settleLeagues(db, now));
+    await every(db, 'company-projects', 10 * 60_000, now, () => expireProjects(db, now));
+    // Features of an update that is not out yet stay off for players (see lib/game/features).
+    if (featureLive('eco', now)) await every(db, 'eco-week', 30 * 60_000, now, () => settleEcoWeek(db, now));
+    await every(db, 'feed-prune', 6 * 3_600_000, now, () => pruneFeed(db, now));
+    // Weekly lease instalments (and taking back trucks two instalments behind).
+    await every(db, 'leases', 10 * 60_000, now, () => collectLeases(db, now));
+    // Company battles: settle last week's, pair this week's.
+    await every(db, 'company-battles', 10 * 60_000, now, async () => {
+      await settleBattles(db, now);
+      if (featureLive('battles', now)) await ensureWeeklyBattles(db, now);
+    });
+    // Push notifications for whatever happened above (in-game notifications and company chat).
+    await job(db, 'push', now, () => dispatchPush(db, now));
     await every(db, 'push-prune', 24 * 60 * 60_000, now, () => pruneSubscriptions(db, now));
     await every(db, 'cleanup', 60 * 60_000, now, async () => {
       await db.delete(sessions).where(lte(sessions.expiresAt, now));

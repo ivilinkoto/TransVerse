@@ -1,4 +1,5 @@
 import { ArrowRight, Bell, BellOff, CalendarRange, Coins, Download, Gavel, Globe2, MapPinned, MessagesSquare, Route, ScrollText, ShieldCheck, Smartphone, Sparkles, Ticket, Trophy, Truck, UserPlus, Users } from 'lucide-react';
+import { DISCORD_URL } from '@/lib/community';
 import Link from 'next/link';
 import { Logo } from '@/components/brand/Logo';
 import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
@@ -36,7 +37,7 @@ export default async function HomePage() {
   const names = await countryNames([...new Set(routes.flatMap((r) => r.route?.countries ?? []))]).catch(() => new Map<string, string>());
   const now = world?.now ?? requestNow();
   const latest = world ? visibleReleases(now)[0] : undefined;
-  const livery = season === 'halloween' ? 'pumpkin' : undefined;
+  const livery = season === 'halloween' ? 'pumpkin' : season === 'christmas' ? 'christmas' : undefined;
 
   return (
     <div className="relative overflow-x-clip">
@@ -298,6 +299,7 @@ export default async function HomePage() {
               <li><Link href="/register" className="hover:text-white">Регистрация</Link></li>
               <li><Link href="/login" className="hover:text-white">Вход</Link></li>
               <li><Link href="/updates" className="hover:text-white">Обновления</Link></li>
+              <li><a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white"><MessagesSquare className="mr-1 inline h-3.5 w-3.5" />Discord сървър</a></li>
               <li><a href="#map" className="hover:text-white"><MapPinned className="mr-1 inline h-3.5 w-3.5" />Картата</a></li>
               <li><a href="#faq" className="hover:text-white">Въпроси и отговори</a></li>
               <li><Link href="/terms" className="hover:text-white">Общи условия</Link></li>
@@ -428,8 +430,8 @@ function PhoneMockup() {
           <p className="text-center text-xs text-mist-400">понеделник</p>
           <div className="mt-8 space-y-2">
             {[
-              { title: 'Камионът пристигна', body: 'СВ 4821 КТ достави плодове във Виена · +3 860 €' },
-              { title: 'Нова поръчка по любима линия', body: 'София → Букурещ · 18 т · 1 420 €' },
+              { title: 'Камионът пристигна', body: 'СВ 4821 КТ достави плодове във Виена · +3 860 лв.' },
+              { title: 'Нова поръчка по любима линия', body: 'София → Букурещ · 18 т · 1 420 лв.' },
               { title: 'Седмичник TransVerse', body: 'Излезе новият брой — виж шофьорите на седмицата.' },
             ].map((n) => (
               <div key={n.title} className="rounded-2xl border border-asphalt-700/80 bg-asphalt-850/90 p-2.5 backdrop-blur">

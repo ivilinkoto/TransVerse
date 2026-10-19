@@ -4,12 +4,17 @@ import polyline from '@mapbox/polyline';
 import * as maplibregl from 'maplibre-gl';
 import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { int } from '@/lib/format';
+import { duration, int, money } from '@/lib/format';
 import { cumulativeKm, greatCircle, headingWest, pointAlong, type LatLon } from '@/lib/geo/geometry';
-import { stateAt, type Segment } from '@/lib/game/schedule';
+import { scheduleEnd, stateAt, type Segment } from '@/lib/game/schedule';
 import type { WorldSnapshot, WorldTruck } from '@/server/game/world-map';
 import { PlayerName } from './PlayerName';
+import { CONVOY_RULES } from '@/lib/game/convoy';
+import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { useFeature } from './Features';
 
 export interface MapLeg {
   geometry: string | null;
@@ -148,18 +153,30 @@ function truckPoint(t: WorldTruck, routes: WorldSnapshot['routes'], now: number)
   return { point: pointAlong(line, f, cum), moving: s.segment?.kind === 'drive', west: headingWest(line, f, cum) };
 }
 
-function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number): GeoJSON.FeatureCollection {
+/** Which other players' trucks are drawn: everyone, only friends and the company, or none. */
+type PlayersMode = 'all' | 'circle' | 'none';
+const RELATION_COLOR = { friend: '#ff6bcb', company: '#a66bff' } as const;
+
+function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number, mode: PlayersMode): GeoJSON.FeatureCollection {
+  if (mode === 'none') return { type: 'FeatureCollection', features: [] };
   return {
     type: 'FeatureCollection',
     features: world.trucks
-      .filter((t) => !ownIds.has(t.id))
+      .filter((t) => !ownIds.has(t.id) && (mode === 'all' || t.relation))
       .map((t) => {
         const { point, moving, west } = truckPoint(t, world.routes, now);
         const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
         const fill = t.color && HEX.test(t.color) ? t.color : '#e8eef7';
-        return { type: 'Feature', properties: { id: t.id, label, icon: truckIcon(fill, t.vip ? '#d4af37' : t.online ? '#34d399' : '#ef4444', t.vip, west), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+        return { type: 'Feature', properties: { id: t.id, label, rel: t.relation ?? '', icon: truckIcon(fill, t.vip ? '#d4af37' : t.online ? '#34d399' : '#ef4444', t.vip, west), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
       }),
   };
+}
+
+/** "→ Виена · 1 ч 20 мин" or "в София". */
+function truckStatus(t: WorldTruck, now: number): string {
+  if (!t.delivery) return `в ${t.city}`;
+  const left = Math.max(0, Math.round((scheduleEnd(t.delivery.schedule) - now) / 60_000));
+  return left > 0 ? `→ ${t.delivery.destination} · ${duration(left)}` : `пристига в ${t.delivery.destination}`;
 }
 
 function routeFeatures(vehicles: MapVehicle[], preview: MapProps['preview']): GeoJSON.FeatureCollection {
@@ -184,8 +201,15 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   const [city, setCity] = useState<CityDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [world, setWorld] = useState<WorldSnapshot | null>(null);
-  const [showPlayers, setShowPlayers] = useState(true);
-  const [picked, setPicked] = useState<WorldTruck | null>(null);
+  const [mode, setMode] = useState<PlayersMode>('all');
+  // The list starts folded on phones, where it would cover the map.
+  const [circleOpen, setCircleOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
+  const [clock, setClock] = useState(0);
+  const circleLive = useFeature('map_circle');
+  const roadsideLive = useFeature('roadside');
+  // The picked truck by id, so its card follows fresh data (e.g. after help on the road).
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const picked = (pickedId && world?.trucks.find((t) => t.id === pickedId)) || null;
   const worldRef = useRef<WorldSnapshot | null>(null);
   // Latest props for the one-time initialisation (data updates are applied by effects below).
   const initial = useRef({ center, preview });
@@ -251,12 +275,23 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       map.addLayer({ id: 'vehicles-label', type: 'symbol', source: 'vehicles', layout: { 'text-field': ['get', 'plate'], 'text-size': 11, 'text-offset': [0, -1.9], 'text-font': ['Noto Sans Regular'] }, paint: { 'text-color': '#22d3ee', 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } });
 
       map.addSource('players', { type: 'geojson', data: empty });
+      // Friends and company members: a coloured halo and a name visible from far away.
+      map.addLayer({ id: 'players-circle', type: 'circle', source: 'players', filter: ['!=', ['get', 'rel'], ''], paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 14, 9, 19],
+        'circle-color': ['match', ['get', 'rel'], 'friend', RELATION_COLOR.friend, RELATION_COLOR.company],
+        'circle-opacity': 0.35,
+        'circle-stroke-color': ['match', ['get', 'rel'], 'friend', RELATION_COLOR.friend, RELATION_COLOR.company],
+        'circle-stroke-width': 2.5,
+      } }, 'vehicles-halo');
       map.addLayer({ id: 'players', type: 'symbol', source: 'players', layout: {
         'icon-image': ['get', 'icon'],
         'icon-size': ['interpolate', ['linear'], ['zoom'], 4, 0.75, 9, 1.05],
         'icon-allow-overlap': true,
+        // Friends and company members are drawn above everyone else.
+        'symbol-sort-key': ['case', ['==', ['get', 'rel'], ''], 0, 1],
       }, paint: { 'icon-opacity': ['case', ['get', 'moving'], 1, 0.75] } }, 'vehicles-halo');
-      map.addLayer({ id: 'players-label', type: 'symbol', source: 'players', minzoom: 6.5, layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.5], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#e8eef7', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'vehicles-halo');
+      map.addLayer({ id: 'players-label', type: 'symbol', source: 'players', minzoom: 6.5, filter: ['==', ['get', 'rel'], ''], layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.5], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#e8eef7', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'vehicles-halo');
+      map.addLayer({ id: 'players-circle-label', type: 'symbol', source: 'players', filter: ['!=', ['get', 'rel'], ''], layout: { 'text-field': ['get', 'label'], 'text-size': 11, 'text-offset': [0, -1.7], 'text-font': ['Noto Sans Regular'], 'text-allow-overlap': true }, paint: { 'text-color': ['match', ['get', 'rel'], 'friend', RELATION_COLOR.friend, RELATION_COLOR.company], 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } }, 'vehicles-halo');
 
       const p = initial.current.preview;
       if (p) {
@@ -275,7 +310,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       const truck = worldRef.current?.trucks.find((t) => t.id === id);
       if (truck) {
         setCity(null);
-        setPicked(truck);
+        setPickedId(truck.id);
       }
     });
     map.on('mouseenter', 'cities-dot', () => (map.getCanvas().style.cursor = 'pointer'));
@@ -285,7 +320,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       if (!id) return;
       const res = await fetch(`/api/geo/city/${id}`);
       if (res.ok) {
-        setPicked(null);
+        setPickedId(null);
         setCity((await res.json()) as CityDetails);
       }
     });
@@ -336,12 +371,26 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     const ownIds = new Set(vehicles.map((v) => v.id));
     const tick = () => {
       const src = mapRef.current?.getSource('players') as GeoJSONSource | undefined;
-      src?.setData(world && showPlayers ? playerFeatures(world, ownIds, Date.now()) : { type: 'FeatureCollection', features: [] });
+      const now = Date.now();
+      src?.setData(world ? playerFeatures(world, ownIds, now, mode) : { type: 'FeatureCollection', features: [] });
+      setClock(now);
     };
     tick();
     const id = setInterval(tick, 2000);
     return () => clearInterval(id);
-  }, [ready, world, showPlayers, vehicles]);
+  }, [ready, world, mode, vehicles]);
+
+  /** Centres the map on a friend's truck and opens its card. */
+  const follow = (t: WorldTruck) => {
+    const { point } = truckPoint(t, worldRef.current?.routes ?? {}, clock);
+    mapRef.current?.flyTo({ center: toLngLat(point), zoom: Math.max(mapRef.current.getZoom(), 7.5), duration: 900 });
+    setCity(null);
+    setPickedId(t.id);
+    if (window.innerWidth < 640) setCircleOpen(false);
+  };
+  const circle = (world?.trucks ?? [])
+    .filter((t) => t.relation)
+    .sort((a, b) => Number(!!b.delivery) - Number(!!a.delivery) || Number(b.online) - Number(a.online) || a.player.localeCompare(b.player));
 
   // Animate vehicle positions from their schedules.
   useEffect(() => {
@@ -372,11 +421,12 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-cyan-glow" />С товар</span>
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 border-t-2 border-dotted border-mist-400" />Празен курс</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-prestige" />Депо</span>
-        <label className="flex cursor-pointer items-center gap-1.5">
-          <input type="checkbox" checked={showPlayers} onChange={(e) => setShowPlayers(e.target.checked)} className="accent-[var(--color-gold-400)]" />
+        <span className="flex items-center gap-1.5">
           <TruckGlyph ring="#ef4444" />
           Други играчи{world ? ` (${world.players}, ${world.online} в играта)` : ''}
-        </label>
+        </span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: RELATION_COLOR.friend, background: `${RELATION_COLOR.friend}55` }} />Приятели</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: RELATION_COLOR.company, background: `${RELATION_COLOR.company}55` }} />Компанията</span>
         <span className="flex items-center gap-1.5">
           <TruckGlyph ring="#34d399" />в играта сега
         </span>
@@ -384,19 +434,41 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
           <TruckGlyph ring="#d4af37" />VIP
         </span>
       </div>
-      {picked && (
-        <aside className="absolute right-3 top-14 w-[min(300px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Играч">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="font-display text-lg font-bold"><PlayerName name={picked.player} role={picked.role} vip={picked.vip} /></div>
-              <div className="text-xs text-mist-400">{picked.company ? `${picked.tag ? `[${picked.tag}] ` : ''}${picked.company}` : 'Самостоятелен шофьор'}</div>
-            </div>
-            <button className="text-mist-400 hover:text-white" onClick={() => setPicked(null)} aria-label="Затвори">✕</button>
-          </div>
-          <p className="mt-3 text-sm">{picked.delivery ? `На курс към ${picked.delivery.destination}` : `Паркиран в ${picked.city}`}</p>
-          <p className={`mt-1 text-xs ${picked.online ? 'text-profit' : 'text-mist-400'}`}>{picked.online ? '● В играта сега' : '○ Не е в играта в момента'}</p>
-        </aside>
-      )}
+      <div className="absolute left-3 top-3 flex max-h-[calc(100%-120px)] w-[min(280px,calc(100%-70px))] flex-col gap-2">
+        {circleLive && <div role="radiogroup" aria-label="Кои играчи да се виждат" className="flex rounded-full border border-asphalt-700 bg-asphalt-950/85 p-0.5 text-[11px] backdrop-blur">
+          {([['all', 'Всички'], ['circle', 'Моите хора'], ['none', 'Само аз']] as const).map(([id, label]) => (
+            <button key={id} type="button" role="radio" aria-checked={mode === id} title={id === 'circle' ? 'Приятели и компания' : undefined} onClick={() => setMode(id)} className={`flex-1 whitespace-nowrap rounded-full px-2 py-1 transition ${mode === id ? 'bg-volt-500 text-white' : 'text-mist-300 hover:text-white'}`}>{label}</button>
+          ))}
+        </div>}
+        {world && mode !== 'none' && circleLive && (
+          <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-asphalt-700 bg-asphalt-950/90 text-sm backdrop-blur" aria-label="Заедно на пътя">
+            <button type="button" onClick={() => setCircleOpen((v) => !v)} aria-expanded={circleOpen} className="flex items-center justify-between gap-2 px-3 py-2 font-semibold">
+              <span className="flex items-center gap-2"><Users className="h-4 w-4 text-prestige" />Заедно на пътя</span>
+              <span className="num text-xs text-mist-400">{circle.length} {circleOpen ? '▴' : '▾'}</span>
+            </button>
+            {circleOpen && (
+              circle.length ? (
+                <ul className="min-h-0 overflow-y-auto border-t border-asphalt-800 py-1">
+                  {circle.map((t) => (
+                    <li key={t.id}>
+                      <button type="button" onClick={() => follow(t)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-asphalt-800">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: RELATION_COLOR[t.relation!] }} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-medium">{t.player}{t.online && <span className="ml-1 text-profit">●</span>}</span>
+                          <span className="block truncate text-[11px] text-mist-400">{roadsideLive && t.delivery?.deliveryId && clock && helpableStop(t.delivery.schedule, clock) ? <span className="font-semibold text-amber-sig">Чака помощ на пътя</span> : truckStatus(t, clock || 0)}</span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="border-t border-asphalt-800 px-3 py-2 text-xs text-mist-400">Тук ще виждаш камионите на приятелите си и на компанията. Добави приятели от профила им или с търсачката горе.</p>
+              )
+            )}
+          </section>
+        )}
+      </div>
+      {picked && <TruckCard truck={picked} now={clock} onClose={() => setPickedId(null)} />}
       {city && (
         <aside className="absolute right-3 top-14 w-[min(320px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur">
           <div className="flex items-start justify-between gap-2">
@@ -429,6 +501,54 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         </aside>
       )}
     </div>
+  );
+}
+
+const SEGMENT_LABEL: Record<string, string> = { drive: 'Кара', break: 'Почивка (45 мин)', rest: 'Дневна почивка', border: 'На границата', loading: 'Товари', unloading: 'Разтоварва', incident: 'Спрял по пътя' };
+
+/** Quick look at another player's truck: lane, load (friends and company), progress, arrival; drive in convoy. */
+function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number; onClose: () => void }) {
+  const d = t.delivery;
+  const s = d && now ? stateAt(d.schedule, now) : null;
+  const left = d && now ? Math.max(0, Math.round((scheduleEnd(d.schedule) - now) / 60_000)) : 0;
+  const roadside = useFeature('roadside');
+  const convoy = useFeature('convoy');
+  const convoyOpen = !!(convoy && d && t.relation && now && now - new Date(d.startedAt).getTime() < CONVOY_RULES.windowMs && !s?.done);
+  return (
+    <aside className="absolute right-3 top-14 z-10 w-[min(310px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Камион на играч">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-display text-lg font-bold"><PlayerName name={t.player} role={t.role} vip={t.vip} /></div>
+          <div className="truncate text-xs text-mist-400">{t.company ? `${t.tag ? `[${t.tag}] ` : ''}${t.company}` : 'Самостоятелен шофьор'}</div>
+          {t.relation && <div className="mt-1 text-xs font-semibold" style={{ color: RELATION_COLOR[t.relation] }}>{t.relation === 'friend' ? 'Приятел' : 'От твоята компания'}</div>}
+        </div>
+        <button className="text-mist-400 hover:text-white" onClick={onClose} aria-label="Затвори">✕</button>
+      </div>
+      {d ? (
+        <div className="mt-3 space-y-2">
+          <div className="font-semibold">{d.origin} → {d.destination}</div>
+          {d.cargo && <div className="text-xs text-mist-300">{d.cargo.goods} · {int(Math.round(d.cargo.tons))} т</div>}
+          <div className="h-1.5 overflow-hidden rounded-full bg-asphalt-800"><div className="h-full rounded-full bg-gradient-to-r from-cyan-glow to-volt-500" style={{ width: `${Math.round((s?.progress ?? 0) * 100)}%` }} /></div>
+          <div className="flex justify-between text-xs text-mist-400">
+            <span>{s?.done ? 'Пристига' : s?.segment ? `${s.leg === 'empty' ? 'Към товара · ' : ''}${SEGMENT_LABEL[s.segment.kind] ?? ''}` : ''}</span>
+            <span>{left > 0 ? `пристига след ${duration(left)}` : 'пристига сега'}</span>
+          </div>
+          {roadside && d.deliveryId && now && helpableStop(d.schedule, now) && (
+            <div className="rounded-xl border border-amber-sig/40 bg-amber-sig/10 p-2.5">
+              <p className="text-xs text-amber-sig">Камионът стои: {helpableStop(d.schedule, now)!.note}. Ако имаш камион до {ROADSIDE.radiusKm} км, помогни — оставащият престой пада наполовина, а ти получаваш хонорар {money(ROADSIDE.feeCents)}</p>
+              <ActionButton action={{ type: 'helpOnRoad', deliveryId: d.deliveryId }} onDone={() => window.dispatchEvent(new Event('tv:world'))} className="btn-primary mt-2 w-full justify-center text-xs">Помогни на пътя</ActionButton>
+            </div>
+          )}
+          {convoyOpen && (
+            <a href={`/game/contracts?lane=${d.originCityId}-${d.destCityId}`} className="btn-primary mt-1 w-full justify-center text-xs">Тръгни в конвой · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</a>
+          )}
+          {convoy && t.relation && !convoyOpen && !s?.done && <p className="text-[11px] text-mist-400">Конвой може до {Math.round(CONVOY_RULES.windowMs / 60_000)} мин след тръгването.</p>}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm">Паркиран в {t.city}</p>
+      )}
+      <p className={`mt-2 text-xs ${t.online ? 'text-profit' : 'text-mist-400'}`}>{t.online ? '● В играта сега' : '○ Не е в играта в момента'}</p>
+    </aside>
   );
 }
 

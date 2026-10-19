@@ -210,7 +210,7 @@ export function DepositForm() {
     <form onSubmit={submit} className="space-y-2">
       <label className="block text-sm font-medium text-mist-300" htmlFor="deposit">Внеси от личните си пари</label>
       <div className="flex gap-2">
-        <input id="deposit" name="deposit" type="number" min={1} step={1} inputMode="numeric" className="input min-w-0 flex-1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Сума в €" required />
+        <input id="deposit" name="deposit" type="number" min={1} step={1} inputMode="numeric" className="input min-w-0 flex-1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Сума в лв." required />
         <button className="btn-gold" disabled={busy || !amount}>{busy ? '…' : 'Внеси'}</button>
       </div>
       <Feedback error={error} saved={saved} okText="Внесено в касата." />

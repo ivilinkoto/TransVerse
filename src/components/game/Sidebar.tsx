@@ -1,6 +1,8 @@
 'use client';
 
-import { Gem, LogOut, MoreHorizontal, ShieldCheck, X } from 'lucide-react';
+import { useFeature } from './Features';
+import { Gem, LogOut, MessagesSquare, MoreHorizontal, ShieldCheck, X } from 'lucide-react';
+import { DISCORD_URL } from '@/lib/community';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -96,9 +98,10 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
 }
 
 /** Phone and tablet navigation: a bottom bar with the four main sections and "Още" for everything else. */
-export function MobileNav({ badges, staff, holiday = null }: { badges: NavBadges; staff: boolean; holiday?: string | null }) {
+export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { badges: NavBadges; staff: boolean; holiday?: string | null; attention?: number }) {
   const pathname = usePathname();
   const router = useRouter();
+  const mentor = useFeature('mentor');
   const [open, setOpen] = useState(false);
   const current = sectionFor(pathname);
   const main = SECTIONS.filter((s) => ['home', 'jobs', 'map', 'fleet'].includes(s.key));
@@ -137,8 +140,9 @@ export function MobileNav({ badges, staff, holiday = null }: { badges: NavBadges
               </Link>
             );
           })}
-          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Още" className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
-            {(badges.missions > 0 || badges.eventLive) && !open && <span className="absolute right-[calc(50%-14px)] top-2 h-2 w-2 rounded-full bg-gold-400" aria-hidden="true" />}
+          <button type="button" onClick={() => { if (!open) window.dispatchEvent(new Event('tv:chat-close')); setOpen((o) => !o); }} aria-expanded={open} aria-label="Още" className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
+            {(badges.missions > 0 || badges.eventLive) && !open && attention === 0 && <span className="absolute right-[calc(50%-14px)] top-2 h-2 w-2 rounded-full bg-gold-400" aria-hidden="true" />}
+            {staff && attention > 0 && !open && <span className="absolute right-[calc(50%-14px)] top-2 h-2.5 w-2.5 rounded-full bg-loss" aria-hidden="true" />}
             {open ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}
             Още
           </button>
@@ -167,14 +171,15 @@ export function MobileNav({ badges, staff, holiday = null }: { badges: NavBadges
             <section>
               <h2 className="label mb-2">Профил</h2>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {ACCOUNT_MENU.map((item) => (
+                {ACCOUNT_MENU.filter((item) => mentor || item.href !== '/game/mentor').map((item) => (
                   <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`${tile} ${pathname.startsWith(item.href) ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
                     <item.icon className={`h-5 w-5 ${item.href === '/game/shop' ? 'text-gold-400' : 'text-mist-400'}`} />
                     {item.label}
                   </Link>
                 ))}
+                <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className={tile}><MessagesSquare className="h-5 w-5 text-mist-400" />Discord</a>
                 {staff && (
-                  <Link href="/admin" onClick={() => setOpen(false)} className={`${tile} text-prestige`}><ShieldCheck className="h-5 w-5" />Админ панел</Link>
+                  <Link href="/admin" onClick={() => setOpen(false)} className={`${tile} relative text-prestige`}><ShieldCheck className="h-5 w-5" />Админ панел{attention > 0 && <span className="num absolute right-1.5 top-1.5 rounded-full bg-loss px-1.5 text-[11px] font-bold leading-5 text-white">{attention}</span>}</Link>
                 )}
                 <button type="button" onClick={logout} className={`${tile} text-mist-400`}><LogOut className="h-5 w-5" />Изход</button>
               </div>

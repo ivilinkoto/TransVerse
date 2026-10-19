@@ -14,7 +14,7 @@ export const urgentSchema = z.object({
   goods: z.string().trim().min(2, 'Въведете име на товара.').max(60, 'Най-много 60 символа.'),
   cargoType: z.enum(CARGO_TYPES as unknown as [CargoType, ...CargoType[]]),
   weightTons: z.coerce.number().min(0.1, 'Минимум 0,1 т.').max(40, 'Най-много 40 т.'),
-  rewardEur: z.coerce.number().min(1, 'Цената е поне 1 €.').max(1_000_000, 'Твърде висока цена.'),
+  rewardEur: z.coerce.number().min(1, 'Цената е поне 1 лв.').max(1_000_000, 'Твърде висока цена.'),
   originCityId: z.coerce.number().int().positive(),
   destCityId: z.coerce.number().int().positive(),
   /** Deadline for delivery, counted from acceptance. */
@@ -106,7 +106,7 @@ export async function insertUrgent(tx: Tx, v: UrgentValues, names: { from: strin
   if (announce !== 'none') {
     // One notification per player, in a single statement.
     const title = `Спешна доставка: ${v.goods}`;
-    const body = `${names.from} → ${names.to} · ${(v.rewardCents / 100).toLocaleString('bg-BG')} € · ×${v.speedFactor} по-бързо, до товара за 1 мин. Може да я поеме всеки със свободен камион, докато не изтече.`;
+    const body = `${names.from} → ${names.to} · ${(v.rewardCents / 100).toLocaleString('bg-BG')} лв. · ×${v.speedFactor} по-бързо, до товара за 1 мин. Може да я поеме всеки със свободен камион, докато не изтече.`;
     const active = announce === 'active' ? sql`and ${users.lastSeenAt} > now() - interval '3 days'` : sql``;
     await tx.execute(sql`insert into ${notifications} (user_id, kind, title, body, href) select ${users.id}, 'warning', ${title}, ${body}, '/game/contracts' from ${users} where ${users.bannedAt} is null ${active}`);
   }
@@ -118,8 +118,8 @@ export async function urgentContracts(db: DbOrTx, limit = 30) {
   const rows = await db
     .select({
       contract: contracts,
-      takers: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts.id})`,
-      delivered: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts.id} and d.status = 'completed')`,
+      takers: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts}.id)`,
+      delivered: sql<number>`(select count(*)::int from deliveries d where d.contract_id = ${contracts}.id and d.status = 'completed')`,
     })
     .from(contracts)
     .where(eq(contracts.urgent, true))

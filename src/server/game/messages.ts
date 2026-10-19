@@ -1,11 +1,13 @@
 import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
+import { featureFor } from '@/server/features';
 import { z } from 'zod';
 import { isStaff } from '@/server/auth/roles';
 import { rateLimit } from '@/server/auth/rate-limit';
 import { CHANNELS, MESSAGE_MAX, isOnline, lastSeenLabel, type Channel } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { chatMessages, directMessages, users } from '@/server/db/schema';
+import { chatMessages, directMessages, userBlocks, users } from '@/server/db/schema';
+import { extractMentions } from '@/lib/game/mentions';
 import { fail } from './errors';
 import { assertNotBlocked, assertNotMuted } from './moderation';
 import { notify } from './notify';
@@ -46,6 +48,7 @@ export async function postToChannel(db: Database, userId: string, channel: Chann
   await rateLimit(db, `channel:${channel}:${userId}`, CHANNELS[channel].perMinute, 60);
   return db.transaction(async (tx) => {
     const [row] = await tx.insert(chatMessages).values({ channel, userId, body }).returning({ id: chatMessages.id });
+    await notifyMentions(tx, userId, body, { tab: channel, where: CHANNELS[channel].label });
     await ping(tx, { type: 'channel', channel });
     return row!.id;
   });
@@ -60,6 +63,27 @@ export async function deleteChannelMessage(db: Database, userId: string, role: s
     await tx.update(chatMessages).set({ deletedAt: new Date(), deletedBy: userId }).where(eq(chatMessages.id, messageId));
     await ping(tx, { type: 'channel', channel: m!.channel });
   });
+}
+
+// ── Mentions ──────────────────────────────────────────────────────────────
+
+/**
+ * Tells the players mentioned with @name in a chat message. Not the author,
+ * not banned players, not who blocked the author; in the company chat only
+ * members (`members`). At most MENTION_MAX per message.
+ */
+export async function notifyMentions(tx: Tx, authorId: string, body: string, where: { tab: string; where: string; members?: string[] }) {
+  const names = extractMentions(body);
+  if (!names.length || !(await featureFor(tx, authorId, 'chat_extras'))) return [];
+  const rows = await tx
+    .select({ id: users.id, username: users.username })
+    .from(users)
+    .where(and(inArray(sql`lower(${users.username})`, names), isNull(users.bannedAt), sql`${users.id} <> ${authorId}`, sql`not exists (select 1 from ${userBlocks} b where b.blocker_id = ${users}.id and b.blocked_id = ${authorId})`));
+  const targets = where.members ? rows.filter((r) => where.members!.includes(r.id)) : rows;
+  if (!targets.length) return [];
+  const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, authorId));
+  for (const t of targets) await notify(tx, t.id, 'info', `${me!.username} те спомена в чата`, `${where.where}: ${body.slice(0, 140)}`, `/game?chat=${encodeURIComponent(where.tab)}`);
+  return targets.map((t) => t.username);
 }
 
 // ── Private messages ──────────────────────────────────────────────────────

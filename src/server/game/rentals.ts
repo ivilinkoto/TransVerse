@@ -34,7 +34,7 @@ async function seatOwner(tx: Tx, companyId: string, ownerDriverId: string, prefe
   const candidates = await tx
     .select({ id: vehicles.id })
     .from(vehicles)
-    .where(and(eq(vehicles.companyId, companyId), eq(vehicles.ownership, 'owned'), isNull(vehicles.soldAt), sql`not exists (select 1 from drivers d where d.vehicle_id = ${vehicles.id})`))
+    .where(and(eq(vehicles.companyId, companyId), eq(vehicles.ownership, 'owned'), isNull(vehicles.soldAt), sql`not exists (select 1 from drivers d where d.vehicle_id = ${vehicles}.id)`))
     .orderBy(desc(vehicles.purchasedAt));
   const target = candidates.find((c) => c.id === preferredVehicleId) ?? candidates[0];
   if (target) await tx.update(drivers).set({ vehicleId: target.id }).where(eq(drivers.id, ownerDriverId));
@@ -79,7 +79,7 @@ export async function afterRentedTrip(tx: Tx, vehicleId: string, ownerUserId: st
   }
   if ((await deliveriesWith(tx, v.id)) === RENTAL_BUYOUT_DELIVERIES) {
     const price = rentalBuyoutCents(v.modelId);
-    await notify(tx, ownerUserId, 'success', 'Можеш да откупиш наетия камион', `След ${RENTAL_BUYOUT_DELIVERIES} доставки наемодателят ти предлага ${powerUnitModel(v.modelId).name} (${v.plate}) за ${(price / 100).toLocaleString('bg-BG')} € — наполовина от цената на нов.`, '/game/fleet');
+    await notify(tx, ownerUserId, 'success', 'Можеш да откупиш наетия камион', `След ${RENTAL_BUYOUT_DELIVERIES} доставки наемодателят ти предлага ${powerUnitModel(v.modelId).name} (${v.plate}) за ${(price / 100).toLocaleString('bg-BG')} лв. — наполовина от цената на нов.`, '/game/fleet');
   }
 }
 

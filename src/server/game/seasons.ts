@@ -105,7 +105,7 @@ async function closeOrganizationSeason(tx: Tx, season: typeof seasons.$inferSele
     if (prize) await postTreasury(tx, org.id, [{ category: 'season_prize', amountCents: prize, description: `${season.name}: ${i + 1}. място`, idempotencyKey: `season:${season.id}:company-prize:${org.id}` }]);
     const members = await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, org.id));
     for (const m of members) {
-      await notify(tx, m.userId, 'achievement', `${season.name}: „${org.name}“ е ${i + 1}.`, prize ? `Компанията спечели ${(prize / 100).toLocaleString('bg-BG')} € за касата.` : `Компанията събра ${row.points} сезонни точки.`, '/game/seasons?tab=companies');
+      await notify(tx, m.userId, 'achievement', `${season.name}: „${org.name}“ е ${i + 1}.`, prize ? `Компанията спечели ${(prize / 100).toLocaleString('bg-BG')} лв. за касата.` : `Компанията събра ${row.points} сезонни точки.`, '/game/seasons?tab=companies');
     }
   }
 }

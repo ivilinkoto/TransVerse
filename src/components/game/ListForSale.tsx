@@ -39,7 +39,7 @@ export function ListForSale({ kind, itemId, bounds, feeShare, small = false, dis
   return (
     <div className="w-full space-y-2 rounded-xl border border-cyan-glow/30 bg-cyan-glow/5 p-3 text-sm">
       <label className="block">
-        <span className="label">Цена за другите играчи (€)</span>
+        <span className="label">Цена за другите играчи (лв.)</span>
         <input type="number" inputMode="numeric" className="input mt-1" min={bounds.min / 100} max={bounds.max / 100} step={100} value={Number.isFinite(eur) ? eur : ''} onChange={(e) => setEur(Math.round(Number(e.target.value)))} />
       </label>
       <p className="text-xs text-mist-400">

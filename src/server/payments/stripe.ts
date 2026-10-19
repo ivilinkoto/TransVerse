@@ -1,5 +1,5 @@
 /**
- * Stripe Checkout (kept ready for when the site has its own domain and HTTPS).
+ * Stripe Checkout (needs the site on HTTPS for the webhook).
  * Stripe calls our webhook (signed) and the return page also asks Stripe
  * directly; delivery goes through the shared, exactly-once code.
  */
@@ -57,6 +57,8 @@ export async function createCheckout(db: Database, userId: string, raw: Checkout
           },
         ],
         ...(tax ? { automatic_tax: { enabled: true } } : {}),
+        // We sell as the merchant (as with PayPal), not through Stripe's Managed Payments, which is on by default for new accounts.
+        managed_payments: { enabled: false },
         expires_at: Math.floor(now.getTime() / 1000) + 60 * 60,
         success_url: `${base}/game/shop/payment?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/game/shop?payment=cancelled`,

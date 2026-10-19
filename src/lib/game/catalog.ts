@@ -95,7 +95,7 @@ export const TRAILERS: TrailerModel[] = [
   { id: 'drawbar-reefer', kind: 'drawbar', body: 'reefer', brand: 'Struma Trailers', name: 'Прикачно хладилно ремарке 7.7 м', priceCents: 36_000_00, payloadTons: 9, axles: 2, requiresHeavyHaul: false, minLevel: 3, dragFuel: 2.5 },
 ];
 
-export type UpgradeId = 'eco_tune' | 'aero_kit' | 'premium_tyres' | 'comfort_cab';
+export type UpgradeId = 'eco_tune' | 'aero_kit' | 'premium_tyres' | 'winter_tyres' | 'comfort_cab';
 
 export interface UpgradeDefinition {
   id: UpgradeId;
@@ -113,6 +113,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDefinition> = {
   eco_tune: { id: 'eco_tune', label: 'Еко настройка на двигателя', description: '−8 % разход на гориво', priceCents: 3_800_00, fuel: 0.92, wear: 1, xp: 1, appliesTo: ['van', 'rigid', 'tractor'] },
   aero_kit: { id: 'aero_kit', label: 'Аеродинамичен пакет', description: '−5 % разход на гориво', priceCents: 4_500_00, fuel: 0.95, wear: 1, xp: 1, appliesTo: ['rigid', 'tractor'] },
   premium_tyres: { id: 'premium_tyres', label: 'Премиум гуми', description: '−25 % износване', priceCents: 2_900_00, fuel: 1, wear: 0.75, xp: 1, appliesTo: ['van', 'rigid', 'tractor'] },
+  winter_tyres: { id: 'winter_tyres', label: 'Зимни гуми', description: 'Наполовина по-малък шанс и забавяне от сняг, лед и затворени проходи', priceCents: 1_800_00, fuel: 1, wear: 1, xp: 1, appliesTo: ['van', 'rigid', 'tractor'] },
   comfort_cab: { id: 'comfort_cab', label: 'Комфортна кабина', description: '+10 % опит от доставки', priceCents: 5_200_00, fuel: 1, wear: 1, xp: 1.1, appliesTo: ['rigid', 'tractor'] },
 };
 
@@ -181,7 +182,7 @@ export const STARTER_RENTAL = 'rent-rigid';
 
 /** After this many deliveries with a rented truck the player may buy it out. */
 export const RENTAL_BUYOUT_DELIVERIES = 5;
-/** Buy-out price as a share of the new price (rounded to 100 €). */
+/** Buy-out price as a share of the new price (rounded to 100 лв.). */
 export const RENTAL_BUYOUT_SHARE = 0.5;
 
 export function rentalBuyoutCents(unitId: string, trailerId?: string | null): number {

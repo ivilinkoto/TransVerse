@@ -28,7 +28,7 @@ export default async function StaffPage() {
     <div className="space-y-6">
       <PageHeader
         title="Шофьори"
-        subtitle={`Наети шофьори, които карат вместо теб. Дневни заплати: ${money(payroll)}.`}
+        subtitle={`Наети шофьори, които карат вместо теб. Дневни заплати: ${money(payroll)}`}
         help={`Шофьорът може да кара 9 часа преди дневна почивка. Часовете от последния курс се пренасят: ако го пратиш веднага пак, ще спре за почивка по-рано и курсът ще е по-дълъг. След ${CREW_RULES.restGameMin} минути престой е отпочинал. Двоен екипаж (втори шофьор в същия камион) кара до 18 часа без почивки — дългите курсове стават много по-бързи. С всяко ниво на умение шофьорът получава точка за Икономичност, Безопасност или Издръжливост.`}
       />
       {!user.seenHints.includes('crew') && <Hint id="crew" />}
@@ -110,7 +110,7 @@ export default async function StaffPage() {
 
                   {!d.isOwner && (
                     <div className="mt-3 border-t border-asphalt-700 pt-3 text-right">
-                      <ActionButton action={{ type: 'fireDriver', driverId: d.id }} className="btn-danger px-3 py-1.5 text-xs" confirm={`Обезщетение ${money(d.salaryCentsPerDay * 3)}. Освобождаване?`} disabled={!!onTrip}>Освободи</ActionButton>
+                      <ActionButton action={{ type: 'fireDriver', driverId: d.id }} className="btn-danger px-3 py-1.5 text-xs" confirm={`Обезщетение ${money(d.salaryCentsPerDay * 3)} Освобождаване?`} disabled={!!onTrip}>Освободи</ActionButton>
                     </div>
                   )}
                 </li>

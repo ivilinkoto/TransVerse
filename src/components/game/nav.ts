@@ -1,10 +1,10 @@
-import { BookOpen, Building2, ClipboardList, Gem, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { BookOpen, Building2, ClipboardList, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
   label: string;
   /** Shown only while this holiday's content runs. */
-  holiday?: 'halloween';
+  holiday?: 'halloween' | 'christmas';
 }
 
 export interface NavSection {
@@ -67,6 +67,7 @@ export const SECTIONS: NavSection[] = [
     icon: Trophy,
     tabs: [
       { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween' },
+      { href: '/game/christmas', label: 'Коледа', holiday: 'christmas' },
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/league', label: 'Лига' },
       { href: '/game/pass', label: 'Пропуск' },
@@ -85,6 +86,7 @@ export const ACCOUNT_MENU = [
   { href: '/game/finance', label: 'Финанси', icon: Landmark },
   { href: '/game/shop', label: 'Магазин и VIP', icon: Gem },
   { href: '/game/invite', label: 'Покани приятел', icon: UserPlus },
+  { href: '/game/mentor', label: 'Наставник', icon: GraduationCap },
   { href: '/game/updates', label: 'Обновления', icon: ScrollText },
   { href: '/game/settings', label: 'Настройки', icon: Settings },
   { href: '/game/help', label: 'Помощ и правила', icon: BookOpen },

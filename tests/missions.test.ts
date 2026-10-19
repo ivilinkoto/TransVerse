@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
-import { MISSIONS, missionById, periodWindow, pickMissions, scaledTarget } from '@/lib/game/missions';
+import { MISSIONS, missionById, periodWindow, pickMissions, scaledTarget, sofiaMidnight } from '@/lib/game/missions';
 import { closeDb } from '@/server/db/client';
 import { companies, ledgerEntries, missionProgress, users, vehicles } from '@/server/db/schema';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
@@ -43,7 +43,9 @@ describe('mission rules', () => {
 describe('missions in the game', () => {
   it('assigns missions, counts deliveries and pays each reward once', async () => {
     const p = await newPlayer('Sofia');
-    const now = new Date();
+    // Noon today in Sofia: the trip ends in the same daily period wherever the clock is (CI runs near midnight too).
+    const [y, m, dd] = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia' }).format(new Date()).split('-').map(Number);
+    const now = new Date(sofiaMidnight(y!, m!, dd!).getTime() + 12 * 3_600_000);
     const board = await missionBoard(db(), p.userId, now);
     const byPeriod = (period: string) => board.current.filter((r) => r.period === period).length;
     expect([byPeriod('daily'), byPeriod('weekly'), byPeriod('monthly')]).toEqual([3, 3, 3]);
@@ -54,7 +56,7 @@ describe('missions in the game', () => {
     const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
     const [truck] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
     const contract = await makeContract('Sofia', 'Plovdiv', { rewardCents: 800_00 });
-    const d = await acceptContract(db(), p.userId, contract.id, truck!.id);
+    const d = await acceptContract(db(), p.userId, contract.id, truck!.id, now);
     await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000));
 
     const rows = await db().select().from(missionProgress).where(eq(missionProgress.userId, p.userId));

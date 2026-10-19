@@ -105,8 +105,8 @@ export async function bidAuction(db: Database, userId: string, auctionId: string
     const max = maxBidCents(a!.startPriceCents, lowest?.amount ?? null);
     const floor = floorBidCents(a!.startPriceCents);
     const amount = Math.round(amountCents / 100) * 100;
-    if (amount > max) fail('bid_too_high', `Офертата трябва да е най-много ${(max / 100).toLocaleString('bg-BG')} €.`);
-    if (amount < floor) fail('bid_too_low', `Най-ниската допустима оферта е ${(floor / 100).toLocaleString('bg-BG')} €.`);
+    if (amount > max) fail('bid_too_high', `Офертата трябва да е най-много ${(max / 100).toLocaleString('bg-BG')} лв.`);
+    if (amount < floor) fail('bid_too_low', `Най-ниската допустима оферта е ${(floor / 100).toLocaleString('bg-BG')} лв.`);
     await tx
       .insert(auctionBids)
       .values({ auctionId: a!.id, companyId: company.id, userId, amountCents: amount, updatedAt: now })
@@ -154,9 +154,9 @@ export async function settleAuctions(db: Database, now = new Date()): Promise<nu
         })
         .returning({ id: contracts.id });
       await tx.update(specialAuctions).set({ status: 'awarded', winnerCompanyId: win.companyId, winningBidCents: win.amountCents, contractId: c!.id }).where(eq(specialAuctions.id, row.id));
-      const eur = (x: number) => `${Math.round(x / 100).toLocaleString('bg-BG')} €`;
+      const eur = (x: number) => `${Math.round(x / 100).toLocaleString('bg-BG')} лв.`;
       await notify(tx, win.userId, 'achievement', `Спечели търга: ${row.title}`, `${eur(win.amountCents)} + ${row.coins} TC при доставка. Изпрати камион до ${AUCTION_RULES.sendHours} часа (Поръчки → Търгове).`, '/game/auctions');
-      for (const b of bids.slice(1)) await notify(tx, b.userId, 'info', `Търгът „${row.title}“ приключи`, `Спечели оферта от ${eur(win.amountCents)}. Твоята беше ${eur(b.amountCents)}.`, '/game/auctions');
+      for (const b of bids.slice(1)) await notify(tx, b.userId, 'info', `Търгът „${row.title}“ приключи`, `Спечели оферта от ${eur(win.amountCents)} Твоята беше ${eur(b.amountCents)}`, '/game/auctions');
       return 1;
     });
   }

@@ -1,12 +1,23 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { ChevronRight, ClipboardList, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { CalendarHeart, ChevronRight, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
 import { headline } from '@/lib/game/news';
 import { latestIssues } from '@/server/game/news';
-import { PumpkinIcon } from '@/components/seasonal/icons';
+import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
+import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
+import { isWinter } from '@/lib/game/winter';
+import { RoadConditions } from '@/components/game/RoadConditions';
+import { isNewcomer, MENTOR } from '@/lib/game/mentor';
+import { mentorOverview } from '@/server/game/mentor';
+import { friendsFeed } from '@/server/game/feed';
+import { weeklyGoalState } from '@/server/game/weekly-goal';
+import { isRecapTime, recapYear } from '@/lib/game/recap';
+import { DiscordInvite } from '@/components/game/DiscordInvite';
+import { FriendsFeed } from '@/components/game/FriendsFeed';
+import { countries as countryTable } from '@/server/db/schema';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { Badge, Card, Empty, Meter } from '@/components/ui';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
@@ -21,8 +32,10 @@ import { companyStats } from '@/server/game/progression';
 import { fleetView, latestNotifications, netWorthCents } from '@/server/game/queries';
 
 export default async function OverviewPage() {
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const [paper] = await latestIssues(db, 1);
+  const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
+  const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
   const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
@@ -120,6 +133,45 @@ export default async function OverviewPage() {
           <span className="btn-primary max-sm:hidden">Към празника</span>
         </Link>
       )}
+      {isChristmas(now) && (
+        <Link href="/game/christmas" className="panel group flex items-center gap-4 border-red-500/40 p-4 transition hover:border-red-500/80">
+          <ChristmasTreeIcon className="h-11 w-11 shrink-0 transition group-hover:scale-110" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold">Коледна треска</span>
+            <span className="block text-sm text-mist-300">Коледни поръчки с +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%, подаръци до Бъдни вечер, коледни мисии, значка и празнична боя.</span>
+          </span>
+          <span className="btn-primary max-sm:hidden">Към празника</span>
+        </Link>
+      )}
+      {goal && !goal.goal && (
+        <Link href="/game/missions" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
+          <Flag className="h-6 w-6 shrink-0 text-gold-400" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Избери си седмична цел</span>
+            <span className="block text-sm text-mist-300">Лесна, нормална или трудна — според твоето темпо. Награда в лева и ТрансКоин.</span>
+          </span>
+        </Link>
+      )}
+      {!user.seenHints.includes('discord') && <DiscordInvite />}
+      {features.year_recap && isRecapTime(now) && (
+        <Link href="/game/recap" className="panel group flex items-center gap-3 border-prestige/40 p-3.5 transition hover:border-prestige">
+          <CalendarHeart className="h-6 w-6 shrink-0 text-prestige" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Твоята {recapYear(now)} в TransVerse</span>
+            <span className="block text-sm text-mist-300">Километри, рекорди, любима линия и приятелят от конвоя — виж годината си и я сподели.</span>
+          </span>
+        </Link>
+      )}
+      {features.mentor && isNewcomer(user, now) && !(await mentorOverview(db, user.id, now)).mentor && (
+        <Link href="/game/mentor" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
+          <GraduationCap className="h-6 w-6 shrink-0 text-cyan-glow" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Избери си наставник</span>
+            <span className="block text-sm text-mist-300">Опитен шофьор те води до ниво {MENTOR.goalLevel}: +{Math.round(MENTOR.xpBonus * 100)} % опит, а накрая награда и за двамата.</span>
+          </span>
+        </Link>
+      )}
+      {isWinter(now) && <RoadConditions countries={await db.select({ code: countryTable.code, nameBg: countryTable.nameBg }).from(countryTable).orderBy(countryTable.nameBg)} now={now} />}
       {paper && (
         <Link href="/game/news" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
           <Newspaper className="h-6 w-6 shrink-0 text-mist-300" />
@@ -165,6 +217,11 @@ export default async function OverviewPage() {
         </div>
 
         <div className="space-y-5 sm:space-y-6">
+          {feed.length > 0 && (
+            <Card title="При приятелите" actions={<Link href="/game/profile" className="text-sm text-cyan-glow hover:underline">Приятели →</Link>}>
+              <FriendsFeed items={feed.map((f) => ({ ...f, createdAt: f.createdAt.toISOString() }))} me={user.id} now={now.getTime()} />
+            </Card>
+          )}
           <Card title="Днешни мисии" actions={<Link href="/game/missions" className="text-sm text-cyan-glow hover:underline">Всички →</Link>}>
             <ul className="space-y-3">
               {today.map((m) => {

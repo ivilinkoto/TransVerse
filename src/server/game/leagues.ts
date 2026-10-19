@@ -55,7 +55,7 @@ export async function settleLeagues(db: Database, now = new Date()): Promise<num
           await postCoins(tx, m.userId, { amount: prize.coins, reason: 'league_reward', description: `Лига ${LEAGUE_TIERS[g.tier]!.name}: ${rank}. място`, idempotencyKey: `${key}:coins` });
         }
         const move = outcome === 'up' ? `Качваш се в ${LEAGUE_TIERS[nextTier]!.name}!` : outcome === 'down' ? `Слизаш в ${LEAGUE_TIERS[nextTier]!.name}.` : `Оставаш в ${LEAGUE_TIERS[g.tier]!.name}.`;
-        await notify(tx, m.userId, prize || outcome === 'up' ? 'achievement' : 'info', `Седмичната лига приключи: ${rank}. място`, `${move}${prize ? ` Награда: ${(prize.cents / 100).toLocaleString('bg-BG')} € и ${prize.coins} TC.` : ''}`, '/game/league');
+        await notify(tx, m.userId, prize || outcome === 'up' ? 'achievement' : 'info', `Седмичната лига приключи: ${rank}. място`, `${move}${prize ? ` Награда: ${(prize.cents / 100).toLocaleString('bg-BG')} лв. и ${prize.coins} TC.` : ''}`, '/game/league');
       }
       await tx.update(leagueGroups).set({ settledAt: now }).where(eq(leagueGroups.id, g.id));
     });

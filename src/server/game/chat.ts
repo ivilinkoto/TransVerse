@@ -7,6 +7,7 @@ import { companyMembers, companyMessages, companyRanks, users } from '@/server/d
 import { fail } from './errors';
 import { assertNotMuted } from './moderation';
 import { can, membershipOf } from './membership';
+import { notifyMentions } from './messages';
 import { logActivity } from './notify';
 
 export const chatBodySchema = z.string().trim().min(1, 'Напишете съобщение.').max(500, 'Най-много 500 символа.');
@@ -63,6 +64,10 @@ export async function sendChatMessage(db: Database, userId: string, raw: string)
   await rateLimit(db, `chat:${userId}`, 10, 60);
   return db.transaction(async (tx) => {
     const [row] = await tx.insert(companyMessages).values({ companyId: m!.company.id, userId, body }).returning({ id: companyMessages.id });
+    if (body.includes('@')) {
+      const members = (await tx.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, m!.company.id))).map((r) => r.id);
+      await notifyMentions(tx, userId, body, { tab: 'company', where: `Чат на „${m!.company.name}“`, members });
+    }
     await tx.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type: 'chat', companyId: m!.company.id })})`);
     return row!.id;
   });

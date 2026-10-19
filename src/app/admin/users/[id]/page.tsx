@@ -15,6 +15,7 @@ import { adminContext } from '@/server/admin-context';
 import { describeAudit } from '@/server/audit-format';
 import { canBan, canChangeRole, isAdmin, ROLE_LABELS, type Role } from '@/server/auth/roles';
 import { GameError } from '@/server/game/errors';
+import { moneyBySource, xpBySource } from '@/server/game/progression';
 
 export const metadata = { title: 'Потребител' };
 
@@ -27,6 +28,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const { user, company, org } = detail;
+  const [xp, cash] = await Promise.all([xpBySource(db, user.id, 7, now), company ? moneyBySource(db, company.id, 7, now) : Promise.resolve([])]);
   const roleOptions = (['player', 'support', 'admin'] as const).filter((r) => r === user.role || canChangeRole(actor.role, actor.id, user.role, user.id, r));
   return (
     <div className="space-y-6">
@@ -42,6 +44,22 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
             <div><dt className="label">Доставки</dt><dd className="num mt-1">{company?.deliveries ?? 0} · {km(company?.totalKm ?? 0)}</dd></div>
             {user.banReason && <div className="col-span-2"><dt className="label">Причина за блокиране</dt><dd className="mt-1">{user.banReason}</dd></div>}
           </dl>
+        </Card>
+        <Card title="Последните 7 дни: опит и пари по източници" className="lg:col-span-2">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <div className="label mb-1.5">Опит · общо {int(xp.reduce((s, r) => s + r.xp, 0))}</div>
+              {xp.length === 0 ? <p className="text-sm text-mist-400">Няма записи (записват се от v1.2).</p> : (
+                <ul className="space-y-1 text-sm">{xp.map((r) => <li key={r.reason} className="flex justify-between gap-2"><span>{r.label} <span className="text-mist-400">· {r.n}×</span></span><span className="num">{int(r.xp)}</span></li>)}</ul>
+              )}
+            </div>
+            <div>
+              <div className="label mb-1.5">Пари · нето {money(cash.reduce((s, r) => s + r.cents, 0))}</div>
+              {cash.length === 0 ? <p className="text-sm text-mist-400">Няма движения.</p> : (
+                <ul className="space-y-1 text-sm">{cash.slice(0, 12).map((r) => <li key={r.category} className="flex justify-between gap-2"><span>{r.label} <span className="text-mist-400">· {r.n}×</span></span><span className={`num ${r.cents < 0 ? 'text-loss' : 'text-profit'}`}>{money(r.cents)}</span></li>)}</ul>
+              )}
+            </div>
+          </div>
         </Card>
         <Card title="Управление">
           <div className="space-y-5">

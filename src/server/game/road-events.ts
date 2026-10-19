@@ -9,6 +9,8 @@ import { post } from './finance';
 import { meetGhostTruck } from './halloween';
 import { HALLOWEEN } from '@/lib/game/halloween';
 import { broadcast, notify } from './notify';
+import { askForHelp } from './roadside';
+import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
 
 type DeliveryRow = typeof deliveries.$inferSelect;
 
@@ -50,8 +52,10 @@ export async function applyRoadEvents(tx: Tx, d: DeliveryRow, now: Date): Promis
       continue;
     }
     if (company) {
-      const cost = e.costCents ? (insured ? ` Пътната помощ (${(e.costCents / 100).toLocaleString('bg-BG')} €) е за сметка на застраховката.` : ` Пътна помощ: ${(e.costCents / 100).toLocaleString('bg-BG')} €.`) : '';
-      await notify(tx, company.ownerId, 'warning', `${def.title} по пътя${dest ? ` за ${dest.nameBg}` : ''}`, `${def.body} Закъснение около ${minutes} мин.${cost}`, '/game/fleet');
+      const cost = e.costCents ? (insured ? ` Пътната помощ (${(e.costCents / 100).toLocaleString('bg-BG')} лв.) е за сметка на застраховката.` : ` Пътна помощ: ${(e.costCents / 100).toLocaleString('bg-BG')} лв.`) : '';
+      await notify(tx, company.ownerId, 'warning', `${def.title} по пътя${dest ? ` за ${dest.nameBg}` : ''}`, `${def.body} Закъснение около ${minutes} мин.${cost}${ROADSIDE.kinds.includes(e.kind) ? ' Приятел или колега с камион наблизо може да помогне.' : ''}`, '/game/fleet');
+      // Only while the truck still stands (the worker may apply an event late).
+      if (helpableStop(result.schedule, now.getTime())) await askForHelp(tx, company.ownerId, e.kind, dest?.nameBg ?? null, now);
     }
   }
   return eta;

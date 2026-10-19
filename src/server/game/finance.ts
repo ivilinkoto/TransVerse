@@ -44,7 +44,15 @@ export type LedgerCategory =
   | 'client_bonus'
   | 'holiday_reward'
   | 'fines'
-  | 'insurance';
+  | 'insurance'
+  | 'transfer_out'
+  | 'transfer_in'
+  | 'convoy_bonus'
+  | 'hire_commission'
+  | 'mentor_reward'
+  | 'roadside_help'
+  | 'lease'
+  | 'member_bonus';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -88,6 +96,14 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   holiday_reward: 'Празнични награди',
   fines: 'Глоби',
   insurance: 'Застраховки',
+  transfer_out: 'Изпратени пари',
+  transfer_in: 'Получени пари',
+  convoy_bonus: 'Бонус за конвой',
+  hire_commission: 'Комисиони към компании за възложени курсове',
+  mentor_reward: 'Награди за наставничество',
+  roadside_help: 'Помощ на пътя (хонорари)',
+  lease: 'Лизинг на камиони',
+  member_bonus: 'Премии от компанията',
 };
 
 export interface Posting {
@@ -133,7 +149,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   member_contribution: 'Вноска от курс',
@@ -146,6 +162,10 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   tender_deposit: 'Депозити за търгове',
   tender_bonus: 'Бонуси от търгове',
   season_prize: 'Сезонни награди',
+  hire_commission: 'Комисиони от възложени курсове',
+  company_project: 'Фирмени проекти',
+  company_battle: 'Битки на компаниите',
+  member_bonus: 'Премии за членове',
 };
 
 export interface TreasuryPosting {

@@ -6,10 +6,13 @@ import Link from 'next/link';
 import { CompanyBrand } from '@/components/company/CompanyBrand';
 import { JoinCompanyForm } from '@/components/company/forms';
 import { Badge, Card, Table } from '@/components/ui';
-import { int, money } from '@/lib/format';
+import { date, int, money } from '@/lib/format';
 import { COMPANY_UPGRADES, memberBonuses, memberCapacity, RECRUITMENT, type UpgradeLevels } from '@/lib/game/company';
 import { gameContext } from '@/server/game/context';
 import { CompanyLicences } from '@/components/company/CompanyLicences';
+import { CompanyHighlights } from '@/components/company/CompanyHighlights';
+import { companyHighlights } from '@/server/game/company-profile';
+import { isOnline } from '@/lib/game/social';
 import { CompanySeason } from '@/components/company/CompanySeason';
 import { companyLicenceSet } from '@/server/game/licences';
 import { assetKinds, companyMembersView, membershipOf, myApplications, publicCompany } from '@/server/game/membership';
@@ -19,11 +22,11 @@ export const metadata = { title: 'Компания' };
 export default async function PublicCompanyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { db, user, now } = await gameContext();
+  const { db, user, now, features } = await gameContext();
   const row = await publicCompany(db, id);
   if (!row) notFound();
   const c = row.company;
-  const [assets, members, mine, applications, licences] = await Promise.all([assetKinds(db, c.id), companyMembersView(db, c.id), membershipOf(db, user.id), myApplications(db, user.id), companyLicenceSet(db, c.id)]);
+  const [assets, members, mine, applications, licences, highlights] = await Promise.all([assetKinds(db, c.id), companyMembersView(db, c.id), membershipOf(db, user.id), myApplications(db, user.id), companyLicenceSet(db, c.id), companyHighlights(db, c.id, now)]);
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   const bonuses = memberBonuses(c.upgrades as UpgradeLevels);
   const applied = applications.some((a) => a.application.companyId === c.id);
@@ -39,7 +42,8 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
     <div className="space-y-6">
       <CompanyBrand company={c} hasLogo={assets.has('logo')} hasBanner={assets.has('banner')} subtitle={`Собственик ${row.owner} · ${int(row.members)} / ${capacity} членове · ${int(row.deliveries)} курса на членовете`} actions={<Link href="/game/companies" className="btn-ghost">← Всички компании</Link>} />
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
+          {features.company_profile && highlights && <CompanyHighlights h={highlights} />}
           <Card title={<span className="inline-flex items-center gap-2"><Building2 className="h-4 w-4 text-mist-400" />За компанията</span>}>
             {c.description ? <p className="whitespace-pre-wrap break-words text-sm text-mist-200">{c.description}</p> : <p className="text-sm text-mist-400">Няма описание.</p>}
           </Card>
@@ -47,20 +51,21 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
             {c.rules ? <p className="whitespace-pre-wrap break-words text-sm text-mist-200">{c.rules}</p> : <p className="text-sm text-mist-400">Няма публикувани правила.</p>}
           </Card>
           <Card title="Членове">
-            <Table head={['Играч', 'Длъжност', 'Ниво', 'Курсове']}>
+            <Table head={['Играч', 'Длъжност', 'Ниво', 'Курсове', 'От']}>
               {members.map((m) => (
                 <tr key={m.userId}>
-                  <td className="px-3 py-2 font-semibold"><PlayerName name={m.username} role={m.role} vip={isVip(m.vipUntil, now)} /></td>
+                  <td className="px-3 py-2 font-semibold"><span className="inline-flex items-center gap-2"><span className={`h-2 w-2 shrink-0 rounded-full ${isOnline(m.lastSeenAt, now) ? 'bg-profit' : 'bg-asphalt-500'}`} title={isOnline(m.lastSeenAt, now) ? 'В играта сега' : 'Не е в играта'} /><PlayerName name={m.username} role={m.role} vip={isVip(m.vipUntil, now)} /></span></td>
                   <td className="px-3 py-2"><Badge tone={m.rank.isOwner ? 'gold' : 'neutral'}>{m.rank.name}</Badge></td>
                   <td className="num px-3 py-2">{m.level}</td>
                   <td className="num px-3 py-2">{int(m.member.deliveries)}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-xs text-mist-400">{date(m.member.joinedAt)}</td>
                 </tr>
               ))}
             </Table>
           </Card>
         </div>
-        <div className="space-y-6">
-          <Card title="Присъединяване">
+        <div className="min-w-0 space-y-6">
+          <Card title="Присъединяване" actions={<span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.members < capacity && c.recruitment !== 'closed' ? 'bg-profit/15 text-profit' : 'bg-asphalt-800 text-mist-400'}`}>{c.recruitment === 'closed' ? 'Не приема' : row.members < capacity ? `Свободни места: ${capacity - row.members}` : 'Няма места'}</span>}>
             <p className="mb-4 text-sm text-mist-300">{RECRUITMENT[c.recruitment as keyof typeof RECRUITMENT] ?? c.recruitment}. Вноска към компанията: <span className="num font-semibold">{Math.round(c.contributionRate * 100)}%</span> от възнаграждението за курс.</p>
             <JoinCompanyForm companyId={c.id} mode={c.recruitment === 'open' ? 'open' : 'application'} disabled={blocker} />
           </Card>

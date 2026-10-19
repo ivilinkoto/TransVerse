@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, lte, sql } from 'drizzle-orm';
+import { assertNotLeased } from './leasing';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { USED_MARKET, marketFeeCents, usedPriceBounds } from '@/lib/game/used-market';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -31,6 +32,7 @@ export async function createListing(db: Database, userId: string, input: { kind:
       if (!v) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
       if (v!.ownership === 'rented') fail('rented', 'Наетите превозни средства не могат да се продават.');
       if (v!.status !== 'idle') fail('vehicle_busy', 'Обява се пуска само за свободно превозно средство.');
+      await assertNotLeased(tx, v!.id);
       await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v!.id));
       await tx.update(vehicles).set({ status: 'listed' }).where(eq(vehicles.id, v!.id));
       row = v!;
@@ -47,7 +49,7 @@ export async function createListing(db: Database, userId: string, input: { kind:
       row = t!;
     }
     const bounds = boundsFor(input.kind, row, now);
-    if (input.priceCents < bounds.min || input.priceCents > bounds.max) fail('bad_price', `Цената трябва да е между ${(bounds.min / 100).toLocaleString('bg-BG')} € и ${(bounds.max / 100).toLocaleString('bg-BG')} €.`);
+    if (input.priceCents < bounds.min || input.priceCents > bounds.max) fail('bad_price', `Цената трябва да е между ${(bounds.min / 100).toLocaleString('bg-BG')} лв. и ${(bounds.max / 100).toLocaleString('bg-BG')} лв.`);
     const [listing] = await tx
       .insert(vehicleListings)
       .values({
@@ -125,7 +127,7 @@ export async function buyListing(db: Database, userId: string, listingId: string
       await tx.update(trailers).set({ companyId: buyer.id, listed: false, vehicleId: null, purchasePriceCents: listing!.priceCents }).where(eq(trailers.id, listing!.trailerId));
     }
     await tx.update(vehicleListings).set({ status: 'sold', buyerCompanyId: buyer.id, closedAt: now }).where(eq(vehicleListings.id, listing!.id));
-    await notify(tx, seller!.ownerId, 'success', `Продадено: ${model.name}`, `Получи ${((listing!.priceCents - fee) / 100).toLocaleString('bg-BG')} € след таксата на пазара.`, '/game/finance');
+    await notify(tx, seller!.ownerId, 'success', `Продадено: ${model.name}`, `Получи ${((listing!.priceCents - fee) / 100).toLocaleString('bg-BG')} лв. след таксата на пазара.`, '/game/finance');
     await logActivity(tx, userId, 'listing_bought', { listingId: listing!.id });
     await checkAchievements(tx, userId, buyer.id);
     await broadcast(tx, 'market');

@@ -211,6 +211,90 @@
       "when": 1792348265575,
       "tag": "0029_flimsy_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792359641847,
+      "tag": "0030_amazing_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792360367615,
+      "tag": "0031_useful_mordo",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792363343060,
+      "tag": "0032_ordinary_la_nuit",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792419407689,
+      "tag": "0033_parallel_mulholland_black",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792423115623,
+      "tag": "0034_rapid_quentin_quire",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792426824748,
+      "tag": "0035_sad_kronos",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792427386037,
+      "tag": "0036_complex_nomad",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792437607625,
+      "tag": "0037_married_psynapse",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792438493859,
+      "tag": "0038_needy_the_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792439135429,
+      "tag": "0039_colossal_magus",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792439465695,
+      "tag": "0040_petite_giant_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792441218217,
+      "tag": "0041_graceful_talkback",
+      "breakpoints": true
     }
   ]
 }

@@ -64,7 +64,7 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 
 ## Плащания
 
-Покупките на ТрансКоин и VIP с реални пари минават през **PayPal** (сега) и **Stripe** (по-късно, когато има домейн с HTTPS). Докато настройките липсват, магазинът показва пакетите като „Скоро“ и нищо не може да се плати. Състоянието се вижда в „Админ панел → Плащания“.
+Покупките на ТрансКоин и VIP с реални пари минават през **PayPal** и **Stripe** (карта, Apple Pay / Google Pay; изисква HTTPS на домейна). Докато настройките липсват, магазинът показва пакетите като „Скоро“ и нищо не може да се плати. Състоянието се вижда в „Админ панел → Плащания“.
 
 ### Къде се пазят ключовете
 В **GitHub → репозиторито → Settings → Secrets and variables → Actions → New repository secret**. При всеки Deploy те се записват на сървъра във файл `/var/www/transverse/shared/secrets.env` (достъпен само за потребителя deploy) и уеб приложението и фоновият процес ги зареждат при старт. Не влизат в кода, в build-а или в лога. Никога не ги пращай в чат.
@@ -99,7 +99,7 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 
 Връщане на сума: „Админ панел → Плащания → Върни сумата“ — връща парите през PayPal и премахва ТрансКоин / VIP дните (балансът може да стане отрицателен, ако вече са похарчени). Ако сумата се върне директно в PayPal или купувачът оспори плащането, това се отразява автоматично само при настроен webhook (`https://домейн/api/payments/paypal`, събития `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.CAPTURE.REVERSED`, `PAYMENT.CAPTURE.DENIED`, `CHECKOUT.ORDER.APPROVED`; Webhook ID → `PAYPAL_WEBHOOK_ID`) — иначе използвай бутона в админ панела.
 
-### Stripe (след домейна)
+### Stripe
 Изисква домейн с HTTPS (Caddy, после `COOKIE_SECURE=true`). В Stripe: активиран акаунт на фирмата, включени методи на плащане (карти, Apple/Google Pay), разписки по имейл, webhook `https://домейн/api/payments/stripe` със събития `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`. Secrets: `STRIPE_SECRET_KEY` (sk_test_… / sk_live_…), `STRIPE_WEBHOOK_SECRET` (whsec_…), по избор `STRIPE_AUTOMATIC_TAX=true`. Тестова карта: 4242 4242 4242 4242. Възстановяване — от таблото на Stripe (отразява се автоматично).
 
 Тестовете (`tests/payments.test.ts`, `tests/paypal.test.ts`) проверяват подписите/проверката на уведомленията, еднократната доставка при повторения, отказ при различна сума, сверката от фоновия процес, възстановяванията и зареждането на ключовете.

@@ -32,6 +32,8 @@ export interface Segment {
   toKm: number;
   /** Short label for an unplanned stop (road events). */
   note?: string;
+  /** Groupage: the drop (1-based) this unloading belongs to. */
+  stop?: number;
 }
 
 export interface LegInput {
@@ -40,6 +42,8 @@ export interface LegInput {
   durationS: number;
   /** Positions (km along the leg) of border checkpoints. */
   borderKms: number[];
+  /** Groupage drops on the way: where (km along the leg) and how long the partial unloading takes. */
+  stops?: { km: number; minutes: number }[];
 }
 
 export interface ScheduleInput {
@@ -93,6 +97,7 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
     if (totalMin <= 0 || input_.km <= 0) return;
     const kmPerMin = input_.km / totalMin;
     const borders = [...input_.borderKms].filter((b) => b > 0 && b < input_.km).sort((a, b) => a - b);
+    const drops = (input_.stops ?? []).map((d, i) => ({ ...d, n: i + 1 })).filter((d) => d.km > 0 && d.km < input_.km).sort((a, b) => a.km - b.km);
     const EPS_MIN = 1e-6; // minutes; guards against floating-point creep near the limits
     let km = 0;
     let guard = 0;
@@ -107,15 +112,21 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
         sinceBreak = 0;
       }
       const nextBorder = borders.find((b) => b > km + 1e-6);
+      const nextDrop = drops.find((d) => d.km > km + 1e-6);
       const limitMin = Math.min(rules.breakAfterMin - sinceBreak, rules.dailyDrivingMin - today);
       let targetKm = Math.min(input_.km, km + limitMin * kmPerMin);
       if (nextBorder !== undefined && nextBorder < targetKm) targetKm = nextBorder;
+      if (nextDrop && nextDrop.km < targetKm) targetKm = nextDrop.km;
       const minutes = (targetKm - km) / kmPerMin;
       push('drive', leg, minutes, km, targetKm);
       sinceBreak += minutes;
       today += minutes;
       km = targetKm;
       if (nextBorder !== undefined && Math.abs(km - nextBorder) < 1e-6) push('border', leg, DRIVING_RULES.borderWaitMin, km);
+      if (nextDrop && Math.abs(km - nextDrop.km) < 1e-6) {
+        push('unloading', leg, nextDrop.minutes, km);
+        segments.at(-1)!.stop = nextDrop.n;
+      }
     }
   };
 
@@ -158,13 +169,13 @@ export function estimateMinutes(input: Omit<ScheduleInput, 'startAt' | 'timeScal
 }
 
 /**
- * Game time. Short trips keep players coming back: the whole trip is compressed
- * to 10 min + 0.04 min per km (≈15 min for 150 km, ≈30 min for 500 km, ≈1 h for
- * 1 200 km, ≈2 h 10 min for 3 000 km) — always proportional to distance, with
- * no upper cap. Phases keep their real proportions, so breaks, rests and
+ * Game time. The whole trip is compressed to 15 min + 0.09 min per km (≈30 min
+ * for 150 km, ≈1 h for 500 km, ≈2 h for 1 200 km, ≈4 h 45 min for 3 000 km) —
+ * always proportional to distance, with no upper cap. v1.2 doubled it: trips of
+ * half an hour let a fleet earn levels and money far too fast. Phases keep their real proportions, so breaks, rests and
  * border waits stay visible — just shorter.
  */
-export const GAME_TIME = { baseMin: 10, perKmMin: 0.04, minMin: 10, roundToMin: 5 } as const;
+export const GAME_TIME = { baseMin: 15, perKmMin: 0.09, minMin: 15, roundToMin: 5 } as const;
 
 /** Bump when GAME_TIME changes: running deliveries are rescaled to the current rules. */
 export const SCHEDULE_VERSION = 4;

@@ -13,7 +13,7 @@ export interface VehicleIllustrationProps {
   trailerColor?: string;
   className?: string;
   title?: string;
-  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026). */
+  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026). */
   livery?: string | null;
 }
 
@@ -82,6 +82,7 @@ export function VehicleIllustration({ modelId, trailerModelId, color = '#1d4ed8'
       <Defs ids={ids} color={color} />
       {content}
       {livery === 'pumpkin' && decals.map(([x, y, size], i) => <PumpkinDecal key={i} x={x} y={y} size={size} />)}
+      {livery === 'christmas' && decals.map(([x, y, size], i) => <ChristmasDecal key={i} x={x} y={y} size={size} />)}
     </svg>
   );
 }
@@ -123,6 +124,20 @@ function PumpkinDecal({ x, y, size }: { x: number; y: number; size: number }) {
       <ellipse cx="16" cy="18" rx="6.5" ry="10.5" fill="#f97316" stroke="#1c1917" strokeWidth="0.6" />
       <path d="M10 15l3 2.5-3.5.5zM22 15l-3 2.5 3.5.5z" fill="#fde047" />
       <path d="M9.5 21.5c2 2.4 4.3 3.2 6.5 3.2s4.5-.8 6.5-3.2l-2 .4-1.4 1.2-1.4-1.2-1.7 1.4-1.7-1.4-1.4 1.2-1.4-1.2z" fill="#fde047" />
+    </g>
+  );
+}
+
+/** Decorated fir with a star and baubles — the "Коледа" paint (Christmas 2026), centred on (x, y). */
+function ChristmasDecal({ x, y, size }: { x: number; y: number; size: number }) {
+  const k = size / 32;
+  return (
+    <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`} opacity="0.95">
+      <path d="M16 4l7 9h-3.5l6 8h-4l6 7H4.5l6-7h-4l6-8H9z" fill="#15803d" stroke="#052e16" strokeWidth="0.6" strokeLinejoin="round" />
+      <rect x="14.2" y="28" width="3.6" height="3" fill="#78350f" />
+      <path d="M16 .8l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" fill="#facc15" />
+      {[[13, 12, '#ef4444'], [19, 16, '#facc15'], [11, 21, '#facc15'], [21, 23, '#ef4444'], [16, 19, '#f8fafc']].map(([cx, cy, fill]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.3" fill={fill as string} />)}
+      <path d="M10 17.5q6 2 12-1.5M8.5 25q7.5 2.5 15-1.5" stroke="#fde68a" strokeWidth="0.8" fill="none" />
     </g>
   );
 }

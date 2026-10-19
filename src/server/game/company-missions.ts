@@ -62,7 +62,7 @@ export async function recordCompanyMissionProgress(tx: Tx, companyId: string, us
     const title = def.title(row.target);
     await postTreasury(tx, companyId, [{ category: 'company_mission', amountCents: row.rewardCents, description: `Фирмена мисия: ${title}`, idempotencyKey: `company-mission:${companyId}:${row.periodKey}:${row.missionId}`, refType: 'company_mission', refId: row.missionId }]);
     await addCompanyXp(tx, companyId, row.rewardXp);
-    await notifyMembers(tx, companyId, null, `Фирмената мисия е изпълнена: ${title}`, `+${(row.rewardCents / 100).toLocaleString('bg-BG')} € в касата и +${row.rewardXp} опит за компанията.`, '/game/company/missions');
+    await notifyMembers(tx, companyId, null, `Фирмената мисия е изпълнена: ${title}`, `+${(row.rewardCents / 100).toLocaleString('bg-BG')} лв. в касата и +${row.rewardXp} опит за компанията.`, '/game/company/missions');
   }
 }
 

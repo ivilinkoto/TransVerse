@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 
 /** Purchase with depot selection (vehicles are delivered to one of your depots). */
-export function BuyButton({ type, modelId, depots, disabledReason, label }: { type: 'buyVehicle' | 'buyTrailer'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string }) {
+export function BuyButton({ type, modelId, depots, disabledReason, label }: { type: 'buyVehicle' | 'leaseVehicle' | 'buyTrailer'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string }) {
   const router = useRouter();
   const [cityId, setCityId] = useState(depots[0]?.cityId ?? 0);
   const [busy, setBusy] = useState(false);
@@ -16,7 +16,7 @@ export function BuyButton({ type, modelId, depots, disabledReason, label }: { ty
     setMessage(null);
     try {
       await api('/api/game/action', { type, modelId, cityId });
-      setMessage({ ok: true, text: 'Купено! Вижте го в автопарка.' });
+      setMessage({ ok: true, text: type === 'leaseVehicle' ? 'Взет на лизинг! Вижте го в автопарка; вноските се плащат всяка седмица.' : 'Купено! Вижте го в автопарка.' });
       router.refresh();
     } catch (e) {
       setMessage({ ok: false, text: (e as Error).message });
@@ -34,7 +34,7 @@ export function BuyButton({ type, modelId, depots, disabledReason, label }: { ty
             </option>
           ))}
         </select>
-        <button className="btn-gold" onClick={buy} disabled={busy || !!disabledReason} title={disabledReason ?? undefined}>
+        <button className={type === 'leaseVehicle' ? 'btn-ghost' : 'btn-gold'} onClick={buy} disabled={busy || !!disabledReason} title={disabledReason ?? undefined}>
           <ShoppingCart className="h-4 w-4" />{busy ? '…' : label}
         </button>
       </div>

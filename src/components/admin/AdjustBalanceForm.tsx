@@ -28,7 +28,7 @@ export function AdjustBalanceForm({ userId }: { userId: string }) {
   return (
     <form onSubmit={submit} className="space-y-2">
       <div className="flex gap-2">
-        <input id="amount" name="amount" type="number" step="0.01" className="input w-36" placeholder="± €" required aria-label="Сума в евро" />
+        <input id="amount" name="amount" type="number" step="0.01" className="input w-36" placeholder="± лв." required aria-label="Сума в лева" />
         <input id="reason" name="reason" className="input flex-1" placeholder="Причина (напр. компенсация за грешка)" required minLength={5} maxLength={300} aria-label="Причина" />
       </div>
       <button className="btn-ghost" disabled={busy}>{busy ? '…' : 'Запиши корекция'}</button>

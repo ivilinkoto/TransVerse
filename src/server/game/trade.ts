@@ -15,7 +15,7 @@ import { post } from './finance';
 import { logActivity, notify } from './notify';
 
 const round1 = (t: number) => Math.round(t * 10) / 10;
-const eur = (c: number) => `${Math.round(c / 100).toLocaleString('bg-BG')} €`;
+const eur = (c: number) => `${Math.round(c / 100).toLocaleString('bg-BG')} лв.`;
 
 async function ownDepot(db: DbOrTx, companyId: string, depotId: string, lock = false) {
   const q = db.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, companyId)));

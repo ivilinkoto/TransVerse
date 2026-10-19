@@ -15,8 +15,11 @@ export function legacyXpForLevel(level: number): number {
   return level <= 1 ? 0 : Math.round(800 * (level - 1) ** 1.7);
 }
 
-/** Share of a hired driver's delivery XP that also goes to the player (their own driving gives it all). */
-export const FLEET_XP_SHARE = 0.25;
+/** Share of a hired driver's delivery XP that also goes to the player (their own driving gives it all). v1.2: 0.25 → 0.1 — a big fleet levelled players far too fast. */
+export const FLEET_XP_SHARE = 0.1;
+
+/** Share of a member's delivery XP that goes to the company (hired drivers' trips: times FLEET_XP_SHARE). */
+export const COMPANY_XP_SHARE = 0.5;
 
 export function levelForXp(xp: number): number {
   let level = 1;
@@ -129,7 +132,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     check: (s) => s.depots >= 2, progress: (s) => ratio(s.depots, 2) },
   { key: 'fleet_10', title: 'Логистична компания', description: 'Притежавай 10 превозни средства.', tier: 'gold', rewardCents: 25_000_00, rewardXp: 2_000,
     check: (s) => s.vehicles >= 10, progress: (s) => ratio(s.vehicles, 10) },
-  { key: 'millionaire', title: 'Милионер', description: 'Достигни баланс от 1 000 000 €.', tier: 'prestige', rewardCents: 0, rewardXp: 5_000,
+  { key: 'millionaire', title: 'Милионер', description: 'Достигни баланс от 1 000 000 лв.', tier: 'prestige', rewardCents: 0, rewardXp: 5_000,
     check: (s) => s.balanceCents >= 1_000_000_00, progress: (s) => ratio(s.balanceCents, 1_000_000_00) },
   { key: 'level_10', title: 'Ветеран на пътя', description: 'Достигни ниво 10.', tier: 'prestige', rewardCents: 50_000_00, rewardXp: 0,
     check: (s) => s.level >= 10, progress: (s) => ratio(s.level, 10) },

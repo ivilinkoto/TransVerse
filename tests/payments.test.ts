@@ -68,6 +68,8 @@ describe('payments', () => {
     expect(params.line_items![0]!.price_data).toMatchObject({ currency: 'eur', unit_amount: 999 });
     expect(params.metadata).toMatchObject({ paymentId, userId: p.userId, productId: 'tc_550' });
     expect(params.success_url).toBe('https://transverse.example/game/shop/payment?session_id={CHECKOUT_SESSION_ID}');
+    // Sold by us, not through Stripe's Managed Payments (which needs product tax codes).
+    expect(params.managed_payments).toEqual({ enabled: false });
     const [row] = await db().select().from(payments).where(eq(payments.id, paymentId));
     expect(row).toMatchObject({ status: 'pending', amountCents: 999, coins: 550 });
     expect(row!.checkoutSessionId).toMatch(/^cs_test_/);
@@ -133,5 +135,17 @@ describe('payments', () => {
     expect((await syncReturn(db(), p.userId, id, stripe))!.status).toBe('paid');
     const [u] = await db().select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, p.userId));
     expect(Math.round((u!.vipUntil!.getTime() - Date.now()) / 86_400_000)).toBe(30);
+  });
+});
+
+describe('provider errors for the admin panel', () => {
+  it('Stripe errors keep the explanation but never a key', async () => {
+    const { describeFailure } = await import('@/server/payments');
+    const text = describeFailure({ type: 'StripeInvalidRequestError', code: 'parameter_invalid', param: 'locale', message: 'Invalid API Key provided: rk_live_********abcd. In order to use Checkout, you must set an account or business name.', requestId: 'req_123' });
+    expect(text).toContain('StripeInvalidRequestError');
+    expect(text).toContain('поле locale');
+    expect(text).toContain('business name');
+    expect(text).toContain('req_123');
+    expect(text).not.toContain('rk_live');
   });
 });

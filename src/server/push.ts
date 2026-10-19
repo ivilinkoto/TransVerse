@@ -8,6 +8,8 @@
 import { and, eq, gt, inArray, lt, lte, sql } from 'drizzle-orm';
 import webpush from 'web-push';
 import { z } from 'zod';
+import { featureLive } from '@/lib/game/features';
+import { isStaff } from '@/server/auth/roles';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyMembers, companyMessages, jobState, notifications, organizations, pushSubscriptions, users } from '@/server/db/schema';
 
@@ -33,12 +35,15 @@ export const PUSH_CATEGORY_IDS = Object.keys(PUSH_CATEGORIES) as PushCategory[];
 export function categoryOf(href: string | null | undefined): PushCategory {
   if (!href) return 'general';
   if (href.startsWith('/game/contracts?fav=1')) return 'favorites';
+  // "Delivered" links to the return loads from the destination.
+  if (href.startsWith('/game/contracts?from=')) return 'deliveries';
   if (href.startsWith('/game/contracts')) return 'urgent';
   if (href.startsWith('/game/finance#fines')) return 'fines';
   if (href.startsWith('/game/clients')) return 'clients';
   if (href.startsWith('/game/news')) return 'news';
-  if (href.startsWith('/game/halloween')) return 'holiday';
-  if (href.includes('chat=dm:')) return 'chat';
+  if (href.startsWith('/game/halloween') || href.startsWith('/game/christmas')) return 'holiday';
+  // Private messages and @mentions open the chat.
+  if (href.includes('?chat=')) return 'chat';
   if (href.startsWith('/game/finance') || href.startsWith('/game/fleet') || href.startsWith('/game/garage')) return 'deliveries';
   if (href.startsWith('/game/events') || href.startsWith('/game/missions')) return 'events';
   if (href.startsWith('/game/company/chat')) return 'chat';
@@ -132,6 +137,23 @@ export interface PushMessage {
   url: string;
   /** Same tag replaces an older notification on the device. */
   tag?: string;
+  /** Buttons on the notification (phones show up to two). */
+  actions?: PushAction[];
+}
+
+export interface PushAction {
+  action: string;
+  title: string;
+  url: string;
+}
+
+/** Quick buttons for a notification, by the page it links to. */
+export function pushActionsFor(href: string | null | undefined): PushAction[] | undefined {
+  if (!href) return undefined;
+  // A delivery arrived: take a load back from there, or look at the whole board.
+  if (href.startsWith('/game/contracts?from=')) return [{ action: 'back', title: 'Обратен товар', url: href }, { action: 'board', title: 'Нов курс', url: '/game/contracts' }];
+  if (href.includes('?chat=')) return [{ action: 'chat', title: 'Отвори чата', url: href }];
+  return undefined;
 }
 
 type Sub = typeof pushSubscriptions.$inferSelect;
@@ -142,6 +164,8 @@ export const webPushSender: PushSender = async (sub, payload, keys) => {
   const res = await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, {
     vapidDetails: { subject: process.env.VAPID_SUBJECT || `mailto:${process.env.SUPPORT_EMAIL || 'support@transverse-bg.com'}`, publicKey: keys.publicKey, privateKey: keys.privateKey },
     TTL: 6 * 3600,
+    // High urgency: otherwise Android delivers the message only when the sleeping phone wakes up.
+    urgency: 'high',
     timeout: 10_000,
   });
   return res.statusCode;
@@ -162,9 +186,13 @@ export async function pushToUser(db: Database, userId: string, message: PushMess
         await db.update(pushSubscriptions).set({ lastSuccessAt: new Date() }).where(eq(pushSubscriptions.id, sub.id));
       }
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode;
-      if (status === 404 || status === 410) await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
-      else console.warn('[push] send failed', status ?? (error as Error).message);
+      const e = error as { statusCode?: number; body?: string; message?: string };
+      if (e.statusCode === 404 || e.statusCode === 410) await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
+      else {
+        const text = `${e.statusCode ?? ''} ${e.body || e.message || 'грешка'}`.trim().slice(0, 500);
+        console.warn('[push] send failed', text);
+        await db.update(pushSubscriptions).set({ lastErrorAt: new Date(), lastError: text }).where(eq(pushSubscriptions.id, sub.id));
+      }
     }
   }
   return sent;
@@ -195,7 +223,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
   // Up to the newest id right now, so nothing inserted meanwhile is skipped.
   const upTo = Number((await db.execute<{ m: number }>(sql`select coalesce(max(id), 0)::bigint as m from notifications`)).rows[0]?.m ?? from);
   const rows = await db
-    .select({ id: notifications.id, userId: notifications.userId, title: notifications.title, body: notifications.body, href: notifications.href, prefs: users.pushPrefs, quiet: users.quietHours })
+    .select({ id: notifications.id, userId: notifications.userId, title: notifications.title, body: notifications.body, href: notifications.href, prefs: users.pushPrefs, quiet: users.quietHours, role: users.role })
     .from(notifications)
     .innerJoin(users, eq(users.id, notifications.userId))
     .where(and(gt(notifications.id, from), lte(notifications.id, upTo), sql`exists (select 1 from push_subscriptions s where s.user_id = ${notifications.userId})`))
@@ -207,7 +235,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
   for (const [userId, list] of byUser) {
     const message: PushMessage =
       list.length === 1
-        ? { title: list[0]!.title, body: list[0]!.body, url: list[0]!.href ?? '/game/notifications', tag: `n${list[0]!.id}` }
+        ? { title: list[0]!.title, body: list[0]!.body, url: list[0]!.href ?? '/game/notifications', tag: `n${list[0]!.id}`, actions: featureLive('push_actions', now, isStaff(list[0]!.role)) ? pushActionsFor(list[0]!.href) : undefined }
         : { title: `${list.length} нови известия в TransVerse`, body: list.slice(-3).map((n) => n.title).join(' · '), url: '/game/notifications', tag: 'summary' };
     pushed += await pushToUser(db, userId, message, sender);
   }
@@ -258,3 +286,13 @@ export async function pruneSubscriptions(db: Database, now = new Date()) {
   await db.delete(pushSubscriptions).where(and(lt(pushSubscriptions.createdAt, new Date(now.getTime() - 120 * 86_400_000)), sql`coalesce(${pushSubscriptions.lastSuccessAt}, ${pushSubscriptions.createdAt}) < ${new Date(now.getTime() - 60 * 86_400_000)}`));
 }
 
+
+/** Admin diagnostics: every device with its last success and last error (newest first). */
+export async function pushDevices(db: DbOrTx, limit = 200) {
+  return db
+    .select({ id: pushSubscriptions.id, username: users.username, userAgent: pushSubscriptions.userAgent, createdAt: pushSubscriptions.createdAt, lastSuccessAt: pushSubscriptions.lastSuccessAt, lastErrorAt: pushSubscriptions.lastErrorAt, lastError: pushSubscriptions.lastError, prefs: users.pushPrefs, quiet: users.quietHours })
+    .from(pushSubscriptions)
+    .innerJoin(users, eq(users.id, pushSubscriptions.userId))
+    .orderBy(sql`coalesce(${pushSubscriptions.lastErrorAt}, ${pushSubscriptions.createdAt}) desc`)
+    .limit(limit);
+}

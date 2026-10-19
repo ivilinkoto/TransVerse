@@ -1,7 +1,7 @@
 import { desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { canBan, canChangeRole, isAdmin, isStaff, ROLES, type Role } from '@/server/auth/roles';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { adminAudit, companies, companyMembers, organizations, contracts, deliveries, routes, sessions, supportTickets, users } from '@/server/db/schema';
+import { adminAudit, companies, companyMembers, organizations, contracts, deliveries, routes, sessions, reports, supportTickets, users } from '@/server/db/schema';
 import { replenishMarket } from '@/server/game/contracts';
 import { fail } from '@/server/game/errors';
 import { post } from '@/server/game/finance';
@@ -108,7 +108,7 @@ export async function adjustBalance(db: Database, actor: Staff, targetId: string
     if (!company) fail('company_not_found', 'Потребителят няма игрови акаунт.', 404);
     const auditId = await audit(tx, actor.id, 'adjust_balance', targetId, { amountCents, reason });
     await post(tx, company!.id, [{ category: 'admin_adjustment', amountCents, description: `Корекция: ${reason}`, idempotencyKey: `admin:${auditId}` }]);
-    await notify(tx, targetId, 'info', 'Корекция на баланса', `${amountCents > 0 ? '+' : ''}${(amountCents / 100).toFixed(2)} € — ${reason}`, '/game/finance');
+    await notify(tx, targetId, 'info', 'Корекция на баланса', `${amountCents > 0 ? '+' : ''}${(amountCents / 100).toFixed(2)} лв. — ${reason}`, '/game/finance');
   });
 }
 
@@ -218,4 +218,15 @@ export async function sendTestMail(actor: Staff, to: string, base: string) {
     }),
     'test',
   );
+}
+
+/** What waits for the staff: open support questions and open reports (for the badge on the in-game "Админ панел" button). */
+export async function staffAttention(db: DbOrTx) {
+  const [row] = await db
+    .select({
+      tickets: sql<number>`(select count(*) from ${supportTickets} where ${supportTickets.status} = 'open')::int`,
+      reports: sql<number>`(select count(*) from ${reports} where ${reports.status} = 'open')::int`,
+    })
+    .from(sql`(select 1) as one`);
+  return { tickets: row?.tickets ?? 0, reports: row?.reports ?? 0, total: (row?.tickets ?? 0) + (row?.reports ?? 0) };
 }

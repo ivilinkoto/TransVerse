@@ -47,13 +47,13 @@ export function AuctionBid({ auctionId, maxEur, floorEur }: { auctionId: string;
     <form onSubmit={submit} className="space-y-1.5">
       <div className="flex gap-2">
         <label className="relative flex-1">
-          <span className="sr-only">Твоята цена в евро</span>
+          <span className="sr-only">Твоята цена в лева</span>
           <input className="input pr-8" inputMode="numeric" value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, ''))} />
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-mist-400">€</span>
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-mist-400">лв.</span>
         </label>
         <button type="submit" className="btn-gold" disabled={busy || !value}>{busy ? '…' : 'Наддай'}</button>
       </div>
-      <p className="text-xs text-mist-400">Между {floorEur.toLocaleString('bg-BG')} € и {maxEur.toLocaleString('bg-BG')} €. Печели най-ниската цена.</p>
+      <p className="text-xs text-mist-400">Между {floorEur.toLocaleString('bg-BG')} лв. и {maxEur.toLocaleString('bg-BG')} лв. Печели най-ниската цена.</p>
       {message && <p role="status" className={`text-xs ${message.ok ? 'text-profit' : 'text-loss'}`}>{message.text}</p>}
     </form>
   );

@@ -1,4 +1,5 @@
 import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Wrench } from 'lucide-react';
+import { leasesOf } from '@/server/game/leasing';
 import Link from 'next/link';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
@@ -18,9 +19,10 @@ export const metadata = { title: 'Автопарк' };
 const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влекач' } as const;
 
 export default async function FleetPage() {
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const vip = isVip(user.vipUntil, now);
   const fleet = await fleetView(db, company.id);
+  const leased = new Map((features.leasing ? await leasesOf(db, company.id) : []).filter((l) => l.status === 'active').map((l) => [l.vehicleId, l]));
   const loose = fleet.trailers.filter((t) => !t.vehicleId);
   // The player drives one truck themselves and can switch to another idle one.
   const self = fleet.drivers.find((d) => d.isOwner);
@@ -39,6 +41,7 @@ export default async function FleetPage() {
                   <span className="font-display text-lg font-bold">{v.model.name}</span>
                   <Badge>{KIND[v.model.kind]}</Badge>
                   {v.ownership === 'rented' && <Badge tone="gold">Нает</Badge>}
+                  {leased.has(v.id) && <a href="/game/finance#leases"><Badge tone="violet">Лизинг {leased.get(v.id)!.paid}/{leased.get(v.id)!.payments}</Badge></a>}
                   {v.delivery ? <Badge tone="cyan">На курс</Badge> : v.status === 'listed' ? <Badge tone="gold">Обявен за продажба</Badge> : <Badge tone="green">Свободен</Badge>}
                 </div>
                 <div className="mt-0.5 font-mono text-xs text-mist-400">{v.plate} · {v.model.brand}</div>
@@ -82,7 +85,7 @@ export default async function FleetPage() {
             )}
             {v.rental && (
               <div className="mt-3 space-y-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
-                <p>Нает камион: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} €/км; без разходи за гориво, такси и сервиз.</p>
+                <p>Нает камион: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} лв./км; без разходи за гориво, такси и сервиз.</p>
                 {v.returnPending ? (
                   <p className="font-semibold text-amber-sig">Вече имаш собствен камион — този ще бъде върнат на наемодателя, щом приключи курса.</p>
                 ) : (

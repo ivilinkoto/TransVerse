@@ -8,6 +8,7 @@ import { ECONOMY } from '@/lib/game/economy';
 import { Badge, Card, PageHeader, Segmented } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { money } from '@/lib/format';
+import { LEASE, leaseTerms } from '@/lib/game/leasing';
 import { POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
 import { cities, depots, vehicles } from '@/server/db/schema';
 import { BODY_LABELS } from '@/server/game/deliveries';
@@ -48,7 +49,7 @@ function LicenceHint({ body, held }: { body: string | null | undefined; held: Se
 }
 
 export default async function MarketPage({ searchParams }: { searchParams: Promise<{ show?: string; sort?: string }> }) {
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const params = await searchParams;
   const show: Show = SHOW.some((x) => x.id === params.show) ? (params.show as Show) : 'all';
   const sort: SortId = SORT.some((x) => x.id === params.sort) ? (params.sort as SortId) : 'price_asc';
@@ -119,10 +120,24 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                   <div><dt className="text-mist-400">Оси</dt><dd className="num">{m.axles === 3 ? '6×4' : '4×2'}</dd></div>
                   <div><dt className="text-mist-400">Товар</dt><dd className="num">{m.kind === 'tractor' ? 'с ремарке' : `${m.payloadTons} т · ${BODY_LABELS[m.body!]}`}</dd></div>
                   <div><dt className="text-mist-400">Разход</dt><dd className="num">{m.fuelEmpty}–{m.fuelFull} л</dd></div>
-                  <div><dt className="text-mist-400">Поддръжка</dt><dd className="num">{(m.maintenanceCentsPerKm / 100).toFixed(2)} €/км</dd></div>
+                  <div><dt className="text-mist-400">Поддръжка</dt><dd className="num">{(m.maintenanceCentsPerKm / 100).toFixed(2)} лв./км</dd></div>
                 </dl>
                 <LicenceHint body={m.body} held={held} />
-                <div className="mt-auto"><BuyButton type="buyVehicle" modelId={m.id} depots={depotOptions} disabledReason={reason} label="Купи" /></div>
+                <div className="mt-auto space-y-3">
+                  <BuyButton type="buyVehicle" modelId={m.id} depots={depotOptions} disabledReason={reason} label="Купи" />
+                  {features.leasing && m.priceCents >= LEASE.minPriceCents && (() => {
+                    const t = leaseTerms(m.priceCents);
+                    const leaseReason = user.level < m.minLevel ? `Изисква ниво ${m.minLevel}.` : company.balanceCents < t.downCents ? 'Недостатъчни средства за първата вноска.' : freeSlots <= 0 ? 'Няма свободно място в депата.' : null;
+                    return (
+                      <div className="rounded-xl border border-asphalt-700 p-3">
+                        <p className="mb-2 text-xs text-mist-300">
+                          <b>Лизинг:</b> {money(t.downCents)} сега и {t.payments} седмични вноски по {money(t.weeklyCents)} (общо {money(t.totalCents)}). Вноските се теглят сами; при {LEASE.maxMissed} пропуснати подред камионът се връща.
+                        </p>
+                        <BuyButton type="leaseVehicle" modelId={m.id} depots={depotOptions} disabledReason={leaseReason} label="Вземи на лизинг" />
+                      </div>
+                    );
+                  })()}
+                </div>
               </Card>
             );
           })}

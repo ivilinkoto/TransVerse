@@ -5,7 +5,7 @@ import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
  * A drawn picture of the game's dashboard for the public page (not a
  * screenshot: it does not go stale when the UI changes). Example numbers.
  */
-export function GameMockup({ livery }: { livery?: 'pumpkin' }) {
+export function GameMockup({ livery }: { livery?: 'pumpkin' | 'christmas' }) {
   const nav = [
     { icon: LayoutDashboard, label: 'Табло', on: true },
     { icon: Package, label: 'Поръчки' },
@@ -39,7 +39,7 @@ export function GameMockup({ livery }: { livery?: 'pumpkin' }) {
                 <div className="font-display text-sm font-bold">Балкан Карго ООД</div>
               </div>
               <div className="flex items-center gap-1.5 text-[11px]">
-                <span className="num rounded-lg border border-asphalt-700 px-2 py-1 text-profit">48 320 €</span>
+                <span className="num rounded-lg border border-asphalt-700 px-2 py-1 text-profit">48 320 лв.</span>
                 <span className="num flex items-center gap-1 rounded-lg border border-asphalt-700 px-2 py-1 text-gold-400"><Coins className="h-3 w-3" />240</span>
                 <span className="rounded-lg border border-asphalt-700 p-1 text-mist-300"><Bell className="h-3 w-3" /></span>
               </div>
@@ -64,12 +64,12 @@ export function GameMockup({ livery }: { livery?: 'pumpkin' }) {
                 <VehicleIllustration modelId="danubia-t440" trailerModelId="reefer-13" color="#0f766e" livery={livery} className="mt-1 h-12 w-full" />
                 <div className="mt-1 text-[11px] font-semibold">Плодове и зеленчуци · 21 т</div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-asphalt-800"><div className="h-full w-[58%] rounded-full bg-gradient-to-r from-cyan-glow to-volt-500" /></div>
-                <div className="num mt-1 flex justify-between text-[10px] text-mist-400"><span>612 / 1 054 км</span><span>+3 860 €</span></div>
+                <div className="num mt-1 flex justify-between text-[10px] text-mist-400"><span>612 / 1 054 км</span><span>+3 860 лв.</span></div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: 'Днес', value: '+6 140 €', tone: 'text-profit' },
+                { label: 'Днес', value: '+6 140 лв.', tone: 'text-profit' },
                 { label: 'Камиони на път', value: '4 / 5', tone: '' },
                 { label: 'Ниво', value: '12 · 64%', tone: 'text-prestige' },
               ].map((k) => (
@@ -81,8 +81,8 @@ export function GameMockup({ livery }: { livery?: 'pumpkin' }) {
             </div>
             <div className="space-y-1">
               {[
-                { lane: 'Пловдив → Солун', goods: 'Мрамор', t: '24 т', pay: '2 310 €' },
-                livery ? { lane: 'Русе → Букурещ', goods: 'Тикви за празника', t: '9 т', pay: '640 €' } : { lane: 'Русе → Букурещ', goods: 'Мебели', t: '9 т', pay: '590 €' },
+                { lane: 'Пловдив → Солун', goods: 'Мрамор', t: '24 т', pay: '2 310 лв.' },
+                livery ? { lane: 'Русе → Букурещ', goods: livery === 'christmas' ? 'Коледни подаръци' : 'Тикви за празника', t: '9 т', pay: '640 лв.' } : { lane: 'Русе → Букурещ', goods: 'Мебели', t: '9 т', pay: '590 лв.' },
               ].map((c) => (
                 <div key={c.lane} className="flex items-center justify-between gap-2 rounded-lg border border-asphalt-800 px-2.5 py-1.5 text-[11px]">
                   <span className="flex min-w-0 items-center gap-1.5 truncate"><Gauge className="h-3 w-3 shrink-0 text-gold-400" /> {c.lane} <span className="text-mist-400">· {c.goods} · {c.t}</span></span>

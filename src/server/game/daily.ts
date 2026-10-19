@@ -19,7 +19,7 @@ export async function claimDaily(db: Database, userId: string, now = new Date())
     const account = await companyForUser(tx, userId);
     const label = `Дневна награда — ден ${state.cycleDay}`;
     await post(tx, account.id, [{ category: 'daily_reward', amountCents: state.reward.cents, description: `${label} (серия ${state.nextStreak})`, idempotencyKey: `daily:${userId}:${state.today}` }]);
-    if (state.reward.xp) await awardXp(tx, userId, state.reward.xp);
+    if (state.reward.xp) await awardXp(tx, userId, state.reward.xp, 'daily');
     if (state.reward.coins) await postCoins(tx, userId, { amount: state.reward.coins, reason: 'daily_reward', description: label, idempotencyKey: `daily-coins:${userId}:${state.today}` });
     await tx.update(users).set({ loginStreak: state.nextStreak, dailyClaimKey: state.today }).where(eq(users.id, userId));
     return { ...state.reward, streak: state.nextStreak, cycleDay: state.cycleDay };

@@ -31,7 +31,7 @@ export const EVENT_METRIC_INFO: Record<EventMetric, MetricInfo> = {
   international: { label: 'Международни доставки', unit: 'доставки', floor: 10, minContribution: 1 },
   heavy: { label: 'Товари над 15 т', unit: 'товара', floor: 10, minContribution: 1 },
   long_haul: { label: `Курсове над ${LONG_HAUL_KM} км`, unit: 'курса', floor: 8, minContribution: 1 },
-  earned_cents: { label: 'Спечелено навло', unit: '€', floor: 50_000_00, minContribution: 1_000_00 },
+  earned_cents: { label: 'Спечелено навло', unit: 'лв.', floor: 50_000_00, minContribution: 1_000_00 },
   holiday: { label: 'Празнични доставки', unit: 'доставки', floor: 40, minContribution: 1 },
 };
 
@@ -67,9 +67,9 @@ export function eventIncrement(e: EventFilter, f: DeliveryFacts): number {
   }
 }
 
-/** "1 250 т", "48 доставки", "75 000 €". */
+/** "1 250 т", "48 доставки", "75 000 лв.". */
 export function formatAmount(metric: EventMetric, value: number): string {
-  if (metric === 'earned_cents') return `${Math.round(value / 100).toLocaleString('bg-BG')} €`;
+  if (metric === 'earned_cents') return `${Math.round(value / 100).toLocaleString('bg-BG')} лв.`;
   const v = metric === 'tons' ? Math.round(value * 10) / 10 : Math.round(value);
   return `${v.toLocaleString('bg-BG')} ${EVENT_METRIC_INFO[metric].unit}`;
 }
@@ -133,7 +133,7 @@ export function rewardText(r: Partial<Reward>): string {
   const parts: string[] = [];
   if (r.vipDays) parts.push(`VIP ${r.vipDays} ${r.vipDays === 1 ? 'ден' : 'дни'}`);
   if (r.coins) parts.push(`${r.coins} TC`);
-  if (r.cents) parts.push(`${Math.round(r.cents / 100).toLocaleString('bg-BG')} €`);
+  if (r.cents) parts.push(`${Math.round(r.cents / 100).toLocaleString('bg-BG')} лв.`);
   if (r.xp) parts.push(`${r.xp.toLocaleString('bg-BG')} опит`);
   return parts.join(' · ') || '—';
 }

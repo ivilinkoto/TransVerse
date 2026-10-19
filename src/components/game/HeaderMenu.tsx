@@ -1,6 +1,8 @@
 'use client';
 
-import { Bell, LogOut, ShieldCheck, Star } from 'lucide-react';
+import { useFeature } from './Features';
+import { Bell, ExternalLink, LogOut, MessagesSquare, ShieldCheck, Star } from 'lucide-react';
+import { DISCORD_URL } from '@/lib/community';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -29,11 +31,12 @@ export function NotificationBell({ unread }: { unread: number }) {
 }
 
 /** The avatar menu: level, reputation, account pages, admin and logout. */
-export function AccountMenu({ staff, user, level, reputation }: { staff: boolean; user: { id: string; username: string; role: string; vip: boolean; avatarVersion: number }; level: { level: number; share: number; current: number; next: number }; reputation: number }) {
+export function AccountMenu({ staff, attention = 0, user, level, reputation }: { staff: boolean; attention?: number; user: { id: string; username: string; role: string; vip: boolean; avatarVersion: number }; level: { level: number; share: number; current: number; next: number }; reputation: number }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const mentor = useFeature('mentor');
 
   useEffect(() => {
     if (!open) return;
@@ -62,16 +65,21 @@ export function AccountMenu({ staff, user, level, reputation }: { staff: boolean
     <div className="relative" ref={box}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          // The menu and the chat share the right side: opening the menu folds the chat.
+          if (!open) window.dispatchEvent(new Event('tv:chat-close'));
+          setOpen((o) => !o);
+        }}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Профил и още"
+        aria-label={staff && attention > 0 ? `Профил и още (${attention} чакат в админ панела)` : 'Профил и още'}
         title={`Ниво ${level.level} · ${pct}%`}
         className="relative flex h-9 w-9 items-center justify-center rounded-full p-[2px] transition hover:brightness-125"
         style={{ background: `conic-gradient(var(--color-cyan-glow) ${pct}%, var(--color-asphalt-700) 0)` }}
       >
         <span className="flex h-full w-full overflow-hidden rounded-full bg-asphalt-900"><Avatar userId={user.id} username={user.username} version={user.avatarVersion} vip={user.vip} className="h-full w-full text-sm" /></span>
         <span className="num absolute -bottom-1 -right-1 min-w-[18px] rounded-full border border-asphalt-950 bg-volt-500 px-1 text-center text-[10px] font-bold leading-4 text-white">{level.level}</span>
+        {staff && attention > 0 && <span className="absolute -left-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-asphalt-950 bg-loss" aria-hidden="true" />}
       </button>
       {open && (
         <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-asphalt-700 bg-asphalt-900 p-1.5 shadow-2xl shadow-black/50">
@@ -85,7 +93,7 @@ export function AccountMenu({ staff, user, level, reputation }: { staff: boolean
             <div className="num mt-1 text-[11px] text-mist-400">{pct}% до ниво {level.level + 1}</div>
           </div>
           <div className="mt-1.5">
-            {ACCOUNT_MENU.map((item) => {
+            {ACCOUNT_MENU.filter((item) => mentor || item.href !== '/game/mentor').map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
@@ -101,9 +109,13 @@ export function AccountMenu({ staff, user, level, reputation }: { staff: boolean
                 </Link>
               );
             })}
+            <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" role="menuitem" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-mist-300 transition hover:bg-asphalt-800 hover:text-white">
+              <MessagesSquare className="h-4 w-4" />Discord сървър<ExternalLink className="ml-auto h-3.5 w-3.5 text-mist-500" />
+            </a>
             {staff && (
               <Link href="/admin" role="menuitem" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-prestige hover:bg-prestige/10">
                 <ShieldCheck className="h-4 w-4" /> Админ панел
+                {attention > 0 && <span className="num ml-auto rounded-full bg-loss px-1.5 text-[11px] font-bold leading-5 text-white" title="Чакащи въпроси към поддръжката и доклади">{attention}</span>}
               </Link>
             )}
           </div>
