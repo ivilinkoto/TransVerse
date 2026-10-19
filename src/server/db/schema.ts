@@ -1462,3 +1462,47 @@ export const companyBattles = pgTable(
   },
   (t) => [uniqueIndex('company_battles_a_idx').on(t.weekKey, t.aId), uniqueIndex('company_battles_b_idx').on(t.weekKey, t.bId), index('company_battles_status_idx').on(t.status, t.endsAt)],
 );
+
+/** The friends feed: notable moments of a player (or a company), shown to friends and company members. */
+export const feedEntries = pgTable(
+  'feed_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    text: text('text').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('feed_entries_user_idx').on(t.userId, t.createdAt), index('feed_entries_org_idx').on(t.organizationId, t.createdAt)],
+);
+
+/** "Браво" on a feed entry (once per player). */
+export const feedCheers = pgTable(
+  'feed_cheers',
+  {
+    entryId: uuid('entry_id').notNull().references(() => feedEntries.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.entryId, t.userId] })],
+);
+
+/** The player's own goal for a week (chosen from three sized to their pace). */
+export const weeklyGoals = pgTable(
+  'weekly_goals',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    weekKey: text('week_key').notNull(),
+    difficulty: text('difficulty').notNull(),
+    metric: text('metric').notNull(),
+    target: real('target').notNull(),
+    progress: real('progress').notNull().default(0),
+    rewardCents: money('reward_cents').notNull(),
+    rewardCoins: integer('reward_coins').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    claimedAt: ts('claimed_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.weekKey] })],
+);

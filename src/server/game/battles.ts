@@ -4,6 +4,7 @@ import { battleOutcome, BATTLE_RULES, pairCompanies } from '@/lib/game/battles';
 import { periodWindow } from '@/lib/game/missions';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { companies, companyBattles, companyMembers, deliveries, organizations } from '@/server/db/schema';
+import { addFeed } from './feed';
 import { postTreasury } from './finance';
 import { addCompanyXp, notifyMembers } from './membership';
 
@@ -63,7 +64,10 @@ export async function settleBattles(db: Database, now = new Date()) {
       if (outcome === 'draw') {
         await pay(b.aId, 0.5);
         await pay(b.bId, 0.5);
-      } else if (winnerId) await pay(winnerId, 1);
+      } else if (winnerId) {
+        await pay(winnerId, 1);
+        await addFeed(tx, { organizationId: winnerId, kind: 'battle', text: `компанията спечели битката срещу „${names.get(winnerId === b.aId ? b.bId : b.aId)}“ (${Math.round(Math.max(b.aTons, b.bTons))} : ${Math.round(Math.min(b.aTons, b.bTons))} т)` }, now);
+      }
       for (const [orgId, side] of [[b.aId, 'a'], [b.bId, 'b']] as const) {
         const other = names.get(side === 'a' ? b.bId : b.aId);
         const text =

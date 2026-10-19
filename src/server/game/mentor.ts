@@ -9,6 +9,7 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { assertNotBlocked } from './moderation';
+import { addFeed } from './feed';
 import { notify } from './notify';
 
 const DAY = 86_400_000;
@@ -101,6 +102,7 @@ export async function completeMentorship(tx: Tx, menteeId: string, level: number
   await postCoins(tx, m.mentorId, { amount: MENTOR.mentorCoins, reason: 'mentor_reward', description: `Наставник на ${mentee!.username}`, idempotencyKey: `mentor:${menteeId}:mentor-coins` });
   await postCoins(tx, menteeId, { amount: MENTOR.menteeCoins, reason: 'mentor_reward', description: `Ниво ${MENTOR.goalLevel} с наставник`, idempotencyKey: `mentor:${menteeId}:mentee-coins` });
   await tx.insert(userBadges).values({ userId: m.mentorId, badge: MENTOR.badge, awardedAt: now }).onConflictDoNothing();
+  await addFeed(tx, { userId: m.mentorId, kind: 'mentor', text: `изведе ${mentee!.username} до ниво ${MENTOR.goalLevel} като наставник` }, now);
   await notify(tx, m.mentorId, 'achievement', `${mentee!.username} стигна ниво ${MENTOR.goalLevel}!`, `Благодарим, наставнико: ${money(MENTOR.mentorCents)} и ${MENTOR.mentorCoins} TC са твои, а значката „Наставник“ — в профила ти.`, '/game/mentor');
   await notify(tx, menteeId, 'achievement', `Ниво ${MENTOR.goalLevel} с наставник!`, `Ти и ${mentor!.username} получавате награда: ${money(MENTOR.menteeCents)} и ${MENTOR.menteeCoins} TC за теб.`, '/game/mentor');
   return true;

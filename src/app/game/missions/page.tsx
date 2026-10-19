@@ -6,6 +6,8 @@ import { dateTime, duration, int, money } from '@/lib/format';
 import { MISSION_PERIODS, MISSION_REROLL_COINS, PERIOD_LABELS, missionById, type MissionPeriod } from '@/lib/game/missions';
 import { gameContext } from '@/server/game/context';
 import { missionBoard } from '@/server/game/missions';
+import { weeklyGoalState } from '@/server/game/weekly-goal';
+import { WeeklyGoalCard } from '@/components/game/WeeklyGoalCard';
 
 export const metadata = { title: 'Мисии' };
 
@@ -68,6 +70,7 @@ function MissionCard({ row, reroll }: { row: Row; reroll?: { label: string; disa
 export default async function MissionsPage() {
   const { db, user, now } = await gameContext();
   const { windows, current, unclaimed } = await missionBoard(db, user.id, now);
+  const goal = await weeklyGoalState(db, user.id, now);
   const done = current.filter((r) => r.completedAt).length;
   const waiting = [...current, ...unclaimed].filter((r) => r.completedAt && !r.claimedAt);
   const waitingCents = waiting.reduce((s, r) => s + r.rewardCents, 0);
@@ -80,6 +83,7 @@ export default async function MissionsPage() {
     <div className="space-y-6">
       <PageHeader title="Мисии" subtitle="Цели за деня, седмицата, месеца и сезона."
         help="Прогресът се отчита автоматично при всяка доставка; наградата се взима с бутон (VIP — автоматично). Мисиите се подбират според нивото и лицензите ти; VIP получава +1 дневна и +1 седмична мисия." />
+      <WeeklyGoalCard state={goal} now={now} />
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="panel flex items-center gap-3 p-3 sm:p-4"><Target className="hidden h-5 w-5 shrink-0 sm:block text-cyan-glow" /><div><div className="label">Изпълнени сега</div><div className="num font-display text-lg font-bold sm:text-xl">{done} / {current.length}</div></div></div>
         <div className="panel flex items-center gap-3 p-3 sm:p-4"><Coins className="hidden h-5 w-5 shrink-0 sm:block text-gold-400" /><div><div className="label">Чакащи награди</div><div className="num font-display text-lg font-bold sm:text-xl text-gold-400">{money(waitingCents)}</div></div></div>

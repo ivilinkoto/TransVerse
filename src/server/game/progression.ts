@@ -1,5 +1,6 @@
 import { and, eq, gte, isNull, sql } from 'drizzle-orm';
 import { LEDGER_LABELS, type LedgerCategory } from './finance';
+import { addFeed } from './feed';
 import { completeMentorship } from './mentor';
 import { ACHIEVEMENTS, levelForXp, type CompanyStats } from '@/lib/game/progression';
 import type { DbOrTx, Tx } from '@/server/db/client';
@@ -83,6 +84,7 @@ export async function awardXp(tx: Tx, userId: string, xp: number, reason: XpReas
     await tx.update(users).set({ level }).where(eq(users.id, userId));
     await notify(tx, userId, 'achievement', `Ниво ${level}!`, 'Отключихте нови възможности. Вижте „Прогрес“.', '/game/progress');
     await completeMentorship(tx, userId, level);
+    await addFeed(tx, { userId, kind: 'level', text: `достигна ниво ${level}` });
     return { level, leveledUp: true };
   }
   return { level, leveledUp: false };
@@ -101,6 +103,7 @@ export async function checkAchievements(tx: Tx, userId: string, companyId: strin
     if (a.rewardXp) await awardXp(tx, userId, a.rewardXp, 'achievement');
     if (a.badge) await tx.insert(userBadges).values({ userId, badge: a.badge }).onConflictDoNothing();
     await notify(tx, userId, 'achievement', `Постижение: ${a.title}`, a.description, '/game/progress');
+    await addFeed(tx, { userId, kind: 'achievement', text: `спечели постижението „${a.title}“` });
   }
   return unlocked;
 }

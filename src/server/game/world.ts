@@ -27,6 +27,8 @@ import { expireListings } from './used-market';
 import { settleLeagues } from './leagues';
 import { expireProjects } from './projects';
 import { ensureWeeklyBattles, settleBattles } from './battles';
+import { pruneFeed } from './feed';
+import { settleEcoWeek } from './eco';
 import { runPayroll } from './staff';
 
 /**
@@ -172,6 +174,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
     await every(db, 'leagues', 10 * 60_000, now, () => settleLeagues(db, now));
     await every(db, 'company-projects', 10 * 60_000, now, () => expireProjects(db, now));
+    await every(db, 'eco-week', 30 * 60_000, now, () => settleEcoWeek(db, now));
+    await every(db, 'feed-prune', 6 * 3_600_000, now, () => pruneFeed(db, now));
     // Company battles: settle last week's, pair this week's.
     await every(db, 'company-battles', 10 * 60_000, now, async () => {
       await settleBattles(db, now);

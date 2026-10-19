@@ -274,6 +274,20 @@
       "when": 1792438493859,
       "tag": "0038_needy_the_order",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792439135429,
+      "tag": "0039_colossal_magus",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792439465695,
+      "tag": "0040_petite_giant_girl",
+      "breakpoints": true
     }
   ]
 }

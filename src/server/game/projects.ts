@@ -4,6 +4,7 @@ import { PROJECT_RULES, projectOffers, projectReward, projectTarget, projectTemp
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companyMembers, companyProjects, organizations } from '@/server/db/schema';
 import { postCoins } from './coins';
+import { addFeed } from './feed';
 import { fail } from './errors';
 import { postTreasury } from './finance';
 import { addCompanyXp, memberCount, notifyMembers, requirePermission } from './membership';
@@ -58,6 +59,7 @@ export async function recordProjectDelivery(tx: Tx, organizationId: string, user
   if (!done) return;
   await postTreasury(tx, organizationId, [{ category: 'company_project', amountCents: p.rewardCents, description: `Фирмен проект: ${p.title}`, idempotencyKey: `project:${p.id}`, refType: 'company_project', refId: p.id }]);
   await addCompanyXp(tx, organizationId, p.rewardXp);
+  await addFeed(tx, { organizationId, kind: 'project', text: `компанията завърши проекта „${p.title}“` }, now);
   // ТрансКоин for every member who really helped (and is still in the company).
   const members = new Set((await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, organizationId))).map((r) => r.userId));
   for (const [helper, tons] of Object.entries(contributions)) {

@@ -33,6 +33,8 @@ import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { helpOnRoad } from '@/server/game/roadside';
+import { cheer } from '@/server/game/feed';
+import { chooseWeeklyGoal, claimWeeklyGoal } from '@/server/game/weekly-goal';
 import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
 import { startProject } from '@/server/game/projects';
@@ -149,6 +151,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema }),
   z.object({ type: z.literal('sendMoney'), transfer: transferSchema }),
   z.object({ type: z.literal('mentorOpen'), on: z.boolean() }),
+  z.object({ type: z.literal('cheer'), entryId: z.string().uuid() }),
+  z.object({ type: z.literal('chooseWeeklyGoal'), difficulty: z.enum(['easy', 'normal', 'hard']) }),
+  z.object({ type: z.literal('claimWeeklyGoal'), week: z.string().regex(/^W\d{4}-\d{2}$/) }),
   z.object({ type: z.literal('helpOnRoad'), deliveryId: z.string().uuid() }),
   z.object({ type: z.literal('chooseMentor'), mentorId: z.string().uuid() }),
   z.object({ type: z.literal('endMentorship'), id: z.string().uuid() }),
@@ -342,6 +347,13 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'helpOnRoad':
       return { ok: true, ...(await helpOnRoad(db, user.id, input.deliveryId)) };
+    case 'chooseWeeklyGoal':
+      await chooseWeeklyGoal(db, user.id, input.difficulty);
+      return { ok: true };
+    case 'claimWeeklyGoal':
+      return { ok: true, ...(await claimWeeklyGoal(db, user.id, input.week)) };
+    case 'cheer':
+      return { ok: true, ...(await cheer(db, user.id, input.entryId)) };
     case 'mentorOpen':
       await setMentorOpen(db, user.id, input.on);
       return { ok: true };

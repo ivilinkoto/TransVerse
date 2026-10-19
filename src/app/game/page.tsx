@@ -1,5 +1,5 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { ChevronRight, ClipboardList, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronRight, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
@@ -12,6 +12,9 @@ import { isWinter } from '@/lib/game/winter';
 import { RoadConditions } from '@/components/game/RoadConditions';
 import { isNewcomer, MENTOR } from '@/lib/game/mentor';
 import { mentorOverview } from '@/server/game/mentor';
+import { friendsFeed } from '@/server/game/feed';
+import { weeklyGoalState } from '@/server/game/weekly-goal';
+import { FriendsFeed } from '@/components/game/FriendsFeed';
 import { countries as countryTable } from '@/server/db/schema';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { Badge, Card, Empty, Meter } from '@/components/ui';
@@ -29,6 +32,8 @@ import { fleetView, latestNotifications, netWorthCents } from '@/server/game/que
 export default async function OverviewPage() {
   const { db, user, company, now } = await gameContext();
   const [paper] = await latestIssues(db, 1);
+  const feed = await friendsFeed(db, user.id, now);
+  const goal = await weeklyGoalState(db, user.id, now);
   const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
@@ -136,6 +141,15 @@ export default async function OverviewPage() {
           <span className="btn-primary max-sm:hidden">Към празника</span>
         </Link>
       )}
+      {!goal.goal && (
+        <Link href="/game/missions" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
+          <Flag className="h-6 w-6 shrink-0 text-gold-400" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Избери си седмична цел</span>
+            <span className="block text-sm text-mist-300">Лесна, нормална или трудна — според твоето темпо. Награда в лева и ТрансКоин.</span>
+          </span>
+        </Link>
+      )}
       {isNewcomer(user, now) && !(await mentorOverview(db, user.id, now)).mentor && (
         <Link href="/game/mentor" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
           <GraduationCap className="h-6 w-6 shrink-0 text-cyan-glow" />
@@ -191,6 +205,11 @@ export default async function OverviewPage() {
         </div>
 
         <div className="space-y-5 sm:space-y-6">
+          {feed.length > 0 && (
+            <Card title="При приятелите" actions={<Link href="/game/profile" className="text-sm text-cyan-glow hover:underline">Приятели →</Link>}>
+              <FriendsFeed items={feed.map((f) => ({ ...f, createdAt: f.createdAt.toISOString() }))} me={user.id} now={now.getTime()} />
+            </Card>
+          )}
           <Card title="Днешни мисии" actions={<Link href="/game/missions" className="text-sm text-cyan-glow hover:underline">Всички →</Link>}>
             <ul className="space-y-3">
               {today.map((m) => {
