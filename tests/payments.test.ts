@@ -68,6 +68,8 @@ describe('payments', () => {
     expect(params.line_items![0]!.price_data).toMatchObject({ currency: 'eur', unit_amount: 999 });
     expect(params.metadata).toMatchObject({ paymentId, userId: p.userId, productId: 'tc_550' });
     expect(params.success_url).toBe('https://transverse.example/game/shop/payment?session_id={CHECKOUT_SESSION_ID}');
+    // Sold by us, not through Stripe's Managed Payments (which needs product tax codes).
+    expect(params.managed_payments).toEqual({ enabled: false });
     const [row] = await db().select().from(payments).where(eq(payments.id, paymentId));
     expect(row).toMatchObject({ status: 'pending', amountCents: 999, coins: 550 });
     expect(row!.checkoutSessionId).toMatch(/^cs_test_/);
