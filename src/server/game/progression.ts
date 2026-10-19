@@ -1,8 +1,9 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, gte, isNull, sql } from 'drizzle-orm';
+import { LEDGER_LABELS, type LedgerCategory } from './finance';
 import { completeMentorship } from './mentor';
 import { ACHIEVEMENTS, levelForXp, type CompanyStats } from '@/lib/game/progression';
 import type { DbOrTx, Tx } from '@/server/db/client';
-import { achievements, companies, deliveries, depots, drivers, cities, userBadges, users, vehicles } from '@/server/db/schema';
+import { achievements, companies, deliveries, depots, drivers, cities, ledgerEntries, userBadges, users, vehicles, xpEntries } from '@/server/db/schema';
 import { post } from './finance';
 import { notify } from './notify';
 
@@ -70,8 +71,12 @@ export async function companyStats(db: DbOrTx, companyId: string): Promise<Compa
   };
 }
 
-/** Adds XP, recomputes the level and notifies on level-up. */
-export async function awardXp(tx: Tx, userId: string, xp: number): Promise<{ level: number; leveledUp: boolean }> {
+export type XpReason = 'delivery' | 'fleet' | 'mission' | 'event' | 'achievement' | 'daily' | 'tutorial' | 'roadside' | 'other';
+export const XP_REASON_LABELS: Record<XpReason, string> = { delivery: 'Собствени курсове', fleet: 'Курсове на наети шофьори', mission: 'Мисии', event: 'Ивенти', achievement: 'Постижения', daily: 'Дневна награда', tutorial: 'Обучение', roadside: 'Помощ на пътя', other: 'Други' };
+
+/** Adds XP (logged with its source), recomputes the level and notifies on level-up. */
+export async function awardXp(tx: Tx, userId: string, xp: number, reason: XpReason = 'other'): Promise<{ level: number; leveledUp: boolean }> {
+  if (xp > 0) await tx.insert(xpEntries).values({ userId, amount: xp, reason });
   const [user] = await tx.update(users).set({ xp: sql`${users.xp} + ${xp}` }).where(eq(users.id, userId)).returning({ xp: users.xp, level: users.level });
   const level = levelForXp(user!.xp);
   if (level > user!.level) {
@@ -93,9 +98,29 @@ export async function checkAchievements(tx: Tx, userId: string, companyId: strin
     if (!inserted.length) continue;
     unlocked.push(a.key);
     if (a.rewardCents) await post(tx, companyId, [{ category: 'achievement_reward', amountCents: a.rewardCents, description: `Постижение: ${a.title}`, idempotencyKey: `achievement:${userId}:${a.key}` }]);
-    if (a.rewardXp) await awardXp(tx, userId, a.rewardXp);
+    if (a.rewardXp) await awardXp(tx, userId, a.rewardXp, 'achievement');
     if (a.badge) await tx.insert(userBadges).values({ userId, badge: a.badge }).onConflictDoNothing();
     await notify(tx, userId, 'achievement', `Постижение: ${a.title}`, a.description, '/game/progress');
   }
   return unlocked;
+}
+
+/** Admin: a player's XP over the last days, by source (largest first). */
+export async function xpBySource(db: DbOrTx, userId: string, days = 7, now = new Date()) {
+  const rows = await db
+    .select({ reason: xpEntries.reason, xp: sql<number>`sum(${xpEntries.amount})::int`, n: sql<number>`count(*)::int` })
+    .from(xpEntries)
+    .where(and(eq(xpEntries.userId, userId), gte(xpEntries.createdAt, new Date(now.getTime() - days * 86_400_000))))
+    .groupBy(xpEntries.reason);
+  return rows.sort((a, b) => b.xp - a.xp).map((r) => ({ ...r, label: XP_REASON_LABELS[r.reason as XpReason] ?? r.reason }));
+}
+
+/** Admin: a player's money over the last days by ledger category (income and costs, largest first). */
+export async function moneyBySource(db: DbOrTx, companyId: string, days = 7, now = new Date()) {
+  const rows = await db
+    .select({ category: ledgerEntries.category, cents: sql<number>`sum(${ledgerEntries.amountCents})::bigint`, n: sql<number>`count(*)::int` })
+    .from(ledgerEntries)
+    .where(and(eq(ledgerEntries.companyId, companyId), gte(ledgerEntries.createdAt, new Date(now.getTime() - days * 86_400_000))))
+    .groupBy(ledgerEntries.category);
+  return rows.map((r) => ({ ...r, cents: Number(r.cents), label: LEDGER_LABELS[r.category as LedgerCategory] ?? r.category })).sort((a, b) => Math.abs(b.cents) - Math.abs(a.cents));
 }

@@ -15,8 +15,11 @@ export function legacyXpForLevel(level: number): number {
   return level <= 1 ? 0 : Math.round(800 * (level - 1) ** 1.7);
 }
 
-/** Share of a hired driver's delivery XP that also goes to the player (their own driving gives it all). */
-export const FLEET_XP_SHARE = 0.25;
+/** Share of a hired driver's delivery XP that also goes to the player (their own driving gives it all). v1.3: 0.25 → 0.1 — a big fleet levelled players far too fast. */
+export const FLEET_XP_SHARE = 0.1;
+
+/** Share of a member's delivery XP that goes to the company (hired drivers' trips: times FLEET_XP_SHARE). */
+export const COMPANY_XP_SHARE = 0.5;
 
 export function levelForXp(xp: number): number {
   let level = 1;

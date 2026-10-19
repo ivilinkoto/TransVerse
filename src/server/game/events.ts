@@ -75,7 +75,7 @@ async function payReward(tx: Tx, e: GlobalEvent, userId: string, reward: ReturnT
     const account = await companyForUser(tx, userId);
     await post(tx, account.id, [{ category: 'event_reward', amountCents: reward.cents, description: `Ивент „${e.name}“${rank ? ` — ${rank} място` : ''}`, idempotencyKey: `${key}:money`, refType: 'event', refId: e.id }]);
   }
-  if (reward.xp) await awardXp(tx, userId, reward.xp);
+  if (reward.xp) await awardXp(tx, userId, reward.xp, 'event');
   if (reward.coins) await postCoins(tx, userId, { amount: reward.coins, reason: 'event_reward', description: `Ивент „${e.name}“`, idempotencyKey: `${key}:coins` });
   if (reward.vipDays) {
     const [u] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId)).for('update');

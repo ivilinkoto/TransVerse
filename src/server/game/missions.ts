@@ -66,7 +66,7 @@ async function payMission(tx: Tx, userId: string, row: MissionRow) {
   const def = missionById(row.missionId);
   const account = await companyForUser(tx, userId);
   await post(tx, account.id, [{ category: 'mission_reward', amountCents: row.rewardCents, description: `Мисия: ${def ? def.title(row.target) : row.missionId}`, idempotencyKey: `mission:${userId}:${row.periodKey}:${row.missionId}` }]);
-  await awardXp(tx, userId, row.rewardXp);
+  await awardXp(tx, userId, row.rewardXp, 'mission');
   await tx
     .update(missionProgress)
     .set({ claimedAt: new Date() })

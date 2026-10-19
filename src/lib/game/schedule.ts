@@ -158,13 +158,13 @@ export function estimateMinutes(input: Omit<ScheduleInput, 'startAt' | 'timeScal
 }
 
 /**
- * Game time. Short trips keep players coming back: the whole trip is compressed
- * to 10 min + 0.04 min per km (≈15 min for 150 km, ≈30 min for 500 km, ≈1 h for
- * 1 200 km, ≈2 h 10 min for 3 000 km) — always proportional to distance, with
- * no upper cap. Phases keep their real proportions, so breaks, rests and
+ * Game time. The whole trip is compressed to 15 min + 0.09 min per km (≈30 min
+ * for 150 km, ≈1 h for 500 km, ≈2 h for 1 200 km, ≈4 h 45 min for 3 000 km) —
+ * always proportional to distance, with no upper cap. v1.3 doubled it: trips of
+ * half an hour let a fleet earn levels and money far too fast. Phases keep their real proportions, so breaks, rests and
  * border waits stay visible — just shorter.
  */
-export const GAME_TIME = { baseMin: 10, perKmMin: 0.04, minMin: 10, roundToMin: 5 } as const;
+export const GAME_TIME = { baseMin: 15, perKmMin: 0.09, minMin: 15, roundToMin: 5 } as const;
 
 /** Bump when GAME_TIME changes: running deliveries are rescaled to the current rules. */
 export const SCHEDULE_VERSION = 4;

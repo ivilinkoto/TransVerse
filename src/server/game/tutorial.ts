@@ -39,7 +39,7 @@ async function rewardOnce(db: Database, userId: string, companyId: string) {
     if (u?.tutorial.rewarded) return;
     await tx.update(users).set({ tutorial: { ...(u?.tutorial ?? { done: [] }), rewarded: true } }).where(eq(users.id, userId));
     await post(tx, companyId, [{ category: 'tutorial_reward', amountCents: ECONOMY.tutorialRewardCents, description: 'Завършено обучение', idempotencyKey: `tutorial:${userId}` }]);
-    await awardXp(tx, userId, ECONOMY.tutorialRewardXp);
+    await awardXp(tx, userId, ECONOMY.tutorialRewardXp, 'tutorial');
     await notify(tx, userId, 'achievement', 'Обучението е завършено!', `Награда: ${ECONOMY.tutorialRewardCents / 100} лв. и ${ECONOMY.tutorialRewardXp} опит.`, '/game/finance');
   });
 }

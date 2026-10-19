@@ -12,7 +12,7 @@ import { recordProjectDelivery } from './projects';
 import { isWinter, routeCondition, WINTER } from '@/lib/game/winter';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
 import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/game/fines';
-import { deliveryXp, FLEET_XP_SHARE, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
+import { COMPANY_XP_SHARE, deliveryXp, FLEET_XP_SHARE, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
 import { buildGameTrip, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
@@ -331,11 +331,13 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, d.coDriverId ? [d.driverId, d.coDriverId] : [d.driverId]), eq(drivers.isOwner, true)))).length > 0;
   const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);
   if (perks) {
+    // The company learns from every member trip, at its own (slower) pace; hired drivers' trips count less.
+    const companyXp = Math.round(baseXp * COMPANY_XP_SHARE * (ownerDrove ? 1 : FLEET_XP_SHARE));
     await tx
       .update(companyMembers)
-      .set({ deliveries: sql`${companyMembers.deliveries} + 1`, contributedCents: sql`${companyMembers.contributedCents} + ${contribution}`, xpContributed: sql`${companyMembers.xpContributed} + ${baseXp}` })
+      .set({ deliveries: sql`${companyMembers.deliveries} + 1`, contributedCents: sql`${companyMembers.contributedCents} + ${contribution}`, xpContributed: sql`${companyMembers.xpContributed} + ${companyXp}` })
       .where(eq(companyMembers.userId, company!.ownerId));
-    await addCompanyXp(tx, perks.membership.company.id, baseXp);
+    await addCompanyXp(tx, perks.membership.company.id, companyXp);
   }
 
   await tx
@@ -378,7 +380,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .set({ demand: sql`greatest(${ECONOMY.demandFloor}, ${cityMarkets.demand} - ${contract.weightTons * ECONOMY.demandDropPerTon})`, updatedAt: now })
     .where(and(eq(cityMarkets.cityId, contract.destCityId), eq(cityMarkets.cargoType, contract.cargoType)));
 
-  await awardXp(tx, company!.ownerId, playerXp);
+  await awardXp(tx, company!.ownerId, playerXp, ownerDrove ? 'delivery' : 'fleet');
   // Missions: what this delivery contributes (route countries plus both ends).
   const [origin] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract.originCityId));
   const [route] = await tx.select({ countries: routes.countries }).from(routes).where(eq(routes.id, d.routeId));

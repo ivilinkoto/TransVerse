@@ -1429,3 +1429,16 @@ export const roadsideHelps = pgTable(
   },
   (t) => [uniqueIndex('roadside_helps_stop_idx').on(t.deliveryId, t.stopAt), index('roadside_helps_helper_idx').on(t.helperId, t.createdAt)],
 );
+
+/** Every XP grant to a player: how much and from where (admin view, balance checks). */
+export const xpEntries = pgTable(
+  'xp_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    amount: integer('amount').notNull(),
+    reason: text('reason').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('xp_entries_user_idx').on(t.userId, t.createdAt)],
+);

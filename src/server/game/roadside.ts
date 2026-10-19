@@ -102,7 +102,7 @@ export async function helpOnRoad(db: Database, helperId: string, deliveryId: str
     await post(tx, account.id, [{ category: 'roadside_help', amountCents: ROADSIDE.feeCents, description: `Помощ на пътя: ${owner!.username} (${stop!.note})`, idempotencyKey: `roadside:${help!.id}`, refType: 'delivery', refId: d!.id }]);
     const [acc] = await tx.select({ reputation: companies.reputation }).from(companies).where(eq(companies.id, account.id)).for('update');
     await tx.update(companies).set({ reputation: Math.min(100, acc!.reputation + ROADSIDE.reputation) }).where(eq(companies.id, account.id));
-    await awardXp(tx, helperId, ROADSIDE.xp);
+    await awardXp(tx, helperId, ROADSIDE.xp, 'roadside');
     await recordChristmasHelp(tx, helperId, now);
     const minutes = Math.max(1, Math.round(savedMs / 60_000));
     await notify(tx, owner!.id, 'success', `${helper!.username} ти помогна на пътя`, `${stop!.note}: камионът тръгва ${minutes} мин. по-рано.`, '/game/fleet');
