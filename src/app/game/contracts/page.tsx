@@ -35,14 +35,14 @@ export const metadata = { title: 'Поръчки' };
 export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; from?: string; truck?: string }> }) {
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
-  const { db, user, company, hq, now } = await gameContext();
+  const { db, user, company, hq, now, features } = await gameContext();
   const favorites = await favoriteLanesOf(db, user.id);
   // Loads companies handed to this player, and whether the player may hand loads out.
-  const [hiredOffers, canAssign] = await Promise.all([offersFor(db, user.id, now), canOfferJobs(db, user.id)]);
+  const [hiredOffers, canAssign] = features.hire ? await Promise.all([offersFor(db, user.id, now), canOfferJobs(db, user.id)]) : [[], false] as const;
   const hiredBy = new Map(hiredOffers.map((o) => [o.contractId, { offerId: o.id, company: o.tag ? `[${o.tag}] ${o.company}` : o.company, share: o.share, until: o.expiresAt.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' }) }]));
   // Lanes a friend or company member just left on (first one per lane).
   const convoys = new Map<string, string>();
-  for (const c of await convoyCandidates(db, user.id, now)) if (!convoys.has(`${c.originCityId}:${c.destCityId}`)) convoys.set(`${c.originCityId}:${c.destCityId}`, c.username);
+  if (features.convoy) for (const c of await convoyCandidates(db, user.id, now)) if (!convoys.has(`${c.originCityId}:${c.destCityId}`)) convoys.set(`${c.originCityId}:${c.destCityId}`, c.username);
   // Every free vehicle always has at least one job it can take in its own city.
   await ensureLocalJobsForFleet(db, now, company.id).catch((e) => console.warn('[contracts] local jobs', e));
   const [fleet, licences, taken] = await Promise.all([
@@ -57,14 +57,14 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
   const membership = await membershipOf(db, user.id);
   const memberOfCompanyId = membership?.company.id ?? null;
-  const project = memberOfCompanyId ? await activeProject(db, memberOfCompanyId) : null;
+  const project = memberOfCompanyId && features.projects ? await activeProject(db, memberOfCompanyId) : null;
   const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId }))]);
   // "Drive in convoy" from the map: only the loads on that lane (from its origin city, all of them).
-  const laneMatch = /^(\d+)-(\d+)$/.exec(params.lane ?? '');
+  const laneMatch = features.convoy ? /^(\d+)-(\d+)$/.exec(params.lane ?? '') : null;
   const lane = laneMatch ? { from: Number(laneMatch[1]), to: Number(laneMatch[2]) } : null;
   const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId }) : [];
   // "Return load" after a delivery: the loads from where the truck now stands, that truck first.
-  const fromCity = /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
+  const fromCity = features.backhaul && /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
   const backTruck = fromCity ? fleet.vehicles.find((v) => v.id === params.truck && !v.delivery) ?? fleet.vehicles.find((v) => !v.delivery && v.cityId === fromCity) ?? null : null;
   const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId }) : [];
   const seen = new Set<string>();
@@ -129,7 +129,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         return w.condition === 'clear' ? null : { condition: w.condition, label: CONDITION_LABELS[w.condition], country: w.country! };
       })(),
       favorite: favorites.some((f) => f.originCityId === c.originCityId && f.destCityId === c.destCityId),
-      toHome: c.destCityId === hq.id,
+      toHome: features.backhaul && c.destCityId === hq.id,
       tender: !!c.tenderId,
       alreadyTaken: takenIds.has(c.id),
       reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,

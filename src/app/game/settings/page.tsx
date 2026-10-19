@@ -18,7 +18,7 @@ import { HIRE_RULES } from '@/lib/game/hire';
 export const metadata = { title: 'Настройки' };
 
 export default async function SettingsPage() {
-  const { db, user, now } = await gameContext();
+  const { db, user, now, features } = await gameContext();
   const site = activeSeason(now, await seasonMode(db));
   const [u] = await db.select({ email: users.email, createdAt: users.createdAt, verified: users.emailVerifiedAt, pushPrefs: users.pushPrefs }).from(users).where(eq(users.id, user.id));
   const [keys, devices, blocked] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id)]);
@@ -51,14 +51,14 @@ export default async function SettingsPage() {
             <ActionButton action={{ type: 'seasonalTheme', on: !user.seasonalTheme }} className="btn-ghost">{user.seasonalTheme ? 'Изключи украсата' : 'Включи украсата'}</ActionButton>
           </div>
         </Card>
-        <Card title={<span className="inline-flex items-center gap-2"><UserRoundCheck className="h-4 w-4 text-mist-400" />На разположение за компании</span>} className="lg:col-span-2">
+        {features.hire && <Card title={<span className="inline-flex items-center gap-2"><UserRoundCheck className="h-4 w-4 text-mist-400" />На разположение за компании</span>} className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
             <p className="max-w-xl text-mist-300">
               Компаниите могат да ти възлагат курсове от борсата: товарът се запазва за теб {HIRE_RULES.offerMinutes} минути, караш със свой камион и при доставката плащаш на компанията уговорена комисиона ({Math.round(HIRE_RULES.minShare * 100)}–{Math.round(HIRE_RULES.maxShare * 100)} %). Всяко предложение можеш да откажеш. {user.forHire ? 'В момента приемаш предложения.' : 'В момента не приемаш предложения.'}
             </p>
             <ActionButton action={{ type: 'forHire', on: !user.forHire }} className={user.forHire ? 'btn-ghost' : 'btn-primary'}>{user.forHire ? 'Спри предложенията' : 'Приемам курсове'}</ActionButton>
           </div>
-        </Card>
+        </Card>}
         <Card title={<span className="inline-flex items-center gap-2"><Ban className="h-4 w-4 text-mist-400" />Блокирани играчи</span>} className="lg:col-span-2">
           {blocked.length === 0 ? (
             <p className="text-sm text-mist-400">Няма блокирани играчи. Блокира се от картата на играча (натисни името му).</p>

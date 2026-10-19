@@ -68,9 +68,9 @@ function MissionCard({ row, reroll }: { row: Row; reroll?: { label: string; disa
 }
 
 export default async function MissionsPage() {
-  const { db, user, now } = await gameContext();
+  const { db, user, now, features } = await gameContext();
   const { windows, current, unclaimed } = await missionBoard(db, user.id, now);
-  const goal = await weeklyGoalState(db, user.id, now);
+  const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
   const done = current.filter((r) => r.completedAt).length;
   const waiting = [...current, ...unclaimed].filter((r) => r.completedAt && !r.claimedAt);
   const waitingCents = waiting.reduce((s, r) => s + r.rewardCents, 0);
@@ -83,7 +83,7 @@ export default async function MissionsPage() {
     <div className="space-y-6">
       <PageHeader title="Мисии" subtitle="Цели за деня, седмицата, месеца и сезона."
         help="Прогресът се отчита автоматично при всяка доставка; наградата се взима с бутон (VIP — автоматично). Мисиите се подбират според нивото и лицензите ти; VIP получава +1 дневна и +1 седмична мисия." />
-      <WeeklyGoalCard state={goal} now={now} />
+      {goal && <WeeklyGoalCard state={goal} now={now} />}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="panel flex items-center gap-3 p-3 sm:p-4"><Target className="hidden h-5 w-5 shrink-0 sm:block text-cyan-glow" /><div><div className="label">Изпълнени сега</div><div className="num font-display text-lg font-bold sm:text-xl">{done} / {current.length}</div></div></div>
         <div className="panel flex items-center gap-3 p-3 sm:p-4"><Coins className="hidden h-5 w-5 shrink-0 sm:block text-gold-400" /><div><div className="label">Чакащи награди</div><div className="num font-display text-lg font-bold sm:text-xl text-gold-400">{money(waitingCents)}</div></div></div>

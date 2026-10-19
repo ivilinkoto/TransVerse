@@ -8,6 +8,7 @@ import type { FeedMessage } from '@/server/game/messages';
 import { PlayerName, openPlayerCard } from './PlayerName';
 import { openReport } from './ReportDialog';
 import { ScrollStrip } from './ScrollStrip';
+import { useFeature } from './Features';
 
 interface Conversation {
   userId: string;
@@ -59,6 +60,7 @@ export function ChatDock() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const extras = useFeature('chat_extras');
   const [suggest, setSuggest] = useState<{ query: string; names: string[] } | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -200,7 +202,7 @@ export function ChatDock() {
 
   /** "@na…" before the caret: names from this chat first, then the player search. */
   const lookUp = async (value: string, caret: number) => {
-    const query = typingMention(value.slice(0, caret));
+    const query = extras ? typingMention(value.slice(0, caret)) : null;
     if (query === null) return setSuggest(null);
     const q = query.toLowerCase();
     const local = [...new Set([...messages.map((m) => m.username), ...(inbox?.conversations.map((c) => c.username) ?? [])])].filter((n) => n !== inbox?.meName && n.toLowerCase().startsWith(q));
@@ -339,7 +341,7 @@ export function ChatDock() {
                     <p className={`whitespace-pre-wrap break-words text-sm ${m.deleted ? 'italic text-mist-400' : ''}`}>
                       {m.deleted || !m.body
                         ? 'Съобщението е изтрито.'
-                        : splitMentions(m.body).map((part, i) =>
+                        : (extras ? splitMentions(m.body) : [{ text: m.body }]).map((part, i) =>
                             part.mention ? (
                               <button key={i} type="button" onClick={() => openPlayerCard(part.mention!)} className={`rounded px-0.5 font-semibold ${part.mention.toLowerCase() === inbox?.meName.toLowerCase() ? 'bg-gold-400/25 text-gold-400' : 'text-cyan-glow hover:underline'}`}>
                                 {part.text}
@@ -374,7 +376,7 @@ export function ChatDock() {
             </div>
           )}
           <form onSubmit={(e) => void send(e)} className="flex gap-2 border-t border-asphalt-800 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] lg:pb-2">
-            <button type="button" className={`shrink-0 rounded-xl px-2 transition ${emojiOpen ? 'bg-asphalt-700 text-gold-400' : 'text-mist-400 hover:bg-asphalt-800 hover:text-white'}`} onClick={() => setEmojiOpen((o) => !o)} aria-label="Емоджи" aria-expanded={emojiOpen}><Smile className="h-5 w-5" /></button>
+            {extras && <button type="button" className={`shrink-0 rounded-xl px-2 transition ${emojiOpen ? 'bg-asphalt-700 text-gold-400' : 'text-mist-400 hover:bg-asphalt-800 hover:text-white'}`} onClick={() => setEmojiOpen((o) => !o)} aria-label="Емоджи" aria-expanded={emojiOpen}><Smile className="h-5 w-5" /></button>}
             <textarea
               ref={input}
               className="input min-h-10 flex-1 resize-none py-2 text-sm"
@@ -396,7 +398,7 @@ export function ChatDock() {
                   } else void send();
                 }
               }}
-              placeholder={dm ? `Съобщение до ${current.label}…` : tab === 'trade' ? 'Продавам / купувам…' : tab === 'company' ? 'До компанията… (@име споменава)' : 'До всички играчи… (@име споменава)'}
+              placeholder={dm ? `Съобщение до ${current.label}…` : tab === 'trade' ? 'Продавам / купувам…' : tab === 'company' ? (extras ? 'До компанията… (@име споменава)' : 'До компанията…') : (extras ? 'До всички играчи… (@име споменава)' : 'До всички играчи…')}
               aria-label="Съобщение"
             />
             <button className="btn-primary px-3" disabled={busy || !text.trim()} aria-label="Изпрати"><Send className="h-4 w-4" /></button>

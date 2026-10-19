@@ -1,5 +1,6 @@
 'use client';
 
+import { useFeature } from './Features';
 import { Award, Ban, Banknote, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
@@ -32,6 +33,8 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const transfers = useFeature('transfers');
+  const career = useFeature('career');
   const act = async (action: Record<string, unknown>) => {
     setBusy(true);
     setError(null);
@@ -75,7 +78,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
         <Stat label="Приятели" value={card.friends} />
       </div>
 
-      {careerLink && <Link href={`/game/players/${encodeURIComponent(card.username)}`} onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan-glow hover:underline"><Truck className="h-4 w-4" />Кариера: курсове, рекорди, любими линии →</Link>}
+      {careerLink && career && <Link href={`/game/players/${encodeURIComponent(card.username)}`} onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan-glow hover:underline"><Truck className="h-4 w-4" />Кариера: курсове, рекорди, любими линии →</Link>}
 
       <div className="mt-3 flex items-center gap-2 rounded-xl border border-asphalt-700 px-3 py-2 text-sm">
         <Building2 className="h-4 w-4 shrink-0 text-mist-400" />
@@ -112,7 +115,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
           )}
           {card.canInvite && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'companyInvite', userId: card.id })}><Users className="h-4 w-4" />Покани в компанията</button>}
           {card.invited && <span className="inline-flex items-center gap-1 px-2 text-sm text-mist-400"><Check className="h-4 w-4" />Поканен в компанията</span>}
-          <button type="button" className="btn-ghost" aria-expanded={paying} onClick={() => setPaying((v) => !v)}><Banknote className="h-4 w-4 text-gold-400" />Изпрати пари</button>
+          {transfers && <button type="button" className="btn-ghost" aria-expanded={paying} onClick={() => setPaying((v) => !v)}><Banknote className="h-4 w-4 text-gold-400" />Изпрати пари</button>}
         </div>
       )}
       {paying && card.relation !== 'self' && <div className="mt-3"><SendMoneyForm userId={card.id} username={card.username} /></div>}

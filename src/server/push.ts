@@ -8,6 +8,8 @@
 import { and, eq, gt, inArray, lt, lte, sql } from 'drizzle-orm';
 import webpush from 'web-push';
 import { z } from 'zod';
+import { featureLive } from '@/lib/game/features';
+import { isStaff } from '@/server/auth/roles';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyMembers, companyMessages, jobState, notifications, organizations, pushSubscriptions, users } from '@/server/db/schema';
 
@@ -221,7 +223,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
   // Up to the newest id right now, so nothing inserted meanwhile is skipped.
   const upTo = Number((await db.execute<{ m: number }>(sql`select coalesce(max(id), 0)::bigint as m from notifications`)).rows[0]?.m ?? from);
   const rows = await db
-    .select({ id: notifications.id, userId: notifications.userId, title: notifications.title, body: notifications.body, href: notifications.href, prefs: users.pushPrefs, quiet: users.quietHours })
+    .select({ id: notifications.id, userId: notifications.userId, title: notifications.title, body: notifications.body, href: notifications.href, prefs: users.pushPrefs, quiet: users.quietHours, role: users.role })
     .from(notifications)
     .innerJoin(users, eq(users.id, notifications.userId))
     .where(and(gt(notifications.id, from), lte(notifications.id, upTo), sql`exists (select 1 from push_subscriptions s where s.user_id = ${notifications.userId})`))
@@ -233,7 +235,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
   for (const [userId, list] of byUser) {
     const message: PushMessage =
       list.length === 1
-        ? { title: list[0]!.title, body: list[0]!.body, url: list[0]!.href ?? '/game/notifications', tag: `n${list[0]!.id}`, actions: pushActionsFor(list[0]!.href) }
+        ? { title: list[0]!.title, body: list[0]!.body, url: list[0]!.href ?? '/game/notifications', tag: `n${list[0]!.id}`, actions: featureLive('push_actions', now, isStaff(list[0]!.role)) ? pushActionsFor(list[0]!.href) : undefined }
         : { title: `${list.length} нови известия в TransVerse`, body: list.slice(-3).map((n) => n.title).join(' · '), url: '/game/notifications', tag: 'summary' };
     pushed += await pushToUser(db, userId, message, sender);
   }

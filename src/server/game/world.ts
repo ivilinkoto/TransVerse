@@ -29,6 +29,7 @@ import { expireProjects } from './projects';
 import { ensureWeeklyBattles, settleBattles } from './battles';
 import { pruneFeed } from './feed';
 import { settleEcoWeek } from './eco';
+import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 
 /**
@@ -174,12 +175,13 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
     await every(db, 'leagues', 10 * 60_000, now, () => settleLeagues(db, now));
     await every(db, 'company-projects', 10 * 60_000, now, () => expireProjects(db, now));
-    await every(db, 'eco-week', 30 * 60_000, now, () => settleEcoWeek(db, now));
+    // Features of an update that is not out yet stay off for players (see lib/game/features).
+    if (featureLive('eco', now)) await every(db, 'eco-week', 30 * 60_000, now, () => settleEcoWeek(db, now));
     await every(db, 'feed-prune', 6 * 3_600_000, now, () => pruneFeed(db, now));
     // Company battles: settle last week's, pair this week's.
     await every(db, 'company-battles', 10 * 60_000, now, async () => {
       await settleBattles(db, now);
-      await ensureWeeklyBattles(db, now);
+      if (featureLive('battles', now)) await ensureWeeklyBattles(db, now);
     });
     // Push notifications for whatever happened above (in-game notifications and company chat).
     await job(db, 'push', now, () => dispatchPush(db, now));

@@ -1,4 +1,5 @@
 import polyline from '@mapbox/polyline';
+import { featureFor } from '@/server/features';
 import { and, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
 import { ROAD_EVENTS, type RoadEventPlan } from '@/lib/game/road-events';
@@ -117,6 +118,7 @@ export async function helpOnRoad(db: Database, helperId: string, deliveryId: str
 /** When a truck stops for a helpable event: tells the owner's online friends and colleagues. */
 export async function askForHelp(tx: DbOrTx, ownerId: string, kind: keyof typeof ROAD_EVENTS, place: string | null, now: Date) {
   if (!ROADSIDE.kinds.includes(kind)) return 0;
+  if (!(await featureFor(tx, ownerId, 'roadside', now))) return 0;
   const circle = await circleOf(tx, ownerId);
   const ids = [...new Set([...circle.friends, ...circle.mates])];
   if (!ids.length) return 0;

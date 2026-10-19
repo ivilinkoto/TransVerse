@@ -6,6 +6,7 @@ import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { formConvoy } from './convoy';
+import { featureFor } from '@/server/features';
 import { acceptJobOffer, payHireCommission } from './hire';
 import { mentorXpFactor } from './mentor';
 import { recordBattleDelivery } from './battles';
@@ -414,15 +415,17 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await addLeaguePoints(tx, company!.ownerId, points, now);
   await addPassPoints(tx, company!.ownerId, points, now);
   await rewardReferral(tx, company!.ownerId, now);
+  // Return loads come with v1.2 (staff see them before the release).
+  const backhaul = !contract.trade && (await featureFor(tx, company!.ownerId, 'backhaul', completedAt));
   // Own goods get their own message (sale or warehouse) from settleTradeLot.
   if (!contract.trade) await notify(
     tx,
     company!.ownerId,
     onTime ? 'success' : 'warning',
     onTime ? `Доставено: ${contract.goods} в ${dest!.nameBg}` : `Закъсняла доставка в ${dest!.nameBg}`,
-    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} лв., +${playerXp} опит. Виж товарите обратно от ${dest!.nameBg}.`,
+    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} лв., +${playerXp} опит.${backhaul ? ` Виж товарите обратно от ${dest!.nameBg}.` : ''}`,
     // Straight to the return loads from where the truck now stands.
-    `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}`,
+    backhaul ? `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}` : '/game/finance',
   );
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });

@@ -9,3 +9,4 @@
 - Vehicle illustrations live in `src/components/vehicles` (1 unit = 1 cm, ground at y = 0). Brands are fictional; never add real trademarks or copied assets.
 - UI text is Bulgarian. Keep docs in `docs/` in sync with behaviour.
 - Every game update gets a version, a name and release notes in `src/lib/game/releases.ts` (Bulgarian); keep them in sync with what the update ships.
+- New player-facing features are registered in `FEATURES` (`src/lib/game/features.ts`) under their release version and gated with `useFeature` / `gameContext().features` / `requireFeature` / `featureFor`: staff-only until the release's `publishedAt`. Balance changes and bug fixes are not gated.

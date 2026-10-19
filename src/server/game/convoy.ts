@@ -1,4 +1,5 @@
 import { and, asc, eq, gte, inArray, isNull, ne } from 'drizzle-orm';
+import { featureFor } from '@/server/features';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import type { DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, contracts, deliveries, users } from '@/server/db/schema';
@@ -30,6 +31,7 @@ export async function convoyCandidates(db: DbOrTx, userId: string, now: Date, la
 
 /** A new trip joins the earliest matching one into a convoy; both players are told. */
 export async function formConvoy(tx: Tx, delivery: { id: string; companyId: string }, userId: string, lane: { originCityId: number; destCityId: number }, now: Date) {
+  if (!(await featureFor(tx, userId, 'convoy', now))) return null;
   const [partner] = (await convoyCandidates(tx, userId, now, lane)).filter((c) => c.deliveryId !== delivery.id);
   if (!partner) return null;
   // Lock the partner's trip so two new trips cannot both join it.

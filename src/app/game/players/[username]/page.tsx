@@ -21,7 +21,8 @@ function Fact({ label, value, icon: Icon }: { label: string; value: React.ReactN
 /** A player's public career page: the card, totals, records, favourite lanes and the latest trips. */
 export default async function PlayerCareerPage({ params }: { params: Promise<{ username: string }> }) {
   const username = decodeURIComponent((await params).username);
-  const { db, user } = await gameContext();
+  const { db, user, features } = await gameContext();
+  if (!features.career) notFound();
   const card = await playerCard(db, user.id, username);
   if (!card) notFound();
   const career = await playerCareer(db, card.id);

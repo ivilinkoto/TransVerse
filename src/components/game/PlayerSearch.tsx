@@ -1,5 +1,6 @@
 'use client';
 
+import { useFeature } from './Features';
 import { Building2, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -14,7 +15,12 @@ export function openPlayerSearch() {
 }
 
 /** Top-bar search: players by name, companies by name or tag. "/" or Ctrl+K opens it. */
+/** The search in the top bar (a release feature). */
 export function PlayerSearch() {
+  return useFeature('search') ? <PlayerSearchBox /> : null;
+}
+
+function PlayerSearchBox() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [result, setResult] = useState<SearchResult | null>(null);

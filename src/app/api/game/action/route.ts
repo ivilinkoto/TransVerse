@@ -34,6 +34,8 @@ import { hashIp } from '@/server/game/referrals';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { helpOnRoad } from '@/server/game/roadside';
 import { cheer } from '@/server/game/feed';
+import type { FeatureId } from '@/lib/game/features';
+import { requireFeature } from '@/server/features';
 import { chooseWeeklyGoal, claimWeeklyGoal } from '@/server/game/weekly-goal';
 import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
@@ -171,8 +173,26 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
 ]);
 
+/** Actions of features that go live with a release (staff can use them earlier, to test). */
+const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
+  sendMoney: 'transfers',
+  offerJob: 'hire',
+  declineJob: 'hire',
+  forHire: 'hire',
+  startProject: 'projects',
+  mentorOpen: 'mentor',
+  chooseMentor: 'mentor',
+  endMentorship: 'mentor',
+  helpOnRoad: 'roadside',
+  cheer: 'feed',
+  chooseWeeklyGoal: 'weekly_goal',
+  claimWeeklyGoal: 'weekly_goal',
+};
+
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
   const db = getDb();
+  const feature = ACTION_FEATURE[input.type];
+  if (feature) requireFeature(feature, user.role);
   switch (input.type) {
     case 'acceptContract': {
       const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload });

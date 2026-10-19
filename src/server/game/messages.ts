@@ -1,4 +1,5 @@
 import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
+import { featureFor } from '@/server/features';
 import { z } from 'zod';
 import { isStaff } from '@/server/auth/roles';
 import { rateLimit } from '@/server/auth/rate-limit';
@@ -73,7 +74,7 @@ export async function deleteChannelMessage(db: Database, userId: string, role: s
  */
 export async function notifyMentions(tx: Tx, authorId: string, body: string, where: { tab: string; where: string; members?: string[] }) {
   const names = extractMentions(body);
-  if (!names.length) return [];
+  if (!names.length || !(await featureFor(tx, authorId, 'chat_extras'))) return [];
   const rows = await tx
     .select({ id: users.id, username: users.username })
     .from(users)

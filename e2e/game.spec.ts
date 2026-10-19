@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { releaseByVersion } from '../src/lib/game/releases';
 
 const unique = () => `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
 
@@ -288,7 +289,17 @@ test('v1.1 pages: dispatcher, special loads, analytics, newspaper, help, updates
 });
 
 test('v1.2: search, money transfers, map filter', async ({ page }) => {
+  // Before the release date these are staff-only: a player does not see them yet.
+  const live = Date.now() >= Date.parse(releaseByVersion('1.2')!.publishedAt);
   await register(page);
+  if (!live) {
+    await expect(page.getByRole('button', { name: 'Търси играч или компания' })).toHaveCount(0);
+    await page.goto('/game/finance');
+    await expect(page.getByText('Преводи между играчи')).toHaveCount(0);
+    await page.goto('/game/mentor');
+    await expect(page.getByRole('heading', { name: '404' })).toBeVisible();
+    return;
+  }
   await page.getByRole('button', { name: 'Търси играч или компания' }).click();
   await page.getByRole('textbox', { name: 'Име на играч или компания' }).fill('zz-nobody-here');
   await expect(page.getByText('Няма играч или компания')).toBeVisible();

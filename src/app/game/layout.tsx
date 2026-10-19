@@ -18,6 +18,8 @@ import { WhatsNew } from '@/components/game/WhatsNew';
 import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isHalloween } from '@/lib/game/halloween';
 import { staffAttention } from '@/server/admin';
+import { FeaturesProvider } from '@/components/game/Features';
+import { liveFeatures } from '@/lib/game/features';
 import { isChristmas } from '@/lib/game/christmas';
 import { isStaff } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
@@ -40,37 +42,39 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const [{ unread = 0 } = {}] = await db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt)));
   const [live] = await db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1);
   return (
-    <div className="flex min-h-dvh flex-col lg:flex-row">
-      <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
-        <InstallAppBanner />
-        {!user.emailVerifiedAt && mailConfig().enabled && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
-            <MailWarning className="h-4 w-4 text-amber-sig" />
-            <span>Потвърди имейла си <span className="font-semibold">{user.email}</span> — така ще можеш да си върнеш профила и да пазаруваш.</span>
-            <ResendVerification />
-            <span className="basis-full text-xs text-mist-400 sm:basis-auto">Не виждаш писмото? Провери „Спам“ / „Нежелана поща“.</span>
-          </div>
+    <FeaturesProvider value={liveFeatures(now, staff)}>
+      <div className="flex min-h-dvh flex-col lg:flex-row">
+        <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
+          <InstallAppBanner />
+          {!user.emailVerifiedAt && mailConfig().enabled && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
+              <MailWarning className="h-4 w-4 text-amber-sig" />
+              <span>Потвърди имейла си <span className="font-semibold">{user.email}</span> — така ще можеш да си върнеш профила и да пазаруваш.</span>
+              <ResendVerification />
+              <span className="basis-full text-xs text-mist-400 sm:basis-auto">Не виждаш писмото? Провери „Спам“ / „Нежелана поща“.</span>
+            </div>
+          )}
+          {tutorial.active && tutorial.step && <TutorialCoach step={tutorial.step} index={tutorial.index} total={tutorial.total} />}
+          <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-6">
+            <SectionTabs holiday={holiday} />
+            {children}
+          </main>
+        </div>
+        <MobileNav badges={{ missions, eventLive: !!live }} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
+        <LiveUpdates />
+        <ChatDock />
+        <PlayerCardHost />
+        <ReportHost />
+        <RegisterServiceWorker />
+        {fresh && !(tutorial.active && tutorial.step) && (
+          <WhatsNew version={fresh.version}>
+            <ReleaseTitle release={fresh} />
+            <div className="mt-5"><ReleaseBody release={fresh} /></div>
+          </WhatsNew>
         )}
-        {tutorial.active && tutorial.step && <TutorialCoach step={tutorial.step} index={tutorial.index} total={tutorial.total} />}
-        <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-6">
-          <SectionTabs holiday={holiday} />
-          {children}
-        </main>
       </div>
-      <MobileNav badges={{ missions, eventLive: !!live }} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
-      <LiveUpdates />
-      <ChatDock />
-      <PlayerCardHost />
-      <ReportHost />
-      <RegisterServiceWorker />
-      {fresh && !(tutorial.active && tutorial.step) && (
-        <WhatsNew version={fresh.version}>
-          <ReleaseTitle release={fresh} />
-          <div className="mt-5"><ReleaseBody release={fresh} /></div>
-        </WhatsNew>
-      )}
-    </div>
+    </FeaturesProvider>
   );
 }

@@ -14,6 +14,7 @@ import { PlayerName } from './PlayerName';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { useFeature } from './Features';
 
 export interface MapLeg {
   geometry: string | null;
@@ -204,6 +205,8 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   // The list starts folded on phones, where it would cover the map.
   const [circleOpen, setCircleOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
   const [clock, setClock] = useState(0);
+  const circleLive = useFeature('map_circle');
+  const roadsideLive = useFeature('roadside');
   // The picked truck by id, so its card follows fresh data (e.g. after help on the road).
   const [pickedId, setPickedId] = useState<string | null>(null);
   const picked = (pickedId && world?.trucks.find((t) => t.id === pickedId)) || null;
@@ -432,12 +435,12 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         </span>
       </div>
       <div className="absolute left-3 top-3 flex max-h-[calc(100%-120px)] w-[min(280px,calc(100%-70px))] flex-col gap-2">
-        <div role="radiogroup" aria-label="Кои играчи да се виждат" className="flex rounded-full border border-asphalt-700 bg-asphalt-950/85 p-0.5 text-[11px] backdrop-blur">
+        {circleLive && <div role="radiogroup" aria-label="Кои играчи да се виждат" className="flex rounded-full border border-asphalt-700 bg-asphalt-950/85 p-0.5 text-[11px] backdrop-blur">
           {([['all', 'Всички'], ['circle', 'Моите хора'], ['none', 'Само аз']] as const).map(([id, label]) => (
             <button key={id} type="button" role="radio" aria-checked={mode === id} title={id === 'circle' ? 'Приятели и компания' : undefined} onClick={() => setMode(id)} className={`flex-1 whitespace-nowrap rounded-full px-2 py-1 transition ${mode === id ? 'bg-volt-500 text-white' : 'text-mist-300 hover:text-white'}`}>{label}</button>
           ))}
-        </div>
-        {world && mode !== 'none' && (
+        </div>}
+        {world && mode !== 'none' && circleLive && (
           <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-asphalt-700 bg-asphalt-950/90 text-sm backdrop-blur" aria-label="Заедно на пътя">
             <button type="button" onClick={() => setCircleOpen((v) => !v)} aria-expanded={circleOpen} className="flex items-center justify-between gap-2 px-3 py-2 font-semibold">
               <span className="flex items-center gap-2"><Users className="h-4 w-4 text-prestige" />Заедно на пътя</span>
@@ -452,7 +455,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: RELATION_COLOR[t.relation!] }} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[13px] font-medium">{t.player}{t.online && <span className="ml-1 text-profit">●</span>}</span>
-                          <span className="block truncate text-[11px] text-mist-400">{t.delivery?.deliveryId && clock && helpableStop(t.delivery.schedule, clock) ? <span className="font-semibold text-amber-sig">Чака помощ на пътя</span> : truckStatus(t, clock || 0)}</span>
+                          <span className="block truncate text-[11px] text-mist-400">{roadsideLive && t.delivery?.deliveryId && clock && helpableStop(t.delivery.schedule, clock) ? <span className="font-semibold text-amber-sig">Чака помощ на пътя</span> : truckStatus(t, clock || 0)}</span>
                         </span>
                       </button>
                     </li>
@@ -508,7 +511,9 @@ function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number;
   const d = t.delivery;
   const s = d && now ? stateAt(d.schedule, now) : null;
   const left = d && now ? Math.max(0, Math.round((scheduleEnd(d.schedule) - now) / 60_000)) : 0;
-  const convoyOpen = !!(d && t.relation && now && now - new Date(d.startedAt).getTime() < CONVOY_RULES.windowMs && !s?.done);
+  const roadside = useFeature('roadside');
+  const convoy = useFeature('convoy');
+  const convoyOpen = !!(convoy && d && t.relation && now && now - new Date(d.startedAt).getTime() < CONVOY_RULES.windowMs && !s?.done);
   return (
     <aside className="absolute right-3 top-14 z-10 w-[min(310px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Камион на играч">
       <div className="flex items-start justify-between gap-2">
@@ -528,7 +533,7 @@ function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number;
             <span>{s?.done ? 'Пристига' : s?.segment ? `${s.leg === 'empty' ? 'Към товара · ' : ''}${SEGMENT_LABEL[s.segment.kind] ?? ''}` : ''}</span>
             <span>{left > 0 ? `пристига след ${duration(left)}` : 'пристига сега'}</span>
           </div>
-          {d.deliveryId && now && helpableStop(d.schedule, now) && (
+          {roadside && d.deliveryId && now && helpableStop(d.schedule, now) && (
             <div className="rounded-xl border border-amber-sig/40 bg-amber-sig/10 p-2.5">
               <p className="text-xs text-amber-sig">Камионът стои: {helpableStop(d.schedule, now)!.note}. Ако имаш камион до {ROADSIDE.radiusKm} км, помогни — оставащият престой пада наполовина, а ти получаваш хонорар {money(ROADSIDE.feeCents)}</p>
               <ActionButton action={{ type: 'helpOnRoad', deliveryId: d.deliveryId }} onDone={() => window.dispatchEvent(new Event('tv:world'))} className="btn-primary mt-2 w-full justify-center text-xs">Помогни на пътя</ActionButton>
@@ -537,7 +542,7 @@ function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number;
           {convoyOpen && (
             <a href={`/game/contracts?lane=${d.originCityId}-${d.destCityId}`} className="btn-primary mt-1 w-full justify-center text-xs">Тръгни в конвой · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</a>
           )}
-          {t.relation && !convoyOpen && !s?.done && <p className="text-[11px] text-mist-400">Конвой може до {Math.round(CONVOY_RULES.windowMs / 60_000)} мин след тръгването.</p>}
+          {convoy && t.relation && !convoyOpen && !s?.done && <p className="text-[11px] text-mist-400">Конвой може до {Math.round(CONVOY_RULES.windowMs / 60_000)} мин след тръгването.</p>}
         </div>
       ) : (
         <p className="mt-3 text-sm">Паркиран в {t.city}</p>

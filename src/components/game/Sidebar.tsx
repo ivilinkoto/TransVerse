@@ -1,5 +1,6 @@
 'use client';
 
+import { useFeature } from './Features';
 import { Gem, LogOut, MoreHorizontal, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -99,6 +100,7 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
 export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { badges: NavBadges; staff: boolean; holiday?: string | null; attention?: number }) {
   const pathname = usePathname();
   const router = useRouter();
+  const mentor = useFeature('mentor');
   const [open, setOpen] = useState(false);
   const current = sectionFor(pathname);
   const main = SECTIONS.filter((s) => ['home', 'jobs', 'map', 'fleet'].includes(s.key));
@@ -168,7 +170,7 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
             <section>
               <h2 className="label mb-2">Профил</h2>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {ACCOUNT_MENU.map((item) => (
+                {ACCOUNT_MENU.filter((item) => mentor || item.href !== '/game/mentor').map((item) => (
                   <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`${tile} ${pathname.startsWith(item.href) ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
                     <item.icon className={`h-5 w-5 ${item.href === '/game/shop' ? 'text-gold-400' : 'text-mist-400'}`} />
                     {item.label}

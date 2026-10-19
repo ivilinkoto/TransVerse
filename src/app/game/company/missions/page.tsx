@@ -19,7 +19,7 @@ import { activeProject, projectChoices } from '@/server/game/projects';
 export const metadata = { title: 'Мисии на компанията' };
 
 export default async function CompanyMissionsPage() {
-  const { db, user, now } = await gameContext();
+  const { db, user, now, features } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
   const board = await companyMissionBoard(db, hub.company.id, now);
@@ -33,14 +33,14 @@ export default async function CompanyMissionsPage() {
   const amount = (metric: string | undefined, v: number) => (metric === 'earned_cents' ? money(v) : int(Math.floor(v)));
   return (
     <div className="space-y-5">
-      <BattleCard now={now} battle={battle} record={record} companyName={hub.company.name} />
-      <ProjectCard
+      {features.battles && <BattleCard now={now} battle={battle} record={record} companyName={hub.company.name} />}
+      {features.projects && <ProjectCard
         now={now}
         canStart={canStart}
         startedThisWeek={startedThisWeek}
         choices={choices.map((c) => ({ id: c.id, title: c.title, goods: c.goods, cargo: c.cargo, target: c.target, reward: c.reward, cityBg: cityRows.find((r) => r.name === c.city && r.country === c.country)?.nameBg ?? c.city }))}
         running={project && { title: project.title, cargo: project.cargoType as CargoType, city: cityRows.find((r) => r.id === project.destCityId)?.nameBg ?? '', progress: project.progressTons, target: project.targetTons, rewardCents: project.rewardCents, rewardXp: project.rewardXp, endsAt: project.endsAt, helpers: Object.entries(project.contributions).sort((a, b) => b[1] - a[1]).map(([id, tons]) => ({ username: helperNames.find((h) => h.id === id)?.username ?? '—', tons })) }}
-      />
+      />}
       <Card
         title={<span className="inline-flex items-center gap-2"><Target className="h-4 w-4 text-cyan-glow" />Седмични мисии на компанията</span>}
         actions={<span className="text-xs text-mist-400">Нови след {duration((board.window.endsAt.getTime() - now.getTime()) / 60_000)} · {dateTime(board.window.endsAt)}</span>}

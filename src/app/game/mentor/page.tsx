@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import { Clock, GraduationCap, HandHeart, Sparkles } from 'lucide-react';
 import { PlayerName } from '@/components/game/PlayerName';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
@@ -13,7 +14,8 @@ export const metadata = { title: 'Наставник' };
 const daysLeft = (end: Date, now: Date) => Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86_400_000));
 
 export default async function MentorPage() {
-  const { db, user, now } = await gameContext();
+  const { db, user, now, features } = await gameContext();
+  if (!features.mentor) notFound();
   const o = await mentorOverview(db, user.id, now);
   const mentors = o.canPick ? await availableMentors(db, user.id, now) : [];
   const goalXp = xpForLevel(MENTOR.goalLevel);

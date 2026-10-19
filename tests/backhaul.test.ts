@@ -1,5 +1,8 @@
 import { and, eq, like } from 'drizzle-orm';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+
+// These tests check the feature as released (before the date it is staff-only; see tests/release-gating.test.ts).
+vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
 import { closeDb } from '@/server/db/client';
 import { companies, notifications, vehicles } from '@/server/db/schema';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';

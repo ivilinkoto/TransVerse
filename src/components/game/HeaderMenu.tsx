@@ -1,5 +1,6 @@
 'use client';
 
+import { useFeature } from './Features';
 import { Bell, LogOut, ShieldCheck, Star } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -34,6 +35,7 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const mentor = useFeature('mentor');
 
   useEffect(() => {
     if (!open) return;
@@ -90,7 +92,7 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
             <div className="num mt-1 text-[11px] text-mist-400">{pct}% до ниво {level.level + 1}</div>
           </div>
           <div className="mt-1.5">
-            {ACCOUNT_MENU.map((item) => {
+            {ACCOUNT_MENU.filter((item) => mentor || item.href !== '/game/mentor').map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link

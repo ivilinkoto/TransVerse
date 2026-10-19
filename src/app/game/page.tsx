@@ -30,10 +30,10 @@ import { companyStats } from '@/server/game/progression';
 import { fleetView, latestNotifications, netWorthCents } from '@/server/game/queries';
 
 export default async function OverviewPage() {
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const [paper] = await latestIssues(db, 1);
-  const feed = await friendsFeed(db, user.id, now);
-  const goal = await weeklyGoalState(db, user.id, now);
+  const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
+  const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
   const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
@@ -141,7 +141,7 @@ export default async function OverviewPage() {
           <span className="btn-primary max-sm:hidden">Към празника</span>
         </Link>
       )}
-      {!goal.goal && (
+      {goal && !goal.goal && (
         <Link href="/game/missions" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
           <Flag className="h-6 w-6 shrink-0 text-gold-400" />
           <span className="min-w-0 flex-1">
@@ -150,7 +150,7 @@ export default async function OverviewPage() {
           </span>
         </Link>
       )}
-      {isNewcomer(user, now) && !(await mentorOverview(db, user.id, now)).mentor && (
+      {features.mentor && isNewcomer(user, now) && !(await mentorOverview(db, user.id, now)).mentor && (
         <Link href="/game/mentor" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
           <GraduationCap className="h-6 w-6 shrink-0 text-cyan-glow" />
           <span className="min-w-0 flex-1">

@@ -21,7 +21,7 @@ import { eq } from 'drizzle-orm';
 export const metadata = { title: 'Финанси' };
 
 export default async function FinancePage() {
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const [summary, entries, fineRows, transfers, sent, [me]] = await Promise.all([
     financeSummary(db, company.id, 30),
     ledgerPage(db, company.id, 120),
@@ -86,7 +86,7 @@ export default async function FinancePage() {
           </ul>
         </Card>
       )}
-      <Card id="transfers" title={<span className="inline-flex items-center gap-2"><Banknote className="h-4 w-4 text-mist-400" />Преводи между играчи</span>} actions={<span className="text-xs text-mist-400">такса {Math.round(TRANSFER_RULES.feeShare * 100)} % · до {money(TRANSFER_RULES.dailyLimitCents)} за 24 ч</span>}>
+      {features.transfers && <Card id="transfers" title={<span className="inline-flex items-center gap-2"><Banknote className="h-4 w-4 text-mist-400" />Преводи между играчи</span>} actions={<span className="text-xs text-mist-400">такса {Math.round(TRANSFER_RULES.feeShare * 100)} % · до {money(TRANSFER_RULES.dailyLimitCents)} за 24 ч</span>}>
         <p className="mb-3 text-sm text-mist-400">
           {transferBlock ?? `За да изпратиш пари, отвори профила на играча (натисни името му или го потърси горе) → „Изпрати пари“. За 24 часа можеш да изпратиш още ${money(Math.max(0, TRANSFER_RULES.dailyLimitCents - sent))}`}
         </p>
@@ -106,7 +106,7 @@ export default async function FinancePage() {
             ))}
           </ul>
         )}
-      </Card>
+      </Card>}
       <Card title={<span className="inline-flex items-center gap-2"><Fuel className="h-4 w-4 text-mist-400" />Дизел днес</span>} actions={<span className="text-xs text-mist-400">игрови цени · сменят се всеки ден</span>}>
         <p className="mb-3 text-sm text-mist-400">Горивото за курса се плаща по цените на държавите, през които минава камионът — пропорционално на километрите във всяка.</p>
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">

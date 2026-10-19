@@ -22,7 +22,7 @@ export const metadata = { title: 'Компания' };
 export default async function PublicCompanyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { db, user, now } = await gameContext();
+  const { db, user, now, features } = await gameContext();
   const row = await publicCompany(db, id);
   if (!row) notFound();
   const c = row.company;
@@ -43,7 +43,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
       <CompanyBrand company={c} hasLogo={assets.has('logo')} hasBanner={assets.has('banner')} subtitle={`Собственик ${row.owner} · ${int(row.members)} / ${capacity} членове · ${int(row.deliveries)} курса на членовете`} actions={<Link href="/game/companies" className="btn-ghost">← Всички компании</Link>} />
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 space-y-6">
-          {highlights && <CompanyHighlights h={highlights} />}
+          {features.company_profile && highlights && <CompanyHighlights h={highlights} />}
           <Card title={<span className="inline-flex items-center gap-2"><Building2 className="h-4 w-4 text-mist-400" />За компанията</span>}>
             {c.description ? <p className="whitespace-pre-wrap break-words text-sm text-mist-200">{c.description}</p> : <p className="text-sm text-mist-400">Няма описание.</p>}
           </Card>

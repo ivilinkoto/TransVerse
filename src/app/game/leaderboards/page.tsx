@@ -23,13 +23,14 @@ const TABS: { id: LeaderboardKind | 'eco'; label: string; unit: string }[] = [
 const medal = (i: number) => (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1);
 
 export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const { db, user, company } = await gameContext();
+  const { db, user, company, features } = await gameContext();
+  const tabs = TABS.filter((t) => t.id !== 'eco' || features.eco);
   const requested = (await searchParams).tab;
-  const tab = TABS.find((t) => t.id === requested) ?? TABS[0]!;
+  const tab = tabs.find((t) => t.id === requested) ?? tabs[0]!;
   return (
     <div className="space-y-5">
       <PageHeader title="Класации" subtitle="Само реални играчи и техните компании. Няма измислени конкуренти." />
-      <Segmented label="Вид класация" active={tab.id} items={TABS.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
+      <Segmented label="Вид класация" active={tab.id} items={tabs.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
       {tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
     </div>
   );
