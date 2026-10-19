@@ -2,6 +2,7 @@ import { aliasedTable, and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { ONLINE_MS } from '@/lib/game/social';
 import type { DbOrTx } from '@/server/db/client';
 import { cities, companies, companyMembers, companyTenders, contracts, deliveries, organizations, users, vehicles } from '@/server/db/schema';
+import { battleRecord } from './battles';
 import { finishedProjects } from './projects';
 import { organizationSeasonResults } from './seasons';
 
@@ -61,6 +62,7 @@ export async function companyHighlights(db: DbOrTx, organizationId: string, now 
       ])
     : [[undefined], [undefined], [undefined], [], [undefined], [], []];
 
+  const battles = await battleRecord(db, organizationId, 10);
   // History: founding, the newest members, completed tenders and season places — newest first.
   const history = [
     { at: org.foundedAt, kind: 'founded' as const, text: `Компанията е основана в ${org.hq}` },
@@ -69,6 +71,7 @@ export async function companyHighlights(db: DbOrTx, organizationId: string, now 
     ...tenders.filter((t) => t.at).map((t) => ({ at: t.at!, kind: 'tender' as const, text: `Изпълнен търг: ${t.title}` })),
     ...seasons.filter((s) => (s.rank ?? 99) <= 10).map((s) => ({ at: null, kind: 'season' as const, text: `${s.name}: ${s.rank}. място` })),
     ...(await finishedProjects(db, organizationId)).filter((p) => p.completedAt).map((p) => ({ at: p.completedAt!, kind: 'project' as const, text: `Завършен проект: ${p.title}` })),
+    ...battles.recent.filter((b) => b.result === 'win').map((b) => ({ at: b.at, kind: 'battle' as const, text: `Победа в битка срещу „${b.rival}“ (${Math.round(b.ourTons)} : ${Math.round(b.theirTons)} т)` })),
   ]
     .sort((a, b) => (b.at?.getTime() ?? 0) - (a.at?.getTime() ?? 0))
     .slice(0, 12);
@@ -86,6 +89,7 @@ export async function companyHighlights(db: DbOrTx, organizationId: string, now 
     heaviest: heaviest ?? null,
     weekly,
     history,
+    trophies: battles.wins,
   };
 }
 

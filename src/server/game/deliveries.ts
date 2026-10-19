@@ -8,6 +8,7 @@ import { CONVOY_RULES } from '@/lib/game/convoy';
 import { formConvoy } from './convoy';
 import { acceptJobOffer, payHireCommission } from './hire';
 import { mentorXpFactor } from './mentor';
+import { recordBattleDelivery } from './battles';
 import { recordProjectDelivery } from './projects';
 import { isWinter, routeCondition, WINTER } from '@/lib/game/winter';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
@@ -401,6 +402,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await recordEventProgress(tx, company!.ownerId, org?.id ?? null, facts, completedAt);
   if (org) await recordCompanyMissionProgress(tx, org.id, company!.ownerId, facts, now);
   if (org) await recordProjectDelivery(tx, org.id, company!.ownerId, { cargoType: contract.cargoType, destCityId: contract.destCityId, tons: contract.weightTons }, completedAt);
+  if (org) await recordBattleDelivery(tx, org.id, contract.weightTons, completedAt);
   const points = seasonPoints(d.loadedKm, contract.weightTons, onTime);
   await addSeasonScore(tx, d.companyId, points, result.rewardCents, now);
   if (org) await addOrganizationSeasonScore(tx, org.id, points, now);

@@ -8,6 +8,8 @@ import { gameContext } from '@/server/game/context';
 import { companyHub } from '@/server/game/membership';
 import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import { ProjectCard } from '@/components/company/ProjectCard';
+import { BattleCard } from '@/components/company/BattleCard';
+import { battleRecord, currentBattle } from '@/server/game/battles';
 import type { CargoType } from '@/lib/game/cargo';
 import { periodWindow } from '@/lib/game/missions';
 import { cities, companyProjects, users } from '@/server/db/schema';
@@ -27,9 +29,11 @@ export default async function CompanyMissionsPage() {
   const cityRows = await db.select({ id: cities.id, name: cities.name, country: cities.countryCode, nameBg: cities.nameBg }).from(cities).where(or(inArray(cities.id, cityIds.length ? cityIds : [-1]), ...choices.map((c) => and(eq(cities.name, c.city), eq(cities.countryCode, c.country)))));
   const helperNames = project ? await db.select({ id: users.id, username: users.username }).from(users).where(inArray(users.id, Object.keys(project.contributions).length ? Object.keys(project.contributions) : ['00000000-0000-0000-0000-000000000000'])) : [];
   const startedThisWeek = !project && !!lastProject[0] && periodWindow('weekly', lastProject[0].startsAt).key === periodWindow('weekly', now).key;
+  const [battle, record] = await Promise.all([currentBattle(db, hub.company.id, now), battleRecord(db, hub.company.id)]);
   const amount = (metric: string | undefined, v: number) => (metric === 'earned_cents' ? money(v) : int(Math.floor(v)));
   return (
     <div className="space-y-5">
+      <BattleCard now={now} battle={battle} record={record} companyName={hub.company.name} />
       <ProjectCard
         now={now}
         canStart={canStart}

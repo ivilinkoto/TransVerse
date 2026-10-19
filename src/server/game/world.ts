@@ -26,6 +26,7 @@ import { applyDueRoadEvents } from './road-events';
 import { expireListings } from './used-market';
 import { settleLeagues } from './leagues';
 import { expireProjects } from './projects';
+import { ensureWeeklyBattles, settleBattles } from './battles';
 import { runPayroll } from './staff';
 
 /**
@@ -171,6 +172,11 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
     await every(db, 'leagues', 10 * 60_000, now, () => settleLeagues(db, now));
     await every(db, 'company-projects', 10 * 60_000, now, () => expireProjects(db, now));
+    // Company battles: settle last week's, pair this week's.
+    await every(db, 'company-battles', 10 * 60_000, now, async () => {
+      await settleBattles(db, now);
+      await ensureWeeklyBattles(db, now);
+    });
     // Push notifications for whatever happened above (in-game notifications and company chat).
     await job(db, 'push', now, () => dispatchPush(db, now));
     await every(db, 'push-prune', 24 * 60 * 60_000, now, () => pruneSubscriptions(db, now));

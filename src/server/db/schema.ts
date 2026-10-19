@@ -1442,3 +1442,23 @@ export const xpEntries = pgTable(
   },
   (t) => [index('xp_entries_user_idx').on(t.userId, t.createdAt)],
 );
+
+/** Weekly battle of two companies of similar level: tonnes delivered by their members. */
+export const companyBattles = pgTable(
+  'company_battles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    weekKey: text('week_key').notNull(),
+    aId: uuid('a_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    bId: uuid('b_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    aTons: real('a_tons').notNull().default(0),
+    bTons: real('b_tons').notNull().default(0),
+    status: text('status').notNull().default('active'), // active | done
+    /** The winner; null for a draw or when nobody delivered. */
+    winnerId: uuid('winner_id').references(() => organizations.id, { onDelete: 'set null' }),
+    endsAt: ts('ends_at').notNull(),
+    settledAt: ts('settled_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('company_battles_a_idx').on(t.weekKey, t.aId), uniqueIndex('company_battles_b_idx').on(t.weekKey, t.bId), index('company_battles_status_idx').on(t.status, t.endsAt)],
+);

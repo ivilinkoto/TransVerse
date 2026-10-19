@@ -5,7 +5,7 @@ import { Card } from '@/components/ui';
 import { date, int, km } from '@/lib/format';
 import type { CompanyHighlights as Highlights } from '@/server/game/company-profile';
 
-const HISTORY_ICON = { founded: CalendarDays, joined: UserPlus, tender: Gavel, season: Medal, project: Hammer } as const;
+const HISTORY_ICON = { founded: CalendarDays, joined: UserPlus, tender: Gavel, season: Medal, project: Hammer, battle: Trophy } as const;
 
 function Fact({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon: typeof Truck }) {
   return (
@@ -28,6 +28,7 @@ export function CompanyHighlights({ h }: { h: Highlights }) {
           <Fact label="Курсове" value={int(h.trips)} icon={Truck} />
           <Fact label="Изминати" value={km(h.km)} icon={Route} />
           <Fact label="Превозени" value={`${int(h.tons)} т`} icon={Weight} />
+          {h.trophies > 0 && <Fact label="Трофеи от битки" value={h.trophies} icon={Trophy} />}
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-asphalt-700 px-3 py-2 text-sm">
           <span className="flex items-center gap-1.5"><span className={`h-2 w-2 rounded-full ${h.online ? 'bg-profit' : 'bg-asphalt-500'}`} />{h.online} {h.online === 1 ? 'член е' : 'члена са'} в играта сега</span>
