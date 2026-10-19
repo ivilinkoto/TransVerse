@@ -2,7 +2,7 @@ name: Deploy
 
 # Builds a self-contained release and installs it on the VPS over SSH.
 # Required repository secrets: VPS_HOST, VPS_USER, VPS_PORT, VPS_SSH_KEY.
-# Optional secrets (written to the server, never into the build): PAYPAL_*, STRIPE_*, APP_URL, COOKIE_SECURE, SELLER_*, SUPPORT_EMAIL, SMTP_*, MAIL_FROM, VAPID_*, GOOGLE_PLAY_*, ANDROID_CERT_SHA256.
+# Optional secrets (written to the server, never into the build): PAYPAL_*, STRIPE_*, APP_URL, COOKIE_SECURE, SELLER_*, SUPPORT_EMAIL, SMTP_*, MAIL_FROM, VAPID_*.
 on:
   push:
     branches: [main]
@@ -76,9 +76,6 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
-          GOOGLE_PLAY_PACKAGE: ${{ secrets.GOOGLE_PLAY_PACKAGE }}
-          GOOGLE_PLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
-          ANDROID_CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
@@ -89,7 +86,7 @@ jobs:
           scp -P "${PORT:-22}" -o BatchMode=yes release.tgz "$USER@$HOST:/var/www/transverse/releases/$ID/release.tgz"
           # Payment settings from GitHub Secrets → a file only the deploy user can read (loaded by the app and the worker).
           : > secrets.env
-          for k in PAYPAL_CLIENT_ID PAYPAL_CLIENT_SECRET PAYPAL_ENV PAYPAL_WEBHOOK_ID STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_AUTOMATIC_TAX APP_URL COOKIE_SECURE SELLER_NAME SELLER_ID SELLER_ADDRESS SUPPORT_EMAIL SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS SMTP_SECURE MAIL_FROM VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT GOOGLE_PLAY_PACKAGE GOOGLE_PLAY_SERVICE_ACCOUNT ANDROID_CERT_SHA256; do
+          for k in PAYPAL_CLIENT_ID PAYPAL_CLIENT_SECRET PAYPAL_ENV PAYPAL_WEBHOOK_ID STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_AUTOMATIC_TAX APP_URL COOKIE_SECURE SELLER_NAME SELLER_ID SELLER_ADDRESS SUPPORT_EMAIL SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS SMTP_SECURE MAIL_FROM VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT; do
             v="${!k}"; v="${v//$'\r'/}"; v="${v//$'\n'/ }"
             if [ -n "$v" ]; then printf '%s=%s\n' "$k" "$v" >> secrets.env; fi
           done

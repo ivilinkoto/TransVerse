@@ -12,7 +12,6 @@ import { adminPayments, paymentConfig } from '@/server/payments';
 
 export const metadata = { title: 'Плащания' };
 
-const PROVIDER_LABELS: Record<string, string> = { paypal: 'PayPal', stripe: 'Stripe', google_play: 'Google Play' };
 const TONE: Record<string, 'green' | 'gold' | 'red' | 'neutral'> = { paid: 'green', pending: 'gold', failed: 'red', expired: 'neutral', refunded: 'red' };
 
 export default async function AdminPaymentsPage() {
@@ -22,7 +21,7 @@ export default async function AdminPaymentsPage() {
   const transfers = await recentTransfers(db, 100);
   return (
     <div className="space-y-6">
-      <PageHeader title="Плащания" subtitle="Покупки на ТрансКоин и VIP с реални пари (PayPal на сайта, Google Play в Android приложението; Stripe — по-късно). Доставката е автоматична. Плащане с PayPal може да се върне оттук; ТрансКоин и VIP дните от покупката се премахват автоматично." />
+      <PageHeader title="Плащания" subtitle="Покупки на ТрансКоин и VIP с реални пари (PayPal; Stripe — по-късно). Доставката е автоматична. Плащане с PayPal може да се върне оттук; ТрансКоин и VIP дните от покупката се премахват автоматично." />
       <Card title="Настройка">
         <ul className="space-y-2 text-sm">
           <li className="flex flex-wrap items-center gap-2">
@@ -31,14 +30,6 @@ export default async function AdminPaymentsPage() {
               <span className="flex items-center gap-1.5 text-profit"><CheckCircle2 className="h-4 w-4" />включен · {config.paypal.sandbox ? 'ТЕСТОВ режим (sandbox)' : 'реален режим (live)'}{config.paypal.webhook ? ' · webhook' : ' · без webhook (сверката е от фоновия процес)'}</span>
             ) : (
               <span className="flex items-center gap-1.5 text-amber-sig"><AlertTriangle className="h-4 w-4" />изключен — липсват: <span className="num text-mist-300">{config.paypal.missing.join(', ')}</span></span>
-            )}
-          </li>
-          <li className="flex flex-wrap items-center gap-2">
-            <span className="w-20 font-semibold">Google Play</span>
-            {config.googlePlay.enabled ? (
-              <span className="flex items-center gap-1.5 text-profit"><CheckCircle2 className="h-4 w-4" />включен · {config.googlePlay.packageName} · само в Android приложението</span>
-            ) : (
-              <span className="text-mist-400">изключен — липсват: <span className="num">{config.googlePlay.missing.join(', ')}</span></span>
             )}
           </li>
           <li className="flex flex-wrap items-center gap-2">
@@ -52,7 +43,6 @@ export default async function AdminPaymentsPage() {
         </ul>
         {config.appUrlInvalid && <p className="mt-2 text-sm text-amber-sig">APP_URL не е пълен адрес (трябва да започва с https://) — пренебрегва се и се ползва адресът, от който играчът отваря сайта.</p>}
         {isAdmin(user.role) && config.paypal.enabled && <PaypalCheck />}
-        {isAdmin(user.role) && config.googlePlay.enabled && <PaypalCheck type="checkGooglePlay" label="Google Play" />}
         {isAdmin(user.role) && <p className="mt-3 text-xs text-mist-400">Ключовете се добавят в GitHub → Settings → Secrets and variables → Actions и се записват на сървъра при следващия Deploy (виж docs/DEPLOYMENT.md, „Плащания“). Никога в кода или в чат.</p>}
         <p className="mt-1 text-xs text-mist-400">Webhook адреси (по избор, изискват HTTPS): <code>/api/payments/paypal</code>, <code>/api/payments/stripe</code> · Публични страници: <Link className="underline" href="/terms">/terms</Link>, <Link className="underline" href="/privacy">/privacy</Link></p>
       </Card>
@@ -73,7 +63,7 @@ export default async function AdminPaymentsPage() {
                 <Badge tone={TONE[p.status] ?? 'neutral'}>{PAYMENT_STATUS_LABELS[p.status] ?? p.status}</Badge>
                 {p.failureReason && <div className="mt-1 max-w-xs font-mono text-[11px] text-loss" title="Отговор от платежния доставчик">{p.failureReason}</div>}
               </td>
-              <td className="px-3 py-2 text-xs text-mist-400">{PROVIDER_LABELS[p.provider] ?? p.provider} <span className="font-mono">{p.captureId ?? p.orderId ?? p.paymentIntentId ?? p.checkoutSessionId?.slice(0, 18) ?? ''}</span></td>
+              <td className="px-3 py-2 text-xs text-mist-400">{p.provider === 'paypal' ? 'PayPal' : 'Stripe'} <span className="font-mono">{p.captureId ?? p.orderId ?? p.paymentIntentId ?? p.checkoutSessionId?.slice(0, 18) ?? ''}</span></td>
               <td className="px-3 py-2">
                 {isAdmin(user.role) && p.provider === 'paypal' && p.status === 'paid' && (
                   <ActionButton endpoint="/api/admin/action" action={{ type: 'refundPayment', paymentId: p.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm={`Да върнем ли ${euro(p.amountCents)} на ${username}? ТрансКоин / VIP дните от покупката ще бъдат премахнати.`}>

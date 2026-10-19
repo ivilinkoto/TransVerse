@@ -15,8 +15,3 @@ data/raw/
 .DS_Store
 public/vendor/
 dist/
-# Android app (TWA): the generated Gradle project and signing keys are never committed
-android/*
-!android/twa-manifest.json
-*.keystore
-*.jks

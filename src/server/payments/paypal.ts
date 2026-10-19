@@ -305,7 +305,7 @@ export async function refundPaypalPayment(db: Database, actor: Staff, paymentId:
   requireAdminRole(actor);
   const [p] = await db.select().from(payments).where(eq(payments.id, paymentId));
   if (!p) fail('payment_not_found', 'Плащането не е намерено.', 404);
-  if (p!.provider !== 'paypal') fail('wrong_provider', p!.provider === 'google_play' ? 'Това плащане се възстановява от Google Play Console (Поръчки) — ТрансКоин / VIP се премахват автоматично.' : 'Това плащане се възстановява от таблото на Stripe.');
+  if (p!.provider !== 'paypal') fail('wrong_provider', 'Това плащане се възстановява от таблото на Stripe.');
   if (p!.status !== 'paid' || !p!.captureId) fail('not_refundable', 'Може да се възстанови само платено плащане.');
   let refund: { id: string; status: string };
   try {

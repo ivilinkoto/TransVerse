@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Exo_2, JetBrains_Mono, Onest } from 'next/font/google';
 import './globals.css';
-import { AndroidAppMarker } from '@/components/AndroidAppMarker';
 import { SeasonalDecor } from '@/components/seasonal/SeasonalDecor';
 import { requestSeason } from '@/server/seasonal';
 import { configuredSiteUrl, DEFAULT_SITE_URL, OG_IMAGE } from '@/server/site';
@@ -36,7 +35,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="bg" className={`${display.variable} ${sans.variable} ${mono.variable}`} data-season={season ?? undefined}>
       <body>
         {children}
-        <AndroidAppMarker />
         {season && <SeasonalDecor season={season} />}
       </body>
     </html>
