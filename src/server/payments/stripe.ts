@@ -1,5 +1,5 @@
 /**
- * Stripe Checkout (kept ready for when the site has its own domain and HTTPS).
+ * Stripe Checkout (needs the site on HTTPS for the webhook).
  * Stripe calls our webhook (signed) and the return page also asks Stripe
  * directly; delivery goes through the shared, exactly-once code.
  */

@@ -21,7 +21,7 @@ export default async function AdminPaymentsPage() {
   const transfers = await recentTransfers(db, 100);
   return (
     <div className="space-y-6">
-      <PageHeader title="Плащания" subtitle="Покупки на ТрансКоин и VIP с реални пари (PayPal; Stripe — по-късно). Доставката е автоматична. Плащане с PayPal може да се върне оттук; ТрансКоин и VIP дните от покупката се премахват автоматично." />
+      <PageHeader title="Плащания" subtitle="Покупки на ТрансКоин и VIP с реални пари (PayPal и карта през Stripe). Доставката е автоматична. Плащане с PayPal се връща оттук, а със Stripe — от таблото на Stripe (Payments → Refund); и в двата случая ТрансКоин и VIP дните от покупката се премахват автоматично." />
       <Card title="Настройка">
         <ul className="space-y-2 text-sm">
           <li className="flex flex-wrap items-center gap-2">
@@ -37,7 +37,7 @@ export default async function AdminPaymentsPage() {
             {config.stripe.enabled ? (
               <span className="flex items-center gap-1.5 text-profit"><CheckCircle2 className="h-4 w-4" />включен · {config.stripe.testMode ? 'ТЕСТОВ режим' : 'реален режим'}</span>
             ) : (
-              <span className="text-mist-400">изключен (за след домейна) — липсват: <span className="num">{config.stripe.missing.join(', ')}</span></span>
+              <span className="text-mist-400">изключен — липсват: <span className="num">{config.stripe.missing.join(', ')}</span></span>
             )}
           </li>
         </ul>
