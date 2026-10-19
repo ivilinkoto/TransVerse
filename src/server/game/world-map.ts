@@ -27,7 +27,19 @@ export interface WorldTruck {
   /** Parking position when idle. */
   position: [number, number];
   city: string;
-  delivery: null | { schedule: Segment[]; empty: WorldLeg | null; loaded: WorldLeg; destination: string };
+  delivery: null | {
+    schedule: Segment[];
+    empty: WorldLeg | null;
+    loaded: WorldLeg;
+    origin: string;
+    destination: string;
+    /** The lane (for "drive in convoy"). */
+    originCityId: number;
+    destCityId: number;
+    startedAt: string;
+    /** The load — only for the viewer's friends and company (others see just the lane). */
+    cargo: { goods: string; tons: number } | null;
+  };
 }
 
 export interface WorldSnapshot {
@@ -86,7 +98,7 @@ export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: str
   const moving = rows.filter((r) => r.status === 'on_delivery').map((r) => r.id);
   const trips = moving.length
     ? await db
-        .select({ vehicleId: deliveries.vehicleId, schedule: deliveries.schedule, routeId: deliveries.routeId, emptyRouteId: deliveries.emptyRouteId, emptyKm: deliveries.emptyKm, loadedKm: deliveries.loadedKm, originCityId: contracts.originCityId, destCityId: contracts.destCityId })
+        .select({ vehicleId: deliveries.vehicleId, schedule: deliveries.schedule, routeId: deliveries.routeId, emptyRouteId: deliveries.emptyRouteId, emptyKm: deliveries.emptyKm, loadedKm: deliveries.loadedKm, startedAt: deliveries.startedAt, originCityId: contracts.originCityId, destCityId: contracts.destCityId, goods: contracts.goods, tons: contracts.weightTons })
         .from(deliveries)
         .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
         .where(and(inArray(deliveries.vehicleId, moving), eq(deliveries.status, 'in_progress')))
@@ -113,7 +125,12 @@ export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: str
         schedule: t.schedule as Segment[],
         loaded: { routeId: t.routeId, from: ll(t.originCityId), to: ll(t.destCityId), km: t.loadedKm },
         empty: t.emptyRouteId && emptyFrom && cityById.has(emptyFrom) ? { routeId: t.emptyRouteId, from: ll(emptyFrom), to: ll(t.originCityId), km: t.emptyKm } : null,
+        origin: cityById.get(t.originCityId)!.nameBg,
         destination: cityById.get(t.destCityId)!.nameBg,
+        originCityId: t.originCityId,
+        destCityId: t.destCityId,
+        startedAt: t.startedAt.toISOString(),
+        cargo: friends.has(r.userId) || mates.has(r.userId) ? { goods: t.goods, tons: t.tons } : null,
       };
     }
     return {

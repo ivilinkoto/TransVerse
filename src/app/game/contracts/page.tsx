@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { Hint } from '@/components/game/Hint';
+import { CONVOY_RULES } from '@/lib/game/convoy';
 import { ContractBoard, type BoardContract } from '@/components/game/ContractBoard';
 import { PageHeader } from '@/components/ui';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
@@ -29,7 +31,7 @@ import { membershipOf } from '@/server/game/membership';
 
 export const metadata = { title: 'Поръчки' };
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string }> }) {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string }> }) {
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
   const { db, user, company, now } = await gameContext();
@@ -55,8 +57,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const membership = await membershipOf(db, user.id);
   const memberOfCompanyId = membership?.company.id ?? null;
   const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId }))]);
+  // "Drive in convoy" from the map: only the loads on that lane (from its origin city, all of them).
+  const laneMatch = /^(\d+)-(\d+)$/.exec(params.lane ?? '');
+  const lane = laneMatch ? { from: Number(laneMatch[1]), to: Number(laneMatch[2]) } : null;
+  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId }) : [];
   const seen = new Set<string>();
-  const contracts = [...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
+  const contracts = [...laneLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];
@@ -129,6 +135,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
     };
   });
 
+  const laneBoard = lane ? board.filter((c) => c.origin.id === lane.from && c.destination.id === lane.to) : [];
+
   return (
     <div>
       <PageHeader
@@ -136,10 +144,20 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         subtitle="Избери товар, камион и тръгвай. Поръчките са общи за всички играчи."
         help="Горивото се плаща по цените на държавите по маршрута (виж Финанси → Дизел днес). По пътя може да се случи задръстване, ремонт, повреда или опашка на границата — това забавя курса, а повредата струва пари за пътна помощ (при наетия камион плаща наемодателят). Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
+      {lane && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-prestige/40 bg-prestige/10 px-4 py-3 text-sm">
+          <span>
+            {laneBoard.length
+              ? <>Поръчки по линията <b>{laneBoard[0]!.origin.name} → {laneBoard[0]!.destination.name}</b> — поеми една до {Math.round(CONVOY_RULES.windowMs / 60_000)} мин след приятеля си и карате в конвой.</>
+              : 'В момента няма свободна поръчка по тази линия. Опитай след малко — нови поръчки излизат постоянно.'}
+          </span>
+          <Link href="/game/contracts" className="btn-ghost px-3 py-1.5 text-xs">Всички поръчки</Link>
+        </div>
+      )}
       {!user.seenHints.includes('board') && <Hint id="board" />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
-      <ContractBoard initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

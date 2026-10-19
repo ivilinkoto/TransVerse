@@ -11,6 +11,7 @@ import { cumulativeKm, greatCircle, headingWest, pointAlong, type LatLon } from 
 import { scheduleEnd, stateAt, type Segment } from '@/lib/game/schedule';
 import type { WorldSnapshot, WorldTruck } from '@/server/game/world-map';
 import { PlayerName } from './PlayerName';
+import { CONVOY_RULES } from '@/lib/game/convoy';
 
 export interface MapLeg {
   geometry: string | null;
@@ -460,20 +461,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
           </section>
         )}
       </div>
-      {picked && (
-        <aside className="absolute right-3 top-14 w-[min(300px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Играч">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="font-display text-lg font-bold"><PlayerName name={picked.player} role={picked.role} vip={picked.vip} /></div>
-              <div className="text-xs text-mist-400">{picked.company ? `${picked.tag ? `[${picked.tag}] ` : ''}${picked.company}` : 'Самостоятелен шофьор'}</div>
-              {picked.relation && <div className="mt-1 text-xs font-semibold" style={{ color: RELATION_COLOR[picked.relation] }}>{picked.relation === 'friend' ? 'Приятел' : 'От твоята компания'}</div>}
-            </div>
-            <button className="text-mist-400 hover:text-white" onClick={() => setPicked(null)} aria-label="Затвори">✕</button>
-          </div>
-          <p className="mt-3 text-sm">{picked.delivery ? `На курс ${truckStatus(picked, clock || 0)}` : `Паркиран в ${picked.city}`}</p>
-          <p className={`mt-1 text-xs ${picked.online ? 'text-profit' : 'text-mist-400'}`}>{picked.online ? '● В играта сега' : '○ Не е в играта в момента'}</p>
-        </aside>
-      )}
+      {picked && <TruckCard truck={picked} now={clock} onClose={() => setPicked(null)} />}
       {city && (
         <aside className="absolute right-3 top-14 w-[min(320px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur">
           <div className="flex items-start justify-between gap-2">
@@ -506,6 +494,46 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         </aside>
       )}
     </div>
+  );
+}
+
+const SEGMENT_LABEL: Record<string, string> = { drive: 'Кара', break: 'Почивка (45 мин)', rest: 'Дневна почивка', border: 'На границата', loading: 'Товари', unloading: 'Разтоварва', incident: 'Спрял по пътя' };
+
+/** Quick look at another player's truck: lane, load (friends and company), progress, arrival; drive in convoy. */
+function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number; onClose: () => void }) {
+  const d = t.delivery;
+  const s = d && now ? stateAt(d.schedule, now) : null;
+  const left = d && now ? Math.max(0, Math.round((scheduleEnd(d.schedule) - now) / 60_000)) : 0;
+  const convoyOpen = !!(d && t.relation && now && now - new Date(d.startedAt).getTime() < CONVOY_RULES.windowMs && !s?.done);
+  return (
+    <aside className="absolute right-3 top-14 z-10 w-[min(310px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Камион на играч">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-display text-lg font-bold"><PlayerName name={t.player} role={t.role} vip={t.vip} /></div>
+          <div className="truncate text-xs text-mist-400">{t.company ? `${t.tag ? `[${t.tag}] ` : ''}${t.company}` : 'Самостоятелен шофьор'}</div>
+          {t.relation && <div className="mt-1 text-xs font-semibold" style={{ color: RELATION_COLOR[t.relation] }}>{t.relation === 'friend' ? 'Приятел' : 'От твоята компания'}</div>}
+        </div>
+        <button className="text-mist-400 hover:text-white" onClick={onClose} aria-label="Затвори">✕</button>
+      </div>
+      {d ? (
+        <div className="mt-3 space-y-2">
+          <div className="font-semibold">{d.origin} → {d.destination}</div>
+          {d.cargo && <div className="text-xs text-mist-300">{d.cargo.goods} · {int(Math.round(d.cargo.tons))} т</div>}
+          <div className="h-1.5 overflow-hidden rounded-full bg-asphalt-800"><div className="h-full rounded-full bg-gradient-to-r from-cyan-glow to-volt-500" style={{ width: `${Math.round((s?.progress ?? 0) * 100)}%` }} /></div>
+          <div className="flex justify-between text-xs text-mist-400">
+            <span>{s?.done ? 'Пристига' : s?.segment ? `${s.leg === 'empty' ? 'Към товара · ' : ''}${SEGMENT_LABEL[s.segment.kind] ?? ''}` : ''}</span>
+            <span>{left > 0 ? `пристига след ${duration(left)}` : 'пристига сега'}</span>
+          </div>
+          {convoyOpen && (
+            <a href={`/game/contracts?lane=${d.originCityId}-${d.destCityId}`} className="btn-primary mt-1 w-full justify-center text-xs">Тръгни в конвой · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</a>
+          )}
+          {t.relation && !convoyOpen && !s?.done && <p className="text-[11px] text-mist-400">Конвой може до {Math.round(CONVOY_RULES.windowMs / 60_000)} мин след тръгването.</p>}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm">Паркиран в {t.city}</p>
+      )}
+      <p className={`mt-2 text-xs ${t.online ? 'text-profit' : 'text-mist-400'}`}>{t.online ? '● В играта сега' : '○ Не е в играта в момента'}</p>
+    </aside>
   );
 }
 
