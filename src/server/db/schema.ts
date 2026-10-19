@@ -860,6 +860,9 @@ export const payments = pgTable(
     /** PayPal: the order and its capture. */
     orderId: text('order_id'),
     captureId: text('capture_id'),
+    /** Google Play: the purchase token, and when the purchase was consumed (Play refunds unconsumed ones after 3 days). */
+    purchaseToken: text('purchase_token'),
+    consumedAt: ts('consumed_at'),
     /** Why the provider refused (error code and reference) — for the admin panel. */
     failureReason: text('failure_reason'),
     /** When the buyer agreed that delivery starts at once (EU right of withdrawal for digital content). */
@@ -873,6 +876,7 @@ export const payments = pgTable(
     index('payments_intent_idx').on(t.paymentIntentId),
     uniqueIndex('payments_order_idx').on(t.orderId),
     index('payments_capture_idx').on(t.captureId),
+    uniqueIndex('payments_purchase_token_idx').on(t.purchaseToken),
     index('payments_pending_idx').on(t.provider, t.status, t.createdAt),
     index('payments_user_idx').on(t.userId, t.createdAt),
   ],

@@ -16,7 +16,7 @@ import { autoUrgentTick } from './auto-urgent';
 import { settleTenders } from './tenders';
 import { dailyReminders } from './daily';
 import { ensureAutoEvent, settleDueEvents } from './events';
-import { paymentConfig, reconcilePaypal } from '@/server/payments';
+import { paymentConfig, reconcileGooglePlay, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
 import { pick, randInt } from './random';
 import { activeSeason, rotateSeasons } from './seasons';
@@ -144,6 +144,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
+    // Google Play: consume delivered purchases; take back ones refunded in Play.
+    if (paymentConfig().googlePlay.enabled) await every(db, 'google-play-reconcile', 30 * 60_000, now, () => reconcileGooglePlay(db, now));
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
     await every(db, 'local-jobs', 60_000, now, () => ensureLocalJobsForFleet(db, now, undefined, provider));
     await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));

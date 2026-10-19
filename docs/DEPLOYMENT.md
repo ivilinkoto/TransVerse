@@ -64,7 +64,7 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 
 ## Плащания
 
-Покупките на ТрансКоин и VIP с реални пари минават през **PayPal** (сега) и **Stripe** (по-късно, когато има домейн с HTTPS). Докато настройките липсват, магазинът показва пакетите като „Скоро“ и нищо не може да се плати. Състоянието се вижда в „Админ панел → Плащания“.
+Покупките на ТрансКоин и VIP с реални пари минават през **PayPal** (сега), **Google Play** (в Android приложението) и **Stripe** (по-късно, когато има домейн с HTTPS). Докато настройките липсват, магазинът показва пакетите като „Скоро“ и нищо не може да се плати. Състоянието се вижда в „Админ панел → Плащания“.
 
 ### Къде се пазят ключовете
 В **GitHub → репозиторито → Settings → Secrets and variables → Actions → New repository secret**. При всеки Deploy те се записват на сървъра във файл `/var/www/transverse/shared/secrets.env` (достъпен само за потребителя deploy) и уеб приложението и фоновият процес ги зареждат при старт. Не влизат в кода, в build-а или в лога. Никога не ги пращай в чат.
@@ -101,6 +101,27 @@ sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 
 ### Stripe (след домейна)
 Изисква домейн с HTTPS (Caddy, после `COOKIE_SECURE=true`). В Stripe: активиран акаунт на фирмата, включени методи на плащане (карти, Apple/Google Pay), разписки по имейл, webhook `https://домейн/api/payments/stripe` със събития `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`. Secrets: `STRIPE_SECRET_KEY` (sk_test_… / sk_live_…), `STRIPE_WEBHOOK_SECRET` (whsec_…), по избор `STRIPE_AUTOMATIC_TAX=true`. Тестова карта: 4242 4242 4242 4242. Възстановяване — от таблото на Stripe (отразява се автоматично).
+
+### Google Play (Android приложението)
+
+Приложението е Trusted Web Activity: Android обвивка от Google Play, която отваря `https://transverse-bg.com/game?app=android` на цял екран. Вътре в него истински пари се плащат само през Google Play Billing (правило на Google Play) — PayPal / Stripe бутоните се скриват. Google Play приема карта, Google Play баланс и, където мобилният оператор го поддържа, плащане с телефонната сметка.
+
+Как работи: страницата отваря прозореца на Google Play (Digital Goods API + PaymentRequest) и праща на сървъра токена на покупката. Сървърът я проверява в Google Play Developer API (`purchases.products.get`), доставя я веднъж (уникален `purchase_token`) и я „консумира“, за да може да се купи отново. Покупка, която не сме доставили, остава неконсумирана и Google Play я възстановява сам след 3 дни. Фоновият процес на всеки 30 минути консумира пропуснатите и чете списъка с върнати (voided) покупки за последните 30 дни — върнатите в Google Play суми премахват ТрансКоин / VIP автоматично. Връщане на сума — от Play Console → Поръчки.
+
+Продуктите в Play Console (Монетизиране → Продукти в приложението) трябва да са със същите ID като в `src/lib/game/payments.ts`: `tc_100`, `tc_550`, `tc_1200`, `tc_3200`, `vip_30_direct` (консумируеми). Цените се задават там, в местна валута.
+
+GitHub Secrets (за сайта, записват се на сървъра при Deploy):
+| Secret | Какво е |
+|---|---|
+| `GOOGLE_PLAY_PACKAGE` | `com.transversebg.app` |
+| `GOOGLE_PLAY_SERVICE_ACCOUNT` | целият JSON ключ на service account-а (може и base64) |
+| `ANDROID_CERT_SHA256` | SHA-256 отпечатък на ключа за подписване от Play Console → Целокупност на приложението (може няколко, със запетая) — публикува се в `/.well-known/assetlinks.json` |
+
+Service account: Google Cloud конзола → IAM → Service accounts → нов → Keys → JSON. В Play Console → Потребители и разрешения → поканете имейла му с права „Преглед на финансови данни“ и „Управление на поръчки и абонаменти“. „Админ панел → Плащания → Провери връзката с Google Play“ казва дали ключът и правата са наред.
+
+Изграждане на приложението: GitHub → Actions → „Android app“ → Run workflow (версия и versionCode — всяко качване с по-голям код). Нужен е secret `ANDROID_KEYSTORE_PASSWORD` (ваша силна парола, поне 12 знака). При първото пускане без `ANDROID_KEYSTORE_BASE64` workflow-ът създава ключ за качване, защитен с тази парола, и го дава като артефакт `upload-key` за 1 ден — копирайте текста от `ANDROID_KEYSTORE_BASE64.txt` в secret `ANDROID_KEYSTORE_BASE64` и изтрийте артефакта. Готовият `.aab` е в артефактите на изпълнението; качва се в Play Console (първо във „Вътрешно тестване“). Настройките на приложението са в `android/twa-manifest.json` (Bubblewrap; минимум Android 7.0, Play Billing и известия са включени).
+
+Тестовете (`tests/google-play.test.ts`) проверяват еднократната доставка, чужд токен, отказани / чакащи / тестови покупки, консумирането и върнатите покупки, подписа на JWT към Google и assetlinks.
 
 Тестовете (`tests/payments.test.ts`, `tests/paypal.test.ts`) проверяват подписите/проверката на уведомленията, еднократната доставка при повторения, отказ при различна сума, сверката от фоновия процес, възстановяванията и зареждането на ключовете.
 

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { adminResetLink, adminVerifyEmail, sendTestMail, adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
 import { cancelEvent, createEvent, eventSchema } from '@/server/game/events';
-import { diagnosePaypal, refundPaypalPayment } from '@/server/payments';
+import { diagnoseGooglePlay, diagnosePaypal, refundPaypalPayment } from '@/server/payments';
 import { siteUrl } from '@/server/payments/common';
 import { recordAudit, requireAdminRole } from '@/server/admin';
 import { parseSeasonMode } from '@/lib/game/seasonal';
@@ -32,6 +32,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cancelEvent'), eventId: id }),
   z.object({ type: z.literal('refundPayment'), paymentId: id }),
   z.object({ type: z.literal('checkPaypal') }),
+  z.object({ type: z.literal('checkGooglePlay') }),
   z.object({ type: z.literal('resetLink'), userId: id }),
   z.object({ type: z.literal('resolveReport'), reportId: id, action: z.enum(['dismiss', 'warn', 'delete_message', 'mute_h24', 'mute_d7']) }),
   z.object({ type: z.literal('unmute'), userId: id }),
@@ -107,6 +108,9 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'checkPaypal':
       requireAdminRole(user);
       return diagnosePaypal();
+    case 'checkGooglePlay':
+      requireAdminRole(user);
+      return diagnoseGooglePlay();
     case 'resetLink':
       return { ok: true, url: await adminResetLink(db, user, input.userId, siteUrl(request.headers.get('origin'))) };
   }

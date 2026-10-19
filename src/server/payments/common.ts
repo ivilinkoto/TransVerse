@@ -1,6 +1,6 @@
 /**
  * Real-money purchases — the parts every provider shares: configuration,
- * pending payments, delivery and refunds. Providers (PayPal, Stripe) only
+ * pending payments, delivery and refunds. Providers (PayPal, Stripe, Google Play) only
  * confirm that money arrived; delivery always goes through here, exactly once.
  */
 import { and, desc, eq, sql } from 'drizzle-orm';
@@ -16,6 +16,19 @@ import { mailConfig } from '@/server/mail';
 export type Payment = typeof payments.$inferSelect;
 export type Provider = 'paypal' | 'stripe';
 
+/** The Google Play service account from GOOGLE_PLAY_SERVICE_ACCOUNT (the JSON key, as is or base64); null when missing or not valid. */
+export function playServiceAccount(): { clientEmail: string; privateKey: string; tokenUri: string } | null {
+  const raw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT?.trim();
+  if (!raw) return null;
+  try {
+    const json = JSON.parse(raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8')) as { client_email?: string; private_key?: string; token_uri?: string };
+    if (!json.client_email || !json.private_key?.includes('PRIVATE KEY')) return null;
+    return { clientEmail: json.client_email, privateKey: json.private_key, tokenUri: json.token_uri ?? 'https://oauth2.googleapis.com/token' };
+  } catch {
+    return null;
+  }
+}
+
 /** What may take money right now. Secrets stay on the server; only flags reach the page. */
 export function paymentConfig() {
   const env = process.env;
@@ -24,12 +37,17 @@ export function paymentConfig() {
   const stripeMissing = [!env.STRIPE_SECRET_KEY && 'STRIPE_SECRET_KEY', !env.STRIPE_WEBHOOK_SECRET && 'STRIPE_WEBHOOK_SECRET'].filter((x): x is string => !!x);
   const paypal = { enabled: !sellerMissing.length && !paypalMissing.length, sandbox: paypalMode() === 'sandbox', webhook: !!env.PAYPAL_WEBHOOK_ID, missing: [...sellerMissing, ...paypalMissing] };
   const stripe = { enabled: !sellerMissing.length && !stripeMissing.length, testMode: env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ?? false, missing: [...sellerMissing, ...stripeMissing] };
+  const playMissing = [!env.GOOGLE_PLAY_PACKAGE && 'GOOGLE_PLAY_PACKAGE', !env.GOOGLE_PLAY_SERVICE_ACCOUNT ? 'GOOGLE_PLAY_SERVICE_ACCOUNT' : !playServiceAccount() && 'GOOGLE_PLAY_SERVICE_ACCOUNT (невалиден JSON ключ)'].filter((x): x is string => !!x);
+  /** Google Play Billing — only inside the Android app (Play rules: no other way to pay there). */
+  const googlePlay = { enabled: !sellerMissing.length && !playMissing.length, packageName: env.GOOGLE_PLAY_PACKAGE ?? '', missing: [...sellerMissing, ...playMissing] };
   const providers = [paypal.enabled && ('paypal' as const), stripe.enabled && ('stripe' as const)].filter((x): x is Provider => !!x);
   return {
-    enabled: providers.length > 0,
+    enabled: providers.length > 0 || googlePlay.enabled,
+    /** Providers for the web shop (Google Play is separate: the Android app only). */
     providers,
     paypal,
     stripe,
+    googlePlay,
     /** Test money only (PayPal sandbox / Stripe test keys). */
     testMode: (paypal.enabled && paypal.sandbox) || (stripe.enabled && stripe.testMode),
     /** APP_URL is set but is not a full address (it is then ignored). */
@@ -65,10 +83,7 @@ export function siteUrl(requestOrigin?: string | null): string {
 export async function startPayment(db: Database, userId: string, input: z.output<typeof checkoutSchema>, now: Date) {
   const product = paidProduct(input.productId);
   if (!product) fail('unknown_product', 'Непознат продукт.');
-  const [user] = await db.select({ email: users.email, bannedAt: users.bannedAt, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId));
-  if (!user || user.bannedAt) fail('forbidden', 'Профилът не може да прави покупки.', 403);
-  // With e-mail switched on, purchases need a confirmed address (receipts, account recovery).
-  if (mailConfig().enabled && !user!.verified) fail('email_unverified', 'Първо потвърди имейла си — линкът е в пощата ти (или го изпрати отново от „Профил и настройки“).', 403);
+  const user = await assertCanBuy(db, userId);
   // At most a few unfinished checkouts at a time (stops spamming the provider).
   const [{ open = 0 } = {}] = await db
     .select({ open: sql<number>`count(*)::int` })
@@ -79,7 +94,16 @@ export async function startPayment(db: Database, userId: string, input: z.output
     .insert(payments)
     .values({ userId, provider: input.provider, productId: product!.id, coins: product!.coins, vipDays: product!.vipDays, amountCents: product!.priceCents, currency: 'eur', consentAt: now })
     .returning();
-  return { payment: payment!, product: product!, email: user!.email };
+  return { payment: payment!, product: product!, email: user.email };
+}
+
+/** May this player pay real money? (not banned; a confirmed e-mail when mail is on) */
+export async function assertCanBuy(db: DbOrTx, userId: string) {
+  const [user] = await db.select({ email: users.email, bannedAt: users.bannedAt, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId));
+  if (!user || user.bannedAt) fail('forbidden', 'Профилът не може да прави покупки.', 403);
+  // With e-mail switched on, purchases need a confirmed address (receipts, account recovery).
+  if (mailConfig().enabled && !user!.verified) fail('email_unverified', 'Първо потвърди имейла си — линкът е в пощата ти (или го изпрати отново от „Профил и настройки“).', 403);
+  return user!;
 }
 
 export async function markPaymentFailed(db: DbOrTx, paymentId: string, reason?: string) {
