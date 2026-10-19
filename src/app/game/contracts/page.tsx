@@ -7,6 +7,7 @@ import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
 import { CONDITION_LABELS, routeCondition } from '@/lib/game/winter';
 import { convoyCandidates } from '@/server/game/convoy';
 import { canOfferJobs, offersFor } from '@/server/game/hire';
+import { activeProject } from '@/server/game/projects';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
 import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
@@ -56,6 +57,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
   const membership = await membershipOf(db, user.id);
   const memberOfCompanyId = membership?.company.id ?? null;
+  const project = memberOfCompanyId ? await activeProject(db, memberOfCompanyId) : null;
   const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId }))]);
   // "Drive in convoy" from the map: only the loads on that lane (from its origin city, all of them).
   const laneMatch = /^(\d+)-(\d+)$/.exec(params.lane ?? '');
@@ -116,6 +118,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       urgent: c.urgent,
       holiday: c.holiday,
       hiredBy: hiredBy.get(c.id) ?? null,
+      project: project && project.cargoType === c.cargoType && project.destCityId === c.destCityId ? project.title : null,
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
       weather: (() => {
         const w = routeCondition(c.route.countries, now);

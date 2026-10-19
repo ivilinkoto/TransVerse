@@ -23,6 +23,7 @@ import { activeSeason, rotateSeasons } from './seasons';
 import { applyDueRoadEvents } from './road-events';
 import { expireListings } from './used-market';
 import { settleLeagues } from './leagues';
+import { expireProjects } from './projects';
 import { runPayroll } from './staff';
 
 /**
@@ -165,6 +166,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'daily-reminders', 10 * 60_000, now, () => dailyReminders(db, now));
     await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
     await every(db, 'leagues', 10 * 60_000, now, () => settleLeagues(db, now));
+    await every(db, 'company-projects', 10 * 60_000, now, () => expireProjects(db, now));
     // Push notifications for whatever happened above (in-game notifications and company chat).
     await job(db, 'push', now, () => dispatchPush(db, now));
     await every(db, 'push-prune', 24 * 60 * 60_000, now, () => pruneSubscriptions(db, now));

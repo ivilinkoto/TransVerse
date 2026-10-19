@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Siren, Snowflake, Star, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Hammer, Siren, Snowflake, Star, Truck } from 'lucide-react';
 import { PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN } from '@/lib/game/halloween';
 import { WINTER } from '@/lib/game/winter';
@@ -47,6 +47,8 @@ export interface BoardContract {
   holiday: string | null;
   /** Winter: the worst road condition on the way today (null when the roads are clear). */
   weather: { condition: 'snow' | 'ice' | 'blizzard'; label: string; country: string } | null;
+  /** Counts for the running project of the player's company (its cargo to its city). */
+  project: string | null;
   /** A company handed this load to the player (held for them, commission on delivery). */
   hiredBy: { offerId: string; company: string; share: number; until: string } | null;
   /** A friend or company member left on this lane in the last half hour: taking it forms a convoy. */
@@ -288,6 +290,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
             {c.hiredBy && <span className="max-w-full truncate" title={`Възложена от ${c.hiredBy.company} до ${c.hiredBy.until}`}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />ВЪЗЛОЖЕНА · {Math.round(c.hiredBy.share * 100)}% за {c.hiredBy.company}</Badge></span>}
             {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}
             {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />ЗИМЕН ТОВАР · +{Math.round((WINTER.rewardMultiplier - 1) * 100)}%</Badge>}

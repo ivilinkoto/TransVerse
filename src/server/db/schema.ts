@@ -1371,3 +1371,28 @@ export const jobOffers = pgTable(
   },
   (t) => [index('job_offers_to_idx').on(t.toUserId, t.status), index('job_offers_org_idx').on(t.organizationId, t.status), index('job_offers_delivery_idx').on(t.deliveryId)],
 );
+
+/** A company project: the members haul X tonnes of a cargo to a city within a week (lib/game/projects.ts). */
+export const companyProjects = pgTable(
+  'company_projects',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    templateId: text('template_id').notNull(),
+    title: text('title').notNull(),
+    cargoType: text('cargo_type').notNull(),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    targetTons: real('target_tons').notNull(),
+    progressTons: real('progress_tons').notNull().default(0),
+    /** Tonnes per member: { userId: tons }. */
+    contributions: jsonb('contributions').$type<Record<string, number>>().notNull().default({}),
+    rewardCents: money('reward_cents').notNull(),
+    rewardXp: integer('reward_xp').notNull(),
+    status: text('status').notNull().default('active'), // active | done | failed
+    startedBy: uuid('started_by').references(() => users.id, { onDelete: 'set null' }),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    completedAt: ts('completed_at'),
+  },
+  (t) => [index('company_projects_org_idx').on(t.organizationId, t.status), index('company_projects_due_idx').on(t.status, t.endsAt)],
+);

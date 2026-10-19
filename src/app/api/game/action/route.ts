@@ -32,6 +32,7 @@ import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
+import { startProject } from '@/server/game/projects';
 import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
 import { reserveContract } from '@/server/game/contracts';
@@ -146,6 +147,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('offerJob'), offer: offerSchema }),
   z.object({ type: z.literal('declineJob'), offerId: id }),
   z.object({ type: z.literal('forHire'), on: z.boolean() }),
+  z.object({ type: z.literal('startProject'), templateId: z.string().max(40) }),
   z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('deleteConversation'), userId: id }),
   z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema }),
@@ -323,6 +325,9 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, ...(await offerJob(db, user.id, input.offer)) };
     case 'declineJob':
       await declineJob(db, user.id, input.offerId);
+      return { ok: true };
+    case 'startProject':
+      await startProject(db, user.id, input.templateId);
       return { ok: true };
     case 'forHire':
       await setForHire(db, user.id, input.on);

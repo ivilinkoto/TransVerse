@@ -6,6 +6,13 @@ import { companyMissionById } from '@/lib/game/company-missions';
 import { companyMissionBoard } from '@/server/game/company-missions';
 import { gameContext } from '@/server/game/context';
 import { companyHub } from '@/server/game/membership';
+import { and, desc, eq, inArray, or } from 'drizzle-orm';
+import { ProjectCard } from '@/components/company/ProjectCard';
+import type { CargoType } from '@/lib/game/cargo';
+import { periodWindow } from '@/lib/game/missions';
+import { cities, companyProjects, users } from '@/server/db/schema';
+import { canOfferJobs } from '@/server/game/hire';
+import { activeProject, projectChoices } from '@/server/game/projects';
 
 export const metadata = { title: 'Мисии на компанията' };
 
@@ -14,9 +21,22 @@ export default async function CompanyMissionsPage() {
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
   const board = await companyMissionBoard(db, hub.company.id, now);
+  // The company project: the running one, or this week's choice.
+  const [project, choices, canStart, lastProject] = await Promise.all([activeProject(db, hub.company.id), projectChoices(db, hub.company.id, now), canOfferJobs(db, user.id), db.select({ startsAt: companyProjects.startsAt }).from(companyProjects).where(eq(companyProjects.organizationId, hub.company.id)).orderBy(desc(companyProjects.startsAt)).limit(1)]);
+  const cityIds = project ? [project.destCityId] : [];
+  const cityRows = await db.select({ id: cities.id, name: cities.name, country: cities.countryCode, nameBg: cities.nameBg }).from(cities).where(or(inArray(cities.id, cityIds.length ? cityIds : [-1]), ...choices.map((c) => and(eq(cities.name, c.city), eq(cities.countryCode, c.country)))));
+  const helperNames = project ? await db.select({ id: users.id, username: users.username }).from(users).where(inArray(users.id, Object.keys(project.contributions).length ? Object.keys(project.contributions) : ['00000000-0000-0000-0000-000000000000'])) : [];
+  const startedThisWeek = !project && !!lastProject[0] && periodWindow('weekly', lastProject[0].startsAt).key === periodWindow('weekly', now).key;
   const amount = (metric: string | undefined, v: number) => (metric === 'earned_cents' ? money(v) : int(Math.floor(v)));
   return (
     <div className="space-y-5">
+      <ProjectCard
+        now={now}
+        canStart={canStart}
+        startedThisWeek={startedThisWeek}
+        choices={choices.map((c) => ({ id: c.id, title: c.title, goods: c.goods, cargo: c.cargo, target: c.target, reward: c.reward, cityBg: cityRows.find((r) => r.name === c.city && r.country === c.country)?.nameBg ?? c.city }))}
+        running={project && { title: project.title, cargo: project.cargoType as CargoType, city: cityRows.find((r) => r.id === project.destCityId)?.nameBg ?? '', progress: project.progressTons, target: project.targetTons, rewardCents: project.rewardCents, rewardXp: project.rewardXp, endsAt: project.endsAt, helpers: Object.entries(project.contributions).sort((a, b) => b[1] - a[1]).map(([id, tons]) => ({ username: helperNames.find((h) => h.id === id)?.username ?? '—', tons })) }}
+      />
       <Card
         title={<span className="inline-flex items-center gap-2"><Target className="h-4 w-4 text-cyan-glow" />Седмични мисии на компанията</span>}
         actions={<span className="text-xs text-mist-400">Нови след {duration((board.window.endsAt.getTime() - now.getTime()) / 60_000)} · {dateTime(board.window.endsAt)}</span>}

@@ -1,11 +1,11 @@
-import { Award, CalendarDays, Gavel, History, MapPin, Medal, Route, Trophy, Truck, UserPlus, Weight } from 'lucide-react';
+import { Award, CalendarDays, Gavel, Hammer, History, MapPin, Medal, Route, Trophy, Truck, UserPlus, Weight } from 'lucide-react';
 import Link from 'next/link';
 import { PlayerName } from '@/components/game/PlayerName';
 import { Card } from '@/components/ui';
 import { date, int, km } from '@/lib/format';
 import type { CompanyHighlights as Highlights } from '@/server/game/company-profile';
 
-const HISTORY_ICON = { founded: CalendarDays, joined: UserPlus, tender: Gavel, season: Medal } as const;
+const HISTORY_ICON = { founded: CalendarDays, joined: UserPlus, tender: Gavel, season: Medal, project: Hammer } as const;
 
 function Fact({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon: typeof Truck }) {
   return (

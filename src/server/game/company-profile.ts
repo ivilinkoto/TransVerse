@@ -2,6 +2,7 @@ import { aliasedTable, and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { ONLINE_MS } from '@/lib/game/social';
 import type { DbOrTx } from '@/server/db/client';
 import { cities, companies, companyMembers, companyTenders, contracts, deliveries, organizations, users, vehicles } from '@/server/db/schema';
+import { finishedProjects } from './projects';
 import { organizationSeasonResults } from './seasons';
 
 /**
@@ -67,6 +68,7 @@ export async function companyHighlights(db: DbOrTx, organizationId: string, now 
     ...members.filter((m) => m.userId !== org.ownerId || Math.abs(m.joinedAt.getTime() - org.foundedAt.getTime()) > 60_000).map((m) => ({ at: m.joinedAt, kind: 'joined' as const, text: `${m.username} се присъедини` })),
     ...tenders.filter((t) => t.at).map((t) => ({ at: t.at!, kind: 'tender' as const, text: `Изпълнен търг: ${t.title}` })),
     ...seasons.filter((s) => (s.rank ?? 99) <= 10).map((s) => ({ at: null, kind: 'season' as const, text: `${s.name}: ${s.rank}. място` })),
+    ...(await finishedProjects(db, organizationId)).filter((p) => p.completedAt).map((p) => ({ at: p.completedAt!, kind: 'project' as const, text: `Завършен проект: ${p.title}` })),
   ]
     .sort((a, b) => (b.at?.getTime() ?? 0) - (a.at?.getTime() ?? 0))
     .slice(0, 12);
