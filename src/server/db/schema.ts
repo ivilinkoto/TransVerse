@@ -386,6 +386,8 @@ export const deliveries = pgTable(
     coDriverId: uuid('co_driver_id').references(() => drivers.id, { onDelete: 'set null' }),
     /** Sent by the VIP auto-dispatcher (counts toward its daily limit). */
     autoDispatched: boolean('auto_dispatched').notNull().default(false),
+    /** The other trip of a convoy (a friend or company member on the same lane); both get a bonus on time. */
+    convoyWith: uuid('convoy_with'),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */

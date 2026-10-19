@@ -4,6 +4,8 @@ import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/
 import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
+import { CONVOY_RULES } from '@/lib/game/convoy';
+import { formConvoy } from './convoy';
 import { isWinter, routeCondition, WINTER } from '@/lib/game/winter';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
 import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/game/fines';
@@ -246,6 +248,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       })
       .returning();
     await tx.update(vehicles).set({ status: 'on_delivery' }).where(eq(vehicles.id, vehicleId));
+    // A friend or company member left on the same lane a moment ago: drive together.
+    if (!contract!.urgent) await formConvoy(tx, delivery!, userId, { originCityId: contract!.originCityId, destCityId: contract!.destCityId }, now);
     await logActivity(tx, userId, 'contract_accepted', { contractId, vehicleId, deliveryId: delivery!.id });
     await broadcast(tx, 'market');
     await broadcast(tx, 'world');
@@ -285,6 +289,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const reputationBonus = Math.round(result.rewardCents * reputationBonusShare(company!.reputation));
   if (reputationBonus) postings.push({ category: 'reputation_bonus', amountCents: reputationBonus, description: `Бонус за репутация (${Math.floor(company!.reputation)})`, idempotencyKey: key('reputation'), refType: 'delivery', refId: d.id });
   if (d.rentalFeeCents) postings.push({ category: 'rental', amountCents: -d.rentalFeeCents, description: `Наем на камиона (${Math.round(d.emptyKm + d.loadedKm)} км)`, idempotencyKey: key('rental'), refType: 'delivery', refId: d.id });
+  // Convoy: a friend or company member drove the same lane; on time, each gets a bonus.
+  const convoyBonus = d.convoyWith && !result.late ? Math.round(result.rewardCents * CONVOY_RULES.bonusShare) : 0;
+  if (convoyBonus) postings.push({ category: 'convoy_bonus', amountCents: convoyBonus, description: 'Бонус за конвой', idempotencyKey: key('convoy'), refType: 'delivery', refId: d.id });
   if (result.penaltyCents) postings.push({ category: 'penalty', amountCents: -result.penaltyCents, description: 'Неустойка за закъснение', idempotencyKey: key('penalty'), refType: 'delivery', refId: d.id });
   // Company membership: bonus from the company's upgrades and a contribution to its treasury.
   const perks = await bonusesForUser(tx, company!.ownerId);
@@ -302,7 +309,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = result.rewardCents + result.bonusCents + reputationBonus - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = result.rewardCents + result.bonusCents + reputationBonus + convoyBonus - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
   // XP bonuses: company training, VIP and the shop's double-XP booster.

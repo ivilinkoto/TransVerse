@@ -4,6 +4,7 @@ import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, S
 import { PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN } from '@/lib/game/halloween';
 import { WINTER } from '@/lib/game/winter';
+import { CONVOY_RULES } from '@/lib/game/convoy';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -45,6 +46,8 @@ export interface BoardContract {
   holiday: string | null;
   /** Winter: the worst road condition on the way today (null when the roads are clear). */
   weather: { condition: 'snow' | 'ice' | 'blizzard'; label: string; country: string } | null;
+  /** A friend or company member left on this lane in the last half hour: taking it forms a convoy. */
+  convoy: string | null;
   /** The player starred this lane (origin → destination). */
   favorite: boolean;
   /** Load of a tender of the player's company (only members see it). */
@@ -279,6 +282,7 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}
             {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />ЗИМЕН ТОВАР · +{Math.round((WINTER.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{c.weather.label} ({c.weather.country})</Badge>}
             {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />ПРЕМИУМ · репутация {c.minReputation}</Badge>}

@@ -46,7 +46,8 @@ export type LedgerCategory =
   | 'fines'
   | 'insurance'
   | 'transfer_out'
-  | 'transfer_in';
+  | 'transfer_in'
+  | 'convoy_bonus';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -92,6 +93,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   insurance: 'Застраховки',
   transfer_out: 'Изпратени пари',
   transfer_in: 'Получени пари',
+  convoy_bonus: 'Бонус за конвой',
 };
 
 export interface Posting {

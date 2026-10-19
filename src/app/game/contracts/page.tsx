@@ -3,6 +3,7 @@ import { ContractBoard, type BoardContract } from '@/components/game/ContractBoa
 import { PageHeader } from '@/components/ui';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
 import { CONDITION_LABELS, routeCondition } from '@/lib/game/winter';
+import { convoyCandidates } from '@/server/game/convoy';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
 import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
@@ -31,6 +32,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const onlyFavorites = (await searchParams).fav === '1';
   const { db, user, company, now } = await gameContext();
   const favorites = await favoriteLanesOf(db, user.id);
+  // Lanes a friend or company member just left on (first one per lane).
+  const convoys = new Map<string, string>();
+  for (const c of await convoyCandidates(db, user.id, now)) if (!convoys.has(`${c.originCityId}:${c.destCityId}`)) convoys.set(`${c.originCityId}:${c.destCityId}`, c.username);
   // Every free vehicle always has at least one job it can take in its own city.
   await ensureLocalJobsForFleet(db, now, company.id).catch((e) => console.warn('[contracts] local jobs', e));
   const [fleet, licences, taken] = await Promise.all([
@@ -100,6 +104,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       local: localCities.includes(c.originCityId),
       urgent: c.urgent,
       holiday: c.holiday,
+      convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
       weather: (() => {
         const w = routeCondition(c.route.countries, now);
         return w.condition === 'clear' ? null : { condition: w.condition, label: CONDITION_LABELS[w.condition], country: w.country! };

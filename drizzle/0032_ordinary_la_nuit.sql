@@ -1,0 +1,1 @@
+ALTER TABLE "deliveries" ADD COLUMN "convoy_with" uuid;
