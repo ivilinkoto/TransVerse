@@ -1,8 +1,9 @@
 'use client';
 
 import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Hammer, Siren, Snowflake, Star, Truck } from 'lucide-react';
-import { PumpkinIcon } from '@/components/seasonal/icons';
+import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN } from '@/lib/game/halloween';
+import { CHRISTMAS } from '@/lib/game/christmas';
 import { WINTER } from '@/lib/game/winter';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { HireDialog } from './HireDialog';
@@ -87,12 +88,13 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'hired' | 'halloween' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'hired' | 'halloween' | 'christmas' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
   { id: 'hired', label: 'Възложени на мен', test: (c) => !!c.hiredBy },
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
+  { id: 'christmas', label: 'Коледа', test: (c) => c.holiday === 'christmas' },
   { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
   { id: 'clear', label: 'Без сняг по пътя', test: (c) => !c.weather },
   { id: 'licence', label: 'Без нужда от лиценз', test: (c) => c.missingLicences.length === 0 },
@@ -104,6 +106,7 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
 const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['hired', (c) => !!c.hiredBy],
   ['halloween', (c) => c.holiday === 'halloween'],
+  ['christmas', (c) => c.holiday === 'christmas'],
   ['winter', (c) => c.holiday === 'winter'],
   ['clear', (c) => !!c.weather],
 ]);
@@ -290,6 +293,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
             {c.hiredBy && <span className="max-w-full truncate" title={`Възложена от ${c.hiredBy.company} до ${c.hiredBy.until}`}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />ВЪЗЛОЖЕНА · {Math.round(c.hiredBy.share * 100)}% за {c.hiredBy.company}</Badge></span>}
             {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}

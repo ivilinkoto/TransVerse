@@ -4,7 +4,7 @@ export interface NavTab {
   href: string;
   label: string;
   /** Shown only while this holiday's content runs. */
-  holiday?: 'halloween';
+  holiday?: 'halloween' | 'christmas';
 }
 
 export interface NavSection {
@@ -67,6 +67,7 @@ export const SECTIONS: NavSection[] = [
     icon: Trophy,
     tabs: [
       { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween' },
+      { href: '/game/christmas', label: 'Коледа', holiday: 'christmas' },
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/league', label: 'Лига' },
       { href: '/game/pass', label: 'Пропуск' },

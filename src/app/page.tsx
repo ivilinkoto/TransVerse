@@ -36,7 +36,7 @@ export default async function HomePage() {
   const names = await countryNames([...new Set(routes.flatMap((r) => r.route?.countries ?? []))]).catch(() => new Map<string, string>());
   const now = world?.now ?? requestNow();
   const latest = world ? visibleReleases(now)[0] : undefined;
-  const livery = season === 'halloween' ? 'pumpkin' : undefined;
+  const livery = season === 'halloween' ? 'pumpkin' : season === 'christmas' ? 'christmas' : undefined;
 
   return (
     <div className="relative overflow-x-clip">

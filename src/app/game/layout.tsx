@@ -17,6 +17,7 @@ import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
 import { WhatsNew } from '@/components/game/WhatsNew';
 import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isHalloween } from '@/lib/game/halloween';
+import { isChristmas } from '@/lib/game/christmas';
 import { isStaff } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
@@ -31,7 +32,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const { db, user, company, hq, now } = await gameContext();
   const staff = isStaff(user.role);
   const fresh = unseenRelease(user.seenVersion, now, staff);
-  const holiday = isHalloween(now) ? 'halloween' : null;
+  const holiday = isHalloween(now) ? 'halloween' : isChristmas(now) ? 'christmas' : null;
   const [tutorial, membership, missions] = await Promise.all([tutorialState(db, user.id), membershipOf(db, user.id), claimableCount(db, user.id)]);
   const [{ unread = 0 } = {}] = await db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt)));
   const [live] = await db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1);

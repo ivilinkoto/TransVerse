@@ -96,7 +96,8 @@ describe('halloween in the game', () => {
     const d = await acceptContract(db(), p.userId, job.id, truck!.id, HALLOWEEN_EVENING);
     const at = d.startedAt.getTime() + 60_000;
     await db().update(deliveries).set({ roadEvents: [{ kind: 'ghost', at, delayMs: 5_000, costCents: 0, applied: false }], nextEventAt: new Date(at) }).where(eq(deliveries.id, d.id));
-    expect(await applyDueRoadEvents(db(), new Date(at + 1000))).toBe(1);
+    // Other test files may have due events too.
+    expect(await applyDueRoadEvents(db(), new Date(at + 1000))).toBeGreaterThanOrEqual(1);
     const coins = await db().select().from(coinEntries).where(and(eq(coinEntries.userId, p.userId), eq(coinEntries.idempotencyKey, `delivery:${d.id}:ghost`)));
     expect(coins.map((c) => c.amount)).toEqual([HALLOWEEN.ghostCoins]);
     expect((await halloweenState(db(), p.userId)).quests.find((q) => q.id === 'h_ghost')!.done).toBe(true);

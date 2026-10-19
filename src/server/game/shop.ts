@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { PLATE_PATTERN, shopItem, VIP_DAYS, type ShopItemId } from '@/lib/game/shop';
 import { isVip, STANDARD_COLORS, VIP_COLORS } from '@/lib/game/vip';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
+import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { registerSchema } from '@/server/auth/accounts';
 import type { Database, Tx } from '@/server/db/client';
 import { cityMarkets, drivers, trailers, users, vehicles } from '@/server/db/schema';
@@ -123,6 +124,14 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         if (v.livery === 'pumpkin') fail('already_painted', 'Камионът вече е с боя „Тиква“.');
         await tx.update(vehicles).set({ color: HALLOWEEN.pumpkinColor, livery: 'pumpkin' }).where(eq(vehicles.id, v.id));
         summary = `Боя „Тиква“ за ${v.plate}`;
+        break;
+      }
+      case 'paint_christmas': {
+        if (!isChristmas(now)) fail('not_in_season', 'Боята „Коледа“ се продава само по Коледа.');
+        const v = await ownVehicle(tx, account.id, input.vehicleId);
+        if (v.livery === 'christmas') fail('already_painted', 'Камионът вече е с боя „Коледа“.');
+        await tx.update(vehicles).set({ color: CHRISTMAS.paintColor, livery: 'christmas' }).where(eq(vehicles.id, v.id));
+        summary = `Боя „Коледа“ за ${v.plate}`;
         break;
       }
       case 'rename': {

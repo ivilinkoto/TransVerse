@@ -37,7 +37,7 @@ export function categoryOf(href: string | null | undefined): PushCategory {
   if (href.startsWith('/game/finance#fines')) return 'fines';
   if (href.startsWith('/game/clients')) return 'clients';
   if (href.startsWith('/game/news')) return 'news';
-  if (href.startsWith('/game/halloween')) return 'holiday';
+  if (href.startsWith('/game/halloween') || href.startsWith('/game/christmas')) return 'holiday';
   if (href.includes('chat=dm:')) return 'chat';
   if (href.startsWith('/game/finance') || href.startsWith('/game/fleet') || href.startsWith('/game/garage')) return 'deliveries';
   if (href.startsWith('/game/events') || href.startsWith('/game/missions')) return 'events';

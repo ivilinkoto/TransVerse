@@ -215,7 +215,38 @@ html[data-season='winter'] .brand-mark::after {
   50% { transform: translate(18px, 50vh); }
   to { transform: translate(-6px, 102vh); }
 }
+/* ── Christmas (15 December – 6 January): winter snow plus lights ── */
+html[data-season='christmas'] {
+  --color-cyan-glow: #7dd3fc;
+  --color-volt-400: #93c5fd;
+}
+html[data-season='christmas'] body {
+  background-image: radial-gradient(1100px 520px at 75% -12%, rgba(239, 68, 68, 0.12), transparent 60%), radial-gradient(900px 480px at -10% 0%, rgba(250, 204, 21, 0.07), transparent 60%);
+}
+html[data-season='christmas'] .brand-mark {
+  position: relative;
+}
+html[data-season='christmas'] .brand-mark::after {
+  /* a Santa hat on the logo */
+  content: '';
+  position: absolute;
+  left: 18%;
+  top: -9px;
+  width: 64%;
+  height: 11px;
+  border-radius: 10px 14px 2px 2px;
+  background: linear-gradient(#dc2626, #b91c1c);
+  box-shadow: 0 3px 0 -1px #f8fafc;
+}
+.season-light {
+  animation: season-twinkle 2.4s ease-in-out infinite;
+}
+@keyframes season-twinkle {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 0.35; }
+}
 @media (prefers-reduced-motion: reduce) {
+  .season-light { animation: none; }
   .season-bat { display: none; }
   .season-fog { animation: none; }
   .season-flake { display: none; }

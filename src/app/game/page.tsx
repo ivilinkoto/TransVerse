@@ -5,7 +5,8 @@ import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
 import { headline } from '@/lib/game/news';
 import { latestIssues } from '@/server/game/news';
-import { PumpkinIcon } from '@/components/seasonal/icons';
+import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
+import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { isWinter } from '@/lib/game/winter';
 import { RoadConditions } from '@/components/game/RoadConditions';
@@ -121,6 +122,16 @@ export default async function OverviewPage() {
           <span className="min-w-0 flex-1">
             <span className="block font-display font-bold">Нощта на тиквите</span>
             <span className="block text-sm text-mist-300">Празнични поръчки с +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%, общ ивент, хелуински мисии и значка, призрачен камион нощем.</span>
+          </span>
+          <span className="btn-primary max-sm:hidden">Към празника</span>
+        </Link>
+      )}
+      {isChristmas(now) && (
+        <Link href="/game/christmas" className="panel group flex items-center gap-4 border-red-500/40 p-4 transition hover:border-red-500/80">
+          <ChristmasTreeIcon className="h-11 w-11 shrink-0 transition group-hover:scale-110" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold">Коледна треска</span>
+            <span className="block text-sm text-mist-300">Коледни поръчки с +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%, подаръци до Бъдни вечер, коледни мисии, значка и празнична боя.</span>
           </span>
           <span className="btn-primary max-sm:hidden">Към празника</span>
         </Link>

@@ -5,7 +5,7 @@ import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
  * A drawn picture of the game's dashboard for the public page (not a
  * screenshot: it does not go stale when the UI changes). Example numbers.
  */
-export function GameMockup({ livery }: { livery?: 'pumpkin' }) {
+export function GameMockup({ livery }: { livery?: 'pumpkin' | 'christmas' }) {
   const nav = [
     { icon: LayoutDashboard, label: 'Табло', on: true },
     { icon: Package, label: 'Поръчки' },
@@ -82,7 +82,7 @@ export function GameMockup({ livery }: { livery?: 'pumpkin' }) {
             <div className="space-y-1">
               {[
                 { lane: 'Пловдив → Солун', goods: 'Мрамор', t: '24 т', pay: '2 310 лв.' },
-                livery ? { lane: 'Русе → Букурещ', goods: 'Тикви за празника', t: '9 т', pay: '640 лв.' } : { lane: 'Русе → Букурещ', goods: 'Мебели', t: '9 т', pay: '590 лв.' },
+                livery ? { lane: 'Русе → Букурещ', goods: livery === 'christmas' ? 'Коледни подаръци' : 'Тикви за празника', t: '9 т', pay: '640 лв.' } : { lane: 'Русе → Букурещ', goods: 'Мебели', t: '9 т', pay: '590 лв.' },
               ].map((c) => (
                 <div key={c.lane} className="flex items-center justify-between gap-2 rounded-lg border border-asphalt-800 px-2.5 py-1.5 text-[11px]">
                   <span className="flex min-w-0 items-center gap-1.5 truncate"><Gauge className="h-3 w-3 shrink-0 text-gold-400" /> {c.lane} <span className="text-mist-400">· {c.goods} · {c.t}</span></span>

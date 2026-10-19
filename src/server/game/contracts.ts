@@ -10,6 +10,7 @@ import { contractWindowMinutes } from '@/lib/game/schedule';
 import { seasonalFactor } from '@/lib/game/seasonality';
 import { isWinter, WINTER } from '@/lib/game/winter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
+import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
@@ -201,14 +202,17 @@ export const PREMIUM_SHARE = 0.12;
 
 async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null) {
   const route = await getRoute(db, origin.id, destination.id, 'truck', provider);
-  // Halloween: some pallet and refrigerated loads are holiday goods that pay better.
+  // Halloween and Christmas: some pallet and refrigerated loads are holiday goods that pay better.
   // Winter: some bulk, liquid and pallet loads are winter goods (salt, heating fuel, pellets…).
-  const halloweenGoods = isHalloween(now) ? HALLOWEEN.goods[cargo] : undefined;
-  const winterGoods = isWinter(now) ? WINTER.goods[cargo] : undefined;
-  const holiday = halloweenGoods && rand() < HALLOWEEN.contractShare ? 'halloween' : winterGoods && rand() < WINTER.contractShare ? 'winter' : null;
-  const holidayMultiplier = holiday === 'halloween' ? HALLOWEEN.rewardMultiplier : holiday === 'winter' ? WINTER.rewardMultiplier : 1;
-  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * holidayMultiplier;
-  const goods = holiday === 'halloween' ? pick(halloweenGoods!) : holiday === 'winter' ? pick(winterGoods!) : pick(CARGO[cargo].goods);
+  const themes = [
+    { id: 'halloween', goods: isHalloween(now) ? HALLOWEEN.goods[cargo] : undefined, share: HALLOWEEN.contractShare, multiplier: HALLOWEEN.rewardMultiplier },
+    { id: 'christmas', goods: isChristmas(now) ? CHRISTMAS.goods[cargo] : undefined, share: CHRISTMAS.contractShare, multiplier: CHRISTMAS.rewardMultiplier },
+    { id: 'winter', goods: isWinter(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
+  ];
+  const theme = themes.find((t) => t.goods && rand() < t.share) ?? null;
+  const holiday = theme?.id ?? null;
+  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1);
+  const goods = theme ? pick(theme.goods!) : pick(CARGO[cargo].goods);
   const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1));
   await db.insert(contracts).values({
     shipper: shipperName(),

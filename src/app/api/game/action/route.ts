@@ -7,6 +7,7 @@ import { claimDaily } from '@/server/game/daily';
 import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
 import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
+import { claimChristmasQuest } from '@/server/game/christmas';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { buyGoods, shipGoods } from '@/server/game/trade';
@@ -132,6 +133,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('seenRelease'), version: z.string().trim().max(20) }),
   z.object({ type: z.literal('seasonalTheme'), on: z.boolean() }),
   z.object({ type: z.literal('claimHalloweenQuest'), questId: z.string().max(30) }),
+  z.object({ type: z.literal('claimChristmasQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
@@ -383,6 +385,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'claimHalloweenQuest':
       return { ok: true, ...(await claimHalloweenQuest(db, user.id, input.questId)) };
+    case 'claimChristmasQuest':
+      return { ok: true, ...(await claimChristmasQuest(db, user.id, input.questId)) };
     case 'seasonalTheme':
       await setSeasonalTheme(db, user.id, input.on);
       return { ok: true };

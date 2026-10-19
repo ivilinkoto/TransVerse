@@ -75,7 +75,7 @@ function DriversShot() {
   );
 }
 
-function FleetShot({ livery }: { livery?: 'pumpkin' }) {
+function FleetShot({ livery }: { livery?: 'pumpkin' | 'christmas' }) {
   const rigs = [
     { modelId: 'hemus-r12-box', trailerModelId: 'drawbar-box', color: '#b91c1c', caption: 'Соло + прикачно ремарке' },
     { modelId: 'danubia-t440', trailerModelId: 'car-carrier', color: '#e5e7eb', caption: 'Влекач + автовоз' },
@@ -171,7 +171,7 @@ function AnalyticsShot() {
 const icon = (I: typeof Truck) => <I className="h-4 w-4" />;
 
 /** Tabs of the public tour; the numbers in the text come from the game rules. */
-export function tourTabs(livery?: 'pumpkin'): TourTab[] {
+export function tourTabs(livery?: 'pumpkin' | 'christmas'): TourTab[] {
   return [
     {
       id: 'board', label: 'Борса и диспечер', icon: icon(Package),

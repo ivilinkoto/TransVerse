@@ -5,6 +5,7 @@ import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { settleClientContracts } from './clients';
 import { ensureHalloweenEvent } from './halloween';
+import { ensureChristmasEvent } from './christmas';
 import { collectOverdueFines } from './fines';
 import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
@@ -143,6 +144,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     await every(db, 'global-events', 10 * 60_000, now, () => ensureAutoEvent(db, now));
     await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
+    await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));
     await every(db, 'mentorships', 10 * 60_000, now, () => expireMentorships(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));

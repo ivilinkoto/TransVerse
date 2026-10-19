@@ -4,6 +4,7 @@ import { CLIENT_RULES } from '@/lib/game/clients';
 import { CREW_RULES, TRAIT_IDS, TRAITS } from '@/lib/game/crew';
 import { FINE_RULES, INSURANCE } from '@/lib/game/fines';
 import { HALLOWEEN } from '@/lib/game/halloween';
+import { CHRISTMAS } from '@/lib/game/christmas';
 import { ECONOMY } from '@/lib/game/economy';
 import { AUTO_DISPATCH_PER_DAY } from '@/server/game/dispatch';
 import { AUCTION_RULES } from '@/lib/game/auctions';
@@ -77,6 +78,9 @@ const SECTIONS: { id: string; title: string; items: React.ReactNode[] }[] = [
       <>Анализ (Автопарк → Анализ): какво носи всеки камион, шофьор, линия и товар.</>,
       <>Седмичник (Състезание): вестник всеки понеделник за изминалата седмица.</>,
       `Хелуин (${HALLOWEEN.from.split('-').reverse().join('.')}–${HALLOWEEN.to.split('-').reverse().join('.')}): празнични поръчки с +${pct(HALLOWEEN.rewardMultiplier - 1)}, общ ивент, мисии, значка и призрачен камион нощем.`,
+      `Коледа (${CHRISTMAS.from.split('-').reverse().join('.')}–${CHRISTMAS.to.split('-').reverse().join('.')}): коледни поръчки с +${pct(CHRISTMAS.rewardMultiplier - 1)}, общ ивент „Коледна треска“ до Бъдни вечер, мисии, значка и боя „Коледа“.`,
+      <>Наставник (меню на профила): нов играч избира опитен шофьор (ниво 15+) — +10 % опит, а при ниво 5 награда и за двамата.</>,
+      <>Помощ на пътя: приятел или колега закъса — с камион до 150 км натисни „Помогни на пътя“ на картата.</>,
       <>Обновленията и описанията им са в <Link href="/game/updates" className="text-cyan-glow hover:underline">Обновления</Link>; въпроси — в <Link href="/game/support" className="text-cyan-glow hover:underline">Поддръжка</Link>.</>,
     ],
   },

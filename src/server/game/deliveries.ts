@@ -40,6 +40,8 @@ import { applyRoadEvents } from './road-events';
 import { recordClientLoad } from './clients';
 import { deliverAuctionLoad } from './auctions';
 import { recordHalloweenDelivery } from './halloween';
+import { recordChristmasDelivery } from './christmas';
+import { isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
@@ -389,7 +391,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     countries: contractCountries(origin!.country, dest!.countryCode, route?.countries),
     urgent: contract.urgent,
     inCompany: !!perks,
-    holiday: !!contract.holiday,
+    // Holiday events count the holiday's own loads (winter goods are seasonal, not a holiday).
+    holiday: !!contract.holiday && contract.holiday !== 'winter',
   };
   await recordMissionProgress(tx, company!.ownerId, facts, now);
   // Global events count by arrival time; company missions by the member's company.
@@ -413,6 +416,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   );
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
+  // Christmas quests: Christmas loads, arrivals on Christmas Eve and Day.
+  if (isChristmas(completedAt)) await recordChristmasDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'christmas', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // A special load won on auction.
   if (contract.auctionId) await deliverAuctionLoad(tx, contract.auctionId, company!.ownerId);
   // A load of a long-term client contract.

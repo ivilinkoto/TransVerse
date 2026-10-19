@@ -13,7 +13,7 @@ export const SHOP_CATEGORIES: Record<ShopCategory, string> = {
   account: 'Профил',
 };
 
-export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'rename';
+export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'rename';
 
 export interface ShopItem {
   id: ShopItemId;
@@ -24,7 +24,7 @@ export interface ShopItem {
   /** What the buyer has to choose. */
   needs?: 'vehicle' | 'vehicle_city' | 'vehicle_plate' | 'vehicle_color' | 'username' | 'recipient';
   /** Sold only during this holiday (what was bought stays). */
-  seasonal?: 'halloween';
+  seasonal?: 'halloween' | 'christmas';
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
@@ -38,6 +38,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'custom_plate', category: 'cosmetic', label: 'Лична регистрационна табела', description: 'Собствен надпис на табелата на твой камион (2–10 знака).', price: 150, needs: 'vehicle_plate' },
   { id: 'paint', category: 'cosmetic', label: 'Пребоядисване', description: 'Нов цвят на твой камион. За VIP е безплатно и с ексклузивни цветове.', price: 50, needs: 'vehicle_color' },
   { id: 'paint_pumpkin', category: 'cosmetic', label: 'Боя „Тиква“ · Хелуин 2026', description: 'Празнична оранжева боя с тиквена усмивка на кабината и ремаркето. Продава се само по Хелуин — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'halloween' },
+  { id: 'paint_christmas', category: 'cosmetic', label: 'Боя „Коледа“ · Коледа 2026', description: 'Празнична червена боя с украсена елха на кабината и ремаркето. Продава се само по Коледа — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'christmas' },
   { id: 'rename', category: 'account', label: 'Смяна на потребителско име', description: 'Ново име в играта (3–20 знака).', price: 300, needs: 'username' },
 ];
 

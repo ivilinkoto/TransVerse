@@ -1,4 +1,4 @@
-/** Original seasonal artwork (Halloween): small SVG icons and decorations. */
+/** Original seasonal artwork (Halloween, Christmas): small SVG icons and decorations. */
 
 export function PumpkinIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
@@ -59,6 +59,31 @@ export function Cobweb({ className = 'h-16 w-16' }: { className?: string }) {
             .join(' ')}
         />
       ))}
+    </svg>
+  );
+}
+
+export function ChristmasTreeIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+      <path d="M16 4l7 9h-3.5l6 8h-4l6 7H4.5l6-7h-4l6-8H9z" fill="#16a34a" />
+      <rect x="14.2" y="28" width="3.6" height="3" fill="#92400e" />
+      <path d="M16 .8l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" fill="#facc15" />
+      <circle cx="13" cy="12" r="1.3" fill="#ef4444" />
+      <circle cx="19" cy="16" r="1.3" fill="#facc15" />
+      <circle cx="11" cy="21" r="1.3" fill="#38bdf8" />
+      <circle cx="21" cy="23" r="1.3" fill="#ef4444" />
+    </svg>
+  );
+}
+
+export function GiftIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+      <rect x="5" y="13" width="22" height="16" rx="1.5" fill="#dc2626" />
+      <rect x="3.5" y="9" width="25" height="5" rx="1" fill="#ef4444" />
+      <rect x="14" y="9" width="4" height="20" fill="#facc15" />
+      <path d="M16 9c-2-4-7-6-8-3s4 3 8 3zM16 9c2-4 7-6 8-3s-4 3-8 3z" fill="none" stroke="#facc15" strokeWidth="1.8" />
     </svg>
   );
 }

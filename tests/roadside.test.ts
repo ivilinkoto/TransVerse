@@ -77,6 +77,8 @@ describe('help on the road', () => {
     expect(await code(helpOnRoad(db(), far.userId, trip.id, now))).toBe('too_far');
     for (let i = 0; i < ROADSIDE.dailyLimit; i++) {
       const other = await stuckTrip((await newPlayer('Sofia')).userId);
+      // Not left due: other test files apply every due road event.
+      await db().update(deliveries).set({ nextEventAt: null }).where(eq(deliveries.id, other.id));
       await db().insert(roadsideHelps).values({ deliveryId: other.id, stopAt: new Date(other.at + i), helperId: busy.userId, savedMs: 1, feeCents: 0, createdAt: now });
     }
     expect(await code(helpOnRoad(db(), busy.userId, trip.id, now))).toBe('daily_limit');

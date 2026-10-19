@@ -1,12 +1,13 @@
 /**
- * Seasonal looks of the site (Halloween, winter; others can be added the
+ * Seasonal looks of the site (Halloween, Christmas, winter; others can be added the
  * same way). A season switches itself on and off by date (Sofia
  * time, every year); an administrator can force it on or off. The base
  * design is untouched: a season only overrides colours and adds decorations
  * under html[data-season="…"].
  */
 
-export const SEASON_IDS = ['halloween', 'winter'] as const;
+/** In date order of priority: when windows overlap (Christmas inside winter), the first wins. */
+export const SEASON_IDS = ['halloween', 'christmas', 'winter'] as const;
 export type SeasonId = (typeof SEASON_IDS)[number];
 
 export interface SeasonDefinition {
@@ -20,6 +21,7 @@ export interface SeasonDefinition {
 export const SEASONS: Record<SeasonId, SeasonDefinition> = {
   halloween: { id: 'halloween', label: 'Хелуин', from: '10-20', to: '11-02' },
   // Over the new year: from > to means the window wraps.
+  christmas: { id: 'christmas', label: 'Коледа', from: '12-15', to: '01-06' },
   winter: { id: 'winter', label: 'Зима', from: '12-01', to: '02-28' },
 };
 

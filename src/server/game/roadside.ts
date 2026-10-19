@@ -11,6 +11,7 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { broadcast, notify } from './notify';
+import { recordChristmasHelp } from './christmas';
 import { awardXp } from './progression';
 import { circleOf } from './world-map';
 
@@ -102,6 +103,7 @@ export async function helpOnRoad(db: Database, helperId: string, deliveryId: str
     const [acc] = await tx.select({ reputation: companies.reputation }).from(companies).where(eq(companies.id, account.id)).for('update');
     await tx.update(companies).set({ reputation: Math.min(100, acc!.reputation + ROADSIDE.reputation) }).where(eq(companies.id, account.id));
     await awardXp(tx, helperId, ROADSIDE.xp);
+    await recordChristmasHelp(tx, helperId, now);
     const minutes = Math.max(1, Math.round(savedMs / 60_000));
     await notify(tx, owner!.id, 'success', `${helper!.username} ти помогна на пътя`, `${stop!.note}: камионът тръгва ${minutes} мин. по-рано.`, '/game/fleet');
     await notify(tx, helperId, 'success', 'Помогна на колега', `${owner!.username} тръгва ${minutes} мин. по-рано. Хонорар ${money(ROADSIDE.feeCents)}, +${ROADSIDE.xp} опит и репутация.`, '/game/finance');
