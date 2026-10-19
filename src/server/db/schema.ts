@@ -145,6 +145,8 @@ export const users = pgTable(
     seenVersion: text('seen_version'),
     /** Seasonal decorations (Halloween…) on or off for this player. */
     seasonalTheme: boolean('seasonal_theme').notNull().default(true),
+    /** Available to drive loads handed over by companies (for a commission). */
+    forHire: boolean('for_hire').notNull().default(false),
     /** One-time hints the player has closed. */
     seenHints: text('seen_hints').array().notNull().default(sql`'{}'::text[]`),
     /** No phone notifications between these hours (Sofia), e.g. { from: 23, to: 8 }; null = none. */
@@ -1349,4 +1351,23 @@ export const moneyTransfers = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('money_transfers_from_idx').on(t.fromUserId, t.createdAt), index('money_transfers_to_idx').on(t.toUserId, t.createdAt)],
+);
+
+/** A company hands a board load to a free player for a commission (lib/game/hire.ts). */
+export const jobOffers = pgTable(
+  'job_offers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    offeredBy: uuid('offered_by').references(() => users.id, { onDelete: 'set null' }),
+    toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** Share of the reward the driver pays to the company's treasury. */
+    share: real('share').notNull(),
+    status: text('status').notNull().default('pending'), // pending | accepted | declined | done
+    expiresAt: ts('expires_at').notNull(),
+    deliveryId: uuid('delivery_id'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('job_offers_to_idx').on(t.toUserId, t.status), index('job_offers_org_idx').on(t.organizationId, t.status), index('job_offers_delivery_idx').on(t.deliveryId)],
 );

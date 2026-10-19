@@ -10,7 +10,7 @@ export const PERMISSIONS = {
   manage_upgrades: 'Развитие на компанията (покупка на подобрения)',
   manage_settings: 'Настройки (набиране, вноска, минимално ниво)',
   manage_chat: 'Чат (изтриване на съобщения и изчистване на целия чат)',
-  manage_tenders: 'Търгове (приемане на големи фирмени поръчки от касата)',
+  manage_tenders: 'Търгове и възлагане на курсове на свободни шофьори',
 } as const;
 export type Permission = keyof typeof PERMISSIONS;
 export const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as Permission[];

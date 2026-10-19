@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/ui';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
 import { CONDITION_LABELS, routeCondition } from '@/lib/game/winter';
 import { convoyCandidates } from '@/server/game/convoy';
+import { canOfferJobs, offersFor } from '@/server/game/hire';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
 import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
@@ -28,10 +29,14 @@ import { membershipOf } from '@/server/game/membership';
 
 export const metadata = { title: 'Поръчки' };
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string }> }) {
-  const onlyFavorites = (await searchParams).fav === '1';
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string }> }) {
+  const params = await searchParams;
+  const onlyFavorites = params.fav === '1';
   const { db, user, company, now } = await gameContext();
   const favorites = await favoriteLanesOf(db, user.id);
+  // Loads companies handed to this player, and whether the player may hand loads out.
+  const [hiredOffers, canAssign] = await Promise.all([offersFor(db, user.id, now), canOfferJobs(db, user.id)]);
+  const hiredBy = new Map(hiredOffers.map((o) => [o.contractId, { offerId: o.id, company: o.tag ? `[${o.tag}] ${o.company}` : o.company, share: o.share, until: o.expiresAt.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' }) }]));
   // Lanes a friend or company member just left on (first one per lane).
   const convoys = new Map<string, string>();
   for (const c of await convoyCandidates(db, user.id, now)) if (!convoys.has(`${c.originCityId}:${c.destCityId}`)) convoys.set(`${c.originCityId}:${c.destCityId}`, c.username);
@@ -104,6 +109,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       local: localCities.includes(c.originCityId),
       urgent: c.urgent,
       holiday: c.holiday,
+      hiredBy: hiredBy.get(c.id) ?? null,
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
       weather: (() => {
         const w = routeCondition(c.route.countries, now);
@@ -133,7 +139,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       {!user.seenHints.includes('board') && <Hint id="board" />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
-      <ContractBoard initialChips={onlyFavorites ? ['fav'] : []} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

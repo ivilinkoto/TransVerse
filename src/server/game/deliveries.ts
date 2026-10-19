@@ -6,6 +6,7 @@ import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { formConvoy } from './convoy';
+import { acceptJobOffer, payHireCommission } from './hire';
 import { isWinter, routeCondition, WINTER } from '@/lib/game/winter';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
 import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/game/fines';
@@ -250,6 +251,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     await tx.update(vehicles).set({ status: 'on_delivery' }).where(eq(vehicles.id, vehicleId));
     // A friend or company member left on the same lane a moment ago: drive together.
     if (!contract!.urgent) await formConvoy(tx, delivery!, userId, { originCityId: contract!.originCityId, destCityId: contract!.destCityId }, now);
+    // A load handed over by a company: the agreed commission is paid when it arrives.
+    await acceptJobOffer(tx, userId, contractId, delivery!.id, now);
     await logActivity(tx, userId, 'contract_accepted', { contractId, vehicleId, deliveryId: delivery!.id });
     await broadcast(tx, 'market');
     await broadcast(tx, 'world');
@@ -301,6 +304,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: `Бонус от „${org!.name}“`, idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
   if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към касата на „${org!.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
+  const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   if (contribution) {
     // Personal account first, then the treasury (fixed lock order).
     const [member] = await tx.select({ username: users.username }).from(users).where(eq(users.id, company!.ownerId));
@@ -309,7 +313,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = result.rewardCents + result.bonusCents + reputationBonus + convoyBonus - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
   // XP bonuses: company training, VIP and the shop's double-XP booster.

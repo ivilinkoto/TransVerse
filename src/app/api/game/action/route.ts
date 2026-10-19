@@ -31,6 +31,7 @@ import { acceptClientContract, declineClientContract, sendClientLoad } from '@/s
 import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
+import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
 import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
 import { reserveContract } from '@/server/game/contracts';
@@ -142,6 +143,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('companyInviteRespond'), inviteId: id, accept: z.boolean() }),
   z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema }),
   z.object({ type: z.literal('sendMoney'), transfer: transferSchema }),
+  z.object({ type: z.literal('offerJob'), offer: offerSchema }),
+  z.object({ type: z.literal('declineJob'), offerId: id }),
+  z.object({ type: z.literal('forHire'), on: z.boolean() }),
   z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('deleteConversation'), userId: id }),
   z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema }),
@@ -315,6 +319,14 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, result: await respondCompanyInvite(db, user.id, input.inviteId, input.accept) };
     case 'sendDirect':
       return { ok: true, id: await sendDirectMessage(db, user.id, input.userId, input.body) };
+    case 'offerJob':
+      return { ok: true, ...(await offerJob(db, user.id, input.offer)) };
+    case 'declineJob':
+      await declineJob(db, user.id, input.offerId);
+      return { ok: true };
+    case 'forHire':
+      await setForHire(db, user.id, input.on);
+      return { ok: true };
     case 'sendMoney':
       return { ok: true, ...(await sendMoney(db, user.id, input.transfer, await hashIp(db, await clientIp()))) };
     case 'unsendDirect':

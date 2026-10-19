@@ -47,7 +47,8 @@ export type LedgerCategory =
   | 'insurance'
   | 'transfer_out'
   | 'transfer_in'
-  | 'convoy_bonus';
+  | 'convoy_bonus'
+  | 'hire_commission';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -94,6 +95,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   transfer_out: 'Изпратени пари',
   transfer_in: 'Получени пари',
   convoy_bonus: 'Бонус за конвой',
+  hire_commission: 'Комисиони към компании за възложени курсове',
 };
 
 export interface Posting {
@@ -139,7 +141,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   member_contribution: 'Вноска от курс',
@@ -152,6 +154,7 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   tender_deposit: 'Депозити за търгове',
   tender_bonus: 'Бонуси от търгове',
   season_prize: 'Сезонни награди',
+  hire_commission: 'Комисиони от възложени курсове',
 };
 
 export interface TreasuryPosting {

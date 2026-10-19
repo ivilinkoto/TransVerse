@@ -1,5 +1,5 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
-import { Ban, Bell, Sparkles } from 'lucide-react';
+import { Ban, Bell, Sparkles, UserRoundCheck } from 'lucide-react';
 import { SEASON_IDS, SEASONS, activeSeason } from '@/lib/game/seasonal';
 import { seasonMode } from '@/server/seasonal';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -13,6 +13,7 @@ import { PasswordForm } from '@/components/game/PasswordForm';
 import { date } from '@/lib/format';
 import { sessions, users } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
+import { HIRE_RULES } from '@/lib/game/hire';
 
 export const metadata = { title: 'Настройки' };
 
@@ -48,6 +49,14 @@ export default async function SettingsPage() {
               По празници и сезони ({SEASON_IDS.map((id) => `${SEASONS[id].label} ${SEASONS[id].from.split('-').reverse().join('.')} – ${SEASONS[id].to.split('-').reverse().join('.')}`).join(', ')}) играта сменя цветовете и добавя украса. {site ? `В момента е включена: ${SEASONS[site].label}.` : 'В момента няма празнична тема.'}
             </p>
             <ActionButton action={{ type: 'seasonalTheme', on: !user.seasonalTheme }} className="btn-ghost">{user.seasonalTheme ? 'Изключи украсата' : 'Включи украсата'}</ActionButton>
+          </div>
+        </Card>
+        <Card title={<span className="inline-flex items-center gap-2"><UserRoundCheck className="h-4 w-4 text-mist-400" />На разположение за компании</span>} className="lg:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+            <p className="max-w-xl text-mist-300">
+              Компаниите могат да ти възлагат курсове от борсата: товарът се запазва за теб {HIRE_RULES.offerMinutes} минути, караш със свой камион и при доставката плащаш на компанията уговорена комисиона ({Math.round(HIRE_RULES.minShare * 100)}–{Math.round(HIRE_RULES.maxShare * 100)} %). Всяко предложение можеш да откажеш. {user.forHire ? 'В момента приемаш предложения.' : 'В момента не приемаш предложения.'}
+            </p>
+            <ActionButton action={{ type: 'forHire', on: !user.forHire }} className={user.forHire ? 'btn-ghost' : 'btn-primary'}>{user.forHire ? 'Спри предложенията' : 'Приемам курсове'}</ActionButton>
           </div>
         </Card>
         <Card title={<span className="inline-flex items-center gap-2"><Ban className="h-4 w-4 text-mist-400" />Блокирани играчи</span>} className="lg:col-span-2">

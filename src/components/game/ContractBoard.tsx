@@ -5,6 +5,7 @@ import { PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN } from '@/lib/game/halloween';
 import { WINTER } from '@/lib/game/winter';
 import { CONVOY_RULES } from '@/lib/game/convoy';
+import { HireDialog } from './HireDialog';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -46,6 +47,8 @@ export interface BoardContract {
   holiday: string | null;
   /** Winter: the worst road condition on the way today (null when the roads are clear). */
   weather: { condition: 'snow' | 'ice' | 'blizzard'; label: string; country: string } | null;
+  /** A company handed this load to the player (held for them, commission on delivery). */
+  hiredBy: { offerId: string; company: string; share: number; until: string } | null;
   /** A friend or company member left on this lane in the last half hour: taking it forms a convoy. */
   convoy: string | null;
   /** The player starred this lane (origin → destination). */
@@ -82,10 +85,11 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'halloween' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'hired' | 'halloween' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
+  { id: 'hired', label: 'Възложени на мен', test: (c) => !!c.hiredBy },
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
   { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
   { id: 'clear', label: 'Без сняг по пътя', test: (c) => !c.weather },
@@ -96,12 +100,13 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
 
 /** Chips that appear only in their season (when some contract matches). */
 const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
+  ['hired', (c) => !!c.hiredBy],
   ['halloween', (c) => c.holiday === 'halloween'],
   ['winter', (c) => c.holiday === 'winter'],
   ['clear', (c) => !!c.weather],
 ]);
 
-export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [] }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[] }) {
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean }) {
   const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
   const toggleChip = (id: Chip) => setChips((s) => {
     const next = new Set(s);
@@ -223,7 +228,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       ) : (
         <ul className="space-y-2">
           {list.map((c) => (
-            <ContractRow key={c.id} contract={c} vip={vip} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text) => { setSent(text); setOpen(null); }} />
+            <ContractRow key={c.id} contract={c} vip={vip} canAssign={canAssign} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text) => { setSent(text); setOpen(null); }} />
           ))}
         </ul>
       )}
@@ -231,7 +236,8 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   );
 }
 
-function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
+function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
+  const [hiring, setHiring] = useState(false);
   const router = useRouter();
   const usable = c.options.filter((o) => !o.error);
   const [vehicleId, setVehicleId] = useState(usable[0]?.vehicleId ?? '');
@@ -282,6 +288,7 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.hiredBy && <span className="max-w-full truncate" title={`Възложена от ${c.hiredBy.company} до ${c.hiredBy.until}`}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />ВЪЗЛОЖЕНА · {Math.round(c.hiredBy.share * 100)}% за {c.hiredBy.company}</Badge></span>}
             {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}
             {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />ЗИМЕН ТОВАР · +{Math.round((WINTER.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{c.weather.label} ({c.weather.country})</Badge>}
@@ -327,6 +334,18 @@ function ContractRow({ contract: c, vip, open, onToggle, onAccepted }: { contrac
             </button>
           </div>
 
+          {c.hiredBy && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-prestige/40 bg-prestige/10 px-3 py-2 text-sm">
+              <span>„{c.hiredBy.company}“ ти възлага този курс. Караш със свой камион и плащаш {Math.round(c.hiredBy.share * 100)}% от наградата ({money(Math.round(c.rewardCents * c.hiredBy.share))}) на компанията при доставката.</span>
+              <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => void api('/api/game/action', { type: 'declineJob', offerId: c.hiredBy!.offerId }).then(() => router.refresh(), (e: Error) => setError(e.message))}>Откажи</button>
+            </div>
+          )}
+          {canAssign && !c.urgent && !c.tender && !c.reservedByOther && !c.hiredBy && (
+            <div className="mt-3">
+              <button type="button" className="inline-flex items-center gap-1.5 text-sm text-mist-300 hover:text-prestige" onClick={() => setHiring(true)}><BadgeCheck className="h-4 w-4" />Възложи на свободен шофьор срещу комисиона за касата</button>
+            </div>
+          )}
+          {hiring && <HireDialog contract={{ id: c.id, goods: c.goods, rewardCents: c.rewardCents, origin: c.origin.name, destination: c.destination.name }} onClose={() => setHiring(false)} />}
           {c.urgent && (
             <p className="mt-3 rounded-lg border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-mist-200">
               Спешна поръчка: камионът стига до {c.origin.name} за 1 минута, където и да е, а курсът върви ×{dec(c.speedFactor)} по-бързо. Може да я поеме всеки играч със свободен камион (по веднъж), докато не изтече от борсата.
