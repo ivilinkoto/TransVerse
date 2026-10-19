@@ -2,27 +2,31 @@ import { redirect } from 'next/navigation';
 import { RankForm } from '@/components/company/forms';
 import { Badge, Card } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { ALL_PERMISSIONS, COMPANY_UNLOCKS, maxRanks, PERMISSIONS } from '@/lib/game/company';
+import { ALL_PERMISSIONS, COMPANY_UNLOCKS, maxRanks, PERMISSIONS, ROLE_PERMISSIONS, ROLE_TEMPLATES } from '@/lib/game/company';
 import { gameContext } from '@/server/game/context';
 import { can, companyHub, companyRanksView } from '@/server/game/membership';
 
 export const metadata = { title: 'Длъжности' };
 
 export default async function RanksPage() {
-  const { db, user } = await gameContext();
+  const { db, user, features } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
   const ranks = await companyRanksView(db, hub.company.id);
   const manage = can(hub.rank, 'manage_ranks');
-  const limit = maxRanks(hub.company.companyLevel);
-  const permissions = ALL_PERMISSIONS.map((key) => ({ key, label: PERMISSIONS[key] }));
+  const roles = features.company_roles;
+  const limit = maxRanks(hub.company.companyLevel, roles);
+  // The rights of the company roles (v1.2) stay hidden until the release (staff see them earlier).
+  const shown = ALL_PERMISSIONS.filter((p) => roles || !ROLE_PERMISSIONS.includes(p));
+  const permissions = shown.map((key) => ({ key, label: PERMISSIONS[key] }));
   const grantable = hub.rank.isOwner ? [...ALL_PERMISSIONS] : hub.rank.permissions;
+  const templates = roles ? ROLE_TEMPLATES.filter((t) => !ranks.some((r) => r.name === t.name) && t.permissions.every((p) => grantable.includes(p))) : [];
   const nextPriority = Math.min(999, Math.max(hub.rank.priority, ...ranks.map((r) => r.priority)) + 10);
   return (
     <div className="space-y-6">
       <p className="text-sm text-mist-400">
         Длъжностите се подреждат по старшинство — по-малкото число е по-висока длъжност. Всеки управлява само длъжностите под своята и може да дава само права, които има. Длъжности: {ranks.length} / {limit}
-        {limit < 10 && ` · повече се отключват на ниво ${COMPANY_UNLOCKS.find((u) => u.key === (limit < 6 ? 'custom_ranks' : 'more_ranks'))!.level}`}.
+        {limit < maxRanks(99, roles) && ` · повече се отключват на ниво ${COMPANY_UNLOCKS.find((u) => u.key === (limit < maxRanks(2, roles) ? 'custom_ranks' : 'more_ranks'))!.level}`}.
       </p>
       <div className="grid gap-4 lg:grid-cols-2">
         {ranks.map((r) => {
@@ -40,13 +44,26 @@ export default async function RanksPage() {
                 </>
               ) : (
                 <ul className="list-inside list-disc space-y-1 text-sm text-mist-300">
-                  {(r.isOwner ? ALL_PERMISSIONS : r.permissions).map((p) => <li key={p}>{PERMISSIONS[p as keyof typeof PERMISSIONS] ?? p}</li>)}
+                  {(r.isOwner ? shown : r.permissions.filter((p) => roles || !ROLE_PERMISSIONS.includes(p as never))).map((p) => <li key={p}>{PERMISSIONS[p as keyof typeof PERMISSIONS] ?? p}</li>)}
                   {!r.isOwner && r.permissions.length === 0 && <li className="list-none text-mist-400">Без права за управление — кара курсове и получава бонусите.</li>}
                 </ul>
               )}
             </Card>
           );
         })}
+        {manage && ranks.length < limit && templates.length > 0 && (
+          <Card title="Готови роли">
+            <p className="mb-3 text-sm text-mist-400">Добави длъжност с едно натискане — после я дай на член от раздел „Членове“.</p>
+            <ul className="space-y-2">
+              {templates.map((t, i) => (
+                <li key={t.name} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-asphalt-700 p-3 text-sm">
+                  <span><b>{t.name}</b> <span className="text-mist-400">— {t.description}</span></span>
+                  <ActionButton action={{ type: 'createRank', rank: { name: t.name, priority: Math.min(999, nextPriority + i), permissions: t.permissions } }} className="btn-primary px-3 py-1.5 text-xs">Добави</ActionButton>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
         {manage && ranks.length < limit && (
           <Card title="Нова длъжност">
             <RankForm key={ranks.length} rank={{ name: '', priority: nextPriority, permissions: [] }} permissions={permissions} grantable={grantable} minPriority={hub.rank.priority + 1} submitLabel="Създай" />

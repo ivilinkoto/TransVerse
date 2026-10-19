@@ -1,11 +1,12 @@
 'use client';
 
-import { AlertTriangle, ArrowRight, BadgeCheck, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Hammer, House, Siren, Snowflake, Star, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BadgeCheck, Boxes, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Hammer, House, Siren, Snowflake, Star, Truck } from 'lucide-react';
 import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN } from '@/lib/game/halloween';
 import { CHRISTMAS } from '@/lib/game/christmas';
 import { WINTER } from '@/lib/game/winter';
 import { CONVOY_RULES } from '@/lib/game/convoy';
+import { MULTISTOP } from '@/lib/game/multistop';
 import { HireDialog } from './HireDialog';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -56,6 +57,8 @@ export interface BoardContract {
   convoy: string | null;
   /** Goes to the player's base (HQ). */
   toHome: boolean;
+  /** Groupage: drops on the way before the destination (empty for an ordinary load). */
+  stops: { name: string; country: string; tons: number; windowMinutes: number }[];
   /** The player starred this lane (origin → destination). */
   favorite: boolean;
   /** Load of a tender of the player's company (only members see it). */
@@ -90,12 +93,13 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'home' | 'hired' | 'halloween' | 'christmas' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
   { id: 'home', label: 'Към базата', test: (c) => c.toHome },
   { id: 'hired', label: 'Възложени на мен', test: (c) => !!c.hiredBy },
+  { id: 'stops', label: 'Сборни товари', test: (c) => c.stops.length > 0 },
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
   { id: 'christmas', label: 'Коледа', test: (c) => c.holiday === 'christmas' },
   { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
@@ -109,6 +113,7 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
 const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['home', (c) => c.toHome],
   ['hired', (c) => !!c.hiredBy],
+  ['stops', (c) => c.stops.length > 0],
   ['halloween', (c) => c.holiday === 'halloween'],
   ['christmas', (c) => c.holiday === 'christmas'],
   ['winter', (c) => c.holiday === 'winter'],
@@ -300,6 +305,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.toHome && <Badge tone="green"><House className="h-3 w-3" />КЪМ БАЗАТА</Badge>}
             {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
+            {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />СБОРЕН · {c.stops.length} {c.stops.length === 1 ? 'СПИРКА' : 'СПИРКИ'} · +{Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100)}%</Badge>}
             {c.hiredBy && <span className="max-w-full truncate" title={`Възложена от ${c.hiredBy.company} до ${c.hiredBy.until}`}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />ВЪЗЛОЖЕНА · {Math.round(c.hiredBy.share * 100)}% за {c.hiredBy.company}</Badge></span>}
             {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}
             {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />ЗИМЕН ТОВАР · +{Math.round((WINTER.rewardMultiplier - 1) * 100)}%</Badge>}
@@ -316,6 +322,13 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
             <span className="font-medium">{c.origin.name}</span>
             <span className="text-[11px] text-mist-400">{c.origin.country}</span>
+            {c.stops.map((st) => (
+              <span key={st.name} className="contents">
+                <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
+                <span className="text-cyan-glow" title={`Разтоварване на ${dec(st.tons)} т · срок ${duration(st.windowMinutes)}`}>{st.name}</span>
+                <span className="text-[11px] text-mist-400">{st.country}</span>
+              </span>
+            ))}
             <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
             <span className="font-medium">{c.destination.name}</span>
             <span className="text-[11px] text-mist-400">{c.destination.country}</span>
@@ -339,6 +352,16 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             <div><dt className="label">Срок за доставка</dt><dd className="mt-1">{duration(c.windowMinutes)} от приемането</dd></div>
             <div><dt className="label">Изтича от борсата</dt><dd className="mt-1">{dateTime(c.expiresAt)}</dd></div>
           </dl>
+          {c.stops.length > 0 && (
+            <div className="mt-3 rounded-xl border border-cyan-glow/30 bg-cyan-glow/5 p-3 text-sm">
+              <div className="font-semibold text-cyan-glow">Сборен товар — разтоварване по пътя</div>
+              <ol className="mt-1.5 space-y-1 text-mist-300">
+                {c.stops.map((st, i) => <li key={st.name}>{i + 1}. {st.name} ({st.country}) — {dec(st.tons)} т, до {duration(st.windowMinutes)} от приемането</li>)}
+                <li>{c.stops.length + 1}. {c.destination.name} ({c.destination.country}) — останалото, до {duration(c.windowMinutes)}</li>
+              </ol>
+              <p className="mt-1.5 text-xs text-mist-400">Всяка спирка има свой срок. Закъснялата спирка струва {Math.round(MULTISTOP.latePenaltyShare * 100)}% от своя дял в заплащането.</p>
+            </div>
+          )}
           <div className="mt-3">
             <button type="button" className="inline-flex items-center gap-1.5 text-sm text-mist-300 hover:text-gold-400" onClick={toggleFavorite} disabled={favBusy}>
               <Star className={`h-4 w-4 ${c.favorite ? 'fill-gold-400 text-gold-400' : ''}`} />

@@ -52,7 +52,9 @@ describe('company rules', () => {
     expect(b.rentalShareReduction).toBeCloseTo(0.05);
     expect(b.xpMultiplier).toBeCloseTo(1.15);
     expect(memberCapacity({ capacity: 2 })).toBe(15);
-    expect([maxRanks(1), maxRanks(2), maxRanks(4)]).toEqual([4, 6, 10]);
+    expect([maxRanks(1, false), maxRanks(2, false), maxRanks(4, false)]).toEqual([4, 6, 10]);
+    // Company roles (v1.2): two more places for the ready-made roles.
+    expect([maxRanks(1), maxRanks(2), maxRanks(4)]).toEqual([6, 8, 12]);
     expect(rentalFeeCents(1000_00, 0, 0.05)).toBe(400_00);
     expect(rentalFeeCents(1000_00, 0, 0.9)).toBe(200_00); // never below 20 %
   });

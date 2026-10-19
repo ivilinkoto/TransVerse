@@ -5,6 +5,7 @@ import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib
 import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
+import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multistop';
 import { formConvoy } from './convoy';
 import { featureFor } from '@/server/features';
 import { acceptJobOffer, payHireCommission } from './hire';
@@ -116,6 +117,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   if (contract!.tradeCompanyId && contract!.tradeCompanyId !== company.id) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
   const { vehicle } = await vehicleBundle(db, company.id, vehicleId);
   if (vehicle.status !== 'idle') fail('vehicle_busy', 'Превозното средство е заето.', 409);
+  // Groupage loads come with v1.2 (staff test them before the release).
+  if (contract!.stops?.length && !(await featureFor(db, userId, 'multistop', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
 
   // Network work outside the transaction (may take seconds).
   const loadedRoute = await db.query.routes.findFirst({ where: (r, { eq: e }) => e(r.id, contract!.routeId) });
@@ -179,7 +182,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const overloaded = overloadPercent(contract!.weightTons, payload);
     if (overloaded > 0) violations.push({ violation: 'overload', amount: overloaded });
     const crew = { ...rested, startDutyMin: risks.rush ? 0 : rested.startDutyMin, wear: rested.wear * (overloaded > 0 ? FINE_RULES.overloadWear : 1) };
-    const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km) };
+    const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km), stops: contract!.stops?.map((st) => ({ km: st.km, minutes: MULTISTOP.unloadMin })) };
     // Urgent shipments run faster than normal game time.
     const scale = timeScale() * Math.max(1, contract!.speedFactor);
     const trip = contract!.urgent
@@ -270,6 +273,21 @@ export async function acceptContract(db: Database, userId: string, contractId: s
 
 type DeliveryRow = typeof deliveries.$inferSelect;
 
+/**
+ * Groupage drops of a delivery: when the truck finished unloading at each and
+ * whether that was late. A drop's deadline is its window's share of the trip's.
+ */
+export function stopResults(stops: readonly ContractStop[], d: Pick<DeliveryRow, 'schedule' | 'startedAt' | 'deadlineAt'>, windowMinutes: number) {
+  const segments = d.schedule as Segment[];
+  const span = d.deadlineAt.getTime() - d.startedAt.getTime();
+  const full = Math.max(1, windowMinutes);
+  return stops.map((s, i) => {
+    const at = segments.find((seg) => seg.stop === i + 1)?.end ?? null;
+    const deadline = d.startedAt.getTime() + span * Math.min(1, s.windowMinutes / full);
+    return { ...s, at, deadline, late: at != null && at > deadline };
+  });
+}
+
 /** Settles one finished delivery exactly once. Returns false if it was not due or already settled. */
 export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date()): Promise<boolean> {
   const [d] = await tx
@@ -304,6 +322,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const convoyBonus = d.convoyWith && !result.late ? Math.round(result.rewardCents * CONVOY_RULES.bonusShare) : 0;
   if (convoyBonus) postings.push({ category: 'convoy_bonus', amountCents: convoyBonus, description: 'Бонус за конвой', idempotencyKey: key('convoy'), refType: 'delivery', refId: d.id });
   if (result.penaltyCents) postings.push({ category: 'penalty', amountCents: -result.penaltyCents, description: 'Неустойка за закъснение', idempotencyKey: key('penalty'), refType: 'delivery', refId: d.id });
+  // Groupage: each drop on the way has its own window; a late one costs a penalty on its share.
+  const drops = contract.stops?.length ? stopResults(contract.stops, d, contract.windowMinutes) : [];
+  const stopPenalty = stopPenaltyCents(result.rewardCents, contract.weightTons, drops.filter((s) => s.late));
+  if (stopPenalty) postings.push({ category: 'penalty', amountCents: -stopPenalty, description: `Закъснели спирки (${drops.filter((s) => s.late).length} от ${drops.length})`, idempotencyKey: key('stop-penalty'), refType: 'delivery', refId: d.id });
   // Company membership: bonus from the company's upgrades and a contribution to its treasury.
   const perks = await bonusesForUser(tx, company!.ownerId);
   const org = perks?.membership.company;
@@ -321,7 +343,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
@@ -423,7 +445,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     company!.ownerId,
     onTime ? 'success' : 'warning',
     onTime ? `Доставено: ${contract.goods} в ${dest!.nameBg}` : `Закъсняла доставка в ${dest!.nameBg}`,
-    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} лв., +${playerXp} опит.${backhaul ? ` Виж товарите обратно от ${dest!.nameBg}.` : ''}`,
+    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} лв., +${playerXp} опит.${drops.length ? ` Спирки навреме: ${drops.filter((x) => !x.late).length} от ${drops.length}.` : ''}${backhaul ? ` Виж товарите обратно от ${dest!.nameBg}.` : ''}`,
     // Straight to the return loads from where the truck now stands.
     backhaul ? `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}` : '/game/finance',
   );

@@ -13,7 +13,9 @@ import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
-import { getRoute } from '@/server/geo/route-service';
+import { getRoute, getRouteVia } from '@/server/geo/route-service';
+import { featureLive } from '@/lib/game/features';
+import { MULTISTOP, splitTons, stopMultiplier, stopWindowMinutes, type ContractStop } from '@/lib/game/multistop';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { licencesForUsers } from './licences';
 import { shipperName } from './names';
@@ -110,7 +112,9 @@ export async function generateContracts(db: Database, options: GenerateOptions =
     const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
     // Some market jobs are premium: better paid, only for players with enough reputation.
     const premium = rand() < PREMIUM_SHARE ? pickWeighted(PREMIUM_LEVELS.map((l, i) => ({ ...l, weight: [6, 3, 1][i] ?? 1 })), (l) => l.weight) ?? null : null;
-    await insertContract(db, origin, destination, cargo, tons, now, randInt(6, 30) * 3_600_000, options.provider, premium);
+    // Groupage: some longer loads drop part of the cargo in a city or two on the way.
+    const via = !options.originCityId && rand() < MULTISTOP.share ? stopsOnTheWay(hubs, origin, destination, cargo, options.domestic) : [];
+    await insertContract(db, origin, destination, cargo, tons, now, randInt(6, 30) * 3_600_000, options.provider, premium, via);
     created++;
   }
   if (created) await broadcast(db, 'market');
@@ -197,11 +201,40 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
   return 1;
 }
 
+/**
+ * Up to two cities near the straight line from origin to destination (by
+ * distance from the origin) that take the cargo; none when the trip is short
+ * or nothing fits without a long detour.
+ */
+export function stopsOnTheWay(hubs: Hub[], origin: Hub, destination: Hub, cargo: CargoType, domestic = false): Hub[] {
+  const km = (a: Hub, b: Hub) => haversineKm([a.lat, a.lon], [b.lat, b.lon]);
+  const direct = km(origin, destination);
+  if (direct * 1.25 < MULTISTOP.minKm) return [];
+  const fits = hubs
+    .filter((h) => h.id !== origin.id && h.id !== destination.id && h.consumes.has(cargo) && (!domestic || h.countryCode === origin.countryCode))
+    .filter((h) => km(origin, h) >= MULTISTOP.minLegKm && km(h, destination) >= MULTISTOP.minLegKm && (km(origin, h) + km(h, destination)) / direct <= MULTISTOP.maxDetour);
+  const first = pickWeighted(fits, (h) => Math.sqrt(h.population));
+  if (!first) return [];
+  const stops = [first];
+  if (MULTISTOP.maxStops > 1 && rand() < 0.4) {
+    // A second drop between the first one and the destination.
+    const second = pickWeighted(
+      fits.filter((h) => h.id !== first.id && km(origin, h) > km(origin, first) + MULTISTOP.minLegKm && km(h, destination) >= MULTISTOP.minLegKm && (km(origin, first) + km(first, h) + km(h, destination)) / direct <= MULTISTOP.maxDetour),
+      (h) => Math.sqrt(h.population),
+    );
+    if (second) stops.push(second);
+  }
+  return stops;
+}
+
 /** Share of market contracts that are premium (reputation required, better pay). */
 export const PREMIUM_SHARE = 0.12;
 
-async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null) {
-  const route = await getRoute(db, origin.id, destination.id, 'truck', provider);
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = []) {
+  const viaRoute = via.length ? await getRouteVia(db, origin.id, via.map((h) => h.id), destination.id, 'truck', provider) : null;
+  const route = viaRoute ?? (await getRoute(db, origin.id, destination.id, 'truck', provider));
+  const parts = via.length ? splitTons(tons, via.length, rand) : [];
+  const stops: ContractStop[] | null = viaRoute ? via.map((h, i) => ({ cityId: h.id, km: viaRoute.legKms[i]!, tons: parts[i]!, windowMinutes: stopWindowMinutes(viaRoute.legKms[i]!) })) : null;
   // Halloween and Christmas: some pallet and refrigerated loads are holiday goods that pay better.
   // Winter: some bulk, liquid and pallet loads are winter goods (salt, heating fuel, pellets…).
   const themes = [
@@ -213,7 +246,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const holiday = theme?.id ?? null;
   const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1);
   const goods = theme ? pick(theme.goods!) : pick(CARGO[cargo].goods);
-  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1));
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length));
   await db.insert(contracts).values({
     shipper: shipperName(),
     goods,
@@ -228,6 +261,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     windowMinutes: contractWindowMinutes(route.distanceKm),
     minLevel: CARGO[cargo].minLevel,
     minReputation: premium?.minReputation ?? 0,
+    stops,
     expiresAt: new Date(now.getTime() + ttlMs),
   });
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));
@@ -280,6 +314,8 @@ export interface ContractFilter {
   limit?: number;
   /** Player company of the viewer: its tender loads are included. */
   memberOfCompanyId?: string | null;
+  /** Groupage loads too (default: once their release is out; staff see them earlier). */
+  withStops?: boolean;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
@@ -292,19 +328,20 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   );
   if (filter.cargoType && CARGO_TYPES.includes(filter.cargoType)) conditions.push(eq(contracts.cargoType, filter.cargoType));
   if (filter.originCityId) conditions.push(eq(contracts.originCityId, filter.originCityId));
+  if (!(filter.withStops ?? featureLive('multistop', now))) conditions.push(isNull(contracts.stops));
   const rows = await db.query.contracts.findMany({
     where: and(...conditions),
     orderBy: [desc(contracts.urgent), desc(contracts.rewardCents), asc(contracts.expiresAt)],
     limit: Math.min(filter.limit ?? 150, 300),
   });
-  const cityIds = [...new Set(rows.flatMap((r) => [r.originCityId, r.destCityId]))];
+  const cityIds = [...new Set(rows.flatMap((r) => [r.originCityId, r.destCityId, ...(r.stops ?? []).map((st) => st.cityId)]))];
   const cityRows = cityIds.length ? await db.select().from(cities).where(inArray(cities.id, cityIds)) : [];
   const routeIds = [...new Set(rows.map((r) => r.routeId))];
   const routeRows = routeIds.length ? await db.select({ id: routes.id, provider: routes.provider, hasToll: routes.hasToll, borders: routes.borders, durationS: routes.durationS, countries: routes.countries }).from(routes).where(inArray(routes.id, routeIds)) : [];
   const cityMap = new Map(cityRows.map((c) => [c.id, c]));
   const routeMap = new Map(routeRows.map((r) => [r.id, r]));
   return rows
-    .map((r) => ({ ...r, origin: cityMap.get(r.originCityId)!, destination: cityMap.get(r.destCityId)!, route: routeMap.get(r.routeId)! }))
+    .map((r) => ({ ...r, origin: cityMap.get(r.originCityId)!, destination: cityMap.get(r.destCityId)!, route: routeMap.get(r.routeId)!, stopCities: (r.stops ?? []).map((st) => ({ ...st, name: cityMap.get(st.cityId)?.nameBg ?? '', country: cityMap.get(st.cityId)?.countryCode ?? '' })) }))
     .filter((r) => !filter.countryCode || r.origin.countryCode === filter.countryCode || r.destination.countryCode === filter.countryCode);
 }
 

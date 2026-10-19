@@ -17,6 +17,8 @@ import { TRANSFER_RULES } from '@/lib/game/transfers';
 import { users } from '@/server/db/schema';
 import { senderBlock, sentLast24h, transfersOf } from '@/server/game/transfers';
 import { eq } from 'drizzle-orm';
+import { LEASE } from '@/lib/game/leasing';
+import { leasesOf } from '@/server/game/leasing';
 
 export const metadata = { title: 'Финанси' };
 
@@ -30,6 +32,7 @@ export default async function FinancePage() {
     sentLast24h(db, user.id, now),
     db.select({ level: users.level, createdAt: users.createdAt }).from(users).where(eq(users.id, user.id)),
   ]);
+  const leases = features.leasing ? await leasesOf(db, company.id) : [];
   const transferBlock = me ? senderBlock(me, now) : null;
   const income = summary.byCategory.filter((c) => c.total > 0 && c.category !== 'starting_capital').reduce((s, c) => s + c.total, 0);
   const expense = -summary.byCategory.filter((c) => c.total < 0).reduce((s, c) => s + c.total, 0);
@@ -84,6 +87,30 @@ export default async function FinancePage() {
               </li>
             ))}
           </ul>
+        </Card>
+      )}
+      {leases.length > 0 && (
+        <Card id="leases" title={<span className="inline-flex items-center gap-2"><Landmark className="h-4 w-4 text-mist-400" />Лизинг</span>} actions={<span className="text-xs text-mist-400">вноските се теглят сами всяка седмица</span>}>
+          <ul className="divide-y divide-asphalt-800 text-sm">
+            {leases.map((l) => (
+              <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                <div>
+                  <div className="font-semibold">{l.plate} · {l.model}</div>
+                  <div className="text-xs text-mist-400">
+                    {l.status === 'active'
+                      ? <>Платени {l.paid} от {l.payments} вноски по {money(l.weeklyCents)} · следваща {dateTime(l.nextDueAt)}{l.missed > 0 && <span className="text-loss"> · пропуснати {l.missed} от {LEASE.maxMissed}</span>}</>
+                      : l.status === 'paid' ? 'Изплатен — камионът е изцяло твой.' : 'Камионът е върнат на лизинговата компания.'}
+                  </div>
+                </div>
+                {l.status === 'active' ? (
+                  <ActionButton action={{ type: 'payOffLease', leaseId: l.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm={`Да изплатим ли лизинга на ${l.plate} сега за ${money(l.payoffCents)}?`}>Изплати сега · {money(l.payoffCents)}</ActionButton>
+                ) : (
+                  <Badge tone={l.status === 'paid' ? 'green' : 'red'}>{l.status === 'paid' ? 'изплатен' : 'върнат'}</Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-mist-400">При предсрочно изплащане плащаш оставащата главница и половината от оставащата лихва. Камион на лизинг не може да се продаде, докато не се изплати.</p>
         </Card>
       )}
       {features.transfers && <Card id="transfers" title={<span className="inline-flex items-center gap-2"><Banknote className="h-4 w-4 text-mist-400" />Преводи между играчи</span>} actions={<span className="text-xs text-mist-400">такса {Math.round(TRANSFER_RULES.feeShare * 100)} % · до {money(TRANSFER_RULES.dailyLimitCents)} за 24 ч</span>}>

@@ -24,6 +24,10 @@ export const FEATURES = {
   feed: '1.2',
   weekly_goal: '1.2',
   eco: '1.2',
+  multistop: '1.2',
+  leasing: '1.2',
+  company_roles: '1.2',
+  year_recap: '1.2',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

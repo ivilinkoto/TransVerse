@@ -32,6 +32,8 @@ export interface Segment {
   toKm: number;
   /** Short label for an unplanned stop (road events). */
   note?: string;
+  /** Groupage: the drop (1-based) this unloading belongs to. */
+  stop?: number;
 }
 
 export interface LegInput {
@@ -40,6 +42,8 @@ export interface LegInput {
   durationS: number;
   /** Positions (km along the leg) of border checkpoints. */
   borderKms: number[];
+  /** Groupage drops on the way: where (km along the leg) and how long the partial unloading takes. */
+  stops?: { km: number; minutes: number }[];
 }
 
 export interface ScheduleInput {
@@ -93,6 +97,7 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
     if (totalMin <= 0 || input_.km <= 0) return;
     const kmPerMin = input_.km / totalMin;
     const borders = [...input_.borderKms].filter((b) => b > 0 && b < input_.km).sort((a, b) => a - b);
+    const drops = (input_.stops ?? []).map((d, i) => ({ ...d, n: i + 1 })).filter((d) => d.km > 0 && d.km < input_.km).sort((a, b) => a.km - b.km);
     const EPS_MIN = 1e-6; // minutes; guards against floating-point creep near the limits
     let km = 0;
     let guard = 0;
@@ -107,15 +112,21 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
         sinceBreak = 0;
       }
       const nextBorder = borders.find((b) => b > km + 1e-6);
+      const nextDrop = drops.find((d) => d.km > km + 1e-6);
       const limitMin = Math.min(rules.breakAfterMin - sinceBreak, rules.dailyDrivingMin - today);
       let targetKm = Math.min(input_.km, km + limitMin * kmPerMin);
       if (nextBorder !== undefined && nextBorder < targetKm) targetKm = nextBorder;
+      if (nextDrop && nextDrop.km < targetKm) targetKm = nextDrop.km;
       const minutes = (targetKm - km) / kmPerMin;
       push('drive', leg, minutes, km, targetKm);
       sinceBreak += minutes;
       today += minutes;
       km = targetKm;
       if (nextBorder !== undefined && Math.abs(km - nextBorder) < 1e-6) push('border', leg, DRIVING_RULES.borderWaitMin, km);
+      if (nextDrop && Math.abs(km - nextDrop.km) < 1e-6) {
+        push('unloading', leg, nextDrop.minutes, km);
+        segments.at(-1)!.stop = nextDrop.n;
+      }
     }
   };
 

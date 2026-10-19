@@ -2,7 +2,10 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { POWER_UNITS, TRAILERS, UPGRADES, couplingError, powerUnitModel, trailerModel, type UpgradeId } from '@/lib/game/catalog';
 import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cityMarkets, companies, depots, drivers, trailers, users, vehicles } from '@/server/db/schema';
+import { cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';
+import { money } from '@/lib/format';
+import { LEASE, leaseTerms } from '@/lib/game/leasing';
+import { assertNotLeased } from './leasing';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -41,17 +44,30 @@ async function depotInCity(db: DbOrTx, companyId: string, cityId: number) {
   return depot!;
 }
 
-export async function buyVehicle(db: Database, userId: string, modelId: string, depotCityId: number) {
+/** Buys a truck outright, or on lease (`lease`: a down payment now, weekly instalments after). */
+export async function buyVehicle(db: Database, userId: string, modelId: string, depotCityId: number, options: { lease?: boolean; now?: Date } = {}) {
   const model = POWER_UNITS.find((m) => m.id === modelId);
   if (!model) fail('unknown_model', 'Непознат модел.');
+  const now = options.now ?? new Date();
+  if (options.lease && model!.priceCents < LEASE.minPriceCents) fail('lease_unavailable', 'Лизинг има за камиони от ' + money(LEASE.minPriceCents) + ' нагоре.');
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     if ((await level(tx, userId)) < model!.minLevel) fail('level', `Изисква ниво ${model!.minLevel}.`);
     await depotInCity(tx, company.id, depotCityId);
     const cap = await fleetCapacity(tx, company.id);
     if (cap.used >= cap.slots) fail('no_capacity', 'Нямате свободни места в депата. Разширете депо или открийте ново.');
+    if (options.lease) {
+      const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(vehicleLeases).where(and(eq(vehicleLeases.companyId, company.id), eq(vehicleLeases.status, 'active')));
+      if (n >= LEASE.maxActive) fail('lease_limit', `Може да имаш най-много ${LEASE.maxActive} лизинга едновременно.`);
+    }
     const [vehicle] = await tx.insert(vehicles).values({ companyId: company.id, modelId: model!.id, plate: await uniquePlate(tx), color: pick(VEHICLE_COLORS), cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
-    await post(tx, company.id, [{ category: 'vehicle_purchase', amountCents: -model!.priceCents, description: `${model!.name} (${vehicle!.plate})`, idempotencyKey: `buy:vehicle:${vehicle!.id}`, refType: 'vehicle', refId: vehicle!.id }], { requireFunds: true });
+    if (options.lease) {
+      const terms = leaseTerms(model!.priceCents);
+      await post(tx, company.id, [{ category: 'lease', amountCents: -terms.downCents, description: `Лизинг: първоначална вноска за ${model!.name} (${vehicle!.plate})`, idempotencyKey: `lease:vehicle:${vehicle!.id}:down`, refType: 'vehicle', refId: vehicle!.id }], { requireFunds: true });
+      await tx.insert(vehicleLeases).values({ vehicleId: vehicle!.id, companyId: company.id, priceCents: model!.priceCents, downCents: terms.downCents, weeklyCents: terms.weeklyCents, payments: terms.payments, nextDueAt: new Date(now.getTime() + LEASE.periodDays * 86_400_000), createdAt: now });
+    } else {
+      await post(tx, company.id, [{ category: 'vehicle_purchase', amountCents: -model!.priceCents, description: `${model!.name} (${vehicle!.plate})`, idempotencyKey: `buy:vehicle:${vehicle!.id}`, refType: 'vehicle', refId: vehicle!.id }], { requireFunds: true });
+    }
     // A truck of their own replaces the rented one (now, or when its current trip ends).
     const rental = await retireRentalFor(tx, company.id, vehicle!.id);
     await logActivity(tx, userId, 'vehicle_bought', { vehicleId: vehicle!.id, modelId, rental });
@@ -95,6 +111,7 @@ export async function sellVehicle(db: Database, userId: string, vehicleId: strin
     if (v.ownership === 'rented') fail('rented', 'Наетите превозни средства се връщат, не се продават.');
     if (v.status === 'listed') fail('listed', 'Превозното средство е обявено на пазара — първо свали обявата.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Не можете да продадете превозно средство по време на курс.');
+    await assertNotLeased(tx, v.id);
     const model = powerUnitModel(v.modelId);
     const value = resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt));
     await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v.id));

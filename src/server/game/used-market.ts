@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, lte, sql } from 'drizzle-orm';
+import { assertNotLeased } from './leasing';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { USED_MARKET, marketFeeCents, usedPriceBounds } from '@/lib/game/used-market';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -31,6 +32,7 @@ export async function createListing(db: Database, userId: string, input: { kind:
       if (!v) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
       if (v!.ownership === 'rented') fail('rented', 'Наетите превозни средства не могат да се продават.');
       if (v!.status !== 'idle') fail('vehicle_busy', 'Обява се пуска само за свободно превозно средство.');
+      await assertNotLeased(tx, v!.id);
       await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v!.id));
       await tx.update(vehicles).set({ status: 'listed' }).where(eq(vehicles.id, v!.id));
       row = v!;

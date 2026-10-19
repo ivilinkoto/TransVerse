@@ -8,19 +8,26 @@ import { SelectAction } from '@/components/ui/SelectAction';
 import { date, int, money } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
 import { can, companyHub, companyMembersView, companyRanksView } from '@/server/game/membership';
+import { bonusesLast24h, bonusRoomCents } from '@/server/game/bonuses';
+import { BonusButton } from '@/components/company/BonusButton';
+import { BONUS_RULES } from '@/lib/game/company';
 
 export const metadata = { title: 'Членове на компанията' };
 
 export default async function MembersPage() {
-  const { db, user, now } = await gameContext();
+  const { db, user, now, features } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
   const [members, ranks] = await Promise.all([companyMembersView(db, hub.company.id), companyRanksView(db, hub.company.id)]);
   const manage = can(hub.rank, 'manage_members');
+  const recruit = can(hub.rank, 'recruit');
+  // Company roles (v1.2): bonuses from the treasury.
+  const bonuses = features.company_roles && can(hub.rank, 'pay_bonuses');
+  const bonusRoom = bonuses ? bonusRoomCents(hub.company.treasuryCents, await bonusesLast24h(db, hub.company.id, now)) : 0;
   const assignable = ranks.filter((r) => !r.isOwner && r.priority > hub.rank.priority);
   return (
     <div className="space-y-6">
-      {manage && (
+      {recruit && (
         <Card title={`Кандидатури (${hub.pending.length})`}>
           {hub.pending.length === 0 ? (
             <p className="text-sm text-mist-400">Няма чакащи кандидатури.</p>
@@ -41,6 +48,11 @@ export default async function MembersPage() {
             </ul>
           )}
         </Card>
+      )}
+      {bonuses && (
+        <p className="text-sm text-mist-400">
+          Премии от касата: до {money(BONUS_RULES.maxCents)} на член веднъж на {BONUS_RULES.perMemberHours} часа, за членове от поне {BONUS_RULES.minMemberDays} дни. За 24 часа компанията дава до {Math.round(BONUS_RULES.companyDailyShare * 100)} % от касата (най-много {money(BONUS_RULES.companyDailyMaxCents)}). Днес остават {money(bonusRoom)}. Всяка премия се вижда в историята на касата.
+        </p>
       )}
       <Card title="Членове">
         <Table head={['Играч', 'Длъжност', 'Ниво', 'Курсове', 'Вноски', 'Опит', 'От', '']}>
@@ -70,6 +82,7 @@ export default async function MembersPage() {
                 <td className="num px-3 py-2">{int(m.member.xpContributed)}</td>
                 <td className="px-3 py-2 text-mist-400">{date(m.member.joinedAt)}</td>
                 <td className="px-3 py-2 text-right">
+                  {bonuses && m.userId !== user.id && <span className="mr-2 inline-block align-middle"><BonusButton userId={m.userId} username={m.username} roomCents={bonusRoom} /></span>}
                   {manageable && <ActionButton action={{ type: 'kickMember', userId: m.userId }} className="btn-ghost px-3 py-1.5 text-sm text-loss" confirm={`Да изключите ${m.username}?`}>Изключи</ActionButton>}
                 </td>
               </tr>

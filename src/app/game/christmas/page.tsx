@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { isRecapTime, recapYear } from '@/lib/game/recap';
 import { CalendarDays, Coins, HandHeart, PartyPopper, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { ChristmasTreeIcon, GiftIcon } from '@/components/seasonal/icons';
@@ -20,7 +21,7 @@ const day = (d: Date) => d.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', d
 const dm = (md: string) => md.split('-').reverse().join('.');
 
 export default async function ChristmasPage() {
-  const { db, user, now } = await gameContext();
+  const { db, user, now, features } = await gameContext();
   const [state, [event]] = await Promise.all([christmasState(db, user.id), db.select().from(globalEvents).where(eq(globalEvents.template, CHRISTMAS.eventTemplate)).limit(1)]);
   const live = isChristmas(now);
   const window = christmasEventWindow();
@@ -34,6 +35,9 @@ export default async function ChristmasPage() {
         help={`Коледните поръчки имат червен етикет „Коледа“ на борсата и се плащат с ${Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}% повече. Броят се за общия ивент и за коледните мисии. Изпълни всичките четири мисии и вземи значката „${badge.label}“ завинаги. Празничното съдържание е от ${dm(CHRISTMAS.from)} до ${dm(CHRISTMAS.to)}; наградите от мисиите може да вземеш до края на празника.`}
       />
 
+      {features.year_recap && isRecapTime(now) && (
+        <Link href="/game/recap" className="panel block p-3.5 text-sm transition hover:border-prestige">🎁 <b>Твоята {recapYear(now)} в TransVerse</b> — виж годината си и я сподели като картинка →</Link>
+      )}
       <section className="panel relative overflow-hidden p-5 sm:p-6">
         <div className="pointer-events-none absolute -right-6 -top-6 opacity-20" aria-hidden="true"><ChristmasTreeIcon className="h-48 w-48" /></div>
         <div className="relative">

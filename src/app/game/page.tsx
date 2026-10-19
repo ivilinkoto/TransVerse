@@ -1,5 +1,5 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { ChevronRight, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { CalendarHeart, ChevronRight, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
@@ -14,6 +14,7 @@ import { isNewcomer, MENTOR } from '@/lib/game/mentor';
 import { mentorOverview } from '@/server/game/mentor';
 import { friendsFeed } from '@/server/game/feed';
 import { weeklyGoalState } from '@/server/game/weekly-goal';
+import { isRecapTime, recapYear } from '@/lib/game/recap';
 import { FriendsFeed } from '@/components/game/FriendsFeed';
 import { countries as countryTable } from '@/server/db/schema';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
@@ -147,6 +148,15 @@ export default async function OverviewPage() {
           <span className="min-w-0 flex-1">
             <span className="block font-semibold">Избери си седмична цел</span>
             <span className="block text-sm text-mist-300">Лесна, нормална или трудна — според твоето темпо. Награда в лева и ТрансКоин.</span>
+          </span>
+        </Link>
+      )}
+      {features.year_recap && isRecapTime(now) && (
+        <Link href="/game/recap" className="panel group flex items-center gap-3 border-prestige/40 p-3.5 transition hover:border-prestige">
+          <CalendarHeart className="h-6 w-6 shrink-0 text-prestige" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Твоята {recapYear(now)} в TransVerse</span>
+            <span className="block text-sm text-mist-300">Километри, рекорди, любима линия и приятелят от конвоя — виж годината си и я сподели.</span>
           </span>
         </Link>
       )}

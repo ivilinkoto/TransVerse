@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { ContractStop } from '@/lib/game/multistop';
 import type { RoadEventPlan } from '@/lib/game/road-events';
 import {
   customType,
@@ -371,6 +372,8 @@ export const contracts = pgTable(
     auctionId: uuid('auction_id'),
     /** One load of a long-term client contract (private, like trade lots). */
     clientContractId: uuid('client_contract_id'),
+    /** Groupage: drops on the way before the destination (null for an ordinary load). */
+    stops: jsonb('stops').$type<ContractStop[]>(),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -1505,4 +1508,26 @@ export const weeklyGoals = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.weekKey] })],
+);
+
+/** A truck bought on lease: a down payment, then weekly instalments; missed ones end with repossession. */
+export const vehicleLeases = pgTable(
+  'vehicle_leases',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    vehicleId: uuid('vehicle_id').notNull().references(() => vehicles.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    priceCents: money('price_cents').notNull(),
+    downCents: money('down_cents').notNull(),
+    weeklyCents: money('weekly_cents').notNull(),
+    payments: integer('payments').notNull(),
+    paid: integer('paid').notNull().default(0),
+    /** Instalments missed in a row (not enough money on the due date). */
+    missed: integer('missed').notNull().default(0),
+    status: text('status').notNull().default('active'), // active | paid | repossessed
+    nextDueAt: ts('next_due_at').notNull(),
+    endedAt: ts('ended_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('vehicle_leases_vehicle_idx').on(t.vehicleId).where(sql`${t.status} = 'active'`), index('vehicle_leases_due_idx').on(t.status, t.nextDueAt), index('vehicle_leases_company_idx').on(t.companyId)],
 );

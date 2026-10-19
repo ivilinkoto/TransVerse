@@ -31,6 +31,8 @@ import { TRAIT_IDS } from '@/lib/game/crew';
 import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
 import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
+import { payOffLease } from '@/server/game/leasing';
+import { bonusSchema, payBonus } from '@/server/game/bonuses';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { helpOnRoad } from '@/server/game/roadside';
 import { cheer } from '@/server/game/feed';
@@ -84,6 +86,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('appealFine'), fineId: id }),
   z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
   z.object({ type: z.literal('buyVehicle'), modelId: z.string().max(40), cityId }),
+  z.object({ type: z.literal('leaseVehicle'), modelId: z.string().max(40), cityId }),
+  z.object({ type: z.literal('payOffLease'), leaseId: id }),
+  z.object({ type: z.literal('payBonus'), bonus: bonusSchema }),
   z.object({ type: z.literal('buyTrailer'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('sellVehicle'), vehicleId: id }),
   z.object({ type: z.literal('sellTrailer'), trailerId: id }),
@@ -187,6 +192,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   cheer: 'feed',
   chooseWeeklyGoal: 'weekly_goal',
   claimWeeklyGoal: 'weekly_goal',
+  leaseVehicle: 'leasing',
+  payOffLease: 'leasing',
+  payBonus: 'company_roles',
 };
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -224,6 +232,12 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, ...(await buyInsurance(db, user.id, input.vehicleId)) };
     case 'buyVehicle':
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId)).id };
+    case 'leaseVehicle':
+      return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId, { lease: true })).id };
+    case 'payOffLease':
+      return { ok: true, amountCents: await payOffLease(db, user.id, input.leaseId) };
+    case 'payBonus':
+      return { ok: true, ...(await payBonus(db, user.id, input.bonus, await hashIp(db, await clientIp()))) };
     case 'buyTrailer':
       return { ok: true, id: (await buyTrailer(db, user.id, input.modelId, input.cityId)).id };
     case 'sellVehicle':

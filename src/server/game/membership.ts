@@ -9,6 +9,7 @@ import {
   DEFAULT_RANKS,
   hasUnlock,
   maxRanks,
+  ROLE_PERMISSIONS,
   memberBonuses,
   memberCapacity,
   type MemberBonuses,
@@ -20,6 +21,7 @@ import {
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, companyApplications, companyAssets, companyMembers, companyRanks, depots, organizations, treasuryEntries, users } from '@/server/db/schema';
 import { ECONOMY } from '@/lib/game/economy';
+import { featureFor } from '@/server/features';
 import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
@@ -141,7 +143,7 @@ export async function joinCompany(db: Database, userId: string, companyId: strin
       await tx.insert(companyMembers).values({ userId, companyId, rankId: rank.id });
       await tx.update(companyApplications).set({ status: 'withdrawn', decidedAt: new Date() }).where(and(eq(companyApplications.userId, userId), eq(companyApplications.status, 'pending')));
       await logActivity(tx, userId, 'company_joined', { companyId });
-      await notifyMembers(tx, companyId, 'manage_members', 'Нов член', `${user!.username} се присъедини към „${company!.name}“.`, '/game/company/members');
+      await notifyMembers(tx, companyId, 'recruit', 'Нов член', `${user!.username} се присъедини към „${company!.name}“.`, '/game/company/members');
       return 'joined' as const;
     }
     const inserted = await tx
@@ -151,7 +153,7 @@ export async function joinCompany(db: Database, userId: string, companyId: strin
       .returning({ id: companyApplications.id });
     if (!inserted.length) fail('already_applied', 'Вече сте кандидатствали в тази компания.', 409);
     await logActivity(tx, userId, 'company_applied', { companyId });
-    await notifyMembers(tx, companyId, 'manage_members', 'Нова кандидатура', `${user!.username} кандидатства за „${company!.name}“.`, '/game/company/members');
+    await notifyMembers(tx, companyId, 'recruit', 'Нова кандидатура', `${user!.username} кандидатства за „${company!.name}“.`, '/game/company/members');
     return 'applied' as const;
   });
 }
@@ -167,7 +169,7 @@ export async function withdrawApplication(db: Database, userId: string, applicat
 
 export async function decideApplication(db: Database, actorId: string, applicationId: string, accept: boolean) {
   return db.transaction(async (tx) => {
-    const actor = await requirePermission(tx, actorId, 'manage_members');
+    const actor = await requirePermission(tx, actorId, 'recruit');
     const [app] = await tx
       .select()
       .from(companyApplications)
@@ -242,27 +244,39 @@ export async function setMemberRank(db: Database, actorId: string, targetUserId:
 
 // ── Ranks ────────────────────────────────────────────────────────────────
 
+/**
+ * Before the company roles are out for the actor, their rights are not shown:
+ * recruiting follows "members" (as before) and bonuses are not given.
+ */
+async function rolesInput(tx: Tx, actorId: string, input: z.infer<typeof rankInputSchema>) {
+  if (await featureFor(tx, actorId, 'company_roles')) return input;
+  const permissions = input.permissions.filter((p) => !ROLE_PERMISSIONS.includes(p));
+  return { ...input, permissions: permissions.includes('manage_members') ? [...permissions, 'recruit' as const] : permissions };
+}
+
 function checkRankInput(actor: Membership, input: z.infer<typeof rankInputSchema>) {
   if (input.priority <= actor.rank.priority) fail('forbidden', 'Длъжността трябва да е под вашата.', 403);
   // Nobody can hand out privileges they do not hold themselves.
   if (!actor.rank.isOwner && input.permissions.some((p) => !actor.rank.permissions.includes(p))) fail('forbidden', 'Не можете да давате права, които нямате.', 403);
 }
 
-export async function createRank(db: Database, actorId: string, input: z.infer<typeof rankInputSchema>) {
+export async function createRank(db: Database, actorId: string, raw: z.infer<typeof rankInputSchema>) {
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_ranks');
+    const input = await rolesInput(tx, actorId, raw);
     checkRankInput(actor, input);
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(companyRanks).where(eq(companyRanks.companyId, actor.company.id));
-    const limit = maxRanks(actor.company.companyLevel);
+    const limit = maxRanks(actor.company.companyLevel, await featureFor(tx, actorId, 'company_roles'));
     if (n >= limit) fail('rank_limit', `Достигнахте лимита от ${limit} длъжности. Развийте компанията, за да отключите повече.`);
     const [rank] = await tx.insert(companyRanks).values({ companyId: actor.company.id, ...input }).returning();
     return rank!;
   });
 }
 
-export async function updateRank(db: Database, actorId: string, rankId: string, input: z.infer<typeof rankInputSchema>) {
+export async function updateRank(db: Database, actorId: string, rankId: string, raw: z.infer<typeof rankInputSchema>) {
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_ranks');
+    const input = await rolesInput(tx, actorId, raw);
     const [rank] = await tx.select().from(companyRanks).where(and(eq(companyRanks.id, rankId), eq(companyRanks.companyId, actor.company.id)));
     if (!rank) fail('rank_not_found', 'Длъжността не е намерена.', 404);
     if (rank!.isOwner) {
@@ -584,7 +598,7 @@ export async function companyHub(db: DbOrTx, userId: string) {
   const [assets, members, pending, [extra]] = await Promise.all([
     assetKinds(db, m.company.id),
     memberCount(db, m.company.id),
-    can(m.rank, 'manage_members') ? pendingApplications(db, m.company.id) : Promise.resolve([]),
+    can(m.rank, 'recruit') ? pendingApplications(db, m.company.id) : Promise.resolve([]),
     db
       .select({ owner: users.username, hq: cities.nameBg, memberDeliveries: memberDeliveries })
       .from(organizations)

@@ -5,12 +5,14 @@
 
 export const PERMISSIONS = {
   edit_profile: 'Редактиране на профила (описание, правила, лого, банер)',
-  manage_members: 'Управление на членове (кандидатури, длъжности, изключване)',
+  manage_members: 'Управление на членове (длъжности, изключване)',
+  recruit: 'Набиране (кандидатури и покани)',
   manage_ranks: 'Управление на длъжности',
   manage_upgrades: 'Развитие на компанията (покупка на подобрения)',
   manage_settings: 'Настройки (набиране, вноска, минимално ниво)',
   manage_chat: 'Чат (изтриване на съобщения и изчистване на целия чат)',
   manage_tenders: 'Търгове и възлагане на курсове на свободни шофьори',
+  pay_bonuses: 'Премии за членовете от касата',
 } as const;
 export type Permission = keyof typeof PERMISSIONS;
 export const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as Permission[];
@@ -25,10 +27,38 @@ export interface RankTemplate {
 /** Ranks every new company starts with. Lower priority = higher rank. */
 export const DEFAULT_RANKS: RankTemplate[] = [
   { name: 'Собственик', priority: 0, permissions: [...ALL_PERMISSIONS], isOwner: true },
-  { name: 'Заместник', priority: 10, permissions: ['edit_profile', 'manage_members', 'manage_upgrades', 'manage_settings', 'manage_chat', 'manage_tenders'], isOwner: false },
-  { name: 'Диспечер', priority: 20, permissions: ['manage_members', 'manage_tenders'], isOwner: false },
+  { name: 'Заместник', priority: 10, permissions: ['edit_profile', 'manage_members', 'recruit', 'manage_upgrades', 'manage_settings', 'manage_chat', 'manage_tenders'], isOwner: false },
+  { name: 'Диспечер', priority: 20, permissions: ['manage_members', 'recruit', 'manage_tenders'], isOwner: false },
   { name: 'Шофьор', priority: 30, permissions: [], isOwner: false },
 ];
+
+/** Ready-made roles a company can add with one click (v1.2). */
+export const ROLE_TEMPLATES: { name: string; permissions: Permission[]; description: string }[] = [
+  { name: 'Набирач', permissions: ['recruit'], description: 'Разглежда кандидатурите и кани нови членове.' },
+  { name: 'Счетоводител', permissions: ['pay_bonuses'], description: 'Дава премии от касата на членовете за добра работа.' },
+  { name: 'Диспечер', permissions: ['manage_tenders'], description: 'Поема търгове и възлага курсове на шофьорите.' },
+];
+
+/** Rights that came with the company roles of v1.2 (hidden before the release, see lib/game/features). */
+export const ROLE_PERMISSIONS: Permission[] = ['recruit', 'pay_bonuses'];
+
+/**
+ * Bonuses from the treasury: limited so that the treasury cannot be emptied
+ * into one account (a bonus a day per member, a daily cap for the company,
+ * only for members of some days and not within the same network).
+ */
+export const BONUS_RULES = {
+  minCents: 100_00,
+  maxCents: 5_000_00,
+  /** One bonus per member in this many hours. */
+  perMemberHours: 24,
+  /** All bonuses of a company in 24 hours: at most this share of the treasury… */
+  companyDailyShare: 0.25,
+  /** …and at most this much. */
+  companyDailyMaxCents: 20_000_00,
+  minMemberDays: 3,
+  noteMax: 100,
+} as const;
 
 export const RECRUITMENT = { open: 'Отворена — всеки може да се присъедини', application: 'С кандидатура — нужно е одобрение', closed: 'Затворена' } as const;
 export type Recruitment = keyof typeof RECRUITMENT;
@@ -151,8 +181,10 @@ export function hasUnlock(companyLevel: number, key: UnlockKey): boolean {
   return companyLevel >= (COMPANY_UNLOCKS.find((u) => u.key === key)?.level ?? Infinity);
 }
 
-export function maxRanks(companyLevel: number): number {
-  return hasUnlock(companyLevel, 'more_ranks') ? 10 : hasUnlock(companyLevel, 'custom_ranks') ? 6 : DEFAULT_RANKS.length;
+/** Ranks a company may have; the company roles of v1.2 add two places at every level (`roles` before the release is off). */
+export function maxRanks(companyLevel: number, roles = true): number {
+  const extra = roles ? 2 : 0;
+  return (hasUnlock(companyLevel, 'more_ranks') ? 10 : hasUnlock(companyLevel, 'custom_ranks') ? 6 : DEFAULT_RANKS.length) + extra;
 }
 
 /** Recognises PNG, JPEG and WebP by their magic bytes (no SVG — it can carry scripts). */
