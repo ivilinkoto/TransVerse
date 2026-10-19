@@ -1,4 +1,4 @@
-import { BookOpen, Building2, ClipboardList, Gem, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { BookOpen, Building2, ClipboardList, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
@@ -85,6 +85,7 @@ export const ACCOUNT_MENU = [
   { href: '/game/finance', label: 'Финанси', icon: Landmark },
   { href: '/game/shop', label: 'Магазин и VIP', icon: Gem },
   { href: '/game/invite', label: 'Покани приятел', icon: UserPlus },
+  { href: '/game/mentor', label: 'Наставник', icon: GraduationCap },
   { href: '/game/updates', label: 'Обновления', icon: ScrollText },
   { href: '/game/settings', label: 'Настройки', icon: Settings },
   { href: '/game/help', label: 'Помощ и правила', icon: BookOpen },

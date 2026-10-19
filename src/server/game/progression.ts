@@ -1,4 +1,5 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
+import { completeMentorship } from './mentor';
 import { ACHIEVEMENTS, levelForXp, type CompanyStats } from '@/lib/game/progression';
 import type { DbOrTx, Tx } from '@/server/db/client';
 import { achievements, companies, deliveries, depots, drivers, cities, userBadges, users, vehicles } from '@/server/db/schema';
@@ -76,6 +77,7 @@ export async function awardXp(tx: Tx, userId: string, xp: number): Promise<{ lev
   if (level > user!.level) {
     await tx.update(users).set({ level }).where(eq(users.id, userId));
     await notify(tx, userId, 'achievement', `Ниво ${level}!`, 'Отключихте нови възможности. Вижте „Прогрес“.', '/game/progress');
+    await completeMentorship(tx, userId, level);
     return { level, leveledUp: true };
   }
   return { level, leveledUp: false };

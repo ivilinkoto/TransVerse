@@ -7,6 +7,7 @@ import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { formConvoy } from './convoy';
 import { acceptJobOffer, payHireCommission } from './hire';
+import { mentorXpFactor } from './mentor';
 import { recordProjectDelivery } from './projects';
 import { isWinter, routeCondition, WINTER } from '@/lib/game/winter';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
@@ -317,11 +318,13 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus - result.penaltyCents - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
-  // XP bonuses: company training, VIP and the shop's double-XP booster.
+  // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
   const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;
   const boostXp = owner?.xpBoostUntil && owner.xpBoostUntil > now ? 2 : 1;
-  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp);
+  // A newcomer with a mentor learns faster.
+  const mentorXp = await mentorXpFactor(tx, company!.ownerId, now);
+  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp * mentorXp);
   // The player's own driving gives all of the XP; a hired driver's trip only a share (the driver learns from all of it).
   const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, d.coDriverId ? [d.driverId, d.coDriverId] : [d.driverId]), eq(drivers.isOwner, true)))).length > 0;
   const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);

@@ -147,6 +147,8 @@ export const users = pgTable(
     seasonalTheme: boolean('seasonal_theme').notNull().default(true),
     /** Available to drive loads handed over by companies (for a commission). */
     forHire: boolean('for_hire').notNull().default(false),
+    /** Offers to mentor new players (level 15+). */
+    mentorOpen: boolean('mentor_open').notNull().default(false),
     /** One-time hints the player has closed. */
     seenHints: text('seen_hints').array().notNull().default(sql`'{}'::text[]`),
     /** No phone notifications between these hours (Sofia), e.g. { from: 23, to: 8 }; null = none. */
@@ -1395,4 +1397,19 @@ export const companyProjects = pgTable(
     completedAt: ts('completed_at'),
   },
   (t) => [index('company_projects_org_idx').on(t.organizationId, t.status), index('company_projects_due_idx').on(t.status, t.endsAt)],
+);
+
+/** A mentor (level 15+) helping a new player to level 5. One active mentorship per newcomer. */
+export const mentorships = pgTable(
+  'mentorships',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    mentorId: uuid('mentor_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    menteeId: uuid('mentee_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('active'), // active | done | ended | expired
+    createdAt: createdAt(),
+    endsAt: ts('ends_at').notNull(),
+    finishedAt: ts('finished_at'),
+  },
+  (t) => [uniqueIndex('mentorships_active_mentee_idx').on(t.menteeId).where(sql`status = 'active'`), index('mentorships_mentor_idx').on(t.mentorId, t.status)],
 );

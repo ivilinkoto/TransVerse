@@ -1,5 +1,5 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { ChevronRight, ClipboardList, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronRight, ClipboardList, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
@@ -9,6 +9,8 @@ import { PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { isWinter } from '@/lib/game/winter';
 import { RoadConditions } from '@/components/game/RoadConditions';
+import { isNewcomer, MENTOR } from '@/lib/game/mentor';
+import { mentorOverview } from '@/server/game/mentor';
 import { countries as countryTable } from '@/server/db/schema';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { Badge, Card, Empty, Meter } from '@/components/ui';
@@ -121,6 +123,15 @@ export default async function OverviewPage() {
             <span className="block text-sm text-mist-300">Празнични поръчки с +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%, общ ивент, хелуински мисии и значка, призрачен камион нощем.</span>
           </span>
           <span className="btn-primary max-sm:hidden">Към празника</span>
+        </Link>
+      )}
+      {isNewcomer(user, now) && !(await mentorOverview(db, user.id, now)).mentor && (
+        <Link href="/game/mentor" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
+          <GraduationCap className="h-6 w-6 shrink-0 text-cyan-glow" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Избери си наставник</span>
+            <span className="block text-sm text-mist-300">Опитен шофьор те води до ниво {MENTOR.goalLevel}: +{Math.round(MENTOR.xpBonus * 100)} % опит, а накрая награда и за двамата.</span>
+          </span>
         </Link>
       )}
       {isWinter(now) && <RoadConditions countries={await db.select({ code: countryTable.code, nameBg: countryTable.nameBg }).from(countryTable).orderBy(countryTable.nameBg)} now={now} />}

@@ -91,4 +91,5 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   'ghost-hunter': { label: 'Ловец на призраци', description: 'Срещна призрачния камион 3 пъти.' },
   'news-star': { label: 'Звезда на седмичника', description: 'Попадна в класациите на Седмичника.' },
   legend: { label: 'Легенда на пътя', description: 'Достигна ниво 20.' },
+  mentor: { label: 'Наставник', description: 'Помогна на нов играч да стигне ниво 5.' },
 };

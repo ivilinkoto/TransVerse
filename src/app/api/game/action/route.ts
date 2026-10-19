@@ -31,6 +31,7 @@ import { acceptClientContract, declineClientContract, sendClientLoad } from '@/s
 import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
+import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
 import { startProject } from '@/server/game/projects';
 import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
@@ -144,6 +145,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('companyInviteRespond'), inviteId: id, accept: z.boolean() }),
   z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema }),
   z.object({ type: z.literal('sendMoney'), transfer: transferSchema }),
+  z.object({ type: z.literal('mentorOpen'), on: z.boolean() }),
+  z.object({ type: z.literal('chooseMentor'), mentorId: z.string().uuid() }),
+  z.object({ type: z.literal('endMentorship'), id: z.string().uuid() }),
   z.object({ type: z.literal('offerJob'), offer: offerSchema }),
   z.object({ type: z.literal('declineJob'), offerId: id }),
   z.object({ type: z.literal('forHire'), on: z.boolean() }),
@@ -331,6 +335,14 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'forHire':
       await setForHire(db, user.id, input.on);
+      return { ok: true };
+    case 'mentorOpen':
+      await setMentorOpen(db, user.id, input.on);
+      return { ok: true };
+    case 'chooseMentor':
+      return { ok: true, ...(await chooseMentor(db, user.id, input.mentorId, await hashIp(db, await clientIp()))) };
+    case 'endMentorship':
+      await endMentorship(db, user.id, input.id);
       return { ok: true };
     case 'sendMoney':
       return { ok: true, ...(await sendMoney(db, user.id, input.transfer, await hashIp(db, await clientIp()))) };
