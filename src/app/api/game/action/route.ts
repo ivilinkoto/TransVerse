@@ -31,6 +31,7 @@ import { acceptClientContract, declineClientContract, sendClientLoad } from '@/s
 import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
+import { helpOnRoad } from '@/server/game/roadside';
 import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
 import { startProject } from '@/server/game/projects';
@@ -146,6 +147,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema }),
   z.object({ type: z.literal('sendMoney'), transfer: transferSchema }),
   z.object({ type: z.literal('mentorOpen'), on: z.boolean() }),
+  z.object({ type: z.literal('helpOnRoad'), deliveryId: z.string().uuid() }),
   z.object({ type: z.literal('chooseMentor'), mentorId: z.string().uuid() }),
   z.object({ type: z.literal('endMentorship'), id: z.string().uuid() }),
   z.object({ type: z.literal('offerJob'), offer: offerSchema }),
@@ -336,6 +338,8 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'forHire':
       await setForHire(db, user.id, input.on);
       return { ok: true };
+    case 'helpOnRoad':
+      return { ok: true, ...(await helpOnRoad(db, user.id, input.deliveryId)) };
     case 'mentorOpen':
       await setMentorOpen(db, user.id, input.on);
       return { ok: true };

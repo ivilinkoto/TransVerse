@@ -39,6 +39,8 @@ export interface WorldTruck {
     startedAt: string;
     /** The load — only for the viewer's friends and company (others see just the lane). */
     cargo: { goods: string; tons: number } | null;
+    /** For "help on the road" — only for the viewer's friends and company. */
+    deliveryId: string | null;
   };
 }
 
@@ -98,7 +100,7 @@ export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: str
   const moving = rows.filter((r) => r.status === 'on_delivery').map((r) => r.id);
   const trips = moving.length
     ? await db
-        .select({ vehicleId: deliveries.vehicleId, schedule: deliveries.schedule, routeId: deliveries.routeId, emptyRouteId: deliveries.emptyRouteId, emptyKm: deliveries.emptyKm, loadedKm: deliveries.loadedKm, startedAt: deliveries.startedAt, originCityId: contracts.originCityId, destCityId: contracts.destCityId, goods: contracts.goods, tons: contracts.weightTons })
+        .select({ deliveryId: deliveries.id, vehicleId: deliveries.vehicleId, schedule: deliveries.schedule, routeId: deliveries.routeId, emptyRouteId: deliveries.emptyRouteId, emptyKm: deliveries.emptyKm, loadedKm: deliveries.loadedKm, startedAt: deliveries.startedAt, originCityId: contracts.originCityId, destCityId: contracts.destCityId, goods: contracts.goods, tons: contracts.weightTons })
         .from(deliveries)
         .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
         .where(and(inArray(deliveries.vehicleId, moving), eq(deliveries.status, 'in_progress')))
@@ -131,6 +133,8 @@ export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: str
         destCityId: t.destCityId,
         startedAt: t.startedAt.toISOString(),
         cargo: friends.has(r.userId) || mates.has(r.userId) ? { goods: t.goods, tons: t.tons } : null,
+        // Friends and colleagues may help on the road.
+        deliveryId: friends.has(r.userId) || mates.has(r.userId) ? t.deliveryId : null,
       };
     }
     return {

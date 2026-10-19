@@ -49,7 +49,8 @@ export type LedgerCategory =
   | 'transfer_in'
   | 'convoy_bonus'
   | 'hire_commission'
-  | 'mentor_reward';
+  | 'mentor_reward'
+  | 'roadside_help';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -98,6 +99,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   convoy_bonus: 'Бонус за конвой',
   hire_commission: 'Комисиони към компании за възложени курсове',
   mentor_reward: 'Награди за наставничество',
+  roadside_help: 'Помощ на пътя (хонорари)',
 };
 
 export interface Posting {

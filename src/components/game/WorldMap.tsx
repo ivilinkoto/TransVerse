@@ -6,12 +6,14 @@ import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { duration, int } from '@/lib/format';
+import { duration, int, money } from '@/lib/format';
 import { cumulativeKm, greatCircle, headingWest, pointAlong, type LatLon } from '@/lib/geo/geometry';
 import { scheduleEnd, stateAt, type Segment } from '@/lib/game/schedule';
 import type { WorldSnapshot, WorldTruck } from '@/server/game/world-map';
 import { PlayerName } from './PlayerName';
 import { CONVOY_RULES } from '@/lib/game/convoy';
+import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
+import { ActionButton } from '@/components/ui/ActionButton';
 
 export interface MapLeg {
   geometry: string | null;
@@ -202,7 +204,9 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   // The list starts folded on phones, where it would cover the map.
   const [circleOpen, setCircleOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
   const [clock, setClock] = useState(0);
-  const [picked, setPicked] = useState<WorldTruck | null>(null);
+  // The picked truck by id, so its card follows fresh data (e.g. after help on the road).
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const picked = (pickedId && world?.trucks.find((t) => t.id === pickedId)) || null;
   const worldRef = useRef<WorldSnapshot | null>(null);
   // Latest props for the one-time initialisation (data updates are applied by effects below).
   const initial = useRef({ center, preview });
@@ -303,7 +307,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       const truck = worldRef.current?.trucks.find((t) => t.id === id);
       if (truck) {
         setCity(null);
-        setPicked(truck);
+        setPickedId(truck.id);
       }
     });
     map.on('mouseenter', 'cities-dot', () => (map.getCanvas().style.cursor = 'pointer'));
@@ -313,7 +317,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       if (!id) return;
       const res = await fetch(`/api/geo/city/${id}`);
       if (res.ok) {
-        setPicked(null);
+        setPickedId(null);
         setCity((await res.json()) as CityDetails);
       }
     });
@@ -378,7 +382,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     const { point } = truckPoint(t, worldRef.current?.routes ?? {}, clock);
     mapRef.current?.flyTo({ center: toLngLat(point), zoom: Math.max(mapRef.current.getZoom(), 7.5), duration: 900 });
     setCity(null);
-    setPicked(t);
+    setPickedId(t.id);
     if (window.innerWidth < 640) setCircleOpen(false);
   };
   const circle = (world?.trucks ?? [])
@@ -448,7 +452,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: RELATION_COLOR[t.relation!] }} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[13px] font-medium">{t.player}{t.online && <span className="ml-1 text-profit">●</span>}</span>
-                          <span className="block truncate text-[11px] text-mist-400">{truckStatus(t, clock || 0)}</span>
+                          <span className="block truncate text-[11px] text-mist-400">{t.delivery?.deliveryId && clock && helpableStop(t.delivery.schedule, clock) ? <span className="font-semibold text-amber-sig">Чака помощ на пътя</span> : truckStatus(t, clock || 0)}</span>
                         </span>
                       </button>
                     </li>
@@ -461,7 +465,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
           </section>
         )}
       </div>
-      {picked && <TruckCard truck={picked} now={clock} onClose={() => setPicked(null)} />}
+      {picked && <TruckCard truck={picked} now={clock} onClose={() => setPickedId(null)} />}
       {city && (
         <aside className="absolute right-3 top-14 w-[min(320px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur">
           <div className="flex items-start justify-between gap-2">
@@ -524,6 +528,12 @@ function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number;
             <span>{s?.done ? 'Пристига' : s?.segment ? `${s.leg === 'empty' ? 'Към товара · ' : ''}${SEGMENT_LABEL[s.segment.kind] ?? ''}` : ''}</span>
             <span>{left > 0 ? `пристига след ${duration(left)}` : 'пристига сега'}</span>
           </div>
+          {d.deliveryId && now && helpableStop(d.schedule, now) && (
+            <div className="rounded-xl border border-amber-sig/40 bg-amber-sig/10 p-2.5">
+              <p className="text-xs text-amber-sig">Камионът стои: {helpableStop(d.schedule, now)!.note}. Ако имаш камион до {ROADSIDE.radiusKm} км, помогни — оставащият престой пада наполовина, а ти получаваш хонорар {money(ROADSIDE.feeCents)}</p>
+              <ActionButton action={{ type: 'helpOnRoad', deliveryId: d.deliveryId }} onDone={() => window.dispatchEvent(new Event('tv:world'))} className="btn-primary mt-2 w-full justify-center text-xs">Помогни на пътя</ActionButton>
+            </div>
+          )}
           {convoyOpen && (
             <a href={`/game/contracts?lane=${d.originCityId}-${d.destCityId}`} className="btn-primary mt-1 w-full justify-center text-xs">Тръгни в конвой · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</a>
           )}

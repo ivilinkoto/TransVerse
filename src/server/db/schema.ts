@@ -1413,3 +1413,19 @@ export const mentorships = pgTable(
   },
   (t) => [uniqueIndex('mentorships_active_mentee_idx').on(t.menteeId).where(sql`status = 'active'`), index('mentorships_mentor_idx').on(t.mentorId, t.status)],
 );
+
+/** Help on the road: a friend or colleague shortened another player's stop (once per stop). */
+export const roadsideHelps = pgTable(
+  'roadside_helps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    deliveryId: uuid('delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+    /** Start of the stop that was shortened. */
+    stopAt: ts('stop_at').notNull(),
+    helperId: uuid('helper_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    savedMs: integer('saved_ms').notNull(),
+    feeCents: integer('fee_cents').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('roadside_helps_stop_idx').on(t.deliveryId, t.stopAt), index('roadside_helps_helper_idx').on(t.helperId, t.createdAt)],
+);
