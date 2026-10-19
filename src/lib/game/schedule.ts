@@ -160,7 +160,7 @@ export function estimateMinutes(input: Omit<ScheduleInput, 'startAt' | 'timeScal
 /**
  * Game time. The whole trip is compressed to 15 min + 0.09 min per km (≈30 min
  * for 150 km, ≈1 h for 500 km, ≈2 h for 1 200 km, ≈4 h 45 min for 3 000 km) —
- * always proportional to distance, with no upper cap. v1.3 doubled it: trips of
+ * always proportional to distance, with no upper cap. v1.2 doubled it: trips of
  * half an hour let a fleet earn levels and money far too fast. Phases keep their real proportions, so breaks, rests and
  * border waits stay visible — just shorter.
  */

@@ -413,8 +413,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     company!.ownerId,
     onTime ? 'success' : 'warning',
     onTime ? `Доставено: ${contract.goods} в ${dest!.nameBg}` : `Закъсняла доставка в ${dest!.nameBg}`,
-    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} лв., +${playerXp} опит.`,
-    '/game/finance',
+    `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} лв., +${playerXp} опит. Виж товарите обратно от ${dest!.nameBg}.`,
+    // Straight to the return loads from where the truck now stands.
+    `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}`,
   );
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });

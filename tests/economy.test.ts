@@ -10,7 +10,7 @@ import { db, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
 
-describe('v1.3 economy pace', () => {
+describe('v1.2 economy pace', () => {
   it('trips take twice as long, fleets and companies level slower', () => {
     expect(gameDurationMinutes(500)).toBe(60);
     expect(FLEET_XP_SHARE).toBe(0.1);

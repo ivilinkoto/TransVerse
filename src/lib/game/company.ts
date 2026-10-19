@@ -43,7 +43,7 @@ export const COMPANY_LIMITS = {
   bannerMaxBytes: 1024 * 1024,
 } as const;
 
-/** Company experience needed for a level (v1.3: steeper — level 10 ≈ 420 000, level 20 ≈ 1 600 000). Levels already reached stay. */
+/** Company experience needed for a level (v1.2: steeper — level 10 ≈ 420 000, level 20 ≈ 1 600 000). Levels already reached stay. */
 export function companyXpForLevel(level: number): number {
   return level <= 1 ? 0 : Math.round(8000 * (level - 1) ** 1.8);
 }

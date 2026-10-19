@@ -33,12 +33,15 @@ export const PUSH_CATEGORY_IDS = Object.keys(PUSH_CATEGORIES) as PushCategory[];
 export function categoryOf(href: string | null | undefined): PushCategory {
   if (!href) return 'general';
   if (href.startsWith('/game/contracts?fav=1')) return 'favorites';
+  // "Delivered" links to the return loads from the destination.
+  if (href.startsWith('/game/contracts?from=')) return 'deliveries';
   if (href.startsWith('/game/contracts')) return 'urgent';
   if (href.startsWith('/game/finance#fines')) return 'fines';
   if (href.startsWith('/game/clients')) return 'clients';
   if (href.startsWith('/game/news')) return 'news';
   if (href.startsWith('/game/halloween') || href.startsWith('/game/christmas')) return 'holiday';
-  if (href.includes('chat=dm:')) return 'chat';
+  // Private messages and @mentions open the chat.
+  if (href.includes('?chat=')) return 'chat';
   if (href.startsWith('/game/finance') || href.startsWith('/game/fleet') || href.startsWith('/game/garage')) return 'deliveries';
   if (href.startsWith('/game/events') || href.startsWith('/game/missions')) return 'events';
   if (href.startsWith('/game/company/chat')) return 'chat';
@@ -132,6 +135,23 @@ export interface PushMessage {
   url: string;
   /** Same tag replaces an older notification on the device. */
   tag?: string;
+  /** Buttons on the notification (phones show up to two). */
+  actions?: PushAction[];
+}
+
+export interface PushAction {
+  action: string;
+  title: string;
+  url: string;
+}
+
+/** Quick buttons for a notification, by the page it links to. */
+export function pushActionsFor(href: string | null | undefined): PushAction[] | undefined {
+  if (!href) return undefined;
+  // A delivery arrived: take a load back from there, or look at the whole board.
+  if (href.startsWith('/game/contracts?from=')) return [{ action: 'back', title: 'Обратен товар', url: href }, { action: 'board', title: 'Нов курс', url: '/game/contracts' }];
+  if (href.includes('?chat=')) return [{ action: 'chat', title: 'Отвори чата', url: href }];
+  return undefined;
 }
 
 type Sub = typeof pushSubscriptions.$inferSelect;
@@ -213,7 +233,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
   for (const [userId, list] of byUser) {
     const message: PushMessage =
       list.length === 1
-        ? { title: list[0]!.title, body: list[0]!.body, url: list[0]!.href ?? '/game/notifications', tag: `n${list[0]!.id}` }
+        ? { title: list[0]!.title, body: list[0]!.body, url: list[0]!.href ?? '/game/notifications', tag: `n${list[0]!.id}`, actions: pushActionsFor(list[0]!.href) }
         : { title: `${list.length} нови известия в TransVerse`, body: list.slice(-3).map((n) => n.title).join(' · '), url: '/game/notifications', tag: 'summary' };
     pushed += await pushToUser(db, userId, message, sender);
   }

@@ -32,10 +32,10 @@ import { membershipOf } from '@/server/game/membership';
 
 export const metadata = { title: 'Поръчки' };
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string }> }) {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; from?: string; truck?: string }> }) {
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, hq, now } = await gameContext();
   const favorites = await favoriteLanesOf(db, user.id);
   // Loads companies handed to this player, and whether the player may hand loads out.
   const [hiredOffers, canAssign] = await Promise.all([offersFor(db, user.id, now), canOfferJobs(db, user.id)]);
@@ -63,12 +63,16 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const laneMatch = /^(\d+)-(\d+)$/.exec(params.lane ?? '');
   const lane = laneMatch ? { from: Number(laneMatch[1]), to: Number(laneMatch[2]) } : null;
   const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId }) : [];
+  // "Return load" after a delivery: the loads from where the truck now stands, that truck first.
+  const fromCity = /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
+  const backTruck = fromCity ? fleet.vehicles.find((v) => v.id === params.truck && !v.delivery) ?? fleet.vehicles.find((v) => !v.delivery && v.cityId === fromCity) ?? null : null;
+  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId }) : [];
   const seen = new Set<string>();
-  const contracts = [...laneLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
+  const contracts = [...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];
-    const options = fleet.vehicles.map((v) => {
+    const options = (backTruck ? [backTruck, ...fleet.vehicles.filter((v) => v.id !== backTruck.id)] : fleet.vehicles).map((v) => {
       const bundle = { modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, condition: v.condition, hasDriver: !!v.driver, status: v.status, trailerCondition: v.trailer?.condition ?? null };
       const strict = compatibilityError(bundle, c, user.level);
       // Up to 10 % over the payload is possible as a risk the player chooses.
@@ -125,6 +129,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         return w.condition === 'clear' ? null : { condition: w.condition, label: CONDITION_LABELS[w.condition], country: w.country! };
       })(),
       favorite: favorites.some((f) => f.originCityId === c.originCityId && f.destCityId === c.destCityId),
+      toHome: c.destCityId === hq.id,
       tender: !!c.tenderId,
       alreadyTaken: takenIds.has(c.id),
       reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,
@@ -139,6 +144,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   });
 
   const laneBoard = lane ? board.filter((c) => c.origin.id === lane.from && c.destination.id === lane.to) : [];
+  // Return loads: takeable with that truck first, then the best paid.
+  const usableBy = (c: BoardContract) => (backTruck ? c.options.some((o) => o.vehicleId === backTruck.id && !o.error) : true);
+  const backBoard = fromCity ? board.filter((c) => c.origin.id === fromCity).sort((a, b) => Number(usableBy(b)) - Number(usableBy(a)) || Number(b.toHome) - Number(a.toHome) || b.rewardCents - a.rewardCents) : [];
+  const fromName = fromCity ? (backBoard[0]?.origin.name ?? fleet.vehicles.find((v) => v.cityId === fromCity)?.city.nameBg ?? null) : null;
 
   return (
     <div>
@@ -157,10 +166,20 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           <Link href="/game/contracts" className="btn-ghost px-3 py-1.5 text-xs">Всички поръчки</Link>
         </div>
       )}
+      {fromCity && !lane && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 px-4 py-3 text-sm">
+          <span>
+            {backBoard.length
+              ? <>Обратен товар{fromName ? <> от <b>{fromName}</b></> : ''}{backTruck ? <> за <b>{backTruck.plate}</b></> : ''} — товарите, които камионът може да вземе, са първи{backBoard.some((c) => c.toHome) ? ', а тези към базата ти са отбелязани' : ''}.</>
+              : `В момента няма поръчки${fromName ? ` от ${fromName}` : ''}. Виж всички поръчки — празният курс до съседен град често се изплаща.`}
+          </span>
+          <Link href="/game/contracts" className="btn-ghost px-3 py-1.5 text-xs">Всички поръчки</Link>
+        </div>
+      )}
       {!user.seenHints.includes('board') && <Hint id="board" />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
-      <ContractBoard initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

@@ -49,7 +49,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <div className="label mb-1.5">Опит · общо {int(xp.reduce((s, r) => s + r.xp, 0))}</div>
-              {xp.length === 0 ? <p className="text-sm text-mist-400">Няма записи (записват се от v1.3).</p> : (
+              {xp.length === 0 ? <p className="text-sm text-mist-400">Няма записи (записват се от v1.2).</p> : (
                 <ul className="space-y-1 text-sm">{xp.map((r) => <li key={r.reason} className="flex justify-between gap-2"><span>{r.label} <span className="text-mist-400">· {r.n}×</span></span><span className="num">{int(r.xp)}</span></li>)}</ul>
               )}
             </div>
