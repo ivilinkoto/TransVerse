@@ -1,7 +1,8 @@
 'use client';
 
 import { useFeature } from './Features';
-import { Gem, LogOut, MoreHorizontal, ShieldCheck, X } from 'lucide-react';
+import { Gem, LogOut, MessagesSquare, MoreHorizontal, ShieldCheck, X } from 'lucide-react';
+import { DISCORD_URL } from '@/lib/community';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -176,6 +177,7 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
                     {item.label}
                   </Link>
                 ))}
+                <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className={tile}><MessagesSquare className="h-5 w-5 text-mist-400" />Discord</a>
                 {staff && (
                   <Link href="/admin" onClick={() => setOpen(false)} className={`${tile} relative text-prestige`}><ShieldCheck className="h-5 w-5" />Админ панел{attention > 0 && <span className="num absolute right-1.5 top-1.5 rounded-full bg-loss px-1.5 text-[11px] font-bold leading-5 text-white">{attention}</span>}</Link>
                 )}

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { ExternalLink, MessagesSquare } from 'lucide-react';
+import { DISCORD_URL } from '@/lib/community';
 import { Card, PageHeader } from '@/components/ui';
 import { CLIENT_RULES } from '@/lib/game/clients';
 import { CREW_RULES, TRAIT_IDS, TRAITS } from '@/lib/game/crew';
@@ -90,6 +92,11 @@ export default function HelpPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Помощ и правила" subtitle="Всички системи на играта накратко. Числата са игрови правила." />
+      <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="panel flex items-center gap-3 p-3.5 transition hover:border-volt-500/60">
+        <MessagesSquare className="h-6 w-6 shrink-0 text-volt-400" />
+        <span className="min-w-0 flex-1"><span className="block font-semibold">Discord сървър на TransVerse</span><span className="block text-sm text-mist-300">Питай другите играчи, следи новините, намери компания.</span></span>
+        <ExternalLink className="h-4 w-4 shrink-0 text-mist-400" />
+      </a>
       <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label="Раздели">
         {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`} className="shrink-0 rounded-full border border-asphalt-700 px-3 py-1.5 text-sm text-mist-300 hover:text-white">{s.title}</a>)}
       </nav>

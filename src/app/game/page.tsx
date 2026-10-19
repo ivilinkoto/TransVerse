@@ -15,6 +15,7 @@ import { mentorOverview } from '@/server/game/mentor';
 import { friendsFeed } from '@/server/game/feed';
 import { weeklyGoalState } from '@/server/game/weekly-goal';
 import { isRecapTime, recapYear } from '@/lib/game/recap';
+import { DiscordInvite } from '@/components/game/DiscordInvite';
 import { FriendsFeed } from '@/components/game/FriendsFeed';
 import { countries as countryTable } from '@/server/db/schema';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
@@ -151,6 +152,7 @@ export default async function OverviewPage() {
           </span>
         </Link>
       )}
+      {!user.seenHints.includes('discord') && <DiscordInvite />}
       {features.year_recap && isRecapTime(now) && (
         <Link href="/game/recap" className="panel group flex items-center gap-3 border-prestige/40 p-3.5 transition hover:border-prestige">
           <CalendarHeart className="h-6 w-6 shrink-0 text-prestige" />
