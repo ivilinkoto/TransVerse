@@ -9,5 +9,5 @@ export const dynamic = 'force-dynamic';
 export const GET = handler({ perMinute: 120 }, async ({ user }) => {
   const db = getDb();
   const [list, member] = await Promise.all([conversations(db, user.id), membershipOf(db, user.id)]);
-  return { conversations: list, company: member ? member.company.name : null, me: user.id };
+  return { conversations: list, company: member ? member.company.name : null, me: user.id, meName: user.username };
 });

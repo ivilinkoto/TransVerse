@@ -1,8 +1,9 @@
 'use client';
 
-import { Building2, Flag, Globe2, MessageCircle, Send, Store, Trash2, X } from 'lucide-react';
+import { AtSign, Building2, Flag, Globe2, MessageCircle, Send, Smile, Store, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
+import { CHAT_EMOJI, splitMentions, typingMention } from '@/lib/game/mentions';
 import type { FeedMessage } from '@/server/game/messages';
 import { PlayerName, openPlayerCard } from './PlayerName';
 import { openReport } from './ReportDialog';
@@ -22,6 +23,7 @@ interface Inbox {
   conversations: Conversation[];
   company: string | null;
   me: string;
+  meName: string;
 }
 interface Tab {
   id: string;
@@ -56,6 +58,9 @@ export function ChatDock() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [suggest, setSuggest] = useState<{ query: string; names: string[] } | null>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   const tabRef = useRef(tab);
@@ -143,6 +148,9 @@ export function ChatDock() {
     window.addEventListener('tv:chat', onCompany);
     window.addEventListener('tv:dm', onDm);
     window.addEventListener('tv:chat-open', onOpen);
+    // Another panel (the account menu, "Още") opens over the same corner: fold the chat.
+    const onClose = () => setOpen(false);
+    window.addEventListener('tv:chat-close', onClose);
     const safety = setInterval(() => {
       void loadInbox();
       if (openRef.current) void loadFeed(tabRef.current);
@@ -152,6 +160,7 @@ export function ChatDock() {
       window.removeEventListener('tv:chat', onCompany);
       window.removeEventListener('tv:dm', onDm);
       window.removeEventListener('tv:chat-open', onOpen);
+      window.removeEventListener('tv:chat-close', onClose);
       clearInterval(safety);
     };
   }, [loadFeed, loadInbox]);
@@ -176,6 +185,36 @@ export function ChatDock() {
   const partner = dm ? inbox?.conversations.find((c) => c.userId === dm) : null;
   const me = inbox?.me;
 
+  /** Inserts text at the caret (emoji) and keeps the focus in the box. */
+  const insertAt = (piece: string, replaceBack = 0) => {
+    const el = input.current;
+    const at = el?.selectionStart ?? text.length;
+    const next = text.slice(0, at - replaceBack) + piece + text.slice(el?.selectionEnd ?? at);
+    setText(next);
+    requestAnimationFrame(() => {
+      el?.focus();
+      const caret = at - replaceBack + piece.length;
+      el?.setSelectionRange(caret, caret);
+    });
+  };
+
+  /** "@na…" before the caret: names from this chat first, then the player search. */
+  const lookUp = async (value: string, caret: number) => {
+    const query = typingMention(value.slice(0, caret));
+    if (query === null) return setSuggest(null);
+    const q = query.toLowerCase();
+    const local = [...new Set([...messages.map((m) => m.username), ...(inbox?.conversations.map((c) => c.username) ?? [])])].filter((n) => n !== inbox?.meName && n.toLowerCase().startsWith(q));
+    setSuggest({ query, names: local.slice(0, 6) });
+    if (q.length < 2) return;
+    try {
+      const res = await api<{ players: { username: string }[] }>(`/api/players/search?q=${encodeURIComponent(q)}`);
+      const names = [...new Set([...local, ...res.players.map((p) => p.username)])].filter((n) => n !== inbox?.meName).slice(0, 6);
+      setSuggest((cur) => (cur && cur.query === query ? { query, names } : cur));
+    } catch {
+      // keep the local names
+    }
+  };
+
   const send = async (event?: React.FormEvent) => {
     event?.preventDefault();
     if (!text.trim() || busy) return;
@@ -186,6 +225,8 @@ export function ChatDock() {
       else if (tab === 'company') await api('/api/game/action', { type: 'sendChat', body: text });
       else await api('/api/game/action', { type: 'sendChannel', channel: tab, body: text });
       setText('');
+      setSuggest(null);
+      setEmojiOpen(false);
       stick.current = true;
       await loadFeed(tab);
       if (dm) void loadInbox();
@@ -295,27 +336,67 @@ export function ChatDock() {
                         <button type="button" className="text-mist-400 opacity-60 transition hover:text-loss group-hover:opacity-100" onClick={() => void remove(m)} aria-label="Изтрий съобщението"><Trash2 className="h-3 w-3" /></button>
                       )}
                     </div>
-                    <p className={`whitespace-pre-wrap break-words text-sm ${m.deleted ? 'italic text-mist-400' : ''}`}>{m.deleted ? 'Съобщението е изтрито.' : m.body}</p>
+                    <p className={`whitespace-pre-wrap break-words text-sm ${m.deleted ? 'italic text-mist-400' : ''}`}>
+                      {m.deleted || !m.body
+                        ? 'Съобщението е изтрито.'
+                        : splitMentions(m.body).map((part, i) =>
+                            part.mention ? (
+                              <button key={i} type="button" onClick={() => openPlayerCard(part.mention!)} className={`rounded px-0.5 font-semibold ${part.mention.toLowerCase() === inbox?.meName.toLowerCase() ? 'bg-gold-400/25 text-gold-400' : 'text-cyan-glow hover:underline'}`}>
+                                {part.text}
+                              </button>
+                            ) : (
+                              <span key={i}>{part.text}</span>
+                            ),
+                          )}
+                    </p>
                   </div>
                 </div>
               );
             })}
           </div>
 
+          {suggest && suggest.names.length > 0 && (
+            <ul className="flex flex-wrap gap-1.5 border-t border-asphalt-800 px-2 pt-2" aria-label="Споменай играч">
+              {suggest.names.map((n) => (
+                <li key={n}>
+                  <button type="button" className="inline-flex items-center gap-1 rounded-full border border-asphalt-600 bg-asphalt-800 px-2 py-0.5 text-xs hover:border-cyan-glow/60" onClick={() => { insertAt(`@${n} `, suggest.query.length + 1); setSuggest(null); }}>
+                    <AtSign className="h-3 w-3 text-cyan-glow" />{n}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {emojiOpen && (
+            <div className="grid grid-cols-8 gap-1 border-t border-asphalt-800 p-2" role="listbox" aria-label="Емоджи">
+              {CHAT_EMOJI.map((e) => (
+                <button key={e} type="button" role="option" aria-selected={false} className="rounded-lg py-1 text-lg hover:bg-asphalt-800" onClick={() => insertAt(e)}>{e}</button>
+              ))}
+            </div>
+          )}
           <form onSubmit={(e) => void send(e)} className="flex gap-2 border-t border-asphalt-800 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] lg:pb-2">
+            <button type="button" className={`shrink-0 rounded-xl px-2 transition ${emojiOpen ? 'bg-asphalt-700 text-gold-400' : 'text-mist-400 hover:bg-asphalt-800 hover:text-white'}`} onClick={() => setEmojiOpen((o) => !o)} aria-label="Емоджи" aria-expanded={emojiOpen}><Smile className="h-5 w-5" /></button>
             <textarea
+              ref={input}
               className="input min-h-10 flex-1 resize-none py-2 text-sm"
               rows={1}
               maxLength={500}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                void lookUp(e.target.value, e.target.selectionStart ?? e.target.value.length);
+              }}
               onKeyDown={(e) => {
+                if (e.key === 'Escape') setSuggest(null);
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  void send();
+                  // Enter picks the first suggested name while one is offered.
+                  if (suggest?.names.length) {
+                    insertAt(`@${suggest.names[0]} `, suggest.query.length + 1);
+                    setSuggest(null);
+                  } else void send();
                 }
               }}
-              placeholder={dm ? `Съобщение до ${current.label}…` : tab === 'trade' ? 'Продавам / купувам…' : tab === 'company' ? 'До компанията…' : 'До всички играчи…'}
+              placeholder={dm ? `Съобщение до ${current.label}…` : tab === 'trade' ? 'Продавам / купувам…' : tab === 'company' ? 'До компанията… (@име споменава)' : 'До всички играчи… (@име споменава)'}
               aria-label="Съобщение"
             />
             <button className="btn-primary px-3" disabled={busy || !text.trim()} aria-label="Изпрати"><Send className="h-4 w-4" /></button>

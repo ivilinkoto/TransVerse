@@ -17,6 +17,7 @@ import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
 import { WhatsNew } from '@/components/game/WhatsNew';
 import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isHalloween } from '@/lib/game/halloween';
+import { staffAttention } from '@/server/admin';
 import { isChristmas } from '@/lib/game/christmas';
 import { isStaff } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
@@ -33,6 +34,8 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const staff = isStaff(user.role);
   const fresh = unseenRelease(user.seenVersion, now, staff);
   const holiday = isHalloween(now) ? 'halloween' : isChristmas(now) ? 'christmas' : null;
+  // Staff see a badge on the admin button while support questions or reports wait.
+  const attention = staff ? (await staffAttention(db)).total : 0;
   const [tutorial, membership, missions] = await Promise.all([tutorialState(db, user.id), membershipOf(db, user.id), claimableCount(db, user.id)]);
   const [{ unread = 0 } = {}] = await db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt)));
   const [live] = await db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1);
@@ -40,7 +43,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     <div className="flex min-h-dvh flex-col lg:flex-row">
       <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
+        <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
         <InstallAppBanner />
         {!user.emailVerifiedAt && mailConfig().enabled && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
@@ -56,7 +59,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
           {children}
         </main>
       </div>
-      <MobileNav badges={{ missions, eventLive: !!live }} staff={isStaff(user.role)} holiday={holiday} />
+      <MobileNav badges={{ missions, eventLive: !!live }} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
       <LiveUpdates />
       <ChatDock />
       <PlayerCardHost />
