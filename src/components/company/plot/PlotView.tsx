@@ -78,11 +78,23 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
   const others = useMemo(() => data.buildings.filter((b) => b.type !== placing), [data.buildings, placing]);
   const W = data.plotW;
   const whyNot = (x: number, y: number) => (placing ? placementError(placing, x, y, others, { plotW: W, decor: data.decor }) : placingDecor ? decorError(placingDecor, x, y, data.buildings, data.decor, W) : null);
-  const ghost = (placing || placingDecor) && hover ? (() => {
+  /** The spot (top-left tile) of the thing being placed when the pointer is over tile t. */
+  const spotAt = (t: { x: number; y: number }) => {
     const def = placing ? BUILDINGS[placing] : DECOR[placingDecor!];
-    const x = Math.round(hover.x - def.w / 2), y = Math.round(hover.y - def.h / 2);
+    return { x: Math.round(t.x - def.w / 2), y: Math.round(t.y - def.h / 2) };
+  };
+  const ghost = (placing || placingDecor) && hover ? (() => {
+    const { x, y } = spotAt(hover);
     return { type: placing ?? undefined, decor: placingDecor ?? undefined, x, y, valid: whyNot(x, y) === null };
   })() : null;
+  // On a touch screen a tap shows where it goes; "Постави тук" confirms.
+  const [touch, setTouch] = useState(false);
+  // Placing starts from the panel (below the scene on a phone): bring the plot into view.
+  useEffect(() => {
+    if (mode.kind === 'view') return;
+    const r = box.current?.getBoundingClientRect();
+    if (r && (r.top < 0 || r.bottom > window.innerHeight)) box.current!.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [mode.kind]);
 
   const VIEW = viewFor(W);
   const vb = { w: VIEW.w / view.zoom, h: VIEW.h / view.zoom };
@@ -96,6 +108,15 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
     return () => ro.disconnect();
   }, []);
   const labelScale = Math.min(2.6, Math.max(0.75, (vb.w / width) * 0.85));
+  // Traffic drives unless the player asked the device for less motion.
+  const [moving, setMoving] = useState(false);
+  useEffect(() => {
+    const q = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const on = () => setMoving(!q.matches);
+    on();
+    q.addEventListener('change', on);
+    return () => q.removeEventListener('change', on);
+  }, []);
   const viewBox = `${VIEW.x + (VIEW.w - vb.w) / 2 + view.x} ${VIEW.y + (VIEW.h - vb.h) / 2 + view.y} ${vb.w} ${vb.h}`;
 
   const toSvg = (e: React.PointerEvent) => {
@@ -111,7 +132,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
     if (drag.current) {
       const d = drag.current;
       const scale = vb.w / (svg.current?.clientWidth || VIEW.w);
-      if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 4) {
+      if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > (e.pointerType === 'mouse' ? 4 : 12)) {
         d.moved = true;
         setMenuAt(null);
       }
@@ -120,6 +141,25 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
     }
     const p = toSvg(e);
     if (p) setHover(toTile(p.x, p.y));
+  };
+  const place = async (x: number, y: number) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (placingDecor) await api('/api/game/action', { type: 'placeDecor', kind: placingDecor, x, y });
+      else await api('/api/game/action', { type: mode.kind === 'move' ? 'moveBuilding' : 'placeBuilding', building: placing, x, y });
+      // Decorations: keep placing until cancelled.
+      if (!placingDecor) {
+        setMode({ kind: 'view' });
+        setSelected(placing);
+        setHover(null);
+      }
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
   const onDown = (e: React.PointerEvent) => {
     drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false };
@@ -131,24 +171,18 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
     const p = toSvg(e);
     if (!p) return;
     const t = toTile(p.x, p.y);
-    if (ghost && (placing || placingDecor)) {
-      if (!ghost.valid) return setError(whyNot(ghost.x, ghost.y));
-      setBusy(true);
-      setError(null);
-      try {
-        if (placingDecor) await api('/api/game/action', { type: 'placeDecor', kind: placingDecor, x: ghost.x, y: ghost.y });
-        else await api('/api/game/action', { type: mode.kind === 'move' ? 'moveBuilding' : 'placeBuilding', building: placing, x: ghost.x, y: ghost.y });
-        // Decorations: keep placing until cancelled.
-        if (!placingDecor) {
-          setMode({ kind: 'view' });
-          setSelected(placing);
-        }
-        router.refresh();
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setBusy(false);
+    if (placing || placingDecor) {
+      // The spot is where the pointer went up (a tap on a phone has no hover before it).
+      const spot = spotAt(t);
+      setHover(t);
+      const why = whyNot(spot.x, spot.y);
+      if (e.pointerType !== 'mouse') {
+        setTouch(true);
+        setError(why);
+        return;
       }
+      if (why) return setError(why);
+      await place(spot.x, spot.y);
       return;
     }
     // The drawing under the pointer first (a tall building covers the tiles behind it), then the tile.
@@ -181,11 +215,11 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           onPointerMove={onMove}
           onPointerDown={onDown}
           onPointerUp={onUp}
-          onPointerLeave={() => { drag.current = null; setHover(null); }}
+          onPointerLeave={(e) => { drag.current = null; if (e.pointerType === 'mouse') setHover(null); }}
           role="img"
           aria-label={`Участъкът на „${data.org.name}“`}
         >
-          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} labelScale={labelScale} />
+          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} labelScale={labelScale} moving={moving} />
         </svg>
         <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 px-3 py-2 text-xs text-mist-300 backdrop-blur">
           <b className="block text-sm text-white">Участък · {data.hq?.nameBg ?? ''}</b>
@@ -197,13 +231,16 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => setView({ x: 0, y: 0, zoom: 1 })} aria-label="Целият участък"><Maximize2 className="h-4 w-4" /></button>
         </div>
         {(placing || placingDecor) && (
-          <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-glow/40 bg-asphalt-950/85 px-3 py-2 text-sm backdrop-blur">
+          <div className="relative m-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-glow/40 bg-asphalt-950/90 px-3 py-2 text-sm backdrop-blur sm:absolute sm:inset-x-3 sm:bottom-3 sm:m-0 sm:bg-asphalt-950/85">
             {placing ? (
-              <span>{mode.kind === 'move' ? 'Премести' : 'Постави'} <b>{BUILDINGS[placing].label}</b> — натисни свободно място на участъка ({BUILDINGS[placing].w}×{BUILDINGS[placing].h}).{busy ? ' …' : ''}</span>
+              <span>{mode.kind === 'move' ? 'Премести' : 'Постави'} <b>{BUILDINGS[placing].label}</b> — {touch ? 'докосни свободно място, после „Постави тук“' : 'натисни свободно място на участъка'} ({BUILDINGS[placing].w}×{BUILDINGS[placing].h}).{busy ? ' …' : ''}</span>
             ) : (
               <span>Постави <b>{DECOR[placingDecor!].label}</b> ({priceText(placingDecor!)}) — натисни свободно място; можеш да сложиш няколко.{busy ? ' …' : ''}</span>
             )}
-            <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => { setMode({ kind: 'view' }); setError(null); }}><X className="h-3.5 w-3.5" />Отказ</button>
+            <span className="flex gap-2">
+              {touch && ghost && <button type="button" className="btn-primary px-3 py-1.5 text-xs" disabled={!ghost.valid || busy} onClick={() => place(ghost.x, ghost.y)}><Hammer className="h-3.5 w-3.5" />Постави тук</button>}
+              <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => { setMode({ kind: 'view' }); setError(null); setHover(null); }}><X className="h-3.5 w-3.5" />Отказ</button>
+            </span>
           </div>
         )}
         {sel && menuAt && !placing && !placingDecor && (

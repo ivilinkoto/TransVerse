@@ -95,8 +95,10 @@ function wheel(plane: 'x' | 'y', at: number, c: number, r = 0.19): ReactNode {
  * at a = length), `b` across (the visible side at b = width). The vehicle drives
  * along x or along y of the plot.
  */
-function frame(x: number, y: number, along: 'x' | 'y') {
-  const at = (a: number, b: number): [number, number] => (along === 'y' ? [x + b, y + a] : [x + a, y + b]);
+function frame(x: number, y: number, along: 'x' | 'y', rev = false, len = 0) {
+  // A vehicle driving the other way: its own frame mirrored along its length.
+  const m = (a: number) => (rev ? len - a : a);
+  const at = (a: number, b: number): [number, number] => (along === 'y' ? [x + b, y + m(a)] : [x + m(a), y + b]);
   return {
     box(a0: number, b0: number, a1: number, b1: number, z0: number, h: number, c: Faces) {
       const [xa, ya] = at(a0, b0);
@@ -104,10 +106,13 @@ function frame(x: number, y: number, along: 'x' | 'y') {
       return box(Math.min(xa, xb), Math.min(ya, yb), Math.max(xa, xb), Math.max(ya, yb), z0, h, c);
     },
     /** A panel on the visible side (b = const). */
-    side: (b: number, a0: number, a1: number, z0: number, z1: number, fill: string) => (along === 'y' ? onX(x + b, y + a0, y + a1, z0, z1, fill) : onY(y + b, x + a0, x + a1, z0, z1, fill)),
+    side(b: number, a0: number, a1: number, z0: number, z1: number, fill: string) {
+      const [p, q] = [m(a0), m(a1)].sort((u, v) => u - v);
+      return along === 'y' ? onX(x + b, y + p!, y + q!, z0, z1, fill) : onY(y + b, x + p!, x + q!, z0, z1, fill);
+    },
     /** A panel on the front (a = const). */
-    front: (a: number, b0: number, b1: number, z0: number, z1: number, fill: string) => (along === 'y' ? onY(y + a, x + b0, x + b1, z0, z1, fill) : onX(x + a, y + b0, y + b1, z0, z1, fill)),
-    wheel: (b: number, a: number, r?: number) => (along === 'y' ? wheel('x', x + b, y + a, r) : wheel('y', y + b, x + a, r)),
+    front: (a: number, b0: number, b1: number, z0: number, z1: number, fill: string) => (along === 'y' ? onY(y + m(a), x + b0, x + b1, z0, z1, fill) : onX(x + m(a), y + b0, y + b1, z0, z1, fill)),
+    wheel: (b: number, a: number, r?: number) => (along === 'y' ? wheel('x', x + b, y + m(a), r) : wheel('y', y + b, x + m(a), r)),
     shadow(len: number, w: number, h: number) {
       const [xa, ya] = at(0, 0);
       const [xb, yb] = at(len, w);
@@ -174,10 +179,10 @@ function truck(x: number, y: number, look: TruckLook) {
   return <g key={k()}>{out}</g>;
 }
 
-/** A car: body, cabin with windows, lights and wheels. */
-function car(x: number, y: number, rgb: RGB, alongX = true) {
-  const f = frame(x, y, alongX ? 'x' : 'y');
+/** A car: body, cabin with windows, lights and wheels. `rev`: driving towards −x / −y (its rear faces the viewer). */
+function car(x: number, y: number, rgb: RGB, alongX = true, rev = false) {
   const L = 1.3, W = 0.6;
+  const f = frame(x, y, alongX ? 'x' : 'y', rev, L);
   return (
     <g key={k()}>
       {f.shadow(L, W, 0.6)}
@@ -185,12 +190,30 @@ function car(x: number, y: number, rgb: RGB, alongX = true) {
       {f.box(0.32, 0.05, 1.0, W - 0.05, 0.42, 0.26, faces(rgb))}
       {f.side(W - 0.05, 0.36, 0.64, 0.46, 0.64, GLASS.right)}
       {f.side(W - 0.05, 0.68, 0.96, 0.46, 0.64, GLASS.right)}
-      {f.front(1.0, 0.08, W - 0.08, 0.45, 0.66, GLASS.left)}
-      {f.front(L, 0.04, 0.14, 0.26, 0.34, '#fff3b8')}
-      {f.front(L, W - 0.14, W - 0.04, 0.26, 0.34, '#fff3b8')}
-      {f.front(L, 0.02, W - 0.02, 0.12, 0.2, '#3a3f48')}
+      {rev ? f.front(0.32, 0.1, W - 0.1, 0.46, 0.64, GLASS.left) : f.front(1.0, 0.08, W - 0.08, 0.45, 0.66, GLASS.left)}
+      {rev ? f.front(0, 0.04, 0.14, 0.27, 0.34, '#e04545') : f.front(L, 0.04, 0.14, 0.26, 0.34, '#fff3b8')}
+      {rev ? f.front(0, W - 0.14, W - 0.04, 0.27, 0.34, '#e04545') : f.front(L, W - 0.14, W - 0.04, 0.26, 0.34, '#fff3b8')}
+      {f.front(rev ? 0 : L, 0.02, W - 0.02, 0.12, 0.2, '#3a3f48')}
       {f.wheel(W - 0.01, 0.28, 0.13)}
       {f.wheel(W - 0.01, L - 0.28, 0.13)}
+    </g>
+  );
+}
+
+/**
+ * A vehicle driving along a road and starting over: drawn at the start of
+ * the road and moved `dist` tiles along x or y, `phase` (0–1) of the way in.
+ * Without `moving` it just stands at that point of the road.
+ */
+function driving(node: (x: number, y: number) => ReactNode, from: [number, number], along: 'x' | 'y', dist: number, seconds: number, phase: number, moving: boolean) {
+  const d = along === 'x' ? [dist, 0] : [0, dist];
+  if (!moving) return node(from[0] + d[0]! * phase, from[1] + d[1]! * phase);
+  const [x0, y0] = P(from[0], from[1]);
+  const [x1, y1] = P(from[0] + d[0]!, from[1] + d[1]!);
+  return (
+    <g key={k()}>
+      {node(from[0], from[1])}
+      <animateTransform attributeName="transform" type="translate" from="0 0" to={`${(x1 - x0).toFixed(1)} ${(y1 - y0).toFixed(1)}`} dur={`${seconds}s`} begin={`${(-phase * seconds).toFixed(1)}s`} repeatCount="indefinite" />
     </g>
   );
 }
@@ -545,6 +568,8 @@ export interface SceneProps {
   labels?: boolean;
   /** Drawing units per screen pixel, so the labels keep their size on a phone and when zoomed. */
   labelScale?: number;
+  /** Cars and trucks drive along the streets (off for reduced motion). */
+  moving?: boolean;
 }
 
 const OUTSIDE_TREES: [number, number][] = [[-1.4, 3], [-2.2, 8], [-1.2, 11], [3, -1.6], [8, -2.2], [11, -1.4], [18.5, 2], [18.2, 8], [19, 11.5], [2, 16.5], [9, 16.8], [13, 16.2], [-3, 16], [-3.5, 0], [6, -3.5], [14.5, -3]];
@@ -552,7 +577,7 @@ const OUTSIDE_TREES: [number, number][] = [[-1.4, 3], [-2.2, 8], [-1.2, 11], [3,
 const XMAS_SPOTS: [number, number][] = [[5.3, 11.3], [7.7, 11.3], [4.2, 11.4], [9, 11.3], [12.6, 11.3], [1.5, 11.4], [12.6, 6.5]];
 const EDGE_SPOTS: [number, number][] = [[0.3, 0.3], [0.3, 4.6], [0.3, 6.4], [0.3, 11.4], [3.2, 0.3], [5.3, 0.3], [7.7, 0.3], [12.6, 0.3], [13.6, 2.4], [13.6, 6.6], [13.6, 11.4], [3.0, 11.6], [9.8, 11.6], [5.3, 11.4]];
 
-export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null, plotW = PLOT.w, decor = [], season = null, selectedDecor = null, labels = true, labelScale = 1 }: SceneProps) {
+export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null, plotW = PLOT.w, decor = [], season = null, selectedDecor = null, labels = true, labelScale = 1, moving = false }: SceneProps) {
   // Keys are counted from zero on every render, so the same scene gets the same keys.
   // eslint-disable-next-line react-hooks/globals
   uid = 0;
@@ -596,15 +621,36 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
   add(25, <g key="fence">{fence}</g>);
 
   // Trees, bushes and lamps (none on top of a building).
-  OUTSIDE_TREES.forEach(([x, y], i) => { const xx = x > 14 ? x + sx : x; add(xx + y + 0.6, tree(xx, y, 0.5 + (i % 3) * 0.08, i)); });
+  // Trees beyond the streets stand in front of the traffic.
+  const front: ReactNode[] = [];
+  OUTSIDE_TREES.forEach(([x, y], i) => {
+    const xx = x > 14 ? x + sx : x;
+    const t = tree(xx, y, 0.5 + (i % 3) * 0.08, i);
+    if (y > 15.5 || xx > 17.5 + sx) front.push(t);
+    else add(xx + y + 0.6, t);
+  });
   EDGE_SPOTS.forEach(([x, y], i) => { const xx = x >= 12 ? x + sx : x; if (!occupied(xx, y)) add(xx + y + 0.6, i % 3 === 2 ? bush(xx, y) : tree(xx, y, 0.45 + (i % 2) * 0.08, i)); });
   for (let x = 1; x < 15 + sx; x += 3.2) add(x + 12.8, lamp(x, 12.8));
   for (let y = 1; y < 13; y += 3.2) add(14.7 + sx + y, lamp(14.7 + sx, y));
 
-  // Traffic, and material loads arriving.
-  add(9.5 + 34, car(9.5, 14.45, [224, 69, 69]));
-  add(-2 + 34, car(-2, 14.45, [235, 240, 246]));
-  add(16 + sx + 6, car(15.45 + sx, 5.5, [246, 195, 67], false));
+  // Traffic on the two streets (drawn over the plot, under the trees beyond the streets).
+  const road = 32 + sx;
+  const traffic: ReactNode[] = [
+    // The side street: towards the main road and back.
+    driving((x, y) => car(x, y, [47, 123, 255], false, true), [16.45 + sx, 16 - 1.3], 'y', -24, 20, 0.15, moving),
+    driving((x, y) => car(x, y, [246, 195, 67], false), [15.45 + sx, -8], 'y', 24, 18, 0.45, moving),
+  ];
+  // The far lane of the main road (unless material loads stand there at the gate).
+  if (!incoming) traffic.push(
+    driving((x, y) => car(x, y, [47, 210, 122], true, true), [24 + sx - 1.3, 13.3], 'x', -road, 30, 0.3, moving),
+    driving((x, y) => car(x, y, [166, 107, 255], true, true), [24 + sx - 1.3, 13.3], 'x', -road, 30, 0.78, moving),
+  );
+  traffic.push(
+    driving((x, y) => car(x, y, [224, 69, 69]), [-8, 14.55], 'x', road, 30, 0.55, moving),
+    driving((x, y) => car(x, y, [235, 240, 246]), [-8, 14.55], 'x', road, 30, 0.2, moving),
+    driving((x, y) => truck(x, y, { cab: [235, 240, 246], body: [47, 123, 255], rigid: true, along: 'x' }), [-8, 14.45], 'x', road, 30, 0.88, moving),
+  );
+  // Material loads arriving at the gate.
   for (let i = 0; i < Math.min(2, incoming); i++) {
     const x = 1.2 - i * 5.5, y = 13.35;
     add(y + x + 20, truck(x, y - 0.02, { cab: [34, 211, 238], body: [90, 96, 110], along: 'x', load: [[200, 200, 196], [196, 106, 74]] }));
@@ -686,6 +732,8 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
       </defs>
       <rect width={VIEW.w * 4} height={VIEW.h * 4} x={-VIEW.w} y={-VIEW.h} fill={SNOW ? '#e3ebf2' : '#9fd48c'} />
       {items.map((i) => i.node)}
+      <g pointerEvents="none">{traffic}</g>
+      {front}
       {tags.map((t) => {
         const [px, py] = P(t.x, t.y, t.z);
         const w = Math.max(t.text.length, t.sub.length) * 7 + 22;
