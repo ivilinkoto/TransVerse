@@ -34,8 +34,11 @@ import { hashIp } from '@/server/game/referrals';
 import { payOffLease } from '@/server/game/leasing';
 import { bonusSchema, payBonus } from '@/server/game/bonuses';
 import { setCompanyLivery, setLivery } from '@/server/game/livery';
-import { buyDelivered, cancelBuild, likePlot, moveBuilding, orderMaterials, placeBuilding, startConstruction, upgradeBuilding } from '@/server/game/plot';
-import { BUILDING_TYPES, type BuildingType } from '@/lib/game/plot';
+import { buyDelivered, cancelBuild, expandPlot, likePlot, moveBuilding, orderMaterials, placeBuilding, placeDecor, removeDecor, startConstruction, upgradeBuilding } from '@/server/game/plot';
+import { BUILDING_TYPES, DECOR_KINDS, type BuildingType, type DecorKind } from '@/lib/game/plot';
+import { borrowOrgVehicle, buyOrgVehicle, returnOrgVehicle, sellOrgVehicle } from '@/server/game/company-fleet';
+import { closePoll, createPoll, votePoll } from '@/server/game/polls';
+import { pollInputSchema } from '@/lib/game/polls';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { helpOnRoad } from '@/server/game/roadside';
 import { cheer } from '@/server/game/feed';
@@ -102,6 +105,16 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('startConstruction'), buildId: id }),
   z.object({ type: z.literal('cancelBuild'), buildId: id }),
   z.object({ type: z.literal('likePlot'), organizationId: id }),
+  z.object({ type: z.literal('placeDecor'), kind: z.enum(DECOR_KINDS as [DecorKind, ...DecorKind[]]), x: tile, y: tile }),
+  z.object({ type: z.literal('removeDecor'), decorId: id }),
+  z.object({ type: z.literal('expandPlot') }),
+  z.object({ type: z.literal('buyOrgVehicle'), modelId: z.string().max(40) }),
+  z.object({ type: z.literal('sellOrgVehicle'), orgVehicleId: id }),
+  z.object({ type: z.literal('borrowOrgVehicle'), orgVehicleId: id }),
+  z.object({ type: z.literal('returnOrgVehicle'), vehicleId: id }),
+  z.object({ type: z.literal('createPoll'), poll: pollInputSchema }),
+  z.object({ type: z.literal('votePoll'), pollId: id, option: z.number().int().min(0).max(9) }),
+  z.object({ type: z.literal('closePoll'), pollId: id }),
   z.object({ type: z.literal('setLivery'), color: z.string().max(9).nullable() }),
   z.object({ type: z.literal('companyLivery'), on: z.boolean() }),
   z.object({ type: z.literal('serviceVehicle'), vehicleId: id }),
@@ -219,6 +232,16 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   startConstruction: 'company_plot',
   cancelBuild: 'company_plot',
   likePlot: 'plot_guests',
+  placeDecor: 'plot_decor',
+  removeDecor: 'plot_decor',
+  expandPlot: 'plot_expand',
+  buyOrgVehicle: 'company_fleet',
+  sellOrgVehicle: 'company_fleet',
+  borrowOrgVehicle: 'company_fleet',
+  returnOrgVehicle: 'company_fleet',
+  createPoll: 'company_polls',
+  votePoll: 'company_polls',
+  closePoll: 'company_polls',
   setLivery: 'livery',
   companyLivery: 'livery',
   serviceVehicle: 'maintenance',
@@ -278,6 +301,30 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, endsAt: await startConstruction(db, user.id, input.buildId) };
     case 'cancelBuild':
       await cancelBuild(db, user.id, input.buildId);
+      return { ok: true };
+    case 'placeDecor':
+      return { ok: true, id: (await placeDecor(db, user.id, input.kind, input.x, input.y)).id };
+    case 'removeDecor':
+      await removeDecor(db, user.id, input.decorId);
+      return { ok: true };
+    case 'expandPlot':
+      return { ok: true, ...(await expandPlot(db, user.id)) };
+    case 'buyOrgVehicle':
+      return { ok: true, id: (await buyOrgVehicle(db, user.id, input.modelId)).id };
+    case 'sellOrgVehicle':
+      return { ok: true, valueCents: await sellOrgVehicle(db, user.id, input.orgVehicleId) };
+    case 'borrowOrgVehicle':
+      return { ok: true, vehicleId: (await borrowOrgVehicle(db, user.id, input.orgVehicleId)).id };
+    case 'returnOrgVehicle':
+      await returnOrgVehicle(db, user.id, input.vehicleId);
+      return { ok: true };
+    case 'createPoll':
+      return { ok: true, id: (await createPoll(db, user.id, input.poll)).id };
+    case 'votePoll':
+      await votePoll(db, user.id, input.pollId, input.option);
+      return { ok: true };
+    case 'closePoll':
+      await closePoll(db, user.id, input.pollId);
       return { ok: true };
     case 'likePlot':
       return { ok: true, ...(await likePlot(db, user.id, input.organizationId)) };

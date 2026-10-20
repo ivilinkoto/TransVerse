@@ -43,7 +43,7 @@ export async function fleetView(db: DbOrTx, companyId: string) {
       coDriver,
       delivery: delivery && contract ? { ...delivery, schedule: delivery.schedule as Segment[], contract, origin: cityMap.get(contract.originCityId)!, destination: cityMap.get(contract.destCityId)! } : null,
       // Rented vehicles are not assets of the player.
-      resaleCents: v.ownership === 'rented' ? 0 : resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt)),
+      resaleCents: v.ownership !== 'owned' ? 0 : resaleValueCents(model.priceCents, v.condition, ageDays(v.purchasedAt)),
       rental: v.ownership === 'rented' ? { trips: rentalTrips.find((r) => r.vehicleId === v.id)?.n ?? 0, buyoutCents: rentalBuyoutCents(v.modelId, trailer?.ownership === 'rented' ? trailer.modelId : null) } : null,
     };
   });

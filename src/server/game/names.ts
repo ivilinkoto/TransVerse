@@ -39,7 +39,7 @@ export async function uniquePlate(db: DbOrTx): Promise<string> {
   for (let attempt = 0; attempt < 30; attempt++) {
     const candidate = plate(attempt < 20 ? 2 : 3);
     const { rows } = await db.execute<{ taken: boolean }>(
-      sql`select exists(select 1 from vehicles where upper(plate) = ${candidate} and sold_at is null) or exists(select 1 from trailers where upper(plate) = ${candidate} and sold_at is null) as taken`,
+      sql`select exists(select 1 from vehicles where upper(plate) = ${candidate} and sold_at is null) or exists(select 1 from trailers where upper(plate) = ${candidate} and sold_at is null) or exists(select 1 from org_vehicles where upper(plate) = ${candidate} and sold_at is null) as taken`,
     );
     if (!rows[0]?.taken) return candidate;
   }

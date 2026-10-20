@@ -29,6 +29,7 @@ const PLOT_UPGRADES: string[] = Object.values(BUILDINGS).map((b) => b.upgrade);
 import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
+import { returnOnLeave, sellFleetOnDissolve } from './company-fleet';
 
 export type Rank = typeof companyRanks.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
@@ -206,6 +207,7 @@ export async function leaveCompany(db: Database, userId: string) {
     const m = await membershipOf(tx, userId);
     if (!m) fail('not_member', 'Не членувате в компания.');
     if (m!.rank.isOwner) fail('owner_must_transfer', 'Като собственик първо предайте собствеността на друг член (или закрийте компанията, ако сте единственият член).');
+    await returnOnLeave(tx, userId, new Date());
     await tx.delete(companyMembers).where(eq(companyMembers.userId, userId));
     await logActivity(tx, userId, 'company_left', { companyId: m!.company.id });
     await notify(tx, m!.company.ownerId, 'info', 'Член напусна компанията', 'Един от членовете напусна компанията.', '/game/company/members');
@@ -228,6 +230,7 @@ export async function kickMember(db: Database, actorId: string, targetUserId: st
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_members');
     await subordinate(tx, actor, targetUserId);
+    await returnOnLeave(tx, targetUserId, new Date());
     await tx.delete(companyMembers).where(eq(companyMembers.userId, targetUserId));
     await logActivity(tx, actorId, 'company_member_removed', { userId: targetUserId });
     await notify(tx, targetUserId, 'warning', 'Изключени сте от компанията', `Вече не членувате в „${actor.company.name}“.`, '/game/companies');
@@ -566,7 +569,10 @@ export async function dissolveCompany(db: Database, ownerId: string) {
     if (!owner) fail('not_member', 'Не членувате в компания.', 403);
     if (!owner!.rank.isOwner) fail('forbidden', 'Само собственикът може да закрие компанията.', 403);
     if ((await memberCount(tx, owner!.company.id)) > 1) fail('has_members', 'Компанията има други членове — предайте собствеността на някой от тях.');
-    const left = owner!.company.treasuryCents;
+    // The company's own trucks are sold first, into the treasury paid out below.
+    await returnOnLeave(tx, ownerId, new Date());
+    const fleetCents = await sellFleetOnDissolve(tx, owner!.company.id, new Date());
+    const left = owner!.company.treasuryCents + fleetCents;
     if (left > 0) {
       const account = await accountOf(tx, ownerId);
       await postTreasury(tx, owner!.company.id, [{ category: 'dissolution', amountCents: -left, description: 'Изплатено на собственика при закриване', idempotencyKey: `dissolve:${owner!.company.id}:out`, actorUserId: ownerId }]);

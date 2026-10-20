@@ -80,6 +80,15 @@ export default async function GaragePage() {
                     <p>Поддръжката, ремонтите и горивото са за сметка на наемодателя. Наетите превозни средства не се модифицират и не се продават.</p>
                     {!busy && !v.driver?.isOwner && <ActionButton action={{ type: 'returnRental', vehicleId: v.id }} className="btn-ghost" confirm="Да върнем ли камиона?">Върни на наемодателя</ActionButton>}
                   </div>
+                ) : v.ownership === 'company' ? (
+                  <div className="space-y-3 text-sm text-mist-300">
+                    <Badge tone="cyan">Фирмен</Badge>
+                    <p>Камион на компанията. Горивото и ремонтите са твои, докато го караш; не се модифицира и не се продава.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <ActionButton action={{ type: 'repairVehicle', vehicleId: v.id }} className="btn-primary" disabled={busy || repair <= 0}><Wrench className="h-4 w-4" />Ремонт · {money(repair)}</ActionButton>
+                      {!busy && <ActionButton action={{ type: 'returnOrgVehicle', vehicleId: v.id }} className="btn-ghost" confirm="Да върнем ли камиона на компанията?">Върни на компанията</ActionButton>}
+                    </div>
+                  </div>
                 ) : (
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2">

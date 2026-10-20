@@ -4,7 +4,7 @@
  * of their own (right away, or after its current trip), and after a few
  * deliveries the player may buy it out at a lower price.
  */
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { powerUnitModel, RENTAL_BUYOUT_DELIVERIES, rentalBuyoutCents } from '@/lib/game/catalog';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { deliveries, drivers, trailers, vehicles } from '@/server/db/schema';
@@ -111,7 +111,7 @@ export async function returnRental(db: Database, userId: string, vehicleId: stri
     if (!v || v.soldAt) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
     if (v!.ownership !== 'rented') fail('not_rented', 'Това превозно средство е собствено.');
     if (v!.status !== 'idle') fail('vehicle_busy', 'Не можете да върнете камиона по време на курс.');
-    const active = await tx.select({ id: vehicles.id }).from(vehicles).where(and(eq(vehicles.companyId, company.id), isNull(vehicles.soldAt)));
+    const active = await tx.select({ id: vehicles.id }).from(vehicles).where(and(eq(vehicles.companyId, company.id), isNull(vehicles.soldAt), ne(vehicles.ownership, 'company')));
     if (active.length <= 1) fail('last_vehicle', 'Без камион не можете да работите. Първо купете собствен.');
     const [owner] = await tx.select({ id: drivers.id }).from(drivers).where(and(eq(drivers.vehicleId, v!.id), eq(drivers.isOwner, true)));
     await releaseRental(tx, v!);

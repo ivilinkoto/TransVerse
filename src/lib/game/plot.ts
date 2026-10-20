@@ -35,7 +35,7 @@ export type MaterialId = keyof typeof MATERIALS;
 export const MATERIAL_IDS = Object.keys(MATERIALS) as MaterialId[];
 export type Materials = Partial<Record<MaterialId, number>>;
 
-export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse';
+export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest';
 
 export interface BuildingDef {
   type: BuildingType;
@@ -44,7 +44,7 @@ export interface BuildingDef {
   w: number;
   h: number;
   /** The company upgrade this building drives (its level = building level − offset). */
-  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse';
+  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest';
   offset: number;
   maxLevel: number;
   /** Materials of level 1; later levels need more. */
@@ -129,6 +129,18 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     effect: (l) => `+${l * 40} т място в склада на всеки член в града на базата`,
     minCompanyLevel: [2, 4, 6],
   },
+  rest: {
+    type: 'rest',
+    label: 'Почивна станция',
+    w: 3,
+    h: 3,
+    upgrade: 'rest',
+    offset: 0,
+    maxLevel: 3,
+    base: { cement: 12, bricks: 12, glass: 3, steel: 2 },
+    effect: (l) => `−${l * 15} % почивка на шофьорите след курс до града на базата`,
+    minCompanyLevel: [2, 3, 5],
+  },
 };
 export const BUILDING_TYPES = Object.keys(BUILDINGS) as BuildingType[];
 
@@ -151,11 +163,34 @@ export function levelSpec(type: BuildingType, level: number): LevelSpec {
   return { materials, minutes: LEVEL_MINUTES[level - 1] ?? LEVEL_MINUTES.at(-1)!, minCompanyLevel: def.minCompanyLevel[level - 1] ?? 1 };
 }
 
-/** The purchase price of materials (tonnes × price), optionally with the delivery markup. */
-export function materialCostCents(m: Materials, delivered = false): number {
-  const sum = MATERIAL_IDS.reduce((s, id) => s + (m[id] ?? 0) * MATERIALS[id].priceCents, 0);
-  return Math.round(sum * (delivered ? PLOT.deliveredMarkup : 1));
+/**
+ * "Строителен бум": the release week of the plot (13–20 December 2026) and the
+ * first week of every month after it — materials cost less and hauling them
+ * gives more experience.
+ */
+export const BOOM = { priceFactor: 0.7, xpFactor: 1.5, launch: { from: '2026-12-13T00:00:00+02:00', to: '2026-12-21T00:00:00+02:00' } } as const;
+export function isBoom(now: Date): boolean {
+  if (now >= new Date(BOOM.launch.from) && now < new Date(BOOM.launch.to)) return true;
+  if (now < new Date(BOOM.launch.from)) return false;
+  const day = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', day: 'numeric' }).format(now));
+  return day <= 7;
 }
+
+/** The purchase price of materials (tonnes × price), optionally with the delivery markup and the boom discount. */
+export function materialCostCents(m: Materials, delivered = false, boom = false): number {
+  const sum = MATERIAL_IDS.reduce((s, id) => s + (m[id] ?? 0) * MATERIALS[id].priceCents, 0);
+  return Math.round(sum * (delivered ? PLOT.deliveredMarkup : 1) * (boom ? BOOM.priceFactor : 1));
+}
+
+/** Badges for building (given to the members at the moment). */
+export const BUILD_BADGES = {
+  firstBrick: 'first-brick',
+  architect: 'architect',
+  skyscraper: 'skyscraper',
+  builder: 'builder',
+} as const;
+/** Material loads a player hauls for the badge "Строител". */
+export const BUILDER_LOADS = 5;
 
 /** Tonnes still missing (needed − delivered − on the way), per material. */
 export function missing(need: Materials, delivered: Materials, onTheWay: Materials = {}): Materials {
@@ -183,19 +218,70 @@ export interface PlacedBuilding {
   y: number;
 }
 
+// ── Expansion ────────────────────────────────────────────────────────────
+
+/** Buying the neighbouring land: each step makes the plot this many tiles wider. */
+export const EXPANSIONS = [
+  { costCents: 150_000_00, minCompanyLevel: 4 },
+  { costCents: 400_000_00, minCompanyLevel: 7 },
+] as const;
+export const EXPANSION_TILES = 4;
+export const plotWidth = (expansions: number) => PLOT.w + EXPANSION_TILES * Math.max(0, Math.min(EXPANSIONS.length, expansions));
+
+// ── Decorations ──────────────────────────────────────────────────────────
+
+export type DecorKind = 'flowerbed' | 'bench' | 'tree' | 'flag' | 'sign' | 'fountain' | 'statue';
+/** Decorations: bought from the treasury (лв.) or with the buyer's own ТрансКоин. Game cosmetics. */
+export const DECOR: Record<DecorKind, { label: string; w: number; h: number; priceCents?: number; coins?: number }> = {
+  flowerbed: { label: 'Цветна леха', w: 1, h: 1, priceCents: 1_500_00 },
+  bench: { label: 'Пейка', w: 1, h: 1, priceCents: 1_000_00 },
+  tree: { label: 'Дърво', w: 1, h: 1, priceCents: 800_00 },
+  flag: { label: 'Знаме на компанията', w: 1, h: 1, priceCents: 4_000_00 },
+  sign: { label: 'Табела с името', w: 2, h: 1, priceCents: 8_000_00 },
+  fountain: { label: 'Фонтан', w: 2, h: 2, coins: 60 },
+  statue: { label: 'Статуя „Златен камион“', w: 1, h: 1, coins: 40 },
+};
+export const DECOR_KINDS = Object.keys(DECOR) as DecorKind[];
+export const MAX_DECOR = 16;
+
+export interface PlacedDecor {
+  kind: DecorKind;
+  x: number;
+  y: number;
+}
+
 const isDriveway = (x: number, y: number) => (x === PLOT.driveway.x && y >= PLOT.driveway.yFrom) || (y === PLOT.yardY && x >= PLOT.driveway.x);
 
-/** Why a building cannot stand at (x, y) — off the plot, on the driveway or over another one; null when it can. */
-export function placementError(type: BuildingType, x: number, y: number, others: readonly PlacedBuilding[]): string | null {
-  const def = BUILDINGS[type];
-  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x + def.w > PLOT.w || y + def.h > PLOT.h) return 'Сградата излиза извън участъка.';
-  for (let i = x; i < x + def.w; i++) for (let j = y; j < y + def.h; j++) if (isDriveway(i, j)) return 'Тук минава пътят към двора.';
-  for (const o of others) {
-    if (o.type === type) continue;
+interface Area {
+  w: number;
+  h: number;
+}
+/** Why something of this size cannot stand at (x, y): off the plot, on the driveway or over a building or decoration. */
+function areaError(area: Area, x: number, y: number, buildings: readonly PlacedBuilding[], decor: readonly PlacedDecor[], plotW: number, skip: { type?: BuildingType; decor?: PlacedDecor }): string | null {
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x + area.w > plotW || y + area.h > PLOT.h) return 'Излиза извън участъка.';
+  for (let i = x; i < x + area.w; i++) for (let j = y; j < y + area.h; j++) if (isDriveway(i, j)) return 'Тук минава пътят към двора.';
+  const hits = (ox: number, oy: number, ow: number, oh: number) => x < ox + ow && ox < x + area.w && y < oy + oh && oy < y + area.h;
+  for (const o of buildings) {
+    if (o.type === skip.type) continue;
     const d = BUILDINGS[o.type];
-    if (x < o.x + d.w && o.x < x + def.w && y < o.y + d.h && o.y < y + def.h) return `Мястото е заето от „${d.label}“.`;
+    if (hits(o.x, o.y, d.w, d.h)) return `Мястото е заето от „${d.label}“.`;
+  }
+  for (const o of decor) {
+    if (o === skip.decor) continue;
+    const d = DECOR[o.kind];
+    if (hits(o.x, o.y, d.w, d.h)) return `Мястото е заето от „${d.label}“.`;
   }
   return null;
+}
+
+/** Why a building cannot stand at (x, y); null when it can. */
+export function placementError(type: BuildingType, x: number, y: number, others: readonly PlacedBuilding[], opts: { plotW?: number; decor?: readonly PlacedDecor[] } = {}): string | null {
+  return areaError(BUILDINGS[type], x, y, others, opts.decor ?? [], opts.plotW ?? PLOT.w, { type });
+}
+
+/** Why a decoration cannot stand at (x, y); null when it can. */
+export function decorError(kind: DecorKind, x: number, y: number, buildings: readonly PlacedBuilding[], decor: readonly PlacedDecor[], plotW: number = PLOT.w): string | null {
+  return areaError(DECOR[kind], x, y, buildings, decor, plotW, {});
 }
 
 /** Where existing companies' buildings go when they get their plot (it all fits next to each other). */
@@ -206,6 +292,7 @@ export const DEFAULT_SPOTS: Record<BuildingType, { x: number; y: number }> = {
   warehouse: { x: 1, y: 9 },
   logistics: { x: 8, y: 0 },
   parking: { x: 8, y: 7 },
+  rest: { x: 4, y: 0 },
 };
 
 /** The upgrade levels a set of finished buildings gives (only the keys they drive). */

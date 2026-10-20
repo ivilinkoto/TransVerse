@@ -11,7 +11,7 @@ export const PERMISSIONS = {
   manage_ranks: 'Управление на длъжности',
   manage_upgrades: 'Развитие на компанията (покупка на подобрения)',
   manage_settings: 'Настройки (набиране, вноска, минимално ниво)',
-  manage_chat: 'Чат (изтриване на съобщения и изчистване на целия чат)',
+  manage_chat: 'Чат (изтриване на съобщения, изчистване на чата и анкети)',
   manage_tenders: 'Търгове и възлагане на курсове на свободни шофьори',
   build: 'Строителство (участък и сгради)',
   pay_bonuses: 'Премии за членовете от касата',
@@ -152,7 +152,7 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
 ];
 
 /** Upgrade levels of a company; `service` and `parking` come only from buildings on the plot (v1.3). */
-export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking' | 'warehouse', number>>;
+export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking' | 'warehouse' | 'rest', number>>;
 
 export interface MemberBonuses {
   rewardMultiplier: number;
@@ -164,6 +164,8 @@ export interface MemberBonuses {
   parkingSlots: number;
   /** Extra tonnes in each member's warehouse in the company's base city (the plot's warehouse). */
   warehouseTons: number;
+  /** Shorter rest of the drivers after a trip that ends in the base city (the plot's rest stop). */
+  restCut: number;
 }
 
 export function memberBonuses(upgrades: UpgradeLevels): MemberBonuses {
@@ -174,6 +176,7 @@ export function memberBonuses(upgrades: UpgradeLevels): MemberBonuses {
     repairDiscount: 0.1 * (upgrades.service ?? 0),
     parkingSlots: upgrades.parking ?? 0,
     warehouseTons: 40 * (upgrades.warehouse ?? 0),
+    restCut: 0.15 * (upgrades.rest ?? 0),
   };
 }
 

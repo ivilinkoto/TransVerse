@@ -1,4 +1,4 @@
-import { and, eq, gte, isNull, sql } from 'drizzle-orm';
+import { and, eq, gte, isNull, ne, sql } from 'drizzle-orm';
 import { LEDGER_LABELS, type LedgerCategory } from './finance';
 import { addFeed } from './feed';
 import { completeMentorship } from './mentor';
@@ -13,7 +13,7 @@ export async function companyStats(db: DbOrTx, companyId: string): Promise<Compa
   if (!company) throw new Error('company not found');
   const [user] = await db.select({ level: users.level }).from(users).where(eq(users.id, company.ownerId));
   const count = async (q: Promise<{ n: number }[]>) => (await q)[0]?.n ?? 0;
-  const vehiclesN = await count(db.select({ n: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt))));
+  const vehiclesN = await count(db.select({ n: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt), ne(vehicles.ownership, 'company'))));
   const driversN = await count(db.select({ n: sql<number>`count(*)::int` }).from(drivers).where(eq(drivers.companyId, companyId)));
   const depotsN = await count(db.select({ n: sql<number>`count(*)::int` }).from(depots).where(eq(depots.companyId, companyId)));
   const countriesN = await count(

@@ -6,7 +6,7 @@
  * Pure drawing — no state.
  */
 import type { ReactNode } from 'react';
-import { BUILDINGS, PLOT, type BuildingType, type MaterialId } from '@/lib/game/plot';
+import { BUILDINGS, DECOR, PLOT, type BuildingType, type DecorKind, type MaterialId, type PlacedDecor } from '@/lib/game/plot';
 
 export const TILE = 40;
 const C = Math.cos(Math.PI / 6);
@@ -14,6 +14,11 @@ const C = Math.cos(Math.PI / 6);
 export const ORIGIN = { x: 560, y: 250 };
 /** The part of the drawing shown at zoom 1: the plot with the street in front. */
 export const VIEW = { x: 60, y: 40, w: 1080, h: 780 };
+/** The view of a plot that was made wider: the same proportions, a little further out. */
+export function viewFor(plotW: number) {
+  const f = 1 + ((plotW - PLOT.w) * C * TILE) / VIEW.w;
+  return { x: VIEW.x, y: VIEW.y, w: VIEW.w * f, h: VIEW.h * f };
+}
 
 export const P = (x: number, y: number, z = 0): [number, number] => [ORIGIN.x + (x - y) * C * TILE, ORIGIN.y + (x + y) * 0.5 * TILE - z * TILE];
 /** Plot coordinates (fractional tiles) under a point of the drawing. */
@@ -33,6 +38,9 @@ interface Faces {
 
 let uid = 0;
 const k = () => `e${uid++}`;
+/** The season of the current render: snow on roofs, lawns and trees; Christmas lights. */
+let SNOW = false;
+let XMAS = false;
 
 function Poly({ p, fill, ...rest }: { p: Pt[]; fill: string } & React.SVGProps<SVGPolygonElement>) {
   return <polygon points={pts(p)} fill={fill} {...rest} />;
@@ -49,7 +57,7 @@ function box(x0: number, y0: number, x1: number, y1: number, z0: number, h: numb
     <g key={k()}>
       <Poly p={[[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]]} fill={c.left} {...extra} />
       <Poly p={[[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]]} fill={c.right} {...extra} />
-      <Poly p={[[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]} fill={c.top} {...extra} />
+      <Poly p={[[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]} fill={SNOW && h > 0.15 && !extra.stroke ? '#f3f7fb' : c.top} {...extra} />
     </g>
   );
 }
@@ -100,8 +108,8 @@ function tree(x: number, y: number, r = 0.55, v = 0) {
     <g key={k()}>
       <ellipse cx={tx + 10} cy={ty + 2} rx={r * TILE} ry={r * TILE * 0.45} fill="rgba(20,40,25,0.25)" />
       <rect x={tx - 2.5} y={cy} width={5} height={ty - cy} fill="#7a5235" />
-      <circle cx={cx} cy={cy} r={r * TILE} fill={greens[v % 3]} />
-      <circle cx={cx - r * TILE * 0.32} cy={cy - r * TILE * 0.35} r={r * TILE * 0.55} fill="#6cc977" opacity={0.6} />
+      <circle cx={cx} cy={cy} r={r * TILE} fill={SNOW ? '#2f6f45' : greens[v % 3]} />
+      <circle cx={cx - r * TILE * 0.32} cy={cy - r * TILE * 0.35} r={r * TILE * 0.55} fill={SNOW ? '#f4f8fb' : '#6cc977'} opacity={SNOW ? 0.9 : 0.6} />
     </g>
   );
 }
@@ -109,8 +117,8 @@ function bush(x: number, y: number) {
   const [cx, cy] = P(x, y, 0.25);
   return (
     <g key={k()}>
-      <ellipse cx={cx} cy={cy} rx={11} ry={7} fill="#3f9a4f" />
-      <ellipse cx={cx - 3} cy={cy - 3} rx={6} ry={4} fill="#73cf7e" opacity={0.7} />
+      <ellipse cx={cx} cy={cy} rx={11} ry={7} fill={SNOW ? '#2f6f45' : '#3f9a4f'} />
+      <ellipse cx={cx - 3} cy={cy - 3} rx={6} ry={4} fill={SNOW ? '#f4f8fb' : '#73cf7e'} opacity={0.8} />
     </g>
   );
 }
@@ -148,6 +156,8 @@ export function buildingHeight(type: BuildingType, level: number) {
       return 0.05;
     case 'warehouse':
       return 1.8 + level * 0.15;
+    case 'rest':
+      return 1.5 + (level >= 2 ? 0.9 : 0);
   }
 }
 
@@ -254,6 +264,24 @@ function warehouse(f: Footprint, level: number) {
   return out;
 }
 
+function rest(f: Footprint, level: number) {
+  const x0 = f.x + 0.25, y0 = f.y + 0.25, x1 = f.x + f.w - 0.3, y1 = f.y + f.h - 0.6;
+  const h = buildingHeight('rest', level);
+  const out: ReactNode[] = [shadow(x0, y0, x1, y1, h), box(x0, y0, x1, y1, 0, h, faces([236, 214, 178]))];
+  // Wide warm windows, a café terrace with umbrellas and a sign.
+  const rows = h > 2 ? 2 : 1;
+  for (let r = 0; r < rows; r++) for (let x = x0 + 0.15; x < x1 - 0.3; x += 0.7) out.push(onY(y1, x, x + 0.55, 0.3 + r * 0.9, 0.95 + r * 0.9, r === 0 ? '#ffd998' : '#8cc4e8'));
+  for (let y = y0 + 0.2; y < y1 - 0.3; y += 0.7) out.push(onX(x1, y, y + 0.5, 0.3, 0.95, '#f2c27a'));
+  out.push(box(x0, y1 - 0.1, x1, y1, h - 0.25, 0.22, faces([47, 123, 255])));
+  out.push(<Poly key={k()} p={[[x0 - 0.05, y0, h], [x1 + 0.05, y0, h], [x1 + 0.05, y1 + 0.25, h - 0.35], [x0 - 0.05, y1 + 0.25, h - 0.35]]} fill={SNOW ? '#f3f7fb' : '#8b5e3c'} />);
+  for (let i = 0; i < Math.min(3, level + 1); i++) {
+    const ux = x0 + 0.4 + i * 0.75, uy = y1 + 0.55;
+    out.push(<Line key={k()} a={[ux, uy, 0]} b={[ux, uy, 0.75]} stroke="#7a5235" w={1.2} />);
+    out.push(<Poly key={k()} p={[[ux - 0.32, uy, 0.7], [ux, uy - 0.32, 0.7], [ux + 0.32, uy, 0.7], [ux, uy + 0.32, 0.7], [ux, uy, 0.95]]} fill={i % 2 ? '#e04545' : '#f6c343'} />);
+  }
+  return out;
+}
+
 function parking(f: Footprint, level: number, trucks: number, livery: string | null) {
   const x0 = f.x + 0.1, y0 = f.y + 0.1, x1 = f.x + f.w - 0.1, y1 = f.y + f.h - 0.1;
   const out: ReactNode[] = [flat(x0, y0, x1, y1, 0.04, '#6b717c'), flat(x0 + 0.05, y0 + 0.05, x1 - 0.05, y1 - 0.05, 0.045, '#5d636e')];
@@ -324,6 +352,65 @@ function crane(x: number, y: number, jib: number) {
   return out;
 }
 
+// ── Decorations and the season ───────────────────────────────────────────
+function decoration(d: PlacedDecor, livery: string | null): ReactNode[] {
+  const { x, y } = d;
+  const cx = x + 0.5, cy = y + 0.5;
+  switch (d.kind) {
+    case 'flowerbed': {
+      const out: ReactNode[] = [box(x + 0.1, y + 0.1, x + 0.9, y + 0.9, 0.03, 0.12, faces([150, 110, 80]))];
+      if (!SNOW) [[0.3, 0.3, '#e04545'], [0.6, 0.35, '#f6c343'], [0.4, 0.65, '#a66bff'], [0.7, 0.7, '#ff7ab6']].forEach(([dx, dy, c]) => { const [px, py] = P(x + (dx as number), y + (dy as number), 0.2); out.push(<circle key={k()} cx={px} cy={py} r={3.2} fill={c as string} />); });
+      return out;
+    }
+    case 'bench':
+      return [box(x + 0.15, y + 0.35, x + 0.85, y + 0.6, 0.25, 0.08, faces([150, 100, 60])), box(x + 0.15, y + 0.3, x + 0.85, y + 0.38, 0.33, 0.22, faces([150, 100, 60])), box(x + 0.2, y + 0.4, x + 0.28, y + 0.55, 0, 0.25, faces([70, 70, 75])), box(x + 0.72, y + 0.4, x + 0.8, y + 0.55, 0, 0.25, faces([70, 70, 75]))];
+    case 'tree':
+      return [tree(cx, cy, 0.42, Math.round(x + y))];
+    case 'flag': {
+      const color = livery ?? '#22d3ee';
+      return [<Line key={k()} a={[cx, cy, 0]} b={[cx, cy, 2.4]} stroke="#9aa3b2" w={1.6} />, <Poly key={k()} p={[[cx, cy, 2.35], [cx, cy + 0.75, 2.3], [cx, cy + 0.75, 1.85], [cx, cy, 1.9]]} fill={color} />];
+    }
+    case 'sign':
+      return [box(x + 0.2, y + 0.4, x + 0.3, y + 0.5, 0, 0.6, faces([90, 96, 110])), box(x + 1.7, y + 0.4, x + 1.8, y + 0.5, 0, 0.6, faces([90, 96, 110])), box(x + 0.1, y + 0.4, x + 1.9, y + 0.55, 0.6, 0.55, { top: '#e8eef7', left: livery ?? '#2f7bff', right: '#1f52ad' }), onY(y + 0.55, x + 0.3, x + 1.7, 0.78, 0.92, '#ffffff')];
+    case 'fountain': {
+      const out: ReactNode[] = [];
+      const [fx, fy] = P(x + 1, y + 1, 0.15);
+      out.push(<ellipse key={k()} cx={fx} cy={fy + 2} rx={0.95 * TILE} ry={0.5 * TILE} fill="#b9c2cf" />, <ellipse key={k()} cx={fx} cy={fy} rx={0.85 * TILE} ry={0.43 * TILE} fill={SNOW ? '#dceaf5' : '#5fb4e6'} />);
+      out.push(box(x + 0.85, y + 0.85, x + 1.15, y + 1.15, 0.1, 0.6, faces([200, 206, 214])));
+      if (!SNOW) { const [tx, ty] = P(x + 1, y + 1, 0.95); out.push(<path key={k()} d={`M${tx} ${ty} q -10 -14 -18 6 M${tx} ${ty} q 10 -14 18 6`} stroke="#bfe6ff" strokeWidth={2} fill="none" />); }
+      return out;
+    }
+    case 'statue':
+      return [box(x + 0.15, y + 0.15, x + 0.85, y + 0.85, 0, 0.5, faces([200, 206, 214])), box(x + 0.25, y + 0.35, x + 0.75, y + 0.6, 0.5, 0.3, faces([246, 195, 67])), box(x + 0.25, y + 0.62, x + 0.75, y + 0.8, 0.5, 0.38, faces([226, 175, 50]))];
+  }
+}
+
+/** Christmas lights along the front edges of a finished building's roof. */
+function lights(f: Footprint, h: number): ReactNode[] {
+  const out: ReactNode[] = [];
+  const x0 = f.x + 0.2, x1 = f.x + f.w - 0.25, y0 = f.y + 0.2, y1 = f.y + f.h - 0.3;
+  const colors = ['#ff4d4d', '#ffd23f', '#3fd0ff', '#7dff6a'];
+  let i = 0;
+  for (let x = x0; x <= x1; x += 0.35) { const [px, py] = P(x, y1, h); out.push(<circle key={k()} cx={px} cy={py} r={2.4} fill={colors[i++ % 4]} />); }
+  for (let y = y0; y <= y1; y += 0.35) { const [px, py] = P(x1, y, h); out.push(<circle key={k()} cx={px} cy={py} r={2.4} fill={colors[i++ % 4]} />); }
+  return out;
+}
+
+function christmasTree(x: number, y: number): ReactNode[] {
+  const out: ReactNode[] = [];
+  const [bx, by] = P(x, y, 0);
+  for (let i = 0; i < 3; i++) {
+    const [tx, ty] = P(x, y, 2.6 - i * 0.6);
+    const w = 0.35 + i * 0.22;
+    out.push(<polygon key={k()} points={`${tx},${ty} ${tx - w * TILE},${ty + 0.95 * TILE} ${tx + w * TILE},${ty + 0.95 * TILE}`} fill={['#2e8b57', '#267a4b', '#1f6b41'][i]} />);
+  }
+  out.push(<rect key={k()} x={bx - 3} y={by - 8} width={6} height={8} fill="#7a5235" />);
+  const [sx, sy] = P(x, y, 2.7);
+  out.push(<circle key={k()} cx={sx} cy={sy} r={5} fill="#ffd23f" />);
+  [[-8, 30, '#ff4d4d'], [9, 42, '#3fd0ff'], [-12, 55, '#ffd23f'], [12, 62, '#ff4d4d'], [0, 48, '#7dff6a']].forEach(([dx, dy, c]) => out.push(<circle key={k()} cx={sx + (dx as number)} cy={sy + (dy as number)} r={3} fill={c as string} />));
+  return out;
+}
+
 // ── The scene ────────────────────────────────────────────────────────────
 export interface SceneBuilding {
   type: BuildingType;
@@ -341,8 +428,8 @@ export interface SceneConstruction {
 export interface SceneProps {
   buildings: SceneBuilding[];
   construction: SceneConstruction | null;
-  /** Building being placed or moved. */
-  ghost: { type: BuildingType; x: number; y: number; valid: boolean } | null;
+  /** Building (or decoration) being placed or moved. */
+  ghost: { type?: BuildingType; decor?: DecorKind; x: number; y: number; valid: boolean } | null;
   selected: BuildingType | null;
   /** Trucks to show on the parking (the members' fleet). */
   parkedTrucks: number;
@@ -352,55 +439,72 @@ export interface SceneProps {
   grid: boolean;
   /** The company livery: the trucks on the parking wear it. */
   liveryColor?: string | null;
+  /** Plot width in tiles (wider after buying land). */
+  plotW?: number;
+  decor?: (PlacedDecor & { id?: string })[];
+  /** Snow in winter; lights and a tree at Christmas. */
+  season?: 'winter' | 'christmas' | null;
+  /** The decoration picked on the plot (highlighted). */
+  selectedDecor?: string | null;
 }
 
 const OUTSIDE_TREES: [number, number][] = [[-1.4, 3], [-2.2, 8], [-1.2, 11], [3, -1.6], [8, -2.2], [11, -1.4], [18.5, 2], [18.2, 8], [19, 11.5], [2, 16.5], [9, 16.8], [13, 16.2], [-3, 16], [-3.5, 0], [6, -3.5], [14.5, -3]];
+/** Where the Christmas tree goes: the first free spot by the gate, else along the front fence. */
+const XMAS_SPOTS: [number, number][] = [[5.3, 11.3], [7.7, 11.3], [4.2, 11.4], [9, 11.3], [12.6, 11.3], [1.5, 11.4], [12.6, 6.5]];
 const EDGE_SPOTS: [number, number][] = [[0.3, 0.3], [0.3, 4.6], [0.3, 6.4], [0.3, 11.4], [3.2, 0.3], [5.3, 0.3], [7.7, 0.3], [12.6, 0.3], [13.6, 2.4], [13.6, 6.6], [13.6, 11.4], [3.0, 11.6], [9.8, 11.6], [5.3, 11.4]];
 
-export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null }: SceneProps) {
+export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null, plotW = PLOT.w, decor = [], season = null, selectedDecor = null }: SceneProps) {
   // Keys are counted from zero on every render, so the same scene gets the same keys.
   // eslint-disable-next-line react-hooks/globals
   uid = 0;
+  // eslint-disable-next-line react-hooks/globals
+  SNOW = season !== null;
+  // eslint-disable-next-line react-hooks/globals
+  XMAS = season === 'christmas';
+  const W = plotW;
+  const sx = W - PLOT.w;
   const items: { key: number; node: ReactNode }[] = [];
   const add = (key: number, node: ReactNode) => items.push({ key, node });
   const fp = (b: { type: BuildingType; x: number; y: number }): Footprint => ({ x: b.x, y: b.y, w: BUILDINGS[b.type].w, h: BUILDINGS[b.type].h });
-  const occupied = (x: number, y: number) => buildings.some((b) => { const f = fp(b); return x >= f.x - 0.2 && x <= f.x + f.w + 0.2 && y >= f.y - 0.2 && y <= f.y + f.h + 1.2; });
+  const occupied = (x: number, y: number) =>
+    buildings.some((b) => { const f = fp(b); return x >= f.x - 0.2 && x <= f.x + f.w + 0.2 && y >= f.y - 0.2 && y <= f.y + f.h + 1.2; }) ||
+    decor.some((d) => x >= d.x - 0.3 && x <= d.x + DECOR[d.kind].w + 0.3 && y >= d.y - 0.3 && y <= d.y + DECOR[d.kind].h + 0.3);
 
   // Ground: fields, streets, sidewalks, the lawn, driveway and yard.
   const ground: ReactNode[] = [];
-  ground.push(flat(-8, -8, 24, 22, 0, 'url(#plot-field)'));
-  ground.push(flat(-8, 13, 24, 15.4, 0, '#646b77'), flat(15, -8, 17.4, 13, 0, '#646b77'));
-  for (let x = -7; x < 24; x += 1.6) ground.push(flat(x, 14.15, x + 0.8, 14.25, 0.01, '#f4f1e2'));
-  for (let y = -7; y < 13; y += 1.6) ground.push(flat(16.15, y, 16.25, y + 0.8, 0.01, '#f4f1e2'));
-  ground.push(flat(-8, 12.4, 15, 13, 0.02, '#c9ccd2'), flat(14.4, -8, 15, 13, 0.02, '#c9ccd2'), flat(15, 12.4, 17.4, 13, 0.015, '#646b77'));
-  ground.push(flat(-8, 0, -0.6, 12, 0.02, '#8fca7e'), flat(0, -8, 14, -0.6, 0.02, '#8fca7e'));
-  ground.push(flat(0, 0, PLOT.w, PLOT.h, 0.03, 'url(#plot-lawn)'));
+  ground.push(flat(-8, -8, 24 + sx, 22, 0, SNOW ? 'url(#plot-snowfield)' : 'url(#plot-field)'));
+  ground.push(flat(-8, 13, 24 + sx, 15.4, 0, '#646b77'), flat(15 + sx, -8, 17.4 + sx, 13, 0, '#646b77'));
+  for (let x = -7; x < 24 + sx; x += 1.6) ground.push(flat(x, 14.15, x + 0.8, 14.25, 0.01, '#f4f1e2'));
+  for (let y = -7; y < 13; y += 1.6) ground.push(flat(16.15 + sx, y, 16.25 + sx, y + 0.8, 0.01, '#f4f1e2'));
+  ground.push(flat(-8, 12.4, 15 + sx, 13, 0.02, '#c9ccd2'), flat(14.4 + sx, -8, 15 + sx, 13, 0.02, '#c9ccd2'), flat(15 + sx, 12.4, 17.4 + sx, 13, 0.015, '#646b77'));
+  ground.push(flat(-8, 0, -0.6, 12, 0.02, SNOW ? '#e3ebf2' : '#8fca7e'), flat(0, -8, W, -0.6, 0.02, SNOW ? '#e3ebf2' : '#8fca7e'));
+  ground.push(flat(0, 0, W, PLOT.h, 0.03, SNOW ? 'url(#plot-snow)' : 'url(#plot-lawn)'));
   const dx = PLOT.driveway.x;
-  ground.push(flat(dx, PLOT.driveway.yFrom, dx + 1, 12.4, 0.04, '#717884'), flat(dx, PLOT.yardY, PLOT.w, PLOT.yardY + 1, 0.04, '#717884'));
+  ground.push(flat(dx, PLOT.driveway.yFrom, dx + 1, 12.4, 0.04, '#717884'), flat(dx, PLOT.yardY, W, PLOT.yardY + 1, 0.04, '#717884'));
   for (let y = PLOT.yardY + 1.3; y < 12.3; y += 1.2) ground.push(flat(dx + 0.46, y, dx + 0.54, y + 0.6, 0.05, '#f4f1e2'));
-  if (grid) for (let x = 0; x <= PLOT.w; x++) ground.push(<Line key={k()} a={[x, 0, 0.05]} b={[x, PLOT.h, 0.05]} stroke="rgba(255,255,255,0.28)" w={0.8} />);
-  if (grid) for (let y = 0; y <= PLOT.h; y++) ground.push(<Line key={k()} a={[0, y, 0.05]} b={[PLOT.w, y, 0.05]} stroke="rgba(255,255,255,0.28)" w={0.8} />);
+  if (grid) for (let x = 0; x <= W; x++) ground.push(<Line key={k()} a={[x, 0, 0.05]} b={[x, PLOT.h, 0.05]} stroke={SNOW ? 'rgba(80,110,140,0.3)' : 'rgba(255,255,255,0.28)'} w={0.8} />);
+  if (grid) for (let y = 0; y <= PLOT.h; y++) ground.push(<Line key={k()} a={[0, y, 0.05]} b={[W, y, 0.05]} stroke={SNOW ? 'rgba(80,110,140,0.3)' : 'rgba(255,255,255,0.28)'} w={0.8} />);
   add(-100, <g key="ground">{ground}</g>);
 
   // Fence with the gate on the driveway.
   const fence: ReactNode[] = [];
-  for (let x = 0; x <= PLOT.w; x += 1) if (x < dx - 0.2 || x > dx + 1.2) fence.push(<Line key={k()} a={[x, 12.2, 0]} b={[x, 12.2, 0.55]} stroke="#7c8696" w={1.4} />);
-  for (let y = 0; y <= 12.2; y += 1) fence.push(<Line key={k()} a={[PLOT.w + 0.2, y, 0]} b={[PLOT.w + 0.2, y, 0.55]} stroke="#7c8696" w={1.4} />);
-  fence.push(<Line key={k()} a={[0, 12.2, 0.5]} b={[dx - 0.3, 12.2, 0.5]} stroke="#7c8696" w={1.2} />, <Line key={k()} a={[dx + 1.3, 12.2, 0.5]} b={[PLOT.w + 0.2, 12.2, 0.5]} stroke="#7c8696" w={1.2} />, <Line key={k()} a={[PLOT.w + 0.2, 0, 0.5]} b={[PLOT.w + 0.2, 12.2, 0.5]} stroke="#7c8696" w={1.2} />);
+  for (let x = 0; x <= W; x += 1) if (x < dx - 0.2 || x > dx + 1.2) fence.push(<Line key={k()} a={[x, 12.2, 0]} b={[x, 12.2, 0.55]} stroke="#7c8696" w={1.4} />);
+  for (let y = 0; y <= 12.2; y += 1) fence.push(<Line key={k()} a={[W + 0.2, y, 0]} b={[W + 0.2, y, 0.55]} stroke="#7c8696" w={1.4} />);
+  fence.push(<Line key={k()} a={[0, 12.2, 0.5]} b={[dx - 0.3, 12.2, 0.5]} stroke="#7c8696" w={1.2} />, <Line key={k()} a={[dx + 1.3, 12.2, 0.5]} b={[W + 0.2, 12.2, 0.5]} stroke="#7c8696" w={1.2} />, <Line key={k()} a={[W + 0.2, 0, 0.5]} b={[W + 0.2, 12.2, 0.5]} stroke="#7c8696" w={1.2} />);
   fence.push(box(dx - 0.3, 12.0, dx, 12.3, 0, 0.9, faces([226, 230, 236])), box(dx + 1, 12.0, dx + 1.3, 12.3, 0, 0.9, faces([226, 230, 236])));
   fence.push(<Line key={k()} a={[dx, 12.15, 0.6]} b={[dx + 0.9, 12.15, 0.6]} stroke="#e04545" w={3} strokeDasharray="6 5" />);
   add(25, <g key="fence">{fence}</g>);
 
   // Trees, bushes and lamps (none on top of a building).
-  OUTSIDE_TREES.forEach(([x, y], i) => add(x + y + 0.6, tree(x, y, 0.5 + (i % 3) * 0.08, i)));
-  EDGE_SPOTS.forEach(([x, y], i) => { if (!occupied(x, y)) add(x + y + 0.6, i % 3 === 2 ? bush(x, y) : tree(x, y, 0.45 + (i % 2) * 0.08, i)); });
-  for (let x = 1; x < 15; x += 3.2) add(x + 12.8, lamp(x, 12.8));
-  for (let y = 1; y < 13; y += 3.2) add(14.7 + y, lamp(14.7, y));
+  OUTSIDE_TREES.forEach(([x, y], i) => { const xx = x > 14 ? x + sx : x; add(xx + y + 0.6, tree(xx, y, 0.5 + (i % 3) * 0.08, i)); });
+  EDGE_SPOTS.forEach(([x, y], i) => { const xx = x >= 12 ? x + sx : x; if (!occupied(xx, y)) add(xx + y + 0.6, i % 3 === 2 ? bush(xx, y) : tree(xx, y, 0.45 + (i % 2) * 0.08, i)); });
+  for (let x = 1; x < 15 + sx; x += 3.2) add(x + 12.8, lamp(x, 12.8));
+  for (let y = 1; y < 13; y += 3.2) add(14.7 + sx + y, lamp(14.7 + sx, y));
 
   // Traffic, and material loads arriving.
   add(9.5 + 34, car(9.5, 14.45, [224, 69, 69]));
   add(-2 + 34, car(-2, 14.45, [235, 240, 246]));
-  add(16 + 6, car(15.45, 5.5, [246, 195, 67], false));
+  add(16 + sx + 6, car(15.45 + sx, 5.5, [246, 195, 67], false));
   for (let i = 0; i < Math.min(2, incoming); i++) {
     const x = 1.2 - i * 5.5, y = 13.35;
     const t: ReactNode[] = [
@@ -418,7 +522,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     const f = fp(b);
     const building = construction && construction.type === b.type ? construction : null;
     const node: ReactNode[] = [];
-    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
+    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
     if (building && b.level === 0) node.push(...site(f, b.type, building.status, building.progress, building.delivered, null));
     else if (building) node.push(...site(f, b.type, building.status, building.progress, building.delivered, finished(b.level)));
     else if (b.level > 0) node.push(...finished(b.level));
@@ -427,11 +531,22 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     if (building?.status === 'building' && b.type !== 'parking') add(f.x + f.y + 1, <g key={`crane-${b.type}`}>{crane(f.x - 0.4, f.y + 0.2, Math.max(3.5, f.h + 1.5))}</g>);
   }
 
-  // The building being placed.
+  // Decorations, and the season.
+  for (const d of decor) {
+    const sel = !!d.id && d.id === selectedDecor;
+    add(d.x + DECOR[d.kind].w + d.y + DECOR[d.kind].h - 0.4, <g key={k()}>{sel && flat(d.x - 0.05, d.y - 0.05, d.x + DECOR[d.kind].w + 0.05, d.y + DECOR[d.kind].h + 0.05, 0.06, 'rgba(34,211,238,0.25)', { stroke: '#22d3ee', strokeWidth: 2 })}{decoration(d, liveryColor)}</g>);
+  }
+  if (XMAS) {
+    for (const b of buildings) if (b.level > 0 && b.type !== 'parking' && !(construction && construction.type === b.type)) add(fp(b).x + fp(b).w + fp(b).y + fp(b).h - 0.45, <g key={k()}>{lights(fp(b), buildingHeight(b.type, b.level))}</g>);
+    const spot = XMAS_SPOTS.map(([x, y]): [number, number] => [x >= 12 ? x + sx : x, y]).find(([x, y]) => !occupied(x, y));
+    if (spot) add(spot[0] + spot[1] + 0.2, <g key="xmas-tree">{christmasTree(spot[0], spot[1])}</g>);
+  }
+
+  // The building (or decoration) being placed.
   if (ghost) {
-    const def = BUILDINGS[ghost.type];
+    const def = ghost.type ? BUILDINGS[ghost.type] : DECOR[ghost.decor!];
     const col = ghost.valid ? '34,211,238' : '224,69,69';
-    const h = Math.max(0.4, buildingHeight(ghost.type, 1));
+    const h = ghost.type ? Math.max(0.4, buildingHeight(ghost.type, 1)) : 0.4;
     add(200, (
       <g key="ghost" pointerEvents="none">
         {flat(ghost.x, ghost.y, ghost.x + def.w, ghost.y + def.h, 0.07, `rgba(${col},0.25)`, { stroke: `rgb(${col})`, strokeWidth: 2, strokeDasharray: '6 5' })}
@@ -455,12 +570,23 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
           <circle cx="7" cy="9" r="1.4" fill="#b2de9f" />
           <circle cx="22" cy="23" r="1.4" fill="#8cc67a" />
         </pattern>
+        <pattern id="plot-snow" width="24" height="24" patternUnits="userSpaceOnUse">
+          <rect width="24" height="24" fill="#eef4f9" />
+          <circle cx="5" cy="6" r="1.4" fill="#ffffff" />
+          <circle cx="17" cy="14" r="1.2" fill="#dbe6ef" />
+          <circle cx="10" cy="20" r="1.1" fill="#ffffff" />
+        </pattern>
+        <pattern id="plot-snowfield" width="32" height="32" patternUnits="userSpaceOnUse">
+          <rect width="32" height="32" fill="#e3ebf2" />
+          <circle cx="7" cy="9" r="1.4" fill="#f5f9fc" />
+          <circle cx="22" cy="23" r="1.4" fill="#d3dee8" />
+        </pattern>
         <linearGradient id="plot-sun" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#fff6d6" stopOpacity="0.28" />
           <stop offset="0.6" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect width={VIEW.w * 3} height={VIEW.h * 3} x={-VIEW.w} y={-VIEW.h} fill="#9fd48c" />
+      <rect width={VIEW.w * 4} height={VIEW.h * 4} x={-VIEW.w} y={-VIEW.h} fill={SNOW ? '#e3ebf2' : '#9fd48c'} />
       {items.map((i) => i.node)}
       <rect width={VIEW.w * 3} height={VIEW.h * 3} x={-VIEW.w} y={-VIEW.h} fill="url(#plot-sun)" pointerEvents="none" />
     </>

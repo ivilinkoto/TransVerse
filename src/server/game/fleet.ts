@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { POWER_UNITS, TRAILERS, UPGRADES, couplingError, powerUnitModel, trailerModel, type UpgradeId } from '@/lib/game/catalog';
 import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -34,7 +34,8 @@ async function fleetCapacity(db: DbOrTx, companyId: string) {
     .select({ slots: sql<number>`coalesce(sum(${depots.slots}), 0)::int`, depots: sql<number>`count(*)::int` })
     .from(depots)
     .where(eq(depots.companyId, companyId));
-  const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt)));
+  // A borrowed company truck stands on the company's parking, not in the member's depot.
+  const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt), ne(vehicles.ownership, 'company')));
   // VIP: one extra place in every depot.
   let extra = (await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0;
   // The parking on the company's plot: places in the member's depot in the company's base city.
@@ -118,6 +119,7 @@ export async function sellVehicle(db: Database, userId: string, vehicleId: strin
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
     if (v.ownership === 'rented') fail('rented', 'Наетите превозни средства се връщат, не се продават.');
+    if (v.ownership === 'company') fail('company_truck', 'Фирменият камион е на компанията — върнете го, не се продава.');
     if (v.status === 'listed') fail('listed', 'Превозното средство е обявено на пазара — първо свали обявата.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Не можете да продадете превозно средство по време на курс.');
     await assertNotLeased(tx, v.id);
@@ -193,7 +195,7 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
-    if (v.ownership === 'rented') fail('rented', 'Наетите превозни средства не могат да се модифицират.');
+    if (v.ownership !== 'owned') fail('rented', 'Наетите и фирмените превозни средства не могат да се модифицират.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Подобрения се монтират само между курсовете.');
     if (!upgrade!.appliesTo.includes(powerUnitModel(v.modelId).kind)) fail('not_applicable', 'Подобрението не е приложимо за този тип превозно средство.');
     if (v.upgrades.includes(upgrade!.id)) fail('already_installed', 'Вече е монтирано.');

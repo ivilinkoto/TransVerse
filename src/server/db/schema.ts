@@ -258,6 +258,8 @@ export const vehicles = pgTable(
     odometerKm: real('odometer_km').notNull().default(0),
     /** Odometer at the last maintenance (v1.3): overdue trucks break down more often. */
     serviceKm: real('service_km').notNull().default(0),
+    /** A company truck a member borrowed (ownership 'company'): the company's own vehicle row. */
+    orgVehicleId: uuid('org_vehicle_id'),
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
     /** Special paint scheme on top of the colour (e.g. 'pumpkin' from Halloween 2026); null = plain colour. */
     livery: text('livery'),
@@ -671,6 +673,8 @@ export const organizations = pgTable(
     upgrades: jsonb('upgrades').$type<Record<string, number>>().notNull().default({}),
     /** The company's livery: the colour its members' trucks wear (null = everyone their own). */
     liveryColor: text('livery_color'),
+    /** Land bought next to the plot (each step makes it wider). */
+    plotExpansions: integer('plot_expansions').notNull().default(0),
     brandingVersion: integer('branding_version').notNull().default(0),
     /** The company's own money — separate from every member's (and the owner's) personal balance. */
     treasuryCents: money('treasury_cents').notNull().default(0),
@@ -1590,4 +1594,66 @@ export const plotLikes = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.organizationId] }), index('plot_likes_org_idx').on(t.organizationId, t.createdAt)],
+);
+
+/** Decorations on a company's plot (flower beds, benches, a fountain…). */
+export const companyDecor = pgTable(
+  'company_decor',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    x: integer('x').notNull(),
+    y: integer('y').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('company_decor_org_idx').on(t.organizationId)],
+);
+
+/** Trucks the company owns (bought from the treasury); members borrow them for trips. */
+export const orgVehicles = pgTable(
+  'org_vehicles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    modelId: text('model_id').notNull(),
+    plate: text('plate').notNull(),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    condition: real('condition').notNull().default(100),
+    odometerKm: real('odometer_km').notNull().default(0),
+    serviceKm: real('service_km').notNull().default(0),
+    /** The member who has it and the vehicle row in their fleet (null when it is in the yard). */
+    lentTo: uuid('lent_to').references(() => users.id, { onDelete: 'set null' }),
+    vehicleId: uuid('vehicle_id'),
+    soldAt: ts('sold_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('org_vehicles_org_idx').on(t.organizationId)],
+);
+
+/** Polls in the company chat (one open at a time). */
+export const companyPolls = pgTable(
+  'company_polls',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    question: text('question').notNull(),
+    options: text('options').array().notNull(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    closesAt: ts('closes_at').notNull(),
+    closedAt: ts('closed_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('company_polls_org_idx').on(t.organizationId, t.createdAt)],
+);
+
+export const companyPollVotes = pgTable(
+  'company_poll_votes',
+  {
+    pollId: uuid('poll_id').notNull().references(() => companyPolls.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    option: integer('option').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.pollId, t.userId] })],
 );

@@ -1,19 +1,24 @@
 'use client';
 
-import { Building2, Hammer, Maximize2, Minus, Move, Plus, X } from 'lucide-react';
+import { Building2, Flower2, Hammer, LandPlot, Maximize2, Minus, Move, Plus, Sparkles, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Meter } from '@/components/ui';
 import { api } from '@/lib/client/api';
 import { duration, money } from '@/lib/format';
-import { BUILDINGS, BUILDING_TYPES, levelSpec, MATERIAL_IDS, MATERIALS, materialCostCents, placementError, type BuildingType, type Materials } from '@/lib/game/plot';
-import { PlotScene, toTile, VIEW } from './scene';
+import { BOOM, BUILDINGS, BUILDING_TYPES, DECOR, DECOR_KINDS, decorError, EXPANSIONS, levelSpec, MATERIAL_IDS, MATERIALS, MAX_DECOR, materialCostCents, placementError, PLOT, plotWidth, type BuildingType, type DecorKind, type Materials } from '@/lib/game/plot';
+import { PlotScene, toTile, viewFor } from './scene';
 
 export interface PlotData {
   org: { name: string; level: number; treasuryCents: number; liveryColor?: string | null };
   hq: { nameBg: string } | null;
   buildings: { type: BuildingType; x: number; y: number; level: number }[];
+  decor: { id: string; kind: DecorKind; x: number; y: number }[];
+  expansions: number;
+  plotW: number;
+  /** "Строителен бум" is on: materials cost less. */
+  boom: boolean;
   construction: {
     id: string;
     type: BuildingType;
@@ -32,15 +37,21 @@ export interface PlotData {
   } | null;
 }
 
-type Mode = { kind: 'view' } | { kind: 'place' | 'move'; type: BuildingType };
+type Mode = { kind: 'view' } | { kind: 'place' | 'move'; type: BuildingType } | { kind: 'decor'; decor: DecorKind };
+
+export interface PlotFeatures {
+  decor: boolean;
+  expand: boolean;
+}
 
 /** The company plot: the scene, building on it and the running construction. */
-export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incoming }: { data: PlotData; canBuild: boolean; now: number; parkedTrucks: number; incoming: number }) {
+export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incoming, season = null, features = { decor: false, expand: false }, coins = 0, children }: { data: PlotData; canBuild: boolean; now: number; parkedTrucks: number; incoming: number; season?: 'winter' | 'christmas' | null; features?: PlotFeatures; coins?: number; children?: React.ReactNode }) {
   const router = useRouter();
   const svg = useRef<SVGSVGElement>(null);
   const [mode, setMode] = useState<Mode>({ kind: 'view' });
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [selected, setSelected] = useState<BuildingType | null>(null);
+  const [selectedDecor, setSelectedDecor] = useState<string | null>(null);
   const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -58,14 +69,18 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
   const progress = c?.status === 'building' && c.startedAt && c.endsAt ? Math.min(1, Math.max(0, (now - Date.parse(c.startedAt)) / (Date.parse(c.endsAt) - Date.parse(c.startedAt)))) : 0;
   const leftMin = c?.endsAt ? Math.max(0, Math.ceil((Date.parse(c.endsAt) - now) / 60_000)) : 0;
   const office = data.buildings.find((b) => b.type === 'office');
-  const placing = mode.kind !== 'view' ? mode.type : null;
+  const placing = mode.kind === 'place' || mode.kind === 'move' ? mode.type : null;
+  const placingDecor = mode.kind === 'decor' ? mode.decor : null;
   const others = useMemo(() => data.buildings.filter((b) => b.type !== placing), [data.buildings, placing]);
-  const ghost = placing && hover ? (() => {
-    const def = BUILDINGS[placing];
+  const W = data.plotW;
+  const whyNot = (x: number, y: number) => (placing ? placementError(placing, x, y, others, { plotW: W, decor: data.decor }) : placingDecor ? decorError(placingDecor, x, y, data.buildings, data.decor, W) : null);
+  const ghost = (placing || placingDecor) && hover ? (() => {
+    const def = placing ? BUILDINGS[placing] : DECOR[placingDecor!];
     const x = Math.round(hover.x - def.w / 2), y = Math.round(hover.y - def.h / 2);
-    return { type: placing, x, y, valid: placementError(placing, x, y, others) === null };
+    return { type: placing ?? undefined, decor: placingDecor ?? undefined, x, y, valid: whyNot(x, y) === null };
   })() : null;
 
+  const VIEW = viewFor(W);
   const vb = { w: VIEW.w / view.zoom, h: VIEW.h / view.zoom };
   const viewBox = `${VIEW.x + (VIEW.w - vb.w) / 2 + view.x} ${VIEW.y + (VIEW.h - vb.h) / 2 + view.y} ${vb.w} ${vb.h}`;
 
@@ -99,14 +114,18 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
     const p = toSvg(e);
     if (!p) return;
     const t = toTile(p.x, p.y);
-    if (ghost && placing) {
-      if (!ghost.valid) return setError(placementError(placing, ghost.x, ghost.y, others));
+    if (ghost && (placing || placingDecor)) {
+      if (!ghost.valid) return setError(whyNot(ghost.x, ghost.y));
       setBusy(true);
       setError(null);
       try {
-        await api('/api/game/action', { type: mode.kind === 'move' ? 'moveBuilding' : 'placeBuilding', building: placing, x: ghost.x, y: ghost.y });
-        setMode({ kind: 'view' });
-        setSelected(placing);
+        if (placingDecor) await api('/api/game/action', { type: 'placeDecor', kind: placingDecor, x: ghost.x, y: ghost.y });
+        else await api('/api/game/action', { type: mode.kind === 'move' ? 'moveBuilding' : 'placeBuilding', building: placing, x: ghost.x, y: ghost.y });
+        // Decorations: keep placing until cancelled.
+        if (!placingDecor) {
+          setMode({ kind: 'view' });
+          setSelected(placing);
+        }
         router.refresh();
       } catch (err) {
         setError((err as Error).message);
@@ -116,20 +135,25 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
       return;
     }
     const hit = data.buildings.find((b) => t.x >= b.x && t.x < b.x + BUILDINGS[b.type].w && t.y >= b.y && t.y < b.y + BUILDINGS[b.type].h);
+    const hitDecor = hit ? null : data.decor.find((d) => t.x >= d.x && t.x < d.x + DECOR[d.kind].w && t.y >= d.y && t.y < d.y + DECOR[d.kind].h);
     setSelected(hit?.type ?? null);
+    setSelectedDecor(hitDecor?.id ?? null);
   };
   const zoom = (f: number) => setView((v) => ({ ...v, zoom: Math.min(2.5, Math.max(0.7, v.zoom * f)) }));
 
   const sel = selected ? data.buildings.find((b) => b.type === selected) : null;
   const notPlaced = BUILDING_TYPES.filter((t) => !data.buildings.some((b) => b.type === t));
+  const decorSel = selectedDecor ? data.decor.find((d) => d.id === selectedDecor) : null;
+  const nextLand = EXPANSIONS[data.expansions];
+  const cost = (m: Materials) => materialCostCents(m, false, data.boom);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="relative min-w-0 overflow-hidden rounded-2xl border border-asphalt-700 bg-[#9fd48c]">
+      <div className="relative min-w-0 self-start overflow-hidden xl:sticky xl:top-20 rounded-2xl border border-asphalt-700 bg-[#9fd48c]">
         <svg
           ref={svg}
           viewBox={viewBox}
-          className={`block aspect-[1060/720] w-full touch-none select-none ${placing ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'}`}
+          className={`block aspect-[1080/780] w-full touch-none select-none ${placing || placingDecor ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'}`}
           onPointerMove={onMove}
           onPointerDown={onDown}
           onPointerUp={onUp}
@@ -137,7 +161,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           role="img"
           aria-label={`Участъкът на „${data.org.name}“`}
         >
-          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!placing} liveryColor={data.org.liveryColor ?? null} />
+          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} />
         </svg>
         <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 px-3 py-2 text-xs text-mist-300 backdrop-blur">
           <b className="block text-sm text-white">Участък · {data.hq?.nameBg ?? ''}</b>
@@ -148,9 +172,13 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => zoom(0.8)} aria-label="Отдалечи"><Minus className="h-4 w-4" /></button>
           <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => setView({ x: 0, y: 0, zoom: 1 })} aria-label="Целият участък"><Maximize2 className="h-4 w-4" /></button>
         </div>
-        {placing && (
+        {(placing || placingDecor) && (
           <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-glow/40 bg-asphalt-950/85 px-3 py-2 text-sm backdrop-blur">
-            <span>{mode.kind === 'move' ? 'Премести' : 'Постави'} <b>{BUILDINGS[placing].label}</b> — натисни свободно място на участъка ({BUILDINGS[placing].w}×{BUILDINGS[placing].h}).{busy ? ' …' : ''}</span>
+            {placing ? (
+              <span>{mode.kind === 'move' ? 'Премести' : 'Постави'} <b>{BUILDINGS[placing].label}</b> — натисни свободно място на участъка ({BUILDINGS[placing].w}×{BUILDINGS[placing].h}).{busy ? ' …' : ''}</span>
+            ) : (
+              <span>Постави <b>{DECOR[placingDecor!].label}</b> ({priceText(placingDecor!)}) — натисни свободно място; можеш да сложиш няколко.{busy ? ' …' : ''}</span>
+            )}
             <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => { setMode({ kind: 'view' }); setError(null); }}><X className="h-3.5 w-3.5" />Отказ</button>
           </div>
         )}
@@ -158,7 +186,22 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
       </div>
 
       <div className="min-w-0 space-y-4">
+        {data.boom && (
+          <div className="panel flex items-start gap-3 border-gold-400/50 bg-gold-400/10 p-4 text-sm">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-gold-400" />
+            <div><b className="text-gold-300">Строителен бум!</b> Материалите са с {Math.round((1 - BOOM.priceFactor) * 100)} % по-евтини, а курсовете с материали дават {Math.round((BOOM.xpFactor - 1) * 100)} % повече опит.</div>
+          </div>
+        )}
         {c && <ConstructionCard c={c} canBuild={canBuild} progress={progress} leftMin={leftMin} />}
+        {decorSel && (
+          <div className="panel p-4">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-display text-lg font-bold">{DECOR[decorSel.kind].label}</h3>
+              <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSelectedDecor(null)} aria-label="Затвори"><X className="h-4 w-4" /></button>
+            </div>
+            {canBuild && <ActionButton action={{ type: 'removeDecor', decorId: decorSel.id }} className="btn-ghost mt-2 w-full justify-center text-sm text-loss" confirm="Да махнем ли украсата? Парите не се връщат." onDone={() => setSelectedDecor(null)}><Trash2 className="h-4 w-4" />Махни</ActionButton>}
+          </div>
+        )}
         {sel && (
           <div className="panel p-4">
             <div className="flex items-start justify-between gap-2">
@@ -174,7 +217,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
               return (
                 <div className="mt-3 rounded-xl border border-asphalt-700 p-3 text-sm">
                   <div className="font-semibold">Ниво {sel.level + 1}: {BUILDINGS[sel.type].effect(sel.level + 1)}</div>
-                  <div className="mt-1 text-xs text-mist-400">{materialsText(spec.materials)} · ~{money(materialCostCents(spec.materials))} · строеж {duration(spec.minutes)}{locked ? ` · нужно ниво ${spec.minCompanyLevel} на компанията` : ''}</div>
+                  <div className="mt-1 text-xs text-mist-400">{materialsText(spec.materials)} · ~{money(cost(spec.materials))} · строеж {duration(spec.minutes)}{locked ? ` · нужно ниво ${spec.minCompanyLevel} на компанията` : ''}</div>
                   {canBuild && <ActionButton action={{ type: 'upgradeBuilding', building: sel.type }} className="btn-primary mt-2 w-full justify-center text-sm" disabled={locked || !!c}>{c ? 'Компанията вече строи' : `Вдигни на ниво ${sel.level + 1}`}</ActionButton>}
                 </div>
               );
@@ -203,17 +246,53 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
                       {canBuild && <button type="button" className="btn-primary px-3 py-1 text-xs" disabled={!!reason} onClick={() => { setMode({ kind: 'place', type: t }); setSelected(null); setError(null); }}><Hammer className="h-3.5 w-3.5" />Постави</button>}
                     </div>
                     <div className="mt-1 text-xs text-mist-300">{def.effect(1)}</div>
-                    <div className="mt-0.5 text-xs text-mist-400">{materialsText(spec.materials)} · ~{money(materialCostCents(spec.materials))} · {duration(spec.minutes)}{reason ? ` · ${reason}` : ''}</div>
+                    <div className="mt-0.5 text-xs text-mist-400">{materialsText(spec.materials)} · ~{money(cost(spec.materials))} · {duration(spec.minutes)}{reason ? ` · ${reason}` : ''}</div>
                   </li>
                 );
               })}
             </ul>
           )}
         </div>
+        {features.decor && (
+          <div className="panel p-4">
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Flower2 className="h-5 w-5 text-cyan-glow" />Украса <span className="text-xs font-normal text-mist-400">{data.decor.length} / {MAX_DECOR}</span></h3>
+            {!canBuild && <p className="mt-1 text-sm text-mist-400">Украсяват длъжностите с право „Строителство“.</p>}
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {DECOR_KINDS.map((kind) => {
+                const d = DECOR[kind];
+                const poor = d.coins ? coins < d.coins : (d.priceCents ?? 0) > data.org.treasuryCents;
+                return (
+                  <button key={kind} type="button" className={`rounded-xl border p-2 text-left text-xs transition ${placingDecor === kind ? 'border-cyan-glow bg-cyan-glow/10' : 'border-asphalt-700 hover:border-asphalt-500'}`} disabled={!canBuild || poor || data.decor.length >= MAX_DECOR} onClick={() => { setMode({ kind: 'decor', decor: kind }); setSelected(null); setSelectedDecor(null); setError(null); }}>
+                    <b className="block text-sm text-mist-100">{d.label}</b>
+                    <span className={poor ? 'text-loss' : 'text-mist-400'}>{priceText(kind)} · {d.w}×{d.h}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] text-mist-400">Лв. се плащат от касата, ТрансКоин — от твоя портфейл. Украсата е само за красота.</p>
+          </div>
+        )}
+        {features.expand && (
+          <div className="panel p-4 text-sm">
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold"><LandPlot className="h-5 w-5 text-cyan-glow" />Земя</h3>
+            <p className="mt-1 text-mist-300">Участъкът е {W} на {PLOT.h} квадрата.</p>
+            {nextLand ? (
+              <>
+                <p className="mt-1 text-xs text-mist-400">Следващата земя: +{plotWidth(data.expansions + 1) - W} квадрата широчина · {money(nextLand.costCents)} от касата · нужно ниво {nextLand.minCompanyLevel} на компанията.</p>
+                {canBuild && <ActionButton action={{ type: 'expandPlot' }} className="btn-primary mt-2 w-full justify-center text-sm" disabled={data.org.level < nextLand.minCompanyLevel || data.org.treasuryCents < nextLand.costCents} confirm={`Да купим земя за ${money(nextLand.costCents)} от касата?`}>Купи земя · {money(nextLand.costCents)}</ActionButton>}
+              </>
+            ) : (
+              <p className="mt-1 text-xs text-profit">Участъкът е с най-големия възможен размер.</p>
+            )}
+          </div>
+        )}
+        {children}
       </div>
     </div>
   );
 }
+
+const priceText = (kind: DecorKind) => (DECOR[kind].coins ? `${DECOR[kind].coins} ТрансКоин` : money(DECOR[kind].priceCents ?? 0));
 
 const materialsText = (m: Materials) => MATERIAL_IDS.filter((id) => m[id]).map((id) => `${m[id]} т ${MATERIALS[id].label.toLowerCase()}`).join(', ');
 

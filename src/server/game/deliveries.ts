@@ -12,7 +12,8 @@ import { maintenanceState } from '@/lib/game/maintenance';
 import { acceptJobOffer, payHireCommission } from './hire';
 import { mentorXpFactor } from './mentor';
 import { recordBattleDelivery } from './battles';
-import { recordMaterialDelivery } from './plot';
+import { boomFor, recordMaterialDelivery } from './plot';
+import { BOOM } from '@/lib/game/plot';
 import { recordWeeklyGoal } from './weekly-goal';
 import { addFeed, FEED_LONG_TRIP_KM } from './feed';
 import { recordProjectDelivery } from './projects';
@@ -356,7 +357,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const boostXp = owner?.xpBoostUntil && owner.xpBoostUntil > now ? 2 : 1;
   // A newcomer with a mentor learns faster.
   const mentorXp = await mentorXpFactor(tx, company!.ownerId, now);
-  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp * mentorXp);
+  // "Строителен бум": hauling building materials teaches more.
+  const boomXp = contract.constructionId && (await boomFor(tx, company!.ownerId, completedAt)) ? BOOM.xpFactor : 1;
+  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp * mentorXp * boomXp);
   // The player's own driving gives all of the XP; a hired driver's trip only a share (the driver learns from all of it).
   const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, d.coDriverId ? [d.driverId, d.coDriverId] : [d.driverId]), eq(drivers.isOwner, true)))).length > 0;
   const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);
@@ -389,7 +392,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
       xp: sql`${drivers.xp} + ${xp}`,
       skill: sql`greatest(${drivers.skill}, least(5, 1 + floor((${drivers.xp} + ${xp}) / 8000.0)::int))`,
       dutyMin: dutyEach,
-      restedAt: new Date(completedAt.getTime() + (CREW_RULES.restGameMin * 60_000) / timeScale()),
+      // The company's rest stop shortens the rest after a trip that ends in the base city.
+      restedAt: new Date(completedAt.getTime() + (CREW_RULES.restGameMin * 60_000 * (1 - (org && contract.destCityId === org.hqCityId ? (perks?.bonuses.restCut ?? 0) : 0))) / timeScale()),
     })
     .where(inArray(drivers.id, crewIds));
   await tx
@@ -433,7 +437,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (org) await recordProjectDelivery(tx, org.id, company!.ownerId, { cargoType: contract.cargoType, destCityId: contract.destCityId, tons: contract.weightTons }, completedAt);
   if (org) await recordBattleDelivery(tx, org.id, contract.weightTons, completedAt);
   // Building materials for the company's plot.
-  await recordMaterialDelivery(tx, contract);
+  await recordMaterialDelivery(tx, contract, company!.ownerId, completedAt);
   await recordWeeklyGoal(tx, company!.ownerId, { loadedKm: d.loadedKm, tons: contract.weightTons }, completedAt);
   // A long trip the player drove themselves goes to the friends feed.
   if (ownerDrove && d.loadedKm >= FEED_LONG_TRIP_KM) await addFeed(tx, { userId: company!.ownerId, kind: 'trip', text: `достави ${contract.goods} до ${dest!.nameBg} (${Math.round(d.loadedKm).toLocaleString('bg-BG')} км)` }, completedAt);

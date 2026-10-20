@@ -30,7 +30,7 @@ export async function createListing(db: Database, userId: string, input: { kind:
     if (input.kind === 'vehicle') {
       const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, input.id), eq(vehicles.companyId, company.id), sql`${vehicles.soldAt} is null`)).for('update');
       if (!v) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
-      if (v!.ownership === 'rented') fail('rented', 'Наетите превозни средства не могат да се продават.');
+      if (v!.ownership !== 'owned') fail('rented', 'Наетите и фирмените превозни средства не могат да се продават.');
       if (v!.status !== 'idle') fail('vehicle_busy', 'Обява се пуска само за свободно превозно средство.');
       await assertNotLeased(tx, v!.id);
       await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v!.id));

@@ -93,4 +93,8 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   'news-star': { label: 'Звезда на седмичника', description: 'Попадна в класациите на Седмичника.' },
   legend: { label: 'Легенда на пътя', description: 'Достигна ниво 20.' },
   mentor: { label: 'Наставник', description: 'Помогна на нов играч да стигне ниво 5.' },
+  'first-brick': { label: 'Първа тухла', description: 'Беше в компанията, когато завърши първата ѝ сграда.' },
+  architect: { label: 'Архитект', description: 'Беше в компанията, когато построи всички видове сгради.' },
+  skyscraper: { label: 'Небостъргач', description: 'Беше в компанията, когато офисът ѝ стигна най-високото ниво.' },
+  builder: { label: 'Строител', description: 'Докара 5 товара материали за строежите на компанията.' },
 };

@@ -1,5 +1,7 @@
 import { PlayerName } from '@/components/game/PlayerName';
-import { PlotScene, VIEW } from '@/components/company/plot/scene';
+import { PlotScene, viewFor } from '@/components/company/plot/scene';
+import { isChristmas } from '@/lib/game/christmas';
+import { isWinter } from '@/lib/game/winter';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { publicPlot } from '@/server/game/plot';
 import { isVip } from '@/lib/game/vip';
@@ -53,7 +55,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
               title={<span className="inline-flex items-center gap-2"><Building className="h-4 w-4 text-mist-400" />Базата</span>}
               actions={mine?.company.id === c.id ? <Link href="/game/company/plot" className="text-xs text-cyan-glow hover:underline">Към участъка →</Link> : <ActionButton action={{ type: 'likePlot', organizationId: c.id }} className={base.liked ? 'btn-primary px-3 py-1 text-xs' : 'btn-ghost px-3 py-1 text-xs'}>👍 {base.liked ? 'Харесано' : 'Браво'} · {base.likes}</ActionButton>}
             >
-              <svg viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} className="block aspect-[1080/780] w-full rounded-xl" role="img" aria-label={`Базата на „${c.name}“`}>
+              <svg viewBox={(({ x, y, w, h }) => `${x} ${y} ${w} ${h}`)(viewFor(base.plotW))} className="block aspect-[1080/780] w-full rounded-xl" role="img" aria-label={`Базата на „${c.name}“`}>
                 <PlotScene
                   buildings={base.buildings}
                   construction={base.construction && { type: base.construction.type, status: base.construction.status, delivered: base.construction.delivered, progress: base.construction.startedAt && base.construction.endsAt ? Math.min(1, (now.getTime() - base.construction.startedAt.getTime()) / Math.max(1, base.construction.endsAt.getTime() - base.construction.startedAt.getTime())) : 0 }}
@@ -63,6 +65,9 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
                   incoming={0}
                   grid={false}
                   liveryColor={base.liveryColor}
+                  plotW={base.plotW}
+                  decor={base.decor}
+                  season={!features.plot_season ? null : isChristmas(now) ? 'christmas' : isWinter(now) ? 'winter' : null}
                 />
               </svg>
               {base.likes > 0 && <p className="mt-2 text-xs text-mist-400">{base.likes} {base.likes === 1 ? 'играч харесва' : 'играчи харесват'} тази база.</p>}
