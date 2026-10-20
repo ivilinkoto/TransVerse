@@ -3,7 +3,7 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { coinEntries, users } from '@/server/db/schema';
 import { fail } from './errors';
 
-export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link';
+export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway';
 
 export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   admin_grant: 'Дадени от администратор',
@@ -19,6 +19,7 @@ export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   mentor_reward: 'Наставничество',
   weekly_goal: 'Седмична цел',
   discord_link: 'Свързан Discord',
+  giveaway: 'Раздаване в Discord',
   payment_refund: 'Върнато плащане',
   daily_reward: 'Дневна награда',
   referral_reward: 'Награда за поканен приятел',

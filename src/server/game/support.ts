@@ -44,12 +44,13 @@ async function loadTicket(db: DbOrTx, actor: Actor, ticketId: string) {
   return ticket!;
 }
 
-export async function replyToTicket(db: Database, actor: Actor, ticketId: string, body: string) {
+/** `discordMessageId`: the reply was written in the ticket's Discord channel (not sent back there). */
+export async function replyToTicket(db: Database, actor: Actor, ticketId: string, body: string, discordMessageId?: string) {
   return db.transaction(async (tx) => {
     const ticket = await loadTicket(tx, actor, ticketId);
     const asStaff = ticket.userId !== actor.id && isStaff(actor.role);
     if (ticket.status === 'closed' && !asStaff) fail('ticket_closed', 'Запитването е затворено. Отворете ново.');
-    await tx.insert(supportMessages).values({ ticketId, authorId: actor.id, staff: asStaff, body });
+    await tx.insert(supportMessages).values({ ticketId, authorId: actor.id, staff: asStaff, body, discordMessageId: discordMessageId ?? null });
     await tx.update(supportTickets).set({ status: asStaff ? 'answered' : 'open', updatedAt: new Date(), ...(asStaff && !ticket.assignedTo ? { assignedTo: actor.id } : {}) }).where(eq(supportTickets.id, ticketId));
     if (asStaff) await notify(tx, ticket.userId, 'info', `Отговор от поддръжката: ${ticket.subject}`, body.slice(0, 140), `/game/support/${ticketId}`);
     else if (ticket.assignedTo) await notify(tx, ticket.assignedTo, 'info', `Нов отговор от играч: ${ticket.subject}`, body.slice(0, 140), `/admin/tickets/${ticketId}`);

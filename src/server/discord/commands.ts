@@ -1,5 +1,4 @@
 import { and, desc, eq, gt, ilike, isNull, or, sql } from 'drizzle-orm';
-import { dailyState, DAILY_REWARDS } from '@/lib/game/daily';
 import { featureDate, featureLive } from '@/lib/game/features';
 import { dec, int, km, money } from '@/lib/format';
 import { isStaff } from '@/server/auth/roles';
@@ -11,12 +10,20 @@ import { topBases } from '@/server/game/plot';
 import { companyLeaderboard, fleetView, leaderboard } from '@/server/game/queries';
 import { playerCard } from '@/server/game/social';
 import type { Embed } from './api';
+import type { Row } from './ui';
 import { appUrl, BRAND } from './config';
+
+const MODERATE = String(1n << 40n);
+const BAN = String(1n << 2n);
+const MANAGE_GUILD = String(1n << 5n);
+const user = { type: 6, name: 'потребител', description: 'Член на сървъра', required: true };
+const reason = (required: boolean) => ({ type: 3, name: 'причина', description: 'Причина (вижда я и членът)', required, max_length: 500 });
 
 /** Slash commands of the bot (registered in the server by `registerCommands`). Names are Bulgarian. */
 export const COMMANDS = [
   { name: 'профил', description: 'Профилът на играч в TransVerse (без име — твоят)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'компания', description: 'Компания в TransVerse (без име — твоята)', options: [{ type: 3, name: 'име', description: 'Име или таг на компанията', required: false }] },
+  { name: 'участък', description: 'Снимка на базата на компания (без име — твоята)', options: [{ type: 3, name: 'компания', description: 'Име или таг на компанията', required: false }] },
   {
     name: 'класация',
     description: 'Класациите на TransVerse',
@@ -29,10 +36,35 @@ export const COMMANDS = [
     ] }],
   },
   { name: 'камиони', description: 'Твоите камиони: къде са и кога пристигат (нужен е свързан акаунт)' },
+  { name: 'курс', description: 'Пусни камион на курс: избираш камион и товар (свързан акаунт)' },
   { name: 'борса', description: 'Най-добре платените товари от град', options: [{ type: 3, name: 'град', description: 'Град (напр. София)', required: true }] },
-  { name: 'дневна', description: 'Чака ли те дневната награда?' },
+  { name: 'дневна', description: 'Вземи дневната награда' },
+  { name: 'ивент', description: 'Текущият ивент на общността и твоят принос' },
+  { name: 'битка', description: 'Битката на компанията ти тази седмица' },
+  { name: 'тикет', description: 'Отвори тикет към екипа на TransVerse' },
   { name: 'свързване', description: 'Свържи Discord с акаунта си в играта' },
   { name: 'помощ', description: 'Какво може ботът на TransVerse' },
+  { name: 'предупреждение', description: 'Предупреди член на сървъра', default_member_permissions: MODERATE, options: [user, reason(true)] },
+  {
+    name: 'заглуши',
+    description: 'Заглуши член на сървъра за определено време',
+    default_member_permissions: MODERATE,
+    options: [user, { type: 4, name: 'минути', description: 'За колко минути (до 28 дни)', required: true, min_value: 1, max_value: 40_320 }, reason(true), { type: 5, name: 'и-в-играта', description: 'Заглуши и чата в играта (свързан акаунт)', required: false }],
+  },
+  { name: 'бан', description: 'Бан от сървъра', default_member_permissions: BAN, options: [user, reason(true), { type: 5, name: 'изтрий-съобщенията', description: 'Изтрий съобщенията му от последното денонощие', required: false }] },
+  { name: 'разбани', description: 'Свали бан', default_member_permissions: BAN, options: [user, reason(false)] },
+  { name: 'наказания', description: 'Наказанията на член на сървъра', default_member_permissions: MODERATE, options: [user] },
+  {
+    name: 'раздаване',
+    description: 'Раздаване на ТрансКоин в #раздавания',
+    default_member_permissions: MANAGE_GUILD,
+    options: [
+      { type: 4, name: 'награда', description: 'ТрансКоин за всеки победител', required: true, min_value: 1, max_value: 100_000 },
+      { type: 4, name: 'часове', description: 'Колко часа трае', required: true, min_value: 1, max_value: 336 },
+      { type: 3, name: 'заглавие', description: 'Заглавие (напр. „Коледно раздаване“)', required: true, max_length: 100 },
+      { type: 4, name: 'победители', description: 'Брой победители (1 по подразбиране)', required: false, min_value: 1, max_value: 20 },
+    ],
+  },
 ] as const;
 
 export interface CommandInput {
@@ -43,6 +75,7 @@ export interface CommandInput {
 export interface CommandReply {
   content?: string;
   embeds?: Embed[];
+  components?: Row[];
   /** Only the player who asked sees it. */
   ephemeral?: boolean;
 }
@@ -74,8 +107,8 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return me ? trucks(db, me.id) : { ephemeral: true, content: `Не знам кой си в играта. ${linkHint()}` };
     case 'борса':
       return board(db, input.options['град'] ?? '', now);
-    case 'дневна':
-      return me ? daily(me) : { ephemeral: true, content: `Не знам кой си в играта. ${linkHint()}` };
+    case 'участък':
+      return plot(db, input.options['компания'] ?? null, me?.id ?? null);
     case 'свързване':
       return { ephemeral: true, content: me ? `Свързан си като **${me.username}**. Отвързваш от Настройки → Discord.` : linkHint() };
     default:
@@ -88,13 +121,21 @@ function help(): Embed {
     title: 'Ботът на TransVerse',
     color: BRAND,
     description: [
-      '`/профил [играч]` — ниво, курсове, значки, компания',
-      '`/компания [име]` — ниво, членове, база и витрина',
+      '**Играта**',
+      '`/профил [играч]` — картичка на играч',
+      '`/компания [име]` · `/участък [компания]` — компания и снимка на базата ѝ',
       '`/класация [вид]` — сезон, богатство, курсове, компании, бази',
-      '`/камиони` — твоите камиони (свързан акаунт)',
       '`/борса град` — най-добрите товари от град',
-      '`/дневна` — дневната награда',
-      '`/свързване` — свържи Discord с играта',
+      '',
+      '**Със свързан акаунт**',
+      '`/камиони` — къде са камионите ти',
+      '`/курс` — пусни камион на курс от Discord',
+      '`/дневна` — вземи дневната награда',
+      '`/ивент` · `/битка` — ивентът и битката на компанията ти',
+      '',
+      '**Сървърът**',
+      '`/тикет` — помощ от екипа · `/свързване` — свържи Discord с играта',
+      'В #роли избираш известията си, в #раздавания печелиш ТрансКоин.',
     ].join('\n'),
     footer,
   };
@@ -109,7 +150,7 @@ async function profile(db: DbOrTx, username: string | null, viewerId: string | n
       title: `${card.username}${card.vip ? ' · VIP' : ''}`,
       url: `${appUrl()}/game/players/${encodeURIComponent(card.username)}`,
       color: BRAND,
-      thumbnail: { url: `${appUrl()}/api/players/${card.id}/avatar?v=${card.avatarVersion}` },
+      image: { url: `${appUrl()}/api/discord/card/player/${encodeURIComponent(card.username)}?v=${pictureVersion()}` },
       fields: [
         { name: 'Ниво', value: `${card.level} (${Math.round(card.levelShare * 100)} %)`, inline: true },
         { name: 'Курсове', value: int(card.deliveries), inline: true },
@@ -124,7 +165,8 @@ async function profile(db: DbOrTx, username: string | null, viewerId: string | n
   };
 }
 
-async function company(db: DbOrTx, name: string | null, viewerId: string | null): Promise<CommandReply> {
+/** A company by name or tag (exact first, then a part of the name), or the viewer's own. */
+async function findCompany(db: DbOrTx, name: string | null, viewerId: string | null) {
   let org: typeof organizations.$inferSelect | undefined;
   if (name?.trim()) {
     const q = name.trim();
@@ -133,6 +175,28 @@ async function company(db: DbOrTx, name: string | null, viewerId: string | null)
   } else if (viewerId) {
     org = (await membershipOf(db, viewerId))?.company;
   }
+  return org ?? null;
+}
+
+/** Changes every ten minutes, so Discord fetches a fresh picture now and then. */
+const pictureVersion = () => Math.floor(Date.now() / 600_000);
+
+async function plot(db: DbOrTx, name: string | null, viewerId: string | null): Promise<CommandReply> {
+  const org = await findCompany(db, name, viewerId);
+  if (!org) return { ephemeral: true, content: name ? `Няма компания „${name}“.` : `Напиши име на компания или свържи акаунта си. ${linkHint()}` };
+  return {
+    embeds: [{
+      title: `🏗️ Базата на ${org.name}${org.tag ? ` [${org.tag}]` : ''}`,
+      url: `${appUrl()}/game/companies/${org.id}`,
+      color: org.liveryColor ? parseInt(org.liveryColor.slice(1), 16) : BRAND,
+      image: { url: `${appUrl()}/api/discord/card/plot/${org.id}?v=${pictureVersion()}` },
+      footer,
+    }],
+  };
+}
+
+async function company(db: DbOrTx, name: string | null, viewerId: string | null): Promise<CommandReply> {
+  const org = await findCompany(db, name, viewerId);
   if (!org) return { ephemeral: true, content: name ? `Няма компания „${name}“.` : `Напиши име на компания или свържи акаунта си. ${linkHint()}` };
   const [{ members = 0 } = {}] = await db.execute<{ members: number }>(sql`select count(*)::int as members from company_members where company_id = ${org.id}`).then((r) => r.rows);
   const [hq] = await db.select({ name: cities.nameBg }).from(cities).where(eq(cities.id, org.hqCityId));
@@ -203,10 +267,4 @@ async function board(db: DbOrTx, cityName: string, now: Date): Promise<CommandRe
     .limit(8);
   const lines = rows.map((r) => `📦 **${r.goods}** ${dec(r.tons)} т → ${r.dest} · ${km(r.km)} · **${money(r.reward)}**${r.minLevel > 1 ? ` · ниво ${r.minLevel}+` : ''}`);
   return { embeds: [{ title: `Борса · ${city.name}`, url: `${appUrl()}/game/contracts`, color: BRAND, description: lines.join('\n') || 'В момента няма свободни товари оттук.', footer: { text: 'Поемането на товар става в играта · игрови данни' } }] };
-}
-
-function daily(me: typeof users.$inferSelect): CommandReply {
-  const s = dailyState(me.loginStreak, me.dailyClaimKey, new Date());
-  if (s.claimedToday) return { ephemeral: true, content: `✅ Днешната награда е взета. Серия: **${s.streak}** дни. Ела утре за ден ${(s.cycleDay % DAILY_REWARDS.length) + 1}!` };
-  return { ephemeral: true, content: `🎁 Наградата за днес те чака — ден ${s.cycleDay}: **${money(s.reward.cents)}**${s.reward.coins ? ` + ${s.reward.coins} ТрансКоин` : ''}. Серия: ${s.streak} дни.\n${appUrl()}/game#daily` };
 }

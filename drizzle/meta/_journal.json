@@ -337,6 +337,13 @@
       "when": 1792506634496,
       "tag": "0047_flawless_cassandra_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1792528797673,
+      "tag": "0048_lazy_goblin_queen",
+      "breakpoints": true
     }
   ]
 }

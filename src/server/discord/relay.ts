@@ -6,6 +6,7 @@ import { companyMessages, jobState, notifications, organizations, users } from '
 import { categoryOf, inQuietHours, type PushCategory } from '@/server/push';
 import { appUrl, BRAND, discordConfig } from './config';
 import { enqueue } from './outbox';
+import { button, linkButton, rows as buttonRows, STYLE } from './ui';
 
 /** Discord direct messages: every category is on until the player turns it off (like phone notifications). */
 export const wantsDiscord = (prefs: Partial<Record<string, boolean>> | null | undefined, category: PushCategory) => prefs?.[category] !== false;
@@ -40,11 +41,14 @@ export async function relayNotifications(db: Database, now = new Date()) {
   for (const list of byUser.values()) {
     const last = list.at(-1)!;
     const link = (href: string | null) => `${appUrl()}${href ?? '/game/notifications'}`;
+    // A truck arrived: "Нов курс" picks its next load right here (see play.ts).
+    const truck = list.length === 1 ? /[?&]truck=([0-9a-f-]{36})/.exec(last.href ?? '')?.[1] : undefined;
     await enqueue(db, `dm:${last.userId}:${last.id}`, `dm:${last.discordId}`, {
+      components: buttonRows(...(truck ? [button('Нов курс за този камион', `course:truck:${truck}`, STYLE.primary, '🚚')] : []), linkButton('Отвори в играта', link(list.length === 1 ? last.href : null), '🎮')),
       embeds: [
         list.length === 1
-          ? { title: last.title.slice(0, 250), description: `${last.body.slice(0, 1500)}\n\n[Отвори в играта](${link(last.href)})`, color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } }
-          : { title: `${list.length} нови известия в TransVerse`, description: `${list.slice(-6).map((n) => `• **${n.title}** — ${n.body.slice(0, 120)}`).join('\n')}\n\n[Отвори в играта](${link('/game/notifications')})`, color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } },
+          ? { title: last.title.slice(0, 250), description: last.body.slice(0, 1500), color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } }
+          : { title: `${list.length} нови известия в TransVerse`, description: list.slice(-6).map((n) => `• **${n.title}** — ${n.body.slice(0, 120)}`).join('\n'), color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } },
       ],
     }, now);
   }
