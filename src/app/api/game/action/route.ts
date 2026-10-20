@@ -33,6 +33,8 @@ import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
 import { payOffLease } from '@/server/game/leasing';
 import { bonusSchema, payBonus } from '@/server/game/bonuses';
+import { buyDelivered, cancelBuild, moveBuilding, orderMaterials, placeBuilding, startConstruction, upgradeBuilding } from '@/server/game/plot';
+import { BUILDING_TYPES, type BuildingType } from '@/lib/game/plot';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { helpOnRoad } from '@/server/game/roadside';
 import { cheer } from '@/server/game/feed';
@@ -71,6 +73,8 @@ import {
 
 const id = z.string().uuid('Невалиден идентификатор.');
 const cityId = z.coerce.number().int().positive();
+const tile = z.coerce.number().int().min(0).max(40);
+const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]]);
 
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 const Action = z.discriminatedUnion('type', [
@@ -89,6 +93,13 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('leaseVehicle'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('payOffLease'), leaseId: id }),
   z.object({ type: z.literal('payBonus'), bonus: bonusSchema }),
+  z.object({ type: z.literal('placeBuilding'), building: buildingType, x: tile, y: tile }),
+  z.object({ type: z.literal('moveBuilding'), building: buildingType, x: tile, y: tile }),
+  z.object({ type: z.literal('upgradeBuilding'), building: buildingType }),
+  z.object({ type: z.literal('orderMaterials'), buildId: id }),
+  z.object({ type: z.literal('buyMaterialsDelivered'), buildId: id }),
+  z.object({ type: z.literal('startConstruction'), buildId: id }),
+  z.object({ type: z.literal('cancelBuild'), buildId: id }),
   z.object({ type: z.literal('buyTrailer'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('sellVehicle'), vehicleId: id }),
   z.object({ type: z.literal('sellTrailer'), trailerId: id }),
@@ -195,6 +206,13 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   leaseVehicle: 'leasing',
   payOffLease: 'leasing',
   payBonus: 'company_roles',
+  placeBuilding: 'company_plot',
+  moveBuilding: 'company_plot',
+  upgradeBuilding: 'company_plot',
+  orderMaterials: 'company_plot',
+  buyMaterialsDelivered: 'company_plot',
+  startConstruction: 'company_plot',
+  cancelBuild: 'company_plot',
 };
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -236,6 +254,22 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId, { lease: true })).id };
     case 'payOffLease':
       return { ok: true, amountCents: await payOffLease(db, user.id, input.leaseId) };
+    case 'placeBuilding':
+      return { ok: true, id: (await placeBuilding(db, user.id, input.building, input.x, input.y)).id };
+    case 'moveBuilding':
+      await moveBuilding(db, user.id, input.building, input.x, input.y);
+      return { ok: true };
+    case 'upgradeBuilding':
+      return { ok: true, id: (await upgradeBuilding(db, user.id, input.building)).id };
+    case 'orderMaterials':
+      return { ok: true, ...(await orderMaterials(db, user.id, input.buildId)) };
+    case 'buyMaterialsDelivered':
+      return { ok: true, ...(await buyDelivered(db, user.id, input.buildId)) };
+    case 'startConstruction':
+      return { ok: true, endsAt: await startConstruction(db, user.id, input.buildId) };
+    case 'cancelBuild':
+      await cancelBuild(db, user.id, input.buildId);
+      return { ok: true };
     case 'payBonus':
       return { ok: true, ...(await payBonus(db, user.id, input.bonus, await hashIp(db, await clientIp()))) };
     case 'buyTrailer':

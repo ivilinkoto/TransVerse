@@ -6,7 +6,7 @@ import { fail } from './errors';
 import { notify } from './notify';
 import { circleOf } from './world-map';
 
-export type FeedKind = 'level' | 'achievement' | 'trip' | 'mentor' | 'help' | 'project' | 'battle';
+export type FeedKind = 'level' | 'achievement' | 'trip' | 'mentor' | 'help' | 'project' | 'battle' | 'build';
 
 /** Feed entries live this long. */
 const KEEP_DAYS = 14;

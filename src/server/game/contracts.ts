@@ -329,6 +329,12 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (filter.cargoType && CARGO_TYPES.includes(filter.cargoType)) conditions.push(eq(contracts.cargoType, filter.cargoType));
   if (filter.originCityId) conditions.push(eq(contracts.originCityId, filter.originCityId));
   if (!(filter.withStops ?? featureLive('multistop', now))) conditions.push(isNull(contracts.stops));
+  // Building materials are only for the members of the company that builds.
+  conditions.push(
+    filter.memberOfCompanyId
+      ? sql`(${contracts.constructionId} is null or ${contracts.constructionId} in (select id from company_builds where organization_id = ${filter.memberOfCompanyId}))`
+      : isNull(contracts.constructionId),
+  );
   const rows = await db.query.contracts.findMany({
     where: and(...conditions),
     orderBy: [desc(contracts.urgent), desc(contracts.rewardCents), asc(contracts.expiresAt)],

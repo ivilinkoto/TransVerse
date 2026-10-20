@@ -30,6 +30,7 @@ import { ensureWeeklyBattles, settleBattles } from './battles';
 import { pruneFeed } from './feed';
 import { settleEcoWeek } from './eco';
 import { collectLeases } from './leasing';
+import { finishConstructions } from './plot';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 
@@ -181,6 +182,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'feed-prune', 6 * 3_600_000, now, () => pruneFeed(db, now));
     // Weekly lease instalments (and taking back trucks two instalments behind).
     await every(db, 'leases', 10 * 60_000, now, () => collectLeases(db, now));
+    // Constructions on company plots whose time is up.
+    await every(db, 'constructions', 60_000, now, () => finishConstructions(db, now));
     // Company battles: settle last week's, pair this week's.
     await every(db, 'company-battles', 10 * 60_000, now, async () => {
       await settleBattles(db, now);

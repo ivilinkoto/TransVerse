@@ -2,6 +2,7 @@
  * Player companies: ranks, permissions, upgrades, levels and member bonuses.
  * Pure rules shared by server and UI.
  */
+import type { FeatureId } from './features';
 
 export const PERMISSIONS = {
   edit_profile: 'Редактиране на профила (описание, правила, лого, банер)',
@@ -12,6 +13,7 @@ export const PERMISSIONS = {
   manage_settings: 'Настройки (набиране, вноска, минимално ниво)',
   manage_chat: 'Чат (изтриване на съобщения и изчистване на целия чат)',
   manage_tenders: 'Търгове и възлагане на курсове на свободни шофьори',
+  build: 'Строителство (участък и сгради)',
   pay_bonuses: 'Премии за членовете от касата',
 } as const;
 export type Permission = keyof typeof PERMISSIONS;
@@ -27,7 +29,7 @@ export interface RankTemplate {
 /** Ranks every new company starts with. Lower priority = higher rank. */
 export const DEFAULT_RANKS: RankTemplate[] = [
   { name: 'Собственик', priority: 0, permissions: [...ALL_PERMISSIONS], isOwner: true },
-  { name: 'Заместник', priority: 10, permissions: ['edit_profile', 'manage_members', 'recruit', 'manage_upgrades', 'manage_settings', 'manage_chat', 'manage_tenders'], isOwner: false },
+  { name: 'Заместник', priority: 10, permissions: ['edit_profile', 'manage_members', 'recruit', 'manage_upgrades', 'manage_settings', 'manage_chat', 'manage_tenders', 'build'], isOwner: false },
   { name: 'Диспечер', priority: 20, permissions: ['manage_members', 'recruit', 'manage_tenders'], isOwner: false },
   { name: 'Шофьор', priority: 30, permissions: [], isOwner: false },
 ];
@@ -39,8 +41,10 @@ export const ROLE_TEMPLATES: { name: string; permissions: Permission[]; descript
   { name: 'Диспечер', permissions: ['manage_tenders'], description: 'Поема търгове и възлага курсове на шофьорите.' },
 ];
 
-/** Rights that came with the company roles of v1.2 (hidden before the release, see lib/game/features). */
-export const ROLE_PERMISSIONS: Permission[] = ['recruit', 'pay_bonuses'];
+/** Rights that came with a later update: hidden (and not granted) before its release, see lib/game/features. */
+export const PERMISSION_FEATURE: Partial<Record<Permission, FeatureId>> = { recruit: 'company_roles', pay_bonuses: 'company_roles', build: 'company_plot' };
+/** The rights shown for a viewer who has these features on. */
+export const shownPermissions = (features: Partial<Record<FeatureId, boolean>>) => ALL_PERMISSIONS.filter((p) => !PERMISSION_FEATURE[p] || features[PERMISSION_FEATURE[p]!]);
 
 /**
  * Bonuses from the treasury: limited so that the treasury cannot be emptied
@@ -147,12 +151,17 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
   },
 ];
 
-export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'], number>>;
+/** Upgrade levels of a company; `service` and `parking` come only from buildings on the plot (v1.3). */
+export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking', number>>;
 
 export interface MemberBonuses {
   rewardMultiplier: number;
   rentalShareReduction: number;
   xpMultiplier: number;
+  /** Cheaper repairs of the members' own trucks (the plot's service). */
+  repairDiscount: number;
+  /** Extra truck places in each member's depot in the company's base city (the plot's parking). */
+  parkingSlots: number;
 }
 
 export function memberBonuses(upgrades: UpgradeLevels): MemberBonuses {
@@ -160,6 +169,8 @@ export function memberBonuses(upgrades: UpgradeLevels): MemberBonuses {
     rewardMultiplier: 1 + 0.02 * (upgrades.logistics ?? 0),
     rentalShareReduction: 0.05 * (upgrades.rental_partner ?? 0),
     xpMultiplier: 1 + 0.05 * (upgrades.training ?? 0),
+    repairDiscount: 0.1 * (upgrades.service ?? 0),
+    parkingSlots: upgrades.parking ?? 0,
   };
 }
 

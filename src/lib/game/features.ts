@@ -28,6 +28,7 @@ export const FEATURES = {
   leasing: '1.2',
   company_roles: '1.2',
   year_recap: '1.2',
+  company_plot: '1.3',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

@@ -6,6 +6,7 @@ import { cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases
 import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
 import { assertNotLeased } from './leasing';
+import { bonusesForUser } from './membership';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -34,7 +35,14 @@ async function fleetCapacity(db: DbOrTx, companyId: string) {
     .where(eq(depots.companyId, companyId));
   const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt)));
   // VIP: one extra place in every depot.
-  const extra = (await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0;
+  let extra = (await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0;
+  // The parking on the company's plot: places in the member's depot in the company's base city.
+  const [owner] = await db.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, companyId));
+  const perks = owner ? await bonusesForUser(db, owner.ownerId) : null;
+  if (perks?.bonuses.parkingSlots) {
+    const [home] = await db.select({ id: depots.id }).from(depots).where(and(eq(depots.companyId, companyId), eq(depots.cityId, perks.membership.company.hqCityId)));
+    if (home) extra += perks.bonuses.parkingSlots;
+  }
   return { slots: slots + extra, used, extra };
 }
 
@@ -151,7 +159,9 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
     const [trailer] = await tx.select().from(trailers).where(eq(trailers.vehicleId, v.id));
     const full = repairCostCents(powerUnitModel(v.modelId).priceCents, v.condition) + (trailer ? repairCostCents(trailerModel(trailer.modelId).priceCents, trailer.condition) : 0);
     if (full <= 0) fail('nothing_to_repair', 'Няма нужда от ремонт.');
-    const cost = Math.round(full * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
+    // VIP and the company's service on the plot make it cheaper.
+    const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
+    const cost = Math.round(full * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service));
     await post(tx, company.id, [{ category: 'repairs', amountCents: -cost, description: `Ремонт ${v.plate}`, idempotencyKey: `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}` }], { requireFunds: true });
     await tx.update(vehicles).set({ condition: 100 }).where(eq(vehicles.id, v.id));
     if (trailer) await tx.update(trailers).set({ condition: 100 }).where(eq(trailers.id, trailer.id));

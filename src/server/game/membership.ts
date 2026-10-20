@@ -9,7 +9,7 @@ import {
   DEFAULT_RANKS,
   hasUnlock,
   maxRanks,
-  ROLE_PERMISSIONS,
+  PERMISSION_FEATURE,
   memberBonuses,
   memberCapacity,
   type MemberBonuses,
@@ -22,6 +22,10 @@ import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, companyApplications, companyAssets, companyMembers, companyRanks, depots, organizations, treasuryEntries, users } from '@/server/db/schema';
 import { ECONOMY } from '@/lib/game/economy';
 import { featureFor } from '@/server/features';
+import { BUILDINGS } from '@/lib/game/plot';
+
+/** Upgrades that became buildings on the plot. */
+const PLOT_UPGRADES: string[] = Object.values(BUILDINGS).map((b) => b.upgrade);
 import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
@@ -249,9 +253,11 @@ export async function setMemberRank(db: Database, actorId: string, targetUserId:
  * recruiting follows "members" (as before) and bonuses are not given.
  */
 async function rolesInput(tx: Tx, actorId: string, input: z.infer<typeof rankInputSchema>) {
-  if (await featureFor(tx, actorId, 'company_roles')) return input;
-  const permissions = input.permissions.filter((p) => !ROLE_PERMISSIONS.includes(p));
-  return { ...input, permissions: permissions.includes('manage_members') ? [...permissions, 'recruit' as const] : permissions };
+  let permissions = [...input.permissions];
+  for (const [p, feature] of Object.entries(PERMISSION_FEATURE)) if (!(await featureFor(tx, actorId, feature!))) permissions = permissions.filter((x) => x !== p);
+  // Before the company roles, recruiting follows "members" as it always did.
+  if (!(await featureFor(tx, actorId, 'company_roles')) && permissions.includes('manage_members')) permissions.push('recruit');
+  return { ...input, permissions };
 }
 
 function checkRankInput(actor: Membership, input: z.infer<typeof rankInputSchema>) {
@@ -338,6 +344,8 @@ export async function buyCompanyUpgrade(db: Database, actorId: string, upgradeId
     const actor = await requirePermission(tx, actorId, 'manage_upgrades');
     const upgrade = COMPANY_UPGRADES.find((u) => u.id === upgradeId);
     if (!upgrade) fail('unknown_upgrade', 'Непознато подобрение.');
+    // With the plot (v1.3) these are buildings: they are built there, not bought.
+    if (PLOT_UPGRADES.includes(upgrade!.id) && (await featureFor(tx, actorId, 'company_plot'))) fail('use_plot', 'Това вече е сграда — строи се в Компания → Участък.');
     const levels = actor.company.upgrades as UpgradeLevels;
     const current = levels[upgrade!.id] ?? 0;
     const next = upgrade!.levels[current];

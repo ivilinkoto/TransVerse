@@ -46,7 +46,7 @@ describe('company rules', () => {
     expect(companyXpForLevel(1)).toBe(0);
     expect(companyLevelForXp(companyXpForLevel(3))).toBe(3);
     expect(companyLevelForXp(companyXpForLevel(3) - 1)).toBe(2);
-    expect(memberBonuses({})).toEqual({ rewardMultiplier: 1, rentalShareReduction: 0, xpMultiplier: 1 });
+    expect(memberBonuses({})).toEqual({ rewardMultiplier: 1, rentalShareReduction: 0, xpMultiplier: 1, repairDiscount: 0, parkingSlots: 0 });
     const b = memberBonuses({ logistics: 2, rental_partner: 1, training: 3 });
     expect(b.rewardMultiplier).toBeCloseTo(1.04);
     expect(b.rentalShareReduction).toBeCloseTo(0.05);

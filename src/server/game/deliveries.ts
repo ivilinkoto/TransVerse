@@ -11,6 +11,7 @@ import { featureFor } from '@/server/features';
 import { acceptJobOffer, payHireCommission } from './hire';
 import { mentorXpFactor } from './mentor';
 import { recordBattleDelivery } from './battles';
+import { recordMaterialDelivery } from './plot';
 import { recordWeeklyGoal } from './weekly-goal';
 import { addFeed, FEED_LONG_TRIP_KM } from './feed';
 import { recordProjectDelivery } from './projects';
@@ -428,6 +429,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (org) await recordCompanyMissionProgress(tx, org.id, company!.ownerId, facts, now);
   if (org) await recordProjectDelivery(tx, org.id, company!.ownerId, { cargoType: contract.cargoType, destCityId: contract.destCityId, tons: contract.weightTons }, completedAt);
   if (org) await recordBattleDelivery(tx, org.id, contract.weightTons, completedAt);
+  // Building materials for the company's plot.
+  await recordMaterialDelivery(tx, contract);
   await recordWeeklyGoal(tx, company!.ownerId, { loadedKm: d.loadedKm, tons: contract.weightTons }, completedAt);
   // A long trip the player drove themselves goes to the friends feed.
   if (ownerDrove && d.loadedKm >= FEED_LONG_TRIP_KM) await addFeed(tx, { userId: company!.ownerId, kind: 'trip', text: `достави ${contract.goods} до ${dest!.nameBg} (${Math.round(d.loadedKm).toLocaleString('bg-BG')} км)` }, completedAt);

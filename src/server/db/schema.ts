@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import type { ContractStop } from '@/lib/game/multistop';
+import type { Materials } from '@/lib/game/plot';
 import type { RoadEventPlan } from '@/lib/game/road-events';
 import {
   customType,
@@ -374,6 +375,9 @@ export const contracts = pgTable(
     clientContractId: uuid('client_contract_id'),
     /** Groupage: drops on the way before the destination (null for an ordinary load). */
     stops: jsonb('stops').$type<ContractStop[]>(),
+    /** A load of building materials for a company's construction (members only); `material` is what it carries. */
+    constructionId: uuid('construction_id'),
+    material: text('material'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -1530,4 +1534,43 @@ export const vehicleLeases = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('vehicle_leases_vehicle_idx').on(t.vehicleId).where(sql`${t.status} = 'active'`), index('vehicle_leases_due_idx').on(t.status, t.nextDueAt), index('vehicle_leases_company_idx').on(t.companyId)],
+);
+
+/** Buildings on a company's plot (one of each type); level 0 = placed, first construction not finished yet. */
+export const companyBuildings = pgTable(
+  'company_buildings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    x: integer('x').notNull(),
+    y: integer('y').notNull(),
+    level: integer('level').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('company_buildings_type_idx').on(t.organizationId, t.type)],
+);
+
+/** A construction on the plot (a building or its next level): materials, then building time. One at a time per company. */
+export const companyBuilds = pgTable(
+  'company_builds',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    buildingId: uuid('building_id').notNull().references(() => companyBuildings.id, { onDelete: 'cascade' }),
+    targetLevel: integer('target_level').notNull(),
+    needs: jsonb('needs').$type<Materials>().notNull(),
+    delivered: jsonb('delivered').$type<Materials>().notNull().default({}),
+    minutes: integer('minutes').notNull(),
+    status: text('status').notNull().default('materials'), // materials | building | done | cancelled
+    startedAt: ts('started_at'),
+    endsAt: ts('ends_at'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    doneAt: ts('done_at'),
+  },
+  (t) => [
+    uniqueIndex('company_builds_active_idx').on(t.organizationId).where(sql`${t.status} in ('materials', 'building')`),
+    index('company_builds_due_idx').on(t.status, t.endsAt),
+  ],
 );

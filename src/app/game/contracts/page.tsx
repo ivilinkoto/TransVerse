@@ -130,6 +130,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       })(),
       favorite: favorites.some((f) => f.originCityId === c.originCityId && f.destCityId === c.destCityId),
       toHome: features.backhaul && c.destCityId === hq.id,
+      construction: !!c.constructionId,
       stops: c.stopCities.map((st) => ({ name: st.name, country: st.country, tons: st.tons, windowMinutes: st.windowMinutes })),
       tender: !!c.tenderId,
       alreadyTaken: takenIds.has(c.id),
