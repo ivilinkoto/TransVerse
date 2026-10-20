@@ -1,12 +1,12 @@
-import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { z } from 'zod';
 import { isStaff } from '@/server/auth/roles';
 import { rateLimit } from '@/server/auth/rate-limit';
-import { CHANNELS, MESSAGE_MAX, isOnline, lastSeenLabel, type Channel } from '@/lib/game/social';
+import { CHANNELS, MESSAGE_MAX, REPLY_SNIPPET, isOnline, lastSeenLabel, type Channel } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { chatMessages, directMessages, userBlocks, users } from '@/server/db/schema';
+import { chatMessages, companyMessages, directMessages, userBlocks, users } from '@/server/db/schema';
 import { extractMentions } from '@/lib/game/mentions';
 import { fail } from './errors';
 import { assertNotBlocked, assertNotMuted } from './moderation';
@@ -27,6 +27,56 @@ export interface FeedMessage {
   createdAt: string;
   /** Private messages: the recipient has read it. */
   read?: boolean;
+  /** The message this one answers (a short quote). */
+  reply?: ReplyRef | null;
+}
+
+export interface ReplyRef {
+  id: number;
+  username: string;
+  /** null when the original was deleted. */
+  body: string | null;
+}
+
+// ── Replies ───────────────────────────────────────────────────────────────
+
+type ReplyKind = 'channel' | 'company' | 'dm';
+const REPLY_TABLES = {
+  channel: { t: chatMessages, author: chatMessages.userId },
+  company: { t: companyMessages, author: companyMessages.userId },
+  dm: { t: directMessages, author: directMessages.senderId },
+} as const;
+
+/** The quoted originals of a page of messages (author and a short snippet). */
+export async function replyRefs(db: DbOrTx, kind: ReplyKind, ids: (number | null)[]): Promise<Map<number, ReplyRef>> {
+  const wanted = [...new Set(ids.filter((x): x is number => !!x))];
+  if (!wanted.length) return new Map();
+  const { t, author } = REPLY_TABLES[kind];
+  const rows = await db.select({ id: t.id, body: t.body, deletedAt: t.deletedAt, username: users.username }).from(t).innerJoin(users, eq(users.id, author)).where(inArray(t.id, wanted));
+  return new Map(rows.map((r) => [r.id, { id: r.id, username: r.username, body: r.deletedAt ? null : r.body.slice(0, REPLY_SNIPPET) }]));
+}
+
+/**
+ * Checks what a new message answers: it must be in the same channel /
+ * company / conversation (`scope`). Returns its author, or null without a reply.
+ */
+export async function replyTarget(tx: DbOrTx, kind: ReplyKind, replyToId: number | null | undefined, scope: SQL): Promise<{ id: number; userId: string } | null> {
+  if (!replyToId) return null;
+  const { t, author } = REPLY_TABLES[kind];
+  const [row] = await tx.select({ id: t.id, userId: author, deletedAt: t.deletedAt }).from(t).where(and(eq(t.id, replyToId), scope));
+  if (!row || row.deletedAt) fail('reply_not_found', 'Съобщението, на което отговаряш, вече го няма.', 404);
+  return { id: row!.id, userId: row!.userId };
+}
+
+/** Tells the author of the answered message (not oneself, not if they blocked the replier or were already @mentioned). */
+export async function notifyReply(tx: Tx, authorId: string, target: { userId: string } | null, body: string, where: { tab: string; where: string; mentioned: string[] }) {
+  if (!target || target.userId === authorId) return;
+  const [to] = await tx.select({ username: users.username, bannedAt: users.bannedAt }).from(users).where(eq(users.id, target.userId));
+  if (!to || to.bannedAt || where.mentioned.includes(to.username)) return;
+  const [blocked] = await tx.select({ id: userBlocks.blockerId }).from(userBlocks).where(and(eq(userBlocks.blockerId, target.userId), eq(userBlocks.blockedId, authorId)));
+  if (blocked) return;
+  const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, authorId));
+  await notify(tx, target.userId, 'info', `${me!.username} ти отговори в чата`, `${where.where}: ${body.slice(0, 140)}`, `/game?chat=${encodeURIComponent(where.tab)}`);
 }
 
 // ── World chat (global, trade) ───────────────────────────────────────────
@@ -39,16 +89,19 @@ export async function channelFeed(db: DbOrTx, channel: Channel, afterId = 0, lim
     .where(and(eq(chatMessages.channel, channel), afterId ? gt(chatMessages.id, afterId) : undefined))
     .orderBy(desc(chatMessages.id))
     .limit(Math.min(limit, 200));
-  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString() }));
+  const replies = await replyRefs(db, 'channel', rows.map((r) => r.m.replyToId));
+  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null }));
 }
 
-export async function postToChannel(db: Database, userId: string, channel: Channel, raw: string) {
+export async function postToChannel(db: Database, userId: string, channel: Channel, raw: string, replyToId?: number | null) {
   const body = messageBodySchema.parse(raw);
   await assertNotMuted(db, userId);
   await rateLimit(db, `channel:${channel}:${userId}`, CHANNELS[channel].perMinute, 60);
   return db.transaction(async (tx) => {
-    const [row] = await tx.insert(chatMessages).values({ channel, userId, body }).returning({ id: chatMessages.id });
-    await notifyMentions(tx, userId, body, { tab: channel, where: CHANNELS[channel].label });
+    const target = replyToId && (await featureFor(tx, userId, 'chat_replies')) ? await replyTarget(tx, 'channel', replyToId, eq(chatMessages.channel, channel)) : null;
+    const [row] = await tx.insert(chatMessages).values({ channel, userId, body, replyToId: target?.id ?? null }).returning({ id: chatMessages.id });
+    const mentioned = await notifyMentions(tx, userId, body, { tab: channel, where: CHANNELS[channel].label });
+    await notifyReply(tx, userId, target, body, { tab: channel, where: CHANNELS[channel].label, mentioned });
     await ping(tx, { type: 'channel', channel });
     return row!.id;
   });
@@ -92,7 +145,7 @@ const pair = (a: string, b: string) => or(and(eq(directMessages.senderId, a), eq
 /** Messages the player has not hidden (by deleting the conversation). */
 const visibleTo = (me: string) => or(and(eq(directMessages.senderId, me), eq(directMessages.hiddenForSender, false)), and(eq(directMessages.recipientId, me), eq(directMessages.hiddenForRecipient, false)));
 
-export async function sendDirectMessage(db: Database, userId: string, toId: string, raw: string, now = new Date()) {
+export async function sendDirectMessage(db: Database, userId: string, toId: string, raw: string, now = new Date(), replyToId?: number | null) {
   const body = messageBodySchema.parse(raw);
   if (userId === toId) fail('self', 'Не можеш да пишеш на себе си.');
   await assertNotMuted(db, userId, now);
@@ -101,7 +154,8 @@ export async function sendDirectMessage(db: Database, userId: string, toId: stri
   return db.transaction(async (tx) => {
     const [to] = await tx.select({ id: users.id, bannedAt: users.bannedAt, lastSeenAt: users.lastSeenAt }).from(users).where(eq(users.id, toId));
     if (!to || to.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
-    const [row] = await tx.insert(directMessages).values({ senderId: userId, recipientId: toId, body }).returning({ id: directMessages.id });
+    const target = replyToId && (await featureFor(tx, userId, 'chat_replies', now)) ? await replyTarget(tx, 'dm', replyToId, and(pair(userId, toId), visibleTo(userId))!) : null;
+    const [row] = await tx.insert(directMessages).values({ senderId: userId, recipientId: toId, body, replyToId: target?.id ?? null }).returning({ id: directMessages.id });
     // One notification per conversation while it is unread (not one per message), and only if they are not in the game.
     const [{ unread = 0 } = {}] = await tx.select({ unread: sql<number>`count(*)::int` }).from(directMessages).where(and(eq(directMessages.senderId, userId), eq(directMessages.recipientId, toId), isNull(directMessages.readAt), isNull(directMessages.deletedAt)));
     if (unread === 1 && !isOnline(to!.lastSeenAt, now)) {
@@ -121,7 +175,8 @@ export async function conversation(db: DbOrTx, userId: string, otherId: string, 
     .where(and(pair(userId, otherId), visibleTo(userId), afterId ? gt(directMessages.id, afterId) : undefined))
     .orderBy(desc(directMessages.id))
     .limit(Math.min(limit, 200));
-  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.senderId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), read: !!r.m.readAt }));
+  const replies = await replyRefs(db, 'dm', rows.map((r) => r.m.replyToId));
+  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.senderId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), read: !!r.m.readAt, reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null }));
 }
 
 export async function markConversationRead(db: DbOrTx, userId: string, otherId: string, now = new Date()) {

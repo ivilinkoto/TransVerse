@@ -26,3 +26,9 @@ export type Channel = keyof typeof CHANNELS;
 export const CHANNEL_IDS = Object.keys(CHANNELS) as Channel[];
 
 export const MESSAGE_MAX = 500;
+
+/** Unread chat messages are counted up to this many; more shows as "99+". */
+export const UNREAD_CAP = 100;
+export const unreadLabel = (n: number) => (n > 99 ? '99+' : String(n));
+/** A quoted reply shows this much of the original message. */
+export const REPLY_SNIPPET = 90;

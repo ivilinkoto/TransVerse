@@ -163,7 +163,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('rerollMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
   z.object({ type: z.literal('reserveContract'), contractId: id }),
   z.object({ type: z.literal('shopBuy'), purchase: shopPurchaseSchema }),
-  z.object({ type: z.literal('sendChat'), body: chatBodySchema }),
+  z.object({ type: z.literal('sendChat'), body: chatBodySchema, replyTo: z.coerce.number().int().positive().nullish() }),
   z.object({ type: z.literal('deleteChat'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('clearChat') }),
   z.object({ type: z.literal('acceptTender'), tenderId: id }),
@@ -184,7 +184,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('friendRemove'), userId: id }),
   z.object({ type: z.literal('companyInvite'), userId: id }),
   z.object({ type: z.literal('companyInviteRespond'), inviteId: id, accept: z.boolean() }),
-  z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema }),
+  z.object({ type: z.literal('sendDirect'), userId: id, body: messageBodySchema, replyTo: z.coerce.number().int().positive().nullish() }),
   z.object({ type: z.literal('sendMoney'), transfer: transferSchema }),
   z.object({ type: z.literal('mentorOpen'), on: z.boolean() }),
   z.object({ type: z.literal('cheer'), entryId: z.string().uuid() }),
@@ -199,7 +199,7 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('startProject'), templateId: z.string().max(40) }),
   z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('deleteConversation'), userId: id }),
-  z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema }),
+  z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema, replyTo: z.coerce.number().int().positive().nullish() }),
   z.object({ type: z.literal('deleteChannel'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели лева.').positive().max(10_000_000) }),
   z.object({ type: z.literal('cancelListing'), listingId: id }),
@@ -443,7 +443,7 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'rerollMission':
       return { ok: true, ...(await rerollMission(db, user.id, input.periodKey, input.missionId)) };
     case 'sendChat':
-      return { ok: true, id: await sendChatMessage(db, user.id, input.body) };
+      return { ok: true, id: await sendChatMessage(db, user.id, input.body, input.replyTo) };
     case 'deleteChat':
       await deleteChatMessage(db, user.id, input.messageId);
       return { ok: true };
@@ -467,7 +467,7 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'companyInviteRespond':
       return { ok: true, result: await respondCompanyInvite(db, user.id, input.inviteId, input.accept) };
     case 'sendDirect':
-      return { ok: true, id: await sendDirectMessage(db, user.id, input.userId, input.body) };
+      return { ok: true, id: await sendDirectMessage(db, user.id, input.userId, input.body, new Date(), input.replyTo) };
     case 'offerJob':
       return { ok: true, ...(await offerJob(db, user.id, input.offer)) };
     case 'declineJob':
@@ -505,7 +505,7 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       await deleteConversation(db, user.id, input.userId);
       return { ok: true };
     case 'sendChannel':
-      return { ok: true, id: await postToChannel(db, user.id, input.channel, input.body) };
+      return { ok: true, id: await postToChannel(db, user.id, input.channel, input.body, input.replyTo) };
     case 'deleteChannel':
       await deleteChannelMessage(db, user.id, user.role, input.messageId);
       return { ok: true };

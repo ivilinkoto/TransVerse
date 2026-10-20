@@ -7,7 +7,8 @@ import { companyMembers, companyMessages, companyRanks, users } from '@/server/d
 import { fail } from './errors';
 import { assertNotMuted } from './moderation';
 import { can, membershipOf } from './membership';
-import { notifyMentions } from './messages';
+import { featureFor } from '@/server/features';
+import { notifyMentions, notifyReply, replyRefs, replyTarget, type ReplyRef } from './messages';
 import { logActivity } from './notify';
 
 export const chatBodySchema = z.string().trim().min(1, 'Напишете съобщение.').max(500, 'Най-много 500 символа.');
@@ -22,6 +23,8 @@ export interface ChatMessage {
   body: string | null;
   deleted: boolean;
   createdAt: string;
+  /** The message this one answers (a short quote). */
+  reply?: ReplyRef | null;
 }
 
 /** Latest messages of the player's company (oldest first), or only those after `afterId`. */
@@ -37,6 +40,7 @@ export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit
     .where(and(eq(companyMessages.companyId, m!.company.id), afterId ? gt(companyMessages.id, afterId) : undefined))
     .orderBy(desc(companyMessages.id))
     .limit(Math.min(limit, 200));
+  const replies = await replyRefs(db, 'company', rows.map((r) => r.message.replyToId));
   return {
     canModerate: can(m!.rank, 'manage_members') || can(m!.rank, 'manage_chat'),
     canClear: can(m!.rank, 'manage_chat'),
@@ -50,12 +54,13 @@ export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit
       body: r.message.deletedAt ? null : r.message.body,
       deleted: !!r.message.deletedAt,
       createdAt: r.message.createdAt.toISOString(),
+      reply: r.message.replyToId ? (replies.get(r.message.replyToId) ?? null) : null,
     })),
   };
 }
 
 /** Posts a message to the player's company chat and wakes the other members' chat windows. */
-export async function sendChatMessage(db: Database, userId: string, raw: string) {
+export async function sendChatMessage(db: Database, userId: string, raw: string, replyToId?: number | null) {
   const body = chatBodySchema.parse(raw);
   const m = await membershipOf(db, userId);
   if (!m) fail('not_member', 'Чатът е само за членове на компанията.', 403);
@@ -63,11 +68,12 @@ export async function sendChatMessage(db: Database, userId: string, raw: string)
   // Anti-spam: at most 10 messages a minute per player.
   await rateLimit(db, `chat:${userId}`, 10, 60);
   return db.transaction(async (tx) => {
-    const [row] = await tx.insert(companyMessages).values({ companyId: m!.company.id, userId, body }).returning({ id: companyMessages.id });
-    if (body.includes('@')) {
-      const members = (await tx.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, m!.company.id))).map((r) => r.id);
-      await notifyMentions(tx, userId, body, { tab: 'company', where: `Чат на „${m!.company.name}“`, members });
-    }
+    const target = replyToId && (await featureFor(tx, userId, 'chat_replies')) ? await replyTarget(tx, 'company', replyToId, eq(companyMessages.companyId, m!.company.id)) : null;
+    const [row] = await tx.insert(companyMessages).values({ companyId: m!.company.id, userId, body, replyToId: target?.id ?? null }).returning({ id: companyMessages.id });
+    const members = body.includes('@') || target ? (await tx.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, m!.company.id))).map((r) => r.id) : [];
+    const mentioned = body.includes('@') ? await notifyMentions(tx, userId, body, { tab: 'company', where: `Чат на „${m!.company.name}“`, members }) : [];
+    // Only someone still in the company hears about the reply.
+    if (target && members.includes(target.userId)) await notifyReply(tx, userId, target, body, { tab: 'company', where: `Чат на „${m!.company.name}“`, mentioned });
     await tx.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type: 'chat', companyId: m!.company.id })})`);
     return row!.id;
   });

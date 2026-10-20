@@ -1,9 +1,11 @@
 'use client';
 
-import { AtSign, Building2, Flag, Globe2, MessageCircle, Send, Smile, Store, Trash2, X } from 'lucide-react';
+import { AtSign, Building2, CornerUpLeft, Flag, Globe2, MessageCircle, Send, Smile, Store, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { CHAT_EMOJI, splitMentions, typingMention } from '@/lib/game/mentions';
+import { unreadLabel } from '@/lib/game/social';
+import { ReplyBar, ReplyQuote, jumpToMessage, type ReplyQuoteData } from './ChatReply';
 import type { FeedMessage } from '@/server/game/messages';
 import { PlayerName, openPlayerCard } from './PlayerName';
 import { openReport } from './ReportDialog';
@@ -25,6 +27,8 @@ interface Inbox {
   company: string | null;
   me: string;
   meName: string;
+  /** New messages in the channels (counted up to 100). */
+  unread?: { global: number; trade: number; company: number };
 }
 interface Tab {
   id: string;
@@ -61,6 +65,10 @@ export function ChatDock() {
   const [error, setError] = useState<string | null>(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const extras = useFeature('chat_extras');
+  const replies = useFeature('chat_replies');
+  // A reply belongs to the tab it was started in.
+  const [replyState, setReplyTo] = useState<(ReplyQuoteData & { tab: string }) | null>(null);
+  const replyTo = replyState?.tab === tab ? replyState : null;
   const [suggest, setSuggest] = useState<{ query: string; names: string[] } | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -80,6 +88,16 @@ export function ChatDock() {
     }
   }, []);
 
+  // Many messages in a busy channel: refresh the counters at most every few seconds.
+  const inboxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const soonInbox = useCallback(() => {
+    if (inboxTimer.current) return;
+    inboxTimer.current = setTimeout(() => {
+      inboxTimer.current = null;
+      void loadInbox();
+    }, 3000);
+  }, [loadInbox]);
+
   const loadFeed = useCallback(async (which: string) => {
     try {
       const data = await api<{ messages: FeedMessage[]; canModerate: boolean }>(`/api/chat/feed?tab=${encodeURIComponent(which)}`);
@@ -87,8 +105,8 @@ export function ChatDock() {
       setMessages(data.messages);
       setCanModerate(data.canModerate);
       setError(null);
-      // Opening a private chat marks it read — refresh the unread badges.
-      if (which.startsWith('dm:')) void loadInbox();
+      // Opening a tab marks it read — refresh the unread badges.
+      void loadInbox();
     } catch (e) {
       if (tabRef.current === which) setError((e as Error).message);
     }
@@ -131,9 +149,11 @@ export function ChatDock() {
     const onChannel = (e: Event) => {
       const ch = (e as CustomEvent<{ channel?: string }>).detail?.channel;
       if (openRef.current && ch === tabRef.current) void loadFeed(tabRef.current);
+      else soonInbox();
     };
     const onCompany = () => {
       if (openRef.current && tabRef.current === 'company') void loadFeed('company');
+      else soonInbox();
     };
     const onDm = (e: Event) => {
       const other = (e as CustomEvent<{ with?: string }>).detail?.with;
@@ -165,7 +185,7 @@ export function ChatDock() {
       window.removeEventListener('tv:chat-close', onClose);
       clearInterval(safety);
     };
-  }, [loadFeed, loadInbox]);
+  }, [loadFeed, loadInbox, soonInbox]);
 
   useEffect(() => {
     const el = list.current;
@@ -173,15 +193,17 @@ export function ChatDock() {
   }, [messages]);
 
   const tabs: Tab[] = useMemo(() => {
-    const out: Tab[] = [{ id: 'global', label: 'Глобален', icon: Globe2 }];
-    if (inbox?.company) out.push({ id: 'company', label: 'Компания', icon: Building2 });
-    out.push({ id: 'trade', label: 'Търговия', icon: Store });
+    const u = inbox?.unread;
+    const out: Tab[] = [{ id: 'global', label: 'Глобален', icon: Globe2, unread: u?.global }];
+    if (inbox?.company) out.push({ id: 'company', label: 'Компания', icon: Building2, unread: u?.company });
+    out.push({ id: 'trade', label: 'Търговия', icon: Store, unread: u?.trade });
     for (const c of inbox?.conversations ?? []) out.push({ id: `dm:${c.userId}`, label: c.username, unread: c.unread, online: c.online });
     if (extra && !out.some((t) => t.id === extra.id)) out.push({ id: extra.id, label: extra.title });
     return out;
   }, [inbox, extra]);
 
-  const unread = (inbox?.conversations ?? []).reduce((s, c) => s + c.unread, 0);
+  // Everything new: private messages and the channels.
+  const unread = tabs.reduce((s, t) => s + (t.unread ?? 0), 0);
   const current = tabs.find((t) => t.id === tab) ?? tabs[0]!;
   const dm = tab.startsWith('dm:') ? tab.slice(3) : null;
   const partner = dm ? inbox?.conversations.find((c) => c.userId === dm) : null;
@@ -223,10 +245,12 @@ export function ChatDock() {
     setBusy(true);
     setError(null);
     try {
-      if (dm) await api('/api/game/action', { type: 'sendDirect', userId: dm, body: text });
-      else if (tab === 'company') await api('/api/game/action', { type: 'sendChat', body: text });
-      else await api('/api/game/action', { type: 'sendChannel', channel: tab, body: text });
+      const reply = replyTo?.id ?? null;
+      if (dm) await api('/api/game/action', { type: 'sendDirect', userId: dm, body: text, replyTo: reply });
+      else if (tab === 'company') await api('/api/game/action', { type: 'sendChat', body: text, replyTo: reply });
+      else await api('/api/game/action', { type: 'sendChannel', channel: tab, body: text, replyTo: reply });
       setText('');
+      setReplyTo(null);
       setSuggest(null);
       setEmojiOpen(false);
       stick.current = true;
@@ -273,7 +297,7 @@ export function ChatDock() {
           title="Чат"
         >
           <MessageCircle className="h-6 w-6" />
-          {unread > 0 && <span className="num absolute -right-0.5 -top-0.5 min-w-[22px] rounded-full border-2 border-asphalt-950 bg-amber-sig px-1 text-center text-xs font-bold leading-[18px] text-asphalt-950">{unread > 99 ? '99+' : unread}</span>}
+          {unread > 0 && <span className="num absolute -right-0.5 -top-0.5 min-w-[22px] rounded-full border-2 border-asphalt-950 bg-amber-sig px-1 text-center text-xs font-bold leading-[18px] text-asphalt-950">{unreadLabel(unread)}</span>}
         </button>
       )}
 
@@ -294,7 +318,7 @@ export function ChatDock() {
                 >
                   {t.icon ? <t.icon className="h-3.5 w-3.5" /> : <span className={`h-2 w-2 rounded-full ${t.online ? 'bg-profit' : 'bg-asphalt-500'}`} />}
                   <span className="max-w-[110px] truncate">{t.label}</span>
-                  {!!t.unread && <span className="num rounded-full bg-amber-sig px-1.5 text-[10px] font-bold text-asphalt-950">{t.unread}</span>}
+                  {!!t.unread && t.id !== current.id && <span className="num rounded-full bg-amber-sig px-1.5 text-[10px] font-bold text-asphalt-950" aria-label={`${unreadLabel(t.unread)} нови`}>{unreadLabel(t.unread)}</span>}
                 </button>
               ))}
             </ScrollStrip>
@@ -325,12 +349,15 @@ export function ChatDock() {
             {messages.map((m) => {
               const mine = m.userId === me;
               return (
-                <div key={m.id} className={`group flex ${mine ? 'justify-end' : ''}`}>
+                <div key={m.id} data-message={m.id} className={`group flex rounded-2xl ${mine ? 'justify-end' : ''}`}>
                   <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 ${mine ? 'bg-volt-500/25' : 'bg-asphalt-800'}`}>
                     <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                       {!dm && <PlayerName name={m.username} role={m.role} vip={m.vip} className="font-semibold" />}
                       <span className="text-mist-400">{time(m.createdAt)}</span>
                       {mine && dm && m.read && !m.deleted && <span className="text-cyan-glow">· видяно</span>}
+                      {replies && !m.deleted && (
+                        <button type="button" className="text-mist-400 opacity-60 transition hover:text-cyan-glow group-hover:opacity-100" onClick={() => { setReplyTo({ id: m.id, username: m.username, body: (m.body ?? '').slice(0, 90), tab }); input.current?.focus(); }} aria-label={`Отговори на ${m.username}`} title="Отговори"><CornerUpLeft className="h-3 w-3" /></button>
+                      )}
                       {!m.deleted && !mine && (
                         <button type="button" className="text-mist-400 opacity-60 transition hover:text-loss group-hover:opacity-100" onClick={() => openReport({ targetUserId: m.userId, username: m.username, kind: dm ? 'dm' : tab === 'company' ? 'company' : 'channel', messageId: m.id, snippet: m.body })} aria-label="Докладвай съобщението"><Flag className="h-3 w-3" /></button>
                       )}
@@ -338,6 +365,7 @@ export function ChatDock() {
                         <button type="button" className="text-mist-400 opacity-60 transition hover:text-loss group-hover:opacity-100" onClick={() => void remove(m)} aria-label="Изтрий съобщението"><Trash2 className="h-3 w-3" /></button>
                       )}
                     </div>
+                    {m.reply && !m.deleted && <ReplyQuote reply={m.reply} onJump={(id) => jumpToMessage(list.current, id)} />}
                     <p className={`whitespace-pre-wrap break-words text-sm ${m.deleted ? 'italic text-mist-400' : ''}`}>
                       {m.deleted || !m.body
                         ? 'Съобщението е изтрито.'
@@ -375,6 +403,7 @@ export function ChatDock() {
               ))}
             </div>
           )}
+          {replyTo && <ReplyBar to={replyTo} onCancel={() => setReplyTo(null)} />}
           <form onSubmit={(e) => void send(e)} className="flex gap-2 border-t border-asphalt-800 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] lg:pb-2">
             {extras && <button type="button" className={`shrink-0 rounded-xl px-2 transition ${emojiOpen ? 'bg-asphalt-700 text-gold-400' : 'text-mist-400 hover:bg-asphalt-800 hover:text-white'}`} onClick={() => setEmojiOpen((o) => !o)} aria-label="Емоджи" aria-expanded={emojiOpen}><Smile className="h-5 w-5" /></button>}
             <textarea
@@ -388,7 +417,10 @@ export function ChatDock() {
                 void lookUp(e.target.value, e.target.selectionStart ?? e.target.value.length);
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') setSuggest(null);
+                if (e.key === 'Escape') {
+                  setSuggest(null);
+                  setReplyTo(null);
+                }
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   // Enter picks the first suggested name while one is offered.
