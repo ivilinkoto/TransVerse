@@ -278,7 +278,7 @@ export async function applyLayout(db: DbOrTx, opts: { permissions: boolean }) {
   const next: LayoutState = { channels: {}, categories: {}, panels: state.panels, appliedAt: Date.now() };
   const created: string[] = [];
   const errors: string[] = [];
-  const positions: { id: string; position: number; parent_id?: string | null }[] = [];
+  const positions: { id: string; position: number }[] = [];
   const step = async <T>(label: string, fn: () => Promise<T>): Promise<T | undefined> => {
     try {
       return await fn();
@@ -327,7 +327,8 @@ export async function applyLayout(db: DbOrTx, opts: { permissions: boolean }) {
         if (Object.keys(patch).length) await step(ch.name, () => discord('PATCH', `/channels/${id}`, patch));
       }
       next.channels[ch.key] = x.id;
-      positions.push({ id: x.id, position: chPos++, parent_id: parent });
+      // The category was already set above: Discord changes only one parent per bulk request.
+      positions.push({ id: x.id, position: chPos++ });
     }
   }
   // The other categories go after the layout's, in their old order.
