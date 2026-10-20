@@ -38,6 +38,8 @@ import { buyDelivered, cancelBuild, expandPlot, likePlot, moveBuilding, orderMat
 import { BUILDING_TYPES, DECOR_KINDS, type BuildingType, type DecorKind } from '@/lib/game/plot';
 import { borrowOrgVehicle, buyOrgVehicle, NOTE_MAX, returnOrgVehicle, sellOrgVehicle, setOrgVehicleNote } from '@/server/game/company-fleet';
 import { pinCompanyMessage, toggleReaction } from '@/server/game/chat-extras';
+import { setDiscordPrefs, unlinkDiscord } from '@/server/discord/link';
+import { setCompanyDiscord } from '@/server/discord/company';
 import { closePoll, createPoll, votePoll } from '@/server/game/polls';
 import { pollInputSchema } from '@/lib/game/polls';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
@@ -117,6 +119,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('votePoll'), pollId: id, option: z.number().int().min(0).max(9) }),
   z.object({ type: z.literal('closePoll'), pollId: id }),
   z.object({ type: z.literal('reactChat'), tab: z.string().regex(/^(global|trade|company|dm:[0-9a-f-]{36})$/), messageId: z.coerce.number().int().positive(), emoji: z.string().max(8) }),
+  z.object({ type: z.literal('discordUnlink') }),
+  z.object({ type: z.literal('discordPrefs'), prefs: z.record(z.string().max(20), z.boolean()) }),
+  z.object({ type: z.literal('companyDiscord'), on: z.boolean() }),
   z.object({ type: z.literal('pinChat'), messageId: z.coerce.number().int().positive().nullable() }),
   z.object({ type: z.literal('orgVehicleNote'), orgVehicleId: id, note: z.string().max(NOTE_MAX * 2) }),
   z.object({ type: z.literal('setLivery'), color: z.string().max(9).nullable() }),
@@ -248,6 +253,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   closePoll: 'company_polls',
   reactChat: 'chat_reactions',
   pinChat: 'chat_pin',
+  discordUnlink: 'discord_bot',
+  discordPrefs: 'discord_bot',
+  companyDiscord: 'discord_bot',
   orgVehicleNote: 'truck_notes',
   setLivery: 'livery',
   companyLivery: 'livery',
@@ -332,6 +340,15 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true };
     case 'reactChat':
       return { ok: true, ...(await toggleReaction(db, user.id, input.tab, input.messageId, input.emoji)) };
+    case 'discordUnlink':
+      await unlinkDiscord(db, user.id);
+      return { ok: true };
+    case 'discordPrefs':
+      await setDiscordPrefs(db, user.id, input.prefs);
+      return { ok: true };
+    case 'companyDiscord':
+      await setCompanyDiscord(db, user.id, input.on);
+      return { ok: true };
     case 'pinChat':
       await pinCompanyMessage(db, user.id, input.messageId);
       return { ok: true };

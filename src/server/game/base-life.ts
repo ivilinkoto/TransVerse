@@ -8,6 +8,7 @@ import { companyForUser } from './company';
 import { post, postTreasury } from './finance';
 import { notifyMembers } from './membership';
 import { notify } from './notify';
+import { announceBuilderOfWeek } from '@/server/discord/announce';
 
 /**
  * Worker, after a week ends: in every company, the member who delivered the
@@ -51,6 +52,7 @@ export async function awardBuildersOfWeek(db: Database, now = new Date()) {
       }
       const tons = Math.round(r.tons * 10) / 10;
       await notifyMembers(tx, r.organization_id, null, `Строител на седмицата: ${u!.username}`, `${tons} т материали за базата${prize ? ` · награда ${money(prize)} от касата` : ''}.`, '/game/company/plot');
+      await announceBuilderOfWeek(tx, key, org?.name ?? '', u!.username, r.tons, prize, now);
       if (prize) await notify(tx, r.user_id, 'success', 'Ти си строител на седмицата!', `Награда ${money(prize)} от касата на „${org!.name}“.`, '/game/finance');
       n++;
     });

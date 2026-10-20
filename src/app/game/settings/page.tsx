@@ -1,11 +1,14 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
-import { Ban, Bell, Paintbrush, Sparkles, UserRoundCheck } from 'lucide-react';
+import { Ban, Bell, MessageSquare, Paintbrush, Sparkles, UserRoundCheck } from 'lucide-react';
 import { SEASON_IDS, SEASONS, activeSeason } from '@/lib/game/seasonal';
 import { seasonMode } from '@/server/seasonal';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { blockList } from '@/server/game/moderation';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { PushSettings } from '@/components/game/PushSettings';
+import { DiscordSettings } from '@/components/game/DiscordSettings';
+import { discordConfig } from '@/server/discord/config';
+import { DISCORD_LINK_COINS } from '@/server/discord/link';
 import { QuietHours } from '@/components/game/QuietHours';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { deviceCount, PUSH_CATEGORIES, vapidKeys } from '@/server/push';
@@ -17,10 +20,11 @@ import { HIRE_RULES } from '@/lib/game/hire';
 
 export const metadata = { title: 'Настройки' };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ discord?: string }> }) {
+  const { discord: discordStatus } = await searchParams;
   const { db, user, now, features } = await gameContext();
   const site = activeSeason(now, await seasonMode(db));
-  const [u] = await db.select({ email: users.email, createdAt: users.createdAt, verified: users.emailVerifiedAt, pushPrefs: users.pushPrefs }).from(users).where(eq(users.id, user.id));
+  const [u] = await db.select({ email: users.email, createdAt: users.createdAt, verified: users.emailVerifiedAt, pushPrefs: users.pushPrefs, discordName: users.discordName, discordId: users.discordId, discordPrefs: users.discordPrefs }).from(users).where(eq(users.id, user.id));
   const [keys, devices, blocked] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id)]);
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(sessions).where(and(eq(sessions.userId, user.id), gt(sessions.expiresAt, new Date())));
   return (
@@ -43,6 +47,11 @@ export default async function SettingsPage() {
           </dl>
         </Card>
         <Card title="Сигурност"><PasswordForm /></Card>
+        {features.discord_bot && (
+          <Card title={<span id="discord" className="inline-flex scroll-mt-24 items-center gap-2"><MessageSquare className="h-4 w-4 text-mist-400" />Discord</span>} className="lg:col-span-2">
+            <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} />
+          </Card>
+        )}
         <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />Празнична украса</span>} className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
             <p className="max-w-xl text-mist-300">

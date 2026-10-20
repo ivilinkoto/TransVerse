@@ -142,6 +142,12 @@ export const users = pgTable(
     loginStreak: integer('login_streak').notNull().default(0),
     dailyClaimKey: text('daily_claim_key'),
     pushPrefs: jsonb('push_prefs').$type<Partial<Record<string, boolean>>>().notNull().default({}),
+    /** Linked Discord account (v1.3): the user id there, the name shown and when it was linked. */
+    discordId: text('discord_id'),
+    discordName: text('discord_name'),
+    discordLinkedAt: ts('discord_linked_at'),
+    /** Game notifications also as Discord direct messages, by push category (empty = none). */
+    discordPrefs: jsonb('discord_prefs').$type<Partial<Record<string, boolean>>>().notNull().default({}),
     lastSeenAt: ts('last_seen_at'),
     /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
     seenVersion: text('seen_version'),
@@ -181,7 +187,7 @@ export const users = pgTable(
     /** SHA-256 of the sign-up IP with a server salt — only compared for invite rewards. */
     signupIpHash: text('signup_ip_hash'),
   },
-  (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`), uniqueIndex('users_referral_code_idx').on(t.referralCode), index('users_referred_by_idx').on(t.referredById)],
+  (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`), uniqueIndex('users_referral_code_idx').on(t.referralCode), index('users_referred_by_idx').on(t.referredById), uniqueIndex('users_discord_idx').on(t.discordId)],
 );
 
 export const sessions = pgTable(
@@ -679,6 +685,11 @@ export const organizations = pgTable(
     plotExpansions: integer('plot_expansions').notNull().default(0),
     /** A message pinned on top of the company chat. */
     pinnedMessageId: bigint('pinned_message_id', { mode: 'number' }),
+    /** The company's private channel and role in the TransVerse Discord server (v1.3). */
+    discordChannel: boolean('discord_channel').notNull().default(false),
+    discordChannelId: text('discord_channel_id'),
+    discordRoleId: text('discord_role_id'),
+    discordWebhook: text('discord_webhook'),
     brandingVersion: integer('branding_version').notNull().default(0),
     /** The company's own money — separate from every member's (and the owner's) personal balance. */
     treasuryCents: money('treasury_cents').notNull().default(0),
@@ -717,11 +728,13 @@ export const companyMessages = pgTable(
     body: text('body').notNull(),
     /** The message this one answers (same company). */
     replyToId: bigint('reply_to_id', { mode: 'number' }),
+    /** Written in the company's Discord channel (bridged); its id there. */
+    discordMessageId: text('discord_message_id'),
     createdAt: createdAt(),
     deletedAt: ts('deleted_at'),
     deletedBy: uuid('deleted_by').references(() => users.id, { onDelete: 'set null' }),
   },
-  (t) => [index('company_messages_company_idx').on(t.companyId, t.id)],
+  (t) => [index('company_messages_company_idx').on(t.companyId, t.id), uniqueIndex('company_messages_discord_idx').on(t.discordMessageId)],
 );
 
 // ── Company membership ────────────────────────────────────────────────────
@@ -1708,4 +1721,26 @@ export const companyBuilderWeeks = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.organizationId, t.weekKey] })],
+);
+
+/**
+ * Messages for the TransVerse Discord server, sent by the worker (v1.3):
+ * announcements to a channel, direct messages, company channel jobs.
+ * `dedupeKey` makes every announcement happen once.
+ */
+export const discordOutbox = pgTable(
+  'discord_outbox',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    dedupeKey: text('dedupe_key').notNull(),
+    /** channel:<name> | dm:<discord user id> | company:<organization id> | job:<kind> */
+    target: text('target').notNull(),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    nextAttemptAt: ts('next_attempt_at').notNull().defaultNow(),
+    lastError: text('last_error'),
+    sentAt: ts('sent_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('discord_outbox_dedupe_idx').on(t.dedupeKey), index('discord_outbox_due_idx').on(t.sentAt, t.nextAttemptAt)],
 );

@@ -330,6 +330,13 @@
       "when": 1792503667566,
       "tag": "0046_lean_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1792506634496,
+      "tag": "0047_flawless_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }

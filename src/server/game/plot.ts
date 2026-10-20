@@ -41,6 +41,7 @@ import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { loadHubs } from './contracts';
 import { postCoins } from './coins';
+import { announceBuild } from '@/server/discord/announce';
 import { fail } from './errors';
 import { addFeed } from './feed';
 import { postTreasury } from './finance';
@@ -402,6 +403,7 @@ export async function finishConstructions(db: Database, now = new Date()) {
       await buildingBadges(tx, build.organizationId, all, { type, level: build.targetLevel }, now);
       await notifyMembers(tx, build.organizationId, null, `${def.label} е ${build.targetLevel > 1 ? `на ниво ${build.targetLevel}` : 'построен'}!`, `${def.effect(build.targetLevel)}.`, '/game/company/plot');
       await addFeed(tx, { organizationId: build.organizationId, kind: 'build', text: `компанията ${build.targetLevel > 1 ? `вдигна „${def.label}“ на ниво ${build.targetLevel}` : `построи „${def.label}“`}` }, now);
+      await announceBuild(tx, build.id, { id: org!.id, name: org!.name, tag: org!.tag }, def.label, build.targetLevel, now);
     });
   }
   return due.length;

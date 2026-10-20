@@ -8,6 +8,7 @@ import { companies, companyApplications, companyInvites, companyMembers, friends
 import { badgesOf } from './halloween';
 import { assertNotBlocked } from './moderation';
 import { fail } from './errors';
+import { queueRoles } from '@/server/discord/outbox';
 import { can, entryRank, memberCount, membershipOf, notifyMembers, requirePermission } from './membership';
 import { logActivity, notify } from './notify';
 
@@ -168,6 +169,7 @@ export async function respondCompanyInvite(db: Database, userId: string, inviteI
     if ((await memberCount(tx, company!.id)) >= memberCapacity(company!.upgrades as UpgradeLevels)) fail('company_full', 'Компанията вече няма свободни места.');
     const rank = await entryRank(tx, company!.id);
     await tx.insert(companyMembers).values({ userId, companyId: company!.id, rankId: rank.id });
+    await queueRoles(tx, userId);
     await tx.update(companyInvites).set({ status: 'accepted', decidedAt: new Date() }).where(eq(companyInvites.id, invite!.id));
     // Other invites and applications are no longer needed.
     await tx.update(companyInvites).set({ status: 'cancelled', decidedAt: new Date() }).where(and(eq(companyInvites.userId, userId), eq(companyInvites.status, 'pending')));

@@ -96,5 +96,6 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   'first-brick': { label: 'Първа тухла', description: 'Беше в компанията, когато завърши първата ѝ сграда.' },
   architect: { label: 'Архитект', description: 'Беше в компанията, когато построи всички видове сгради.' },
   skyscraper: { label: 'Небостъргач', description: 'Беше в компанията, когато офисът ѝ стигна най-високото ниво.' },
+  discord: { label: 'Discord шофьор', description: 'Свърза акаунта си с Discord сървъра на TransVerse.' },
   builder: { label: 'Строител', description: 'Докара 5 товара материали за строежите на компанията.' },
 };
