@@ -26,6 +26,8 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return `Създаде ивент „${String(d.name ?? '')}“${d.startsAt ? ` (от ${new Date(String(d.startsAt)).toLocaleString('bg-BG')})` : ''}`;
     case 'season_mode':
       return `Смени празничната тема: ${d.value === 'auto' ? 'автоматично по дати' : d.value === 'off' ? 'изключена' : `винаги ${String(d.value).replace('on:', '')}`}`;
+    case 'discord_repair':
+      return `Поправка на Discord бота: ${Number(d.commands ?? 0)} команди, роли за ${Number(d.players ?? 0)} свързани играчи`;
     case 'verify_email':
       return `Потвърди ръчно имейла на ${who}`;
     case 'password_reset_link':

@@ -10,6 +10,7 @@ import { companyMessages, discordOutbox, notifications, organizations, userBadge
 import { announceFromGame } from '@/server/discord/announce';
 import { runCommand } from '@/server/discord/commands';
 import { messageFromDiscord } from '@/server/discord/gateway';
+import { channelPermissions } from '@/server/discord/diagnose';
 import { channelKey } from '@/server/discord/guild';
 import { linkDiscord, unlinkDiscord } from '@/server/discord/link';
 import { bridgeCompanyChat, relayNotifications } from '@/server/discord/relay';
@@ -41,6 +42,18 @@ describe('channel names', () => {
   it('finds the bot channels with emoji, separators and #', () => {
     for (const name of ['обновления', '#обновления', '📢-обновления', '📢︱обновления', '📢・обновления', '📢обновления', 'обновления-📢', '📢-ОБНОВЛЕНИЯ', '💻||обновления', '💻-||-обновления']) expect(channelKey(name)).toBe('обновления');
     expect(channelKey('стари-обновления')).not.toBe('обновления');
+  });
+
+  it('works out what the bot may do in a locked channel', () => {
+    const VIEW = 1n << 10n;
+    const SEND = 1n << 11n;
+    const base = VIEW | SEND;
+    const locked = { id: 'c', name: 'обновления', type: 0, permission_overwrites: [{ id: 'g', type: 0, allow: '0', deny: String(VIEW | SEND) }] };
+    expect(channelPermissions(base, locked, 'g', ['botrole'], 'bot') & SEND).toBe(0n);
+    const allowed = { ...locked, permission_overwrites: [...locked.permission_overwrites, { id: 'botrole', type: 0, allow: String(VIEW | SEND), deny: '0' }] };
+    expect(channelPermissions(base, allowed, 'g', ['botrole'], 'bot') & SEND).toBe(SEND);
+    // Administrator ignores the channel's overwrites.
+    expect(channelPermissions(base | (1n << 3n), locked, 'g', [], 'bot') & SEND).toBe(SEND);
   });
 });
 
