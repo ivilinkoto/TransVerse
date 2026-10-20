@@ -5,7 +5,7 @@ import { seasonMode } from '@/server/seasonal';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { blockList } from '@/server/game/moderation';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
-import { PushSettings } from '@/components/game/PushSettings';
+import { PushSettings, SoundSetting } from '@/components/game/PushSettings';
 import { DiscordSettings } from '@/components/game/DiscordSettings';
 import { discordConfig } from '@/server/discord/config';
 import { DISCORD_LINK_COINS } from '@/server/discord/link';
@@ -49,7 +49,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <Card title="Сигурност"><PasswordForm /></Card>
         {features.discord_bot && (
           <Card title={<span id="discord" className="inline-flex scroll-mt-24 items-center gap-2"><MessageSquare className="h-4 w-4 text-mist-400" />Discord</span>} className="lg:col-span-2">
-            <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} />
+            <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} quiet={user.quietHours ?? null} />
           </Card>
         )}
         <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />Празнична украса</span>} className="lg:col-span-2">
@@ -90,11 +90,18 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </ul>
           )}
         </Card>
-        <Card title={<span className="inline-flex items-center gap-2"><Bell className="h-4 w-4 text-mist-400" />Известия на телефона и компютъра</span>} className="lg:col-span-2">
-          <p className="mb-4 text-sm text-mist-400">Получавай известие, когато камионът пристигне, има спешна доставка, започва ивент или ти пишат в компанията — дори когато играта е затворена.</p>
-          <PushSettings publicKey={keys.publicKey} categories={PUSH_CATEGORIES} prefs={u?.pushPrefs ?? {}} devices={devices} />
-          <div className="mt-4 border-t border-asphalt-800 pt-4"><QuietHours value={user.quietHours ?? null} /></div>
-        </Card>
+        {/* From v1.3 notifications outside the game go to Discord (the card above). */}
+        {features.discord_bot ? (
+          <Card title={<span className="inline-flex items-center gap-2"><Bell className="h-4 w-4 text-mist-400" />Звук в играта</span>}>
+            <SoundSetting />
+          </Card>
+        ) : (
+          <Card title={<span className="inline-flex items-center gap-2"><Bell className="h-4 w-4 text-mist-400" />Известия на телефона и компютъра</span>} className="lg:col-span-2">
+            <p className="mb-4 text-sm text-mist-400">Получавай известие, когато камионът пристигне, има спешна доставка, започва ивент или ти пишат в компанията — дори когато играта е затворена.</p>
+            <PushSettings publicKey={keys.publicKey} categories={PUSH_CATEGORIES} prefs={u?.pushPrefs ?? {}} devices={devices} />
+            <div className="mt-4 border-t border-asphalt-800 pt-4"><QuietHours value={user.quietHours ?? null} /></div>
+          </Card>
+        )}
       </div>
     </div>
   );

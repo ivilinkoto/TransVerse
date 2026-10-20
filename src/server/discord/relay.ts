@@ -7,8 +7,8 @@ import { categoryOf, inQuietHours, type PushCategory } from '@/server/push';
 import { appUrl, BRAND, discordConfig } from './config';
 import { enqueue } from './outbox';
 
-/** Discord direct messages are opt-in per category (unlike push, which is on by default). */
-export const wantsDiscord = (prefs: Partial<Record<string, boolean>> | null | undefined, category: PushCategory) => prefs?.[category] === true;
+/** Discord direct messages replace phone notifications: every category is on until the player turns it off. */
+export const wantsDiscord = (prefs: Partial<Record<string, boolean>> | null | undefined, category: PushCategory) => prefs?.[category] !== false;
 
 async function cursor(db: Database, key: string, table: 'notifications' | 'company_messages') {
   const [row] = await db.select().from(jobState).where(eq(jobState.key, key));

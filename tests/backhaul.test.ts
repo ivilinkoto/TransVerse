@@ -2,7 +2,7 @@ import { and, eq, like } from 'drizzle-orm';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the feature as released (before the date it is staff-only; see tests/release-gating.test.ts).
-vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
+vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: (id: string) => id !== 'discord_bot' }));
 import { closeDb } from '@/server/db/client';
 import { companies, notifications, vehicles } from '@/server/db/schema';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
@@ -25,6 +25,7 @@ describe('return loads and quick buttons', () => {
     expect(categoryOf(n!.href)).toBe('deliveries');
   });
 
+  // Phone notifications until Discord takes over (v1.3).
   it('phone notifications get "Обратен товар" and "Нов курс" buttons', async () => {
     expect(pushActionsFor('/game/contracts?from=12&truck=x')!.map((a) => a.title)).toEqual(['Обратен товар', 'Нов курс']);
     expect(pushActionsFor('/game?chat=global')![0]!.title).toBe('Отвори чата');
