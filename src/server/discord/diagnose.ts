@@ -155,11 +155,17 @@ export async function diagnoseDiscord(db: Database): Promise<DiscordCheck[]> {
 
   const [gw] = await db.select().from(jobState).where(eq(jobState.key, GATEWAY_STATE));
   const state = gw?.value as GatewayState | undefined;
-  const intents: Record<number, string> = { 4004: 'грешен токен', 4013: 'невалидни intents', 4014: 'не са включени Server Members Intent и Message Content Intent (Bot → Privileged Gateway Intents)' };
+  const intents: Record<number, string> = { 4004: 'грешен токен', 4013: 'невалидни intents', 4014: 'не е включен Message Content Intent (Bot → Privileged Gateway Intents)' };
   add(
     'Връзка на worker-а с Discord',
-    state?.state === 'ready',
-    !state ? 'Още няма данни — worker-ът не е стартирал с тази версия.' : state.state === 'ready' ? 'Свързан.' : state.code && intents[state.code] ? `Затворена: ${intents[state.code]}.` : `Състояние: ${state.state}${state.code ? ` (код ${state.code})` : ''}${state.error ? ` — ${state.error}` : ''}.`,
+    state?.state === 'ready' && !state.limited,
+    !state
+      ? 'Още няма данни — worker-ът не е стартирал с тази версия.'
+      : state.state === 'ready' && state.limited
+        ? 'Свързан без Message Content: командите работят, но съобщенията от канала на компанията в Discord не стигат до играта. Включи Message Content Intent (Bot → Privileged Gateway Intents) — ботът опитва пак на всеки 30 минути.'
+        : state.state === 'ready'
+          ? 'Свързан.'
+          : state.code && intents[state.code] ? `Затворена: ${intents[state.code]}.` : `Състояние: ${state.state}${state.code ? ` (код ${state.code})` : ''}${state.error ? ` — ${state.error}` : ''}.`,
   );
 
   const [linkedRow] = await db.select({ linked: sql<number>`count(*)::int` }).from(users).where(isNotNull(users.discordId));
