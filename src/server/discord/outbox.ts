@@ -3,7 +3,8 @@ import type { Database, DbOrTx } from '@/server/db/client';
 import { discordOutbox, organizations } from '@/server/db/schema';
 import { discord, noPings, type DiscordMessage } from './api';
 import { DISCORD_CHANNELS, discordConfig, type DiscordChannel } from './config';
-import { channelByName } from './guild';
+import { pingRoleFor } from './guild';
+import { layoutChannel } from './layout';
 import { ensureCompanyChannel, stripRoles, syncUserRoles } from './sync';
 
 /** Queues something for Discord once (the same dedupe key never twice). */
@@ -22,10 +23,16 @@ async function send(db: Database, target: string, payload: Record<string, unknow
   const [kind, id] = [target.slice(0, target.indexOf(':')), target.slice(target.indexOf(':') + 1)];
   if (kind === 'channel') {
     const name = DISCORD_CHANNELS[id as DiscordChannel] ?? id;
-    const channel = await channelByName(name);
+    const channelId = await layoutChannel(db, name);
     // No such channel in the server: nothing to send (the owner did not create it).
-    if (!channel) return;
-    await discord('POST', `/channels/${channel.id}/messages`, { ...payload, ...noPings });
+    if (!channelId) return;
+    // Announcements mention the role of those who picked them in #роли (unless `ping: false`).
+    const { ping, ...message } = payload as Record<string, unknown> & { ping?: boolean; content?: string };
+    const role = ping === false ? null : await pingRoleFor(id);
+    await discord('POST', `/channels/${channelId}/messages`, role ? { ...message, content: `<@&${role}> ${message.content ?? ''}`.trim(), allowed_mentions: { parse: [], roles: [role] } } : { ...noPings, ...message });
+  } else if (kind === 'msg') {
+    // A message to a channel by id (tickets, polls): may allow its own mentions.
+    await discord('POST', `/channels/${id}/messages`, { ...noPings, ...payload });
   } else if (kind === 'dm') {
     const dm = await discord<{ id: string }>('POST', '/users/@me/channels', { recipient_id: id });
     await discord('POST', `/channels/${dm.id}/messages`, { ...payload, ...noPings });

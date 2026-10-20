@@ -1,10 +1,12 @@
 import { and, asc, eq, gt, isNotNull, isNull } from 'drizzle-orm';
 import { isVip } from '@/lib/game/vip';
+import { isStaff } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
 import { companyMembers, companyRanks, jobState, organizations, users } from '@/server/db/schema';
 import { discord, DiscordError } from './api';
 import { COMPANY_CATEGORY, discordConfig } from './config';
 import { ensureRole, forgetGuild, gameRole, guild, managedRoleIds } from './guild';
+import { layoutCategory } from './layout';
 import { enqueue } from './outbox';
 
 const VIEW = 1n << 10n;
@@ -36,6 +38,7 @@ async function desiredRoles(db: Database, userId: string, now: Date) {
   if (u.level >= 20) want.push(await gameRole('level20'));
   if (isVip(u.vipUntil, now)) want.push(await gameRole('vip'));
   if (m?.isOwner) want.push(await gameRole('owner'));
+  if (isStaff(u.role)) want.push(await gameRole('staff'));
   if (m?.org.discordChannel && m.org.discordRoleId) want.push(m.org.discordRoleId);
   return { discordId: u.discordId, want: new Set(want) };
 }
@@ -92,7 +95,7 @@ export async function syncAllRoles(db: Database, now = new Date(), page = 40) {
   return rows.length;
 }
 
-const channelName = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'компания';
+const channelName = (name: string) => `🚚┃${name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'компания'}`;
 
 /**
  * A company's private channel in the server (category "Компании"): its own
@@ -113,8 +116,8 @@ export async function ensureCompanyChannel(db: Database, organizationId: string)
   const color = org.liveryColor ? parseInt(org.liveryColor.slice(1), 16) : 0x2f7bff;
   const roleId = org.discordRoleId ?? (await ensureRole(`Компания · ${org.name}`.slice(0, 100), color));
   const g = await guild(true);
-  let category = g.channels.find((c) => c.type === 4 && c.name.toLowerCase() === COMPANY_CATEGORY.toLowerCase());
-  if (!category) category = await discord('POST', `/guilds/${guildId}/channels`, { name: COMPANY_CATEGORY, type: 4 });
+  let categoryId = await layoutCategory(db, 'компании', COMPANY_CATEGORY);
+  if (!categoryId) categoryId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: COMPANY_CATEGORY, type: 4 })).id;
   let channelId = org.discordChannelId && g.channels.some((c) => c.id === org.discordChannelId) ? org.discordChannelId : null;
   const overwrites = [
     { id: guildId, type: 0, deny: allow(VIEW) },
@@ -122,7 +125,7 @@ export async function ensureCompanyChannel(db: Database, organizationId: string)
     { id: g.botId, type: 1, allow: allow(VIEW, SEND, HISTORY, EMBED, WEBHOOKS) },
   ];
   if (!channelId) {
-    const ch = await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: channelName(org.name), type: 0, parent_id: category!.id, topic: `Чатът на „${org.name}“ — свързан с чата в TransVerse.`, permission_overwrites: overwrites });
+    const ch = await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: channelName(org.name), type: 0, parent_id: categoryId, topic: `Чатът на „${org.name}“ — свързан с чата в TransVerse.`, permission_overwrites: overwrites });
     channelId = ch.id;
   } else {
     await discord('PATCH', `/channels/${channelId}`, { name: channelName(org.name), permission_overwrites: overwrites });

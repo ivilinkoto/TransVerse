@@ -9,6 +9,7 @@ import { closeDb } from '@/server/db/client';
 import { companyMessages, discordOutbox, notifications, organizations, userBadges, users } from '@/server/db/schema';
 import { announceFromGame } from '@/server/discord/announce';
 import { runCommand } from '@/server/discord/commands';
+import { answerInteraction } from '@/server/discord/interaction';
 import { messageFromDiscord } from '@/server/discord/gateway';
 import { channelPermissions } from '@/server/discord/diagnose';
 import { channelKey } from '@/server/discord/guild';
@@ -88,7 +89,10 @@ describe('interactions', () => {
     expect((await runCommand(db(), { name: 'компания', options: {}, discordUserId: id })).embeds![0]!.title).toContain('Тест');
     expect((await runCommand(db(), { name: 'класация', options: { 'вид': 'companies' }, discordUserId: id })).embeds![0]!.title).toBe('Класация · Компании');
     expect((await runCommand(db(), { name: 'борса', options: { 'град': 'София' }, discordUserId: id })).embeds![0]!.title).toBe('Борса · София');
-    expect((await runCommand(db(), { name: 'дневна', options: {}, discordUserId: id })).content).toMatch(/Наградата за днес/);
+    // /дневна has its own handler now, with a "Вземи наградата" button.
+    const daily = JSON.stringify((await answerInteraction(db(), { type: 2, data: { name: 'дневна' }, member: { user: { id } } })).response);
+    expect(daily).toMatch(/Наградата за днес/);
+    expect(daily).toContain('daily:claim');
   });
 });
 

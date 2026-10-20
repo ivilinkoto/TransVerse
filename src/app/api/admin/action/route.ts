@@ -10,6 +10,9 @@ import { setSeasonMode } from '@/server/seasonal';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
 import { diagnoseDiscord, repairDiscord } from '@/server/discord/diagnose';
+import { applyLayout, planLayout } from '@/server/discord/layout';
+import { postPanels } from '@/server/discord/panels';
+import { discordConfig } from '@/server/discord/config';
 import { resolveReport, unmute } from '@/server/game/moderation';
 import { createUrgentContract, urgentSchema } from '@/server/urgent';
 
@@ -35,6 +38,9 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('checkPaypal') }),
   z.object({ type: z.literal('checkDiscord') }),
   z.object({ type: z.literal('repairDiscord') }),
+  z.object({ type: z.literal('discordLayoutPlan') }),
+  z.object({ type: z.literal('discordLayoutApply'), permissions: z.boolean().default(false) }),
+  z.object({ type: z.literal('discordPanels') }),
   z.object({ type: z.literal('resetLink'), userId: id }),
   z.object({ type: z.literal('resolveReport'), reportId: id, action: z.enum(['dismiss', 'warn', 'delete_message', 'mute_h24', 'mute_d7']) }),
   z.object({ type: z.literal('unmute'), userId: id }),
@@ -113,6 +119,23 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'checkDiscord':
       requireAdminRole(user);
       return { ok: true, checks: await diagnoseDiscord(db) };
+    case 'discordLayoutPlan':
+      requireAdminRole(user);
+      if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
+      return { ok: true, plan: await planLayout(db) };
+    case 'discordLayoutApply': {
+      requireAdminRole(user);
+      if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
+      const { created } = await applyLayout(db, { permissions: input.permissions });
+      const panels = await postPanels(db, created);
+      await recordAudit(db, user.id, 'discord_layout', null, { created, panels, permissions: input.permissions });
+      return { ok: true, created, panels };
+    }
+    case 'discordPanels': {
+      requireAdminRole(user);
+      if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
+      return { ok: true, panels: await postPanels(db) };
+    }
     case 'repairDiscord': {
       requireAdminRole(user);
       const done = await repairDiscord(db);

@@ -26,6 +26,16 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return `Създаде ивент „${String(d.name ?? '')}“${d.startsAt ? ` (от ${new Date(String(d.startsAt)).toLocaleString('bg-BG')})` : ''}`;
     case 'season_mode':
       return `Смени празничната тема: ${d.value === 'auto' ? 'автоматично по дати' : d.value === 'off' ? 'изключена' : `винаги ${String(d.value).replace('on:', '')}`}`;
+    case 'discord_layout':
+      return `Подреди Discord сървъра: ${(d.created as string[] | undefined)?.length ?? 0} нови канала/категории${d.permissions ? ', с правата' : ''}`;
+    case 'discord_warn':
+      return `Предупреждение в Discord${target ? ` за ${who}` : ''}: ${String(d.reason ?? '')}`;
+    case 'discord_timeout':
+      return `Заглуши в Discord${target ? ` ${who}` : ''}${d.inGame ? ' (и в играта)' : ''}: ${String(d.reason ?? '')}`;
+    case 'discord_ban':
+      return `Бан в Discord${target ? ` на ${who}` : ''}: ${String(d.reason ?? '')}`;
+    case 'discord_unban':
+      return `Свален бан в Discord${target ? ` на ${who}` : ''}`;
     case 'discord_repair':
       return `Поправка на Discord бота: ${Number(d.commands ?? 0)} команди, роли за ${Number(d.players ?? 0)} свързани играчи`;
     case 'verify_email':

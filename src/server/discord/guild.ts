@@ -1,5 +1,5 @@
 import { discord } from './api';
-import { discordConfig, DISCORD_ROLES, type DiscordRole } from './config';
+import { discordConfig, DISCORD_ROLES, PING_ROLES, type DiscordRole } from './config';
 
 interface Channel {
   id: string;
@@ -62,4 +62,12 @@ export async function managedRoleIds(extra: string[] = []) {
   const { roles } = await guild();
   const names = new Set<string>(Object.values(DISCORD_ROLES).map((r) => r.name));
   return new Set([...roles.filter((r) => names.has(r.name)).map((r) => r.id), ...extra]);
+}
+
+/** The pick-your-pings role of an announcement channel, if it exists (never made here). */
+export async function pingRoleFor(channel: string) {
+  const entry = Object.values(PING_ROLES).find((r) => r.channel === channel);
+  if (!entry) return null;
+  const { roles } = await guild();
+  return roles.find((r) => r.name === entry.name)?.id ?? null;
 }

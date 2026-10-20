@@ -30,10 +30,18 @@ export const DISCORD_CHANNELS = {
   battles: 'битки',
   builds: 'строежи',
   news: 'седмичник',
+  rankings: 'класации',
+  giveaways: 'раздавания',
+  welcome: 'добре-дошли',
+  logs: 'логове',
+  warnings: 'предупреждения',
+  bans: 'банове',
 } as const;
 export type DiscordChannel = keyof typeof DISCORD_CHANNELS;
-/** The category the companies' private channels go into. */
+/** The category the companies' private channels go into (matched without emoji and decorations). */
 export const COMPANY_CATEGORY = 'Компании';
+/** The category of the support tickets' private channels. */
+export const TICKET_CATEGORY = 'Отворени тикети';
 
 /** Roles the bot gives to linked players (created when missing). */
 export const DISCORD_ROLES = {
@@ -42,8 +50,23 @@ export const DISCORD_ROLES = {
   vip: { name: 'VIP', color: 0xa66bff },
   owner: { name: 'Собственик на компания', color: 0xf97316 },
   linked: { name: 'Свързан с играта', color: 0x2fd27a },
+  /** Support, admins and the founder of the game: sees the staff channels and the tickets. */
+  staff: { name: 'Екип TransVerse', color: 0xe04545 },
 } as const;
 export type DiscordRole = keyof typeof DISCORD_ROLES;
+
+/**
+ * Roles anyone picks in #роли to be pinged by an announcement channel
+ * (not managed: the bot never takes them away on its own).
+ */
+export const PING_ROLES = {
+  updates: { name: '🔔 Обновления', label: 'Обновления', emoji: '🆕', channel: 'updates' },
+  events: { name: '🔔 Ивенти', label: 'Ивенти', emoji: '🎯', channel: 'events' },
+  battles: { name: '🔔 Битки', label: 'Битки', emoji: '⚔️', channel: 'battles' },
+  news: { name: '🔔 Седмичник', label: 'Седмичник', emoji: '📰', channel: 'news' },
+  giveaways: { name: '🔔 Раздавания', label: 'Раздавания', emoji: '🎁', channel: 'giveaways' },
+} as const;
+export type PingRole = keyof typeof PING_ROLES;
 
 /** Embed colour of the game. */
 export const BRAND = 0xf97316;

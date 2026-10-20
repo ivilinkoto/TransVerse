@@ -35,7 +35,12 @@ import { awardBuildersOfWeek } from './base-life';
 import { announceFromGame } from '@/server/discord/announce';
 import { processOutbox } from '@/server/discord/outbox';
 import { bridgeCompanyChat, relayNotifications } from '@/server/discord/relay';
+import { syncCompanyPolls } from '@/server/discord/company-polls';
+import { drawGiveaways } from '@/server/discord/giveaways';
 import { registerCommands } from '@/server/discord/register';
+import { updateStats } from '@/server/discord/stats';
+import { syncTickets } from '@/server/discord/tickets';
+import { announceWeeklyRanking } from '@/server/discord/weekly';
 import { syncAllRoles } from '@/server/discord/sync';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
@@ -201,8 +206,17 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'discord-chat', 15_000, now, async () => {
       await bridgeCompanyChat(db, now);
       await relayNotifications(db, now);
+      await syncTickets(db, now);
       await processOutbox(db, now);
     });
+    // Giveaways that ended and company polls in the company channels.
+    await every(db, 'discord-community', 60_000, now, async () => {
+      await drawGiveaways(db, now);
+      await syncCompanyPolls(db, now);
+    });
+    // The numbers in the names of the statistics channels (Discord allows two renames per ten minutes).
+    await every(db, 'discord-stats', 10 * 60_000, now, () => updateStats(db, now));
+    await every(db, 'discord-weekly', 30 * 60_000, now, () => announceWeeklyRanking(db, now));
     await every(db, 'discord-announce', 5 * 60_000, now, () => announceFromGame(db, now));
     await every(db, 'discord-roles', 10 * 60_000, now, () => syncAllRoles(db, now));
     // Again now and then: the bot may have been added to the server after the worker started.

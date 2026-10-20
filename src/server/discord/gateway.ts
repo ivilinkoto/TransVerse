@@ -4,11 +4,16 @@ import { companyMembers, companyMessages, jobState, organizations, users } from 
 import { discord } from './api';
 import { discordConfig } from './config';
 import { answerInteraction, type Interaction } from './interaction';
+import { banChanged, memberJoined, memberLeft, memberUpdated, messageDeleted, messageEdited, rememberMessage } from './logs';
+import { ticketMessageFromDiscord } from './tickets';
 
-/** GUILDS | GUILD_MESSAGES | MESSAGE_CONTENT (privileged: turned on in the Developer Portal). */
-const INTENTS = (1 << 0) | (1 << 9) | (1 << 15);
-/** Without the privileged intent: commands still work, the bridge gets no message text. */
-const BASIC_INTENTS = (1 << 0) | (1 << 9);
+/**
+ * GUILDS | GUILD_MEMBERS | GUILD_MODERATION | GUILD_MESSAGES | MESSAGE_CONTENT
+ * (members and message content are privileged: turned on in the Developer Portal).
+ */
+const INTENTS = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 9) | (1 << 15);
+/** Without the privileged intents: commands still work; no welcome, no message text for the bridge and the log. */
+const BASIC_INTENTS = (1 << 0) | (1 << 2) | (1 << 9);
 /** How often a connection without Message Content tries the full intents again. */
 const RETRY_FULL_MS = 30 * 60_000;
 
@@ -66,7 +71,47 @@ async function saveState(db: Database, value: GatewayState) {
 /** A slash command that came through the gateway (when no Interactions Endpoint URL is set). */
 async function interactionFromGateway(db: Database, i: Interaction) {
   if (!i.id || !i.token) return;
-  await discord('POST', `/interactions/${i.id}/${i.token}/callback`, await answerInteraction(db, i));
+  const { response, later } = await answerInteraction(db, i);
+  await discord('POST', `/interactions/${i.id}/${i.token}/callback`, response);
+  if (later) await later();
+}
+
+/** Server events: the chat bridges (company channels, tickets), the welcome and the team's log. */
+function onEvent(db: Database, type: string, d: unknown) {
+  const run = (what: string, p: Promise<unknown>) => void p.catch((e) => console.warn(`[discord] ${what} failed`, (e as Error).message));
+  const guildId = discordConfig().guildId;
+  const inGuild = (d as { guild_id?: string }).guild_id === guildId;
+  switch (type) {
+    case 'MESSAGE_CREATE': {
+      const m = d as DiscordMessageEvent;
+      if (inGuild) rememberMessage(m);
+      run('bridge', messageFromDiscord(db, m));
+      if (inGuild) run('ticket', ticketMessageFromDiscord(db, m));
+      break;
+    }
+    case 'MESSAGE_UPDATE':
+      if (inGuild) run('log', messageEdited(db, d as Parameters<typeof messageEdited>[1]));
+      break;
+    case 'MESSAGE_DELETE':
+      if (inGuild) run('log', messageDeleted(db, d as Parameters<typeof messageDeleted>[1]));
+      break;
+    case 'GUILD_MEMBER_ADD':
+      if (inGuild) run('welcome', memberJoined(db, d as Parameters<typeof memberJoined>[1]));
+      break;
+    case 'GUILD_MEMBER_REMOVE':
+      if (inGuild) run('log', memberLeft(db, d as Parameters<typeof memberLeft>[1]));
+      break;
+    case 'GUILD_MEMBER_UPDATE':
+      if (inGuild) run('log', memberUpdated(db, d as Parameters<typeof memberUpdated>[1]));
+      break;
+    case 'GUILD_BAN_ADD':
+    case 'GUILD_BAN_REMOVE':
+      if (inGuild) run('log', banChanged(db, d as Parameters<typeof banChanged>[1], type === 'GUILD_BAN_ADD'));
+      break;
+    case 'INTERACTION_CREATE':
+      run('command', interactionFromGateway(db, d as Interaction));
+      break;
+  }
 }
 
 /**
@@ -146,11 +191,7 @@ export function startGateway(db: Database) {
               reconnect(0);
             }, RETRY_FULL_MS);
           }
-        } else if (p.t === 'MESSAGE_CREATE') {
-          void messageFromDiscord(db, p.d as DiscordMessageEvent).catch((e) => console.warn('[discord] bridge failed', (e as Error).message));
-        } else if (p.t === 'INTERACTION_CREATE') {
-          void interactionFromGateway(db, p.d as Interaction).catch((e) => console.warn('[discord] command failed', (e as Error).message));
-        }
+        } else if (p.t) onEvent(db, p.t, p.d);
       }
     };
     ws.onclose = (event) => {

@@ -577,9 +577,11 @@ export const supportMessages = pgTable(
     /** Written by staff (support/admin/founder) rather than the player. */
     staff: boolean('staff').notNull(),
     body: text('body').notNull(),
+    /** Written in the ticket's Discord channel (that message is not sent back there). */
+    discordMessageId: text('discord_message_id'),
     createdAt: createdAt(),
   },
-  (t) => [index('support_messages_ticket_idx').on(t.ticketId, t.id)],
+  (t) => [index('support_messages_ticket_idx').on(t.ticketId, t.id), uniqueIndex('support_messages_discord_idx').on(t.discordMessageId)],
 );
 
 /** Every administrative action, for accountability. */
@@ -1668,6 +1670,11 @@ export const companyPolls = pgTable(
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     closesAt: ts('closes_at').notNull(),
     closedAt: ts('closed_at'),
+    /** The poll's message (with vote buttons) in the company's Discord channel. */
+    discordChannelId: text('discord_channel_id'),
+    discordMessageId: text('discord_message_id'),
+    /** Votes shown in that message the last time it was updated; -1 once the final result is shown. */
+    discordVotes: integer('discord_votes').notNull().default(0),
     createdAt: createdAt(),
   },
   (t) => [index('company_polls_org_idx').on(t.organizationId, t.createdAt)],
@@ -1733,7 +1740,7 @@ export const discordOutbox = pgTable(
   {
     id: bigserial('id', { mode: 'number' }).primaryKey(),
     dedupeKey: text('dedupe_key').notNull(),
-    /** channel:<name> | dm:<discord user id> | company:<organization id> | job:<kind> */
+    /** channel:<key> | msg:<channel id> | dm:<discord user id> | company:<organization id> | job:<kind> */
     target: text('target').notNull(),
     payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
     attempts: integer('attempts').notNull().default(0),
@@ -1743,4 +1750,74 @@ export const discordOutbox = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('discord_outbox_dedupe_idx').on(t.dedupeKey), index('discord_outbox_due_idx').on(t.sentAt, t.nextAttemptAt)],
+);
+
+/**
+ * Support tickets opened in Discord (#тикети): a private channel for the
+ * player and the team. With a linked account it is also a ticket in the game
+ * and the messages go both ways.
+ */
+export const discordTickets = pgTable(
+  'discord_tickets',
+  {
+    channelId: text('channel_id').primaryKey(),
+    discordUserId: text('discord_user_id').notNull(),
+    ticketId: uuid('ticket_id').references(() => supportTickets.id, { onDelete: 'set null' }),
+    subject: text('subject').notNull(),
+    closedAt: ts('closed_at'),
+    /** The channel was removed (a day after closing). */
+    deletedAt: ts('deleted_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('discord_tickets_user_idx').on(t.discordUserId), index('discord_tickets_ticket_idx').on(t.ticketId)],
+);
+
+/** Warnings, timeouts and bans given in the Discord server (/предупреждение, /заглуши, /бан). */
+export const discordSanctions = pgTable(
+  'discord_sanctions',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    discordUserId: text('discord_user_id').notNull(),
+    /** The game account, when linked. */
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    kind: text('kind').notNull(), // warn | timeout | ban | unban
+    reason: text('reason').notNull(),
+    until: ts('until'),
+    /** The chat in the game was muted too. */
+    inGame: boolean('in_game').notNull().default(false),
+    moderatorDiscordId: text('moderator_discord_id').notNull(),
+    moderatorUserId: uuid('moderator_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('discord_sanctions_user_idx').on(t.discordUserId, t.createdAt)],
+);
+
+/** ТрансКоин giveaways in #раздавания: linked players press "Участвам", the worker draws the winners at the end. */
+export const discordGiveaways = pgTable(
+  'discord_giveaways',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    prizeCoins: integer('prize_coins').notNull(),
+    winners: integer('winners').notNull().default(1),
+    endsAt: ts('ends_at').notNull(),
+    channelId: text('channel_id'),
+    messageId: text('message_id'),
+    createdByDiscordId: text('created_by_discord_id').notNull(),
+    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    drawnAt: ts('drawn_at'),
+    winnerIds: uuid('winner_ids').array().notNull().default(sql`'{}'::uuid[]`),
+    createdAt: createdAt(),
+  },
+  (t) => [index('discord_giveaways_due_idx').on(t.drawnAt, t.endsAt)],
+);
+
+export const discordGiveawayEntries = pgTable(
+  'discord_giveaway_entries',
+  {
+    giveawayId: uuid('giveaway_id').notNull().references(() => discordGiveaways.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.giveawayId, t.userId] })],
 );
