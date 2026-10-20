@@ -39,6 +39,8 @@ export const FEATURES = {
   build_badges: '1.3',
   build_boom: '1.3',
   company_polls: '1.3',
+  chat_replies: '1.3',
+  chat_unread: '1.3',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

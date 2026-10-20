@@ -711,6 +711,8 @@ export const companyMessages = pgTable(
     companyId: uuid('company_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     body: text('body').notNull(),
+    /** The message this one answers (same company). */
+    replyToId: bigint('reply_to_id', { mode: 'number' }),
     createdAt: createdAt(),
     deletedAt: ts('deleted_at'),
     deletedBy: uuid('deleted_by').references(() => users.id, { onDelete: 'set null' }),
@@ -1060,6 +1062,8 @@ export const directMessages = pgTable(
     senderId: uuid('sender_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     recipientId: uuid('recipient_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     body: text('body').notNull(),
+    /** The message this one answers (same conversation). */
+    replyToId: bigint('reply_to_id', { mode: 'number' }),
     createdAt: createdAt(),
     readAt: ts('read_at'),
     /** Unsent by the sender: gone for both. */
@@ -1082,6 +1086,8 @@ export const chatMessages = pgTable(
     channel: text('channel').notNull(),
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     body: text('body').notNull(),
+    /** The message this one answers (same channel). */
+    replyToId: bigint('reply_to_id', { mode: 'number' }),
     createdAt: createdAt(),
     deletedAt: ts('deleted_at'),
     deletedBy: uuid('deleted_by').references(() => users.id, { onDelete: 'set null' }),
@@ -1656,4 +1662,16 @@ export const companyPollVotes = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.pollId, t.userId] })],
+);
+
+/** How far a player has read a chat channel ('global', 'trade', 'company:<id>'): newer messages are unread. */
+export const chatReads = pgTable(
+  'chat_reads',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    channel: text('channel').notNull(),
+    lastReadId: bigint('last_read_id', { mode: 'number' }).notNull().default(0),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.channel] })],
 );
