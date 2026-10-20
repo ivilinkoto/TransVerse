@@ -147,6 +147,8 @@ export const users = pgTable(
     seenVersion: text('seen_version'),
     /** Seasonal decorations (Halloween…) on or off for this player. */
     seasonalTheme: boolean('seasonal_theme').notNull().default(true),
+    /** Own trucks wear the company's livery (when it has one). */
+    companyLivery: boolean('company_livery').notNull().default(true),
     /** Available to drive loads handed over by companies (for a commission). */
     forHire: boolean('for_hire').notNull().default(false),
     /** Offers to mentor new players (level 15+). */
@@ -254,6 +256,8 @@ export const vehicles = pgTable(
     status: text('status').notNull().default('idle'), // idle | on_delivery
     condition: real('condition').notNull().default(100),
     odometerKm: real('odometer_km').notNull().default(0),
+    /** Odometer at the last maintenance (v1.3): overdue trucks break down more often. */
+    serviceKm: real('service_km').notNull().default(0),
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
     /** Special paint scheme on top of the colour (e.g. 'pumpkin' from Halloween 2026); null = plain colour. */
     livery: text('livery'),
@@ -665,6 +669,8 @@ export const organizations = pgTable(
     companyLevel: integer('company_level').notNull().default(1),
     /** Purchased upgrade levels, e.g. { logistics: 2 }. */
     upgrades: jsonb('upgrades').$type<Record<string, number>>().notNull().default({}),
+    /** The company's livery: the colour its members' trucks wear (null = everyone their own). */
+    liveryColor: text('livery_color'),
     brandingVersion: integer('branding_version').notNull().default(0),
     /** The company's own money — separate from every member's (and the owner's) personal balance. */
     treasuryCents: money('treasury_cents').notNull().default(0),
@@ -1573,4 +1579,15 @@ export const companyBuilds = pgTable(
     uniqueIndex('company_builds_active_idx').on(t.organizationId).where(sql`${t.status} in ('materials', 'building')`),
     index('company_builds_due_idx').on(t.status, t.endsAt),
   ],
+);
+
+/** "Браво" for a company's base, one per player and company (the most liked bases rank). */
+export const plotLikes = pgTable(
+  'plot_likes',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.organizationId] }), index('plot_likes_org_idx').on(t.organizationId, t.createdAt)],
 );

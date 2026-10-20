@@ -1,6 +1,9 @@
 import { PlayerName } from '@/components/game/PlayerName';
+import { PlotScene, VIEW } from '@/components/company/plot/scene';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { publicPlot } from '@/server/game/plot';
 import { isVip } from '@/lib/game/vip';
-import { Building2, ScrollText } from 'lucide-react';
+import { Building, Building2, ScrollText } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CompanyBrand } from '@/components/company/CompanyBrand';
@@ -27,6 +30,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
   if (!row) notFound();
   const c = row.company;
   const [assets, members, mine, applications, licences, highlights] = await Promise.all([assetKinds(db, c.id), companyMembersView(db, c.id), membershipOf(db, user.id), myApplications(db, user.id), companyLicenceSet(db, c.id), companyHighlights(db, c.id, now)]);
+  const base = features.plot_guests ? await publicPlot(db, c.id, user.id) : null;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   const bonuses = memberBonuses(c.upgrades as UpgradeLevels);
   const applied = applications.some((a) => a.application.companyId === c.id);
@@ -44,6 +48,26 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 space-y-6">
           {features.company_profile && highlights && <CompanyHighlights h={highlights} />}
+          {base && base.buildings.some((b) => b.level > 0 || base.construction) && (
+            <Card
+              title={<span className="inline-flex items-center gap-2"><Building className="h-4 w-4 text-mist-400" />Базата</span>}
+              actions={mine?.company.id === c.id ? <Link href="/game/company/plot" className="text-xs text-cyan-glow hover:underline">Към участъка →</Link> : <ActionButton action={{ type: 'likePlot', organizationId: c.id }} className={base.liked ? 'btn-primary px-3 py-1 text-xs' : 'btn-ghost px-3 py-1 text-xs'}>👍 {base.liked ? 'Харесано' : 'Браво'} · {base.likes}</ActionButton>}
+            >
+              <svg viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} className="block aspect-[1080/780] w-full rounded-xl" role="img" aria-label={`Базата на „${c.name}“`}>
+                <PlotScene
+                  buildings={base.buildings}
+                  construction={base.construction && { type: base.construction.type, status: base.construction.status, delivered: base.construction.delivered, progress: base.construction.startedAt && base.construction.endsAt ? Math.min(1, (now.getTime() - base.construction.startedAt.getTime()) / Math.max(1, base.construction.endsAt.getTime() - base.construction.startedAt.getTime())) : 0 }}
+                  ghost={null}
+                  selected={null}
+                  parkedTrucks={Math.min(6, row.members + 1)}
+                  incoming={0}
+                  grid={false}
+                  liveryColor={base.liveryColor}
+                />
+              </svg>
+              {base.likes > 0 && <p className="mt-2 text-xs text-mist-400">{base.likes} {base.likes === 1 ? 'играч харесва' : 'играчи харесват'} тази база.</p>}
+            </Card>
+          )}
           <Card title={<span className="inline-flex items-center gap-2"><Building2 className="h-4 w-4 text-mist-400" />За компанията</span>}>
             {c.description ? <p className="whitespace-pre-wrap break-words text-sm text-mist-200">{c.description}</p> : <p className="text-sm text-mist-400">Няма описание.</p>}
           </Card>

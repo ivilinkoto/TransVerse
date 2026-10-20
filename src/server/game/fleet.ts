@@ -5,6 +5,7 @@ import type { Database, DbOrTx } from '@/server/db/client';
 import { cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';
 import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
+import { maintenanceCostCents, maintenanceState } from '@/lib/game/maintenance';
 import { assertNotLeased } from './leasing';
 import { bonusesForUser } from './membership';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
@@ -165,6 +166,23 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
     await post(tx, company.id, [{ category: 'repairs', amountCents: -cost, description: `Ремонт ${v.plate}`, idempotencyKey: `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}` }], { requireFunds: true });
     await tx.update(vehicles).set({ condition: 100 }).where(eq(vehicles.id, v.id));
     if (trailer) await tx.update(trailers).set({ condition: 100 }).where(eq(trailers.id, trailer.id));
+    return cost;
+  });
+}
+
+/** Maintenance: services an idle own truck (its kilometres since the last service start again). */
+export async function serviceVehicle(db: Database, userId: string, vehicleId: string) {
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const v = await ownedVehicle(tx, company.id, vehicleId);
+    if (v.ownership === 'rented') fail('rented', 'Поддръжката на наетите превозни средства е за сметка на наемодателя.');
+    if (v.status !== 'idle') fail('vehicle_busy', 'Профилактика се прави само между курсовете.');
+    if (maintenanceState(v.odometerKm, v.serviceKm).fresh) fail('fresh', 'Камионът наскоро мина профилактика.');
+    const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
+    const vip = (await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0;
+    const cost = maintenanceCostCents(powerUnitModel(v.modelId).priceCents, 1 - (1 - service) * (1 - vip));
+    await post(tx, company.id, [{ category: 'maintenance', amountCents: -cost, description: `Профилактика ${v.plate}`, idempotencyKey: `service:${v.id}:${v.odometerKm.toFixed(1)}`, refType: 'vehicle', refId: v.id }], { requireFunds: true });
+    await tx.update(vehicles).set({ serviceKm: v.odometerKm }).where(eq(vehicles.id, v.id));
     return cost;
   });
 }

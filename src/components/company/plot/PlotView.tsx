@@ -11,7 +11,7 @@ import { BUILDINGS, BUILDING_TYPES, levelSpec, MATERIAL_IDS, MATERIALS, material
 import { PlotScene, toTile, VIEW } from './scene';
 
 export interface PlotData {
-  org: { name: string; level: number; treasuryCents: number };
+  org: { name: string; level: number; treasuryCents: number; liveryColor?: string | null };
   hq: { nameBg: string } | null;
   buildings: { type: BuildingType; x: number; y: number; level: number }[];
   construction: {
@@ -137,7 +137,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           role="img"
           aria-label={`Участъкът на „${data.org.name}“`}
         >
-          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!placing} />
+          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!placing} liveryColor={data.org.liveryColor ?? null} />
         </svg>
         <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 px-3 py-2 text-xs text-mist-300 backdrop-blur">
           <b className="block text-sm text-white">Участък · {data.hq?.nameBg ?? ''}</b>

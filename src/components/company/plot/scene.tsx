@@ -146,6 +146,8 @@ export function buildingHeight(type: BuildingType, level: number) {
       return 1.7;
     case 'parking':
       return 0.05;
+    case 'warehouse':
+      return 1.8 + level * 0.15;
   }
 }
 
@@ -228,14 +230,39 @@ function service(f: Footprint, level: number) {
   return out;
 }
 
-function parking(f: Footprint, level: number, trucks: number) {
+function warehouse(f: Footprint, level: number) {
+  const x0 = f.x + 0.15, y0 = f.y + 0.15, x1 = f.x + f.w - 0.2, y1 = f.y + f.h - 0.55;
+  const h = buildingHeight('warehouse', level);
+  const out: ReactNode[] = [shadow(x0, y0, x1, y1, h), box(x0, y0, x1, y1, 0, h, faces([150, 172, 196]))];
+  // Corrugated walls, an orange band and vents on the roof.
+  for (let x = x0 + 0.15; x < x1; x += 0.2) out.push(<Line key={k()} a={[x, y1, 0.05]} b={[x, y1, h - 0.3]} stroke="#93a8bf" w={0.7} />);
+  out.push(box(x0, y1 - 0.08, x1, y1, h - 0.3, 0.22, faces([249, 115, 22])));
+  for (let x = x0 + 0.6; x < x1 - 0.4; x += 1.1) out.push(box(x, (y0 + y1) / 2 - 0.2, x + 0.35, (y0 + y1) / 2 + 0.2, h, 0.25, faces([170, 178, 190])));
+  // Roll-up doors and pallets of goods outside, more with every level.
+  const doors = 1 + level;
+  const step = (x1 - x0 - 0.2) / doors;
+  for (let i = 0; i < doors; i++) {
+    const xa = x0 + 0.15 + i * step;
+    out.push(onY(y1, xa, xa + step * 0.75, 0.05, 1.05, '#5d6878'));
+    for (let z = 0.15; z < 1.05; z += 0.12) out.push(<Line key={k()} a={[xa, y1, z]} b={[xa + step * 0.75, y1, z]} stroke="#76839a" w={0.6} />);
+  }
+  for (let i = 0; i < level + 1; i++) {
+    const px = x0 + 0.2 + i * 0.75;
+    out.push(box(px, y1 + 0.15, px + 0.55, y1 + 0.6, 0.05, 0.1, faces([196, 160, 112])));
+    out.push(box(px + 0.04, y1 + 0.18, px + 0.51, y1 + 0.57, 0.15, 0.32 + (i % 2) * 0.1, faces([224, 196, 150])));
+  }
+  return out;
+}
+
+function parking(f: Footprint, level: number, trucks: number, livery: string | null) {
   const x0 = f.x + 0.1, y0 = f.y + 0.1, x1 = f.x + f.w - 0.1, y1 = f.y + f.h - 0.1;
   const out: ReactNode[] = [flat(x0, y0, x1, y1, 0.04, '#6b717c'), flat(x0 + 0.05, y0 + 0.05, x1 - 0.05, y1 - 0.05, 0.045, '#5d636e')];
   const bays = Math.max(3, Math.min(Math.floor((x1 - x0) / 1.2), 2 + level));
   const step = (x1 - x0) / bays;
   for (let i = 0; i <= bays; i++) out.push(flat(x0 + i * step, y0 + 0.2, x0 + i * step + 0.06, y1 - 0.2, 0.05, '#f2f0e4'));
   const colors: [number, number, number][] = [[47, 123, 255], [246, 195, 67], [166, 107, 255], [47, 210, 122], [224, 69, 69]];
-  for (let i = 0; i < Math.min(trucks, bays); i++) out.push(truck(x0 + i * step + (step - 0.9) / 2, y0 + 0.2, [235, 240, 246], colors[i % colors.length]!, true));
+  const rgb = livery ? ([1, 3, 5].map((i) => parseInt(livery.slice(i, i + 2), 16)) as [number, number, number]) : null;
+  for (let i = 0; i < Math.min(trucks, bays); i++) out.push(truck(x0 + i * step + (step - 0.9) / 2, y0 + 0.2, rgb ?? [235, 240, 246], rgb ? [235, 240, 246] : colors[i % colors.length]!, true));
   // Ticket booth and a light pole.
   out.push(box(x1 - 0.5, y1 - 0.5, x1 - 0.1, y1 - 0.1, 0.05, 0.8, faces([226, 232, 240])));
   out.push(lamp(x0 + 0.2, y1 - 0.2));
@@ -323,12 +350,14 @@ export interface SceneProps {
   incoming: number;
   /** Show the tile grid (placement). */
   grid: boolean;
+  /** The company livery: the trucks on the parking wear it. */
+  liveryColor?: string | null;
 }
 
 const OUTSIDE_TREES: [number, number][] = [[-1.4, 3], [-2.2, 8], [-1.2, 11], [3, -1.6], [8, -2.2], [11, -1.4], [18.5, 2], [18.2, 8], [19, 11.5], [2, 16.5], [9, 16.8], [13, 16.2], [-3, 16], [-3.5, 0], [6, -3.5], [14.5, -3]];
 const EDGE_SPOTS: [number, number][] = [[0.3, 0.3], [0.3, 4.6], [0.3, 6.4], [0.3, 11.4], [3.2, 0.3], [5.3, 0.3], [7.7, 0.3], [12.6, 0.3], [13.6, 2.4], [13.6, 6.6], [13.6, 11.4], [3.0, 11.6], [9.8, 11.6], [5.3, 11.4]];
 
-export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid }: SceneProps) {
+export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null }: SceneProps) {
   // Keys are counted from zero on every render, so the same scene gets the same keys.
   // eslint-disable-next-line react-hooks/globals
   uid = 0;
@@ -389,7 +418,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     const f = fp(b);
     const building = construction && construction.type === b.type ? construction : null;
     const node: ReactNode[] = [];
-    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : parking(f, lvl, parkedTrucks));
+    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
     if (building && b.level === 0) node.push(...site(f, b.type, building.status, building.progress, building.delivered, null));
     else if (building) node.push(...site(f, b.type, building.status, building.progress, building.delivered, finished(b.level)));
     else if (b.level > 0) node.push(...finished(b.level));

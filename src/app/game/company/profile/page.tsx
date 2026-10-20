@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation';
 import { AssetUpload, ProfileForm } from '@/components/company/forms';
 import { Card } from '@/components/ui';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { LIVERY_COLORS } from '@/lib/game/livery';
 import { COMPANY_LIMITS, hasUnlock } from '@/lib/game/company';
 import { gameContext } from '@/server/game/context';
 import { can, companyHub } from '@/server/game/membership';
@@ -10,7 +13,7 @@ export const metadata = { title: 'Профил на компанията' };
 const kb = (bytes: number) => `${Math.round(bytes / 1024)} KB`;
 
 export default async function CompanyProfilePage() {
-  const { db, user } = await gameContext();
+  const { db, user, features } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
   if (!can(hub.rank, 'edit_profile')) return <Card><p className="text-sm text-mist-400">Длъжността ви няма право да редактира профила на компанията.</p></Card>;
@@ -28,6 +31,21 @@ export default async function CompanyProfilePage() {
           <p className="text-xs text-mist-400">Качвайте само собствени изображения или такива, които имате право да използвате. Неподходящо съдържание се премахва от модераторите.</p>
         </div>
       </Card>
+      {features.livery && (
+        <Card title="Ливрея на камионите" className="lg:col-span-2">
+          <p className="mb-3 text-sm text-mist-300">Цветът, с който се боядисват камионите на членовете — на страниците на автопарка, в гаража и на участъка. Специалните бои от магазина остават. Всеки член може да я изключи за себе си от Настройки.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            {LIVERY_COLORS.map((l) => (
+              <ActionButton key={l.id} action={{ type: 'setLivery', color: l.id }} className={`flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-xs ${c.liveryColor === l.id ? 'border-cyan-glow text-white' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}>
+                <span className="h-5 w-5 rounded-md border border-white/20" style={{ background: l.id }} />
+                {l.label}
+              </ActionButton>
+            ))}
+            {c.liveryColor && <ActionButton action={{ type: 'setLivery', color: null }} className="btn-ghost px-3 py-1.5 text-xs">Без ливрея</ActionButton>}
+          </div>
+          {c.liveryColor && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={c.liveryColor} className="mt-4 h-20 w-auto" />}
+        </Card>
+      )}
     </div>
   );
 }

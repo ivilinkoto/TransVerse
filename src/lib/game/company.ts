@@ -152,7 +152,7 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
 ];
 
 /** Upgrade levels of a company; `service` and `parking` come only from buildings on the plot (v1.3). */
-export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking', number>>;
+export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking' | 'warehouse', number>>;
 
 export interface MemberBonuses {
   rewardMultiplier: number;
@@ -162,6 +162,8 @@ export interface MemberBonuses {
   repairDiscount: number;
   /** Extra truck places in each member's depot in the company's base city (the plot's parking). */
   parkingSlots: number;
+  /** Extra tonnes in each member's warehouse in the company's base city (the plot's warehouse). */
+  warehouseTons: number;
 }
 
 export function memberBonuses(upgrades: UpgradeLevels): MemberBonuses {
@@ -171,6 +173,7 @@ export function memberBonuses(upgrades: UpgradeLevels): MemberBonuses {
     xpMultiplier: 1 + 0.05 * (upgrades.training ?? 0),
     repairDiscount: 0.1 * (upgrades.service ?? 0),
     parkingSlots: upgrades.parking ?? 0,
+    warehouseTons: 40 * (upgrades.warehouse ?? 0),
   };
 }
 

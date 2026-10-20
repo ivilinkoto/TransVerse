@@ -35,7 +35,7 @@ export type MaterialId = keyof typeof MATERIALS;
 export const MATERIAL_IDS = Object.keys(MATERIALS) as MaterialId[];
 export type Materials = Partial<Record<MaterialId, number>>;
 
-export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking';
+export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse';
 
 export interface BuildingDef {
   type: BuildingType;
@@ -44,7 +44,7 @@ export interface BuildingDef {
   w: number;
   h: number;
   /** The company upgrade this building drives (its level = building level − offset). */
-  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking';
+  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse';
   offset: number;
   maxLevel: number;
   /** Materials of level 1; later levels need more. */
@@ -117,6 +117,18 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     effect: (l) => `+${l} ${l === 1 ? 'място' : 'места'} за камион в депото на всеки член в града на базата`,
     minCompanyLevel: [2, 3, 5],
   },
+  warehouse: {
+    type: 'warehouse',
+    label: 'Склад',
+    w: 4,
+    h: 3,
+    upgrade: 'warehouse',
+    offset: 0,
+    maxLevel: 3,
+    base: { cement: 18, steel: 10, bricks: 6 },
+    effect: (l) => `+${l * 40} т място в склада на всеки член в града на базата`,
+    minCompanyLevel: [2, 4, 6],
+  },
 };
 export const BUILDING_TYPES = Object.keys(BUILDINGS) as BuildingType[];
 
@@ -188,10 +200,11 @@ export function placementError(type: BuildingType, x: number, y: number, others:
 
 /** Where existing companies' buildings go when they get their plot (it all fits next to each other). */
 export const DEFAULT_SPOTS: Record<BuildingType, { x: number; y: number }> = {
-  office: { x: 1, y: 1 },
+  office: { x: 1, y: 0 },
+  service: { x: 1, y: 3 },
+  training: { x: 1, y: 6 },
+  warehouse: { x: 1, y: 9 },
   logistics: { x: 8, y: 0 },
-  training: { x: 1, y: 7 },
-  service: { x: 2, y: 4 },
   parking: { x: 8, y: 7 },
 };
 

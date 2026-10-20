@@ -1,4 +1,5 @@
 import { and, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
+import { liveryFor } from './livery';
 import { powerUnitModel, rentalBuyoutCents, trailerModel } from '@/lib/game/catalog';
 import { resaleValueCents } from '@/lib/game/economy';
 import type { Segment } from '@/lib/game/schedule';
@@ -22,6 +23,8 @@ export async function fleetView(db: DbOrTx, companyId: string) {
   const cityRows = cityIds.length ? await db.select().from(cities).where(inArray(cities.id, cityIds)) : [];
   const cityMap = new Map(cityRows.map((c) => [c.id, c]));
   const contractMap = new Map(contractRows.map((c) => [c.id, c]));
+  // The company livery paints the trucks that wear no special paint.
+  const livery = await liveryFor(db, companyId);
 
   const vehiclesOut = vs.map((v) => {
     const model = powerUnitModel(v.modelId);
@@ -32,6 +35,7 @@ export async function fleetView(db: DbOrTx, companyId: string) {
     const contract = delivery ? contractMap.get(delivery.contractId)! : null;
     return {
       ...v,
+      color: livery && !v.livery && v.ownership !== 'rented' ? livery : v.color,
       model,
       city: cityMap.get(v.cityId)!,
       trailer: trailer ? { ...trailer, model: trailerModel(trailer.modelId) } : null,

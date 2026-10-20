@@ -1,11 +1,13 @@
 import { Hint } from '@/components/game/Hint';
+import { maintenanceCostCents, maintenanceState } from '@/lib/game/maintenance';
+import { bonusesForUser } from '@/server/game/membership';
 import { ShieldCheck, Wrench } from 'lucide-react';
 import { insurancePriceCents, isInsured } from '@/lib/game/fines';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
-import { dateTime, money } from '@/lib/format';
+import { dateTime, int, money } from '@/lib/format';
 import { USED_MARKET } from '@/lib/game/used-market';
 import { ListForSale } from '@/components/game/ListForSale';
 import { boundsFor, myListings } from '@/server/game/used-market';
@@ -18,9 +20,10 @@ import { fleetView } from '@/server/game/queries';
 export const metadata = { title: 'Сервиз' };
 
 export default async function GaragePage() {
-  const { db, user, company, now } = await gameContext();
-  // VIP: discount on repairs and upgrades.
+  const { db, user, company, now, features } = await gameContext();
+  // VIP: discount on repairs and upgrades; the company's service on the plot makes repairs cheaper too.
   const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
+  const serviceDiscount = (await bonusesForUser(db, user.id))?.bonuses.repairDiscount ?? 0;
   const [fleet, listings] = await Promise.all([fleetView(db, company.id), myListings(db, company.id)]);
   const insurance = new Map(fleet.vehicles.map((v) => [v.id, insurancePriceCents(v.model.priceCents + (v.trailer?.model.priceCents ?? 0))]));
   const listingOf = (id: string) => listings.find((l) => l.vehicleId === id || l.trailerId === id);
@@ -35,7 +38,9 @@ export default async function GaragePage() {
         {fleet.vehicles.map((v) => {
           const listing = listingOf(v.id);
           const busy = !!v.delivery || !!listing;
-          const repair = Math.round((repairCostCents(v.model.priceCents, v.condition) + (v.trailer ? repairCostCents(v.trailer.model.priceCents, v.trailer.condition) : 0)) * discount);
+          const repair = Math.round((repairCostCents(v.model.priceCents, v.condition) + (v.trailer ? repairCostCents(v.trailer.model.priceCents, v.trailer.condition) : 0)) * discount * (1 - serviceDiscount));
+          const upkeep = maintenanceState(v.odometerKm, v.serviceKm);
+          const upkeepCost = maintenanceCostCents(v.model.priceCents, 1 - discount * (1 - serviceDiscount));
           const trailerOptions = fleet.trailers.filter((t) => t.cityId === v.cityId && canCouple(v.model, t.model));
           return (
             <Card key={v.id}>
@@ -59,6 +64,15 @@ export default async function GaragePage() {
                       </div>
                     )}
                   </div>
+                  {features.maintenance && v.ownership !== 'rented' && (
+                    <div className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border p-2.5 text-sm ${upkeep.overdue ? 'border-loss/50 bg-loss/10' : 'border-asphalt-700'}`}>
+                      <span>
+                        <b>Профилактика</b>{' '}
+                        {upkeep.overdue ? <span className="text-loss">просрочена с {int(-upkeep.dueInKm)} км — по-често повреди по пътя</span> : upkeep.fresh ? <span className="text-profit">току-що направена — по-малко инциденти</span> : <span className="text-mist-300">след {int(upkeep.dueInKm)} км</span>}
+                      </span>
+                      {!upkeep.fresh && <ActionButton action={{ type: 'serviceVehicle', vehicleId: v.id }} className={upkeep.overdue ? 'btn-primary px-3 py-1.5 text-xs' : 'btn-ghost px-3 py-1.5 text-xs'} disabled={busy}>Направи · {money(upkeepCost)}</ActionButton>}
+                    </div>
+                  )}
                 </div>
                 {v.ownership === 'rented' ? (
                   <div className="space-y-3 text-sm text-mist-300">

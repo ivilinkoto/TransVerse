@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 // The plot as released; companies founded after this date start with an empty plot.
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true, featureDate: () => new Date('2026-01-01T00:00:00Z') }));
 import { memberBonuses } from '@/lib/game/company';
-import { BUILDINGS, levelSpec, materialCostCents, missing, PLOT, placementError, splitLoads, upgradesFromBuildings } from '@/lib/game/plot';
+import { BUILDING_TYPES, BUILDINGS, DEFAULT_SPOTS, levelSpec, type BuildingType, materialCostCents, missing, PLOT, placementError, splitLoads, upgradesFromBuildings } from '@/lib/game/plot';
 import { closeDb } from '@/server/db/client';
 import { companies, companyBuildings, companyBuilds, contracts, organizations, vehicles } from '@/server/db/schema';
 import { openContracts } from '@/server/game/contracts';
@@ -40,6 +40,14 @@ describe('plot rules', () => {
     expect(placementError('office', 12, 1, [])).toMatch(/извън/);
     expect(placementError('office', 5, 6, [])).toMatch(/пътят/);
     expect(placementError('training', 2, 2, [{ type: 'office', x: 1, y: 1 }])).toMatch(/Офис/);
+  });
+
+  it('the default spots of converted companies fit together', () => {
+    const placed: { type: BuildingType; x: number; y: number }[] = [];
+    for (const type of BUILDING_TYPES) {
+      expect(placementError(type, DEFAULT_SPOTS[type].x, DEFAULT_SPOTS[type].y, placed)).toBeNull();
+      placed.push({ type, ...DEFAULT_SPOTS[type] });
+    }
   });
 
   it('buildings drive the company upgrades; service and parking have effects', () => {

@@ -25,7 +25,7 @@ import {
 import { haversineKm } from '@/lib/geo/geometry';
 import type { UpgradeLevels } from '@/lib/game/company';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, companyBuildings, companyBuilds, contracts, deliveries, organizations } from '@/server/db/schema';
+import { cities, companyBuildings, companyBuilds, companyMembers, contracts, deliveries, organizations, plotLikes } from '@/server/db/schema';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { loadHubs } from './contracts';
@@ -105,7 +105,7 @@ export async function plotView(db: DbOrTx, organizationId: string, now = new Dat
     const target = buildings.find((b) => b.id === build.buildingId)!;
     construction = { ...build, type: target.type as BuildingType, onTheWay: way, missing: left, deliveredCostCents: materialCostCents(missing(build.needs, build.delivered, way), true), orderCostCents: materialCostCents(left), complete: isComplete(build.needs, build.delivered) };
   }
-  return { org: { id: org.id, name: org.name, level: org.companyLevel, treasuryCents: org.treasuryCents }, hq: hq ?? null, buildings: buildings.map((b) => ({ id: b.id, type: b.type as BuildingType, x: b.x, y: b.y, level: b.level })), construction };
+  return { org: { id: org.id, name: org.name, level: org.companyLevel, treasuryCents: org.treasuryCents, liveryColor: org.liveryColor }, hq: hq ?? null, buildings: buildings.map((b) => ({ id: b.id, type: b.type as BuildingType, x: b.x, y: b.y, level: b.level })), construction };
 }
 
 async function activeBuild(tx: DbOrTx, organizationId: string) {
@@ -327,3 +327,56 @@ export async function finishConstructions(db: Database, now = new Date()) {
   return due.length;
 }
 
+
+// ── Guests ───────────────────────────────────────────────────────────────
+
+/** "Браво" for another company's base (once per player and company; again takes it back). Not for your own. */
+export async function likePlot(db: Database, userId: string, organizationId: string, now = new Date()) {
+  return db.transaction(async (tx) => {
+    const [org] = await tx.select({ id: organizations.id, name: organizations.name }).from(organizations).where(eq(organizations.id, organizationId));
+    if (!org) fail('company_not_found', 'Компанията не е намерена.', 404);
+    const [mine] = await tx.select({ id: companyMembers.userId }).from(companyMembers).where(and(eq(companyMembers.userId, userId), eq(companyMembers.companyId, organizationId)));
+    if (mine) fail('own_base', 'Своята база не се харесва — покажи я на другите.');
+    const removed = await tx.delete(plotLikes).where(and(eq(plotLikes.userId, userId), eq(plotLikes.organizationId, organizationId))).returning({ id: plotLikes.userId });
+    if (removed.length) return { liked: false };
+    await tx.insert(plotLikes).values({ userId, organizationId, createdAt: now });
+    return { liked: true };
+  });
+}
+
+/** A company's base for visitors: the buildings, likes and whether the viewer liked it. */
+export async function publicPlot(db: DbOrTx, organizationId: string, viewerId: string) {
+  const [org] = await db.select().from(organizations).where(eq(organizations.id, organizationId));
+  if (!org) return null;
+  await ensurePlot(db, org);
+  const buildings = await db.select().from(companyBuildings).where(eq(companyBuildings.organizationId, organizationId));
+  const [build] = await db.select().from(companyBuilds).where(and(eq(companyBuilds.organizationId, organizationId), inArray(companyBuilds.status, ['materials', 'building'])));
+  const [{ likes = 0 } = {}] = await db.select({ likes: sql<number>`count(*)::int` }).from(plotLikes).where(eq(plotLikes.organizationId, organizationId));
+  const [mine] = await db.select({ id: plotLikes.userId }).from(plotLikes).where(and(eq(plotLikes.organizationId, organizationId), eq(plotLikes.userId, viewerId)));
+  const target = build ? buildings.find((b) => b.id === build.buildingId) : null;
+  return {
+    buildings: buildings.map((b) => ({ type: b.type as BuildingType, x: b.x, y: b.y, level: b.level })),
+    construction: build && target ? { type: target.type as BuildingType, status: build.status as 'materials' | 'building', startedAt: build.startedAt, endsAt: build.endsAt, delivered: build.delivered } : null,
+    liveryColor: org.liveryColor,
+    likes,
+    liked: !!mine,
+  };
+}
+
+/** The most liked bases (likes of the last 30 days, then the sum of building levels). */
+export async function topBases(db: DbOrTx, now = new Date(), limit = 25) {
+  const since = new Date(now.getTime() - 30 * 86_400_000);
+  return db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      tag: organizations.tag,
+      level: organizations.companyLevel,
+      likes: sql<number>`(select count(*) from plot_likes l where l.organization_id = ${organizations}.id and l.created_at >= ${since})::int`,
+      buildings: sql<number>`(select coalesce(sum(b.level), 0) from company_buildings b where b.organization_id = ${organizations}.id)::int`,
+    })
+    .from(organizations)
+    .where(sql`exists (select 1 from company_buildings b where b.organization_id = ${organizations}.id and b.level > 0)`)
+    .orderBy(sql`5 desc`, sql`6 desc`)
+    .limit(limit);
+}

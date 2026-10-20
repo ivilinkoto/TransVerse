@@ -1,5 +1,5 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
-import { Ban, Bell, Sparkles, UserRoundCheck } from 'lucide-react';
+import { Ban, Bell, Paintbrush, Sparkles, UserRoundCheck } from 'lucide-react';
 import { SEASON_IDS, SEASONS, activeSeason } from '@/lib/game/seasonal';
 import { seasonMode } from '@/server/seasonal';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -51,6 +51,14 @@ export default async function SettingsPage() {
             <ActionButton action={{ type: 'seasonalTheme', on: !user.seasonalTheme }} className="btn-ghost">{user.seasonalTheme ? 'Изключи украсата' : 'Включи украсата'}</ActionButton>
           </div>
         </Card>
+        {features.livery && (
+          <Card title={<span className="inline-flex items-center gap-2"><Paintbrush className="h-4 w-4 text-mist-400" />Ливрея на компанията</span>} className="lg:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <p className="max-w-xl text-mist-300">Ако компанията ти има ливрея, камионите ти са в нейния цвят (специалните бои от магазина остават). {user.companyLivery ? 'В момента носиш ливреята на компанията.' : 'В момента камионите ти са в собствените си цветове.'}</p>
+              <ActionButton action={{ type: 'companyLivery', on: !user.companyLivery }} className="btn-ghost">{user.companyLivery ? 'Собствени цветове' : 'Носи ливреята'}</ActionButton>
+            </div>
+          </Card>
+        )}
         {features.hire && <Card title={<span className="inline-flex items-center gap-2"><UserRoundCheck className="h-4 w-4 text-mist-400" />На разположение за компании</span>} className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
             <p className="max-w-xl text-mist-300">

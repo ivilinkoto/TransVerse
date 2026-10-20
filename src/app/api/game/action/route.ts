@@ -24,7 +24,7 @@ import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispat
 import { toggleFavoriteLane } from '@/server/game/favorites';
 import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
-import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle } from '@/server/game/fleet';
+import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -33,7 +33,8 @@ import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
 import { payOffLease } from '@/server/game/leasing';
 import { bonusSchema, payBonus } from '@/server/game/bonuses';
-import { buyDelivered, cancelBuild, moveBuilding, orderMaterials, placeBuilding, startConstruction, upgradeBuilding } from '@/server/game/plot';
+import { setCompanyLivery, setLivery } from '@/server/game/livery';
+import { buyDelivered, cancelBuild, likePlot, moveBuilding, orderMaterials, placeBuilding, startConstruction, upgradeBuilding } from '@/server/game/plot';
 import { BUILDING_TYPES, type BuildingType } from '@/lib/game/plot';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { helpOnRoad } from '@/server/game/roadside';
@@ -100,6 +101,10 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyMaterialsDelivered'), buildId: id }),
   z.object({ type: z.literal('startConstruction'), buildId: id }),
   z.object({ type: z.literal('cancelBuild'), buildId: id }),
+  z.object({ type: z.literal('likePlot'), organizationId: id }),
+  z.object({ type: z.literal('setLivery'), color: z.string().max(9).nullable() }),
+  z.object({ type: z.literal('companyLivery'), on: z.boolean() }),
+  z.object({ type: z.literal('serviceVehicle'), vehicleId: id }),
   z.object({ type: z.literal('buyTrailer'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('sellVehicle'), vehicleId: id }),
   z.object({ type: z.literal('sellTrailer'), trailerId: id }),
@@ -213,6 +218,10 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   buyMaterialsDelivered: 'company_plot',
   startConstruction: 'company_plot',
   cancelBuild: 'company_plot',
+  likePlot: 'plot_guests',
+  setLivery: 'livery',
+  companyLivery: 'livery',
+  serviceVehicle: 'maintenance',
 };
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -270,6 +279,16 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
     case 'cancelBuild':
       await cancelBuild(db, user.id, input.buildId);
       return { ok: true };
+    case 'likePlot':
+      return { ok: true, ...(await likePlot(db, user.id, input.organizationId)) };
+    case 'setLivery':
+      await setLivery(db, user.id, input.color);
+      return { ok: true };
+    case 'companyLivery':
+      await setCompanyLivery(db, user.id, input.on);
+      return { ok: true };
+    case 'serviceVehicle':
+      return { ok: true, costCents: await serviceVehicle(db, user.id, input.vehicleId) };
     case 'payBonus':
       return { ok: true, ...(await payBonus(db, user.id, input.bonus, await hashIp(db, await clientIp()))) };
     case 'buyTrailer':

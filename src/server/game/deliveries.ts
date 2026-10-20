@@ -8,6 +8,7 @@ import { CONVOY_RULES } from '@/lib/game/convoy';
 import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multistop';
 import { formConvoy } from './convoy';
 import { featureFor } from '@/server/features';
+import { maintenanceState } from '@/lib/game/maintenance';
 import { acceptJobOffer, payHireCommission } from './hire';
 import { mentorXpFactor } from './mentor';
 import { recordBattleDelivery } from './battles';
@@ -233,7 +234,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     // Surprises on the way, decided now and revealed when the truck gets there.
-    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance, ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isWinter(now) ? { condition: routeCondition(loadedRoute!.countries, now).condition, tyres: rented || bundle.vehicle.upgrades.includes(WINTER.tyres) } : undefined });
+    // Maintenance (v1.3): an overdue truck gets into trouble more often, a freshly serviced one less.
+    const upkeep = !rented && (await featureFor(tx, userId, 'maintenance', now)) ? maintenanceState(bundle.vehicle.odometerKm, bundle.vehicle.serviceKm).factor : 1;
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep, ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isWinter(now) ? { condition: routeCondition(loadedRoute!.countries, now).condition, tyres: rented || bundle.vehicle.upgrades.includes(WINTER.tyres) } : undefined });
     const [delivery] = await tx
       .insert(deliveries)
       .values({
