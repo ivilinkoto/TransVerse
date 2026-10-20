@@ -3,7 +3,7 @@ import { featureFor } from '@/server/features';
 import { z } from 'zod';
 import { isStaff } from '@/server/auth/roles';
 import { rateLimit } from '@/server/auth/rate-limit';
-import { CHANNELS, MESSAGE_MAX, REPLY_SNIPPET, isOnline, lastSeenLabel, type Channel } from '@/lib/game/social';
+import { CHANNELS, MESSAGE_MAX, REPLY_SNIPPET, isOnline, lastSeenLabel, type Channel, type ReactionSummary } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { chatMessages, companyMessages, directMessages, userBlocks, users } from '@/server/db/schema';
@@ -29,6 +29,9 @@ export interface FeedMessage {
   read?: boolean;
   /** The message this one answers (a short quote). */
   reply?: ReplyRef | null;
+  reactions?: ReactionSummary[];
+  /** Company chat: the author is in the game right now. */
+  online?: boolean;
 }
 
 export interface ReplyRef {

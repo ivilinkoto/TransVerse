@@ -46,7 +46,7 @@ export interface PlotFeatures {
 }
 
 /** The company plot: the scene, building on it and the running construction. */
-export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incoming, season = null, features = { decor: false, expand: false }, coins = 0, children }: { data: PlotData; canBuild: boolean; now: number; parkedTrucks: number; incoming: number; season?: 'winter' | 'christmas' | null; features?: PlotFeatures; coins?: number; children?: React.ReactNode }) {
+export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incoming, season = null, ambience = { night: false, weather: null, visitors: [] }, features = { decor: false, expand: false }, coins = 0, children }: { data: PlotData; canBuild: boolean; now: number; parkedTrucks: number; incoming: number; season?: 'winter' | 'christmas' | null; ambience?: { night: boolean; weather: 'rain' | 'leaves' | null; visitors: string[] }; features?: PlotFeatures; coins?: number; children?: React.ReactNode }) {
   const router = useRouter();
   const svg = useRef<SVGSVGElement>(null);
   const [mode, setMode] = useState<Mode>({ kind: 'view' });
@@ -219,7 +219,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           role="img"
           aria-label={`Участъкът на „${data.org.name}“`}
         >
-          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} labelScale={labelScale} moving={moving} />
+          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} labelScale={labelScale} moving={moving} night={ambience.night} weather={ambience.weather} visitors={ambience.visitors} />
         </svg>
         <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 px-3 py-2 text-xs text-mist-300 backdrop-blur">
           <b className="block text-sm text-white">Участък · {data.hq?.nameBg ?? ''}</b>

@@ -6,6 +6,7 @@ import { channelFeed, conversation, markConversationRead } from '@/server/game/m
 import { handler } from '@/server/http';
 import { blockedIds } from '@/server/game/moderation';
 import { companyKey, markChannelRead } from '@/server/game/chat-reads';
+import { withReactions } from '@/server/game/chat-extras';
 import { membershipOf } from '@/server/game/membership';
 
 export const dynamic = 'force-dynamic';
@@ -26,14 +27,14 @@ export const GET = handler({ perMinute: 120, schema }, async ({ user, input }) =
     const c = await companyChat(db, user.id, input.after ?? 0);
     const m = await membershipOf(db, user.id);
     if (m) await markChannelRead(db, user.id, companyKey(m.company.id), c.messages.at(-1)?.id ?? 0);
-    return visible({ messages: c.messages, canModerate: c.canModerate });
+    return visible({ messages: c.messages, canModerate: c.canModerate, canPin: c.canPin, pinned: c.pinned, online: c.online });
   }
   if (input.tab.startsWith('dm:')) {
     const other = input.tab.slice(3);
     await markConversationRead(db, user.id, other);
-    return { messages: await conversation(db, user.id, other, input.after ?? 0), canModerate: false };
+    return { messages: await withReactions(db, 'dm', await conversation(db, user.id, other, input.after ?? 0), user.id), canModerate: false };
   }
   const messages = await channelFeed(db, input.tab as 'global' | 'trade', input.after ?? 0);
   await markChannelRead(db, user.id, input.tab, messages.at(-1)?.id ?? 0);
-  return visible({ messages, canModerate: isStaff(user.role) });
+  return visible({ messages: await withReactions(db, 'channel', messages, user.id), canModerate: isStaff(user.role) });
 });

@@ -1,6 +1,9 @@
 import { PlayerName } from '@/components/game/PlayerName';
 import { PlotScene, viewFor } from '@/components/company/plot/scene';
 import { isChristmas } from '@/lib/game/christmas';
+import { isNight, plotWeather } from '@/lib/game/ambience';
+import { Showcase } from '@/components/company/plot/Showcase';
+import { companyShowcase } from '@/server/game/base-life';
 import { isWinter } from '@/lib/game/winter';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { publicPlot } from '@/server/game/plot';
@@ -33,6 +36,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
   const c = row.company;
   const [assets, members, mine, applications, licences, highlights] = await Promise.all([assetKinds(db, c.id), companyMembersView(db, c.id), membershipOf(db, user.id), myApplications(db, user.id), companyLicenceSet(db, c.id), companyHighlights(db, c.id, now)]);
   const base = features.plot_guests ? await publicPlot(db, c.id, user.id) : null;
+  const showcase = base && features.company_trophies ? await companyShowcase(db, c.id) : null;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   const bonuses = memberBonuses(c.upgrades as UpgradeLevels);
   const applied = applications.some((a) => a.application.companyId === c.id);
@@ -68,10 +72,13 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
                   plotW={base.plotW}
                   labelScale={1.4}
                   moving
+                  night={features.plot_night && isNight(now)}
+                  weather={features.plot_weather ? plotWeather(now) : null}
                   decor={base.decor}
                   season={!features.plot_season ? null : isChristmas(now) ? 'christmas' : isWinter(now) ? 'winter' : null}
                 />
               </svg>
+              {showcase && <div className="mt-3"><Showcase data={showcase} builderWeek={features.builder_week} /></div>}
               {base.likes > 0 && <p className="mt-2 text-xs text-mist-400">{base.likes} {base.likes === 1 ? 'играч харесва' : 'играчи харесват'} тази база.</p>}
             </Card>
           )}

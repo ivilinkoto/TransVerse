@@ -6,6 +6,7 @@ import { HALLOWEEN } from '@/lib/game/halloween';
 import { CHRISTMAS } from '@/lib/game/christmas';
 import { WINTER } from '@/lib/game/winter';
 import { CONVOY_RULES } from '@/lib/game/convoy';
+import { PLOT } from '@/lib/game/plot';
 import { MULTISTOP } from '@/lib/game/multistop';
 import { HireDialog } from './HireDialog';
 import Link from 'next/link';
@@ -61,6 +62,8 @@ export interface BoardContract {
   stops: { name: string; country: string; tons: number; windowMinutes: number }[];
   /** Building materials for the player's company plot (members only). */
   construction: boolean;
+  /** The last load a construction waits for (paid more). */
+  lastLoad?: boolean;
   /** The player starred this lane (origin → destination). */
   favorite: boolean;
   /** Load of a tender of the player's company (only members see it). */
@@ -308,6 +311,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.toHome && <Badge tone="green"><House className="h-3 w-3" />КЪМ БАЗАТА</Badge>}
             {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
             {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />ЗА СТРОЕЖА НА КОМПАНИЯТА</Badge>}
+            {c.lastLoad && <Badge tone="red"><Hammer className="h-3 w-3" />ПОСЛЕДЕН ТОВАР · +{Math.round((PLOT.lastLoadFactor - 1) * 100)}%</Badge>}
             {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />СБОРЕН · {c.stops.length} {c.stops.length === 1 ? 'СПИРКА' : 'СПИРКИ'} · +{Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100)}%</Badge>}
             {c.hiredBy && <span className="max-w-full truncate" title={`Възложена от ${c.hiredBy.company} до ${c.hiredBy.until}`}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />ВЪЗЛОЖЕНА · {Math.round(c.hiredBy.share * 100)}% за {c.hiredBy.company}</Badge></span>}
             {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}

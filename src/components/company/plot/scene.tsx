@@ -41,6 +41,18 @@ const k = () => `e${uid++}`;
 /** The season of the current render: snow on roofs, lawns and trees; Christmas lights. */
 let SNOW = false;
 let XMAS = false;
+/** Evening and night: lit windows, lamps and headlights; autumn leaves. */
+let NIGHT = false;
+let AUTUMN = false;
+/** Warm light colours: the night filter keeps exactly these bright (warm, little blue). */
+const LIT = ['#ffd84a', '#ffe066', '#ffcf40'];
+/** Traffic is drawn outside the night filter (it moves): it darkens its own colours. */
+let DIM = false;
+/** Headlights: warm at night (so the night filter keeps them bright). */
+const head = () => (NIGHT ? '#ffe066' : '#fff3b8');
+const tone = (rgb: [number, number, number]): [number, number, number] => (DIM ? [rgb[0] * 0.27, rgb[1] * 0.31, rgb[2] * 0.48 + 15] : rgb);
+/** A window: at night most of them are lit (the same ones every time). */
+const win = (day: string, i: number) => (NIGHT && ((i * 7 + 3) % 10) < 6 ? LIT[i % 3]! : day);
 
 function Poly({ p, fill, ...rest }: { p: Pt[]; fill: string } & React.SVGProps<SVGPolygonElement>) {
   return <polygon points={pts(p)} fill={fill} {...rest} />;
@@ -72,7 +84,9 @@ const faces = (rgb: [number, number, number]): Faces => ({ top: shade(rgb, 1.12)
 
 // ── Vehicles ─────────────────────────────────────────────────────────────
 type RGB = [number, number, number];
-const GLASS: Faces = { top: '#cfeaff', left: '#9fd2f5', right: '#7fb6dc' };
+const GLASS_DAY: Faces = { top: '#cfeaff', left: '#9fd2f5', right: '#7fb6dc' };
+const GLASS_DIM: Faces = { top: '#3b5266', left: '#30475c', right: '#273b4e' };
+const glass = () => (DIM ? GLASS_DIM : GLASS_DAY);
 const DARK: Faces = faces([44, 48, 56]);
 
 /** A wheel standing in a vertical plane (x = plane, or y = plane), centred at `c` along it: tyre, rim and hub. */
@@ -113,6 +127,12 @@ function frame(x: number, y: number, along: 'x' | 'y', rev = false, len = 0) {
     /** A panel on the front (a = const). */
     front: (a: number, b0: number, b1: number, z0: number, z1: number, fill: string) => (along === 'y' ? onY(y + m(a), x + b0, x + b1, z0, z1, fill) : onX(x + m(a), y + b0, y + b1, z0, z1, fill)),
     wheel: (b: number, a: number, r?: number) => (along === 'y' ? wheel('x', x + b, y + m(a), r) : wheel('y', y + b, x + m(a), r)),
+    /** A patch of ground in the vehicle's frame (headlight beams). */
+    ground(a0: number, b0: number, a1: number, b1: number, fill: string) {
+      const [xa, ya] = at(a0, b0);
+      const [xb, yb] = at(a1, b1);
+      return flat(Math.min(xa, xb), Math.min(ya, yb), Math.max(xa, xb), Math.max(ya, yb), 0.03, fill);
+    },
     shadow(len: number, w: number, h: number) {
       const [xa, ya] = at(0, 0);
       const [xb, yb] = at(len, w);
@@ -140,38 +160,42 @@ function truck(x: number, y: number, look: TruckLook) {
   const body = look.rigid ? 1.7 : 3.2;
   const cab0 = body + 0.12, cab1 = cab0 + 0.95;
   const out: ReactNode[] = [f.shadow(cab1, W, 1.3)];
+  // Only trucks on the road have their lights on (parked ones stand dark).
+  if (DIM) out.push(f.ground(cab1, -0.1, cab1 + 2.2, W + 0.1, 'rgba(255,230,150,0.2)'));
   // The axles: the front one sits under the cab, close to the bumper.
   const axles = look.rigid ? [0.4, cab1 - 0.3] : [0.45, 0.88, 1.31, body - 0.15, cab1 - 0.32];
   // Wheels on the far side first: the body hides most of them, the bottom shows under the chassis.
   for (const a of axles) out.push(f.wheel(0.04, a));
   // Chassis rails, then the body.
   out.push(f.box(0.1, 0.15, cab1 - 0.1, W - 0.15, 0.16, 0.12, DARK));
+  const cabRgb = tone(look.cab), bodyRgb = tone(look.body);
   if (look.load) {
     out.push(f.box(0, 0, body, W, 0.28, 0.1, faces([96, 104, 118])));
     const n = look.load.length;
-    look.load.forEach((rgb, i) => {
+    look.load.forEach((raw, i) => {
+      const rgb = tone(raw);
       const a0 = 0.15 + (i * (body - 0.3)) / n;
       out.push(f.box(a0, 0.1, a0 + (body - 0.3) / n - 0.1, W - 0.1, 0.38, 0.45, faces(rgb)));
     });
     out.push(f.box(body - 0.08, 0.05, body, W - 0.05, 0.38, 0.75, DARK));
   } else {
-    out.push(f.box(0, 0, body, W, 0.3, look.rigid ? 1.05 : 1.15, faces(look.body)));
+    out.push(f.box(0, 0, body, W, 0.3, look.rigid ? 1.05 : 1.15, faces(bodyRgb)));
     // Ribs, a colour stripe and the side guard.
-    for (let a = 0.35; a < body - 0.1; a += 0.45) out.push(f.side(W, a, a + 0.03, 0.34, look.rigid ? 1.3 : 1.4, shade(look.body, 0.82)));
-    out.push(f.side(W, 0.12, body - 0.12, 0.62, 0.74, shade(look.cab, 0.95)));
+    for (let a = 0.35; a < body - 0.1; a += 0.45) out.push(f.side(W, a, a + 0.03, 0.34, look.rigid ? 1.3 : 1.4, shade(bodyRgb, 0.82)));
+    out.push(f.side(W, 0.12, body - 0.12, 0.62, 0.74, shade(cabRgb, 0.95)));
     out.push(f.side(W, 0.6, body - 0.6, 0.2, 0.26, '#3a3f48'));
   }
   // The cab: a roof spoiler on a tractor, windscreen, side window and door, lights, grille, bumper and a mirror.
-  out.push(f.box(cab0, 0.04, cab1, W - 0.04, 0.24, 1.0, faces(look.cab)));
-  if (!look.rigid) out.push(f.box(cab0 + 0.05, 0.12, cab0 + 0.55, W - 0.12, 1.24, 0.22, faces(look.cab)));
-  out.push(f.front(cab1, 0.1, W - 0.1, 0.74, 1.14, GLASS.left));
+  out.push(f.box(cab0, 0.04, cab1, W - 0.04, 0.24, 1.0, faces(cabRgb)));
+  if (!look.rigid) out.push(f.box(cab0 + 0.05, 0.12, cab0 + 0.55, W - 0.12, 1.24, 0.22, faces(cabRgb)));
+  out.push(f.front(cab1, 0.1, W - 0.1, 0.74, 1.14, glass().left));
   out.push(f.front(cab1, 0.12, W - 0.12, 1.06, 1.12, 'rgba(255,255,255,0.45)'));
-  out.push(f.side(W - 0.04, cab1 - 0.5, cab1 - 0.08, 0.74, 1.12, GLASS.right));
-  out.push(f.side(W - 0.04, cab1 - 0.55, cab1 - 0.53, 0.3, 1.14, shade(look.cab, 0.7)));
+  out.push(f.side(W - 0.04, cab1 - 0.5, cab1 - 0.08, 0.74, 1.12, glass().right));
+  out.push(f.side(W - 0.04, cab1 - 0.55, cab1 - 0.53, 0.3, 1.14, shade(cabRgb, 0.7)));
   out.push(f.side(W - 0.04, cab1 - 0.3, cab1 - 0.2, 0.62, 0.66, '#3a3f48'));
   out.push(f.front(cab1, 0.28, W - 0.28, 0.38, 0.64, '#2b2f37'));
   for (let z = 0.43; z < 0.62; z += 0.06) out.push(f.front(cab1, 0.3, W - 0.3, z, z + 0.015, '#6b7280'));
-  out.push(f.front(cab1, 0.08, 0.22, 0.4, 0.5, '#fff3b8'), f.front(cab1, W - 0.22, W - 0.08, 0.4, 0.5, '#fff3b8'));
+  out.push(f.front(cab1, 0.08, 0.22, 0.4, 0.5, head()), f.front(cab1, W - 0.22, W - 0.08, 0.4, 0.5, head()));
   out.push(f.front(cab1, 0.05, W - 0.05, 0.22, 0.34, '#3a3f48'));
   out.push(f.box(cab1 - 0.12, W - 0.02, cab1 - 0.06, W + 0.05, 0.78, 0.26, DARK));
   // Wheels on the visible side.
@@ -181,18 +205,21 @@ function truck(x: number, y: number, look: TruckLook) {
 
 /** A car: body, cabin with windows, lights and wheels. `rev`: driving towards −x / −y (its rear faces the viewer). */
 function car(x: number, y: number, rgb: RGB, alongX = true, rev = false) {
+  // (rgb is darkened at night for the traffic.)
   const L = 1.3, W = 0.6;
   const f = frame(x, y, alongX ? 'x' : 'y', rev, L);
+  rgb = tone(rgb);
   return (
     <g key={k()}>
       {f.shadow(L, W, 0.6)}
+      {DIM && f.ground(L, -0.05, L + 1.8, W + 0.05, 'rgba(255,230,150,0.2)')}
       {f.box(0, 0, L, W, 0.12, 0.3, faces(rgb))}
       {f.box(0.32, 0.05, 1.0, W - 0.05, 0.42, 0.26, faces(rgb))}
-      {f.side(W - 0.05, 0.36, 0.64, 0.46, 0.64, GLASS.right)}
-      {f.side(W - 0.05, 0.68, 0.96, 0.46, 0.64, GLASS.right)}
-      {rev ? f.front(0.32, 0.1, W - 0.1, 0.46, 0.64, GLASS.left) : f.front(1.0, 0.08, W - 0.08, 0.45, 0.66, GLASS.left)}
-      {rev ? f.front(0, 0.04, 0.14, 0.27, 0.34, '#e04545') : f.front(L, 0.04, 0.14, 0.26, 0.34, '#fff3b8')}
-      {rev ? f.front(0, W - 0.14, W - 0.04, 0.27, 0.34, '#e04545') : f.front(L, W - 0.14, W - 0.04, 0.26, 0.34, '#fff3b8')}
+      {f.side(W - 0.05, 0.36, 0.64, 0.46, 0.64, glass().right)}
+      {f.side(W - 0.05, 0.68, 0.96, 0.46, 0.64, glass().right)}
+      {rev ? f.front(0.32, 0.1, W - 0.1, 0.46, 0.64, glass().left) : f.front(1.0, 0.08, W - 0.08, 0.45, 0.66, glass().left)}
+      {rev ? f.front(0, 0.04, 0.14, 0.27, 0.34, '#e04545') : f.front(L, 0.04, 0.14, 0.26, 0.34, head())}
+      {rev ? f.front(0, W - 0.14, W - 0.04, 0.27, 0.34, '#e04545') : f.front(L, W - 0.14, W - 0.04, 0.26, 0.34, head())}
       {f.front(rev ? 0 : L, 0.02, W - 0.02, 0.12, 0.2, '#3a3f48')}
       {f.wheel(W - 0.01, 0.28, 0.13)}
       {f.wheel(W - 0.01, L - 0.28, 0.13)}
@@ -222,13 +249,13 @@ function driving(node: (x: number, y: number) => ReactNode, from: [number, numbe
 function tree(x: number, y: number, r = 0.55, v = 0) {
   const [tx, ty] = P(x, y, 0);
   const [cx, cy] = P(x, y, 1.2);
-  const greens = ['#3f9a4f', '#358a45', '#4caa5a'];
+  const greens = AUTUMN ? ['#d9822b', '#c4562a', '#e0a63a'] : ['#3f9a4f', '#358a45', '#4caa5a'];
   return (
     <g key={k()}>
       <ellipse cx={tx + 10} cy={ty + 2} rx={r * TILE} ry={r * TILE * 0.45} fill="rgba(20,40,25,0.25)" />
       <rect x={tx - 2.5} y={cy} width={5} height={ty - cy} fill="#7a5235" />
       <circle cx={cx} cy={cy} r={r * TILE} fill={SNOW ? '#2f6f45' : greens[v % 3]} />
-      <circle cx={cx - r * TILE * 0.32} cy={cy - r * TILE * 0.35} r={r * TILE * 0.55} fill={SNOW ? '#f4f8fb' : '#6cc977'} opacity={SNOW ? 0.9 : 0.6} />
+      <circle cx={cx - r * TILE * 0.32} cy={cy - r * TILE * 0.35} r={r * TILE * 0.55} fill={SNOW ? '#f4f8fb' : AUTUMN ? '#f2c25a' : '#6cc977'} opacity={SNOW ? 0.9 : 0.6} />
     </g>
   );
 }
@@ -246,8 +273,10 @@ function lamp(x: number, y: number) {
   const [tx, ty] = P(x, y, 1.6);
   return (
     <g key={k()}>
+      {NIGHT && <ellipse cx={bx} cy={by} rx={34} ry={17} fill="rgba(255,214,60,0.3)" />}
       <line x1={bx} y1={by} x2={tx} y2={ty} stroke="#5e6676" strokeWidth={1.8} />
-      <rect x={tx - 5} y={ty - 2} width={10} height={4} rx={2} fill="#4a5160" />
+      <rect x={tx - 5} y={ty - 2} width={10} height={4} rx={2} fill={NIGHT ? '#ffd84a' : '#4a5160'} />
+      {NIGHT && <circle cx={tx} cy={ty + 2} r={12} fill="url(#plot-glow)" />}
     </g>
   );
 }
@@ -287,8 +316,8 @@ function office(f: Footprint, level: number) {
   const out: ReactNode[] = [shadow(x0, y0, x1, y1, h), box(x0, y0, x1, y1, 0, h, { top: '#e9eef4', left: '#c7d1de', right: '#a5b2c4' })];
   for (let fl = 0; fl < floors; fl++) {
     const za = 0.35 + fl * 0.95, zb = za + 0.62;
-    for (let x = x0 + 0.15; x < x1 - 0.2; x += 0.5) out.push(onY(y1, x, x + 0.38, za, zb, (Math.round(x * 3) + fl) % 4 === 0 ? '#bfe3fb' : '#5fa8d9'));
-    for (let y = y0 + 0.15; y < y1 - 0.2; y += 0.5) out.push(onX(x1, y, y + 0.38, za, zb, (Math.round(y * 3) + fl) % 4 === 1 ? '#9fd0f0' : '#3f86bb'));
+    for (let x = x0 + 0.15; x < x1 - 0.2; x += 0.5) out.push(onY(y1, x, x + 0.38, za, zb, win((Math.round(x * 3) + fl) % 4 === 0 ? '#bfe3fb' : '#5fa8d9', Math.round(x * 3) + fl * 5)));
+    for (let y = y0 + 0.15; y < y1 - 0.2; y += 0.5) out.push(onX(x1, y, y + 0.38, za, zb, win((Math.round(y * 3) + fl) % 4 === 1 ? '#9fd0f0' : '#3f86bb', Math.round(y * 3) + fl * 3 + 1)));
   }
   // Entrance with a canopy, the company colour band and roof equipment.
   const mid = (y0 + y1) / 2;
@@ -327,8 +356,8 @@ function training(f: Footprint, level: number) {
   const rows = h > 3 ? 3 : 2;
   for (let r = 0; r < rows; r++) {
     const za = 0.35 + r * 1.0, zb = za + 0.6;
-    for (let x = x0 + 0.2; x < x1 - 0.2; x += 0.65) out.push(onY(y1, x, x + 0.5, za, zb, '#f3f6fa'), onY(y1, x + 0.05, x + 0.45, za + 0.05, zb - 0.05, '#6fb1dc'));
-    for (let y = y0 + 0.2; y < y1 - 0.2; y += 0.65) out.push(onX(x1, y, y + 0.5, za, zb, '#4b8fbf'));
+    for (let x = x0 + 0.2; x < x1 - 0.2; x += 0.65) out.push(onY(y1, x, x + 0.5, za, zb, '#f3f6fa'), onY(y1, x + 0.05, x + 0.45, za + 0.05, zb - 0.05, win('#6fb1dc', Math.round(x * 4) + r * 3)));
+    for (let y = y0 + 0.2; y < y1 - 0.2; y += 0.65) out.push(onX(x1, y, y + 0.5, za, zb, win('#4b8fbf', Math.round(y * 4) + r * 5)));
   }
   // A sloped roof and a flag.
   const ridge = h + 0.6;
@@ -389,8 +418,8 @@ function rest(f: Footprint, level: number) {
   const out: ReactNode[] = [shadow(x0, y0, x1, y1, h), box(x0, y0, x1, y1, 0, h, faces([236, 214, 178]))];
   // Wide warm windows, a café terrace with umbrellas and a sign.
   const rows = h > 2 ? 2 : 1;
-  for (let r = 0; r < rows; r++) for (let x = x0 + 0.15; x < x1 - 0.3; x += 0.7) out.push(onY(y1, x, x + 0.55, 0.3 + r * 0.9, 0.95 + r * 0.9, r === 0 ? '#ffd998' : '#8cc4e8'));
-  for (let y = y0 + 0.2; y < y1 - 0.3; y += 0.7) out.push(onX(x1, y, y + 0.5, 0.3, 0.95, '#f2c27a'));
+  for (let r = 0; r < rows; r++) for (let x = x0 + 0.15; x < x1 - 0.3; x += 0.7) out.push(onY(y1, x, x + 0.55, 0.3 + r * 0.9, 0.95 + r * 0.9, win(r === 0 ? '#ffd998' : '#8cc4e8', Math.round(x * 4) + r)));
+  for (let y = y0 + 0.2; y < y1 - 0.3; y += 0.7) out.push(onX(x1, y, y + 0.5, 0.3, 0.95, win('#f2c27a', Math.round(y * 4) + 2)));
   out.push(box(x0, y1 - 0.1, x1, y1, h - 0.25, 0.22, faces([47, 123, 255])));
   out.push(<Poly key={k()} p={[[x0 - 0.05, y0, h], [x1 + 0.05, y0, h], [x1 + 0.05, y1 + 0.25, h - 0.35], [x0 - 0.05, y1 + 0.25, h - 0.35]]} fill={SNOW ? '#f3f7fb' : '#8b5e3c'} />);
   for (let i = 0; i < Math.min(3, level + 1); i++) {
@@ -570,6 +599,12 @@ export interface SceneProps {
   labelScale?: number;
   /** Cars and trucks drive along the streets (off for reduced motion). */
   moving?: boolean;
+  /** Evening and night in the base city: lit windows, lamps and headlights. */
+  night?: boolean;
+  /** Rain (puddles, streaks) or autumn leaves. Snow comes with the winter season. */
+  weather?: 'rain' | 'leaves' | null;
+  /** Members' trucks that just arrived in the base city, parked in the yard with the driver's name. */
+  visitors?: string[];
 }
 
 const OUTSIDE_TREES: [number, number][] = [[-1.4, 3], [-2.2, 8], [-1.2, 11], [3, -1.6], [8, -2.2], [11, -1.4], [18.5, 2], [18.2, 8], [19, 11.5], [2, 16.5], [9, 16.8], [13, 16.2], [-3, 16], [-3.5, 0], [6, -3.5], [14.5, -3]];
@@ -577,7 +612,23 @@ const OUTSIDE_TREES: [number, number][] = [[-1.4, 3], [-2.2, 8], [-1.2, 11], [3,
 const XMAS_SPOTS: [number, number][] = [[5.3, 11.3], [7.7, 11.3], [4.2, 11.4], [9, 11.3], [12.6, 11.3], [1.5, 11.4], [12.6, 6.5]];
 const EDGE_SPOTS: [number, number][] = [[0.3, 0.3], [0.3, 4.6], [0.3, 6.4], [0.3, 11.4], [3.2, 0.3], [5.3, 0.3], [7.7, 0.3], [12.6, 0.3], [13.6, 2.4], [13.6, 6.6], [13.6, 11.4], [3.0, 11.6], [9.8, 11.6], [5.3, 11.4]];
 
-export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null, plotW = PLOT.w, decor = [], season = null, selectedDecor = null, labels = true, labelScale = 1, moving = false }: SceneProps) {
+/** Leaves falling over the plot in autumn (looping). */
+function fallingLeaves(): ReactNode[] {
+  const colors = ['#d9822b', '#c4562a', '#e0a63a', '#b5482a'];
+  return Array.from({ length: 14 }, (_, i) => {
+    const x = VIEW.x + 60 + ((i * 337) % (VIEW.w - 120));
+    const y = VIEW.y + ((i * 131) % 260);
+    const dur = 7 + (i % 5);
+    return (
+      <ellipse key={`leaf-${i}`} cx={x} cy={y} rx={4} ry={2.2} fill={colors[i % 4]} opacity={0.9}>
+        <animateTransform attributeName="transform" type="translate" values={`0 0; ${18 + (i % 3) * 10} 220; ${-6 + (i % 4) * 6} 460`} dur={`${dur}s`} begin={`${-(i * 0.9).toFixed(1)}s`} repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;0.95;0.95;0" keyTimes="0;0.1;0.85;1" dur={`${dur}s`} begin={`${-(i * 0.9).toFixed(1)}s`} repeatCount="indefinite" />
+      </ellipse>
+    );
+  });
+}
+
+export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null, plotW = PLOT.w, decor = [], season = null, selectedDecor = null, labels = true, labelScale = 1, moving = false, night = false, weather = null, visitors = [] }: SceneProps) {
   // Keys are counted from zero on every render, so the same scene gets the same keys.
   // eslint-disable-next-line react-hooks/globals
   uid = 0;
@@ -585,10 +636,16 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
   SNOW = season !== null;
   // eslint-disable-next-line react-hooks/globals
   XMAS = season === 'christmas';
+  // eslint-disable-next-line react-hooks/globals
+  NIGHT = night;
+  // eslint-disable-next-line react-hooks/globals
+  AUTUMN = weather === 'leaves' && !SNOW;
+  // eslint-disable-next-line react-hooks/globals
+  DIM = false;
   const W = plotW;
   const sx = W - PLOT.w;
   const items: { key: number; node: ReactNode }[] = [];
-  const tags: { type: BuildingType; x: number; y: number; z: number; text: string; sub: string; active: boolean }[] = [];
+  const tags: { type: string; x: number; y: number; z: number; text: string; sub: string; active: boolean; visitor?: boolean }[] = [];
   const add = (key: number, node: ReactNode) => items.push({ key, node });
   const fp = (b: { type: BuildingType; x: number; y: number }): Footprint => ({ x: b.x, y: b.y, w: BUILDINGS[b.type].w, h: BUILDINGS[b.type].h });
   const occupied = (x: number, y: number) =>
@@ -609,6 +666,13 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
   for (let y = PLOT.yardY + 1.3; y < 12.3; y += 1.2) ground.push(flat(dx + 0.46, y, dx + 0.54, y + 0.6, 0.05, '#f4f1e2'));
   if (grid) for (let x = 0; x <= W; x++) ground.push(<Line key={k()} a={[x, 0, 0.05]} b={[x, PLOT.h, 0.05]} stroke={SNOW ? 'rgba(80,110,140,0.3)' : 'rgba(255,255,255,0.28)'} w={0.8} />);
   if (grid) for (let y = 0; y <= PLOT.h; y++) ground.push(<Line key={k()} a={[0, y, 0.05]} b={[W, y, 0.05]} stroke={SNOW ? 'rgba(80,110,140,0.3)' : 'rgba(255,255,255,0.28)'} w={0.8} />);
+  if (weather === 'rain' && !SNOW) {
+    // Puddles on the yard, the lawn and the streets.
+    for (const [px, py] of [[8.2, 5.5], [11.5, 5.4], [3, 7.5], [6.5, 9.5], [10.5, 9], [1.5, 13.7], [9, 14.7], [16 + sx, 3], [16.3 + sx, 9]] as [number, number][]) {
+      const [cx, cy] = P(px, py, 0.05);
+      ground.push(<ellipse key={k()} cx={cx} cy={cy} rx={18} ry={7} fill="rgba(150,180,210,0.55)" />, <ellipse key={k()} cx={cx - 4} cy={cy - 1.5} rx={7} ry={2.2} fill="rgba(255,255,255,0.35)" />);
+    }
+  }
   add(-100, <g key="ground">{ground}</g>);
 
   // Fence with the gate on the driveway.
@@ -635,6 +699,8 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
 
   // Traffic on the two streets (drawn over the plot, under the trees beyond the streets).
   const road = 32 + sx;
+  // eslint-disable-next-line react-hooks/globals
+  DIM = NIGHT;
   const traffic: ReactNode[] = [
     // The side street: towards the main road and back.
     driving((x, y) => car(x, y, [47, 123, 255], false, true), [16.45 + sx, 16 - 1.3], 'y', -24, 20, 0.15, moving),
@@ -650,6 +716,18 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     driving((x, y) => car(x, y, [235, 240, 246]), [-8, 14.55], 'x', road, 30, 0.2, moving),
     driving((x, y) => truck(x, y, { cab: [235, 240, 246], body: [47, 123, 255], rigid: true, along: 'x' }), [-8, 14.45], 'x', road, 30, 0.88, moving),
   );
+  // eslint-disable-next-line react-hooks/globals
+  DIM = false;
+
+  // Members' trucks that just arrived, parked along the yard with the driver's name.
+  const yardSpots = Math.max(0, Math.floor((W - PLOT.driveway.x - 1.2) / 3.1));
+  visitors.slice(0, Math.min(3, yardSpots)).forEach((name, i) => {
+    const vx = PLOT.driveway.x + 1.1 + i * 3.1, vy = PLOT.yardY + 0.05;
+    const rgb = liveryColor ? ([1, 3, 5].map((j) => parseInt(liveryColor.slice(j, j + 2), 16)) as [number, number, number]) : ([47, 123, 255] as [number, number, number]);
+    add(vx + vy + 3, truck(vx, vy, { cab: rgb, body: [235, 240, 246], rigid: true, along: 'x' }));
+    if (labels) tags.push({ type: `visit-${i}`, x: vx + 1.4, y: vy + 0.45, z: 1.5, text: name, sub: 'пристигна', active: false, visitor: true });
+  });
+
   // Material loads arriving at the gate.
   for (let i = 0; i < Math.min(2, incoming); i++) {
     const x = 1.2 - i * 5.5, y = 13.35;
@@ -725,27 +803,56 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
           <circle cx="7" cy="9" r="1.4" fill="#f5f9fc" />
           <circle cx="22" cy="23" r="1.4" fill="#d3dee8" />
         </pattern>
+        <radialGradient id="plot-glow">
+          <stop offset="0" stopColor="#ffd84a" stopOpacity="0.95" />
+          <stop offset="1" stopColor="#ffcf40" stopOpacity="0" />
+        </radialGradient>
+        {/* Night: everything dark and blue, except the warm lights (LIT), which keep their colour and glow a little. */}
+        <filter id="plot-night" x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
+          <feColorMatrix in="SourceGraphic" type="matrix" values="0.24 0 0 0 0.01  0 0.28 0 0 0.02  0.04 0.05 0.42 0 0.07  0 0 0 1 0" result="dark" />
+          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  3 6 -7.5 0 -4.65" result="mask" />
+          <feComposite in="SourceGraphic" in2="mask" operator="in" result="lights" />
+          <feGaussianBlur in="lights" stdDeviation="3" result="bloom" />
+          <feMerge>
+            <feMergeNode in="dark" />
+            <feMergeNode in="bloom" />
+            <feMergeNode in="lights" />
+          </feMerge>
+        </filter>
+        <pattern id="plot-rain" width="36" height="60" patternUnits="userSpaceOnUse">
+          <path d="M6 0 l-5 14 M24 22 l-5 14 M14 40 l-5 14 M32 48 l-4 11" stroke="rgba(210,225,245,0.55)" strokeWidth={1.3} strokeLinecap="round" />
+          {moving && <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="-20 60" dur="0.55s" repeatCount="indefinite" />}
+        </pattern>
         <linearGradient id="plot-sun" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#fff6d6" stopOpacity="0.28" />
           <stop offset="0.6" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect width={VIEW.w * 4} height={VIEW.h * 4} x={-VIEW.w} y={-VIEW.h} fill={SNOW ? '#e3ebf2' : '#9fd48c'} />
-      {items.map((i) => i.node)}
+      <g filter={NIGHT ? 'url(#plot-night)' : undefined}>
+        <rect width={VIEW.w * 4} height={VIEW.h * 4} x={-VIEW.w} y={-VIEW.h} fill={SNOW ? '#e3ebf2' : '#9fd48c'} />
+        {items.map((i) => i.node)}
+      </g>
       <g pointerEvents="none">{traffic}</g>
-      {front}
+      <g filter={NIGHT ? 'url(#plot-night)' : undefined}>{front}</g>
+      {weather === 'rain' && !SNOW && (
+        <g pointerEvents="none">
+          <rect width={VIEW.w * 4} height={VIEW.h * 4} x={-VIEW.w} y={-VIEW.h} fill="rgba(60,72,92,0.16)" />
+          <rect width={VIEW.w * 4} height={VIEW.h * 4} x={-VIEW.w} y={-VIEW.h} fill="url(#plot-rain)" />
+        </g>
+      )}
+      {AUTUMN && moving && <g pointerEvents="none">{fallingLeaves()}</g>}
       {tags.map((t) => {
         const [px, py] = P(t.x, t.y, t.z);
         const w = Math.max(t.text.length, t.sub.length) * 7 + 22;
         return (
-          <g key={`tag-${t.type}`} data-building={t.type} transform={`translate(${px.toFixed(1)} ${(py - 8).toFixed(1)}) scale(${labelScale.toFixed(3)}) translate(0 -22)`} className="cursor-pointer">
-            <path d={`M${-w / 2} -16 h${w} a6 6 0 0 1 6 6 v20 a6 6 0 0 1 -6 6 h${-w / 2 + 6} l-6 6 l-6 -6 h${-w / 2 + 6} a6 6 0 0 1 -6 -6 v-20 a6 6 0 0 1 6 -6 z`} fill={t.active ? 'rgba(8,47,73,0.92)' : 'rgba(10,14,22,0.82)'} stroke={t.active ? '#22d3ee' : 'rgba(255,255,255,0.18)'} strokeWidth={1} />
+          <g key={`tag-${t.type}`} data-building={t.visitor ? undefined : t.type} transform={`translate(${px.toFixed(1)} ${(py - 8).toFixed(1)}) scale(${labelScale.toFixed(3)}) translate(0 -22)`} className="cursor-pointer">
+            <path d={`M${-w / 2} -16 h${w} a6 6 0 0 1 6 6 v20 a6 6 0 0 1 -6 6 h${-w / 2 + 6} l-6 6 l-6 -6 h${-w / 2 + 6} a6 6 0 0 1 -6 -6 v-20 a6 6 0 0 1 6 -6 z`} fill={t.active ? 'rgba(8,47,73,0.92)' : t.visitor ? 'rgba(30,58,138,0.85)' : 'rgba(10,14,22,0.82)'} stroke={t.active ? '#22d3ee' : 'rgba(255,255,255,0.18)'} strokeWidth={1} />
             <text x={0} y={-2} textAnchor="middle" fontSize={12} fontWeight={700} fill="#ffffff" fontFamily="inherit">{t.text}</text>
-            <text x={0} y={12} textAnchor="middle" fontSize={10.5} fill={t.sub.startsWith('ниво') && !t.sub.includes('→') ? '#f6c343' : '#7dd3fc'} fontFamily="inherit">{t.sub}</text>
+            <text x={0} y={12} textAnchor="middle" fontSize={10.5} fill={t.visitor ? '#a7f3d0' : t.sub.startsWith('ниво') && !t.sub.includes('→') ? '#f6c343' : '#7dd3fc'} fontFamily="inherit">{t.sub}</text>
           </g>
         );
       })}
-      <rect width={VIEW.w * 3} height={VIEW.h * 3} x={-VIEW.w} y={-VIEW.h} fill="url(#plot-sun)" pointerEvents="none" />
+      {!NIGHT && <rect width={VIEW.w * 3} height={VIEW.h * 3} x={-VIEW.w} y={-VIEW.h} fill="url(#plot-sun)" pointerEvents="none" />}
     </>
   );
 }

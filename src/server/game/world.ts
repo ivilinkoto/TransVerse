@@ -31,6 +31,11 @@ import { pruneFeed } from './feed';
 import { settleEcoWeek } from './eco';
 import { collectLeases } from './leasing';
 import { finishConstructions } from './plot';
+import { awardBuildersOfWeek } from './base-life';
+import { announceFromGame } from '@/server/discord/announce';
+import { processOutbox } from '@/server/discord/outbox';
+import { bridgeCompanyChat, relayNotifications } from '@/server/discord/relay';
+import { syncAllRoles } from '@/server/discord/sync';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 
@@ -184,11 +189,21 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'leases', 10 * 60_000, now, () => collectLeases(db, now));
     // Constructions on company plots whose time is up.
     await every(db, 'constructions', 60_000, now, () => finishConstructions(db, now));
+    // "Строител на седмицата" in every company, after the week ends.
+    if (featureLive('builder_week', now)) await every(db, 'builder-week', 30 * 60_000, now, () => awardBuildersOfWeek(db, now));
     // Company battles: settle last week's, pair this week's.
     await every(db, 'company-battles', 10 * 60_000, now, async () => {
       await settleBattles(db, now);
       if (featureLive('battles', now)) await ensureWeeklyBattles(db, now);
     });
+    // The Discord bot: chat bridge and messages often, announcements and roles less often.
+    await every(db, 'discord-chat', 15_000, now, async () => {
+      await bridgeCompanyChat(db, now);
+      await relayNotifications(db, now);
+      await processOutbox(db, now);
+    });
+    await every(db, 'discord-announce', 5 * 60_000, now, () => announceFromGame(db, now));
+    await every(db, 'discord-roles', 10 * 60_000, now, () => syncAllRoles(db, now));
     // Push notifications for whatever happened above (in-game notifications and company chat).
     await job(db, 'push', now, () => dispatchPush(db, now));
     await every(db, 'push-prune', 24 * 60 * 60_000, now, () => pruneSubscriptions(db, now));

@@ -23,6 +23,8 @@ export const PLOT = {
   loadTons: { pallets: 7, steel: 20 } as Record<string, number>,
   /** Material loads stay on the members' board this long. */
   loadHours: 72,
+  /** The last load a construction waits for pays this much more. */
+  lastLoadFactor: 1.5,
 } as const;
 
 export const MATERIALS = {
@@ -200,6 +202,9 @@ export const BUILD_BADGES = {
   skyscraper: 'skyscraper',
   builder: 'builder',
 } as const;
+/** "Строител на седмицата": a prize from the treasury for who hauled the most building materials (game data). */
+export const BUILDER_WEEK = { rewardCents: 3_000_00, minTons: 5 } as const;
+
 /** Material loads a player hauls for the badge "Строител". */
 export const BUILDER_LOADS = 5;
 

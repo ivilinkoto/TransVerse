@@ -30,6 +30,7 @@ import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
 import { returnOnLeave, sellFleetOnDissolve } from './company-fleet';
+import { queueRoles } from '@/server/discord/outbox';
 
 export type Rank = typeof companyRanks.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
@@ -128,6 +129,7 @@ export async function setupCompanyMembership(tx: Tx, companyId: string, ownerId:
     .returning();
   const owner = ranks.find((r) => r.isOwner)!;
   await tx.insert(companyMembers).values({ userId: ownerId, companyId, rankId: owner.id });
+  await queueRoles(tx, ownerId);
 }
 
 // ── Joining and leaving ──────────────────────────────────────────────────
@@ -146,6 +148,7 @@ export async function joinCompany(db: Database, userId: string, companyId: strin
     if (company!.recruitment === 'open') {
       const rank = await entryRank(tx, companyId);
       await tx.insert(companyMembers).values({ userId, companyId, rankId: rank.id });
+      await queueRoles(tx, userId);
       await tx.update(companyApplications).set({ status: 'withdrawn', decidedAt: new Date() }).where(and(eq(companyApplications.userId, userId), eq(companyApplications.status, 'pending')));
       await logActivity(tx, userId, 'company_joined', { companyId });
       await notifyMembers(tx, companyId, 'recruit', 'Нов член', `${user!.username} се присъедини към „${company!.name}“.`, '/game/company/members');
@@ -194,6 +197,7 @@ export async function decideApplication(db: Database, actorId: string, applicati
     if ((await memberCount(tx, actor.company.id)) >= memberCapacity(actor.company.upgrades as UpgradeLevels)) fail('company_full', 'Няма свободни места — разширете административната сграда.');
     const rank = await entryRank(tx, actor.company.id);
     await tx.insert(companyMembers).values({ userId: app!.userId, companyId: actor.company.id, rankId: rank.id });
+    await queueRoles(tx, app!.userId);
     await tx.update(companyApplications).set({ status: 'accepted', ...decided }).where(eq(companyApplications.id, app!.id));
     await tx.update(companyApplications).set({ status: 'withdrawn', decidedAt: new Date() }).where(and(eq(companyApplications.userId, app!.userId), eq(companyApplications.status, 'pending')));
     await logActivity(tx, actorId, 'company_application_accepted', { applicationId, userId: app!.userId });
@@ -209,6 +213,7 @@ export async function leaveCompany(db: Database, userId: string) {
     if (m!.rank.isOwner) fail('owner_must_transfer', 'Като собственик първо предайте собствеността на друг член (или закрийте компанията, ако сте единственият член).');
     await returnOnLeave(tx, userId, new Date());
     await tx.delete(companyMembers).where(eq(companyMembers.userId, userId));
+    await queueRoles(tx, userId);
     await logActivity(tx, userId, 'company_left', { companyId: m!.company.id });
     await notify(tx, m!.company.ownerId, 'info', 'Член напусна компанията', 'Един от членовете напусна компанията.', '/game/company/members');
   });
@@ -232,6 +237,7 @@ export async function kickMember(db: Database, actorId: string, targetUserId: st
     await subordinate(tx, actor, targetUserId);
     await returnOnLeave(tx, targetUserId, new Date());
     await tx.delete(companyMembers).where(eq(companyMembers.userId, targetUserId));
+    await queueRoles(tx, targetUserId);
     await logActivity(tx, actorId, 'company_member_removed', { userId: targetUserId });
     await notify(tx, targetUserId, 'warning', 'Изключени сте от компанията', `Вече не членувате в „${actor.company.name}“.`, '/game/companies');
   });

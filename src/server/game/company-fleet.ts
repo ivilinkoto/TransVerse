@@ -1,4 +1,5 @@
 import { and, asc, eq, isNull } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { POWER_UNITS, powerUnitModel } from '@/lib/game/catalog';
 import { COMPANY_FLEET, fleetLimit } from '@/lib/game/company-fleet';
 import type { UpgradeLevels } from '@/lib/game/company';
@@ -7,7 +8,7 @@ import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, drivers, orgVehicles, organizations, trailers, users, vehicles } from '@/server/db/schema';
 import { fail } from './errors';
 import { postTreasury } from './finance';
-import { membershipOf, notifyMembers, requirePermission } from './membership';
+import { can, membershipOf, notifyMembers, requirePermission } from './membership';
 import { uniquePlate } from './names';
 import { logActivity } from './notify';
 
@@ -25,16 +26,18 @@ const ageDays = (from: Date, now: Date) => (now.getTime() - from.getTime()) / 86
 export async function orgFleetView(db: DbOrTx, organizationId: string) {
   const [org] = await db.select({ upgrades: organizations.upgrades }).from(organizations).where(eq(organizations.id, organizationId));
   if (!org) return null;
+  const noteAuthor = alias(users, 'note_author');
   const rows = await db
-    .select({ v: orgVehicles, borrower: users.username, city: cities.nameBg })
+    .select({ v: orgVehicles, borrower: users.username, city: cities.nameBg, noteBy: noteAuthor.username })
     .from(orgVehicles)
     .leftJoin(users, eq(users.id, orgVehicles.lentTo))
+    .leftJoin(noteAuthor, eq(noteAuthor.id, orgVehicles.noteBy))
     .innerJoin(cities, eq(cities.id, orgVehicles.cityId))
     .where(and(eq(orgVehicles.organizationId, organizationId), isNull(orgVehicles.soldAt)))
     .orderBy(asc(orgVehicles.createdAt));
   return {
     limit: fleetLimit(org.upgrades as UpgradeLevels),
-    vehicles: rows.map((r) => ({ id: r.v.id, modelId: r.v.modelId, name: powerUnitModel(r.v.modelId).name, kind: powerUnitModel(r.v.modelId).kind, plate: r.v.plate, city: r.city, condition: r.v.condition, odometerKm: r.v.odometerKm, borrower: r.borrower, lentTo: r.v.lentTo })),
+    vehicles: rows.map((r) => ({ id: r.v.id, modelId: r.v.modelId, name: powerUnitModel(r.v.modelId).name, kind: powerUnitModel(r.v.modelId).kind, plate: r.v.plate, city: r.city, condition: r.v.condition, odometerKm: r.v.odometerKm, borrower: r.borrower, lentTo: r.v.lentTo, note: r.v.note ? { text: r.v.note, by: r.noteBy } : null })),
   };
 }
 
@@ -145,4 +148,21 @@ export async function returnOnLeave(tx: Tx, userId: string, now: Date) {
     if (r.status !== 'idle') fail('company_truck_on_trip', 'Фирменият камион е на курс — върнете го на компанията след края на курса.');
     await returnCompanyTruck(tx, r.id, now);
   }
+}
+
+export const NOTE_MAX = 140;
+
+/**
+ * A note on a company truck for the next driver ("the tyres are worn"): by
+ * whoever has it now or ranks with "Развитие"; empty clears it.
+ */
+export async function setOrgVehicleNote(db: Database, userId: string, orgVehicleId: string, raw: string) {
+  const note = raw.trim().slice(0, NOTE_MAX);
+  return db.transaction(async (tx) => {
+    const m = await membershipOf(tx, userId);
+    if (!m) fail('not_member', 'Не членувате в компания.', 403);
+    const ov = await lockOrgVehicle(tx, m!.company.id, orgVehicleId);
+    if (ov.lentTo !== userId && !can(m!.rank, 'manage_upgrades')) fail('forbidden', 'Бележка оставя шофьорът, който кара камиона, или длъжност с право „Развитие“.', 403);
+    await tx.update(orgVehicles).set({ note: note || null, noteBy: note ? userId : null }).where(eq(orgVehicles.id, ov.id));
+  });
 }

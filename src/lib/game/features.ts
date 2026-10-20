@@ -41,6 +41,17 @@ export const FEATURES = {
   company_polls: '1.3',
   chat_replies: '1.3',
   chat_unread: '1.3',
+  chat_reactions: '1.3',
+  chat_pin: '1.3',
+  chat_online: '1.3',
+  truck_notes: '1.3',
+  plot_night: '1.3',
+  plot_weather: '1.3',
+  plot_visits: '1.3',
+  company_trophies: '1.3',
+  builder_week: '1.3',
+  build_last_load: '1.3',
+  discord_bot: '1.3',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;
