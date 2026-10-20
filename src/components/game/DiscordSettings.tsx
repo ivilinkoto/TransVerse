@@ -3,7 +3,6 @@
 import { Link2, Unlink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { QuietHours } from '@/components/game/QuietHours';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { api } from '@/lib/client/api';
 
@@ -15,7 +14,7 @@ const STATUS: Record<string, { text: string; good: boolean }> = {
 };
 
 /** Settings → Discord: link the account, which notifications come as Discord messages, unlink. */
-export function DiscordSettings({ ready, linked, categories, prefs, status, coins, quiet }: { ready: boolean; linked: string | null; categories: Record<string, string>; prefs: Record<string, boolean | undefined>; status: string | null; coins: number; quiet: { from: number; to: number } | null }) {
+export function DiscordSettings({ ready, linked, categories, prefs, status, coins }: { ready: boolean; linked: string | null; categories: Record<string, string>; prefs: Record<string, boolean | undefined>; status: string | null; coins: number }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +44,7 @@ export function DiscordSettings({ ready, linked, categories, prefs, status, coin
           </div>
           <div>
             <p className="label mb-1.5">Известия като лично съобщение в Discord</p>
-            <p className="mb-2 text-xs text-mist-400">Известията извън играта (пристигнал камион, спешна доставка, ивенти, компанията…) идват само тук. Махни отметката на това, което не искаш.</p>
+            <p className="mb-2 text-xs text-mist-400">Всичко е включено — махни отметката на това, което не искаш в Discord. Известията на телефона се настройват отделно по-долу.</p>
             <ul className="grid gap-1.5 sm:grid-cols-2">
               {Object.entries(categories).map(([key, label]) => (
                 <li key={key}>
@@ -56,12 +55,12 @@ export function DiscordSettings({ ready, linked, categories, prefs, status, coin
                 </li>
               ))}
             </ul>
+            <p className="mt-1.5 text-[11px] text-mist-400">Тихите часове важат и тук.</p>
           </div>
-          <div className="border-t border-asphalt-800 pt-3"><QuietHours value={quiet} /></div>
         </>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="max-w-xl text-mist-300">Известията извън играта (пристигнал камион, спешна доставка, ивенти, компанията) идват само в Discord. Свържи го и влизаш в сървъра на TransVerse с ролите си от играта (ниво, VIP, компания), канала на компанията и известията. Първия път получаваш <b className="text-cyan-glow">{coins} ТрансКоин</b> и значка „Discord шофьор“.</p>
+          <p className="max-w-xl text-mist-300">Свържи Discord и влизаш в сървъра на TransVerse с ролите си от играта (ниво, VIP, компания), канала на компанията и известия в Discord. Първия път получаваш <b className="text-cyan-glow">{coins} ТрансКоин</b> и значка „Discord шофьор“.</p>
           <a href="/api/discord/link" className="btn-primary"><Link2 className="h-4 w-4" />Свържи Discord</a>
         </div>
       )}

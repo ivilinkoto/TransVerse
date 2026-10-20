@@ -29,7 +29,7 @@ export function QuietHours({ value }: { value: { from: number; to: number } | nu
   };
   return (
     <div className="space-y-2 text-sm">
-      <p className="flex items-center gap-2 text-mist-300"><Moon className="h-4 w-4 text-prestige" />{value ? `Тихи часове: ${hh(value.from)} – ${hh(value.to)} — тогава не идват известия извън играта (в играта остават).` : 'Без тихи часове — известията идват по всяко време.'}</p>
+      <p className="flex items-center gap-2 text-mist-300"><Moon className="h-4 w-4 text-prestige" />{value ? `Тихи часове: ${hh(value.from)} – ${hh(value.to)} — тогава не идват известия на телефона и в Discord (в играта остават).` : 'Без тихи часове — известията идват по всяко време.'}</p>
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-1.5">от <select className="input w-auto py-1.5" value={from} onChange={(e) => setFrom(Number(e.target.value))} aria-label="Тихи часове от">{HOURS.map((h) => <option key={h} value={h}>{hh(h)}</option>)}</select></label>
         <label className="flex items-center gap-1.5">до <select className="input w-auto py-1.5" value={to} onChange={(e) => setTo(Number(e.target.value))} aria-label="Тихи часове до">{HOURS.map((h) => <option key={h} value={h}>{hh(h)}</option>)}</select></label>

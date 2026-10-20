@@ -2,7 +2,6 @@
 
 import { Bell, BellOff, Download, Send, Smartphone, Volume2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useFeature } from '@/components/game/Features';
 import { api } from '@/lib/client/api';
 import { playChime, setSoundEnabled, soundEnabled, unlockSound } from '@/lib/client/sound';
 
@@ -44,8 +43,6 @@ const isStandalone = () => window.matchMedia('(display-mode: standalone)').match
 
 /** Banner for players in a normal browser tab: "we have an app" with an install button (or iPhone steps). */
 export function InstallAppBanner() {
-  // From v1.3 notifications come through Discord, so the app is about full screen and quick start only.
-  const alerts = !useFeature('discord_bot');
   const [mode, setMode] = useState<'hidden' | 'prompt' | 'ios'>('hidden');
   useEffect(() => {
     const decide = () => {
@@ -87,11 +84,11 @@ export function InstallAppBanner() {
       <Smartphone className="h-4 w-4 shrink-0 text-cyan-glow" />
       {mode === 'prompt' ? (
         <>
-          <span className="flex-1">TransVerse има приложение — {alerts ? 'по-бързо стартиране, цял екран и известия, когато камионът пристигне' : 'по-бързо стартиране и цял екран'}.</span>
+          <span className="flex-1">TransVerse има приложение — по-бързо стартиране, цял екран и известия, когато камионът пристигне.</span>
           <button type="button" className="btn-primary px-3 py-1.5 text-sm" onClick={() => void install()}><Download className="h-4 w-4" />Изтегли приложението</button>
         </>
       ) : (
-        <span className="flex-1">Инсталирай TransVerse на iPhone: натисни <span className="font-semibold">Сподели</span> (квадратчето със стрелка) → <span className="font-semibold">Добави към началния екран</span>.{alerts ? ' Така ще получаваш и известия.' : ''}</span>
+        <span className="flex-1">Инсталирай TransVerse на iPhone: натисни <span className="font-semibold">Сподели</span> (квадратчето със стрелка) → <span className="font-semibold">Добави към началния екран</span>. Така ще получаваш и известия.</span>
       )}
       <button type="button" className="text-mist-400 hover:text-white" onClick={dismiss} aria-label="Скрий">✕</button>
     </div>
@@ -117,12 +114,14 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [install, setInstall] = useState<InstallEvent | null>(null);
+  const [sound, setSound] = useState(true);
 
   useEffect(() => {
     const onPrompt = () => setInstall(window.__tvInstall ?? null);
     window.addEventListener('tv:installable', onPrompt);
     (async () => {
       onPrompt();
+      setSound(soundEnabled());
       const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
       const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
       if (!supported()) return setState(ios && !standalone ? 'ios' : 'unsupported');
@@ -225,42 +224,29 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
 
       <fieldset className="space-y-1.5 border-t border-asphalt-800 pt-3">
         <legend className="label mb-1">Звук</legend>
-        <SoundSetting />
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={sound}
+            onChange={(e) => {
+              setSound(e.target.checked);
+              setSoundEnabled(e.target.checked);
+              if (e.target.checked) {
+                unlockSound();
+                setTimeout(playChime, 50);
+              }
+            }}
+          />
+          <span>Кратък звук при ново известие, докато играта е отворена (на това устройство)</span>
+        </label>
+        <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => { unlockSound(); setTimeout(playChime, 50); }}><Volume2 className="h-3.5 w-3.5" />Чуй звука</button>
         <p className="text-xs text-mist-400">Когато играта е затворена, известието идва със звука и вибрацията на телефона (настройват се от известията на телефона за TransVerse).</p>
       </fieldset>
 
       {install && (
         <button type="button" className="btn-ghost" onClick={() => void install.prompt().then(() => { window.__tvInstall = null; setInstall(null); })}><Download className="h-4 w-4" />Инсталирай TransVerse като приложение</button>
       )}
-    </div>
-  );
-}
-
-/** The short in-game chime for new notifications (stored on this device). */
-export function SoundSetting() {
-  const [sound, setSound] = useState(true);
-  useEffect(() => {
-    void Promise.resolve().then(() => setSound(soundEnabled()));
-  }, []);
-  return (
-    <div className="space-y-1.5">
-      <label className="flex items-start gap-2">
-        <input
-          type="checkbox"
-          className="mt-0.5"
-          checked={sound}
-          onChange={(e) => {
-            setSound(e.target.checked);
-            setSoundEnabled(e.target.checked);
-            if (e.target.checked) {
-              unlockSound();
-              setTimeout(playChime, 50);
-            }
-          }}
-        />
-        <span>Кратък звук при ново известие, докато играта е отворена (на това устройство)</span>
-      </label>
-      <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => { unlockSound(); setTimeout(playChime, 50); }}><Volume2 className="h-3.5 w-3.5" />Чуй звука</button>
     </div>
   );
 }

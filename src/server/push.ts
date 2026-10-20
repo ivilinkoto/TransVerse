@@ -51,9 +51,6 @@ export function categoryOf(href: string | null | undefined): PushCategory {
   return 'general';
 }
 
-/** From v1.3 the notifications outside the game go to Discord only (see discord/relay.ts), not to phones. */
-export const viaDiscord = (role: string, now: Date) => featureLive('discord_bot', now, isStaff(role));
-
 export const wants = (prefs: Partial<Record<string, boolean>> | null | undefined, category: PushCategory) => prefs?.[category] !== false;
 
 /** Quiet hours (Sofia time): no phone notifications from `from` to `to` (may cross midnight). */
@@ -234,7 +231,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
     .limit(1000);
   const byUser = new Map<string, typeof rows>();
   // Quiet hours: nothing reaches the phone (the notifications stay in the game).
-  for (const r of rows) if (!viaDiscord(r.role, now) && wants(r.prefs, categoryOf(r.href)) && !inQuietHours(r.quiet, now)) byUser.set(r.userId, [...(byUser.get(r.userId) ?? []), r]);
+  for (const r of rows) if (wants(r.prefs, categoryOf(r.href)) && !inQuietHours(r.quiet, now)) byUser.set(r.userId, [...(byUser.get(r.userId) ?? []), r]);
   for (const [userId, list] of byUser) {
     const message: PushMessage =
       list.length === 1
@@ -258,7 +255,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
   if (messages.length) {
     const companies = [...new Set(messages.map((m) => m.companyId))];
     const members = await db
-      .select({ userId: companyMembers.userId, companyId: companyMembers.companyId, prefs: users.pushPrefs, quiet: users.quietHours, role: users.role })
+      .select({ userId: companyMembers.userId, companyId: companyMembers.companyId, prefs: users.pushPrefs, quiet: users.quietHours })
       .from(companyMembers)
       .innerJoin(users, eq(users.id, companyMembers.userId))
       .where(
@@ -269,7 +266,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
         ),
       );
     for (const m of members) {
-      if (viaDiscord(m.role, now) || !wants(m.prefs, 'chat') || inQuietHours(m.quiet, now)) continue;
+      if (!wants(m.prefs, 'chat') || inQuietHours(m.quiet, now)) continue;
       const mine = messages.filter((x) => x.companyId === m.companyId && x.authorId !== m.userId);
       if (!mine.length) continue;
       const last = mine.at(-1)!;

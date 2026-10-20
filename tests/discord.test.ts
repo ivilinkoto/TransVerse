@@ -19,7 +19,6 @@ import { sendChatMessage } from '@/server/game/chat';
 import { GameError } from '@/server/game/errors';
 import { joinCompany, updateSettings } from '@/server/game/membership';
 import { notify } from '@/server/game/notify';
-import { dispatchPush, subscribe, type PushSender } from '@/server/push';
 import { db, newPlayer, playerWithCompany } from './helpers';
 
 const keys = generateKeyPairSync('ed25519');
@@ -141,23 +140,15 @@ describe('chat bridge and direct messages', () => {
     expect(await outbox(`bridge:${fromDiscord[0]!.id}`)).toHaveLength(0);
   });
 
-  it('notifications go to Discord instead of the phone; a category can be turned off', async () => {
+  it('notifications come as a Discord message unless the player turned the category off', async () => {
     const p = await newPlayer();
     const id = discordId();
     await linkDiscord(db(), p.userId, { id, name: 'DM' });
-    await subscribe(db(), p.userId, { endpoint: `https://push.example.com/send/${p.userId}`, keys: { p256dh: 'BPp256dh-test-key-value', auth: 'auth-secret-1' } });
-    const pushed: string[] = [];
-    const fake: PushSender = async (_s, payload) => {
-      pushed.push(payload);
-      return 201;
-    };
-    await relayNotifications(db()); // cursors
-    await dispatchPush(db(), new Date(), fake);
+    await relayNotifications(db()); // cursor
     await notify(db(), p.userId, 'info', 'Камионът пристигна', 'В София.', '/game/fleet');
     await relayNotifications(db());
-    await dispatchPush(db(), new Date(), fake);
-    expect(await outbox(`dm:${p.userId}:`)).toHaveLength(1);
-    expect(pushed).toHaveLength(0);
+    const [dm] = await outbox(`dm:${p.userId}:`);
+    expect(dm).toMatchObject({ target: `dm:${id}` });
     await db().update(users).set({ discordPrefs: { deliveries: false } }).where(eq(users.id, p.userId));
     await notify(db(), p.userId, 'info', 'Камионът пристигна отново', 'Във Варна.', '/game/fleet');
     await relayNotifications(db());

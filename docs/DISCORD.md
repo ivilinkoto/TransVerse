@@ -5,7 +5,7 @@
 ## Настройка
 
 1. Discord Developer Portal → New Application „TransVerse“.
-2. **Bot**: Reset Token → `DISCORD_BOT_TOKEN`; Public Bot — изключено; Privileged Gateway Intents: **Server Members** и **Message Content** — включени.
+2. **Bot**: Reset Token → `DISCORD_BOT_TOKEN`; Public Bot — изключено; Privileged Gateway Intents: **Message Content** — включено (без него ботът се свързва и така — командите, ролите и известията работят, но мостът от Discord към чата в играта не получава текста; опитва пак на всеки 30 минути).
 3. **OAuth2**: Client Secret → `DISCORD_CLIENT_SECRET`; Redirects: `https://<сайта>/api/discord/callback`.
 4. **General Information**: Application ID → `DISCORD_APPLICATION_ID`, Public Key → `DISCORD_PUBLIC_KEY`. **Interactions Endpoint URL**: `https://<сайта>/api/discord/interactions` (попълва се след качване — Discord го проверява веднага). Може и да остане празно: тогава командите идват през постоянната връзка на worker-а.
 5. OAuth2 → URL Generator: scopes `bot` и `applications.commands`; права: View Channels, Send Messages, Embed Links, Attach Files, Read Message History, Manage Webhooks, Manage Roles, Manage Channels. Поканата се отваря и ботът се добавя в сървъра. Ролята на бота стои над ролите, които раздава.
@@ -24,4 +24,4 @@
 - **Роли** (`sync.ts`): „Свързан с играта“, „Шофьор 10+“, „Легенда 20+“, „VIP“, „Собственик на компания“ и „Компания · <име>“ (само за компании с канал). Ботът пипа само своите роли. Обновяват се при влизане/излизане от компания и на всеки 10 минути по 40 играча.
 - **Канал на компанията**: собственикът (право „Настройки“) го включва от Компания → Управление. Частен канал в категория „Компании“, вижда го само ролята на компанията; уебхук за моста.
 - **Мост на чата**: от играта към Discord през уебхука (име и снимка на автора); от Discord към играта — постоянна връзка (gateway) в worker-а, само от свързани членове на компанията, всяко съобщение веднъж (`company_messages.discord_message_id`).
-- **Лични съобщения**: от v1.3 известията извън играта идват само оттук — push към телефоните спира (`viaDiscord` в `push.ts`, за всеки играч, за когото `discord_bot` е включено). Всички категории са включени, докато играчът не изключи някоя (Настройки → Discord); без тихите часове; няколко наведнъж стават едно. Без свързан Discord известията остават само в играта.
+- **Лични съобщения**: известията от играта (освен известията на телефона, които си остават) — всички категории са включени, докато играчът не изключи някоя (Настройки → Discord); без тихите часове; няколко наведнъж стават едно.

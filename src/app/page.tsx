@@ -11,7 +11,6 @@ import { duration, int, km, money } from '@/lib/format';
 import { ECONOMY } from '@/lib/game/economy';
 import { LEAGUE_GROUP_SIZE, LEAGUE_TIERS } from '@/lib/game/leagues';
 import { REFERRAL } from '@/lib/game/referrals';
-import { featureLive } from '@/lib/game/features';
 import { visibleReleases } from '@/lib/game/releases';
 import { gameDurationMinutes } from '@/lib/game/schedule';
 import { VIP_PERKS } from '@/lib/game/vip';
@@ -38,8 +37,6 @@ export default async function HomePage() {
   const names = await countryNames([...new Set(routes.flatMap((r) => r.route?.countries ?? []))]).catch(() => new Map<string, string>());
   const now = world?.now ?? requestNow();
   const latest = world ? visibleReleases(now)[0] : undefined;
-  // From v1.3 notifications outside the game come through Discord.
-  const discordAlerts = featureLive('discord_bot', now);
   const livery = season === 'halloween' ? 'pumpkin' : season === 'christmas' ? 'christmas' : undefined;
 
   return (
@@ -227,12 +224,12 @@ export default async function HomePage() {
           <div>
             <p className="label">На телефона</p>
             <h2 className="mt-3 font-display text-3xl font-bold sm:text-4xl">Компанията ти е в джоба ти</h2>
-            <p className="mt-4 max-w-xl text-mist-300">TransVerse работи в браузъра на всяко устройство — без изтегляне от магазин. Можеш да го добавиш на началния екран като приложение{discordAlerts ? ', а известията идват в Discord' : ' и да получаваш известия'}.</p>
+            <p className="mt-4 max-w-xl text-mist-300">TransVerse работи в браузъра на всяко устройство — без изтегляне от магазин. Можеш да го добавиш на началния екран като приложение и да получаваш известия.</p>
             <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {[
                 { icon: Download, title: 'Инсталирай като приложение', text: 'От менюто на браузъра — „Добави към началния екран“.' },
-                { icon: Bell, title: discordAlerts ? 'Известия в Discord' : 'Известия', text: 'Камионът пристигна, нова поръчка по любима линия, съобщение от приятел.' },
-                { icon: BellOff, title: 'Тихи часове', text: discordAlerts ? 'Избираш кога да не идват известия и кои искаш.' : 'Избираш кога телефонът да мълчи и кои известия искаш.' },
+                { icon: Bell, title: 'Известия', text: 'Камионът пристигна, нова поръчка по любима линия, съобщение от приятел.' },
+                { icon: BellOff, title: 'Тихи часове', text: 'Избираш кога телефонът да мълчи и кои известия искаш.' },
                 { icon: Smartphone, title: 'Пълна игра', text: 'Борса, автопарк, карта и чат — всичко е пригодено за малък екран.' },
               ].map((f) => (
                 <li key={f.title} className="flex gap-3 rounded-xl border border-asphalt-700 bg-asphalt-900/60 p-3.5">
@@ -256,7 +253,7 @@ export default async function HomePage() {
               { q: 'Безплатна ли е играта?', a: 'Да. Цялата игра е безплатна. ТрансКоин (TC) и VIP може да се купят, но TC се печелят и в играта — от мисии, ивенти, дневната награда, търговете и поканите.' },
               { q: 'Какво дава VIP?', a: `Удобства и престиж: +${Math.round((VIP_PERKS.xpMultiplier - 1) * 100)}% опит, по-нисък наем, отстъпка в сервиза, допълнителни мисии, ранен достъп до спешните поръчки, златно име и ексклузивни цветове. VIP никога не дава сезонни точки и не вдига мястото в класациите.` },
               { q: 'Трябва ли да съм онлайн, докато камионът кара?', a: `Не. Курсовете се изпълняват на сървъра — от ${gameDurationMinutes(0)} минути за кратък курс до около ${duration(gameDurationMinutes(2000))} за 2 000 км. Камионът пристига и парите влизат, дори ако играта е затворена.` },
-              { q: 'Мога ли да играя на телефон?', a: discordAlerts ? 'Да. Играта работи в браузъра на телефона и може да се инсталира като приложение. Известията (пристигнал камион, спешна доставка, съобщения) идват като лично съобщение в Discord.' : 'Да. Играта работи в браузъра на телефона и може да се инсталира като приложение с известия.' },
+              { q: 'Мога ли да играя на телефон?', a: 'Да. Играта работи в браузъра на телефона и може да се инсталира като приложение с известия.' },
               { q: 'Истински ли са градовете и пътищата?', a: 'Да. Градовете и пристанищата са от GeoNames, а маршрутите — по пътната мрежа на OpenStreetMap, с граници и пътни такси. Цените, компаниите, клиентите и събитията в играта са симулирани (игрови данни).' },
               { q: 'Мога ли да играя с приятели?', a: `Да — в обща компания, в чата или като съперници в лигите. Ако поканиш приятел с личния си линк, и двамата получавате награда след първите му ${REFERRAL.deliveriesNeeded} доставки.` },
               { q: 'Какво се случва в края на сезона?', a: `Най-добрите получават наградите, а точките се нулират. Парите, камионите, шофьорите и депата ти остават — сезонът е ново състезание, не нов старт.` },
