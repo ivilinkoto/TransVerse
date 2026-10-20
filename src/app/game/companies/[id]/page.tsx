@@ -66,6 +66,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
                   grid={false}
                   liveryColor={base.liveryColor}
                   plotW={base.plotW}
+                  labelScale={1.4}
                   decor={base.decor}
                   season={!features.plot_season ? null : isChristmas(now) ? 'christmas' : isWinter(now) ? 'winter' : null}
                 />

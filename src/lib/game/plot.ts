@@ -144,6 +144,17 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
 };
 export const BUILDING_TYPES = Object.keys(BUILDINGS) as BuildingType[];
 
+/** Where a building leads in the game when it is clicked on the plot. */
+export const BUILDING_LINKS: Record<BuildingType, { href: string; label: string }> = {
+  office: { href: '/game/company/members', label: 'Отвори членовете' },
+  logistics: { href: '/game/contracts', label: 'Отвори борсата' },
+  training: { href: '/game/staff', label: 'Отвори шофьорите' },
+  service: { href: '/game/garage', label: 'Отвори сервиза' },
+  parking: { href: '/game/fleet', label: 'Отвори автопарка' },
+  warehouse: { href: '/game/trade', label: 'Отвори склада' },
+  rest: { href: '/game/staff', label: 'Отвори шофьорите' },
+};
+
 /** How much more each level needs than level 1, and how long it takes (real minutes). */
 const LEVEL_FACTOR = [1, 1.8, 3, 4.5, 6.5];
 const LEVEL_MINUTES = [180, 360, 600, 960, 1440];

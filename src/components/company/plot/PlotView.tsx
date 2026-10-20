@@ -1,13 +1,14 @@
 'use client';
 
-import { Building2, Flower2, Hammer, LandPlot, Maximize2, Minus, Move, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowRight, Building2, Flower2, Hammer, LandPlot, Maximize2, Minus, Move, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Meter } from '@/components/ui';
 import { api } from '@/lib/client/api';
 import { duration, money } from '@/lib/format';
-import { BOOM, BUILDINGS, BUILDING_TYPES, DECOR, DECOR_KINDS, decorError, EXPANSIONS, levelSpec, MATERIAL_IDS, MATERIALS, MAX_DECOR, materialCostCents, placementError, PLOT, plotWidth, type BuildingType, type DecorKind, type Materials } from '@/lib/game/plot';
+import { BOOM, BUILDING_LINKS, BUILDINGS, BUILDING_TYPES, DECOR, DECOR_KINDS, decorError, EXPANSIONS, levelSpec, MATERIAL_IDS, MATERIALS, MAX_DECOR, materialCostCents, placementError, PLOT, plotWidth, type BuildingType, type DecorKind, type Materials } from '@/lib/game/plot';
 import { PlotScene, toTile, viewFor } from './scene';
 
 export interface PlotData {
@@ -52,6 +53,9 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [selected, setSelected] = useState<BuildingType | null>(null);
   const [selectedDecor, setSelectedDecor] = useState<string | null>(null);
+  /** Where the building menu opens (pixels in the scene box). */
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const box = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -82,6 +86,16 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
 
   const VIEW = viewFor(W);
   const vb = { w: VIEW.w / view.zoom, h: VIEW.h / view.zoom };
+  // Labels keep about the same size on the screen: bigger in the drawing on a phone, smaller when zoomed in.
+  const [width, setWidth] = useState(1000);
+  useEffect(() => {
+    const el = svg.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth || 1000));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const labelScale = Math.min(2.6, Math.max(0.75, (vb.w / width) * 0.85));
   const viewBox = `${VIEW.x + (VIEW.w - vb.w) / 2 + view.x} ${VIEW.y + (VIEW.h - vb.h) / 2 + view.y} ${vb.w} ${vb.h}`;
 
   const toSvg = (e: React.PointerEvent) => {
@@ -97,7 +111,10 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
     if (drag.current) {
       const d = drag.current;
       const scale = vb.w / (svg.current?.clientWidth || VIEW.w);
-      if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 4) d.moved = true;
+      if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 4) {
+        d.moved = true;
+        setMenuAt(null);
+      }
       setView((v) => ({ ...v, x: d.vx - (e.clientX - d.x) * scale, y: d.vy - (e.clientY - d.y) * scale }));
       return;
     }
@@ -134,12 +151,19 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
       }
       return;
     }
-    const hit = data.buildings.find((b) => t.x >= b.x && t.x < b.x + BUILDINGS[b.type].w && t.y >= b.y && t.y < b.y + BUILDINGS[b.type].h);
+    // The drawing under the pointer first (a tall building covers the tiles behind it), then the tile.
+    const drawn = (e.target as Element).closest?.('[data-building]')?.getAttribute('data-building') as BuildingType | null | undefined;
+    const hit = data.buildings.find((b) => b.type === drawn) ?? data.buildings.find((b) => t.x >= b.x && t.x < b.x + BUILDINGS[b.type].w && t.y >= b.y && t.y < b.y + BUILDINGS[b.type].h);
     const hitDecor = hit ? null : data.decor.find((d) => t.x >= d.x && t.x < d.x + DECOR[d.kind].w && t.y >= d.y && t.y < d.y + DECOR[d.kind].h);
     setSelected(hit?.type ?? null);
     setSelectedDecor(hitDecor?.id ?? null);
+    const r = box.current?.getBoundingClientRect();
+    setMenuAt(hit && r ? { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height } : null);
   };
-  const zoom = (f: number) => setView((v) => ({ ...v, zoom: Math.min(2.5, Math.max(0.7, v.zoom * f)) }));
+  const zoom = (f: number) => {
+    setMenuAt(null);
+    setView((v) => ({ ...v, zoom: Math.min(2.5, Math.max(0.7, v.zoom * f)) }));
+  };
 
   const sel = selected ? data.buildings.find((b) => b.type === selected) : null;
   const notPlaced = BUILDING_TYPES.filter((t) => !data.buildings.some((b) => b.type === t));
@@ -149,7 +173,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="relative min-w-0 self-start overflow-hidden xl:sticky xl:top-20 rounded-2xl border border-asphalt-700 bg-[#9fd48c]">
+      <div ref={box} className="relative min-w-0 self-start overflow-hidden xl:sticky xl:top-20 rounded-2xl border border-asphalt-700 bg-[#9fd48c]">
         <svg
           ref={svg}
           viewBox={viewBox}
@@ -161,7 +185,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           role="img"
           aria-label={`Участъкът на „${data.org.name}“`}
         >
-          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} />
+          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} labelScale={labelScale} />
         </svg>
         <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 px-3 py-2 text-xs text-mist-300 backdrop-blur">
           <b className="block text-sm text-white">Участък · {data.hq?.nameBg ?? ''}</b>
@@ -181,6 +205,16 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
             )}
             <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => { setMode({ kind: 'view' }); setError(null); }}><X className="h-3.5 w-3.5" />Отказ</button>
           </div>
+        )}
+        {sel && menuAt && !placing && !placingDecor && (
+          <BuildingMenu
+            building={sel}
+            at={menuAt}
+            upgrading={!!c && c.type === sel.type}
+            canMove={canBuild && !(c?.type === sel.type && c.status === 'building')}
+            onMove={() => { setMode({ kind: 'move', type: sel.type }); setMenuAt(null); setError(null); }}
+            onClose={() => { setMenuAt(null); setSelected(null); }}
+          />
         )}
         {error && <p role="alert" className="absolute inset-x-3 top-16 rounded-xl bg-loss/90 px-3 py-2 text-sm text-white">{error}</p>}
       </div>
@@ -203,7 +237,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           </div>
         )}
         {sel && (
-          <div className="panel p-4">
+          <div id="plot-building" className="panel scroll-mt-24 p-4">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="font-display text-lg font-bold">{BUILDINGS[sel.type].label}{sel.level > 0 ? ` · ниво ${sel.level}` : ''}</h3>
@@ -287,6 +321,35 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           </div>
         )}
         {children}
+      </div>
+    </div>
+  );
+}
+
+/** The menu of a building clicked on the plot: where it leads in the game, its level and moving it. */
+function BuildingMenu({ building, at, upgrading, canMove, onMove, onClose }: { building: { type: BuildingType; level: number }; at: { x: number; y: number; w: number; h: number }; upgrading: boolean; canMove: boolean; onMove: () => void; onClose: () => void }) {
+  const def = BUILDINGS[building.type];
+  const link = BUILDING_LINKS[building.type];
+  const W = 248;
+  // On a small scene (a phone) the menu is a compact bar along the bottom.
+  const compact = at.w < 520;
+  const left = Math.max(8, Math.min(at.x - W / 2, at.w - W - 8));
+  const below = at.y < at.h / 2;
+  const place = compact ? { left: 8, right: 8, bottom: 8 } : { left, width: W, ...(below ? { top: at.y + 12 } : { bottom: Math.max(8, at.h - at.y + 12) }) };
+  return (
+    <div role="dialog" aria-label={def.label} className={`absolute z-10 rounded-xl border border-cyan-glow/40 bg-asphalt-950/95 text-sm shadow-xl backdrop-blur ${compact ? 'p-2.5' : 'p-3'}`} style={place} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <b className="block text-white">{def.label}</b>
+          <span className="text-xs text-gold-300">{building.level > 0 ? `Ниво ${building.level} от ${def.maxLevel}` : 'Строи се'}{upgrading && building.level > 0 ? ' · вдига се' : ''}</span>
+        </div>
+        <button type="button" className="text-mist-400 hover:text-white" onClick={onClose} aria-label="Затвори"><X className="h-4 w-4" /></button>
+      </div>
+      {building.level > 0 && !compact && <p className="mt-1 text-xs text-mist-300">{def.effect(building.level)}</p>}
+      <div className={`mt-2 flex gap-1.5 ${compact ? 'flex-row flex-wrap [&>*]:flex-1' : 'flex-col'}`}>
+        {building.level > 0 && <Link href={link.href} className="btn-primary justify-center py-1.5 text-sm">{link.label}<ArrowRight className="h-4 w-4" /></Link>}
+        <a href="#plot-building" className="btn-ghost justify-center whitespace-nowrap py-1.5 text-xs" onClick={() => document.getElementById('plot-building')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Нива и подобрения</a>
+        {canMove && <button type="button" className="btn-ghost justify-center py-1.5 text-xs" onClick={onMove}><Move className="h-3.5 w-3.5" />Премести</button>}
       </div>
     </div>
   );

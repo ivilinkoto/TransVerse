@@ -71,31 +71,122 @@ const shade = (base: [number, number, number], f: number) => `rgb(${base.map((v)
 const faces = (rgb: [number, number, number]): Faces => ({ top: shade(rgb, 1.12), left: shade(rgb, 0.95), right: shade(rgb, 0.78) });
 
 // ── Vehicles ─────────────────────────────────────────────────────────────
-/** A truck along y: an articulated one (length 4.2) or, with `rigid`, a box truck that fits a parking bay (2.6). */
-function truck(x: number, y: number, cab: [number, number, number], trailer: [number, number, number], rigid = false) {
-  const body = rigid ? 1.7 : 3.2;
-  const wheel = (xx: number, yy: number) => {
-    const [cx, cy] = P(xx, yy, 0.18);
-    return <ellipse key={k()} cx={cx} cy={cy} rx={5} ry={6.5} fill="#1d1f24" stroke="#5b6170" strokeWidth={1} />;
-  };
+type RGB = [number, number, number];
+const GLASS: Faces = { top: '#cfeaff', left: '#9fd2f5', right: '#7fb6dc' };
+const DARK: Faces = faces([44, 48, 56]);
+
+/** A wheel standing in a vertical plane (x = plane, or y = plane), centred at `c` along it: tyre, rim and hub. */
+function wheel(plane: 'x' | 'y', at: number, c: number, r = 0.19): ReactNode {
+  const ring = (rr: number): Pt[] => Array.from({ length: 18 }, (_, i) => {
+    const t = (i / 18) * Math.PI * 2;
+    return plane === 'x' ? [at, c + rr * Math.cos(t), r + rr * Math.sin(t)] : [c + rr * Math.cos(t), at, r + rr * Math.sin(t)];
+  });
   return (
     <g key={k()}>
-      {shadow(x, y, x + 0.9, y + body + 1, 1.2)}
-      {box(x, y, x + 0.9, y + body, 0.25, 1.15, faces(trailer))}
-      {box(x + 0.05, y + body + 0.1, x + 0.85, y + body + 1, 0.25, 1.05, faces(cab))}
-      {onY(y + body + 1, x + 0.15, x + 0.75, 0.75, 1.15, '#bfe3ff')}
-      {onY(y + body + 1, x + 0.1, x + 0.8, 0.25, 0.4, '#2b2f37')}
-      {wheel(x + 0.9, y + 0.4)}
-      {!rigid && wheel(x + 0.9, y + 1.0)}
-      {wheel(x + 0.9, y + body + 0.5)}
+      <Poly p={ring(r)} fill="#17191d" stroke="#0b0c0f" strokeWidth={0.6} />
+      <Poly p={ring(r * 0.62)} fill="#aeb6c3" />
+      <Poly p={ring(r * 0.28)} fill="#59606d" />
     </g>
   );
 }
-function car(x: number, y: number, rgb: [number, number, number], alongX = true) {
-  return alongX ? (
-    <g key={k()}>{box(x, y, x + 1.3, y + 0.6, 0.15, 0.45, faces(rgb))}{box(x + 0.3, y + 0.05, x + 1.0, y + 0.55, 0.6, 0.3, faces([170, 215, 245]))}</g>
-  ) : (
-    <g key={k()}>{box(x, y, x + 0.6, y + 1.3, 0.15, 0.45, faces(rgb))}{box(x + 0.05, y + 0.3, x + 0.55, y + 1.0, 0.6, 0.3, faces([170, 215, 245]))}</g>
+
+/**
+ * Drawing in a vehicle's own frame: `a` along the driving direction (the front
+ * at a = length), `b` across (the visible side at b = width). The vehicle drives
+ * along x or along y of the plot.
+ */
+function frame(x: number, y: number, along: 'x' | 'y') {
+  const at = (a: number, b: number): [number, number] => (along === 'y' ? [x + b, y + a] : [x + a, y + b]);
+  return {
+    box(a0: number, b0: number, a1: number, b1: number, z0: number, h: number, c: Faces) {
+      const [xa, ya] = at(a0, b0);
+      const [xb, yb] = at(a1, b1);
+      return box(Math.min(xa, xb), Math.min(ya, yb), Math.max(xa, xb), Math.max(ya, yb), z0, h, c);
+    },
+    /** A panel on the visible side (b = const). */
+    side: (b: number, a0: number, a1: number, z0: number, z1: number, fill: string) => (along === 'y' ? onX(x + b, y + a0, y + a1, z0, z1, fill) : onY(y + b, x + a0, x + a1, z0, z1, fill)),
+    /** A panel on the front (a = const). */
+    front: (a: number, b0: number, b1: number, z0: number, z1: number, fill: string) => (along === 'y' ? onY(y + a, x + b0, x + b1, z0, z1, fill) : onX(x + a, y + b0, y + b1, z0, z1, fill)),
+    wheel: (b: number, a: number, r?: number) => (along === 'y' ? wheel('x', x + b, y + a, r) : wheel('y', y + b, x + a, r)),
+    shadow(len: number, w: number, h: number) {
+      const [xa, ya] = at(0, 0);
+      const [xb, yb] = at(len, w);
+      return shadow(Math.min(xa, xb), Math.min(ya, yb), Math.max(xa, xb), Math.max(ya, yb), h);
+    },
+  };
+}
+
+interface TruckLook {
+  cab: RGB;
+  body: RGB;
+  /** A box truck that fits a parking bay instead of a tractor with a semi-trailer. */
+  rigid?: boolean;
+  along?: 'x' | 'y';
+  /** A flatbed with a load (material colours) instead of a box. */
+  load?: RGB[];
+}
+
+/** A truck: chassis, wheels, a cab with windscreen, lights, grille and mirror, and a box (or a flatbed with a load). */
+function truck(x: number, y: number, look: TruckLook) {
+  const f = frame(x, y, look.along ?? 'y');
+  const W = 0.9;
+  const body = look.rigid ? 1.7 : 3.2;
+  const cab0 = body + 0.12, cab1 = cab0 + 0.95;
+  const out: ReactNode[] = [f.shadow(cab1, W, 1.3)];
+  // Chassis rails, then the body.
+  out.push(f.box(0.1, 0.15, cab1 - 0.1, W - 0.15, 0.16, 0.12, DARK));
+  if (look.load) {
+    out.push(f.box(0, 0, body, W, 0.28, 0.1, faces([96, 104, 118])));
+    const n = look.load.length;
+    look.load.forEach((rgb, i) => {
+      const a0 = 0.15 + (i * (body - 0.3)) / n;
+      out.push(f.box(a0, 0.1, a0 + (body - 0.3) / n - 0.1, W - 0.1, 0.38, 0.45, faces(rgb)));
+    });
+    out.push(f.box(body - 0.08, 0.05, body, W - 0.05, 0.38, 0.75, DARK));
+  } else {
+    out.push(f.box(0, 0, body, W, 0.3, look.rigid ? 1.05 : 1.15, faces(look.body)));
+    // Ribs, a colour stripe and the side guard.
+    for (let a = 0.35; a < body - 0.1; a += 0.45) out.push(f.side(W, a, a + 0.03, 0.34, look.rigid ? 1.3 : 1.4, shade(look.body, 0.82)));
+    out.push(f.side(W, 0.12, body - 0.12, 0.62, 0.74, shade(look.cab, 0.95)));
+    out.push(f.side(W, 0.6, body - 0.6, 0.2, 0.26, '#3a3f48'));
+  }
+  // The cab: a roof spoiler on a tractor, windscreen, side window and door, lights, grille, bumper and a mirror.
+  out.push(f.box(cab0, 0.04, cab1, W - 0.04, 0.24, 1.0, faces(look.cab)));
+  if (!look.rigid) out.push(f.box(cab0 + 0.05, 0.12, cab0 + 0.55, W - 0.12, 1.24, 0.22, faces(look.cab)));
+  out.push(f.front(cab1, 0.1, W - 0.1, 0.74, 1.14, GLASS.left));
+  out.push(f.front(cab1, 0.12, W - 0.12, 1.06, 1.12, 'rgba(255,255,255,0.45)'));
+  out.push(f.side(W - 0.04, cab1 - 0.5, cab1 - 0.08, 0.74, 1.12, GLASS.right));
+  out.push(f.side(W - 0.04, cab1 - 0.55, cab1 - 0.53, 0.3, 1.14, shade(look.cab, 0.7)));
+  out.push(f.side(W - 0.04, cab1 - 0.3, cab1 - 0.2, 0.62, 0.66, '#3a3f48'));
+  out.push(f.front(cab1, 0.28, W - 0.28, 0.38, 0.64, '#2b2f37'));
+  for (let z = 0.43; z < 0.62; z += 0.06) out.push(f.front(cab1, 0.3, W - 0.3, z, z + 0.015, '#6b7280'));
+  out.push(f.front(cab1, 0.08, 0.22, 0.4, 0.5, '#fff3b8'), f.front(cab1, W - 0.22, W - 0.08, 0.4, 0.5, '#fff3b8'));
+  out.push(f.front(cab1, 0.05, W - 0.05, 0.22, 0.34, '#3a3f48'));
+  out.push(f.box(cab1 - 0.12, W - 0.02, cab1 - 0.06, W + 0.05, 0.78, 0.26, DARK));
+  // Wheels on the visible side.
+  const axles = look.rigid ? [0.4, cab1 - 0.42] : [0.45, 0.88, 1.31, body - 0.15, cab1 - 0.42];
+  for (const a of axles) out.push(f.wheel(W - 0.02, a));
+  return <g key={k()}>{out}</g>;
+}
+
+/** A car: body, cabin with windows, lights and wheels. */
+function car(x: number, y: number, rgb: RGB, alongX = true) {
+  const f = frame(x, y, alongX ? 'x' : 'y');
+  const L = 1.3, W = 0.6;
+  return (
+    <g key={k()}>
+      {f.shadow(L, W, 0.6)}
+      {f.box(0, 0, L, W, 0.12, 0.3, faces(rgb))}
+      {f.box(0.32, 0.05, 1.0, W - 0.05, 0.42, 0.26, faces(rgb))}
+      {f.side(W - 0.05, 0.36, 0.64, 0.46, 0.64, GLASS.right)}
+      {f.side(W - 0.05, 0.68, 0.96, 0.46, 0.64, GLASS.right)}
+      {f.front(1.0, 0.08, W - 0.08, 0.45, 0.66, GLASS.left)}
+      {f.front(L, 0.04, 0.14, 0.26, 0.34, '#fff3b8')}
+      {f.front(L, W - 0.14, W - 0.04, 0.26, 0.34, '#fff3b8')}
+      {f.front(L, 0.02, W - 0.02, 0.12, 0.2, '#3a3f48')}
+      {f.wheel(W - 0.01, 0.28, 0.13)}
+      {f.wheel(W - 0.01, L - 0.28, 0.13)}
+    </g>
   );
 }
 
@@ -290,10 +381,9 @@ function parking(f: Footprint, level: number, trucks: number, livery: string | n
   for (let i = 0; i <= bays; i++) out.push(flat(x0 + i * step, y0 + 0.2, x0 + i * step + 0.06, y1 - 0.2, 0.05, '#f2f0e4'));
   const colors: [number, number, number][] = [[47, 123, 255], [246, 195, 67], [166, 107, 255], [47, 210, 122], [224, 69, 69]];
   const rgb = livery ? ([1, 3, 5].map((i) => parseInt(livery.slice(i, i + 2), 16)) as [number, number, number]) : null;
-  for (let i = 0; i < Math.min(trucks, bays); i++) out.push(truck(x0 + i * step + (step - 0.9) / 2, y0 + 0.2, rgb ?? [235, 240, 246], rgb ? [235, 240, 246] : colors[i % colors.length]!, true));
-  // Ticket booth and a light pole.
-  out.push(box(x1 - 0.5, y1 - 0.5, x1 - 0.1, y1 - 0.1, 0.05, 0.8, faces([226, 232, 240])));
-  out.push(lamp(x0 + 0.2, y1 - 0.2));
+  for (let i = 0; i < Math.min(trucks, bays); i++) out.push(truck(x0 + i * step + (step - 0.9) / 2, y0 + 0.15, { cab: rgb ?? [235, 240, 246], body: rgb ? [235, 240, 246] : colors[i % colors.length]!, rigid: true }));
+  // A light pole at the corner.
+  out.push(lamp(x0 + 0.1, y1 - 0.1));
   return out;
 }
 
@@ -446,6 +536,10 @@ export interface SceneProps {
   season?: 'winter' | 'christmas' | null;
   /** The decoration picked on the plot (highlighted). */
   selectedDecor?: string | null;
+  /** Name and level over every building. */
+  labels?: boolean;
+  /** Drawing units per screen pixel, so the labels keep their size on a phone and when zoomed. */
+  labelScale?: number;
 }
 
 const OUTSIDE_TREES: [number, number][] = [[-1.4, 3], [-2.2, 8], [-1.2, 11], [3, -1.6], [8, -2.2], [11, -1.4], [18.5, 2], [18.2, 8], [19, 11.5], [2, 16.5], [9, 16.8], [13, 16.2], [-3, 16], [-3.5, 0], [6, -3.5], [14.5, -3]];
@@ -453,7 +547,7 @@ const OUTSIDE_TREES: [number, number][] = [[-1.4, 3], [-2.2, 8], [-1.2, 11], [3,
 const XMAS_SPOTS: [number, number][] = [[5.3, 11.3], [7.7, 11.3], [4.2, 11.4], [9, 11.3], [12.6, 11.3], [1.5, 11.4], [12.6, 6.5]];
 const EDGE_SPOTS: [number, number][] = [[0.3, 0.3], [0.3, 4.6], [0.3, 6.4], [0.3, 11.4], [3.2, 0.3], [5.3, 0.3], [7.7, 0.3], [12.6, 0.3], [13.6, 2.4], [13.6, 6.6], [13.6, 11.4], [3.0, 11.6], [9.8, 11.6], [5.3, 11.4]];
 
-export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null, plotW = PLOT.w, decor = [], season = null, selectedDecor = null }: SceneProps) {
+export function PlotScene({ buildings, construction, ghost, selected, parkedTrucks, incoming, grid, liveryColor = null, plotW = PLOT.w, decor = [], season = null, selectedDecor = null, labels = true, labelScale = 1 }: SceneProps) {
   // Keys are counted from zero on every render, so the same scene gets the same keys.
   // eslint-disable-next-line react-hooks/globals
   uid = 0;
@@ -464,6 +558,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
   const W = plotW;
   const sx = W - PLOT.w;
   const items: { key: number; node: ReactNode }[] = [];
+  const tags: { type: BuildingType; x: number; y: number; z: number; text: string; sub: string; active: boolean }[] = [];
   const add = (key: number, node: ReactNode) => items.push({ key, node });
   const fp = (b: { type: BuildingType; x: number; y: number }): Footprint => ({ x: b.x, y: b.y, w: BUILDINGS[b.type].w, h: BUILDINGS[b.type].h });
   const occupied = (x: number, y: number) =>
@@ -507,14 +602,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
   add(16 + sx + 6, car(15.45 + sx, 5.5, [246, 195, 67], false));
   for (let i = 0; i < Math.min(2, incoming); i++) {
     const x = 1.2 - i * 5.5, y = 13.35;
-    const t: ReactNode[] = [
-      box(x, y, x + 3.3, y + 0.85, 0.25, 0.22, faces([90, 96, 110])),
-      box(x + 0.2, y + 0.1, x + 1.4, y + 0.75, 0.47, 0.5, faces([200, 200, 196])),
-      box(x + 1.6, y + 0.1, x + 3.1, y + 0.75, 0.47, 0.5, faces([196, 106, 74])),
-      box(x + 3.4, y + 0.02, x + 4.3, y + 0.83, 0.25, 1.05, faces([34, 211, 238])),
-      onX(x + 4.3, y + 0.12, y + 0.73, 0.75, 1.15, '#d7f1ff'),
-    ];
-    add(y + x + 20, <g key={k()}>{t}</g>);
+    add(y + x + 20, truck(x, y - 0.02, { cab: [34, 211, 238], body: [90, 96, 110], along: 'x', load: [[200, 200, 196], [196, 106, 74]] }));
   }
 
   // Buildings and the construction site.
@@ -528,6 +616,11 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     else if (b.level > 0) node.push(...finished(b.level));
     if (selected === b.type) node.unshift(flat(f.x - 0.1, f.y - 0.1, f.x + f.w + 0.1, f.y + f.h + 0.1, 0.06, 'rgba(34,211,238,0.22)', { stroke: '#22d3ee', strokeWidth: 2 }));
     add(f.x + f.w + f.y + f.h - 0.5, <g key={`b-${b.type}`} data-building={b.type}>{node}</g>);
+    if (labels) {
+      const lvl = building ? (b.level === 0 ? 'строи се' : `ниво ${b.level} → ${b.level + 1}`) : b.level > 0 ? `ниво ${b.level}` : null;
+      const h = b.level > 0 ? buildingHeight(b.type, b.level) : building?.status === 'building' ? 1.2 : 0.4;
+      if (lvl) tags.push({ type: b.type, x: f.x + f.w / 2, y: f.y + f.h / 2, z: h + (b.type === 'training' ? 0.7 : 0.25), text: BUILDINGS[b.type].label, sub: lvl, active: selected === b.type });
+    }
     if (building?.status === 'building' && b.type !== 'parking') add(f.x + f.y + 1, <g key={`crane-${b.type}`}>{crane(f.x - 0.4, f.y + 0.2, Math.max(3.5, f.h + 1.5))}</g>);
   }
 
@@ -588,6 +681,17 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
       </defs>
       <rect width={VIEW.w * 4} height={VIEW.h * 4} x={-VIEW.w} y={-VIEW.h} fill={SNOW ? '#e3ebf2' : '#9fd48c'} />
       {items.map((i) => i.node)}
+      {tags.map((t) => {
+        const [px, py] = P(t.x, t.y, t.z);
+        const w = Math.max(t.text.length, t.sub.length) * 7 + 22;
+        return (
+          <g key={`tag-${t.type}`} data-building={t.type} transform={`translate(${px.toFixed(1)} ${(py - 8).toFixed(1)}) scale(${labelScale.toFixed(3)}) translate(0 -22)`} className="cursor-pointer">
+            <path d={`M${-w / 2} -16 h${w} a6 6 0 0 1 6 6 v20 a6 6 0 0 1 -6 6 h${-w / 2 + 6} l-6 6 l-6 -6 h${-w / 2 + 6} a6 6 0 0 1 -6 -6 v-20 a6 6 0 0 1 6 -6 z`} fill={t.active ? 'rgba(8,47,73,0.92)' : 'rgba(10,14,22,0.82)'} stroke={t.active ? '#22d3ee' : 'rgba(255,255,255,0.18)'} strokeWidth={1} />
+            <text x={0} y={-2} textAnchor="middle" fontSize={12} fontWeight={700} fill="#ffffff" fontFamily="inherit">{t.text}</text>
+            <text x={0} y={12} textAnchor="middle" fontSize={10.5} fill={t.sub.startsWith('ниво') && !t.sub.includes('→') ? '#f6c343' : '#7dd3fc'} fontFamily="inherit">{t.sub}</text>
+          </g>
+        );
+      })}
       <rect width={VIEW.w * 3} height={VIEW.h * 3} x={-VIEW.w} y={-VIEW.h} fill="url(#plot-sun)" pointerEvents="none" />
     </>
   );
