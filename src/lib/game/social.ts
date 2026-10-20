@@ -32,3 +32,15 @@ export const UNREAD_CAP = 100;
 export const unreadLabel = (n: number) => (n > 99 ? '99+' : String(n));
 /** A quoted reply shows this much of the original message. */
 export const REPLY_SNIPPET = 90;
+
+/** Reactions under chat messages. */
+export const REACTIONS = ['👍', '❤️', '😂', '🚚'] as const;
+export type Reaction = (typeof REACTIONS)[number];
+export interface ReactionSummary {
+  emoji: Reaction;
+  count: number;
+  /** The viewer reacted with it. */
+  mine: boolean;
+  /** Who reacted (the first few). */
+  names: string[];
+}

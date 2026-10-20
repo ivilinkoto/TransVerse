@@ -14,11 +14,11 @@ export default async function CompanyChatPage() {
   const { db, user, now, features } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
-  const { messages, canModerate, canClear } = await companyChat(db, user.id, 0, 80, now);
-  await markChannelRead(db, user.id, companyKey(hub.company.id), messages.at(-1)?.id ?? 0, now);
+  const view = await companyChat(db, user.id, 0, 80, now);
+  await markChannelRead(db, user.id, companyKey(hub.company.id), view.messages.at(-1)?.id ?? 0, now);
   const chat = (
     <Card title="Чат на компанията" actions={<span className="text-xs text-mist-400">Вижда се само от членовете · обновява се на живо</span>}>
-      <CompanyChat me={user.id} initial={messages} canModerate={canModerate} canClear={canClear} replies={features.chat_replies} />
+      <CompanyChat me={user.id} view={view} replies={features.chat_replies} extras={{ reactions: features.chat_reactions, pins: features.chat_pin, presence: features.chat_online }} />
     </Card>
   );
   if (!features.company_polls) return chat;

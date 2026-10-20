@@ -36,7 +36,8 @@ import { bonusSchema, payBonus } from '@/server/game/bonuses';
 import { setCompanyLivery, setLivery } from '@/server/game/livery';
 import { buyDelivered, cancelBuild, expandPlot, likePlot, moveBuilding, orderMaterials, placeBuilding, placeDecor, removeDecor, startConstruction, upgradeBuilding } from '@/server/game/plot';
 import { BUILDING_TYPES, DECOR_KINDS, type BuildingType, type DecorKind } from '@/lib/game/plot';
-import { borrowOrgVehicle, buyOrgVehicle, returnOrgVehicle, sellOrgVehicle } from '@/server/game/company-fleet';
+import { borrowOrgVehicle, buyOrgVehicle, NOTE_MAX, returnOrgVehicle, sellOrgVehicle, setOrgVehicleNote } from '@/server/game/company-fleet';
+import { pinCompanyMessage, toggleReaction } from '@/server/game/chat-extras';
 import { closePoll, createPoll, votePoll } from '@/server/game/polls';
 import { pollInputSchema } from '@/lib/game/polls';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
@@ -115,6 +116,9 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('createPoll'), poll: pollInputSchema }),
   z.object({ type: z.literal('votePoll'), pollId: id, option: z.number().int().min(0).max(9) }),
   z.object({ type: z.literal('closePoll'), pollId: id }),
+  z.object({ type: z.literal('reactChat'), tab: z.string().regex(/^(global|trade|company|dm:[0-9a-f-]{36})$/), messageId: z.coerce.number().int().positive(), emoji: z.string().max(8) }),
+  z.object({ type: z.literal('pinChat'), messageId: z.coerce.number().int().positive().nullable() }),
+  z.object({ type: z.literal('orgVehicleNote'), orgVehicleId: id, note: z.string().max(NOTE_MAX * 2) }),
   z.object({ type: z.literal('setLivery'), color: z.string().max(9).nullable() }),
   z.object({ type: z.literal('companyLivery'), on: z.boolean() }),
   z.object({ type: z.literal('serviceVehicle'), vehicleId: id }),
@@ -242,6 +246,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   createPoll: 'company_polls',
   votePoll: 'company_polls',
   closePoll: 'company_polls',
+  reactChat: 'chat_reactions',
+  pinChat: 'chat_pin',
+  orgVehicleNote: 'truck_notes',
   setLivery: 'livery',
   companyLivery: 'livery',
   serviceVehicle: 'maintenance',
@@ -322,6 +329,14 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, id: (await createPoll(db, user.id, input.poll)).id };
     case 'votePoll':
       await votePoll(db, user.id, input.pollId, input.option);
+      return { ok: true };
+    case 'reactChat':
+      return { ok: true, ...(await toggleReaction(db, user.id, input.tab, input.messageId, input.emoji)) };
+    case 'pinChat':
+      await pinCompanyMessage(db, user.id, input.messageId);
+      return { ok: true };
+    case 'orgVehicleNote':
+      await setOrgVehicleNote(db, user.id, input.orgVehicleId, input.note);
       return { ok: true };
     case 'closePoll':
       await closePoll(db, user.id, input.pollId);

@@ -1,11 +1,11 @@
 'use client';
 
-import { AtSign, Building2, CornerUpLeft, Flag, Globe2, MessageCircle, Send, Smile, Store, Trash2, X } from 'lucide-react';
+import { AtSign, Building2, CornerUpLeft, Flag, Globe2, MessageCircle, Pin, Send, Smile, Store, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { CHAT_EMOJI, splitMentions, typingMention } from '@/lib/game/mentions';
 import { unreadLabel } from '@/lib/game/social';
-import { ReplyBar, ReplyQuote, jumpToMessage, type ReplyQuoteData } from './ChatReply';
+import { PinnedBar, ReactionPicker, Reactions, ReplyBar, ReplyQuote, jumpToMessage, type ReplyQuoteData } from './ChatReply';
 import type { FeedMessage } from '@/server/game/messages';
 import { PlayerName, openPlayerCard } from './PlayerName';
 import { openReport } from './ReportDialog';
@@ -60,6 +60,11 @@ export function ChatDock() {
   const [extra, setExtra] = useState<{ id: string; title: string } | null>(null);
   const [messages, setMessages] = useState<FeedMessage[]>([]);
   const [canModerate, setCanModerate] = useState(false);
+  // Company tab: the pinned message, who may pin and who is online.
+  const [company, setCompany] = useState<{ canPin: boolean; pinned: { id: number; username: string; body: string } | null; online: { count: number; names: string[] } } | null>(null);
+  const reactions = useFeature('chat_reactions');
+  const pins = useFeature('chat_pin');
+  const presence = useFeature('chat_online');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,10 +105,11 @@ export function ChatDock() {
 
   const loadFeed = useCallback(async (which: string) => {
     try {
-      const data = await api<{ messages: FeedMessage[]; canModerate: boolean }>(`/api/chat/feed?tab=${encodeURIComponent(which)}`);
+      const data = await api<{ messages: FeedMessage[]; canModerate: boolean; canPin?: boolean; pinned?: { id: number; username: string; body: string } | null; online?: { count: number; names: string[] } }>(`/api/chat/feed?tab=${encodeURIComponent(which)}`);
       if (tabRef.current !== which) return;
       setMessages(data.messages);
       setCanModerate(data.canModerate);
+      setCompany(which === 'company' ? { canPin: !!data.canPin, pinned: data.pinned ?? null, online: data.online ?? { count: 0, names: [] } } : null);
       setError(null);
       // Opening a tab marks it read — refresh the unread badges.
       void loadInbox();
@@ -274,6 +280,24 @@ export function ChatDock() {
     }
   };
 
+  const react = async (m: FeedMessage, emoji: string) => {
+    try {
+      await api('/api/game/action', { type: 'reactChat', tab, messageId: m.id, emoji });
+      await loadFeed(tab);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
+  const pin = async (messageId: number | null) => {
+    try {
+      await api('/api/game/action', { type: 'pinChat', messageId });
+      await loadFeed('company');
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   const deleteConversation = async () => {
     if (!dm || !window.confirm('Да изтрием ли целия разговор? Изчезва само при теб.')) return;
     try {
@@ -334,6 +358,12 @@ export function ChatDock() {
               {partner && <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" onClick={() => void deleteConversation()}><Trash2 className="h-3.5 w-3.5" />Изтрий чата</button>}
             </div>
           )}
+          {tab === 'company' && company && presence && (
+            <p className="border-b border-asphalt-800 px-3 py-1.5 text-[11px] text-mist-400" title={company.online.names.join(', ')}>
+              <span className="mr-1 inline-block h-2 w-2 rounded-full bg-profit" />{company.online.count} {company.online.count === 1 ? 'член е' : 'членове са'} в играта{company.online.names.length ? `: ${company.online.names.slice(0, 5).join(', ')}${company.online.count > 5 ? '…' : ''}` : ''}
+            </p>
+          )}
+          {tab === 'company' && company?.pinned && pins && <PinnedBar pinned={company.pinned} canPin={company.canPin} onUnpin={() => void pin(null)} onJump={(id) => jumpToMessage(list.current, id)} />}
           {tab === 'trade' && <p className="border-b border-asphalt-800 px-3 py-2 text-[11px] text-mist-400">Само обяви: купувам / продавам. Самата сделка с техника става през Автопарк → Пазар → Употребявани.</p>}
 
           <div
@@ -352,11 +382,16 @@ export function ChatDock() {
                 <div key={m.id} data-message={m.id} className={`group flex rounded-2xl ${mine ? 'justify-end' : ''}`}>
                   <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 ${mine ? 'bg-volt-500/25' : 'bg-asphalt-800'}`}>
                     <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                      {tab === 'company' && presence && <span className={`h-1.5 w-1.5 rounded-full ${m.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={m.online ? 'В играта' : 'Не е в играта'} />}
                       {!dm && <PlayerName name={m.username} role={m.role} vip={m.vip} className="font-semibold" />}
                       <span className="text-mist-400">{time(m.createdAt)}</span>
                       {mine && dm && m.read && !m.deleted && <span className="text-cyan-glow">· видяно</span>}
                       {replies && !m.deleted && (
                         <button type="button" className="text-mist-400 opacity-60 transition hover:text-cyan-glow group-hover:opacity-100" onClick={() => { setReplyTo({ id: m.id, username: m.username, body: (m.body ?? '').slice(0, 90), tab }); input.current?.focus(); }} aria-label={`Отговори на ${m.username}`} title="Отговори"><CornerUpLeft className="h-3 w-3" /></button>
+                      )}
+                      {reactions && !m.deleted && <ReactionPicker mine={(m.reactions ?? []).filter((r) => r.mine).map((r) => r.emoji)} onPick={(e) => void react(m, e)} />}
+                      {pins && tab === 'company' && company?.canPin && !m.deleted && company.pinned?.id !== m.id && (
+                        <button type="button" className="text-mist-400 opacity-60 transition hover:text-gold-400 group-hover:opacity-100" onClick={() => void pin(m.id)} aria-label="Закачи съобщението" title="Закачи"><Pin className="h-3 w-3" /></button>
                       )}
                       {!m.deleted && !mine && (
                         <button type="button" className="text-mist-400 opacity-60 transition hover:text-loss group-hover:opacity-100" onClick={() => openReport({ targetUserId: m.userId, username: m.username, kind: dm ? 'dm' : tab === 'company' ? 'company' : 'channel', messageId: m.id, snippet: m.body })} aria-label="Докладвай съобщението"><Flag className="h-3 w-3" /></button>
@@ -379,6 +414,7 @@ export function ChatDock() {
                             ),
                           )}
                     </p>
+                    {!m.deleted && <Reactions items={m.reactions ?? []} canReact={reactions} onToggle={(e) => void react(m, e)} />}
                   </div>
                 </div>
               );

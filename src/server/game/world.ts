@@ -31,6 +31,7 @@ import { pruneFeed } from './feed';
 import { settleEcoWeek } from './eco';
 import { collectLeases } from './leasing';
 import { finishConstructions } from './plot';
+import { awardBuildersOfWeek } from './base-life';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 
@@ -184,6 +185,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'leases', 10 * 60_000, now, () => collectLeases(db, now));
     // Constructions on company plots whose time is up.
     await every(db, 'constructions', 60_000, now, () => finishConstructions(db, now));
+    // "Строител на седмицата" in every company, after the week ends.
+    if (featureLive('builder_week', now)) await every(db, 'builder-week', 30 * 60_000, now, () => awardBuildersOfWeek(db, now));
     // Company battles: settle last week's, pair this week's.
     await every(db, 'company-battles', 10 * 60_000, now, async () => {
       await settleBattles(db, now);

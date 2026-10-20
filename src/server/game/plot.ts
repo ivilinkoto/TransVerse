@@ -318,9 +318,24 @@ export async function recordMaterialDelivery(tx: Tx, contract: { constructionId:
   const need = build.needs[m] ?? 0;
   const delivered = { ...build.delivered, [m]: Math.min(need, Math.round(((build.delivered[m] ?? 0) + contract.weightTons) * 10) / 10) };
   await tx.update(companyBuilds).set({ delivered }).where(eq(companyBuilds.id, build.id));
+  if (userId) await markLastLoad(tx, build.id, userId, now);
   if (isComplete(build.needs, delivered) && !isComplete(build.needs, build.delivered)) {
     await notifyMembers(tx, build.organizationId, 'build', 'Материалите са на участъка', 'Всичко е доставено — строежът може да започне.', '/game/company/plot');
   }
+}
+
+/**
+ * "Последен товар": when a construction waits only for one load still on the
+ * board (nothing else open or on the way), that load pays more.
+ */
+async function markLastLoad(tx: Tx, buildId: string, userId: string, now: Date) {
+  if (!(await featureFor(tx, userId, 'build_last_load', now))) return;
+  const open = await tx.select({ id: contracts.id, lastLoad: contracts.lastLoad }).from(contracts).where(and(eq(contracts.constructionId, buildId), eq(contracts.status, 'open'), gt(contracts.expiresAt, now)));
+  if (open.length !== 1 || open[0]!.lastLoad) return;
+  const [driving] = await tx.select({ id: deliveries.id }).from(deliveries).innerJoin(contracts, eq(contracts.id, deliveries.contractId)).where(and(eq(contracts.constructionId, buildId), eq(deliveries.status, 'in_progress'))).limit(1);
+  if (driving) return;
+  await tx.update(contracts).set({ lastLoad: true, rewardCents: sql`round(${contracts.rewardCents} * ${PLOT.lastLoadFactor}::numeric)::bigint` }).where(and(eq(contracts.id, open[0]!.id), eq(contracts.lastLoad, false)));
+  await broadcast(tx, 'market');
 }
 
 /** Gives a badge (once) with a notification; before the release only to the staff, who test it. */

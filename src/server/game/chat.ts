@@ -1,5 +1,6 @@
 import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { isOnline, type ReactionSummary } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import { rateLimit } from '@/server/auth/rate-limit';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -8,6 +9,7 @@ import { fail } from './errors';
 import { assertNotMuted } from './moderation';
 import { can, membershipOf } from './membership';
 import { featureFor } from '@/server/features';
+import { pinnedMessage, withReactions } from './chat-extras';
 import { notifyMentions, notifyReply, replyRefs, replyTarget, type ReplyRef } from './messages';
 import { logActivity } from './notify';
 
@@ -25,14 +27,28 @@ export interface ChatMessage {
   createdAt: string;
   /** The message this one answers (a short quote). */
   reply?: ReplyRef | null;
+  reactions?: ReactionSummary[];
+  /** The author is in the game right now. */
+  online?: boolean;
+}
+
+export interface CompanyChatView {
+  messages: ChatMessage[];
+  canModerate: boolean;
+  canClear: boolean;
+  /** May pin a message on top (chat rights). */
+  canPin: boolean;
+  pinned: { id: number; username: string; body: string } | null;
+  /** Members in the game right now. */
+  online: { count: number; names: string[] };
 }
 
 /** Latest messages of the player's company (oldest first), or only those after `afterId`. */
-export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit = 60, now = new Date()): Promise<{ messages: ChatMessage[]; canModerate: boolean; canClear: boolean }> {
+export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit = 60, now = new Date()): Promise<CompanyChatView> {
   const m = await membershipOf(db, userId);
   if (!m) fail('not_member', 'Чатът е само за членове на компанията.', 403);
   const rows = await db
-    .select({ message: companyMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, rank: companyRanks.name })
+    .select({ message: companyMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, lastSeenAt: users.lastSeenAt, rank: companyRanks.name })
     .from(companyMessages)
     .innerJoin(users, eq(users.id, companyMessages.userId))
     .leftJoin(companyMembers, and(eq(companyMembers.userId, companyMessages.userId), eq(companyMembers.companyId, companyMessages.companyId)))
@@ -41,10 +57,9 @@ export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit
     .orderBy(desc(companyMessages.id))
     .limit(Math.min(limit, 200));
   const replies = await replyRefs(db, 'company', rows.map((r) => r.message.replyToId));
-  return {
-    canModerate: can(m!.rank, 'manage_members') || can(m!.rank, 'manage_chat'),
-    canClear: can(m!.rank, 'manage_chat'),
-    messages: rows.reverse().map((r) => ({
+  const members = await db.select({ username: users.username, lastSeenAt: users.lastSeenAt }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(eq(companyMembers.companyId, m!.company.id));
+  const here = members.filter((x) => isOnline(x.lastSeenAt, now)).map((x) => x.username).sort((a, b) => a.localeCompare(b, 'bg'));
+  const messages = rows.reverse().map((r) => ({
       id: r.message.id,
       userId: r.message.userId,
       username: r.username,
@@ -55,7 +70,15 @@ export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit
       deleted: !!r.message.deletedAt,
       createdAt: r.message.createdAt.toISOString(),
       reply: r.message.replyToId ? (replies.get(r.message.replyToId) ?? null) : null,
-    })),
+      online: isOnline(r.lastSeenAt, now),
+  }));
+  return {
+    canModerate: can(m!.rank, 'manage_members') || can(m!.rank, 'manage_chat'),
+    canClear: can(m!.rank, 'manage_chat'),
+    canPin: can(m!.rank, 'manage_chat'),
+    pinned: await pinnedMessage(db, m!.company.id),
+    online: { count: here.length, names: here.slice(0, 20) },
+    messages: await withReactions(db, 'company', messages, userId),
   };
 }
 

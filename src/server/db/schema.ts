@@ -384,6 +384,8 @@ export const contracts = pgTable(
     /** A load of building materials for a company's construction (members only); `material` is what it carries. */
     constructionId: uuid('construction_id'),
     material: text('material'),
+    /** The last load a construction waits for: paid more ("Последен товар"). */
+    lastLoad: boolean('last_load').notNull().default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -675,6 +677,8 @@ export const organizations = pgTable(
     liveryColor: text('livery_color'),
     /** Land bought next to the plot (each step makes it wider). */
     plotExpansions: integer('plot_expansions').notNull().default(0),
+    /** A message pinned on top of the company chat. */
+    pinnedMessageId: bigint('pinned_message_id', { mode: 'number' }),
     brandingVersion: integer('branding_version').notNull().default(0),
     /** The company's own money — separate from every member's (and the owner's) personal balance. */
     treasuryCents: money('treasury_cents').notNull().default(0),
@@ -1631,6 +1635,9 @@ export const orgVehicles = pgTable(
     /** The member who has it and the vehicle row in their fleet (null when it is in the yard). */
     lentTo: uuid('lent_to').references(() => users.id, { onDelete: 'set null' }),
     vehicleId: uuid('vehicle_id'),
+    /** A note for the next driver ("tyres are worn") and who left it. */
+    note: text('note'),
+    noteBy: uuid('note_by').references(() => users.id, { onDelete: 'set null' }),
     soldAt: ts('sold_at'),
     createdAt: createdAt(),
   },
@@ -1674,4 +1681,31 @@ export const chatReads = pgTable(
     updatedAt: ts('updated_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.channel] })],
+);
+
+/** Reactions to chat messages (kind: channel | company | dm). */
+export const chatReactions = pgTable(
+  'chat_reactions',
+  {
+    kind: text('kind').notNull(),
+    messageId: bigint('message_id', { mode: 'number' }).notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    emoji: text('emoji').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.kind, t.messageId, t.userId, t.emoji] }), index('chat_reactions_message_idx').on(t.kind, t.messageId)],
+);
+
+/** "Строител на седмицата": who hauled the most building materials in a company that week. */
+export const companyBuilderWeeks = pgTable(
+  'company_builder_weeks',
+  {
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    weekKey: text('week_key').notNull(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    tons: real('tons').notNull(),
+    rewardCents: money('reward_cents').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.weekKey] })],
 );

@@ -1,6 +1,8 @@
 'use client';
 
-import { Truck } from 'lucide-react';
+import { StickyNote, Truck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { api } from '@/lib/client/api';
 import { useState } from 'react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { money } from '@/lib/format';
@@ -9,13 +11,13 @@ import { COMPANY_FLEET } from '@/lib/game/company-fleet';
 
 export interface OrgFleet {
   limit: number;
-  vehicles: { id: string; name: string; plate: string; city: string; condition: number; odometerKm: number; borrower: string | null; lentTo: string | null }[];
+  vehicles: { id: string; name: string; plate: string; city: string; condition: number; odometerKm: number; borrower: string | null; lentTo: string | null; note: { text: string; by: string | null } | null }[];
 }
 
 const MODELS = POWER_UNITS.filter((m) => COMPANY_FLEET.kinds.includes(m.kind));
 
 /** The company's own trucks: members borrow one, ranks with "Развитие" buy and sell them from the treasury. */
-export function CompanyFleetCard({ fleet, me, myVehicleId, canManage, treasuryCents }: { fleet: OrgFleet; me: string; myVehicleId: string | null; canManage: boolean; treasuryCents: number }) {
+export function CompanyFleetCard({ fleet, me, myVehicleId, canManage, treasuryCents, notes = false }: { fleet: OrgFleet; me: string; myVehicleId: string | null; canManage: boolean; treasuryCents: number; notes?: boolean }) {
   const [modelId, setModelId] = useState(MODELS[0]?.id ?? '');
   const model = MODELS.find((m) => m.id === modelId);
   return (
@@ -32,6 +34,8 @@ export function CompanyFleetCard({ fleet, me, myVehicleId, canManage, treasuryCe
                 <span className="text-xs text-mist-400">{Math.round(v.condition)} %</span>
               </div>
               <div className="mt-0.5 text-xs text-mist-400">{v.borrower ? `При ${v.borrower}` : `На паркинга · ${v.city}`} · {Math.round(v.odometerKm).toLocaleString('bg-BG')} км</div>
+              {notes && v.note && <p className="mt-1.5 flex gap-1.5 rounded-lg bg-gold-400/10 px-2 py-1 text-xs text-gold-200"><StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-400" /><span className="break-words">{v.note.text}{v.note.by ? <span className="text-mist-400"> — {v.note.by}</span> : null}</span></p>}
+              {notes && (v.lentTo === me || canManage) && <NoteEditor id={v.id} current={v.note?.text ?? ''} />}
               <div className="mt-2 flex flex-wrap gap-2">
                 {!v.lentTo && !myVehicleId && <ActionButton action={{ type: 'borrowOrgVehicle', orgVehicleId: v.id }} className="btn-primary px-3 py-1 text-xs">Вземи за курсове</ActionButton>}
                 {v.lentTo === me && myVehicleId && <ActionButton action={{ type: 'returnOrgVehicle', vehicleId: myVehicleId }} className="btn-ghost px-3 py-1 text-xs" confirm="Да върнем ли камиона на компанията? Остава в града, където е сега.">Върни на компанията</ActionButton>}
@@ -50,5 +54,32 @@ export function CompanyFleetCard({ fleet, me, myVehicleId, canManage, treasuryCe
         </div>
       )}
     </div>
+  );
+}
+
+/** A note on the truck for the next driver ("the tyres are worn"). */
+function NoteEditor({ id, current }: { id: string; current: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(current);
+  const [error, setError] = useState<string | null>(null);
+  if (!open) return <button type="button" className="mt-1 text-xs text-cyan-glow hover:underline" onClick={() => setOpen(true)}>{current ? 'Промени бележката' : 'Остави бележка за следващия шофьор'}</button>;
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api('/api/game/action', { type: 'orgVehicleNote', orgVehicleId: id, note: text });
+      setOpen(false);
+      router.refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  return (
+    <form onSubmit={save} className="mt-1.5 flex flex-wrap gap-1.5">
+      <input className="input min-w-0 flex-1 py-1 text-xs" maxLength={140} value={text} onChange={(e) => setText(e.target.value)} placeholder="напр. Гумите са за смяна" aria-label="Бележка за камиона" autoFocus />
+      <button className="btn-primary px-2.5 py-1 text-xs">Запази</button>
+      <button type="button" className="btn-ghost px-2.5 py-1 text-xs" onClick={() => setOpen(false)}>Отказ</button>
+      {error && <p role="alert" className="w-full text-xs text-loss">{error}</p>}
+    </form>
   );
 }

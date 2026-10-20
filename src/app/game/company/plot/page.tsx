@@ -4,6 +4,9 @@ import { CompanyFleetCard } from '@/components/company/plot/CompanyFleetCard';
 import { PlotView } from '@/components/company/plot/PlotView';
 import { isChristmas } from '@/lib/game/christmas';
 import { isBoom } from '@/lib/game/plot';
+import { isNight, plotWeather } from '@/lib/game/ambience';
+import { companyShowcase, recentVisitors } from '@/server/game/base-life';
+import { Showcase } from '@/components/company/plot/Showcase';
 import { isWinter } from '@/lib/game/winter';
 import { companies, contracts, deliveries, users, vehicles } from '@/server/db/schema';
 import { orgFleetView } from '@/server/game/company-fleet';
@@ -27,6 +30,8 @@ export default async function PlotPage() {
   const [{ coins = 0 } = {}] = await db.select({ coins: users.coins }).from(users).where(eq(users.id, user.id));
   const season = !features.plot_season ? null : isChristmas(now) ? 'christmas' : isWinter(now) ? 'winter' : null;
   const yard = fleet?.vehicles.filter((v) => !v.lentTo).length ?? 0;
+  const visitors = features.plot_visits && data.hq ? await recentVisitors(db, hub.company.id, data.hq.id, now) : [];
+  const showcase = features.company_trophies || features.builder_week ? await companyShowcase(db, hub.company.id) : null;
   const c = data.construction;
   // Material loads driving to the plot right now (drawn on the street).
   const [{ incoming = 0 } = {}] = c
@@ -38,6 +43,7 @@ export default async function PlotPage() {
       canBuild={can(hub.rank, 'build')}
       parkedTrucks={Math.min(6, hub.members + 1 + yard)}
       season={season}
+      ambience={{ night: features.plot_night && isNight(now), weather: features.plot_weather ? plotWeather(now) : null, visitors }}
       features={{ decor: features.plot_decor, expand: features.plot_expand }}
       coins={coins}
       incoming={incoming}
@@ -67,7 +73,8 @@ export default async function PlotPage() {
         },
       }}
     >
-      {fleet && <CompanyFleetCard fleet={fleet} me={user.id} myVehicleId={mine?.id ?? null} canManage={can(hub.rank, 'manage_upgrades')} treasuryCents={data.org.treasuryCents} />}
+      {showcase && <Showcase data={showcase} trophies={features.company_trophies} builderWeek={features.builder_week} />}
+      {fleet && <CompanyFleetCard fleet={fleet} me={user.id} myVehicleId={mine?.id ?? null} canManage={can(hub.rank, 'manage_upgrades')} treasuryCents={data.org.treasuryCents} notes={features.truck_notes} />}
     </PlotView>
   );
 }
