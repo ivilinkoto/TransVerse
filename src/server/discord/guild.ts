@@ -26,8 +26,18 @@ export const forgetGuild = () => {
   cache = null;
 };
 
-/** A channel name without "#", emoji, separators and the dashes around them ("📢-обновления" → "обновления"). */
-export const channelKey = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}-]/gu, '').replace(/^-+|-+$/g, '');
+/**
+ * A channel name without "#", emoji and decorations around it: "📢-обновления",
+ * "💻ǀǀобновления" (Discord does not allow "|", so servers use look-alike
+ * letters such as ǀ) and "#обновления" all become "обновления".
+ */
+export const channelKey = (name: string) =>
+  name
+    .normalize('NFKC')
+    .toLowerCase()
+    // The Cyrillic "палочка" (Ӏ) looks like "|" too.
+    .replace(/[^\p{L}\p{N}-]|[\u04c0\u04cf]/gu, '')
+    .replace(/^[^a-z0-9\p{Script=Cyrillic}]+|[^a-z0-9\p{Script=Cyrillic}]+$/gu, '');
 
 /** A text channel by name (as shown in Discord, with or without "#" and emoji). */
 export async function channelByName(name: string) {
