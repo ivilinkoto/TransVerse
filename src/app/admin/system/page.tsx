@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { DiscordCheck } from '@/components/admin/DiscordCheck';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { dateTime } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
@@ -60,6 +61,10 @@ export default async function AdminSystem() {
           <p className="mt-3 text-sm text-mist-400">Ако „изостават“ расте, фоновият процес не стига до изпращането — виж грешките вляво.</p>
         </Card>
       </div>
+      <Card title="Discord бот">
+        <p className="mb-3 text-sm text-mist-400">Проверява на живо всичко, което ботът трябва да има: тайните, настройките в Developer Portal, правата в сървъра, каналите и връзката на фоновия процес.</p>
+        <DiscordCheck />
+      </Card>
       <Card title={`Устройства (${devices.length})`} className="p-2 sm:p-3">
         {devices.length === 0 ? <p className="p-3 text-sm text-mist-400">Никой още не е включил известия.</p> : (
           <ul className="divide-y divide-asphalt-800">

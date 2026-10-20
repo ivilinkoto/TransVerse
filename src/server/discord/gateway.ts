@@ -1,8 +1,9 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { Database } from '@/server/db/client';
-import { companyMembers, companyMessages, organizations, users } from '@/server/db/schema';
+import { companyMembers, companyMessages, jobState, organizations, users } from '@/server/db/schema';
 import { discord } from './api';
 import { discordConfig } from './config';
+import { answerInteraction, type Interaction } from './interaction';
 
 /** GUILDS | GUILD_MEMBERS | GUILD_MESSAGES | MESSAGE_CONTENT */
 const INTENTS = (1 << 0) | (1 << 1) | (1 << 9) | (1 << 15);
@@ -39,10 +40,33 @@ export async function messageFromDiscord(db: Database, m: DiscordMessageEvent) {
   return inserted.length > 0;
 }
 
+export const GATEWAY_STATE = 'discord-gateway';
+export interface GatewayState {
+  state: 'connecting' | 'ready' | 'closed';
+  at: number;
+  code?: number;
+  error?: string;
+}
+
+/** What the worker's gateway connection is doing (shown in the admin panel). */
+async function saveState(db: Database, value: GatewayState) {
+  await db
+    .insert(jobState)
+    .values({ key: GATEWAY_STATE, value })
+    .onConflictDoUpdate({ target: jobState.key, set: { value, updatedAt: new Date() } })
+    .catch(() => undefined);
+}
+
+/** A slash command that came through the gateway (when no Interactions Endpoint URL is set). */
+async function interactionFromGateway(db: Database, i: Interaction) {
+  if (!i.id || !i.token) return;
+  await discord('POST', `/interactions/${i.id}/${i.token}/callback`, await answerInteraction(db, i));
+}
+
 /**
  * A minimal Discord gateway connection (in the worker): heartbeats, resume
- * after a drop, and MESSAGE_CREATE for the chat bridge. Starts only when the
- * bot is configured.
+ * after a drop, MESSAGE_CREATE for the chat bridge and slash commands when
+ * Discord sends them here. Starts only when the bot is configured.
  */
 export function startGateway(db: Database) {
   if (!discordConfig().bot) return { stop: () => undefined };
@@ -70,8 +94,10 @@ export function startGateway(db: Database) {
     try {
       const url = session?.url ?? (await discord<{ url: string }>('GET', '/gateway/bot')).url;
       ws = new WebSocket(`${url}?v=10&encoding=json`);
+      void saveState(db, { state: 'connecting', at: Date.now() });
     } catch (error) {
       console.warn('[discord] gateway url failed', (error as Error).message);
+      void saveState(db, { state: 'closed', at: Date.now(), error: (error as Error).message.slice(0, 300) });
       return reconnect(30_000);
     }
     ws.onmessage = (event) => {
@@ -99,12 +125,16 @@ export function startGateway(db: Database) {
           const d = p.d as { session_id: string; resume_gateway_url: string };
           session = { id: d.session_id, url: d.resume_gateway_url };
           console.log('[discord] gateway ready');
+          void saveState(db, { state: 'ready', at: Date.now() });
         } else if (p.t === 'MESSAGE_CREATE') {
           void messageFromDiscord(db, p.d as DiscordMessageEvent).catch((e) => console.warn('[discord] bridge failed', (e as Error).message));
+        } else if (p.t === 'INTERACTION_CREATE') {
+          void interactionFromGateway(db, p.d as Interaction).catch((e) => console.warn('[discord] command failed', (e as Error).message));
         }
       }
     };
     ws.onclose = (event) => {
+      void saveState(db, { state: 'closed', at: Date.now(), code: event.code });
       // 4004: wrong token, 4013/4014: intents not allowed — no point retrying fast.
       if ([4004, 4013, 4014].includes(event.code)) {
         console.error(`[discord] gateway closed (${event.code}) — check the bot token and the intents in the Developer Portal`);

@@ -7,15 +7,17 @@
 1. Discord Developer Portal → New Application „TransVerse“.
 2. **Bot**: Reset Token → `DISCORD_BOT_TOKEN`; Public Bot — изключено; Privileged Gateway Intents: **Server Members** и **Message Content** — включени.
 3. **OAuth2**: Client Secret → `DISCORD_CLIENT_SECRET`; Redirects: `https://<сайта>/api/discord/callback`.
-4. **General Information**: Application ID → `DISCORD_APPLICATION_ID`, Public Key → `DISCORD_PUBLIC_KEY`. **Interactions Endpoint URL**: `https://<сайта>/api/discord/interactions` (попълва се след качване — Discord го проверява веднага).
+4. **General Information**: Application ID → `DISCORD_APPLICATION_ID`, Public Key → `DISCORD_PUBLIC_KEY`. **Interactions Endpoint URL**: `https://<сайта>/api/discord/interactions` (попълва се след качване — Discord го проверява веднага). Може и да остане празно: тогава командите идват през постоянната връзка на worker-а.
 5. OAuth2 → URL Generator: scopes `bot` и `applications.commands`; права: View Channels, Send Messages, Embed Links, Attach Files, Read Message History, Manage Webhooks, Manage Roles, Manage Channels. Поканата се отваря и ботът се добавя в сървъра. Ролята на бота стои над ролите, които раздава.
 6. ID на сървъра → `DISCORD_GUILD_ID`.
 7. Всички стойности са в GitHub Secrets; Deploy ги записва в `shared/secrets.env` (никога в билда).
 8. Канали (по име): `#обновления`, `#ивенти`, `#битки`, `#строежи`, `#седмичник`. Категорията `Компании` се прави сама, ако я няма. Към името може да има емоджи и разделител (`📢-обновления`, `🎯︱ивенти`) — ботът ги пропуска при търсенето; важно е думата да е същата. Канал, който липсва, просто не получава съобщения.
 
+9. **Проверка**: Админ → Система → „Discord бот“ → „Провери Discord“ проверява на живо тайните, токена, Interactions URL и Redirect-а, дали ботът е в сървъра, правата му (Manage Roles/Channels/Webhooks), реда на ролите, командите, правата във всеки канал (View, Send, Embed Links), връзката на worker-а (включени intents) и последните грешки в опашката. „Поправи команди и роли“ записва командите наново и обновява ролите на всички свързани играчи.
+
 ## Как работи
 
-- **Команди** (`commands.ts`, регистрират се за сървъра при старт на worker-а): `/профил`, `/компания`, `/класация`, `/камиони`, `/борса`, `/дневна`, `/свързване`, `/помощ`. Discord ги праща на `/api/discord/interactions`, подписани с Ed25519 (`verify.ts`); неподписани заявки → 401. Командите само четат — в играта нищо не се променя от Discord.
+- **Команди** (`commands.ts`, регистрират се за сървъра при старт на worker-а и пак на всеки 30 минути): `/профил`, `/компания`, `/класация`, `/камиони`, `/борса`, `/дневна`, `/свързване`, `/помощ`. Discord ги праща на `/api/discord/interactions`, подписани с Ed25519 (`verify.ts`); неподписани заявки → 401. Без Interactions URL идват през gateway-а и отговорът се праща с `/interactions/{id}/{token}/callback` (`interaction.ts` — един и същ отговор и в двата случая). Командите само четат — в играта нищо не се променя от Discord.
 - **Свързване** (`link.ts`, Настройки → Discord): OAuth2 (`identify guilds.join`) — играчът влиза и в сървъра. Един Discord акаунт — един профил. Първото свързване: 10 ТрансКоин и значка „Discord шофьор“ (веднъж). Отвързване маха ролите.
 - **Опашка** (`discord_outbox`, `outbox.ts`): всичко към Discord минава през нея с уникален ключ (обявление веднъж), worker-ът праща на всеки 15 секунди, при грешка опитва пак (до 6 пъти, с нарастваща пауза).
 - **Обявления** (`announce.ts`): ново обновление (до 3 дни след излизането), старт и край на ивент, двойките и резултатите от битките, нов брой на Седмичника, построени сгради и „Строител на седмицата“.
