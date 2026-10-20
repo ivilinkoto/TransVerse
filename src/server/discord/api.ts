@@ -14,7 +14,7 @@ export class DiscordError extends Error {
  */
 export async function discord<T = unknown>(method: string, path: string, body?: unknown, opts: { auth?: string; form?: Record<string, string> } = {}): Promise<T> {
   const auth = opts.auth ?? `Bot ${discordConfig().token}`;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     const res = await fetch(`${BASE}${path}`, {
       method,
       headers: opts.form ? { 'Content-Type': 'application/x-www-form-urlencoded', ...(opts.auth ? { Authorization: auth } : {}) } : { 'Content-Type': 'application/json', Authorization: auth },
@@ -23,7 +23,7 @@ export async function discord<T = unknown>(method: string, path: string, body?: 
     });
     if (res.status === 429) {
       const data = (await res.json().catch(() => ({}))) as { retry_after?: number };
-      await new Promise((r) => setTimeout(r, Math.min(10_000, (data.retry_after ?? 1) * 1000 + 100)));
+      await new Promise((r) => setTimeout(r, Math.min(20_000, (data.retry_after ?? 1) * 1000 + 100)));
       continue;
     }
     if (res.status === 204) return undefined as T;

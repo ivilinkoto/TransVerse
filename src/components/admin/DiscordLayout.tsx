@@ -38,9 +38,10 @@ export function DiscordLayout() {
         if (r.plan) setPlan(r.plan);
         else setMessage({ ok: false, text: r.message ?? 'Не стана.' });
       } else if (kind === 'apply') {
-        const r = await api<{ ok: boolean; created?: string[]; panels?: string[]; message?: string }>('/api/admin/action', { type: 'discordLayoutApply', permissions: perms });
-        setMessage(r.ok ? { ok: true, text: `Готово: ${r.created?.length ?? 0} нови канала и категории, ${r.panels?.length ?? 0} съобщения на бота.` } : { ok: false, text: r.message ?? 'Не стана.' });
-        if (r.ok) setPlan(null);
+        const r = await api<{ ok: boolean; created?: string[]; panels?: string[]; errors?: string[]; message?: string }>('/api/admin/action', { type: 'discordLayoutApply', permissions: perms });
+        const failed = r.errors ?? [];
+        setMessage(!r.ok ? { ok: false, text: r.message ?? 'Не стана.' } : failed.length ? { ok: false, text: `Направено отчасти (${r.created?.length ?? 0} нови). Discord отказа: ${failed.join(' · ')}. Натисни „Покажи плана“ и „Приложи“ пак — продължава оттам.` } : { ok: true, text: `Готово: ${r.created?.length ?? 0} нови канала и категории, ${r.panels?.length ?? 0} съобщения на бота.` });
+        if (r.ok && !failed.length) setPlan(null);
       } else {
         const r = await api<{ ok: boolean; panels?: string[]; message?: string }>('/api/admin/action', { type: 'discordPanels' });
         setMessage(r.ok ? { ok: true, text: `Обновени съобщения: ${r.panels?.length ?? 0}.` } : { ok: false, text: r.message ?? 'Не стана.' });

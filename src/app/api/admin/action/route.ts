@@ -126,10 +126,10 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'discordLayoutApply': {
       requireAdminRole(user);
       if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
-      const { created } = await applyLayout(db, { permissions: input.permissions });
-      const panels = await postPanels(db, created);
-      await recordAudit(db, user.id, 'discord_layout', null, { created, panels, permissions: input.permissions });
-      return { ok: true, created, panels };
+      const { created, errors } = await applyLayout(db, { permissions: input.permissions });
+      const panels = await postPanels(db, created).catch((e: Error) => (errors.push(`Съобщенията на бота: ${e.message.slice(0, 300)}`), [] as string[]));
+      await recordAudit(db, user.id, 'discord_layout', null, { created, panels, permissions: input.permissions, errors: errors.length });
+      return { ok: true, created, panels, errors };
     }
     case 'discordPanels': {
       requireAdminRole(user);

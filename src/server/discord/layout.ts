@@ -206,9 +206,17 @@ function match(channels: GuildChannel[], state: LayoutState) {
   for (const cat of LAYOUT) categories.set(cat.key, find(cat, state.categories[cat.key], isCategory));
   for (const cat of LAYOUT) {
     for (const ch of cat.channels) {
-      // Stat channels are found only by their stored id: their names change all the time.
       const stored = state.channels[ch.key];
-      chans.set(ch.key, STAT_CHANNELS.includes(ch.key as StatChannel) ? (stored && byId.get(stored) && !used.has(stored) ? (used.add(stored), byId.get(stored)) : undefined) : find(ch, stored, (c) => !isCategory(c) && (ch.type === 'voice') === isVoice(c)));
+      if (STAT_CHANNELS.includes(ch.key as StatChannel)) {
+        // The numbers in their names change: by the stored id, else by the start of the name ("🟢 Онлайн: 12").
+        const label = channelKey(ch.name);
+        const known = stored ? byId.get(stored) : undefined;
+        const found = known && !used.has(known.id) ? known : channels.find((c) => !used.has(c.id) && isVoice(c) && channelKey(c.name).startsWith(label));
+        if (found) used.add(found.id);
+        chans.set(ch.key, found);
+        continue;
+      }
+      chans.set(ch.key, find(ch, stored, (c) => !isCategory(c) && (ch.type === 'voice') === isVoice(c)));
     }
   }
   return { categories, chans, used };
@@ -255,7 +263,9 @@ function overwrites(access: Access | undefined, ids: { guild: string; bot: strin
 
 /**
  * Applies the layout. `permissions`: also sets the layout's permissions on
- * channels that already existed (new ones always get them).
+ * channels that already existed (new ones always get them). A step Discord
+ * refuses does not stop the rest: it is reported, and what was done is kept,
+ * so applying again continues from there.
  */
 export async function applyLayout(db: DbOrTx, opts: { permissions: boolean }) {
   const { guildId } = discordConfig();
@@ -267,19 +277,32 @@ export async function applyLayout(db: DbOrTx, opts: { permissions: boolean }) {
   const ids = { guild: guildId, bot: g.botId, staff: staffRole };
   const next: LayoutState = { channels: {}, categories: {}, panels: state.panels, appliedAt: Date.now() };
   const created: string[] = [];
+  const errors: string[] = [];
   const positions: { id: string; position: number; parent_id?: string | null }[] = [];
+  const step = async <T>(label: string, fn: () => Promise<T>): Promise<T | undefined> => {
+    try {
+      return await fn();
+    } catch (error) {
+      errors.push(`${label}: ${(error as Error).message.replace(/^Discord \w+ \S+: /, '').slice(0, 300)}`);
+      return undefined;
+    }
+  };
 
   let catPos = 0;
   for (const cat of LAYOUT) {
     let c = categories.get(cat.key);
     const perms = overwrites(cat.access, ids);
     if (!c) {
-      c = await discord<GuildChannel>('POST', `/guilds/${guildId}/channels`, { name: cat.name, type: 4, ...(perms ? { permission_overwrites: perms } : {}) });
+      c = await step(cat.name, () => discord<GuildChannel>('POST', `/guilds/${guildId}/channels`, { name: cat.name, type: 4, ...(perms ? { permission_overwrites: perms } : {}) }));
+      // Without its category the channels wait for the next try.
+      if (!c) continue;
       created.push(cat.key);
     } else if (c.name !== cat.name || (opts.permissions && perms)) {
-      await discord('PATCH', `/channels/${c.id}`, { name: cat.name, ...(opts.permissions && perms ? { permission_overwrites: perms } : {}) });
+      const id = c.id;
+      await step(cat.name, () => discord('PATCH', `/channels/${id}`, { name: cat.name, ...(opts.permissions && perms ? { permission_overwrites: perms } : {}) }));
     }
-    next.categories[cat.key] = c.id;
+    const parent = c.id;
+    next.categories[cat.key] = parent;
     positions.push({ id: c.id, position: catPos++ });
 
     let chPos = 0;
@@ -289,28 +312,32 @@ export async function applyLayout(db: DbOrTx, opts: { permissions: boolean }) {
       const chPerms = overwrites(access, ids);
       let x = chans.get(ch.key);
       if (!x) {
-        x = await discord<GuildChannel>('POST', `/guilds/${guildId}/channels`, { name: ch.name, type: voice ? 2 : 0, parent_id: c.id, ...(ch.topic && !voice ? { topic: ch.topic } : {}), ...(chPerms ? { permission_overwrites: chPerms } : {}) });
+        x = await step(ch.name, () => discord<GuildChannel>('POST', `/guilds/${guildId}/channels`, { name: ch.name, type: voice ? 2 : 0, parent_id: parent, ...(ch.topic && !voice ? { topic: ch.topic } : {}), ...(chPerms ? { permission_overwrites: chPerms } : {}) }));
+        if (!x) continue;
         created.push(ch.key);
       } else {
         const stat = STAT_CHANNELS.includes(ch.key as StatChannel);
         const patch: Record<string, unknown> = {};
         if (!stat && x.name !== ch.name) patch.name = ch.name;
-        if (x.parent_id !== c.id) patch.parent_id = c.id;
-        if (ch.topic && !voice && x.type !== 15 && !x.topic) patch.topic = ch.topic;
+        if (x.parent_id !== parent) patch.parent_id = parent;
+        // Only text channels have a topic here (forums, voice and stage channels keep theirs).
+        if (ch.topic && (x.type === 0 || x.type === 5) && !x.topic) patch.topic = ch.topic;
         if (opts.permissions && chPerms) patch.permission_overwrites = chPerms;
-        if (Object.keys(patch).length) await discord('PATCH', `/channels/${x.id}`, patch);
+        const id = x.id;
+        if (Object.keys(patch).length) await step(ch.name, () => discord('PATCH', `/channels/${id}`, patch));
       }
       next.channels[ch.key] = x.id;
-      positions.push({ id: x.id, position: chPos++, parent_id: c.id });
+      positions.push({ id: x.id, position: chPos++, parent_id: parent });
     }
   }
   // The other categories go after the layout's, in their old order.
   const rest = all.filter((c) => isCategory(c) && !Object.values(next.categories).includes(c.id)).sort((a, b) => a.position - b.position);
   for (const c of rest) positions.push({ id: c.id, position: catPos++ });
-  await discord('PATCH', `/guilds/${guildId}/channels`, positions);
-  await saveLayoutState(db, next);
+  // What was made is kept even when something failed (the stat channels are found only by their ids).
+  await saveLayoutState(db, { ...next, channels: { ...state.channels, ...next.channels }, categories: { ...state.categories, ...next.categories } });
+  await step('Подредбата', () => discord('PATCH', `/guilds/${guildId}/channels`, positions));
   forgetGuild();
-  return { created };
+  return { created, errors };
 }
 
 /** A channel of the layout by key: the stored id, or by name for servers not laid out yet. */
