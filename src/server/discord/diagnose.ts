@@ -145,7 +145,8 @@ export async function diagnoseDiscord(db: Database): Promise<DiscordCheck[]> {
   for (const name of Object.values(DISCORD_CHANNELS)) {
     const ch = channels.find((c) => (c.type === 0 || c.type === 5) && channelKey(c.name) === channelKey(name));
     if (!ch) {
-      add(`Канал #${name}`, false, 'Няма такъв канал (обявленията за него се пропускат).');
+      const near = channels.filter((c) => c.name.toLowerCase().includes(name)).map((c) => `#${c.name} [${[...c.name].map((ch) => ch.codePointAt(0)!.toString(16)).join(' ')}]`);
+      add(`Канал #${name}`, false, near.length ? `Не разпознах: ${near.join(', ')}.` : 'Няма такъв канал (обявленията за него се пропускат).');
       continue;
     }
     const need = missing(channelPermissions(base, ch, cfg.guildId, member.roles, botId), CHANNEL_NEEDS);
