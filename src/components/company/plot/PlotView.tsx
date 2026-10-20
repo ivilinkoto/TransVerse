@@ -108,6 +108,15 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
     return () => ro.disconnect();
   }, []);
   const labelScale = Math.min(2.6, Math.max(0.75, (vb.w / width) * 0.85));
+  // Traffic drives unless the player asked the device for less motion.
+  const [moving, setMoving] = useState(false);
+  useEffect(() => {
+    const q = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const on = () => setMoving(!q.matches);
+    on();
+    q.addEventListener('change', on);
+    return () => q.removeEventListener('change', on);
+  }, []);
   const viewBox = `${VIEW.x + (VIEW.w - vb.w) / 2 + view.x} ${VIEW.y + (VIEW.h - vb.h) / 2 + view.y} ${vb.w} ${vb.h}`;
 
   const toSvg = (e: React.PointerEvent) => {
@@ -210,7 +219,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           role="img"
           aria-label={`Участъкът на „${data.org.name}“`}
         >
-          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} labelScale={labelScale} />
+          <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} labelScale={labelScale} moving={moving} />
         </svg>
         <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 px-3 py-2 text-xs text-mist-300 backdrop-blur">
           <b className="block text-sm text-white">Участък · {data.hq?.nameBg ?? ''}</b>
