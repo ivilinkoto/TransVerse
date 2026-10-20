@@ -1,11 +1,13 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { POWER_UNITS, TRAILERS, UPGRADES, couplingError, powerUnitModel, trailerModel, type UpgradeId } from '@/lib/game/catalog';
 import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';
 import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
+import { maintenanceCostCents, maintenanceState } from '@/lib/game/maintenance';
 import { assertNotLeased } from './leasing';
+import { bonusesForUser } from './membership';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -32,9 +34,17 @@ async function fleetCapacity(db: DbOrTx, companyId: string) {
     .select({ slots: sql<number>`coalesce(sum(${depots.slots}), 0)::int`, depots: sql<number>`count(*)::int` })
     .from(depots)
     .where(eq(depots.companyId, companyId));
-  const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt)));
+  // A borrowed company truck stands on the company's parking, not in the member's depot.
+  const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt), ne(vehicles.ownership, 'company')));
   // VIP: one extra place in every depot.
-  const extra = (await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0;
+  let extra = (await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0;
+  // The parking on the company's plot: places in the member's depot in the company's base city.
+  const [owner] = await db.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, companyId));
+  const perks = owner ? await bonusesForUser(db, owner.ownerId) : null;
+  if (perks?.bonuses.parkingSlots) {
+    const [home] = await db.select({ id: depots.id }).from(depots).where(and(eq(depots.companyId, companyId), eq(depots.cityId, perks.membership.company.hqCityId)));
+    if (home) extra += perks.bonuses.parkingSlots;
+  }
   return { slots: slots + extra, used, extra };
 }
 
@@ -109,6 +119,7 @@ export async function sellVehicle(db: Database, userId: string, vehicleId: strin
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
     if (v.ownership === 'rented') fail('rented', 'Наетите превозни средства се връщат, не се продават.');
+    if (v.ownership === 'company') fail('company_truck', 'Фирменият камион е на компанията — върнете го, не се продава.');
     if (v.status === 'listed') fail('listed', 'Превозното средство е обявено на пазара — първо свали обявата.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Не можете да продадете превозно средство по време на курс.');
     await assertNotLeased(tx, v.id);
@@ -151,10 +162,29 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
     const [trailer] = await tx.select().from(trailers).where(eq(trailers.vehicleId, v.id));
     const full = repairCostCents(powerUnitModel(v.modelId).priceCents, v.condition) + (trailer ? repairCostCents(trailerModel(trailer.modelId).priceCents, trailer.condition) : 0);
     if (full <= 0) fail('nothing_to_repair', 'Няма нужда от ремонт.');
-    const cost = Math.round(full * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
+    // VIP and the company's service on the plot make it cheaper.
+    const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
+    const cost = Math.round(full * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service));
     await post(tx, company.id, [{ category: 'repairs', amountCents: -cost, description: `Ремонт ${v.plate}`, idempotencyKey: `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}` }], { requireFunds: true });
     await tx.update(vehicles).set({ condition: 100 }).where(eq(vehicles.id, v.id));
     if (trailer) await tx.update(trailers).set({ condition: 100 }).where(eq(trailers.id, trailer.id));
+    return cost;
+  });
+}
+
+/** Maintenance: services an idle own truck (its kilometres since the last service start again). */
+export async function serviceVehicle(db: Database, userId: string, vehicleId: string) {
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const v = await ownedVehicle(tx, company.id, vehicleId);
+    if (v.ownership === 'rented') fail('rented', 'Поддръжката на наетите превозни средства е за сметка на наемодателя.');
+    if (v.status !== 'idle') fail('vehicle_busy', 'Профилактика се прави само между курсовете.');
+    if (maintenanceState(v.odometerKm, v.serviceKm).fresh) fail('fresh', 'Камионът наскоро мина профилактика.');
+    const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
+    const vip = (await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0;
+    const cost = maintenanceCostCents(powerUnitModel(v.modelId).priceCents, 1 - (1 - service) * (1 - vip));
+    await post(tx, company.id, [{ category: 'maintenance', amountCents: -cost, description: `Профилактика ${v.plate}`, idempotencyKey: `service:${v.id}:${v.odometerKm.toFixed(1)}`, refType: 'vehicle', refId: v.id }], { requireFunds: true });
+    await tx.update(vehicles).set({ serviceKm: v.odometerKm }).where(eq(vehicles.id, v.id));
     return cost;
   });
 }
@@ -165,7 +195,7 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
-    if (v.ownership === 'rented') fail('rented', 'Наетите превозни средства не могат да се модифицират.');
+    if (v.ownership !== 'owned') fail('rented', 'Наетите и фирмените превозни средства не могат да се модифицират.');
     if (v.status !== 'idle') fail('vehicle_busy', 'Подобрения се монтират само между курсовете.');
     if (!upgrade!.appliesTo.includes(powerUnitModel(v.modelId).kind)) fail('not_applicable', 'Подобрението не е приложимо за този тип превозно средство.');
     if (v.upgrades.includes(upgrade!.id)) fail('already_installed', 'Вече е монтирано.');

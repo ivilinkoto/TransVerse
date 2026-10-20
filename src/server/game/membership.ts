@@ -9,7 +9,7 @@ import {
   DEFAULT_RANKS,
   hasUnlock,
   maxRanks,
-  ROLE_PERMISSIONS,
+  PERMISSION_FEATURE,
   memberBonuses,
   memberCapacity,
   type MemberBonuses,
@@ -22,9 +22,14 @@ import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, companyApplications, companyAssets, companyMembers, companyRanks, depots, organizations, treasuryEntries, users } from '@/server/db/schema';
 import { ECONOMY } from '@/lib/game/economy';
 import { featureFor } from '@/server/features';
+import { BUILDINGS } from '@/lib/game/plot';
+
+/** Upgrades that became buildings on the plot. */
+const PLOT_UPGRADES: string[] = Object.values(BUILDINGS).map((b) => b.upgrade);
 import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
+import { returnOnLeave, sellFleetOnDissolve } from './company-fleet';
 
 export type Rank = typeof companyRanks.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
@@ -202,6 +207,7 @@ export async function leaveCompany(db: Database, userId: string) {
     const m = await membershipOf(tx, userId);
     if (!m) fail('not_member', 'Не членувате в компания.');
     if (m!.rank.isOwner) fail('owner_must_transfer', 'Като собственик първо предайте собствеността на друг член (или закрийте компанията, ако сте единственият член).');
+    await returnOnLeave(tx, userId, new Date());
     await tx.delete(companyMembers).where(eq(companyMembers.userId, userId));
     await logActivity(tx, userId, 'company_left', { companyId: m!.company.id });
     await notify(tx, m!.company.ownerId, 'info', 'Член напусна компанията', 'Един от членовете напусна компанията.', '/game/company/members');
@@ -224,6 +230,7 @@ export async function kickMember(db: Database, actorId: string, targetUserId: st
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_members');
     await subordinate(tx, actor, targetUserId);
+    await returnOnLeave(tx, targetUserId, new Date());
     await tx.delete(companyMembers).where(eq(companyMembers.userId, targetUserId));
     await logActivity(tx, actorId, 'company_member_removed', { userId: targetUserId });
     await notify(tx, targetUserId, 'warning', 'Изключени сте от компанията', `Вече не членувате в „${actor.company.name}“.`, '/game/companies');
@@ -249,9 +256,11 @@ export async function setMemberRank(db: Database, actorId: string, targetUserId:
  * recruiting follows "members" (as before) and bonuses are not given.
  */
 async function rolesInput(tx: Tx, actorId: string, input: z.infer<typeof rankInputSchema>) {
-  if (await featureFor(tx, actorId, 'company_roles')) return input;
-  const permissions = input.permissions.filter((p) => !ROLE_PERMISSIONS.includes(p));
-  return { ...input, permissions: permissions.includes('manage_members') ? [...permissions, 'recruit' as const] : permissions };
+  let permissions = [...input.permissions];
+  for (const [p, feature] of Object.entries(PERMISSION_FEATURE)) if (!(await featureFor(tx, actorId, feature!))) permissions = permissions.filter((x) => x !== p);
+  // Before the company roles, recruiting follows "members" as it always did.
+  if (!(await featureFor(tx, actorId, 'company_roles')) && permissions.includes('manage_members')) permissions.push('recruit');
+  return { ...input, permissions };
 }
 
 function checkRankInput(actor: Membership, input: z.infer<typeof rankInputSchema>) {
@@ -338,6 +347,8 @@ export async function buyCompanyUpgrade(db: Database, actorId: string, upgradeId
     const actor = await requirePermission(tx, actorId, 'manage_upgrades');
     const upgrade = COMPANY_UPGRADES.find((u) => u.id === upgradeId);
     if (!upgrade) fail('unknown_upgrade', 'Непознато подобрение.');
+    // With the plot (v1.3) these are buildings: they are built there, not bought.
+    if (PLOT_UPGRADES.includes(upgrade!.id) && (await featureFor(tx, actorId, 'company_plot'))) fail('use_plot', 'Това вече е сграда — строи се в Компания → Участък.');
     const levels = actor.company.upgrades as UpgradeLevels;
     const current = levels[upgrade!.id] ?? 0;
     const next = upgrade!.levels[current];
@@ -558,7 +569,10 @@ export async function dissolveCompany(db: Database, ownerId: string) {
     if (!owner) fail('not_member', 'Не членувате в компания.', 403);
     if (!owner!.rank.isOwner) fail('forbidden', 'Само собственикът може да закрие компанията.', 403);
     if ((await memberCount(tx, owner!.company.id)) > 1) fail('has_members', 'Компанията има други членове — предайте собствеността на някой от тях.');
-    const left = owner!.company.treasuryCents;
+    // The company's own trucks are sold first, into the treasury paid out below.
+    await returnOnLeave(tx, ownerId, new Date());
+    const fleetCents = await sellFleetOnDissolve(tx, owner!.company.id, new Date());
+    const left = owner!.company.treasuryCents + fleetCents;
     if (left > 0) {
       const account = await accountOf(tx, ownerId);
       await postTreasury(tx, owner!.company.id, [{ category: 'dissolution', amountCents: -left, description: 'Изплатено на собственика при закриване', idempotencyKey: `dissolve:${owner!.company.id}:out`, actorUserId: ownerId }]);

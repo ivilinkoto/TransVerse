@@ -1,5 +1,7 @@
 import { CheckCircle2, Lock } from 'lucide-react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { BUILDINGS } from '@/lib/game/plot';
 import { Badge, Card, Meter } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { money } from '@/lib/format';
@@ -10,7 +12,9 @@ import { can, companyHub } from '@/server/game/membership';
 export const metadata = { title: 'Развитие на компанията' };
 
 export default async function DevelopmentPage() {
-  const { db, user } = await gameContext();
+  const { db, user, features } = await gameContext();
+  // With the plot (v1.3) these upgrades are buildings, built there.
+  const onPlot = (id: string) => features.company_plot && Object.values(BUILDINGS).some((b) => b.upgrade === id);
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
   const c = hub.company;
@@ -36,9 +40,11 @@ export default async function DevelopmentPage() {
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                   <div className="text-sm">
                     <div>Следващо ниво: {u.description(current + 1)}</div>
-                    <div className="mt-0.5 text-mist-400">Цена <span className="num text-gold-400">{money(next.costCents)}</span>{next.minCompanyLevel > 1 && ` · изисква ниво ${next.minCompanyLevel} на компанията`}</div>
+                    {!onPlot(u.id) && <div className="mt-0.5 text-mist-400">Цена <span className="num text-gold-400">{money(next.costCents)}</span>{next.minCompanyLevel > 1 && ` · изисква ниво ${next.minCompanyLevel} на компанията`}</div>}
                   </div>
-                  {manage ? (
+                  {onPlot(u.id) ? (
+                    <Link href="/game/company/plot" className="btn-primary px-4 py-2 text-sm">Строи се на участъка →</Link>
+                  ) : manage ? (
                     <ActionButton action={{ type: 'buyCompanyUpgrade', upgradeId: u.id }} className="btn-gold px-4 py-2 text-sm" disabled={!!lockedByLevel || c.treasuryCents < next.costCents} confirm={`Да платите ${money(next.costCents)} от касата?`}>
                       {lockedByLevel ? `Ниво ${next.minCompanyLevel}` : 'Подобри'}
                     </ActionButton>

@@ -59,6 +59,8 @@ export interface BoardContract {
   toHome: boolean;
   /** Groupage: drops on the way before the destination (empty for an ordinary load). */
   stops: { name: string; country: string; tons: number; windowMinutes: number }[];
+  /** Building materials for the player's company plot (members only). */
+  construction: boolean;
   /** The player starred this lane (origin → destination). */
   favorite: boolean;
   /** Load of a tender of the player's company (only members see it). */
@@ -305,6 +307,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.toHome && <Badge tone="green"><House className="h-3 w-3" />КЪМ БАЗАТА</Badge>}
             {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
+            {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />ЗА СТРОЕЖА НА КОМПАНИЯТА</Badge>}
             {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />СБОРЕН · {c.stops.length} {c.stops.length === 1 ? 'СПИРКА' : 'СПИРКИ'} · +{Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100)}%</Badge>}
             {c.hiredBy && <span className="max-w-full truncate" title={`Възложена от ${c.hiredBy.company} до ${c.hiredBy.until}`}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />ВЪЗЛОЖЕНА · {Math.round(c.hiredBy.share * 100)}% за {c.hiredBy.company}</Badge></span>}
             {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}

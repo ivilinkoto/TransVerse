@@ -41,6 +41,7 @@ export default async function FleetPage() {
                   <span className="font-display text-lg font-bold">{v.model.name}</span>
                   <Badge>{KIND[v.model.kind]}</Badge>
                   {v.ownership === 'rented' && <Badge tone="gold">Нает</Badge>}
+                  {v.ownership === 'company' && <Badge tone="cyan">Фирмен</Badge>}
                   {leased.has(v.id) && <a href="/game/finance#leases"><Badge tone="violet">Лизинг {leased.get(v.id)!.paid}/{leased.get(v.id)!.payments}</Badge></a>}
                   {v.delivery ? <Badge tone="cyan">На курс</Badge> : v.status === 'listed' ? <Badge tone="gold">Обявен за продажба</Badge> : <Badge tone="green">Свободен</Badge>}
                 </div>

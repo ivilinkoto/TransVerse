@@ -23,7 +23,10 @@ describe('release gating', () => {
     expect(Object.values(liveFeatures(before)).every((on) => !on)).toBe(true);
     expect(Object.values(liveFeatures(before, true)).every(Boolean)).toBe(true);
     expect(Object.keys(liveFeatures(after))).toEqual(Object.keys(FEATURES));
-    expect(Object.values(liveFeatures(after)).every(Boolean)).toBe(true);
+    // After the 1.2 release its features are on; a later update's stay off until its own date.
+    const live = liveFeatures(after);
+    expect((Object.keys(FEATURES) as (keyof typeof FEATURES)[]).every((id) => live[id] === (FEATURES[id] === '1.2'))).toBe(true);
+    expect(featureLive('company_plot', after)).toBe(false);
   });
 
   it('refuses an action of an unreleased feature to players, not to staff', () => {

@@ -2,16 +2,21 @@
 
 import { Settings2 } from 'lucide-react';
 import Link from 'next/link';
+import { useFeature } from '@/components/game/Features';
+import type { FeatureId } from '@/lib/game/features';
 import { usePathname } from 'next/navigation';
 
 interface Tab {
   href: string;
   label: string;
   needs?: string;
+  /** Shown once this feature is out (staff see it earlier). */
+  feature?: FeatureId;
 }
 
 const TABS: Tab[] = [
   { href: '/game/company', label: 'Обзор' },
+  { href: '/game/company/plot', label: 'Участък', feature: 'company_plot' },
   { href: '/game/company/chat', label: 'Чат' },
   { href: '/game/company/missions', label: 'Мисии' },
   { href: '/game/company/tenders', label: 'Търгове' },
@@ -28,6 +33,8 @@ const MANAGE: Tab[] = [
 
 export function CompanyTabs({ pending, allowed }: { pending: number; allowed: string[] }) {
   const pathname = usePathname();
+  const plot = useFeature('company_plot');
+  const tabs = TABS.filter((t) => !t.feature || (t.feature === 'company_plot' && plot));
   const manage = MANAGE.filter((t) => !t.needs || allowed.includes(t.needs));
   const inManage = manage.some((t) => pathname.startsWith(t.href));
   const isActive = (href: string) => (href === '/game/company' ? pathname === href : pathname.startsWith(href));
@@ -35,7 +42,7 @@ export function CompanyTabs({ pending, allowed }: { pending: number; allowed: st
   return (
     <div>
       <nav className="-mx-4 flex overflow-x-auto border-b border-asphalt-800 px-4 [scrollbar-width:none] sm:mx-0 sm:px-0" aria-label="Раздели на компанията">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const active = isActive(t.href);
           return (
             <Link key={t.href} href={t.href} aria-current={active ? 'page' : undefined} className={tab(active)}>

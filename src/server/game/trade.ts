@@ -5,7 +5,8 @@ import { contractWindowMinutes } from '@/lib/game/schedule';
 import { TRADE_RULES, buyPriceCents, sellPriceCents, warehouseCapacityTons } from '@/lib/game/trade';
 import { haversineKm } from '@/lib/geo/geometry';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, cityMarkets, contracts, depots, warehouseStock } from '@/server/db/schema';
+import { cities, cityMarkets, companies, contracts, depots, warehouseStock } from '@/server/db/schema';
+import { bonusesForUser } from './membership';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { companyForUser } from './company';
@@ -22,6 +23,18 @@ async function ownDepot(db: DbOrTx, companyId: string, depotId: string, lock = f
   const [d] = lock ? await q.for('update') : await q;
   if (!d) fail('depot_not_found', 'Депото не е намерено.', 404);
   return d!;
+}
+
+/** Extra warehouse tonnes the account has in a city: the warehouse on its company's plot counts in the base city. */
+async function plotWarehouseTons(db: DbOrTx, companyId: string): Promise<{ cityId: number; tons: number } | null> {
+  const [owner] = await db.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, companyId));
+  const perks = owner ? await bonusesForUser(db, owner.ownerId) : null;
+  return perks?.bonuses.warehouseTons ? { cityId: perks.membership.company.hqCityId, tons: perks.bonuses.warehouseTons } : null;
+}
+
+async function capacityOf(db: DbOrTx, depot: { companyId: string; cityId: number; slots: number }) {
+  const extra = await plotWarehouseTons(db, depot.companyId);
+  return warehouseCapacityTons(depot.slots) + (extra?.cityId === depot.cityId ? extra.tons : 0);
 }
 
 async function usedTons(db: DbOrTx, depotId: string) {
@@ -50,7 +63,7 @@ export async function buyGoods(db: Database, userId: string, input: { depotId: s
     const depot = await ownDepot(tx, company.id, input.depotId, true);
     const m = await market(tx, depot.cityId, input.cargo);
     if (!m?.produces) fail('not_produced', 'Тази стока не се произвежда в града на депото.');
-    const free = warehouseCapacityTons(depot.slots) - (await usedTons(tx, depot.id));
+    const free = (await capacityOf(tx, depot)) - (await usedTons(tx, depot.id));
     if (tons > free + 1e-6) fail('warehouse_full', `В склада има място за ${round1(Math.max(0, free))} т.`);
     const [city] = await tx.select({ id: cities.id, countryCode: cities.countryCode, nameBg: cities.nameBg }).from(cities).where(eq(cities.id, depot.cityId));
     const cost = Math.round(buyPriceCents(city!, input.cargo, now) * tons);
@@ -84,7 +97,7 @@ export async function shipGoods(
   } else {
     const [dest] = await db.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, input.destCityId)));
     if (!dest) fail('no_depot', 'Нямаш депо в този град.');
-    if (tons > warehouseCapacityTons(dest!.slots) - (await usedTons(db, dest!.id)) + 1e-6) fail('warehouse_full', 'Складът в този град няма толкова място.');
+    if (tons > (await capacityOf(db, dest!)) - (await usedTons(db, dest!.id)) + 1e-6) fail('warehouse_full', 'Складът в този град няма толкова място.');
     destDepotId = dest!.id;
   }
   const route = await getRoute(db, depot.cityId, input.destCityId, 'truck', provider);
@@ -166,12 +179,13 @@ export async function tradeOverview(db: DbOrTx, companyId: string, now = new Dat
   if (!myDepots.length) return [];
   const stock = await db.select().from(warehouseStock).where(inArray(warehouseStock.depotId, myDepots.map((d) => d.id)));
   const markets = await db.select().from(cityMarkets).where(inArray(cityMarkets.cityId, myDepots.map((d) => d.cityId)));
+  const extra = await plotWarehouseTons(db, companyId);
   return myDepots.map((d) => {
     const city = { id: d.cityId, countryCode: d.countryCode };
     const here = markets.filter((m) => m.cityId === d.cityId);
     return {
       ...d,
-      capacityTons: warehouseCapacityTons(d.slots),
+      capacityTons: warehouseCapacityTons(d.slots) + (extra?.cityId === d.cityId ? extra.tons : 0),
       usedTons: round1(stock.filter((s) => s.depotId === d.id).reduce((a, s) => a + s.tons, 0)),
       stock: stock.filter((s) => s.depotId === d.id).map((s) => ({ cargo: s.cargoType as CargoType, tons: round1(s.tons), costCents: s.costCents, avgCents: Math.round(s.costCents / Math.max(0.1, s.tons)) })),
       buy: CARGO_TYPES.filter((c) => here.some((m) => m.cargoType === c && m.produces)).map((c) => ({ cargo: c, priceCents: buyPriceCents(city, c, now) })),

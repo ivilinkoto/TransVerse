@@ -24,7 +24,7 @@ import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispat
 import { toggleFavoriteLane } from '@/server/game/favorites';
 import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
-import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle } from '@/server/game/fleet';
+import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -33,6 +33,12 @@ import { clientIp, handler } from '@/server/http';
 import { hashIp } from '@/server/game/referrals';
 import { payOffLease } from '@/server/game/leasing';
 import { bonusSchema, payBonus } from '@/server/game/bonuses';
+import { setCompanyLivery, setLivery } from '@/server/game/livery';
+import { buyDelivered, cancelBuild, expandPlot, likePlot, moveBuilding, orderMaterials, placeBuilding, placeDecor, removeDecor, startConstruction, upgradeBuilding } from '@/server/game/plot';
+import { BUILDING_TYPES, DECOR_KINDS, type BuildingType, type DecorKind } from '@/lib/game/plot';
+import { borrowOrgVehicle, buyOrgVehicle, returnOrgVehicle, sellOrgVehicle } from '@/server/game/company-fleet';
+import { closePoll, createPoll, votePoll } from '@/server/game/polls';
+import { pollInputSchema } from '@/lib/game/polls';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { helpOnRoad } from '@/server/game/roadside';
 import { cheer } from '@/server/game/feed';
@@ -71,6 +77,8 @@ import {
 
 const id = z.string().uuid('Невалиден идентификатор.');
 const cityId = z.coerce.number().int().positive();
+const tile = z.coerce.number().int().min(0).max(40);
+const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]]);
 
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 const Action = z.discriminatedUnion('type', [
@@ -89,6 +97,27 @@ const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('leaseVehicle'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('payOffLease'), leaseId: id }),
   z.object({ type: z.literal('payBonus'), bonus: bonusSchema }),
+  z.object({ type: z.literal('placeBuilding'), building: buildingType, x: tile, y: tile }),
+  z.object({ type: z.literal('moveBuilding'), building: buildingType, x: tile, y: tile }),
+  z.object({ type: z.literal('upgradeBuilding'), building: buildingType }),
+  z.object({ type: z.literal('orderMaterials'), buildId: id }),
+  z.object({ type: z.literal('buyMaterialsDelivered'), buildId: id }),
+  z.object({ type: z.literal('startConstruction'), buildId: id }),
+  z.object({ type: z.literal('cancelBuild'), buildId: id }),
+  z.object({ type: z.literal('likePlot'), organizationId: id }),
+  z.object({ type: z.literal('placeDecor'), kind: z.enum(DECOR_KINDS as [DecorKind, ...DecorKind[]]), x: tile, y: tile }),
+  z.object({ type: z.literal('removeDecor'), decorId: id }),
+  z.object({ type: z.literal('expandPlot') }),
+  z.object({ type: z.literal('buyOrgVehicle'), modelId: z.string().max(40) }),
+  z.object({ type: z.literal('sellOrgVehicle'), orgVehicleId: id }),
+  z.object({ type: z.literal('borrowOrgVehicle'), orgVehicleId: id }),
+  z.object({ type: z.literal('returnOrgVehicle'), vehicleId: id }),
+  z.object({ type: z.literal('createPoll'), poll: pollInputSchema }),
+  z.object({ type: z.literal('votePoll'), pollId: id, option: z.number().int().min(0).max(9) }),
+  z.object({ type: z.literal('closePoll'), pollId: id }),
+  z.object({ type: z.literal('setLivery'), color: z.string().max(9).nullable() }),
+  z.object({ type: z.literal('companyLivery'), on: z.boolean() }),
+  z.object({ type: z.literal('serviceVehicle'), vehicleId: id }),
   z.object({ type: z.literal('buyTrailer'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('sellVehicle'), vehicleId: id }),
   z.object({ type: z.literal('sellTrailer'), trailerId: id }),
@@ -195,6 +224,27 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   leaseVehicle: 'leasing',
   payOffLease: 'leasing',
   payBonus: 'company_roles',
+  placeBuilding: 'company_plot',
+  moveBuilding: 'company_plot',
+  upgradeBuilding: 'company_plot',
+  orderMaterials: 'company_plot',
+  buyMaterialsDelivered: 'company_plot',
+  startConstruction: 'company_plot',
+  cancelBuild: 'company_plot',
+  likePlot: 'plot_guests',
+  placeDecor: 'plot_decor',
+  removeDecor: 'plot_decor',
+  expandPlot: 'plot_expand',
+  buyOrgVehicle: 'company_fleet',
+  sellOrgVehicle: 'company_fleet',
+  borrowOrgVehicle: 'company_fleet',
+  returnOrgVehicle: 'company_fleet',
+  createPoll: 'company_polls',
+  votePoll: 'company_polls',
+  closePoll: 'company_polls',
+  setLivery: 'livery',
+  companyLivery: 'livery',
+  serviceVehicle: 'maintenance',
 };
 
 export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, input }) => {
@@ -236,6 +286,56 @@ export const POST = handler({ schema: Action, perMinute: 90 }, async ({ user, in
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId, { lease: true })).id };
     case 'payOffLease':
       return { ok: true, amountCents: await payOffLease(db, user.id, input.leaseId) };
+    case 'placeBuilding':
+      return { ok: true, id: (await placeBuilding(db, user.id, input.building, input.x, input.y)).id };
+    case 'moveBuilding':
+      await moveBuilding(db, user.id, input.building, input.x, input.y);
+      return { ok: true };
+    case 'upgradeBuilding':
+      return { ok: true, id: (await upgradeBuilding(db, user.id, input.building)).id };
+    case 'orderMaterials':
+      return { ok: true, ...(await orderMaterials(db, user.id, input.buildId)) };
+    case 'buyMaterialsDelivered':
+      return { ok: true, ...(await buyDelivered(db, user.id, input.buildId)) };
+    case 'startConstruction':
+      return { ok: true, endsAt: await startConstruction(db, user.id, input.buildId) };
+    case 'cancelBuild':
+      await cancelBuild(db, user.id, input.buildId);
+      return { ok: true };
+    case 'placeDecor':
+      return { ok: true, id: (await placeDecor(db, user.id, input.kind, input.x, input.y)).id };
+    case 'removeDecor':
+      await removeDecor(db, user.id, input.decorId);
+      return { ok: true };
+    case 'expandPlot':
+      return { ok: true, ...(await expandPlot(db, user.id)) };
+    case 'buyOrgVehicle':
+      return { ok: true, id: (await buyOrgVehicle(db, user.id, input.modelId)).id };
+    case 'sellOrgVehicle':
+      return { ok: true, valueCents: await sellOrgVehicle(db, user.id, input.orgVehicleId) };
+    case 'borrowOrgVehicle':
+      return { ok: true, vehicleId: (await borrowOrgVehicle(db, user.id, input.orgVehicleId)).id };
+    case 'returnOrgVehicle':
+      await returnOrgVehicle(db, user.id, input.vehicleId);
+      return { ok: true };
+    case 'createPoll':
+      return { ok: true, id: (await createPoll(db, user.id, input.poll)).id };
+    case 'votePoll':
+      await votePoll(db, user.id, input.pollId, input.option);
+      return { ok: true };
+    case 'closePoll':
+      await closePoll(db, user.id, input.pollId);
+      return { ok: true };
+    case 'likePlot':
+      return { ok: true, ...(await likePlot(db, user.id, input.organizationId)) };
+    case 'setLivery':
+      await setLivery(db, user.id, input.color);
+      return { ok: true };
+    case 'companyLivery':
+      await setCompanyLivery(db, user.id, input.on);
+      return { ok: true };
+    case 'serviceVehicle':
+      return { ok: true, costCents: await serviceVehicle(db, user.id, input.vehicleId) };
     case 'payBonus':
       return { ok: true, ...(await payBonus(db, user.id, input.bonus, await hashIp(db, await clientIp()))) };
     case 'buyTrailer':

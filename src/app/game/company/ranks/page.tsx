@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { RankForm } from '@/components/company/forms';
 import { Badge, Card } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { ALL_PERMISSIONS, COMPANY_UNLOCKS, maxRanks, PERMISSIONS, ROLE_PERMISSIONS, ROLE_TEMPLATES } from '@/lib/game/company';
+import { ALL_PERMISSIONS, COMPANY_UNLOCKS, maxRanks, PERMISSIONS, ROLE_TEMPLATES, shownPermissions } from '@/lib/game/company';
 import { gameContext } from '@/server/game/context';
 import { can, companyHub, companyRanksView } from '@/server/game/membership';
 
@@ -17,7 +17,7 @@ export default async function RanksPage() {
   const roles = features.company_roles;
   const limit = maxRanks(hub.company.companyLevel, roles);
   // The rights of the company roles (v1.2) stay hidden until the release (staff see them earlier).
-  const shown = ALL_PERMISSIONS.filter((p) => roles || !ROLE_PERMISSIONS.includes(p));
+  const shown = shownPermissions(features);
   const permissions = shown.map((key) => ({ key, label: PERMISSIONS[key] }));
   const grantable = hub.rank.isOwner ? [...ALL_PERMISSIONS] : hub.rank.permissions;
   const templates = roles ? ROLE_TEMPLATES.filter((t) => !ranks.some((r) => r.name === t.name) && t.permissions.every((p) => grantable.includes(p))) : [];
@@ -44,7 +44,7 @@ export default async function RanksPage() {
                 </>
               ) : (
                 <ul className="list-inside list-disc space-y-1 text-sm text-mist-300">
-                  {(r.isOwner ? shown : r.permissions.filter((p) => roles || !ROLE_PERMISSIONS.includes(p as never))).map((p) => <li key={p}>{PERMISSIONS[p as keyof typeof PERMISSIONS] ?? p}</li>)}
+                  {(r.isOwner ? shown : r.permissions.filter((p) => shown.includes(p as never))).map((p) => <li key={p}>{PERMISSIONS[p as keyof typeof PERMISSIONS] ?? p}</li>)}
                   {!r.isOwner && r.permissions.length === 0 && <li className="list-none text-mist-400">Без права за управление — кара курсове и получава бонусите.</li>}
                 </ul>
               )}
