@@ -10,6 +10,7 @@ import { companyMessages, discordOutbox, notifications, organizations, userBadge
 import { announceFromGame } from '@/server/discord/announce';
 import { runCommand } from '@/server/discord/commands';
 import { messageFromDiscord } from '@/server/discord/gateway';
+import { channelKey } from '@/server/discord/guild';
 import { linkDiscord, unlinkDiscord } from '@/server/discord/link';
 import { bridgeCompanyChat, relayNotifications } from '@/server/discord/relay';
 import { verifyDiscordSignature } from '@/server/discord/verify';
@@ -35,6 +36,13 @@ const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (
 let n = 0;
 const discordId = () => `9${Date.now()}${++n}`;
 const outbox = async (prefix: string) => (await db().select().from(discordOutbox)).filter((r) => r.dedupeKey.startsWith(prefix));
+
+describe('channel names', () => {
+  it('finds the bot channels with emoji, separators and #', () => {
+    for (const name of ['обновления', '#обновления', '📢-обновления', '📢︱обновления', '📢・обновления', '📢обновления', 'обновления-📢', '📢-ОБНОВЛЕНИЯ', '💻||обновления', '💻-||-обновления']) expect(channelKey(name)).toBe('обновления');
+    expect(channelKey('стари-обновления')).not.toBe('обновления');
+  });
+});
 
 describe('interactions', () => {
   it('only signed requests from Discord are answered; PING gets PONG', async () => {

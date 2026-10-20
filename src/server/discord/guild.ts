@@ -26,11 +26,13 @@ export const forgetGuild = () => {
   cache = null;
 };
 
+/** A channel name without "#", emoji, separators and the dashes around them ("📢-обновления" → "обновления"). */
+export const channelKey = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}-]/gu, '').replace(/^-+|-+$/g, '');
+
 /** A text channel by name (as shown in Discord, with or without "#" and emoji). */
 export async function channelByName(name: string) {
-  const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}-]/gu, '');
   const { channels } = await guild();
-  return channels.find((c) => (c.type === 0 || c.type === 5) && norm(c.name) === norm(name)) ?? null;
+  return channels.find((c) => (c.type === 0 || c.type === 5) && channelKey(c.name) === channelKey(name)) ?? null;
 }
 
 /** A role by name; created (no permissions, not mentionable) when it is missing. */
