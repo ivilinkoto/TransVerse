@@ -124,15 +124,21 @@ interface TruckLook {
   along?: 'x' | 'y';
   /** A flatbed with a load (material colours) instead of a box. */
   load?: RGB[];
+  /** Width across (tiles); parked trucks are a little narrower so their neighbours do not hide the front wheels. */
+  width?: number;
 }
 
 /** A truck: chassis, wheels, a cab with windscreen, lights, grille and mirror, and a box (or a flatbed with a load). */
 function truck(x: number, y: number, look: TruckLook) {
   const f = frame(x, y, look.along ?? 'y');
-  const W = 0.9;
+  const W = look.width ?? 0.9;
   const body = look.rigid ? 1.7 : 3.2;
   const cab0 = body + 0.12, cab1 = cab0 + 0.95;
   const out: ReactNode[] = [f.shadow(cab1, W, 1.3)];
+  // The axles: the front one sits under the cab, close to the bumper.
+  const axles = look.rigid ? [0.4, cab1 - 0.3] : [0.45, 0.88, 1.31, body - 0.15, cab1 - 0.32];
+  // Wheels on the far side first: the body hides most of them, the bottom shows under the chassis.
+  for (const a of axles) out.push(f.wheel(0.04, a));
   // Chassis rails, then the body.
   out.push(f.box(0.1, 0.15, cab1 - 0.1, W - 0.15, 0.16, 0.12, DARK));
   if (look.load) {
@@ -164,7 +170,6 @@ function truck(x: number, y: number, look: TruckLook) {
   out.push(f.front(cab1, 0.05, W - 0.05, 0.22, 0.34, '#3a3f48'));
   out.push(f.box(cab1 - 0.12, W - 0.02, cab1 - 0.06, W + 0.05, 0.78, 0.26, DARK));
   // Wheels on the visible side.
-  const axles = look.rigid ? [0.4, cab1 - 0.42] : [0.45, 0.88, 1.31, body - 0.15, cab1 - 0.42];
   for (const a of axles) out.push(f.wheel(W - 0.02, a));
   return <g key={k()}>{out}</g>;
 }
@@ -381,7 +386,7 @@ function parking(f: Footprint, level: number, trucks: number, livery: string | n
   for (let i = 0; i <= bays; i++) out.push(flat(x0 + i * step, y0 + 0.2, x0 + i * step + 0.06, y1 - 0.2, 0.05, '#f2f0e4'));
   const colors: [number, number, number][] = [[47, 123, 255], [246, 195, 67], [166, 107, 255], [47, 210, 122], [224, 69, 69]];
   const rgb = livery ? ([1, 3, 5].map((i) => parseInt(livery.slice(i, i + 2), 16)) as [number, number, number]) : null;
-  for (let i = 0; i < Math.min(trucks, bays); i++) out.push(truck(x0 + i * step + (step - 0.9) / 2, y0 + 0.15, { cab: rgb ?? [235, 240, 246], body: rgb ? [235, 240, 246] : colors[i % colors.length]!, rigid: true }));
+  for (let i = 0; i < Math.min(trucks, bays); i++) out.push(truck(x0 + i * step + (step - 0.78) / 2, y0 + 0.15, { cab: rgb ?? [235, 240, 246], body: rgb ? [235, 240, 246] : colors[i % colors.length]!, rigid: true, width: 0.78 }));
   // A light pole at the corner.
   out.push(lamp(x0 + 0.1, y1 - 0.1));
   return out;
