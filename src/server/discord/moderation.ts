@@ -6,7 +6,7 @@ import { discord, DiscordError } from './api';
 import { answer, hasPerm, opt, PERM, stop, type Answer, type Ctx } from './context';
 import { discordConfig } from './config';
 import { enqueue } from './outbox';
-import { reply } from './ui';
+import { button, reply, rows, STYLE } from './ui';
 
 /**
  * Moderation in the server: /предупреждение, /заглуши, /бан, /разбани and
@@ -34,17 +34,22 @@ async function linkedUser(ctx: Ctx, discordId: string) {
   return u ?? null;
 }
 
-const dm = (ctx: Ctx, discordId: string, title: string, description: string, color: number) =>
-  enqueue(ctx.db, `mod-dm:${discordId}:${ctx.now.getTime()}`, `dm:${discordId}`, { embeds: [{ title, description, color, footer: { text: 'Сървърът на TransVerse · при въпрос — отвори тикет' } }] }, ctx.now);
+/** The member's message; with "Обжалвай" for a timeout or a ban (appeals.ts). */
+const dmMessage = (title: string, description: string, color: number, sanctionId?: number) => ({
+  embeds: [{ title, description, color, footer: { text: 'Сървърът на TransVerse · при въпрос — отвори тикет' } }],
+  ...(sanctionId ? { components: rows(button('Обжалвай', `appeal:open:${sanctionId}`, STYLE.secondary, '📝')) } : {}),
+});
+const dm = (ctx: Ctx, discordId: string, title: string, description: string, color: number, sanctionId?: number) =>
+  enqueue(ctx.db, `mod-dm:${discordId}:${ctx.now.getTime()}`, `dm:${discordId}`, dmMessage(title, description, color, sanctionId), ctx.now);
 const log = (ctx: Ctx, channel: 'warnings' | 'bans', title: string, fields: { name: string; value: string; inline?: boolean }[], color: number) =>
   enqueue(ctx.db, `mod-log:${channel}:${ctx.now.getTime()}:${ctx.discordId}`, `channel:${channel}`, { ping: false, embeds: [{ title, color, fields, timestamp: ctx.now.toISOString() }] }, ctx.now);
 
 async function record(ctx: Ctx, t: { id: string }, kind: string, reason: string, until: Date | null, inGame = false) {
   const u = await linkedUser(ctx, t.id);
-  await ctx.db.insert(discordSanctions).values({ discordUserId: t.id, userId: u?.id ?? null, kind, reason, until, inGame, moderatorDiscordId: ctx.discordId, moderatorUserId: ctx.me?.id ?? null, createdAt: ctx.now });
+  const [row] = await ctx.db.insert(discordSanctions).values({ discordUserId: t.id, userId: u?.id ?? null, kind, reason, until, inGame, moderatorDiscordId: ctx.discordId, moderatorUserId: ctx.me?.id ?? null, createdAt: ctx.now }).returning({ id: discordSanctions.id });
   // In the game's audit log when the moderator is linked.
   if (ctx.me) await ctx.db.insert(adminAudit).values({ actorId: ctx.me.id, action: `discord_${kind}`, targetUserId: u?.id ?? null, details: { discordUserId: t.id, reason, until: until?.toISOString() ?? null, inGame } });
-  return u;
+  return { user: u, sanctionId: row!.id };
 }
 
 const discordFail = (e: unknown): never => {
@@ -72,14 +77,14 @@ export async function timeout(ctx: Ctx): Promise<Answer> {
   const alsoGame = opt(ctx.i, 'и-в-играта') === 'true';
   if (alsoGame && !(ctx.me && isStaff(ctx.me.role))) stop('Чатът в играта се заглушава само от екипа на играта (свързан акаунт).');
   await discord('PATCH', `/guilds/${discordConfig().guildId}/members/${t.id}`, { communication_disabled_until: until.toISOString() }).catch(discordFail);
-  const u = await record(ctx, t, 'timeout', reason, until, alsoGame);
+  const { user: u, sanctionId } = await record(ctx, t, 'timeout', reason, until, alsoGame);
   let inGame = false;
   if (alsoGame && u) {
     await ctx.db.update(users).set({ chatMutedUntil: until }).where(eq(users.id, u.id));
     await notify(ctx.db, u.id, 'warning', 'Ограничение в чата', `Заради нарушение на правилата не можеш да пишеш в чата и лични съобщения до ${until.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.`, '/game/support');
     inGame = true;
   }
-  await dm(ctx, t.id, '🔇 Заглушен', `Не можеш да пишеш в сървъра на TransVerse до ${when(until)}${inGame ? ' — и в чата на играта' : ''}.\n**Причина:** ${reason}`, 0xf97316);
+  await dm(ctx, t.id, '🔇 Заглушен', `Не можеш да пишеш в сървъра на TransVerse до ${when(until)}${inGame ? ' — и в чата на играта' : ''}.\n**Причина:** ${reason}`, 0xf97316, sanctionId);
   await log(ctx, 'warnings', '🔇 Заглушаване', [{ name: 'Член', value: `<@${t.id}> (${t.name})`, inline: true }, { name: 'Модератор', value: `<@${ctx.discordId}>`, inline: true }, { name: 'До', value: `${when(until)}${inGame ? ' · и в играта' : ''}`, inline: true }, { name: 'Причина', value: reason }], 0xf97316);
   return answer(reply({ content: `🔇 <@${t.id}> е заглушен до ${when(until)}${inGame ? ' (и в играта)' : ''}.` }, true));
 }
@@ -89,12 +94,15 @@ export async function ban(ctx: Ctx): Promise<Answer> {
   const t = target(ctx);
   const reason = (opt(ctx.i, 'причина') ?? '').trim().slice(0, 500) || 'Без причина';
   const purge = opt(ctx.i, 'изтрий-съобщенията') === 'true';
-  // The message first: after the ban the bot can no longer reach them.
+  const { sanctionId } = await record(ctx, t, 'ban', reason, null);
+  // The message first: after the ban the bot can no longer reach them (the appeal button still works in the DM).
   await discord<{ id: string }>('POST', '/users/@me/channels', { recipient_id: t.id })
-    .then((c) => discord('POST', `/channels/${c.id}/messages`, { embeds: [{ title: '🔨 Бан', color: 0xe04545, description: `Баннат си от сървъра на TransVerse.\n**Причина:** ${reason}` }] }))
+    .then((c) => discord('POST', `/channels/${c.id}/messages`, dmMessage('🔨 Бан', `Баннат си от сървъра на TransVerse.\n**Причина:** ${reason}`, 0xe04545, sanctionId)))
     .catch(() => undefined);
-  await discord('PUT', `/guilds/${discordConfig().guildId}/bans/${t.id}`, { delete_message_seconds: purge ? 86_400 : 0 }).catch(discordFail);
-  await record(ctx, t, 'ban', reason, null);
+  await discord('PUT', `/guilds/${discordConfig().guildId}/bans/${t.id}`, { delete_message_seconds: purge ? 86_400 : 0 }).catch(async (e) => {
+    await ctx.db.delete(discordSanctions).where(eq(discordSanctions.id, sanctionId));
+    return discordFail(e);
+  });
   await log(ctx, 'bans', '🔨 Бан', [{ name: 'Член', value: `<@${t.id}> (${t.name})`, inline: true }, { name: 'Модератор', value: `<@${ctx.discordId}>`, inline: true }, { name: 'Причина', value: reason }], 0xe04545);
   return answer(reply({ content: `🔨 <@${t.id}> е баннат.` }, true));
 }

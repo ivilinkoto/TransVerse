@@ -5,8 +5,8 @@ import type { Database } from '@/server/db/client';
 import { companyMembers, companyRanks, jobState, organizations, users } from '@/server/db/schema';
 import { discord, DiscordError } from './api';
 import { COMPANY_CATEGORY, discordConfig } from './config';
-import { ensureRole, forgetGuild, gameRole, guild, managedRoleIds } from './guild';
-import { layoutCategory } from './layout';
+import { ensureRole, forgetGuild, gameRole, guild, managedRoleIds, verifiedRole } from './guild';
+import { layoutCategory, layoutState } from './layout';
 import { enqueue } from './outbox';
 
 const VIEW = 1n << 10n;
@@ -15,6 +15,8 @@ const HISTORY = 1n << 16n;
 const EMBED = 1n << 14n;
 const ATTACH = 1n << 15n;
 const WEBHOOKS = 1n << 29n;
+const CONNECT = 1n << 20n;
+const SPEAK = 1n << 21n;
 const allow = (...bits: bigint[]) => bits.reduce((a, b) => a | b, 0n).toString();
 
 /** Company roles the bot made (they are "managed" too: given and taken by the bot only). */
@@ -58,6 +60,11 @@ export async function syncUserRoles(db: Database, userId: string, now = new Date
   }
   const managed = await managedRoleIds(await companyRoleIds(db));
   for (const id of d.want) if (!member.roles.includes(id)) await discord('PUT', `/guilds/${guildId}/members/${d.discordId}/roles/${id}`);
+  // Linked players pass the new members' check by themselves (the role is never taken away here).
+  if ((await layoutState(db)).settings?.verification) {
+    const verified = await verifiedRole();
+    if (!member.roles.includes(verified)) await discord('PUT', `/guilds/${guildId}/members/${d.discordId}/roles/${verified}`);
+  }
   for (const id of member.roles) if (managed.has(id) && !d.want.has(id)) await discord('DELETE', `/guilds/${guildId}/members/${d.discordId}/roles/${id}`);
 }
 
@@ -108,8 +115,9 @@ export async function ensureCompanyChannel(db: Database, organizationId: string)
   if (!org) return;
   if (!org.discordChannel) {
     if (org.discordChannelId) await discord('DELETE', `/channels/${org.discordChannelId}`).catch(() => undefined);
+    if (org.discordVoiceId) await discord('DELETE', `/channels/${org.discordVoiceId}`).catch(() => undefined);
     if (org.discordRoleId) await discord('DELETE', `/guilds/${guildId}/roles/${org.discordRoleId}`).catch(() => undefined);
-    await db.update(organizations).set({ discordChannelId: null, discordRoleId: null, discordWebhook: null }).where(eq(organizations.id, org.id));
+    await db.update(organizations).set({ discordChannelId: null, discordVoiceId: null, discordRoleId: null, discordWebhook: null }).where(eq(organizations.id, org.id));
     forgetGuild();
     return;
   }
@@ -135,7 +143,16 @@ export async function ensureCompanyChannel(db: Database, organizationId: string)
     const hook = await discord<{ id: string; token: string }>('POST', `/channels/${channelId}/webhooks`, { name: 'TransVerse' });
     webhook = `${hook.id}/${hook.token}`;
   }
-  await db.update(organizations).set({ discordRoleId: roleId, discordChannelId: channelId, discordWebhook: webhook }).where(eq(organizations.id, org.id));
+  // The company's voice channel next to it (same people).
+  const voiceOverwrites = [
+    { id: guildId, type: 0, deny: allow(VIEW) },
+    { id: roleId, type: 0, allow: allow(VIEW, CONNECT, SPEAK) },
+    { id: g.botId, type: 1, allow: allow(VIEW, CONNECT) },
+  ];
+  let voiceId = org.discordVoiceId && g.channels.some((c) => c.id === org.discordVoiceId) ? org.discordVoiceId : null;
+  if (!voiceId) voiceId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: `🔊 ${org.name}`.slice(0, 100), type: 2, parent_id: categoryId, permission_overwrites: voiceOverwrites })).id;
+  else await discord('PATCH', `/channels/${voiceId}`, { name: `🔊 ${org.name}`.slice(0, 100), permission_overwrites: voiceOverwrites });
+  await db.update(organizations).set({ discordRoleId: roleId, discordChannelId: channelId, discordVoiceId: voiceId, discordWebhook: webhook }).where(eq(organizations.id, org.id));
   forgetGuild();
   // Linked members get the company role now.
   const members = await db.select({ id: users.id }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(and(eq(companyMembers.companyId, org.id), isNotNull(users.discordId)));

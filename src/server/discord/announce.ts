@@ -9,6 +9,7 @@ import type { Database, DbOrTx } from '@/server/db/client';
 import { companyBattles, globalEvents, newspapers, organizations } from '@/server/db/schema';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
+import { button, rows, STYLE } from './ui';
 
 const HOUR = 3_600_000;
 const footer = { text: 'TransVerse · игрови данни' };
@@ -18,6 +19,8 @@ export async function announceBuild(db: DbOrTx, buildId: string, company: { name
   if (!featureLive('discord_bot', now)) return;
   await announce(db, `build:${buildId}`, 'builds', {
     embeds: [{ title: level > 1 ? `🏗️ ${company.name} вдигна „${label}“ на ниво ${level}` : `🏗️ ${company.name} построи „${label}“`, url: `${appUrl()}/game/companies/${company.id}`, color: BRAND, footer }],
+    // "Браво" is a like for the base in the game (market.ts).
+    components: rows(button('Браво', `cheer:${company.id}`, STYLE.success, '👍')),
   }, now);
 }
 

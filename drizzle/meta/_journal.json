@@ -344,6 +344,13 @@
       "when": 1792528797673,
       "tag": "0048_lazy_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1792568812553,
+      "tag": "0049_left_the_twelve",
+      "breakpoints": true
     }
   ]
 }

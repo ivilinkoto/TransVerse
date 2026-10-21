@@ -5,15 +5,20 @@ import { discord } from './api';
 import { discordConfig } from './config';
 import { answerInteraction, type Interaction } from './interaction';
 import { banChanged, memberJoined, memberLeft, memberUpdated, messageDeleted, messageEdited, rememberMessage } from './logs';
+import { automod, type AutomodMessage } from './automod';
+import { countCompanyMessage } from './company-life';
+import { messageXp, resetVoice } from './levels';
+import { starPhoto } from './photos';
+import { voiceChanged } from './rooms';
 import { ticketMessageFromDiscord } from './tickets';
 
 /**
  * GUILDS | GUILD_MEMBERS | GUILD_MODERATION | GUILD_MESSAGES | MESSAGE_CONTENT
  * (members and message content are privileged: turned on in the Developer Portal).
  */
-const INTENTS = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 9) | (1 << 15);
+const INTENTS = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 7) | (1 << 9) | (1 << 15);
 /** Without the privileged intents: commands still work; no welcome, no message text for the bridge and the log. */
-const BASIC_INTENTS = (1 << 0) | (1 << 2) | (1 << 9);
+const BASIC_INTENTS = (1 << 0) | (1 << 2) | (1 << 7) | (1 << 9);
 /** How often a connection without Message Content tries the full intents again. */
 const RETRY_FULL_MS = 30 * 60_000;
 
@@ -23,8 +28,11 @@ interface DiscordMessageEvent {
   guild_id?: string;
   content: string;
   webhook_id?: string;
-  author: { id: string; bot?: boolean };
-  attachments?: unknown[];
+  author: { id: string; bot?: boolean; username?: string; global_name?: string | null; avatar?: string | null };
+  attachments?: { url: string; content_type?: string }[];
+  member?: { roles?: string[]; joined_at?: string };
+  mentions?: unknown[];
+  mention_roles?: string[];
 }
 
 /**
@@ -84,11 +92,26 @@ function onEvent(db: Database, type: string, d: unknown) {
   switch (type) {
     case 'MESSAGE_CREATE': {
       const m = d as DiscordMessageEvent;
-      if (inGuild) rememberMessage(m);
-      run('bridge', messageFromDiscord(db, m));
-      if (inGuild) run('ticket', ticketMessageFromDiscord(db, m));
+      if (!inGuild) break;
+      rememberMessage(m);
+      // Automatic moderation first: a removed message counts for nothing else.
+      run('message', (async () => {
+        if (await automod(db, m as AutomodMessage)) return;
+        await messageFromDiscord(db, m);
+        await ticketMessageFromDiscord(db, m);
+        await messageXp(db, m);
+        await countCompanyMessage(db, m.channel_id);
+        await starPhoto(db, m);
+      })());
       break;
     }
+    case 'GUILD_CREATE':
+      // After (re)connecting Discord sends the server with who is in which voice channel.
+      if ((d as { id?: string }).id === guildId) run('voice', resetVoice(db, (d as { voice_states?: { user_id: string; channel_id: string | null }[] }).voice_states ?? []));
+      break;
+    case 'VOICE_STATE_UPDATE':
+      if (inGuild) run('voice', voiceChanged(db, d as Parameters<typeof voiceChanged>[1]));
+      break;
     case 'MESSAGE_UPDATE':
       if (inGuild) run('log', messageEdited(db, d as Parameters<typeof messageEdited>[1]));
       break;

@@ -10,7 +10,8 @@ import { setSeasonMode } from '@/server/seasonal';
 import { assignTicket, replySchema, replyToTicket, setTicketStatus } from '@/server/game/support';
 import { handler } from '@/server/http';
 import { diagnoseDiscord, repairDiscord } from '@/server/discord/diagnose';
-import { applyLayout, planLayout } from '@/server/discord/layout';
+import { applyLayout, layoutState, planLayout, saveLayoutState } from '@/server/discord/layout';
+import { setVerification } from '@/server/discord/check';
 import { postPanels } from '@/server/discord/panels';
 import { discordConfig } from '@/server/discord/config';
 import { resolveReport, unmute } from '@/server/game/moderation';
@@ -41,6 +42,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('discordLayoutPlan') }),
   z.object({ type: z.literal('discordLayoutApply'), permissions: z.boolean().default(false) }),
   z.object({ type: z.literal('discordPanels') }),
+  z.object({ type: z.literal('discordSettings'), automod: z.boolean().optional(), verification: z.boolean().optional() }),
   z.object({ type: z.literal('resetLink'), userId: id }),
   z.object({ type: z.literal('resolveReport'), reportId: id, action: z.enum(['dismiss', 'warn', 'delete_message', 'mute_h24', 'mute_d7']) }),
   z.object({ type: z.literal('unmute'), userId: id }),
@@ -135,6 +137,16 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       requireAdminRole(user);
       if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
       return { ok: true, panels: await postPanels(db) };
+    }
+    case 'discordSettings': {
+      requireAdminRole(user);
+      if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
+      const state = await layoutState(db);
+      let errors: string[] = [];
+      if (input.automod !== undefined) await saveLayoutState(db, { ...state, settings: { ...state.settings, automod: input.automod } });
+      if (input.verification !== undefined && input.verification !== !!state.settings?.verification) errors = (await setVerification(db, input.verification)).errors;
+      await recordAudit(db, user.id, 'discord_settings', null, { automod: input.automod, verification: input.verification, errors: errors.length });
+      return { ok: true, errors };
     }
     case 'repairDiscord': {
       requireAdminRole(user);

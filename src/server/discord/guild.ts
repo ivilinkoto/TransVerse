@@ -1,5 +1,5 @@
-import { discord } from './api';
-import { discordConfig, DISCORD_ROLES, PING_ROLES, type DiscordRole } from './config';
+import { discord, DiscordError } from './api';
+import { discordConfig, DISCORD_ROLES, PING_ROLES, VERIFIED_ROLE, type DiscordRole } from './config';
 
 interface Channel {
   id: string;
@@ -70,4 +70,14 @@ export async function pingRoleFor(channel: string) {
   if (!entry) return null;
   const { roles } = await guild();
   return roles.find((r) => r.name === entry.name)?.id ?? null;
+}
+
+/** "✅ Проверен" (the new members' check, see check.ts). */
+export const verifiedRole = () => ensureRole(VERIFIED_ROLE.name, VERIFIED_ROLE.color);
+
+export async function giveVerified(discordId: string) {
+  const role = await verifiedRole();
+  await discord('PUT', `/guilds/${discordConfig().guildId}/members/${discordId}/roles/${role}`).catch((e) => {
+    if (!(e instanceof DiscordError && e.status === 404)) throw e;
+  });
 }

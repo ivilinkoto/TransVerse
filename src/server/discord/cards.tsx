@@ -8,6 +8,7 @@ import type { Database } from '@/server/db/client';
 import { getAvatar } from '@/server/game/avatars';
 import { publicPlot } from '@/server/game/plot';
 import { playerCard } from '@/server/game/social';
+import { levelOf, rankOf } from './levels';
 
 /**
  * Pictures for Discord embeds (PNG, made with next/og): the player card of
@@ -175,5 +176,50 @@ export async function plotImage(db: Database, organizationId: string, name: stri
       </div>
     ),
     { width: 1200, height: 980, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=600' } },
+  );
+}
+
+/** The rank card for /ранг (level in the Discord server). */
+export async function rankCardImage(db: Database, discordId: string) {
+  const r = await rankOf(db, discordId);
+  if (!r) return null;
+  const l = levelOf(r.xp);
+  const avatar = r.avatar ? `https://cdn.discordapp.com/avatars/${discordId}/${r.avatar}.png?size=256` : null;
+  const box = (label: string, value: string) => (
+    <div style={{ display: 'flex', flexDirection: 'column', background: PANEL, borderRadius: 16, padding: '12px 20px' }}>
+      <span style={{ fontSize: 20, color: MIST }}>{label}</span>
+      <span style={{ fontSize: 32, fontWeight: 600 }}>{value}</span>
+    </div>
+  );
+  return new ImageResponse(
+    (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 40, width: '100%', height: '100%', background: `linear-gradient(135deg, ${BG} 0%, #141d2b 100%)`, padding: 48, fontFamily: 'Onest', color: 'white' }}>
+        {avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatar} width={200} height={200} style={{ borderRadius: 100, border: `6px solid ${ORANGE}` }} alt="" />
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 200, height: 200, borderRadius: 100, background: ORANGE, fontFamily: 'Exo 2', fontSize: 96 }}>{(r.name || '?').slice(0, 1).toUpperCase()}</div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 54 }}>{r.name || 'Член'}</span>
+            <span style={{ fontSize: 30, color: CYAN }}>#{r.place}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 40, color: ORANGE }}>Ниво {l.level}</span>
+            <span style={{ fontSize: 22, color: MIST }}>{`${int(l.into)} / ${int(l.next)} опит`}</span>
+          </div>
+          <div style={{ display: 'flex', width: '100%', height: 22, background: '#263347', borderRadius: 11 }}>
+            <div style={{ width: `${Math.max(2, Math.round((l.into / l.next) * 100))}%`, height: 22, background: `linear-gradient(90deg, ${CYAN}, ${ORANGE})`, borderRadius: 11 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+            {box('Съобщения', int(r.messages))}
+            {box('Гласов канал', `${Math.floor(r.voiceMinutes / 60)} ч`)}
+            {box('Опит', int(r.xp))}
+          </div>
+        </div>
+      </div>
+    ),
+    { width: 1200, height: 400, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=600' } },
   );
 }

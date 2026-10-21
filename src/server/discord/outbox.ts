@@ -3,7 +3,7 @@ import type { Database, DbOrTx } from '@/server/db/client';
 import { discordOutbox, organizations } from '@/server/db/schema';
 import { discord, noPings, type DiscordMessage } from './api';
 import { DISCORD_CHANNELS, discordConfig, type DiscordChannel } from './config';
-import { pingRoleFor } from './guild';
+import { giveVerified, pingRoleFor } from './guild';
 import { layoutChannel } from './layout';
 import { ensureCompanyChannel, stripRoles, syncUserRoles } from './sync';
 
@@ -45,6 +45,8 @@ async function send(db: Database, target: string, payload: Record<string, unknow
     await syncUserRoles(db, String(payload.userId));
   } else if (target === 'job:strip') {
     await stripRoles(String(payload.discordId));
+  } else if (target === 'job:verified') {
+    await giveVerified(String(payload.discordId));
   } else if (target === 'job:company-channel') {
     await ensureCompanyChannel(db, String(payload.organizationId));
   }
