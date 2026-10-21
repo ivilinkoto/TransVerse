@@ -104,6 +104,9 @@ describe('server layout', () => {
     const { created } = await applyLayout(db(), { permissions: false });
     expect(created).toContain('логове');
     expect(fake.state.calls.some((c) => c.method === 'DELETE')).toBe(false);
+    // Discord moves only one channel to another category per bulk request: the order carries no categories.
+    const order = fake.state.calls.find((c) => c.method === 'PATCH' && c.path === '/guilds/g1/channels')!.body as { parent_id?: string }[];
+    expect(order.every((o) => o.parent_id === undefined)).toBe(true);
     expect(fake.state.channels.find((c) => c.id === 'ch-upd')!.name).toBe('🆕┃обновления');
     const state = await layoutState(db());
     expect(state.channels['обновления']).toBe('ch-upd');
