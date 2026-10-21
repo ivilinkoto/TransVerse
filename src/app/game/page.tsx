@@ -9,6 +9,7 @@ import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { isWinter } from '@/lib/game/winter';
+import { realConditions } from '@/server/game/weather';
 import { RoadConditions } from '@/components/game/RoadConditions';
 import { isNewcomer, MENTOR } from '@/lib/game/mentor';
 import { mentorOverview } from '@/server/game/mentor';
@@ -33,6 +34,7 @@ import { fleetView, latestNotifications, netWorthCents } from '@/server/game/que
 
 export default async function OverviewPage() {
   const { db, user, company, now, features } = await gameContext();
+  const real = features.real_weather ? await realConditions(db, now, true) : null;
   const [paper] = await latestIssues(db, 1);
   const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
   const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
@@ -171,7 +173,7 @@ export default async function OverviewPage() {
           </span>
         </Link>
       )}
-      {isWinter(now) && <RoadConditions countries={await db.select({ code: countryTable.code, nameBg: countryTable.nameBg }).from(countryTable).orderBy(countryTable.nameBg)} now={now} />}
+      {(isWinter(now) || real) && <RoadConditions countries={await db.select({ code: countryTable.code, nameBg: countryTable.nameBg }).from(countryTable).orderBy(countryTable.nameBg)} now={now} real={real} />}
       {paper && (
         <Link href="/game/news" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
           <Newspaper className="h-6 w-6 shrink-0 text-mist-300" />

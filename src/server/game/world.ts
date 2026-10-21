@@ -49,8 +49,11 @@ import { announceWeeklyRanking } from '@/server/discord/weekly';
 import { syncAllRoles } from '@/server/discord/sync';
 import { announceDailyLoad, announceLiveryWinner } from '@/server/discord/announce';
 import { dailyLoadLane, liveBattles, postLiveryEntries } from '@/server/discord/together';
+import { announceShipCall, liveShipCalls } from '@/server/discord/ports';
 import { DAILY_LOAD } from '@/lib/game/together';
 import { closeExpiredSharedLoads, settleDuels } from './together';
+import { ensurePortLoads, settleShipCalls, startShipCall } from './ports';
+import { fetchWeather } from './weather';
 import { settleLiveryContest } from './livery-contest';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
@@ -218,6 +221,14 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       const made = id ? await dailyLoadLane(db, id) : null;
       if (made) await announceDailyLoad(db, made.load, made.lane, DAILY_LOAD.coins, now);
     });
+    // v1.4: the real weather on the roads, port containers and ship calls.
+    if (process.env.WEATHER !== 'off') await every(db, 'weather', 30 * 60_000, now, () => fetchWeather(db, now));
+    await every(db, 'ports', 30 * 60_000, now, async () => {
+      await settleShipCalls(db, now);
+      await ensurePortLoads(db, now, provider);
+      const call = await startShipCall(db, now, provider);
+      if (call) await announceShipCall(db, call, now);
+    });
     await every(db, 'together', 10 * 60_000, now, async () => {
       await settleDuels(db, now);
       await closeExpiredSharedLoads(db, now);
@@ -226,6 +237,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     await every(db, 'discord-live', 10 * 60_000, now, async () => {
       await liveBattles(db, now);
+      await liveShipCalls(db, now);
       await postLiveryEntries(db, now);
     });
     // The Discord bot: chat bridge and messages often, announcements and roles less often.

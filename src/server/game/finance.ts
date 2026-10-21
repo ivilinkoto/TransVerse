@@ -52,6 +52,7 @@ export type LedgerCategory =
   | 'mentor_reward'
   | 'roadside_help'
   | 'roadside_paid'
+  | 'crossings'
   | 'shared_load_bonus'
   | 'lease'
   | 'member_bonus';
@@ -105,6 +106,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   mentor_reward: 'Награди за наставничество',
   roadside_help: 'Помощ на пътя (хонорари)',
   roadside_paid: 'Платена пътна помощ',
+  crossings: 'Фериботи и влакове',
   shared_load_bonus: 'Бонус за общ товар',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',
@@ -153,7 +155,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   member_contribution: 'Вноска от курс',
@@ -175,6 +177,7 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   company_land: 'Земя за участъка',
   company_fleet: 'Фирмени камиони',
   discord_activity: 'Най-активна компания в Discord',
+  ship_call: 'Кораб пристига — първо място',
 };
 
 export interface TreasuryPosting {

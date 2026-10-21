@@ -1,6 +1,6 @@
 import { FINE_RULES, fineCents, type Violation } from './fines';
 import { isNight } from './halloween';
-import type { Segment } from './schedule';
+import { isMoving, type Segment } from './schedule';
 import { WINTER, WINTER_EVENT_CHANCE } from './winter';
 
 /**
@@ -149,7 +149,7 @@ export function insertStop(schedule: readonly Segment[], at: number, delayMs: nu
       inserted = true;
     } else {
       const f = (at - s.start) / (s.end - s.start);
-      const km = s.kind === 'drive' ? s.fromKm + (s.toKm - s.fromKm) * f : s.fromKm;
+      const km = isMoving(s.kind) ? s.fromKm + (s.toKm - s.fromKm) * f : s.fromKm;
       out.push({ ...s, end: at, toKm: km }, { kind: 'incident', leg: s.leg, start: at, end: at + delayMs, fromKm: km, toKm: km, note }, { ...s, start: at + delayMs, end: s.end + delayMs, fromKm: km });
       inserted = true;
     }

@@ -58,6 +58,11 @@ export const FEATURES = {
   duels: '1.3',
   livery_contest: '1.3',
   roadside_paid: '1.3',
+  ferries: '1.4',
+  rail: '1.4',
+  port_loads: '1.4',
+  ship_calls: '1.4',
+  real_weather: '1.4',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

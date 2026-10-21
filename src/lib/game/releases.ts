@@ -35,6 +35,14 @@ export const BASE_VERSION = '1.0';
 
 export const RELEASES: Release[] = [
   {
+    version: '1.4',
+    name: 'Отвъд пътя',
+    publishedAt: '2027-01-07T00:00:00+02:00',
+    tagline: 'Фериботи, влакове и пристанища — и много повече за компаниите.',
+    highlights: [],
+    sections: [],
+  },
+  {
     version: '1.3',
     name: 'Своя база',
     publishedAt: '2026-12-13T00:00:00+02:00',

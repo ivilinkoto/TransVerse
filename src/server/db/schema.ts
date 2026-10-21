@@ -85,6 +85,8 @@ export const routes = pgTable(
     countries: text('countries').array().notNull(),
     /** Encoded polyline (precision 6); null for approximations. */
     geometry: text('geometry'),
+    /** A ferry or a train on the way (v1.4): which line and where it runs along the route (km). */
+    crossing: jsonb('crossing').$type<{ kind: 'ferry' | 'rail'; lineId: string; fromKm: number; toKm: number }>(),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('routes_pair_idx').on(t.fromCityId, t.toCityId, t.profile)],
@@ -396,6 +398,9 @@ export const contracts = pgTable(
     sharedLoadId: uuid('shared_load_id'),
     /** "Товар на деня": 'daily:<YYYY-MM-DD>' (one a day, better pay and ТрансКоин). */
     featured: text('featured'),
+    /** v1.4: a container from a port (`port`), and from which ship call ("Кораб пристига") when it came with one. */
+    port: boolean('port').notNull().default(false),
+    portCallId: uuid('port_call_id'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -1984,3 +1989,37 @@ export const liveryVotes = pgTable(
   },
   (t) => [primaryKey({ columns: [t.entryId, t.userId] })],
 );
+
+/** "Кораб пристига" (v1.4): a ship brings containers to a port; the companies race to haul the most. */
+export const shipCalls = pgTable(
+  'ship_calls',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    portCityId: integer('port_city_id').notNull().references(() => cities.id),
+    ship: text('ship').notNull(),
+    containers: integer('containers').notNull(),
+    delivered: integer('delivered').notNull().default(0),
+    status: text('status').notNull().default('active'), // active | done
+    winnerOrganizationId: uuid('winner_organization_id').references(() => organizations.id, { onDelete: 'set null' }),
+    /** The live message in Discord (edited as containers arrive). */
+    discordChannelId: text('discord_channel_id'),
+    discordMessageId: text('discord_message_id'),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('ship_calls_status_idx').on(t.status, t.endsAt)],
+);
+
+/** The real weather now in a few cities of every country (Open-Meteo, v1.4): the road conditions follow it. */
+export const weatherNow = pgTable('weather_now', {
+  cityId: integer('city_id').primaryKey().references(() => cities.id),
+  countryCode: text('country_code').notNull(),
+  tempC: real('temp_c').notNull(),
+  precipMm: real('precip_mm').notNull(),
+  snowCm: real('snow_cm').notNull(),
+  gustKmh: real('gust_kmh').notNull(),
+  code: integer('code').notNull(),
+  condition: text('condition').notNull(),
+  fetchedAt: ts('fetched_at').notNull(),
+});

@@ -24,7 +24,7 @@ import { COMPANY_XP_SHARE, deliveryXp, FLEET_XP_SHARE, reputationAfter, reputati
 import { buildGameTrip, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
-import { getRoute } from '@/server/geo/route-service';
+import { getCrossingRoute, getRoute } from '@/server/geo/route-service';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post, postTreasury, type Posting } from './finance';
@@ -52,7 +52,10 @@ import { recordChristmasDelivery } from './christmas';
 import { isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
+import { BOARDING_GAME_MIN, CROSSING_LINES, crossingLine as crossingLine_, crossingNote, DEPARTURE_EVERY_MIN, onBoardGameMinutes, railOptions } from '@/lib/game/crossings';
 import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart } from './together';
+import { recordShipContainer } from './ports';
+import { realConditionsFor } from './weather';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -113,7 +116,7 @@ export const URGENT_RELOCATION_MS = 60_000;
  * ordinary contract has one winner (conditional status update); an urgent one
  * stays open until it expires and every player may take it once.
  */
-export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date(), risks: { rush?: boolean; overload?: boolean; tons?: number } = {}) {
+export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date(), risks: { rush?: boolean; overload?: boolean; tons?: number; rail?: string } = {}) {
   const company = await companyForUser(db, userId);
   const contract = await db.query.contracts.findFirst({ where: eq(contracts.id, contractId) });
   // Own goods (trading) are hauled only by their owner and never appear on the board.
@@ -131,7 +134,19 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   if (contract!.featured && !(await featureFor(db, userId, 'daily_load', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
 
   // Network work outside the transaction (may take seconds).
-  const loadedRoute = await db.query.routes.findFirst({ where: (r, { eq: e }) => e(r.id, contract!.routeId) });
+  let loadedRoute = await db.query.routes.findFirst({ where: (r, { eq: e }) => e(r.id, contract!.routeId) });
+  // v1.4: the truck may ride a train for the long part ("С влак"); islands are reached by ferry.
+  if (risks.rail) {
+    if (!(await featureFor(db, userId, 'rail', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+    const [lineId = '', dir] = risks.rail.split(':');
+    const ends = await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId, ...CROSSING_LINES.filter((l) => l.kind === 'rail').flatMap((l) => [l.a, l.b])]));
+    const at = new Map(ends.map((c) => [c.id, c]));
+    const option = railOptions(at.get(contract!.originCityId)!, at.get(contract!.destCityId)!, at).find((o) => o.line.id === lineId && o.reversed === (dir === 'r'));
+    if (!option || contract!.stops?.length || contract!.urgent) fail('no_rail', 'Влакът не е подходящ за този товар.');
+    loadedRoute = await getCrossingRoute(db, contract!.originCityId, contract!.destCityId, option!.line, option!.reversed, 'truck');
+  }
+  const crossingLine = loadedRoute?.crossing ? crossingLine_(loadedRoute.crossing.lineId) : null;
+  if (crossingLine?.kind === 'ferry' && !(await featureFor(db, userId, 'ferries', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   const emptyRoute = vehicle.cityId !== contract!.originCityId ? await getRoute(db, vehicle.cityId, contract!.originCityId, 'truck') : null;
 
   return db.transaction(async (tx) => {
@@ -212,7 +227,12 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const overloaded = overloadPercent(load.weightTons, payload);
     if (overloaded > 0) violations.push({ violation: 'overload', amount: overloaded });
     const crew = { ...rested, startDutyMin: risks.rush ? 0 : rested.startDutyMin, wear: rested.wear * (overloaded > 0 ? FINE_RULES.overloadWear : 1) };
-    const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km), stops: contract!.stops?.map((st) => ({ km: st.km, minutes: MULTISTOP.unloadMin })) };
+    const crossing = loadedRoute!.crossing && crossingLine
+      ? { kind: crossingLine.kind, fromKm: loadedRoute!.crossing.fromKm, toKm: loadedRoute!.crossing.toKm, realMin: crossingLine.hours * 60, gameMin: onBoardGameMinutes(crossingLine), boardingMin: BOARDING_GAME_MIN, everyMin: DEPARTURE_EVERY_MIN[crossingLine.kind], note: crossingNote(crossingLine, loadedRoute!.profile.endsWith(':r')) }
+      : undefined;
+    const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km), stops: contract!.stops?.map((st) => ({ km: st.km, minutes: MULTISTOP.unloadMin })), crossing };
+    // On board there is no fuel, toll or wear: the road part is what the truck drives.
+    const roadLoadedKm = loadedRoute!.distanceKm - (crossing ? crossing.toKm - crossing.fromKm : 0);
     // Urgent shipments run faster than normal game time.
     const scale = timeScale() * Math.max(1, contract!.speedFactor);
     const trip = contract!.urgent
@@ -235,7 +255,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const rented = bundle.vehicle.ownership === 'rented';
     // The urgent one-minute relocation costs nothing; only the cargo leg is paid for.
     const chargedEmptyKm = contract!.urgent ? 0 : (emptyRoute?.distanceKm ?? 0);
-    const totalKm = chargedEmptyKm + loadedRoute!.distanceKm;
+    const totalKm = chargedEmptyKm + roadLoadedKm;
     const running = tripCosts({
       unit,
       trailer,
@@ -245,26 +265,30 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       crewFuel: crew.fuel,
       crewWear: crew.wear,
       emptyKm: chargedEmptyKm,
-      loadedKm: loadedRoute!.distanceKm,
+      loadedKm: roadLoadedKm,
       tons: load.weightTons,
       payloadTons: combinationCapability({ unit, trailer }).payloadTons,
       tolledRoute: { empty: !contract!.urgent && (emptyRoute?.hasToll ?? false), loaded: loadedRoute!.hasToll },
       // Diesel is bought along the way: each leg pays the prices of the countries it crosses.
       fuelPrice: {
         empty: legFuelPriceCents(parked!.country, chargedEmptyKm, emptyRoute?.borders ?? [], now),
-        loaded: legFuelPriceCents(from!.country, loadedRoute!.distanceKm, loadedRoute!.borders, now),
+        loaded: legFuelPriceCents(from!.country, roadLoadedKm, loadedRoute!.borders, now),
       },
     });
     // Rented vehicles: the rental company covers fuel, tolls, maintenance and wear for a fee.
-    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, totalCents: 0, wear: 0 } : running;
+    // The ferry or train ticket is paid by every truck (rented ones too).
+    const ticket = crossingLine?.ticketCents ?? 0;
+    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, totalCents: ticket, wear: 0 } : { ...running, crossingCents: ticket, totalCents: running.totalCents + ticket };
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
     const rentalFee = rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
+    // The real weather on the roads now (v1.4), when there is a fresh reading.
+    const real = await realConditionsFor(tx, userId, now);
     // Surprises on the way, decided now and revealed when the truck gets there.
     // Maintenance (v1.3): an overdue truck gets into trouble more often, a freshly serviced one less.
     const upkeep = !rented && (await featureFor(tx, userId, 'maintenance', now)) ? maintenanceState(bundle.vehicle.odometerKm, bundle.vehicle.serviceKm).factor : 1;
-    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + loadedRoute!.distanceKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep, ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isWinter(now) ? { condition: routeCondition(loadedRoute!.countries, now).condition, tyres: rented || bundle.vehicle.upgrades.includes(WINTER.tyres) } : undefined });
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + roadLoadedKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep, ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isWinter(now) || real ? { condition: routeCondition(loadedRoute!.countries, now, real).condition, tyres: rented || bundle.vehicle.upgrades.includes(WINTER.tyres) } : undefined });
     const [delivery] = await tx
       .insert(deliveries)
       .values({
@@ -345,6 +369,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     { category: 'maintenance', amountCents: -costs.maintenanceCents, description: 'Поддръжка по курса', idempotencyKey: key('maintenance'), refType: 'delivery', refId: d.id },
   ];
   if (costs.tollCents) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: 'Пътни такси', idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
+  const crossingCents = (costs as { crossingCents?: number }).crossingCents ?? 0;
+  if (crossingCents) postings.push({ category: 'crossings', amountCents: -crossingCents, description: 'Билет за ферибот / влак', idempotencyKey: key('crossing'), refType: 'delivery', refId: d.id });
   if (result.bonusCents) postings.push({ category: 'bonus', amountCents: result.bonusCents, description: 'Бонус за ранна доставка', idempotencyKey: key('bonus'), refType: 'delivery', refId: d.id });
   // Reputation pays: +1 % of the reward per 10 points (up to +10 %), by the reputation before this delivery.
   const reputationBonus = Math.round(result.rewardCents * reputationBonusShare(company!.reputation));
@@ -500,6 +526,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (contract.featured && onTime) await deliverDailyLoad(tx, contract, company!.ownerId);
   // A part of a load shared with the company: the bonus once every part has arrived on time.
   if (contract.sharedLoadId) await settleSharedPart(tx, contract.sharedLoadId, now);
+  // A container of a ship call ("Кораб пристига").
+  if (contract.portCallId) await recordShipContainer(tx, contract.portCallId);
   // Duels count the tonnes by arrival time.
   await recordDuelDelivery(tx, company!.ownerId, contract.weightTons, completedAt);
   // Starter rental: returned now if the player bought their own truck, or offered for buy-out.

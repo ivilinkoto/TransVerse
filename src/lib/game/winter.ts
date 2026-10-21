@@ -40,8 +40,13 @@ export function isWinter(now: Date): boolean {
 
 const sofiaDate = (t: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia', year: 'numeric', month: '2-digit', day: '2-digit' }).format(t);
 
+/** Road conditions from the real weather now (v1.4), by country; missing countries use the game's model. */
+export type RealConditions = Partial<Record<string, RoadCondition>>;
+
 /** The road condition of a country on a given day (the same for everyone that day). */
-export function roadCondition(country: string, now: Date): RoadCondition {
+export function roadCondition(country: string, now: Date, real?: RealConditions | null): RoadCondition {
+  const measured = real?.[country];
+  if (measured) return measured;
   if (!isWinter(now)) return 'clear';
   const day = sofiaDate(now);
   const sev = (WINTER_SEVERITY[country] ?? 0.5) * (MONTH_FACTOR[Number(day.slice(5, 7))] ?? 0);
@@ -53,10 +58,10 @@ export function roadCondition(country: string, now: Date): RoadCondition {
 }
 
 /** The worst condition along a route and where it is. */
-export function routeCondition(countries: readonly string[], now: Date): { condition: RoadCondition; country: string | null } {
+export function routeCondition(countries: readonly string[], now: Date, real?: RealConditions | null): { condition: RoadCondition; country: string | null } {
   let worst: { condition: RoadCondition; country: string | null } = { condition: 'clear', country: null };
   for (const c of countries) {
-    const condition = roadCondition(c, now);
+    const condition = roadCondition(c, now, real);
     if (CONDITION_RANK[condition] > CONDITION_RANK[worst.condition]) worst = { condition, country: c };
   }
   return worst;
@@ -64,3 +69,15 @@ export function routeCondition(countries: readonly string[], now: Date): { condi
 
 /** Chance that a trip meets a winter event, by the worst condition on the way. */
 export const WINTER_EVENT_CHANCE: Record<Exclude<RoadCondition, 'clear'>, number> = { snow: 0.55, ice: 0.5, blizzard: 0.9 };
+
+/**
+ * The road condition from a weather reading (Open-Meteo, the hour now):
+ * heavy snow with strong wind is a blizzard, any snowfall is snow, rain or
+ * freezing drizzle at or below zero is ice.
+ */
+export function conditionFromWeather(w: { tempC: number; precipMm: number; snowCm: number; gustKmh: number; code: number }): RoadCondition {
+  if (w.snowCm >= 1.5 && w.gustKmh >= 50) return 'blizzard';
+  if (w.snowCm > 0.1 || [71, 73, 75, 77, 85, 86].includes(w.code)) return 'snow';
+  if ([56, 57, 66, 67].includes(w.code) || (w.tempC <= 0.5 && w.precipMm > 0)) return 'ice';
+  return 'clear';
+}

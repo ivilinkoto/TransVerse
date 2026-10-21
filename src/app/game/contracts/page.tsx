@@ -16,12 +16,15 @@ import { crewEffects, restLeftMin } from '@/lib/game/crew';
 import { overloadPercent } from '@/lib/game/fines';
 import { canSplit, partRewardCents, partTons } from '@/lib/game/partial';
 import { SHARED_LOAD } from '@/lib/game/together';
+import { CROSSING_LINES, crossingLine, crossingNote, railOptions } from '@/lib/game/crossings';
+import { activeShipCall } from '@/server/game/ports';
+import { realConditionsFor } from '@/server/game/weather';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
 import { compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
-import { and, eq } from 'drizzle-orm';
-import { contracts as contractsTable, deliveries } from '@/server/db/schema';
+import { and, eq, inArray } from 'drizzle-orm';
+import { cities as citiesTable, contracts as contractsTable, deliveries } from '@/server/db/schema';
 import { fleetView } from '@/server/game/queries';
 import { LICENCES } from '@/lib/game/licences';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
@@ -54,26 +57,34 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
     db.select({ contractId: deliveries.contractId }).from(deliveries).innerJoin(contractsTable, eq(contractsTable.id, deliveries.contractId)).where(and(eq(deliveries.companyId, company.id), eq(contractsTable.urgent, true))),
   ]);
   const takenIds = new Set(taken.map((t) => t.contractId));
+  const real = await realConditionsFor(db, user.id, now);
+  // v1.4: rail terminals (for "С влак") and the ship in port.
+  const terminalIds = [...new Set(CROSSING_LINES.filter((l) => l.kind === 'rail').flatMap((l) => [l.a, l.b]))];
+  const terminals = features.rail ? new Map((await db.select({ id: citiesTable.id, lat: citiesTable.lat, lon: citiesTable.lon }).from(citiesTable).where(inArray(citiesTable.id, terminalIds))).map((t) => [t.id, t])) : new Map();
+  const ship = features.ship_calls ? await activeShipCall(db) : null;
   const vip = isVip(user.vipUntil, now);
   const hhmm = (d: Date) => d.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' });
   const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
   const membership = await membershipOf(db, user.id);
   const memberOfCompanyId = membership?.company.id ?? null;
   const project = memberOfCompanyId && features.projects ? await activeProject(db, memberOfCompanyId) : null;
-  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop }))]);
+  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries }))]);
   // "Drive in convoy" from the map: only the loads on that lane (from its origin city, all of them).
   const laneMatch = features.convoy ? /^(\d+)-(\d+)$/.exec(params.lane ?? '') : null;
   const lane = laneMatch ? { from: Number(laneMatch[1]), to: Number(laneMatch[2]) } : null;
-  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop }) : [];
+  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries }) : [];
   // "Return load" after a delivery: the loads from where the truck now stands, that truck first.
   const fromCity = features.backhaul && /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
   const backTruck = fromCity ? fleet.vehicles.find((v) => v.id === params.truck && !v.delivery) ?? fleet.vehicles.find((v) => !v.delivery && v.cityId === fromCity) ?? null : null;
-  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop }) : [];
+  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries }) : [];
   const seen = new Set<string>();
   const contracts = [...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];
+    // A ferry on the way (islands): no fuel on board, a ticket instead.
+    const sea = c.route.crossing ? crossingLine(c.route.crossing.lineId) : null;
+    const seaKm = c.route.crossing ? c.route.crossing.toKm - c.route.crossing.fromKm : 0;
     const options = (backTruck ? [backTruck, ...fleet.vehicles.filter((v) => v.id !== backTruck.id)] : fleet.vehicles).map((v) => {
       const bundle = { modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, condition: v.condition, hasDriver: !!v.driver, status: v.status, trailerCondition: v.trailer?.condition ?? null };
       const strict = compatibilityError(bundle, c, user.level);
@@ -90,7 +101,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const chargedEmptyKm = c.urgent ? 0 : emptyKm;
       const crew = v.driver ? crewEffects(v.driver, v.coDriver, now) : undefined;
       const restMin = v.driver ? Math.max(restLeftMin(v.driver, now), v.coDriver ? restLeftMin(v.coDriver, now) : 0) : 0;
-      const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: Math.max(v.driver?.skill ?? 1, v.coDriver?.skill ?? 0), crewFuel: crew?.fuel, crewWear: crew?.wear, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm, tons: part ? part.tons : c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });
+      const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: Math.max(v.driver?.skill ?? 1, v.coDriver?.skill ?? 0), crewFuel: crew?.fuel, crewWear: crew?.wear, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm - seaKm, tons: part ? part.tons : c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });
       // Urgent: one minute to the pickup city, then the cargo leg at the shipment's speed.
       // The crew changes the trip time: a tired driver rests early, a team drives on.
       const tripMinutes = (cr: typeof crew) => (c.urgent ? (emptyKm > 0 ? URGENT_RELOCATION_MS / 60_000 : 0) + estimateGameMinutes(0, c.distanceKm, cr) / Math.max(1, c.speedFactor) : estimateGameMinutes(emptyKm, c.distanceKm, cr));
@@ -99,7 +110,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const rushMinutes = crew && crew.startDutyMin > 0 ? tripMinutes({ ...crew, startDutyMin: 0 }) : null;
       const rented = v.ownership === 'rented';
       const pay = part ? part.rewardCents : c.rewardCents;
-      const cost = rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents;
+      const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents) + (sea?.ticketCents ?? 0);
       return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''}${v.coDriver ? ' · екипаж' : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? ` · почива още ${restMin} мин` : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part };
     });
     return {
@@ -131,7 +142,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       project: project && project.cargoType === c.cargoType && project.destCityId === c.destCityId ? project.title : null,
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
       weather: (() => {
-        const w = routeCondition(c.route.countries, now);
+        const w = routeCondition(c.route.countries, now, real);
         return w.condition === 'clear' ? null : { condition: w.condition, label: CONDITION_LABELS[w.condition], country: w.country! };
       })(),
       favorite: favorites.some((f) => f.originCityId === c.originCityId && f.destCityId === c.destCityId),
@@ -141,6 +152,11 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       stops: c.stopCities.map((st) => ({ name: st.name, country: st.country, tons: st.tons, windowMinutes: st.windowMinutes })),
       tender: !!c.tenderId,
       featured: !!c.featured,
+      ferry: sea ? { note: crossingNote(sea, c.route.profile.endsWith(':r')), ticketCents: sea.ticketCents } : null,
+      port: c.port ? (c.portCallId && ship?.id === c.portCallId ? `КОРАБ ${ship.ship}` : 'ОТ ПРИСТАНИЩЕТО') : null,
+      rail: features.rail && !c.urgent && !c.stops?.length && !sea
+        ? railOptions(c.origin, c.destination, terminals).slice(0, 2).map((o) => ({ id: `${o.line.id}:${o.reversed ? 'r' : 'f'}`, note: crossingNote(o.line, o.reversed), ticketCents: o.line.ticketCents, km: o.line.km }))
+        : [],
       shared: !!c.sharedLoadId,
       // A member may share a big ordinary load with the company (members take parts of it).
       canShare: features.shared_loads && !!memberOfCompanyId && !c.sharedLoadId && canSplit(c) && c.weightTons >= SHARED_LOAD.minTons && !(c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId !== company.id),
@@ -169,6 +185,11 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         subtitle="Избери товар, камион и тръгвай. Поръчките са общи за всички играчи."
         help="Горивото се плаща по цените на държавите по маршрута (виж Финанси → Дизел днес). По пътя може да се случи задръстване, ремонт, повреда или опашка на границата — това забавя курса, а повредата струва пари за пътна помощ (при наетия камион плаща наемодателят). Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
+      {ship && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-500/40 bg-sky-500/10 px-4 py-3 text-sm">
+          <span>🚢 <b>{ship.ship}</b> е в {ship.portName}: {ship.delivered} от {ship.containers} контейнера са доставени. По-добро заплащане, а компанията с най-много контейнери взема награда в касата. Корабите са игрови данни.</span>
+        </div>
+      )}
       {lane && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-prestige/40 bg-prestige/10 px-4 py-3 text-sm">
           <span>

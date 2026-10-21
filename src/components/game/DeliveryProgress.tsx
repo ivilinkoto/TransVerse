@@ -12,6 +12,8 @@ export const PHASE_LABEL: Record<string, string> = {
   loading: 'Товарене',
   unloading: 'Разтоварване',
   incident: 'Спрял по пътя',
+  ferry: 'На ферибот',
+  rail: 'На влак',
 };
 
 /** Live progress computed from the server's schedule — no polling needed. */

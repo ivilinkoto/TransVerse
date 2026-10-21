@@ -8,7 +8,7 @@ import { Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { duration, int, money } from '@/lib/format';
 import { cumulativeKm, greatCircle, headingWest, pointAlong, type LatLon } from '@/lib/geo/geometry';
-import { scheduleEnd, stateAt, type Segment } from '@/lib/game/schedule';
+import { isMoving, scheduleEnd, stateAt, type Segment } from '@/lib/game/schedule';
 import type { WorldSnapshot, WorldTruck } from '@/server/game/world-map';
 import { PlayerName } from './PlayerName';
 import { CONVOY_RULES } from '@/lib/game/convoy';
@@ -150,7 +150,7 @@ function truckPoint(t: WorldTruck, routes: WorldSnapshot['routes'], now: number)
   const leg = s.leg === 'empty' && t.delivery.empty ? t.delivery.empty : t.delivery.loaded;
   const { line, cum } = cachedLine(`${leg.routeId}:${routes[leg.routeId]?.length ?? 0}`, routes[leg.routeId] ?? null, leg.from, leg.to);
   const f = leg.km > 0 ? s.km / leg.km : 0;
-  return { point: pointAlong(line, f, cum), moving: s.segment?.kind === 'drive', west: headingWest(line, f, cum) };
+  return { point: pointAlong(line, f, cum), moving: !!s.segment && isMoving(s.segment.kind) && s.segment.toKm > s.segment.fromKm, west: headingWest(line, f, cum) };
 }
 
 /** Which other players' trucks are drawn: everyone, only friends and the company, or none. */
