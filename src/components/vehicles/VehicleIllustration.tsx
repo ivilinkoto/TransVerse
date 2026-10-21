@@ -21,8 +21,12 @@ export interface VehicleIllustrationProps {
  * Side-view illustration of a catalogue vehicle at true proportions
  * (1 unit = 1 cm). Original artwork for TransVerse.
  */
-export function VehicleIllustration({ modelId, trailerModelId, color = '#1d4ed8', trailerColor, className, title, livery }: VehicleIllustrationProps) {
-  const uid = useId().replace(/[:«»]/g, '');
+export function VehicleIllustration(props: VehicleIllustrationProps) {
+  return <VehicleDrawing {...props} uid={useId().replace(/[:«»]/g, '')} />;
+}
+
+/** The same drawing without hooks (ids from `uid`), for pictures made on the server. */
+export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', trailerColor, className, title, livery, uid }: VehicleIllustrationProps & { uid: string }) {
   const ids: Ids = {
     body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}`,
   };

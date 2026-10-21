@@ -1,6 +1,7 @@
 import { and, eq, ne } from 'drizzle-orm';
+import { DISCORD_FRAMES } from '@/lib/game/together';
 import type { Database } from '@/server/db/client';
-import { userBadges, users } from '@/server/db/schema';
+import { discordMembers, userBadges, users } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
 import { fail } from '@/server/game/errors';
 import { logActivity, notify } from '@/server/game/notify';
@@ -38,6 +39,10 @@ export async function linkDiscord(db: Database, userId: string, account: { id: s
       await postCoins(tx, userId, { amount: DISCORD_LINK_COINS, reason: 'discord_link', description: 'Свързан Discord', idempotencyKey: `discord-link:${userId}` });
       await notify(tx, userId, 'success', 'Discord е свързан!', `+${DISCORD_LINK_COINS} ТрансКоин и значка „Discord шофьор“.`, '/game/settings#discord');
     }
+    // The frames for the level the member already has in the server.
+    const [member] = await tx.select({ level: discordMembers.level }).from(discordMembers).where(eq(discordMembers.discordUserId, account.id));
+    const frames = DISCORD_FRAMES.filter((f) => (member?.level ?? 0) >= f.level);
+    if (frames.length) await tx.insert(userBadges).values(frames.map((f) => ({ userId, badge: f.badge, awardedAt: now }))).onConflictDoNothing();
     await logActivity(tx, userId, 'discord_linked', { discordId: account.id });
     // Roles in the server follow at once.
     await enqueue(tx, `roles:${userId}:${now.getTime()}`, `job:roles`, { userId });

@@ -13,6 +13,7 @@ import { eventStart, helpView } from './help';
 import { rankView, topView } from './levels';
 import { auctionForm, auctionOffer, auctionView, cheerBase, inviteAnswer, inviteMember, marketBuyers, marketSell, marketView, missionClaim, missionsView } from './market';
 import { quizAnswer } from './quiz';
+import { convoyCommand, convoyGo, convoyJoin, duelAnswer, duelCommand, financeView, liveryVote, mapCommand, passClaim, passCommand, roadCall, roadHelp, roadPay, takeGo, takeStart, usedBuy } from './together';
 import { reply, say } from './ui';
 
 export type { Interaction };
@@ -39,6 +40,11 @@ const COMMAND_HANDLERS: Record<string, (ctx: Ctx) => Answer | Promise<Answer>> =
   'екип-статистика': staffStats,
   'ивент-старт': eventStart,
   помощ: helpView,
+  карта: mapCommand,
+  конвой: convoyCommand,
+  финанси: financeView,
+  дуел: duelCommand,
+  пропуск: passCommand,
 };
 
 /** Buttons and select menus, by the start of their custom_id. */
@@ -82,6 +88,27 @@ async function component(ctx: Ctx, id: string, values: string[]): Promise<Answer
       return verifyStart(ctx);
     case 'quiz':
       return quizAnswer(ctx, a, Number(b));
+    case 'take':
+      // "take:<load>" (a button) or "take:go:<load>" (the truck from the menu).
+      if (a === 'go') return takeGo(ctx, b, values[0] ?? '');
+      return takeStart(ctx, a);
+    case 'convoy':
+      if (a === 'join') return convoyJoin(ctx, b);
+      if (a === 'go') return convoyGo(ctx, values[0] ?? '');
+      break;
+    case 'used':
+      return usedBuy(ctx, b);
+    case 'duel':
+      return duelAnswer(ctx, b, a === 'yes');
+    case 'pass':
+      return passClaim(ctx);
+    case 'road':
+      if (a === 'pay') return roadPay(ctx, b);
+      if (a === 'call') return roadCall(ctx, b);
+      if (a === 'help') return roadHelp(ctx, b);
+      break;
+    case 'livery':
+      return liveryVote(ctx, b);
   }
   return answer(say('Този бутон вече не работи.'));
 }

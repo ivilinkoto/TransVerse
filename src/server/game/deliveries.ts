@@ -52,6 +52,7 @@ import { recordChristmasDelivery } from './christmas';
 import { isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
+import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart } from './together';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -127,6 +128,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   const partial = risks.tons != null && risks.tons < contract!.weightTons;
   if (partial && !(await featureFor(db, userId, 'partial_loads', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   if (partial && !canSplit(contract!)) fail('no_partial', 'Тази поръчка се взима само цяла.');
+  if (contract!.featured && !(await featureFor(db, userId, 'daily_load', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
 
   // Network work outside the transaction (may take seconds).
   const loadedRoute = await db.query.routes.findFirst({ where: (r, { eq: e }) => e(r.id, contract!.routeId) });
@@ -174,6 +176,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // Tender loads: only members of the company that runs the tender.
     if (contract!.tenderId) await checkTenderLoad(tx, contract!.tenderId, userId, now);
+    // A load shared with a company: only its members.
+    if (contract!.sharedLoadId) await checkSharedLoad(tx, contract!.sharedLoadId, userId);
     let loadId = contractId;
     if (contract!.urgent) {
       // Open to everyone until it expires — each player once.
@@ -492,6 +496,12 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (contract.clientContractId) await recordClientLoad(tx, contract.clientContractId, result.late, company!.ownerId, completedAt);
   // A load of a company tender.
   if (contract.tenderId) await recordTenderLoad(tx, contract.tenderId, company!.ownerId, completedAt);
+  // The load of the day: ТрансКоин when on time.
+  if (contract.featured && onTime) await deliverDailyLoad(tx, contract, company!.ownerId);
+  // A part of a load shared with the company: the bonus once every part has arrived on time.
+  if (contract.sharedLoadId) await settleSharedPart(tx, contract.sharedLoadId, now);
+  // Duels count the tonnes by arrival time.
+  await recordDuelDelivery(tx, company!.ownerId, contract.weightTons, completedAt);
   // Starter rental: returned now if the player bought their own truck, or offered for buy-out.
   if (vehicle!.ownership === 'rented') await afterRentedTrip(tx, vehicle!.id, company!.ownerId, now);
   await checkAchievements(tx, company!.ownerId, d.companyId);

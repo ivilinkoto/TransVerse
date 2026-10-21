@@ -1,8 +1,11 @@
 import { randomInt } from 'node:crypto';
 import { and, desc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm';
 import { int } from '@/lib/format';
+import { featureLive } from '@/lib/game/features';
+import { DISCORD_FRAMES } from '@/lib/game/together';
+import { isStaff } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
-import { discordMembers, discordVoice, users } from '@/server/db/schema';
+import { discordMembers, discordVoice, userBadges, users } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
 import { notify } from '@/server/game/notify';
 import { answer, opt, type Answer, type Ctx } from './context';
@@ -66,7 +69,12 @@ async function addXp(db: Database, who: Author, xp: number, extra: { messages?: 
 
 async function levelUp(db: Database, discordId: string, level: number, now: Date) {
   const coins = levelReward(level);
-  const [u] = coins ? await db.select({ id: users.id }).from(users).where(and(eq(users.discordId, discordId), isNull(users.bannedAt))) : [];
+  const [u] = await db.select({ id: users.id, role: users.role }).from(users).where(and(eq(users.discordId, discordId), isNull(users.bannedAt)));
+  // Frames around the profile picture in the game for levels 10 and 25 (v1.3).
+  const frame = DISCORD_FRAMES.find((f) => level >= f.level);
+  if (u && frame && featureLive('discord_bot', now, isStaff(u.role))) {
+    await db.insert(userBadges).values(DISCORD_FRAMES.filter((f) => level >= f.level).map((f) => ({ userId: u.id, badge: f.badge, awardedAt: now }))).onConflictDoNothing();
+  }
   if (u && coins) {
     await db.transaction(async (tx) => {
       if (await postCoins(tx, u.id, { amount: coins, reason: 'discord_level', description: `Ниво ${level} в Discord`, idempotencyKey: `discord-level:${discordId}:${level}` })) {

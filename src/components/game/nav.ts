@@ -1,8 +1,11 @@
+import type { FeatureId } from '@/lib/game/features';
 import { BookOpen, Building2, ClipboardList, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
   label: string;
+  /** Shown only when the viewer has this release feature. */
+  feature?: FeatureId;
   /** Shown only while this holiday's content runs. */
   holiday?: 'halloween' | 'christmas';
 }
@@ -70,6 +73,8 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/christmas', label: 'Коледа', holiday: 'christmas' },
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/league', label: 'Лига' },
+      { href: '/game/duels', label: 'Дуели', feature: 'duels' },
+      { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest' },
       { href: '/game/pass', label: 'Пропуск' },
       { href: '/game/events', label: 'Ивенти' },
       { href: '/game/leaderboards', label: 'Класации' },
@@ -96,8 +101,8 @@ export const ACCOUNT_MENU = [
 const within = (pathname: string, href: string) => (href === '/game' ? pathname === '/game' : pathname === href || pathname.startsWith(href + '/'));
 
 /** The tabs to show: holiday tabs only during their holiday (and on their own page). */
-export function visibleTabs(section: NavSection, holiday: string | null, pathname: string): NavTab[] {
-  return (section.tabs ?? []).filter((t) => !t.holiday || t.holiday === holiday || within(pathname, t.href));
+export function visibleTabs(section: NavSection, holiday: string | null, pathname: string, has: (feature: FeatureId) => boolean = () => true): NavTab[] {
+  return (section.tabs ?? []).filter((t) => (!t.holiday || t.holiday === holiday || within(pathname, t.href)) && (!t.feature || has(t.feature)));
 }
 
 /** The tab of a section that matches the path (the longest match wins, so /game/company/chat stays on "Моята компания"). */

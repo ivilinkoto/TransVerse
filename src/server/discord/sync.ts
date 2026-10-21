@@ -2,9 +2,9 @@ import { and, asc, eq, gt, isNotNull, isNull } from 'drizzle-orm';
 import { isVip } from '@/lib/game/vip';
 import { isStaff } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
-import { companyMembers, companyRanks, jobState, organizations, users } from '@/server/db/schema';
+import { companyMembers, companyRanks, jobState, organizations, userBadges, users } from '@/server/db/schema';
 import { discord, DiscordError } from './api';
-import { COMPANY_CATEGORY, discordConfig } from './config';
+import { BADGE_ROLES, COMPANY_CATEGORY, discordConfig } from './config';
 import { ensureRole, forgetGuild, gameRole, guild, managedRoleIds, verifiedRole } from './guild';
 import { layoutCategory, layoutState } from './layout';
 import { enqueue } from './outbox';
@@ -42,6 +42,12 @@ async function desiredRoles(db: Database, userId: string, now: Date) {
   if (m?.isOwner) want.push(await gameRole('owner'));
   if (isStaff(u.role)) want.push(await gameRole('staff'));
   if (m?.org.discordChannel && m.org.discordRoleId) want.push(m.org.discordRoleId);
+  // Special badges from the game are roles too (v1.3).
+  const badges = await db.select({ badge: userBadges.badge }).from(userBadges).where(eq(userBadges.userId, userId));
+  for (const { badge } of badges) {
+    const role = BADGE_ROLES[badge];
+    if (role) want.push(await ensureRole(role.name, role.color));
+  }
   return { discordId: u.discordId, want: new Set(want) };
 }
 

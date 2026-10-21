@@ -15,6 +15,7 @@ import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getRoute, getRouteVia } from '@/server/geo/route-service';
 import { featureLive } from '@/lib/game/features';
+import { DAILY_LOAD, sofiaDate, sofiaHourOf } from '@/lib/game/together';
 import { MULTISTOP, splitTons, stopMultiplier, stopWindowMinutes, type ContractStop } from '@/lib/game/multistop';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { licencesForUsers } from './licences';
@@ -230,7 +231,7 @@ export function stopsOnTheWay(hubs: Hub[], origin: Hub, destination: Hub, cargo:
 /** Share of market contracts that are premium (reputation required, better pay). */
 export const PREMIUM_SHARE = 0.12;
 
-async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = []) {
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string } = {}): Promise<string> {
   const viaRoute = via.length ? await getRouteVia(db, origin.id, via.map((h) => h.id), destination.id, 'truck', provider) : null;
   const route = viaRoute ?? (await getRoute(db, origin.id, destination.id, 'truck', provider));
   const parts = via.length ? splitTons(tons, via.length, rand) : [];
@@ -242,12 +243,12 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     { id: 'christmas', goods: isChristmas(now) ? CHRISTMAS.goods[cargo] : undefined, share: CHRISTMAS.contractShare, multiplier: CHRISTMAS.rewardMultiplier },
     { id: 'winter', goods: isWinter(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
   ];
-  const theme = themes.find((t) => t.goods && rand() < t.share) ?? null;
+  const theme = extra.featured ? null : (themes.find((t) => t.goods && rand() < t.share) ?? null);
   const holiday = theme?.id ?? null;
   const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1);
   const goods = theme ? pick(theme.goods!) : pick(CARGO[cargo].goods);
   const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length));
-  await db.insert(contracts).values({
+  const [row] = await db.insert(contracts).values({
     shipper: shipperName(),
     goods,
     holiday,
@@ -262,11 +263,50 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     minLevel: CARGO[cargo].minLevel,
     minReputation: premium?.minReputation ?? 0,
     stops,
+    featured: extra.featured ?? null,
     expiresAt: new Date(now.getTime() + ttlMs),
-  });
+  }).returning({ id: contracts.id });
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));
   const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
-  await notifyFavoriteLane(db, { originCityId: origin.id, destCityId: destination.id, originName: name(origin.id), destName: name(destination.id), goods, rewardCents: reward }, now);
+  await notifyFavoriteLane(db, { contractId: row!.id, originCityId: origin.id, destCityId: destination.id, originName: name(origin.id), destName: name(destination.id), goods, rewardCents: reward }, now);
+  return row!.id;
+}
+
+/**
+ * Worker: "Товар на деня" — from 12:00 (Sofia) one well-paid load between two
+ * big cities, once a day (a unique key, so two workers cannot both make it).
+ */
+export async function ensureDailyLoad(db: Database, now = new Date(), provider?: RoutingProvider): Promise<string | null> {
+  if (sofiaHourOf(now) < DAILY_LOAD.hour) return null;
+  const key = `daily:${sofiaDate(now)}`;
+  const [exists] = await db.select({ id: contracts.id }).from(contracts).where(eq(contracts.featured, key));
+  if (exists) return null;
+  const hubs = await loadHubs(db);
+  const allowed = new Set<CargoType>(DAILY_LOAD.cargo);
+  const origins = hubs.filter((h) => h.population >= 100_000 && [...h.produces].some((c) => allowed.has(c)));
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const origin = pickWeighted(origins, (h) => Math.sqrt(h.population));
+    if (!origin) return null;
+    const cargo = pick([...origin.produces].filter((c) => allowed.has(c)));
+    const destination = pickWeighted(hubs.filter((h) => h.id !== origin.id && h.population >= 50_000 && h.consumes.has(cargo)), (h) => {
+      const km = haversineKm([origin.lat, origin.lon], [h.lat, h.lon]) * 1.25;
+      return km < DAILY_LOAD.minKm || km > DAILY_LOAD.maxKm ? 0 : Math.sqrt(h.population);
+    });
+    if (!destination) continue;
+    const [minT, maxT] = CARGO[cargo].tons;
+    const hi = Math.min(maxT, 24);
+    const tons = Math.round((Math.min(hi, Math.max(minT, 6)) + rand() * (hi - Math.min(hi, Math.max(minT, 6)))) * 10) / 10;
+    try {
+      const id = await insertContract(db, origin, destination, cargo, tons, now, DAILY_LOAD.ttlHours * 3_600_000, provider, { minReputation: 0, multiplier: DAILY_LOAD.multiplier }, [], { featured: key });
+      await broadcast(db, 'market');
+      return id;
+    } catch (error) {
+      // Another worker made it first (unique key).
+      if ((error as { code?: string }).code === '23505' || /contracts_featured_idx/.test((error as Error).message)) return null;
+      throw error;
+    }
+  }
+  return null;
 }
 
 /** Runs the local-job guarantee for every free, crewed vehicle (optionally of one company). */
@@ -316,6 +356,8 @@ export interface ContractFilter {
   memberOfCompanyId?: string | null;
   /** Groupage loads too (default: once their release is out; staff see them earlier). */
   withStops?: boolean;
+  /** The load of the day too (default: once its release is out). */
+  withFeatured?: boolean;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
@@ -329,6 +371,13 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (filter.cargoType && CARGO_TYPES.includes(filter.cargoType)) conditions.push(eq(contracts.cargoType, filter.cargoType));
   if (filter.originCityId) conditions.push(eq(contracts.originCityId, filter.originCityId));
   if (!(filter.withStops ?? featureLive('multistop', now))) conditions.push(isNull(contracts.stops));
+  if (!(filter.withFeatured ?? featureLive('daily_load', now))) conditions.push(isNull(contracts.featured));
+  // Loads shared with a company are only for its members.
+  conditions.push(
+    filter.memberOfCompanyId
+      ? sql`(${contracts.sharedLoadId} is null or ${contracts.sharedLoadId} in (select id from shared_loads where organization_id = ${filter.memberOfCompanyId}))`
+      : isNull(contracts.sharedLoadId),
+  );
   // Building materials are only for the members of the company that builds.
   conditions.push(
     filter.memberOfCompanyId
@@ -337,7 +386,7 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   );
   const rows = await db.query.contracts.findMany({
     where: and(...conditions),
-    orderBy: [desc(contracts.urgent), desc(contracts.rewardCents), asc(contracts.expiresAt)],
+    orderBy: [desc(sql`${contracts.featured} is not null`), desc(contracts.urgent), desc(contracts.rewardCents), asc(contracts.expiresAt)],
     limit: Math.min(filter.limit ?? 150, 300),
   });
   const cityIds = [...new Set(rows.flatMap((r) => [r.originCityId, r.destCityId, ...(r.stops ?? []).map((st) => st.cityId)]))];

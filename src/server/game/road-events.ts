@@ -53,9 +53,9 @@ export async function applyRoadEvents(tx: Tx, d: DeliveryRow, now: Date): Promis
     }
     if (company) {
       const cost = e.costCents ? (insured ? ` Пътната помощ (${(e.costCents / 100).toLocaleString('bg-BG')} лв.) е за сметка на застраховката.` : ` Пътна помощ: ${(e.costCents / 100).toLocaleString('bg-BG')} лв.`) : '';
-      await notify(tx, company.ownerId, 'warning', `${def.title} по пътя${dest ? ` за ${dest.nameBg}` : ''}`, `${def.body} Закъснение около ${minutes} мин.${cost}${ROADSIDE.kinds.includes(e.kind) ? ' Приятел или колега с камион наблизо може да помогне.' : ''}`, '/game/fleet');
+      await notify(tx, company.ownerId, 'warning', `${def.title} по пътя${dest ? ` за ${dest.nameBg}` : ''}`, `${def.body} Закъснение около ${minutes} мин.${cost}${ROADSIDE.kinds.includes(e.kind) ? ' Приятел или колега с камион наблизо може да помогне.' : ''}`, ROADSIDE.kinds.includes(e.kind) ? `/game/fleet?stop=${d.id}` : '/game/fleet');
       // Only while the truck still stands (the worker may apply an event late).
-      if (helpableStop(result.schedule, now.getTime())) await askForHelp(tx, company.ownerId, e.kind, dest?.nameBg ?? null, now);
+      if (helpableStop(result.schedule, now.getTime())) await askForHelp(tx, company.ownerId, e.kind, dest?.nameBg ?? null, now, d.id);
     }
   }
   return eta;

@@ -15,6 +15,7 @@ import { estimateGameMinutes } from '@/lib/game/schedule';
 import { crewEffects, restLeftMin } from '@/lib/game/crew';
 import { overloadPercent } from '@/lib/game/fines';
 import { canSplit, partRewardCents, partTons } from '@/lib/game/partial';
+import { SHARED_LOAD } from '@/lib/game/together';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
@@ -33,7 +34,7 @@ import { membershipOf } from '@/server/game/membership';
 
 export const metadata = { title: 'Поръчки' };
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; from?: string; truck?: string }> }) {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; from?: string; truck?: string; load?: string }> }) {
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
   const { db, user, company, hq, now, features } = await gameContext();
@@ -139,6 +140,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       lastLoad: c.lastLoad,
       stops: c.stopCities.map((st) => ({ name: st.name, country: st.country, tons: st.tons, windowMinutes: st.windowMinutes })),
       tender: !!c.tenderId,
+      featured: !!c.featured,
+      shared: !!c.sharedLoadId,
+      // A member may share a big ordinary load with the company (members take parts of it).
+      canShare: features.shared_loads && !!memberOfCompanyId && !c.sharedLoadId && canSplit(c) && c.weightTons >= SHARED_LOAD.minTons && !(c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId !== company.id),
       alreadyTaken: takenIds.has(c.id),
       reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,
       reservedByOther: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId !== company.id,
@@ -187,7 +192,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       {!user.seenHints.includes('board') && <Hint id="board" />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
-      <ContractBoard initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

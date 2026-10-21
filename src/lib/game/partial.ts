@@ -13,9 +13,9 @@ export const PARTIAL = {
 
 const tenth = (t: number) => Math.floor(t * 10 + 1e-6) / 10;
 
-/** Ordinary board loads only: not urgent, not own goods, tenders, auctions, clients, construction or groupage. */
-export function canSplit(c: { urgent: boolean; tradeCompanyId?: string | null; tenderId?: string | null; auctionId?: string | null; clientContractId?: string | null; constructionId?: string | null; stops?: readonly unknown[] | null }): boolean {
-  return !c.urgent && !c.tradeCompanyId && !c.tenderId && !c.auctionId && !c.clientContractId && !c.constructionId && !c.stops?.length;
+/** Ordinary board loads only: not urgent, not own goods, tenders, auctions, clients, construction, groupage or the load of the day. */
+export function canSplit(c: { urgent: boolean; tradeCompanyId?: string | null; tenderId?: string | null; auctionId?: string | null; clientContractId?: string | null; constructionId?: string | null; stops?: readonly unknown[] | null; featured?: string | null }): boolean {
+  return !c.urgent && !c.tradeCompanyId && !c.tenderId && !c.auctionId && !c.clientContractId && !c.constructionId && !c.stops?.length && !c.featured;
 }
 
 /** The biggest part a truck with this payload may take (null when it carries the whole load or the part is too small). */

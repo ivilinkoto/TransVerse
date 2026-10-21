@@ -53,6 +53,11 @@ export const FEATURES = {
   build_last_load: '1.3',
   discord_bot: '1.3',
   partial_loads: '1.3',
+  shared_loads: '1.3',
+  daily_load: '1.3',
+  duels: '1.3',
+  livery_contest: '1.3',
+  roadside_paid: '1.3',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

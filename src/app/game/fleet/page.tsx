@@ -2,6 +2,8 @@ import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Wrench } from 'lucide-react
 import { leasesOf } from '@/server/game/leasing';
 import Link from 'next/link';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
+import { RoadsideChoice } from '@/components/game/RoadsideChoice';
+import { helpableStop } from '@/lib/game/roadside';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { dec, int, km, money } from '@/lib/format';
@@ -62,6 +64,10 @@ export default async function FleetPage() {
                   <span className="num text-profit">{money(v.delivery.contract.rewardCents)}</span>
                 </div>
                 <DeliveryProgress schedule={v.delivery.schedule} etaAt={v.delivery.etaAt} deadlineAt={v.delivery.deadlineAt} />
+                {features.roadside_paid && (() => {
+                  const stop = helpableStop(v.delivery.schedule, now.getTime());
+                  return stop ? <RoadsideChoice deliveryId={v.delivery.id} note={stop.note ?? 'Спрял по пътя'} /> : null;
+                })()}
                 <div className="mt-2 text-xs text-mist-400">{v.delivery.emptyKm > 0 && `${km(v.delivery.emptyKm)} празен курс + `}{km(v.delivery.loadedKm)} с товар</div>
               </div>
             )}

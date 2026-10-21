@@ -4,6 +4,7 @@ import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { USED_MARKET, marketFeeCents, usedPriceBounds } from '@/lib/game/used-market';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, drivers, trailers, users, vehicleListings, vehicles } from '@/server/db/schema';
+import { announceListing } from '@/server/discord/announce';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post, type Posting } from './finance';
@@ -64,6 +65,10 @@ export async function createListing(db: Database, userId: string, input: { kind:
       })
       .returning();
     await logActivity(tx, userId, 'listing_created', { listingId: listing!.id, kind: input.kind, priceCents: input.priceCents });
+    // #пазар-камиони in Discord, with "Купи".
+    const [city] = await tx.select({ nameBg: cities.nameBg }).from(cities).where(eq(cities.id, row.cityId));
+    const [seller] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
+    await announceListing(tx, listing!, { city: city?.nameBg ?? '', condition: row.condition, seller: seller?.username ?? '' }, now);
     await broadcast(tx, 'market');
     return listing!;
   });

@@ -20,6 +20,9 @@ export const ROADSIDE = {
   reputation: 1,
   /** Helps per helper in 24 hours. */
   dailyLimit: 3,
+  /** Paid roadside assistance (the owner calls it): price and the share of the remaining stop it saves. */
+  paidCents: 800_00,
+  paidCut: 0.35,
 } as const;
 
 const HELPABLE = new Set(ROADSIDE.kinds.map((k) => ROAD_EVENTS[k].title));
@@ -32,13 +35,13 @@ export function helpableStop(schedule: readonly Segment[], now: number): Segment
 }
 
 /** Shortens the stop that runs at `now` by `savedMs`: everything after it moves earlier. */
-export function shortenStop(schedule: readonly Segment[], stop: Segment, savedMs: number): Segment[] {
+export function shortenStop(schedule: readonly Segment[], stop: Segment, savedMs: number, label = 'помощ от колега'): Segment[] {
   let after = false;
   return schedule.map((s) => {
     if (after) return { ...s, start: s.start - savedMs, end: s.end - savedMs };
     if (s.start === stop.start && s.kind === 'incident') {
       after = true;
-      return { ...s, end: s.end - savedMs, note: `${s.note} · помощ от колега` };
+      return { ...s, end: s.end - savedMs, note: `${s.note} · ${label}` };
     }
     return s;
   });
