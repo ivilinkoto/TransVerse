@@ -1,5 +1,7 @@
 import { and, asc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import { money } from '@/lib/format';
 import { featureLive } from '@/lib/game/features';
+import { ROADSIDE } from '@/lib/game/roadside';
 import { isStaff } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
 import { cities, companies, companyMessages, contracts, deliveries, jobState, notifications, organizations, users, vehicles } from '@/server/db/schema';
@@ -22,6 +24,27 @@ async function cursor(db: Database, key: string, table: 'notifications' | 'compa
 }
 const save = (db: Database, key: string, id: number) => db.insert(jobState).values({ key, value: { id } }).onConflictDoUpdate({ target: jobState.key, set: { value: { id }, updatedAt: new Date() } });
 
+/** Buttons that act on a notification right in Discord, from the link it carries. */
+export function actionButtons(href: string | null, staff: boolean, now: Date) {
+  const id = (key: string) => new RegExp(`[?&]${key}=([0-9a-f-]{36})`).exec(href ?? '')?.[1];
+  // A truck arrived: "Нов курс" picks its next load right here (see play.ts).
+  const truck = id('truck');
+  if (truck) return [button('Нов курс за този камион', `course:truck:${truck}`, STYLE.primary, '🚚')];
+  // A load on a favourite lane, the load of the day or a shared company load: take it.
+  const load = id('load');
+  if (load) return [button('Поеми', `take:${load}`, STYLE.success, '🚚')];
+  // The own truck stands after a breakdown: paid roadside assistance or call the colleagues.
+  const stop = id('stop');
+  if (stop && featureLive('roadside_paid', now, staff)) return [button(`Пътна помощ (${money(ROADSIDE.paidCents)})`, `road:pay:${stop}`, STYLE.primary, '🛠️'), button('Повикай колеги', `road:call:${stop}`, STYLE.secondary, '📣')];
+  // A friend's or colleague's truck stands: help it.
+  const help = id('help');
+  if (help) return [button('Помогни', `road:help:${help}`, STYLE.success, '🤝')];
+  // A duel invitation.
+  const duel = id('duel');
+  if (duel && featureLive('duels', now, staff)) return [button('Приеми дуела', `duel:yes:${duel}`, STYLE.success, '⚔️'), button('Откажи', `duel:no:${duel}`, STYLE.secondary)];
+  return [];
+}
+
 /** Worker: game notifications of players who asked for them on Discord, as a direct message (several become one). */
 export async function relayNotifications(db: Database, now = new Date()) {
   if (!discordConfig().bot) return 0;
@@ -41,10 +64,8 @@ export async function relayNotifications(db: Database, now = new Date()) {
   for (const list of byUser.values()) {
     const last = list.at(-1)!;
     const link = (href: string | null) => `${appUrl()}${href ?? '/game/notifications'}`;
-    // A truck arrived: "Нов курс" picks its next load right here (see play.ts).
-    const truck = list.length === 1 ? /[?&]truck=([0-9a-f-]{36})/.exec(last.href ?? '')?.[1] : undefined;
     await enqueue(db, `dm:${last.userId}:${last.id}`, `dm:${last.discordId}`, {
-      components: buttonRows(...(truck ? [button('Нов курс за този камион', `course:truck:${truck}`, STYLE.primary, '🚚')] : []), linkButton('Отвори в играта', link(list.length === 1 ? last.href : null), '🎮')),
+      components: buttonRows(...(list.length === 1 ? actionButtons(last.href, isStaff(last.role), now) : []), linkButton('Отвори в играта', link(list.length === 1 ? last.href : null), '🎮')),
       embeds: [
         list.length === 1
           ? { title: last.title.slice(0, 250), description: last.body.slice(0, 1500), color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } }

@@ -392,11 +392,15 @@ export const contracts = pgTable(
     material: text('material'),
     /** The last load a construction waits for: paid more ("Последен товар"). */
     lastLoad: boolean('last_load').notNull().default(false),
+    /** A part of a load a company member shared with the company (members only; bonus when all parts arrive). */
+    sharedLoadId: uuid('shared_load_id'),
+    /** "Товар на деня": 'daily:<YYYY-MM-DD>' (one a day, better pay and ТрансКоин). */
+    featured: text('featured'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
   },
-  (t) => [index('contracts_status_idx').on(t.status, t.expiresAt), index('contracts_origin_idx').on(t.originCityId), index('contracts_tender_idx').on(t.tenderId)],
+  (t) => [index('contracts_status_idx').on(t.status, t.expiresAt), index('contracts_origin_idx').on(t.originCityId), index('contracts_tender_idx').on(t.tenderId), index('contracts_shared_idx').on(t.sharedLoadId), uniqueIndex('contracts_featured_idx').on(t.featured)],
 );
 
 export const deliveries = pgTable(
@@ -1896,4 +1900,87 @@ export const discordQuizAnswers = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.quizId, t.discordUserId] })],
+);
+
+/** A big load a member shared with the company: members take parts of it; when every part arrives on time, each gets a bonus. */
+export const sharedLoads = pgTable(
+  'shared_loads',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    sharedBy: uuid('shared_by').references(() => users.id, { onDelete: 'set null' }),
+    tons: real('tons').notNull(),
+    status: text('status').notNull().default('open'), // open | done | failed
+    createdAt: createdAt(),
+    closedAt: ts('closed_at'),
+  },
+  (t) => [uniqueIndex('shared_loads_contract_idx').on(t.contractId), index('shared_loads_org_idx').on(t.organizationId, t.status)],
+);
+
+/** A convoy announced in Discord (/конвой): anyone who leaves on the same lane soon joins it. */
+export const openConvoys = pgTable(
+  'open_convoys',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    deliveryId: uuid('delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    expiresAt: ts('expires_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('open_convoys_delivery_idx').on(t.deliveryId), index('open_convoys_lane_idx').on(t.originCityId, t.destCityId, t.expiresAt)],
+);
+
+/** One-on-one duel: who hauls more tonnes in 7 days. */
+export const duels = pgTable(
+  'duels',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    challengerId: uuid('challenger_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    opponentId: uuid('opponent_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('pending'), // pending | active | declined | expired | done
+    challengerTons: real('challenger_tons').notNull().default(0),
+    opponentTons: real('opponent_tons').notNull().default(0),
+    winnerId: uuid('winner_id').references(() => users.id, { onDelete: 'set null' }),
+    startsAt: ts('starts_at'),
+    endsAt: ts('ends_at'),
+    createdAt: createdAt(),
+    settledAt: ts('settled_at'),
+  },
+  (t) => [index('duels_challenger_idx').on(t.challengerId, t.status), index('duels_opponent_idx').on(t.opponentId, t.status)],
+);
+
+/** The monthly livery contest: one truck per player a month; players vote with 👍. */
+export const liveryEntries = pgTable(
+  'livery_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    monthKey: text('month_key').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
+    /** The truck's look when it entered: model, trailer, colour and special paint. */
+    modelId: text('model_id').notNull(),
+    trailerModelId: text('trailer_model_id'),
+    color: text('color').notNull(),
+    livery: text('livery'),
+    plate: text('plate').notNull(),
+    /** The Discord message with the 👍 button (when the bot posted it). */
+    messageId: text('message_id'),
+    votes: integer('votes').notNull().default(0),
+    won: boolean('won').notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('livery_entries_month_user_idx').on(t.monthKey, t.userId), index('livery_entries_month_idx').on(t.monthKey, t.votes)],
+);
+
+export const liveryVotes = pgTable(
+  'livery_votes',
+  {
+    entryId: uuid('entry_id').notNull().references(() => liveryEntries.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.entryId, t.userId] })],
 );

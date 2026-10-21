@@ -10,7 +10,7 @@ import { collectOverdueFines } from './fines';
 import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
 import { ensureAuction, settleAuctions } from './auctions';
-import { ensureLocalJobsForFleet, replenishMarket } from './contracts';
+import { ensureDailyLoad, ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { dispatchPush, pruneSubscriptions } from '@/server/push';
 import { autoUrgentTick } from './auto-urgent';
@@ -47,6 +47,11 @@ import { updateStats } from '@/server/discord/stats';
 import { syncTickets } from '@/server/discord/tickets';
 import { announceWeeklyRanking } from '@/server/discord/weekly';
 import { syncAllRoles } from '@/server/discord/sync';
+import { announceDailyLoad, announceLiveryWinner } from '@/server/discord/announce';
+import { dailyLoadLane, liveBattles, postLiveryEntries } from '@/server/discord/together';
+import { DAILY_LOAD } from '@/lib/game/together';
+import { closeExpiredSharedLoads, settleDuels } from './together';
+import { settleLiveryContest } from './livery-contest';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 
@@ -206,6 +211,22 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'company-battles', 10 * 60_000, now, async () => {
       await settleBattles(db, now);
       if (featureLive('battles', now)) await ensureWeeklyBattles(db, now);
+    });
+    // v1.3 together: the load of the day, duels, shared loads that ran out, the livery contest.
+    await every(db, 'daily-load', 10 * 60_000, now, async () => {
+      const id = await ensureDailyLoad(db, now, provider);
+      const made = id ? await dailyLoadLane(db, id) : null;
+      if (made) await announceDailyLoad(db, made.load, made.lane, DAILY_LOAD.coins, now);
+    });
+    await every(db, 'together', 10 * 60_000, now, async () => {
+      await settleDuels(db, now);
+      await closeExpiredSharedLoads(db, now);
+      const winner = await settleLiveryContest(db, now);
+      if (winner) await announceLiveryWinner(db, winner, now);
+    });
+    await every(db, 'discord-live', 10 * 60_000, now, async () => {
+      await liveBattles(db, now);
+      await postLiveryEntries(db, now);
     });
     // The Discord bot: chat bridge and messages often, announcements and roles less often.
     await every(db, 'discord-chat', 15_000, now, async () => {

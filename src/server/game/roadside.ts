@@ -7,7 +7,7 @@ import { helpableStop, ROADSIDE, shortenStop } from '@/lib/game/roadside';
 import { scheduleEnd, stateAt, type Segment } from '@/lib/game/schedule';
 import { haversineKm, pointAlong, type LatLon } from '@/lib/geo/geometry';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cities, companies, contracts, deliveries, roadsideHelps, routes, users, vehicles } from '@/server/db/schema';
+import { cities, companies, contracts, deliveries, jobState, roadsideHelps, routes, users, vehicles } from '@/server/db/schema';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
@@ -63,6 +63,68 @@ async function nearestTruckKm(db: DbOrTx, userId: string, to: LatLon, now: Date)
   return best;
 }
 
+/** The schedule after the stop moves earlier; so does the matching road event (later events are timed from the applied delays). */
+async function shorten(tx: DbOrTx, d: typeof deliveries.$inferSelect, stop: Segment, savedMs: number, label?: string) {
+  const schedule = shortenStop(d.schedule as Segment[], stop, savedMs, label);
+  const incidents = (d.schedule as Segment[]).filter((s) => s.kind === 'incident');
+  const nth = incidents.findIndex((s) => s.start === stop.start);
+  let seen = -1;
+  const events = (d.roadEvents as RoadEventPlan[]).map((e) => (e.applied && ++seen === nth ? { ...e, delayMs: Math.max(0, e.delayMs - savedMs) } : e));
+  await tx
+    .update(deliveries)
+    .set({ schedule, roadEvents: events, etaAt: new Date(scheduleEnd(schedule)), nextEventAt: d.nextEventAt ? new Date(d.nextEventAt.getTime() - savedMs) : null })
+    .where(eq(deliveries.id, d.id));
+}
+
+/** The owner's truck that stands now (for the owner's own choices at a breakdown). */
+async function ownStop(tx: DbOrTx, userId: string, deliveryId: string, now: Date) {
+  const account = await companyForUser(tx, userId);
+  const [d] = await tx.select().from(deliveries).where(and(eq(deliveries.id, deliveryId), eq(deliveries.companyId, account.id), eq(deliveries.status, 'in_progress'))).for('update');
+  if (!d) fail('trip_over', 'Курсът вече е приключил.', 409);
+  const stop = helpableStop(d!.schedule as Segment[], now.getTime());
+  if (!stop) fail('no_stop', 'Камионът вече не чака помощ.', 409);
+  return { account, d: d!, stop: stop! };
+}
+
+/**
+ * Paid roadside assistance (v1.3): the owner calls it for a truck that stands
+ * after a breakdown, ice, snow or a closed pass — part of the rest of the stop
+ * is saved for a fee. A stop is shortened once (by a colleague or this).
+ */
+export async function paidRoadHelp(db: Database, userId: string, deliveryId: string, now = new Date()) {
+  if (!(await featureFor(db, userId, 'roadside_paid', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  return db.transaction(async (tx) => {
+    const { account, d, stop } = await ownStop(tx, userId, deliveryId, now);
+    const savedMs = Math.round((stop.end - now.getTime()) * ROADSIDE.paidCut);
+    const [help] = await tx.insert(roadsideHelps).values({ deliveryId: d.id, stopAt: new Date(stop.start), helperId: userId, savedMs, feeCents: ROADSIDE.paidCents, createdAt: now }).onConflictDoNothing().returning({ id: roadsideHelps.id });
+    if (!help) fail('already_helped', 'На този камион вече е помогнато.', 409);
+    await post(tx, account.id, [{ category: 'roadside_paid', amountCents: -ROADSIDE.paidCents, description: `Платена пътна помощ (${stop.note})`, idempotencyKey: `roadside-paid:${help!.id}`, refType: 'delivery', refId: d.id }], { requireFunds: true });
+    await shorten(tx, d, stop, savedMs, 'пътна помощ');
+    await broadcast(tx, 'world');
+    return { savedMs, feeCents: ROADSIDE.paidCents };
+  });
+}
+
+/**
+ * "Повикай колеги": the owner asks every friend and company colleague (not
+ * only those in the game now) to help; once per stop.
+ */
+export async function callForHelp(db: Database, userId: string, deliveryId: string, now = new Date()) {
+  if (!(await featureFor(db, userId, 'roadside_paid', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  return db.transaction(async (tx) => {
+    const { d, stop } = await ownStop(tx, userId, deliveryId, now);
+    const [first] = await tx.insert(jobState).values({ key: `call-help:${d.id}:${stop.start}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning({ key: jobState.key });
+    if (!first) fail('already_called', 'Вече повика колегите за тази спирка.', 409);
+    const circle = await circleOf(tx, userId);
+    const ids = [...new Set([...circle.friends, ...circle.mates])];
+    if (!ids.length) fail('nobody', 'Нямаш приятели или колеги, които да повикаш.');
+    const asked = await tx.select({ id: users.id }).from(users).where(and(inArray(users.id, ids), isNull(users.bannedAt)));
+    const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
+    for (const u of asked) await notify(tx, u.id, 'info', `${me!.username} вика помощ на пътя`, `${stop.note}. Ако имаш камион до ${ROADSIDE.radiusKm} км, помогни — хонорар ${money(ROADSIDE.feeCents)}.`, `/game/map?help=${d.id}`);
+    return { asked: asked.length };
+  });
+}
+
 /**
  * A friend or company colleague helps a truck that stands after a breakdown,
  * ice, snow or a closed pass: the rest of the stop is halved, the arrival
@@ -88,16 +150,7 @@ export async function helpOnRoad(db: Database, helperId: string, deliveryId: str
     const [help] = await tx.insert(roadsideHelps).values({ deliveryId: d!.id, stopAt: new Date(stop!.start), helperId, savedMs, feeCents: ROADSIDE.feeCents, createdAt: now }).onConflictDoNothing().returning({ id: roadsideHelps.id });
     if (!help) fail('already_helped', 'Някой вече помогна на този камион.', 409);
 
-    // The schedule after the stop moves earlier; so does the matching road event (later events are timed from the applied delays).
-    const schedule = shortenStop(d!.schedule as Segment[], stop!, savedMs);
-    const incidents = (d!.schedule as Segment[]).filter((s) => s.kind === 'incident');
-    const nth = incidents.findIndex((s) => s.start === stop!.start);
-    let seen = -1;
-    const events = (d!.roadEvents as RoadEventPlan[]).map((e) => (e.applied && ++seen === nth ? { ...e, delayMs: Math.max(0, e.delayMs - savedMs) } : e));
-    await tx
-      .update(deliveries)
-      .set({ schedule, roadEvents: events, etaAt: new Date(scheduleEnd(schedule)), nextEventAt: d!.nextEventAt ? new Date(d!.nextEventAt.getTime() - savedMs) : null })
-      .where(eq(deliveries.id, d!.id));
+    await shorten(tx, d!, stop!, savedMs);
 
     const [helper] = await tx.select({ username: users.username }).from(users).where(eq(users.id, helperId));
     const account = await companyForUser(tx, helperId);
@@ -116,7 +169,7 @@ export async function helpOnRoad(db: Database, helperId: string, deliveryId: str
 }
 
 /** When a truck stops for a helpable event: tells the owner's online friends and colleagues. */
-export async function askForHelp(tx: DbOrTx, ownerId: string, kind: keyof typeof ROAD_EVENTS, place: string | null, now: Date) {
+export async function askForHelp(tx: DbOrTx, ownerId: string, kind: keyof typeof ROAD_EVENTS, place: string | null, now: Date, deliveryId?: string) {
   if (!ROADSIDE.kinds.includes(kind)) return 0;
   if (!(await featureFor(tx, ownerId, 'roadside', now))) return 0;
   const circle = await circleOf(tx, ownerId);
@@ -124,6 +177,6 @@ export async function askForHelp(tx: DbOrTx, ownerId: string, kind: keyof typeof
   if (!ids.length) return 0;
   const online = await tx.select({ id: users.id }).from(users).where(and(inArray(users.id, ids), gte(users.lastSeenAt, new Date(now.getTime() - 10 * 60_000)), isNull(users.bannedAt)));
   const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, ownerId));
-  for (const u of online) await notify(tx, u.id, 'info', `${me!.username} чака помощ на пътя`, `${ROAD_EVENTS[kind].title}${place ? ` по пътя за ${place}` : ''}. Ако имаш камион наблизо (до ${ROADSIDE.radiusKm} км), помогни от картата — хонорар ${money(ROADSIDE.feeCents)}`, '/game/map');
+  for (const u of online) await notify(tx, u.id, 'info', `${me!.username} чака помощ на пътя`, `${ROAD_EVENTS[kind].title}${place ? ` по пътя за ${place}` : ''}. Ако имаш камион наблизо (до ${ROADSIDE.radiusKm} км), помогни от картата — хонорар ${money(ROADSIDE.feeCents)}`, deliveryId ? `/game/map?help=${deliveryId}` : '/game/map');
   return online.length;
 }

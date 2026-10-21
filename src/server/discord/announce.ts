@@ -5,8 +5,10 @@ import { dec, int, km, money } from '@/lib/format';
 import { weekKey } from '@/lib/game/leagues';
 import { headline, type NewsIssue } from '@/lib/game/news';
 import { RELEASES } from '@/lib/game/releases';
+import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { companyBattles, globalEvents, newspapers, organizations } from '@/server/db/schema';
+import { companyBattles, globalEvents, newspapers, organizations, users } from '@/server/db/schema';
+import { LIVERY_CONTEST } from '@/lib/game/together';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
 import { button, rows, STYLE } from './ui';
@@ -29,6 +31,49 @@ export async function announceBuilderOfWeek(db: DbOrTx, key: string, company: st
   if (!featureLive('discord_bot', now)) return;
   await announce(db, `builder-week:${key}:${company}`, 'builds', {
     embeds: [{ title: `👷 Строител на седмицата в „${company}“: ${username}`, description: `${dec(tons)} т материали за базата${rewardCents ? ` · награда ${money(rewardCents)}` : ''}`, color: 0xf6c343, footer }],
+  }, now);
+}
+
+/** A used truck or trailer on the market (from createListing): "Купи" buys it from Discord. */
+export async function announceListing(db: DbOrTx, listing: { id: string; kind: string; modelId: string; priceCents: number; expiresAt: Date }, details: { city: string; condition: number; seller: string }, now: Date) {
+  if (!featureLive('discord_bot', now)) return;
+  const model = listing.kind === 'vehicle' ? powerUnitModel(listing.modelId) : trailerModel(listing.modelId);
+  await announce(db, `listing:${listing.id}`, 'usedMarket', {
+    embeds: [{
+      title: `🏷️ ${model.brand} ${model.name}`,
+      url: `${appUrl()}/game/market`,
+      color: BRAND,
+      description: `**${money(listing.priceCents)}** · състояние ${Math.round(details.condition)} % · ${details.city}
+Продава: ${details.seller} · до <t:${Math.floor(listing.expiresAt.getTime() / 1000)}:d>`,
+      footer,
+    }],
+    components: rows(button('Купи', `used:buy:${listing.id}`, STYLE.success, '🛒')),
+  }, now);
+}
+
+/** "Товар на деня" (from the worker): the first one to take it gets it. */
+export async function announceDailyLoad(db: DbOrTx, load: { id: string; goods: string; weightTons: number; distanceKm: number; rewardCents: number; expiresAt: Date }, lane: { from: string; to: string }, coins: number, now: Date) {
+  if (!featureLive('daily_load', now)) return;
+  await announce(db, `daily-load:${load.id}`, 'dailyLoad', {
+    embeds: [{
+      title: `⭐ Товар на деня: ${lane.from} → ${lane.to}`,
+      url: `${appUrl()}/game/contracts?load=${load.id}`,
+      color: 0xf6c343,
+      description: `${load.goods} · ${dec(load.weightTons)} т · ${km(load.distanceKm)}
+**${money(load.rewardCents)}** + **${coins} ТрансКоин** при доставка навреме.
+Взима го първият — до <t:${Math.floor(load.expiresAt.getTime() / 1000)}:t>.`,
+      footer,
+    }],
+    components: rows(button('Поеми', `take:${load.id}`, STYLE.success, '🚚')),
+  }, now);
+}
+
+/** The livery of the month (from settleLiveryContest). */
+export async function announceLiveryWinner(db: DbOrTx, entry: { id: string; monthKey: string; userId: string; plate: string; votes: number }, now: Date) {
+  if (!featureLive('livery_contest', now)) return;
+  const [u] = await db.select({ username: users.username }).from(users).where(eq(users.id, entry.userId));
+  await announce(db, `livery-win:${entry.monthKey}`, 'livery', {
+    embeds: [{ title: `🎨 Ливрея на месеца: ${u?.username ?? ''}`, description: `${entry.plate} събра ${entry.votes} 👍 — +${LIVERY_CONTEST.coins} ТрансКоин и значка „Ливрея на месеца“. Новият конкурс вече тече: покажи камиона си от Състезание → Ливреи.`, color: 0xa66bff, image: { url: `${appUrl()}/api/discord/card/livery/${entry.id}` }, footer }],
   }, now);
 }
 

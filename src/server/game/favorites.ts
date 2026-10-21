@@ -22,14 +22,14 @@ export async function toggleFavoriteLane(db: DbOrTx, userId: string, originCityI
 }
 
 /** A new job on the board: tells the players who starred its lane (at most once an hour per lane). */
-export async function notifyFavoriteLane(db: DbOrTx, lane: { originCityId: number; destCityId: number; originName: string; destName: string; goods: string; rewardCents: number }, now = new Date()) {
+export async function notifyFavoriteLane(db: DbOrTx, lane: { contractId?: string; originCityId: number; destCityId: number; originName: string; destName: string; goods: string; rewardCents: number }, now = new Date()) {
   const due = await db
     .update(favoriteLanes)
     .set({ notifiedAt: now })
     .where(and(eq(favoriteLanes.originCityId, lane.originCityId), eq(favoriteLanes.destCityId, lane.destCityId), or(isNull(favoriteLanes.notifiedAt), lt(favoriteLanes.notifiedAt, new Date(now.getTime() - 3_600_000)))))
     .returning({ userId: favoriteLanes.userId });
   for (const { userId } of due) {
-    await notify(db, userId, 'info', `Нова поръчка: ${lane.originName} → ${lane.destName}`, `${lane.goods} за ${Math.round(lane.rewardCents / 100).toLocaleString('bg-BG')} лв. по твоя любима линия.`, '/game/contracts?fav=1');
+    await notify(db, userId, 'info', `Нова поръчка: ${lane.originName} → ${lane.destName}`, `${lane.goods} за ${Math.round(lane.rewardCents / 100).toLocaleString('bg-BG')} лв. по твоя любима линия.`, lane.contractId ? `/game/contracts?fav=1&load=${lane.contractId}` : '/game/contracts?fav=1');
   }
   return due.length;
 }

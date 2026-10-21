@@ -1,3 +1,4 @@
+import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { ImageResponse } from 'next/og';
 import { Children, Fragment, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { PlotScene, viewFor } from '@/components/company/plot/scene';
@@ -8,6 +9,12 @@ import type { Database } from '@/server/db/client';
 import { getAvatar } from '@/server/game/avatars';
 import { publicPlot } from '@/server/game/plot';
 import { playerCard } from '@/server/game/social';
+import { cities, companies, deliveries, liveryEntries, users } from '@/server/db/schema';
+import { VehicleDrawing } from '@/components/vehicles/VehicleIllustration';
+import { powerUnitModel } from '@/lib/game/catalog';
+import { fleetView } from '@/server/game/queries';
+import { tripPosition } from '@/server/game/roadside';
+import type { LatLon } from '@/lib/geo/geometry';
 import { levelOf, rankOf } from './levels';
 
 /**
@@ -221,5 +228,107 @@ export async function rankCardImage(db: Database, discordId: string) {
       </div>
     ),
     { width: 1200, height: 400, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=600' } },
+  );
+}
+
+/**
+ * /карта: the player's trucks on their real coordinates (parked ones in their
+ * city, moving ones where they are on the route now, with a line to where
+ * they go) and the biggest cities around for orientation. Game data.
+ */
+export async function truckMapImage(db: Database, userId: string, now = new Date()) {
+  const [account] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
+  if (!account) return null;
+  const fleet = await fleetView(db, account.id);
+  const trips = await db.select().from(deliveries).where(and(eq(deliveries.companyId, account.id), eq(deliveries.status, 'in_progress')));
+  const trucks: { plate: string; at: LatLon; to: { name: string; at: LatLon } | null }[] = [];
+  for (const v of fleet.vehicles) {
+    const trip = trips.find((t) => t.vehicleId === v.id);
+    const at = trip ? await tripPosition(db, trip, now) : ([v.city.lat, v.city.lon] as LatLon);
+    if (!at) continue;
+    const to = v.delivery ? { name: v.delivery.destination.nameBg, at: [v.delivery.destination.lat, v.delivery.destination.lon] as LatLon } : null;
+    trucks.push({ plate: v.plate, at, to });
+  }
+  if (!trucks.length) return null;
+  const W = 1200;
+  const H = 700;
+  const all = trucks.flatMap((t) => [t.at, ...(t.to ? [t.to.at] : [])]);
+  let [south, north] = [Math.min(...all.map((p) => p[0])), Math.max(...all.map((p) => p[0]))];
+  let [west, east] = [Math.min(...all.map((p) => p[1])), Math.max(...all.map((p) => p[1]))];
+  // At least ~3° around, and the shape of the picture (longitude shrinks with the latitude).
+  const midLat = (south + north) / 2;
+  const k = Math.cos((midLat * Math.PI) / 180);
+  let spanLat = Math.max(3, (north - south) * 1.3);
+  let spanLon = Math.max(3 / k, (east - west) * 1.3);
+  if ((spanLon * k) / spanLat < W / H) spanLon = (spanLat * W) / H / k;
+  else spanLat = (spanLon * k * H) / W;
+  const midLon = (west + east) / 2;
+  [south, north, west, east] = [midLat - spanLat / 2, midLat + spanLat / 2, midLon - spanLon / 2, midLon + spanLon / 2];
+  const x = (p: LatLon) => ((p[1] - west) / (east - west)) * W;
+  const y = (p: LatLon) => ((north - p[0]) / (north - south)) * H;
+  const around = await db
+    .select({ name: cities.nameBg, lat: cities.lat, lon: cities.lon })
+    .from(cities)
+    .where(and(gte(cities.lat, south), lte(cities.lat, north), gte(cities.lon, west), lte(cities.lon, east)))
+    .orderBy(desc(cities.population))
+    .limit(14);
+  const moving = trucks.flatMap((t) => (t.to ? [{ ...t, to: t.to }] : []));
+  const label = (left: number, top: number, text: string, style: Record<string, string | number>) => (
+    <div style={{ position: 'absolute', left, top, display: 'flex', fontSize: 18, ...style }}>{text}</div>
+  );
+  return new ImageResponse(
+    (
+      <div style={{ display: 'flex', position: 'relative', width: '100%', height: '100%', background: `radial-gradient(circle at 30% 20%, #16243a 0%, ${BG} 75%)`, fontFamily: 'Onest', color: 'white' }}>
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', left: 0, top: 0 }}>
+          {Array.from({ length: Math.ceil(east) - Math.floor(west) + 1 }, (_, i) => Math.floor(west) + i).map((lon) => (
+            <line key={`lon${lon}`} x1={x([0, lon])} y1={0} x2={x([0, lon])} y2={H} stroke="#1e2a3c" strokeWidth={1} />
+          ))}
+          {Array.from({ length: Math.ceil(north) - Math.floor(south) + 1 }, (_, i) => Math.floor(south) + i).map((lat) => (
+            <line key={`lat${lat}`} x1={0} y1={y([lat, 0])} x2={W} y2={y([lat, 0])} stroke="#1e2a3c" strokeWidth={1} />
+          ))}
+          {around.map((c) => <circle key={c.name} cx={x([c.lat, c.lon])} cy={y([c.lat, c.lon])} r={4} fill="#3b4a60" />)}
+          {moving.map((t, i) => <line key={`l${i}`} x1={x(t.at)} y1={y(t.at)} x2={x(t.to.at)} y2={y(t.to.at)} stroke={CYAN} strokeWidth={3} strokeDasharray="10 8" opacity={0.7} />)}
+          {moving.map((t, i) => <circle key={`d${i}`} cx={x(t.to.at)} cy={y(t.to.at)} r={7} fill="none" stroke={CYAN} strokeWidth={3} />)}
+          {trucks.map((t, i) => <circle key={`t${i}`} cx={x(t.at)} cy={y(t.at)} r={11} fill={t.to ? ORANGE : '#2fd27a'} stroke="#0b1018" strokeWidth={3} />)}
+        </svg>
+        {around.map((c) => label(x([c.lat, c.lon]) + 8, y([c.lat, c.lon]) - 12, c.name, { color: '#6b7a90', fontSize: 16 }))}
+        {moving.map((t) => label(x(t.to.at) + 10, y(t.to.at) - 12, t.to.name, { color: CYAN, fontWeight: 600 }))}
+        {trucks.map((t) => label(x(t.at) + 14, y(t.at) + 4, t.plate, { color: 'white', fontWeight: 600, background: 'rgba(11,16,24,0.75)', padding: '2px 8px', borderRadius: 8 }))}
+        <div style={{ position: 'absolute', left: 32, top: 24, display: 'flex' }}><Brand /></div>
+        <div style={{ position: 'absolute', right: 32, bottom: 24, display: 'flex', gap: 20, fontSize: 18, color: MIST }}>
+          <span style={{ color: ORANGE }}>● на път</span>
+          <span style={{ color: '#2fd27a' }}>● свободен</span>
+          <span>Реални координати · игрови данни</span>
+        </div>
+      </div>
+    ),
+    { width: W, height: H, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=300' } },
+  );
+}
+
+/** The truck of a livery contest entry (#ливреи), as it looked when it entered. */
+export async function liveryCardImage(db: Database, entryId: string) {
+  const [e] = await db.select({ e: liveryEntries, username: users.username }).from(liveryEntries).innerJoin(users, eq(users.id, liveryEntries.userId)).where(eq(liveryEntries.id, entryId));
+  if (!e) return null;
+  const model = powerUnitModel(e.e.modelId);
+  const drawn = plain(<VehicleDrawing uid="lv" modelId={e.e.modelId} trailerModelId={e.e.trailerModelId} color={e.e.color} livery={e.e.livery} />) as ReactElement<{ children?: ReactNode; viewBox?: string }>;
+  // Satori wants a size on the <svg> and no <title> inside it.
+  const children = Children.toArray(drawn.props.children).filter((c) => !(isValidElement(c) && c.type === 'title'));
+  const svg = { ...drawn, props: { viewBox: drawn.props.viewBox, xmlns: 'http://www.w3.org/2000/svg', width: 1040, height: 420, preserveAspectRatio: 'xMidYMax meet', children } } as ReactElement;
+  return new ImageResponse(
+    (
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `linear-gradient(180deg, #1b2a40 0%, ${BG} 70%)`, padding: 40, fontFamily: 'Onest', color: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Brand />
+          <span style={{ fontSize: 24, color: MIST }}>Конкурс за ливрея</span>
+        </div>
+        <div style={{ display: 'flex', flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>{svg}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+          <span style={{ fontFamily: 'Exo 2', fontSize: 40 }}>{e.username}</span>
+          <span style={{ fontSize: 26, color: MIST }}>{`${model.brand} ${model.name} · ${e.e.plate}`}</span>
+        </div>
+      </div>
+    ),
+    { width: 1200, height: 675, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },
   );
 }

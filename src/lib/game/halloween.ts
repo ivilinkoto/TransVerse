@@ -98,4 +98,9 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   skyscraper: { label: 'Небостъргач', description: 'Беше в компанията, когато офисът ѝ стигна най-високото ниво.' },
   discord: { label: 'Discord шофьор', description: 'Свърза акаунта си с Discord сървъра на TransVerse.' },
   builder: { label: 'Строител', description: 'Докара 5 товара материали за строежите на компанията.' },
+  duelist: { label: 'Дуелист', description: 'Спечели дуел срещу друг шофьор.' },
+  'livery-star': { label: 'Ливрея на месеца', description: 'Камионът му спечели конкурса за ливрея.' },
+  'team-haul': { label: 'Отборен товар', description: 'Участва в общ товар на компанията, който стигна навреме.' },
+  'discord-10': { label: 'Discord ниво 10', description: 'Стигна ниво 10 в Discord сървъра — синя рамка около снимката.' },
+  'discord-25': { label: 'Discord ниво 25', description: 'Стигна ниво 25 в Discord сървъра — златна рамка около снимката.' },
 };

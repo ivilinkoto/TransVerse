@@ -39,6 +39,10 @@ export const DISCORD_CHANNELS = {
   quiz: 'викторина',
   photos: 'снимки',
   botCommands: 'бот-команди',
+  dailyLoad: 'товар-на-деня',
+  convoys: 'конвои',
+  usedMarket: 'пазар-камиони',
+  livery: 'ливреи',
 } as const;
 export type DiscordChannel = keyof typeof DISCORD_CHANNELS;
 /** The category the companies' private channels go into (matched without emoji and decorations). */
@@ -58,6 +62,23 @@ export const DISCORD_ROLES = {
 } as const;
 export type DiscordRole = keyof typeof DISCORD_ROLES;
 
+/** Badges from the game that become a role in the server (given and taken by the bot like the roles above). */
+export const BADGE_ROLES: Record<string, { name: string; color: number }> = {
+  'pumpkin-2026': { name: '🎃 Тиквен шофьор 2026', color: 0xf97316 },
+  'santa-2026': { name: '🎄 Коледен шофьор 2026', color: 0xef4444 },
+  'ghost-hunter': { name: '👻 Ловец на призраци', color: 0x94a3b8 },
+  legend: { name: '🏆 Легенда на пътя', color: 0xf6c343 },
+  mentor: { name: '🧭 Наставник', color: 0x2fd27a },
+  architect: { name: '🏛️ Архитект', color: 0x22d3ee },
+  skyscraper: { name: '🏙️ Небостъргач', color: 0x60a5fa },
+  builder: { name: '🧱 Строител', color: 0xca8a04 },
+  'news-star': { name: '📰 Звезда на седмичника', color: 0xe5e7eb },
+  partner: { name: '🤝 Верен партньор', color: 0x0e7490 },
+  duelist: { name: '⚔️ Дуелист', color: 0xe04545 },
+  'livery-star': { name: '🎨 Ливрея на месеца', color: 0xa66bff },
+  'team-haul': { name: '📦 Отборен товар', color: 0x65a30d },
+};
+
 /**
  * Roles anyone picks in #роли to be pinged by an announcement channel
  * (not managed: the bot never takes them away on its own).
@@ -69,6 +90,8 @@ export const PING_ROLES = {
   news: { name: '🔔 Седмичник', label: 'Седмичник', emoji: '📰', channel: 'news' },
   giveaways: { name: '🔔 Раздавания', label: 'Раздавания', emoji: '🎁', channel: 'giveaways' },
   quiz: { name: '🔔 Викторина', label: 'Викторина', emoji: '🧠', channel: 'quiz' },
+  dailyLoad: { name: '🔔 Товар на деня', label: 'Товар на деня', emoji: '⭐', channel: 'dailyLoad' },
+  convoys: { name: '🔔 Конвои', label: 'Конвои', emoji: '🚚', channel: 'convoys' },
 } as const;
 export type PingRole = keyof typeof PING_ROLES;
 

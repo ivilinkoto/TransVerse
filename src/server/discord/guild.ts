@@ -1,5 +1,5 @@
 import { discord, DiscordError } from './api';
-import { discordConfig, DISCORD_ROLES, PING_ROLES, VERIFIED_ROLE, type DiscordRole } from './config';
+import { BADGE_ROLES, discordConfig, DISCORD_ROLES, PING_ROLES, VERIFIED_ROLE, type DiscordRole } from './config';
 
 interface Channel {
   id: string;
@@ -60,7 +60,7 @@ export const gameRole = (key: DiscordRole) => ensureRole(DISCORD_ROLES[key].name
 /** Roles the bot manages (so it never touches the server's own roles). */
 export async function managedRoleIds(extra: string[] = []) {
   const { roles } = await guild();
-  const names = new Set<string>(Object.values(DISCORD_ROLES).map((r) => r.name));
+  const names = new Set<string>([...Object.values(DISCORD_ROLES), ...Object.values(BADGE_ROLES)].map((r) => r.name));
   return new Set([...roles.filter((r) => names.has(r.name)).map((r) => r.id), ...extra]);
 }
 

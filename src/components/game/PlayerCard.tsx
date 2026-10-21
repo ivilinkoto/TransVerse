@@ -1,6 +1,7 @@
 'use client';
 
 import { useFeature } from './Features';
+import { DuelChallenge } from './TogetherActions';
 import { Award, Ban, Banknote, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
@@ -12,6 +13,13 @@ import { LeagueBadge } from './LeagueBadge';
 import { PlayerName } from './PlayerName';
 import { openReport } from './ReportDialog';
 import { SendMoneyForm } from './SendMoneyForm';
+
+/** The ring around the picture: the Halloween badge, then the Discord level frames (gold 25, cyan 10). */
+const frameOf = (badges: { id: string }[]) =>
+  badges.some((b) => b.id === 'pumpkin-2026') ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-asphalt-900'
+  : badges.some((b) => b.id === 'discord-25') ? 'ring-[3px] ring-gold-400 ring-offset-2 ring-offset-asphalt-900 shadow-[0_0_18px_rgba(246,195,67,0.45)]'
+  : badges.some((b) => b.id === 'discord-10') ? 'ring-2 ring-cyan-glow ring-offset-2 ring-offset-asphalt-900'
+  : '';
 
 /** Opens a private chat in the chat dock. */
 export function openDirectChat(userId: string, username: string) {
@@ -35,6 +43,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
   const [paying, setPaying] = useState(false);
   const transfers = useFeature('transfers');
   const career = useFeature('career');
+  const duels = useFeature('duels');
   const act = async (action: Record<string, unknown>) => {
     setBusy(true);
     setError(null);
@@ -52,7 +61,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
     <div>
       <div className="flex items-center gap-4">
         <div className="relative">
-          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`h-16 w-16 text-2xl ${card.badges.some((b) => b.id === 'pumpkin-2026') ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-asphalt-900' : ''}`} rounded="rounded-2xl" />
+          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`h-16 w-16 text-2xl ${frameOf(card.badges)}`} rounded="rounded-2xl" />
           <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-asphalt-900 ${card.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={card.online ? 'Онлайн' : `Последно: ${card.lastSeen}`} />
         </div>
         <div className="min-w-0">
@@ -101,6 +110,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" className="btn-primary" onClick={() => { openDirectChat(card.id, card.username); onClose?.(); }}><MessageSquare className="h-4 w-4" />Съобщение</button>
           {card.relation === 'none' && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'friendRequest', userId: card.id })}><UserPlus className="h-4 w-4" />Добави приятел</button>}
+          {duels && <DuelChallenge userId={card.id} username={card.username} />}
           {card.relation === 'sent' && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'friendRemove', userId: card.id })}><X className="h-4 w-4" />Отмени поканата</button>}
           {card.relation === 'received' && card.friendshipId && (
             <>

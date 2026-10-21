@@ -1,6 +1,6 @@
 'use client';
 
-import { useFeature } from './Features';
+import { useFeature, useFeatures } from './Features';
 import { Gem, LogOut, MessagesSquare, MoreHorizontal, ShieldCheck, X } from 'lucide-react';
 import { DISCORD_URL } from '@/lib/community';
 import Link from 'next/link';
@@ -73,6 +73,7 @@ export function Sidebar({ badges, version }: { badges: NavBadges; version: strin
 /** Tabs for the pages of the current section (e.g. Автопарк → Сервиз, Пазар, Шофьори…). */
 export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
   const pathname = usePathname();
+  const has = useFeatures();
   const box = useRef<HTMLElement>(null);
   const section = sectionFor(pathname);
   const tab = section ? activeTab(section, pathname) : undefined;
@@ -84,7 +85,7 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
   return (
     <nav ref={box} aria-label={section.label} className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
       <div className="inline-flex min-w-max gap-1 rounded-2xl border border-asphalt-800 bg-asphalt-900/70 p-1">
-        {visibleTabs(section, holiday, pathname).map((t) => {
+        {visibleTabs(section, holiday, pathname, has).map((t) => {
           const active = t.href === tab?.href;
           return (
             <Link key={t.href} href={t.href} aria-current={active ? 'page' : undefined} className={`rounded-xl px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition sm:px-3.5 sm:py-2 sm:text-sm ${active ? 'bg-asphalt-700 text-white shadow-sm' : 'text-mist-400 hover:text-white'}`}>
@@ -102,6 +103,7 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
   const pathname = usePathname();
   const router = useRouter();
   const mentor = useFeature('mentor');
+  const has = useFeatures();
   const [open, setOpen] = useState(false);
   const current = sectionFor(pathname);
   const main = SECTIONS.filter((s) => ['home', 'jobs', 'map', 'fleet'].includes(s.key));
@@ -158,7 +160,7 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
               <section key={s.key} className="mb-5">
                 <h2 className="label mb-2 flex items-center gap-2"><s.icon className="h-3.5 w-3.5" />{s.label}</h2>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  {visibleTabs(s, holiday, pathname).map((t) => (
+                  {visibleTabs(s, holiday, pathname, has).map((t) => (
                     <Link key={t.href} href={t.href} onClick={() => setOpen(false)} className={`${tile} ${activeTab(s, pathname)?.href === t.href ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
                       {t.label}
                       {t.href === '/game/missions' && badges.missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[10px] font-bold text-asphalt-950">{badges.missions} награди</span>}

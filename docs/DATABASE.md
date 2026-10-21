@@ -130,3 +130,10 @@
 - `users.discord_id`, `discord_name`, `discord_linked_at`, `discord_prefs` — свързан Discord и известията там; `organizations.discord_channel`, `discord_channel_id`, `discord_role_id`, `discord_webhook` — канал на компанията; `company_messages.discord_message_id` — съобщение, дошло от Discord; `discord_outbox` — опашка към Discord. Миграция 0047.
 - `discord_tickets` — тикети от Discord (канал, автор, тикетът в играта, затворен/изтрит); `support_messages.discord_message_id` — отговор, писан в канала на тикета; `discord_sanctions` — предупреждения, заглушавания и банове в сървъра; `discord_giveaways`, `discord_giveaway_entries` — раздавания на ТрансКоин; `company_polls.discord_channel_id`, `discord_message_id`, `discord_votes` — анкетата в канала на компанията. Подредбата на сървъра (id на категориите, каналите и съобщенията на бота) е в `job_state` (`discord-layout`). Миграция 0048.
 - `discord_members` — нива в Discord сървъра; `discord_voice` — кой е в гласов канал сега; `discord_temp_rooms` — стаите от „Създай стая“; `discord_company_activity` — съобщения в каналите на компаниите по седмици; `discord_quizzes`, `discord_quiz_answers` — викторината; `discord_sanctions.appeal_text`, `appealed_at`, `appeal_status` — обжалване; `organizations.discord_voice_id` — гласовият канал на компанията. Настройките автомодерация и проверка на новите са в `job_state` (`discord-layout`). Миграция 0049.
+
+## v1.3 — заедно (миграция 0050)
+- `contracts.shared_load_id`, `contracts.featured` (уникален) — общ товар на компания и товар на деня.
+- `shared_loads` — споделените товари (компания, кой, тонове, `open | done | failed`).
+- `open_convoys` — конвои, обявени с /конвой (линия, до кога).
+- `duels` — дуели 1 срещу 1 (`pending | active | declined | expired | done`, тонове, победител).
+- `livery_entries`, `livery_votes` — конкурсът за ливрея (вид на камиона, 👍, победител, съобщение в Discord).

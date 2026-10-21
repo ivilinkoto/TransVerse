@@ -2,6 +2,9 @@ import { eq } from 'drizzle-orm';
 import { dec, int, km, money } from '@/lib/format';
 import { dailyState, DAILY_REWARDS } from '@/lib/game/daily';
 import { EVENT_METRIC_INFO, type EventMetric } from '@/lib/game/events';
+import { combinationCapability } from '@/lib/game/catalog';
+import { canSplit, partRewardCents, partTons } from '@/lib/game/partial';
+import { featureFor } from '@/server/features';
 import { companies } from '@/server/db/schema';
 import { currentBattle } from '@/server/game/battles';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
@@ -56,19 +59,31 @@ export async function truckLoads(ctx: Ctx, vehicleId: string, how: 'reply' | 'up
   const member = await membershipOf(ctx.db, me.id);
   const loads = await openContracts(ctx.db, { originCityId: v!.cityId, limit: 80, memberOfCompanyId: member?.company.id ?? null }, ctx.now);
   const bundle = { modelId: v!.modelId, trailerModelId: v!.trailer?.modelId ?? null, condition: v!.condition, hasDriver: !!v!.driver, status: v!.status, trailerCondition: v!.trailer?.condition ?? null };
-  const ok = loads.filter((c) => compatibilityError(bundle, c, me.level) === null).slice(0, 10);
+  // Loads bigger than the truck: only the part it carries (v1.3), for the share of the pay.
+  const payload = combinationCapability({ unit: v!.model, trailer: v!.trailer?.model ?? null }).payloadTons;
+  const partial = await featureFor(ctx.db, me.id, 'partial_loads', ctx.now);
+  const ok = loads
+    .map((c) => {
+      if (compatibilityError(bundle, c, me.level) === null) return { c, tons: null };
+      const tons = partial && canSplit(c) ? partTons(c.weightTons, payload) : null;
+      return tons && compatibilityError(bundle, { ...c, weightTons: tons }, me.level) === null ? { c, tons } : null;
+    })
+    .filter((x) => x !== null)
+    .slice(0, 10);
   const data: MessageData = ok.length
     ? {
         content: `📦 Товари за **${v!.plate}** от ${v!.city.nameBg}:`,
-        components: rows(select(`course:pick:${v!.id}`, ok.map((c) => ({ label: `${c.goods} → ${c.destination.nameBg}`, value: c.id, description: `${dec(c.weightTons)} т · ${km(c.distanceKm)} · ${money(c.rewardCents)}${c.urgent ? ' · спешна' : ''}`, emoji: { name: c.urgent ? '⚡' : '📦' } })), 'Избери товар'), linkButton('Всички поръчки', `${appUrl()}/game/contracts?from=${v!.cityId}&truck=${v!.id}`, '🗺️')),
+        components: rows(select(`course:pick:${v!.id}`, ok.map(({ c, tons }) => ({ label: `${c.goods} → ${c.destination.nameBg}`.slice(0, 100), value: tons ? `${c.id}:${tons}` : c.id, description: tons ? `${dec(tons)} от ${dec(c.weightTons)} т · ${km(c.distanceKm)} · ${money(partRewardCents(c, tons))}` : `${dec(c.weightTons)} т · ${km(c.distanceKm)} · ${money(c.rewardCents)}${c.urgent ? ' · спешна' : ''}`, emoji: { name: c.urgent ? '⚡' : tons ? '✂️' : '📦' } })), 'Избери товар'), linkButton('Всички поръчки', `${appUrl()}/game/contracts?from=${v!.cityId}&truck=${v!.id}`, '🗺️')),
       }
     : { content: `Няма товар, който **${v!.plate}** може да вземе от ${v!.city.nameBg} в момента.`, components: rows(linkButton('Виж поръчките', `${appUrl()}/game/contracts`, '🗺️')) };
   return how === 'update' ? update(data) : reply(data, true);
 }
 
 /** The load is picked: the truck goes (same as "Поеми" in the game). */
-export async function courseGo(ctx: Ctx, vehicleId: string, contractId: string): Promise<Answer> {
-  const r = await act<{ etaAt: string | Date }>(ctx, { type: 'acceptContract', contractId, vehicleId, rush: false, overload: false });
+export async function courseGo(ctx: Ctx, vehicleId: string, pick: string): Promise<Answer> {
+  // "<contract>" for the whole load, "<contract>:<tons>" for a part of it.
+  const [contractId = '', part] = pick.split(':');
+  const r = await act<{ etaAt: string | Date }>(ctx, { type: 'acceptContract', contractId, vehicleId, rush: false, overload: false, ...(part ? { tons: Number(part) } : {}) });
   return answer(update({ content: `✅ Камионът тръгна! Пристига ${at(r.etaAt)}. Ще ти пишем, когато стигне.`, components: rows(linkButton('Виж на картата', `${appUrl()}/game/map`, '🗺️')) }));
 }
 

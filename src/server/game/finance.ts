@@ -51,6 +51,8 @@ export type LedgerCategory =
   | 'hire_commission'
   | 'mentor_reward'
   | 'roadside_help'
+  | 'roadside_paid'
+  | 'shared_load_bonus'
   | 'lease'
   | 'member_bonus';
 
@@ -102,6 +104,8 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   hire_commission: 'Комисиони към компании за възложени курсове',
   mentor_reward: 'Награди за наставничество',
   roadside_help: 'Помощ на пътя (хонорари)',
+  roadside_paid: 'Платена пътна помощ',
+  shared_load_bonus: 'Бонус за общ товар',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',
 };

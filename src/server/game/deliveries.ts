@@ -51,6 +51,8 @@ import { recordHalloweenDelivery } from './halloween';
 import { recordChristmasDelivery } from './christmas';
 import { isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
+import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
+import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart } from './together';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -111,7 +113,7 @@ export const URGENT_RELOCATION_MS = 60_000;
  * ordinary contract has one winner (conditional status update); an urgent one
  * stays open until it expires and every player may take it once.
  */
-export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date(), risks: { rush?: boolean; overload?: boolean } = {}) {
+export async function acceptContract(db: Database, userId: string, contractId: string, vehicleId: string, now = new Date(), risks: { rush?: boolean; overload?: boolean; tons?: number } = {}) {
   const company = await companyForUser(db, userId);
   const contract = await db.query.contracts.findFirst({ where: eq(contracts.id, contractId) });
   // Own goods (trading) are hauled only by their owner and never appear on the board.
@@ -122,6 +124,11 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   if (vehicle.status !== 'idle') fail('vehicle_busy', 'Превозното средство е заето.', 409);
   // Groupage loads come with v1.2 (staff test them before the release).
   if (contract!.stops?.length && !(await featureFor(db, userId, 'multistop', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  // Partial load (v1.3): only part of an ordinary board load, for the same pay per tonne.
+  const partial = risks.tons != null && risks.tons < contract!.weightTons;
+  if (partial && !(await featureFor(db, userId, 'partial_loads', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (partial && !canSplit(contract!)) fail('no_partial', 'Тази поръчка се взима само цяла.');
+  if (contract!.featured && !(await featureFor(db, userId, 'daily_load', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
 
   // Network work outside the transaction (may take seconds).
   const loadedRoute = await db.query.routes.findFirst({ where: (r, { eq: e }) => e(r.id, contract!.routeId) });
@@ -131,11 +138,22 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const [user] = await tx.select({ level: users.level, vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
     const vip = isVip(user?.vipUntil, now);
     const bundle = await vehicleBundle(tx, company.id, vehicleId, true);
+    // A partial load re-reads the load under a lock: another truck may have just taken a part of it.
+    let load = contract!;
+    if (partial) {
+      const [fresh] = await tx.select().from(contracts).where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`)).for('update');
+      if (!fresh) fail('contract_unavailable', 'Друга компания току-що пое тази поръчка.', 409);
+      const capacity = combinationCapability({ unit: powerUnitModel(bundle.vehicle.modelId), trailer: bundle.trailer ? trailerModel(bundle.trailer.modelId) : null }).payloadTons;
+      const tons = Math.round(risks.tons! * 10) / 10;
+      const wrong = partError(fresh!.weightTons, tons, capacity);
+      if (wrong) fail('bad_part', wrong);
+      load = { ...fresh!, weightTons: tons, rewardCents: partRewardCents(fresh!, tons) };
+    }
     const error = compatibilityError(
       { modelId: bundle.vehicle.modelId, trailerModelId: bundle.trailer?.modelId ?? null, condition: bundle.vehicle.condition, hasDriver: !!bundle.driver, status: bundle.vehicle.status, trailerCondition: bundle.trailer?.condition ?? null },
-      contract!,
+      load,
       user?.level ?? 1,
-      !!risks.overload,
+      !partial && !!risks.overload,
     );
     if (error) fail('incompatible', error);
     const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
@@ -158,12 +176,21 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // Tender loads: only members of the company that runs the tender.
     if (contract!.tenderId) await checkTenderLoad(tx, contract!.tenderId, userId, now);
+    // A load shared with a company: only its members.
+    if (contract!.sharedLoadId) await checkSharedLoad(tx, contract!.sharedLoadId, userId);
+    let loadId = contractId;
     if (contract!.urgent) {
       // Open to everyone until it expires — each player once.
       const [still] = await tx.select({ id: contracts.id }).from(contracts).where(and(eq(contracts.id, contractId), eq(contracts.status, 'open'), sql`${contracts.expiresAt} > ${now}`)).for('share');
       if (!still) fail('contract_unavailable', 'Спешната поръчка вече изтече.', 409);
       const [mine] = await tx.select({ id: deliveries.id }).from(deliveries).where(and(eq(deliveries.contractId, contractId), eq(deliveries.companyId, company.id)));
       if (mine) fail('already_taken', 'Вече сте поели тази спешна поръчка.', 409);
+    } else if (partial) {
+      // The part becomes a load of its own; the rest stays on the board with the rest of the pay.
+      const { id: _whole, ...copy } = load;
+      const [part] = await tx.insert(contracts).values({ ...copy, status: 'accepted', acceptedByCompanyId: company.id, acceptedAt: now, reservedByCompanyId: null, reservedUntil: null }).returning({ id: contracts.id });
+      await tx.update(contracts).set({ weightTons: sql`round((${contracts.weightTons} - ${load.weightTons})::numeric, 1)::real`, rewardCents: sql`${contracts.rewardCents} - ${load.rewardCents}` }).where(eq(contracts.id, contractId));
+      loadId = part!.id;
     } else {
       const claimed = await tx
         .update(contracts)
@@ -182,7 +209,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const violations: { violation: Violation; amount: number }[] = [];
     if (risks.rush && rested.startDutyMin > 0) violations.push({ violation: 'hours', amount: rested.startDutyMin / 60 });
     const payload = combinationCapability({ unit: powerUnitModel(bundle.vehicle.modelId), trailer: bundle.trailer ? trailerModel(bundle.trailer.modelId) : null }).payloadTons;
-    const overloaded = overloadPercent(contract!.weightTons, payload);
+    const overloaded = overloadPercent(load.weightTons, payload);
     if (overloaded > 0) violations.push({ violation: 'overload', amount: overloaded });
     const crew = { ...rested, startDutyMin: risks.rush ? 0 : rested.startDutyMin, wear: rested.wear * (overloaded > 0 ? FINE_RULES.overloadWear : 1) };
     const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km), stops: contract!.stops?.map((st) => ({ km: st.km, minutes: MULTISTOP.unloadMin })) };
@@ -219,7 +246,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       crewWear: crew.wear,
       emptyKm: chargedEmptyKm,
       loadedKm: loadedRoute!.distanceKm,
-      tons: contract!.weightTons,
+      tons: load.weightTons,
       payloadTons: combinationCapability({ unit, trailer }).payloadTons,
       tolledRoute: { empty: !contract!.urgent && (emptyRoute?.hasToll ?? false), loaded: loadedRoute!.hasToll },
       // Diesel is bought along the way: each leg pays the prices of the countries it crosses.
@@ -232,7 +259,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, totalCents: 0, wear: 0 } : running;
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
-    const rentalFee = rented ? rentalFeeCents(contract!.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
+    const rentalFee = rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     // Surprises on the way, decided now and revealed when the truck gets there.
     // Maintenance (v1.3): an overdue truck gets into trouble more often, a freshly serviced one less.
@@ -241,7 +268,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const [delivery] = await tx
       .insert(deliveries)
       .values({
-        contractId,
+        contractId: loadId,
         companyId: company.id,
         vehicleId,
         trailerId: bundle.trailer?.id ?? null,
@@ -269,7 +296,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     if (!contract!.urgent) await formConvoy(tx, delivery!, userId, { originCityId: contract!.originCityId, destCityId: contract!.destCityId }, now);
     // A load handed over by a company: the agreed commission is paid when it arrives.
     await acceptJobOffer(tx, userId, contractId, delivery!.id, now);
-    await logActivity(tx, userId, 'contract_accepted', { contractId, vehicleId, deliveryId: delivery!.id });
+    await logActivity(tx, userId, 'contract_accepted', { contractId: loadId, ...(partial ? { partOf: contractId } : {}), vehicleId, deliveryId: delivery!.id });
     await broadcast(tx, 'market');
     await broadcast(tx, 'world');
     return delivery!;
@@ -469,6 +496,12 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (contract.clientContractId) await recordClientLoad(tx, contract.clientContractId, result.late, company!.ownerId, completedAt);
   // A load of a company tender.
   if (contract.tenderId) await recordTenderLoad(tx, contract.tenderId, company!.ownerId, completedAt);
+  // The load of the day: ТрансКоин when on time.
+  if (contract.featured && onTime) await deliverDailyLoad(tx, contract, company!.ownerId);
+  // A part of a load shared with the company: the bonus once every part has arrived on time.
+  if (contract.sharedLoadId) await settleSharedPart(tx, contract.sharedLoadId, now);
+  // Duels count the tonnes by arrival time.
+  await recordDuelDelivery(tx, company!.ownerId, contract.weightTons, completedAt);
   // Starter rental: returned now if the player bought their own truck, or offered for buy-out.
   if (vehicle!.ownership === 'rented') await afterRentedTrip(tx, vehicle!.id, company!.ownerId, now);
   await checkAchievements(tx, company!.ownerId, d.companyId);

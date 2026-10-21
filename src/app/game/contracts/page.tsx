@@ -14,6 +14,8 @@ import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
 import { estimateGameMinutes } from '@/lib/game/schedule';
 import { crewEffects, restLeftMin } from '@/lib/game/crew';
 import { overloadPercent } from '@/lib/game/fines';
+import { canSplit, partRewardCents, partTons } from '@/lib/game/partial';
+import { SHARED_LOAD } from '@/lib/game/together';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
@@ -32,7 +34,7 @@ import { membershipOf } from '@/server/game/membership';
 
 export const metadata = { title: 'Поръчки' };
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; from?: string; truck?: string }> }) {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; from?: string; truck?: string; load?: string }> }) {
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
   const { db, user, company, hq, now, features } = await gameContext();
@@ -77,15 +79,18 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const strict = compatibilityError(bundle, c, user.level);
       // Up to 10 % over the payload is possible as a risk the player chooses.
       const overloadable = !!strict && compatibilityError(bundle, c, user.level, true) === null;
-      const error = overloadable ? null : strict;
+      const cap = combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null });
+      // A load bigger than the truck: only the part it carries, for the share of the pay (v1.3).
+      const partT = strict && features.partial_loads && canSplit(c) ? partTons(c.weightTons, cap.payloadTons) : null;
+      const part = partT && compatibilityError(bundle, { ...c, weightTons: partT }, user.level) === null ? { tons: partT, rewardCents: partRewardCents(c, partT) } : null;
+      const error = overloadable || part ? null : strict;
       // Planning estimates: empty leg by straight-line × 1.25, loaded leg from the real route.
       const emptyKm = v.cityId === c.originCityId ? 0 : haversineKm([v.city.lat, v.city.lon], [c.origin.lat, c.origin.lon]) * 1.25;
-      const cap = combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null });
       // The urgent one-minute relocation is free; only the cargo leg costs.
       const chargedEmptyKm = c.urgent ? 0 : emptyKm;
       const crew = v.driver ? crewEffects(v.driver, v.coDriver, now) : undefined;
       const restMin = v.driver ? Math.max(restLeftMin(v.driver, now), v.coDriver ? restLeftMin(v.coDriver, now) : 0) : 0;
-      const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: Math.max(v.driver?.skill ?? 1, v.coDriver?.skill ?? 0), crewFuel: crew?.fuel, crewWear: crew?.wear, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm, tons: c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });
+      const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: Math.max(v.driver?.skill ?? 1, v.coDriver?.skill ?? 0), crewFuel: crew?.fuel, crewWear: crew?.wear, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm, tons: part ? part.tons : c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });
       // Urgent: one minute to the pickup city, then the cargo leg at the shipment's speed.
       // The crew changes the trip time: a tired driver rests early, a team drives on.
       const tripMinutes = (cr: typeof crew) => (c.urgent ? (emptyKm > 0 ? URGENT_RELOCATION_MS / 60_000 : 0) + estimateGameMinutes(0, c.distanceKm, cr) / Math.max(1, c.speedFactor) : estimateGameMinutes(emptyKm, c.distanceKm, cr));
@@ -93,8 +98,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       // Without the due rest (a risk the player may take): the trip as with a rested crew.
       const rushMinutes = crew && crew.startDutyMin > 0 ? tripMinutes({ ...crew, startDutyMin: 0 }) : null;
       const rented = v.ownership === 'rented';
-      const cost = rented ? rentalFeeCents(c.rewardCents, chargedEmptyKm + c.distanceKm) : costs.totalCents;
-      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''}${v.coDriver ? ' · екипаж' : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? ` · почива още ${restMin} мин` : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: c.rewardCents - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0 };
+      const pay = part ? part.rewardCents : c.rewardCents;
+      const cost = rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents;
+      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''}${v.coDriver ? ' · екипаж' : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? ` · почива още ${restMin} мин` : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part };
     });
     return {
       id: c.id,
@@ -134,6 +140,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       lastLoad: c.lastLoad,
       stops: c.stopCities.map((st) => ({ name: st.name, country: st.country, tons: st.tons, windowMinutes: st.windowMinutes })),
       tender: !!c.tenderId,
+      featured: !!c.featured,
+      shared: !!c.sharedLoadId,
+      // A member may share a big ordinary load with the company (members take parts of it).
+      canShare: features.shared_loads && !!memberOfCompanyId && !c.sharedLoadId && canSplit(c) && c.weightTons >= SHARED_LOAD.minTons && !(c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId !== company.id),
       alreadyTaken: takenIds.has(c.id),
       reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,
       reservedByOther: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId !== company.id,
@@ -182,7 +192,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       {!user.seenHints.includes('board') && <Hint id="board" />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
-      <ContractBoard initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

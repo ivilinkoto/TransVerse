@@ -8,6 +8,7 @@ import { WINTER } from '@/lib/game/winter';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { PLOT } from '@/lib/game/plot';
 import { MULTISTOP } from '@/lib/game/multistop';
+import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
 import { HireDialog } from './HireDialog';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -68,6 +69,12 @@ export interface BoardContract {
   favorite: boolean;
   /** Load of a tender of the player's company (only members see it). */
   tender: boolean;
+  /** "Товар на деня" (v1.3). */
+  featured?: boolean;
+  /** A load a member shared with the player's company (v1.3). */
+  shared?: boolean;
+  /** The player may share it with the company. */
+  canShare?: boolean;
   speedFactor: number;
   /** Urgent shipment this player has already taken (each player may take it once). */
   alreadyTaken: boolean;
@@ -92,6 +99,8 @@ export interface BoardContract {
     rushMinutes: number | null;
     /** > 0 when the load fits only with an overload (percent over the payload). */
     overloadPercent: number;
+    /** The load is bigger than the truck: the part it can take and its pay (null when it fits or may not be split). */
+    part: { tons: number; rewardCents: number } | null;
   }[];
 }
 
@@ -125,7 +134,7 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['clear', (c) => !!c.weather],
 ]);
 
-export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean }) {
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string }) {
   const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
   const toggleChip = (id: Chip) => setChips((s) => {
     const next = new Set(s);
@@ -137,7 +146,8 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   const [query, setQuery] = useState('');
   const [doable, setDoable] = useState(false);
   const [sort, setSort] = useState<Sort>('reward');
-  const [open, setOpen] = useState<string | null>(null);
+  // A link to one load (a notification, Discord) opens it first.
+  const [open, setOpen] = useState<string | null>(() => (focus && contracts.some((c) => c.id === focus) ? focus : null));
   // After accepting, the player stays on the board; a short note says where the truck went.
   const [sent, setSent] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState<string | null>(null);
@@ -187,9 +197,9 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
     // Urgent shipments first, then the player's own city.
     const takeable = (c: BoardContract) => !c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error);
     // Favourite lanes the player can take come right after urgent shipments.
-    const rank = (c: BoardContract) => (c.urgent ? 0 : c.favorite && takeable(c) ? 1 : c.tender && takeable(c) ? 2 : c.local ? (takeable(c) ? 2 : 3) : 4);
+    const rank = (c: BoardContract) => (c.id === focus ? -2 : c.featured ? -1 : c.urgent ? 0 : c.shared && takeable(c) ? 1 : c.favorite && takeable(c) ? 1 : c.tender && takeable(c) ? 2 : c.local ? (takeable(c) ? 2 : 3) : 4);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
-  }, [contracts, cargo, query, doable, sort, chips]);
+  }, [contracts, cargo, query, doable, sort, chips, focus]);
 
   return (
     <div className="space-y-4">
@@ -266,6 +276,10 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
   const [rush, setRush] = useState(false);
   const [overload, setOverload] = useState(false);
   const needsOverload = !!option && option.overloadPercent > 0;
+  // A load bigger than the truck goes as a part, unless the player chose to overload and take it all.
+  const part = option?.part && !(needsOverload && overload) ? option.part : null;
+  // The page estimates a part's profit; overloading the whole load is paid in full.
+  const shownProfit = option ? (option.part && !part ? option.profitCents + c.rewardCents - option.part.rewardCents : option.profitCents) : 0;
   const shownMinutes = option ? (rush && option.rushMinutes != null ? option.rushMinutes : option.minutes) : 0;
 
   const [favBusy, setFavBusy] = useState(false);
@@ -285,8 +299,8 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload });
-      onAccepted(`Камионът тръгна: ${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
+      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}) });
+      onAccepted(`Камионът тръгна: ${part ? `${dec(part.tons)} т ` : ''}${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
       setBusy(false);
       router.refresh();
     } catch (e) {
@@ -305,6 +319,8 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
+            {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />ТОВАР НА ДЕНЯ · +{DAILY_LOAD.coins} TC</Badge>}
+            {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />ОБЩ ТОВАР НА КОМПАНИЯТА · +{Math.round(SHARED_LOAD.bonusShare * 100)}%</Badge>}
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
@@ -388,6 +404,17 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             </div>
           )}
           {hiring && <HireDialog contract={{ id: c.id, goods: c.goods, rewardCents: c.rewardCents, origin: c.origin.name, destination: c.destination.name }} onClose={() => setHiring(false)} />}
+          {c.featured && (
+            <p className="mt-3 rounded-lg border border-gold-400/40 bg-gold-400/10 px-3 py-2 text-sm text-mist-200">
+              Товарът на деня: по-добро заплащане и +{DAILY_LOAD.coins} ТрансКоин при доставка навреме. Взима се само цял — от първия, който го поеме.
+            </p>
+          )}
+          {c.shared && (
+            <p className="mt-3 rounded-lg border border-cyan-glow/40 bg-cyan-glow/5 px-3 py-2 text-sm text-mist-200">
+              Общ товар на компанията: вземете го на части с камионите си. Ако всички части стигнат навреме, всеки получава +{Math.round(SHARED_LOAD.bonusShare * 100)}% от своята част и значка „Отборен товар“.
+            </p>
+          )}
+          {c.canShare && <ShareButton contractId={c.id} tons={c.tons} />}
           {c.urgent && (
             <p className="mt-3 rounded-lg border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-mist-200">
               Спешна поръчка: камионът стига до {c.origin.name} за 1 минута, където и да е, а курсът върви ×{dec(c.speedFactor)} по-бързо. Може да я поеме всеки играч със свободен камион (по веднъж), докато не изтече от борсата.
@@ -415,12 +442,12 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                   <option value="">— изберете превозно средство —</option>
                   {c.options.map((o) => (
                     <option key={o.vehicleId} value={o.vehicleId} disabled={!!o.error}>
-                      {o.label}{o.error ? ` — ${o.error}` : ''}
+                      {o.label}{o.error ? ` — ${o.error}` : o.part && !o.overloadPercent ? ` — част: ${dec(o.part.tons)} т` : ''}
                     </option>
                   ))}
                 </select>
-                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload)} onClick={accept}>
-                  <ShieldCheck className="h-4 w-4" />{busy ? 'Изпращане…' : 'Приеми и изпрати'}
+                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload && !part)} onClick={accept}>
+                  <ShieldCheck className="h-4 w-4" />{busy ? 'Изпращане…' : part ? `Вземи ${dec(part.tons)} т и изпрати` : 'Приеми и изпрати'}
                 </button>
                 <Link href={`/game/map?contract=${c.id}`} className="btn-ghost"><MapPinned className="h-4 w-4" />На картата</Link>
                 {vip && !c.urgent && !c.reservedByMe && <ReserveButton contractId={c.id} />}
@@ -436,16 +463,22 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                   {needsOverload && (
                     <label className="flex items-start gap-2">
                       <input type="checkbox" className="mt-0.5" checked={overload} onChange={(e) => setOverload(e.target.checked)} />
-                      <span>Натовари с претоварване (+{option.overloadPercent}% над капацитета). <span className="text-amber-sig">Риск от глоба на кантар и по-бързо износване.</span></span>
+                      <span>{option.part ? 'Вместо част — натовари всичко' : 'Натовари'} с претоварване (+{option.overloadPercent}% над капацитета). <span className="text-amber-sig">Риск от глоба на кантар и по-бързо износване.</span></span>
                     </label>
                   )}
                 </div>
+              )}
+              {part && (
+                <p className="rounded-xl border border-cyan-glow/30 bg-cyan-glow/5 p-3 text-sm">
+                  <span className="font-semibold text-cyan-glow">Част от товара: </span>
+                  камионът побира {dec(part.tons)} т от {dec(c.tons)} т — заплащане <span className="num font-semibold text-profit">{money(part.rewardCents)}</span> (делът от тоновете). Останалите {dec(Math.round((c.tons - part.tons) * 10) / 10)} т остават на борсата за други камиони.
+                </p>
               )}
               {option && !option.error && (
                 <div className="grid gap-2 text-sm sm:grid-cols-4">
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Празен курс </span><span className="num">≈ {int(option.emptyKm)} км{c.urgent && option.emptyKm > 0 ? ' · 1 мин' : ''}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{option.rented ? 'Наем ' : 'Разходи (оценка) '}</span><span className="num text-loss">{money(option.costCents)}</span></div>
-                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Печалба (оценка) </span><span className={`num ${option.profitCents >= 0 ? 'text-profit' : 'text-loss'}`}>{money(option.profitCents)}</span></div>
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Печалба (оценка) </span><span className={`num ${shownProfit >= 0 ? 'text-profit' : 'text-loss'}`}>{money(shownProfit)}</span></div>
                   <div className={`rounded-lg px-3 py-2 ${shownMinutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>
                     <span className="text-mist-400">Пристигане след </span><span className="num">≈ {duration(shownMinutes)}</span>
                     {shownMinutes > c.windowMinutes && <span className="ml-1 inline-flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" />риск от закъснение</span>}
@@ -459,6 +492,33 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
         </div>
       )}
     </li>
+  );
+}
+
+/** Share a big load with the company: from then on only the members see it and take parts of it. */
+function ShareButton({ contractId, tons }: { contractId: string; tons: number }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const share = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/api/game/action', { type: 'shareLoad', contractId });
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+      <button type="button" className="inline-flex items-center gap-1.5 text-mist-300 hover:text-cyan-glow" onClick={share} disabled={busy}>
+        <Boxes className="h-4 w-4" />Сподели {dec(tons)} т с компанията — членовете го карат на части и всеки получава +{Math.round(SHARED_LOAD.bonusShare * 100)}%, ако всичко стигне навреме
+      </button>
+      {error && <span role="alert" className="text-loss">{error}</span>}
+    </div>
   );
 }
 

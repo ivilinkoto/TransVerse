@@ -42,7 +42,10 @@ import { setCompanyDiscord } from '@/server/discord/company';
 import { closePoll, createPoll, votePoll } from '@/server/game/polls';
 import { pollInputSchema } from '@/lib/game/polls';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
-import { helpOnRoad } from '@/server/game/roadside';
+import { callForHelp, helpOnRoad, paidRoadHelp } from '@/server/game/roadside';
+import { challengeDuel, respondDuel, shareLoad } from '@/server/game/together';
+import { enterLiveryContest, voteLivery } from '@/server/game/livery-contest';
+import { announceConvoy } from '@/server/game/convoy';
 import { cheer } from '@/server/game/feed';
 import type { FeatureId } from '@/lib/game/features';
 import { requireFeature } from '@/server/features';
@@ -85,7 +88,7 @@ const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]])
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 /** Every player command (the web game and the Discord bot alike). */
 export const Action = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false) }),
+  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional() }),
   z.object({ type: z.literal('payFine'), fineId: id }),
   z.object({ type: z.literal('dispatchPlan') }),
   z.object({ type: z.literal('auctionBid'), auctionId: id, amountEur: z.coerce.number().positive().max(10_000_000) }),
@@ -214,6 +217,14 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cancelListing'), listingId: id }),
   z.object({ type: z.literal('buyListing'), listingId: id }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
+  z.object({ type: z.literal('shareLoad'), contractId: id }),
+  z.object({ type: z.literal('challengeDuel'), userId: id }),
+  z.object({ type: z.literal('respondDuel'), duelId: id, accept: z.boolean() }),
+  z.object({ type: z.literal('enterLivery'), vehicleId: id }),
+  z.object({ type: z.literal('voteLivery'), entryId: id }),
+  z.object({ type: z.literal('roadsidePaid'), deliveryId: id }),
+  z.object({ type: z.literal('callForHelp'), deliveryId: id }),
+  z.object({ type: z.literal('announceConvoy') }),
 ]);
 
 /** Actions of features that go live with a release (staff can use them earlier, to test). */
@@ -227,6 +238,14 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   chooseMentor: 'mentor',
   endMentorship: 'mentor',
   helpOnRoad: 'roadside',
+  shareLoad: 'shared_loads',
+  challengeDuel: 'duels',
+  respondDuel: 'duels',
+  enterLivery: 'livery_contest',
+  voteLivery: 'livery_contest',
+  roadsidePaid: 'roadside_paid',
+  callForHelp: 'roadside_paid',
+  announceConvoy: 'discord_bot',
   cheer: 'feed',
   chooseWeeklyGoal: 'weekly_goal',
   claimWeeklyGoal: 'weekly_goal',
@@ -275,7 +294,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
   if (feature) requireFeature(feature, user.role);
   switch (input.type) {
     case 'acceptContract': {
-      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload });
+      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons });
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
     case 'favoriteLane':
@@ -494,6 +513,24 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'buyListing':
       await buyListing(db, user.id, input.listingId);
       return { ok: true };
+    case 'shareLoad':
+      return { ok: true, id: (await shareLoad(db, user.id, input.contractId)).id };
+    case 'challengeDuel':
+      return { ok: true, id: (await challengeDuel(db, user.id, input.userId)).id };
+    case 'respondDuel':
+      return { ok: true, ...(await respondDuel(db, user.id, input.duelId, input.accept)) };
+    case 'enterLivery':
+      return { ok: true, id: (await enterLiveryContest(db, user.id, input.vehicleId)).id };
+    case 'voteLivery':
+      return { ok: true, ...(await voteLivery(db, user.id, input.entryId)) };
+    case 'roadsidePaid':
+      return { ok: true, ...(await paidRoadHelp(db, user.id, input.deliveryId)) };
+    case 'callForHelp':
+      return { ok: true, ...(await callForHelp(db, user.id, input.deliveryId)) };
+    case 'announceConvoy': {
+      const c = await announceConvoy(db, user.id);
+      return { ok: true, origin: c.origin, destination: c.destination, expiresAt: c.expiresAt };
+    }
     case 'friendRequest':
       return { ok: true, result: await sendFriendRequest(db, user.id, input.userId) };
     case 'friendRespond':
