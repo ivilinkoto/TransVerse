@@ -71,7 +71,7 @@ describe('interactions', () => {
     const cmd = JSON.stringify({ type: 2, data: { name: 'помощ' }, member: { user: { id: '1' } } });
     const help = await (await POST(new Request('http://x/api/discord/interactions', { method: 'POST', body: cmd, headers: signed(cmd) }))).json();
     expect(help.type).toBe(4);
-    expect(help.data.embeds[0].title).toBe('Ботът на TransVerse');
+    expect(help.data.embeds[0].title).toBe('🚚 Команди за играчите');
   });
 
   it('commands read the game; personal ones need a linked account', async () => {

@@ -52,6 +52,9 @@ export interface DiscordMessage {
   embeds?: Embed[];
   /** Never ping @everyone or roles from game text. */
   allowed_mentions?: { parse: string[] };
+  /** Announcements: false = do not mention the channel's pick-your-pings role. */
+  ping?: boolean;
+  components?: unknown[];
 }
 
 export const noPings = { allowed_mentions: { parse: [] as string[] } };

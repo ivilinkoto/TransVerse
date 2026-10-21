@@ -1,4 +1,5 @@
 import { and, desc, eq, gt, ilike, isNull, or, sql } from 'drizzle-orm';
+import { EVENT_TEMPLATES } from '@/lib/game/events';
 import { featureDate, featureLive } from '@/lib/game/features';
 import { dec, int, km, money } from '@/lib/format';
 import { isStaff } from '@/server/auth/roles';
@@ -37,6 +38,12 @@ export const COMMANDS = [
   },
   { name: 'камиони', description: 'Твоите камиони: къде са и кога пристигат (нужен е свързан акаунт)' },
   { name: 'курс', description: 'Пусни камион на курс: избираш камион и товар (свързан акаунт)' },
+  { name: 'пазар', description: 'Стоката в складовете ти и къде да я продадеш (свързан акаунт)' },
+  { name: 'търг', description: 'Търгът за специален товар — виж и дай оферта (свързан акаунт)' },
+  { name: 'мисии', description: 'Мисиите ти и наградите за изпълнените (свързан акаунт)' },
+  { name: 'покани', description: 'Покани член на сървъра в компанията си (свързан акаунт)', options: [{ type: 6, name: 'потребител', description: 'Кого каниш', required: true }] },
+  { name: 'ранг', description: 'Нивото ти в сървъра (или на друг член)', options: [{ type: 6, name: 'потребител', description: 'Член на сървъра', required: false }] },
+  { name: 'топ', description: 'Най-активните в сървъра' },
   { name: 'борса', description: 'Най-добре платените товари от град', options: [{ type: 3, name: 'град', description: 'Град (напр. София)', required: true }] },
   { name: 'дневна', description: 'Вземи дневната награда' },
   { name: 'ивент', description: 'Текущият ивент на общността и твоят принос' },
@@ -54,6 +61,16 @@ export const COMMANDS = [
   { name: 'бан', description: 'Бан от сървъра', default_member_permissions: BAN, options: [user, reason(true), { type: 5, name: 'изтрий-съобщенията', description: 'Изтрий съобщенията му от последното денонощие', required: false }] },
   { name: 'разбани', description: 'Свали бан', default_member_permissions: BAN, options: [user, reason(false)] },
   { name: 'наказания', description: 'Наказанията на член на сървъра', default_member_permissions: MODERATE, options: [user] },
+  { name: 'екип-статистика', description: 'Тикети, отговори и наказания за последните 30 дни', default_member_permissions: MODERATE },
+  {
+    name: 'ивент-старт',
+    description: 'Пусни ивент в играта от готов шаблон (администратор в играта)',
+    default_member_permissions: MANAGE_GUILD,
+    options: [
+      { type: 3, name: 'шаблон', description: 'Кой ивент', required: true, choices: EVENT_TEMPLATES.slice(0, 25).map((t) => ({ name: t.name.slice(0, 100), value: t.id })) },
+      { type: 4, name: 'часове', description: 'Колко часа (72 по подразбиране)', required: false, min_value: 1, max_value: 336 },
+    ],
+  },
   {
     name: 'раздаване',
     description: 'Раздаване на ТрансКоин в #раздавания',
@@ -112,33 +129,8 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
     case 'свързване':
       return { ephemeral: true, content: me ? `Свързан си като **${me.username}**. Отвързваш от Настройки → Discord.` : linkHint() };
     default:
-      return { ephemeral: true, embeds: [help()] };
+      return { ephemeral: true, content: 'Непозната команда — виж `/помощ`.' };
   }
-}
-
-function help(): Embed {
-  return {
-    title: 'Ботът на TransVerse',
-    color: BRAND,
-    description: [
-      '**Играта**',
-      '`/профил [играч]` — картичка на играч',
-      '`/компания [име]` · `/участък [компания]` — компания и снимка на базата ѝ',
-      '`/класация [вид]` — сезон, богатство, курсове, компании, бази',
-      '`/борса град` — най-добрите товари от град',
-      '',
-      '**Със свързан акаунт**',
-      '`/камиони` — къде са камионите ти',
-      '`/курс` — пусни камион на курс от Discord',
-      '`/дневна` — вземи дневната награда',
-      '`/ивент` · `/битка` — ивентът и битката на компанията ти',
-      '',
-      '**Сървърът**',
-      '`/тикет` — помощ от екипа · `/свързване` — свържи Discord с играта',
-      'В #роли избираш известията си, в #раздавания печелиш ТрансКоин.',
-    ].join('\n'),
-    footer,
-  };
 }
 
 async function profile(db: DbOrTx, username: string | null, viewerId: string | null, now: Date): Promise<CommandReply> {

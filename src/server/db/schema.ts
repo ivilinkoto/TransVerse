@@ -692,6 +692,8 @@ export const organizations = pgTable(
     discordChannelId: text('discord_channel_id'),
     discordRoleId: text('discord_role_id'),
     discordWebhook: text('discord_webhook'),
+    /** The company's voice channel next to its text channel. */
+    discordVoiceId: text('discord_voice_id'),
     brandingVersion: integer('branding_version').notNull().default(0),
     /** The company's own money — separate from every member's (and the owner's) personal balance. */
     treasuryCents: money('treasury_cents').notNull().default(0),
@@ -1787,6 +1789,10 @@ export const discordSanctions = pgTable(
     inGame: boolean('in_game').notNull().default(false),
     moderatorDiscordId: text('moderator_discord_id').notNull(),
     moderatorUserId: uuid('moderator_user_id').references(() => users.id, { onDelete: 'set null' }),
+    /** The member's appeal (button in the direct message) and the team's answer. */
+    appealText: text('appeal_text'),
+    appealedAt: ts('appealed_at'),
+    appealStatus: text('appeal_status'), // pending | accepted | rejected
     createdAt: createdAt(),
   },
   (t) => [index('discord_sanctions_user_idx').on(t.discordUserId, t.createdAt)],
@@ -1820,4 +1826,74 @@ export const discordGiveawayEntries = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.giveawayId, t.userId] })],
+);
+
+/** Members of the Discord server: levels for writing and talking (and their last name and picture). */
+export const discordMembers = pgTable(
+  'discord_members',
+  {
+    discordUserId: text('discord_user_id').primaryKey(),
+    name: text('name').notNull().default(''),
+    avatar: text('avatar'),
+    xp: integer('xp').notNull().default(0),
+    level: integer('level').notNull().default(0),
+    messages: integer('messages').notNull().default(0),
+    voiceMinutes: integer('voice_minutes').notNull().default(0),
+    /** Messages give experience at most once a minute. */
+    lastXpAt: ts('last_xp_at'),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('discord_members_xp_idx').on(t.xp)],
+);
+
+/** Who is in which voice channel now (the worker's gateway keeps it; the game reads the convoy channel). */
+export const discordVoice = pgTable('discord_voice', {
+  discordUserId: text('discord_user_id').primaryKey(),
+  channelId: text('channel_id').notNull(),
+  joinedAt: ts('joined_at').notNull().defaultNow(),
+});
+
+/** Voice rooms made by "➕ Създай стая" (removed when empty). */
+export const discordTempRooms = pgTable('discord_temp_rooms', {
+  channelId: text('channel_id').primaryKey(),
+  ownerDiscordId: text('owner_discord_id').notNull(),
+  createdAt: createdAt(),
+});
+
+/** Messages in the companies' Discord channels per week ("Най-активна компания"). */
+export const discordCompanyActivity = pgTable(
+  'discord_company_activity',
+  {
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    weekKey: text('week_key').notNull(),
+    messages: integer('messages').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.weekKey] })],
+);
+
+/** Quiz questions in #викторина: the first right answer of a linked player wins. */
+export const discordQuizzes = pgTable('discord_quizzes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  question: text('question').notNull(),
+  options: text('options').array().notNull(),
+  correct: integer('correct').notNull(),
+  prizeCoins: integer('prize_coins').notNull(),
+  channelId: text('channel_id'),
+  messageId: text('message_id'),
+  winnerUserId: uuid('winner_user_id').references(() => users.id, { onDelete: 'set null' }),
+  winnerDiscordId: text('winner_discord_id'),
+  closesAt: ts('closes_at').notNull(),
+  closedAt: ts('closed_at'),
+  createdAt: createdAt(),
+});
+
+export const discordQuizAnswers = pgTable(
+  'discord_quiz_answers',
+  {
+    quizId: uuid('quiz_id').notNull().references(() => discordQuizzes.id, { onDelete: 'cascade' }),
+    discordUserId: text('discord_user_id').notNull(),
+    option: integer('option').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.quizId, t.discordUserId] })],
 );

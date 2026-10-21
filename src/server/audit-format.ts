@@ -26,6 +26,12 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return `Създаде ивент „${String(d.name ?? '')}“${d.startsAt ? ` (от ${new Date(String(d.startsAt)).toLocaleString('bg-BG')})` : ''}`;
     case 'season_mode':
       return `Смени празничната тема: ${d.value === 'auto' ? 'автоматично по дати' : d.value === 'off' ? 'изключена' : `винаги ${String(d.value).replace('on:', '')}`}`;
+    case 'discord_settings':
+      return `Настройки на Discord: ${[d.automod !== undefined ? `автомодерация ${d.automod ? 'включена' : 'изключена'}` : '', d.verification !== undefined ? `проверка на новите ${d.verification ? 'включена' : 'изключена'}` : ''].filter(Boolean).join(', ')}`;
+    case 'discord_appeal_accepted':
+      return `Прие обжалване в Discord${target ? ` на ${who}` : ''}`;
+    case 'discord_appeal_rejected':
+      return `Отказа обжалване в Discord${target ? ` на ${who}` : ''}`;
     case 'discord_layout':
       return `Подреди Discord сървъра: ${(d.created as string[] | undefined)?.length ?? 0} нови канала/категории${d.permissions ? ', с правата' : ''}`;
     case 'discord_warn':

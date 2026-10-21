@@ -34,8 +34,13 @@ import { finishConstructions } from './plot';
 import { awardBuildersOfWeek } from './base-life';
 import { announceFromGame } from '@/server/discord/announce';
 import { processOutbox } from '@/server/discord/outbox';
-import { bridgeCompanyChat, relayNotifications } from '@/server/discord/relay';
+import { bridgeCompanyChat, relayArrivingSoon, relayNotifications } from '@/server/discord/relay';
 import { syncCompanyPolls } from '@/server/discord/company-polls';
+import { awardMostActive, treasuryReports, welcomeCompanyMembers } from '@/server/discord/company-life';
+import { voiceXp } from '@/server/discord/levels';
+import { photoContest } from '@/server/discord/photos';
+import { runQuiz } from '@/server/discord/quiz';
+import { sweepRooms } from '@/server/discord/rooms';
 import { drawGiveaways } from '@/server/discord/giveaways';
 import { registerCommands } from '@/server/discord/register';
 import { updateStats } from '@/server/discord/stats';
@@ -213,10 +218,20 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'discord-community', 60_000, now, async () => {
       await drawGiveaways(db, now);
       await syncCompanyPolls(db, now);
+      await voiceXp(db, now);
+      await sweepRooms(db, now);
+      await relayArrivingSoon(db, now);
+      await welcomeCompanyMembers(db, now);
+      await runQuiz(db, now);
     });
     // The numbers in the names of the statistics channels (Discord allows two renames per ten minutes).
     await every(db, 'discord-stats', 10 * 60_000, now, () => updateStats(db, now));
-    await every(db, 'discord-weekly', 30 * 60_000, now, () => announceWeeklyRanking(db, now));
+    await every(db, 'discord-weekly', 30 * 60_000, now, async () => {
+      await announceWeeklyRanking(db, now);
+      await awardMostActive(db, now);
+      await treasuryReports(db, now);
+      await photoContest(db, now);
+    });
     await every(db, 'discord-announce', 5 * 60_000, now, () => announceFromGame(db, now));
     await every(db, 'discord-roles', 10 * 60_000, now, () => syncAllRoles(db, now));
     // Again now and then: the bot may have been added to the server after the worker started.

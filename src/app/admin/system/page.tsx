@@ -2,6 +2,8 @@ import { sql } from 'drizzle-orm';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { DiscordCheck } from '@/components/admin/DiscordCheck';
 import { DiscordLayout } from '@/components/admin/DiscordLayout';
+import { DiscordSwitches } from '@/components/admin/DiscordSwitches';
+import { layoutState } from '@/server/discord/layout';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { dateTime } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
@@ -24,6 +26,7 @@ export default async function AdminSystem() {
   const { cursor: pushed, newest } = cursor.rows[0] ?? { cursor: null, newest: null };
   const lag = pushed != null && newest != null ? Number(newest) - Number(pushed) : null;
   const stale = jobs.filter((j) => j.failures > 0);
+  const discordSettings = (await layoutState(db)).settings;
   return (
     <div className="space-y-6">
       <PageHeader title="Система и известия" subtitle="Задачите на фоновия процес (worker) и устройствата с включени известия." />
@@ -69,6 +72,9 @@ export default async function AdminSystem() {
       <Card title="Подреждане на Discord сървъра">
         <p className="mb-3 text-sm text-mist-400">Категории и канали с емоджита, теми и права: добре дошли, новини, общност, поддръжка с тикети, статистика, гласови, екип, компании. Първо виж плана — после „Приложи“.</p>
         <DiscordLayout />
+      </Card>
+      <Card title="Защита на Discord сървъра">
+        <DiscordSwitches automod={discordSettings?.automod !== false} verification={!!discordSettings?.verification} />
       </Card>
       <Card title={`Устройства (${devices.length})`} className="p-2 sm:p-3">
         {devices.length === 0 ? <p className="p-3 text-sm text-mist-400">Никой още не е включил известия.</p> : (

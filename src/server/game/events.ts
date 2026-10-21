@@ -6,6 +6,7 @@ import {
   AUTO_EVENT_HOURS,
   DEFAULT_REWARDS,
   EVENT_METRIC_INFO,
+  EVENT_TEMPLATES,
   EVENT_METRICS,
   eventIncrement,
   goalText,
@@ -270,6 +271,29 @@ export async function createEvent(db: Database, actor: Staff, raw: EventInput, n
     await tx.insert(adminAudit).values({ actorId: actor.id, action: 'create_global_event', targetUserId: null, details: { eventId: e!.id, name: e!.name, startsAt: e!.startsAt.toISOString(), target: e!.target, metric: e!.metric } });
     if (input.announce) await announce(tx, e!, now);
     else await tx.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type: 'leaderboard' })})`);
+    return e!;
+  });
+}
+
+/**
+ * Administrator starts one of the automatic events' templates now (from the
+ * Discord bot): the goal sized to recent activity like the automatic ones,
+ * the default rewards. It is not "automatic", so it does not hold them back.
+ */
+export async function startTemplateEvent(db: Database, actor: Staff, templateId: string, hours: number, now = new Date()) {
+  requireAdminRole(actor);
+  const t = EVENT_TEMPLATES.find((x) => x.id === templateId);
+  if (!t) fail('no_template', 'Няма такъв ивент.');
+  if (!(Number.isInteger(hours) && hours >= 1 && hours <= 14 * 24)) fail('bad_hours', 'Продължителността е от 1 час до 14 дни.');
+  const filter = { metric: t!.metric, cargoType: t!.cargoType ?? null, countryCode: t!.countryCode ?? null };
+  const target = autoTarget(t!.metric, await recentAmount(db, filter, now), 7 * 24, hours);
+  return db.transaction(async (tx) => {
+    const [e] = await tx
+      .insert(globalEvents)
+      .values({ name: t!.name, description: t!.description, ...filter, target, minContribution: EVENT_METRIC_INFO[t!.metric].minContribution, rewards: DEFAULT_REWARDS, startsAt: now, endsAt: new Date(now.getTime() + hours * 3_600_000), createdBy: actor.id })
+      .returning();
+    await tx.insert(adminAudit).values({ actorId: actor.id, action: 'create_global_event', targetUserId: null, details: { eventId: e!.id, name: e!.name, startsAt: e!.startsAt.toISOString(), target: e!.target, metric: e!.metric, from: 'discord' } });
+    await announce(tx, e!, now);
     return e!;
   });
 }

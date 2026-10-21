@@ -89,9 +89,10 @@ export const LAYOUT: CategorySpec[] = [
     aliases: ['чат-канали'],
     channels: [
       { key: 'главен-чат', name: '💬┃главен-чат', topic: 'Общият чат на TransVerse. Бъди готин с останалите шофьори.' },
-      { key: 'снимки', name: '📸┃снимки', topic: 'Снимки на камиони, бази и маршрути от играта.' },
+      { key: 'снимки', name: '📸┃снимки', topic: 'Снимки на камиони, бази и маршрути от играта. Конкурс всяка седмица: най-много ⭐ печели ТрансКоин.' },
       { key: 'идеи', name: '💡┃идеи', aliases: ['предложения'], topic: 'Идеи за играта — най-харесваните влизат в обновленията.' },
-      { key: 'бот-команди', name: '🤖┃бот-команди', topic: 'Тук пиши командите на бота: /профил, /курс, /ивент, /битка…' },
+      { key: 'бот-команди', name: '🤖┃бот-команди', topic: 'Тук пиши командите на бота: /профил, /курс, /ивент, /битка, /ранг…' },
+      { key: 'викторина', name: '🧠┃викторина', access: 'readonly', topic: 'Въпроси за градовете и пътищата — първият верен отговор печели ТрансКоин.' },
       { key: 'спам-чат', name: '🎲┃спам-чат', topic: 'Всичко останало.' },
     ],
   },
@@ -121,6 +122,7 @@ export const LAYOUT: CategorySpec[] = [
     name: '🔊 ┃ ГЛАСОВИ КАНАЛИ',
     aliases: ['voicechannels'],
     channels: [
+      { key: 'създай-стая', name: '➕ Създай стая', type: 'voice' },
       { key: 'говорилня1', name: '🔊 Говорилня #1', type: 'voice' },
       { key: 'говорилня2', name: '🔊 Говорилня #2', type: 'voice' },
       { key: 'говорилня3', name: '🔊 Говорилня #3', type: 'voice' },
@@ -150,13 +152,15 @@ export interface LayoutState {
   categories: Record<string, string>;
   panels: Record<string, string>;
   appliedAt?: number;
+  /** Admin switches: automatic moderation (on unless false), the new members' check (off unless true). */
+  settings?: { automod?: boolean; verification?: boolean };
 }
 const STATE = 'discord-layout';
 
 export async function layoutState(db: DbOrTx): Promise<LayoutState> {
   const [row] = await db.select().from(jobState).where(eq(jobState.key, STATE));
   const v = (row?.value ?? {}) as Partial<LayoutState>;
-  return { channels: v.channels ?? {}, categories: v.categories ?? {}, panels: v.panels ?? {}, appliedAt: v.appliedAt };
+  return { channels: v.channels ?? {}, categories: v.categories ?? {}, panels: v.panels ?? {}, appliedAt: v.appliedAt, settings: v.settings ?? {} };
 }
 export async function saveLayoutState(db: DbOrTx, state: LayoutState) {
   await db.insert(jobState).values({ key: STATE, value: state }).onConflictDoUpdate({ target: jobState.key, set: { value: state, updatedAt: new Date() } });
@@ -275,7 +279,7 @@ export async function applyLayout(db: DbOrTx, opts: { permissions: boolean }) {
   const { categories, chans } = match(all, state);
   const staffRole = await ensureRole(DISCORD_ROLES.staff.name, DISCORD_ROLES.staff.color);
   const ids = { guild: guildId, bot: g.botId, staff: staffRole };
-  const next: LayoutState = { channels: {}, categories: {}, panels: state.panels, appliedAt: Date.now() };
+  const next: LayoutState = { channels: {}, categories: {}, panels: state.panels, appliedAt: Date.now(), settings: state.settings };
   const created: string[] = [];
   const errors: string[] = [];
   const positions: { id: string; position: number }[] = [];

@@ -2,7 +2,7 @@ import { and, asc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { isStaff } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
-import { companyMessages, jobState, notifications, organizations, users } from '@/server/db/schema';
+import { cities, companies, companyMessages, contracts, deliveries, jobState, notifications, organizations, users, vehicles } from '@/server/db/schema';
 import { categoryOf, inQuietHours, type PushCategory } from '@/server/push';
 import { appUrl, BRAND, discordConfig } from './config';
 import { enqueue } from './outbox';
@@ -77,4 +77,32 @@ export async function bridgeCompanyChat(db: Database, now = new Date()) {
   }
   await save(db, 'discord-bridge-cursor', rows.length === 200 ? rows.at(-1)!.id : Math.max(from, upTo));
   return rows.length;
+}
+
+/**
+ * Worker: "пристига след ~5 мин" to linked players (deliveries on, quiet
+ * hours respected), once per trip, with the loads waiting at the destination.
+ */
+export async function relayArrivingSoon(db: Database, now = new Date()) {
+  if (!discordConfig().bot) return 0;
+  const rows = await db
+    .select({ id: deliveries.id, etaAt: deliveries.etaAt, discordId: users.discordId, prefs: users.discordPrefs, quiet: users.quietHours, role: users.role, plate: vehicles.plate, vehicleId: vehicles.id, destId: contracts.destCityId, dest: cities.nameBg })
+    .from(deliveries)
+    .innerJoin(companies, eq(companies.id, deliveries.companyId))
+    .innerJoin(users, eq(users.id, companies.ownerId))
+    .innerJoin(vehicles, eq(vehicles.id, deliveries.vehicleId))
+    .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
+    .innerJoin(cities, eq(cities.id, contracts.destCityId))
+    .where(and(eq(deliveries.status, 'in_progress'), isNotNull(users.discordId), gt(deliveries.etaAt, new Date(now.getTime() + 3 * 60_000)), lte(deliveries.etaAt, new Date(now.getTime() + 6 * 60_000))))
+    .limit(200);
+  let n = 0;
+  for (const r of rows) {
+    if (!featureLive('discord_bot', now, isStaff(r.role)) || !wantsDiscord(r.prefs, 'deliveries') || inQuietHours(r.quiet, now)) continue;
+    await enqueue(db, `soon:${r.id}`, `dm:${r.discordId}`, {
+      embeds: [{ title: `⏱️ ${r.plate} пристига в ${r.dest} <t:${Math.floor(r.etaAt!.getTime() / 1000)}:R>`, description: 'Виж товарите, които те чакат там — като пристигне, ще можеш да го пуснеш с „Нов курс за този камион“.', color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } }],
+      components: buttonRows(linkButton(`Товари от ${r.dest}`, `${appUrl()}/game/contracts?from=${r.destId}&truck=${r.vehicleId}`, '📦')),
+    }, now);
+    n++;
+  }
+  return n;
 }

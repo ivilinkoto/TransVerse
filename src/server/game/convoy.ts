@@ -2,14 +2,31 @@ import { and, asc, eq, gte, inArray, isNull, ne } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import type { DbOrTx, Tx } from '@/server/db/client';
-import { cities, companies, contracts, deliveries, users } from '@/server/db/schema';
+import { cities, companies, contracts, deliveries, discordVoice, users } from '@/server/db/schema';
+import { layoutState } from '@/server/discord/layout';
 import { notify } from './notify';
 import { circleOf } from './world-map';
 
-/** Friends' and company members' trips on this lane that left recently and have no convoy yet. */
+/**
+ * Linked players who are in the Discord voice channel "Конвой" together with
+ * this player right now (v1.3): they count as a convoy like friends do.
+ */
+async function voiceMates(db: DbOrTx, userId: string, now: Date) {
+  if (!(await featureFor(db, userId, 'discord_bot', now))) return [];
+  const [me] = await db.select({ discordId: users.discordId }).from(users).where(eq(users.id, userId));
+  if (!me?.discordId) return [];
+  const convoyChannel = (await layoutState(db)).channels['конвой'];
+  if (!convoyChannel) return [];
+  const [inside] = await db.select({ id: discordVoice.discordUserId }).from(discordVoice).where(and(eq(discordVoice.discordUserId, me.discordId), eq(discordVoice.channelId, convoyChannel)));
+  if (!inside) return [];
+  const rows = await db.select({ id: users.id }).from(discordVoice).innerJoin(users, eq(users.discordId, discordVoice.discordUserId)).where(and(eq(discordVoice.channelId, convoyChannel), ne(users.id, userId)));
+  return rows.map((r) => r.id);
+}
+
+/** Friends', company members' and voice convoy mates' trips on this lane that left recently and have no convoy yet. */
 export async function convoyCandidates(db: DbOrTx, userId: string, now: Date, lane?: { originCityId: number; destCityId: number }) {
   const { friends, mates } = await circleOf(db, userId);
-  const ids = [...new Set([...friends, ...mates])];
+  const ids = [...new Set([...friends, ...mates, ...(await voiceMates(db, userId, now))])];
   if (!ids.length) return [];
   return db
     .select({ deliveryId: deliveries.id, userId: users.id, username: users.username, originCityId: contracts.originCityId, destCityId: contracts.destCityId, startedAt: deliveries.startedAt })

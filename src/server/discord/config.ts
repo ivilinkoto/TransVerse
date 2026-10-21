@@ -36,6 +36,9 @@ export const DISCORD_CHANNELS = {
   logs: 'логове',
   warnings: 'предупреждения',
   bans: 'банове',
+  quiz: 'викторина',
+  photos: 'снимки',
+  botCommands: 'бот-команди',
 } as const;
 export type DiscordChannel = keyof typeof DISCORD_CHANNELS;
 /** The category the companies' private channels go into (matched without emoji and decorations). */
@@ -65,8 +68,15 @@ export const PING_ROLES = {
   battles: { name: '🔔 Битки', label: 'Битки', emoji: '⚔️', channel: 'battles' },
   news: { name: '🔔 Седмичник', label: 'Седмичник', emoji: '📰', channel: 'news' },
   giveaways: { name: '🔔 Раздавания', label: 'Раздавания', emoji: '🎁', channel: 'giveaways' },
+  quiz: { name: '🔔 Викторина', label: 'Викторина', emoji: '🧠', channel: 'quiz' },
 } as const;
 export type PingRole = keyof typeof PING_ROLES;
+
+/**
+ * Members who pressed "Не съм бот" (when the check is on, see verify.ts): the
+ * rest of the server opens for them. Not managed: the bot never takes it away.
+ */
+export const VERIFIED_ROLE = { name: '✅ Проверен', color: 0x2fd27a } as const;
 
 /** Embed colour of the game. */
 export const BRAND = 0xf97316;
