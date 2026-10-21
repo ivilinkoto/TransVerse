@@ -37,9 +37,16 @@ interface Question {
   correct: number;
 }
 
-/** A question from the game's real geography (null when the data is too thin). */
+/** A question from the game's real geography: the kinds in random order, the first one the data allows (null when none). */
 export async function makeQuestion(db: Database): Promise<Question | null> {
-  const kind = randomInt(3);
+  for (const kind of shuffle([0, 1, 2])) {
+    const q = await questionOfKind(db, kind);
+    if (q) return q;
+  }
+  return null;
+}
+
+async function questionOfKind(db: Database, kind: number): Promise<Question | null> {
   if (kind === 0) {
     const { rows: cs } = await db.execute<{ name: string; population: number }>(sql`select name_bg as name, population from cities where population > 30000 order by random() limit 3`);
     if (cs.length < 3 || new Set(cs.map((c) => c.population)).size < 3) return null;
@@ -54,6 +61,7 @@ export async function makeQuestion(db: Database): Promise<Question | null> {
     const options = shuffle([c[0].country, ...others.map((o) => o.country)]);
     return { question: `В коя държава е град ${c[0].name}?`, options, correct: options.indexOf(c[0].country) };
   }
+  // Only roads routed on the real network (not straight-line approximations).
   const { rows: r } = await db.execute<{ a: string; b: string; km: number }>(sql`select oc.name_bg as a, dc.name_bg as b, r.distance_km::float as km from routes r join cities oc on oc.id = r.from_city_id join cities dc on dc.id = r.to_city_id where r.provider = 'valhalla' and r.distance_km > 80 order by random() limit 1`);
   if (!r[0]) return null;
   const real = Math.round(r[0].km / 10) * 10;
