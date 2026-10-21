@@ -92,6 +92,8 @@ export interface BoardContract {
     rushMinutes: number | null;
     /** > 0 when the load fits only with an overload (percent over the payload). */
     overloadPercent: number;
+    /** The load is bigger than the truck: the part it can take and its pay (null when it fits or may not be split). */
+    part: { tons: number; rewardCents: number } | null;
   }[];
 }
 
@@ -266,6 +268,10 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
   const [rush, setRush] = useState(false);
   const [overload, setOverload] = useState(false);
   const needsOverload = !!option && option.overloadPercent > 0;
+  // A load bigger than the truck goes as a part, unless the player chose to overload and take it all.
+  const part = option?.part && !(needsOverload && overload) ? option.part : null;
+  // The page estimates a part's profit; overloading the whole load is paid in full.
+  const shownProfit = option ? (option.part && !part ? option.profitCents + c.rewardCents - option.part.rewardCents : option.profitCents) : 0;
   const shownMinutes = option ? (rush && option.rushMinutes != null ? option.rushMinutes : option.minutes) : 0;
 
   const [favBusy, setFavBusy] = useState(false);
@@ -285,8 +291,8 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload });
-      onAccepted(`Камионът тръгна: ${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
+      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}) });
+      onAccepted(`Камионът тръгна: ${part ? `${dec(part.tons)} т ` : ''}${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
       setBusy(false);
       router.refresh();
     } catch (e) {
@@ -415,12 +421,12 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                   <option value="">— изберете превозно средство —</option>
                   {c.options.map((o) => (
                     <option key={o.vehicleId} value={o.vehicleId} disabled={!!o.error}>
-                      {o.label}{o.error ? ` — ${o.error}` : ''}
+                      {o.label}{o.error ? ` — ${o.error}` : o.part && !o.overloadPercent ? ` — част: ${dec(o.part.tons)} т` : ''}
                     </option>
                   ))}
                 </select>
-                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload)} onClick={accept}>
-                  <ShieldCheck className="h-4 w-4" />{busy ? 'Изпращане…' : 'Приеми и изпрати'}
+                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload && !part)} onClick={accept}>
+                  <ShieldCheck className="h-4 w-4" />{busy ? 'Изпращане…' : part ? `Вземи ${dec(part.tons)} т и изпрати` : 'Приеми и изпрати'}
                 </button>
                 <Link href={`/game/map?contract=${c.id}`} className="btn-ghost"><MapPinned className="h-4 w-4" />На картата</Link>
                 {vip && !c.urgent && !c.reservedByMe && <ReserveButton contractId={c.id} />}
@@ -436,16 +442,22 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                   {needsOverload && (
                     <label className="flex items-start gap-2">
                       <input type="checkbox" className="mt-0.5" checked={overload} onChange={(e) => setOverload(e.target.checked)} />
-                      <span>Натовари с претоварване (+{option.overloadPercent}% над капацитета). <span className="text-amber-sig">Риск от глоба на кантар и по-бързо износване.</span></span>
+                      <span>{option.part ? 'Вместо част — натовари всичко' : 'Натовари'} с претоварване (+{option.overloadPercent}% над капацитета). <span className="text-amber-sig">Риск от глоба на кантар и по-бързо износване.</span></span>
                     </label>
                   )}
                 </div>
+              )}
+              {part && (
+                <p className="rounded-xl border border-cyan-glow/30 bg-cyan-glow/5 p-3 text-sm">
+                  <span className="font-semibold text-cyan-glow">Част от товара: </span>
+                  камионът побира {dec(part.tons)} т от {dec(c.tons)} т — заплащане <span className="num font-semibold text-profit">{money(part.rewardCents)}</span> (делът от тоновете). Останалите {dec(Math.round((c.tons - part.tons) * 10) / 10)} т остават на борсата за други камиони.
+                </p>
               )}
               {option && !option.error && (
                 <div className="grid gap-2 text-sm sm:grid-cols-4">
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Празен курс </span><span className="num">≈ {int(option.emptyKm)} км{c.urgent && option.emptyKm > 0 ? ' · 1 мин' : ''}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{option.rented ? 'Наем ' : 'Разходи (оценка) '}</span><span className="num text-loss">{money(option.costCents)}</span></div>
-                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Печалба (оценка) </span><span className={`num ${option.profitCents >= 0 ? 'text-profit' : 'text-loss'}`}>{money(option.profitCents)}</span></div>
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">Печалба (оценка) </span><span className={`num ${shownProfit >= 0 ? 'text-profit' : 'text-loss'}`}>{money(shownProfit)}</span></div>
                   <div className={`rounded-lg px-3 py-2 ${shownMinutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>
                     <span className="text-mist-400">Пристигане след </span><span className="num">≈ {duration(shownMinutes)}</span>
                     {shownMinutes > c.windowMinutes && <span className="ml-1 inline-flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" />риск от закъснение</span>}

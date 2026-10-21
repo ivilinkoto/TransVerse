@@ -52,6 +52,7 @@ export const FEATURES = {
   builder_week: '1.3',
   build_last_load: '1.3',
   discord_bot: '1.3',
+  partial_loads: '1.3',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;
