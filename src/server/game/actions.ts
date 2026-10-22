@@ -10,6 +10,8 @@ import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
 import { claimEasterQuest, eggFight } from '@/server/game/easter';
+import { setShowcase, staffBus } from '@/server/game/community';
+import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
 import { createAlliance, dissolveAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
 import { CARGO_TYPES } from '@/lib/game/cargo';
@@ -198,6 +200,11 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('spotStork') }),
   z.object({ type: z.literal('claimEasterQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('eggFight'), friendId: id }),
+  z.object({ type: z.literal('staffBus'), vehicleId: id }),
+  z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
+  z.object({ type: z.literal('listForAlliance'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500), pricePerTon: z.coerce.number().positive().max(100_000) }),
+  z.object({ type: z.literal('buyAllianceListing'), listingId: id }),
+  z.object({ type: z.literal('withdrawAllianceListing'), listingId: id }),
   z.object({ type: z.literal('createAlliance'), name: z.string().max(40) }),
   z.object({ type: z.literal('inviteToAlliance'), target: z.string().max(40) }),
   z.object({ type: z.literal('respondAllianceInvite'), inviteId: id, accept: z.boolean() }),
@@ -305,6 +312,11 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   spotStork: 'marta',
   claimEasterQuest: 'easter',
   eggFight: 'easter',
+  staffBus: 'staff_bus',
+  setShowcase: 'profile_showcase',
+  listForAlliance: 'alliance_market',
+  buyAllianceListing: 'alliance_market',
+  withdrawAllianceListing: 'alliance_market',
   createAlliance: 'alliances',
   inviteToAlliance: 'alliances',
   respondAllianceInvite: 'alliances',
@@ -756,6 +768,17 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await claimEasterQuest(db, user.id, input.questId)) };
     case 'eggFight':
       return { ok: true, ...(await eggFight(db, user.id, input.friendId)) };
+    case 'staffBus':
+      return { ok: true, ...(await staffBus(db, user.id, input.vehicleId)) };
+    case 'setShowcase':
+      return { ok: true, ...(await setShowcase(db, user.id, { trucks: input.trucks, badges: input.badges })) };
+    case 'listForAlliance':
+      return { ok: true, listingId: (await listForAlliance(db, user.id, { depotId: input.depotId, cargo: input.cargo, tons: input.tons, pricePerTonCents: Math.round(input.pricePerTon * 100) })).id };
+    case 'buyAllianceListing':
+      return { ok: true, ...(await buyAllianceListing(db, user.id, input.listingId)) };
+    case 'withdrawAllianceListing':
+      await withdrawAllianceListing(db, user.id, input.listingId);
+      return { ok: true };
     case 'claimMartaQuest':
       return { ok: true, ...(await claimMartaQuest(db, user.id, input.questId)) };
     case 'giveMartenitsa':

@@ -7,6 +7,7 @@ import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multistop';
 import { formConvoy } from './convoy';
+import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
 import { acceptJobOffer, payHireCommission } from './hire';
@@ -464,6 +465,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const payloadTons = combinationCapability({ unit: powerUnitModel(vehicle!.modelId), trailer: trailerRow ? trailerModel(trailerRow.modelId) : null }).payloadTons;
   const perfect = await recordPerfectTrip(tx, company!.ownerId, { late: result.late, violations: d.violations, events: d.roadEvents, tons: contract.weightTons, payloadTons, rewardCents: result.rewardCents }, completedAt);
   if (perfect.bonusCents) await post(tx, d.companyId, [{ category: 'perfect_bonus', amountCents: perfect.bonusCents, description: `Перфектна серия: ${perfect.streak} подред`, idempotencyKey: key('perfect'), refType: 'delivery', refId: d.id }]);
+  // v1.5: a perfect convoy (both on time, together) and the first trip of a new company member.
+  const convoyPerfect = await settlePerfectConvoy(tx, d, { userId: company!.ownerId, late: result.late, at: completedAt, rewardCents: result.rewardCents, originCityId: contract.originCityId, destCityId: contract.destCityId });
+  const firstTrip = perks ? await firstTripBonus(tx, company!.ownerId, d, result.rewardCents, completedAt) : 0;
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
   if (station?.cents) await postTreasury(tx, station.orgId, [{ category: 'fuel_station', amountCents: station.cents, description: `Гориво на станцията: ${contract.goods}`, idempotencyKey: key('fuel-station'), refType: 'delivery', refId: d.id }]);
@@ -475,8 +479,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
+  // Lane records (v1.5): the fastest loaded run on the lane this month.
+  await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
   // The city album (v1.5): a card for the destination.
   await recordCityVisit(tx, company!.ownerId, contract.destCityId, completedAt);
   // The company academy (v1.5): an on-time trip of a student is a course.

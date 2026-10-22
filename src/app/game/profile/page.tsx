@@ -1,4 +1,5 @@
-import { Building2, Star, Users } from 'lucide-react';
+import { eq } from 'drizzle-orm';
+import { Building2, Sparkles, Star, Users } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AvatarUpload } from '@/components/game/AvatarUpload';
 import { FriendsPanel } from '@/components/game/FriendsPanel';
@@ -8,14 +9,21 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { date } from '@/lib/format';
 import { PREMIUM_LEVELS, REPUTATION_TIERS, reputationBonusShare, reputationTier } from '@/lib/game/progression';
 import { gameContext } from '@/server/game/context';
+import { ProfileShowcase } from '@/components/game/ProfileShowcase';
+import { ShowcaseEditor } from '@/components/game/ShowcaseEditor';
+import { users } from '@/server/db/schema';
+import { showcaseOf } from '@/server/game/community';
+import { badgesOf } from '@/server/game/halloween';
+import { fleetView } from '@/server/game/queries';
 import { friendsOf, myCompanyInvites, playerCard } from '@/server/game/social';
 
 export const metadata = { title: 'Профил' };
 
 export default async function ProfilePage() {
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const [card, social, invites] = await Promise.all([playerCard(db, user.id, user.username, now), friendsOf(db, user.id, now), myCompanyInvites(db, user.id)]);
   if (!card) notFound();
+  const showcase = features.profile_showcase ? { mine: await showcaseOf(db, user.id), fleet: (await fleetView(db, company.id)).vehicles.filter((v) => v.ownership !== 'rented'), badges: await badgesOf(db, user.id), chosen: (await db.select({ s: users.showcase }).from(users).where(eq(users.id, user.id)))[0]!.s } : null;
   const tier = reputationTier(company.reputation);
   const next = REPUTATION_TIERS.find((t) => t.min > company.reputation);
   return (
@@ -24,6 +32,13 @@ export default async function ProfilePage() {
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <div className="space-y-6">
           <Card><PlayerCardView card={card} /></Card>
+          {showcase && (
+            <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" />Витрина на профила</span>}>
+              <p className="mb-3 text-sm text-mist-300">До 3 камиона и 3 значки, които другите виждат в профила ти.</p>
+              <ProfileShowcase showcase={showcase.mine} />
+              <div className="mt-4 border-t border-asphalt-800 pt-4"><ShowcaseEditor trucks={showcase.fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${v.model.brand} ${v.model.name}` }))} badges={showcase.badges.map((b) => ({ id: b.id, label: b.label }))} chosen={showcase.chosen} /></div>
+            </Card>
+          )}
           <Card title="Снимка на профила"><AvatarUpload userId={user.id} username={user.username} version={user.avatarVersion} vip={card.vip} /></Card>
           {invites.length > 0 && (
             <Card id="invites" title={<span className="inline-flex items-center gap-2"><Building2 className="h-4 w-4 text-gold-400" />Покани за компании</span>}>

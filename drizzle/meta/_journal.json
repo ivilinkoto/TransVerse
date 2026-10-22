@@ -435,6 +435,13 @@
       "when": 1792701230109,
       "tag": "0061_wandering_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792701871538,
+      "tag": "0062_daily_morg",
+      "breakpoints": true
     }
   ]
 }

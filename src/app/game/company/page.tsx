@@ -1,4 +1,5 @@
-import { Building2, CalendarDays, CheckCircle2, Circle, Coins, Gift, Landmark, MapPin, Route, ScrollText, Star, Truck, Users } from 'lucide-react';
+import { and, eq, isNull } from 'drizzle-orm';
+import { Building2, Bus, Cake, CalendarDays, CheckCircle2, Circle, Coins, Gift, Landmark, MapPin, Route, ScrollText, Star, Truck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { CompanySeason } from '@/components/company/CompanySeason';
 import { getDb } from '@/server/db/client';
@@ -17,19 +18,23 @@ import { foundingCheck, headquarterOptions } from '@/server/game/company';
 import { tutorialPending } from '@/server/game/tutorial-flags';
 import { date, dateTime, int, money } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
+import { SelectAction } from '@/components/ui/SelectAction';
+import { daysToAnniversary, STAFF_BUS } from '@/lib/game/community';
+import { vehicles } from '@/server/db/schema';
+import { staffBusState } from '@/server/game/community';
 
 export const metadata = { title: 'Транспортна компания' };
 
 
 export default async function CompanyPage() {
-  const { db, user, company } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const visitPending = await tutorialPending(db, user.id, 'company_goal');
   const hub = await companyHub(db, user.id);
   if (hub) {
     return (
       <>
         <TutorialVisit step="company_goal" pending={visitPending} />
-        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} />
+        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null }} />
       </>
     );
   }
@@ -131,7 +136,31 @@ function TextBlock({ title, icon: Icon, text, empty }: { title: string; icon: ty
 type History = Awaited<ReturnType<typeof treasuryHistory>>;
 
 /** What every member (the owner included) sees: the company, its treasury, perks and their own share. */
-function CompanyOverview({ hub, history, licences }: { hub: Hub; history: History; licences: { licence: string; acquiredAt: Date }[] }) {
+async function staffBusView(db: ReturnType<typeof getDb>, userId: string, accountId: string, now: Date) {
+  const state = await staffBusState(db, userId, now);
+  if (!state || (!state.available && !state.firstTripBonus)) return null;
+  const trucks = state.available ? await db.select({ id: vehicles.id, plate: vehicles.plate, cityId: vehicles.cityId }).from(vehicles).where(and(eq(vehicles.companyId, accountId), isNull(vehicles.soldAt), eq(vehicles.status, 'idle'))) : [];
+  return { ...state, trucks: trucks.filter((t) => t.cityId !== state.hqCityId) };
+}
+
+type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null };
+
+/** The staff bus for a new member and the first-trip bonus (v1.5). */
+function StaffBus({ bus, hq }: { bus: NonNullable<Extras['bus']>; hq: string }) {
+  return (
+    <Card title={<span className="inline-flex items-center gap-2"><Bus className="h-4 w-4 text-cyan-glow" />Фирмен автобус</span>}>
+      {bus.available && (
+        <div className="space-y-2 text-sm">
+          <p className="text-mist-300">Добре дошъл! Компанията праща автобус: един твой свободен камион (с ремаркето) идва в {hq} за минута, безплатно. Важи до {date(bus.until)}.</p>
+          {bus.trucks.length ? <SelectAction label="Докарай" ariaLabel="Камион до базата" value="" options={[{ value: '', label: '— избери камион —' }, ...bus.trucks.map((t) => ({ value: t.id, label: t.plate }))]} action={{ type: 'staffBus' }} field="vehicleId" /> : <p className="text-xs text-mist-400">Нямаш свободен камион извън {hq}.</p>}
+        </div>
+      )}
+      {bus.firstTripBonus && <p className="mt-2 text-sm text-profit">Първият ти курс като член носи +{Math.round(STAFF_BUS.firstTripShare * 100)} % към наградата.</p>}
+    </Card>
+  );
+}
+
+function CompanyOverview({ hub, history, licences, extras }: { hub: Hub; history: History; licences: { licence: string; acquiredAt: Date }[]; extras: Extras }) {
   const c = hub.company;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   return (
@@ -139,6 +168,7 @@ function CompanyOverview({ hub, history, licences }: { hub: Hub; history: Histor
       <p className="flex flex-wrap items-center gap-3 text-sm text-mist-400">
         <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />Седалище {hub.hq}</span>
         <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />Основана {date(c.foundedAt)}</span>
+        {extras.anniversaryIn != null && <span className="inline-flex items-center gap-1"><Cake className="h-3.5 w-3.5" />{extras.anniversaryIn === 0 ? 'Днес е рожденият ден на компанията!' : `Годишнина след ${extras.anniversaryIn} ${extras.anniversaryIn === 1 ? 'ден' : 'дни'}`}</span>}
         <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />Собственик {hub.owner}</span>
       </p>
       <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
@@ -150,6 +180,7 @@ function CompanyOverview({ hub, history, licences }: { hub: Hub; history: Histor
       <div className="grid gap-6 lg:grid-cols-2">
         <TextBlock title="За компанията" icon={Building2} text={c.description} empty="Компанията още няма описание." />
         <TextBlock title="Правила" icon={ScrollText} text={c.rules} empty="Няма публикувани правила." />
+        {extras.bus && <StaffBus bus={extras.bus} hq={hub.hq} />}
         <CompanyProgress hub={hub} />
         <CompanySeason db={getDb()} organizationId={c.id} />
         <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} />

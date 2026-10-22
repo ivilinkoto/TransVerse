@@ -97,6 +97,12 @@ export const FEATURES = {
   cargo_insurance: '1.5',
   urgent_raise: '1.5',
   tachograph: '1.5',
+  alliance_market: '1.5',
+  staff_bus: '1.5',
+  anniversary: '1.5',
+  profile_showcase: '1.5',
+  perfect_convoy: '1.5',
+  lane_records: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

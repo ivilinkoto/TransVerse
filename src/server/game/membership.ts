@@ -148,7 +148,7 @@ export async function joinCompany(db: Database, userId: string, companyId: strin
 
     if (company!.recruitment === 'open') {
       const rank = await entryRank(tx, companyId);
-      await tx.insert(companyMembers).values({ userId, companyId, rankId: rank.id });
+      await tx.insert(companyMembers).values({ userId, companyId, rankId: rank.id, firstTripBonus: true });
       await queueRoles(tx, userId);
       await tx.update(companyApplications).set({ status: 'withdrawn', decidedAt: new Date() }).where(and(eq(companyApplications.userId, userId), eq(companyApplications.status, 'pending')));
       await logActivity(tx, userId, 'company_joined', { companyId });
@@ -197,7 +197,7 @@ export async function decideApplication(db: Database, actorId: string, applicati
     }
     if ((await memberCount(tx, actor.company.id)) >= memberCapacity(actor.company.upgrades as UpgradeLevels)) fail('company_full', 'Няма свободни места — разширете административната сграда.');
     const rank = await entryRank(tx, actor.company.id);
-    await tx.insert(companyMembers).values({ userId: app!.userId, companyId: actor.company.id, rankId: rank.id });
+    await tx.insert(companyMembers).values({ userId: app!.userId, companyId: actor.company.id, rankId: rank.id, firstTripBonus: true });
     await queueRoles(tx, app!.userId);
     await tx.update(companyApplications).set({ status: 'accepted', ...decided }).where(eq(companyApplications.id, app!.id));
     await tx.update(companyApplications).set({ status: 'withdrawn', decidedAt: new Date() }).where(and(eq(companyApplications.userId, app!.userId), eq(companyApplications.status, 'pending')));

@@ -1,10 +1,12 @@
-import { CheckCircle2, Clock, Flag, Globe2, Medal, Route, Trophy, Truck, Weight } from 'lucide-react';
+import { CheckCircle2, Clock, Flag, Globe2, Medal, Route, Sparkles, Trophy, Truck, Weight } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { PlayerCardLive } from '@/components/game/PlayerCardLive';
 import { Card, Empty, PageHeader } from '@/components/ui';
 import { date, int, km } from '@/lib/format';
 import { playerCareer } from '@/server/game/career';
 import { gameContext } from '@/server/game/context';
+import { ProfileShowcase } from '@/components/game/ProfileShowcase';
+import { laneRecordsView, showcaseOf } from '@/server/game/community';
 import { playerCard } from '@/server/game/social';
 
 export const metadata = { title: 'Кариера на играч' };
@@ -21,18 +23,23 @@ function Fact({ label, value, icon: Icon }: { label: string; value: React.ReactN
 /** A player's public career page: the card, totals, records, favourite lanes and the latest trips. */
 export default async function PlayerCareerPage({ params }: { params: Promise<{ username: string }> }) {
   const username = decodeURIComponent((await params).username);
-  const { db, user, features } = await gameContext();
+  const { db, user, features, now } = await gameContext();
   if (!features.career) notFound();
   const card = await playerCard(db, user.id, username);
   if (!card) notFound();
   const career = await playerCareer(db, card.id);
   if (!career) notFound();
+  const showcase = features.profile_showcase ? await showcaseOf(db, card.id) : null;
+  const records = features.lane_records ? await laneRecordsView(db, now, 10, card.id) : [];
   return (
     <div className="space-y-6">
       <PageHeader title={`Кариера · ${card.username}`} subtitle="Курсове, рекорди и любими линии. Игрови данни, без пари." />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="min-w-0 space-y-6">
           <Card><PlayerCardLive card={card} /></Card>
+          {showcase && (showcase.trucks.length > 0 || showcase.badges.length > 0) && (
+            <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" />Витрина</span>}><ProfileShowcase showcase={showcase} /></Card>
+          )}
           <Card title={<span className="inline-flex items-center gap-2"><Trophy className="h-4 w-4 text-gold-400" />В числа</span>}>
             <div className="grid grid-cols-2 gap-2">
               <Fact label="Курсове" value={int(career.trips)} icon={Truck} />
@@ -50,6 +57,12 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
                 {career.heaviest && <li><div>Най-тежък товар: <span className="num font-semibold">{int(Math.round(career.heaviest.tons))} т</span> {career.heaviest.goods.toLowerCase()}</div><div className="text-xs text-mist-400">{career.heaviest.from} → {career.heaviest.to}</div></li>}
               </ul>
             ) : <p className="text-sm text-mist-400">Още няма завършени курсове.</p>}
+            {records.length > 0 && (
+              <div className="mt-4 border-t border-asphalt-800 pt-3">
+                <div className="label">Рекорди на линии този месец</div>
+                <ul className="mt-2 space-y-1 text-sm">{records.map((r) => <li key={`${r.originCityId}-${r.destCityId}`} className="flex justify-between gap-2"><span className="truncate">{r.from} → {r.to}</span><span className="num shrink-0 text-xs text-mist-400">{Math.floor(r.minutes / 60)} ч {r.minutes % 60} мин</span></li>)}</ul>
+              </div>
+            )}
           </Card>
         </div>
         <div className="min-w-0 space-y-6">

@@ -171,7 +171,7 @@ export async function respondCompanyInvite(db: Database, userId: string, inviteI
     if (await membershipOf(tx, userId)) fail('already_member', 'Вече членуваш в компания. Първо я напусни.', 409);
     if ((await memberCount(tx, company!.id)) >= memberCapacity(company!.upgrades as UpgradeLevels)) fail('company_full', 'Компанията вече няма свободни места.');
     const rank = await entryRank(tx, company!.id);
-    await tx.insert(companyMembers).values({ userId, companyId: company!.id, rankId: rank.id });
+    await tx.insert(companyMembers).values({ userId, companyId: company!.id, rankId: rank.id, firstTripBonus: true });
     await queueRoles(tx, userId);
     await tx.update(companyInvites).set({ status: 'accepted', decidedAt: new Date() }).where(eq(companyInvites.id, invite!.id));
     // Other invites and applications are no longer needed.

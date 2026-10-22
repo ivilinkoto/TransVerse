@@ -1,10 +1,14 @@
 import { and, eq, gt } from 'drizzle-orm';
-import { GraduationCap, Handshake, Shield } from 'lucide-react';
+import { GraduationCap, Handshake, Shield, Warehouse } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 import { Badge, Card, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { TextAction } from '@/components/ui/TextAction';
+import { AllianceListForm } from '@/components/game/AllianceListForm';
+import { CARGO, type CargoType } from '@/lib/game/cargo';
+import { ALLIANCE_MARKET } from '@/lib/game/community';
+import { allianceMarketView } from '@/server/game/alliance-market';
 import { date, dec, money } from '@/lib/format';
 import { ACADEMY, ALLIANCE, COMPANY_CONTRACT } from '@/lib/game/alliances';
 import { allianceInvites, alliances, companyMembers, users } from '@/server/db/schema';
@@ -28,6 +32,7 @@ export default async function AlliancePage() {
     features.academy ? academyOf(db, m.company.id) : [],
     features.academy ? db.select({ id: users.id, username: users.username, level: users.level }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(eq(companyMembers.companyId, m.company.id)) : [],
   ]);
+  const market = alliance && features.alliance_market ? await allianceMarketView(db, user.id, now) : null;
   const newMember = m.member.joinedAt.getTime() + ACADEMY.joinedDays * 86_400_000 > now.getTime();
   const enrolled = academy.find((s) => s.userId === user.id);
   return (
@@ -76,6 +81,22 @@ export default async function AlliancePage() {
               {manage ? <TextAction label="Създай съюз" action={{ type: 'createAlliance' }} field="name" placeholder="Име на съюза" ariaLabel="Име на съюза" maxLength={ALLIANCE.nameMax} /> : <p className="text-xs text-mist-400">Съюз създава длъжност с право „Настройки“.</p>}
             </div>
           )}
+        </Card>
+      )}
+
+      {market && (
+        <Card title={<span className="flex items-center gap-2"><Warehouse className="h-5 w-5 text-cyan-glow" />Склад на съюза</span>}>
+          <p className="text-sm text-mist-300">Продавай стока от складовете си на членовете на съюза — купува се в същия град, направо в склада на купувача (нужно му е депо там). Обявата е {ALLIANCE_MARKET.hours} ч; непродаденото се връща при теб. Игрови данни.</p>
+          <div className="mt-3"><AllianceListForm stock={market.stock.map((s) => ({ ...s, label: CARGO[s.cargoType as CargoType]?.label ?? s.cargoType }))} /></div>
+          <ul className="mt-3 divide-y divide-asphalt-800 text-sm">
+            {market.listings.map((l) => (
+              <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span><b>{l.tons} т</b> {(CARGO[l.cargoType as CargoType]?.label ?? l.cargoType).toLowerCase()} · {l.city} <span className="text-xs text-mist-400">· {l.seller} · {money(l.priceCents)} ({money(Math.round(l.priceCents / l.tons))}/т) · до {date(l.expiresAt)}</span></span>
+                {l.mine ? <ActionButton action={{ type: 'withdrawAllianceListing', listingId: l.id }}>Свали</ActionButton> : l.canBuy ? <ActionButton action={{ type: 'buyAllianceListing', listingId: l.id }} className="btn-primary" confirm={`Да купиш ли ${l.tons} т за ${money(l.priceCents)}?`}>Купи</ActionButton> : <span className="text-xs text-mist-400">нужно е депо в {l.city}</span>}
+              </li>
+            ))}
+            {!market.listings.length && <li className="py-2 text-mist-400">Още няма обяви.</li>}
+          </ul>
         </Card>
       )}
 
