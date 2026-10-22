@@ -4,6 +4,7 @@ import { Coins } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { COSMETIC_IDS, COSMETIC_PARTS } from '@/lib/game/cosmetics';
 import type { ShopItem } from '@/lib/game/shop';
 
 export interface VehicleOption {
@@ -37,12 +38,13 @@ export function ShopBuy({
   const [cityId, setCityId] = useState('');
   const [text, setText] = useState('');
   const [color, setColor] = useState(colors[0] ?? '');
+  const [cosmetic, setCosmetic] = useState('grille:chrome');
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
-  const price = item.id === 'paint' && vip ? 0 : item.price;
+  const price = item.id === 'paint' && vip ? 0 : item.needs === 'vehicle_cosmetic' ? COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof COSMETIC_PARTS].price : item.price;
   const needsVehicle = item.needs?.startsWith('vehicle');
   const missing = (needsVehicle && !vehicleId) || (item.needs === 'vehicle_city' && !cityId) || ((item.needs === 'vehicle_plate' || item.needs === 'username' || item.needs === 'recipient') && text.trim().length < 2);
 
@@ -59,6 +61,7 @@ export function ShopBuy({
           cityId: item.needs === 'vehicle_city' ? Number(cityId) : undefined,
           plate: item.needs === 'vehicle_plate' ? text : undefined,
           color: item.needs === 'vehicle_color' ? color : undefined,
+          cosmetic: item.needs === 'vehicle_cosmetic' ? cosmetic : undefined,
           username: item.needs === 'username' ? text : undefined,
           recipient: item.needs === 'recipient' ? text : undefined,
         },
@@ -90,6 +93,15 @@ export function ShopBuy({
         <select className="input py-2 text-sm" value={cityId} onChange={(e) => setCityId(e.target.value)} aria-label="Град">
           <option value="">— град —</option>
           {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      )}
+      {item.needs === 'vehicle_cosmetic' && (
+        <select className="input py-2 text-sm" value={cosmetic} onChange={(e) => setCosmetic(e.target.value)} aria-label="Част">
+          {COSMETIC_IDS.map((part) => (
+            <optgroup key={part} label={`${COSMETIC_PARTS[part].label} · ${COSMETIC_PARTS[part].price} TC`}>
+              {COSMETIC_PARTS[part].styles.map((st) => <option key={st.id} value={`${part}:${st.id}`}>{COSMETIC_PARTS[part].label}: {st.label}</option>)}
+            </optgroup>
+          ))}
         </select>
       )}
       {item.needs === 'vehicle_plate' && <input className="input py-2 text-sm uppercase" maxLength={10} value={text} onChange={(e) => setText(e.target.value.toUpperCase())} placeholder="TRANS 1" aria-label="Надпис на табелата" />}

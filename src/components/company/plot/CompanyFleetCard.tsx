@@ -14,7 +14,7 @@ export interface OrgFleet {
   vehicles: { id: string; name: string; plate: string; city: string; condition: number; odometerKm: number; borrower: string | null; lentTo: string | null; note: { text: string; by: string | null } | null }[];
 }
 
-const MODELS = POWER_UNITS.filter((m) => COMPANY_FLEET.kinds.includes(m.kind));
+const MODELS = POWER_UNITS.filter((m) => COMPANY_FLEET.kinds.includes(m.kind) && !m.electric);
 
 /** The company's own trucks: members borrow one, ranks with "Развитие" buy and sell them from the treasury. */
 export function CompanyFleetCard({ fleet, me, myVehicleId, canManage, treasuryCents, notes = false }: { fleet: OrgFleet; me: string; myVehicleId: string | null; canManage: boolean; treasuryCents: number; notes?: boolean }) {

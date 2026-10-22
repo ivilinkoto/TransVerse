@@ -94,7 +94,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       // A load bigger than the truck: only the part it carries, for the share of the pay (v1.3).
       const partT = strict && features.partial_loads && canSplit(c) ? partTons(c.weightTons, cap.payloadTons) : null;
       const part = partT && compatibilityError(bundle, { ...c, weightTons: partT }, user.level) === null ? { tons: partT, rewardCents: partRewardCents(c, partT) } : null;
-      const error = overloadable || part ? null : strict;
+      const error = v.driver?.vacationUntil && v.driver.vacationUntil > now ? 'Шофьорът е в почивен ден' : overloadable || part ? null : strict;
       // Planning estimates: empty leg by straight-line × 1.25, loaded leg from the real route.
       const emptyKm = v.cityId === c.originCityId ? 0 : haversineKm([v.city.lat, v.city.lon], [c.origin.lat, c.origin.lon]) * 1.25;
       // The urgent one-minute relocation is free; only the cargo leg costs.

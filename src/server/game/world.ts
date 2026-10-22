@@ -4,6 +4,7 @@ import { countries, jobState, marketEvents, rateLimits, sessions } from '@/serve
 import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { settleClientContracts } from './clients';
+import { driverMoods } from './moods';
 import { ensureHalloweenEvent } from './halloween';
 import { ensureChristmasEvent } from './christmas';
 import { collectOverdueFines } from './fines';
@@ -226,6 +227,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.4: the real weather on the roads, port containers and ship calls.
     if (process.env.WEATHER !== 'off') await every(db, 'weather', 30 * 60_000, now, () => fetchWeather(db, now));
+    await every(db, 'driver-moods', 24 * 3_600_000, now, () => driverMoods(db, now));
     await every(db, 'factories', 5 * 60_000, now, () => runFactories(db, now));
     await every(db, 'branches-loans', 10 * 60_000, now, async () => {
       await collectLoans(db, now);

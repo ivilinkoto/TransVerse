@@ -18,7 +18,7 @@ export const DRIVING_RULES = {
 
 import { CREW_RULES, dailyLimitMin, type Crew } from './crew';
 
-export type SegmentKind = 'drive' | 'break' | 'rest' | 'border' | 'loading' | 'unloading' | 'incident' | 'ferry' | 'rail';
+export type SegmentKind = 'drive' | 'break' | 'rest' | 'border' | 'loading' | 'unloading' | 'incident' | 'ferry' | 'rail' | 'charge';
 
 /** Segments in which the truck moves along the route (on its wheels, or on board a ferry or a train). */
 export const isMoving = (kind: SegmentKind) => kind === 'drive' || kind === 'ferry' || kind === 'rail';
@@ -75,6 +75,8 @@ export interface ScheduleInput {
   timeScale: number;
   /** Who drives: hours carried over from the last trip, a team, skills. Default: one rested driver. */
   crew?: Crew;
+  /** An electric truck (v1.4): it stops to charge every `everyKm` (it starts full). */
+  charging?: { everyKm: number; minutes: number };
 }
 
 export interface PlannedTrip {
@@ -102,6 +104,8 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
   };
   let t = input.startAt;
   let sinceBreak = 0;
+  // Electric: km driven since the last charge (the battery is full at the start).
+  let sinceCharge = 0;
   let today = Math.max(0, crew.startDutyMin);
 
   const push = (kind: SegmentKind, leg: LegKind, minutes: number, fromKm: number, toKm = fromKm) => {
@@ -142,6 +146,8 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
         segments.at(-1)!.note = cross.note;
         km = cross.toKm;
         sinceBreak = 0;
+        // Charged on board.
+        sinceCharge = 0;
         if (cross.realMin >= rules.dailyRestMin) today = 0;
         continue;
       }
@@ -152,11 +158,20 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
       if (nextBorder !== undefined && nextBorder < targetKm) targetKm = nextBorder;
       if (nextDrop && nextDrop.km < targetKm) targetKm = nextDrop.km;
       if (cross && cross.fromKm > km + 1e-6 && cross.fromKm < targetKm) targetKm = cross.fromKm;
+      const charging = input.charging;
+      if (charging && km + (charging.everyKm - sinceCharge) < targetKm) targetKm = km + Math.max(0, charging.everyKm - sinceCharge);
       const minutes = (targetKm - km) / speed;
       push('drive', leg, minutes, km, targetKm);
       sinceBreak += minutes;
       today += minutes;
+      sinceCharge += targetKm - km;
       km = targetKm;
+      // A fast charge also counts as the break.
+      if (input.charging && sinceCharge >= input.charging.everyKm - 1e-6 && km < input_.km - 1e-6) {
+        push('charge', leg, input.charging.minutes, km);
+        sinceCharge = 0;
+        if (input.charging.minutes >= DRIVING_RULES.breakMin) sinceBreak = 0;
+      }
       if (nextBorder !== undefined && Math.abs(km - nextBorder) < 1e-6) push('border', leg, DRIVING_RULES.borderWaitMin, km);
       if (nextDrop && Math.abs(km - nextDrop.km) < 1e-6) {
         push('unloading', leg, nextDrop.minutes, km);
@@ -279,8 +294,9 @@ export function compressWithCrossing(segments: readonly Segment[], startAt: numb
 
 function crewTimeFactor(input: Omit<ScheduleInput, 'timeScale'>, real: readonly Segment[]): number {
   const crew = input.crew;
-  if (!crew || (!crew.team && crew.startDutyMin <= 0 && crew.extraDailyMin <= 0)) return 1;
-  const fresh = buildSchedule({ ...input, crew: undefined, startAt: 0, timeScale: 1 });
+  // Charging stops of an electric truck make the trip longer too.
+  if (!input.charging && (!crew || (!crew.team && crew.startDutyMin <= 0 && crew.extraDailyMin <= 0))) return 1;
+  const fresh = buildSchedule({ ...input, crew: undefined, charging: undefined, startAt: 0, timeScale: 1 });
   const base = scheduleEnd(fresh) - (fresh[0]?.start ?? 0);
   const span = scheduleEnd(real) - (real[0]?.start ?? 0);
   return base > 0 ? span / base : 1;

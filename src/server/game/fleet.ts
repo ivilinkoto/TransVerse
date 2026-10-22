@@ -1,4 +1,5 @@
 import { and, eq, isNull, ne, sql } from 'drizzle-orm';
+import { featureFor } from '@/server/features';
 import { POWER_UNITS, TRAILERS, UPGRADES, couplingError, powerUnitModel, trailerModel, type UpgradeId } from '@/lib/game/catalog';
 import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -59,6 +60,7 @@ export async function buyVehicle(db: Database, userId: string, modelId: string, 
   const model = POWER_UNITS.find((m) => m.id === modelId);
   if (!model) fail('unknown_model', 'Непознат модел.');
   const now = options.now ?? new Date();
+  if (model!.electric && !(await featureFor(db, userId, 'electric', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   if (options.lease && model!.priceCents < LEASE.minPriceCents) fail('lease_unavailable', 'Лизинг има за камиони от ' + money(LEASE.minPriceCents) + ' нагоре.');
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);

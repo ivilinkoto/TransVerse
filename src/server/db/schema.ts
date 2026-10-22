@@ -20,6 +20,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { Cosmetics } from '@/lib/game/cosmetics';
 
 const money = (name: string) => bigint(name, { mode: 'number' });
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
@@ -271,6 +272,8 @@ export const vehicles = pgTable(
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
     /** Special paint scheme on top of the colour (e.g. 'pumpkin' from Halloween 2026); null = plain colour. */
     livery: text('livery'),
+    /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
+    cosmetics: jsonb('cosmetics').$type<Cosmetics>().notNull().default({}),
     /** Insurance paid up to this time (covers road-assistance bills of breakdowns). */
     insuredUntil: ts('insured_until'),
     /** VIP: the dispatcher sends this truck on its next job by itself when it is free. */
@@ -328,6 +331,12 @@ export const drivers = pgTable(
     restedAt: ts('rested_at'),
     /** Skill points spent: eco / safe / long, 0..3 each. */
     traits: jsonb('traits').$type<Partial<Record<'eco' | 'safe' | 'long', number>>>().notNull().default({}),
+    /** v1.4: loyalty 0–100, an open request (raise | vacation | offer) and a day off. */
+    loyalty: integer('loyalty').notNull().default(70),
+    request: text('request'),
+    requestAt: ts('request_at'),
+    vacationUntil: ts('vacation_until'),
+    lastVacationAt: ts('last_vacation_at'),
     hiredAt: createdAt(),
   },
   (t) => [index('drivers_company_idx').on(t.companyId), uniqueIndex('drivers_vehicle_idx').on(t.vehicleId), uniqueIndex('drivers_co_vehicle_idx').on(t.coVehicleId)],
@@ -424,7 +433,8 @@ export const deliveries = pgTable(
     companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
     vehicleId: uuid('vehicle_id').notNull().references(() => vehicles.id),
     trailerId: uuid('trailer_id').references(() => trailers.id),
-    driverId: uuid('driver_id').notNull().references(() => drivers.id),
+    /** Null once the driver left the company (the trip stays in the history). */
+    driverId: uuid('driver_id').references(() => drivers.id, { onDelete: 'set null' }),
     coDriverId: uuid('co_driver_id').references(() => drivers.id, { onDelete: 'set null' }),
     /** Sent by the VIP auto-dispatcher (counts toward its daily limit). */
     autoDispatched: boolean('auto_dispatched').notNull().default(false),

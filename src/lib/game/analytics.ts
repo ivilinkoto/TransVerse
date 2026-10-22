@@ -8,7 +8,7 @@ export interface DeliveryRow {
   id: string;
   completedAt: Date;
   vehicleId: string;
-  driverId: string;
+  driverId: string | null;
   coDriverId: string | null;
   originCityId: number;
   destCityId: number;
@@ -96,7 +96,7 @@ export function analyze(rows: DeliveryRow[], from: Date, days: number): Analytic
     daily: [...byDay.entries()].map(([day, v]) => ({ day, ...v })),
     vehicles: groupBy(rows, (r) => [r.vehicleId]),
     // A team trip counts for both drivers.
-    drivers: groupBy(rows, (r) => (r.coDriverId ? [r.driverId, r.coDriverId] : [r.driverId])),
+    drivers: groupBy(rows, (r) => [r.driverId, r.coDriverId].filter((x): x is string => !!x)),
     lanes: groupBy(rows, (r) => [`${r.originCityId}>${r.destCityId}`]),
     cargo: groupBy(rows, (r) => [r.cargoType]),
   };

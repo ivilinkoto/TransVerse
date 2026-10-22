@@ -58,6 +58,7 @@ import { recordShipContainer } from './ports';
 import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
+import { onVacation } from './moods';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -176,6 +177,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       !partial && !!risks.overload,
     );
     if (error) fail('incompatible', error);
+    // A driver on a day off does not drive (v1.4).
+    if (onVacation(bundle.driver, now) || onVacation(bundle.coDriver, now)) fail('vacation', 'Шофьорът е в почивен ден — назначи друг или изчакай.');
     const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
     const [parked] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, bundle.vehicle.cityId));
     const [to] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.destCityId));
@@ -229,6 +232,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const unit = powerUnitModel(bundle.vehicle.modelId);
     const trailer = bundle.trailer ? trailerModel(bundle.trailer.modelId) : null;
     const speedFactor = unit.kind === 'van' ? 1.15 : 1;
+    // Electric (v1.4): a fast charge at about 90 % of the range.
+    const charging = unit.electric ? { everyKm: Math.round(unit.electric.rangeKm * 0.9), minutes: unit.electric.chargeMin } : undefined;
+    if (unit.electric && !(await featureFor(tx, userId, 'electric', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
     // The crew: hours left from the last trip, a second driver, skills.
     const rested = crewEffects(bundle.driver!, bundle.coDriver, now);
     // Risks the player chose: drive on without the due rest, load over the payload.
@@ -247,7 +253,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     // Urgent shipments run faster than normal game time.
     const scale = timeScale() * Math.max(1, contract!.speedFactor);
     const trip = contract!.urgent
-      ? buildGameTrip({ startAt: now.getTime() + (emptyRoute ? URGENT_RELOCATION_MS : 0), empty: null, loaded: loadedLeg, speedFactor, timeScale: scale, crew })
+      ? buildGameTrip({ startAt: now.getTime() + (emptyRoute ? URGENT_RELOCATION_MS : 0), empty: null, loaded: loadedLeg, speedFactor, timeScale: scale, crew, charging })
       : buildGameTrip({
           startAt: now.getTime(),
           empty: emptyRoute ? { km: emptyRoute.distanceKm, durationS: emptyRoute.durationS, borderKms: emptyRoute.borders.map((b) => b.km) } : null,
@@ -255,6 +261,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
           speedFactor,
           timeScale: scale,
           crew,
+          charging,
         });
     const schedule: Segment[] = contract!.urgent
       ? [
@@ -425,7 +432,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const boomXp = contract.constructionId && (await boomFor(tx, company!.ownerId, completedAt)) ? BOOM.xpFactor : 1;
   const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp * mentorXp * boomXp);
   // The player's own driving gives all of the XP; a hired driver's trip only a share (the driver learns from all of it).
-  const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, d.coDriverId ? [d.driverId, d.coDriverId] : [d.driverId]), eq(drivers.isOwner, true)))).length > 0;
+  const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, [d.driverId, d.coDriverId].filter((x): x is string => !!x)), eq(drivers.isOwner, true)))).length > 0;
   const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);
   if (perks) {
     // The company learns from every member trip, at its own (slower) pace; hired drivers' trips count less.
@@ -448,7 +455,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (d.trailerId) await tx.update(trailers).set({ cityId: contract.destCityId, condition: sql`greatest(0, ${trailers.condition} - ${costs.wear * 0.6})` }).where(eq(trailers.id, d.trailerId));
   // Drivers grow with experience: one skill level per 8 000 XP, never downwards.
   // They also carry the driving hours of this trip until they have rested (a team shares them).
-  const crewIds = d.coDriverId ? [d.driverId, d.coDriverId] : [d.driverId];
+  const crewIds = [d.driverId, d.coDriverId].filter((x): x is string => !!x);
   const dutyEach = d.endDutyMin / crewIds.length;
   await tx
     .update(drivers)

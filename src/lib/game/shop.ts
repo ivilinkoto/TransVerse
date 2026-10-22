@@ -13,7 +13,7 @@ export const SHOP_CATEGORIES: Record<ShopCategory, string> = {
   account: 'Профил',
 };
 
-export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'rename';
+export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'truck_part' | 'rename';
 
 export interface ShopItem {
   id: ShopItemId;
@@ -22,7 +22,7 @@ export interface ShopItem {
   description: string;
   price: number;
   /** What the buyer has to choose. */
-  needs?: 'vehicle' | 'vehicle_city' | 'vehicle_plate' | 'vehicle_color' | 'username' | 'recipient';
+  needs?: 'vehicle' | 'vehicle_city' | 'vehicle_plate' | 'vehicle_color' | 'vehicle_cosmetic' | 'username' | 'recipient';
   /** Sold only during this holiday (what was bought stays). */
   seasonal?: 'halloween' | 'christmas';
 }
@@ -39,6 +39,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'paint', category: 'cosmetic', label: 'Пребоядисване', description: 'Нов цвят на твой камион. За VIP е безплатно и с ексклузивни цветове.', price: 50, needs: 'vehicle_color' },
   { id: 'paint_pumpkin', category: 'cosmetic', label: 'Боя „Тиква“ · Хелуин 2026', description: 'Празнична оранжева боя с тиквена усмивка на кабината и ремаркето. Продава се само по Хелуин — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'halloween' },
   { id: 'paint_christmas', category: 'cosmetic', label: 'Боя „Коледа“ · Коледа 2026', description: 'Празнична червена боя с украсена елха на кабината и ремаркето. Продава се само по Коледа — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'christmas' },
+  { id: 'truck_part', category: 'cosmetic', label: 'Части за камиона', description: 'Решетка, светлини на покрива, сенник или стикер с името на компанията на вратата. Остават на камиона; нов стил на същата част заменя стария.', price: 50, needs: 'vehicle_cosmetic' },
   { id: 'rename', category: 'account', label: 'Смяна на потребителско име', description: 'Ново име в играта (3–20 знака).', price: 300, needs: 'username' },
 ];
 

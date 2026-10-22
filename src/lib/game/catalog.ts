@@ -31,6 +31,8 @@ export interface PowerUnitModel {
   axles: number;
   minLevel: number;
   cab: CabStyle;
+  /** Electric (v1.4): range on a full battery, energy use (kWh / 100 km empty and full) and how long a fast charge takes. */
+  electric?: { rangeKm: number; kwhEmpty: number; kwhFull: number; chargeMin: number };
 }
 
 export interface TrailerModel {
@@ -80,7 +82,22 @@ export const POWER_UNITS: PowerUnitModel[] = [
     payloadTons: 0, body: null, heavyHaul: true, maxSpeedKmh: 80, fuelEmpty: 27, fuelFull: 42,
     maintenanceCentsPerKm: 15, tolled: true, powerHp: 620, axles: 3, minLevel: 7, cab: 'highline',
   },
+  {
+    id: 'volta-e19', kind: 'rigid', brand: 'Volta Motors', name: 'Volta E19 Box', priceCents: 136_000_00,
+    payloadTons: 7, body: 'box', heavyHaul: false, maxSpeedKmh: 90, fuelEmpty: 0, fuelFull: 0,
+    maintenanceCentsPerKm: 5, tolled: true, powerHp: 400, axles: 2, minLevel: 3, cab: 'day',
+    electric: { rangeKm: 280, kwhEmpty: 95, kwhFull: 125, chargeMin: 50 },
+  },
+  {
+    id: 'volta-et42', kind: 'tractor', brand: 'Volta Motors', name: 'Volta ET42', priceCents: 214_000_00,
+    payloadTons: 0, body: null, heavyHaul: false, maxSpeedKmh: 85, fuelEmpty: 0, fuelFull: 0,
+    maintenanceCentsPerKm: 6, tolled: true, powerHp: 600, axles: 2, minLevel: 5, cab: 'sleeper',
+    electric: { rangeKm: 400, kwhEmpty: 115, kwhFull: 165, chargeMin: 60 },
+  },
 ];
+
+/** Electric models come with v1.4 (staff see them earlier). */
+export const isElectric = (m: Pick<PowerUnitModel, 'electric'>) => !!m.electric;
 
 export const TRAILERS: TrailerModel[] = [
   { id: 'curtain-13', kind: 'semi', body: 'curtain', brand: 'Struma Trailers', name: 'Завеса 13.6 м', priceCents: 32_000_00, payloadTons: 24, axles: 3, requiresHeavyHaul: false, minLevel: 2, dragFuel: 0 },

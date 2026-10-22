@@ -55,7 +55,8 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
   const sort: SortId = SORT.some((x) => x.id === params.sort) ? (params.sort as SortId) : 'price_asc';
   const order = <T extends { priceCents: number; minLevel: number }>(list: readonly T[]) =>
     [...list].sort((a, b) => (sort === 'price_desc' ? b.priceCents - a.priceCents : sort === 'level' ? a.minLevel - b.minLevel || a.priceCents - b.priceCents : a.priceCents - b.priceCents));
-  const units = order(POWER_UNITS.filter((m) => show === 'all' || m.kind === show));
+  // Electric models come with v1.4 (staff see them earlier).
+  const units = order(POWER_UNITS.filter((m) => (show === 'all' || m.kind === show) && (!m.electric || features.electric)));
   const showUnits = show === 'all' || show === 'van' || show === 'rigid' || show === 'tractor';
   const href = (next: Partial<{ show: Show; sort: SortId }>) => `/game/market?show=${next.show ?? show}&sort=${next.sort ?? sort}`;
   const held = await heldLicences(db, user.id);
@@ -119,7 +120,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                   <div><dt className="text-mist-400">Мощност</dt><dd className="num">{m.powerHp} к.с.</dd></div>
                   <div><dt className="text-mist-400">Оси</dt><dd className="num">{m.axles === 3 ? '6×4' : '4×2'}</dd></div>
                   <div><dt className="text-mist-400">Товар</dt><dd className="num">{m.kind === 'tractor' ? 'с ремарке' : `${m.payloadTons} т · ${BODY_LABELS[m.body!]}`}</dd></div>
-                  <div><dt className="text-mist-400">Разход</dt><dd className="num">{m.fuelEmpty}–{m.fuelFull} л</dd></div>
+                  <div><dt className="text-mist-400">{m.electric ? 'Ток · пробег' : 'Разход'}</dt><dd className="num">{m.electric ? `${m.electric.kwhEmpty}–${m.electric.kwhFull} kWh · ${m.electric.rangeKm} км` : `${m.fuelEmpty}–${m.fuelFull} л`}</dd></div>
                   <div><dt className="text-mist-400">Поддръжка</dt><dd className="num">{(m.maintenanceCentsPerKm / 100).toFixed(2)} лв./км</dd></div>
                 </dl>
                 <LicenceHint body={m.body} held={held} />

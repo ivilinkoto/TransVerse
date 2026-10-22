@@ -120,7 +120,7 @@ describe('rest stop', () => {
     const d = await acceptContract(db(), owner.userId, contract.id, truck!.id);
     await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000), account.id);
     const [done] = await db().select().from(deliveries).where(eq(deliveries.id, d.id));
-    const [driver] = await db().select().from(drivers).where(eq(drivers.id, done!.driverId));
+    const [driver] = await db().select().from(drivers).where(eq(drivers.id, done!.driverId!));
     const full = (CREW_RULES.restGameMin * 60_000) / Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
     expect(driver!.restedAt!.getTime() - done!.completedAt!.getTime()).toBeCloseTo(full * 0.7, -1);
   });

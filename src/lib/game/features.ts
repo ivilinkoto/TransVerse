@@ -67,6 +67,9 @@ export const FEATURES = {
   freight_exchange: '1.4',
   branches: '1.4',
   loans: '1.4',
+  electric: '1.4',
+  driver_moods: '1.4',
+  cosmetics: '1.4',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;
