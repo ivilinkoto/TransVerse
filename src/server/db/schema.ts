@@ -286,6 +286,8 @@ export const vehicles = pgTable(
     purchasedAt: createdAt(),
     /** Sold (or returned) vehicles stay for delivery history but are no longer part of the fleet. */
     soldAt: ts('sold_at'),
+    /** Moving to a depot of the company (v1.4): it is there, but free only from this time. */
+    movingUntil: ts('moving_until'),
   },
   (t) => [index('vehicles_company_idx').on(t.companyId)],
 );
@@ -304,6 +306,12 @@ export const trailers = pgTable(
     ownership: text('ownership').notNull().default('owned'),
     /** Offered on the used-vehicle market (cannot be coupled meanwhile). */
     listed: boolean('listed').notNull().default(false),
+    /** Trailer upgrades (v1.4): aero skirts, low-resistance tyres, LED markers, company logo. */
+    upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
+    /** The company name painted on the body (logo upgrade; company trailers always). */
+    logo: text('logo'),
+    /** A company trailer a member borrowed (ownership 'company'): the company's own trailer row. */
+    orgTrailerId: uuid('org_trailer_id'),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
     soldAt: ts('sold_at'),
@@ -2131,4 +2139,24 @@ export const rallyEntries = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('rally_entries_user_idx').on(t.rallyId, t.userId)],
+);
+
+/** The company's own trailers (v1.4): bought from the treasury, borrowed by the members. */
+export const orgTrailers = pgTable(
+  'org_trailers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    modelId: text('model_id').notNull(),
+    plate: text('plate').notNull(),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    condition: real('condition').notNull().default(100),
+    upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
+    /** The member who has it and the trailer row in their fleet (null when it is in the yard). */
+    lentTo: uuid('lent_to').references(() => users.id, { onDelete: 'set null' }),
+    trailerId: uuid('trailer_id'),
+    soldAt: ts('sold_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('org_trailers_org_idx').on(t.organizationId)],
 );

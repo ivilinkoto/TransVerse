@@ -1,6 +1,8 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { notFound, redirect } from 'next/navigation';
 import { CompanyFleetCard } from '@/components/company/plot/CompanyFleetCard';
+import { CompanyTrailersCard } from '@/components/company/plot/CompanyTrailersCard';
+import { orgTrailersView } from '@/server/game/company-trailers';
 import { PlotView } from '@/components/company/plot/PlotView';
 import { isChristmas } from '@/lib/game/christmas';
 import { isBoom } from '@/lib/game/plot';
@@ -8,7 +10,7 @@ import { isNight, plotWeather } from '@/lib/game/ambience';
 import { companyShowcase, recentVisitors } from '@/server/game/base-life';
 import { Showcase } from '@/components/company/plot/Showcase';
 import { isWinter } from '@/lib/game/winter';
-import { companies, contracts, deliveries, users, vehicles } from '@/server/db/schema';
+import { companies, contracts, deliveries, trailers, users, vehicles } from '@/server/db/schema';
 import { orgFleetView } from '@/server/game/company-fleet';
 import { gameContext } from '@/server/game/context';
 import { can, companyHub } from '@/server/game/membership';
@@ -26,6 +28,10 @@ export default async function PlotPage() {
   const fleet = features.company_fleet ? await orgFleetView(db, hub.company.id) : null;
   const [mine] = fleet
     ? await db.select({ id: vehicles.id }).from(vehicles).innerJoin(companies, eq(companies.id, vehicles.companyId)).where(and(eq(companies.ownerId, user.id), eq(vehicles.ownership, 'company'), isNull(vehicles.soldAt)))
+    : [];
+  const orgTrailerList = features.company_trailers ? await orgTrailersView(db, hub.company.id) : null;
+  const [myTrailer] = orgTrailerList
+    ? await db.select({ id: trailers.id }).from(trailers).innerJoin(companies, eq(companies.id, trailers.companyId)).where(and(eq(companies.ownerId, user.id), eq(trailers.ownership, 'company'), isNull(trailers.soldAt)))
     : [];
   const [{ coins = 0 } = {}] = await db.select({ coins: users.coins }).from(users).where(eq(users.id, user.id));
   const season = !features.plot_season ? null : isChristmas(now) ? 'christmas' : isWinter(now) ? 'winter' : null;
@@ -75,6 +81,7 @@ export default async function PlotPage() {
     >
       {showcase && <Showcase data={showcase} trophies={features.company_trophies} builderWeek={features.builder_week} />}
       {fleet && <CompanyFleetCard fleet={fleet} me={user.id} myVehicleId={mine?.id ?? null} canManage={can(hub.rank, 'manage_upgrades')} treasuryCents={data.org.treasuryCents} notes={features.truck_notes} />}
+      {orgTrailerList && <CompanyTrailersCard list={orgTrailerList} me={user.id} myTrailerId={myTrailer?.id ?? null} canManage={can(hub.rank, 'manage_upgrades')} treasuryCents={data.org.treasuryCents} companyName={hub.company.name} />}
     </PlotView>
   );
 }

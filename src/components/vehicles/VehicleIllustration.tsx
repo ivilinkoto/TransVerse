@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Cosmetics } from '@/lib/game/cosmetics';
 import { Defs, GroundShadow, type Ids } from './parts';
-import { DrawbarTrailer, Trailer, type TrailerBody } from './trailers';
+import { DrawbarTrailer, Trailer, TrailerExtras, type TrailerBody } from './trailers';
 import { Rigid, Tractor, Van } from './units';
 
 export interface VehicleIllustrationProps {
@@ -18,6 +18,9 @@ export interface VehicleIllustrationProps {
   livery?: string | null;
   /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
   cosmetics?: Cosmetics | null;
+  /** Upgrades of the coupled trailer (v1.4; the seen ones are drawn) and the company name on it. */
+  trailerUpgrades?: readonly string[] | null;
+  trailerLogo?: string | null;
 }
 
 /**
@@ -29,7 +32,7 @@ export function VehicleIllustration(props: VehicleIllustrationProps) {
 }
 
 /** The same drawing without hooks (ids from `uid`), for pictures made on the server. */
-export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', trailerColor, className, title, livery, cosmetics, uid }: VehicleIllustrationProps & { uid: string }) {
+export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', trailerColor, className, title, livery, cosmetics, trailerUpgrades, trailerLogo, uid }: VehicleIllustrationProps & { uid: string }) {
   const ids: Ids = {
     body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}`,
   };
@@ -62,6 +65,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       <>
         <GroundShadow from={0} to={rigidX + 900} />
         {drawbar && <DrawbarTrailer body={body} ids={ids} color={trailerColor ?? color} />}
+        {drawbar && <TrailerExtras kind="drawbar" upgrades={trailerUpgrades ?? []} logo={trailerLogo} />}
         <g transform={`translate(${rigidX} 0)`}>
           <Rigid ids={ids} color={color} body={body} extras={cosmetics ?? undefined} />
         </g>
@@ -76,6 +80,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       <>
         <GroundShadow from={0} to={tractorX + 602} />
         {trailer && <Trailer body={trailer.body as TrailerBody} ids={ids} color={trailerColor ?? (trailer.body === 'container' ? '#b45309' : trailer.body === 'tipper' ? '#ca8a04' : color)} />}
+        {trailer && <TrailerExtras kind="semi" body={trailer.body} upgrades={trailerUpgrades ?? []} logo={trailerLogo} />}
         <g transform={`translate(${tractorX} 0)`}>
           <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} extras={cosmetics ?? undefined} />
         </g>
@@ -96,7 +101,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
 }
 
 /** Stand-alone trailer illustration (garage / market cards). */
-export function TrailerIllustration({ modelId, color = '#1d4ed8', className }: { modelId: string; color?: string; className?: string }) {
+export function TrailerIllustration({ modelId, color = '#1d4ed8', className, upgrades, logo }: { modelId: string; color?: string; className?: string; upgrades?: readonly string[]; logo?: string | null }) {
   const uid = useId().replace(/[:«»]/g, '');
   const ids: Ids = { body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}` };
   const t = trailerModel(modelId);
@@ -108,6 +113,7 @@ export function TrailerIllustration({ modelId, color = '#1d4ed8', className }: {
         <Defs ids={ids} color={color} />
         <GroundShadow from={0} to={900} />
         <DrawbarTrailer body={t.body === 'reefer' ? 'reefer' : 'box'} ids={ids} color={fill} />
+        <TrailerExtras kind="drawbar" upgrades={upgrades} logo={logo} />
       </svg>
     );
   }
@@ -117,6 +123,7 @@ export function TrailerIllustration({ modelId, color = '#1d4ed8', className }: {
       <Defs ids={ids} color={color} />
       <GroundShadow from={0} to={1360} />
       <Trailer body={t.body as TrailerBody} ids={ids} color={fill} />
+      <TrailerExtras kind="semi" body={t.body} upgrades={upgrades} logo={logo} />
     </svg>
   );
 }

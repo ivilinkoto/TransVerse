@@ -1,5 +1,5 @@
 import { CARGO, type CargoType } from './cargo';
-import { UPGRADES, type PowerUnitModel, type TrailerModel, type UpgradeId } from './catalog';
+import { TRAILER_UPGRADES, UPGRADES, type PowerUnitModel, type TrailerModel, type TrailerUpgradeId, type UpgradeId } from './catalog';
 
 /**
  * Economic formulas. All money is integer euro cents. These functions are
@@ -50,7 +50,7 @@ export function rewardCents(cargo: CargoType, tons: number, km: number, marketMu
 }
 
 export function upgradeFactor(upgrades: readonly string[], key: 'fuel' | 'wear' | 'xp'): number {
-  return upgrades.reduce((f, id) => f * (UPGRADES[id as UpgradeId]?.[key] ?? 1), 1);
+  return upgrades.reduce((f, id) => f * (UPGRADES[id as UpgradeId]?.[key] ?? TRAILER_UPGRADES[id as TrailerUpgradeId]?.[key] ?? 1), 1);
 }
 
 export interface TripCostInput {

@@ -73,6 +73,8 @@ export const FEATURES = {
   rally: '1.4',
   discord_events: '1.4',
   company_report: '1.4',
+  trailer_upgrades: '1.4',
+  company_trailers: '1.4',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

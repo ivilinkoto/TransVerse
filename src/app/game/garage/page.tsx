@@ -11,7 +11,9 @@ import { dateTime, int, money } from '@/lib/format';
 import { USED_MARKET } from '@/lib/game/used-market';
 import { ListForSale } from '@/components/game/ListForSale';
 import { boundsFor, myListings } from '@/server/game/used-market';
-import { TRAILERS, UPGRADES, canCouple } from '@/lib/game/catalog';
+import { TRAILERS, TRAILER_UPGRADES, UPGRADES, canCouple } from '@/lib/game/catalog';
+import { eq } from 'drizzle-orm';
+import { cities, depots } from '@/server/db/schema';
 import { repairCostCents } from '@/lib/game/economy';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { gameContext } from '@/server/game/context';
@@ -24,7 +26,7 @@ export default async function GaragePage() {
   // VIP: discount on repairs and upgrades; the company's service on the plot makes repairs cheaper too.
   const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
   const serviceDiscount = (await bonusesForUser(db, user.id))?.bonuses.repairDiscount ?? 0;
-  const [fleet, listings] = await Promise.all([fleetView(db, company.id), myListings(db, company.id)]);
+  const [fleet, listings, myDepots] = await Promise.all([fleetView(db, company.id), myListings(db, company.id), db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id))]);
   const insurance = new Map(fleet.vehicles.map((v) => [v.id, insurancePriceCents(v.model.priceCents + (v.trailer?.model.priceCents ?? 0))]));
   const listingOf = (id: string) => listings.find((l) => l.vehicleId === id || l.trailerId === id);
 
@@ -49,9 +51,9 @@ export default async function GaragePage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-lg font-bold">{v.model.name}</span>
                     <span className="font-mono text-xs text-mist-400">{v.plate}</span>
-                    {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
+                    {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : v.movingUntil && v.movingUntil > now ? <Badge tone="orange">пътува до {v.city.nameBg} · до минута</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
                   </div>
-                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} className="my-3 h-24 w-full" />
+                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} className="my-3 h-24 w-full" />
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="flex justify-between text-xs text-mist-400"><span>Влекач / камион</span><span className="num">{Math.round(v.condition)}%</span></div>
@@ -64,6 +66,20 @@ export default async function GaragePage() {
                       </div>
                     )}
                   </div>
+                  {!v.delivery && !listing && myDepots.some((d) => d.cityId !== v.cityId) && (
+                    <div className="mt-3">
+                      <div className="label mb-1.5">Премести до депо (за 1 минута)</div>
+                      <SelectAction
+                        label="Премести"
+                        ariaLabel={`Депо за ${v.plate}`}
+                        value=""
+                        options={[{ value: '', label: '— избери депо —' }, ...myDepots.filter((d) => d.cityId !== v.cityId).map((d) => ({ value: d.id, label: d.name }))]}
+                        action={{ type: 'moveToDepot', vehicleId: v.id }}
+                        field="depotId"
+                      />
+                      <p className="mt-1 text-xs text-mist-400">Плащаш горивото, таксите и износването за пътя (по истинския маршрут). Прикаченото ремарке идва с него.</p>
+                    </div>
+                  )}
                   {features.maintenance && v.ownership !== 'rented' && (
                     <div className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border p-2.5 text-sm ${upkeep.overdue ? 'border-loss/50 bg-loss/10' : 'border-asphalt-700'}`}>
                       <span>
@@ -168,9 +184,16 @@ export default async function GaragePage() {
               const listing = listingOf(t.id);
               return (
                 <li key={t.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-3 text-sm">
-                  <TrailerIllustration modelId={t.modelId} className="h-14 w-full" />
+                  <TrailerIllustration modelId={t.modelId} upgrades={t.upgrades} logo={t.logo} className="h-14 w-full" />
                   <div className="mt-2 flex items-center justify-between"><span className="font-semibold">{t.model.name}</span><span className="font-mono text-xs text-mist-400">{t.plate}</span></div>
                   <div className="mt-1 text-xs text-mist-400">{tractor ? `Прикачено към ${tractor.plate}` : `Паркирано в ${t.city.nameBg}`} · {Math.round(t.condition)}%</div>
+                  {t.ownership === 'company' ? (
+                    <div className="mt-2 space-y-2">
+                      <Badge tone="cyan">Фирмено</Badge>
+                      <p className="text-xs text-mist-400">Ремарке на компанията: курсовете с него носят бонус за касата и повече опит за компанията.</p>
+                      <ActionButton action={{ type: 'returnOrgTrailer', trailerId: t.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm="Да върнем ли ремаркето на компанията?" disabled={!!tractor?.delivery}>Върни на компанията</ActionButton>
+                    </div>
+                  ) : (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {listing ? (
                       <>
@@ -186,6 +209,21 @@ export default async function GaragePage() {
                       </>
                     )}
                   </div>
+                  )}
+                  {features.trailer_upgrades && t.ownership === 'owned' && (
+                    <ul className="mt-3 space-y-1.5">
+                      {Object.values(TRAILER_UPGRADES).filter((u) => !u.bodies || u.bodies.includes(t.model.body)).map((u) => (
+                        <li key={u.id} className="flex items-center justify-between gap-2 rounded-lg border border-asphalt-700 px-2 py-1.5 text-xs">
+                          <span className="min-w-0"><b>{u.label}</b><span className="block text-mist-400">{u.description}</span></span>
+                          {t.upgrades.includes(u.id) ? <Badge tone="violet">монтирано</Badge> : (
+                            <ActionButton action={{ type: 'trailerUpgrade', trailerId: t.id, upgradeId: u.id }} className="btn-ghost shrink-0 px-2 py-1 text-xs" disabled={!!tractor?.delivery || !!listing || company.balanceCents < Math.round(u.priceCents * discount)}>
+                              {money(Math.round(u.priceCents * discount))}
+                            </ActionButton>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               );
             })}

@@ -40,7 +40,7 @@ export async function createListing(db: Database, userId: string, input: { kind:
     } else {
       const [t] = await tx.select().from(trailers).where(and(eq(trailers.id, input.id), eq(trailers.companyId, company.id), sql`${trailers.soldAt} is null`)).for('update');
       if (!t) fail('trailer_not_found', 'Ремаркето не е намерено.', 404);
-      if (t!.ownership === 'rented') fail('rented', 'Наетите ремаркета не могат да се продават.');
+      if (t!.ownership !== 'owned') fail('rented', 'Наетите и фирмените ремаркета не могат да се продават.');
       if (t!.listed) fail('already_listed', 'Ремаркето вече е обявено.');
       if (t!.vehicleId) {
         const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t!.vehicleId));

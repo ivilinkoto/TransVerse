@@ -55,7 +55,7 @@ export default async function FleetPage() {
               </div>
             </div>
             <div className="my-3 flex h-28 items-end justify-center rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
-              <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} className="max-h-28 w-full" />
+              <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} className="max-h-28 w-full" />
             </div>
             {v.delivery && (
               <div className="mb-3 rounded-xl border border-asphalt-700 bg-asphalt-850 p-3">

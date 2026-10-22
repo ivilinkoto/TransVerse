@@ -289,3 +289,39 @@ export function DrawbarTrailer({ body, ids, color }: { body: 'box' | 'reefer'; i
     </g>
   );
 }
+
+/**
+ * Trailer upgrades that are seen (v1.4): aero side skirts, LED marker
+ * lights along the body and the company name on the side. Drawn over the
+ * trailer in its own coordinates (rear at x = 0).
+ */
+export function TrailerExtras({ kind, body, upgrades = [], logo }: { kind: 'semi' | 'drawbar'; body?: string; upgrades?: readonly string[]; logo?: string | null }) {
+  const semi = kind === 'semi';
+  const skirt = semi ? { x: 470, w: 575 } : { x: 232, w: 306 };
+  const leds = semi ? Array.from({ length: 17 }, (_, i) => 40 + i * 80) : Array.from({ length: 11 }, (_, i) => 30 + i * 70);
+  const ledY = semi ? -143 : -144;
+  // The panel covers the stock lettering of the body.
+  const panel = !semi ? { x: 40, y: -302, w: 690, h: 72, font: 40 } : body === 'curtain' ? { x: 290, y: -334, w: 780, h: 100, font: 60 } : { x: 330, y: -352, w: 700, h: 86, font: 54 };
+  return (
+    <g>
+      {upgrades.includes('aero_skirts') && (
+        <g>
+          <path d={`M ${skirt.x} -128 L ${skirt.x + skirt.w} -128 L ${skirt.x + skirt.w} -76 Q ${skirt.x + skirt.w} -70 ${skirt.x + skirt.w - 8} -70 L ${skirt.x + 14} -70 Z`} fill="#334155" stroke="#0b1220" strokeWidth="2" />
+          <path d={`M ${skirt.x + 12} -118 L ${skirt.x + skirt.w - 6} -118`} stroke="#fff" strokeOpacity="0.18" strokeWidth="4" />
+        </g>
+      )}
+      {upgrades.includes('led_markers') && leds.map((x) => (
+        <g key={x}>
+          <circle cx={x} cy={ledY} r={11} fill="#fbbf24" opacity="0.3" />
+          <circle cx={x} cy={ledY} r={4.5} fill="#fde68a" />
+        </g>
+      ))}
+      {logo && (
+        <g>
+          <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx={10} fill="#f8fafc" opacity="0.95" stroke="#0b1220" strokeWidth="2" />
+          <text x={panel.x + panel.w / 2} y={panel.y + panel.h / 2 + panel.font * 0.36} textAnchor="middle" fontSize={panel.font} fontWeight="900" fill="#0b1220" fontFamily="system-ui, sans-serif" letterSpacing="3" {...(logo.length > 12 ? { textLength: panel.w - 40, lengthAdjust: 'spacingAndGlyphs' } : {})}>{logo}</text>
+        </g>
+      )}
+    </g>
+  );
+}

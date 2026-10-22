@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
-import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
+import { combinationCapability, powerUnitModel, TRAILER_UPGRADES, trailerModel } from '@/lib/game/catalog';
 import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
@@ -56,6 +56,8 @@ import { BOARDING_GAME_MIN, CROSSING_LINES, crossingLine as crossingLine_, cross
 import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart } from './together';
 import { recordShipContainer } from './ports';
 import { recordRallyRun } from './rally';
+import { companyTrailerBonus } from './company-trailers';
+import { COMPANY_TRAILERS } from '@/lib/game/company-fleet';
 import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
@@ -132,6 +134,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   if (contract!.exchange && !(await featureFor(db, userId, 'freight_exchange', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   const { vehicle } = await vehicleBundle(db, company.id, vehicleId);
   if (vehicle.status !== 'idle') fail('vehicle_busy', 'Превозното средство е заето.', 409);
+  if (vehicle.movingUntil && vehicle.movingUntil > now) fail('moving', 'Камионът още пътува до депото — след минута.', 409);
   // Groupage loads come with v1.2 (staff test them before the release).
   if (contract!.stops?.length && !(await featureFor(db, userId, 'multistop', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   // Partial load (v1.3): only part of an ordinary board load, for the same pay per tonne.
@@ -279,7 +282,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const running = tripCosts({
       unit,
       trailer,
-      upgrades: bundle.vehicle.upgrades,
+      upgrades: [...bundle.vehicle.upgrades, ...(bundle.trailer?.upgrades ?? [])],
       condition: bundle.vehicle.condition,
       driverSkill: Math.max(bundle.driver!.skill, bundle.coDriver?.skill ?? 0),
       crewFuel: crew.fuel,
@@ -308,7 +311,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     // Surprises on the way, decided now and revealed when the truck gets there.
     // Maintenance (v1.3): an overdue truck gets into trouble more often, a freshly serviced one less.
     const upkeep = !rented && (await featureFor(tx, userId, 'maintenance', now)) ? maintenanceState(bundle.vehicle.odometerKm, bundle.vehicle.serviceKm).factor : 1;
-    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + roadLoadedKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep, ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isWinter(now) || real ? { condition: routeCondition(loadedRoute!.countries, now, real).condition, tyres: rented || bundle.vehicle.upgrades.includes(WINTER.tyres) } : undefined });
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + roadLoadedKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep * (bundle.trailer?.upgrades.includes('led_markers') ? (TRAILER_UPGRADES.led_markers.incidents ?? 1) : 1), ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isWinter(now) || real ? { condition: routeCondition(loadedRoute!.countries, now, real).condition, tyres: rented || bundle.vehicle.upgrades.includes(WINTER.tyres) } : undefined });
     const [delivery] = await tx
       .insert(deliveries)
       .values({
@@ -438,7 +441,13 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);
   if (perks) {
     // The company learns from every member trip, at its own (slower) pace; hired drivers' trips count less.
-    const companyXp = Math.round(baseXp * COMPANY_XP_SHARE * (ownerDrove ? 1 : FLEET_XP_SHARE));
+    // A trip with a company trailer (v1.4): more company XP and a bonus into the treasury.
+    const orgTrailer = d.trailerId ? (await tx.select({ orgTrailerId: trailers.orgTrailerId }).from(trailers).where(eq(trailers.id, d.trailerId)))[0]?.orgTrailerId : null;
+    const companyXp = Math.round(baseXp * COMPANY_XP_SHARE * (ownerDrove ? 1 : FLEET_XP_SHARE) * (orgTrailer ? COMPANY_TRAILERS.companyXp : 1));
+    if (orgTrailer) {
+      const [member] = await tx.select({ username: users.username }).from(users).where(eq(users.id, company!.ownerId));
+      await companyTrailerBonus(tx, perks.membership.company.id, d.id, result.rewardCents, member!.username);
+    }
     await tx
       .update(companyMembers)
       .set({ deliveries: sql`${companyMembers.deliveries} + 1`, contributedCents: sql`${companyMembers.contributedCents} + ${contribution}`, xpContributed: sql`${companyMembers.xpContributed} + ${companyXp}` })
