@@ -43,6 +43,7 @@ export const DISCORD_CHANNELS = {
   convoys: 'конвои',
   usedMarket: 'пазар-камиони',
   livery: 'ливреи',
+  rally: 'рали',
 } as const;
 export type DiscordChannel = keyof typeof DISCORD_CHANNELS;
 /** The category the companies' private channels go into (matched without emoji and decorations). */

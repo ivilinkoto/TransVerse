@@ -41,6 +41,8 @@ const k = () => `e${uid++}`;
 /** The season of the current render: snow on roofs, lawns and trees; Christmas lights. */
 let SNOW = false;
 let XMAS = false;
+/** Баба Марта (March, v1.5): a blossoming tree with martenitsas by the gate. */
+let MARTA = false;
 /** Evening and night: lit windows, lamps and headlights; autumn leaves. */
 let NIGHT = false;
 let AUTUMN = false;
@@ -308,6 +310,8 @@ export function buildingHeight(type: BuildingType, level: number) {
       return 1.5 + (level >= 2 ? 0.9 : 0);
     case 'factory':
       return 1.9 + level * 0.15;
+    case 'fuel':
+      return 1.2;
   }
 }
 
@@ -453,6 +457,29 @@ function factory(f: Footprint, level: number) {
   return out;
 }
 
+/** A fuel station: a canopy on columns over the pumps, a small shop and a price sign (taller with the level). */
+function fuelStation(f: Footprint, level: number) {
+  const x0 = f.x + 0.15, y0 = f.y + 0.15, x1 = f.x + f.w - 0.2, y1 = f.y + f.h - 0.2;
+  const out: ReactNode[] = [flat(x0, y0, x1, y1, 0.04, '#6b717c')];
+  // The shop at the back.
+  const sx1 = x0 + 0.9;
+  out.push(shadow(x0, y0, sx1, y1, 0.9), box(x0, y0, sx1, y1, 0, 0.9, faces([236, 240, 245])));
+  out.push(onX(sx1, y0 + 0.2, y1 - 0.2, 0.15, 0.7, win('#9fd0f0', 3)));
+  // Pumps, one more per level.
+  const pumps = 1 + level;
+  for (let i = 0; i < pumps; i++) {
+    const px = sx1 + 0.45 + i * ((x1 - sx1 - 0.6) / Math.max(1, pumps));
+    out.push(box(px, (y0 + y1) / 2 - 0.12, px + 0.22, (y0 + y1) / 2 + 0.12, 0, 0.5, faces([224, 69, 69])));
+  }
+  // The canopy on four columns.
+  const h = buildingHeight('fuel', level);
+  for (const [cx, cy] of [[sx1 + 0.25, y0 + 0.15], [x1 - 0.15, y0 + 0.15], [sx1 + 0.25, y1 - 0.25], [x1 - 0.15, y1 - 0.25]] as [number, number][]) out.push(box(cx, cy, cx + 0.08, cy + 0.08, 0, h, faces([200, 205, 212])));
+  out.push(box(sx1 + 0.15, y0, x1, y1, h, 0.2, { top: SNOW ? '#f3f7fb' : '#f8fafc', left: '#e04545', right: '#c53030' }));
+  // The price sign.
+  out.push(box(x1 - 0.12, y1 - 0.05, x1, y1 + 0.07, 0, 1.6 + level * 0.15, faces([38, 52, 74])));
+  return out;
+}
+
 function parking(f: Footprint, level: number, trucks: number, livery: string | null) {
   const x0 = f.x + 0.1, y0 = f.y + 0.1, x1 = f.x + f.w - 0.1, y1 = f.y + f.h - 0.1;
   const out: ReactNode[] = [flat(x0, y0, x1, y1, 0.04, '#6b717c'), flat(x0 + 0.05, y0 + 0.05, x1 - 0.05, y1 - 0.05, 0.045, '#5d636e')];
@@ -581,6 +608,22 @@ function christmasTree(x: number, y: number): ReactNode[] {
   return out;
 }
 
+/** A blossoming tree with red and white martenitsas (Баба Марта). */
+function martaTree(x: number, y: number): ReactNode[] {
+  const out: ReactNode[] = [];
+  const [bx, by] = P(x, y, 0);
+  out.push(<rect key={k()} x={bx - 3} y={by - 26} width={6} height={26} fill="#7a5235" />);
+  const [cx, cy] = P(x, y, 1.6);
+  [[0, 0, 22], [-14, 8, 16], [14, 8, 16], [-6, -12, 15], [8, -10, 14]].forEach(([dx, dy, r]) => out.push(<circle key={k()} cx={cx + dx!} cy={cy + dy!} r={r} fill="#f9c6d8" />));
+  [[-10, 2], [6, -6], [12, 12], [-4, 14], [0, -14]].forEach(([dx, dy]) => out.push(<circle key={k()} cx={cx + dx!} cy={cy + dy!} r={3} fill="#fff" />));
+  // Martenitsas on the branches
+  [[-12, 14, '#dc2626'], [-6, 16, '#f8fafc'], [10, 18, '#dc2626'], [16, 16, '#f8fafc']].forEach(([dx, dy, c]) => {
+    out.push(<line key={k()} x1={cx + (dx as number)} y1={cy + (dy as number) - 6} x2={cx + (dx as number)} y2={cy + (dy as number) + 4} stroke="#dc2626" strokeWidth={1.2} />);
+    out.push(<circle key={k()} cx={cx + (dx as number)} cy={cy + (dy as number) + 6} r={3} fill={c as string} stroke="#94a3b8" strokeWidth={0.5} />);
+  });
+  return out;
+}
+
 // ── The scene ────────────────────────────────────────────────────────────
 export interface SceneBuilding {
   type: BuildingType;
@@ -613,7 +656,7 @@ export interface SceneProps {
   plotW?: number;
   decor?: (PlacedDecor & { id?: string })[];
   /** Snow in winter; lights and a tree at Christmas. */
-  season?: 'winter' | 'christmas' | null;
+  season?: 'winter' | 'christmas' | 'marta' | null;
   /** The decoration picked on the plot (highlighted). */
   selectedDecor?: string | null;
   /** Name and level over every building. */
@@ -656,9 +699,11 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
   // eslint-disable-next-line react-hooks/globals
   uid = 0;
   // eslint-disable-next-line react-hooks/globals
-  SNOW = season !== null;
+  SNOW = season === 'winter' || season === 'christmas';
   // eslint-disable-next-line react-hooks/globals
   XMAS = season === 'christmas';
+  // eslint-disable-next-line react-hooks/globals
+  MARTA = season === 'marta';
   // eslint-disable-next-line react-hooks/globals
   NIGHT = night;
   // eslint-disable-next-line react-hooks/globals
@@ -762,7 +807,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     const f = fp(b);
     const building = construction && construction.type === b.type ? construction : null;
     const node: ReactNode[] = [];
-    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
+    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : b.type === 'fuel' ? fuelStation(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
     if (building && b.level === 0) node.push(...site(f, b.type, building.status, building.progress, building.delivered, null));
     else if (building) node.push(...site(f, b.type, building.status, building.progress, building.delivered, finished(b.level)));
     else if (b.level > 0) node.push(...finished(b.level));
@@ -785,6 +830,10 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     for (const b of buildings) if (b.level > 0 && b.type !== 'parking' && !(construction && construction.type === b.type)) add(fp(b).x + fp(b).w + fp(b).y + fp(b).h - 0.45, <g key={k()}>{lights(fp(b), buildingHeight(b.type, b.level))}</g>);
     const spot = XMAS_SPOTS.map(([x, y]): [number, number] => [x >= 12 ? x + sx : x, y]).find(([x, y]) => !occupied(x, y));
     if (spot) add(spot[0] + spot[1] + 0.2, <g key="xmas-tree">{christmasTree(spot[0], spot[1])}</g>);
+  }
+  if (MARTA) {
+    const spot = XMAS_SPOTS.map(([x, y]): [number, number] => [x >= 12 ? x + sx : x, y]).find(([x, y]) => !occupied(x, y));
+    if (spot) add(spot[0] + spot[1] + 0.2, <g key="marta-tree">{martaTree(spot[0], spot[1])}</g>);
   }
 
   // The building (or decoration) being placed.

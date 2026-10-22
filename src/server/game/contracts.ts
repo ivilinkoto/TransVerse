@@ -11,6 +11,9 @@ import { seasonalFactor } from '@/lib/game/seasonality';
 import { isWinter, WINTER } from '@/lib/game/winter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
+import { isMarta, MARTA } from '@/lib/game/marta';
+import { OVERSIZE } from '@/lib/game/roads';
+import { payFactor } from '@/server/admin-economy';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getCrossingRoute, getRoute, getRouteVia } from '@/server/geo/route-service';
@@ -254,7 +257,7 @@ async function loadRoute(db: Database, origin: Hub, destination: Hub, provider?:
   return getCrossingRoute(db, origin.id, destination.id, line, !!ia, 'truck', provider);
 }
 
-async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean } = {}): Promise<string | null> {
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean; oversize?: boolean; goods?: string } = {}): Promise<string | null> {
   const sea = islandOf(origin)?.id !== islandOf(destination)?.id;
   if (sea) via = [];
   const viaRoute = via.length ? await getRouteVia(db, origin.id, via.map((h) => h.id), destination.id, 'truck', provider) : null;
@@ -267,13 +270,15 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const themes = [
     { id: 'halloween', goods: isHalloween(now) ? HALLOWEEN.goods[cargo] : undefined, share: HALLOWEEN.contractShare, multiplier: HALLOWEEN.rewardMultiplier },
     { id: 'christmas', goods: isChristmas(now) ? CHRISTMAS.goods[cargo] : undefined, share: CHRISTMAS.contractShare, multiplier: CHRISTMAS.rewardMultiplier },
+    { id: 'marta', goods: isMarta(now) && featureLive('marta', now) ? MARTA.goods[cargo] : undefined, share: MARTA.contractShare, multiplier: MARTA.rewardMultiplier },
     { id: 'winter', goods: isWinter(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
   ];
-  const theme = extra.featured ? null : (themes.find((t) => t.goods && rand() < t.share) ?? null);
+  const theme = extra.featured || extra.oversize ? null : (themes.find((t) => t.goods && rand() < t.share) ?? null);
   const holiday = theme?.id ?? null;
   const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1);
-  const goods = theme ? pick(theme.goods!) : pick(CARGO[cargo].goods);
-  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length));
+  const goods = extra.goods ?? (theme ? pick(theme.goods!) : pick(CARGO[cargo].goods));
+  // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)));
   const [row] = await db.insert(contracts).values({
     shipper: shipperName(),
     goods,
@@ -285,13 +290,15 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     routeId: route.id,
     distanceKm: route.distanceKm,
     rewardCents: reward,
-    windowMinutes: contractWindowMinutes(route.distanceKm),
+    // Oversize loads drive slower (escort): their window is longer too.
+    windowMinutes: Math.round(contractWindowMinutes(route.distanceKm) / (extra.oversize ? OVERSIZE.slower : 1)),
     minLevel: CARGO[cargo].minLevel,
     minReputation: premium?.minReputation ?? 0,
     stops,
     featured: extra.featured ?? null,
     portCallId: extra.portCallId ?? null,
     port: extra.port ?? false,
+    oversize: extra.oversize ?? false,
     expiresAt: new Date(now.getTime() + ttlMs),
   }).returning({ id: contracts.id });
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));
@@ -301,7 +308,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
 }
 
 /** A load between two given cities (port loads, ship calls); null when there is no way (two different islands). */
-export async function addLoad(db: Database, originId: number, destinationId: number, cargo: CargoType, tons: number, now: Date, ttlMs: number, multiplier: number, extra: { portCallId?: string; port?: boolean }, provider?: RoutingProvider, hubs?: Hub[]) {
+export async function addLoad(db: Database, originId: number, destinationId: number, cargo: CargoType, tons: number, now: Date, ttlMs: number, multiplier: number, extra: { portCallId?: string; port?: boolean; oversize?: boolean; goods?: string }, provider?: RoutingProvider, hubs?: Hub[]) {
   const all = hubs ?? (await loadHubs(db));
   const origin = all.find((h) => h.id === originId);
   const destination = all.find((h) => h.id === destinationId);
@@ -398,6 +405,10 @@ export interface ContractFilter {
   withFeatured?: boolean;
   /** Loads over a ferry and port loads too (v1.4; default: once the release is out). */
   withSea?: boolean;
+  /** Oversize loads too (v1.5; default: once the release is out). */
+  /** Loads of companies this company hauls for (v1.5). */
+  withContracts?: boolean;
+  withOversize?: boolean;
   /** Own goods of other players on the freight exchange (v1.4). */
   withExchange?: boolean;
   /** The viewer: their own weekly rally load is included (v1.4). */
@@ -417,12 +428,15 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (!(filter.withStops ?? featureLive('multistop', now))) conditions.push(isNull(contracts.stops));
   if (!(filter.withFeatured ?? featureLive('daily_load', now))) conditions.push(isNull(contracts.featured));
   if (!(filter.withExchange ?? featureLive('freight_exchange', now))) conditions.push(eq(contracts.exchange, false));
+  if (!(filter.withOversize ?? featureLive('oversize', now))) conditions.push(eq(contracts.oversize, false));
   const sea = filter.withSea ?? featureLive('ferries', now);
   if (!sea) conditions.push(eq(contracts.port, false));
   // Raw materials and product of a company factory are only for its members.
   conditions.push(filter.viewerUserId ? sql`(${contracts.rallyId} is null or ${contracts.createdBy} = ${filter.viewerUserId})` : isNull(contracts.rallyId));
-  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.factoryOrgId} is null or ${contracts.factoryOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.factoryOrgId));
-  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.branchOrgId} is null or ${contracts.branchOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.branchOrgId));
+  // Members-only loads: own company's, and (v1.5) those of the companies this one hauls for.
+  const clients = filter.memberOfCompanyId && (filter.withContracts ?? featureLive('company_contracts', now)) ? sql`(select client_org_id from company_contracts where hauler_org_id = ${filter.memberOfCompanyId} and status = 'active' and ends_at > ${now})` : null;
+  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.factoryOrgId} is null or ${contracts.factoryOrgId} = ${filter.memberOfCompanyId}${clients ? sql` or ${contracts.factoryOrgId} in ${clients}` : sql``})` : isNull(contracts.factoryOrgId));
+  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.branchOrgId} is null or ${contracts.branchOrgId} = ${filter.memberOfCompanyId}${clients ? sql` or ${contracts.branchOrgId} in ${clients}` : sql``})` : isNull(contracts.branchOrgId));
   // Loads shared with a company are only for its members.
   conditions.push(
     filter.memberOfCompanyId

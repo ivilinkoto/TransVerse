@@ -75,6 +75,22 @@ export const FEATURES = {
   company_report: '1.4',
   trailer_upgrades: '1.4',
   company_trailers: '1.4',
+  marta: '1.5',
+  night_shift: '1.5',
+  road_works: '1.5',
+  oversize: '1.5',
+  fuel_station: '1.5',
+  alliances: '1.5',
+  company_contracts: '1.5',
+  academy: '1.5',
+  divisions: '1.5',
+  perfect_run: '1.5',
+  city_album: '1.5',
+  garage_showcase: '1.5',
+  discord_rally: '1.5',
+  weekly_digest: '1.5',
+  predictions: '1.5',
+  event_autostart: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

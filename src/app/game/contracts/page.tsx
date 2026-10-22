@@ -34,6 +34,8 @@ import { FleetCondition } from '@/components/game/FleetCondition';
 import { DispatchPanel } from '@/components/game/DispatchPanel';
 import { favoriteLanesOf } from '@/server/game/favorites';
 import { membershipOf } from '@/server/game/membership';
+import { isNightShift, NIGHT, oversizeCostCents } from '@/lib/game/roads';
+import { activeRoadWorks } from '@/server/game/roads';
 
 export const metadata = { title: 'Поръчки' };
 
@@ -62,21 +64,22 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const terminalIds = [...new Set(CROSSING_LINES.filter((l) => l.kind === 'rail').flatMap((l) => [l.a, l.b]))];
   const terminals = features.rail ? new Map((await db.select({ id: citiesTable.id, lat: citiesTable.lat, lon: citiesTable.lon }).from(citiesTable).where(inArray(citiesTable.id, terminalIds))).map((t) => [t.id, t])) : new Map();
   const ship = features.ship_calls ? await activeShipCall(db) : null;
+  const works = features.road_works ? await activeRoadWorks(db, now) : [];
   const vip = isVip(user.vipUntil, now);
   const hhmm = (d: Date) => d.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' });
   const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
   const membership = await membershipOf(db, user.id);
   const memberOfCompanyId = membership?.company.id ?? null;
   const project = memberOfCompanyId && features.projects ? await activeProject(db, memberOfCompanyId) : null;
-  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, viewerUserId: user.id }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, viewerUserId: user.id }))]);
+  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }))]);
   // "Drive in convoy" from the map: only the loads on that lane (from its origin city, all of them).
   const laneMatch = features.convoy ? /^(\d+)-(\d+)$/.exec(params.lane ?? '') : null;
   const lane = laneMatch ? { from: Number(laneMatch[1]), to: Number(laneMatch[2]) } : null;
-  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, viewerUserId: user.id }) : [];
+  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }) : [];
   // "Return load" after a delivery: the loads from where the truck now stands, that truck first.
   const fromCity = features.backhaul && /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
   const backTruck = fromCity ? fleet.vehicles.find((v) => v.id === params.truck && !v.delivery) ?? fleet.vehicles.find((v) => !v.delivery && v.cityId === fromCity) ?? null : null;
-  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, viewerUserId: user.id }) : [];
+  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }) : [];
   const seen = new Set<string>();
   const contracts = [...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
@@ -110,7 +113,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const rushMinutes = crew && crew.startDutyMin > 0 ? tripMinutes({ ...crew, startDutyMin: 0 }) : null;
       const rented = v.ownership === 'rented';
       const pay = part ? part.rewardCents : c.rewardCents;
-      const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents) + (sea?.ticketCents ?? 0);
+      const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents) + (sea?.ticketCents ?? 0) + (c.oversize ? oversizeCostCents(c.distanceKm - seaKm) : 0);
       return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''}${v.coDriver ? ' · екипаж' : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? ` · почива още ${restMin} мин` : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part };
     });
     return {
@@ -154,6 +157,11 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       featured: !!c.featured,
       exchange: c.exchange ? c.shipper : null,
       rally: !!c.rallyId,
+      oversizeCents: c.oversize ? oversizeCostCents(c.distanceKm) : null,
+      roadWorks: (() => {
+        const w = works.find((x) => c.route.countries.includes(x.countryCode));
+        return w ? `Ремонт: ${w.road} · +${Math.round(w.delay * 100)}% време` : null;
+      })(),
       ferry: sea ? { note: crossingNote(sea, c.route.profile.endsWith(':r')), ticketCents: sea.ticketCents } : null,
       port: c.port ? (c.portCallId && ship?.id === c.portCallId ? `КОРАБ ${ship.ship}` : 'ОТ ПРИСТАНИЩЕТО') : null,
       rail: features.rail && !c.urgent && !c.stops?.length && !sea
@@ -187,6 +195,16 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         subtitle="Избери товар, камион и тръгвай. Поръчките са общи за всички играчи."
         help="Горивото се плаща по цените на държавите по маршрута (виж Финанси → Дизел днес). По пътя може да се случи задръстване, ремонт, повреда или опашка на границата — това забавя курса, а повредата струва пари за пътна помощ (при наетия камион плаща наемодателят). Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
       />
+      {features.night_shift && isNightShift(now) && (
+        <div className="mb-4 rounded-2xl border border-indigo-400/40 bg-indigo-500/10 px-4 py-3 text-sm">
+          🌙 <b>Нощна смяна</b> — курсовете, тръгнали сега (22:00–05:00), са с {Math.round((NIGHT.faster - 1) * 100)}% по-бързи по празните пътища и носят +{Math.round(NIGHT.bonusShare * 100)}% бонус, ако стигнат навреме. Шофьорът се уморява повече.
+        </div>
+      )}
+      {works.length > 0 && (
+        <div className="mb-4 rounded-2xl border border-amber-sig/40 bg-amber-sig/10 px-4 py-3 text-sm">
+          🚧 <b>Ремонти по пътищата</b> (игрови данни): {works.map((w) => `${w.road} (+${Math.round(w.delay * 100)}% време)`).join(' · ')}. Курсовете през тези държави са по-бавни.
+        </div>
+      )}
       {ship && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-500/40 bg-sky-500/10 px-4 py-3 text-sm">
           <span>🚢 <b>{ship.ship}</b> е в {ship.portName}: {ship.delivered} от {ship.containers} контейнера са доставени. По-добро заплащане, а компанията с най-много контейнери взема награда в касата. Корабите са игрови данни.</span>

@@ -5,6 +5,7 @@ import { CompanyTrailersCard } from '@/components/company/plot/CompanyTrailersCa
 import { orgTrailersView } from '@/server/game/company-trailers';
 import { PlotView } from '@/components/company/plot/PlotView';
 import { isChristmas } from '@/lib/game/christmas';
+import { isMarta } from '@/lib/game/marta';
 import { isBoom } from '@/lib/game/plot';
 import { isNight, plotWeather } from '@/lib/game/ambience';
 import { companyShowcase, recentVisitors } from '@/server/game/base-life';
@@ -34,7 +35,7 @@ export default async function PlotPage() {
     ? await db.select({ id: trailers.id }).from(trailers).innerJoin(companies, eq(companies.id, trailers.companyId)).where(and(eq(companies.ownerId, user.id), eq(trailers.ownership, 'company'), isNull(trailers.soldAt)))
     : [];
   const [{ coins = 0 } = {}] = await db.select({ coins: users.coins }).from(users).where(eq(users.id, user.id));
-  const season = !features.plot_season ? null : isChristmas(now) ? 'christmas' : isWinter(now) ? 'winter' : null;
+  const season = !features.plot_season ? null : isChristmas(now) ? 'christmas' : isWinter(now) ? 'winter' : features.marta && isMarta(now) ? 'marta' : null;
   const yard = fleet?.vehicles.filter((v) => !v.lentTo).length ?? 0;
   const visitors = features.plot_visits && data.hq ? await recentVisitors(db, hub.company.id, data.hq.id, now) : [];
   const showcase = features.company_trophies || features.builder_week ? await companyShowcase(db, hub.company.id) : null;
@@ -50,7 +51,7 @@ export default async function PlotPage() {
       parkedTrucks={Math.min(6, hub.members + 1 + yard)}
       season={season}
       ambience={{ night: features.plot_night && isNight(now), weather: features.plot_weather ? plotWeather(now) : null, visitors }}
-      features={{ decor: features.plot_decor, expand: features.plot_expand, factory: features.factories }}
+      features={{ decor: features.plot_decor, expand: features.plot_expand, factory: features.factories, fuel: features.fuel_station }}
       coins={coins}
       incoming={incoming}
       data={{

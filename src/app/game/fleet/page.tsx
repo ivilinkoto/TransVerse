@@ -15,6 +15,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { ECONOMY } from '@/lib/game/economy';
 import { isVip } from '@/lib/game/vip';
 import { AUTO_DISPATCH_PER_DAY } from '@/server/game/dispatch';
+import { isMarta } from '@/lib/game/marta';
 
 export const metadata = { title: 'Автопарк' };
 
@@ -22,6 +23,8 @@ const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влек
 
 export default async function FleetPage() {
   const { db, user, company, now, features } = await gameContext();
+  // Баба Марта (v1.5): martenitsas on the trucks in March.
+  const marta = features.marta && isMarta(now);
   const vip = isVip(user.vipUntil, now);
   const fleet = await fleetView(db, company.id);
   const leased = new Map((features.leasing ? await leasesOf(db, company.id) : []).filter((l) => l.status === 'active').map((l) => [l.vehicleId, l]));
@@ -55,7 +58,7 @@ export default async function FleetPage() {
               </div>
             </div>
             <div className="my-3 flex h-28 items-end justify-center rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
-              <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} className="max-h-28 w-full" />
+              <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} martenitsa={marta} className="max-h-28 w-full" />
             </div>
             {v.delivery && (
               <div className="mb-3 rounded-xl border border-asphalt-700 bg-asphalt-850 p-3">

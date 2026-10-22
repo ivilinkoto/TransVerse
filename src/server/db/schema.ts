@@ -189,6 +189,9 @@ export const users = pgTable(
     avatarVersion: integer('avatar_version').notNull().default(0),
     /** SHA-256 of the sign-up IP with a server salt — only compared for invite rewards. */
     signupIpHash: text('signup_ip_hash'),
+    /** Perfect trips in a row and the best streak (v1.5). */
+    perfectStreak: integer('perfect_streak').notNull().default(0),
+    bestPerfectStreak: integer('best_perfect_streak').notNull().default(0),
   },
   (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`), uniqueIndex('users_referral_code_idx').on(t.referralCode), index('users_referred_by_idx').on(t.referredById), uniqueIndex('users_discord_idx').on(t.discordId)],
 );
@@ -422,6 +425,8 @@ export const contracts = pgTable(
     portCallId: uuid('port_call_id'),
     /** The weekly rally run of one player (v1.4): private to `createdBy`. */
     rallyId: uuid('rally_id'),
+    /** An oversize load (v1.5): low-bed only, slower, permit and escort paid at the end. */
+    oversize: boolean('oversize').notNull().default(false),
     /** v1.4: a raw material for the company's factory (`material` = raw id) or its product to a buyer (`material` = 'product'). */
     factoryOrgId: uuid('factory_org_id'),
     /** v1.4: a load from a company branch (members only, better paid). */
@@ -476,6 +481,8 @@ export const deliveries = pgTable(
     roadEvents: jsonb('road_events').$type<RoadEventPlan[]>().notNull().default([]),
     /** Time of the next unapplied road event (null when none is left). */
     nextEventAt: ts('next_event_at'),
+    /** Started in the night (v1.5): faster, and a bonus when on time. */
+    nightShift: boolean('night_shift').notNull().default(false),
   },
   (t) => [
     index('deliveries_next_event_idx').on(t.nextEventAt),
@@ -724,6 +731,8 @@ export const organizations = pgTable(
     plotExpansions: integer('plot_expansions').notNull().default(0),
     /** A message pinned on top of the company chat. */
     pinnedMessageId: bigint('pinned_message_id', { mode: 'number' }),
+    /** Division in the monthly company league (v1.5): bronze | silver | gold. */
+    division: text('division').notNull().default('bronze'),
     /** The company's private channel and role in the TransVerse Discord server (v1.3). */
     discordChannel: boolean('discord_channel').notNull().default(false),
     discordChannelId: text('discord_channel_id'),
@@ -2159,4 +2168,156 @@ export const orgTrailers = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('org_trailers_org_idx').on(t.organizationId)],
+);
+
+/** Road works on real motorways (v1.5, game data): trips through the country are slower. */
+export const roadWorks = pgTable('road_works', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  countryCode: text('country_code').notNull(),
+  road: text('road').notNull(),
+  delay: real('delay').notNull(),
+  startsAt: ts('starts_at').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  createdAt: createdAt(),
+});
+
+/** Martenitsas given to friends (v1.5, Баба Марта): once per pair a year. */
+export const martenitsas = pgTable(
+  'martenitsas',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    year: integer('year').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('martenitsas_pair_idx').on(t.fromUserId, t.toUserId, t.year), index('martenitsas_to_idx').on(t.toUserId)],
+);
+
+/** Alliances of companies (v1.5). */
+export const alliances = pgTable('alliances', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(),
+  leaderOrgId: uuid('leader_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  createdAt: createdAt(),
+});
+
+export const allianceMembers = pgTable(
+  'alliance_members',
+  {
+    allianceId: uuid('alliance_id').notNull().references(() => alliances.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    joinedAt: createdAt(),
+  },
+  (t) => [uniqueIndex('alliance_members_org_idx').on(t.organizationId), index('alliance_members_alliance_idx').on(t.allianceId)],
+);
+
+export const allianceInvites = pgTable(
+  'alliance_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    allianceId: uuid('alliance_id').notNull().references(() => alliances.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('pending'), // pending | accepted | declined
+    expiresAt: ts('expires_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('alliance_invites_org_idx').on(t.organizationId, t.status)],
+);
+
+/** An alliance's week: tonnes of all its companies, the shared goal and the battle against another alliance. */
+export const allianceWeeks = pgTable(
+  'alliance_weeks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    allianceId: uuid('alliance_id').notNull().references(() => alliances.id, { onDelete: 'cascade' }),
+    weekKey: text('week_key').notNull(),
+    tons: real('tons').notNull().default(0),
+    targetTons: real('target_tons').notNull(),
+    /** The rival alliance this week (null: no battle). */
+    rivalId: uuid('rival_id'),
+    status: text('status').notNull().default('active'), // active | done
+    goalReached: boolean('goal_reached').notNull().default(false),
+    won: boolean('won'),
+    endsAt: ts('ends_at').notNull(),
+  },
+  (t) => [uniqueIndex('alliance_weeks_idx').on(t.allianceId, t.weekKey)],
+);
+
+/** Hauling contracts between companies (v1.5): the hauler's members haul the client's members-only loads. */
+export const companyContracts = pgTable(
+  'company_contracts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    clientOrgId: uuid('client_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    haulerOrgId: uuid('hauler_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    share: real('share').notNull(),
+    status: text('status').notNull().default('pending'), // pending | active | declined | done
+    startsAt: ts('starts_at'),
+    endsAt: ts('ends_at'),
+    loads: integer('loads').notNull().default(0),
+    tons: real('tons').notNull().default(0),
+    paidCents: money('paid_cents').notNull().default(0),
+    rating: integer('rating'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('company_contracts_client_idx').on(t.clientOrgId, t.status), index('company_contracts_hauler_idx').on(t.haulerOrgId, t.status)],
+);
+
+/** The company academy (v1.5): a new member's training trips with a mentor from the company. */
+export const academyStudents = pgTable(
+  'academy_students',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    mentorId: uuid('mentor_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    courses: integer('courses').notNull().default(0),
+    startedAt: createdAt(),
+    finishedAt: ts('finished_at'),
+  },
+  (t) => [uniqueIndex('academy_students_user_idx').on(t.userId, t.organizationId)],
+);
+
+/** Company divisions (v1.5): the month's table and where each company went. */
+export const divisionResults = pgTable(
+  'division_results',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    monthKey: text('month_key').notNull(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    division: text('division').notNull(),
+    rank: integer('rank').notNull(),
+    tons: real('tons').notNull(),
+    move: text('move').notNull(), // up | down | stay
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('division_results_idx').on(t.monthKey, t.organizationId)],
+);
+
+/** The city album (v1.5): the first delivery of a player to a city. */
+export const cityVisits = pgTable(
+  'city_visits',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    firstAt: ts('first_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.cityId] })],
+);
+
+/** Free predictions on the company battles (v1.5): no stake; a right one earns ТрансКоин from the game. */
+export const predictions = pgTable(
+  'predictions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    battleId: uuid('battle_id').notNull().references(() => companyBattles.id, { onDelete: 'cascade' }),
+    pickOrgId: uuid('pick_org_id').notNull(),
+    weekKey: text('week_key').notNull(),
+    correct: boolean('correct'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('predictions_user_battle_idx').on(t.userId, t.battleId), index('predictions_user_week_idx').on(t.userId, t.weekKey)],
 );

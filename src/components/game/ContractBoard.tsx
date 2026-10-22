@@ -17,6 +17,7 @@ import { Badge, Empty, type BadgeTone } from '@/components/ui';
 import { api } from '@/lib/client/api';
 import { dateTime, dec, duration, int, km, money } from '@/lib/format';
 import type { CargoType } from '@/lib/game/cargo';
+import { MARTA } from '@/lib/game/marta';
 
 export interface BoardContract {
   id: string;
@@ -81,6 +82,10 @@ export interface BoardContract {
   rail?: { id: string; note: string; ticketCents: number; km: number }[];
   /** Someone's own goods on the freight exchange (the shipper's label). */
   exchange?: string | null;
+  /** Oversize load (v1.5): what the permit and the escort cost. */
+  oversizeCents?: number | null;
+  /** Road works on the way (v1.5). */
+  roadWorks?: string | null;
   /** The player's own weekly rally run (v1.4). */
   rally?: boolean;
   speedFactor: number;
@@ -115,7 +120,7 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
@@ -124,6 +129,8 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
   { id: 'stops', label: 'Сборни товари', test: (c) => c.stops.length > 0 },
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
   { id: 'christmas', label: 'Коледа', test: (c) => c.holiday === 'christmas' },
+  { id: 'marta', label: 'Баба Марта', test: (c) => c.holiday === 'marta' },
+  { id: 'oversize', label: 'Извънгабаритни', test: (c) => !!c.oversizeCents },
   { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
   { id: 'clear', label: 'Без сняг по пътя', test: (c) => !c.weather },
   { id: 'licence', label: 'Без нужда от лиценз', test: (c) => c.missingLicences.length === 0 },
@@ -138,6 +145,8 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['stops', (c) => c.stops.length > 0],
   ['halloween', (c) => c.holiday === 'halloween'],
   ['christmas', (c) => c.holiday === 'christmas'],
+  ['marta', (c) => c.holiday === 'marta'],
+  ['oversize', (c) => !!c.oversizeCents],
   ['winter', (c) => c.holiday === 'winter'],
   ['clear', (c) => !!c.weather],
 ]);
@@ -337,6 +346,9 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
+            {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}
+            {c.roadWorks && <Badge tone="orange">🚧 {c.roadWorks}</Badge>}
             {c.toHome && <Badge tone="green"><House className="h-3 w-3" />КЪМ БАЗАТА</Badge>}
             {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
             {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />ЗА СТРОЕЖА НА КОМПАНИЯТА</Badge>}

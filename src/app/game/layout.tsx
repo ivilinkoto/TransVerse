@@ -21,6 +21,7 @@ import { staffAttention } from '@/server/admin';
 import { FeaturesProvider } from '@/components/game/Features';
 import { liveFeatures } from '@/lib/game/features';
 import { isChristmas } from '@/lib/game/christmas';
+import { isMarta } from '@/lib/game/marta';
 import { isStaff } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
@@ -35,7 +36,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const { db, user, company, hq, now } = await gameContext();
   const staff = isStaff(user.role);
   const fresh = unseenRelease(user.seenVersion, now, staff);
-  const holiday = isHalloween(now) ? 'halloween' : isChristmas(now) ? 'christmas' : null;
+  const holiday = isHalloween(now) ? 'halloween' : isChristmas(now) ? 'christmas' : isMarta(now) ? 'marta' : null;
   // Staff see a badge on the admin button while support questions or reports wait.
   const attention = staff ? (await staffAttention(db)).total : 0;
   const [tutorial, membership, missions] = await Promise.all([tutorialState(db, user.id), membershipOf(db, user.id), claimableCount(db, user.id)]);

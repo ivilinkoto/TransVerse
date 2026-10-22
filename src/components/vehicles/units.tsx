@@ -68,6 +68,16 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
           {[0, 1, 2, 3].map((i) => <circle key={i} cx={f - 76 + i * 15} cy={T - 22} r={6} fill={LIGHT_COLORS[extras.lights!]} stroke="#0b1220" strokeWidth="1" />)}
         </g>
       )}
+      {extras?.martenitsa && (
+        // Martenitsa: red and white cord from the mirror arm, with two pompoms and tassels
+        <g>
+          <path d={`M ${f + 6} ${T + 57} Q ${f + 2} ${T + 80} ${f + 4} ${T + 100}`} stroke="#dc2626" strokeWidth="2.5" fill="none" />
+          <path d={`M ${f + 8} ${T + 57} Q ${f + 6} ${T + 80} ${f + 8} ${T + 100}`} stroke="#f8fafc" strokeWidth="2.5" fill="none" />
+          <circle cx={f - 2} cy={T + 104} r={7} fill="#f8fafc" stroke="#94a3b8" strokeWidth="1" />
+          <circle cx={f + 12} cy={T + 106} r={7} fill="#dc2626" />
+          <path d={`M ${f - 5} ${T + 110} l -2 14 M ${f - 1} ${T + 111} l 0 14 M ${f + 9} ${T + 112} l 0 14 M ${f + 14} ${T + 112} l 2 14`} stroke="#94a3b8" strokeWidth="1.5" />
+        </g>
+      )}
       {extras?.sticker && (
         <text x={doorX + 72} y={-121} textAnchor="middle" fontSize="16" fontWeight="800" fill="#fff" stroke="#0b1220" strokeWidth="0.8" paintOrder="stroke" fontFamily="system-ui, sans-serif" letterSpacing="1" {...(extras.sticker.length > 13 ? { textLength: 130, lengthAdjust: 'spacingAndGlyphs' } : {})}>{extras.sticker}</text>
       )}

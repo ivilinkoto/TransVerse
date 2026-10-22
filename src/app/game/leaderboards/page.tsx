@@ -10,30 +10,33 @@ import { membershipOf } from '@/server/game/membership';
 import { companyLeaderboard, leaderboard, type LeaderboardKind } from '@/server/game/queries';
 import { ECO } from '@/lib/game/eco';
 import { ecoBoard, ecoWeek } from '@/server/game/eco';
+import { DIVISION_LABELS, DIVISION_RULES, DIVISIONS } from '@/lib/game/competition';
+import { divisionTable } from '@/server/game/competition';
 
 export const metadata = { title: 'Класации' };
 
-const TABS: { id: LeaderboardKind | 'eco' | 'bases'; label: string; unit: string }[] = [
+const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions'; label: string; unit: string }[] = [
   { id: 'season', label: 'Сезон', unit: 'точки' },
   { id: 'wealth', label: 'Богатство', unit: 'стойност' },
   { id: 'deliveries', label: 'Доставки', unit: 'доставки' },
   { id: 'companies', label: 'Компании', unit: 'опит' },
   { id: 'eco', label: 'Икономичен шофьор', unit: 'лв./км' },
   { id: 'bases', label: 'Най-красиви бази', unit: 'харесвания' },
+  { id: 'divisions', label: 'Дивизии', unit: 'тонове' },
 ];
 
 const medal = (i: number) => (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1);
 
 export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { db, user, company, features } = await gameContext();
-  const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'bases' || features.plot_guests));
+  const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions));
   const requested = (await searchParams).tab;
   const tab = tabs.find((t) => t.id === requested) ?? tabs[0]!;
   return (
     <div className="space-y-5">
       <PageHeader title="Класации" subtitle="Само реални играчи и техните компании. Няма измислени конкуренти." />
       <Segmented label="Вид класация" active={tab.id} items={tabs.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
-      {tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
+      {tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
     </div>
   );
 }
@@ -114,6 +117,34 @@ async function BasesBoard({ userId }: { userId: string }) {
       </ol>
       {rows.length === 0 && <p className="p-3 text-sm text-mist-400">Още никоя компания не е построила база.</p>}
     </Card>
+  );
+}
+
+async function DivisionsBoard({ userId }: { userId: string }) {
+  const { db, now } = await gameContext();
+  const mine = (await membershipOf(db, userId))?.company.id;
+  const tables = await Promise.all(DIVISIONS.slice().reverse().map(async (d) => ({ d, rows: await divisionTable(db, d, now) })));
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-mist-300">Компаниите се състезават по тоновете на членовете си за месеца. В края на месеца най-добрите {Math.round(DIVISION_RULES.moveShare * 100)} % се качват, последните слизат, а първите трима получават награда в касата. Игрови данни.</p>
+      {tables.map(({ d, rows }) => (
+        <Card key={d} title={`${d === 'gold' ? '🥇' : d === 'silver' ? '🥈' : '🥉'} ${DIVISION_LABELS[d]} дивизия`} className="p-2 sm:p-3">
+          {rows.length === 0 ? <p className="p-2 text-sm text-mist-400">Още няма компании.</p> : (
+            <ol className="divide-y divide-asphalt-800">
+              {rows.slice(0, 20).map((r) => (
+                <li key={r.id} className={`flex items-center gap-3 rounded-xl px-2 py-2 ${r.id === mine ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
+                  <span className="num w-8 text-center font-display font-bold text-mist-300">{medal(r.rank - 1)}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">{r.name}{r.tag ? <span className="text-xs text-mist-400"> [{r.tag}]</span> : null}</span>
+                  <span className="text-xs">{r.move === 'up' ? <span className="text-profit">⬆</span> : r.move === 'down' ? <span className="text-loss">⬇</span> : null}</span>
+                  <span className="num font-display font-bold text-gold-400">{int(r.tons)} т</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          <p className="px-2 pt-1 text-xs text-mist-400">Награди: {DIVISION_RULES.prizes[d].map((p) => money(p)).join(' / ')}</p>
+        </Card>
+      ))}
+    </div>
   );
 }
 

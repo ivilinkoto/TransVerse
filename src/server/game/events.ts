@@ -421,3 +421,24 @@ export async function adminEvents(db: DbOrTx, limit = 40) {
     .limit(limit);
 }
 
+
+/**
+ * Worker (v1.5): an event an administrator planned for later is announced
+ * again when it starts — a notification to everyone, once.
+ */
+export async function announceStartedEvents(db: Database, now = new Date()) {
+  const due = await db
+    .select()
+    .from(globalEvents)
+    .where(and(lte(globalEvents.startsAt, now), gt(globalEvents.endsAt, now), isNull(globalEvents.settledAt), sql`${globalEvents.startsAt} > ${globalEvents.createdAt} + interval '5 minutes'`, sql`${globalEvents.startsAt} > ${new Date(now.getTime() - 6 * 3_600_000)}`));
+  let n = 0;
+  for (const e of due) {
+    await db.transaction(async (tx) => {
+      const [fresh] = await tx.execute<{ key: string }>(sql`insert into job_state (key, value) values (${`event-start:${e.id}`}, '{}'::jsonb) on conflict do nothing returning key`).then((r) => r.rows);
+      if (!fresh) return;
+      await announce(tx, e, now);
+      n++;
+    });
+  }
+  return n;
+}

@@ -98,3 +98,48 @@ export async function fraudSignals(db: DbOrTx, now = new Date()) {
     fast: fast.map((r) => ({ username: r.username, net: Number(r.net), freight: Number(r.freight), other: Number(r.other) })),
   };
 }
+
+/**
+ * Balance (v1.5): one global factor on the pay of new loads, set by an
+ * administrator. The dashboard suggests a change from the week's
+ * "inflation"; nothing changes until an administrator applies it.
+ */
+export const BALANCE = {
+  key: 'economy-balance',
+  min: 0.7,
+  max: 1.3,
+  /** Weekly growth of the money above this suggests lower pay, below the lower bound higher pay. */
+  highInflation: 0.05,
+  lowInflation: -0.02,
+  maxStep: 0.1,
+} as const;
+
+/** The pay factor of new loads (1 when never set). */
+export async function payFactor(db: DbOrTx): Promise<number> {
+  const { rows } = await db.execute<{ value: { factor?: number } }>(sql`select value from job_state where key = ${BALANCE.key}`);
+  const f = Number(rows[0]?.value?.factor ?? 1);
+  return Number.isFinite(f) ? Math.min(BALANCE.max, Math.max(BALANCE.min, f)) : 1;
+}
+
+/** What the dashboard suggests: lower pay when the money grows fast, higher when it shrinks. */
+export function balanceSuggestion(inflation: number, current: number): { factor: number; reason: string } | null {
+  const round = (x: number) => Math.round(x * 100) / 100;
+  if (inflation > BALANCE.highInflation) {
+    const step = Math.min(BALANCE.maxStep, Math.round((inflation - BALANCE.highInflation) * 100) / 100 + 0.03);
+    return { factor: round(Math.max(BALANCE.min, current * (1 - step))), reason: `Парите растат с ${(inflation * 100).toFixed(1)} % за седмица — предлагам ${Math.round(step * 100)} % по-ниско заплащане на новите товари.` };
+  }
+  if (inflation < BALANCE.lowInflation) {
+    const step = Math.min(BALANCE.maxStep, Math.round((BALANCE.lowInflation - inflation) * 100) / 100 + 0.03);
+    return { factor: round(Math.min(BALANCE.max, current * (1 + step))), reason: `Парите намаляват с ${(-inflation * 100).toFixed(1)} % за седмица — предлагам ${Math.round(step * 100)} % по-високо заплащане на новите товари.` };
+  }
+  return null;
+}
+
+/** An administrator applies a pay factor (written to the audit log). */
+export async function applyPayFactor(db: DbOrTx, actorId: string, factor: number) {
+  const f = Math.min(BALANCE.max, Math.max(BALANCE.min, Math.round(factor * 100) / 100));
+  const before = await payFactor(db);
+  await db.execute(sql`insert into job_state (key, value, updated_at) values (${BALANCE.key}, ${JSON.stringify({ factor: f })}::jsonb, now()) on conflict (key) do update set value = excluded.value, updated_at = now()`);
+  await db.execute(sql`insert into admin_audit (actor_id, action, target_user_id, details) values (${actorId}, 'economy_balance', null, ${JSON.stringify({ before, after: f })}::jsonb)`);
+  return f;
+}

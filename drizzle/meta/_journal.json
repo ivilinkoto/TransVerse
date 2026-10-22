@@ -393,6 +393,34 @@
       "when": 1792637182888,
       "tag": "0055_curved_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792677914502,
+      "tag": "0056_open_the_hunter",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1792678802410,
+      "tag": "0057_huge_black_tom",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792679239472,
+      "tag": "0058_ambitious_hannibal_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792679716173,
+      "tag": "0059_steady_galactus",
+      "breakpoints": true
     }
   ]
 }

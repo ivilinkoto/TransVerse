@@ -14,6 +14,7 @@ import { PlayerName } from './PlayerName';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { api } from '@/lib/client/api';
 import { useFeature } from './Features';
 
 export interface MapLeg {
@@ -38,6 +39,8 @@ export interface MapProps {
   preview: null | { leg: MapLeg; title: string; approximate: boolean };
   /** The player is VIP: golden glow on their own trucks. */
   ownVip?: boolean;
+  /** Баба Марта (v1.5): the stork of the day over a real city — click it to spot it. */
+  stork?: { name: string; position: LatLon } | null;
 }
 
 interface CityDetails {
@@ -194,7 +197,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null }: MapProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -331,6 +334,30 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     };
   }, [styleUrl]);
 
+  // The stork of the day (Баба Марта): a marker; a click tells the server it was spotted.
+  const [storkNote, setStorkNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (!ready || !stork || !mapRef.current) return;
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.setAttribute('aria-label', 'Щъркел');
+    el.style.cssText = 'background:none;border:0;cursor:pointer;padding:0;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))';
+    // A white stork with black wing tips, red beak and legs (original drawing).
+    el.innerHTML = '<svg width="38" height="38" viewBox="0 0 40 40"><path d="M8 22 Q14 14 24 16 L30 13 L34 14 L30 17 Q28 24 20 25 Z" fill="#fff" stroke="#0b1220" stroke-width="1"/><path d="M10 21 Q14 18 20 20 L16 24 Z" fill="#111827"/><path d="M33 14 L39 16 L33 15.5 Z" fill="#dc2626"/><circle cx="31" cy="14" r="0.9" fill="#0b1220"/><path d="M18 25 L17 36 M21 25 L22 36" stroke="#dc2626" stroke-width="1.4"/></svg>';
+    el.onclick = async () => {
+      try {
+        const data = await api<{ coins: number; city: string }>('/api/game/action', { type: 'spotStork' });
+        setStorkNote(`Видя щъркела над ${data.city}! +${data.coins} TC 🔴⚪`);
+      } catch (e) {
+        setStorkNote((e as Error).message);
+      }
+    };
+    const marker = new maplibregl.Marker({ element: el }).setLngLat(toLngLat(stork.position)).addTo(mapRef.current);
+    return () => {
+      marker.remove();
+    };
+  }, [ready, stork]);
+
   // Data layers follow server refreshes without recreating the map.
   useEffect(() => {
     if (!ready) return;
@@ -415,6 +442,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     <div className="relative h-[calc(100dvh-210px)] min-h-[420px] overflow-hidden rounded-2xl border border-asphalt-700">
       <div ref={container} className="h-full w-full" />
       {error && <div className="absolute left-3 top-3 rounded-lg bg-loss/90 px-3 py-2 text-sm text-white">{error}</div>}
+      {storkNote && <button type="button" onClick={() => setStorkNote(null)} className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg bg-asphalt-900/95 px-3 py-2 text-sm text-white shadow-lg">{storkNote}</button>}
       <div className="absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-xl bg-asphalt-950/85 px-3 py-2 text-[11px] text-mist-300 backdrop-blur">
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-gold-400" />Град с товарен пазар (число = поръчки)</span>
         <span className="flex items-center gap-1.5"><TruckGlyph ring="#22d3ee" fill="#f8fafc" />Твоите камиони</span>

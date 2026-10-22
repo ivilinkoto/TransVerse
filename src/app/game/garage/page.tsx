@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Hint } from '@/components/game/Hint';
 import { maintenanceCostCents, maintenanceState } from '@/lib/game/maintenance';
 import { bonusesForUser } from '@/server/game/membership';
@@ -18,14 +19,18 @@ import { repairCostCents } from '@/lib/game/economy';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
+import { isMarta, springDiscount } from '@/lib/game/marta';
 
 export const metadata = { title: 'Сервиз' };
 
 export default async function GaragePage() {
   const { db, user, company, now, features } = await gameContext();
+  // Баба Марта (v1.5): martenitsas on the trucks in March.
+  const marta = features.marta && isMarta(now);
   // VIP: discount on repairs and upgrades; the company's service on the plot makes repairs cheaper too.
   const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
-  const serviceDiscount = (await bonusesForUser(db, user.id))?.bonuses.repairDiscount ?? 0;
+  // The company's service and, in March, spring cleaning (Баба Марта) make repairs cheaper.
+  const serviceDiscount = 1 - (1 - ((await bonusesForUser(db, user.id))?.bonuses.repairDiscount ?? 0)) * (1 - (features.marta ? springDiscount(now) : 0));
   const [fleet, listings, myDepots] = await Promise.all([fleetView(db, company.id), myListings(db, company.id), db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id))]);
   const insurance = new Map(fleet.vehicles.map((v) => [v.id, insurancePriceCents(v.model.priceCents + (v.trailer?.model.priceCents ?? 0))]));
   const listingOf = (id: string) => listings.find((l) => l.vehicleId === id || l.trailerId === id);
@@ -51,9 +56,10 @@ export default async function GaragePage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-lg font-bold">{v.model.name}</span>
                     <span className="font-mono text-xs text-mist-400">{v.plate}</span>
+                    {features.garage_showcase && <Link href={`/game/garage/${v.id}`} className="text-xs text-cyan-glow hover:underline">Витрина →</Link>}
                     {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : v.movingUntil && v.movingUntil > now ? <Badge tone="orange">пътува до {v.city.nameBg} · до минута</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
                   </div>
-                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} className="my-3 h-24 w-full" />
+                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} martenitsa={marta} className="my-3 h-24 w-full" />
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="flex justify-between text-xs text-mist-400"><span>Влекач / камион</span><span className="num">{Math.round(v.condition)}%</span></div>

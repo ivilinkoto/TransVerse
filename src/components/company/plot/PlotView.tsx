@@ -45,10 +45,12 @@ export interface PlotFeatures {
   expand: boolean;
   /** The factory (v1.4). */
   factory?: boolean;
+  /** The fuel station (v1.5). */
+  fuel?: boolean;
 }
 
 /** The company plot: the scene, building on it and the running construction. */
-export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incoming, season = null, ambience = { night: false, weather: null, visitors: [] }, features = { decor: false, expand: false }, coins = 0, children }: { data: PlotData; canBuild: boolean; now: number; parkedTrucks: number; incoming: number; season?: 'winter' | 'christmas' | null; ambience?: { night: boolean; weather: 'rain' | 'leaves' | null; visitors: string[] }; features?: PlotFeatures; coins?: number; children?: React.ReactNode }) {
+export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incoming, season = null, ambience = { night: false, weather: null, visitors: [] }, features = { decor: false, expand: false }, coins = 0, children }: { data: PlotData; canBuild: boolean; now: number; parkedTrucks: number; incoming: number; season?: 'winter' | 'christmas' | 'marta' | null; ambience?: { night: boolean; weather: 'rain' | 'leaves' | null; visitors: string[] }; features?: PlotFeatures; coins?: number; children?: React.ReactNode }) {
   const router = useRouter();
   const svg = useRef<SVGSVGElement>(null);
   const [mode, setMode] = useState<Mode>({ kind: 'view' });
@@ -203,7 +205,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
 
   const sel = selected ? data.buildings.find((b) => b.type === selected) : null;
   // The factory comes with v1.4 (staff see it earlier).
-  const notPlaced = BUILDING_TYPES.filter((t) => !data.buildings.some((b) => b.type === t) && (t !== 'factory' || !!features.factory));
+  const notPlaced = BUILDING_TYPES.filter((t) => !data.buildings.some((b) => b.type === t) && (t !== 'factory' || !!features.factory) && (t !== 'fuel' || !!features.fuel));
   const decorSel = selectedDecor ? data.decor.find((d) => d.id === selectedDecor) : null;
   const nextLand = EXPANSIONS[data.expansions];
   const cost = (m: Materials) => materialCostCents(m, false, data.boom);
