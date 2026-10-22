@@ -147,6 +147,50 @@ export async function adjustCoins(db: Database, actor: Staff, targetId: string, 
   });
 }
 
+export const COMPENSATION = { maxCents: 100_000_00, maxCoins: 10_000, batch: 200 } as const;
+
+/**
+ * "Компенсация за всички" (v1.5): the same amount of money or ТрансКоин for
+ * every active (not banned) player, e.g. after an outage. One audit entry for
+ * the whole run; each payment has its own idempotency key under it, and every
+ * player is notified. Returns how many players got it.
+ */
+export async function compensateAll(db: Database, actor: Staff, input: { kind: 'money' | 'coins'; amount: number; reason: string }, now = new Date()) {
+  requireAdminRole(actor);
+  const amount = input.kind === 'money' ? Math.round(input.amount * 100) : Math.round(input.amount);
+  const max = input.kind === 'money' ? COMPENSATION.maxCents : COMPENSATION.maxCoins;
+  if (!Number.isSafeInteger(amount) || amount <= 0 || amount > max) fail('invalid_amount', input.kind === 'money' ? `Сумата е от 0,01 до ${max / 100} лв.` : `От 1 до ${max} ТрансКоин.`);
+  const reason = input.reason.trim();
+  if (reason.length < 5) fail('reason_required', 'Посочете причина (поне 5 символа).');
+  const auditId = await audit(db, actor.id, 'compensate_all', null, { kind: input.kind, amount, reason });
+  const label = input.kind === 'money' ? `${(amount / 100).toFixed(2)} лв.` : `${amount} ТрансКоин`;
+  let paid = 0;
+  let after = '00000000-0000-0000-0000-000000000000';
+  for (;;) {
+    const page = await db
+      .select({ userId: users.id, companyId: companies.id })
+      .from(users)
+      .innerJoin(companies, eq(companies.ownerId, users.id))
+      .where(sql`${users.bannedAt} is null and ${users.id} > ${after}`)
+      .orderBy(users.id)
+      .limit(COMPENSATION.batch);
+    if (!page.length) break;
+    for (const p of page) {
+      await db.transaction(async (tx) => {
+        const applied = input.kind === 'money'
+          ? await post(tx, p.companyId, [{ category: 'admin_adjustment', amountCents: amount, description: `Компенсация: ${reason}`, idempotencyKey: `compensation:${auditId}:${p.userId}` }])
+          : (await postCoins(tx, p.userId, { amount, reason: 'admin_grant', description: `Компенсация: ${reason}`, idempotencyKey: `compensation:${auditId}:${p.userId}`, actorUserId: actor.id })) ? 1 : 0;
+        if (!applied) return;
+        paid++;
+        await notify(tx, p.userId, 'success', `Компенсация: +${label}`, reason, input.kind === 'money' ? '/game/finance' : '/game/shop');
+      });
+    }
+    after = page.at(-1)!.userId;
+  }
+  await db.update(adminAudit).set({ details: { kind: input.kind, amount, reason, players: paid } }).where(eq(adminAudit.id, auditId));
+  return { players: paid, auditId, at: now };
+}
+
 /** Moderation: removes a company's logo, banner, description, rules and tag. */
 export async function adminResetCompanyBranding(db: Database, actor: Staff, companyId: string, reason: string) {
   if (reason.trim().length < 5) fail('reason_required', 'Посочете причина (поне 5 символа).');

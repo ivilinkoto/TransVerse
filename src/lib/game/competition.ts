@@ -46,6 +46,9 @@ export const PERFECT = {
   spoilers: ['breakdown', 'police'],
 } as const;
 
+/** A Discord role while the streak is at least this long. */
+export const PERFECT_ROLE_STREAK = 10;
+
 export const perfectBonusShare = (streak: number) => Math.min(PERFECT.maxBonus, streak * PERFECT.bonusPerStep);
 
 export function isPerfectTrip(f: { late: boolean; violations: readonly string[]; events: readonly { kind: string }[]; tons: number; payloadTons: number }): boolean {

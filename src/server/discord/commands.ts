@@ -10,6 +10,8 @@ import { membershipOf } from '@/server/game/membership';
 import { topBases } from '@/server/game/plot';
 import { companyLeaderboard, fleetView, leaderboard } from '@/server/game/queries';
 import { playerCard } from '@/server/game/social';
+import { laneRecordsView } from '@/server/game/community';
+import { albumOf } from '@/server/game/competition';
 import type { Embed } from './api';
 import type { Row } from './ui';
 import { appUrl, BRAND } from './config';
@@ -51,6 +53,8 @@ export const COMMANDS = [
   { name: 'пропуск', description: 'Сезонният пропуск: ниво и наградите, които те чакат (свързан акаунт)' },
   { name: 'борса', description: 'Най-добре платените товари от град', options: [{ type: 3, name: 'град', description: 'Град (напр. София)', required: true }] },
   { name: 'дневна', description: 'Вземи дневната награда' },
+  { name: 'рекорди', description: 'Рекордите на линиите този месец (с име — на играч)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
+  { name: 'албум', description: 'Колекцията от градове (без име — твоята)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'ивент', description: 'Текущият ивент на общността и твоят принос' },
   { name: 'битка', description: 'Битката на компанията ти тази седмица' },
   { name: 'тикет', description: 'Отвори тикет към екипа на TransVerse' },
@@ -131,6 +135,10 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return board(db, input.options['град'] ?? '', now);
     case 'участък':
       return plot(db, input.options['компания'] ?? null, me?.id ?? null);
+    case 'рекорди':
+      return records(db, input.options['играч'] ?? null, now);
+    case 'албум':
+      return album(db, input.options['играч'] ?? me?.username ?? null, now);
     case 'свързване':
       return { ephemeral: true, content: me ? `Свързан си като **${me.username}**. Отвързваш от Настройки → Discord.` : linkHint() };
     default:
@@ -264,4 +272,50 @@ async function board(db: DbOrTx, cityName: string, now: Date): Promise<CommandRe
     .limit(8);
   const lines = rows.map((r) => `📦 **${r.goods}** ${dec(r.tons)} т → ${r.dest} · ${km(r.km)} · **${money(r.reward)}**${r.minLevel > 1 ? ` · ниво ${r.minLevel}+` : ''}`);
   return { embeds: [{ title: `Борса · ${city.name}`, url: `${appUrl()}/game/contracts`, color: BRAND, description: lines.join('\n') || 'В момента няма свободни товари оттук.', footer: { text: 'Поемането на товар става в играта · игрови данни' } }] };
+}
+
+async function playerByName(db: DbOrTx, username: string) {
+  const [u] = await db.select({ id: users.id, username: users.username }).from(users).where(and(sql`lower(${users.username}) = lower(${username.trim()})`, isNull(users.bannedAt)));
+  return u ?? null;
+}
+
+/** /рекорди — the fastest loaded runs on the lanes this month (v1.5). */
+async function records(db: DbOrTx, username: string | null, now: Date): Promise<CommandReply> {
+  if (!featureLive('lane_records', now)) return { ephemeral: true, content: 'Рекордите на линиите идват с обновление 1.5.' };
+  const who = username ? await playerByName(db, username) : null;
+  if (username && !who) return { ephemeral: true, content: `Няма играч „${username}“.` };
+  const rows = await laneRecordsView(db, now, 10, who?.id);
+  const time = (m: number) => `${Math.floor(m / 60)} ч ${m % 60} мин`;
+  return {
+    embeds: [{
+      title: who ? `🏁 Рекордите на ${who.username} този месец` : '🏁 Рекорди на линиите този месец',
+      url: `${appUrl()}/game/leaderboards?tab=records`,
+      color: BRAND,
+      description: rows.length ? rows.map((r) => `**${r.from} → ${r.to}** · ${time(r.minutes)} · ${int(Math.round(r.km))} км${who ? '' : ` · ${r.username}`}`).join('\n') : 'Този месец още няма рекорди.',
+      footer,
+    }],
+  };
+}
+
+/** /албум — the city album: cards per country (v1.5). */
+async function album(db: DbOrTx, username: string | null, now: Date): Promise<CommandReply> {
+  if (!featureLive('city_album', now)) return { ephemeral: true, content: 'Колекцията от градове идва с обновление 1.5.' };
+  if (!username) return { ephemeral: true, content: `Напиши име на играч или свържи акаунта си. ${linkHint()}` };
+  const who = await playerByName(db, username);
+  if (!who) return { ephemeral: true, content: `Няма играч „${username}“.` };
+  const pages = await albumOf(db, who.id);
+  const have = pages.reduce((s, p) => s + p.cities.filter((c) => c.at).length, 0);
+  const all = pages.reduce((s, p) => s + p.cities.length, 0);
+  return {
+    embeds: [{
+      title: `📒 Албумът на ${who.username}: ${have} / ${all} града`,
+      url: `${appUrl()}/game/collection`,
+      color: BRAND,
+      fields: pages.map((p) => {
+        const n = p.cities.filter((c) => c.at).length;
+        return { name: `${n === p.cities.length ? '✅ ' : ''}${p.name}`, value: `${n} / ${p.cities.length}`, inline: true };
+      }).slice(0, 24),
+      footer,
+    }],
+  };
 }

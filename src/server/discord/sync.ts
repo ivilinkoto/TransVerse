@@ -1,4 +1,6 @@
 import { and, asc, eq, gt, isNotNull, isNull } from 'drizzle-orm';
+import { featureLive } from '@/lib/game/features';
+import { PERFECT_ROLE_STREAK } from '@/lib/game/competition';
 import { isVip } from '@/lib/game/vip';
 import { isStaff } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
@@ -42,6 +44,9 @@ async function desiredRoles(db: Database, userId: string, now: Date) {
   if (m?.isOwner) want.push(await gameRole('owner'));
   if (isStaff(u.role)) want.push(await gameRole('staff'));
   if (m?.org.discordChannel && m.org.discordRoleId) want.push(m.org.discordRoleId);
+  // v1.5: the company's division and a live perfect streak.
+  if (m && featureLive('divisions', now)) want.push(await gameRole(m.org.division === 'gold' ? 'divisionGold' : m.org.division === 'silver' ? 'divisionSilver' : 'divisionBronze'));
+  if (u.perfectStreak >= PERFECT_ROLE_STREAK && featureLive('perfect_run', now)) want.push(await gameRole('perfect10'));
   // Special badges from the game are roles too (v1.3).
   const badges = await db.select({ badge: userBadges.badge }).from(userBadges).where(eq(userBadges.userId, userId));
   for (const { badge } of badges) {

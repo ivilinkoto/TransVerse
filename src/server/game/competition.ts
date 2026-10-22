@@ -1,10 +1,11 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
-import { ALBUM, albumBadge, DIVISION_LABELS, DIVISION_RULES, DIVISIONS, divisionMoves, isPerfectTrip, nextDivision, PERFECT, perfectBonusShare, type Division } from '@/lib/game/competition';
+import { ALBUM, albumBadge, DIVISION_LABELS, DIVISION_RULES, DIVISIONS, divisionMoves, isPerfectTrip, nextDivision, PERFECT, PERFECT_ROLE_STREAK, perfectBonusShare, type Division } from '@/lib/game/competition';
 import { periodWindow } from '@/lib/game/missions';
 import { BADGES } from '@/lib/game/halloween';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, cityVisits, countries, divisionResults, jobState, organizations, userBadges, users } from '@/server/db/schema';
+import { cities, cityVisits, companyMembers, countries, divisionResults, jobState, organizations, userBadges, users } from '@/server/db/schema';
+import { queueRoles } from '@/server/discord/outbox';
 import { featureFor } from '@/server/features';
 import { postCoins } from './coins';
 import { postTreasury } from './finance';
@@ -65,6 +66,8 @@ export async function settleDivisions(db: Database, now = new Date()) {
         if (move !== 'stay') {
           await tx.update(organizations).set({ division: nextDivision(division, move) }).where(eq(organizations.id, r.id));
           moved++;
+          // The members' division role in Discord follows.
+          for (const m of await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, r.id))) await queueRoles(tx, m.userId, now);
         }
         if (prize || move !== 'stay') await notifyMembers(tx, r.id, null, move === 'up' ? `Качихте се в ${DIVISION_LABELS[nextDivision(division, 'up')].toLowerCase()}та дивизия! ⬆` : move === 'down' ? `Слизате в ${DIVISION_LABELS[nextDivision(division, 'down')].toLowerCase()}та дивизия` : `${i + 1}. място в дивизията`, prize ? `Награда: ${money(prize)} в касата.` : 'Новият месец е нов шанс.', '/game/leaderboards?tab=divisions');
       }
@@ -83,11 +86,15 @@ export async function settleDivisions(db: Database, now = new Date()) {
 export async function recordPerfectTrip(tx: Tx, userId: string, f: Parameters<typeof isPerfectTrip>[0] & { rewardCents: number }, now: Date): Promise<{ bonusCents: number; streak: number }> {
   if (!(await featureFor(tx, userId, 'perfect_run', now))) return { bonusCents: 0, streak: 0 };
   if (!isPerfectTrip(f)) {
+    const [before] = await tx.select({ streak: users.perfectStreak }).from(users).where(eq(users.id, userId));
     await tx.update(users).set({ perfectStreak: 0 }).where(eq(users.id, userId));
+    // The Discord role of a long streak goes with it.
+    if ((before?.streak ?? 0) >= PERFECT_ROLE_STREAK) await queueRoles(tx, userId, now);
     return { bonusCents: 0, streak: 0 };
   }
   const [u] = await tx.update(users).set({ perfectStreak: sql`${users.perfectStreak} + 1`, bestPerfectStreak: sql`greatest(${users.bestPerfectStreak}, ${users.perfectStreak} + 1)` }).where(eq(users.id, userId)).returning({ streak: users.perfectStreak });
   const streak = u!.streak;
+  if (streak === PERFECT_ROLE_STREAK) await queueRoles(tx, userId, now);
   for (const [n, badge] of PERFECT.badges) {
     if (streak !== n) continue;
     const [got] = await tx.insert(userBadges).values({ userId, badge }).onConflictDoNothing().returning();

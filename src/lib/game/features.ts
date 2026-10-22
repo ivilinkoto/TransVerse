@@ -103,6 +103,8 @@ export const FEATURES = {
   profile_showcase: '1.5',
   perfect_convoy: '1.5',
   lane_records: '1.5',
+  staff_alerts: '1.5',
+  compensation: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

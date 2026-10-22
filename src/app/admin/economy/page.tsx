@@ -3,6 +3,10 @@ import { int, money } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
 import { balanceSuggestion, economyOverview, FRAUD, fraudSignals, payFactor } from '@/server/admin-economy';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { CompensationForm } from '@/components/admin/CompensationForm';
+import { featureLive } from '@/lib/game/features';
+import { COMPENSATION } from '@/server/admin';
+import { isAdmin } from '@/server/auth/roles';
 import { LEDGER_LABELS, type LedgerCategory } from '@/server/game/finance';
 
 export const metadata = { title: 'Икономика' };
@@ -12,7 +16,7 @@ const pct = (x: number) => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1).replace('
 
 /** The game economy and the anti-fraud signals (v1.4). Signals only — the staff decide. */
 export default async function AdminEconomy() {
-  const { db, now } = await adminContext();
+  const { db, now, user } = await adminContext();
   const [eco, fraud, factor] = await Promise.all([economyOverview(db, now), fraudSignals(db, now), payFactor(db)]);
   const suggestion = balanceSuggestion(eco.inflation, factor);
   const payChange = eco.avgPay != null && eco.avgPayLastWeek ? eco.avgPay / eco.avgPayLastWeek - 1 : null;
@@ -35,6 +39,12 @@ export default async function AdminEconomy() {
         ) : <p className="mt-2 text-sm text-profit">Икономиката е в норма — няма предложение.</p>}
         {factor !== 1 && <div className="mt-2"><ActionButton action={{ type: 'applyPayFactor', factor: 1 }} endpoint="/api/admin/action" className="btn-ghost" confirm="Да върнем ли множителя на ×1,00?">Върни на ×1,00</ActionButton></div>}
       </Card>
+      {isAdmin(user.role) && featureLive('compensation', now, true) && (
+        <Card title="Компенсация за всички">
+          <p className="mb-3 text-sm text-mist-300">Еднаква сума или ТрансКоин за всеки активен (неблокиран) играч — напр. след прекъсване. До {COMPENSATION.maxCents / 100} лв. или {COMPENSATION.maxCoins} TC. Записва се в одита; всеки играч получава известие с причината.</p>
+          <CompensationForm />
+        </Card>
+      )}
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Потоци за 7 дни (по категории)">
           <table className="w-full text-sm">
