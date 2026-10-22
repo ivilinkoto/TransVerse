@@ -400,6 +400,8 @@ export interface ContractFilter {
   withSea?: boolean;
   /** Own goods of other players on the freight exchange (v1.4). */
   withExchange?: boolean;
+  /** The viewer: their own weekly rally load is included (v1.4). */
+  viewerUserId?: string | null;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
@@ -418,6 +420,7 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   const sea = filter.withSea ?? featureLive('ferries', now);
   if (!sea) conditions.push(eq(contracts.port, false));
   // Raw materials and product of a company factory are only for its members.
+  conditions.push(filter.viewerUserId ? sql`(${contracts.rallyId} is null or ${contracts.createdBy} = ${filter.viewerUserId})` : isNull(contracts.rallyId));
   conditions.push(filter.memberOfCompanyId ? sql`(${contracts.factoryOrgId} is null or ${contracts.factoryOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.factoryOrgId));
   conditions.push(filter.memberOfCompanyId ? sql`(${contracts.branchOrgId} is null or ${contracts.branchOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.branchOrgId));
   // Loads shared with a company are only for its members.

@@ -412,6 +412,8 @@ export const contracts = pgTable(
     /** v1.4: a container from a port (`port`), and from which ship call ("Кораб пристига") when it came with one. */
     port: boolean('port').notNull().default(false),
     portCallId: uuid('port_call_id'),
+    /** The weekly rally run of one player (v1.4): private to `createdBy`. */
+    rallyId: uuid('rally_id'),
     /** v1.4: a raw material for the company's factory (`material` = raw id) or its product to a buyer (`material` = 'product'). */
     factoryOrgId: uuid('factory_org_id'),
     /** v1.4: a load from a company branch (members only, better paid). */
@@ -2099,4 +2101,34 @@ export const loans = pgTable(
     closedAt: ts('closed_at'),
   },
   (t) => [index('loans_company_idx').on(t.companyId, t.status), index('loans_due_idx').on(t.status, t.nextDueAt)],
+);
+
+/** Weekly rally (v1.4): one real route a week, each player runs it once. */
+export const rallies = pgTable('rallies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  weekKey: text('week_key').notNull().unique(),
+  originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+  destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+  routeId: integer('route_id').notNull().references(() => routes.id),
+  distanceKm: real('distance_km').notNull(),
+  startsAt: ts('starts_at').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  status: text('status').notNull().default('active'), // active | done
+  createdAt: createdAt(),
+});
+
+export const rallyEntries = pgTable(
+  'rally_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    rallyId: uuid('rally_id').notNull().references(() => rallies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    contractId: uuid('contract_id').references(() => contracts.id, { onDelete: 'set null' }),
+    /** Filled when the run arrives. */
+    minutes: integer('minutes'),
+    fuelCentsPer100: integer('fuel_cents_per_100'),
+    finishedAt: ts('finished_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('rally_entries_user_idx').on(t.rallyId, t.userId)],
 );

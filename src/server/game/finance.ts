@@ -57,6 +57,7 @@ export type LedgerCategory =
   | 'branch_bonus'
   | 'loan'
   | 'shared_load_bonus'
+  | 'rally_prize'
   | 'lease'
   | 'member_bonus';
 
@@ -114,6 +115,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   branch_bonus: 'Бонус от филиал',
   loan: 'Кредит (отпускане и вноски)',
   shared_load_bonus: 'Бонус за общ товар',
+  rally_prize: 'Награди от ралито',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',
 };

@@ -74,6 +74,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/league', label: 'Лига' },
       { href: '/game/duels', label: 'Дуели', feature: 'duels' },
+      { href: '/game/rally', label: 'Рали', feature: 'rally' },
       { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest' },
       { href: '/game/pass', label: 'Пропуск' },
       { href: '/game/events', label: 'Ивенти' },

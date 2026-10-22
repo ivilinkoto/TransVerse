@@ -11,6 +11,7 @@ import { claimChristmasQuest } from '@/server/game/christmas';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { answerDriver } from '@/server/game/moods';
+import { joinRally } from '@/server/game/rally';
 import { buyGoods, postFreight, rateHauler, shipGoods } from '@/server/game/trade';
 import { buyPremiumPass, claimPassRewards } from '@/server/game/season-pass';
 import { deleteChannelMessage, deleteConversation, messageBodySchema, postToChannel, sendDirectMessage, unsendDirectMessage } from '@/server/game/messages';
@@ -237,6 +238,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('closeBranch'), branchId: id }),
   z.object({ type: z.literal('takeLoan'), amountEur: z.coerce.number().int().min(1_000).max(1_000_000), weeks: z.coerce.number().int() }),
   z.object({ type: z.literal('repayLoan') }),
+  z.object({ type: z.literal('joinRally') }),
   z.object({ type: z.literal('answerDriver'), driverId: id, accept: z.boolean() }),
 ]);
 
@@ -269,6 +271,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   takeLoan: 'loans',
   repayLoan: 'loans',
   answerDriver: 'driver_moods',
+  joinRally: 'rally',
   cheer: 'feed',
   chooseWeeklyGoal: 'weekly_goal',
   claimWeeklyGoal: 'weekly_goal',
@@ -559,6 +562,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await sellProduct(db, user.id, input.cityId)) };
     case 'postFreight':
       return { ok: true, id: await postFreight(db, user.id, { depotId: input.depotId, cargo: input.cargo, tons: input.tons, destCityId: input.destCityId, mode: input.mode, priceCents: input.priceEur * 100 }) };
+    case 'joinRally':
+      return { ok: true, ...(await joinRally(db, user.id)) };
     case 'answerDriver':
       return { ok: true, ...(await answerDriver(db, user.id, input.driverId, input.accept)) };
     case 'rateHauler':

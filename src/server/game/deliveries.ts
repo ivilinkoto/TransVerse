@@ -55,6 +55,7 @@ import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
 import { BOARDING_GAME_MIN, CROSSING_LINES, crossingLine as crossingLine_, crossingNote, DEPARTURE_EVERY_MIN, onBoardGameMinutes, railOptions } from '@/lib/game/crossings';
 import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart } from './together';
 import { recordShipContainer } from './ports';
+import { recordRallyRun } from './rally';
 import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
@@ -202,6 +203,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     // A load shared with a company: only its members.
     if (contract!.sharedLoadId) await checkSharedLoad(tx, contract!.sharedLoadId, userId);
     // Building materials and factory loads: only the members of that company.
+    if (contract!.rallyId && contract!.createdBy !== userId) fail('not_yours', 'Това е ралито на друг играч.', 403);
     if (contract!.factoryOrgId || contract!.constructionId || contract!.branchOrgId) {
       const mine = (await membershipOf(tx, userId))?.company.id ?? null;
       const [build] = contract!.constructionId ? await tx.select({ org: companyBuilds.organizationId }).from(companyBuilds).where(eq(companyBuilds.id, contract!.constructionId)) : [];
@@ -555,6 +557,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (contract.factoryOrgId) await recordFactoryDelivery(tx, contract);
   // A container of a ship call ("Кораб пристига").
   if (contract.portCallId) await recordShipContainer(tx, contract.portCallId);
+  // A weekly rally run: its time and fuel count.
+  if (contract.rallyId) await recordRallyRun(tx, contract, d, completedAt);
   // Duels count the tonnes by arrival time.
   await recordDuelDelivery(tx, company!.ownerId, contract.weightTons, completedAt);
   // Starter rental: returned now if the player bought their own truck, or offered for buy-out.

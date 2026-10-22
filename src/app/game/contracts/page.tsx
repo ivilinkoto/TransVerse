@@ -68,15 +68,15 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const membership = await membershipOf(db, user.id);
   const memberOfCompanyId = membership?.company.id ?? null;
   const project = memberOfCompanyId && features.projects ? await activeProject(db, memberOfCompanyId) : null;
-  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange }))]);
+  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, viewerUserId: user.id }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, viewerUserId: user.id }))]);
   // "Drive in convoy" from the map: only the loads on that lane (from its origin city, all of them).
   const laneMatch = features.convoy ? /^(\d+)-(\d+)$/.exec(params.lane ?? '') : null;
   const lane = laneMatch ? { from: Number(laneMatch[1]), to: Number(laneMatch[2]) } : null;
-  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange }) : [];
+  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, viewerUserId: user.id }) : [];
   // "Return load" after a delivery: the loads from where the truck now stands, that truck first.
   const fromCity = features.backhaul && /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
   const backTruck = fromCity ? fleet.vehicles.find((v) => v.id === params.truck && !v.delivery) ?? fleet.vehicles.find((v) => !v.delivery && v.cityId === fromCity) ?? null : null;
-  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange }) : [];
+  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, viewerUserId: user.id }) : [];
   const seen = new Set<string>();
   const contracts = [...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
@@ -153,6 +153,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       tender: !!c.tenderId,
       featured: !!c.featured,
       exchange: c.exchange ? c.shipper : null,
+      rally: !!c.rallyId,
       ferry: sea ? { note: crossingNote(sea, c.route.profile.endsWith(':r')), ticketCents: sea.ticketCents } : null,
       port: c.port ? (c.portCallId && ship?.id === c.portCallId ? `КОРАБ ${ship.ship}` : 'ОТ ПРИСТАНИЩЕТО') : null,
       rail: features.rail && !c.urgent && !c.stops?.length && !sea

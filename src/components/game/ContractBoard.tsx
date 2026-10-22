@@ -81,6 +81,8 @@ export interface BoardContract {
   rail?: { id: string; note: string; ticketCents: number; km: number }[];
   /** Someone's own goods on the freight exchange (the shipper's label). */
   exchange?: string | null;
+  /** The player's own weekly rally run (v1.4). */
+  rally?: boolean;
   speedFactor: number;
   /** Urgent shipment this player has already taken (each player may take it once). */
   alreadyTaken: boolean;
@@ -327,6 +329,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
             {c.exchange && <Badge tone="violet">БОРСА МЕЖДУ ИГРАЧИ</Badge>}
+            {c.rally && <Badge tone="orange">🏁 РАЛИ — мери се времето и горивото</Badge>}
             {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
             {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{c.port}</Badge>}
             {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />ТОВАР НА ДЕНЯ · +{DAILY_LOAD.coins} TC</Badge>}

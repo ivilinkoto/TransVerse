@@ -5,6 +5,8 @@ import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { settleClientContracts } from './clients';
 import { driverMoods } from './moods';
+import { ensureRally, settleRallies } from './rally';
+import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent } from './halloween';
 import { ensureChristmasEvent } from './christmas';
 import { collectOverdueFines } from './fines';
@@ -227,6 +229,11 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.4: the real weather on the roads, port containers and ship calls.
     if (process.env.WEATHER !== 'off') await every(db, 'weather', 30 * 60_000, now, () => fetchWeather(db, now));
+    await every(db, 'rally', 30 * 60_000, now, async () => {
+      const rally = await ensureRally(db, now, provider);
+      if (rally) await announceRally(db, rally.id, now);
+      await settleRallies(db, now);
+    });
     await every(db, 'driver-moods', 24 * 3_600_000, now, () => driverMoods(db, now));
     await every(db, 'factories', 5 * 60_000, now, () => runFactories(db, now));
     await every(db, 'branches-loans', 10 * 60_000, now, async () => {
@@ -250,6 +257,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await liveBattles(db, now);
       await liveShipCalls(db, now);
       await postLiveryEntries(db, now);
+      await syncScheduledEvents(db, now);
     });
     // The Discord bot: chat bridge and messages often, announcements and roles less often.
     await every(db, 'discord-chat', 15_000, now, async () => {
