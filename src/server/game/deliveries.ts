@@ -59,6 +59,8 @@ import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart
 import { recordShipContainer } from './ports';
 import { recordRallyRun } from './rally';
 import { activeRoadWorks } from './roads';
+import { clientsOf, fuelStationAt, payCompanyContract, recordAcademyCourse, recordAllianceDelivery } from './alliances';
+import { FUEL_STATION } from '@/lib/game/alliances';
 import { isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor } from '@/lib/game/roads';
 import { companyTrailerBonus } from './company-trailers';
 import { COMPANY_TRAILERS } from '@/lib/game/company-fleet';
@@ -214,7 +216,10 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     if (contract!.factoryOrgId || contract!.constructionId || contract!.branchOrgId) {
       const mine = (await membershipOf(tx, userId))?.company.id ?? null;
       const [build] = contract!.constructionId ? await tx.select({ org: companyBuilds.organizationId }).from(companyBuilds).where(eq(companyBuilds.id, contract!.constructionId)) : [];
-      if ((contract!.factoryOrgId && contract!.factoryOrgId !== mine) || (contract!.branchOrgId && contract!.branchOrgId !== mine) || (contract!.constructionId && build?.org !== mine)) fail('members_only', 'Този товар е само за членовете на компанията.', 403);
+      // A hauling contract (v1.5): the hauler company's members may take the client's factory and branch loads.
+      const clients = mine && (contract!.factoryOrgId || contract!.branchOrgId) && (await featureFor(tx, userId, 'company_contracts', now)) ? await clientsOf(tx, mine, now) : [];
+      const ok = (org: string | null) => !org || org === mine || clients.includes(org);
+      if (!ok(contract!.factoryOrgId) || !ok(contract!.branchOrgId) || (contract!.constructionId && build?.org !== mine)) fail('members_only', 'Този товар е само за членовете на компанията.', 403);
     }
     let loadId = contractId;
     if (contract!.urgent) {
@@ -312,7 +317,15 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const ticket = crossingLine?.ticketCents ?? 0;
     // An oversize load: the permit and the escort car (v1.5).
     const oversizeCents = contract!.oversize ? oversizeCostCents(roadLoadedKm) : 0;
-    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, totalCents: ticket + oversizeCents, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, totalCents: running.totalCents + ticket + oversizeCents };
+    // A company fuel station in the start city (v1.5): cheaper fuel for its members; the station earns on the others.
+    const station = !rented && !contract!.urgent ? await fuelStationAt(tx, contract!.originCityId, userId, now) : null;
+    if (station?.member) {
+      const off = Math.round(running.fuelCents * station.discount);
+      running.fuelCents -= off;
+      running.totalCents -= off;
+    }
+    const fuelStation = station && !station.member ? { orgId: station.orgId, cents: Math.round(running.fuelCents * FUEL_STATION.margin) } : null;
+    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, totalCents: ticket + oversizeCents, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, fuelStation, totalCents: running.totalCents + ticket + oversizeCents };
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
     const rentalFee = rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
@@ -407,6 +420,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (costs.tollCents) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: 'Пътни такси', idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
   const crossingCents = (costs as { crossingCents?: number }).crossingCents ?? 0;
   if (crossingCents) postings.push({ category: 'crossings', amountCents: -crossingCents, description: 'Билет за ферибот / влак', idempotencyKey: key('crossing'), refType: 'delivery', refId: d.id });
+  // The fuel station where the truck filled up earns its margin (paid by the game).
+  const station = (costs as { fuelStation?: { orgId: string; cents: number } | null }).fuelStation;
   const oversizeCents = (costs as { oversizeCents?: number }).oversizeCents ?? 0;
   if (oversizeCents) postings.push({ category: 'oversize', amountCents: -oversizeCents, description: 'Разрешително и придружаваща кола', idempotencyKey: key('oversize'), refType: 'delivery', refId: d.id });
   // A night shift on time (v1.5).
@@ -434,6 +449,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към касата на „${org!.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
+  // Personal account first, then treasuries (fixed lock order).
+  if (station?.cents) await postTreasury(tx, station.orgId, [{ category: 'fuel_station', amountCents: station.cents, description: `Гориво на станцията: ${contract.goods}`, idempotencyKey: key('fuel-station'), refType: 'delivery', refId: d.id }]);
   if (contribution) {
     // Personal account first, then the treasury (fixed lock order).
     const [member] = await tx.select({ username: users.username }).from(users).where(eq(users.id, company!.ownerId));
@@ -444,6 +461,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
 
   const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
+  // The company academy (v1.5): an on-time trip of a student is a course.
+  await recordAcademyCourse(tx, company!.ownerId, { onTime, loadedKm: d.loadedKm }, completedAt);
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
   const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
@@ -471,6 +490,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
       .set({ deliveries: sql`${companyMembers.deliveries} + 1`, contributedCents: sql`${companyMembers.contributedCents} + ${contribution}`, xpContributed: sql`${companyMembers.xpContributed} + ${companyXp}` })
       .where(eq(companyMembers.userId, company!.ownerId));
     await addCompanyXp(tx, perks.membership.company.id, companyXp);
+    // v1.5: the alliance's week counts the tonnes; a client's load pays the hauler company its share.
+    await recordAllianceDelivery(tx, perks.membership.company.id, contract.weightTons, completedAt);
+    const client = contract.factoryOrgId ?? contract.branchOrgId;
+    if (client && client !== perks.membership.company.id) await payCompanyContract(tx, client, perks.membership.company.id, d.id, result.rewardCents, contract.weightTons, completedAt);
   }
 
   await tx

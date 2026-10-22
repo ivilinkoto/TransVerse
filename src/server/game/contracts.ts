@@ -404,6 +404,8 @@ export interface ContractFilter {
   /** Loads over a ferry and port loads too (v1.4; default: once the release is out). */
   withSea?: boolean;
   /** Oversize loads too (v1.5; default: once the release is out). */
+  /** Loads of companies this company hauls for (v1.5). */
+  withContracts?: boolean;
   withOversize?: boolean;
   /** Own goods of other players on the freight exchange (v1.4). */
   withExchange?: boolean;
@@ -429,8 +431,10 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (!sea) conditions.push(eq(contracts.port, false));
   // Raw materials and product of a company factory are only for its members.
   conditions.push(filter.viewerUserId ? sql`(${contracts.rallyId} is null or ${contracts.createdBy} = ${filter.viewerUserId})` : isNull(contracts.rallyId));
-  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.factoryOrgId} is null or ${contracts.factoryOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.factoryOrgId));
-  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.branchOrgId} is null or ${contracts.branchOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.branchOrgId));
+  // Members-only loads: own company's, and (v1.5) those of the companies this one hauls for.
+  const clients = filter.memberOfCompanyId && (filter.withContracts ?? featureLive('company_contracts', now)) ? sql`(select client_org_id from company_contracts where hauler_org_id = ${filter.memberOfCompanyId} and status = 'active' and ends_at > ${now})` : null;
+  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.factoryOrgId} is null or ${contracts.factoryOrgId} = ${filter.memberOfCompanyId}${clients ? sql` or ${contracts.factoryOrgId} in ${clients}` : sql``})` : isNull(contracts.factoryOrgId));
+  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.branchOrgId} is null or ${contracts.branchOrgId} = ${filter.memberOfCompanyId}${clients ? sql` or ${contracts.branchOrgId} in ${clients}` : sql``})` : isNull(contracts.branchOrgId));
   // Loads shared with a company are only for its members.
   conditions.push(
     filter.memberOfCompanyId

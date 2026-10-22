@@ -7,6 +7,7 @@ import { settleClientContracts } from './clients';
 import { driverMoods } from './moods';
 import { ensureRally, settleRallies } from './rally';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
+import { endCompanyContracts, runAlliances } from './alliances';
 import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent } from './halloween';
 import { ensureChristmasEvent } from './christmas';
@@ -241,6 +242,10 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);
       await ensureOversizeLoads(db, now, provider);
+    });
+    await every(db, 'alliances', 30 * 60_000, now, async () => {
+      await runAlliances(db, now);
+      await endCompanyContracts(db, now);
     });
     await every(db, 'driver-moods', 24 * 3_600_000, now, () => driverMoods(db, now));
     await every(db, 'factories', 5 * 60_000, now, () => runFactories(db, now));

@@ -2188,3 +2188,89 @@ export const martenitsas = pgTable(
   },
   (t) => [uniqueIndex('martenitsas_pair_idx').on(t.fromUserId, t.toUserId, t.year), index('martenitsas_to_idx').on(t.toUserId)],
 );
+
+/** Alliances of companies (v1.5). */
+export const alliances = pgTable('alliances', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(),
+  leaderOrgId: uuid('leader_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  createdAt: createdAt(),
+});
+
+export const allianceMembers = pgTable(
+  'alliance_members',
+  {
+    allianceId: uuid('alliance_id').notNull().references(() => alliances.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    joinedAt: createdAt(),
+  },
+  (t) => [uniqueIndex('alliance_members_org_idx').on(t.organizationId), index('alliance_members_alliance_idx').on(t.allianceId)],
+);
+
+export const allianceInvites = pgTable(
+  'alliance_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    allianceId: uuid('alliance_id').notNull().references(() => alliances.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('pending'), // pending | accepted | declined
+    expiresAt: ts('expires_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('alliance_invites_org_idx').on(t.organizationId, t.status)],
+);
+
+/** An alliance's week: tonnes of all its companies, the shared goal and the battle against another alliance. */
+export const allianceWeeks = pgTable(
+  'alliance_weeks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    allianceId: uuid('alliance_id').notNull().references(() => alliances.id, { onDelete: 'cascade' }),
+    weekKey: text('week_key').notNull(),
+    tons: real('tons').notNull().default(0),
+    targetTons: real('target_tons').notNull(),
+    /** The rival alliance this week (null: no battle). */
+    rivalId: uuid('rival_id'),
+    status: text('status').notNull().default('active'), // active | done
+    goalReached: boolean('goal_reached').notNull().default(false),
+    won: boolean('won'),
+    endsAt: ts('ends_at').notNull(),
+  },
+  (t) => [uniqueIndex('alliance_weeks_idx').on(t.allianceId, t.weekKey)],
+);
+
+/** Hauling contracts between companies (v1.5): the hauler's members haul the client's members-only loads. */
+export const companyContracts = pgTable(
+  'company_contracts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    clientOrgId: uuid('client_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    haulerOrgId: uuid('hauler_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    share: real('share').notNull(),
+    status: text('status').notNull().default('pending'), // pending | active | declined | done
+    startsAt: ts('starts_at'),
+    endsAt: ts('ends_at'),
+    loads: integer('loads').notNull().default(0),
+    tons: real('tons').notNull().default(0),
+    paidCents: money('paid_cents').notNull().default(0),
+    rating: integer('rating'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('company_contracts_client_idx').on(t.clientOrgId, t.status), index('company_contracts_hauler_idx').on(t.haulerOrgId, t.status)],
+);
+
+/** The company academy (v1.5): a new member's training trips with a mentor from the company. */
+export const academyStudents = pgTable(
+  'academy_students',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    mentorId: uuid('mentor_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    courses: integer('courses').notNull().default(0),
+    startedAt: createdAt(),
+    finishedAt: ts('finished_at'),
+  },
+  (t) => [uniqueIndex('academy_students_user_idx').on(t.userId, t.organizationId)],
+);

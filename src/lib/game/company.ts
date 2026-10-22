@@ -152,7 +152,7 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
 ];
 
 /** Upgrade levels of a company; `service` and `parking` come only from buildings on the plot (v1.3). */
-export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory', number>>;
+export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel', number>>;
 
 export interface MemberBonuses {
   rewardMultiplier: number;

@@ -9,6 +9,7 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
+import { createAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { answerDriver } from '@/server/game/moods';
@@ -193,6 +194,15 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('claimMartaQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('giveMartenitsa'), friendId: id }),
   z.object({ type: z.literal('spotStork') }),
+  z.object({ type: z.literal('createAlliance'), name: z.string().max(40) }),
+  z.object({ type: z.literal('inviteToAlliance'), target: z.string().max(40) }),
+  z.object({ type: z.literal('respondAllianceInvite'), inviteId: id, accept: z.boolean() }),
+  z.object({ type: z.literal('leaveAlliance') }),
+  z.object({ type: z.literal('allianceMessage'), body: z.string().max(600) }),
+  z.object({ type: z.literal('offerCompanyContract'), target: z.string().max(40), sharePct: z.coerce.number().int().min(5).max(30) }),
+  z.object({ type: z.literal('respondCompanyContract'), contractId: id, accept: z.boolean() }),
+  z.object({ type: z.literal('rateCompanyContract'), contractId: id, stars: z.coerce.number().int().min(1).max(5) }),
+  z.object({ type: z.literal('enrolAcademy'), mentorId: id }),
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
@@ -287,6 +297,15 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   claimMartaQuest: 'marta',
   giveMartenitsa: 'marta',
   spotStork: 'marta',
+  createAlliance: 'alliances',
+  inviteToAlliance: 'alliances',
+  respondAllianceInvite: 'alliances',
+  leaveAlliance: 'alliances',
+  allianceMessage: 'alliances',
+  offerCompanyContract: 'company_contracts',
+  respondCompanyContract: 'company_contracts',
+  rateCompanyContract: 'company_contracts',
+  enrolAcademy: 'academy',
   trailerUpgrade: 'trailer_upgrades',
   buyOrgTrailer: 'company_trailers',
   sellOrgTrailer: 'company_trailers',
@@ -693,6 +712,30 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'claimHalloweenQuest':
       return { ok: true, ...(await claimHalloweenQuest(db, user.id, input.questId)) };
+    case 'createAlliance':
+      return { ok: true, id: (await createAlliance(db, user.id, input.name)).id };
+    case 'inviteToAlliance':
+      await inviteToAlliance(db, user.id, input.target);
+      return { ok: true };
+    case 'respondAllianceInvite':
+      await respondAllianceInvite(db, user.id, input.inviteId, input.accept);
+      return { ok: true };
+    case 'leaveAlliance':
+      await leaveAlliance(db, user.id);
+      return { ok: true };
+    case 'allianceMessage':
+      return { ok: true, id: await postAllianceMessage(db, user.id, input.body) };
+    case 'offerCompanyContract':
+      return { ok: true, id: (await offerCompanyContract(db, user.id, input.target, input.sharePct)).id };
+    case 'respondCompanyContract':
+      await respondCompanyContract(db, user.id, input.contractId, input.accept);
+      return { ok: true };
+    case 'rateCompanyContract':
+      await rateCompanyContract(db, user.id, input.contractId, input.stars);
+      return { ok: true };
+    case 'enrolAcademy':
+      await enrolAcademy(db, user.id, input.mentorId);
+      return { ok: true };
     case 'claimMartaQuest':
       return { ok: true, ...(await claimMartaQuest(db, user.id, input.questId)) };
     case 'giveMartenitsa':

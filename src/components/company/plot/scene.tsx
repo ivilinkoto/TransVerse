@@ -310,6 +310,8 @@ export function buildingHeight(type: BuildingType, level: number) {
       return 1.5 + (level >= 2 ? 0.9 : 0);
     case 'factory':
       return 1.9 + level * 0.15;
+    case 'fuel':
+      return 1.2;
   }
 }
 
@@ -452,6 +454,29 @@ function factory(f: Footprint, level: number) {
   const cx = x0 + 0.35, cy = y0 + 0.35;
   out.push(box(cx, cy, cx + 0.35, cy + 0.35, 0, h + 1.1 + level * 0.3, faces([150, 74, 56])));
   out.push(box(cx - 0.03, cy - 0.03, cx + 0.38, cy + 0.38, h + 1.0 + level * 0.3, 0.12, faces([90, 90, 96])));
+  return out;
+}
+
+/** A fuel station: a canopy on columns over the pumps, a small shop and a price sign (taller with the level). */
+function fuelStation(f: Footprint, level: number) {
+  const x0 = f.x + 0.15, y0 = f.y + 0.15, x1 = f.x + f.w - 0.2, y1 = f.y + f.h - 0.2;
+  const out: ReactNode[] = [flat(x0, y0, x1, y1, 0.04, '#6b717c')];
+  // The shop at the back.
+  const sx1 = x0 + 0.9;
+  out.push(shadow(x0, y0, sx1, y1, 0.9), box(x0, y0, sx1, y1, 0, 0.9, faces([236, 240, 245])));
+  out.push(onX(sx1, y0 + 0.2, y1 - 0.2, 0.15, 0.7, win('#9fd0f0', 3)));
+  // Pumps, one more per level.
+  const pumps = 1 + level;
+  for (let i = 0; i < pumps; i++) {
+    const px = sx1 + 0.45 + i * ((x1 - sx1 - 0.6) / Math.max(1, pumps));
+    out.push(box(px, (y0 + y1) / 2 - 0.12, px + 0.22, (y0 + y1) / 2 + 0.12, 0, 0.5, faces([224, 69, 69])));
+  }
+  // The canopy on four columns.
+  const h = buildingHeight('fuel', level);
+  for (const [cx, cy] of [[sx1 + 0.25, y0 + 0.15], [x1 - 0.15, y0 + 0.15], [sx1 + 0.25, y1 - 0.25], [x1 - 0.15, y1 - 0.25]] as [number, number][]) out.push(box(cx, cy, cx + 0.08, cy + 0.08, 0, h, faces([200, 205, 212])));
+  out.push(box(sx1 + 0.15, y0, x1, y1, h, 0.2, { top: SNOW ? '#f3f7fb' : '#f8fafc', left: '#e04545', right: '#c53030' }));
+  // The price sign.
+  out.push(box(x1 - 0.12, y1 - 0.05, x1, y1 + 0.07, 0, 1.6 + level * 0.15, faces([38, 52, 74])));
   return out;
 }
 
@@ -782,7 +807,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     const f = fp(b);
     const building = construction && construction.type === b.type ? construction : null;
     const node: ReactNode[] = [];
-    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
+    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : b.type === 'fuel' ? fuelStation(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
     if (building && b.level === 0) node.push(...site(f, b.type, building.status, building.progress, building.delivered, null));
     else if (building) node.push(...site(f, b.type, building.status, building.progress, building.delivered, finished(b.level)));
     else if (b.level > 0) node.push(...finished(b.level));
