@@ -16,6 +16,7 @@ import { postPanels } from '@/server/discord/panels';
 import { discordConfig } from '@/server/discord/config';
 import { resolveReport, unmute } from '@/server/game/moderation';
 import { createUrgentContract, urgentSchema } from '@/server/urgent';
+import { applyPayFactor } from '@/server/admin-economy';
 
 const id = z.string().uuid('Невалиден идентификатор.');
 
@@ -35,6 +36,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('resetCompanyBranding'), companyId: id, reason: z.string().trim().max(300) }),
   z.object({ type: z.literal('createEvent'), event: eventSchema }),
   z.object({ type: z.literal('cancelEvent'), eventId: id }),
+  z.object({ type: z.literal('applyPayFactor'), factor: z.coerce.number().min(0.7).max(1.3) }),
   z.object({ type: z.literal('refundPayment'), paymentId: id }),
   z.object({ type: z.literal('checkPaypal') }),
   z.object({ type: z.literal('checkDiscord') }),
@@ -109,6 +111,9 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true };
     case 'createEvent':
       return { ok: true, id: (await createEvent(db, user, input.event)).id };
+    case 'applyPayFactor':
+      requireAdminRole(user);
+      return { ok: true, factor: await applyPayFactor(db, user.id, input.factor) };
     case 'cancelEvent':
       await cancelEvent(db, user, input.eventId);
       return { ok: true };

@@ -13,6 +13,7 @@ import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { isMarta, MARTA } from '@/lib/game/marta';
 import { OVERSIZE } from '@/lib/game/roads';
+import { payFactor } from '@/server/admin-economy';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getCrossingRoute, getRoute, getRouteVia } from '@/server/geo/route-service';
@@ -276,7 +277,8 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const holiday = theme?.id ?? null;
   const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1);
   const goods = extra.goods ?? (theme ? pick(theme.goods!) : pick(CARGO[cargo].goods));
-  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length));
+  // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)));
   const [row] = await db.insert(contracts).values({
     shipper: shipperName(),
     goods,

@@ -90,6 +90,7 @@ export const FEATURES = {
   discord_rally: '1.5',
   weekly_digest: '1.5',
   predictions: '1.5',
+  event_autostart: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

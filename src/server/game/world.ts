@@ -24,7 +24,7 @@ import { dispatchPush, pruneSubscriptions } from '@/server/push';
 import { autoUrgentTick } from './auto-urgent';
 import { settleTenders } from './tenders';
 import { dailyReminders } from './daily';
-import { ensureAutoEvent, settleDueEvents } from './events';
+import { announceStartedEvents, ensureAutoEvent, settleDueEvents } from './events';
 import { expireMentorships } from './mentor';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
@@ -186,6 +186,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await settleAuctions(db, now);
     });
     await every(db, 'global-events', 10 * 60_000, now, () => ensureAutoEvent(db, now));
+    if (featureLive('event_autostart', now)) await every(db, 'event-start', 60_000, now, () => announceStartedEvents(db, now));
     await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
     await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));
     if (featureLive('marta', now)) await every(db, 'marta-event', 10 * 60_000, now, () => ensureMartaEvent(db, now));
