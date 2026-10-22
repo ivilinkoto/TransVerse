@@ -5,7 +5,9 @@ import { contractWindowMinutes } from '@/lib/game/schedule';
 import { TRADE_RULES, buyPriceCents, sellPriceCents, warehouseCapacityTons } from '@/lib/game/trade';
 import { haversineKm } from '@/lib/geo/geometry';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, cityMarkets, companies, contracts, depots, warehouseStock } from '@/server/db/schema';
+import { cities, cityMarkets, companies, contracts, depots, haulerRatings, users, warehouseStock } from '@/server/db/schema';
+import { rewardCents } from '@/lib/game/economy';
+import { featureFor } from '@/server/features';
 import { bonusesForUser } from './membership';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
@@ -13,7 +15,7 @@ import { companyForUser } from './company';
 import { acceptContract } from './deliveries';
 import { fail } from './errors';
 import { post } from './finance';
-import { logActivity, notify } from './notify';
+import { broadcast, logActivity, notify } from './notify';
 
 const round1 = (t: number) => Math.round(t * 10) / 10;
 const eur = (c: number) => `${Math.round(c / 100).toLocaleString('bg-BG')} лв.`;
@@ -143,6 +145,114 @@ export async function shipGoods(
     });
     throw error;
   }
+}
+
+// ── Freight exchange (v1.4) ─────────────────────────────────────────────
+
+export const EXCHANGE = { minPriceShare: 0.6, maxPriceShare: 3, hours: 24 } as const;
+
+/** A fair price for hauling a lot (what an NPC shipper would pay). */
+export const exchangeSuggestedCents = (cargo: CargoType, tons: number, km: number) => rewardCents(cargo, tons, km, 1);
+
+/**
+ * Puts own goods on the board for other players to haul (the freight
+ * exchange): the goods leave the warehouse, the pay the owner sets is taken
+ * into escrow now and goes to the hauler on delivery; nobody takes it in a
+ * day → goods and money come back.
+ */
+export async function postFreight(db: Database, userId: string, input: { depotId: string; cargo: CargoType; tons: number; destCityId: number; mode: 'sell' | 'store'; priceCents: number }, now = new Date(), provider?: RoutingProvider) {
+  if (!(await featureFor(db, userId, 'freight_exchange', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  const tons = round1(input.tons);
+  if (!(tons >= TRADE_RULES.minTons)) fail('bad_tons', `Най-малко ${TRADE_RULES.minTons} т.`);
+  const company = await companyForUser(db, userId);
+  const depot = await ownDepot(db, company.id, input.depotId);
+  if (input.destCityId === depot.cityId) fail('same_city', 'Избери друг град.');
+  let destDepotId: string | null = null;
+  if (input.mode === 'sell') {
+    const m = await market(db, input.destCityId, input.cargo);
+    if (!m?.consumes) fail('not_consumed', 'В този град няма купувачи на тази стока.');
+  } else {
+    const [dest] = await db.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, input.destCityId)));
+    if (!dest) fail('no_depot', 'Нямаш депо в този град.');
+    destDepotId = dest!.id;
+  }
+  const route = await getRoute(db, depot.cityId, input.destCityId, 'truck', provider);
+  const fair = exchangeSuggestedCents(input.cargo, tons, route.distanceKm);
+  if (input.priceCents < fair * EXCHANGE.minPriceShare || input.priceCents > fair * EXCHANGE.maxPriceShare) fail('bad_price', `Заплащането трябва да е между ${eur(fair * EXCHANGE.minPriceShare)} и ${eur(fair * EXCHANGE.maxPriceShare)}.`);
+  return db.transaction(async (tx) => {
+    const [stock] = await tx.select().from(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, input.cargo))).for('update');
+    if (!stock || stock.tons + 1e-6 < tons) fail('not_enough_stock', `В склада има ${round1(stock?.tons ?? 0)} т.`);
+    const cost = Math.round((stock!.costCents * tons) / stock!.tons);
+    const left = round1(stock!.tons - tons);
+    if (left <= 0.05) await tx.delete(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, input.cargo)));
+    else await tx.update(warehouseStock).set({ tons: left, costCents: stock!.costCents - cost, updatedAt: now }).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, input.cargo)));
+    const [row] = await tx
+      .insert(contracts)
+      .values({
+        shipper: `Борса · ${(await tx.select({ username: users.username }).from(users).where(eq(users.id, userId)))[0]!.username}`.slice(0, 60),
+        goods: CARGO[input.cargo].goods[0]!, cargoType: input.cargo, weightTons: tons,
+        originCityId: depot.cityId, destCityId: input.destCityId, routeId: route.id, distanceKm: route.distanceKm,
+        rewardCents: input.priceCents, windowMinutes: contractWindowMinutes(route.distanceKm), minLevel: 1,
+        status: 'open', tradeCompanyId: company.id, exchange: true,
+        trade: { mode: input.mode, tons, costCents: cost, destDepotId, fromDepotId: depot.id, escrowCents: input.priceCents },
+        expiresAt: new Date(now.getTime() + EXCHANGE.hours * 3_600_000),
+      })
+      .returning({ id: contracts.id });
+    await post(tx, company.id, [{ category: 'freight_escrow', amountCents: -input.priceCents, description: `Депозит за превоз: ${tons} т ${CARGO[input.cargo].label.toLowerCase()}`, idempotencyKey: `exchange:${row!.id}:escrow`, refType: 'contract', refId: row!.id }], { requireFunds: true });
+    await logActivity(tx, userId, 'freight_posted', { contractId: row!.id, priceCents: input.priceCents });
+    await broadcast(tx, 'market');
+    return row!.id;
+  });
+}
+
+/** Worker: offers nobody took in time — the goods go back to the warehouse, the escrow to the owner. */
+export async function expireFreight(db: Database, now = new Date()) {
+  const due = await db.select({ id: contracts.id }).from(contracts).where(and(eq(contracts.exchange, true), inArray(contracts.status, ['open', 'expired']), sql`${contracts.expiresAt} <= ${now}`)).limit(100);
+  for (const { id } of due) {
+    await db.transaction(async (tx) => {
+      const [c] = await tx.select().from(contracts).where(and(eq(contracts.id, id), inArray(contracts.status, ['open', 'expired']))).for('update');
+      if (!c?.trade || !c.tradeCompanyId) return;
+      await tx.update(contracts).set({ status: 'returned' }).where(eq(contracts.id, c.id));
+      const [from] = c.trade.fromDepotId ? await tx.select().from(depots).where(eq(depots.id, c.trade.fromDepotId)) : [];
+      if (from) await addStock(tx, from.id, c.cargoType as CargoType, c.trade.tons, c.trade.costCents);
+      await post(tx, c.tradeCompanyId, [{ category: 'freight_escrow', amountCents: c.trade.escrowCents ?? c.rewardCents, description: 'Върнат депозит: никой не пое превоза', idempotencyKey: `exchange:${c.id}:refund`, refType: 'contract', refId: c.id }]);
+      const [owner] = await tx.select({ id: companies.ownerId }).from(companies).where(eq(companies.id, c.tradeCompanyId));
+      if (owner) await notify(tx, owner.id, 'info', 'Никой не пое превоза', `${c.trade.tons} т ${c.goods} са обратно в склада, а депозитът — в сметката ти.`, '/game/trade');
+    });
+  }
+  return due.length;
+}
+
+/** On delivery of an exchange load: a late penalty goes back to the owner; the owner may rate the hauler. */
+export async function settleExchange(tx: Tx, contract: typeof contracts.$inferSelect, haulerUserId: string, penaltyCents: number) {
+  if (!contract.exchange || !contract.tradeCompanyId) return;
+  const [owner] = await tx.select({ id: companies.ownerId }).from(companies).where(eq(companies.id, contract.tradeCompanyId));
+  if (!owner) return;
+  if (penaltyCents > 0) await post(tx, contract.tradeCompanyId, [{ category: 'freight_escrow', amountCents: penaltyCents, description: 'Неустойка от превозвача за закъснение', idempotencyKey: `exchange:${contract.id}:penalty`, refType: 'contract', refId: contract.id }]);
+  await tx.insert(haulerRatings).values({ contractId: contract.id, ownerUserId: owner.id, haulerUserId }).onConflictDoNothing();
+  const [hauler] = await tx.select({ username: users.username }).from(users).where(eq(users.id, haulerUserId));
+  await notify(tx, owner.id, 'success', `${hauler?.username ?? 'Превозвачът'} достави стоката ти`, `Оцени превозвача от „Търговия“.`, `/game/trade?rate=${contract.id}`);
+}
+
+/** The goods owner rates the hauler (once). */
+export async function rateHauler(db: Database, userId: string, contractId: string, stars: number) {
+  const n = Math.max(1, Math.min(5, Math.round(stars)));
+  const [r] = await db.update(haulerRatings).set({ stars: n }).where(and(eq(haulerRatings.contractId, contractId), eq(haulerRatings.ownerUserId, userId), sql`${haulerRatings.stars} is null`)).returning();
+  if (!r) fail('not_found', 'Няма превоз за оценка.', 404);
+  return r!;
+}
+
+/** A hauler's average stars and how many ratings. */
+export async function haulerRating(db: DbOrTx, userId: string) {
+  const [r] = await db.select({ avg: sql<number | null>`avg(${haulerRatings.stars})::float`, n: sql<number>`count(${haulerRatings.stars})::int` }).from(haulerRatings).where(eq(haulerRatings.haulerUserId, userId));
+  return { stars: r?.avg ?? null, count: r?.n ?? 0 };
+}
+
+/** The owner's open offers and the ratings waiting. */
+export async function myFreight(db: DbOrTx, companyId: string, userId: string) {
+  const offers = await db.select().from(contracts).where(and(eq(contracts.exchange, true), eq(contracts.tradeCompanyId, companyId), inArray(contracts.status, ['open', 'accepted']))).limit(30);
+  const toRate = await db.select({ contractId: haulerRatings.contractId, hauler: users.username, goods: contracts.goods }).from(haulerRatings).innerJoin(users, eq(users.id, haulerRatings.haulerUserId)).innerJoin(contracts, eq(contracts.id, haulerRatings.contractId)).where(and(eq(haulerRatings.ownerUserId, userId), sql`${haulerRatings.stars} is null`)).limit(10);
+  return { offers, toRate };
 }
 
 /** On arrival: sell the lot at today's market price, or put it into the warehouse of the destination depot. */

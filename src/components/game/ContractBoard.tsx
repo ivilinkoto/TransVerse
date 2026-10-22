@@ -79,6 +79,8 @@ export interface BoardContract {
   ferry?: { note: string; ticketCents: number } | null;
   port?: string | null;
   rail?: { id: string; note: string; ticketCents: number; km: number }[];
+  /** Someone's own goods on the freight exchange (the shipper's label). */
+  exchange?: string | null;
   speedFactor: number;
   /** Urgent shipment this player has already taken (each player may take it once). */
   alreadyTaken: boolean;
@@ -324,6 +326,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
+            {c.exchange && <Badge tone="violet">БОРСА МЕЖДУ ИГРАЧИ</Badge>}
             {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
             {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{c.port}</Badge>}
             {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />ТОВАР НА ДЕНЯ · +{DAILY_LOAD.coins} TC</Badge>}

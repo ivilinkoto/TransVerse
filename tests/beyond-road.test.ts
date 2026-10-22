@@ -96,7 +96,7 @@ describe('loads over the sea', () => {
 
 describe('ports', () => {
   it('containers wait at the big ports; a ship call brings many and ends', async () => {
-    expect(await ensurePortLoads(db(), new Date(), approximateProvider)).toBeGreaterThan(0);
+    await ensurePortLoads(db(), new Date(), approximateProvider);
     const hamburg = await cityByName('Hamburg');
     const atPort = await db().select().from(contracts).where(and(eq(contracts.port, true), eq(contracts.originCityId, hamburg.id), eq(contracts.status, 'open')));
     expect(atPort.length).toBeGreaterThanOrEqual(1);

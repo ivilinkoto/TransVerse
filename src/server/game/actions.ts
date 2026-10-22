@@ -10,7 +10,7 @@ import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
-import { buyGoods, shipGoods } from '@/server/game/trade';
+import { buyGoods, postFreight, rateHauler, shipGoods } from '@/server/game/trade';
 import { buyPremiumPass, claimPassRewards } from '@/server/game/season-pass';
 import { deleteChannelMessage, deleteConversation, messageBodySchema, postToChannel, sendDirectMessage, unsendDirectMessage } from '@/server/game/messages';
 import { inviteToCompany, removeFriend, respondCompanyInvite, respondFriendRequest, sendFriendRequest } from '@/server/game/social';
@@ -46,6 +46,8 @@ import { callForHelp, helpOnRoad, paidRoadHelp } from '@/server/game/roadside';
 import { challengeDuel, respondDuel, shareLoad } from '@/server/game/together';
 import { enterLiveryContest, voteLivery } from '@/server/game/livery-contest';
 import { announceConvoy } from '@/server/game/convoy';
+import { chooseRecipe, orderRaw, sellProduct } from '@/server/game/factory';
+import { closeBranch, openBranch, repayLoan, takeLoan } from '@/server/game/business';
 import { cheer } from '@/server/game/feed';
 import type { FeatureId } from '@/lib/game/features';
 import { requireFeature } from '@/server/features';
@@ -225,6 +227,15 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('roadsidePaid'), deliveryId: id }),
   z.object({ type: z.literal('callForHelp'), deliveryId: id }),
   z.object({ type: z.literal('announceConvoy') }),
+  z.object({ type: z.literal('factoryRecipe'), recipe: z.string().max(30) }),
+  z.object({ type: z.literal('factoryOrder'), batches: z.coerce.number().int().min(1).max(5) }),
+  z.object({ type: z.literal('factorySell'), cityId: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('postFreight'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(60), destCityId: cityId, mode: z.enum(['sell', 'store']), priceEur: z.coerce.number().int().positive().max(1_000_000) }),
+  z.object({ type: z.literal('rateHauler'), contractId: id, stars: z.coerce.number().int().min(1).max(5) }),
+  z.object({ type: z.literal('openBranch'), cityId }),
+  z.object({ type: z.literal('closeBranch'), branchId: id }),
+  z.object({ type: z.literal('takeLoan'), amountEur: z.coerce.number().int().min(1_000).max(1_000_000), weeks: z.coerce.number().int() }),
+  z.object({ type: z.literal('repayLoan') }),
 ]);
 
 /** Actions of features that go live with a release (staff can use them earlier, to test). */
@@ -246,6 +257,15 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   roadsidePaid: 'roadside_paid',
   callForHelp: 'roadside_paid',
   announceConvoy: 'discord_bot',
+  factoryRecipe: 'factories',
+  factoryOrder: 'factories',
+  factorySell: 'factories',
+  postFreight: 'freight_exchange',
+  rateHauler: 'freight_exchange',
+  openBranch: 'branches',
+  closeBranch: 'branches',
+  takeLoan: 'loans',
+  repayLoan: 'loans',
   cheer: 'feed',
   chooseWeeklyGoal: 'weekly_goal',
   claimWeeklyGoal: 'weekly_goal',
@@ -527,6 +547,27 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await paidRoadHelp(db, user.id, input.deliveryId)) };
     case 'callForHelp':
       return { ok: true, ...(await callForHelp(db, user.id, input.deliveryId)) };
+    case 'factoryRecipe':
+      await chooseRecipe(db, user.id, input.recipe);
+      return { ok: true };
+    case 'factoryOrder':
+      return { ok: true, ...(await orderRaw(db, user.id, input.batches)) };
+    case 'factorySell':
+      return { ok: true, ...(await sellProduct(db, user.id, input.cityId)) };
+    case 'postFreight':
+      return { ok: true, id: await postFreight(db, user.id, { depotId: input.depotId, cargo: input.cargo, tons: input.tons, destCityId: input.destCityId, mode: input.mode, priceCents: input.priceEur * 100 }) };
+    case 'rateHauler':
+      await rateHauler(db, user.id, input.contractId, input.stars);
+      return { ok: true };
+    case 'openBranch':
+      return { ok: true, id: (await openBranch(db, user.id, input.cityId)).id };
+    case 'closeBranch':
+      await closeBranch(db, user.id, input.branchId);
+      return { ok: true };
+    case 'takeLoan':
+      return { ok: true, id: (await takeLoan(db, user.id, input.amountEur * 100, input.weeks)).id };
+    case 'repayLoan':
+      return { ok: true, ...(await repayLoan(db, user.id)) };
     case 'announceConvoy': {
       const c = await announceConvoy(db, user.id);
       return { ok: true, origin: c.origin, destination: c.destination, expiresAt: c.expiresAt };

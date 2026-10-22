@@ -23,7 +23,7 @@ import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/
 import { COMPANY_XP_SHARE, deliveryXp, FLEET_XP_SHARE, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
 import { buildGameTrip, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, cityMarkets, companies, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, companyBuilds, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getCrossingRoute, getRoute } from '@/server/geo/route-service';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -31,7 +31,7 @@ import { post, postTreasury, type Posting } from './finance';
 import { broadcast, logActivity, notify } from './notify';
 import { awardXp, checkAchievements } from './progression';
 import { heldLicences, licenceNames, missingFor } from './licences';
-import { addCompanyXp, bonusesForUser } from './membership';
+import { addCompanyXp, bonusesForUser, membershipOf } from './membership';
 import { recordCompanyMissionProgress } from './company-missions';
 import { recordEventProgress } from './events';
 import { recordMissionProgress } from './missions';
@@ -43,7 +43,7 @@ import { addOrganizationSeasonScore, addSeasonScore } from './seasons';
 import { rewardReferral } from './referrals';
 import { addLeaguePoints } from './leagues';
 import { addPassPoints } from './season-pass';
-import { settleTradeLot } from './trade';
+import { settleExchange, settleTradeLot } from './trade';
 import { applyRoadEvents } from './road-events';
 import { recordClientLoad } from './clients';
 import { deliverAuctionLoad } from './auctions';
@@ -55,6 +55,8 @@ import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
 import { BOARDING_GAME_MIN, CROSSING_LINES, crossingLine as crossingLine_, crossingNote, DEPARTURE_EVERY_MIN, onBoardGameMinutes, railOptions } from '@/lib/game/crossings';
 import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart } from './together';
 import { recordShipContainer } from './ports';
+import { recordFactoryDelivery } from './factory';
+import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
@@ -120,9 +122,12 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   const company = await companyForUser(db, userId);
   const contract = await db.query.contracts.findFirst({ where: eq(contracts.id, contractId) });
   // Own goods (trading) are hauled only by their owner and never appear on the board.
-  const openStatus = contract?.tradeCompanyId ? 'trade' : 'open';
+  // Own goods hauled by their owner are private ('trade'); own goods on the freight exchange (v1.4) are on the board.
+  const openStatus = contract?.tradeCompanyId && !contract.exchange ? 'trade' : 'open';
   if (!contract || contract.status !== openStatus || contract.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
-  if (contract!.tradeCompanyId && contract!.tradeCompanyId !== company.id) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
+  if (contract!.tradeCompanyId && !contract!.exchange && contract!.tradeCompanyId !== company.id) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
+  if (contract!.exchange && contract!.tradeCompanyId === company.id) fail('own_offer', 'Това е твоята стока — изчакай превозвач или я откарай сам от „Търговия“.');
+  if (contract!.exchange && !(await featureFor(db, userId, 'freight_exchange', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   const { vehicle } = await vehicleBundle(db, company.id, vehicleId);
   if (vehicle.status !== 'idle') fail('vehicle_busy', 'Превозното средство е заето.', 409);
   // Groupage loads come with v1.2 (staff test them before the release).
@@ -193,6 +198,12 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     if (contract!.tenderId) await checkTenderLoad(tx, contract!.tenderId, userId, now);
     // A load shared with a company: only its members.
     if (contract!.sharedLoadId) await checkSharedLoad(tx, contract!.sharedLoadId, userId);
+    // Building materials and factory loads: only the members of that company.
+    if (contract!.factoryOrgId || contract!.constructionId || contract!.branchOrgId) {
+      const mine = (await membershipOf(tx, userId))?.company.id ?? null;
+      const [build] = contract!.constructionId ? await tx.select({ org: companyBuilds.organizationId }).from(companyBuilds).where(eq(companyBuilds.id, contract!.constructionId)) : [];
+      if ((contract!.factoryOrgId && contract!.factoryOrgId !== mine) || (contract!.branchOrgId && contract!.branchOrgId !== mine) || (contract!.constructionId && build?.org !== mine)) fail('members_only', 'Този товар е само за членовете на компанията.', 403);
+    }
     let loadId = contractId;
     if (contract!.urgent) {
       // Open to everyone until it expires — each player once.
@@ -460,7 +471,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .where(eq(companies.id, d.companyId));
 
   // Own goods: sold at the destination market (at today's price, before this lot lowers demand) or stored there.
-  if (contract.trade) await settleTradeLot(tx, contract, d.companyId, company!.ownerId, completedAt);
+  // On the freight exchange (v1.4) the goods are someone else's: their owner gets the sale.
+  const goodsOwner = contract.exchange && contract.tradeCompanyId ? (await tx.select({ id: companies.id, ownerId: companies.ownerId }).from(companies).where(eq(companies.id, contract.tradeCompanyId)))[0] ?? null : null;
+  if (contract.trade) await settleTradeLot(tx, contract, goodsOwner?.id ?? d.companyId, goodsOwner?.ownerId ?? company!.ownerId, completedAt);
+  if (contract.exchange) await settleExchange(tx, contract, company!.ownerId, result.penaltyCents);
   // Shared economy: deliveries saturate the destination market for everyone (goods put into a warehouse do not).
   if (contract.trade?.mode !== 'store') await tx
     .update(cityMarkets)
@@ -501,9 +515,11 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await addPassPoints(tx, company!.ownerId, points, now);
   await rewardReferral(tx, company!.ownerId, now);
   // Return loads come with v1.2 (staff see them before the release).
-  const backhaul = !contract.trade && (await featureFor(tx, company!.ownerId, 'backhaul', completedAt));
+  // The hauler of someone else's goods gets the usual "Доставено" message.
+  const ownGoods = !!contract.trade && !contract.exchange;
+  const backhaul = !ownGoods && (await featureFor(tx, company!.ownerId, 'backhaul', completedAt));
   // Own goods get their own message (sale or warehouse) from settleTradeLot.
-  if (!contract.trade) await notify(
+  if (!ownGoods) await notify(
     tx,
     company!.ownerId,
     onTime ? 'success' : 'warning',
@@ -526,6 +542,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (contract.featured && onTime) await deliverDailyLoad(tx, contract, company!.ownerId);
   // A part of a load shared with the company: the bonus once every part has arrived on time.
   if (contract.sharedLoadId) await settleSharedPart(tx, contract.sharedLoadId, now);
+  // A delivery to a city where the member's company has a branch.
+  await branchBonus(tx, d, company!.ownerId, contract.destCityId, result.rewardCents, completedAt);
+  // Raw materials for the company's factory, or its product to a buyer.
+  if (contract.factoryOrgId) await recordFactoryDelivery(tx, contract);
   // A container of a ship call ("Кораб пристига").
   if (contract.portCallId) await recordShipContainer(tx, contract.portCallId);
   // Duels count the tonnes by arrival time.

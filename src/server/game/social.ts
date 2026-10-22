@@ -4,7 +4,7 @@ import { levelProgress, reputationTier } from '@/lib/game/progression';
 import { isOnline, lastSeenLabel } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, userBlocks, users } from '@/server/db/schema';
+import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, userBlocks, users, haulerRatings } from '@/server/db/schema';
 import { badgesOf } from './halloween';
 import { assertNotBlocked } from './moderation';
 import { fail } from './errors';
@@ -41,6 +41,8 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
   const [invited] = viewerM && !m ? await db.select({ id: companyInvites.id }).from(companyInvites).where(and(eq(companyInvites.companyId, viewerM.company.id), eq(companyInvites.userId, u.id), eq(companyInvites.status, 'pending'))) : [];
   const [blockRow] = u.id === viewerId ? [] : await db.select({ x: userBlocks.blockerId }).from(userBlocks).where(and(eq(userBlocks.blockerId, viewerId), eq(userBlocks.blockedId, u.id)));
   const [{ friends = 0 } = {}] = await db.select({ friends: sql<number>`count(*)::int` }).from(friendships).where(and(eq(friendships.status, 'accepted'), or(eq(friendships.requesterId, u.id), eq(friendships.addresseeId, u.id))));
+  // v1.4: stars from the goods owners this player hauled for (the freight exchange).
+  const [hauler] = await db.select({ stars: sql<number | null>`avg(${haulerRatings.stars})::float`, count: sql<number>`count(${haulerRatings.stars})::int` }).from(haulerRatings).where(eq(haulerRatings.haulerUserId, u.id));
   return {
     id: u.id,
     username: u.username,
@@ -67,6 +69,7 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     invited: !!invited,
     /** The viewer has blocked this player. */
     blocked: !!blockRow,
+    hauler: hauler?.count ? { stars: Math.round((hauler.stars ?? 0) * 10) / 10, count: hauler.count } : null,
   };
 }
 export type PlayerCard = NonNullable<Awaited<ReturnType<typeof playerCard>>>;

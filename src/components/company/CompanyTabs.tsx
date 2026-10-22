@@ -2,7 +2,7 @@
 
 import { Settings2 } from 'lucide-react';
 import Link from 'next/link';
-import { useFeature } from '@/components/game/Features';
+import { useFeatures } from '@/components/game/Features';
 import type { FeatureId } from '@/lib/game/features';
 import { usePathname } from 'next/navigation';
 
@@ -17,6 +17,8 @@ interface Tab {
 const TABS: Tab[] = [
   { href: '/game/company', label: 'Обзор' },
   { href: '/game/company/plot', label: 'Участък', feature: 'company_plot' },
+  { href: '/game/company/factory', label: 'Фабрика', feature: 'factories' },
+  { href: '/game/company/branches', label: 'Филиали', feature: 'branches' },
   { href: '/game/company/chat', label: 'Чат' },
   { href: '/game/company/missions', label: 'Мисии' },
   { href: '/game/company/tenders', label: 'Търгове' },
@@ -33,8 +35,8 @@ const MANAGE: Tab[] = [
 
 export function CompanyTabs({ pending, allowed }: { pending: number; allowed: string[] }) {
   const pathname = usePathname();
-  const plot = useFeature('company_plot');
-  const tabs = TABS.filter((t) => !t.feature || (t.feature === 'company_plot' && plot));
+  const has = useFeatures();
+  const tabs = TABS.filter((t) => !t.feature || has(t.feature));
   const manage = MANAGE.filter((t) => !t.needs || allowed.includes(t.needs));
   const inManage = manage.some((t) => pathname.startsWith(t.href));
   const isActive = (href: string) => (href === '/game/company' ? pathname === href : pathname.startsWith(href));

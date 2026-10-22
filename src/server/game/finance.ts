@@ -53,6 +53,9 @@ export type LedgerCategory =
   | 'roadside_help'
   | 'roadside_paid'
   | 'crossings'
+  | 'freight_escrow'
+  | 'branch_bonus'
+  | 'loan'
   | 'shared_load_bonus'
   | 'lease'
   | 'member_bonus';
@@ -107,6 +110,9 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   roadside_help: 'Помощ на пътя (хонорари)',
   roadside_paid: 'Платена пътна помощ',
   crossings: 'Фериботи и влакове',
+  freight_escrow: 'Борса между играчите (депозити)',
+  branch_bonus: 'Бонус от филиал',
+  loan: 'Кредит (отпускане и вноски)',
   shared_load_bonus: 'Бонус за общ товар',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',
@@ -155,7 +161,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   member_contribution: 'Вноска от курс',
@@ -178,6 +184,8 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   company_fleet: 'Фирмени камиони',
   discord_activity: 'Най-активна компания в Discord',
   ship_call: 'Кораб пристига — първо място',
+  factory: 'Фабрика (суровини и продажби)',
+  company_branch: 'Филиали',
 };
 
 export interface TreasuryPosting {

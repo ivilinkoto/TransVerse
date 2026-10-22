@@ -54,6 +54,9 @@ import { DAILY_LOAD } from '@/lib/game/together';
 import { closeExpiredSharedLoads, settleDuels } from './together';
 import { ensurePortLoads, settleShipCalls, startShipCall } from './ports';
 import { fetchWeather } from './weather';
+import { runFactories } from './factory';
+import { collectLoans, ensureBranchLoads } from './business';
+import { expireFreight } from './trade';
 import { settleLiveryContest } from './livery-contest';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
@@ -223,6 +226,12 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.4: the real weather on the roads, port containers and ship calls.
     if (process.env.WEATHER !== 'off') await every(db, 'weather', 30 * 60_000, now, () => fetchWeather(db, now));
+    await every(db, 'factories', 5 * 60_000, now, () => runFactories(db, now));
+    await every(db, 'branches-loans', 10 * 60_000, now, async () => {
+      await collectLoans(db, now);
+      await ensureBranchLoads(db, now, provider);
+    });
+    await every(db, 'freight-exchange', 10 * 60_000, now, () => expireFreight(db, now));
     await every(db, 'ports', 30 * 60_000, now, async () => {
       await settleShipCalls(db, now);
       await ensurePortLoads(db, now, provider);

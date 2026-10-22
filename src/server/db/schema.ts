@@ -380,7 +380,9 @@ export const contracts = pgTable(
     tenderId: uuid('tender_id'),
     /** Own goods hauled by a player (trading): only that player's account may take it; never on the public board. */
     tradeCompanyId: uuid('trade_company_id'),
-    trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null }>(),
+    trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null; fromDepotId?: string | null; escrowCents?: number }>(),
+    /** v1.4: own goods offered on the board to other players (the freight exchange), with the pay held in escrow. */
+    exchange: boolean('exchange').notNull().default(false),
     /** Holiday load (e.g. 'halloween'): themed goods, better pay, counts for the holiday event and quests. */
     holiday: text('holiday'),
     /** A special load won on auction (private to the winner; ТрансКоин on delivery). */
@@ -401,6 +403,12 @@ export const contracts = pgTable(
     /** v1.4: a container from a port (`port`), and from which ship call ("Кораб пристига") when it came with one. */
     port: boolean('port').notNull().default(false),
     portCallId: uuid('port_call_id'),
+    /** v1.4: a raw material for the company's factory (`material` = raw id) or its product to a buyer (`material` = 'product'). */
+    factoryOrgId: uuid('factory_org_id'),
+    /** v1.4: a load from a company branch (members only, better paid). */
+    branchOrgId: uuid('branch_org_id'),
+    /** What the buyer pays the company's treasury for a product load (v1.4). */
+    factorySaleCents: money('factory_sale_cents'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -2023,3 +2031,62 @@ export const weatherNow = pgTable('weather_now', {
   condition: text('condition').notNull(),
   fetchedAt: ts('fetched_at').notNull(),
 });
+
+/** The company factory (v1.4): what it makes, the raw materials on the plot, the product waiting, the running batch. */
+export const companyFactories = pgTable('company_factories', {
+  organizationId: uuid('organization_id').primaryKey().references(() => organizations.id, { onDelete: 'cascade' }),
+  recipe: text('recipe'),
+  stock: jsonb('stock').$type<Partial<Record<string, number>>>().notNull().default({}),
+  productTons: real('product_tons').notNull().default(0),
+  batchEndsAt: ts('batch_ends_at'),
+  batchTons: real('batch_tons'),
+  batches: integer('batches').notNull().default(0),
+  soldCents: money('sold_cents').notNull().default(0),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});
+
+/** v1.4 freight exchange: the goods owner rates the hauler after delivery (1–5 stars). */
+export const haulerRatings = pgTable(
+  'hauler_ratings',
+  {
+    contractId: uuid('contract_id').primaryKey().references(() => contracts.id, { onDelete: 'cascade' }),
+    ownerUserId: uuid('owner_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    haulerUserId: uuid('hauler_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    stars: integer('stars'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('hauler_ratings_hauler_idx').on(t.haulerUserId)],
+);
+
+/** A company branch in another real city (v1.4). */
+export const companyBranches = pgTable(
+  'company_branches',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('company_branches_city_idx').on(t.organizationId, t.cityId)],
+);
+
+/** A bank loan of a player's account (v1.4): weekly payments; missed ones hurt the credit rating. */
+export const loans = pgTable(
+  'loans',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    principalCents: money('principal_cents').notNull(),
+    totalCents: money('total_cents').notNull(),
+    weeklyCents: money('weekly_cents').notNull(),
+    paidCents: money('paid_cents').notNull().default(0),
+    weeks: integer('weeks').notNull(),
+    rateBps: integer('rate_bps').notNull(),
+    missed: integer('missed').notNull().default(0),
+    status: text('status').notNull().default('active'), // active | paid | defaulted
+    nextDueAt: ts('next_due_at').notNull(),
+    createdAt: createdAt(),
+    closedAt: ts('closed_at'),
+  },
+  (t) => [index('loans_company_idx').on(t.companyId, t.status), index('loans_due_idx').on(t.status, t.nextDueAt)],
+);

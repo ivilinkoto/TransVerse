@@ -67,6 +67,7 @@ export async function ensurePlot(tx: DbOrTx, org: Pick<Organization, 'id' | 'cre
   if (release && org.createdAt >= release) return;
   const placed = existing.map((b) => ({ type: b.type as BuildingType, x: b.x, y: b.y }));
   for (const type of BUILDING_TYPES) {
+    if (type === 'factory') continue;
     const level = type === 'office' ? Math.max(1, levelFromUpgrade(type, upgrades)) : levelFromUpgrade(type, upgrades);
     if (level <= 0) continue;
     const have = existing.find((b) => b.type === type);
@@ -155,6 +156,7 @@ async function newConstruction(tx: Tx, orgId: string, buildingId: string, type: 
 /** Places a new building on the plot and opens its first construction (office first). */
 export async function placeBuilding(db: Database, actorId: string, type: BuildingType, x: number, y: number, now = new Date()) {
   if (!BUILDINGS[type]) fail('unknown_building', 'Непозната сграда.');
+  if (type === 'factory' && !(await featureFor(db, actorId, 'factories', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     await ensurePlot(tx, actor.company);

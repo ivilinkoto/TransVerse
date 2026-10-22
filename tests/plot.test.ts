@@ -44,7 +44,7 @@ describe('plot rules', () => {
 
   it('the default spots of converted companies fit together', () => {
     const placed: { type: BuildingType; x: number; y: number }[] = [];
-    for (const type of BUILDING_TYPES) {
+    for (const type of Object.keys(DEFAULT_SPOTS) as (keyof typeof DEFAULT_SPOTS)[]) {
       expect(placementError(type, DEFAULT_SPOTS[type].x, DEFAULT_SPOTS[type].y, placed)).toBeNull();
       placed.push({ type, ...DEFAULT_SPOTS[type] });
     }

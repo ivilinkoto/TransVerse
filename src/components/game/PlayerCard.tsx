@@ -86,6 +86,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
         <Stat label="Доставки" value={card.deliveries.toLocaleString('bg-BG')} sub={card.kind === 'company' ? 'собствен автопарк' : 'шофьор'} />
         <Stat label="Приятели" value={card.friends} />
       </div>
+      {card.hauler && <p className="mt-2 text-sm text-mist-300">Превозвач на борсата: <span className="text-gold-400">★ {card.hauler.stars.toLocaleString('bg-BG')}</span> от {card.hauler.count} {card.hauler.count === 1 ? 'оценка' : 'оценки'}</p>}
 
       {careerLink && career && <Link href={`/game/players/${encodeURIComponent(card.username)}`} onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan-glow hover:underline"><Truck className="h-4 w-4" />Кариера: курсове, рекорди, любими линии →</Link>}
 

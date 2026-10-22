@@ -63,6 +63,10 @@ export const FEATURES = {
   port_loads: '1.4',
   ship_calls: '1.4',
   real_weather: '1.4',
+  factories: '1.4',
+  freight_exchange: '1.4',
+  branches: '1.4',
+  loans: '1.4',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

@@ -398,6 +398,8 @@ export interface ContractFilter {
   withFeatured?: boolean;
   /** Loads over a ferry and port loads too (v1.4; default: once the release is out). */
   withSea?: boolean;
+  /** Own goods of other players on the freight exchange (v1.4). */
+  withExchange?: boolean;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
@@ -412,8 +414,12 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (filter.originCityId) conditions.push(eq(contracts.originCityId, filter.originCityId));
   if (!(filter.withStops ?? featureLive('multistop', now))) conditions.push(isNull(contracts.stops));
   if (!(filter.withFeatured ?? featureLive('daily_load', now))) conditions.push(isNull(contracts.featured));
+  if (!(filter.withExchange ?? featureLive('freight_exchange', now))) conditions.push(eq(contracts.exchange, false));
   const sea = filter.withSea ?? featureLive('ferries', now);
   if (!sea) conditions.push(eq(contracts.port, false));
+  // Raw materials and product of a company factory are only for its members.
+  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.factoryOrgId} is null or ${contracts.factoryOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.factoryOrgId));
+  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.branchOrgId} is null or ${contracts.branchOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.branchOrgId));
   // Loads shared with a company are only for its members.
   conditions.push(
     filter.memberOfCompanyId

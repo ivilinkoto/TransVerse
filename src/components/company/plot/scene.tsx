@@ -306,6 +306,8 @@ export function buildingHeight(type: BuildingType, level: number) {
       return 1.8 + level * 0.15;
     case 'rest':
       return 1.5 + (level >= 2 ? 0.9 : 0);
+    case 'factory':
+      return 1.9 + level * 0.15;
   }
 }
 
@@ -427,6 +429,27 @@ function rest(f: Footprint, level: number) {
     out.push(<Line key={k()} a={[ux, uy, 0]} b={[ux, uy, 0.75]} stroke="#7a5235" w={1.2} />);
     out.push(<Poly key={k()} p={[[ux - 0.32, uy, 0.7], [ux, uy - 0.32, 0.7], [ux + 0.32, uy, 0.7], [ux, uy + 0.32, 0.7], [ux, uy, 0.95]]} fill={i % 2 ? '#e04545' : '#f6c343'} />);
   }
+  return out;
+}
+
+function factory(f: Footprint, level: number) {
+  const x0 = f.x + 0.15, y0 = f.y + 0.15, x1 = f.x + f.w - 0.2, y1 = f.y + f.h - 0.5;
+  const h = buildingHeight('factory', level);
+  const out: ReactNode[] = [shadow(x0, y0, x1, y1, h + 0.5), box(x0, y0, x1, y1, 0, h, faces([178, 94, 72]))];
+  // Brick hall with a sawtooth roof (glass on the steep side), a loading door and a chimney, taller with the level.
+  const teeth = Math.max(3, Math.round((x1 - x0) / 0.9));
+  const step = (x1 - x0) / teeth;
+  for (let i = 0; i < teeth; i++) {
+    const xa = x0 + i * step, xb = xa + step;
+    out.push(<Poly key={k()} p={[[xa, y0, h], [xb, y0, h], [xb, y0, h + 0.45], [xb, y1, h + 0.45], [xb, y1, h], [xa, y1, h]]} fill={SNOW ? '#f3f7fb' : '#7c838f'} />);
+    out.push(<Poly key={k()} p={[[xb, y0, h], [xb, y1, h], [xb, y1, h + 0.45], [xb, y0, h + 0.45]]} fill="#9fd0f0" />);
+  }
+  for (let x = x0 + 0.25; x < x1 - 0.3; x += 0.55) out.push(onY(y1, x, x + 0.35, 0.9, 1.45, win('#ffd998', Math.round(x * 5))));
+  out.push(onY(y1, x1 - 1.2, x1 - 0.25, 0.05, 1.1, '#4b5563'));
+  for (let z = 0.15; z < 1.1; z += 0.13) out.push(<Line key={k()} a={[x1 - 1.2, y1, z]} b={[x1 - 0.25, y1, z]} stroke="#6b7280" w={0.6} />);
+  const cx = x0 + 0.35, cy = y0 + 0.35;
+  out.push(box(cx, cy, cx + 0.35, cy + 0.35, 0, h + 1.1 + level * 0.3, faces([150, 74, 56])));
+  out.push(box(cx - 0.03, cy - 0.03, cx + 0.38, cy + 0.38, h + 1.0 + level * 0.3, 0.12, faces([90, 90, 96])));
   return out;
 }
 
@@ -739,7 +762,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     const f = fp(b);
     const building = construction && construction.type === b.type ? construction : null;
     const node: ReactNode[] = [];
-    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
+    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
     if (building && b.level === 0) node.push(...site(f, b.type, building.status, building.progress, building.delivered, null));
     else if (building) node.push(...site(f, b.type, building.status, building.progress, building.delivered, finished(b.level)));
     else if (b.level > 0) node.push(...finished(b.level));
