@@ -61,6 +61,7 @@ export type LedgerCategory =
   | 'oversize'
   | 'night_bonus'
   | 'perfect_bonus'
+  | 'insurance_payout'
   | 'lease'
   | 'member_bonus';
 
@@ -122,6 +123,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   oversize: 'Разрешителни и придружаване (извънгабаритни)',
   night_bonus: 'Бонус „Нощна смяна“',
   perfect_bonus: 'Бонус за перфектна серия',
+  insurance_payout: 'Обезщетения от застраховки',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',
 };

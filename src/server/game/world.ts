@@ -14,6 +14,7 @@ import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent } from './halloween';
 import { ensureChristmasEvent } from './christmas';
 import { ensureMartaEvent } from './marta';
+import { ensureEasterEvent } from './easter';
 import { collectOverdueFines } from './fines';
 import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
@@ -21,7 +22,7 @@ import { ensureAuction, settleAuctions } from './auctions';
 import { ensureDailyLoad, ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { dispatchPush, pruneSubscriptions } from '@/server/push';
-import { autoUrgentTick } from './auto-urgent';
+import { autoUrgentTick, raiseUrgentPrices } from './auto-urgent';
 import { settleTenders } from './tenders';
 import { dailyReminders } from './daily';
 import { announceStartedEvents, ensureAutoEvent, settleDueEvents } from './events';
@@ -189,6 +190,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     if (featureLive('event_autostart', now)) await every(db, 'event-start', 60_000, now, () => announceStartedEvents(db, now));
     await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
     await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));
+    if (featureLive('easter', now)) await every(db, 'easter-event', 10 * 60_000, now, () => ensureEasterEvent(db, now));
     if (featureLive('marta', now)) await every(db, 'marta-event', 10 * 60_000, now, () => ensureMartaEvent(db, now));
     await every(db, 'mentorships', 10 * 60_000, now, () => expireMentorships(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
@@ -243,6 +245,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       if (rally) await announceRally(db, rally.id, now);
       await settleRallies(db, now);
     });
+    if (featureLive('urgent_raise', now)) await every(db, 'urgent-raise', 5 * 60_000, now, () => raiseUrgentPrices(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);

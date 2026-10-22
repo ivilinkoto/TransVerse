@@ -9,6 +9,7 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
+import { claimEasterQuest, eggFight } from '@/server/game/easter';
 import { predictBattle } from '@/server/game/predictions';
 import { createAlliance, dissolveAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
 import { CARGO_TYPES } from '@/lib/game/cargo';
@@ -96,7 +97,7 @@ const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]])
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 /** Every player command (the web game and the Discord bot alike). */
 export const Action = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional() }),
+  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional(), insure: z.boolean().default(false) }),
   z.object({ type: z.literal('payFine'), fineId: id }),
   z.object({ type: z.literal('dispatchPlan') }),
   z.object({ type: z.literal('auctionBid'), auctionId: id, amountEur: z.coerce.number().positive().max(10_000_000) }),
@@ -195,6 +196,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('claimMartaQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('giveMartenitsa'), friendId: id }),
   z.object({ type: z.literal('spotStork') }),
+  z.object({ type: z.literal('claimEasterQuest'), questId: z.string().max(30) }),
+  z.object({ type: z.literal('eggFight'), friendId: id }),
   z.object({ type: z.literal('createAlliance'), name: z.string().max(40) }),
   z.object({ type: z.literal('inviteToAlliance'), target: z.string().max(40) }),
   z.object({ type: z.literal('respondAllianceInvite'), inviteId: id, accept: z.boolean() }),
@@ -300,6 +303,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   claimMartaQuest: 'marta',
   giveMartenitsa: 'marta',
   spotStork: 'marta',
+  claimEasterQuest: 'easter',
+  eggFight: 'easter',
   createAlliance: 'alliances',
   inviteToAlliance: 'alliances',
   respondAllianceInvite: 'alliances',
@@ -364,7 +369,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
   if (feature) requireFeature(feature, user.role);
   switch (input.type) {
     case 'acceptContract': {
-      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail });
+      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail, insure: input.insure });
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
     case 'favoriteLane':
@@ -747,6 +752,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'enrolAcademy':
       await enrolAcademy(db, user.id, input.mentorId);
       return { ok: true };
+    case 'claimEasterQuest':
+      return { ok: true, ...(await claimEasterQuest(db, user.id, input.questId)) };
+    case 'eggFight':
+      return { ok: true, ...(await eggFight(db, user.id, input.friendId)) };
     case 'claimMartaQuest':
       return { ok: true, ...(await claimMartaQuest(db, user.id, input.questId)) };
     case 'giveMartenitsa':

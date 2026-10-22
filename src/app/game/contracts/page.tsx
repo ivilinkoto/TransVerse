@@ -157,6 +157,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       featured: !!c.featured,
       exchange: c.exchange ? c.shipper : null,
       rally: !!c.rallyId,
+      urgentRaises: c.urgent ? c.urgentRaises : 0,
       oversizeCents: c.oversize ? oversizeCostCents(c.distanceKm) : null,
       roadWorks: (() => {
         const w = works.find((x) => c.route.countries.includes(x.countryCode));

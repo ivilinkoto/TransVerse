@@ -14,7 +14,8 @@ import { isFreightHub } from '@/lib/game/markets';
 import { gameDurationMinutes } from '@/lib/game/schedule';
 import { haversineKm } from '@/lib/geo/geometry';
 import type { Database } from '@/server/db/client';
-import { cities, contracts, jobState } from '@/server/db/schema';
+import { cities, contracts, deliveries, jobState } from '@/server/db/schema';
+import { broadcast } from './notify';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { insertUrgent } from '@/server/urgent';
@@ -105,4 +106,24 @@ export async function autoUrgentTick(db: Database, now = new Date(), provider?: 
   }
   await save(now.getTime() + nextGapMs());
   return published;
+}
+
+/** Urgent price rises (v1.5): +10 % for every 30 minutes nobody has taken it, up to +50 %. */
+export const URGENT_RAISE = { everyMin: 30, step: 0.1, max: 5 } as const;
+
+/** Worker: raises the pay of urgent shipments that wait on the board without a taker. */
+export async function raiseUrgentPrices(db: Database, now = new Date()) {
+  const open = await db.select().from(contracts).where(and(eq(contracts.urgent, true), eq(contracts.status, 'open'), gt(contracts.expiresAt, now)));
+  let raised = 0;
+  for (const c of open) {
+    const steps = Math.min(URGENT_RAISE.max, Math.floor((now.getTime() - c.createdAt.getTime()) / (URGENT_RAISE.everyMin * 60_000)));
+    if (steps <= c.urgentRaises) continue;
+    const [taken] = await db.select({ id: deliveries.id }).from(deliveries).where(eq(deliveries.contractId, c.id)).limit(1);
+    if (taken) continue;
+    const reward = Math.round((c.rewardCents * (1 + URGENT_RAISE.step * steps)) / (1 + URGENT_RAISE.step * c.urgentRaises) / 100) * 100;
+    const [row] = await db.update(contracts).set({ rewardCents: reward, urgentRaises: steps }).where(and(eq(contracts.id, c.id), eq(contracts.urgentRaises, c.urgentRaises))).returning({ id: contracts.id });
+    if (row) raised++;
+  }
+  if (raised) await broadcast(db, 'market');
+  return raised;
 }

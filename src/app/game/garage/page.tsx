@@ -155,7 +155,7 @@ export default async function GaragePage() {
                     <div className="label mb-1.5">Подобрения</div>
                     <ul className="grid gap-2 sm:grid-cols-2">
                       {Object.values(UPGRADES)
-                        .filter((u) => u.appliesTo.includes(v.model.kind))
+                        .filter((u) => u.appliesTo.includes(v.model.kind) && (features.seasonal_tyres || (u.id !== 'summer_tyres' && u.id !== 'all_season_tyres')))
                         .map((u) => {
                           const has = v.upgrades.includes(u.id);
                           return (

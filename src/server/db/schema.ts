@@ -393,6 +393,8 @@ export const contracts = pgTable(
     acceptedAt: ts('accepted_at'),
     /** Urgent shipment created by an administrator: shown first and driven faster. */
     urgent: boolean('urgent').notNull().default(false),
+    /** Price rises of an urgent shipment nobody has taken yet (v1.5). */
+    urgentRaises: integer('urgent_raises').notNull().default(0),
     /** VIP reservation: only this player may take the contract until reservedUntil. */
     reservedByCompanyId: uuid('reserved_by_company_id').references(() => companies.id, { onDelete: 'set null' }),
     reservedUntil: ts('reserved_until'),
@@ -2322,4 +2324,18 @@ export const predictions = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('predictions_user_battle_idx').on(t.userId, t.battleId), index('predictions_user_week_idx').on(t.userId, t.weekKey)],
+);
+
+/** Egg fights between friends (v1.5, Великден): once per pair a year, no stake. */
+export const eggFights = pgTable(
+  'egg_fights',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userA: uuid('user_a').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userB: uuid('user_b').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    year: integer('year').notNull(),
+    winnerId: uuid('winner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('egg_fights_pair_idx').on(t.userA, t.userB, t.year), index('egg_fights_winner_idx').on(t.winnerId)],
 );

@@ -112,7 +112,7 @@ export const TRAILERS: TrailerModel[] = [
   { id: 'drawbar-reefer', kind: 'drawbar', body: 'reefer', brand: 'Struma Trailers', name: 'Прикачно хладилно ремарке 7.7 м', priceCents: 36_000_00, payloadTons: 9, axles: 2, requiresHeavyHaul: false, minLevel: 3, dragFuel: 2.5 },
 ];
 
-export type UpgradeId = 'eco_tune' | 'aero_kit' | 'premium_tyres' | 'winter_tyres' | 'comfort_cab';
+export type UpgradeId = 'eco_tune' | 'aero_kit' | 'premium_tyres' | 'winter_tyres' | 'comfort_cab' | 'summer_tyres' | 'all_season_tyres';
 
 export interface UpgradeDefinition {
   id: UpgradeId;
@@ -132,7 +132,14 @@ export const UPGRADES: Record<UpgradeId, UpgradeDefinition> = {
   premium_tyres: { id: 'premium_tyres', label: 'Премиум гуми', description: '−25 % износване', priceCents: 2_900_00, fuel: 1, wear: 0.75, xp: 1, appliesTo: ['van', 'rigid', 'tractor'] },
   winter_tyres: { id: 'winter_tyres', label: 'Зимни гуми', description: 'Наполовина по-малък шанс и забавяне от сняг, лед и затворени проходи', priceCents: 1_800_00, fuel: 1, wear: 1, xp: 1, appliesTo: ['van', 'rigid', 'tractor'] },
   comfort_cab: { id: 'comfort_cab', label: 'Комфортна кабина', description: '+10 % опит от доставки', priceCents: 5_200_00, fuel: 1, wear: 1, xp: 1.1, appliesTo: ['rigid', 'tractor'] },
+  summer_tyres: { id: 'summer_tyres', label: 'Летни гуми', description: '−3 % гориво, −5 % износване · без защита от сняг и лед', priceCents: 1_800_00, fuel: 0.97, wear: 0.95, xp: 1, appliesTo: ['van', 'rigid', 'tractor'] },
+  all_season_tyres: { id: 'all_season_tyres', label: 'Всесезонни гуми', description: 'Пазят от сняг и лед като зимните, но се износват с 10 % по-бързо', priceCents: 2_400_00, fuel: 1, wear: 1.1, xp: 1, appliesTo: ['van', 'rigid', 'tractor'] },
 };
+
+/** Tyre sets (v1.5): one set on a truck at a time — fitting one takes the others off. */
+export const TYRE_SETS: UpgradeId[] = ['winter_tyres', 'summer_tyres', 'all_season_tyres'];
+/** Tyres that protect against snow and ice. */
+export const hasWinterGrip = (upgrades: readonly string[]) => upgrades.includes('winter_tyres') || upgrades.includes('all_season_tyres');
 
 export type TrailerUpgradeId = 'aero_skirts' | 'low_rr_tyres' | 'led_markers' | 'company_logo';
 

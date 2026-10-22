@@ -1,6 +1,6 @@
 import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
-import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
+import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
 import { stickerText } from '@/lib/game/cosmetics';
 import { springDiscount } from '@/lib/game/marta';
 import { fuelPriceCents } from '@/lib/game/fuel';
@@ -214,9 +214,12 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
     if (v.status !== 'idle') fail('vehicle_busy', 'Подобрения се монтират само между курсовете.');
     if (!upgrade!.appliesTo.includes(powerUnitModel(v.modelId).kind)) fail('not_applicable', 'Подобрението не е приложимо за този тип превозно средство.');
     if (v.upgrades.includes(upgrade!.id)) fail('already_installed', 'Вече е монтирано.');
+    if ((upgrade!.id === 'summer_tyres' || upgrade!.id === 'all_season_tyres') && !(await featureFor(tx, userId, 'seasonal_tyres'))) fail('not_released', 'Това идва със следващото обновление.', 403);
+    // One tyre set at a time (v1.5): the new set replaces the old one.
+    const kept = TYRE_SETS.includes(upgrade!.id) ? v.upgrades.filter((u) => !TYRE_SETS.includes(u as UpgradeId)) : v.upgrades;
     const price = Math.round(upgrade!.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
     await post(tx, company.id, [{ category: 'upgrades', amountCents: -price, description: `${upgrade!.label} — ${v.plate}`, idempotencyKey: `upgrade:${v.id}:${upgrade!.id}` }], { requireFunds: true });
-    await tx.update(vehicles).set({ upgrades: [...v.upgrades, upgrade!.id] }).where(eq(vehicles.id, v.id));
+    await tx.update(vehicles).set({ upgrades: [...kept, upgrade!.id] }).where(eq(vehicles.id, v.id));
   });
 }
 

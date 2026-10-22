@@ -73,4 +73,10 @@ export const OVERSIZE = {
   hours: 36,
 } as const;
 
+/**
+ * Cargo insurance (v1.5): when taking a load the player may insure it for a
+ * share of its pay; a late arrival's penalties are then mostly covered.
+ */
+export const CARGO_INSURANCE = { premiumShare: 0.03, covers: 0.8 } as const;
+
 export const oversizeCostCents = (km: number) => OVERSIZE.permitCents + Math.round(km * OVERSIZE.escortCentsPerKm);

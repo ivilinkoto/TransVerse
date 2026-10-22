@@ -428,6 +428,13 @@
       "when": 1792700630649,
       "tag": "0060_glorious_leech",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792701230109,
+      "tag": "0061_wandering_king_cobra",
+      "breakpoints": true
     }
   ]
 }
