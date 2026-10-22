@@ -103,6 +103,8 @@ describe('ports', () => {
     expect(atPort.every((c) => c.cargoType === 'container')).toBe(true);
 
     const morning = new Date('2027-01-12T09:00:00Z'); // 11:00 in Sofia
+    // Another test file's worker tick may have brought a ship in (by day): this test starts from none.
+    await db().update(shipCalls).set({ status: 'done' }).where(eq(shipCalls.status, 'active'));
     expect(await startShipCall(db(), new Date('2027-01-12T03:00:00Z'), approximateProvider)).toBeNull();
     const call = await startShipCall(db(), morning, approximateProvider);
     expect(call!.containers).toBeGreaterThan(10);
