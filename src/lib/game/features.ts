@@ -87,6 +87,9 @@ export const FEATURES = {
   perfect_run: '1.5',
   city_album: '1.5',
   garage_showcase: '1.5',
+  discord_rally: '1.5',
+  weekly_digest: '1.5',
+  predictions: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

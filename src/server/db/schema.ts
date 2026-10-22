@@ -2306,3 +2306,18 @@ export const cityVisits = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.cityId] })],
 );
+
+/** Free predictions on the company battles (v1.5): no stake; a right one earns ТрансКоин from the game. */
+export const predictions = pgTable(
+  'predictions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    battleId: uuid('battle_id').notNull().references(() => companyBattles.id, { onDelete: 'cascade' }),
+    pickOrgId: uuid('pick_org_id').notNull(),
+    weekKey: text('week_key').notNull(),
+    correct: boolean('correct'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('predictions_user_battle_idx').on(t.userId, t.battleId), index('predictions_user_week_idx').on(t.userId, t.weekKey)],
+);

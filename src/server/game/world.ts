@@ -9,6 +9,7 @@ import { ensureRally, settleRallies } from './rally';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
 import { settleDivisions } from './competition';
+import { settlePredictions } from './predictions';
 import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent } from './halloween';
 import { ensureChristmasEvent } from './christmas';
@@ -53,6 +54,8 @@ import { registerCommands } from '@/server/discord/register';
 import { updateStats } from '@/server/discord/stats';
 import { syncTickets } from '@/server/discord/tickets';
 import { announceWeeklyRanking } from '@/server/discord/weekly';
+import { announceWeeklyDigest } from '@/server/discord/digest';
+import { liveRally } from '@/server/discord/rally';
 import { syncAllRoles } from '@/server/discord/sync';
 import { announceDailyLoad, announceLiveryWinner } from '@/server/discord/announce';
 import { dailyLoadLane, liveBattles, postLiveryEntries } from '@/server/discord/together';
@@ -247,6 +250,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     if (featureLive('divisions', now)) await every(db, 'divisions', 60 * 60_000, now, () => settleDivisions(db, now));
     await every(db, 'alliances', 30 * 60_000, now, async () => {
       await runAlliances(db, now);
+      await settlePredictions(db);
       await endCompanyContracts(db, now);
     });
     await every(db, 'driver-moods', 24 * 3_600_000, now, () => driverMoods(db, now));
@@ -273,6 +277,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await liveShipCalls(db, now);
       await postLiveryEntries(db, now);
       await syncScheduledEvents(db, now);
+      await liveRally(db, now);
     });
     // The Discord bot: chat bridge and messages often, announcements and roles less often.
     await every(db, 'discord-chat', 15_000, now, async () => {
@@ -295,6 +300,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'discord-stats', 10 * 60_000, now, () => updateStats(db, now));
     await every(db, 'discord-weekly', 30 * 60_000, now, async () => {
       await announceWeeklyRanking(db, now);
+      await announceWeeklyDigest(db, now);
       await awardMostActive(db, now);
       await treasuryReports(db, now);
       await photoContest(db, now);

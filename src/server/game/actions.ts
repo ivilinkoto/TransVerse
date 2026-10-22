@@ -9,6 +9,7 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
+import { predictBattle } from '@/server/game/predictions';
 import { createAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
@@ -203,6 +204,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('respondCompanyContract'), contractId: id, accept: z.boolean() }),
   z.object({ type: z.literal('rateCompanyContract'), contractId: id, stars: z.coerce.number().int().min(1).max(5) }),
   z.object({ type: z.literal('enrolAcademy'), mentorId: id }),
+  z.object({ type: z.literal('predictBattle'), battleId: id, pickOrgId: id }),
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
@@ -306,6 +308,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   respondCompanyContract: 'company_contracts',
   rateCompanyContract: 'company_contracts',
   enrolAcademy: 'academy',
+  predictBattle: 'predictions',
   trailerUpgrade: 'trailer_upgrades',
   buyOrgTrailer: 'company_trailers',
   sellOrgTrailer: 'company_trailers',
@@ -732,6 +735,9 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'rateCompanyContract':
       await rateCompanyContract(db, user.id, input.contractId, input.stars);
+      return { ok: true };
+    case 'predictBattle':
+      await predictBattle(db, user.id, input.battleId, input.pickOrgId);
       return { ok: true };
     case 'enrolAcademy':
       await enrolAcademy(db, user.id, input.mentorId);

@@ -16,6 +16,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { loadHubs } from './contracts';
 import { notify } from './notify';
+import { announceRallyFinish } from '@/server/discord/rally';
 import { pick } from './random';
 
 /** Worker: the rally of this week (once per week, a random route between two big cities). */
@@ -76,10 +77,19 @@ export async function recordRallyRun(tx: Tx, contract: { id: string; rallyId: st
   const costs = d.estimatedCosts as { fuelCents?: number };
   const km = d.emptyKm + d.loadedKm;
   const loadedFuel = km > 0 ? ((costs.fuelCents ?? 0) * d.loadedKm) / km : 0;
-  await tx
+  const minutes = loadedMinutes(d.schedule as Segment[]);
+  const fuelCentsPer100 = Math.round((loadedFuel / Math.max(1, d.loadedKm)) * 100);
+  const [entry] = await tx
     .update(rallyEntries)
-    .set({ minutes: loadedMinutes(d.schedule as Segment[]), fuelCentsPer100: Math.round((loadedFuel / Math.max(1, d.loadedKm)) * 100), finishedAt: completedAt })
-    .where(and(eq(rallyEntries.rallyId, contract.rallyId), eq(rallyEntries.contractId, contract.id)));
+    .set({ minutes, fuelCentsPer100, finishedAt: completedAt })
+    .where(and(eq(rallyEntries.rallyId, contract.rallyId), eq(rallyEntries.contractId, contract.id)))
+    .returning({ id: rallyEntries.id, userId: rallyEntries.userId });
+  // A line in Discord's #рали (v1.5).
+  const rally = entry ? await activeRally(tx) : null;
+  if (entry && rally?.id === contract.rallyId) {
+    const [u] = await tx.select({ username: users.username }).from(users).where(eq(users.id, entry.userId));
+    await announceRallyFinish(tx, entry.id, { username: u!.username, minutes, fuelCentsPer100, from: rally.from, to: rally.to }, completedAt);
+  }
 }
 
 /** Finished runs of a rally with the drivers' names. */
