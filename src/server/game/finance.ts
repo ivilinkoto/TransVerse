@@ -52,7 +52,12 @@ export type LedgerCategory =
   | 'mentor_reward'
   | 'roadside_help'
   | 'roadside_paid'
+  | 'crossings'
+  | 'freight_escrow'
+  | 'branch_bonus'
+  | 'loan'
   | 'shared_load_bonus'
+  | 'rally_prize'
   | 'lease'
   | 'member_bonus';
 
@@ -105,7 +110,12 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   mentor_reward: 'Награди за наставничество',
   roadside_help: 'Помощ на пътя (хонорари)',
   roadside_paid: 'Платена пътна помощ',
+  crossings: 'Фериботи и влакове',
+  freight_escrow: 'Борса между играчите (депозити)',
+  branch_bonus: 'Бонус от филиал',
+  loan: 'Кредит (отпускане и вноски)',
   shared_load_bonus: 'Бонус за общ товар',
+  rally_prize: 'Награди от ралито',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',
 };
@@ -153,7 +163,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   member_contribution: 'Вноска от курс',
@@ -175,6 +185,10 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   company_land: 'Земя за участъка',
   company_fleet: 'Фирмени камиони',
   discord_activity: 'Най-активна компания в Discord',
+  ship_call: 'Кораб пристига — първо място',
+  factory: 'Фабрика (суровини и продажби)',
+  company_branch: 'Филиали',
+  company_trailer: 'Фирмени ремаркета (покупки и бонус от курсовете)',
 };
 
 export interface TreasuryPosting {

@@ -10,7 +10,9 @@ import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
-import { buyGoods, shipGoods } from '@/server/game/trade';
+import { answerDriver } from '@/server/game/moods';
+import { joinRally } from '@/server/game/rally';
+import { buyGoods, postFreight, rateHauler, shipGoods } from '@/server/game/trade';
 import { buyPremiumPass, claimPassRewards } from '@/server/game/season-pass';
 import { deleteChannelMessage, deleteConversation, messageBodySchema, postToChannel, sendDirectMessage, unsendDirectMessage } from '@/server/game/messages';
 import { inviteToCompany, removeFriend, respondCompanyInvite, respondFriendRequest, sendFriendRequest } from '@/server/game/social';
@@ -24,7 +26,8 @@ import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispat
 import { toggleFavoriteLane } from '@/server/game/favorites';
 import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
-import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installUpgrade, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
+import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveToDepot, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
+import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -46,6 +49,8 @@ import { callForHelp, helpOnRoad, paidRoadHelp } from '@/server/game/roadside';
 import { challengeDuel, respondDuel, shareLoad } from '@/server/game/together';
 import { enterLiveryContest, voteLivery } from '@/server/game/livery-contest';
 import { announceConvoy } from '@/server/game/convoy';
+import { chooseRecipe, orderRaw, sellProduct } from '@/server/game/factory';
+import { closeBranch, openBranch, repayLoan, takeLoan } from '@/server/game/business';
 import { cheer } from '@/server/game/feed';
 import type { FeatureId } from '@/lib/game/features';
 import { requireFeature } from '@/server/features';
@@ -88,7 +93,7 @@ const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]])
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 /** Every player command (the web game and the Discord bot alike). */
 export const Action = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional() }),
+  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional() }),
   z.object({ type: z.literal('payFine'), fineId: id }),
   z.object({ type: z.literal('dispatchPlan') }),
   z.object({ type: z.literal('auctionBid'), auctionId: id, amountEur: z.coerce.number().positive().max(10_000_000) }),
@@ -225,6 +230,24 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('roadsidePaid'), deliveryId: id }),
   z.object({ type: z.literal('callForHelp'), deliveryId: id }),
   z.object({ type: z.literal('announceConvoy') }),
+  z.object({ type: z.literal('factoryRecipe'), recipe: z.string().max(30) }),
+  z.object({ type: z.literal('factoryOrder'), batches: z.coerce.number().int().min(1).max(5) }),
+  z.object({ type: z.literal('factorySell'), cityId: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('postFreight'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(60), destCityId: cityId, mode: z.enum(['sell', 'store']), priceEur: z.coerce.number().int().positive().max(1_000_000) }),
+  z.object({ type: z.literal('rateHauler'), contractId: id, stars: z.coerce.number().int().min(1).max(5) }),
+  z.object({ type: z.literal('openBranch'), cityId }),
+  z.object({ type: z.literal('closeBranch'), branchId: id }),
+  z.object({ type: z.literal('takeLoan'), amountEur: z.coerce.number().int().min(1_000).max(1_000_000), weeks: z.coerce.number().int() }),
+  z.object({ type: z.literal('repayLoan') }),
+  z.object({ type: z.literal('joinRally') }),
+  z.object({ type: z.literal('moveToDepot'), vehicleId: id, depotId: id }),
+  z.object({ type: z.literal('trailerUpgrade'), trailerId: id, upgradeId: z.string().max(40) }),
+  z.object({ type: z.literal('buyOrgTrailer'), modelId: z.string().max(40) }),
+  z.object({ type: z.literal('sellOrgTrailer'), orgTrailerId: id }),
+  z.object({ type: z.literal('upgradeOrgTrailer'), orgTrailerId: id, upgradeId: z.string().max(40) }),
+  z.object({ type: z.literal('borrowOrgTrailer'), orgTrailerId: id }),
+  z.object({ type: z.literal('returnOrgTrailer'), trailerId: id }),
+  z.object({ type: z.literal('answerDriver'), driverId: id, accept: z.boolean() }),
 ]);
 
 /** Actions of features that go live with a release (staff can use them earlier, to test). */
@@ -246,6 +269,22 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   roadsidePaid: 'roadside_paid',
   callForHelp: 'roadside_paid',
   announceConvoy: 'discord_bot',
+  factoryRecipe: 'factories',
+  factoryOrder: 'factories',
+  factorySell: 'factories',
+  postFreight: 'freight_exchange',
+  rateHauler: 'freight_exchange',
+  openBranch: 'branches',
+  closeBranch: 'branches',
+  takeLoan: 'loans',
+  repayLoan: 'loans',
+  answerDriver: 'driver_moods',
+  joinRally: 'rally',
+  trailerUpgrade: 'trailer_upgrades',
+  buyOrgTrailer: 'company_trailers',
+  sellOrgTrailer: 'company_trailers',
+  upgradeOrgTrailer: 'company_trailers',
+  borrowOrgTrailer: 'company_trailers',
   cheer: 'feed',
   chooseWeeklyGoal: 'weekly_goal',
   claimWeeklyGoal: 'weekly_goal',
@@ -294,7 +333,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
   if (feature) requireFeature(feature, user.role);
   switch (input.type) {
     case 'acceptContract': {
-      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons });
+      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail });
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
     case 'favoriteLane':
@@ -527,6 +566,46 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await paidRoadHelp(db, user.id, input.deliveryId)) };
     case 'callForHelp':
       return { ok: true, ...(await callForHelp(db, user.id, input.deliveryId)) };
+    case 'factoryRecipe':
+      await chooseRecipe(db, user.id, input.recipe);
+      return { ok: true };
+    case 'factoryOrder':
+      return { ok: true, ...(await orderRaw(db, user.id, input.batches)) };
+    case 'factorySell':
+      return { ok: true, ...(await sellProduct(db, user.id, input.cityId)) };
+    case 'postFreight':
+      return { ok: true, id: await postFreight(db, user.id, { depotId: input.depotId, cargo: input.cargo, tons: input.tons, destCityId: input.destCityId, mode: input.mode, priceCents: input.priceEur * 100 }) };
+    case 'moveToDepot':
+      return { ok: true, ...(await moveToDepot(db, user.id, input.vehicleId, input.depotId)) };
+    case 'trailerUpgrade':
+      return { ok: true, costCents: await installTrailerUpgrade(db, user.id, input.trailerId, input.upgradeId) };
+    case 'buyOrgTrailer':
+      return { ok: true, id: (await buyOrgTrailer(db, user.id, input.modelId)).id };
+    case 'sellOrgTrailer':
+      return { ok: true, valueCents: await sellOrgTrailer(db, user.id, input.orgTrailerId) };
+    case 'upgradeOrgTrailer':
+      return { ok: true, costCents: await upgradeOrgTrailer(db, user.id, input.orgTrailerId, input.upgradeId) };
+    case 'borrowOrgTrailer':
+      return { ok: true, trailerId: (await borrowOrgTrailer(db, user.id, input.orgTrailerId)).id };
+    case 'returnOrgTrailer':
+      await returnOrgTrailer(db, user.id, input.trailerId);
+      return { ok: true };
+    case 'joinRally':
+      return { ok: true, ...(await joinRally(db, user.id)) };
+    case 'answerDriver':
+      return { ok: true, ...(await answerDriver(db, user.id, input.driverId, input.accept)) };
+    case 'rateHauler':
+      await rateHauler(db, user.id, input.contractId, input.stars);
+      return { ok: true };
+    case 'openBranch':
+      return { ok: true, id: (await openBranch(db, user.id, input.cityId)).id };
+    case 'closeBranch':
+      await closeBranch(db, user.id, input.branchId);
+      return { ok: true };
+    case 'takeLoan':
+      return { ok: true, id: (await takeLoan(db, user.id, input.amountEur * 100, input.weeks)).id };
+    case 'repayLoan':
+      return { ok: true, ...(await repayLoan(db, user.id)) };
     case 'announceConvoy': {
       const c = await announceConvoy(db, user.id);
       return { ok: true, origin: c.origin, destination: c.destination, expiresAt: c.expiresAt };

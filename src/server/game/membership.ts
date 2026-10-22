@@ -30,6 +30,7 @@ import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
 import { returnOnLeave, sellFleetOnDissolve } from './company-fleet';
+import { returnTrailersOnLeave, sellTrailersOnDissolve } from './company-trailers';
 import { queueRoles } from '@/server/discord/outbox';
 
 export type Rank = typeof companyRanks.$inferSelect;
@@ -212,6 +213,7 @@ export async function leaveCompany(db: Database, userId: string) {
     if (!m) fail('not_member', 'Не членувате в компания.');
     if (m!.rank.isOwner) fail('owner_must_transfer', 'Като собственик първо предайте собствеността на друг член (или закрийте компанията, ако сте единственият член).');
     await returnOnLeave(tx, userId, new Date());
+    await returnTrailersOnLeave(tx, userId, new Date());
     await tx.delete(companyMembers).where(eq(companyMembers.userId, userId));
     await queueRoles(tx, userId);
     await logActivity(tx, userId, 'company_left', { companyId: m!.company.id });
@@ -236,6 +238,7 @@ export async function kickMember(db: Database, actorId: string, targetUserId: st
     const actor = await requirePermission(tx, actorId, 'manage_members');
     await subordinate(tx, actor, targetUserId);
     await returnOnLeave(tx, targetUserId, new Date());
+    await returnTrailersOnLeave(tx, targetUserId, new Date());
     await tx.delete(companyMembers).where(eq(companyMembers.userId, targetUserId));
     await queueRoles(tx, targetUserId);
     await logActivity(tx, actorId, 'company_member_removed', { userId: targetUserId });
@@ -577,7 +580,8 @@ export async function dissolveCompany(db: Database, ownerId: string) {
     if ((await memberCount(tx, owner!.company.id)) > 1) fail('has_members', 'Компанията има други членове — предайте собствеността на някой от тях.');
     // The company's own trucks are sold first, into the treasury paid out below.
     await returnOnLeave(tx, ownerId, new Date());
-    const fleetCents = await sellFleetOnDissolve(tx, owner!.company.id, new Date());
+    await returnTrailersOnLeave(tx, ownerId, new Date());
+    const fleetCents = (await sellFleetOnDissolve(tx, owner!.company.id, new Date())) + (await sellTrailersOnDissolve(tx, owner!.company.id, new Date()));
     const left = owner!.company.treasuryCents + fleetCents;
     if (left > 0) {
       const account = await accountOf(tx, ownerId);

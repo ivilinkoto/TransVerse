@@ -9,6 +9,7 @@ import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { isWinter } from '@/lib/game/winter';
+import { realConditions } from '@/server/game/weather';
 import { RoadConditions } from '@/components/game/RoadConditions';
 import { isNewcomer, MENTOR } from '@/lib/game/mentor';
 import { mentorOverview } from '@/server/game/mentor';
@@ -33,6 +34,7 @@ import { fleetView, latestNotifications, netWorthCents } from '@/server/game/que
 
 export default async function OverviewPage() {
   const { db, user, company, now, features } = await gameContext();
+  const real = features.real_weather ? await realConditions(db, now, true) : null;
   const [paper] = await latestIssues(db, 1);
   const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
   const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
@@ -95,7 +97,7 @@ export default async function OverviewPage() {
           </div>
           {hero && (
             <div className="hidden shrink-0 md:block">
-              <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
+              <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} cosmetics={hero.cosmetics} trailerUpgrades={hero.trailer?.upgrades} trailerLogo={hero.trailer?.logo} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
             </div>
           )}
         </div>
@@ -171,7 +173,7 @@ export default async function OverviewPage() {
           </span>
         </Link>
       )}
-      {isWinter(now) && <RoadConditions countries={await db.select({ code: countryTable.code, nameBg: countryTable.nameBg }).from(countryTable).orderBy(countryTable.nameBg)} now={now} />}
+      {(isWinter(now) || real) && <RoadConditions countries={await db.select({ code: countryTable.code, nameBg: countryTable.nameBg }).from(countryTable).orderBy(countryTable.nameBg)} now={now} real={real} />}
       {paper && (
         <Link href="/game/news" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
           <Newspaper className="h-6 w-6 shrink-0 text-mist-300" />
@@ -197,7 +199,7 @@ export default async function OverviewPage() {
               <ul className="space-y-3">
                 {active.map((v) => (
                   <li key={v.id} className="flex flex-col gap-3 rounded-xl border border-asphalt-700/80 bg-asphalt-850/80 p-3 sm:flex-row sm:items-center">
-                    <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} className="h-11 w-auto max-w-[170px] shrink-0" />
+                    <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} className="h-11 w-auto max-w-[170px] shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                         <span className="font-semibold">{v.delivery!.origin.nameBg} → {v.delivery!.destination.nameBg}</span>

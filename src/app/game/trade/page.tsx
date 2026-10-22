@@ -2,17 +2,20 @@ import { Store, Warehouse } from 'lucide-react';
 import Link from 'next/link';
 import { BuyGoodsForm, ShipGoodsForm, type DeskVehicle } from '@/components/game/TradeDesk';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
-import { money } from '@/lib/format';
+import { dateTime, money } from '@/lib/format';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
 import { gameContext } from '@/server/game/context';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { fleetView } from '@/server/game/queries';
-import { bestBuyers, tradeOverview } from '@/server/game/trade';
+import { bestBuyers, myFreight, tradeOverview } from '@/server/game/trade';
 
 export const metadata = { title: 'Търговия със стоки' };
 
-export default async function TradePage() {
-  const { db, company, now } = await gameContext();
+export default async function TradePage({ searchParams }: { searchParams: Promise<{ rate?: string }> }) {
+  const { db, user, company, now, features } = await gameContext();
+  const { rate } = await searchParams;
+  const exchange = features.freight_exchange ? await myFreight(db, company.id, user.id) : null;
   const [overview, fleet] = await Promise.all([tradeOverview(db, company.id, now), fleetView(db, company.id)]);
   const labels = Object.fromEntries(Object.values(CARGO).map((c) => [c.id, c.label]));
   const vehicles: DeskVehicle[] = fleet.vehicles
@@ -34,6 +37,30 @@ export default async function TradePage() {
         subtitle="Купи евтино където се произвежда, превози сам и продай скъпо където се търси."
         help="Всяко твое депо има склад (15 т на място в депото). Купуваш стоки от производителите в града на депото, а после ги превозваш със свой камион: за продажба в град, който ги търси, или в друго твое депо. Цените са игрови данни. Зависят от държавата (в Германия и Австрия стоките са по-скъпи, отколкото в България), от търсенето в града и се менят всеки ден с до ±12%, така че избери кога и къде да продадеш. Продажбата става по цената в деня на пристигане и намалява търсенето там. Разходите за курса (гориво, такси) са като при поръчка, но няма възнаграждение — печалбата е разликата в цената."
       />
+      {exchange && (exchange.toRate.length > 0 || exchange.offers.length > 0) && (
+        <Card title="Борса между играчите">
+          {exchange.toRate.length > 0 && (
+            <ul className="mb-3 space-y-2 text-sm">
+              {exchange.toRate.map((r) => (
+                <li key={r.contractId} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border p-2 ${rate === r.contractId ? 'border-gold-400/60 bg-gold-400/10' : 'border-asphalt-700'}`}>
+                  <span><b>{r.hauler}</b> превози {r.goods} — оцени го:</span>
+                  <span className="flex gap-1">{[1, 2, 3, 4, 5].map((n) => <ActionButton key={n} action={{ type: 'rateHauler', contractId: r.contractId, stars: n }} className="btn-ghost px-2 py-1 text-xs">{'★'.repeat(n)}</ActionButton>)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {exchange.offers.length > 0 && (
+            <ul className="divide-y divide-asphalt-800 text-sm">
+              {exchange.offers.map((o) => (
+                <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <span>{o.weightTons} т {o.goods} · {money(o.rewardCents)}</span>
+                  <Badge tone={o.status === 'open' ? 'gold' : 'cyan'}>{o.status === 'open' ? `чака превозвач до ${dateTime(o.expiresAt)}` : 'на път'}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
       {overview.length === 0 ? (
         <Card><Empty icon={Warehouse} title="Нямаш депо">Складовете са в депата. <Link href="/game/logistics" className="text-cyan-glow underline">Открий депо</Link> и започни да търгуваш.</Empty></Card>
       ) : (
@@ -54,7 +81,7 @@ export default async function TradePage() {
                           <span className="text-xs text-mist-400">средно {money(s.avgCents)}/т · общо {money(s.costCents)}</span>
                         </div>
                         <div className="mt-2">
-                          <ShipGoodsForm depotId={d.id} depotCityId={d.cityId} row={s} label={labels[s.cargo]!} bodies={CARGO[s.cargo as CargoType].bodies} vehicles={vehicles} buyers={buyers[`${d.id}:${s.cargo}`] ?? []} depots={depotList} />
+                          <ShipGoodsForm depotId={d.id} depotCityId={d.cityId} row={s} label={labels[s.cargo]!} bodies={CARGO[s.cargo as CargoType].bodies} vehicles={vehicles} buyers={buyers[`${d.id}:${s.cargo}`] ?? []} depots={depotList} exchange={features.freight_exchange} />
                         </div>
                       </li>
                     ))}

@@ -7,7 +7,10 @@ import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { registerSchema } from '@/server/auth/accounts';
 import type { Database, Tx } from '@/server/db/client';
-import { cityMarkets, drivers, trailers, users, vehicles } from '@/server/db/schema';
+import { cityMarkets, companyMembers, drivers, organizations, trailers, users, vehicles } from '@/server/db/schema';
+import { featureFor } from '@/server/features';
+import { powerUnitModel } from '@/lib/game/catalog';
+import { COSMETIC_PARTS, parseCosmetic, stickerText } from '@/lib/game/cosmetics';
 import { postCoins } from './coins';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -21,6 +24,7 @@ export const shopPurchaseSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   username: z.string().trim().max(20).optional(),
   recipient: z.string().trim().max(20).optional(),
+  cosmetic: z.string().max(20).optional(),
 });
 export type ShopPurchase = z.infer<typeof shopPurchaseSchema>;
 
@@ -132,6 +136,25 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         if (v.livery === 'christmas') fail('already_painted', 'Камионът вече е с боя „Коледа“.');
         await tx.update(vehicles).set({ color: CHRISTMAS.paintColor, livery: 'christmas' }).where(eq(vehicles.id, v.id));
         summary = `Боя „Коледа“ за ${v.plate}`;
+        break;
+      }
+      case 'truck_part': {
+        if (!(await featureFor(tx, userId, 'cosmetics', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+        const choice = parseCosmetic(input.cosmetic ?? '');
+        if (!choice) fail('invalid_part', 'Изберете част и стил.');
+        const v = await ownVehicle(tx, account.id, input.vehicleId);
+        if (powerUnitModel(v.modelId).kind === 'van') fail('van', 'Частите са за камиони, не за бусове.');
+        const { part, style } = choice!;
+        let value = style;
+        if (part === 'sticker') {
+          const [org] = await tx.select({ name: organizations.name }).from(companyMembers).innerJoin(organizations, eq(organizations.id, companyMembers.companyId)).where(eq(companyMembers.userId, userId));
+          if (!org) fail('no_company', 'Стикерът е с името на компанията — първо влез в компания.');
+          value = stickerText(org!.name);
+        }
+        if (v.cosmetics[part] === value) fail('already_fitted', 'Камионът вече е с тази част.');
+        await tx.update(vehicles).set({ cosmetics: { ...v.cosmetics, [part]: value } }).where(eq(vehicles.id, v.id));
+        price = COSMETIC_PARTS[part].price;
+        summary = `${COSMETIC_PARTS[part].label} (${COSMETIC_PARTS[part].styles.find((s) => s.id === style)!.label}) за ${v.plate}`;
         break;
       }
       case 'rename': {

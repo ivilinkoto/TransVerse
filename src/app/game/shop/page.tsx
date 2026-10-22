@@ -21,7 +21,7 @@ export const metadata = { title: 'Магазин' };
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ payment?: string }> }) {
   const cancelled = (await searchParams).payment === 'cancelled';
   const payment = paymentConfig();
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const vip = isVip(user.vipUntil, now);
   const [fleet, cityRows, history, purchases] = await Promise.all([
     db
@@ -76,13 +76,14 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <section key={cat}>
           <h2 className="mb-3 font-display text-lg font-bold">{SHOP_CATEGORIES[cat]}</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {SHOP_ITEMS.filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : isChristmas(now)))).map((i) => (
+            {SHOP_ITEMS.filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : isChristmas(now))) && (i.id !== 'truck_part' || features.cosmetics)).map((i) => (
               <Card key={i.id} className="flex flex-col">
                 {i.id === 'paint_christmas' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={CHRISTMAS.paintColor} livery="christmas" className="mb-3 h-16 w-full" />}
+                {i.id === 'truck_part' && <VehicleIllustration modelId="danubia-t440" color="#1d4ed8" cosmetics={{ grille: 'chrome', lights: 'amber', visor: 'body', sticker: 'TRANSVERSE' }} className="mb-3 h-16 w-full" />}
                 {i.id === 'paint_pumpkin' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={HALLOWEEN.pumpkinColor} livery="pumpkin" className="mb-3 h-16 w-full" />}
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-display font-bold">{i.label}</div>
-                  <span className="num shrink-0 font-bold text-cyan-glow">{i.id === 'paint' && vip ? '0' : i.price} TC</span>
+                  <span className="num shrink-0 font-bold text-cyan-glow">{i.id === 'truck_part' ? 'от ' : ''}{i.id === 'paint' && vip ? '0' : i.price} TC</span>
                 </div>
                 <p className="mb-3 mt-1 text-sm text-mist-300">{i.description}</p>
                 {i.id === 'xp_boost_24h' && boostActive && <p className="mb-2 text-xs text-profit">Активен до {user.xpBoostUntil!.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia' })} — нова покупка го удължава.</p>}

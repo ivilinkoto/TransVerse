@@ -4,7 +4,9 @@ import { periodWindow } from '@/lib/game/missions';
 import type { Database } from '@/server/db/client';
 import { companyMembers, discordCompanyActivity, jobState, organizations, treasuryEntries, users } from '@/server/db/schema';
 import { postTreasury, TREASURY_LABELS, type TreasuryCategory } from '@/server/game/finance';
+import { featureLive } from '@/lib/game/features';
 import { appUrl, BRAND, discordConfig } from './config';
+import { reportToken } from './map-token';
 import { announce, enqueue } from './outbox';
 
 /**
@@ -106,6 +108,8 @@ export async function treasuryReports(db: Database, now = new Date()) {
           { name: 'В касата сега', value: money(o.balance) },
         ],
         footer: { text: `Нетно: ${money(sum(rows))} · игрови данни` },
+        // The week in a picture (v1.4).
+        ...(featureLive('company_report', now) ? { image: { url: `${appUrl()}/api/discord/card/report/${o.id}?f=${w.from.getTime()}&k=${reportToken(o.id, w.from.getTime())}` } } : {}),
       }],
     }, now);
   }

@@ -18,7 +18,10 @@ export const DRIVING_RULES = {
 
 import { CREW_RULES, dailyLimitMin, type Crew } from './crew';
 
-export type SegmentKind = 'drive' | 'break' | 'rest' | 'border' | 'loading' | 'unloading' | 'incident';
+export type SegmentKind = 'drive' | 'break' | 'rest' | 'border' | 'loading' | 'unloading' | 'incident' | 'ferry' | 'rail' | 'charge';
+
+/** Segments in which the truck moves along the route (on its wheels, or on board a ferry or a train). */
+export const isMoving = (kind: SegmentKind) => kind === 'drive' || kind === 'ferry' || kind === 'rail';
 export type LegKind = 'empty' | 'loaded';
 
 export interface Segment {
@@ -44,6 +47,22 @@ export interface LegInput {
   borderKms: number[];
   /** Groupage drops on the way: where (km along the leg) and how long the partial unloading takes. */
   stops?: { km: number; minutes: number }[];
+  /** A ferry or a train on the way (v1.4): the truck rides on board from `fromKm` to `toKm`; the driver rests. */
+  crossing?: LegCrossing;
+}
+
+export interface LegCrossing {
+  kind: 'ferry' | 'rail';
+  fromKm: number;
+  toKm: number;
+  /** Real time on board, minutes. */
+  realMin: number;
+  /** Game minutes on board and the boarding before the departure. */
+  gameMin: number;
+  boardingMin: number;
+  /** Departures every so many minutes (game timetable). */
+  everyMin: number;
+  note: string;
 }
 
 export interface ScheduleInput {
@@ -56,6 +75,8 @@ export interface ScheduleInput {
   timeScale: number;
   /** Who drives: hours carried over from the last trip, a team, skills. Default: one rested driver. */
   crew?: Crew;
+  /** An electric truck (v1.4): it stops to charge every `everyKm` (it starts full). */
+  charging?: { everyKm: number; minutes: number };
 }
 
 export interface PlannedTrip {
@@ -83,6 +104,8 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
   };
   let t = input.startAt;
   let sinceBreak = 0;
+  // Electric: km driven since the last charge (the battery is full at the start).
+  let sinceCharge = 0;
   let today = Math.max(0, crew.startDutyMin);
 
   const push = (kind: SegmentKind, leg: LegKind, minutes: number, fromKm: number, toKm = fromKm) => {
@@ -94,9 +117,14 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
 
   const driveLeg = (leg: LegKind, input_: LegInput) => {
     const totalMin = (input_.durationS / 60) / input.speedFactor;
-    if (totalMin <= 0 || input_.km <= 0) return;
-    const kmPerMin = input_.km / totalMin;
-    const borders = [...input_.borderKms].filter((b) => b > 0 && b < input_.km).sort((a, b) => a - b);
+    const cross = input_.crossing && input_.crossing.toKm > input_.crossing.fromKm ? input_.crossing : null;
+    // A leg that is only a crossing (terminal to terminal) has no road time.
+    if (input_.km <= 0 || (totalMin <= 0 && !cross)) return;
+    const kmPerMin = cross ? 0 : input_.km / totalMin;
+    // Road minutes per km come from the road part only (the crossing is timed by its line).
+    const roadKm = input_.km - (cross ? cross.toKm - cross.fromKm : 0);
+    const kmPerMinRoad = roadKm > 0 && totalMin > 0 ? roadKm / totalMin : 1;
+    const borders = [...input_.borderKms].filter((b) => b > 0 && b < input_.km && !(cross && b > cross.fromKm && b < cross.toKm)).sort((a, b) => a - b);
     const drops = (input_.stops ?? []).map((d, i) => ({ ...d, n: i + 1 })).filter((d) => d.km > 0 && d.km < input_.km).sort((a, b) => a.km - b.km);
     const EPS_MIN = 1e-6; // minutes; guards against floating-point creep near the limits
     let km = 0;
@@ -111,17 +139,39 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
         push('break', leg, DRIVING_RULES.breakMin, km);
         sinceBreak = 0;
       }
+      const speed = kmPerMin || kmPerMinRoad;
+      // On board: the truck crosses without being driven; a long crossing is the daily rest.
+      if (cross && Math.abs(km - cross.fromKm) < 1e-6) {
+        push(cross.kind, leg, cross.realMin, cross.fromKm, cross.toKm);
+        segments.at(-1)!.note = cross.note;
+        km = cross.toKm;
+        sinceBreak = 0;
+        // Charged on board.
+        sinceCharge = 0;
+        if (cross.realMin >= rules.dailyRestMin) today = 0;
+        continue;
+      }
       const nextBorder = borders.find((b) => b > km + 1e-6);
       const nextDrop = drops.find((d) => d.km > km + 1e-6);
       const limitMin = Math.min(rules.breakAfterMin - sinceBreak, rules.dailyDrivingMin - today);
-      let targetKm = Math.min(input_.km, km + limitMin * kmPerMin);
+      let targetKm = Math.min(input_.km, km + limitMin * speed);
       if (nextBorder !== undefined && nextBorder < targetKm) targetKm = nextBorder;
       if (nextDrop && nextDrop.km < targetKm) targetKm = nextDrop.km;
-      const minutes = (targetKm - km) / kmPerMin;
+      if (cross && cross.fromKm > km + 1e-6 && cross.fromKm < targetKm) targetKm = cross.fromKm;
+      const charging = input.charging;
+      if (charging && km + (charging.everyKm - sinceCharge) < targetKm) targetKm = km + Math.max(0, charging.everyKm - sinceCharge);
+      const minutes = (targetKm - km) / speed;
       push('drive', leg, minutes, km, targetKm);
       sinceBreak += minutes;
       today += minutes;
+      sinceCharge += targetKm - km;
       km = targetKm;
+      // A fast charge also counts as the break.
+      if (input.charging && sinceCharge >= input.charging.everyKm - 1e-6 && km < input_.km - 1e-6) {
+        push('charge', leg, input.charging.minutes, km);
+        sinceCharge = 0;
+        if (input.charging.minutes >= DRIVING_RULES.breakMin) sinceBreak = 0;
+      }
       if (nextBorder !== undefined && Math.abs(km - nextBorder) < 1e-6) push('border', leg, DRIVING_RULES.borderWaitMin, km);
       if (nextDrop && Math.abs(km - nextDrop.km) < 1e-6) {
         push('unloading', leg, nextDrop.minutes, km);
@@ -158,7 +208,7 @@ export function stateAt(segments: readonly Segment[], now: number): ScheduleStat
   if (now <= first.start) return { segment: first, leg: first.leg, km: first.fromKm, done: false, progress: 0 };
   const segment = segments.find((s) => now >= s.start && now < s.end)!;
   const f = (now - segment.start) / (segment.end - segment.start);
-  const km = segment.kind === 'drive' ? segment.fromKm + (segment.toKm - segment.fromKm) * f : segment.fromKm;
+  const km = isMoving(segment.kind) ? segment.fromKm + (segment.toKm - segment.fromKm) * f : segment.fromKm;
   return { segment, leg: segment.leg, km, done: false, progress: (now - first.start) / (last.end - first.start) };
 }
 
@@ -208,15 +258,45 @@ export function buildGameSchedule(input: Omit<ScheduleInput, 'timeScale'> & { ti
  */
 export function buildGameTrip(input: Omit<ScheduleInput, 'timeScale'> & { timeScale?: number }): PlannedTrip {
   const real = planTrip({ ...input, timeScale: 1 });
-  const km = (input.empty?.km ?? 0) + input.loaded.km;
+  const cross = input.loaded.crossing;
+  // The road is timed by its distance; a ferry or a train by its line and timetable.
+  const km = (input.empty?.km ?? 0) + input.loaded.km - (cross ? cross.toKm - cross.fromKm : 0);
   const minutes = gameDurationMinutes(km) * crewTimeFactor(input, real.segments);
-  return { segments: compressSchedule(real.segments, input.startAt, minutes / (input.timeScale ?? 1)), endDutyMin: real.endDutyMin };
+  const scale = input.timeScale ?? 1;
+  if (!cross) return { segments: compressSchedule(real.segments, input.startAt, minutes / scale), endDutyMin: real.endDutyMin };
+  return { segments: compressWithCrossing(real.segments, input.startAt, minutes / scale, cross, scale), endDutyMin: real.endDutyMin };
+}
+
+/**
+ * Like compressSchedule for the road segments; the crossing waits for the
+ * next departure of its timetable (after boarding) and lasts its game minutes.
+ */
+export function compressWithCrossing(segments: readonly Segment[], startAt: number, roadMinutes: number, cross: LegCrossing, timeScale = 1): Segment[] {
+  const road = segments.filter((s) => !(s.kind === 'ferry' || s.kind === 'rail'));
+  const span = road.reduce((sum, s) => sum + (s.end - s.start), 0);
+  const factor = span > 0 ? (roadMinutes * MIN) / span : 0;
+  let t = startAt;
+  return segments.flatMap((s): Segment[] => {
+    if (s.kind === 'ferry' || s.kind === 'rail') {
+      // On the quay (or the terminal) until the departure, then on board.
+      const every = (cross.everyMin * MIN) / timeScale;
+      const departs = Math.ceil((t + (cross.boardingMin * MIN) / timeScale) / every) * every;
+      const wait: Segment = { ...s, start: t, end: departs, toKm: s.fromKm, note: s.kind === 'ferry' ? 'На пристанището — чака ферибота' : 'На терминала — чака влака' };
+      const board: Segment = { ...s, start: departs, end: departs + (cross.gameMin * MIN) / timeScale };
+      t = board.end;
+      return [wait, board];
+    }
+    const out = { ...s, start: t, end: t + (s.end - s.start) * factor };
+    t = out.end;
+    return [out];
+  });
 }
 
 function crewTimeFactor(input: Omit<ScheduleInput, 'timeScale'>, real: readonly Segment[]): number {
   const crew = input.crew;
-  if (!crew || (!crew.team && crew.startDutyMin <= 0 && crew.extraDailyMin <= 0)) return 1;
-  const fresh = buildSchedule({ ...input, crew: undefined, startAt: 0, timeScale: 1 });
+  // Charging stops of an electric truck make the trip longer too.
+  if (!input.charging && (!crew || (!crew.team && crew.startDutyMin <= 0 && crew.extraDailyMin <= 0))) return 1;
+  const fresh = buildSchedule({ ...input, crew: undefined, charging: undefined, startAt: 0, timeScale: 1 });
   const base = scheduleEnd(fresh) - (fresh[0]?.start ?? 0);
   const span = scheduleEnd(real) - (real[0]?.start ?? 0);
   return base > 0 ? span / base : 1;

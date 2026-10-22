@@ -1,7 +1,8 @@
 import { Fender, Wheel, type Ids } from './parts';
+import { GRILLE_COLORS, LIGHT_COLORS, type Cosmetics } from '@/lib/game/cosmetics';
 
 /** Cab-over European truck cab. `x` = rear of cab, faces right. */
-export function Cab({ x, style, ids, color, aero = false }: { x: number; style: 'day' | 'sleeper' | 'highline'; ids: Ids; color: string; aero?: boolean }) {
+export function Cab({ x, style, ids, color, aero = false, extras }: { x: number; style: 'day' | 'sleeper' | 'highline'; ids: Ids; color: string; aero?: boolean; extras?: Cosmetics }) {
   const L = style === 'day' ? 200 : 240;
   const T = style === 'day' ? -300 : style === 'sleeper' ? -330 : -372;
   const f = x + L; // front face
@@ -27,9 +28,10 @@ export function Cab({ x, style, ids, color, aero = false }: { x: number; style: 
           <path d={`M ${x} ${T + 20} L ${x - 34} ${T + 12} L ${x - 34} -150 L ${x} -140 Z`} fill={color} opacity="0.9" stroke="#0b1220" strokeWidth="1.5" />
         </g>
       )}
-      {/* grille slats on the front corner */}
+      {/* grille slats on the front corner (a bought grille: a finished panel behind them) */}
+      {extras?.grille && <rect x={f - 12} y={-268} width={13} height={88} rx={3} fill={extras.grille === 'chrome' ? `url(#${ids.chrome})` : GRILLE_COLORS[extras.grille]} stroke="#0b1220" strokeWidth="1.5" />}
       {Array.from({ length: 6 }, (_, i) => (
-        <rect key={`g${i}`} x={f - 9} y={-262 + i * 14} width={9} height={6} rx={2} fill="#0b1220" opacity="0.55" />
+        <rect key={`g${i}`} x={f - 9} y={-262 + i * 14} width={9} height={6} rx={2} fill={extras?.grille === 'black' ? '#475569' : '#0b1220'} opacity="0.55" />
       ))}
       {/* roof highlight */}
       <path d={`M ${x + 14} ${T + 3} L ${f - 22} ${T + 3}`} stroke="#fff" strokeOpacity="0.35" strokeWidth="4" strokeLinecap="round" />
@@ -54,7 +56,21 @@ export function Cab({ x, style, ids, color, aero = false }: { x: number; style: 
       <path d={`M ${x} -158 L ${f - 1} -158 L ${f - 1} -146 L ${x} -146 Z`} fill="#000" opacity="0.18" />
       <path d={`M ${x} -170 L ${f - 2} -170`} stroke="#fff" strokeOpacity="0.35" strokeWidth="3" />
       {/* sun visor */}
-      <rect x={f - 46} y={T - 6} width={46} height={10} rx={4} fill="#111827" />
+      {extras?.visor ? (
+        <path d={`M ${f - 64} ${T - 2} L ${f + 6} ${T - 2} L ${f + 2} ${T + 14} L ${f - 60} ${T + 8} Z`} fill={extras.visor === 'chrome' ? `url(#${ids.chrome})` : extras.visor === 'body' ? color : '#0b1220'} stroke="#0b1220" strokeWidth="1.5" />
+      ) : (
+        <rect x={f - 46} y={T - 6} width={46} height={10} rx={4} fill="#111827" />
+      )}
+      {extras?.lights && (
+        // Roof light bar with four lamps
+        <g>
+          <rect x={f - 84} y={T - 20} width={60} height={10} rx={4} fill="#111827" />
+          {[0, 1, 2, 3].map((i) => <circle key={i} cx={f - 76 + i * 15} cy={T - 22} r={6} fill={LIGHT_COLORS[extras.lights!]} stroke="#0b1220" strokeWidth="1" />)}
+        </g>
+      )}
+      {extras?.sticker && (
+        <text x={doorX + 72} y={-121} textAnchor="middle" fontSize="16" fontWeight="800" fill="#fff" stroke="#0b1220" strokeWidth="0.8" paintOrder="stroke" fontFamily="system-ui, sans-serif" letterSpacing="1" {...(extras.sticker.length > 13 ? { textLength: 130, lengthAdjust: 'spacingAndGlyphs' } : {})}>{extras.sticker}</text>
+      )}
       {/* headlight, indicator, bumper, step */}
       <rect x={f - 16} y={-150} width={16} height={18} rx={4} fill="#fffbe6" stroke="#9ca3af" />
       <ellipse cx={f + 4} cy={-141} rx={18} ry={8} fill="#fff7c2" opacity="0.35" />
@@ -74,7 +90,7 @@ export function Cab({ x, style, ids, color, aero = false }: { x: number; style: 
 }
 
 /** Tractor unit, rear at x = 0, front at ≈ 602. Fifth wheel centre at x = 120 (kingpin sits 1.6 m behind the trailer nose). */
-export function Tractor({ ids, color, cab, heavy = false, coupled = false }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean }) {
+export function Tractor({ ids, color, cab, heavy = false, coupled = false, extras }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; extras?: Cosmetics }) {
   const cabX = 362;
   const rear = heavy ? [72, 198] : [100];
   return (
@@ -93,7 +109,7 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false }: { i
       <rect x={heavy ? 232 : 190} y={-134} width={16} height={6} fill="#2563eb" />
       {/* side skirt */}
       {!heavy && <rect x={160} y={-102} width={196} height={18} rx={4} fill={color} opacity="0.85" />}
-      <Cab x={cabX} style={cab} ids={ids} color={color} aero={coupled && !heavy} />
+      <Cab x={cabX} style={cab} ids={ids} color={color} aero={coupled && !heavy} extras={extras} />
       {rear.map((wx) => (
         <g key={wx}>
           <Fender x={wx} />
@@ -107,7 +123,7 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false }: { i
 }
 
 /** Rigid truck with its own body. Rear at 0, front at ≈ 902. */
-export function Rigid({ ids, color, body }: { ids: Ids; color: string; body: 'box' | 'reefer' }) {
+export function Rigid({ ids, color, body, extras }: { ids: Ids; color: string; body: 'box' | 'reefer'; extras?: Cosmetics }) {
   const bodyEnd = 680;
   return (
     <g>
@@ -138,7 +154,7 @@ export function Rigid({ ids, color, body }: { ids: Ids; color: string; body: 'bo
       <rect x={300} y={-96} width={320} height={6} rx={2} fill="#9ca3af" />
       <rect x={300} y={-74} width={320} height={6} rx={2} fill="#9ca3af" />
       <rect x={430} y={-150} width={110} height={56} rx={12} fill={`url(#${ids.metal})`} stroke="#475569" />
-      <Cab x={bodyEnd + 12} style="day" ids={ids} color={color} />
+      <Cab x={bodyEnd + 12} style="day" ids={ids} color={color} extras={extras} />
       <Fender x={200} />
       <Wheel x={200} ids={ids} twin />
       <Fender x={778} />

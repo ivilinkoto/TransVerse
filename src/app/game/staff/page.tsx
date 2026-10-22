@@ -8,6 +8,7 @@ import { int, money } from '@/lib/format';
 import { CompanyRequired } from '@/components/game/CompanyRequired';
 import { CREW_RULES, TRAIT_IDS, TRAIT_MAX, TRAITS, dutyAt, restLeftMin, traitLevel, traitPointsLeft } from '@/lib/game/crew';
 import { gameContext } from '@/server/game/context';
+import { loyaltyLabel, marketSalaryCents, MOODS, REQUEST_TEXT, type DriverRequest } from '@/lib/game/moods';
 import { fleetView } from '@/server/game/queries';
 import { candidates } from '@/server/game/staff';
 
@@ -17,8 +18,9 @@ const Stars = ({ n }: { n: number }) => <span className="text-gold-400" aria-lab
 
 const hours = (min: number) => `${Math.floor(min / 60)} ч${Math.round(min % 60) ? ` ${Math.round(min % 60)} мин` : ''}`;
 
-export default async function StaffPage() {
-  const { db, user, company, now } = await gameContext();
+export default async function StaffPage({ searchParams }: { searchParams: Promise<{ driver?: string }> }) {
+  const { driver: focus } = await searchParams;
+  const { db, user, company, now, features } = await gameContext();
   if (!(await canHireStaff(db, user.id, company))) return <CompanyRequired what="Наемането на шофьори" />;
   const [fleet, pool] = await Promise.all([fleetView(db, company.id), candidates(db, company.id)]);
   const payroll = fleet.drivers.reduce((s, d) => s + d.salaryCentsPerDay, 0);
@@ -47,7 +49,7 @@ export default async function StaffPage() {
               const mainOptions = [{ value: '', label: '— без превозно средство —' }, ...fleet.vehicles.map((v) => ({ value: v.id, label: `${label(v)}${v.driver && v.driver.id !== d.id ? ` (сега: ${v.driver.name})` : ''}`, disabled: !!v.delivery }))];
               const coOptions = [{ value: '', label: '— не е втори шофьор —' }, ...fleet.vehicles.filter((v) => v.model.kind !== 'van' && v.ownership !== 'rented').map((v) => ({ value: v.id, label: `${label(v)}${v.coDriver && v.coDriver.id !== d.id ? ` (сега: ${v.coDriver.name})` : ''}`, disabled: !!v.delivery }))];
               return (
-                <li key={d.id} className="rounded-2xl border border-asphalt-700 bg-asphalt-850 p-4">
+                <li key={d.id} id={`driver-${d.id}`} className={`rounded-2xl border bg-asphalt-850 p-4 ${focus === d.id ? 'border-gold-400' : 'border-asphalt-700'}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="truncate font-semibold">{d.name}{d.isOwner && <span className="ml-2 text-xs text-mist-400">(ти)</span>}</div>
@@ -65,6 +67,26 @@ export default async function StaffPage() {
                     {rest > 0 && <p className="mt-1.5 text-xs text-mist-400">Ако тръгне сега, ще спре за почивка след {hours(Math.max(0, CREW_RULES.soloDailyMin + traitLevel(d.traits, 'long') * CREW_RULES.longBonusMin - duty))} кормуване.</p>}
                   </div>
 
+                  {features.driver_moods && !d.isOwner && (
+                    <div className="mt-3 rounded-xl bg-asphalt-900/60 p-3 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-mist-300">Настроение</span>
+                        <span className={`text-xs ${d.loyalty >= 60 ? 'text-profit' : d.loyalty >= 40 ? 'text-mist-300' : 'text-amber-sig'}`}>{loyaltyLabel(d.loyalty)} · <span className="num">{d.loyalty}</span>/100</span>
+                      </div>
+                      <Meter value={d.loyalty} className="mt-2" />
+                      {d.vacationUntil && d.vacationUntil > now && <div className="mt-2"><Badge tone="orange">почивен ден до {d.vacationUntil.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' })}</Badge></div>}
+                      {d.request && (
+                        <div className="mt-2 rounded-lg border border-amber-sig/40 p-2">
+                          <p className="text-xs">{d.name} {REQUEST_TEXT[d.request as DriverRequest]}{d.request === 'raise' ? ` (+${Math.round(MOODS.raiseShare * 100)} %)` : d.request === 'offer' ? ` — задържа го само +${Math.round(MOODS.counterShare * 100)} % заплата` : ''}. Отговори до {MOODS.answerHours} часа.</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <ActionButton className="btn-primary" action={{ type: 'answerDriver', driverId: d.id, accept: true }}>{d.request === 'vacation' ? 'Дай почивка' : 'Вдигни заплатата'}</ActionButton>
+                            <ActionButton action={{ type: 'answerDriver', driverId: d.id, accept: false }} confirm={d.request === 'offer' ? 'Шофьорът ще напусне. Сигурен ли си?' : undefined}>Откажи</ActionButton>
+                          </div>
+                        </div>
+                      )}
+                      <p className="mt-1.5 text-xs text-mist-400">Пазарна заплата за умението: {money(marketSalaryCents(d.skill))} на ден. Платен поне толкова, шофьорът става все по-лоялен (игрови данни).</p>
+                    </div>
+                  )}
                   <div className="mt-3 space-y-2">
                     {onTrip ? (
                       <Badge tone="cyan">на курс с {(main ?? co)!.plate}{co ? ' (втори шофьор)' : ''}</Badge>

@@ -37,7 +37,7 @@ export type MaterialId = keyof typeof MATERIALS;
 export const MATERIAL_IDS = Object.keys(MATERIALS) as MaterialId[];
 export type Materials = Partial<Record<MaterialId, number>>;
 
-export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest';
+export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory';
 
 export interface BuildingDef {
   type: BuildingType;
@@ -46,7 +46,7 @@ export interface BuildingDef {
   w: number;
   h: number;
   /** The company upgrade this building drives (its level = building level − offset). */
-  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest';
+  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory';
   offset: number;
   maxLevel: number;
   /** Materials of level 1; later levels need more. */
@@ -143,6 +143,18 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     effect: (l) => `−${l * 15} % почивка на шофьорите след курс до града на базата`,
     minCompanyLevel: [2, 3, 5],
   },
+  factory: {
+    type: 'factory',
+    label: 'Фабрика',
+    w: 4,
+    h: 3,
+    upgrade: 'factory',
+    offset: 0,
+    maxLevel: 3,
+    base: { cement: 20, steel: 14, bricks: 8, glass: 2 },
+    effect: (l) => `Произвежда стоки от суровини · партида за ${Math.round(100 / (1 + 0.5 * (l - 1)))} % от времето, +${(l - 1) * 25} % продукция`,
+    minCompanyLevel: [3, 5, 7],
+  },
 };
 export const BUILDING_TYPES = Object.keys(BUILDINGS) as BuildingType[];
 
@@ -155,6 +167,7 @@ export const BUILDING_LINKS: Record<BuildingType, { href: string; label: string 
   parking: { href: '/game/fleet', label: 'Отвори автопарка' },
   warehouse: { href: '/game/trade', label: 'Отвори склада' },
   rest: { href: '/game/staff', label: 'Отвори шофьорите' },
+  factory: { href: '/game/company/factory', label: 'Отвори фабриката' },
 };
 
 /** How much more each level needs than level 1, and how long it takes (real minutes). */
@@ -300,8 +313,8 @@ export function decorError(kind: DecorKind, x: number, y: number, buildings: rea
   return areaError(DECOR[kind], x, y, buildings, decor, plotW, {});
 }
 
-/** Where existing companies' buildings go when they get their plot (it all fits next to each other). */
-export const DEFAULT_SPOTS: Record<BuildingType, { x: number; y: number }> = {
+/** Where existing companies' buildings go when they get their plot (it all fits next to each other); the factory (v1.4) is always placed by the company. */
+export const DEFAULT_SPOTS: Record<Exclude<BuildingType, 'factory'>, { x: number; y: number }> = {
   office: { x: 1, y: 0 },
   service: { x: 1, y: 3 },
   training: { x: 1, y: 6 },

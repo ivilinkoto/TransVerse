@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, ArrowRight, BadgeCheck, Boxes, Clock, Lock, MapPinned, Route, Search, ShieldCheck, Hammer, House, Siren, Snowflake, Star, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BadgeCheck, Boxes, Clock, Lock, MapPinned, Route, Search, Ship, ShieldCheck, Hammer, House, Siren, Snowflake, Star, TrainFront, Truck } from 'lucide-react';
 import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN } from '@/lib/game/halloween';
 import { CHRISTMAS } from '@/lib/game/christmas';
@@ -75,6 +75,14 @@ export interface BoardContract {
   shared?: boolean;
   /** The player may share it with the company. */
   canShare?: boolean;
+  /** v1.4: a ferry on the way (islands), a container from a port, trains the truck may ride. */
+  ferry?: { note: string; ticketCents: number } | null;
+  port?: string | null;
+  rail?: { id: string; note: string; ticketCents: number; km: number }[];
+  /** Someone's own goods on the freight exchange (the shipper's label). */
+  exchange?: string | null;
+  /** The player's own weekly rally run (v1.4). */
+  rally?: boolean;
   speedFactor: number;
   /** Urgent shipment this player has already taken (each player may take it once). */
   alreadyTaken: boolean;
@@ -275,6 +283,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
   const option = c.options.find((o) => o.vehicleId === vehicleId);
   const [rush, setRush] = useState(false);
   const [overload, setOverload] = useState(false);
+  const [rail, setRail] = useState('');
   const needsOverload = !!option && option.overloadPercent > 0;
   // A load bigger than the truck goes as a part, unless the player chose to overload and take it all.
   const part = option?.part && !(needsOverload && overload) ? option.part : null;
@@ -299,7 +308,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}) });
+      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}) });
       onAccepted(`Камионът тръгна: ${part ? `${dec(part.tons)} т ` : ''}${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
       setBusy(false);
       router.refresh();
@@ -319,6 +328,10 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
             {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
+            {c.exchange && <Badge tone="violet">БОРСА МЕЖДУ ИГРАЧИ</Badge>}
+            {c.rally && <Badge tone="orange">🏁 РАЛИ — мери се времето и горивото</Badge>}
+            {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
+            {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{c.port}</Badge>}
             {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />ТОВАР НА ДЕНЯ · +{DAILY_LOAD.coins} TC</Badge>}
             {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />ОБЩ ТОВАР НА КОМПАНИЯТА · +{Math.round(SHARED_LOAD.bonusShare * 100)}%</Badge>}
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
@@ -466,6 +479,26 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                       <span>{option.part ? 'Вместо част — натовари всичко' : 'Натовари'} с претоварване (+{option.overloadPercent}% над капацитета). <span className="text-amber-sig">Риск от глоба на кантар и по-бързо износване.</span></span>
                     </label>
                   )}
+                </div>
+              )}
+              {c.ferry && (
+                <p className="rounded-xl border border-cyan-glow/30 bg-cyan-glow/5 p-3 text-sm">
+                  <span className="font-semibold text-cyan-glow">{c.ferry.note}: </span>
+                  камионът чака на пристанището следващия ферибот (тръгват на всеки час), шофьорът почива на борда. Билет {money(c.ferry.ticketCents)}; за морето няма гориво и такси. Разписанието и цените са игрови данни.
+                </p>
+              )}
+              {!!c.rail?.length && (
+                <div className="space-y-1.5 rounded-xl border border-volt-500/30 bg-volt-500/5 p-3 text-sm">
+                  <label className="flex items-start gap-2">
+                    <input type="radio" name={`rail-${c.id}`} className="mt-0.5" checked={!rail} onChange={() => setRail('')} />
+                    <span>По пътя</span>
+                  </label>
+                  {c.rail.map((r) => (
+                    <label key={r.id} className="flex items-start gap-2">
+                      <input type="radio" name={`rail-${c.id}`} className="mt-0.5" checked={rail === r.id} onChange={() => setRail(r.id)} />
+                      <span><TrainFront className="mr-1 inline h-3.5 w-3.5 text-volt-400" /><b>{r.note}</b> ({int(r.km)} км с влак) — камионът се качва на влака, шофьорът почива, а за тези километри няма гориво, такси и износване. Билет {money(r.ticketCents)}; влаковете тръгват на всеки 30 мин (игрово разписание).</span>
+                    </label>
+                  ))}
                 </div>
               )}
               {part && (

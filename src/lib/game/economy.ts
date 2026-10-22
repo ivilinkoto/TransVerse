@@ -1,5 +1,5 @@
 import { CARGO, type CargoType } from './cargo';
-import { UPGRADES, type PowerUnitModel, type TrailerModel, type UpgradeId } from './catalog';
+import { TRAILER_UPGRADES, UPGRADES, type PowerUnitModel, type TrailerModel, type TrailerUpgradeId, type UpgradeId } from './catalog';
 
 /**
  * Economic formulas. All money is integer euro cents. These functions are
@@ -40,6 +40,9 @@ export const ECONOMY = {
   depotSlotUpgradeCents: 18_000_00,
 } as const;
 
+/** Electric trucks (v1.4, game data): energy price and the lower road tolls. */
+export const ELECTRIC = { centsPerKwh: 42, tollFactor: 0.25 } as const;
+
 export function rewardCents(cargo: CargoType, tons: number, km: number, marketMultiplier: number): number {
   const def = CARGO[cargo];
   const perKm = def.baseCentsPerKm + def.centsPerTonKm * tons;
@@ -47,7 +50,7 @@ export function rewardCents(cargo: CargoType, tons: number, km: number, marketMu
 }
 
 export function upgradeFactor(upgrades: readonly string[], key: 'fuel' | 'wear' | 'xp'): number {
-  return upgrades.reduce((f, id) => f * (UPGRADES[id as UpgradeId]?.[key] ?? 1), 1);
+  return upgrades.reduce((f, id) => f * (UPGRADES[id as UpgradeId]?.[key] ?? TRAILER_UPGRADES[id as TrailerUpgradeId]?.[key] ?? 1), 1);
 }
 
 export interface TripCostInput {
@@ -87,14 +90,17 @@ export function tripCosts(input: TripCostInput): TripCosts {
   const emptyL = (input.emptyKm / 100) * (unit.fuelEmpty + drag * 0.5);
   const loadedL = (input.loadedKm / 100) * (unit.fuelEmpty + (unit.fuelFull - unit.fuelEmpty) * loadShare + drag);
   const price = input.fuelPrice ?? { empty: ECONOMY.fuelPriceCentsPerLitre, loaded: ECONOMY.fuelPriceCentsPerLitre };
-  const fuelCents = Math.round((emptyL * price.empty + loadedL * price.loaded) * efficiency);
+  // Electric trucks (v1.4) pay for the energy instead of diesel.
+  const ev = unit.electric;
+  const energyKwh = ev ? (input.emptyKm / 100) * ev.kwhEmpty + (input.loadedKm / 100) * (ev.kwhEmpty + (ev.kwhFull - ev.kwhEmpty) * loadShare) : 0;
+  const fuelCents = ev ? Math.round(energyKwh * ELECTRIC.centsPerKwh * efficiency) : Math.round((emptyL * price.empty + loadedL * price.loaded) * efficiency);
 
   const tolledKm = unit.tolled ? (input.tolledRoute.empty ? input.emptyKm : 0) + (input.tolledRoute.loaded ? input.loadedKm : 0) : 0;
-  const tollCents = Math.round(tolledKm * ECONOMY.tollCentsPerKm);
+  const tollCents = Math.round(tolledKm * ECONOMY.tollCentsPerKm * (ev ? ELECTRIC.tollFactor : 1));
   const km = input.emptyKm + input.loadedKm;
   const maintenanceCents = Math.round(km * unit.maintenanceCentsPerKm);
   const wear = (km / 1000) * ECONOMY.wearPerThousandKm * upgradeFactor(input.upgrades, 'wear') * (input.crewWear ?? 1);
-  return { fuelCents, fuelLitres: Math.round((emptyL + loadedL) * efficiency), tollCents, maintenanceCents, totalCents: fuelCents + tollCents + maintenanceCents, wear };
+  return { fuelCents, fuelLitres: ev ? 0 : Math.round((emptyL + loadedL) * efficiency), tollCents, maintenanceCents, totalCents: fuelCents + tollCents + maintenanceCents, wear };
 }
 
 export interface Settlement {

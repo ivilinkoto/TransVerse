@@ -1,16 +1,16 @@
 import { Snowflake } from 'lucide-react';
-import { CONDITION_LABELS, roadCondition, type RoadCondition, WINTER } from '@/lib/game/winter';
+import { CONDITION_LABELS, roadCondition, type RealConditions, type RoadCondition, WINTER } from '@/lib/game/winter';
 
 const TONE: Record<RoadCondition, string> = { clear: 'text-profit', snow: 'text-volt-400', ice: 'text-amber-sig', blizzard: 'text-loss' };
 
-/** Winter: today's road condition in every country (game data), with a reminder about winter tyres. */
-export function RoadConditions({ countries, now }: { countries: { code: string; nameBg: string }[]; now: Date }) {
-  const rows = countries.map((c) => ({ ...c, condition: roadCondition(c.code, now) }));
+/** Today's road condition in every country (the real weather when there is a reading, v1.4; else game data), with a reminder about winter tyres. */
+export function RoadConditions({ countries, now, real = null }: { countries: { code: string; nameBg: string }[]; now: Date; real?: RealConditions | null }) {
+  const rows = countries.map((c) => ({ ...c, condition: roadCondition(c.code, now, real) }));
   return (
     <section className="panel border-cyan-glow/30 p-4" aria-label="Пътна обстановка днес">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display font-bold"><Snowflake className="h-5 w-5 text-cyan-glow" />Пътна обстановка днес</h2>
-        <span className="text-xs text-mist-400">игрови данни · сменя се всеки ден</span>
+        <span className="text-xs text-mist-400">{real ? 'реалното време сега · Open-Meteo.com (CC BY 4.0)' : 'игрови данни · сменя се всеки ден'}</span>
       </div>
       <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm sm:grid-cols-3">
         {rows.map((r) => (

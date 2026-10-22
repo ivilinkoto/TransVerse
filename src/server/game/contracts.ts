@@ -13,7 +13,8 @@ import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
-import { getRoute, getRouteVia } from '@/server/geo/route-service';
+import { getCrossingRoute, getRoute, getRouteVia } from '@/server/geo/route-service';
+import { crossingLine, islandOf } from '@/lib/game/crossings';
 import { featureLive } from '@/lib/game/features';
 import { DAILY_LOAD, sofiaDate, sofiaHourOf } from '@/lib/game/together';
 import { MULTISTOP, splitTons, stopMultiplier, stopWindowMinutes, type ContractStop } from '@/lib/game/multistop';
@@ -115,8 +116,7 @@ export async function generateContracts(db: Database, options: GenerateOptions =
     const premium = rand() < PREMIUM_SHARE ? pickWeighted(PREMIUM_LEVELS.map((l, i) => ({ ...l, weight: [6, 3, 1][i] ?? 1 })), (l) => l.weight) ?? null : null;
     // Groupage: some longer loads drop part of the cargo in a city or two on the way.
     const via = !options.originCityId && rand() < MULTISTOP.share ? stopsOnTheWay(hubs, origin, destination, cargo, options.domestic) : [];
-    await insertContract(db, origin, destination, cargo, tons, now, randInt(6, 30) * 3_600_000, options.provider, premium, via);
-    created++;
+    if (await insertContract(db, origin, destination, cargo, tons, now, randInt(6, 30) * 3_600_000, options.provider, premium, via)) created++;
   }
   if (created) await broadcast(db, 'market');
   return created;
@@ -184,7 +184,10 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
   const cargo = pick(local.length ? local : compatible);
   // Without cross-border licences the guaranteed job stays inside the country.
   const domesticOnly = !need.licences.has('international') || !need.licences.has('customs');
-  const others = hubs.filter((h) => h.id !== origin!.id && (!domesticOnly || h.countryCode === origin!.countryCode));
+  // On an island the guaranteed job stays on it when it can (no ferry needed).
+  const island = islandOf(origin);
+  const sameIsland = island ? hubs.filter((h) => h.id !== origin!.id && islandOf(h)?.id === island.id) : [];
+  const others = sameIsland.length ? sameIsland : hubs.filter((h) => h.id !== origin!.id && (!domesticOnly || h.countryCode === origin!.countryCode) && !(island && islandOf(h)));
   const weight = (h: Hub) => {
     const km = haversineKm([origin!.lat, origin!.lon], [h.lat, h.lon]);
     return km < 15 ? 0 : Math.sqrt(h.population) / (1 + km / 400);
@@ -197,7 +200,7 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
   const hi = Math.min(maxT, need.payloadTons);
   const lo = Math.min(hi, Math.max(0.2, minT));
   const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
-  await insertContract(db, origin, destination, cargo, tons, now, 12 * 3_600_000, provider);
+  if (!(await insertContract(db, origin, destination, cargo, tons, now, 12 * 3_600_000, provider))) return 0;
   await broadcast(db, 'market');
   return 1;
 }
@@ -231,9 +234,32 @@ export function stopsOnTheWay(hubs: Hub[], origin: Hub, destination: Hub, cargo:
 /** Share of market contracts that are premium (reputation required, better pay). */
 export const PREMIUM_SHARE = 0.12;
 
-async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string } = {}): Promise<string> {
+/**
+ * The route of a new load. An island (Crete, Rhodes…) is reached by ferry
+ * from Piraeus (v1.4); between two different islands there is no load.
+ */
+async function loadRoute(db: Database, origin: Hub, destination: Hub, provider?: RoutingProvider) {
+  const [ia, ib] = [islandOf(origin), islandOf(destination)];
+  if (ia?.id === ib?.id) return getRoute(db, origin.id, destination.id, 'truck', provider);
+  if (ia && ib) return null;
+  const island = (ia ?? ib)!;
+  const onIsland = ia ? origin : destination;
+  const lines = island.lines.map((id) => crossingLine(id)!);
+  const ports = await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, lines.map((l) => l.b)));
+  const near = (l: (typeof lines)[number]) => {
+    const p = ports.find((x) => x.id === l.b);
+    return p ? haversineKm([p.lat, p.lon], [onIsland.lat, onIsland.lon]) : Infinity;
+  };
+  const line = [...lines].sort((x, y) => near(x) - near(y))[0]!;
+  return getCrossingRoute(db, origin.id, destination.id, line, !!ia, 'truck', provider);
+}
+
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean } = {}): Promise<string | null> {
+  const sea = islandOf(origin)?.id !== islandOf(destination)?.id;
+  if (sea) via = [];
   const viaRoute = via.length ? await getRouteVia(db, origin.id, via.map((h) => h.id), destination.id, 'truck', provider) : null;
-  const route = viaRoute ?? (await getRoute(db, origin.id, destination.id, 'truck', provider));
+  const route = viaRoute ?? (await loadRoute(db, origin, destination, provider));
+  if (!route) return null;
   const parts = via.length ? splitTons(tons, via.length, rand) : [];
   const stops: ContractStop[] | null = viaRoute ? via.map((h, i) => ({ cityId: h.id, km: viaRoute.legKms[i]!, tons: parts[i]!, windowMinutes: stopWindowMinutes(viaRoute.legKms[i]!) })) : null;
   // Halloween and Christmas: some pallet and refrigerated loads are holiday goods that pay better.
@@ -264,12 +290,23 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     minReputation: premium?.minReputation ?? 0,
     stops,
     featured: extra.featured ?? null,
+    portCallId: extra.portCallId ?? null,
+    port: extra.port ?? false,
     expiresAt: new Date(now.getTime() + ttlMs),
   }).returning({ id: contracts.id });
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));
   const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
   await notifyFavoriteLane(db, { contractId: row!.id, originCityId: origin.id, destCityId: destination.id, originName: name(origin.id), destName: name(destination.id), goods, rewardCents: reward }, now);
   return row!.id;
+}
+
+/** A load between two given cities (port loads, ship calls); null when there is no way (two different islands). */
+export async function addLoad(db: Database, originId: number, destinationId: number, cargo: CargoType, tons: number, now: Date, ttlMs: number, multiplier: number, extra: { portCallId?: string; port?: boolean }, provider?: RoutingProvider, hubs?: Hub[]) {
+  const all = hubs ?? (await loadHubs(db));
+  const origin = all.find((h) => h.id === originId);
+  const destination = all.find((h) => h.id === destinationId);
+  if (!origin || !destination) return null;
+  return insertContract(db, origin, destination, cargo, tons, now, ttlMs, provider, { minReputation: 0, multiplier }, [], extra);
 }
 
 /**
@@ -283,12 +320,12 @@ export async function ensureDailyLoad(db: Database, now = new Date(), provider?:
   if (exists) return null;
   const hubs = await loadHubs(db);
   const allowed = new Set<CargoType>(DAILY_LOAD.cargo);
-  const origins = hubs.filter((h) => h.population >= 100_000 && [...h.produces].some((c) => allowed.has(c)));
+  const origins = hubs.filter((h) => h.population >= 100_000 && !islandOf(h) && [...h.produces].some((c) => allowed.has(c)));
   for (let attempt = 0; attempt < 20; attempt++) {
     const origin = pickWeighted(origins, (h) => Math.sqrt(h.population));
     if (!origin) return null;
     const cargo = pick([...origin.produces].filter((c) => allowed.has(c)));
-    const destination = pickWeighted(hubs.filter((h) => h.id !== origin.id && h.population >= 50_000 && h.consumes.has(cargo)), (h) => {
+    const destination = pickWeighted(hubs.filter((h) => h.id !== origin.id && h.population >= 50_000 && !islandOf(h) && h.consumes.has(cargo)), (h) => {
       const km = haversineKm([origin.lat, origin.lon], [h.lat, h.lon]) * 1.25;
       return km < DAILY_LOAD.minKm || km > DAILY_LOAD.maxKm ? 0 : Math.sqrt(h.population);
     });
@@ -298,6 +335,7 @@ export async function ensureDailyLoad(db: Database, now = new Date(), provider?:
     const tons = Math.round((Math.min(hi, Math.max(minT, 6)) + rand() * (hi - Math.min(hi, Math.max(minT, 6)))) * 10) / 10;
     try {
       const id = await insertContract(db, origin, destination, cargo, tons, now, DAILY_LOAD.ttlHours * 3_600_000, provider, { minReputation: 0, multiplier: DAILY_LOAD.multiplier }, [], { featured: key });
+      if (!id) continue;
       await broadcast(db, 'market');
       return id;
     } catch (error) {
@@ -358,6 +396,12 @@ export interface ContractFilter {
   withStops?: boolean;
   /** The load of the day too (default: once its release is out). */
   withFeatured?: boolean;
+  /** Loads over a ferry and port loads too (v1.4; default: once the release is out). */
+  withSea?: boolean;
+  /** Own goods of other players on the freight exchange (v1.4). */
+  withExchange?: boolean;
+  /** The viewer: their own weekly rally load is included (v1.4). */
+  viewerUserId?: string | null;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
@@ -372,6 +416,13 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (filter.originCityId) conditions.push(eq(contracts.originCityId, filter.originCityId));
   if (!(filter.withStops ?? featureLive('multistop', now))) conditions.push(isNull(contracts.stops));
   if (!(filter.withFeatured ?? featureLive('daily_load', now))) conditions.push(isNull(contracts.featured));
+  if (!(filter.withExchange ?? featureLive('freight_exchange', now))) conditions.push(eq(contracts.exchange, false));
+  const sea = filter.withSea ?? featureLive('ferries', now);
+  if (!sea) conditions.push(eq(contracts.port, false));
+  // Raw materials and product of a company factory are only for its members.
+  conditions.push(filter.viewerUserId ? sql`(${contracts.rallyId} is null or ${contracts.createdBy} = ${filter.viewerUserId})` : isNull(contracts.rallyId));
+  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.factoryOrgId} is null or ${contracts.factoryOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.factoryOrgId));
+  conditions.push(filter.memberOfCompanyId ? sql`(${contracts.branchOrgId} is null or ${contracts.branchOrgId} = ${filter.memberOfCompanyId})` : isNull(contracts.branchOrgId));
   // Loads shared with a company are only for its members.
   conditions.push(
     filter.memberOfCompanyId
@@ -392,12 +443,14 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   const cityIds = [...new Set(rows.flatMap((r) => [r.originCityId, r.destCityId, ...(r.stops ?? []).map((st) => st.cityId)]))];
   const cityRows = cityIds.length ? await db.select().from(cities).where(inArray(cities.id, cityIds)) : [];
   const routeIds = [...new Set(rows.map((r) => r.routeId))];
-  const routeRows = routeIds.length ? await db.select({ id: routes.id, provider: routes.provider, hasToll: routes.hasToll, borders: routes.borders, durationS: routes.durationS, countries: routes.countries }).from(routes).where(inArray(routes.id, routeIds)) : [];
+  const routeRows = routeIds.length ? await db.select({ id: routes.id, provider: routes.provider, hasToll: routes.hasToll, borders: routes.borders, durationS: routes.durationS, countries: routes.countries, crossing: routes.crossing, profile: routes.profile }).from(routes).where(inArray(routes.id, routeIds)) : [];
   const cityMap = new Map(cityRows.map((c) => [c.id, c]));
   const routeMap = new Map(routeRows.map((r) => [r.id, r]));
   return rows
     .map((r) => ({ ...r, origin: cityMap.get(r.originCityId)!, destination: cityMap.get(r.destCityId)!, route: routeMap.get(r.routeId)!, stopCities: (r.stops ?? []).map((st) => ({ ...st, name: cityMap.get(st.cityId)?.nameBg ?? '', country: cityMap.get(st.cityId)?.countryCode ?? '' })) }))
-    .filter((r) => !filter.countryCode || r.origin.countryCode === filter.countryCode || r.destination.countryCode === filter.countryCode);
+    .filter((r) => !filter.countryCode || r.origin.countryCode === filter.countryCode || r.destination.countryCode === filter.countryCode)
+    // Loads over a ferry wait for the release (staff see them earlier).
+    .filter((r) => sea || !r.route.crossing);
 }
 
 export type ContractView = Awaited<ReturnType<typeof openContracts>>[number];

@@ -1,7 +1,8 @@
 import polyline from '@mapbox/polyline';
-import { and, eq, notLike } from 'drizzle-orm';
+import { and, eq, inArray, notLike } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import { cities, routes } from '@/server/db/schema';
+import type { CrossingLine } from '@/lib/game/crossings';
 import { approximateProvider, configuredProvider, RoutingUnavailableError, type RouteProfile, type RoutingProvider } from './routing';
 
 export type StoredRoute = typeof routes.$inferSelect;
@@ -110,11 +111,59 @@ export async function getRouteVia(db: DbOrTx, fromCityId: number, via: number[],
   return { ...stored!, legKms };
 }
 
+/**
+ * A route with a ferry or a train on the way (v1.4): the road to the first
+ * terminal, the line (a straight line on the map: the sea lane or the rail
+ * corridor), and the road from the second terminal. Stored like any route
+ * (`truck:ferry:<line>`), with where the crossing runs.
+ */
+export async function getCrossingRoute(db: DbOrTx, fromCityId: number, toCityId: number, line: CrossingLine, reversed: boolean, profile: RouteProfile, provider: RoutingProvider = configuredProvider()): Promise<StoredRoute> {
+  const [start, end] = reversed ? [line.b, line.a] : [line.a, line.b];
+  const before = fromCityId === start ? null : await getRoute(db, fromCityId, start, profile, provider);
+  const after = toCityId === end ? null : await getRoute(db, end, toCityId, profile, provider);
+  const terminals = await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, [start, end]));
+  const s = terminals.find((c) => c.id === start);
+  const e = terminals.find((c) => c.id === end);
+  if (!s || !e) throw new Error(`Unknown terminal of ${line.id}`);
+  const fromKm = before?.distanceKm ?? 0;
+  const toKm = fromKm + line.km;
+  const borders: StoredRoute['borders'] = [...(before?.borders ?? []), ...(after?.borders ?? []).map((b) => ({ ...b, km: b.km + toKm }))];
+  const countries: string[] = [];
+  for (const c of [...(before?.countries ?? []), ...(reversed ? [...line.countries].reverse() : line.countries), ...(after?.countries ?? [])]) if (countries.at(-1) !== c) countries.push(c);
+  const roads = [before, after].filter((r) => r !== null);
+  const real = roads.every((r) => r.geometry) && roads.every((r) => r.provider === (roads[0]?.provider ?? 'valhalla'));
+  const coords: [number, number][] = [];
+  if (real) {
+    if (before) coords.push(...(polyline.decode(before.geometry!, 6) as [number, number][]));
+    coords.push([s.lat, s.lon], [e.lat, e.lon]);
+    if (after) coords.push(...(polyline.decode(after.geometry!, 6) as [number, number][]));
+  }
+  const values = {
+    fromCityId,
+    toCityId,
+    profile: `${profile}:${line.kind}:${line.id}:${reversed ? 'r' : 'f'}`,
+    provider: roads.length && real ? roads[0]!.provider : 'approximate',
+    distanceKm: Math.round((toKm + (after?.distanceKm ?? 0)) * 10) / 10,
+    durationS: (before?.durationS ?? 0) + (after?.durationS ?? 0),
+    hasToll: roads.some((r) => r.hasToll),
+    borders,
+    countries: [...new Set(countries)],
+    geometry: real && coords.length ? polyline.encode(coords, 6) : null,
+    crossing: { kind: line.kind, lineId: line.id, fromKm, toKm },
+  };
+  const [stored] = await db
+    .insert(routes)
+    .values(values)
+    .onConflictDoUpdate({ target: [routes.fromCityId, routes.toCityId, routes.profile], set: { ...values, createdAt: new Date() } })
+    .returning();
+  return stored!;
+}
+
 /** Retries routing for cached approximations so they become real road routes over time. */
 export async function upgradeApproximateRoutes(db: DbOrTx, limit = 5, provider: RoutingProvider = configuredProvider()): Promise<number> {
   if (provider.name === 'approximate') return 0;
   // Routes through stops are rebuilt from their legs when a contract needs them again.
-  const pending = await db.select().from(routes).where(and(eq(routes.provider, 'approximate'), notLike(routes.profile, '%:via:%'))).limit(limit);
+  const pending = await db.select().from(routes).where(and(eq(routes.provider, 'approximate'), notLike(routes.profile, '%:%'))).limit(limit);
   let upgraded = 0;
   for (const r of pending) {
     const fresh = await getRoute(db, r.fromCityId, r.toCityId, r.profile as RouteProfile, provider);

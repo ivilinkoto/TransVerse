@@ -1,13 +1,18 @@
 import { and, eq, isNull, ne, sql } from 'drizzle-orm';
-import { POWER_UNITS, TRAILERS, UPGRADES, couplingError, powerUnitModel, trailerModel, type UpgradeId } from '@/lib/game/catalog';
-import { ECONOMY, repairCostCents, resaleValueCents } from '@/lib/game/economy';
+import { featureFor } from '@/server/features';
+import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
+import { stickerText } from '@/lib/game/cosmetics';
+import { fuelPriceCents } from '@/lib/game/fuel';
+import { getRoute } from '@/server/geo/route-service';
+import type { RoutingProvider } from '@/server/geo/routing';
+import { ECONOMY, repairCostCents, resaleValueCents, tripCosts } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';
 import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
 import { maintenanceCostCents, maintenanceState } from '@/lib/game/maintenance';
 import { assertNotLeased } from './leasing';
-import { bonusesForUser } from './membership';
+import { bonusesForUser, membershipOf } from './membership';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -59,6 +64,7 @@ export async function buyVehicle(db: Database, userId: string, modelId: string, 
   const model = POWER_UNITS.find((m) => m.id === modelId);
   if (!model) fail('unknown_model', 'Непознат модел.');
   const now = options.now ?? new Date();
+  if (model!.electric && !(await featureFor(db, userId, 'electric', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   if (options.lease && model!.priceCents < LEASE.minPriceCents) fail('lease_unavailable', 'Лизинг има за камиони от ' + money(LEASE.minPriceCents) + ' нагоре.');
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
@@ -140,6 +146,7 @@ export async function sellTrailer(db: Database, userId: string, trailerId: strin
     const company = await companyForUser(tx, userId);
     const t = await ownedTrailer(tx, company.id, trailerId);
     if (t.ownership === 'rented') fail('rented', 'Наетите ремаркета се връщат заедно с влекача.');
+    if (t.ownership === 'company') fail('company', 'Фирменото ремарке се връща на компанията, не се продава.');
     if (t.listed) fail('listed', 'Ремаркето е обявено на пазара — първо свали обявата.');
     if (t.vehicleId) {
       const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t.vehicleId));
@@ -211,6 +218,7 @@ export async function coupleTrailer(db: Database, userId: string, vehicleId: str
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
     if (v.status !== 'idle') fail('vehicle_busy', 'Камионът е на курс.');
+    if (v.movingUntil && v.movingUntil > new Date()) fail('moving', 'Камионът още пътува до депото — след минута.');
     const unit = powerUnitModel(v.modelId);
     if (unit.kind === 'van') fail('not_tractor', 'Ванът не тегли ремарке.');
     await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v.id));
@@ -261,3 +269,75 @@ export function depotSlotCostCents(slots: number) {
 }
 
 export { fleetCapacity };
+
+/** How long the drive to a depot takes (v1.4): a minute, whatever the distance. */
+export const DEPOT_MOVE_MS = 60_000;
+
+/**
+ * Sends a free truck (with its trailer) to one of the company's depots in a
+ * minute — so it can pick up a trailer that waits there. The running costs
+ * of the drive (fuel or energy, tolls, maintenance and wear) are paid as for
+ * an empty run; the route is the real one.
+ */
+export async function moveToDepot(db: Database, userId: string, vehicleId: string, depotId: string, now = new Date(), provider?: RoutingProvider) {
+  const company = await companyForUser(db, userId);
+  const [depot] = await db.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id)));
+  if (!depot) fail('depot_not_found', 'Депото не е намерено.', 404);
+  const [pre] = await db.select({ cityId: vehicles.cityId }).from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id), isNull(vehicles.soldAt)));
+  if (!pre) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
+  if (pre!.cityId === depot!.cityId) fail('same_city', 'Камионът вече е в този град.');
+  // The route is fetched (and cached) before the money moves.
+  const route = await getRoute(db, pre!.cityId, depot!.cityId, 'truck', provider);
+  return db.transaction(async (tx) => {
+    const v = await ownedVehicle(tx, company.id, vehicleId);
+    if (v.status !== 'idle') fail('vehicle_busy', 'Камионът е на курс.');
+    if (v.movingUntil && v.movingUntil > now) fail('moving', 'Камионът вече пътува.');
+    if (v.cityId !== pre!.cityId) fail('moved', 'Камионът вече е другаде — опитай пак.', 409);
+    const [t] = await tx.select().from(trailers).where(eq(trailers.vehicleId, v.id));
+    const unit = powerUnitModel(v.modelId);
+    const [from] = await tx.select({ countryCode: cities.countryCode }).from(cities).where(eq(cities.id, v.cityId));
+    const costs = tripCosts({ unit, trailer: t ? trailerModel(t.modelId) : null, upgrades: [...v.upgrades, ...(t?.upgrades ?? [])], condition: v.condition, driverSkill: 1, emptyKm: route.distanceKm, loadedKm: 0, tons: 0, payloadTons: 1, tolledRoute: { empty: route.hasToll, loaded: false }, fuelPrice: { empty: fuelPriceCents(from!.countryCode, now), loaded: fuelPriceCents(from!.countryCode, now) } });
+    const rented = v.ownership === 'rented';
+    const key = `move:${v.id}:${now.getTime()}`;
+    // A rented truck's running costs are the lessor's (as on its trips): only the tolls are paid.
+    const postings = [
+      { category: 'fuel' as const, amountCents: rented ? 0 : -costs.fuelCents, description: `Преместване на ${v.plate} до депото (${Math.round(route.distanceKm)} км)`, idempotencyKey: `${key}:fuel` },
+      { category: 'tolls' as const, amountCents: -costs.tollCents, description: `Пътни такси: ${v.plate} до депото`, idempotencyKey: `${key}:tolls` },
+      { category: 'maintenance' as const, amountCents: rented ? 0 : -costs.maintenanceCents, description: `Поддръжка: ${v.plate} до депото`, idempotencyKey: `${key}:maintenance` },
+    ].filter((p) => p.amountCents !== 0);
+    if (postings.length) await post(tx, company.id, postings, { requireFunds: true });
+    await tx.update(vehicles).set({ cityId: depot!.cityId, movingUntil: new Date(now.getTime() + DEPOT_MOVE_MS), odometerKm: sql`${vehicles.odometerKm} + ${route.distanceKm}`, condition: sql`greatest(0, ${vehicles.condition} - ${costs.wear})` }).where(eq(vehicles.id, v.id));
+    if (t) await tx.update(trailers).set({ cityId: depot!.cityId }).where(eq(trailers.id, t.id));
+    return { km: Math.round(route.distanceKm), costCents: -postings.reduce((s, p) => s + p.amountCents, 0), arrivesAt: new Date(now.getTime() + DEPOT_MOVE_MS) };
+  });
+}
+
+/** Fits a trailer upgrade (between trips); the company logo paints the member's company name. */
+export async function installTrailerUpgrade(db: Database, userId: string, trailerId: string, upgradeId: string, now = new Date()) {
+  if (!isTrailerUpgrade(upgradeId)) fail('unknown_upgrade', 'Непознато подобрение.');
+  if (!(await featureFor(db, userId, 'trailer_upgrades', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  const upgrade = TRAILER_UPGRADES[upgradeId as TrailerUpgradeId];
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const t = await ownedTrailer(tx, company.id, trailerId);
+    if (t.ownership !== 'owned') fail('rented', 'Наетите и фирмените ремаркета не могат да се модифицират.');
+    if (t.listed) fail('listed', 'Ремаркето е обявено на пазара.');
+    if (t.vehicleId) {
+      const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t.vehicleId));
+      if (v?.status !== 'idle') fail('trailer_busy', 'Подобрения се монтират само между курсовете.');
+    }
+    const body = trailerModel(t.modelId).body;
+    if (upgrade.bodies && !upgrade.bodies.includes(body)) fail('not_applicable', 'Подобрението не е приложимо за този тип ремарке.');
+    if (t.upgrades.includes(upgrade.id)) fail('already_installed', 'Вече е монтирано.');
+    let logo: string | null = t.logo;
+    if (upgrade.id === 'company_logo') {
+      const m = await membershipOf(tx, userId);
+      if (!m) fail('no_company', 'Логото е с името на компанията — първо влез в компания.');
+      logo = stickerText(m!.company.name);
+    }
+    const price = Math.round(upgrade.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
+    await post(tx, company.id, [{ category: 'upgrades', amountCents: -price, description: `${upgrade.label} — ремарке ${t.plate}`, idempotencyKey: `trailer-upgrade:${t.id}:${upgrade.id}` }], { requireFunds: true });
+    await tx.update(trailers).set({ upgrades: [...t.upgrades, upgrade.id], logo }).where(eq(trailers.id, t.id));
+    return price;
+  });
+}

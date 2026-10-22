@@ -47,7 +47,7 @@ export async function fleetView(db: DbOrTx, companyId: string) {
       rental: v.ownership === 'rented' ? { trips: rentalTrips.find((r) => r.vehicleId === v.id)?.n ?? 0, buyoutCents: rentalBuyoutCents(v.modelId, trailer?.ownership === 'rented' ? trailer.modelId : null) } : null,
     };
   });
-  const trailersOut = ts.map((t) => ({ ...t, model: trailerModel(t.modelId), city: cityMap.get(t.cityId)!, resaleCents: t.ownership === 'rented' ? 0 : resaleValueCents(trailerModel(t.modelId).priceCents, t.condition, ageDays(t.purchasedAt)) }));
+  const trailersOut = ts.map((t) => ({ ...t, model: trailerModel(t.modelId), city: cityMap.get(t.cityId)!, resaleCents: t.ownership !== 'owned' ? 0 : resaleValueCents(trailerModel(t.modelId).priceCents, t.condition, ageDays(t.purchasedAt)) }));
   return { vehicles: vehiclesOut, trailers: trailersOut, drivers: ds };
 }
 

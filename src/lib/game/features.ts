@@ -58,6 +58,23 @@ export const FEATURES = {
   duels: '1.3',
   livery_contest: '1.3',
   roadside_paid: '1.3',
+  ferries: '1.4',
+  rail: '1.4',
+  port_loads: '1.4',
+  ship_calls: '1.4',
+  real_weather: '1.4',
+  factories: '1.4',
+  freight_exchange: '1.4',
+  branches: '1.4',
+  loans: '1.4',
+  electric: '1.4',
+  driver_moods: '1.4',
+  cosmetics: '1.4',
+  rally: '1.4',
+  discord_events: '1.4',
+  company_report: '1.4',
+  trailer_upgrades: '1.4',
+  company_trailers: '1.4',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

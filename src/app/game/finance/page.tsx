@@ -9,6 +9,8 @@ import { TutorialVisit } from '@/components/game/TutorialVisit';
 import { fuelPriceCents } from '@/lib/game/fuel';
 import { countries } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
+import { creditOf } from '@/server/game/business';
+import { LoanForm } from '@/components/game/LoanForm';
 import { tutorialPending } from '@/server/game/tutorial-flags';
 import { LEDGER_LABELS, type LedgerCategory } from '@/server/game/finance';
 import { financeSummary, ledgerPage } from '@/server/game/queries';
@@ -24,6 +26,7 @@ export const metadata = { title: 'Финанси' };
 
 export default async function FinancePage() {
   const { db, user, company, now, features } = await gameContext();
+  const credit = features.loans ? await creditOf(db, user.id, now) : null;
   const [summary, entries, fineRows, transfers, sent, [me]] = await Promise.all([
     financeSummary(db, company.id, 30),
     ledgerPage(db, company.id, 120),
@@ -134,6 +137,27 @@ export default async function FinancePage() {
           </ul>
         )}
       </Card>}
+      {credit && (
+        <Card id="credit" title={<span className="inline-flex items-center gap-2"><Landmark className="h-4 w-4 text-mist-400" />Кредит</span>} actions={<span className="text-xs text-mist-400">игрова банка</span>}>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <span className="font-display text-3xl font-bold">{credit.rating}</span>
+            <span className="text-sm text-mist-300">кредитен рейтинг · {credit.tier.label}</span>
+          </div>
+          <p className="mt-1 text-xs text-mist-400">Рейтингът расте с нивото, доставките (особено навреме) и изплатените кредити; пада с пропуснатите вноски.</p>
+          <div className="mt-4">
+            {credit.active ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span>Изплатено {money(credit.active.paidCents)} от {money(credit.active.totalCents)} · следваща вноска {money(credit.active.weeklyCents)} на {dateTime(credit.active.nextDueAt)}{credit.active.missed ? ` · пропуснати: ${credit.active.missed}` : ''}</span>
+                <ActionButton action={{ type: 'repayLoan' }} className="btn-ghost px-3 py-1.5 text-xs" confirm={`Да изплатим ли наведнъж останалите ${money(credit.active.totalCents - credit.active.paidCents)}?`}>Изплати предсрочно</ActionButton>
+              </div>
+            ) : credit.tier.maxCents > 0 ? (
+              <LoanForm maxCents={credit.tier.maxCents} rateBps={credit.tier.rateBps} />
+            ) : (
+              <p className="text-sm text-mist-400">Банката още не ти дава кредит — карай и доставяй навреме.</p>
+            )}
+          </div>
+        </Card>
+      )}
       <Card title={<span className="inline-flex items-center gap-2"><Fuel className="h-4 w-4 text-mist-400" />Дизел днес</span>} actions={<span className="text-xs text-mist-400">игрови цени · сменят се всеки ден</span>}>
         <p className="mb-3 text-sm text-mist-400">Горивото за курса се плаща по цените на държавите, през които минава камионът — пропорционално на километрите във всяка.</p>
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">

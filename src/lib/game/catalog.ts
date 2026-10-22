@@ -31,6 +31,8 @@ export interface PowerUnitModel {
   axles: number;
   minLevel: number;
   cab: CabStyle;
+  /** Electric (v1.4): range on a full battery, energy use (kWh / 100 km empty and full) and how long a fast charge takes. */
+  electric?: { rangeKm: number; kwhEmpty: number; kwhFull: number; chargeMin: number };
 }
 
 export interface TrailerModel {
@@ -80,7 +82,22 @@ export const POWER_UNITS: PowerUnitModel[] = [
     payloadTons: 0, body: null, heavyHaul: true, maxSpeedKmh: 80, fuelEmpty: 27, fuelFull: 42,
     maintenanceCentsPerKm: 15, tolled: true, powerHp: 620, axles: 3, minLevel: 7, cab: 'highline',
   },
+  {
+    id: 'volta-e19', kind: 'rigid', brand: 'Volta Motors', name: 'Volta E19 Box', priceCents: 136_000_00,
+    payloadTons: 7, body: 'box', heavyHaul: false, maxSpeedKmh: 90, fuelEmpty: 0, fuelFull: 0,
+    maintenanceCentsPerKm: 5, tolled: true, powerHp: 400, axles: 2, minLevel: 3, cab: 'day',
+    electric: { rangeKm: 280, kwhEmpty: 95, kwhFull: 125, chargeMin: 50 },
+  },
+  {
+    id: 'volta-et42', kind: 'tractor', brand: 'Volta Motors', name: 'Volta ET42', priceCents: 214_000_00,
+    payloadTons: 0, body: null, heavyHaul: false, maxSpeedKmh: 85, fuelEmpty: 0, fuelFull: 0,
+    maintenanceCentsPerKm: 6, tolled: true, powerHp: 600, axles: 2, minLevel: 5, cab: 'sleeper',
+    electric: { rangeKm: 400, kwhEmpty: 115, kwhFull: 165, chargeMin: 60 },
+  },
 ];
+
+/** Electric models come with v1.4 (staff see them earlier). */
+export const isElectric = (m: Pick<PowerUnitModel, 'electric'>) => !!m.electric;
 
 export const TRAILERS: TrailerModel[] = [
   { id: 'curtain-13', kind: 'semi', body: 'curtain', brand: 'Struma Trailers', name: 'Завеса 13.6 м', priceCents: 32_000_00, payloadTons: 24, axles: 3, requiresHeavyHaul: false, minLevel: 2, dragFuel: 0 },
@@ -116,6 +133,33 @@ export const UPGRADES: Record<UpgradeId, UpgradeDefinition> = {
   winter_tyres: { id: 'winter_tyres', label: 'Зимни гуми', description: 'Наполовина по-малък шанс и забавяне от сняг, лед и затворени проходи', priceCents: 1_800_00, fuel: 1, wear: 1, xp: 1, appliesTo: ['van', 'rigid', 'tractor'] },
   comfort_cab: { id: 'comfort_cab', label: 'Комфортна кабина', description: '+10 % опит от доставки', priceCents: 5_200_00, fuel: 1, wear: 1, xp: 1.1, appliesTo: ['rigid', 'tractor'] },
 };
+
+export type TrailerUpgradeId = 'aero_skirts' | 'low_rr_tyres' | 'led_markers' | 'company_logo';
+
+export interface TrailerUpgradeDefinition {
+  id: TrailerUpgradeId;
+  label: string;
+  description: string;
+  priceCents: number;
+  fuel: number;
+  wear: number;
+  xp: number;
+  /** Lower chance of road incidents (×). */
+  incidents?: number;
+  /** Shown on the drawing. */
+  visual: boolean;
+  bodies?: BodyType[];
+}
+
+/** Trailer upgrades (v1.4): some only save money, some are seen on the road too. Game data. */
+export const TRAILER_UPGRADES: Record<TrailerUpgradeId, TrailerUpgradeDefinition> = {
+  aero_skirts: { id: 'aero_skirts', label: 'Аеродинамични поли', description: '−4 % разход на гориво · виждат се отстрани', priceCents: 3_200_00, fuel: 0.96, wear: 1, xp: 1, visual: true, bodies: ['curtain', 'reefer', 'tipper', 'container', 'tanker', 'flatbed', 'box'] },
+  low_rr_tyres: { id: 'low_rr_tyres', label: 'Гуми с ниско съпротивление', description: '−2 % гориво, −15 % износване на ремаркето', priceCents: 2_400_00, fuel: 0.98, wear: 0.85, xp: 1, visual: false },
+  led_markers: { id: 'led_markers', label: 'LED контурни светлини', description: '−15 % шанс за пътни инциденти · светят по контура', priceCents: 1_100_00, fuel: 1, wear: 1, xp: 1, incidents: 0.85, visual: true },
+  company_logo: { id: 'company_logo', label: 'Фирмено лого', description: 'Името на компанията ти по ремаркето', priceCents: 1_500_00, fuel: 1, wear: 1, xp: 1, visual: true, bodies: ['curtain', 'reefer', 'tipper', 'container', 'tanker', 'box'] },
+};
+
+export const isTrailerUpgrade = (id: string): id is TrailerUpgradeId => id in TRAILER_UPGRADES;
 
 export function powerUnitModel(id: string): PowerUnitModel {
   const m = POWER_UNITS.find((p) => p.id === id);

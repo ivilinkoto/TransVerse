@@ -20,6 +20,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { Cosmetics } from '@/lib/game/cosmetics';
 
 const money = (name: string) => bigint(name, { mode: 'number' });
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
@@ -85,6 +86,8 @@ export const routes = pgTable(
     countries: text('countries').array().notNull(),
     /** Encoded polyline (precision 6); null for approximations. */
     geometry: text('geometry'),
+    /** A ferry or a train on the way (v1.4): which line and where it runs along the route (km). */
+    crossing: jsonb('crossing').$type<{ kind: 'ferry' | 'rail'; lineId: string; fromKm: number; toKm: number }>(),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('routes_pair_idx').on(t.fromCityId, t.toCityId, t.profile)],
@@ -269,6 +272,8 @@ export const vehicles = pgTable(
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
     /** Special paint scheme on top of the colour (e.g. 'pumpkin' from Halloween 2026); null = plain colour. */
     livery: text('livery'),
+    /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
+    cosmetics: jsonb('cosmetics').$type<Cosmetics>().notNull().default({}),
     /** Insurance paid up to this time (covers road-assistance bills of breakdowns). */
     insuredUntil: ts('insured_until'),
     /** VIP: the dispatcher sends this truck on its next job by itself when it is free. */
@@ -281,6 +286,8 @@ export const vehicles = pgTable(
     purchasedAt: createdAt(),
     /** Sold (or returned) vehicles stay for delivery history but are no longer part of the fleet. */
     soldAt: ts('sold_at'),
+    /** Moving to a depot of the company (v1.4): it is there, but free only from this time. */
+    movingUntil: ts('moving_until'),
   },
   (t) => [index('vehicles_company_idx').on(t.companyId)],
 );
@@ -299,6 +306,12 @@ export const trailers = pgTable(
     ownership: text('ownership').notNull().default('owned'),
     /** Offered on the used-vehicle market (cannot be coupled meanwhile). */
     listed: boolean('listed').notNull().default(false),
+    /** Trailer upgrades (v1.4): aero skirts, low-resistance tyres, LED markers, company logo. */
+    upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
+    /** The company name painted on the body (logo upgrade; company trailers always). */
+    logo: text('logo'),
+    /** A company trailer a member borrowed (ownership 'company'): the company's own trailer row. */
+    orgTrailerId: uuid('org_trailer_id'),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
     soldAt: ts('sold_at'),
@@ -326,6 +339,12 @@ export const drivers = pgTable(
     restedAt: ts('rested_at'),
     /** Skill points spent: eco / safe / long, 0..3 each. */
     traits: jsonb('traits').$type<Partial<Record<'eco' | 'safe' | 'long', number>>>().notNull().default({}),
+    /** v1.4: loyalty 0–100, an open request (raise | vacation | offer) and a day off. */
+    loyalty: integer('loyalty').notNull().default(70),
+    request: text('request'),
+    requestAt: ts('request_at'),
+    vacationUntil: ts('vacation_until'),
+    lastVacationAt: ts('last_vacation_at'),
     hiredAt: createdAt(),
   },
   (t) => [index('drivers_company_idx').on(t.companyId), uniqueIndex('drivers_vehicle_idx').on(t.vehicleId), uniqueIndex('drivers_co_vehicle_idx').on(t.coVehicleId)],
@@ -378,7 +397,9 @@ export const contracts = pgTable(
     tenderId: uuid('tender_id'),
     /** Own goods hauled by a player (trading): only that player's account may take it; never on the public board. */
     tradeCompanyId: uuid('trade_company_id'),
-    trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null }>(),
+    trade: jsonb('trade').$type<{ mode: 'sell' | 'store'; tons: number; costCents: number; destDepotId?: string | null; fromDepotId?: string | null; escrowCents?: number }>(),
+    /** v1.4: own goods offered on the board to other players (the freight exchange), with the pay held in escrow. */
+    exchange: boolean('exchange').notNull().default(false),
     /** Holiday load (e.g. 'halloween'): themed goods, better pay, counts for the holiday event and quests. */
     holiday: text('holiday'),
     /** A special load won on auction (private to the winner; ТрансКоин on delivery). */
@@ -396,6 +417,17 @@ export const contracts = pgTable(
     sharedLoadId: uuid('shared_load_id'),
     /** "Товар на деня": 'daily:<YYYY-MM-DD>' (one a day, better pay and ТрансКоин). */
     featured: text('featured'),
+    /** v1.4: a container from a port (`port`), and from which ship call ("Кораб пристига") when it came with one. */
+    port: boolean('port').notNull().default(false),
+    portCallId: uuid('port_call_id'),
+    /** The weekly rally run of one player (v1.4): private to `createdBy`. */
+    rallyId: uuid('rally_id'),
+    /** v1.4: a raw material for the company's factory (`material` = raw id) or its product to a buyer (`material` = 'product'). */
+    factoryOrgId: uuid('factory_org_id'),
+    /** v1.4: a load from a company branch (members only, better paid). */
+    branchOrgId: uuid('branch_org_id'),
+    /** What the buyer pays the company's treasury for a product load (v1.4). */
+    factorySaleCents: money('factory_sale_cents'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -411,7 +443,8 @@ export const deliveries = pgTable(
     companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
     vehicleId: uuid('vehicle_id').notNull().references(() => vehicles.id),
     trailerId: uuid('trailer_id').references(() => trailers.id),
-    driverId: uuid('driver_id').notNull().references(() => drivers.id),
+    /** Null once the driver left the company (the trip stays in the history). */
+    driverId: uuid('driver_id').references(() => drivers.id, { onDelete: 'set null' }),
     coDriverId: uuid('co_driver_id').references(() => drivers.id, { onDelete: 'set null' }),
     /** Sent by the VIP auto-dispatcher (counts toward its daily limit). */
     autoDispatched: boolean('auto_dispatched').notNull().default(false),
@@ -1983,4 +2016,147 @@ export const liveryVotes = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.entryId, t.userId] })],
+);
+
+/** "Кораб пристига" (v1.4): a ship brings containers to a port; the companies race to haul the most. */
+export const shipCalls = pgTable(
+  'ship_calls',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    portCityId: integer('port_city_id').notNull().references(() => cities.id),
+    ship: text('ship').notNull(),
+    containers: integer('containers').notNull(),
+    delivered: integer('delivered').notNull().default(0),
+    status: text('status').notNull().default('active'), // active | done
+    winnerOrganizationId: uuid('winner_organization_id').references(() => organizations.id, { onDelete: 'set null' }),
+    /** The live message in Discord (edited as containers arrive). */
+    discordChannelId: text('discord_channel_id'),
+    discordMessageId: text('discord_message_id'),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('ship_calls_status_idx').on(t.status, t.endsAt)],
+);
+
+/** The real weather now in a few cities of every country (Open-Meteo, v1.4): the road conditions follow it. */
+export const weatherNow = pgTable('weather_now', {
+  cityId: integer('city_id').primaryKey().references(() => cities.id),
+  countryCode: text('country_code').notNull(),
+  tempC: real('temp_c').notNull(),
+  precipMm: real('precip_mm').notNull(),
+  snowCm: real('snow_cm').notNull(),
+  gustKmh: real('gust_kmh').notNull(),
+  code: integer('code').notNull(),
+  condition: text('condition').notNull(),
+  fetchedAt: ts('fetched_at').notNull(),
+});
+
+/** The company factory (v1.4): what it makes, the raw materials on the plot, the product waiting, the running batch. */
+export const companyFactories = pgTable('company_factories', {
+  organizationId: uuid('organization_id').primaryKey().references(() => organizations.id, { onDelete: 'cascade' }),
+  recipe: text('recipe'),
+  stock: jsonb('stock').$type<Partial<Record<string, number>>>().notNull().default({}),
+  productTons: real('product_tons').notNull().default(0),
+  batchEndsAt: ts('batch_ends_at'),
+  batchTons: real('batch_tons'),
+  batches: integer('batches').notNull().default(0),
+  soldCents: money('sold_cents').notNull().default(0),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});
+
+/** v1.4 freight exchange: the goods owner rates the hauler after delivery (1–5 stars). */
+export const haulerRatings = pgTable(
+  'hauler_ratings',
+  {
+    contractId: uuid('contract_id').primaryKey().references(() => contracts.id, { onDelete: 'cascade' }),
+    ownerUserId: uuid('owner_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    haulerUserId: uuid('hauler_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    stars: integer('stars'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('hauler_ratings_hauler_idx').on(t.haulerUserId)],
+);
+
+/** A company branch in another real city (v1.4). */
+export const companyBranches = pgTable(
+  'company_branches',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('company_branches_city_idx').on(t.organizationId, t.cityId)],
+);
+
+/** A bank loan of a player's account (v1.4): weekly payments; missed ones hurt the credit rating. */
+export const loans = pgTable(
+  'loans',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    principalCents: money('principal_cents').notNull(),
+    totalCents: money('total_cents').notNull(),
+    weeklyCents: money('weekly_cents').notNull(),
+    paidCents: money('paid_cents').notNull().default(0),
+    weeks: integer('weeks').notNull(),
+    rateBps: integer('rate_bps').notNull(),
+    missed: integer('missed').notNull().default(0),
+    status: text('status').notNull().default('active'), // active | paid | defaulted
+    nextDueAt: ts('next_due_at').notNull(),
+    createdAt: createdAt(),
+    closedAt: ts('closed_at'),
+  },
+  (t) => [index('loans_company_idx').on(t.companyId, t.status), index('loans_due_idx').on(t.status, t.nextDueAt)],
+);
+
+/** Weekly rally (v1.4): one real route a week, each player runs it once. */
+export const rallies = pgTable('rallies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  weekKey: text('week_key').notNull().unique(),
+  originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+  destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+  routeId: integer('route_id').notNull().references(() => routes.id),
+  distanceKm: real('distance_km').notNull(),
+  startsAt: ts('starts_at').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  status: text('status').notNull().default('active'), // active | done
+  createdAt: createdAt(),
+});
+
+export const rallyEntries = pgTable(
+  'rally_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    rallyId: uuid('rally_id').notNull().references(() => rallies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    contractId: uuid('contract_id').references(() => contracts.id, { onDelete: 'set null' }),
+    /** Filled when the run arrives. */
+    minutes: integer('minutes'),
+    fuelCentsPer100: integer('fuel_cents_per_100'),
+    finishedAt: ts('finished_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('rally_entries_user_idx').on(t.rallyId, t.userId)],
+);
+
+/** The company's own trailers (v1.4): bought from the treasury, borrowed by the members. */
+export const orgTrailers = pgTable(
+  'org_trailers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    modelId: text('model_id').notNull(),
+    plate: text('plate').notNull(),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    condition: real('condition').notNull().default(100),
+    upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
+    /** The member who has it and the trailer row in their fleet (null when it is in the yard). */
+    lentTo: uuid('lent_to').references(() => users.id, { onDelete: 'set null' }),
+    trailerId: uuid('trailer_id'),
+    soldAt: ts('sold_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('org_trailers_org_idx').on(t.organizationId)],
 );

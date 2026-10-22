@@ -13,6 +13,7 @@ import { cities, companies, deliveries, liveryEntries, users } from '@/server/db
 import { VehicleDrawing } from '@/components/vehicles/VehicleIllustration';
 import { powerUnitModel } from '@/lib/game/catalog';
 import { fleetView } from '@/server/game/queries';
+import { companyWeekReport } from '@/server/game/company-report';
 import { tripPosition } from '@/server/game/roadside';
 import type { LatLon } from '@/lib/geo/geometry';
 import { levelOf, rankOf } from './levels';
@@ -330,5 +331,60 @@ export async function liveryCardImage(db: Database, entryId: string) {
       </div>
     ),
     { width: 1200, height: 675, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },
+  );
+}
+
+/** The weekly report of a company (its Discord channel, Monday): the week in numbers. */
+export async function companyReportImage(db: Database, organizationId: string, from: Date) {
+  const to = new Date(from.getTime() + 7 * 86_400_000);
+  const r = await companyWeekReport(db, organizationId, from, to);
+  if (!r) return null;
+  const tile = (label: string, value: string, color = 'white') => (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: PANEL, borderRadius: 18, padding: '18px 22px' }}>
+      <span style={{ fontSize: 20, color: MIST }}>{label}</span>
+      <span style={{ fontFamily: 'Exo 2', fontSize: 40, color }}>{value}</span>
+    </div>
+  );
+  const day = (d: Date) => d.toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', timeZone: 'Europe/Sofia' });
+  const lv = (c: number) => `${int(Math.round(c / 100))} лв.`;
+  return new ImageResponse(
+    (
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `radial-gradient(circle at 20% 0%, #1b2a40 0%, ${BG} 70%)`, fontFamily: 'Onest', color: 'white', padding: 36, gap: 22 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 46 }}>{`${r.name}${r.tag ? ` [${r.tag}]` : ''}`}</span>
+            <span style={{ fontSize: 22, color: MIST }}>{`Седмичен отчет · ${day(from)} – ${day(new Date(to.getTime() - 1))} · ниво ${r.level}`}</span>
+          </div>
+          <Brand />
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {tile('Курсове', int(r.trips))}
+          {tile('Тонове', `${r.tons.toLocaleString('bg-BG')} т`)}
+          {tile('Километри', int(r.km))}
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {tile('Спечелено от членовете', lv(r.earnedCents), '#2fd27a')}
+          {tile('Касата за седмицата', `${r.treasuryNetCents >= 0 ? '+' : '−'}${lv(Math.abs(r.treasuryNetCents))}`, r.treasuryNetCents >= 0 ? '#2fd27a' : '#f87171')}
+          {tile('В касата', lv(r.treasuryCents), CYAN)}
+        </div>
+        <div style={{ display: 'flex', gap: 16, flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 2, background: PANEL, borderRadius: 18, padding: '18px 22px', gap: 8 }}>
+            <span style={{ fontSize: 20, color: MIST }}>Най-много тонове</span>
+            {r.top.length ? r.top.map((m, i) => (
+              <div key={m.username} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 28 }}>
+                <span>{`${['🥇', '🥈', '🥉'][i]} ${m.username}`}</span>
+                <span style={{ color: ORANGE }}>{`${m.tons.toLocaleString('bg-BG')} т · ${m.trips} курса`}</span>
+              </div>
+            )) : <span style={{ fontSize: 26, color: MIST }}>Тази седмица няма доставки.</span>}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: PANEL, borderRadius: 18, padding: '18px 22px', justifyContent: 'center', alignItems: 'center' }}>
+            <span style={{ fontSize: 20, color: MIST }}>Битка на компаниите</span>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 36, color: r.battle?.won ? '#f6c343' : 'white' }}>{!r.battle ? 'без битка' : !r.battle.done ? 'тече' : r.battle.won ? '🏆 победа' : r.battle.draw ? 'равенство' : 'загуба'}</span>
+          </div>
+        </div>
+        <span style={{ fontSize: 16, color: MIST }}>Игрови данни · TransVerse</span>
+      </div>
+    ),
+    { width: 1200, height: 760, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },
   );
 }

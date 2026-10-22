@@ -1,7 +1,8 @@
 import { useId } from 'react';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
+import type { Cosmetics } from '@/lib/game/cosmetics';
 import { Defs, GroundShadow, type Ids } from './parts';
-import { DrawbarTrailer, Trailer, type TrailerBody } from './trailers';
+import { DrawbarTrailer, Trailer, TrailerExtras, type TrailerBody } from './trailers';
 import { Rigid, Tractor, Van } from './units';
 
 export interface VehicleIllustrationProps {
@@ -15,6 +16,11 @@ export interface VehicleIllustrationProps {
   title?: string;
   /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026). */
   livery?: string | null;
+  /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
+  cosmetics?: Cosmetics | null;
+  /** Upgrades of the coupled trailer (v1.4; the seen ones are drawn) and the company name on it. */
+  trailerUpgrades?: readonly string[] | null;
+  trailerLogo?: string | null;
 }
 
 /**
@@ -26,7 +32,7 @@ export function VehicleIllustration(props: VehicleIllustrationProps) {
 }
 
 /** The same drawing without hooks (ids from `uid`), for pictures made on the server. */
-export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', trailerColor, className, title, livery, uid }: VehicleIllustrationProps & { uid: string }) {
+export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', trailerColor, className, title, livery, cosmetics, trailerUpgrades, trailerLogo, uid }: VehicleIllustrationProps & { uid: string }) {
   const ids: Ids = {
     body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}`,
   };
@@ -59,8 +65,9 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       <>
         <GroundShadow from={0} to={rigidX + 900} />
         {drawbar && <DrawbarTrailer body={body} ids={ids} color={trailerColor ?? color} />}
+        {drawbar && <TrailerExtras kind="drawbar" upgrades={trailerUpgrades ?? []} logo={trailerLogo} />}
         <g transform={`translate(${rigidX} 0)`}>
-          <Rigid ids={ids} color={color} body={body} />
+          <Rigid ids={ids} color={color} body={body} extras={cosmetics ?? undefined} />
         </g>
       </>
     );
@@ -73,8 +80,9 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       <>
         <GroundShadow from={0} to={tractorX + 602} />
         {trailer && <Trailer body={trailer.body as TrailerBody} ids={ids} color={trailerColor ?? (trailer.body === 'container' ? '#b45309' : trailer.body === 'tipper' ? '#ca8a04' : color)} />}
+        {trailer && <TrailerExtras kind="semi" body={trailer.body} upgrades={trailerUpgrades ?? []} logo={trailerLogo} />}
         <g transform={`translate(${tractorX} 0)`}>
-          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} />
+          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} extras={cosmetics ?? undefined} />
         </g>
       </>
     );
@@ -87,12 +95,13 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       {content}
       {livery === 'pumpkin' && decals.map(([x, y, size], i) => <PumpkinDecal key={i} x={x} y={y} size={size} />)}
       {livery === 'christmas' && decals.map(([x, y, size], i) => <ChristmasDecal key={i} x={x} y={y} size={size} />)}
+      {unit.electric && decals.slice(0, 1).map(([x, y, size], i) => <ElectricDecal key={`e${i}`} x={x} y={y + size * 0.9} size={size * 0.55} />)}
     </svg>
   );
 }
 
 /** Stand-alone trailer illustration (garage / market cards). */
-export function TrailerIllustration({ modelId, color = '#1d4ed8', className }: { modelId: string; color?: string; className?: string }) {
+export function TrailerIllustration({ modelId, color = '#1d4ed8', className, upgrades, logo }: { modelId: string; color?: string; className?: string; upgrades?: readonly string[]; logo?: string | null }) {
   const uid = useId().replace(/[:«»]/g, '');
   const ids: Ids = { body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}` };
   const t = trailerModel(modelId);
@@ -104,6 +113,7 @@ export function TrailerIllustration({ modelId, color = '#1d4ed8', className }: {
         <Defs ids={ids} color={color} />
         <GroundShadow from={0} to={900} />
         <DrawbarTrailer body={t.body === 'reefer' ? 'reefer' : 'box'} ids={ids} color={fill} />
+        <TrailerExtras kind="drawbar" upgrades={upgrades} logo={logo} />
       </svg>
     );
   }
@@ -113,6 +123,7 @@ export function TrailerIllustration({ modelId, color = '#1d4ed8', className }: {
       <Defs ids={ids} color={color} />
       <GroundShadow from={0} to={1360} />
       <Trailer body={t.body as TrailerBody} ids={ids} color={fill} />
+      <TrailerExtras kind="semi" body={t.body} upgrades={upgrades} logo={logo} />
     </svg>
   );
 }
@@ -142,6 +153,17 @@ function ChristmasDecal({ x, y, size }: { x: number; y: number; size: number }) 
       <path d="M16 .8l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" fill="#facc15" />
       {[[13, 12, '#ef4444'], [19, 16, '#facc15'], [11, 21, '#facc15'], [21, 23, '#ef4444'], [16, 19, '#f8fafc']].map(([cx, cy, fill]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.3" fill={fill as string} />)}
       <path d="M10 17.5q6 2 12-1.5M8.5 25q7.5 2.5 15-1.5" stroke="#fde68a" strokeWidth="0.8" fill="none" />
+    </g>
+  );
+}
+
+/** A green lightning bolt on an electric truck (v1.4), centred on (x, y). */
+function ElectricDecal({ x, y, size }: { x: number; y: number; size: number }) {
+  const k = size / 32;
+  return (
+    <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`}>
+      <circle cx="16" cy="16" r="15" fill="#052e16" opacity="0.85" />
+      <path d="M18 3 7 18h7l-2 11 11-15h-7z" fill="#4ade80" />
     </g>
   );
 }

@@ -12,6 +12,8 @@ export default defineConfig({
       SESSION_SECRET: 'test-secret-test-secret-test-secret',
       // Deterministic trips; tests that need road events turn them on themselves.
       ROAD_EVENTS: 'off',
+      // No calls to the weather service from the tests.
+      WEATHER: 'off',
     },
     fileParallelism: false,
     testTimeout: 20_000,
