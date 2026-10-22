@@ -59,6 +59,7 @@ import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart
 import { recordShipContainer } from './ports';
 import { recordRallyRun } from './rally';
 import { activeRoadWorks } from './roads';
+import { recordCityVisit, recordPerfectTrip } from './competition';
 import { clientsOf, fuelStationAt, payCompanyContract, recordAcademyCourse, recordAllianceDelivery } from './alliances';
 import { FUEL_STATION } from '@/lib/game/alliances';
 import { isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor } from '@/lib/game/roads';
@@ -448,6 +449,11 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: `Бонус от „${org!.name}“`, idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
   if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към касата на „${org!.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
+  // The perfect trip (v1.5): on time, no breakdown or police, no fine, a full truck — the streak pays.
+  const [trailerRow] = d.trailerId ? await tx.select({ modelId: trailers.modelId }).from(trailers).where(eq(trailers.id, d.trailerId)) : [];
+  const payloadTons = combinationCapability({ unit: powerUnitModel(vehicle!.modelId), trailer: trailerRow ? trailerModel(trailerRow.modelId) : null }).payloadTons;
+  const perfect = await recordPerfectTrip(tx, company!.ownerId, { late: result.late, violations: d.violations, events: d.roadEvents, tons: contract.weightTons, payloadTons, rewardCents: result.rewardCents }, completedAt);
+  if (perfect.bonusCents) await post(tx, d.companyId, [{ category: 'perfect_bonus', amountCents: perfect.bonusCents, description: `Перфектна серия: ${perfect.streak} подред`, idempotencyKey: key('perfect'), refType: 'delivery', refId: d.id }]);
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
   if (station?.cents) await postTreasury(tx, station.orgId, [{ category: 'fuel_station', amountCents: station.cents, description: `Гориво на станцията: ${contract.goods}`, idempotencyKey: key('fuel-station'), refType: 'delivery', refId: d.id }]);
@@ -459,8 +465,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
+  // The city album (v1.5): a card for the destination.
+  await recordCityVisit(tx, company!.ownerId, contract.destCityId, completedAt);
   // The company academy (v1.5): an on-time trip of a student is a course.
   await recordAcademyCourse(tx, company!.ownerId, { onTime, loadedKm: d.loadedKm }, completedAt);
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));

@@ -83,6 +83,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/news', label: 'Седмичник' },
       { href: '/game/seasons', label: 'Сезони' },
       { href: '/game/progress', label: 'Постижения' },
+      { href: '/game/collection', label: 'Албум', feature: 'city_album' },
     ],
   },
 ];

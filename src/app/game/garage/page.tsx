@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Hint } from '@/components/game/Hint';
 import { maintenanceCostCents, maintenanceState } from '@/lib/game/maintenance';
 import { bonusesForUser } from '@/server/game/membership';
@@ -55,6 +56,7 @@ export default async function GaragePage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-lg font-bold">{v.model.name}</span>
                     <span className="font-mono text-xs text-mist-400">{v.plate}</span>
+                    {features.garage_showcase && <Link href={`/game/garage/${v.id}`} className="text-xs text-cyan-glow hover:underline">Витрина →</Link>}
                     {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : v.movingUntil && v.movingUntil > now ? <Badge tone="orange">пътува до {v.city.nameBg} · до минута</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
                   </div>
                   <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} martenitsa={marta} className="my-3 h-24 w-full" />

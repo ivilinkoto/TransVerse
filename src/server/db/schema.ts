@@ -189,6 +189,9 @@ export const users = pgTable(
     avatarVersion: integer('avatar_version').notNull().default(0),
     /** SHA-256 of the sign-up IP with a server salt — only compared for invite rewards. */
     signupIpHash: text('signup_ip_hash'),
+    /** Perfect trips in a row and the best streak (v1.5). */
+    perfectStreak: integer('perfect_streak').notNull().default(0),
+    bestPerfectStreak: integer('best_perfect_streak').notNull().default(0),
   },
   (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`), uniqueIndex('users_referral_code_idx').on(t.referralCode), index('users_referred_by_idx').on(t.referredById), uniqueIndex('users_discord_idx').on(t.discordId)],
 );
@@ -728,6 +731,8 @@ export const organizations = pgTable(
     plotExpansions: integer('plot_expansions').notNull().default(0),
     /** A message pinned on top of the company chat. */
     pinnedMessageId: bigint('pinned_message_id', { mode: 'number' }),
+    /** Division in the monthly company league (v1.5): bronze | silver | gold. */
+    division: text('division').notNull().default('bronze'),
     /** The company's private channel and role in the TransVerse Discord server (v1.3). */
     discordChannel: boolean('discord_channel').notNull().default(false),
     discordChannelId: text('discord_channel_id'),
@@ -2273,4 +2278,31 @@ export const academyStudents = pgTable(
     finishedAt: ts('finished_at'),
   },
   (t) => [uniqueIndex('academy_students_user_idx').on(t.userId, t.organizationId)],
+);
+
+/** Company divisions (v1.5): the month's table and where each company went. */
+export const divisionResults = pgTable(
+  'division_results',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    monthKey: text('month_key').notNull(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    division: text('division').notNull(),
+    rank: integer('rank').notNull(),
+    tons: real('tons').notNull(),
+    move: text('move').notNull(), // up | down | stay
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('division_results_idx').on(t.monthKey, t.organizationId)],
+);
+
+/** The city album (v1.5): the first delivery of a player to a city. */
+export const cityVisits = pgTable(
+  'city_visits',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    firstAt: ts('first_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.cityId] })],
 );

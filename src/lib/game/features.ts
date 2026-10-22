@@ -83,6 +83,10 @@ export const FEATURES = {
   alliances: '1.5',
   company_contracts: '1.5',
   academy: '1.5',
+  divisions: '1.5',
+  perfect_run: '1.5',
+  city_album: '1.5',
+  garage_showcase: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;
