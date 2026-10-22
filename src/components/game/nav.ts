@@ -7,7 +7,7 @@ export interface NavTab {
   /** Shown only when the viewer has this release feature. */
   feature?: FeatureId;
   /** Shown only while this holiday's content runs. */
-  holiday?: 'halloween' | 'christmas' | 'marta' | 'easter';
+  holiday?: 'halloween' | 'christmas' | 'marta';
 }
 
 export interface NavSection {
@@ -72,7 +72,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween' },
       { href: '/game/christmas', label: 'Коледа', holiday: 'christmas' },
       { href: '/game/marta', label: 'Баба Марта', holiday: 'marta', feature: 'marta' },
-      { href: '/game/easter', label: 'Великден', holiday: 'easter', feature: 'easter' },
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/league', label: 'Лига' },
       { href: '/game/duels', label: 'Дуели', feature: 'duels' },

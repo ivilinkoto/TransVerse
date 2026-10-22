@@ -2331,20 +2331,6 @@ export const predictions = pgTable(
   (t) => [uniqueIndex('predictions_user_battle_idx').on(t.userId, t.battleId), index('predictions_user_week_idx').on(t.userId, t.weekKey)],
 );
 
-/** Egg fights between friends (v1.5, Великден): once per pair a year, no stake. */
-export const eggFights = pgTable(
-  'egg_fights',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userA: uuid('user_a').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    userB: uuid('user_b').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    year: integer('year').notNull(),
-    winnerId: uuid('winner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    createdAt: createdAt(),
-  },
-  (t) => [uniqueIndex('egg_fights_pair_idx').on(t.userA, t.userB, t.year), index('egg_fights_winner_idx').on(t.winnerId)],
-);
-
 /** Lane records (v1.5): the fastest loaded run on a lane in a month. */
 export const laneRecords = pgTable(
   'lane_records',

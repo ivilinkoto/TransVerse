@@ -9,7 +9,6 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
-import { claimEasterQuest, eggFight } from '@/server/game/easter';
 import { setShowcase, staffBus } from '@/server/game/community';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
@@ -198,8 +197,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('claimMartaQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('giveMartenitsa'), friendId: id }),
   z.object({ type: z.literal('spotStork') }),
-  z.object({ type: z.literal('claimEasterQuest'), questId: z.string().max(30) }),
-  z.object({ type: z.literal('eggFight'), friendId: id }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
   z.object({ type: z.literal('listForAlliance'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500), pricePerTon: z.coerce.number().positive().max(100_000) }),
@@ -310,8 +307,6 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   claimMartaQuest: 'marta',
   giveMartenitsa: 'marta',
   spotStork: 'marta',
-  claimEasterQuest: 'easter',
-  eggFight: 'easter',
   staffBus: 'staff_bus',
   setShowcase: 'profile_showcase',
   listForAlliance: 'alliance_market',
@@ -764,10 +759,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'enrolAcademy':
       await enrolAcademy(db, user.id, input.mentorId);
       return { ok: true };
-    case 'claimEasterQuest':
-      return { ok: true, ...(await claimEasterQuest(db, user.id, input.questId)) };
-    case 'eggFight':
-      return { ok: true, ...(await eggFight(db, user.id, input.friendId)) };
     case 'staffBus':
       return { ok: true, ...(await staffBus(db, user.id, input.vehicleId)) };
     case 'setShowcase':

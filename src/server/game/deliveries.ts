@@ -53,8 +53,6 @@ import { recordChristmasDelivery } from './christmas';
 import { isChristmas } from '@/lib/game/christmas';
 import { isMarta } from '@/lib/game/marta';
 import { recordMartaDelivery } from './marta';
-import { isEaster } from '@/lib/game/easter';
-import { recordEasterDelivery } from './easter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
 import { BOARDING_GAME_MIN, CROSSING_LINES, crossingLine as crossingLine_, crossingNote, DEPARTURE_EVERY_MIN, onBoardGameMinutes, railOptions } from '@/lib/game/crossings';
@@ -615,7 +613,6 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // Christmas quests: Christmas loads, arrivals on Christmas Eve and Day.
   // Великден (v1.5).
-  if (isEaster(completedAt)) await recordEasterDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'easter', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // Баба Марта (v1.5): spring loads.
   if (isMarta(completedAt)) await recordMartaDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'marta', loadedKm: d.loadedKm });
   if (isChristmas(completedAt)) await recordChristmasDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'christmas', loadedKm: d.loadedKm, arrivedAt: completedAt });

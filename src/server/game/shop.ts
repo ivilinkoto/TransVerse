@@ -5,7 +5,6 @@ import { PLATE_PATTERN, shopItem, VIP_DAYS, type ShopItemId } from '@/lib/game/s
 import { isVip, STANDARD_COLORS, VIP_COLORS } from '@/lib/game/vip';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
-import { EASTER, isEaster } from '@/lib/game/easter';
 import { registerSchema } from '@/server/auth/accounts';
 import type { Database, Tx } from '@/server/db/client';
 import { cityMarkets, companyMembers, drivers, organizations, trailers, users, vehicles } from '@/server/db/schema';
@@ -138,14 +137,6 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         if (v.livery === 'christmas') fail('already_painted', 'Камионът вече е с боя „Коледа“.');
         await tx.update(vehicles).set({ color: CHRISTMAS.paintColor, livery: 'christmas' }).where(eq(vehicles.id, v.id));
         summary = `Боя „Коледа“ за ${v.plate}`;
-        break;
-      }
-      case 'paint_easter': {
-        if (!isEaster(now) || !(await featureFor(tx, userId, 'easter', now))) fail('not_in_season', 'Боята „Великден“ се продава само около Великден.');
-        const v = await ownVehicle(tx, account.id, input.vehicleId);
-        if (v.livery === 'easter') fail('already_painted', 'Камионът вече е с боя „Великден“.');
-        await tx.update(vehicles).set({ color: EASTER.paintColor, livery: 'easter' }).where(eq(vehicles.id, v.id));
-        summary = `Боя „Великден“ за ${v.plate}`;
         break;
       }
       case 'truck_part': {

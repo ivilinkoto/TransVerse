@@ -12,7 +12,6 @@ import { isWinter, WINTER } from '@/lib/game/winter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { isMarta, MARTA } from '@/lib/game/marta';
-import { EASTER, isEaster } from '@/lib/game/easter';
 import { OVERSIZE } from '@/lib/game/roads';
 import { payFactor } from '@/server/admin-economy';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -271,7 +270,6 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const themes = [
     { id: 'halloween', goods: isHalloween(now) ? HALLOWEEN.goods[cargo] : undefined, share: HALLOWEEN.contractShare, multiplier: HALLOWEEN.rewardMultiplier },
     { id: 'christmas', goods: isChristmas(now) ? CHRISTMAS.goods[cargo] : undefined, share: CHRISTMAS.contractShare, multiplier: CHRISTMAS.rewardMultiplier },
-    { id: 'easter', goods: isEaster(now) && featureLive('easter', now) ? EASTER.goods[cargo] : undefined, share: EASTER.contractShare, multiplier: EASTER.rewardMultiplier },
     { id: 'marta', goods: isMarta(now) && featureLive('marta', now) ? MARTA.goods[cargo] : undefined, share: MARTA.contractShare, multiplier: MARTA.rewardMultiplier },
     { id: 'winter', goods: isWinter(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
   ];

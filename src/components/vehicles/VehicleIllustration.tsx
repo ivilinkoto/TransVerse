@@ -14,7 +14,7 @@ export interface VehicleIllustrationProps {
   trailerColor?: string;
   className?: string;
   title?: string;
-  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'easter' — Easter 2027). */
+  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026). */
   livery?: string | null;
   /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
   cosmetics?: Cosmetics | null;
@@ -99,7 +99,6 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       {content}
       {livery === 'pumpkin' && decals.map(([x, y, size], i) => <PumpkinDecal key={i} x={x} y={y} size={size} />)}
       {livery === 'christmas' && decals.map(([x, y, size], i) => <ChristmasDecal key={i} x={x} y={y} size={size} />)}
-      {livery === 'easter' && decals.map(([x, y, size], i) => <EasterDecal key={`ea${i}`} x={x} y={y} size={size} />)}
       {unit.electric && decals.slice(0, 1).map(([x, y, size], i) => <ElectricDecal key={`e${i}`} x={x} y={y + size * 0.9} size={size * 0.55} />)}
     </svg>
   );
@@ -144,19 +143,6 @@ function PumpkinDecal({ x, y, size }: { x: number; y: number; size: number }) {
       <ellipse cx="16" cy="18" rx="6.5" ry="10.5" fill="#f97316" stroke="#1c1917" strokeWidth="0.6" />
       <path d="M10 15l3 2.5-3.5.5zM22 15l-3 2.5 3.5.5z" fill="#fde047" />
       <path d="M9.5 21.5c2 2.4 4.3 3.2 6.5 3.2s4.5-.8 6.5-3.2l-2 .4-1.4 1.2-1.4-1.2-1.7 1.4-1.7-1.4-1.4 1.2-1.4-1.2z" fill="#fde047" />
-    </g>
-  );
-}
-
-/** A painted Easter egg with a red-and-white pattern — the "Великден" paint (Easter 2027), centred on (x, y). */
-function EasterDecal({ x, y, size }: { x: number; y: number; size: number }) {
-  const k = size / 32;
-  return (
-    <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`} opacity="0.95">
-      <ellipse cx="16" cy="17" rx="10" ry="13" fill="#dc2626" stroke="#450a0a" strokeWidth="0.6" />
-      <path d="M6.5 13q9.5 4 19 0M6.2 19q9.8 4 19.6 0" stroke="#f8fafc" strokeWidth="1.6" fill="none" />
-      {[[11, 16], [16, 16.8], [21, 16], [12, 22], [20, 22]].map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.1" fill="#facc15" />)}
-      <path d="M12 8q4-3 8 0" stroke="#f8fafc" strokeWidth="1" fill="none" />
     </g>
   );
 }

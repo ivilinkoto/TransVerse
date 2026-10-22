@@ -352,7 +352,6 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
-            {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
             {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
             {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}
             {c.roadWorks && <Badge tone="orange">🚧 {c.roadWorks}</Badge>}
