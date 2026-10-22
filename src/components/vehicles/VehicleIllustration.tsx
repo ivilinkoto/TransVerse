@@ -21,6 +21,8 @@ export interface VehicleIllustrationProps {
   /** Upgrades of the coupled trailer (v1.4; the seen ones are drawn) and the company name on it. */
   trailerUpgrades?: readonly string[] | null;
   trailerLogo?: string | null;
+  /** Баба Марта (March): a martenitsa on the mirror. */
+  martenitsa?: boolean;
 }
 
 /**
@@ -32,7 +34,7 @@ export function VehicleIllustration(props: VehicleIllustrationProps) {
 }
 
 /** The same drawing without hooks (ids from `uid`), for pictures made on the server. */
-export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', trailerColor, className, title, livery, cosmetics, trailerUpgrades, trailerLogo, uid }: VehicleIllustrationProps & { uid: string }) {
+export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', trailerColor, className, title, livery, cosmetics, trailerUpgrades, trailerLogo, martenitsa, uid }: VehicleIllustrationProps & { uid: string }) {
   const ids: Ids = {
     body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}`,
   };
@@ -67,7 +69,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
         {drawbar && <DrawbarTrailer body={body} ids={ids} color={trailerColor ?? color} />}
         {drawbar && <TrailerExtras kind="drawbar" upgrades={trailerUpgrades ?? []} logo={trailerLogo} />}
         <g transform={`translate(${rigidX} 0)`}>
-          <Rigid ids={ids} color={color} body={body} extras={cosmetics ?? undefined} />
+          <Rigid ids={ids} color={color} body={body} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
         </g>
       </>
     );
@@ -82,7 +84,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
         {trailer && <Trailer body={trailer.body as TrailerBody} ids={ids} color={trailerColor ?? (trailer.body === 'container' ? '#b45309' : trailer.body === 'tipper' ? '#ca8a04' : color)} />}
         {trailer && <TrailerExtras kind="semi" body={trailer.body} upgrades={trailerUpgrades ?? []} logo={trailerLogo} />}
         <g transform={`translate(${tractorX} 0)`}>
-          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} extras={cosmetics ?? undefined} />
+          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
         </g>
       </>
     );

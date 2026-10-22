@@ -13,6 +13,8 @@ export interface Cosmetics {
   visor?: 'chrome' | 'body' | 'black';
   /** Text on the cab door: the company's name (set when bought). */
   sticker?: string;
+  /** Баба Марта (March): a martenitsa on the mirror — not sold, the season puts it on. */
+  martenitsa?: boolean;
 }
 
 export const COSMETIC_PARTS: Record<CosmeticPart, { label: string; price: number; styles: { id: string; label: string }[] }> = {

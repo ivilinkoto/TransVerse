@@ -2,6 +2,7 @@ import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
 import { stickerText } from '@/lib/game/cosmetics';
+import { springDiscount } from '@/lib/game/marta';
 import { fuelPriceCents } from '@/lib/game/fuel';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
@@ -160,6 +161,11 @@ export async function sellTrailer(db: Database, userId: string, trailerId: strin
   });
 }
 
+/** Spring cleaning (Баба Марта, v1.5): repairs and maintenance cost less in March. */
+async function springOff(db: DbOrTx, userId: string, now = new Date()) {
+  return (await featureFor(db, userId, 'marta', now)) ? springDiscount(now) : 0;
+}
+
 export async function repairVehicle(db: Database, userId: string, vehicleId: string) {
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
@@ -171,7 +177,8 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
     if (full <= 0) fail('nothing_to_repair', 'Няма нужда от ремонт.');
     // VIP and the company's service on the plot make it cheaper.
     const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
-    const cost = Math.round(full * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service));
+    const spring = await springOff(tx, userId);
+    const cost = Math.round(full * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service) * (1 - spring));
     await post(tx, company.id, [{ category: 'repairs', amountCents: -cost, description: `Ремонт ${v.plate}`, idempotencyKey: `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}` }], { requireFunds: true });
     await tx.update(vehicles).set({ condition: 100 }).where(eq(vehicles.id, v.id));
     if (trailer) await tx.update(trailers).set({ condition: 100 }).where(eq(trailers.id, trailer.id));
@@ -189,7 +196,8 @@ export async function serviceVehicle(db: Database, userId: string, vehicleId: st
     if (maintenanceState(v.odometerKm, v.serviceKm).fresh) fail('fresh', 'Камионът наскоро мина профилактика.');
     const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
     const vip = (await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0;
-    const cost = maintenanceCostCents(powerUnitModel(v.modelId).priceCents, 1 - (1 - service) * (1 - vip));
+    const spring = await springOff(tx, userId);
+    const cost = maintenanceCostCents(powerUnitModel(v.modelId).priceCents, 1 - (1 - service) * (1 - vip) * (1 - spring));
     await post(tx, company.id, [{ category: 'maintenance', amountCents: -cost, description: `Профилактика ${v.plate}`, idempotencyKey: `service:${v.id}:${v.odometerKm.toFixed(1)}`, refType: 'vehicle', refId: v.id }], { requireFunds: true });
     await tx.update(vehicles).set({ serviceKm: v.odometerKm }).where(eq(vehicles.id, v.id));
     return cost;

@@ -31,9 +31,12 @@ import { missionBoard } from '@/server/game/missions';
 import { missionById } from '@/lib/game/missions';
 import { companyStats } from '@/server/game/progression';
 import { fleetView, latestNotifications, netWorthCents } from '@/server/game/queries';
+import { isMarta, MARTA } from '@/lib/game/marta';
 
 export default async function OverviewPage() {
   const { db, user, company, now, features } = await gameContext();
+  // Баба Марта (v1.5): martenitsas on the trucks in March.
+  const marta = features.marta && isMarta(now);
   const real = features.real_weather ? await realConditions(db, now, true) : null;
   const [paper] = await latestIssues(db, 1);
   const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
@@ -97,7 +100,7 @@ export default async function OverviewPage() {
           </div>
           {hero && (
             <div className="hidden shrink-0 md:block">
-              <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} cosmetics={hero.cosmetics} trailerUpgrades={hero.trailer?.upgrades} trailerLogo={hero.trailer?.logo} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
+              <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} cosmetics={hero.cosmetics} trailerUpgrades={hero.trailer?.upgrades} trailerLogo={hero.trailer?.logo} martenitsa={marta} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
             </div>
           )}
         </div>
@@ -141,6 +144,16 @@ export default async function OverviewPage() {
           <span className="min-w-0 flex-1">
             <span className="block font-display font-bold">Коледна треска</span>
             <span className="block text-sm text-mist-300">Коледни поръчки с +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%, подаръци до Бъдни вечер, коледни мисии, значка и празнична боя.</span>
+          </span>
+          <span className="btn-primary max-sm:hidden">Към празника</span>
+        </Link>
+      )}
+      {marta && (
+        <Link href="/game/marta" className="panel group flex items-center gap-4 border-red-500/40 p-4 transition hover:border-red-500/80">
+          <span className="text-4xl" aria-hidden="true">🔴⚪</span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold">Честита Баба Марта!</span>
+            <span className="block text-sm text-mist-300">Пролетни товари с +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%, мартеничка за приятел, щъркел на картата и {Math.round(MARTA.springDiscount * 100)}% по-евтини ремонти.</span>
           </span>
           <span className="btn-primary max-sm:hidden">Към празника</span>
         </Link>
@@ -199,7 +212,7 @@ export default async function OverviewPage() {
               <ul className="space-y-3">
                 {active.map((v) => (
                   <li key={v.id} className="flex flex-col gap-3 rounded-xl border border-asphalt-700/80 bg-asphalt-850/80 p-3 sm:flex-row sm:items-center">
-                    <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} className="h-11 w-auto max-w-[170px] shrink-0" />
+                    <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} martenitsa={marta} className="h-11 w-auto max-w-[170px] shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                         <span className="font-semibold">{v.delivery!.origin.nameBg} → {v.delivery!.destination.nameBg}</span>

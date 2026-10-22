@@ -88,6 +88,7 @@ export function questIncrements(f: QuestFacts): Record<string, number> {
 export const BADGES: Record<string, { label: string; description: string }> = {
   'pumpkin-2026': { label: 'Тиквен шофьор 2026', description: 'Изпълни всички хелуински мисии в „Нощта на тиквите“ 2026.' },
   'santa-2026': { label: 'Коледен шофьор 2026', description: 'Изпълни всички коледни мисии в „Коледна треска“ 2026.' },
+  'marta-2027': { label: 'Пролетен шофьор 2027', description: 'Изпълни всички мисии на Баба Марта 2027.' },
   partner: { label: 'Верен партньор', description: 'Изпълни 5 договора с клиенти.' },
   'ghost-hunter': { label: 'Ловец на призраци', description: 'Срещна призрачния камион 3 пъти.' },
   'news-star': { label: 'Звезда на седмичника', description: 'Попадна в класациите на Седмичника.' },

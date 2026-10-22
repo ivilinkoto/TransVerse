@@ -8,6 +8,7 @@ import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/re
 import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
+import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { answerDriver } from '@/server/game/moods';
@@ -189,6 +190,9 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('seasonalTheme'), on: z.boolean() }),
   z.object({ type: z.literal('claimHalloweenQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('claimChristmasQuest'), questId: z.string().max(30) }),
+  z.object({ type: z.literal('claimMartaQuest'), questId: z.string().max(30) }),
+  z.object({ type: z.literal('giveMartenitsa'), friendId: id }),
+  z.object({ type: z.literal('spotStork') }),
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
@@ -280,6 +284,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   repayLoan: 'loans',
   answerDriver: 'driver_moods',
   joinRally: 'rally',
+  claimMartaQuest: 'marta',
+  giveMartenitsa: 'marta',
+  spotStork: 'marta',
   trailerUpgrade: 'trailer_upgrades',
   buyOrgTrailer: 'company_trailers',
   sellOrgTrailer: 'company_trailers',
@@ -686,6 +693,13 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'claimHalloweenQuest':
       return { ok: true, ...(await claimHalloweenQuest(db, user.id, input.questId)) };
+    case 'claimMartaQuest':
+      return { ok: true, ...(await claimMartaQuest(db, user.id, input.questId)) };
+    case 'giveMartenitsa':
+      await giveMartenitsa(db, user.id, input.friendId);
+      return { ok: true };
+    case 'spotStork':
+      return { ok: true, ...(await spotStork(db, user.id)) };
     case 'claimChristmasQuest':
       return { ok: true, ...(await claimChristmasQuest(db, user.id, input.questId)) };
     case 'seasonalTheme':

@@ -422,6 +422,8 @@ export const contracts = pgTable(
     portCallId: uuid('port_call_id'),
     /** The weekly rally run of one player (v1.4): private to `createdBy`. */
     rallyId: uuid('rally_id'),
+    /** An oversize load (v1.5): low-bed only, slower, permit and escort paid at the end. */
+    oversize: boolean('oversize').notNull().default(false),
     /** v1.4: a raw material for the company's factory (`material` = raw id) or its product to a buyer (`material` = 'product'). */
     factoryOrgId: uuid('factory_org_id'),
     /** v1.4: a load from a company branch (members only, better paid). */
@@ -476,6 +478,8 @@ export const deliveries = pgTable(
     roadEvents: jsonb('road_events').$type<RoadEventPlan[]>().notNull().default([]),
     /** Time of the next unapplied road event (null when none is left). */
     nextEventAt: ts('next_event_at'),
+    /** Started in the night (v1.5): faster, and a bonus when on time. */
+    nightShift: boolean('night_shift').notNull().default(false),
   },
   (t) => [
     index('deliveries_next_event_idx').on(t.nextEventAt),
@@ -2159,4 +2163,28 @@ export const orgTrailers = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('org_trailers_org_idx').on(t.organizationId)],
+);
+
+/** Road works on real motorways (v1.5, game data): trips through the country are slower. */
+export const roadWorks = pgTable('road_works', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  countryCode: text('country_code').notNull(),
+  road: text('road').notNull(),
+  delay: real('delay').notNull(),
+  startsAt: ts('starts_at').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  createdAt: createdAt(),
+});
+
+/** Martenitsas given to friends (v1.5, Баба Марта): once per pair a year. */
+export const martenitsas = pgTable(
+  'martenitsas',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    year: integer('year').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('martenitsas_pair_idx').on(t.fromUserId, t.toUserId, t.year), index('martenitsas_to_idx').on(t.toUserId)],
 );

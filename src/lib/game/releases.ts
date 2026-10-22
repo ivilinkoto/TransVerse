@@ -35,6 +35,14 @@ export const BASE_VERSION = '1.0';
 
 export const RELEASES: Release[] = [
   {
+    version: '1.5',
+    name: 'Пролетен рейс',
+    publishedAt: '2027-02-20T00:00:00+02:00',
+    tagline: 'Баба Марта, извънгабаритни товари, съюзи между компании и още много.',
+    highlights: [],
+    sections: [],
+  },
+  {
     version: '1.4',
     name: 'Отвъд пътя',
     publishedAt: '2027-01-07T00:00:00+02:00',

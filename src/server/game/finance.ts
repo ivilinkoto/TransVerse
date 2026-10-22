@@ -58,6 +58,8 @@ export type LedgerCategory =
   | 'loan'
   | 'shared_load_bonus'
   | 'rally_prize'
+  | 'oversize'
+  | 'night_bonus'
   | 'lease'
   | 'member_bonus';
 
@@ -116,6 +118,8 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   loan: 'Кредит (отпускане и вноски)',
   shared_load_bonus: 'Бонус за общ товар',
   rally_prize: 'Награди от ралито',
+  oversize: 'Разрешителни и придружаване (извънгабаритни)',
+  night_bonus: 'Бонус „Нощна смяна“',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',
 };

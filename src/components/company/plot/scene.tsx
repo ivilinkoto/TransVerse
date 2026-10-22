@@ -41,6 +41,8 @@ const k = () => `e${uid++}`;
 /** The season of the current render: snow on roofs, lawns and trees; Christmas lights. */
 let SNOW = false;
 let XMAS = false;
+/** Баба Марта (March, v1.5): a blossoming tree with martenitsas by the gate. */
+let MARTA = false;
 /** Evening and night: lit windows, lamps and headlights; autumn leaves. */
 let NIGHT = false;
 let AUTUMN = false;
@@ -581,6 +583,22 @@ function christmasTree(x: number, y: number): ReactNode[] {
   return out;
 }
 
+/** A blossoming tree with red and white martenitsas (Баба Марта). */
+function martaTree(x: number, y: number): ReactNode[] {
+  const out: ReactNode[] = [];
+  const [bx, by] = P(x, y, 0);
+  out.push(<rect key={k()} x={bx - 3} y={by - 26} width={6} height={26} fill="#7a5235" />);
+  const [cx, cy] = P(x, y, 1.6);
+  [[0, 0, 22], [-14, 8, 16], [14, 8, 16], [-6, -12, 15], [8, -10, 14]].forEach(([dx, dy, r]) => out.push(<circle key={k()} cx={cx + dx!} cy={cy + dy!} r={r} fill="#f9c6d8" />));
+  [[-10, 2], [6, -6], [12, 12], [-4, 14], [0, -14]].forEach(([dx, dy]) => out.push(<circle key={k()} cx={cx + dx!} cy={cy + dy!} r={3} fill="#fff" />));
+  // Martenitsas on the branches
+  [[-12, 14, '#dc2626'], [-6, 16, '#f8fafc'], [10, 18, '#dc2626'], [16, 16, '#f8fafc']].forEach(([dx, dy, c]) => {
+    out.push(<line key={k()} x1={cx + (dx as number)} y1={cy + (dy as number) - 6} x2={cx + (dx as number)} y2={cy + (dy as number) + 4} stroke="#dc2626" strokeWidth={1.2} />);
+    out.push(<circle key={k()} cx={cx + (dx as number)} cy={cy + (dy as number) + 6} r={3} fill={c as string} stroke="#94a3b8" strokeWidth={0.5} />);
+  });
+  return out;
+}
+
 // ── The scene ────────────────────────────────────────────────────────────
 export interface SceneBuilding {
   type: BuildingType;
@@ -613,7 +631,7 @@ export interface SceneProps {
   plotW?: number;
   decor?: (PlacedDecor & { id?: string })[];
   /** Snow in winter; lights and a tree at Christmas. */
-  season?: 'winter' | 'christmas' | null;
+  season?: 'winter' | 'christmas' | 'marta' | null;
   /** The decoration picked on the plot (highlighted). */
   selectedDecor?: string | null;
   /** Name and level over every building. */
@@ -656,9 +674,11 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
   // eslint-disable-next-line react-hooks/globals
   uid = 0;
   // eslint-disable-next-line react-hooks/globals
-  SNOW = season !== null;
+  SNOW = season === 'winter' || season === 'christmas';
   // eslint-disable-next-line react-hooks/globals
   XMAS = season === 'christmas';
+  // eslint-disable-next-line react-hooks/globals
+  MARTA = season === 'marta';
   // eslint-disable-next-line react-hooks/globals
   NIGHT = night;
   // eslint-disable-next-line react-hooks/globals
@@ -785,6 +805,10 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     for (const b of buildings) if (b.level > 0 && b.type !== 'parking' && !(construction && construction.type === b.type)) add(fp(b).x + fp(b).w + fp(b).y + fp(b).h - 0.45, <g key={k()}>{lights(fp(b), buildingHeight(b.type, b.level))}</g>);
     const spot = XMAS_SPOTS.map(([x, y]): [number, number] => [x >= 12 ? x + sx : x, y]).find(([x, y]) => !occupied(x, y));
     if (spot) add(spot[0] + spot[1] + 0.2, <g key="xmas-tree">{christmasTree(spot[0], spot[1])}</g>);
+  }
+  if (MARTA) {
+    const spot = XMAS_SPOTS.map(([x, y]): [number, number] => [x >= 12 ? x + sx : x, y]).find(([x, y]) => !occupied(x, y));
+    if (spot) add(spot[0] + spot[1] + 0.2, <g key="marta-tree">{martaTree(spot[0], spot[1])}</g>);
   }
 
   // The building (or decoration) being placed.

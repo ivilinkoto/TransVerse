@@ -393,6 +393,13 @@
       "when": 1792637182888,
       "tag": "0055_curved_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792677914502,
+      "tag": "0056_open_the_hunter",
+      "breakpoints": true
     }
   ]
 }

@@ -6,9 +6,11 @@ import type { RoutingProvider } from '@/server/geo/routing';
 import { settleClientContracts } from './clients';
 import { driverMoods } from './moods';
 import { ensureRally, settleRallies } from './rally';
+import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent } from './halloween';
 import { ensureChristmasEvent } from './christmas';
+import { ensureMartaEvent } from './marta';
 import { collectOverdueFines } from './fines';
 import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
@@ -181,6 +183,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'global-events', 10 * 60_000, now, () => ensureAutoEvent(db, now));
     await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
     await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));
+    if (featureLive('marta', now)) await every(db, 'marta-event', 10 * 60_000, now, () => ensureMartaEvent(db, now));
     await every(db, 'mentorships', 10 * 60_000, now, () => expireMentorships(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
@@ -233,6 +236,11 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       const rally = await ensureRally(db, now, provider);
       if (rally) await announceRally(db, rally.id, now);
       await settleRallies(db, now);
+    });
+    await every(db, 'roads', 30 * 60_000, now, async () => {
+      // Made before the release too (staff test them); players see them from the release.
+      await ensureRoadWorks(db, now);
+      await ensureOversizeLoads(db, now, provider);
     });
     await every(db, 'driver-moods', 24 * 3_600_000, now, () => driverMoods(db, now));
     await every(db, 'factories', 5 * 60_000, now, () => runFactories(db, now));

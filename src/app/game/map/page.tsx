@@ -9,11 +9,15 @@ import { tutorialPending } from '@/server/game/tutorial-flags';
 import { fleetView, routeGeometries } from '@/server/game/queries';
 import { MapClient } from './MapClient';
 import { isVip } from '@/lib/game/vip';
+import { isMarta } from '@/lib/game/marta';
+import { storkOfDay } from '@/server/game/marta';
 
 export const metadata = { title: 'Карта' };
 
 export default async function MapPage({ searchParams }: { searchParams: Promise<{ contract?: string }> }) {
-  const { db, user, company, hq } = await gameContext();
+  const { db, user, company, hq, now, features } = await gameContext();
+  // Баба Марта (v1.5): the stork of the day.
+  const storkRow = features.marta && isMarta(now) ? await storkOfDay(db, now) : null;
   const fleet = await fleetView(db, company.id);
   const routeIds = fleet.vehicles.flatMap((v) => (v.delivery ? [v.delivery.routeId, v.delivery.emptyRouteId].filter((x): x is number => !!x) : []));
   const geoms = await routeGeometries(db, routeIds);
@@ -61,7 +65,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
         title="Карта"
         subtitle={preview ? `Преглед на маршрут — ${preview.title}${preview.approximate ? ' (приблизителна линия, пътният маршрут не е наличен)' : ' (реален пътен маршрут за камион)'}` : 'Твоите камиони и тези на всички играчи — на живо, по реални пътища.'}
       />
-      <MapClient ownVip={isVip(user.vipUntil, (await gameContext()).now)} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} vehicles={vehicles} depots={depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] }))} preview={preview} />
+      <MapClient ownVip={isVip(user.vipUntil, (await gameContext()).now)} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} vehicles={vehicles} depots={depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] }))} preview={preview} stork={storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null} />
     </div>
   );
 }

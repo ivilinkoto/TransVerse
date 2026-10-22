@@ -48,7 +48,7 @@ export interface PlotFeatures {
 }
 
 /** The company plot: the scene, building on it and the running construction. */
-export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incoming, season = null, ambience = { night: false, weather: null, visitors: [] }, features = { decor: false, expand: false }, coins = 0, children }: { data: PlotData; canBuild: boolean; now: number; parkedTrucks: number; incoming: number; season?: 'winter' | 'christmas' | null; ambience?: { night: boolean; weather: 'rain' | 'leaves' | null; visitors: string[] }; features?: PlotFeatures; coins?: number; children?: React.ReactNode }) {
+export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incoming, season = null, ambience = { night: false, weather: null, visitors: [] }, features = { decor: false, expand: false }, coins = 0, children }: { data: PlotData; canBuild: boolean; now: number; parkedTrucks: number; incoming: number; season?: 'winter' | 'christmas' | 'marta' | null; ambience?: { night: boolean; weather: 'rain' | 'leaves' | null; visitors: string[] }; features?: PlotFeatures; coins?: number; children?: React.ReactNode }) {
   const router = useRouter();
   const svg = useRef<SVGSVGElement>(null);
   const [mode, setMode] = useState<Mode>({ kind: 'view' });

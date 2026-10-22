@@ -50,12 +50,16 @@ import { deliverAuctionLoad } from './auctions';
 import { recordHalloweenDelivery } from './halloween';
 import { recordChristmasDelivery } from './christmas';
 import { isChristmas } from '@/lib/game/christmas';
+import { isMarta } from '@/lib/game/marta';
+import { recordMartaDelivery } from './marta';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
 import { BOARDING_GAME_MIN, CROSSING_LINES, crossingLine as crossingLine_, crossingNote, DEPARTURE_EVERY_MIN, onBoardGameMinutes, railOptions } from '@/lib/game/crossings';
 import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart } from './together';
 import { recordShipContainer } from './ports';
 import { recordRallyRun } from './rally';
+import { activeRoadWorks } from './roads';
+import { isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor } from '@/lib/game/roads';
 import { companyTrailerBonus } from './company-trailers';
 import { COMPANY_TRAILERS } from '@/lib/game/company-fleet';
 import { recordFactoryDelivery } from './factory';
@@ -255,8 +259,13 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const loadedLeg = { km: loadedRoute!.distanceKm, durationS: loadedRoute!.durationS, borderKms: loadedRoute!.borders.map((b) => b.km), stops: contract!.stops?.map((st) => ({ km: st.km, minutes: MULTISTOP.unloadMin })), crossing };
     // On board there is no fuel, toll or wear: the road part is what the truck drives.
     const roadLoadedKm = loadedRoute!.distanceKm - (crossing ? crossing.toKm - crossing.fromKm : 0);
+    // v1.5: a night start is faster, road works on the way and an oversize load slower.
+    if (contract!.oversize && !(await featureFor(tx, userId, 'oversize', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+    const night = !contract!.urgent && isNightShift(now) && (await featureFor(tx, userId, 'night_shift', now));
+    const works = (await featureFor(tx, userId, 'road_works', now)) ? await activeRoadWorks(tx, now) : [];
+    const roadFactor = roadWorksFactor(loadedRoute!.countries, works);
     // Urgent shipments run faster than normal game time.
-    const scale = timeScale() * Math.max(1, contract!.speedFactor);
+    const scale = (timeScale() * Math.max(1, contract!.speedFactor) * (night ? NIGHT.faster : 1) * (contract!.oversize ? OVERSIZE.slower : 1)) / roadFactor;
     const trip = contract!.urgent
       ? buildGameTrip({ startAt: now.getTime() + (emptyRoute ? URGENT_RELOCATION_MS : 0), empty: null, loaded: loadedLeg, speedFactor, timeScale: scale, crew, charging })
       : buildGameTrip({
@@ -301,7 +310,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     // Rented vehicles: the rental company covers fuel, tolls, maintenance and wear for a fee.
     // The ferry or train ticket is paid by every truck (rented ones too).
     const ticket = crossingLine?.ticketCents ?? 0;
-    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, totalCents: ticket, wear: 0 } : { ...running, crossingCents: ticket, totalCents: running.totalCents + ticket };
+    // An oversize load: the permit and the escort car (v1.5).
+    const oversizeCents = contract!.oversize ? oversizeCostCents(roadLoadedKm) : 0;
+    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, totalCents: ticket + oversizeCents, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, totalCents: running.totalCents + ticket + oversizeCents };
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
     const rentalFee = rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
@@ -322,7 +333,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         driverId: bundle.driver!.id,
         coDriverId: bundle.coDriver?.id ?? null,
         violations: violations.map((v) => v.violation),
-        endDutyMin: trip.endDutyMin,
+        // A night shift tires the driver more.
+        endDutyMin: night ? Math.round(trip.endDutyMin * NIGHT.fatigue) : trip.endDutyMin,
+        nightShift: night,
         emptyRouteId: emptyRoute?.id ?? null,
         routeId: loadedRoute!.id,
         emptyKm: emptyRoute?.distanceKm ?? 0,
@@ -394,6 +407,11 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (costs.tollCents) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: 'Пътни такси', idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
   const crossingCents = (costs as { crossingCents?: number }).crossingCents ?? 0;
   if (crossingCents) postings.push({ category: 'crossings', amountCents: -crossingCents, description: 'Билет за ферибот / влак', idempotencyKey: key('crossing'), refType: 'delivery', refId: d.id });
+  const oversizeCents = (costs as { oversizeCents?: number }).oversizeCents ?? 0;
+  if (oversizeCents) postings.push({ category: 'oversize', amountCents: -oversizeCents, description: 'Разрешително и придружаваща кола', idempotencyKey: key('oversize'), refType: 'delivery', refId: d.id });
+  // A night shift on time (v1.5).
+  const nightBonus = d.nightShift && !result.late ? Math.round(result.rewardCents * NIGHT.bonusShare) : 0;
+  if (nightBonus) postings.push({ category: 'night_bonus', amountCents: nightBonus, description: 'Бонус „Нощна смяна“', idempotencyKey: key('night'), refType: 'delivery', refId: d.id });
   if (result.bonusCents) postings.push({ category: 'bonus', amountCents: result.bonusCents, description: 'Бонус за ранна доставка', idempotencyKey: key('bonus'), refType: 'delivery', refId: d.id });
   // Reputation pays: +1 % of the reward per 10 points (up to +10 %), by the reputation before this delivery.
   const reputationBonus = Math.round(result.rewardCents * reputationBonusShare(company!.reputation));
@@ -424,7 +442,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
@@ -549,6 +567,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // Christmas quests: Christmas loads, arrivals on Christmas Eve and Day.
+  // Баба Марта (v1.5): spring loads.
+  if (isMarta(completedAt)) await recordMartaDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'marta', loadedKm: d.loadedKm });
   if (isChristmas(completedAt)) await recordChristmasDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'christmas', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // A special load won on auction.
   if (contract.auctionId) await deliverAuctionLoad(tx, contract.auctionId, company!.ownerId);
