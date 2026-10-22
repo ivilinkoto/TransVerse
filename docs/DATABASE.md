@@ -137,3 +137,10 @@
 - `open_convoys` — конвои, обявени с /конвой (линия, до кога).
 - `duels` — дуели 1 срещу 1 (`pending | active | declined | expired | done`, тонове, победител).
 - `livery_entries`, `livery_votes` — конкурсът за ливрея (вид на камиона, 👍, победител, съобщение в Discord).
+
+## v1.4 — Отвъд пътя (миграции 0051–0055)
+- 0051: `routes.crossing` (ферибот или влак по маршрута; профили `truck:ferry:<линия>:f|r`, `truck:rail:<линия>:f|r`), `contracts.port`, `contracts.port_call_id`, `ship_calls` („Кораб пристига“), `job_state` пази реалното време (`weather`).
+- 0052: `company_factories` (рецепта, суровини, партида, готова стока), `contracts.factory_org_id`, `factory_sale_cents`, `contracts.exchange` (борса между играчи), `hauler_ratings` (звезди за превозвача), `company_branches`, `contracts.branch_org_id`, `loans` (кредити с вноски).
+- 0053: `drivers.loyalty`, `request`, `request_at`, `vacation_until`, `last_vacation_at` (шофьори с характер); `deliveries.driver_id` може да е празно (`on delete set null`) — историята остава, когато шофьор напусне; `vehicles.cosmetics` (решетка, светлини, сенник, стикер).
+- 0054: `rallies` (седмично рали: маршрут, начало, край), `rally_entries` (време на товарния участък, гориво на 100 км), `contracts.rally_id` (личният рали товар; вижда го само `created_by`).
+- 0055: `vehicles.moving_until` (път до депото — 1 минута), `trailers.upgrades`, `trailers.logo`, `trailers.org_trailer_id`, `org_trailers` (фирмени ремаркета).
