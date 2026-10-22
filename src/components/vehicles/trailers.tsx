@@ -1,5 +1,6 @@
 import type { BodyType } from '@/lib/game/cargo';
 import { Wheel, type Ids } from './parts';
+import { STRIPE_COLORS, type TrailerCosmetics } from '@/lib/game/cosmetics';
 
 /** Semi-trailers, rear at x = 0, nose at x = 1360, kingpin at x = 1200. */
 export type TrailerBody = Exclude<BodyType, 'box'>;
@@ -295,15 +296,28 @@ export function DrawbarTrailer({ body, ids, color }: { body: 'box' | 'reefer'; i
  * lights along the body and the company name on the side. Drawn over the
  * trailer in its own coordinates (rear at x = 0).
  */
-export function TrailerExtras({ kind, body, upgrades = [], logo }: { kind: 'semi' | 'drawbar'; body?: string; upgrades?: readonly string[]; logo?: string | null }) {
+export function TrailerExtras({ kind, body, upgrades = [], logo, cosmetics }: { kind: 'semi' | 'drawbar'; body?: string; upgrades?: readonly string[]; logo?: string | null; cosmetics?: TrailerCosmetics | null }) {
   const semi = kind === 'semi';
   const skirt = semi ? { x: 470, w: 575 } : { x: 232, w: 306 };
   const leds = semi ? Array.from({ length: 17 }, (_, i) => 40 + i * 80) : Array.from({ length: 11 }, (_, i) => 30 + i * 70);
   const ledY = semi ? -143 : -144;
   // The panel covers the stock lettering of the body.
   const panel = !semi ? { x: 40, y: -302, w: 690, h: 72, font: 40 } : body === 'curtain' ? { x: 290, y: -334, w: 780, h: 100, font: 60 } : { x: 330, y: -352, w: 700, h: 86, font: 54 };
+  const len = semi ? 1360 : 770;
+  const axles = semi ? [150, 282, 414] : [170, 600];
+  const top = semi ? -400 : -372;
   return (
     <g>
+      {cosmetics?.stripe && <rect x={6} y={semi ? -176 : -160} width={len - 12} height={12} fill={STRIPE_COLORS[cosmetics.stripe]} opacity="0.95" />}
+      {cosmetics?.flaps && axles.slice(-1).map((x) => (
+        <rect key={x} x={x + 54} y={-62} width={10} height={44} rx={2} fill={cosmetics.flaps === 'chrome' ? '#e2e8f0' : cosmetics.flaps === 'red' ? '#b91c1c' : '#0b1220'} stroke="#0b1220" strokeWidth="1" />
+      ))}
+      {cosmetics?.toplights && [0.15, 0.35, 0.55, 0.75, 0.95].map((f) => (
+        <g key={f}>
+          <circle cx={len * f} cy={top - 6} r={10} fill={cosmetics.toplights === 'amber' ? '#fbbf24' : '#f8fafc'} opacity="0.3" />
+          <circle cx={len * f} cy={top - 6} r={4.5} fill={cosmetics.toplights === 'amber' ? '#fde68a' : '#ffffff'} />
+        </g>
+      ))}
       {upgrades.includes('aero_skirts') && (
         <g>
           <path d={`M ${skirt.x} -128 L ${skirt.x + skirt.w} -128 L ${skirt.x + skirt.w} -76 Q ${skirt.x + skirt.w} -70 ${skirt.x + skirt.w - 8} -70 L ${skirt.x + 14} -70 Z`} fill="#334155" stroke="#0b1220" strokeWidth="2" />

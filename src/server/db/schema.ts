@@ -20,7 +20,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import type { Cosmetics } from '@/lib/game/cosmetics';
+import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
 
 const money = (name: string) => bigint(name, { mode: 'number' });
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
@@ -315,6 +315,8 @@ export const trailers = pgTable(
     logo: text('logo'),
     /** A company trailer a member borrowed (ownership 'company'): the company's own trailer row. */
     orgTrailerId: uuid('org_trailer_id'),
+    /** Bought looks (v1.5): paint, stripe, mud flaps, roof lights. */
+    cosmetics: jsonb('cosmetics').$type<TrailerCosmetics>().notNull().default({}),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
     soldAt: ts('sold_at'),

@@ -7,6 +7,9 @@
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { rewardCents } from '@/lib/game/economy';
+
+/** How much an automatic urgent shipment pays, × a normal load of the same size. */
+export const URGENT_PAY = [3, 4] as const;
 import { isFreightHub } from '@/lib/game/markets';
 import { gameDurationMinutes } from '@/lib/game/schedule';
 import { haversineKm } from '@/lib/geo/geometry';
@@ -55,8 +58,8 @@ export async function publishAutoUrgent(db: Database, now = new Date(), provider
   const speedFactor = pick([1.5, 2, 2, 3]);
   const fastest = gameDurationMinutes(route.distanceKm) / speedFactor;
   const windowMinutes = Math.min(2880, Math.max(20, Math.ceil(fastest * 1.6) + 30));
-  // Pays roughly twice a normal job of the same size.
-  const reward = Math.round((rewardCents(mix.cargo, tons, route.distanceKm, 1) * between(1.8, 2.6)) / 1000) * 1000;
+  // Pays three to four times a normal job of the same size (urgent work is worth it).
+  const reward = Math.round((rewardCents(mix.cargo, tons, route.distanceKm, 1) * between(URGENT_PAY[0], URGENT_PAY[1])) / 1000) * 1000;
   return db.transaction((tx) =>
     insertUrgent(
       tx,

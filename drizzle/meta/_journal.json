@@ -421,6 +421,13 @@
       "when": 1792679716173,
       "tag": "0059_steady_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792700630649,
+      "tag": "0060_glorious_leech",
+      "breakpoints": true
     }
   ]
 }

@@ -112,6 +112,19 @@ export async function leaveAlliance(db: Database, actorId: string) {
   });
 }
 
+/** The leader company dissolves the alliance: it is gone for every company in it (its chat too). */
+export async function dissolveAlliance(db: Database, actorId: string) {
+  return db.transaction(async (tx) => {
+    const actor = await requirePermission(tx, actorId, 'manage_settings');
+    const a = await allianceOf(tx, actor.company.id);
+    if (!a) fail('no_alliance', 'Компанията не е в съюз.');
+    if (a!.leaderOrgId !== actor.company.id) fail('not_leader', 'Съюза разпуска само водещата компания.', 403);
+    await tx.delete(chatMessages).where(eq(chatMessages.channel, allianceChannel(a!.id)));
+    await tx.delete(alliances).where(eq(alliances.id, a!.id));
+    for (const m of a!.members) if (m.id !== actor.company.id) await notifyMembers(tx, m.id, null, `Съюзът „${a!.name}“ е разпуснат`, `Водещата компания „${actor.company.name}“ разпусна съюза.`, '/game/company/alliance');
+  });
+}
+
 export const allianceChannel = (allianceId: string) => `alliance:${allianceId}`;
 
 /** The alliance's shared board (newest last). */
@@ -126,6 +139,25 @@ export async function allianceMessages(db: DbOrTx, allianceId: string, limit = 5
     .orderBy(desc(chatMessages.id))
     .limit(limit);
   return rows.reverse();
+}
+
+/** The alliance's messages in the shape of the chat dock (the "Съюз" tab). */
+export async function allianceFeed(db: DbOrTx, allianceId: string, afterId = 0, limit = 60, now = new Date()) {
+  const rows = await db
+    .select({ m: chatMessages, username: users.username, role: users.role, vipUntil: users.vipUntil })
+    .from(chatMessages)
+    .innerJoin(users, eq(users.id, chatMessages.userId))
+    .where(and(eq(chatMessages.channel, allianceChannel(allianceId)), afterId ? gt(chatMessages.id, afterId) : undefined))
+    .orderBy(desc(chatMessages.id))
+    .limit(limit);
+  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: !!r.vipUntil && r.vipUntil > now, body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: null }));
+}
+
+/** The alliance of the player's company (for the chat dock), when alliances are out for them. */
+export async function playerAlliance(db: DbOrTx, userId: string, now = new Date()) {
+  if (!(await featureFor(db, userId, 'alliances', now))) return null;
+  const m = await membershipOf(db, userId);
+  return m ? allianceOf(db, m.company.id) : null;
 }
 
 export async function postAllianceMessage(db: Database, userId: string, raw: string, now = new Date()) {

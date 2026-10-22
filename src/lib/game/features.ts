@@ -91,6 +91,7 @@ export const FEATURES = {
   weekly_digest: '1.5',
   predictions: '1.5',
   event_autostart: '1.5',
+  trailer_cosmetics: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

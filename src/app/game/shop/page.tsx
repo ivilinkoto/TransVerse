@@ -9,12 +9,13 @@ import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { isVip, STANDARD_COLORS, VIP_BENEFITS, VIP_COLORS } from '@/lib/game/vip';
-import { cities, vehicles } from '@/server/db/schema';
+import { cities, trailers, vehicles } from '@/server/db/schema';
 import { coinHistory, COIN_REASON_LABELS, type CoinReason } from '@/server/game/coins';
 import { gameContext } from '@/server/game/context';
 import { BuyWithMoney } from '@/components/game/BuyWithMoney';
 import { euro, paidProduct, PAID_PRODUCTS, PAYMENT_STATUS_LABELS } from '@/lib/game/payments';
 import { paymentConfig, userPayments } from '@/server/payments';
+import { trailerModel } from '@/lib/game/catalog';
 
 export const metadata = { title: 'Магазин' };
 
@@ -33,6 +34,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     coinHistory(db, user.id, 20),
     userPayments(db, user.id, 8),
   ]);
+  const trailerOptions = (await db.select({ id: trailers.id, plate: trailers.plate, modelId: trailers.modelId }).from(trailers).where(and(eq(trailers.companyId, company.id), eq(trailers.ownership, 'owned'), isNull(trailers.soldAt)))).map((t) => ({ id: t.id, label: `${t.plate} · ${trailerModel(t.modelId).name}` }));
   const vehicleOptions: VehicleOption[] = fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${v.city}${v.ownership === 'rented' ? ' (нает)' : ''}${v.status !== 'idle' ? ' · на курс' : ''}`, owned: v.ownership === 'owned', idle: v.status === 'idle' }));
   const hubs = cityRows.filter((c) => isFreightHub({ population: c.population, country: c.country })).map((c) => ({ id: c.id, name: `${c.name} (${c.country})` }));
   const boostActive = user.xpBoostUntil && user.xpBoostUntil > now;
@@ -76,18 +78,19 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <section key={cat}>
           <h2 className="mb-3 font-display text-lg font-bold">{SHOP_CATEGORIES[cat]}</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {SHOP_ITEMS.filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : isChristmas(now))) && (i.id !== 'truck_part' || features.cosmetics)).map((i) => (
+            {SHOP_ITEMS.filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : isChristmas(now))) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics)).map((i) => (
               <Card key={i.id} className="flex flex-col">
                 {i.id === 'paint_christmas' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={CHRISTMAS.paintColor} livery="christmas" className="mb-3 h-16 w-full" />}
+                {i.id === 'trailer_part' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color="#111827" trailerCosmetics={{ paint: '#111827', stripe: 'gold', flaps: 'chrome', toplights: 'amber' }} className="mb-3 h-16 w-full" />}
                 {i.id === 'truck_part' && <VehicleIllustration modelId="danubia-t440" color="#1d4ed8" cosmetics={{ grille: 'chrome', lights: 'amber', visor: 'body', sticker: 'TRANSVERSE' }} className="mb-3 h-16 w-full" />}
                 {i.id === 'paint_pumpkin' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={HALLOWEEN.pumpkinColor} livery="pumpkin" className="mb-3 h-16 w-full" />}
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-display font-bold">{i.label}</div>
-                  <span className="num shrink-0 font-bold text-cyan-glow">{i.id === 'truck_part' ? 'от ' : ''}{i.id === 'paint' && vip ? '0' : i.price} TC</span>
+                  <span className="num shrink-0 font-bold text-cyan-glow">{i.id === 'truck_part' || i.id === 'trailer_part' ? 'от ' : ''}{i.id === 'paint' && vip ? '0' : i.price} TC</span>
                 </div>
                 <p className="mb-3 mt-1 text-sm text-mist-300">{i.description}</p>
                 {i.id === 'xp_boost_24h' && boostActive && <p className="mb-2 text-xs text-profit">Активен до {user.xpBoostUntil!.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia' })} — нова покупка го удължава.</p>}
-                <div className="mt-auto"><ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={VIP_COLORS} /></div>
+                <div className="mt-auto"><ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={VIP_COLORS} trailers={trailerOptions} /></div>
               </Card>
             ))}
           </div>

@@ -103,3 +103,25 @@ describe('truck cosmetics', () => {
     expect(await code(buyShopItem(db(), solo.userId, { item: 'truck_part', vehicleId: (await truck(solo.userId)).id, cosmetic: 'sticker:on' }))).toMatch(/no_company|rented/);
   });
 });
+
+describe('trailer parts', () => {
+  it('bought with coins for an own trailer', async () => {
+    const { parseTrailerCosmetic, TRAILER_COSMETIC_PARTS } = await import('@/lib/game/cosmetics');
+    const { buyTrailer } = await import('@/server/game/fleet');
+    const { trailers } = await import('@/server/db/schema');
+    expect(parseTrailerCosmetic('paint:#111827')).toEqual({ part: 'paint', style: '#111827' });
+    expect(parseTrailerCosmetic('paint:#123456')).toBeNull();
+    const admin = await newPlayer();
+    await db().update(users).set({ role: 'admin' }).where(eq(users.id, admin.userId));
+    const p = await playerWithCompany('Sofia');
+    await db().update(companies).set({ balanceCents: 1_000_000_00 }).where(eq(companies.ownerId, p.userId));
+    await db().update(users).set({ level: 5, xp: 999_999 }).where(eq(users.id, p.userId));
+    const t = await buyTrailer(db(), p.userId, 'curtain-13', p.hq.id);
+    await adjustCoins(db(), { id: admin.userId, role: 'admin', username: admin.username }, p.userId, 200, 'тест');
+    await buyShopItem(db(), p.userId, { item: 'trailer_part', trailerId: t.id, cosmetic: 'stripe:gold' });
+    expect(await code(buyShopItem(db(), p.userId, { item: 'trailer_part', trailerId: t.id, cosmetic: 'stripe:gold' }))).toBe('already_fitted');
+    const [row] = await db().select().from(trailers).where(eq(trailers.id, t.id));
+    expect(row!.cosmetics.stripe).toBe('gold');
+    expect((await db().select().from(users).where(eq(users.id, p.userId)))[0]!.coins).toBe(200 - TRAILER_COSMETIC_PARTS.stripe.price);
+  });
+});

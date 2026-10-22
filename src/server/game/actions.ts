@@ -10,7 +10,7 @@ import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
 import { predictBattle } from '@/server/game/predictions';
-import { createAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
+import { createAlliance, dissolveAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { answerDriver } from '@/server/game/moods';
@@ -199,6 +199,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('inviteToAlliance'), target: z.string().max(40) }),
   z.object({ type: z.literal('respondAllianceInvite'), inviteId: id, accept: z.boolean() }),
   z.object({ type: z.literal('leaveAlliance') }),
+  z.object({ type: z.literal('dissolveAlliance') }),
   z.object({ type: z.literal('allianceMessage'), body: z.string().max(600) }),
   z.object({ type: z.literal('offerCompanyContract'), target: z.string().max(40), sharePct: z.coerce.number().int().min(5).max(30) }),
   z.object({ type: z.literal('respondCompanyContract'), contractId: id, accept: z.boolean() }),
@@ -303,6 +304,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   inviteToAlliance: 'alliances',
   respondAllianceInvite: 'alliances',
   leaveAlliance: 'alliances',
+  dissolveAlliance: 'alliances',
   allianceMessage: 'alliances',
   offerCompanyContract: 'company_contracts',
   respondCompanyContract: 'company_contracts',
@@ -722,6 +724,9 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'respondAllianceInvite':
       await respondAllianceInvite(db, user.id, input.inviteId, input.accept);
+      return { ok: true };
+    case 'dissolveAlliance':
+      await dissolveAlliance(db, user.id);
       return { ok: true };
     case 'leaveAlliance':
       await leaveAlliance(db, user.id);
