@@ -44,6 +44,7 @@ export const DISCORD_CHANNELS = {
   usedMarket: 'пазар-камиони',
   livery: 'ливреи',
   rally: 'рали',
+  staffAlerts: 'сигнали',
 } as const;
 export type DiscordChannel = keyof typeof DISCORD_CHANNELS;
 /** The category the companies' private channels go into (matched without emoji and decorations). */
@@ -58,6 +59,12 @@ export const DISCORD_ROLES = {
   vip: { name: 'VIP', color: 0xa66bff },
   owner: { name: 'Собственик на компания', color: 0xf97316 },
   linked: { name: 'Свързан с играта', color: 0x2fd27a },
+  /** The company's division this month (v1.5). */
+  divisionGold: { name: '🥇 Златна дивизия', color: 0xf6c343 },
+  divisionSilver: { name: '🥈 Сребърна дивизия', color: 0xcbd5e1 },
+  divisionBronze: { name: '🥉 Бронзова дивизия', color: 0xb45309 },
+  /** 10+ perfect trips in a row right now (v1.5): goes away when the streak breaks. */
+  perfect10: { name: '💎 Перфектна серия 10+', color: 0x34d399 },
   /** Support, admins and the founder of the game: sees the staff channels and the tickets. */
   staff: { name: 'Екип TransVerse', color: 0xe04545 },
 } as const;

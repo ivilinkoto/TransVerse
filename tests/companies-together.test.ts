@@ -99,3 +99,25 @@ describe('academy and fuel station', () => {
     expect(theirs?.member).toBe(false);
   });
 });
+
+describe('alliance chat tab and dissolving', () => {
+  it('the alliance chat feeds the dock; the leader dissolves the alliance', async () => {
+    const { allianceFeed, dissolveAlliance, playerAlliance } = await import('@/server/game/alliances');
+    const a = await playerWithCompany('Sofia');
+    const b = await playerWithCompany('Sofia');
+    const orgB = await orgOf(b.userId);
+    const al = await createAlliance(db(), a.userId, `Тракия ${Date.now() % 100000}`);
+    await inviteToAlliance(db(), a.userId, orgB.name);
+    // No company is in an alliance before it accepts the invitation.
+    expect(await allianceOf(db(), orgB.id)).toBeNull();
+    const [inv] = await db().select().from(allianceInvites).where(and(eq(allianceInvites.organizationId, orgB.id), eq(allianceInvites.status, 'pending')));
+    await respondAllianceInvite(db(), b.userId, inv!.id, true);
+    await postAllianceMessage(db(), b.userId, 'В чата!');
+    expect((await playerAlliance(db(), a.userId))!.id).toBe(al.id);
+    expect((await allianceFeed(db(), al.id)).map((m) => m.body)).toContain('В чата!');
+    expect(await code(dissolveAlliance(db(), b.userId))).toBe('not_leader');
+    await dissolveAlliance(db(), a.userId);
+    expect(await allianceOf(db(), orgB.id)).toBeNull();
+    expect(await allianceFeed(db(), al.id)).toEqual([]);
+  });
+});

@@ -9,8 +9,10 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
+import { setShowcase, staffBus } from '@/server/game/community';
+import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
-import { createAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
+import { createAlliance, dissolveAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { answerDriver } from '@/server/game/moods';
@@ -96,7 +98,7 @@ const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]])
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 /** Every player command (the web game and the Discord bot alike). */
 export const Action = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional() }),
+  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional(), insure: z.boolean().default(false) }),
   z.object({ type: z.literal('payFine'), fineId: id }),
   z.object({ type: z.literal('dispatchPlan') }),
   z.object({ type: z.literal('auctionBid'), auctionId: id, amountEur: z.coerce.number().positive().max(10_000_000) }),
@@ -195,10 +197,16 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('claimMartaQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('giveMartenitsa'), friendId: id }),
   z.object({ type: z.literal('spotStork') }),
+  z.object({ type: z.literal('staffBus'), vehicleId: id }),
+  z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
+  z.object({ type: z.literal('listForAlliance'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500), pricePerTon: z.coerce.number().positive().max(100_000) }),
+  z.object({ type: z.literal('buyAllianceListing'), listingId: id }),
+  z.object({ type: z.literal('withdrawAllianceListing'), listingId: id }),
   z.object({ type: z.literal('createAlliance'), name: z.string().max(40) }),
   z.object({ type: z.literal('inviteToAlliance'), target: z.string().max(40) }),
   z.object({ type: z.literal('respondAllianceInvite'), inviteId: id, accept: z.boolean() }),
   z.object({ type: z.literal('leaveAlliance') }),
+  z.object({ type: z.literal('dissolveAlliance') }),
   z.object({ type: z.literal('allianceMessage'), body: z.string().max(600) }),
   z.object({ type: z.literal('offerCompanyContract'), target: z.string().max(40), sharePct: z.coerce.number().int().min(5).max(30) }),
   z.object({ type: z.literal('respondCompanyContract'), contractId: id, accept: z.boolean() }),
@@ -299,10 +307,16 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   claimMartaQuest: 'marta',
   giveMartenitsa: 'marta',
   spotStork: 'marta',
+  staffBus: 'staff_bus',
+  setShowcase: 'profile_showcase',
+  listForAlliance: 'alliance_market',
+  buyAllianceListing: 'alliance_market',
+  withdrawAllianceListing: 'alliance_market',
   createAlliance: 'alliances',
   inviteToAlliance: 'alliances',
   respondAllianceInvite: 'alliances',
   leaveAlliance: 'alliances',
+  dissolveAlliance: 'alliances',
   allianceMessage: 'alliances',
   offerCompanyContract: 'company_contracts',
   respondCompanyContract: 'company_contracts',
@@ -362,7 +376,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
   if (feature) requireFeature(feature, user.role);
   switch (input.type) {
     case 'acceptContract': {
-      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail });
+      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail, insure: input.insure });
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
     case 'favoriteLane':
@@ -723,6 +737,9 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'respondAllianceInvite':
       await respondAllianceInvite(db, user.id, input.inviteId, input.accept);
       return { ok: true };
+    case 'dissolveAlliance':
+      await dissolveAlliance(db, user.id);
+      return { ok: true };
     case 'leaveAlliance':
       await leaveAlliance(db, user.id);
       return { ok: true };
@@ -741,6 +758,17 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'enrolAcademy':
       await enrolAcademy(db, user.id, input.mentorId);
+      return { ok: true };
+    case 'staffBus':
+      return { ok: true, ...(await staffBus(db, user.id, input.vehicleId)) };
+    case 'setShowcase':
+      return { ok: true, ...(await setShowcase(db, user.id, { trucks: input.trucks, badges: input.badges })) };
+    case 'listForAlliance':
+      return { ok: true, listingId: (await listForAlliance(db, user.id, { depotId: input.depotId, cargo: input.cargo, tons: input.tons, pricePerTonCents: Math.round(input.pricePerTon * 100) })).id };
+    case 'buyAllianceListing':
+      return { ok: true, ...(await buyAllianceListing(db, user.id, input.listingId)) };
+    case 'withdrawAllianceListing':
+      await withdrawAllianceListing(db, user.id, input.listingId);
       return { ok: true };
     case 'claimMartaQuest':
       return { ok: true, ...(await claimMartaQuest(db, user.id, input.questId)) };

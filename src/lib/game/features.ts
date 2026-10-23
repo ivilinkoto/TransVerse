@@ -91,6 +91,19 @@ export const FEATURES = {
   weekly_digest: '1.5',
   predictions: '1.5',
   event_autostart: '1.5',
+  trailer_cosmetics: '1.5',
+  seasonal_tyres: '1.5',
+  cargo_insurance: '1.5',
+  urgent_raise: '1.5',
+  tachograph: '1.5',
+  alliance_market: '1.5',
+  staff_bus: '1.5',
+  anniversary: '1.5',
+  profile_showcase: '1.5',
+  perfect_convoy: '1.5',
+  lane_records: '1.5',
+  staff_alerts: '1.5',
+  compensation: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

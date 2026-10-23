@@ -1,14 +1,18 @@
 import { and, eq, gt } from 'drizzle-orm';
-import { GraduationCap, Handshake, Shield } from 'lucide-react';
+import { GraduationCap, Handshake, Shield, Warehouse } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 import { Badge, Card, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { TextAction } from '@/components/ui/TextAction';
+import { AllianceListForm } from '@/components/game/AllianceListForm';
+import { CARGO, type CargoType } from '@/lib/game/cargo';
+import { ALLIANCE_MARKET } from '@/lib/game/community';
+import { allianceMarketView } from '@/server/game/alliance-market';
 import { date, dec, money } from '@/lib/format';
 import { ACADEMY, ALLIANCE, COMPANY_CONTRACT } from '@/lib/game/alliances';
 import { allianceInvites, alliances, companyMembers, users } from '@/server/db/schema';
-import { academyOf, allianceMessages, allianceOf, allianceWeekView, contractsOf } from '@/server/game/alliances';
+import { academyOf, allianceOf, allianceWeekView, contractsOf } from '@/server/game/alliances';
 import { gameContext } from '@/server/game/context';
 import { can, membershipOf } from '@/server/game/membership';
 
@@ -21,14 +25,14 @@ export default async function AlliancePage() {
   if (!m) redirect('/game/company');
   const manage = can(m.rank, 'manage_settings');
   const alliance = features.alliances ? await allianceOf(db, m.company.id) : null;
-  const [week, messages, invites, contracts, academy, members] = await Promise.all([
+  const [week, invites, contracts, academy, members] = await Promise.all([
     alliance ? allianceWeekView(db, alliance.id, alliance.members.length, now) : null,
-    alliance ? allianceMessages(db, alliance.id) : [],
     features.alliances && !alliance ? db.select({ id: allianceInvites.id, name: alliances.name }).from(allianceInvites).innerJoin(alliances, eq(alliances.id, allianceInvites.allianceId)).where(and(eq(allianceInvites.organizationId, m.company.id), eq(allianceInvites.status, 'pending'), gt(allianceInvites.expiresAt, now))) : [],
     features.company_contracts ? contractsOf(db, m.company.id) : null,
     features.academy ? academyOf(db, m.company.id) : [],
     features.academy ? db.select({ id: users.id, username: users.username, level: users.level }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(eq(companyMembers.companyId, m.company.id)) : [],
   ]);
+  const market = alliance && features.alliance_market ? await allianceMarketView(db, user.id, now) : null;
   const newMember = m.member.joinedAt.getTime() + ACADEMY.joinedDays * 86_400_000 > now.getTime();
   const enrolled = academy.find((s) => s.userId === user.id);
   return (
@@ -41,7 +45,12 @@ export default async function AlliancePage() {
             <div className="space-y-4 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div><div className="font-display text-xl font-bold">{alliance.name}</div><div className="text-mist-400">{alliance.members.map((x) => `${x.name}${x.tag ? ` [${x.tag}]` : ''}`).join(' · ')}</div></div>
-                {manage && <ActionButton action={{ type: 'leaveAlliance' }} className="btn-ghost text-loss" confirm="Компанията да напусне съюза?">Напусни съюза</ActionButton>}
+                {manage && (
+                  <span className="flex flex-wrap gap-2">
+                    {alliance.leaderOrgId === m.company.id && <ActionButton action={{ type: 'dissolveAlliance' }} className="btn-ghost text-loss" confirm="Да разпуснем ли съюза? Изчезва за всички компании в него, заедно с чата.">Разпусни съюза</ActionButton>}
+                    <ActionButton action={{ type: 'leaveAlliance' }} className="btn-ghost text-loss" confirm="Компанията да напусне съюза?">Напусни съюза</ActionButton>
+                  </span>
+                )}
               </div>
               {week && (
                 <div className="grid gap-3 md:grid-cols-2">
@@ -58,17 +67,11 @@ export default async function AlliancePage() {
                 </div>
               )}
               {manage && alliance.leaderOrgId === m.company.id && alliance.members.length < ALLIANCE.maxCompanies && <TextAction label="Покани" action={{ type: 'inviteToAlliance' }} field="target" placeholder="Таг или име на компания" ariaLabel="Компания за съюза" />}
-              <div>
-                <div className="label mb-1.5">Съюзен чат</div>
-                <ul className="max-h-72 space-y-1.5 overflow-y-auto rounded-xl border border-asphalt-700 p-3">
-                  {messages.length === 0 ? <li className="text-mist-400">Още няма съобщения.</li> : messages.map((x) => <li key={x.id}><b>{x.username}</b>{x.company ? <span className="text-xs text-mist-400"> · {x.company}</span> : null}: {x.body}</li>)}
-                </ul>
-                <div className="mt-2"><TextAction label="Изпрати" action={{ type: 'allianceMessage' }} field="body" placeholder="Съобщение до съюза" ariaLabel="Съобщение" maxLength={500} /></div>
-              </div>
+              <p className="text-sm text-mist-300">💬 Чатът на съюза е в плаващия чат — раздел „Съюз“, до „Глобален“ и „Компания“.</p>
             </div>
           ) : (
             <div className="space-y-3 text-sm">
-              <p className="text-mist-300">До {ALLIANCE.maxCompanies} компании в съюз: общ чат, седмична цел ({ALLIANCE.goalTonsPerCompany} т на компания) и битка срещу друг съюз.</p>
+              <p className="text-mist-300">До {ALLIANCE.maxCompanies} компании в съюз — само по покана, която компанията трябва да приеме: общ чат, седмична цел ({ALLIANCE.goalTonsPerCompany} т на компания) и битка срещу друг съюз.</p>
               {invites.map((i) => (
                 <div key={i.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-asphalt-700 p-3">
                   <span>Покана от съюза <b>{i.name}</b></span>
@@ -78,6 +81,22 @@ export default async function AlliancePage() {
               {manage ? <TextAction label="Създай съюз" action={{ type: 'createAlliance' }} field="name" placeholder="Име на съюза" ariaLabel="Име на съюза" maxLength={ALLIANCE.nameMax} /> : <p className="text-xs text-mist-400">Съюз създава длъжност с право „Настройки“.</p>}
             </div>
           )}
+        </Card>
+      )}
+
+      {market && (
+        <Card title={<span className="flex items-center gap-2"><Warehouse className="h-5 w-5 text-cyan-glow" />Склад на съюза</span>}>
+          <p className="text-sm text-mist-300">Продавай стока от складовете си на членовете на съюза — купува се в същия град, направо в склада на купувача (нужно му е депо там). Обявата е {ALLIANCE_MARKET.hours} ч; непродаденото се връща при теб. Игрови данни.</p>
+          <div className="mt-3"><AllianceListForm stock={market.stock.map((s) => ({ ...s, label: CARGO[s.cargoType as CargoType]?.label ?? s.cargoType }))} /></div>
+          <ul className="mt-3 divide-y divide-asphalt-800 text-sm">
+            {market.listings.map((l) => (
+              <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span><b>{l.tons} т</b> {(CARGO[l.cargoType as CargoType]?.label ?? l.cargoType).toLowerCase()} · {l.city} <span className="text-xs text-mist-400">· {l.seller} · {money(l.priceCents)} ({money(Math.round(l.priceCents / l.tons))}/т) · до {date(l.expiresAt)}</span></span>
+                {l.mine ? <ActionButton action={{ type: 'withdrawAllianceListing', listingId: l.id }}>Свали</ActionButton> : l.canBuy ? <ActionButton action={{ type: 'buyAllianceListing', listingId: l.id }} className="btn-primary" confirm={`Да купиш ли ${l.tons} т за ${money(l.priceCents)}?`}>Купи</ActionButton> : <span className="text-xs text-mist-400">нужно е депо в {l.city}</span>}
+              </li>
+            ))}
+            {!market.listings.length && <li className="py-2 text-mist-400">Още няма обяви.</li>}
+          </ul>
         </Card>
       )}
 

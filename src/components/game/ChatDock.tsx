@@ -1,6 +1,6 @@
 'use client';
 
-import { AtSign, Building2, CornerUpLeft, Flag, Globe2, MessageCircle, Pin, Send, Smile, Store, Trash2, X } from 'lucide-react';
+import { AtSign, Building2, CornerUpLeft, Flag, Globe2, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { CHAT_EMOJI, splitMentions, typingMention } from '@/lib/game/mentions';
@@ -25,6 +25,8 @@ interface Conversation {
 interface Inbox {
   conversations: Conversation[];
   company: string | null;
+  /** The alliance of the player's company (v1.5). */
+  alliance?: string | null;
   me: string;
   meName: string;
   /** New messages in the channels (counted up to 100). */
@@ -202,6 +204,7 @@ export function ChatDock() {
     const u = inbox?.unread;
     const out: Tab[] = [{ id: 'global', label: 'Глобален', icon: Globe2, unread: u?.global }];
     if (inbox?.company) out.push({ id: 'company', label: 'Компания', icon: Building2, unread: u?.company });
+    if (inbox?.alliance) out.push({ id: 'alliance', label: 'Съюз', icon: Shield });
     out.push({ id: 'trade', label: 'Търговия', icon: Store, unread: u?.trade });
     for (const c of inbox?.conversations ?? []) out.push({ id: `dm:${c.userId}`, label: c.username, unread: c.unread, online: c.online });
     if (extra && !out.some((t) => t.id === extra.id)) out.push({ id: extra.id, label: extra.title });
@@ -254,6 +257,7 @@ export function ChatDock() {
       const reply = replyTo?.id ?? null;
       if (dm) await api('/api/game/action', { type: 'sendDirect', userId: dm, body: text, replyTo: reply });
       else if (tab === 'company') await api('/api/game/action', { type: 'sendChat', body: text, replyTo: reply });
+      else if (tab === 'alliance') await api('/api/game/action', { type: 'allianceMessage', body: text });
       else await api('/api/game/action', { type: 'sendChannel', channel: tab, body: text, replyTo: reply });
       setText('');
       setReplyTo(null);
@@ -466,7 +470,7 @@ export function ChatDock() {
                   } else void send();
                 }
               }}
-              placeholder={dm ? `Съобщение до ${current.label}…` : tab === 'trade' ? 'Продавам / купувам…' : tab === 'company' ? (extras ? 'До компанията… (@име споменава)' : 'До компанията…') : (extras ? 'До всички играчи… (@име споменава)' : 'До всички играчи…')}
+              placeholder={dm ? `Съобщение до ${current.label}…` : tab === 'trade' ? 'Продавам / купувам…' : tab === 'company' ? (extras ? 'До компанията… (@име споменава)' : 'До компанията…') : tab === 'alliance' ? 'До целия съюз…' : (extras ? 'До всички играчи… (@име споменава)' : 'До всички играчи…')}
               aria-label="Съобщение"
             />
             <button className="btn-primary px-3" disabled={busy || !text.trim()} aria-label="Изпрати"><Send className="h-4 w-4" /></button>

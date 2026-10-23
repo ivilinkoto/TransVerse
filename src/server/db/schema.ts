@@ -20,7 +20,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import type { Cosmetics } from '@/lib/game/cosmetics';
+import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
 
 const money = (name: string) => bigint(name, { mode: 'number' });
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
@@ -192,6 +192,8 @@ export const users = pgTable(
     /** Perfect trips in a row and the best streak (v1.5). */
     perfectStreak: integer('perfect_streak').notNull().default(0),
     bestPerfectStreak: integer('best_perfect_streak').notNull().default(0),
+    /** The profile showcase (v1.5): up to three trucks and three badges shown on the public profile. */
+    showcase: jsonb('showcase').$type<{ trucks: string[]; badges: string[] }>().notNull().default({ trucks: [], badges: [] }),
   },
   (t) => [uniqueIndex('users_email_idx').on(sql`lower(${t.email})`), uniqueIndex('users_username_idx').on(sql`lower(${t.username})`), uniqueIndex('users_referral_code_idx').on(t.referralCode), index('users_referred_by_idx').on(t.referredById), uniqueIndex('users_discord_idx').on(t.discordId)],
 );
@@ -315,6 +317,8 @@ export const trailers = pgTable(
     logo: text('logo'),
     /** A company trailer a member borrowed (ownership 'company'): the company's own trailer row. */
     orgTrailerId: uuid('org_trailer_id'),
+    /** Bought looks (v1.5): paint, stripe, mud flaps, roof lights. */
+    cosmetics: jsonb('cosmetics').$type<TrailerCosmetics>().notNull().default({}),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
     soldAt: ts('sold_at'),
@@ -391,6 +395,8 @@ export const contracts = pgTable(
     acceptedAt: ts('accepted_at'),
     /** Urgent shipment created by an administrator: shown first and driven faster. */
     urgent: boolean('urgent').notNull().default(false),
+    /** Price rises of an urgent shipment nobody has taken yet (v1.5). */
+    urgentRaises: integer('urgent_raises').notNull().default(0),
     /** VIP reservation: only this player may take the contract until reservedUntil. */
     reservedByCompanyId: uuid('reserved_by_company_id').references(() => companies.id, { onDelete: 'set null' }),
     reservedUntil: ts('reserved_until'),
@@ -815,6 +821,9 @@ export const companyMembers = pgTable(
     deliveries: integer('deliveries').notNull().default(0),
     contributedCents: money('contributed_cents').notNull().default(0),
     xpContributed: integer('xp_contributed').notNull().default(0),
+    /** The staff bus (v1.5): when the new member's truck rode to the base, and whether the first trip still pays a bonus. */
+    busUsedAt: ts('bus_used_at'),
+    firstTripBonus: boolean('first_trip_bonus').notNull().default(false),
   },
   (t) => [index('company_members_company_idx').on(t.companyId)],
 );
@@ -2320,4 +2329,42 @@ export const predictions = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('predictions_user_battle_idx').on(t.userId, t.battleId), index('predictions_user_week_idx').on(t.userId, t.weekKey)],
+);
+
+/** Lane records (v1.5): the fastest loaded run on a lane in a month. */
+export const laneRecords = pgTable(
+  'lane_records',
+  {
+    month: text('month').notNull(),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id').notNull(),
+    minutes: integer('minutes').notNull(),
+    km: real('km').notNull(),
+    setAt: ts('set_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.month, t.originCityId, t.destCityId] }), index('lane_records_user_idx').on(t.userId, t.month)],
+);
+
+/** The alliance warehouse (v1.5): goods one member sells to the others in a city. */
+export const allianceListings = pgTable(
+  'alliance_listings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    allianceId: uuid('alliance_id').notNull().references(() => alliances.id, { onDelete: 'cascade' }),
+    sellerId: uuid('seller_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    depotId: uuid('depot_id').notNull().references(() => depots.id, { onDelete: 'cascade' }),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    cargoType: text('cargo_type').notNull(),
+    tons: real('tons').notNull(),
+    /** What the goods cost the seller (back into the warehouse when withdrawn). */
+    costCents: money('cost_cents').notNull(),
+    priceCents: money('price_cents').notNull(),
+    status: text('status').notNull().default('open'), // open | sold | withdrawn | expired
+    buyerId: uuid('buyer_id').references(() => users.id, { onDelete: 'set null' }),
+    expiresAt: ts('expires_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('alliance_listings_open_idx').on(t.allianceId, t.status), index('alliance_listings_seller_idx').on(t.sellerId, t.status)],
 );

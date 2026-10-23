@@ -8,12 +8,13 @@ import { blockedIds } from '@/server/game/moderation';
 import { companyKey, markChannelRead } from '@/server/game/chat-reads';
 import { withReactions } from '@/server/game/chat-extras';
 import { membershipOf } from '@/server/game/membership';
+import { allianceFeed, playerAlliance } from '@/server/game/alliances';
 
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({
-  /** global | trade | company | dm:<userId> */
-  tab: z.string().regex(/^(global|trade|company|dm:[0-9a-f-]{36})$/, 'Непознат раздел.'),
+  /** global | trade | company | alliance | dm:<userId> */
+  tab: z.string().regex(/^(global|trade|company|alliance|dm:[0-9a-f-]{36})$/, 'Непознат раздел.'),
   after: z.coerce.number().int().min(0).optional(),
 });
 
@@ -28,6 +29,10 @@ export const GET = handler({ perMinute: 120, schema }, async ({ user, input }) =
     const m = await membershipOf(db, user.id);
     if (m) await markChannelRead(db, user.id, companyKey(m.company.id), c.messages.at(-1)?.id ?? 0);
     return visible({ messages: c.messages, canModerate: c.canModerate, canPin: c.canPin, pinned: c.pinned, online: c.online });
+  }
+  if (input.tab === 'alliance') {
+    const a = await playerAlliance(db, user.id);
+    return visible({ messages: a ? await allianceFeed(db, a.id, input.after ?? 0) : [], canModerate: isStaff(user.role) });
   }
   if (input.tab.startsWith('dm:')) {
     const other = input.tab.slice(3);

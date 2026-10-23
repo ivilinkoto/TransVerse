@@ -18,6 +18,8 @@ import { api } from '@/lib/client/api';
 import { dateTime, dec, duration, int, km, money } from '@/lib/format';
 import type { CargoType } from '@/lib/game/cargo';
 import { MARTA } from '@/lib/game/marta';
+import { CARGO_INSURANCE } from '@/lib/game/roads';
+import { useFeature } from './Features';
 
 export interface BoardContract {
   id: string;
@@ -86,6 +88,8 @@ export interface BoardContract {
   oversizeCents?: number | null;
   /** Road works on the way (v1.5). */
   roadWorks?: string | null;
+  /** An urgent shipment nobody took: its pay went up this many times by 10 % (v1.5). */
+  urgentRaises?: number;
   /** The player's own weekly rally run (v1.4). */
   rally?: boolean;
   speedFactor: number;
@@ -292,6 +296,8 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
   const option = c.options.find((o) => o.vehicleId === vehicleId);
   const [rush, setRush] = useState(false);
   const [overload, setOverload] = useState(false);
+  const [insure, setInsure] = useState(false);
+  const insuranceLive = useFeature('cargo_insurance');
   const [rail, setRail] = useState('');
   const needsOverload = !!option && option.overloadPercent > 0;
   // A load bigger than the truck goes as a part, unless the player chose to overload and take it all.
@@ -317,7 +323,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}) });
+      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure });
       onAccepted(`Камионът тръгна: ${part ? `${dec(part.tons)} т ` : ''}${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
       setBusy(false);
       router.refresh();
@@ -349,6 +355,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
             {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}
             {c.roadWorks && <Badge tone="orange">🚧 {c.roadWorks}</Badge>}
+            {!!c.urgentRaises && <Badge tone="red">📈 +{c.urgentRaises * 10}% — никой не я е поел</Badge>}
             {c.toHome && <Badge tone="green"><House className="h-3 w-3" />КЪМ БАЗАТА</Badge>}
             {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
             {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />ЗА СТРОЕЖА НА КОМПАНИЯТА</Badge>}
@@ -479,6 +486,12 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
               </div>
               {option && !option.error && (option.rushMinutes != null || needsOverload) && (
                 <div className="space-y-1.5 rounded-xl border border-amber-sig/30 bg-amber-sig/5 p-3 text-sm">
+                  {insuranceLive && (
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-0.5" checked={insure} onChange={(e) => setInsure(e.target.checked)} />
+                      <span>Застраховай товара — {money(Math.round((part ? part.rewardCents : c.rewardCents) * CARGO_INSURANCE.premiumShare))}. При закъснение връща {Math.round(CARGO_INSURANCE.covers * 100)} % от неустойката.</span>
+                    </label>
+                  )}
                   {option.rushMinutes != null && (
                     <label className="flex items-start gap-2">
                       <input type="checkbox" className="mt-0.5" checked={rush} onChange={(e) => setRush(e.target.checked)} />

@@ -25,7 +25,7 @@ export default async function ShowcasePage({ params }: { params: Promise<{ id: s
       <Link href="/game/garage" className="inline-flex items-center gap-1 text-sm text-mist-300 hover:text-white"><ArrowLeft className="h-4 w-4" />Към сервиза</Link>
       <PageHeader title={`${v.model.brand} ${v.model.name}`} subtitle={`${v.plate} · ${int(v.odometerKm)} км · ${Math.round(v.condition)} %`} />
       <Card>
-        <Showcase hasTrailer={!!v.trailer} truck={{ modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, color: v.color, livery: v.livery, cosmetics: v.cosmetics, trailerUpgrades: v.trailer?.upgrades, trailerLogo: v.trailer?.logo, martenitsa: features.marta && isMarta(now) }} />
+        <Showcase hasTrailer={!!v.trailer} truck={{ modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, color: v.color, livery: v.livery, cosmetics: v.cosmetics, trailerUpgrades: v.trailer?.upgrades, trailerLogo: v.trailer?.logo, trailerCosmetics: v.trailer?.cosmetics, martenitsa: features.marta && isMarta(now) }} />
       </Card>
       <div className="grid gap-4 md:grid-cols-3">
         <Card title="Подобрения на камиона">

@@ -4,7 +4,7 @@ import { Coins } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
-import { COSMETIC_IDS, COSMETIC_PARTS } from '@/lib/game/cosmetics';
+import { COSMETIC_IDS, COSMETIC_PARTS, TRAILER_COSMETIC_IDS, TRAILER_COSMETIC_PARTS } from '@/lib/game/cosmetics';
 import type { ShopItem } from '@/lib/game/shop';
 
 export interface VehicleOption {
@@ -23,6 +23,7 @@ export function ShopBuy({
   cities,
   colors,
   vipColors,
+  trailers = [],
 }: {
   item: ShopItem;
   balance: number;
@@ -31,6 +32,8 @@ export function ShopBuy({
   cities: { id: number; name: string }[];
   colors: string[];
   vipColors: string[];
+  /** Own trailers (for trailer parts). */
+  trailers?: { id: string; label: string }[];
 }) {
   const router = useRouter();
   const usable = vehicles.filter((v) => (item.needs === 'vehicle_city' ? v.idle : v.owned && (item.needs !== 'vehicle' || v.idle)));
@@ -38,15 +41,16 @@ export function ShopBuy({
   const [cityId, setCityId] = useState('');
   const [text, setText] = useState('');
   const [color, setColor] = useState(colors[0] ?? '');
-  const [cosmetic, setCosmetic] = useState('grille:chrome');
+  const [cosmetic, setCosmetic] = useState(item.needs === 'trailer_cosmetic' ? 'stripe:red' : 'grille:chrome');
+  const [trailerId, setTrailerId] = useState(trailers[0]?.id ?? '');
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
-  const price = item.id === 'paint' && vip ? 0 : item.needs === 'vehicle_cosmetic' ? COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof COSMETIC_PARTS].price : item.price;
+  const price = item.id === 'paint' && vip ? 0 : item.needs === 'vehicle_cosmetic' ? COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof COSMETIC_PARTS].price : item.needs === 'trailer_cosmetic' ? TRAILER_COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof TRAILER_COSMETIC_PARTS].price : item.price;
   const needsVehicle = item.needs?.startsWith('vehicle');
-  const missing = (needsVehicle && !vehicleId) || (item.needs === 'vehicle_city' && !cityId) || ((item.needs === 'vehicle_plate' || item.needs === 'username' || item.needs === 'recipient') && text.trim().length < 2);
+  const missing = (needsVehicle && !vehicleId) || (item.needs === 'vehicle_city' && !cityId) || (item.needs === 'trailer_cosmetic' && !trailerId) || ((item.needs === 'vehicle_plate' || item.needs === 'username' || item.needs === 'recipient') && text.trim().length < 2);
 
   const buy = async () => {
     setBusy(true);
@@ -61,7 +65,8 @@ export function ShopBuy({
           cityId: item.needs === 'vehicle_city' ? Number(cityId) : undefined,
           plate: item.needs === 'vehicle_plate' ? text : undefined,
           color: item.needs === 'vehicle_color' ? color : undefined,
-          cosmetic: item.needs === 'vehicle_cosmetic' ? cosmetic : undefined,
+          cosmetic: item.needs === 'vehicle_cosmetic' || item.needs === 'trailer_cosmetic' ? cosmetic : undefined,
+          trailerId: item.needs === 'trailer_cosmetic' ? trailerId : undefined,
           username: item.needs === 'username' ? text : undefined,
           recipient: item.needs === 'recipient' ? text : undefined,
         },
@@ -103,6 +108,22 @@ export function ShopBuy({
             </optgroup>
           ))}
         </select>
+      )}
+      {item.needs === 'trailer_cosmetic' && (
+        trailers.length ? (
+          <>
+            <select className="input py-2 text-sm" value={trailerId} onChange={(e) => setTrailerId(e.target.value)} aria-label="Ремарке">
+              {trailers.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+            <select className="input py-2 text-sm" value={cosmetic} onChange={(e) => setCosmetic(e.target.value)} aria-label="Част за ремаркето">
+              {TRAILER_COSMETIC_IDS.map((part) => (
+                <optgroup key={part} label={`${TRAILER_COSMETIC_PARTS[part].label} · ${TRAILER_COSMETIC_PARTS[part].price} TC`}>
+                  {TRAILER_COSMETIC_PARTS[part].styles.map((st) => <option key={st.id} value={`${part}:${st.id}`}>{TRAILER_COSMETIC_PARTS[part].label}: {st.label}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </>
+        ) : <p className="text-xs text-mist-400">Нямаш собствено ремарке.</p>
       )}
       {item.needs === 'vehicle_plate' && <input className="input py-2 text-sm uppercase" maxLength={10} value={text} onChange={(e) => setText(e.target.value.toUpperCase())} placeholder="TRANS 1" aria-label="Надпис на табелата" />}
       {item.needs === 'username' && <input className="input py-2 text-sm" maxLength={20} value={text} onChange={(e) => setText(e.target.value)} placeholder="Ново потребителско име" aria-label="Ново потребителско име" />}

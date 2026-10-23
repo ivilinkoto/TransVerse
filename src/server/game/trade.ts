@@ -34,12 +34,12 @@ async function plotWarehouseTons(db: DbOrTx, companyId: string): Promise<{ cityI
   return perks?.bonuses.warehouseTons ? { cityId: perks.membership.company.hqCityId, tons: perks.bonuses.warehouseTons } : null;
 }
 
-async function capacityOf(db: DbOrTx, depot: { companyId: string; cityId: number; slots: number }) {
+export async function capacityOf(db: DbOrTx, depot: { companyId: string; cityId: number; slots: number }) {
   const extra = await plotWarehouseTons(db, depot.companyId);
   return warehouseCapacityTons(depot.slots) + (extra?.cityId === depot.cityId ? extra.tons : 0);
 }
 
-async function usedTons(db: DbOrTx, depotId: string) {
+export async function usedTons(db: DbOrTx, depotId: string) {
   const [{ t = 0 } = {}] = await db.select({ t: sql<number>`coalesce(sum(${warehouseStock.tons}), 0)::float` }).from(warehouseStock).where(eq(warehouseStock.depotId, depotId));
   return Number(t);
 }
@@ -49,7 +49,7 @@ async function market(db: DbOrTx, cityId: number, cargo: CargoType) {
   return m ?? null;
 }
 
-async function addStock(tx: DbOrTx, depotId: string, cargo: CargoType, tons: number, costCents: number) {
+export async function addStock(tx: DbOrTx, depotId: string, cargo: CargoType, tons: number, costCents: number) {
   await tx
     .insert(warehouseStock)
     .values({ depotId, cargoType: cargo, tons, costCents })

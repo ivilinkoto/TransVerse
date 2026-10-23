@@ -11,6 +11,7 @@ import { gameContext } from '@/server/game/context';
 import { loyaltyLabel, marketSalaryCents, MOODS, REQUEST_TEXT, type DriverRequest } from '@/lib/game/moods';
 import { fleetView } from '@/server/game/queries';
 import { candidates } from '@/server/game/staff';
+import { tachograph } from '@/server/game/tachograph';
 
 export const metadata = { title: 'Шофьори' };
 
@@ -23,6 +24,8 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
   const { db, user, company, now, features } = await gameContext();
   if (!(await canHireStaff(db, user.id, company))) return <CompanyRequired what="Наемането на шофьори" />;
   const [fleet, pool] = await Promise.all([fleetView(db, company.id), candidates(db, company.id)]);
+  // The tachograph (v1.5): driving and rest by day for each driver.
+  const tacho = features.tachograph ? new Map(await Promise.all(fleet.drivers.map(async (d) => [d.id, await tachograph(db, d.id, now)] as const))) : null;
   const payroll = fleet.drivers.reduce((s, d) => s + d.salaryCentsPerDay, 0);
   const label = (v: (typeof fleet.vehicles)[number]) => `${v.plate} · ${v.model.name}`;
 
@@ -67,6 +70,27 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                     {rest > 0 && <p className="mt-1.5 text-xs text-mist-400">Ако тръгне сега, ще спре за почивка след {hours(Math.max(0, CREW_RULES.soloDailyMin + traitLevel(d.traits, 'long') * CREW_RULES.longBonusMin - duty))} кормуване.</p>}
                   </div>
 
+                  {tacho && (
+                    <details className="mt-3 rounded-xl bg-asphalt-900/60 p-3 text-sm">
+                      <summary className="cursor-pointer text-mist-300">Тахограф (7 дни)</summary>
+                      {(tacho.get(d.id) ?? []).length === 0 ? <p className="mt-2 text-xs text-mist-400">Няма курсове тази седмица.</p> : (
+                        <table className="mt-2 w-full text-xs">
+                          <thead><tr className="text-left text-mist-400"><th>Ден</th><th className="text-right">Каране</th><th className="text-right">Почивка</th><th className="text-right">Курсове</th></tr></thead>
+                          <tbody>
+                            {(tacho.get(d.id) ?? []).map((r) => (
+                              <tr key={r.date} className="border-t border-asphalt-800">
+                                <td className="py-1">{r.date.split('-').reverse().slice(0, 2).join('.')}{r.violations ? <span className="ml-1 text-loss" title="Без задължителната почивка">⚠ {r.violations}</span> : null}</td>
+                                <td className={`num text-right ${r.driveMin > CREW_RULES.soloDailyMin ? 'text-amber-sig' : ''}`}>{hours(r.driveMin)}</td>
+                                <td className="num text-right">{hours(r.restMin)}</td>
+                                <td className="num text-right">{r.trips}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                      <p className="mt-1 text-[11px] text-mist-400">Игрово време. ⚠ — курс без задължителната почивка (риск от глоба при проверка).</p>
+                    </details>
+                  )}
                   {features.driver_moods && !d.isOwner && (
                     <div className="mt-3 rounded-xl bg-asphalt-900/60 p-3 text-sm">
                       <div className="flex items-center justify-between gap-2">

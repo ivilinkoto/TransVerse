@@ -10,7 +10,7 @@ import type { Database, Tx } from '@/server/db/client';
 import { cityMarkets, companyMembers, drivers, organizations, trailers, users, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { powerUnitModel } from '@/lib/game/catalog';
-import { COSMETIC_PARTS, parseCosmetic, stickerText } from '@/lib/game/cosmetics';
+import { COSMETIC_PARTS, parseCosmetic, parseTrailerCosmetic, stickerText, TRAILER_COSMETIC_PARTS } from '@/lib/game/cosmetics';
 import { postCoins } from './coins';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -25,6 +25,7 @@ export const shopPurchaseSchema = z.object({
   username: z.string().trim().max(20).optional(),
   recipient: z.string().trim().max(20).optional(),
   cosmetic: z.string().max(20).optional(),
+  trailerId: z.string().uuid().optional(),
 });
 export type ShopPurchase = z.infer<typeof shopPurchaseSchema>;
 
@@ -155,6 +156,21 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         await tx.update(vehicles).set({ cosmetics: { ...v.cosmetics, [part]: value } }).where(eq(vehicles.id, v.id));
         price = COSMETIC_PARTS[part].price;
         summary = `${COSMETIC_PARTS[part].label} (${COSMETIC_PARTS[part].styles.find((s) => s.id === style)!.label}) за ${v.plate}`;
+        break;
+      }
+      case 'trailer_part': {
+        if (!(await featureFor(tx, userId, 'trailer_cosmetics', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+        const choice = parseTrailerCosmetic(input.cosmetic ?? '');
+        if (!choice) fail('invalid_part', 'Изберете част и стил.');
+        if (!input.trailerId) fail('trailer_required', 'Изберете ремарке.');
+        const [t] = await tx.select().from(trailers).where(and(eq(trailers.id, input.trailerId!), eq(trailers.companyId, account.id), isNull(trailers.soldAt))).for('update');
+        if (!t) fail('trailer_not_found', 'Ремаркето не е намерено.', 404);
+        if (t!.ownership !== 'owned') fail('rented', 'Наетите и фирмените ремаркета не се променят — изберете свое.');
+        const { part, style } = choice!;
+        if (t!.cosmetics[part] === style) fail('already_fitted', 'Ремаркето вече е с тази част.');
+        await tx.update(trailers).set({ cosmetics: { ...t!.cosmetics, [part]: style } }).where(eq(trailers.id, t!.id));
+        price = TRAILER_COSMETIC_PARTS[part].price;
+        summary = `${TRAILER_COSMETIC_PARTS[part].label} (${TRAILER_COSMETIC_PARTS[part].styles.find((s) => s.id === style)!.label}) за ремарке ${t!.plate}`;
         break;
       }
       case 'rename': {

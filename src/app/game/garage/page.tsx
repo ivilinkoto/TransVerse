@@ -59,7 +59,7 @@ export default async function GaragePage() {
                     {features.garage_showcase && <Link href={`/game/garage/${v.id}`} className="text-xs text-cyan-glow hover:underline">Витрина →</Link>}
                     {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : v.movingUntil && v.movingUntil > now ? <Badge tone="orange">пътува до {v.city.nameBg} · до минута</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
                   </div>
-                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} martenitsa={marta} className="my-3 h-24 w-full" />
+                  <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} trailerCosmetics={v.trailer?.cosmetics} martenitsa={marta} className="my-3 h-24 w-full" />
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="flex justify-between text-xs text-mist-400"><span>Влекач / камион</span><span className="num">{Math.round(v.condition)}%</span></div>
@@ -155,7 +155,7 @@ export default async function GaragePage() {
                     <div className="label mb-1.5">Подобрения</div>
                     <ul className="grid gap-2 sm:grid-cols-2">
                       {Object.values(UPGRADES)
-                        .filter((u) => u.appliesTo.includes(v.model.kind))
+                        .filter((u) => u.appliesTo.includes(v.model.kind) && (features.seasonal_tyres || (u.id !== 'summer_tyres' && u.id !== 'all_season_tyres')))
                         .map((u) => {
                           const has = v.upgrades.includes(u.id);
                           return (
@@ -190,7 +190,7 @@ export default async function GaragePage() {
               const listing = listingOf(t.id);
               return (
                 <li key={t.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-3 text-sm">
-                  <TrailerIllustration modelId={t.modelId} upgrades={t.upgrades} logo={t.logo} className="h-14 w-full" />
+                  <TrailerIllustration modelId={t.modelId} upgrades={t.upgrades} logo={t.logo} cosmetics={t.cosmetics} className="h-14 w-full" />
                   <div className="mt-2 flex items-center justify-between"><span className="font-semibold">{t.model.name}</span><span className="font-mono text-xs text-mist-400">{t.plate}</span></div>
                   <div className="mt-1 text-xs text-mist-400">{tractor ? `Прикачено към ${tractor.plate}` : `Паркирано в ${t.city.nameBg}`} · {Math.round(t.condition)}%</div>
                   {t.ownership === 'company' ? (

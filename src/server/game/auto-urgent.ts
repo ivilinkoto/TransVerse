@@ -7,11 +7,15 @@
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { rewardCents } from '@/lib/game/economy';
+
+/** How much an automatic urgent shipment pays, × a normal load of the same size. */
+export const URGENT_PAY = [3, 4] as const;
 import { isFreightHub } from '@/lib/game/markets';
 import { gameDurationMinutes } from '@/lib/game/schedule';
 import { haversineKm } from '@/lib/geo/geometry';
 import type { Database } from '@/server/db/client';
-import { cities, contracts, jobState } from '@/server/db/schema';
+import { cities, contracts, deliveries, jobState } from '@/server/db/schema';
+import { broadcast } from './notify';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { insertUrgent } from '@/server/urgent';
@@ -55,8 +59,8 @@ export async function publishAutoUrgent(db: Database, now = new Date(), provider
   const speedFactor = pick([1.5, 2, 2, 3]);
   const fastest = gameDurationMinutes(route.distanceKm) / speedFactor;
   const windowMinutes = Math.min(2880, Math.max(20, Math.ceil(fastest * 1.6) + 30));
-  // Pays roughly twice a normal job of the same size.
-  const reward = Math.round((rewardCents(mix.cargo, tons, route.distanceKm, 1) * between(1.8, 2.6)) / 1000) * 1000;
+  // Pays three to four times a normal job of the same size (urgent work is worth it).
+  const reward = Math.round((rewardCents(mix.cargo, tons, route.distanceKm, 1) * between(URGENT_PAY[0], URGENT_PAY[1])) / 1000) * 1000;
   return db.transaction((tx) =>
     insertUrgent(
       tx,
@@ -102,4 +106,24 @@ export async function autoUrgentTick(db: Database, now = new Date(), provider?: 
   }
   await save(now.getTime() + nextGapMs());
   return published;
+}
+
+/** Urgent price rises (v1.5): +10 % for every 30 minutes nobody has taken it, up to +50 %. */
+export const URGENT_RAISE = { everyMin: 30, step: 0.1, max: 5 } as const;
+
+/** Worker: raises the pay of urgent shipments that wait on the board without a taker. */
+export async function raiseUrgentPrices(db: Database, now = new Date()) {
+  const open = await db.select().from(contracts).where(and(eq(contracts.urgent, true), eq(contracts.status, 'open'), gt(contracts.expiresAt, now)));
+  let raised = 0;
+  for (const c of open) {
+    const steps = Math.min(URGENT_RAISE.max, Math.floor((now.getTime() - c.createdAt.getTime()) / (URGENT_RAISE.everyMin * 60_000)));
+    if (steps <= c.urgentRaises) continue;
+    const [taken] = await db.select({ id: deliveries.id }).from(deliveries).where(eq(deliveries.contractId, c.id)).limit(1);
+    if (taken) continue;
+    const reward = Math.round((c.rewardCents * (1 + URGENT_RAISE.step * steps)) / (1 + URGENT_RAISE.step * c.urgentRaises) / 100) * 100;
+    const [row] = await db.update(contracts).set({ rewardCents: reward, urgentRaises: steps }).where(and(eq(contracts.id, c.id), eq(contracts.urgentRaises, c.urgentRaises))).returning({ id: contracts.id });
+    if (row) raised++;
+  }
+  if (raised) await broadcast(db, 'market');
+  return raised;
 }

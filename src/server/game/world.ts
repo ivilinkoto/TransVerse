@@ -21,7 +21,7 @@ import { ensureAuction, settleAuctions } from './auctions';
 import { ensureDailyLoad, ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { dispatchPush, pruneSubscriptions } from '@/server/push';
-import { autoUrgentTick } from './auto-urgent';
+import { autoUrgentTick, raiseUrgentPrices } from './auto-urgent';
 import { settleTenders } from './tenders';
 import { dailyReminders } from './daily';
 import { announceStartedEvents, ensureAutoEvent, settleDueEvents } from './events';
@@ -70,6 +70,9 @@ import { expireFreight } from './trade';
 import { settleLiveryContest } from './livery-contest';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
+import { expireAllianceListings } from './alliance-market';
+import { celebrateAnniversaries } from './community';
+import { postStaffAlerts } from '@/server/discord/staff-alerts';
 
 /**
  * Background simulation of the persistent world. Every job is idempotent and
@@ -243,6 +246,11 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       if (rally) await announceRally(db, rally.id, now);
       await settleRallies(db, now);
     });
+    if (featureLive('urgent_raise', now)) await every(db, 'urgent-raise', 5 * 60_000, now, () => raiseUrgentPrices(db, now));
+    // v1.5: the alliance warehouse returns unsold goods; company birthdays.
+    await every(db, 'alliance-market', 10 * 60_000, now, () => expireAllianceListings(db, now));
+    await every(db, 'anniversaries', 60 * 60_000, now, () => celebrateAnniversaries(db, now));
+    await every(db, 'staff-alerts', 60 * 60_000, now, () => postStaffAlerts(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);

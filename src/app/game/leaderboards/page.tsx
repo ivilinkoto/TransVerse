@@ -12,10 +12,12 @@ import { ECO } from '@/lib/game/eco';
 import { ecoBoard, ecoWeek } from '@/server/game/eco';
 import { DIVISION_LABELS, DIVISION_RULES, DIVISIONS } from '@/lib/game/competition';
 import { divisionTable } from '@/server/game/competition';
+import { LANE_RECORDS } from '@/lib/game/community';
+import { laneRecordsView } from '@/server/game/community';
 
 export const metadata = { title: 'Класации' };
 
-const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions'; label: string; unit: string }[] = [
+const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions' | 'records'; label: string; unit: string }[] = [
   { id: 'season', label: 'Сезон', unit: 'точки' },
   { id: 'wealth', label: 'Богатство', unit: 'стойност' },
   { id: 'deliveries', label: 'Доставки', unit: 'доставки' },
@@ -23,20 +25,21 @@ const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions'; label: string
   { id: 'eco', label: 'Икономичен шофьор', unit: 'лв./км' },
   { id: 'bases', label: 'Най-красиви бази', unit: 'харесвания' },
   { id: 'divisions', label: 'Дивизии', unit: 'тонове' },
+  { id: 'records', label: 'Рекорди на линии', unit: 'време' },
 ];
 
 const medal = (i: number) => (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1);
 
 export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { db, user, company, features } = await gameContext();
-  const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions));
+  const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions) && (t.id !== 'records' || features.lane_records));
   const requested = (await searchParams).tab;
   const tab = tabs.find((t) => t.id === requested) ?? tabs[0]!;
   return (
     <div className="space-y-5">
       <PageHeader title="Класации" subtitle="Само реални играчи и техните компании. Няма измислени конкуренти." />
       <Segmented label="Вид класация" active={tab.id} items={tabs.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
-      {tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
+      {tab.id === 'records' ? <RecordsBoard /> : tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
     </div>
   );
 }
@@ -174,6 +177,26 @@ async function EcoBoardView({ userId }: { userId: string }) {
         ))}
       </ol>
       {rows.length === 0 && <p className="p-3 text-sm text-mist-400">Още никой не е изминал {int(ECO.minKm)} км тази седмица.</p>}
+    </Card>
+  );
+}
+
+async function RecordsBoard() {
+  const { db, now } = await gameContext();
+  const rows = await laneRecordsView(db, now, 50);
+  return (
+    <Card className="p-2 sm:p-3">
+      <p className="px-2 pb-2 text-sm text-mist-300">Най-бързият курс с товар по всяка линия този месец (от натоварването до пристигането, навреме, поне {LANE_RECORDS.minKm} км). Нов месец — нови рекорди. Игрови данни.</p>
+      {rows.length ? (
+        <ul className="divide-y divide-asphalt-800">
+          {rows.map((r) => (
+            <li key={`${r.originCityId}-${r.destCityId}`} className="flex items-center justify-between gap-3 px-2 py-2.5 text-sm">
+              <span className="min-w-0"><span className="block truncate font-medium">{r.from} → {r.to}</span><span className="block text-xs text-mist-400">{int(Math.round(r.km))} км · <PlayerName name={r.username} /></span></span>
+              <span className="num shrink-0 font-semibold">{Math.floor(r.minutes / 60)} ч {r.minutes % 60} мин</span>
+            </li>
+          ))}
+        </ul>
+      ) : <p className="px-2 py-4 text-sm text-mist-400">Този месец още няма рекорди.</p>}
     </Card>
   );
 }

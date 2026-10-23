@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { adminResetLink, adminVerifyEmail, sendTestMail, adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
+import { compensateAll, adminResetLink, adminVerifyEmail, sendTestMail, adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
 import { cancelEvent, createEvent, eventSchema } from '@/server/game/events';
 import { diagnosePaypal, refundPaypalPayment } from '@/server/payments';
@@ -17,6 +17,7 @@ import { discordConfig } from '@/server/discord/config';
 import { resolveReport, unmute } from '@/server/game/moderation';
 import { createUrgentContract, urgentSchema } from '@/server/urgent';
 import { applyPayFactor } from '@/server/admin-economy';
+import { requireFeature } from '@/server/features';
 
 const id = z.string().uuid('Невалиден идентификатор.');
 
@@ -36,6 +37,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('resetCompanyBranding'), companyId: id, reason: z.string().trim().max(300) }),
   z.object({ type: z.literal('createEvent'), event: eventSchema }),
   z.object({ type: z.literal('cancelEvent'), eventId: id }),
+  z.object({ type: z.literal('compensateAll'), kind: z.enum(['money', 'coins']), amount: z.coerce.number().positive('Сумата е положителна.'), reason: z.string().trim().max(300) }),
   z.object({ type: z.literal('applyPayFactor'), factor: z.coerce.number().min(0.7).max(1.3) }),
   z.object({ type: z.literal('refundPayment'), paymentId: id }),
   z.object({ type: z.literal('checkPaypal') }),
@@ -101,6 +103,9 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true };
     case 'createUrgentContract':
       return { ok: true, id: (await createUrgentContract(db, user, input.contract)).id };
+    case 'compensateAll':
+      requireFeature('compensation', user.role);
+      return { ok: true, ...(await compensateAll(db, user, { kind: input.kind, amount: input.amount, reason: input.reason })) };
     case 'adjustCoins':
       await adjustCoins(db, user, input.userId, input.amount, input.reason);
       return { ok: true };

@@ -61,8 +61,12 @@ export type LedgerCategory =
   | 'oversize'
   | 'night_bonus'
   | 'perfect_bonus'
+  | 'insurance_payout'
   | 'lease'
-  | 'member_bonus';
+  | 'member_bonus'
+  | 'convoy_perfect'
+  | 'staff_bus_bonus'
+  | 'alliance_market';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -122,8 +126,12 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   oversize: 'Разрешителни и придружаване (извънгабаритни)',
   night_bonus: 'Бонус „Нощна смяна“',
   perfect_bonus: 'Бонус за перфектна серия',
+  insurance_payout: 'Обезщетения от застраховки',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',
+  convoy_perfect: 'Бонус „Перфектен конвой“',
+  staff_bus_bonus: 'Бонус за първия курс в компанията',
+  alliance_market: 'Склад на съюза (покупки и продажби)',
 };
 
 export interface Posting {
@@ -169,7 +177,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   member_contribution: 'Вноска от курс',
@@ -200,6 +208,7 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   company_contract: 'Договори за превоз с други компании',
   academy: 'Фирмена академия',
   division: 'Награди от дивизията',
+  anniversary: 'Годишнина на компанията',
 };
 
 export interface TreasuryPosting {
