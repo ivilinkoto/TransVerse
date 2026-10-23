@@ -280,7 +280,7 @@ async function loadRoute(db: Database, origin: Hub, destination: Hub, provider?:
   return getCrossingRoute(db, origin.id, destination.id, line, !!ia, 'truck', provider);
 }
 
-async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean; oversize?: boolean; goods?: string } = {}): Promise<string | null> {
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean; oversize?: boolean; goods?: string; transEurope?: boolean } = {}): Promise<string | null> {
   const sea = islandOf(origin)?.id !== islandOf(destination)?.id;
   if (sea) via = [];
   const viaRoute = via.length ? await getRouteVia(db, origin.id, via.map((h) => h.id), destination.id, 'truck', provider) : null;
@@ -326,6 +326,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     portCallId: extra.portCallId ?? null,
     port: extra.port ?? false,
     oversize: extra.oversize ?? false,
+    transEurope: extra.transEurope ?? false,
     expiresAt: new Date(now.getTime() + ttlMs),
   }).returning({ id: contracts.id });
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));
@@ -335,7 +336,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
 }
 
 /** A load between two given cities (port loads, ship calls); null when there is no way (two different islands). */
-export async function addLoad(db: Database, originId: number, destinationId: number, cargo: CargoType, tons: number, now: Date, ttlMs: number, multiplier: number, extra: { portCallId?: string; port?: boolean; oversize?: boolean; goods?: string }, provider?: RoutingProvider, hubs?: Hub[]) {
+export async function addLoad(db: Database, originId: number, destinationId: number, cargo: CargoType, tons: number, now: Date, ttlMs: number, multiplier: number, extra: { portCallId?: string; port?: boolean; oversize?: boolean; goods?: string; transEurope?: boolean }, provider?: RoutingProvider, hubs?: Hub[]) {
   const all = hubs ?? (await loadHubs(db));
   const origin = all.find((h) => h.id === originId);
   const destination = all.find((h) => h.id === destinationId);

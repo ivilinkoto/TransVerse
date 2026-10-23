@@ -9,6 +9,7 @@ import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multi
 import { formConvoy } from './convoy';
 import { isEuropeCountry } from '@/lib/geo/scope';
 import { bigConvoyBonus, checkEurotour } from './challenges';
+import { checkCabotage, requireTeam, transEuropeDone } from './europe';
 import { specializationBonus } from './specialization';
 import { checkLegend } from './heritage';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
@@ -164,12 +165,14 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   let loadedRoute = await db.query.routes.findFirst({ where: (r, { eq: e }) => e(r.id, contract!.routeId) });
   // v1.4: the truck may ride a train for the long part ("С влак"); islands are reached by ferry.
   if (risks.rail) {
-    if (!(await featureFor(db, userId, 'rail', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
     const [lineId = '', dir] = risks.rail.split(':');
-    const ends = await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId, ...CROSSING_LINES.filter((l) => l.kind === 'rail').flatMap((l) => [l.a, l.b])]));
+    // v1.7: a sea line between two mainland ports is chosen the same way as a train.
+    const seaLine = !!crossingLine_(lineId)?.optional;
+    if (!(await featureFor(db, userId, seaLine ? 'sea_lines' : 'rail', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+    const ends = await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId, ...CROSSING_LINES.filter((l) => l.kind === 'rail' || l.optional).flatMap((l) => [l.a, l.b])]));
     const at = new Map(ends.map((c) => [c.id, c]));
-    const option = railOptions(at.get(contract!.originCityId)!, at.get(contract!.destCityId)!, at).find((o) => o.line.id === lineId && o.reversed === (dir === 'r'));
-    if (!option || contract!.stops?.length || contract!.urgent) fail('no_rail', 'Влакът не е подходящ за този товар.');
+    const option = railOptions(at.get(contract!.originCityId)!, at.get(contract!.destCityId)!, at, contract!.distanceKm, seaLine).find((o) => o.line.id === lineId && o.reversed === (dir === 'r'));
+    if (!option || contract!.stops?.length || contract!.urgent) fail('no_rail', seaLine ? 'Фериботът не е подходящ за този товар.' : 'Влакът не е подходящ за този товар.');
     loadedRoute = await getCrossingRoute(db, contract!.originCityId, contract!.destCityId, option!.line, option!.reversed, 'truck');
   }
   // v1.6: the cheap way — off the motorways, no tolls, slower (ordinary loads only).
@@ -213,6 +216,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const [to] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.destCityId));
     const missing = missingFor({ cargoType: contract!.cargoType, originCountry: from!.country, destCountry: to!.country, routeCountries: loadedRoute!.countries }, await heldLicences(tx, userId));
     if (missing.length) fail('licence_required', `Нужен е лиценз: ${licenceNames(missing)}. Купува се от раздел „Лицензи“.`);
+    // v1.7: trans-European loads need a two-driver crew; cabotage is limited in a foreign country.
+    if (contract!.transEurope && (await featureFor(tx, userId, 'trans_europe', now))) requireTeam(contract!, bundle.coDriver?.id);
+    await checkCabotage(tx, userId, bundle.vehicle.companyId, contract!, now);
     if (bundle.vehicle.cityId !== (emptyRoute ? emptyRoute.fromCityId : contract!.originCityId)) fail('vehicle_moved', 'Превозното средство смени местоположението си. Опитайте отново.', 409);
 
     // VIP early access to urgent shipments.
@@ -547,6 +553,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
   // The city album (v1.5): a card for the destination.
   await recordCityVisit(tx, company!.ownerId, contract.destCityId, completedAt);
+  // v1.7: the first trans-European load on time earns a badge.
+  await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
   await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
   // The company academy (v1.5): an on-time trip of a student is a course.

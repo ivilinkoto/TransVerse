@@ -11,6 +11,7 @@ import { settleWeeklyChallenge } from './challenges';
 import { runCup } from './tournament';
 import { ensurePlateAuction, settlePlateAuctions } from './plates';
 import { endTrailerHires } from './trailer-hire';
+import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
 import { settleDivisions } from './competition';
@@ -262,6 +263,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await ensurePlateAuction(db, now);
     });
     await every(db, 'trailer-hires', 10 * 60_000, now, () => endTrailerHires(db, now));
+    // v1.7: a few trans-European loads on the board.
+    if (featureLive('trans_europe', now)) await every(db, 'trans-europe', 60 * 60_000, now, () => ensureTransEuropeLoads(db, now, provider));
     if (featureLive('urgent_raise', now)) await every(db, 'urgent-raise', 5 * 60_000, now, () => raiseUrgentPrices(db, now));
     // v1.5: the alliance warehouse returns unsold goods; company birthdays.
     await every(db, 'alliance-market', 10 * 60_000, now, () => expireAllianceListings(db, now));

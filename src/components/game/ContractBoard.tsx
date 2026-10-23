@@ -23,6 +23,7 @@ import { useFeature } from './Features';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
 import { SECURE_PARKING } from '@/lib/game/traffic';
 import { SPECIALIZATION } from '@/lib/game/specialization';
+import { TRANS_EUROPE } from '@/lib/game/europe';
 
 export interface BoardContract {
   id: string;
@@ -32,6 +33,8 @@ export interface BoardContract {
   specialization?: boolean;
   /** Low-emission zones at the ends (v1.7). */
   lez?: string[];
+  /** 2 500 km and more, for a two-driver crew (v1.7). */
+  transEurope?: boolean;
   shipper: string;
   goods: string;
   cargoType: CargoType;
@@ -90,7 +93,7 @@ export interface BoardContract {
   /** v1.4: a ferry on the way (islands), a container from a port, trains the truck may ride. */
   ferry?: { note: string; ticketCents: number } | null;
   port?: string | null;
-  rail?: { id: string; note: string; ticketCents: number; km: number }[];
+  rail?: { id: string; note: string; ticketCents: number; km: number; kind?: 'rail' | 'ferry'; hours?: number }[];
   /** Someone's own goods on the freight exchange (the shipper's label). */
   exchange?: string | null;
   /** Oversize load (v1.5): what the permit and the escort cost. */
@@ -373,6 +376,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
             {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.transEurope && <Badge tone="gold">🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{Math.round((TRANS_EUROPE.multiplier - 1) * 100)}%</Badge>}
             {!!c.lez?.length && <Badge tone="green">🌿 ЗОНА · {c.lez.join(', ')}</Badge>}
             {c.specialization && <Badge tone="violet">🎯 СПЕЦИАЛИЗАЦИЯ · +{Math.round(SPECIALIZATION.bonusShare * 100)}%</Badge>}
             {!!c.traffic && <Badge tone="orange">🚦 НАТОВАРЕНО · {c.traffic} камиона</Badge>}
@@ -564,7 +568,11 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                   {c.rail.map((r) => (
                     <label key={r.id} className="flex items-start gap-2">
                       <input type="radio" name={`rail-${c.id}`} className="mt-0.5" checked={rail === r.id} onChange={() => setRail(r.id)} />
-                      <span><TrainFront className="mr-1 inline h-3.5 w-3.5 text-volt-400" /><b>{r.note}</b> ({int(r.km)} км с влак) — камионът се качва на влака, шофьорът почива, а за тези километри няма гориво, такси и износване. Билет {money(r.ticketCents)}; влаковете тръгват на всеки 30 мин (игрово разписание).</span>
+                      {r.kind === 'ferry' ? (
+                        <span><Ship className="mr-1 inline h-3.5 w-3.5 text-cyan-glow" /><b>{r.note}</b> ({int(r.km)} км по море, ~{r.hours} ч) — камионът се качва на ферибота, шофьорът почива, а пътят до пристанищата е по-кратък от целия път по суша. Билет {money(r.ticketCents)}; фериботите тръгват на всеки час (игрово разписание).</span>
+                      ) : (
+                        <span><TrainFront className="mr-1 inline h-3.5 w-3.5 text-volt-400" /><b>{r.note}</b> ({int(r.km)} км с влак) — камионът се качва на влака, шофьорът почива, а за тези километри няма гориво, такси и износване. Билет {money(r.ticketCents)}; влаковете тръгват на всеки 30 мин (игрово разписание).</span>
+                      )}
                     </label>
                   ))}
                 </div>

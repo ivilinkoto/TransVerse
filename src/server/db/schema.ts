@@ -447,6 +447,8 @@ export const contracts = pgTable(
     branchOrgId: uuid('branch_org_id'),
     /** What the buyer pays the company's treasury for a product load (v1.4). */
     factorySaleCents: money('factory_sale_cents'),
+    /** A trans-European load (v1.7): 2 500 km and more, for a two-driver crew. */
+    transEurope: boolean('trans_europe').notNull().default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),

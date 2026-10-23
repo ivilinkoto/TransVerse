@@ -64,8 +64,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const takenIds = new Set(taken.map((t) => t.contractId));
   const real = await realConditionsFor(db, user.id, now);
   // v1.4: rail terminals (for "С влак") and the ship in port.
-  const terminalIds = [...new Set(CROSSING_LINES.filter((l) => l.kind === 'rail').flatMap((l) => [l.a, l.b]))];
-  const terminals = features.rail ? new Map((await db.select({ id: citiesTable.id, lat: citiesTable.lat, lon: citiesTable.lon }).from(citiesTable).where(inArray(citiesTable.id, terminalIds))).map((t) => [t.id, t])) : new Map();
+  const terminalIds = [...new Set(CROSSING_LINES.filter((l) => l.kind === 'rail' || (l.optional && features.sea_lines)).flatMap((l) => [l.a, l.b]))];
+  const terminals = features.rail || features.sea_lines ? new Map((await db.select({ id: citiesTable.id, lat: citiesTable.lat, lon: citiesTable.lon }).from(citiesTable).where(inArray(citiesTable.id, terminalIds))).map((t) => [t.id, t])) : new Map();
   const ship = features.ship_calls ? await activeShipCall(db) : null;
   const works = features.road_works ? await activeRoadWorks(db, now) : [];
   const vip = isVip(user.vipUntil, now);
@@ -158,6 +158,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       project: project && project.cargoType === c.cargoType && project.destCityId === c.destCityId ? project.title : null,
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
       specialization: features.specializations && specializationCovers(membership?.company.specialization, c.cargoType),
+      transEurope: features.trans_europe && c.transEurope,
       lez: features.low_emission_zones ? [c.originCityId, c.destCityId].map((id) => LOW_EMISSION_ZONES[id]).filter((x): x is string => !!x) : [],
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,
       weather: (() => {
@@ -181,8 +182,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       })(),
       ferry: sea ? { note: crossingNote(sea, c.route.profile.endsWith(':r')), ticketCents: sea.ticketCents } : null,
       port: c.port ? (c.portCallId && ship?.id === c.portCallId ? `КОРАБ ${ship.ship}` : 'ОТ ПРИСТАНИЩЕТО') : null,
-      rail: features.rail && !c.urgent && !c.stops?.length && !sea
-        ? railOptions(c.origin, c.destination, terminals).slice(0, 2).map((o) => ({ id: `${o.line.id}:${o.reversed ? 'r' : 'f'}`, note: crossingNote(o.line, o.reversed), ticketCents: o.line.ticketCents, km: o.line.km }))
+      rail: (features.rail || features.sea_lines) && !c.urgent && !c.stops?.length && !sea
+        ? railOptions(c.origin, c.destination, terminals, c.distanceKm, features.sea_lines).filter((o) => o.line.kind === 'ferry' || features.rail).slice(0, 2).map((o) => ({ id: `${o.line.id}:${o.reversed ? 'r' : 'f'}`, note: crossingNote(o.line, o.reversed), ticketCents: o.line.ticketCents, km: o.line.km, kind: o.line.kind, hours: o.line.hours }))
         : [],
       shared: !!c.sharedLoadId,
       // A member may share a big ordinary load with the company (members take parts of it).

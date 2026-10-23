@@ -26,6 +26,8 @@ export interface CrossingLine {
   countries: string[];
   /** Ticket for a truck, cents (game data). */
   ticketCents: number;
+  /** v1.7: a sea line between two mainland ports — a choice instead of the road, like a train. */
+  optional?: boolean;
 }
 
 export const CROSSING_LINES: CrossingLine[] = [
@@ -53,6 +55,14 @@ export const CROSSING_LINES: CrossingLine[] = [
   { id: 'valencia-ibiza', kind: 'ferry', a: 2509954, b: 2516479, aName: 'Валенсия', bName: 'Ибиса', km: 200, hours: 6, countries: ['ES'], ticketCents: 340_00 },
   { id: 'barcelona-mao', kind: 'ferry', a: 3128760, b: 2514301, aName: 'Барселона', bName: 'Маон', km: 240, hours: 9, countries: ['ES'], ticketCents: 400_00 },
   { id: 'barcelona-ciutadella', kind: 'ferry', a: 3128760, b: 3124967, aName: 'Барселона', bName: 'Сиудадела', km: 210, hours: 8, countries: ['ES'], ticketCents: 360_00 },
+  // v1.7: sea lines across the Adriatic, the Ionian and the western Mediterranean (real lines), chosen instead of the road.
+  { id: 'bari-patras', kind: 'ferry', a: 3182351, b: 255683, aName: 'Бари', bName: 'Патра', km: 560, hours: 16, countries: ['IT', 'GR'], ticketCents: 900_00, optional: true },
+  { id: 'ancona-patras', kind: 'ferry', a: 3183089, b: 255683, aName: 'Анкона', bName: 'Патра', km: 1_000, hours: 22, countries: ['IT', 'GR'], ticketCents: 1_450_00, optional: true },
+  { id: 'bari-durres', kind: 'ferry', a: 3182351, b: 3185728, aName: 'Бари', bName: 'Дуръс', km: 230, hours: 9, countries: ['IT', 'AL'], ticketCents: 380_00, optional: true },
+  { id: 'bari-bar', kind: 'ferry', a: 3182351, b: 3204509, aName: 'Бари', bName: 'Бар', km: 200, hours: 9, countries: ['IT', 'ME'], ticketCents: 340_00, optional: true },
+  { id: 'ancona-split', kind: 'ferry', a: 3183089, b: 3190261, aName: 'Анкона', bName: 'Сплит', km: 230, hours: 11, countries: ['IT', 'HR'], ticketCents: 380_00, optional: true },
+  { id: 'genoa-barcelona', kind: 'ferry', a: 3176219, b: 3128760, aName: 'Генуа', bName: 'Барселона', km: 650, hours: 19, countries: ['IT', 'ES'], ticketCents: 1_050_00, optional: true },
+  { id: 'civitavecchia-barcelona', kind: 'ferry', a: 3178587, b: 3128760, aName: 'Чивитавекия', bName: 'Барселона', km: 520, hours: 20, countries: ['IT', 'ES'], ticketCents: 860_00, optional: true },
   { id: 'duisburg-istanbul', kind: 'rail', a: 2934691, b: 742394, aName: 'Дуисбург', bName: 'Истанбул (Халкалъ)', km: 2_560, hours: 72, countries: ['DE', 'AT', 'HU', 'RS', 'BG', 'TR'], ticketCents: 1_950_00 },
 ];
 
@@ -99,9 +109,22 @@ export function nextDeparture(kind: CrossingKind, t: number): number {
  * from the second one together are short next to the rail part, and the whole
  * way is not much longer than the direct road (straight lines, for planning).
  */
-export function railOptions(from: { lat: number; lon: number }, to: { lat: number; lon: number }, terminals: Map<number, { lat: number; lon: number }>) {
+export function railOptions(from: { lat: number; lon: number }, to: { lat: number; lon: number }, terminals: Map<number, { lat: number; lon: number }>, roadKm?: number, sea = false) {
   const direct = haversineKm([from.lat, from.lon], [to.lat, to.lon]);
   const out: { line: CrossingLine; reversed: boolean; roadKm: number }[] = [];
+  // v1.7: a sea line is worth it when the road to and from the ports plus the crossing is clearly shorter than the road all the way.
+  if (sea && roadKm) {
+    for (const line of CROSSING_LINES.filter((l) => l.optional)) {
+      for (const reversed of [false, true]) {
+        const start = terminals.get(reversed ? line.b : line.a);
+        const end = terminals.get(reversed ? line.a : line.b);
+        if (!start || !end) continue;
+        const before = haversineKm([from.lat, from.lon], [start.lat, start.lon]) * 1.25;
+        const after = haversineKm([end.lat, end.lon], [to.lat, to.lon]) * 1.25;
+        if (before + line.km + after <= roadKm * 0.8) out.push({ line, reversed, roadKm: before + after });
+      }
+    }
+  }
   for (const line of CROSSING_LINES.filter((l) => l.kind === 'rail')) {
     for (const reversed of [false, true]) {
       const start = terminals.get(reversed ? line.b : line.a);
