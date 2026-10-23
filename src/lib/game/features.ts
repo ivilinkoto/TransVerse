@@ -128,6 +128,9 @@ export const FEATURES = {
   border_queues: '1.6',
   refuel: '1.6',
   road_traffic: '1.6',
+  eurotour: '1.6',
+  big_convoy: '1.6',
+  weekly_challenge: '1.6',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

@@ -463,6 +463,8 @@ export const deliveries = pgTable(
     autoDispatched: boolean('auto_dispatched').notNull().default(false),
     /** The other trip of a convoy (a friend or company member on the same lane); both get a bonus on time. */
     convoyWith: uuid('convoy_with'),
+    /** The first trip of a convoy (v1.6): every truck of a big convoy (up to five) points to it. */
+    convoyLead: uuid('convoy_lead'),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
@@ -498,6 +500,7 @@ export const deliveries = pgTable(
     uniqueIndex('deliveries_contract_company_idx').on(t.contractId, t.companyId),
     index('deliveries_due_idx').on(t.status, t.etaAt),
     index('deliveries_company_idx').on(t.companyId, t.status),
+    index('deliveries_convoy_lead_idx').on(t.convoyLead),
   ],
 );
 

@@ -13,6 +13,8 @@ import { companyLeaderboard, fleetView, leaderboard } from '@/server/game/querie
 import { playerCard } from '@/server/game/social';
 import { laneRecordsView } from '@/server/game/community';
 import { albumOf } from '@/server/game/competition';
+import { openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
+import { BIG_CONVOY, WEEKLY_CHALLENGE } from '@/lib/game/challenges';
 import type { Embed } from './api';
 import type { Row } from './ui';
 import { appUrl, BRAND } from './config';
@@ -57,6 +59,8 @@ export const COMMANDS = [
   { name: 'рекорди', description: 'Рекордите на линиите този месец (с име — на играч)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'камион', description: 'Картичка с твой камион — боя, ливрея, части (свързан акаунт)', options: [{ type: 3, name: 'номер', description: 'Регистрационен номер (без него — последно купеният)', required: false }] },
   { name: 'съюз', description: 'Съюзът на компанията ти (или съюз по име): компании, седмица и съюзна база', options: [{ type: 3, name: 'име', description: 'Име на съюза', required: false }] },
+  { name: 'конвой-голям', description: 'Обявените конвои, в които има място (голям конвой — до 5 камиона)' },
+  { name: 'предизвикателство', description: 'Предизвикателството на седмицата: мярката, първите и твоето място' },
   { name: 'албум', description: 'Колекцията от градове (без име — твоята)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'ивент', description: 'Текущият ивент на общността и твоят принос' },
   { name: 'битка', description: 'Битката на компанията ти тази седмица' },
@@ -144,6 +148,10 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return me ? truckCard(db, me.id, input.options['номер'] ?? null, now) : { ephemeral: true, content: `Не знам кой си в играта. ${linkHint()}` };
     case 'съюз':
       return alliance(db, input.options['име'] ?? null, me?.id ?? null, now);
+    case 'конвой-голям':
+      return bigConvoys(db, now);
+    case 'предизвикателство':
+      return challenge(db, me?.id ?? null, now);
     case 'албум':
       return album(db, input.options['играч'] ?? me?.username ?? null, now);
     case 'свързване':
@@ -299,6 +307,44 @@ async function records(db: DbOrTx, username: string | null, now: Date): Promise<
       url: `${appUrl()}/game/leaderboards?tab=records`,
       color: BRAND,
       description: rows.length ? rows.map((r) => `**${r.from} → ${r.to}** · ${time(r.minutes)} · ${int(Math.round(r.km))} км${who ? '' : ` · ${r.username}`}`).join('\n') : 'Този месец още няма рекорди.',
+      footer,
+    }],
+  };
+}
+
+/** /конвой-голям — announced convoys that still have a seat (v1.6). */
+async function bigConvoys(db: DbOrTx, now: Date): Promise<CommandReply> {
+  if (!featureLive('big_convoy', now)) return { ephemeral: true, content: 'Големият конвой идва с обновление 1.6.' };
+  const rows = await openBigConvoys(db, now);
+  return {
+    embeds: [{
+      title: '🚚🚚🚚 Конвои с място',
+      url: `${appUrl()}/game/challenges`,
+      color: BRAND,
+      description: rows.length
+        ? rows.map((r) => `**${r.from} → ${r.to}** · ${r.username} · ${r.size}/${BIG_CONVOY.maxTrucks} камиона · до <t:${Math.floor(r.expiresAt.getTime() / 1000)}:t>`).join('\n')
+        : 'Сега няма отворен конвой. Тръгни на курс и го обяви с `/конвой`.',
+      footer,
+    }],
+  };
+}
+
+/** /предизвикателство — the challenge of the week (v1.6). */
+async function challenge(db: DbOrTx, userId: string | null, now: Date): Promise<CommandReply> {
+  if (!featureLive('weekly_challenge', now)) return { ephemeral: true, content: 'Предизвикателството на седмицата идва с обновление 1.6.' };
+  const w = await weeklyChallenge(db, now, userId, 5);
+  return {
+    embeds: [{
+      title: `🏆 Предизвикателство на седмицата: ${w.title}`,
+      url: `${appUrl()}/game/challenges`,
+      color: BRAND,
+      description: [
+        w.description,
+        `Награди: ${WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${c} TC`).join(' · ')} · до <t:${Math.floor(w.endsAt.getTime() / 1000)}:f>`,
+        '',
+        w.top.length ? w.top.map((r, i) => `**${i + 1}.** ${r.username} · ${int(r.value)} ${w.unit}`).join('\n') : 'Още няма курс навреме тази седмица.',
+        ...(w.mine ? ['', `Ти си **${w.mine.place}.** от ${int(w.players)} · ${int(w.mine.value)} ${w.unit}`] : []),
+      ].join('\n'),
       footer,
     }],
   };

@@ -101,6 +101,8 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   'perfect-10': { label: 'Безупречен', description: '10 перфектни курса подред.' },
   'perfect-25': { label: 'Легенда на пътя', description: '25 перфектни курса подред.' },
   'spring-2027': { label: 'Първа пролет 2027', description: '10 курса навреме по време на равноденствието 2027.' },
+  eurotour: { label: 'Евротур', description: 'Доставки до всичките 9 държави на играта за един месец.' },
+  'convoy-leader': { label: 'Водач на колона', description: 'Поведе голям конвой (3+ камиона) и пристигна навреме.' },
   'retro-collector': { label: 'Ретро колекционер', description: 'Купи и трите ретро бои (70-те, 80-те, 90-те).' },
   'driver-of-month': { label: 'Шофьор на месеца', description: 'Най-много курсове в компанията за един месец.' },
   anniversary: { label: 'Рожден ден на компанията', description: 'Беше член на компанията в деня на годишнината ѝ.' },

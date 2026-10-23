@@ -7,6 +7,7 @@ import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multistop';
 import { formConvoy } from './convoy';
+import { bigConvoyBonus, checkEurotour } from './challenges';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -505,6 +506,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const firstTrip = perks ? await firstTripBonus(tx, company!.ownerId, d, result.rewardCents, completedAt) : 0;
   const hallBonus = perks ? await allianceHallBonus(tx, company!.ownerId, perks.membership.company.id, d, result.rewardCents, completedAt) : 0;
   // v1.6: the equinox and the passes that open after the winter.
+  // v1.6: a big convoy (3–5 trucks) on time.
+  const bigConvoy = await bigConvoyBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt);
   const springBonus = (await equinoxBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await recordPassOpening(tx, company!.ownerId, d, result.late, completedAt));
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
@@ -517,12 +520,14 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
   // The city album (v1.5): a card for the destination.
   await recordCityVisit(tx, company!.ownerId, contract.destCityId, completedAt);
+  // Евротур (v1.6): all nine countries in one month.
+  await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
   // The company academy (v1.5): an on-time trip of a student is a course.
   await recordAcademyCourse(tx, company!.ownerId, { onTime, loadedKm: d.loadedKm }, completedAt);
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));

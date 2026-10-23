@@ -186,11 +186,12 @@ describe('open convoys', () => {
     const host = await newPlayer('Sofia');
     const stranger = await newPlayer('Sofia');
     expect(await code(announceConvoy(db(), host.userId))).toBe('no_trip');
-    const first = await acceptContract(db(), host.userId, (await makeContract('Sofia', 'Plovdiv')).id, await truck(host.userId));
+    // A lane no other test uses: an open convoy takes anyone (from v1.6 up to five trucks).
+    const first = await acceptContract(db(), host.userId, (await makeContract('Pleven', 'Ruse')).id, await truck(host.userId));
     const open = await announceConvoy(db(), host.userId);
     expect(open.deliveryId).toBe(first.id);
     expect(await code(announceConvoy(db(), host.userId))).toBe('already');
-    const second = await acceptContract(db(), stranger.userId, (await makeContract('Sofia', 'Plovdiv')).id, await truck(stranger.userId));
+    const second = await acceptContract(db(), stranger.userId, (await makeContract('Pleven', 'Ruse')).id, await truck(stranger.userId));
     const [row] = await db().select().from(deliveries).where(eq(deliveries.id, second.id));
     expect(row!.convoyWith).toBe(first.id);
   });
