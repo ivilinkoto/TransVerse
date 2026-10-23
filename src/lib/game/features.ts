@@ -143,6 +143,17 @@ export const FEATURES = {
   plate_auction: '1.6',
   trailer_hire: '1.6',
   europe: '1.7',
+  country_tolls: '1.7',
+  driving_bans: '1.7',
+  low_emission_zones: '1.7',
+  cabotage: '1.7',
+  sea_lines: '1.7',
+  trans_europe: '1.7',
+  grand_eurotour: '1.7',
+  country_kings: '1.7',
+  regional_events: '1.7',
+  discord_country: '1.7',
+  country_map: '1.7',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

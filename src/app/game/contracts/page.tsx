@@ -38,6 +38,7 @@ import { isNightShift, NIGHT, oversizeCostCents } from '@/lib/game/roads';
 import { activeRoadWorks } from '@/server/game/roads';
 import { TRAFFIC } from '@/lib/game/traffic';
 import { specializationCovers } from '@/lib/game/specialization';
+import { LOW_EMISSION_ZONES } from '@/lib/game/europe-roads';
 
 export const metadata = { title: 'Поръчки' };
 
@@ -157,6 +158,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       project: project && project.cargoType === c.cargoType && project.destCityId === c.destCityId ? project.title : null,
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
       specialization: features.specializations && specializationCovers(membership?.company.specialization, c.cargoType),
+      lez: features.low_emission_zones ? [c.originCityId, c.destCityId].map((id) => LOW_EMISSION_ZONES[id]).filter((x): x is string => !!x) : [],
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,
       weather: (() => {
         const w = routeCondition(c.route.countries, now, real);

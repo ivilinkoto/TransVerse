@@ -68,6 +68,8 @@ export interface TripCostInput {
   tons: number;
   payloadTons: number;
   tolledRoute: { empty: boolean; loaded: boolean };
+  /** v1.7: the truck toll of each leg by the countries it crosses (cents); default the single rate per km. */
+  tollByLeg?: { empty: number; loaded: number };
   /** Diesel price on each leg (cents per litre, by the countries it crosses); default ECONOMY.fuelPriceCentsPerLitre. */
   fuelPrice?: { empty: number; loaded: number };
 }
@@ -96,7 +98,8 @@ export function tripCosts(input: TripCostInput): TripCosts {
   const fuelCents = ev ? Math.round(energyKwh * ELECTRIC.centsPerKwh * efficiency) : Math.round((emptyL * price.empty + loadedL * price.loaded) * efficiency);
 
   const tolledKm = unit.tolled ? (input.tolledRoute.empty ? input.emptyKm : 0) + (input.tolledRoute.loaded ? input.loadedKm : 0) : 0;
-  const tollCents = Math.round(tolledKm * ECONOMY.tollCentsPerKm * (ev ? ELECTRIC.tollFactor : 1));
+  const byCountry = input.tollByLeg && unit.tolled ? (input.tolledRoute.empty ? input.tollByLeg.empty : 0) + (input.tolledRoute.loaded ? input.tollByLeg.loaded : 0) : null;
+  const tollCents = Math.round((byCountry ?? tolledKm * ECONOMY.tollCentsPerKm) * (ev ? ELECTRIC.tollFactor : 1));
   const km = input.emptyKm + input.loadedKm;
   const maintenanceCents = Math.round(km * unit.maintenanceCentsPerKm);
   const wear = (km / 1000) * ECONOMY.wearPerThousandKm * upgradeFactor(input.upgrades, 'wear') * (input.crewWear ?? 1);

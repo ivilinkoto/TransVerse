@@ -73,6 +73,7 @@ import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, road
 import { companyTrailerBonus } from './company-trailers';
 import { COMPANY_TRAILERS } from '@/lib/game/company-fleet';
 import { applyBorderQueues, REFUEL, refuelPriceCents, SECURE_PARKING, trafficFactor } from '@/lib/game/traffic';
+import { applyDrivingBans, countryTollCents, lezFeeCents } from '@/lib/game/europe-roads';
 import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
@@ -321,6 +322,11 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // Border queues by the day and the hour (v1.6).
     if (await featureFor(tx, userId, 'border_queues', now)) schedule = applyBorderQueues(schedule);
+    // Weekend driving bans for heavy trucks (v1.7): the truck waits at the border or the start.
+    if (unit.kind !== 'van' && (await featureFor(tx, userId, 'driving_bans', now))) {
+      schedule = applyDrivingBans(schedule, { empty: emptyRoute ? { start: parked!.country, borders: emptyRoute.borders } : null, loaded: { start: from!.country, borders: loadedRoute!.borders } }).segments;
+    }
+    const countryTolls = await featureFor(tx, userId, 'country_tolls', now);
     // The daily rests on the way (v1.6): a guarded car park for a fee, or a free lay-by with a small risk of fuel theft.
     const parkingLive = await featureFor(tx, userId, 'secure_parking', now);
     const rests = parkingLive ? schedule.filter((s) => s.kind === 'rest').length : 0;
@@ -344,6 +350,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       tons: load.weightTons,
       payloadTons: combinationCapability({ unit, trailer }).payloadTons,
       tolledRoute: { empty: !contract!.urgent && (emptyRoute?.hasToll ?? false), loaded: loadedRoute!.hasToll },
+      // v1.7: each country's own truck toll (per km, motorway or vignette).
+      tollByLeg: countryTolls ? { empty: countryTollCents(parked!.country, chargedEmptyKm, emptyRoute?.borders ?? [], ECONOMY.tollCentsPerKm), loaded: countryTollCents(from!.country, roadLoadedKm, loadedRoute!.borders, ECONOMY.tollCentsPerKm) } : undefined,
       // Diesel is bought along the way: each leg pays the prices of the countries it crosses.
       fuelPrice: {
         empty: legFuelPriceCents(parked!.country, chargedEmptyKm, emptyRoute?.borders ?? [], now),
@@ -369,8 +377,10 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const insured = !!risks.insure && (await featureFor(tx, userId, 'cargo_insurance', now));
     const cargoInsuranceCents = insured ? Math.round(load.rewardCents * CARGO_INSURANCE.premiumShare) : 0;
     const fuelStation = station && !station.member ? { orgId: station.orgId, cents: Math.round(running.fuelCents * FUEL_STATION.margin) } : null;
-    const extras = oversizeCents + cargoInsuranceCents + parkingCents;
-    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, cargoInsuranceCents, parkingCents, theftCents, totalCents: ticket + extras, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, cargoInsuranceCents, parkingCents, theftCents, fuelStation, totalCents: running.totalCents + ticket + extras };
+    // Low-emission zones (v1.7): a diesel truck pays to load or unload in them.
+    const lezCents = (await featureFor(tx, userId, 'low_emission_zones', now)) ? lezFeeCents([contract!.originCityId, contract!.destCityId, ...(contract!.stops ?? []).map((st) => st.cityId)], { electric: !!unit.electric, van: unit.kind === 'van' }) : 0;
+    const extras = oversizeCents + cargoInsuranceCents + parkingCents + lezCents;
+    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, cargoInsuranceCents, parkingCents, theftCents, lezCents, totalCents: ticket + extras, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, cargoInsuranceCents, parkingCents, theftCents, lezCents, fuelStation, totalCents: running.totalCents + ticket + extras };
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
     // A test drive (v1.5) has no rental fee.
@@ -470,6 +480,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const station = (costs as { fuelStation?: { orgId: string; cents: number } | null }).fuelStation;
   const cargoInsuranceCents = (costs as { cargoInsuranceCents?: number }).cargoInsuranceCents ?? 0;
   if (cargoInsuranceCents) postings.push({ category: 'insurance', amountCents: -cargoInsuranceCents, description: 'Застраховка на товара', idempotencyKey: key('cargo-insurance'), refType: 'delivery', refId: d.id });
+  const lezCents = (costs as { lezCents?: number }).lezCents ?? 0;
+  if (lezCents) postings.push({ category: 'tolls', amountCents: -lezCents, description: 'Такса за нискоемисионна зона', idempotencyKey: key('lez'), refType: 'delivery', refId: d.id });
   const parkingCents = (costs as { parkingCents?: number }).parkingCents ?? 0;
   if (parkingCents) postings.push({ category: 'road_events', amountCents: -parkingCents, description: 'Охраняем паркинг за почивките', idempotencyKey: key('parking'), refType: 'delivery', refId: d.id });
   // A free lay-by (v1.6): fuel stolen during a rest is known only on arrival.
