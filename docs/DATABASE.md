@@ -158,3 +158,11 @@
 - 0065: `company_chronicle` (хроника), `organizations.driver_of_month_prize_cents`, `driver_of_month`.
 - 0066: `vehicles.test_drive_from` (тест-драйв).
 - `job_state`: `economy-balance` (множител на заплащането, само от администратор), `event-start:<id>`, `rally-live:<id>`, `divisions:<месец>`. Касата на компанията: категория `anniversary` (ключ `anniversary:<компания>:<години>`). Сметката на играча: `convoy_perfect`, `staff_bus_bonus`, `alliance_market`, `insurance_payout`.
+
+## v1.6 — Първа пролет (миграции 0067–0071)
+- 0067: `pass_openings` (отваряне на проходите: година, държава, място, играч; уникално по година+държава+играч).
+- 0068: `deliveries.convoy_lead` (първият курс на голям конвой; индекс).
+- 0069: `organizations.specialization`, `specialization_at`; `tournament_entries`, `tournament_matches` (Пролетна купа); `recruitment_posts` (борса за набиране; една обява на компания и на шофьор).
+- 0070: `museum_exhibits` (музей на компанията), `users.spare_parts` (резервни части от скрап).
+- 0071: `trailers.hired_out`, `trailers.hire_id`, `trailer_hires` (ремаркета под наем), `plate_auctions` (седмичен търг за редки номера).
+- `job_state`: `eurotour:<играч>:M<месец>`, `weekly-challenge:W<седмица>`. ТрансКоин: причини `challenge`, `tournament`, `legend`, `plate_auction`. Сметката на играча: категория `trailer_hire` (наем на ремарке; ключове `trailer-hire:<наем>:pay/earn`), `holiday_reward` (равноденствие, проходи), `road_events` (охраняем паркинг, кражба на гориво), `company_bonus` (специализация), `convoy_bonus` (голям конвой), `vehicle_sale` (скрап).
