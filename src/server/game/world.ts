@@ -71,7 +71,7 @@ import { settleLiveryContest } from './livery-contest';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 import { expireAllianceListings } from './alliance-market';
-import { celebrateAnniversaries } from './community';
+import { awardDriversOfMonth, celebrateAnniversaries } from './community';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
 
 /**
@@ -250,6 +250,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // v1.5: the alliance warehouse returns unsold goods; company birthdays.
     await every(db, 'alliance-market', 10 * 60_000, now, () => expireAllianceListings(db, now));
     await every(db, 'anniversaries', 60 * 60_000, now, () => celebrateAnniversaries(db, now));
+    await every(db, 'driver-of-month', 60 * 60_000, now, () => awardDriversOfMonth(db, now));
     await every(db, 'staff-alerts', 60 * 60_000, now, () => postStaffAlerts(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.

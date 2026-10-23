@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { CARGO, CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
 import { contractWindowMinutes } from '@/lib/game/schedule';
-import { TRADE_RULES, buyPriceCents, sellPriceCents, warehouseCapacityTons } from '@/lib/game/trade';
+import { CLEARANCE, TRADE_RULES, buyPriceCents, sellPriceCents, warehouseCapacityTons } from '@/lib/game/trade';
 import { haversineKm } from '@/lib/geo/geometry';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, cityMarkets, companies, contracts, depots, haulerRatings, users, warehouseStock } from '@/server/db/schema';
@@ -297,10 +297,27 @@ export async function tradeOverview(db: DbOrTx, companyId: string, now = new Dat
       ...d,
       capacityTons: warehouseCapacityTons(d.slots) + (extra?.cityId === d.cityId ? extra.tons : 0),
       usedTons: round1(stock.filter((s) => s.depotId === d.id).reduce((a, s) => a + s.tons, 0)),
-      stock: stock.filter((s) => s.depotId === d.id).map((s) => ({ cargo: s.cargoType as CargoType, tons: round1(s.tons), costCents: s.costCents, avgCents: Math.round(s.costCents / Math.max(0.1, s.tons)) })),
+      stock: stock.filter((s) => s.depotId === d.id).map((s) => ({ cargo: s.cargoType as CargoType, tons: round1(s.tons), costCents: s.costCents, avgCents: Math.round(s.costCents / Math.max(0.1, s.tons)), clearable: s.updatedAt.getTime() <= now.getTime() - CLEARANCE.minDays * 86_400_000, clearCents: Math.round(s.costCents * CLEARANCE.share) })),
       buy: CARGO_TYPES.filter((c) => here.some((m) => m.cargoType === c && m.produces)).map((c) => ({ cargo: c, priceCents: buyPriceCents(city, c, now) })),
       sell: CARGO_TYPES.filter((c) => here.some((m) => m.cargoType === c && m.consumes)).map((c) => ({ cargo: c, priceCents: sellPriceCents(city, c, here.find((m) => m.cargoType === c)!.demand, now) })),
     };
+  });
+}
+
+/** Sells off goods that sat in the warehouse for a while: a share of what they cost, at once — the place is free again. */
+export async function clearStock(db: Database, userId: string, depotId: string, cargo: CargoType, now = new Date()) {
+  if (!(await featureFor(db, userId, 'warehouse_clearance', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const depot = await ownDepot(tx, company.id, depotId);
+    const [stock] = await tx.select().from(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, cargo))).for('update');
+    if (!stock) fail('not_enough_stock', 'Тази стока вече я няма в склада.', 404);
+    if (stock!.updatedAt.getTime() > now.getTime() - CLEARANCE.minDays * 86_400_000) fail('too_fresh', `Разчиства се стока, стояла поне ${CLEARANCE.minDays} дни.`);
+    const cents = Math.round(stock!.costCents * CLEARANCE.share);
+    const [city] = await tx.select({ nameBg: cities.nameBg }).from(cities).where(eq(cities.id, depot.cityId));
+    await tx.delete(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, cargo)));
+    if (cents > 0) await post(tx, company.id, [{ category: 'trade_sale', amountCents: cents, description: `Разчистен склад: ${round1(stock!.tons)} т ${CARGO[cargo].label.toLowerCase()} в ${city!.nameBg}`, idempotencyKey: `clearance:${depot.id}:${cargo}:${stock!.updatedAt.getTime()}` }]);
+    return { tons: round1(stock!.tons), cents };
   });
 }
 

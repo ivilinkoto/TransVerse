@@ -19,9 +19,10 @@ import { tutorialPending } from '@/server/game/tutorial-flags';
 import { date, dateTime, int, money } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
 import { SelectAction } from '@/components/ui/SelectAction';
-import { daysToAnniversary, STAFF_BUS } from '@/lib/game/community';
+import { daysToAnniversary, DRIVER_OF_MONTH, STAFF_BUS } from '@/lib/game/community';
 import { vehicles } from '@/server/db/schema';
 import { staffBusState } from '@/server/game/community';
+import { chronicleOf } from '@/server/game/chronicle';
 
 export const metadata = { title: 'Транспортна компания' };
 
@@ -34,7 +35,7 @@ export default async function CompanyPage() {
     return (
       <>
         <TutorialVisit step="company_goal" pending={visitPending} />
-        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null }} />
+        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month }} />
       </>
     );
   }
@@ -143,7 +144,26 @@ async function staffBusView(db: ReturnType<typeof getDb>, userId: string, accoun
   return { ...state, trucks: trucks.filter((t) => t.cityId !== state.hqCityId) };
 }
 
-type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null };
+type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null; chronicle: Awaited<ReturnType<typeof chronicleOf>> | null; driverOfMonth: boolean };
+
+const CHRONICLE_ICON: Record<string, string> = { driver: '🚚', founded: '🏁', level: '⭐', build: '🏗️', battle: '⚔️', project: '📦', division: '🏆', anniversary: '🎂', alliance: '🛡' };
+
+/** The company's big moments (v1.5). */
+function Chronicle({ items }: { items: NonNullable<Extras['chronicle']> }) {
+  return (
+    <Card title={<span className="inline-flex items-center gap-2"><ScrollText className="h-4 w-4 text-mist-400" />Хроника</span>} className="lg:col-span-2">
+      <ol className="relative space-y-3 border-l border-asphalt-700 pl-5">
+        {items.map((c) => (
+          <li key={c.id} className="text-sm">
+            <span className="absolute -left-2.5 grid h-5 w-5 place-items-center rounded-full bg-asphalt-850 text-xs" aria-hidden="true">{CHRONICLE_ICON[c.kind] ?? '•'}</span>
+            <div>{c.text}</div>
+            <div className="text-xs text-mist-400">{date(c.at)}</div>
+          </li>
+        ))}
+      </ol>
+    </Card>
+  );
+}
 
 /** The staff bus for a new member and the first-trip bonus (v1.5). */
 function StaffBus({ bus, hq }: { bus: NonNullable<Extras['bus']>; hq: string }) {
@@ -181,6 +201,16 @@ function CompanyOverview({ hub, history, licences, extras }: { hub: Hub; history
         <TextBlock title="За компанията" icon={Building2} text={c.description} empty="Компанията още няма описание." />
         <TextBlock title="Правила" icon={ScrollText} text={c.rules} empty="Няма публикувани правила." />
         {extras.bus && <StaffBus bus={extras.bus} hq={hub.hq} />}
+        {extras.driverOfMonth && (
+          <Card title={<span className="inline-flex items-center gap-2"><Truck className="h-4 w-4 text-gold-400" />Шофьор на месеца</span>}>
+            {c.driverOfMonth ? <p className="text-sm"><b>{c.driverOfMonth.username}</b> <span className="text-mist-400">· {c.driverOfMonth.month} · {c.driverOfMonth.trips} курса · {int(Math.round(c.driverOfMonth.tons))} т</span></p> : <p className="text-sm text-mist-400">Още няма — избира се в началото на всеки месец (най-много курсове, поне {DRIVER_OF_MONTH.minTrips}).</p>}
+            <p className="mt-1 text-xs text-mist-400">Значка „Шофьор на месеца“{c.driverOfMonthPrizeCents ? ` и премия ${money(c.driverOfMonthPrizeCents)} от касата` : ''}.</p>
+            {(hub.rank.isOwner || hub.rank.permissions.includes('manage_settings')) && (
+              <div className="mt-3 max-w-xs"><SelectAction label="Запази" ariaLabel="Премия за шофьор на месеца" value={String(c.driverOfMonthPrizeCents)} numeric field="cents" action={{ type: 'driverOfMonthPrize' }} options={DRIVER_OF_MONTH.prizes.map((p) => ({ value: String(p), label: p ? `Премия ${money(p)}` : 'Без премия' }))} /></div>
+            )}
+          </Card>
+        )}
+        {extras.chronicle && <Chronicle items={extras.chronicle} />}
         <CompanyProgress hub={hub} />
         <CompanySeason db={getDb()} organizationId={c.id} />
         <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} />

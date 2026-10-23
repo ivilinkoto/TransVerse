@@ -11,6 +11,7 @@ import { postCoins } from './coins';
 import { postTreasury } from './finance';
 import { notifyMembers } from './membership';
 import { notify } from './notify';
+import { addChronicle } from './chronicle';
 
 // ── Divisions ─────────────────────────────────────────────────────────────
 
@@ -69,6 +70,8 @@ export async function settleDivisions(db: Database, now = new Date()) {
           // The members' division role in Discord follows.
           for (const m of await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, r.id))) await queueRoles(tx, m.userId, now);
         }
+        if (move !== 'stay') await addChronicle(tx, r.id, 'division', move === 'up' ? `Качване в ${DIVISION_LABELS[nextDivision(division, 'up')].toLowerCase()}та дивизия` : `Слизане в ${DIVISION_LABELS[nextDivision(division, 'down')].toLowerCase()}та дивизия`, now);
+        else if (prize) await addChronicle(tx, r.id, 'division', `${i + 1}. място в ${DIVISION_LABELS[division].toLowerCase()}та дивизия`, now);
         if (prize || move !== 'stay') await notifyMembers(tx, r.id, null, move === 'up' ? `Качихте се в ${DIVISION_LABELS[nextDivision(division, 'up')].toLowerCase()}та дивизия! ⬆` : move === 'down' ? `Слизате в ${DIVISION_LABELS[nextDivision(division, 'down')].toLowerCase()}та дивизия` : `${i + 1}. място в дивизията`, prize ? `Награда: ${money(prize)} в касата.` : 'Новият месец е нов шанс.', '/game/leaderboards?tab=divisions');
       }
     }

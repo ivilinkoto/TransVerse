@@ -152,7 +152,7 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
 ];
 
 /** Upgrade levels of a company; `service` and `parking` come only from buildings on the plot (v1.3). */
-export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel', number>>;
+export type UpgradeLevels = Partial<Record<CompanyUpgrade['id'] | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel' | 'polygon', number>>;
 
 export interface MemberBonuses {
   rewardMultiplier: number;
@@ -166,6 +166,8 @@ export interface MemberBonuses {
   warehouseTons: number;
   /** Shorter rest of the drivers after a trip that ends in the base city (the plot's rest stop). */
   restCut: number;
+  /** More experience for the members' drivers — they grow in skill faster (the plot's driving range, v1.5). */
+  driverXpMultiplier: number;
 }
 
 export function memberBonuses(upgrades: UpgradeLevels): MemberBonuses {
@@ -177,6 +179,7 @@ export function memberBonuses(upgrades: UpgradeLevels): MemberBonuses {
     parkingSlots: upgrades.parking ?? 0,
     warehouseTons: 40 * (upgrades.warehouse ?? 0),
     restCut: 0.15 * (upgrades.rest ?? 0),
+    driverXpMultiplier: 1 + 0.15 * (upgrades.polygon ?? 0),
   };
 }
 

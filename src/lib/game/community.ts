@@ -79,6 +79,9 @@ export function daysToAnniversary(foundedAt: Date, now: Date) {
 
 export const SHOWCASE = { trucks: 3, badges: 3 } as const;
 
+/** "Шофьор на месеца" in a company: the member with the most trips (at least this many), prizes the owner may set. */
+export const DRIVER_OF_MONTH = { minTrips: 3, badge: 'driver-of-month', prizes: [0, 500_00, 1_000_00, 2_000_00, 5_000_00] as const } as const;
+
 export const ALLIANCE_MARKET = {
   /** A listing waits this long; then the goods go back to the seller's warehouse. */
   hours: 72,

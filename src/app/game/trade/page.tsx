@@ -9,6 +9,7 @@ import { gameContext } from '@/server/game/context';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { fleetView } from '@/server/game/queries';
 import { bestBuyers, myFreight, tradeOverview } from '@/server/game/trade';
+import { CLEARANCE } from '@/lib/game/trade';
 
 export const metadata = { title: 'Търговия със стоки' };
 
@@ -80,6 +81,12 @@ export default async function TradePage({ searchParams }: { searchParams: Promis
                           <span><span className="font-semibold">{labels[s.cargo]}</span> · <span className="num">{s.tons} т</span></span>
                           <span className="text-xs text-mist-400">средно {money(s.avgCents)}/т · общо {money(s.costCents)}</span>
                         </div>
+                        {features.warehouse_clearance && s.clearable && (
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-asphalt-900/60 px-2 py-1.5 text-xs">
+                            <span className="text-mist-300">Стои тук от поне {CLEARANCE.minDays} дни — разчисти мястото за {money(s.clearCents)} ({Math.round(CLEARANCE.share * 100)} % от цената ѝ).</span>
+                            <ActionButton action={{ type: 'clearStock', depotId: d.id, cargo: s.cargo }} className="btn-ghost px-2 py-1 text-xs" confirm={`Да продадем ли ${s.tons} т за ${money(s.clearCents)}?`}>Разчисти</ActionButton>
+                          </div>
+                        )}
                         <div className="mt-2">
                           <ShipGoodsForm depotId={d.id} depotCityId={d.cityId} row={s} label={labels[s.cargo]!} bodies={CARGO[s.cargo as CargoType].bodies} vehicles={vehicles} buyers={buyers[`${d.id}:${s.cargo}`] ?? []} depots={depotList} exchange={features.freight_exchange} />
                         </div>

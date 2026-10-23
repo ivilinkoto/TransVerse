@@ -533,11 +533,13 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // They also carry the driving hours of this trip until they have rested (a team shares them).
   const crewIds = [d.driverId, d.coDriverId].filter((x): x is string => !!x);
   const dutyEach = d.endDutyMin / crewIds.length;
+  // The company's driving range (v1.5): the drivers learn faster.
+  const driverXp = Math.round(xp * (perks?.bonuses.driverXpMultiplier ?? 1));
   await tx
     .update(drivers)
     .set({
-      xp: sql`${drivers.xp} + ${xp}`,
-      skill: sql`greatest(${drivers.skill}, least(5, 1 + floor((${drivers.xp} + ${xp}) / 8000.0)::int))`,
+      xp: sql`${drivers.xp} + ${driverXp}`,
+      skill: sql`greatest(${drivers.skill}, least(5, 1 + floor((${drivers.xp} + ${driverXp}) / 8000.0)::int))`,
       dutyMin: dutyEach,
       // The company's rest stop shortens the rest after a trip that ends in the base city.
       restedAt: new Date(completedAt.getTime() + (CREW_RULES.restGameMin * 60_000 * (1 - (org && contract.destCityId === org.hqCityId ? (perks?.bonuses.restCut ?? 0) : 0))) / timeScale()),

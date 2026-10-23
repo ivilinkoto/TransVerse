@@ -737,6 +737,9 @@ export const organizations = pgTable(
     plotExpansions: integer('plot_expansions').notNull().default(0),
     /** A message pinned on top of the company chat. */
     pinnedMessageId: bigint('pinned_message_id', { mode: 'number' }),
+    /** "Шофьор на месеца" (v1.5): the prize from the treasury (0 = only the title) and the last winner. */
+    driverOfMonthPrizeCents: money('driver_of_month_prize_cents').notNull().default(0),
+    driverOfMonth: jsonb('driver_of_month').$type<{ userId: string; username: string; month: string; trips: number; tons: number } | null>(),
     /** Division in the monthly company league (v1.5): bronze | silver | gold. */
     division: text('division').notNull().default('bronze'),
     /** The company's private channel and role in the TransVerse Discord server (v1.3). */
@@ -2374,4 +2377,18 @@ export const allianceListings = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('alliance_listings_open_idx').on(t.allianceId, t.status), index('alliance_listings_seller_idx').on(t.sellerId, t.status)],
+);
+
+/** The company's chronicle (v1.5): its big moments, kept for good. */
+export const companyChronicle = pgTable(
+  'company_chronicle',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    /** level | build | battle | project | division | anniversary | alliance */
+    kind: text('kind').notNull(),
+    text: text('text').notNull(),
+    at: ts('at').notNull(),
+  },
+  (t) => [index('company_chronicle_org_idx').on(t.organizationId, t.at)],
 );

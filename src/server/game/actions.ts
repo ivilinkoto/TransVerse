@@ -9,7 +9,7 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
-import { setShowcase, staffBus } from '@/server/game/community';
+import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/community';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
 import { createAlliance, dissolveAlliance, setAllianceDiscord, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
@@ -17,7 +17,7 @@ import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { answerDriver } from '@/server/game/moods';
 import { joinRally } from '@/server/game/rally';
-import { buyGoods, postFreight, rateHauler, shipGoods } from '@/server/game/trade';
+import { buyGoods, clearStock, postFreight, rateHauler, shipGoods } from '@/server/game/trade';
 import { buyPremiumPass, claimPassRewards } from '@/server/game/season-pass';
 import { deleteChannelMessage, deleteConversation, messageBodySchema, postToChannel, sendDirectMessage, unsendDirectMessage } from '@/server/game/messages';
 import { inviteToCompany, removeFriend, respondCompanyInvite, respondFriendRequest, sendFriendRequest } from '@/server/game/social';
@@ -198,6 +198,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('giveMartenitsa'), friendId: id }),
   z.object({ type: z.literal('spotStork') }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
+  z.object({ type: z.literal('driverOfMonthPrize'), cents: z.coerce.number().int().min(0).max(5_000_00) }),
   z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
   z.object({ type: z.literal('listForAlliance'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500), pricePerTon: z.coerce.number().positive().max(100_000) }),
   z.object({ type: z.literal('buyAllianceListing'), listingId: id }),
@@ -217,6 +218,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
+  z.object({ type: z.literal('clearStock'), depotId: id, cargo: z.enum(CARGO_TYPES) }),
   z.object({ type: z.literal('buyGoods'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500) }),
   z.object({ type: z.literal('shipGoods'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500), destCityId: cityId, vehicleId: id, mode: z.enum(['sell', 'store']) }),
   z.object({ type: z.literal('buySeasonPass') }),
@@ -309,6 +311,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   giveMartenitsa: 'marta',
   spotStork: 'marta',
   staffBus: 'staff_bus',
+  driverOfMonthPrize: 'driver_of_month',
+  clearStock: 'warehouse_clearance',
   setShowcase: 'profile_showcase',
   listForAlliance: 'alliance_market',
   buyAllianceListing: 'alliance_market',
@@ -763,6 +767,11 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'enrolAcademy':
       await enrolAcademy(db, user.id, input.mentorId);
+      return { ok: true };
+    case 'clearStock':
+      return { ok: true, ...(await clearStock(db, user.id, input.depotId, input.cargo)) };
+    case 'driverOfMonthPrize':
+      await setDriverOfMonthPrize(db, user.id, input.cents);
       return { ok: true };
     case 'staffBus':
       return { ok: true, ...(await staffBus(db, user.id, input.vehicleId)) };

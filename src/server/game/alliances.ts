@@ -16,6 +16,7 @@ import { addCompanyXp, membershipOf, notifyMembers, requirePermission } from './
 import { messageBodySchema } from './messages';
 import { assertNotMuted } from './moderation';
 import { notify } from './notify';
+import { addChronicle } from './chronicle';
 
 async function released(db: DbOrTx, userId: string, id: 'alliances' | 'company_contracts' | 'academy' | 'alliance_discord', now: Date) {
   if (!(await featureFor(db, userId, id, now))) fail('not_released', 'Това идва със следващото обновление.', 403);
@@ -78,6 +79,7 @@ export async function createAlliance(db: Database, actorId: string, rawName: str
     if (taken) fail('name_taken', 'Съюз с това име вече има.', 409);
     const [a] = await tx.insert(alliances).values({ name, leaderOrgId: actor.company.id, createdAt: now }).returning();
     await tx.insert(allianceMembers).values({ allianceId: a!.id, organizationId: actor.company.id, joinedAt: now });
+    await addChronicle(tx, actor.company.id, 'alliance', `Основа съюза „${name}“`, now);
     await notifyMembers(tx, actor.company.id, null, `Нов съюз: „${name}“`, 'Поканете още компании — заедно имате седмична цел и битка срещу друг съюз.', '/game/company/alliance');
     return a!;
   });
@@ -116,6 +118,8 @@ export async function respondAllianceInvite(db: Database, actorId: string, invit
     if (members.length >= ALLIANCE.maxCompanies) fail('full', 'Съюзът вече е пълен.');
     await tx.insert(allianceMembers).values({ allianceId: inv!.allianceId, organizationId: actor.company.id, joinedAt: now });
     await queueAllianceRoles(tx, [actor.company.id], now);
+    const [joined] = await tx.select({ name: alliances.name }).from(alliances).where(eq(alliances.id, inv!.allianceId));
+    await addChronicle(tx, actor.company.id, 'alliance', `Влезе в съюза „${joined?.name ?? ''}“`, now);
     for (const m of members) await notifyMembers(tx, m.organizationId, null, `„${actor.company.name}“ влезе в съюза`, 'Съюзът расте — повече тонове за общата цел.', '/game/company/alliance');
     return inv!.allianceId;
   });

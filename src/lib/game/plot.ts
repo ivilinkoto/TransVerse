@@ -38,7 +38,7 @@ export type MaterialId = keyof typeof MATERIALS;
 export const MATERIAL_IDS = Object.keys(MATERIALS) as MaterialId[];
 export type Materials = Partial<Record<MaterialId, number>>;
 
-export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel';
+export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel' | 'polygon';
 
 export interface BuildingDef {
   type: BuildingType;
@@ -47,7 +47,7 @@ export interface BuildingDef {
   w: number;
   h: number;
   /** The company upgrade this building drives (its level = building level − offset). */
-  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel';
+  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel' | 'polygon';
   offset: number;
   maxLevel: number;
   /** Materials of level 1; later levels need more. */
@@ -168,6 +168,18 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     effect: (l) => `Гориво с ${[0, 6, 10, 14][l]} % по-евтино за членовете, тръгващи от града на базата · ${Math.round(FUEL_STATION.margin * 100)} % от горивото на другите играчи оттам влиза в касата`,
     minCompanyLevel: [2, 4, 6],
   },
+  polygon: {
+    type: 'polygon',
+    label: 'Автополигон',
+    w: 4,
+    h: 3,
+    upgrade: 'polygon',
+    offset: 0,
+    maxLevel: 3,
+    base: { cement: 18, steel: 4, bricks: 4 },
+    effect: (l) => `+${l * 15} % опит за шофьорите на членовете — растат по-бързо в умения`,
+    minCompanyLevel: [3, 5, 7],
+  },
 };
 export const BUILDING_TYPES = Object.keys(BUILDINGS) as BuildingType[];
 
@@ -182,6 +194,7 @@ export const BUILDING_LINKS: Record<BuildingType, { href: string; label: string 
   rest: { href: '/game/staff', label: 'Отвори шофьорите' },
   factory: { href: '/game/company/factory', label: 'Отвори фабриката' },
   fuel: { href: '/game/finance', label: 'Отвори финансите' },
+  polygon: { href: '/game/staff', label: 'Отвори шофьорите' },
 };
 
 /** How much more each level needs than level 1, and how long it takes (real minutes). */
@@ -328,7 +341,7 @@ export function decorError(kind: DecorKind, x: number, y: number, buildings: rea
 }
 
 /** Where existing companies' buildings go when they get their plot (it all fits next to each other); the factory (v1.4) is always placed by the company. */
-export const DEFAULT_SPOTS: Record<Exclude<BuildingType, 'factory' | 'fuel'>, { x: number; y: number }> = {
+export const DEFAULT_SPOTS: Record<Exclude<BuildingType, 'factory' | 'fuel' | 'polygon'>, { x: number; y: number }> = {
   office: { x: 1, y: 0 },
   service: { x: 1, y: 3 },
   training: { x: 1, y: 6 },

@@ -1,20 +1,22 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { BADGES } from '@/lib/game/halloween';
-import { ANNIVERSARY, anniversaryGiftCents, anniversaryYears, isPerfectConvoy, LANE_RECORDS, loadedRunMinutes, PERFECT_CONVOY, recordMonth, SHOWCASE, STAFF_BUS } from '@/lib/game/community';
+import { ANNIVERSARY, anniversaryGiftCents, DRIVER_OF_MONTH, anniversaryYears, isPerfectConvoy, LANE_RECORDS, loadedRunMinutes, PERFECT_CONVOY, recordMonth, SHOWCASE, STAFF_BUS } from '@/lib/game/community';
 import type { Segment } from '@/lib/game/schedule';
 import { money } from '@/lib/format';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, companies, companyMembers, contracts, deliveries, laneRecords, organizations, trailers, userBadges, users, vehicles } from '@/server/db/schema';
+import { cities, companies, companyMembers, contracts, deliveries, jobState, laneRecords, organizations, trailers, userBadges, users, vehicles } from '@/server/db/schema';
+import { periodWindow } from '@/lib/game/missions';
 import { featureFor } from '@/server/features';
 import { announce } from '@/server/discord/outbox';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { badgesOf } from './halloween';
-import { membershipOf, notifyMembers } from './membership';
+import { membershipOf, notifyMembers, requirePermission } from './membership';
 import { notify } from './notify';
 import { fleetView } from './queries';
+import { addChronicle } from './chronicle';
 
 const cityNames = async (db: DbOrTx, ids: number[]) => {
   const rows = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, ids));
@@ -159,10 +161,69 @@ export async function celebrateAnniversaries(db: Database, now = new Date()) {
       n++;
       const members = await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, o.id));
       if (members.length) await tx.insert(userBadges).values(members.map((m) => ({ userId: m.userId, badge: ANNIVERSARY.badge, awardedAt: now }))).onConflictDoNothing();
+      await addChronicle(tx, o.id, 'anniversary', `${years} ${years === 1 ? 'година' : 'години'} компанията`, now);
       await notifyMembers(tx, o.id, null, `Честит рожден ден, „${o.name}“! 🎂`, `${years} ${years === 1 ? 'година' : 'години'} заедно: ${money(gift)} в касата и значка „${BADGES[ANNIVERSARY.badge]!.label}“ за всеки член.`, '/game/company');
     });
   }
   return n;
+}
+
+// ── Driver of the month ───────────────────────────────────────────────────
+
+/** The month before `now` (Sofia): its key ("2027-02") and bounds. */
+function pastMonth(now: Date) {
+  const start = periodWindow('monthly', new Date(periodWindow('monthly', now).endsAt.getTime() - 32 * 86_400_000)).endsAt;
+  const before = new Date(start.getTime() - 86_400_000);
+  const from = periodWindow('monthly', new Date(before.getTime() - 32 * 86_400_000)).endsAt;
+  return { key: recordMonth(before), from, to: start };
+}
+
+/** Worker: once a month each company's member with the most trips is "Шофьор на месеца" (a badge, a prize if the owner set one). */
+export async function awardDriversOfMonth(db: Database, now = new Date()) {
+  if (!featureLive('driver_of_month', now)) return 0;
+  const m = pastMonth(now);
+  const jobKey = `driver-of-month:${m.key}`;
+  const [done] = await db.select().from(jobState).where(eq(jobState.key, jobKey));
+  if (done) return 0;
+  const { rows } = await db.execute<{ organization_id: string; user_id: string; trips: number; tons: number }>(sql`
+    select distinct on (m.company_id) m.company_id as organization_id, c.owner_id as user_id, count(*)::int as trips, coalesce(sum(k.weight_tons), 0)::float as tons
+    from deliveries d join companies c on c.id = d.company_id join company_members m on m.user_id = c.owner_id join contracts k on k.id = d.contract_id
+    where d.status = 'completed' and d.completed_at >= ${m.from} and d.completed_at < ${m.to}
+    group by m.company_id, c.owner_id
+    order by m.company_id, count(*) desc, sum(k.weight_tons) desc`);
+  let n = 0;
+  for (const r of rows) {
+    if (r.trips < DRIVER_OF_MONTH.minTrips) continue;
+    await db.transaction(async (tx) => {
+      // The member's own account first, then the treasury (fixed lock order).
+      const [account] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, r.user_id)).for('update');
+      const [org] = await tx.select().from(organizations).where(eq(organizations.id, r.organization_id)).for('update');
+      const [u] = await tx.select({ username: users.username }).from(users).where(eq(users.id, r.user_id));
+      if (!account || !org || !u || org.driverOfMonth?.month === m.key) return;
+      const prize = org.driverOfMonthPrizeCents > 0 && org.treasuryCents >= org.driverOfMonthPrizeCents ? org.driverOfMonthPrizeCents : 0;
+      if (prize) {
+        await post(tx, account.id, [{ category: 'member_bonus', amountCents: prize, description: `Шофьор на месеца в „${org.name}“`, idempotencyKey: `driver-month:${org.id}:${m.key}:in`, refType: 'company', refId: org.id }]);
+        await postTreasury(tx, org.id, [{ category: 'member_bonus', amountCents: -prize, description: `Шофьор на месеца: ${u.username}`, idempotencyKey: `driver-month:${org.id}:${m.key}:out`, refType: 'user', refId: r.user_id }]);
+      }
+      await tx.update(organizations).set({ driverOfMonth: { userId: r.user_id, username: u.username, month: m.key, trips: r.trips, tons: Math.round(r.tons * 10) / 10 } }).where(eq(organizations.id, org.id));
+      await tx.insert(userBadges).values({ userId: r.user_id, badge: DRIVER_OF_MONTH.badge, awardedAt: now }).onConflictDoNothing();
+      await addChronicle(tx, org.id, 'driver', `Шофьор на месеца (${m.key}): ${u.username} — ${r.trips} курса`, now);
+      await notifyMembers(tx, org.id, null, `Шофьор на месеца: ${u.username}`, `${r.trips} курса и ${Math.round(r.tons)} т за месеца${prize ? ` · премия ${money(prize)} от касата` : ''}.`, '/game/company');
+      n++;
+    });
+  }
+  await db.insert(jobState).values({ key: jobKey, value: { winners: n } }).onConflictDoNothing();
+  return n;
+}
+
+/** The owner (right "Настройки") sets the monthly prize from the treasury. */
+export async function setDriverOfMonthPrize(db: Database, actorId: string, cents: number, now = new Date()) {
+  if (!(await featureFor(db, actorId, 'driver_of_month', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(DRIVER_OF_MONTH.prizes as readonly number[]).includes(cents)) fail('bad_prize', 'Невалидна премия.');
+  return db.transaction(async (tx) => {
+    const actor = await requirePermission(tx, actorId, 'manage_settings');
+    await tx.update(organizations).set({ driverOfMonthPrizeCents: cents }).where(eq(organizations.id, actor.company.id));
+  });
 }
 
 // ── The profile showcase ──────────────────────────────────────────────────

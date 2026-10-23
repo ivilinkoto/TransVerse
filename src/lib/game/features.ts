@@ -110,6 +110,10 @@ export const FEATURES = {
   alliance_map: '1.5',
   alliance_hall: '1.5',
   alliance_discord: '1.5',
+  polygon: '1.5',
+  chronicle: '1.5',
+  warehouse_clearance: '1.5',
+  driver_of_month: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;
