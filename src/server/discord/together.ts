@@ -75,7 +75,7 @@ export async function takeStart(ctx: Ctx, contractId: string): Promise<Answer> {
 
 export async function takeGo(ctx: Ctx, contractId: string, pick: string): Promise<Answer> {
   const [vehicleId = '', part] = pick.split(':');
-  const r = await act<{ etaAt: string | Date }>(ctx, { type: 'acceptContract', contractId, vehicleId, rush: false, overload: false, insure: false, ...(part ? { tons: Number(part) } : {}) });
+  const r = await act<{ etaAt: string | Date }>(ctx, { type: 'acceptContract', contractId, vehicleId, rush: false, overload: false, insure: false, route: 'fast', parking: 'free', refuel: false, ...(part ? { tons: Number(part) } : {}) });
   return answer(update({ content: `✅ Камионът тръгна${part ? ` с ${dec(Number(part))} т` : ''}! Пристига ${at(r.etaAt)}.`, components: rows(linkButton('Виж на картата', `${appUrl()}/game/map`, '🗺️')) }));
 }
 

@@ -8,7 +8,8 @@ import { cumulativeKm, haversineKm, simplify, type LatLon } from '@/lib/geo/geom
  * game logic.
  */
 
-export type RouteProfile = 'truck' | 'van';
+/** 'truck_cheap' (v1.6): a truck route that avoids tolls and keeps off the motorways where it can — slower, no road charges. */
+export type RouteProfile = 'truck' | 'truck_cheap' | 'van';
 
 export interface RoutePoint {
   lat: number;
@@ -38,8 +39,8 @@ export class RoutingUnavailableError extends Error {}
 export const approximateProvider: RoutingProvider = {
   name: 'approximate',
   async route(from, to, profile) {
-    const km = haversineKm([from.lat, from.lon], [to.lat, to.lon]) * 1.25;
-    const speed = profile === 'van' ? 80 : 68;
+    const km = haversineKm([from.lat, from.lon], [to.lat, to.lon]) * (profile === 'truck_cheap' ? 1.2 : 1.25);
+    const speed = profile === 'van' ? 80 : profile === 'truck_cheap' ? 56 : 68;
     const crossing = from.country !== to.country;
     return {
       provider: 'approximate',
@@ -81,14 +82,14 @@ export function valhallaProvider(baseUrl: string, timeoutMs = 20_000): RoutingPr
     async route(from, to, profile) {
       // City centres are often closed to heavy trucks; real freight is loaded on the
       // nearest major road / industrial area, so snap to secondary roads or better.
-      const snap = profile === 'truck' ? { radius: 3000, search_filter: { min_road_class: 'secondary' } } : {};
+      const snap = profile !== 'van' ? { radius: 3000, search_filter: { min_road_class: 'secondary' } } : {};
       const body = {
         locations: [
           { lat: from.lat, lon: from.lon, ...snap },
           { lat: to.lat, lon: to.lon, ...snap },
         ],
-        costing: profile === 'truck' ? 'truck' : 'auto',
-        costing_options: profile === 'truck' ? { truck: { height: 4, width: 2.55, length: 16.5, weight: 40, axle_load: 11.5 } } : undefined,
+        costing: profile === 'van' ? 'auto' : 'truck',
+        costing_options: profile === 'van' ? undefined : { truck: { height: 4, width: 2.55, length: 16.5, weight: 40, axle_load: 11.5, ...(profile === 'truck_cheap' ? { use_tolls: 0, use_highways: 0.2 } : {}) } },
         units: 'kilometers',
         directions_type: 'none',
         admin_crossings: true,

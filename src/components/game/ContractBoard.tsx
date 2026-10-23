@@ -21,9 +21,12 @@ import { MARTA } from '@/lib/game/marta';
 import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { useFeature } from './Features';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
+import { SECURE_PARKING } from '@/lib/game/traffic';
 
 export interface BoardContract {
   id: string;
+  /** Trucks on this lane right now (v1.6; 0 below the traffic threshold). */
+  traffic?: number;
   shipper: string;
   goods: string;
   cargoType: CargoType;
@@ -303,6 +306,12 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
   const [overload, setOverload] = useState(false);
   const [insure, setInsure] = useState(false);
   const insuranceLive = useFeature('cargo_insurance');
+  const routeChoice = useFeature('route_choice');
+  const [cheap, setCheap] = useState(false);
+  const parkingLive = useFeature('secure_parking');
+  const [secure, setSecure] = useState(false);
+  const refuelLive = useFeature('refuel');
+  const [refuel, setRefuel] = useState(false);
   const [rail, setRail] = useState('');
   const needsOverload = !!option && option.overloadPercent > 0;
   // A load bigger than the truck goes as a part, unless the player chose to overload and take it all.
@@ -328,7 +337,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure });
+      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure, route: routeChoice && cheap && !rail ? 'cheap' : 'fast', parking: parkingLive && secure ? 'secure' : 'free', refuel: refuelLive && refuel });
       onAccepted(`Камионът тръгна: ${part ? `${dec(part.tons)} т ` : ''}${c.goods}, ${c.origin.name} → ${c.destination.name}. Можеш да поемеш следващата поръчка.`);
       setBusy(false);
       router.refresh();
@@ -358,6 +367,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
+            {!!c.traffic && <Badge tone="orange">🚦 НАТОВАРЕНО · {c.traffic} камиона</Badge>}
             {c.holiday === 'sowing' && <Badge tone="green">🌱 СЕИТБА · +{Math.round((SOWING.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'national' && <Badge tone="gold">🎉 НАЦИОНАЛЕН ПРАЗНИК · +{Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100)}%</Badge>}
             {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}
@@ -491,8 +501,26 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                 <Link href={`/game/map?contract=${c.id}`} className="btn-ghost"><MapPinned className="h-4 w-4" />На картата</Link>
                 {vip && !c.urgent && !c.reservedByMe && <ReserveButton contractId={c.id} />}
               </div>
-              {option && !option.error && (option.rushMinutes != null || needsOverload) && (
+              {option && !option.error && (option.rushMinutes != null || needsOverload || insuranceLive || parkingLive || refuelLive || (routeChoice && !c.urgent && !c.stops.length && !c.ferry)) && (
                 <div className="space-y-1.5 rounded-xl border border-amber-sig/30 bg-amber-sig/5 p-3 text-sm">
+                  {routeChoice && !c.urgent && !c.stops.length && !c.ferry && !rail && (
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-0.5" checked={cheap} onChange={(e) => setCheap(e.target.checked)} />
+                      <span>Евтин маршрут — без магистрали и пътни такси, по истински по-бавни пътища. Пристига по-късно; срокът остава същият.</span>
+                    </label>
+                  )}
+                  {refuelLive && (
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-0.5" checked={refuel} onChange={(e) => setRefuel(e.target.checked)} />
+                      <span>Зареди в най-евтината държава по пътя — докъдето стига резервоарът (цените на горивото са игрови данни).</span>
+                    </label>
+                  )}
+                  {parkingLive && (
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-0.5" checked={secure} onChange={(e) => setSecure(e.target.checked)} />
+                      <span>Охраняем паркинг, ако шофьорът нощува по пътя — {money(SECURE_PARKING.feeCents)} на нощувка. Без него има малък риск да откраднат гориво.</span>
+                    </label>
+                  )}
                   {insuranceLive && (
                     <label className="flex items-start gap-2">
                       <input type="checkbox" className="mt-0.5" checked={insure} onChange={(e) => setInsure(e.target.checked)} />

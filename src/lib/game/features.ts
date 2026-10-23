@@ -123,6 +123,11 @@ export const FEATURES = {
   pass_opening: '1.6',
   sowing: '1.6',
   national_days: '1.6',
+  route_choice: '1.6',
+  secure_parking: '1.6',
+  border_queues: '1.6',
+  refuel: '1.6',
+  road_traffic: '1.6',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;
