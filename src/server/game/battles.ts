@@ -7,6 +7,7 @@ import { companies, companyBattles, companyMembers, deliveries, organizations } 
 import { addFeed } from './feed';
 import { postTreasury } from './finance';
 import { addCompanyXp, notifyMembers } from './membership';
+import { addChronicle } from './chronicle';
 
 export type CompanyBattle = typeof companyBattles.$inferSelect;
 
@@ -67,6 +68,7 @@ export async function settleBattles(db: Database, now = new Date()) {
       } else if (winnerId) {
         await pay(winnerId, 1);
         await addFeed(tx, { organizationId: winnerId, kind: 'battle', text: `компанията спечели битката срещу „${names.get(winnerId === b.aId ? b.bId : b.aId)}“ (${Math.round(Math.max(b.aTons, b.bTons))} : ${Math.round(Math.min(b.aTons, b.bTons))} т)` }, now);
+        await addChronicle(tx, winnerId, 'battle', `Победа в битката срещу „${names.get(winnerId === b.aId ? b.bId : b.aId)}“ (${Math.round(Math.max(b.aTons, b.bTons))} : ${Math.round(Math.min(b.aTons, b.bTons))} т)`, now);
       }
       for (const [orgId, side] of [[b.aId, 'a'], [b.bId, 'b']] as const) {
         const other = names.get(side === 'a' ? b.bId : b.aId);

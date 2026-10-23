@@ -80,8 +80,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const fromCity = features.backhaul && /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
   const backTruck = fromCity ? fleet.vehicles.find((v) => v.id === params.truck && !v.delivery) ?? fleet.vehicles.find((v) => !v.delivery && v.cityId === fromCity) ?? null : null;
   const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }) : [];
+  // A load opened by a link (the plot's material loads, Discord): its origin's loads too, so it is on the board even far from the trucks.
+  const focusId = /^[0-9a-f-]{36}$/.test(params.load ?? '') && ![...general, ...locals.flat()].some((c) => c.id === params.load) ? params.load! : null;
+  const [focusRow] = focusId ? await db.select({ originCityId: contractsTable.originCityId }).from(contractsTable).where(eq(contractsTable.id, focusId)) : [];
+  const focusLoads = focusRow ? (await openContracts(db, { originCityId: focusRow.originCityId, limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id })).filter((c) => c.id === focusId) : [];
   const seen = new Set<string>();
-  const contracts = [...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
+  const contracts = [...focusLoads, ...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];

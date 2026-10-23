@@ -15,7 +15,7 @@ import { broadcast, notify } from './notify';
 import { recordChristmasHelp } from './christmas';
 import { addFeed } from './feed';
 import { awardXp } from './progression';
-import { circleOf } from './world-map';
+import { alliesOf, circleOf } from './world-map';
 
 type Trip = Pick<typeof deliveries.$inferSelect, 'schedule' | 'emptyRouteId' | 'routeId' | 'contractId'>;
 
@@ -105,6 +105,11 @@ export async function paidRoadHelp(db: Database, userId: string, deliveryId: str
   });
 }
 
+/** Members of the alliance's other companies help on the road too (v1.5). */
+async function alliesFor(db: DbOrTx, userId: string, now: Date) {
+  return (await featureFor(db, userId, 'alliance_help', now)) ? alliesOf(db, userId) : new Set<string>();
+}
+
 /**
  * "Повикай колеги": the owner asks every friend and company colleague (not
  * only those in the game now) to help; once per stop.
@@ -116,7 +121,7 @@ export async function callForHelp(db: Database, userId: string, deliveryId: stri
     const [first] = await tx.insert(jobState).values({ key: `call-help:${d.id}:${stop.start}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning({ key: jobState.key });
     if (!first) fail('already_called', 'Вече повика колегите за тази спирка.', 409);
     const circle = await circleOf(tx, userId);
-    const ids = [...new Set([...circle.friends, ...circle.mates])];
+    const ids = [...new Set([...circle.friends, ...circle.mates, ...(await alliesFor(tx, userId, now))])];
     if (!ids.length) fail('nobody', 'Нямаш приятели или колеги, които да повикаш.');
     const asked = await tx.select({ id: users.id }).from(users).where(and(inArray(users.id, ids), isNull(users.bannedAt)));
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
@@ -139,7 +144,7 @@ export async function helpOnRoad(db: Database, helperId: string, deliveryId: str
     const [owner] = await tx.select({ id: users.id, username: users.username }).from(companies).innerJoin(users, eq(users.id, companies.ownerId)).where(eq(companies.id, d!.companyId));
     if (!owner || owner.id === helperId) fail('self', 'Не можеш да помогнеш на собствения си камион.');
     const circle = await circleOf(tx, helperId);
-    if (!circle.friends.has(owner!.id) && !circle.mates.has(owner!.id)) fail('not_friend', 'Може да помагаш на приятели и на колеги от компанията.', 403);
+    if (!circle.friends.has(owner!.id) && !circle.mates.has(owner!.id) && !(await alliesFor(tx, helperId, now)).has(owner!.id)) fail('not_friend', 'Може да помагаш на приятели, на колеги от компанията и на съюзници.', 403);
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(roadsideHelps).where(and(eq(roadsideHelps.helperId, helperId), gte(roadsideHelps.createdAt, new Date(now.getTime() - 86_400_000))));
     if (n >= ROADSIDE.dailyLimit) fail('daily_limit', `Може да помагаш до ${ROADSIDE.dailyLimit} пъти за 24 часа.`);
     const where = await tripPosition(tx, d!, now);
@@ -173,7 +178,7 @@ export async function askForHelp(tx: DbOrTx, ownerId: string, kind: keyof typeof
   if (!ROADSIDE.kinds.includes(kind)) return 0;
   if (!(await featureFor(tx, ownerId, 'roadside', now))) return 0;
   const circle = await circleOf(tx, ownerId);
-  const ids = [...new Set([...circle.friends, ...circle.mates])];
+  const ids = [...new Set([...circle.friends, ...circle.mates, ...(await alliesFor(tx, ownerId, now))])];
   if (!ids.length) return 0;
   const online = await tx.select({ id: users.id }).from(users).where(and(inArray(users.id, ids), gte(users.lastSeenAt, new Date(now.getTime() - 10 * 60_000)), isNull(users.bannedAt)));
   const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, ownerId));

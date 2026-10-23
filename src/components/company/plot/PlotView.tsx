@@ -8,7 +8,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { Meter } from '@/components/ui';
 import { api } from '@/lib/client/api';
 import { duration, money } from '@/lib/format';
-import { BOOM, BUILDING_LINKS, BUILDINGS, BUILDING_TYPES, DECOR, DECOR_KINDS, decorError, EXPANSIONS, levelSpec, MATERIAL_IDS, MATERIALS, MAX_DECOR, materialCostCents, placementError, PLOT, plotWidth, type BuildingType, type DecorKind, type Materials } from '@/lib/game/plot';
+import { BOOM, BUILDING_LINKS, BUILDINGS, BUILDING_TYPES, DECOR, DECOR_KINDS, decorError, EXPANSIONS, levelSpec, MATERIAL_IDS, MATERIALS, MAX_DECOR, materialCostCents, placementError, PLOT, plotWidth, type BuildingType, type DecorKind, type MaterialId, type Materials } from '@/lib/game/plot';
 import { PlotScene, toTile, viewFor } from './scene';
 
 export interface PlotData {
@@ -35,6 +35,8 @@ export interface PlotData {
     startedAt: string | null;
     endsAt: string | null;
     minutes: number;
+    /** Open material loads on the exchange (every member may take them). */
+    loads: { id: string; material: string | null; tons: number; rewardCents: number; from: string }[];
   } | null;
 }
 
@@ -47,6 +49,8 @@ export interface PlotFeatures {
   factory?: boolean;
   /** The fuel station (v1.5). */
   fuel?: boolean;
+  /** The driving range (v1.5). */
+  polygon?: boolean;
 }
 
 /** The company plot: the scene, building on it and the running construction. */
@@ -205,7 +209,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
 
   const sel = selected ? data.buildings.find((b) => b.type === selected) : null;
   // The factory comes with v1.4 (staff see it earlier).
-  const notPlaced = BUILDING_TYPES.filter((t) => !data.buildings.some((b) => b.type === t) && (t !== 'factory' || !!features.factory) && (t !== 'fuel' || !!features.fuel));
+  const notPlaced = BUILDING_TYPES.filter((t) => !data.buildings.some((b) => b.type === t) && (t !== 'factory' || !!features.factory) && (t !== 'fuel' || !!features.fuel) && (t !== 'polygon' || !!features.polygon));
   const decorSel = selectedDecor ? data.decor.find((d) => d.id === selectedDecor) : null;
   const nextLand = EXPANSIONS[data.expansions];
   const cost = (m: Materials) => materialCostCents(m, false, data.boom);
@@ -434,6 +438,20 @@ function ConstructionCard({ c, canBuild, progress, leftMin }: { c: NonNullable<P
               );
             })}
           </div>
+          {!c.complete && c.loads.length > 0 && (
+            <div className="mt-4">
+              <div className="label">Товари за строежа на борсата</div>
+              <ul className="mt-1.5 divide-y divide-asphalt-800 text-sm">
+                {c.loads.map((l) => (
+                  <li key={l.id} className="flex items-center justify-between gap-2 py-1.5">
+                    <span className="min-w-0 truncate">{l.material && l.material in MATERIALS ? MATERIALS[l.material as MaterialId].label : 'Материали'} · {l.tons} т <span className="text-xs text-mist-400">от {l.from} · {money(l.rewardCents)}</span></span>
+                    <a href={`/game/contracts?load=${l.id}`} className="btn-primary shrink-0 px-3 py-1 text-xs">Поеми</a>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-xs text-mist-400">Всеки член на компанията може да ги кара.</p>
+            </div>
+          )}
           {c.complete ? (
             canBuild ? <ActionButton action={{ type: 'startConstruction', buildId: c.id }} className="btn-gold mt-4 w-full justify-center">Започни строежа · {duration(c.minutes)}</ActionButton> : <p className="mt-3 text-sm text-profit">Материалите са доставени — строежът започва скоро.</p>
           ) : canBuild ? (

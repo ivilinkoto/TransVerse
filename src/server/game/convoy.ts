@@ -8,7 +8,7 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { layoutState } from '@/server/discord/layout';
 import { notify } from './notify';
-import { circleOf } from './world-map';
+import { alliesOf, circleOf } from './world-map';
 
 /**
  * Linked players who are in the Discord voice channel "Конвой" together with
@@ -71,7 +71,9 @@ export async function announceConvoy(db: DbOrTx, userId: string, now = new Date(
 /** Friends', company members', voice convoy mates' and open convoys' trips on this lane that left recently and have no convoy yet. */
 export async function convoyCandidates(db: DbOrTx, userId: string, now: Date, lane?: { originCityId: number; destCityId: number }) {
   const { friends, mates } = await circleOf(db, userId);
-  const ids = [...new Set([...friends, ...mates, ...(await voiceMates(db, userId, now)), ...(await openConvoyHosts(db, userId, now, lane))])];
+  // v1.5: the other companies of the alliance drive in convoy too.
+  const allies = (await featureFor(db, userId, 'alliance_convoy', now)) ? await alliesOf(db, userId) : new Set<string>();
+  const ids = [...new Set([...friends, ...mates, ...allies, ...(await voiceMates(db, userId, now)), ...(await openConvoyHosts(db, userId, now, lane))])];
   if (!ids.length) return [];
   return db
     .select({ deliveryId: deliveries.id, userId: users.id, username: users.username, originCityId: contracts.originCityId, destCityId: contracts.destCityId, startedAt: deliveries.startedAt })

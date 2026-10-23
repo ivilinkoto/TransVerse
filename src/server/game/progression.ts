@@ -72,8 +72,8 @@ export async function companyStats(db: DbOrTx, companyId: string): Promise<Compa
   };
 }
 
-export type XpReason = 'delivery' | 'fleet' | 'mission' | 'event' | 'achievement' | 'daily' | 'tutorial' | 'roadside' | 'other';
-export const XP_REASON_LABELS: Record<XpReason, string> = { delivery: 'Собствени курсове', fleet: 'Курсове на наети шофьори', mission: 'Мисии', event: 'Ивенти', achievement: 'Постижения', daily: 'Дневна награда', tutorial: 'Обучение', roadside: 'Помощ на пътя', other: 'Други' };
+export type XpReason = 'delivery' | 'fleet' | 'mission' | 'event' | 'achievement' | 'daily' | 'tutorial' | 'roadside' | 'parking' | 'other';
+export const XP_REASON_LABELS: Record<XpReason, string> = { delivery: 'Собствени курсове', fleet: 'Курсове на наети шофьори', mission: 'Мисии', event: 'Ивенти', achievement: 'Постижения', daily: 'Дневна награда', tutorial: 'Обучение', roadside: 'Помощ на пътя', parking: 'Мини-игра „Паркирай“', other: 'Други' };
 
 /** Adds XP (logged with its source), recomputes the level and notifies on level-up. */
 export async function awardXp(tx: Tx, userId: string, xp: number, reason: XpReason = 'other'): Promise<{ level: number; leveledUp: boolean }> {

@@ -73,6 +73,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/christmas', label: 'Коледа', holiday: 'christmas' },
       { href: '/game/marta', label: 'Баба Марта', holiday: 'marta', feature: 'marta' },
       { href: '/game/missions', label: 'Мисии' },
+      { href: '/game/parking', label: 'Паркирай', feature: 'parking_game' },
       { href: '/game/league', label: 'Лига' },
       { href: '/game/duels', label: 'Дуели', feature: 'duels' },
       { href: '/game/rally', label: 'Рали', feature: 'rally' },

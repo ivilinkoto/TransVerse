@@ -48,6 +48,7 @@ import { postTreasury } from './finance';
 import { notifyMembers, requirePermission } from './membership';
 import { shipperName } from './names';
 import { broadcast, logActivity, notify } from './notify';
+import { addChronicle } from './chronicle';
 
 type Organization = typeof organizations.$inferSelect;
 export type CompanyBuilding = typeof companyBuildings.$inferSelect;
@@ -67,7 +68,7 @@ export async function ensurePlot(tx: DbOrTx, org: Pick<Organization, 'id' | 'cre
   if (release && org.createdAt >= release) return;
   const placed = existing.map((b) => ({ type: b.type as BuildingType, x: b.x, y: b.y }));
   for (const type of BUILDING_TYPES) {
-    if (type === 'factory' || type === 'fuel') continue;
+    if (type === 'factory' || type === 'fuel' || type === 'polygon') continue;
     const level = type === 'office' ? Math.max(1, levelFromUpgrade(type, upgrades)) : levelFromUpgrade(type, upgrades);
     if (level <= 0) continue;
     const have = existing.find((b) => b.type === type);
@@ -91,6 +92,17 @@ async function onTheWay(db: DbOrTx, buildId: string, now: Date): Promise<Materia
     .where(and(eq(contracts.constructionId, buildId), or(and(eq(contracts.status, 'open'), gt(contracts.expiresAt, now)), eq(deliveries.status, 'in_progress'))))
     .groupBy(contracts.material);
   return Object.fromEntries(rows.filter((r) => r.material).map((r) => [r.material, r.tons])) as Materials;
+}
+
+/** The open material loads of a construction on the freight exchange — any member of the company may take them. */
+export async function constructionLoads(db: DbOrTx, buildId: string, now = new Date()) {
+  return db
+    .select({ id: contracts.id, material: contracts.material, tons: contracts.weightTons, rewardCents: contracts.rewardCents, from: cities.nameBg, expiresAt: contracts.expiresAt })
+    .from(contracts)
+    .innerJoin(cities, eq(cities.id, contracts.originCityId))
+    .where(and(eq(contracts.constructionId, buildId), eq(contracts.status, 'open'), gt(contracts.expiresAt, now)))
+    .orderBy(asc(contracts.expiresAt))
+    .limit(20);
 }
 
 /** Nearest city (at least 30 km away) that produces the material's cargo — where it is bought. */
@@ -158,6 +170,7 @@ export async function placeBuilding(db: Database, actorId: string, type: Buildin
   if (!BUILDINGS[type]) fail('unknown_building', 'Непозната сграда.');
   if (type === 'factory' && !(await featureFor(db, actorId, 'factories', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   if (type === 'fuel' && !(await featureFor(db, actorId, 'fuel_station', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (type === 'polygon' && !(await featureFor(db, actorId, 'polygon', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     await ensurePlot(tx, actor.company);
@@ -407,6 +420,7 @@ export async function finishConstructions(db: Database, now = new Date()) {
       await notifyMembers(tx, build.organizationId, null, `${def.label} е ${build.targetLevel > 1 ? `на ниво ${build.targetLevel}` : 'построен'}!`, `${def.effect(build.targetLevel)}.`, '/game/company/plot');
       await addFeed(tx, { organizationId: build.organizationId, kind: 'build', text: `компанията ${build.targetLevel > 1 ? `вдигна „${def.label}“ на ниво ${build.targetLevel}` : `построи „${def.label}“`}` }, now);
       await announceBuild(tx, build.id, { id: org!.id, name: org!.name, tag: org!.tag }, def.label, build.targetLevel, now);
+      await addChronicle(tx, build.organizationId, 'build', build.targetLevel > 1 ? `„${def.label}“ стана ниво ${build.targetLevel}` : `Построен „${def.label}“`, now);
     });
   }
   return due.length;

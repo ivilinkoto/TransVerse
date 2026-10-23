@@ -15,7 +15,7 @@ import { companies, contracts, deliveries, trailers, users, vehicles } from '@/s
 import { orgFleetView } from '@/server/game/company-fleet';
 import { gameContext } from '@/server/game/context';
 import { can, companyHub } from '@/server/game/membership';
-import { plotView } from '@/server/game/plot';
+import { constructionLoads, plotView } from '@/server/game/plot';
 
 export const metadata = { title: 'Участък' };
 
@@ -51,7 +51,7 @@ export default async function PlotPage() {
       parkedTrucks={Math.min(6, hub.members + 1 + yard)}
       season={season}
       ambience={{ night: features.plot_night && isNight(now), weather: features.plot_weather ? plotWeather(now) : null, visitors }}
-      features={{ decor: features.plot_decor, expand: features.plot_expand, factory: features.factories, fuel: features.fuel_station }}
+      features={{ decor: features.plot_decor, expand: features.plot_expand, factory: features.factories, fuel: features.fuel_station, polygon: features.polygon }}
       coins={coins}
       incoming={incoming}
       data={{
@@ -77,6 +77,7 @@ export default async function PlotPage() {
           startedAt: c.startedAt?.toISOString() ?? null,
           endsAt: c.endsAt?.toISOString() ?? null,
           minutes: c.minutes,
+          loads: c.status === 'materials' ? (await constructionLoads(db, c.id, now)).map((l) => ({ id: l.id, material: l.material, tons: l.tons, rewardCents: l.rewardCents, from: l.from })) : [],
         },
       }}
     >

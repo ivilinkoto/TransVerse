@@ -312,6 +312,8 @@ export function buildingHeight(type: BuildingType, level: number) {
       return 1.9 + level * 0.15;
     case 'fuel':
       return 1.2;
+    case 'polygon':
+      return 1.4 + level * 0.2;
   }
 }
 
@@ -477,6 +479,29 @@ function fuelStation(f: Footprint, level: number) {
   out.push(box(sx1 + 0.15, y0, x1, y1, h, 0.2, { top: SNOW ? '#f3f7fb' : '#f8fafc', left: '#e04545', right: '#c53030' }));
   // The price sign.
   out.push(box(x1 - 0.12, y1 - 0.05, x1, y1 + 0.07, 0, 1.6 + level * 0.15, faces([38, 52, 74])));
+  return out;
+}
+
+/** A driving range: an asphalt pad with a painted slalom of cones, a reversing bay and a small control tower (taller with the level). */
+function polygon(f: Footprint, level: number) {
+  const x0 = f.x + 0.1, y0 = f.y + 0.1, x1 = f.x + f.w - 0.1, y1 = f.y + f.h - 0.1;
+  const out: ReactNode[] = [flat(x0, y0, x1, y1, 0.04, '#5d636e')];
+  // The painted lane around the pad and the reversing bay.
+  out.push(flat(x0 + 0.15, y0 + 0.15, x1 - 0.15, y0 + 0.22, 0.05, '#f2f0e4'), flat(x0 + 0.15, y1 - 0.22, x1 - 0.15, y1 - 0.15, 0.05, '#f2f0e4'));
+  out.push(flat(x1 - 1.1, y0 + 0.5, x1 - 1.04, y1 - 0.5, 0.05, '#f6c343'), flat(x1 - 0.4, y0 + 0.5, x1 - 0.34, y1 - 0.5, 0.05, '#f6c343'));
+  // The slalom: more cones with each level.
+  const cones = 3 + level;
+  for (let i = 0; i < cones; i++) {
+    const cx = x0 + 0.5 + i * ((x1 - x0 - 2) / cones);
+    const cy = (y0 + y1) / 2 + (i % 2 ? 0.35 : -0.35);
+    out.push(box(cx, cy, cx + 0.12, cy + 0.12, 0, 0.25, faces([249, 115, 22])));
+  }
+  // The control tower.
+  const h = buildingHeight('polygon', level);
+  const tx = x0 + 0.1, ty = y1 - 0.75;
+  out.push(shadow(tx, ty, tx + 0.6, ty + 0.6, h), box(tx, ty, tx + 0.6, ty + 0.6, 0, h, faces([226, 232, 240])));
+  out.push(onY(ty + 0.6, tx + 0.05, tx + 0.55, h - 0.45, h - 0.1, win('#9fd0f0', 7)));
+  out.push(box(tx - 0.05, ty - 0.05, tx + 0.65, ty + 0.65, h, 0.08, faces([224, 69, 69])));
   return out;
 }
 
@@ -807,7 +832,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     const f = fp(b);
     const building = construction && construction.type === b.type ? construction : null;
     const node: ReactNode[] = [];
-    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : b.type === 'fuel' ? fuelStation(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
+    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : b.type === 'fuel' ? fuelStation(f, lvl) : b.type === 'polygon' ? polygon(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
     if (building && b.level === 0) node.push(...site(f, b.type, building.status, building.progress, building.delivered, null));
     else if (building) node.push(...site(f, b.type, building.status, building.progress, building.delivered, finished(b.level)));
     else if (b.level > 0) node.push(...finished(b.level));

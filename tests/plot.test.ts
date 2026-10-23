@@ -10,8 +10,8 @@ import { companies, companyBuildings, companyBuilds, contracts, organizations, v
 import { openContracts } from '@/server/game/contracts';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
-import { buyCompanyUpgrade, joinCompany, updateSettings } from '@/server/game/membership';
-import { buyDelivered, cancelBuild, ensurePlot, finishConstructions, orderMaterials, placeBuilding, plotView, startConstruction, upgradeBuilding } from '@/server/game/plot';
+import { buyCompanyUpgrade, companyHub, joinCompany, updateSettings } from '@/server/game/membership';
+import { buyDelivered, cancelBuild, constructionLoads, ensurePlot, finishConstructions, orderMaterials, placeBuilding, plotView, startConstruction, upgradeBuilding } from '@/server/game/plot';
 import { approximateProvider } from '@/server/geo/routing';
 import { db, newPlayer, playerWithCompany } from './helpers';
 
@@ -60,6 +60,33 @@ describe('plot rules', () => {
 });
 
 describe('building on the plot', () => {
+  it('every member (also a plain driver) sees the plot and hauls the materials', async () => {
+    const owner = await playerWithCompany('Sofia');
+    const org = await orgOf(owner.userId);
+    await db().update(organizations).set({ treasuryCents: 2_000_000_00, recruitment: 'open' }).where(eq(organizations.id, org.id));
+    const build = await placeBuilding(db(), owner.userId, 'office', 1, 1);
+    await orderMaterials(db(), owner.userId, build.id, new Date(), approximateProvider);
+    const driver = await newPlayer('Sofia');
+    expect(await joinCompany(db(), driver.userId, org.id)).toBe('joined');
+    const hub = await companyHub(db(), driver.userId);
+    expect(hub!.rank.permissions).not.toContain('build');
+    // The plot opens for the member, with the open material loads on it.
+    expect((await plotView(db(), hub!.company.id))!.construction!.id).toBe(build.id);
+    const loads = await constructionLoads(db(), build.id);
+    expect(loads.length).toBeGreaterThan(0);
+    // Building stays with the rank that may build; hauling is for everyone.
+    expect(await code(placeBuilding(db(), driver.userId, 'logistics', 8, 0))).toBe('forbidden');
+    const load = loads.find((l) => l.tons <= 7.5)!;
+    const [row] = await db().select().from(contracts).where(eq(contracts.id, load.id));
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, driver.userId));
+    const [truck] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
+    await db().update(vehicles).set({ cityId: row!.originCityId }).where(eq(vehicles.id, truck!.id));
+    const d = await acceptContract(db(), driver.userId, load.id, truck!.id);
+    await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000), account!.id);
+    const [after] = await db().select().from(companyBuilds).where(eq(companyBuilds.id, build.id));
+    expect(after!.delivered[row!.material as 'cement']).toBeCloseTo(row!.weightTons, 5);
+  });
+
   it('office first: materials hauled by members (or bought delivered), then the timer', async () => {
     const owner = await playerWithCompany('Sofia');
     const org = await orgOf(owner.userId);

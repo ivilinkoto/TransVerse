@@ -145,7 +145,7 @@
 - 0054: `rallies` (седмично рали: маршрут, начало, край), `rally_entries` (време на товарния участък, гориво на 100 км), `contracts.rally_id` (личният рали товар; вижда го само `created_by`).
 - 0055: `vehicles.moving_until` (път до депото — 1 минута), `trailers.upgrades`, `trailers.logo`, `trailers.org_trailer_id`, `org_trailers` (фирмени ремаркета).
 
-## v1.5 — Пролетен рейс (миграции 0056–0063)
+## v1.5 — Пролетен рейс (миграции 0056–0066)
 - 0056: `contracts.oversize`, `deliveries.night_shift`, `road_works` (ремонти по реални магистрали), `martenitsas` (мартенички между приятели).
 - 0057: `alliances`, `alliance_members`, `alliance_invites`, `alliance_weeks` (седмична цел и битка), `company_contracts` (договори за превоз между компании), `academy_students`; сградата `fuel` в `company_buildings`.
 - 0058: `organizations.division`, `division_results`, `users.perfect_streak`, `users.best_perfect_streak`, `city_visits` (албум „Градове“).
@@ -154,4 +154,7 @@
 - 0061: `contracts.urgent_raises` (поскъпване на неподета спешна доставка), `egg_fights` (махната в 0063 — Великден идва в 1.6).
 - 0062: `users.showcase` (витрина на профила), `company_members.bus_used_at` и `first_trip_bonus` (фирмен автобус, бонус за първия курс), `lane_records` (рекорд на линия за месеца), `alliance_listings` (склад на съюза).
 - 0063: изтрива `egg_fights` (Великден е отложен за 1.6).
+- 0064: `alliances.hall_level`, `hall_tons` (съюзна база), `discord_channel`, `discord_channel_id`, `discord_role_id` (канал на съюза).
+- 0065: `company_chronicle` (хроника), `organizations.driver_of_month_prize_cents`, `driver_of_month`.
+- 0066: `vehicles.test_drive_from` (тест-драйв).
 - `job_state`: `economy-balance` (множител на заплащането, само от администратор), `event-start:<id>`, `rally-live:<id>`, `divisions:<месец>`. Касата на компанията: категория `anniversary` (ключ `anniversary:<компания>:<години>`). Сметката на играча: `convoy_perfect`, `staff_bus_bonus`, `alliance_market`, `insurance_payout`.

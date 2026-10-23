@@ -293,6 +293,8 @@ export const vehicles = pgTable(
     soldAt: ts('sold_at'),
     /** Moving to a depot of the company (v1.4): it is there, but free only from this time. */
     movingUntil: ts('moving_until'),
+    /** A test drive (v1.5): the player's own vehicle the owner-driver came from; the truck goes back to the dealer after one trip. */
+    testDriveFrom: uuid('test_drive_from'),
   },
   (t) => [index('vehicles_company_idx').on(t.companyId)],
 );
@@ -737,6 +739,9 @@ export const organizations = pgTable(
     plotExpansions: integer('plot_expansions').notNull().default(0),
     /** A message pinned on top of the company chat. */
     pinnedMessageId: bigint('pinned_message_id', { mode: 'number' }),
+    /** "Шофьор на месеца" (v1.5): the prize from the treasury (0 = only the title) and the last winner. */
+    driverOfMonthPrizeCents: money('driver_of_month_prize_cents').notNull().default(0),
+    driverOfMonth: jsonb('driver_of_month').$type<{ userId: string; username: string; month: string; trips: number; tons: number } | null>(),
     /** Division in the monthly company league (v1.5): bronze | silver | gold. */
     division: text('division').notNull().default('bronze'),
     /** The company's private channel and role in the TransVerse Discord server (v1.3). */
@@ -2208,6 +2213,13 @@ export const alliances = pgTable('alliances', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull().unique(),
   leaderOrgId: uuid('leader_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  /** The alliance hall (v1.5): its level and the tonnes of materials toward the next one. */
+  hallLevel: integer('hall_level').notNull().default(0),
+  hallTons: real('hall_tons').notNull().default(0),
+  /** The alliance's private channel and role in the Discord server (v1.5). */
+  discordChannel: boolean('discord_channel').notNull().default(false),
+  discordChannelId: text('discord_channel_id'),
+  discordRoleId: text('discord_role_id'),
   createdAt: createdAt(),
 });
 
@@ -2367,4 +2379,18 @@ export const allianceListings = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('alliance_listings_open_idx').on(t.allianceId, t.status), index('alliance_listings_seller_idx').on(t.sellerId, t.status)],
+);
+
+/** The company's chronicle (v1.5): its big moments, kept for good. */
+export const companyChronicle = pgTable(
+  'company_chronicle',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    /** level | build | battle | project | division | anniversary | alliance */
+    kind: text('kind').notNull(),
+    text: text('text').notNull(),
+    at: ts('at').notNull(),
+  },
+  (t) => [index('company_chronicle_org_idx').on(t.organizationId, t.at)],
 );

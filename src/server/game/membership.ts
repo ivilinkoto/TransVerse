@@ -29,6 +29,7 @@ const PLOT_UPGRADES: string[] = Object.values(BUILDINGS).map((b) => b.upgrade);
 import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
+import { addChronicle } from './chronicle';
 import { returnOnLeave, sellFleetOnDissolve } from './company-fleet';
 import { returnTrailersOnLeave, sellTrailersOnDissolve } from './company-trailers';
 import { queueRoles } from '@/server/discord/outbox';
@@ -386,6 +387,7 @@ export async function addCompanyXp(tx: Tx, companyId: string, xp: number) {
   if (level > row!.level) {
     await tx.update(organizations).set({ companyLevel: level }).where(eq(organizations.id, companyId));
     await notifyMembers(tx, companyId, null, `„${row!.name}“ достигна ниво ${level}!`, 'Вижте новите възможности в „Развитие“.', '/game/company/development');
+    await addChronicle(tx, companyId, 'level', `Компанията стигна ниво ${level}`);
   }
 }
 

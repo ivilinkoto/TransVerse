@@ -61,9 +61,9 @@ import { recordShipContainer } from './ports';
 import { recordRallyRun } from './rally';
 import { activeRoadWorks } from './roads';
 import { recordCityVisit, recordPerfectTrip } from './competition';
-import { clientsOf, fuelStationAt, payCompanyContract, recordAcademyCourse, recordAllianceDelivery } from './alliances';
+import { clientsOf, fuelStationAt, payCompanyContract, recordAcademyCourse, allianceHallBonus, recordAllianceDelivery, recordHallDelivery } from './alliances';
 import { FUEL_STATION } from '@/lib/game/alliances';
-import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor } from '@/lib/game/roads';
+import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor, applyRushHour } from '@/lib/game/roads';
 import { companyTrailerBonus } from './company-trailers';
 import { COMPANY_TRAILERS } from '@/lib/game/company-fleet';
 import { recordFactoryDelivery } from './factory';
@@ -284,13 +284,20 @@ export async function acceptContract(db: Database, userId: string, contractId: s
           crew,
           charging,
         });
-    const schedule: Segment[] = contract!.urgent
+    const planned: Segment[] = contract!.urgent
       ? [
           // The truck is moved to the pickup city in one minute, then drives the cargo.
           ...(emptyRoute ? [{ kind: 'drive' as const, leg: 'empty' as const, start: now.getTime(), end: now.getTime() + URGENT_RELOCATION_MS, fromKm: 0, toKm: emptyRoute.distanceKm }] : []),
           ...trip.segments,
         ]
       : trip.segments;
+    // Rush hour in big cities (v1.5): slower loading and unloading by the city's own clock.
+    let schedule = planned;
+    if (await featureFor(tx, userId, 'rush_hour', now)) {
+      const ends = await tx.select({ id: cities.id, population: cities.population, timezone: cities.timezone }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId]));
+      const o = ends.find((c) => c.id === contract!.originCityId), dst = ends.find((c) => c.id === contract!.destCityId);
+      if (o && dst) schedule = applyRushHour(planned, o, dst).segments;
+    }
     const rented = bundle.vehicle.ownership === 'rented';
     // The urgent one-minute relocation costs nothing; only the cargo leg is paid for.
     const chargedEmptyKm = contract!.urgent ? 0 : (emptyRoute?.distanceKm ?? 0);
@@ -333,7 +340,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, cargoInsuranceCents, totalCents: ticket + oversizeCents + cargoInsuranceCents, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, cargoInsuranceCents, fuelStation, totalCents: running.totalCents + ticket + oversizeCents + cargoInsuranceCents };
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
-    const rentalFee = rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
+    // A test drive (v1.5) has no rental fee.
+    const rentalFee = rented && bundle.vehicle.testDriveFrom ? 0 : rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     // The real weather on the roads now (v1.4), when there is a fresh reading.
     const real = await realConditionsFor(tx, userId, now);
@@ -466,6 +474,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.5: a perfect convoy (both on time, together) and the first trip of a new company member.
   const convoyPerfect = await settlePerfectConvoy(tx, d, { userId: company!.ownerId, late: result.late, at: completedAt, rewardCents: result.rewardCents, originCityId: contract.originCityId, destCityId: contract.destCityId });
   const firstTrip = perks ? await firstTripBonus(tx, company!.ownerId, d, result.rewardCents, completedAt) : 0;
+  const hallBonus = perks ? await allianceHallBonus(tx, company!.ownerId, perks.membership.company.id, d, result.rewardCents, completedAt) : 0;
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
   if (station?.cents) await postTreasury(tx, station.orgId, [{ category: 'fuel_station', amountCents: station.cents, description: `Гориво на станцията: ${contract.goods}`, idempotencyKey: key('fuel-station'), refType: 'delivery', refId: d.id }]);
@@ -477,7 +486,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -514,6 +523,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     await addCompanyXp(tx, perks.membership.company.id, companyXp);
     // v1.5: the alliance's week counts the tonnes; a client's load pays the hauler company its share.
     await recordAllianceDelivery(tx, perks.membership.company.id, contract.weightTons, completedAt);
+    await recordHallDelivery(tx, company!.ownerId, perks.membership.company.id, { cargoType: contract.cargoType, destCityId: contract.destCityId, tons: contract.weightTons }, completedAt);
     const client = contract.factoryOrgId ?? contract.branchOrgId;
     if (client && client !== perks.membership.company.id) await payCompanyContract(tx, client, perks.membership.company.id, d.id, result.rewardCents, contract.weightTons, completedAt);
   }
@@ -531,11 +541,13 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // They also carry the driving hours of this trip until they have rested (a team shares them).
   const crewIds = [d.driverId, d.coDriverId].filter((x): x is string => !!x);
   const dutyEach = d.endDutyMin / crewIds.length;
+  // The company's driving range (v1.5): the drivers learn faster.
+  const driverXp = Math.round(xp * (perks?.bonuses.driverXpMultiplier ?? 1));
   await tx
     .update(drivers)
     .set({
-      xp: sql`${drivers.xp} + ${xp}`,
-      skill: sql`greatest(${drivers.skill}, least(5, 1 + floor((${drivers.xp} + ${xp}) / 8000.0)::int))`,
+      xp: sql`${drivers.xp} + ${driverXp}`,
+      skill: sql`greatest(${drivers.skill}, least(5, 1 + floor((${drivers.xp} + ${driverXp}) / 8000.0)::int))`,
       dutyMin: dutyEach,
       // The company's rest stop shortens the rest after a trip that ends in the base city.
       restedAt: new Date(completedAt.getTime() + (CREW_RULES.restGameMin * 60_000 * (1 - (org && contract.destCityId === org.hqCityId ? (perks?.bonuses.restCut ?? 0) : 0))) / timeScale()),

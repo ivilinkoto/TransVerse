@@ -449,6 +449,27 @@
       "when": 1792702766420,
       "tag": "0063_common_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792739128704,
+      "tag": "0064_pretty_forge",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1792739653013,
+      "tag": "0065_nebulous_supreme_intelligence",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1792740281461,
+      "tag": "0066_colossal_the_executioner",
+      "breakpoints": true
     }
   ]
 }

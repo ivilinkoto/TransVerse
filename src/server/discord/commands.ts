@@ -4,7 +4,8 @@ import { featureDate, featureLive } from '@/lib/game/features';
 import { dec, int, km, money } from '@/lib/format';
 import { isStaff } from '@/server/auth/roles';
 import type { DbOrTx } from '@/server/db/client';
-import { cities, companies, contracts, organizations, users } from '@/server/db/schema';
+import { allianceMembers, alliances, cities, companies, contracts, organizations, users } from '@/server/db/schema';
+import { allianceHall, allianceWeekView, playerAlliance } from '@/server/game/alliances';
 import { companyShowcase } from '@/server/game/base-life';
 import { membershipOf } from '@/server/game/membership';
 import { topBases } from '@/server/game/plot';
@@ -54,6 +55,8 @@ export const COMMANDS = [
   { name: 'борса', description: 'Най-добре платените товари от град', options: [{ type: 3, name: 'град', description: 'Град (напр. София)', required: true }] },
   { name: 'дневна', description: 'Вземи дневната награда' },
   { name: 'рекорди', description: 'Рекордите на линиите този месец (с име — на играч)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
+  { name: 'камион', description: 'Картичка с твой камион — боя, ливрея, части (свързан акаунт)', options: [{ type: 3, name: 'номер', description: 'Регистрационен номер (без него — последно купеният)', required: false }] },
+  { name: 'съюз', description: 'Съюзът на компанията ти (или съюз по име): компании, седмица и съюзна база', options: [{ type: 3, name: 'име', description: 'Име на съюза', required: false }] },
   { name: 'албум', description: 'Колекцията от градове (без име — твоята)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'ивент', description: 'Текущият ивент на общността и твоят принос' },
   { name: 'битка', description: 'Битката на компанията ти тази седмица' },
@@ -137,6 +140,10 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return plot(db, input.options['компания'] ?? null, me?.id ?? null);
     case 'рекорди':
       return records(db, input.options['играч'] ?? null, now);
+    case 'камион':
+      return me ? truckCard(db, me.id, input.options['номер'] ?? null, now) : { ephemeral: true, content: `Не знам кой си в играта. ${linkHint()}` };
+    case 'съюз':
+      return alliance(db, input.options['име'] ?? null, me?.id ?? null, now);
     case 'албум':
       return album(db, input.options['играч'] ?? me?.username ?? null, now);
     case 'свързване':
@@ -315,6 +322,52 @@ async function album(db: DbOrTx, username: string | null, now: Date): Promise<Co
         const n = p.cities.filter((c) => c.at).length;
         return { name: `${n === p.cities.length ? '✅ ' : ''}${p.name}`, value: `${n} / ${p.cities.length}`, inline: true };
       }).slice(0, 24),
+      footer,
+    }],
+  };
+}
+
+/** /съюз — an alliance: its companies, the week and the hall (v1.5). */
+async function alliance(db: DbOrTx, name: string | null, viewerId: string | null, now: Date): Promise<CommandReply> {
+  if (!featureLive('alliances', now)) return { ephemeral: true, content: 'Съюзите идват с обновление 1.5.' };
+  let id: string | null = null;
+  if (name) id = (await db.select({ id: alliances.id }).from(alliances).where(sql`lower(${alliances.name}) = lower(${name.trim()})`))[0]?.id ?? null;
+  else if (viewerId) id = (await playerAlliance(db, viewerId, now))?.id ?? null;
+  if (!id) return { ephemeral: true, content: name ? `Няма съюз „${name}“.` : `Компанията ти не е в съюз (или акаунтът ти не е свързан). ${linkHint()}` };
+  const [a] = await db.select().from(alliances).where(eq(alliances.id, id));
+  const members = await db.select({ name: organizations.name, tag: organizations.tag }).from(allianceMembers).innerJoin(organizations, eq(organizations.id, allianceMembers.organizationId)).where(eq(allianceMembers.allianceId, id));
+  const week = await allianceWeekView(db, id, members.length, now);
+  const hall = await allianceHall(db, id);
+  return {
+    embeds: [{
+      title: `🛡 Съюз „${a!.name}“`,
+      url: `${appUrl()}/game/company/alliance`,
+      color: 0xa78bfa,
+      fields: [
+        { name: 'Компании', value: members.map((m) => (m.tag ? `[${m.tag}] ${m.name}` : m.name)).join('\n') || '—' },
+        { name: 'Седмична цел', value: `${dec(week.tons)} / ${dec(week.targetTons)} т`, inline: true },
+        { name: 'Битка', value: week.rival ? `срещу ${week.rival.name}: ${dec(week.tons)} : ${dec(week.rival.tons)} т` : 'още няма противник', inline: true },
+        ...(hall && featureLive('alliance_hall', now) ? [{ name: 'Съюзна база', value: `ниво ${hall.level} в ${hall.city}${hall.next ? ` · ${dec(hall.tons)} / ${hall.next} т до следващото` : ' · максимално'}`, inline: true }] : []),
+      ],
+      footer,
+    }],
+  };
+}
+
+/** /камион — a card of the player's truck (v1.5). */
+async function truckCard(db: DbOrTx, userId: string, plate: string | null, now: Date): Promise<CommandReply> {
+  if (!featureLive('discord_truck', now)) return { ephemeral: true, content: 'Командата идва с обновление 1.5.' };
+  const [account] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
+  const fleet = account ? (await fleetView(db, account.id)).vehicles : [];
+  const norm = (s: string) => s.replace(/\s+/g, '').toUpperCase();
+  const v = plate ? fleet.find((x) => norm(x.plate) === norm(plate)) : fleet.at(-1);
+  if (!v) return { ephemeral: true, content: plate ? `Нямаш камион с номер „${plate}“.` : 'Още нямаш камион.' };
+  return {
+    embeds: [{
+      title: `🚚 ${v.model.brand} ${v.model.name} · ${v.plate}`,
+      url: `${appUrl()}/game/garage/${v.id}`,
+      color: BRAND,
+      image: { url: `${appUrl()}/api/discord/card/truck/${v.id}?v=${now.getTime()}` },
       footer,
     }],
   };

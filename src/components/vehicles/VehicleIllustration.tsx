@@ -4,6 +4,7 @@ import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
 import { Defs, GroundShadow, type Ids } from './parts';
 import { DrawbarTrailer, Trailer, TrailerExtras, type TrailerBody } from './trailers';
 import { Rigid, Tractor, Van } from './units';
+import { RETRO, type RetroStyle } from '@/lib/game/shop';
 
 export interface VehicleIllustrationProps {
   /** Power unit model id from the catalogue. */
@@ -14,7 +15,7 @@ export interface VehicleIllustrationProps {
   trailerColor?: string;
   className?: string;
   title?: string;
-  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026). */
+  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection). */
   livery?: string | null;
   /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
   cosmetics?: Cosmetics | null;
@@ -99,6 +100,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       {content}
       {livery === 'pumpkin' && decals.map(([x, y, size], i) => <PumpkinDecal key={i} x={x} y={y} size={size} />)}
       {livery === 'christmas' && decals.map(([x, y, size], i) => <ChristmasDecal key={i} x={x} y={y} size={size} />)}
+      {livery && livery in RETRO && decals.map(([x, y, size], i) => <RetroDecal key={`r${i}`} x={x} y={y} size={size} stripes={RETRO[livery as RetroStyle].stripes} />)}
       {unit.electric && decals.slice(0, 1).map(([x, y, size], i) => <ElectricDecal key={`e${i}`} x={x} y={y + size * 0.9} size={size * 0.55} />)}
     </svg>
   );
@@ -157,6 +159,17 @@ function ChristmasDecal({ x, y, size }: { x: number; y: number; size: number }) 
       <path d="M16 .8l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" fill="#facc15" />
       {[[13, 12, '#ef4444'], [19, 16, '#facc15'], [11, 21, '#facc15'], [21, 23, '#ef4444'], [16, 19, '#f8fafc']].map(([cx, cy, fill]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.3" fill={fill as string} />)}
       <path d="M10 17.5q6 2 12-1.5M8.5 25q7.5 2.5 15-1.5" stroke="#fde68a" strokeWidth="0.8" fill="none" />
+    </g>
+  );
+}
+
+/** Three slanted stripes of a past decade — the retro paints (v1.5), centred on (x, y). */
+function RetroDecal({ x, y, size, stripes }: { x: number; y: number; size: number; stripes: readonly string[] }) {
+  const k = size / 32;
+  return (
+    <g transform={`translate(${x - 24 * k} ${y - 10 * k}) scale(${k})`} opacity="0.95">
+      {stripes.map((fill, i) => <path key={fill} d={`M${i * 7} 20 L${12 + i * 7} 0 H${17 + i * 7} L${5 + i * 7} 20 Z`} fill={fill} />)}
+      <rect x="26" y="8" width="22" height="4" fill={stripes[0]} />
     </g>
   );
 }

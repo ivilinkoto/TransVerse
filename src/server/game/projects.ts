@@ -8,6 +8,7 @@ import { addFeed } from './feed';
 import { fail } from './errors';
 import { postTreasury } from './finance';
 import { addCompanyXp, memberCount, notifyMembers, requirePermission } from './membership';
+import { addChronicle } from './chronicle';
 
 export type CompanyProject = typeof companyProjects.$inferSelect;
 
@@ -60,6 +61,7 @@ export async function recordProjectDelivery(tx: Tx, organizationId: string, user
   await postTreasury(tx, organizationId, [{ category: 'company_project', amountCents: p.rewardCents, description: `Фирмен проект: ${p.title}`, idempotencyKey: `project:${p.id}`, refType: 'company_project', refId: p.id }]);
   await addCompanyXp(tx, organizationId, p.rewardXp);
   await addFeed(tx, { organizationId, kind: 'project', text: `компанията завърши проекта „${p.title}“` }, now);
+  await addChronicle(tx, organizationId, 'project', `Завършен проект „${p.title}“`, now);
   // ТрансКоин for every member who really helped (and is still in the company).
   const members = new Set((await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, organizationId))).map((r) => r.userId));
   for (const [helper, tons] of Object.entries(contributions)) {

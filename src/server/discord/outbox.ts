@@ -5,7 +5,7 @@ import { discord, noPings, type DiscordMessage } from './api';
 import { DISCORD_CHANNELS, discordConfig, type DiscordChannel } from './config';
 import { giveVerified, pingRoleFor } from './guild';
 import { layoutChannel } from './layout';
-import { ensureCompanyChannel, stripRoles, syncUserRoles } from './sync';
+import { ensureAllianceChannel, ensureCompanyChannel, removeAllianceChannel, stripRoles, syncUserRoles } from './sync';
 
 /** Queues something for Discord once (the same dedupe key never twice). */
 export async function enqueue(db: DbOrTx, dedupeKey: string, target: string, payload: Record<string, unknown>, now = new Date()) {
@@ -49,6 +49,10 @@ async function send(db: Database, target: string, payload: Record<string, unknow
     await giveVerified(String(payload.discordId));
   } else if (target === 'job:company-channel') {
     await ensureCompanyChannel(db, String(payload.organizationId));
+  } else if (target === 'job:alliance-channel') {
+    await ensureAllianceChannel(db, String(payload.allianceId));
+  } else if (target === 'job:alliance-channel-remove') {
+    await removeAllianceChannel((payload.channelId as string | null) ?? null, (payload.roleId as string | null) ?? null);
   }
 }
 

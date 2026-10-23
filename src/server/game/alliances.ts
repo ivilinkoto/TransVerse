@@ -1,21 +1,24 @@
-import { and, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
-import { ACADEMY, ALLIANCE, COMPANY_CONTRACT, fuelDiscount } from '@/lib/game/alliances';
+import { ACADEMY, ALLIANCE, ALLIANCE_HALL, COMPANY_CONTRACT, fuelDiscount, hallBonusShare, hallNextTons } from '@/lib/game/alliances';
 import type { UpgradeLevels } from '@/lib/game/company';
 import { periodWindow } from '@/lib/game/missions';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { academyStudents, allianceInvites, allianceMembers, alliances, allianceWeeks, chatMessages, companyContracts, companyMembers, organizations, users } from '@/server/db/schema';
+import { academyStudents, allianceInvites, cities, allianceMembers, alliances, allianceWeeks, chatMessages, companyContracts, companyMembers, organizations, users } from '@/server/db/schema';
 import { rateLimit } from '@/server/auth/rate-limit';
 import { featureFor } from '@/server/features';
 import { postCoins } from './coins';
 import { fail } from './errors';
-import { postTreasury } from './finance';
+import { post, postTreasury } from './finance';
+import { discordConfig } from '@/server/discord/config';
+import { enqueue, queueRoles } from '@/server/discord/outbox';
 import { addCompanyXp, membershipOf, notifyMembers, requirePermission } from './membership';
 import { messageBodySchema } from './messages';
 import { assertNotMuted } from './moderation';
 import { notify } from './notify';
+import { addChronicle } from './chronicle';
 
-async function released(db: DbOrTx, userId: string, id: 'alliances' | 'company_contracts' | 'academy', now: Date) {
+async function released(db: DbOrTx, userId: string, id: 'alliances' | 'company_contracts' | 'academy' | 'alliance_discord', now: Date) {
   if (!(await featureFor(db, userId, id, now))) fail('not_released', 'Това идва със следващото обновление.', 403);
 }
 
@@ -33,6 +36,12 @@ export async function fuelStationAt(tx: DbOrTx, cityId: number, userId: string, 
   const m = await membershipOf(tx, userId);
   const own = rows.find((r) => r.id === m?.company.id);
   if (own) return { orgId: own.id, member: true, discount: fuelDiscount((own.upgrades as UpgradeLevels).fuel ?? 0) };
+  // The alliance's fuel card (v1.5): an allied company's station gives its members' discount, without the margin.
+  if (m && (await featureFor(tx, userId, 'alliance_fuel', now))) {
+    const allied = await tx.select({ id: allianceMembers.organizationId }).from(allianceMembers).where(sql`${allianceMembers.allianceId} = (select alliance_id from alliance_members where organization_id = ${m.company.id})`);
+    const best = rows.filter((r) => allied.some((a) => a.id === r.id)).sort((a, b) => ((b.upgrades as UpgradeLevels).fuel ?? 0) - ((a.upgrades as UpgradeLevels).fuel ?? 0))[0];
+    if (best) return { orgId: best.id, member: true, discount: fuelDiscount((best.upgrades as UpgradeLevels).fuel ?? 0) };
+  }
   const best = rows.sort((a, b) => ((b.upgrades as UpgradeLevels).fuel ?? 0) - ((a.upgrades as UpgradeLevels).fuel ?? 0))[0]!;
   return { orgId: best.id, member: false, discount: 0 };
 }
@@ -46,6 +55,19 @@ export async function allianceOf(db: DbOrTx, organizationId: string) {
   return { ...row.a, members };
 }
 
+/** The bases (HQ cities) of the player's company and of the other companies in its alliance — for the map (v1.5). */
+export async function allianceBases(db: DbOrTx, userId: string) {
+  const m = await membershipOf(db, userId);
+  if (!m) return [];
+  const ids = [m.company.id, ...((await allianceOf(db, m.company.id))?.members.map((x) => x.id) ?? [])];
+  const rows = await db
+    .select({ id: organizations.id, name: organizations.name, tag: organizations.tag, color: organizations.color, city: cities.nameBg, lat: cities.lat, lon: cities.lon })
+    .from(organizations)
+    .innerJoin(cities, eq(cities.id, organizations.hqCityId))
+    .where(inArray(organizations.id, [...new Set(ids)]));
+  return rows.map((r) => ({ name: r.tag ? `[${r.tag}] ${r.name}` : r.name, city: r.city, color: r.color, position: [r.lat, r.lon] as [number, number], own: r.id === m.company.id }));
+}
+
 export async function createAlliance(db: Database, actorId: string, rawName: string, now = new Date()) {
   await released(db, actorId, 'alliances', now);
   const name = rawName.trim().replace(/\s+/g, ' ');
@@ -57,6 +79,7 @@ export async function createAlliance(db: Database, actorId: string, rawName: str
     if (taken) fail('name_taken', 'Съюз с това име вече има.', 409);
     const [a] = await tx.insert(alliances).values({ name, leaderOrgId: actor.company.id, createdAt: now }).returning();
     await tx.insert(allianceMembers).values({ allianceId: a!.id, organizationId: actor.company.id, joinedAt: now });
+    await addChronicle(tx, actor.company.id, 'alliance', `Основа съюза „${name}“`, now);
     await notifyMembers(tx, actor.company.id, null, `Нов съюз: „${name}“`, 'Поканете още компании — заедно имате седмична цел и битка срещу друг съюз.', '/game/company/alliance');
     return a!;
   });
@@ -94,6 +117,9 @@ export async function respondAllianceInvite(db: Database, actorId: string, invit
     const members = await tx.select().from(allianceMembers).where(eq(allianceMembers.allianceId, inv!.allianceId)).for('update');
     if (members.length >= ALLIANCE.maxCompanies) fail('full', 'Съюзът вече е пълен.');
     await tx.insert(allianceMembers).values({ allianceId: inv!.allianceId, organizationId: actor.company.id, joinedAt: now });
+    await queueAllianceRoles(tx, [actor.company.id], now);
+    const [joined] = await tx.select({ name: alliances.name }).from(alliances).where(eq(alliances.id, inv!.allianceId));
+    await addChronicle(tx, actor.company.id, 'alliance', `Влезе в съюза „${joined?.name ?? ''}“`, now);
     for (const m of members) await notifyMembers(tx, m.organizationId, null, `„${actor.company.name}“ влезе в съюза`, 'Съюзът расте — повече тонове за общата цел.', '/game/company/alliance');
     return inv!.allianceId;
   });
@@ -106,6 +132,7 @@ export async function leaveAlliance(db: Database, actorId: string) {
     const a = await allianceOf(tx, actor.company.id);
     if (!a) fail('no_alliance', 'Компанията не е в съюз.');
     await tx.delete(allianceMembers).where(eq(allianceMembers.organizationId, actor.company.id));
+    await queueAllianceRoles(tx, [actor.company.id], new Date());
     const left = a!.members.filter((m) => m.id !== actor.company.id);
     if (!left.length) await tx.delete(alliances).where(eq(alliances.id, a!.id));
     else if (a!.leaderOrgId === actor.company.id) await tx.update(alliances).set({ leaderOrgId: left[0]!.id }).where(eq(alliances.id, a!.id));
@@ -120,7 +147,10 @@ export async function dissolveAlliance(db: Database, actorId: string) {
     if (!a) fail('no_alliance', 'Компанията не е в съюз.');
     if (a!.leaderOrgId !== actor.company.id) fail('not_leader', 'Съюза разпуска само водещата компания.', 403);
     await tx.delete(chatMessages).where(eq(chatMessages.channel, allianceChannel(a!.id)));
+    const [row] = await tx.select({ channelId: alliances.discordChannelId, roleId: alliances.discordRoleId }).from(alliances).where(eq(alliances.id, a!.id));
+    if (row?.channelId || row?.roleId) await enqueue(tx, `alliance-channel-remove:${a!.id}`, 'job:alliance-channel-remove', { channelId: row.channelId, roleId: row.roleId });
     await tx.delete(alliances).where(eq(alliances.id, a!.id));
+    await queueAllianceRoles(tx, a!.members.map((m) => m.id), new Date());
     for (const m of a!.members) if (m.id !== actor.company.id) await notifyMembers(tx, m.id, null, `Съюзът „${a!.name}“ е разпуснат`, `Водещата компания „${actor.company.name}“ разпусна съюза.`, '/game/company/alliance');
   });
 }
@@ -188,6 +218,75 @@ export async function recordAllianceDelivery(tx: Tx, organizationId: string, ton
   const w = await allianceWeek(tx, m.allianceId, n, now);
   if (w.status !== 'active') return;
   await tx.update(allianceWeeks).set({ tons: sql`${allianceWeeks.tons} + ${tons}` }).where(eq(allianceWeeks.id, w.id));
+}
+
+// ── The alliance hall (v1.5) ──────────────────────────────────────────────
+
+/** The hall of an alliance: level, progress and the city where it stands (the leader company's base). */
+export async function allianceHall(db: DbOrTx, allianceId: string) {
+  const [row] = await db
+    .select({ level: alliances.hallLevel, tons: alliances.hallTons, cityId: organizations.hqCityId, city: cities.nameBg })
+    .from(alliances)
+    .innerJoin(organizations, eq(organizations.id, alliances.leaderOrgId))
+    .innerJoin(cities, eq(cities.id, organizations.hqCityId))
+    .where(eq(alliances.id, allianceId));
+  return row ? { ...row, next: hallNextTons(row.level), bonusShare: hallBonusShare(row.level) } : null;
+}
+
+/** A member's delivery of materials (pallets, steel) to the hall's city builds the hall; each level is announced to the alliance. */
+export async function recordHallDelivery(tx: Tx, userId: string, organizationId: string, load: { cargoType: string; destCityId: number; tons: number }, now: Date) {
+  if (!ALLIANCE_HALL.cargo.includes(load.cargoType) || !(await featureFor(tx, userId, 'alliance_hall', now))) return null;
+  const [m] = await tx.select({ allianceId: allianceMembers.allianceId }).from(allianceMembers).where(eq(allianceMembers.organizationId, organizationId));
+  if (!m) return null;
+  const [a] = await tx.select().from(alliances).where(eq(alliances.id, m.allianceId)).for('update');
+  const hall = a ? await allianceHall(tx, a.id) : null;
+  if (!a || !hall || hall.cityId !== load.destCityId || hall.next === null) return null;
+  let level = a.hallLevel;
+  let tons = a.hallTons + load.tons;
+  while (hallNextTons(level) !== null && tons >= hallNextTons(level)!) {
+    tons -= hallNextTons(level)!;
+    level++;
+  }
+  if (hallNextTons(level) === null) tons = 0;
+  await tx.update(alliances).set({ hallLevel: level, hallTons: tons }).where(eq(alliances.id, a.id));
+  if (level > a.hallLevel) {
+    const members = await tx.select({ id: allianceMembers.organizationId }).from(allianceMembers).where(eq(allianceMembers.allianceId, a.id));
+    for (const o of members) await notifyMembers(tx, o.id, null, `Съюзната база „${a.name}“ е на ниво ${level}!`, `+${Math.round(hallBonusShare(level) * 100)} % към заплащането на всеки курс на членовете на съюза.`, '/game/company/alliance');
+  }
+  return { level, tons };
+}
+
+/** The hall's bonus on a member's freight (personal account, before any treasury). */
+export async function allianceHallBonus(tx: Tx, userId: string, organizationId: string, d: { id: string; companyId: string }, rewardCents: number, now: Date) {
+  if (!(await featureFor(tx, userId, 'alliance_hall', now))) return 0;
+  const [row] = await tx.select({ level: alliances.hallLevel, name: alliances.name }).from(allianceMembers).innerJoin(alliances, eq(alliances.id, allianceMembers.allianceId)).where(eq(allianceMembers.organizationId, organizationId));
+  const bonus = row ? Math.round(rewardCents * hallBonusShare(row.level)) : 0;
+  if (!bonus) return 0;
+  await post(tx, d.companyId, [{ category: 'alliance_hall_bonus', amountCents: bonus, description: `Съюзна база „${row!.name}“ (ниво ${row!.level})`, idempotencyKey: `delivery:${d.id}:alliance-hall`, refType: 'delivery', refId: d.id }]);
+  return bonus;
+}
+
+// ── The alliance in Discord (v1.5) ────────────────────────────────────────
+
+/** The leader company turns the alliance's private Discord channel on or off. */
+export async function setAllianceDiscord(db: Database, actorId: string, on: boolean, now = new Date()) {
+  await released(db, actorId, 'alliance_discord', now);
+  if (!discordConfig().bot) fail('discord_off', 'Discord ботът още не е настроен.');
+  return db.transaction(async (tx) => {
+    const actor = await requirePermission(tx, actorId, 'manage_settings');
+    const a = await allianceOf(tx, actor.company.id);
+    if (!a) fail('no_alliance', 'Компанията не е в съюз.');
+    if (a!.leaderOrgId !== actor.company.id) fail('not_leader', 'Канала на съюза включва водещата компания.', 403);
+    await tx.update(alliances).set({ discordChannel: on }).where(eq(alliances.id, a!.id));
+    await enqueue(tx, `alliance-channel:${a!.id}:${now.getTime()}`, 'job:alliance-channel', { allianceId: a!.id }, now);
+  });
+}
+
+/** The members of an alliance's companies get (or lose) the alliance role soon. */
+async function queueAllianceRoles(tx: DbOrTx, organizationIds: string[], now: Date) {
+  if (!organizationIds.length) return;
+  const rows = await tx.select({ id: users.id }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(and(inArray(companyMembers.companyId, organizationIds), isNotNull(users.discordId)));
+  for (const r of rows) await queueRoles(tx, r.id, now);
 }
 
 /** The alliance page: its week and the rival's. */

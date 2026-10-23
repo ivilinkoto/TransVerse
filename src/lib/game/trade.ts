@@ -26,6 +26,9 @@ export const COUNTRY_PRICE_LEVEL: Record<string, number> = {
   AT: 1.15, DE: 1.2, IT: 1.1, FR: 1.12, NL: 1.18, BE: 1.15, LU: 1.2, CH: 1.3, DK: 1.22, SE: 1.2, NO: 1.3, FI: 1.15,
 };
 
+/** "Разчисти склада" (v1.5): goods that sat this long can be sold off at once, for a share of what they cost. */
+export const CLEARANCE = { minDays: 3, share: 0.7 } as const;
+
 export const TRADE_RULES = {
   /** Producers sell below the country price, consumers pay the country price × demand. */
   buyFactor: 0.92,
