@@ -3,13 +3,14 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { coinEntries, users } from '@/server/db/schema';
 import { fail } from './errors';
 
-export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend';
+export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction';
 
 export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   rally: 'Седмично рали',
   challenge: 'Евротур и предизвикателства',
   tournament: 'Пролетна купа',
   legend: 'Легендарен камион и музей',
+  plate_auction: 'Търг за редки номера',
   admin_grant: 'Дадени от администратор',
   admin_remove: 'Отнети от администратор',
   purchase: 'Закупени',

@@ -323,6 +323,10 @@ export const trailers = pgTable(
     orgTrailerId: uuid('org_trailer_id'),
     /** Bought looks (v1.5): paint, stripe, mud flaps, roof lights. */
     cosmetics: jsonb('cosmetics').$type<TrailerCosmetics>().notNull().default({}),
+    /** Offered or given for hire to another player (v1.6): the owner cannot use it meanwhile. */
+    hiredOut: boolean('hired_out').notNull().default(false),
+    /** A hired trailer (ownership 'hired'): its hire. */
+    hireId: uuid('hire_id'),
     purchasePriceCents: money('purchase_price_cents').notNull(),
     purchasedAt: createdAt(),
     soldAt: ts('sold_at'),
@@ -2478,4 +2482,38 @@ export const museumExhibits = pgTable(
     donatedAt: ts('donated_at').notNull(),
   },
   (t) => [index('museum_exhibits_org_idx').on(t.organizationId), uniqueIndex('museum_exhibits_vehicle_idx').on(t.vehicleId)],
+);
+
+/** The weekly rare plate auction (v1.6): bids in ТрансКоин are held until outbid. */
+export const plateAuctions = pgTable('plate_auctions', {
+  weekKey: text('week_key').primaryKey(),
+  plate: text('plate').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  bidUserId: uuid('bid_user_id').references(() => users.id, { onDelete: 'set null' }),
+  bidCoins: integer('bid_coins'),
+  bids: integer('bids').notNull().default(0),
+  settledAt: ts('settled_at'),
+  /** The winner's truck once the plate is fitted. */
+  vehicleId: uuid('vehicle_id'),
+  createdAt: ts('created_at').notNull(),
+});
+
+/** Trailers for hire between players (v1.6). */
+export const trailerHires = pgTable(
+  'trailer_hires',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    trailerId: uuid('trailer_id').notNull().references(() => trailers.id, { onDelete: 'cascade' }),
+    ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    pricePerDayCents: money('price_per_day_cents').notNull(),
+    maxDays: integer('max_days').notNull(),
+    renterId: uuid('renter_id').references(() => users.id, { onDelete: 'set null' }),
+    hiredTrailerId: uuid('hired_trailer_id'),
+    days: integer('days'),
+    startedAt: ts('started_at'),
+    until: ts('until'),
+    endedAt: ts('ended_at'),
+    createdAt: ts('created_at').notNull(),
+  },
+  (t) => [index('trailer_hires_open_idx').on(t.endedAt, t.until), uniqueIndex('trailer_hires_trailer_idx').on(t.trailerId).where(sql`ended_at is null`)],
 );

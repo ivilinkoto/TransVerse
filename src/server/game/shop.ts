@@ -1,3 +1,4 @@
+import { isRarePlate } from '@/lib/game/plates';
 import { randomUUID } from 'node:crypto';
 import { and, eq, isNull, like, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -104,6 +105,7 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         const v = await ownVehicle(tx, account.id, input.vehicleId);
         const plate = (input.plate ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
         if (!PLATE_PATTERN.test(plate)) fail('invalid_plate', 'Табелата е 2–10 главни букви, цифри, интервал или тире.');
+        if (isRarePlate(plate)) fail('rare_plate', 'Този номер е рядък — печели се само на търга за номера.');
         const { rows: clash } = await tx.execute<{ taken: boolean }>(
           sql`select exists(select 1 from vehicles where upper(plate) = ${plate} and sold_at is null) or exists(select 1 from trailers where upper(plate) = ${plate} and sold_at is null) as taken`,
         );
