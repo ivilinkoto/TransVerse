@@ -1,0 +1,81 @@
+import { inSeasonWindow, sofiaMonthDay } from './seasonal';
+
+/**
+ * Първа пролет (v1.6), game data:
+ * - The equinox (20–23 March): day and night are equal — every delivery on
+ *   time pays a little more, and ten of them earn a badge. A spring paint
+ *   "Цъфнала череша" is sold until mid-April.
+ * - The passes open: after the winter (16 March – 15 April) the first ten
+ *   players through each mountain country get a prize and a place in the
+ *   passes' chronicle.
+ * - Sowing (1 March – 31 May): seeds, fertilisers and farm machinery.
+ * - National days of the countries in the game: loads to that country pay
+ *   more on its day.
+ */
+export const SPRING = {
+  year: 2027,
+  /** The spring tab and the paint (MM-DD, Sofia). */
+  from: '03-16',
+  to: '04-15',
+  equinox: { from: '03-20', to: '03-23' },
+  equinoxShare: 0.08,
+  equinoxBadge: 'spring-2027',
+  equinoxBadgeTrips: 10,
+  paintColor: '#f9a8d4',
+} as const;
+
+export const isSpring = (now: Date) => inSeasonWindow(sofiaMonthDay(now), SPRING);
+export const isEquinox = (now: Date) => inSeasonWindow(sofiaMonthDay(now), SPRING.equinox);
+
+export const PASS_OPENING = {
+  from: '03-16',
+  to: '04-15',
+  /** Countries with mountain passes closed by blizzards in the winter. */
+  countries: ['AT', 'RS', 'MK', 'BG', 'RO'] as readonly string[],
+  firstN: 10,
+  prizeCents: 1_000_00,
+} as const;
+
+export const isPassOpening = (now: Date) => inSeasonWindow(sofiaMonthDay(now), PASS_OPENING);
+
+export const SOWING = {
+  from: '03-01',
+  to: '05-31',
+  contractShare: 0.15,
+  rewardMultiplier: 1.15,
+  goods: {
+    pallets: ['Семена за сеитба', 'Торове в чували', 'Препарати за растителна защита'],
+    bulk: ['Семенно зърно', 'Минерален тор (насипно)'],
+    special: ['Трактор', 'Сеялка', 'Пръскачка'],
+  } as Record<string, string[]>,
+} as const;
+
+export const isSowing = (now: Date) => inSeasonWindow(sofiaMonthDay(now), SOWING);
+
+/** National days of the countries in the game (MM-DD; real dates). */
+export const NATIONAL_DAYS: Record<string, { day: string; label: string }> = {
+  BG: { day: '03-03', label: 'Освобождението на България' },
+  GR: { day: '03-25', label: 'Ден на независимостта на Гърция' },
+  HU: { day: '03-15', label: 'Национален празник на Унгария' },
+  RS: { day: '02-15', label: 'Ден на държавността на Сърбия' },
+  RO: { day: '12-01', label: 'Национален ден на Румъния' },
+  MK: { day: '09-08', label: 'Ден на независимостта на Северна Македония' },
+  TR: { day: '10-29', label: 'Ден на републиката на Турция' },
+  AT: { day: '10-26', label: 'Национален празник на Австрия' },
+  DE: { day: '10-03', label: 'Ден на германското единство' },
+};
+
+export const NATIONAL_DAY = { rewardMultiplier: 1.1 } as const;
+
+/** The country whose national day it is today (Sofia date), if any. */
+export function nationalDayToday(now: Date, country: string) {
+  const d = NATIONAL_DAYS[country];
+  return d && d.day === sofiaMonthDay(now) ? d : null;
+}
+
+/** The next national days from today (for the calendar). */
+export function upcomingNationalDays(now: Date, n = 4) {
+  const md = sofiaMonthDay(now);
+  const all = Object.entries(NATIONAL_DAYS).map(([country, d]) => ({ country, ...d }));
+  return [...all.filter((d) => d.day >= md).sort((a, b) => a.day.localeCompare(b.day)), ...all.filter((d) => d.day < md).sort((a, b) => a.day.localeCompare(b.day))].slice(0, n);
+}

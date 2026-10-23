@@ -2394,3 +2394,17 @@ export const companyChronicle = pgTable(
   },
   (t) => [index('company_chronicle_org_idx').on(t.organizationId, t.at)],
 );
+
+/** The passes open (v1.6): the first players through each mountain country after the winter. */
+export const passOpenings = pgTable(
+  'pass_openings',
+  {
+    year: integer('year').notNull(),
+    country: text('country').notNull(),
+    rank: integer('rank').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id').notNull(),
+    at: ts('at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.year, t.country, t.rank] }), uniqueIndex('pass_openings_user_idx').on(t.year, t.country, t.userId)],
+);

@@ -1,5 +1,6 @@
 import type { CargoType } from './cargo';
 import { seededRandom } from './road-events';
+import { seasonalFactor } from './seasonality';
 
 /**
  * Trading: players buy goods where they are produced, keep them in the
@@ -47,12 +48,22 @@ const level = (country: string) => COUNTRY_PRICE_LEVEL[country] ?? 1;
 
 /** What a producer city asks per tonne today (euro cents). */
 export function buyPriceCents(city: { id: number; countryCode: string }, cargo: CargoType, now: Date): number {
-  return Math.round(TRADE_BASE_CENTS_PER_TON[cargo] * level(city.countryCode) * TRADE_RULES.buyFactor * swing(city.id, cargo, 'buy', now));
+  return Math.round(TRADE_BASE_CENTS_PER_TON[cargo] * level(city.countryCode) * TRADE_RULES.buyFactor * swing(city.id, cargo, 'buy', now) * goodsSeason(cargo, now, 'buy'));
+}
+
+/**
+ * Seasonal prices of goods (v1.6, balance): a cargo in season (by the freight
+ * demand of the month) sells for more, and the producers ask a little more too
+ * — half as much, so stocking up before the season pays off.
+ */
+export function goodsSeason(cargo: CargoType, now: Date, side: 'buy' | 'sell') {
+  const f = seasonalFactor(cargo, now);
+  return side === 'sell' ? f : 1 + (f - 1) / 2;
 }
 
 /** What a consumer city pays per tonne today (euro cents), given its demand for the cargo. */
 export function sellPriceCents(city: { id: number; countryCode: string }, cargo: CargoType, demand: number, now: Date): number {
-  return Math.round(TRADE_BASE_CENTS_PER_TON[cargo] * level(city.countryCode) * TRADE_RULES.sellFactor * demand * swing(city.id, cargo, 'sell', now));
+  return Math.round(TRADE_BASE_CENTS_PER_TON[cargo] * level(city.countryCode) * TRADE_RULES.sellFactor * demand * swing(city.id, cargo, 'sell', now) * goodsSeason(cargo, now, 'sell'));
 }
 
 export const warehouseCapacityTons = (slots: number) => slots * TRADE_RULES.tonsPerSlot;

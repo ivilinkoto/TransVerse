@@ -119,6 +119,10 @@ export const FEATURES = {
   parking_game: '1.5',
   retro_collection: '1.5',
   discord_truck: '1.5',
+  spring: '1.6',
+  pass_opening: '1.6',
+  sowing: '1.6',
+  national_days: '1.6',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

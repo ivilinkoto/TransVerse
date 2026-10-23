@@ -7,7 +7,7 @@ export interface NavTab {
   /** Shown only when the viewer has this release feature. */
   feature?: FeatureId;
   /** Shown only while this holiday's content runs. */
-  holiday?: 'halloween' | 'christmas' | 'marta';
+  holiday?: 'halloween' | 'christmas' | 'marta' | 'spring';
 }
 
 export interface NavSection {
@@ -72,6 +72,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween' },
       { href: '/game/christmas', label: 'Коледа', holiday: 'christmas' },
       { href: '/game/marta', label: 'Баба Марта', holiday: 'marta', feature: 'marta' },
+      { href: '/game/spring', label: 'Първа пролет', holiday: 'spring', feature: 'spring' },
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/parking', label: 'Паркирай', feature: 'parking_game' },
       { href: '/game/league', label: 'Лига' },
@@ -107,7 +108,8 @@ const within = (pathname: string, href: string) => (href === '/game' ? pathname 
 
 /** The tabs to show: holiday tabs only during their holiday (and on their own page). */
 export function visibleTabs(section: NavSection, holiday: string | null, pathname: string, has: (feature: FeatureId) => boolean = () => true): NavTab[] {
-  return (section.tabs ?? []).filter((t) => (!t.holiday || t.holiday === holiday || within(pathname, t.href)) && (!t.feature || has(t.feature)));
+  // Several holidays can overlap (Баба Марта and Първа пролет): `holiday` lists them comma-separated.
+  return (section.tabs ?? []).filter((t) => (!t.holiday || (holiday ?? '').split(',').includes(t.holiday) || within(pathname, t.href)) && (!t.feature || has(t.feature)));
 }
 
 /** The tab of a section that matches the path (the longest match wins, so /game/company/chat stays on "Моята компания"). */

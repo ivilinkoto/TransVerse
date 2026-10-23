@@ -70,6 +70,7 @@ import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
 import { onVacation } from './moods';
+import { equinoxBonus, recordPassOpening } from './spring';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -475,6 +476,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const convoyPerfect = await settlePerfectConvoy(tx, d, { userId: company!.ownerId, late: result.late, at: completedAt, rewardCents: result.rewardCents, originCityId: contract.originCityId, destCityId: contract.destCityId });
   const firstTrip = perks ? await firstTripBonus(tx, company!.ownerId, d, result.rewardCents, completedAt) : 0;
   const hallBonus = perks ? await allianceHallBonus(tx, company!.ownerId, perks.membership.company.id, d, result.rewardCents, completedAt) : 0;
+  // v1.6: the equinox and the passes that open after the winter.
+  const springBonus = (await equinoxBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await recordPassOpening(tx, company!.ownerId, d, result.late, completedAt));
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
   if (station?.cents) await postTreasury(tx, station.orgId, [{ category: 'fuel_station', amountCents: station.cents, description: `Гориво на станцията: ${contract.goods}`, idempotencyKey: key('fuel-station'), refType: 'delivery', refId: d.id }]);
@@ -486,7 +489,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);

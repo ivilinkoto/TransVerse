@@ -20,6 +20,7 @@ import type { CargoType } from '@/lib/game/cargo';
 import { MARTA } from '@/lib/game/marta';
 import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { useFeature } from './Features';
+import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
 
 export interface BoardContract {
   id: string;
@@ -124,7 +125,7 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'sowing' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
@@ -134,6 +135,8 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
   { id: 'christmas', label: 'Коледа', test: (c) => c.holiday === 'christmas' },
   { id: 'marta', label: 'Баба Марта', test: (c) => c.holiday === 'marta' },
+  { id: 'sowing', label: '🌱 Сеитба', test: (c) => c.holiday === 'sowing' },
+  { id: 'national', label: '🎉 Национален празник', test: (c) => c.holiday === 'national' },
   { id: 'oversize', label: 'Извънгабаритни', test: (c) => !!c.oversizeCents },
   { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
   { id: 'clear', label: 'Без сняг по пътя', test: (c) => !c.weather },
@@ -150,6 +153,8 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['halloween', (c) => c.holiday === 'halloween'],
   ['christmas', (c) => c.holiday === 'christmas'],
   ['marta', (c) => c.holiday === 'marta'],
+  ['sowing', (c) => c.holiday === 'sowing'],
+  ['national', (c) => c.holiday === 'national'],
   ['oversize', (c) => !!c.oversizeCents],
   ['winter', (c) => c.holiday === 'winter'],
   ['clear', (c) => !!c.weather],
@@ -353,6 +358,8 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.holiday === 'sowing' && <Badge tone="green">🌱 СЕИТБА · +{Math.round((SOWING.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.holiday === 'national' && <Badge tone="gold">🎉 НАЦИОНАЛЕН ПРАЗНИК · +{Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100)}%</Badge>}
             {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}
             {c.roadWorks && <Badge tone="orange">🚧 {c.roadWorks}</Badge>}
             {!!c.urgentRaises && <Badge tone="red">📈 +{c.urgentRaises * 10}% — никой не я е поел</Badge>}
