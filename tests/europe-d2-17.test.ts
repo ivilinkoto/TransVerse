@@ -24,7 +24,7 @@ const ownTruckAt = async (userId: string, city: string) => {
 
 describe('v1.7 across Europe', () => {
   it('a sea line is offered when the ports make the way clearly shorter, and the truck takes it', async () => {
-    const [tirana, rome, bari, durres] = await Promise.all(['Tirana', 'Rome', 'Bari', 'Durrës'].map(cityByName));
+    const [tirana, rome, bari, durres] = [await cityByName('Tirana'), await cityByName('Rome'), await cityByName('Bari'), await cityByName('Durrës')];
     const terminals = new Map([bari, durres].map((c) => [c.id, c]));
     const options = railOptions(tirana, rome, terminals, 1_500, true);
     expect(options.map((o) => `${o.line.id}:${o.reversed ? 'r' : 'f'}`)).toContain('bari-durres:r');

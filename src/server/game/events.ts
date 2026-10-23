@@ -6,7 +6,7 @@ import {
   AUTO_EVENT_HOURS,
   DEFAULT_REWARDS,
   EVENT_METRIC_INFO,
-  EVENT_TEMPLATES,
+  ALL_EVENT_TEMPLATES,
   EVENT_METRICS,
   eventIncrement,
   goalText,
@@ -18,6 +18,7 @@ import {
   type EventMetric,
   type EventRewards,
 } from '@/lib/game/events';
+import { featureLive } from '@/lib/game/features';
 import { contractCountries } from '@/lib/game/licences';
 import type { DeliveryFacts } from '@/lib/game/missions';
 import { GAME_COUNTRIES } from '@/lib/geo/scope';
@@ -191,7 +192,7 @@ export async function ensureAutoEvent(db: Database, now = new Date()) {
   if (upcoming) return null;
   const [last] = await db.select({ endsAt: globalEvents.endsAt, template: globalEvents.template }).from(globalEvents).where(isNotNull(globalEvents.template)).orderBy(desc(globalEvents.endsAt)).limit(1);
   const window = nextAutoWindow(last?.endsAt ?? null, now);
-  const t = pickTemplate(window.startsAt, last?.template ?? null);
+  const t = pickTemplate(window.startsAt, last?.template ?? null, featureLive('regional_events', window.startsAt));
   const filter = { metric: t.metric, cargoType: t.cargoType ?? null, countryCode: t.countryCode ?? null };
   const target = autoTarget(t.metric, await recentAmount(db, filter, now), 7 * 24, AUTO_EVENT_HOURS);
   return db.transaction(async (tx) => {
@@ -282,7 +283,7 @@ export async function createEvent(db: Database, actor: Staff, raw: EventInput, n
  */
 export async function startTemplateEvent(db: Database, actor: Staff, templateId: string, hours: number, now = new Date()) {
   requireAdminRole(actor);
-  const t = EVENT_TEMPLATES.find((x) => x.id === templateId);
+  const t = ALL_EVENT_TEMPLATES.find((x) => x.id === templateId);
   if (!t) fail('no_template', 'Няма такъв ивент.');
   if (!(Number.isInteger(hours) && hours >= 1 && hours <= 14 * 24)) fail('bad_hours', 'Продължителността е от 1 час до 14 дни.');
   const filter = { metric: t!.metric, cargoType: t!.cargoType ?? null, countryCode: t!.countryCode ?? null };

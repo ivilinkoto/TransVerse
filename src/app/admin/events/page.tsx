@@ -4,7 +4,7 @@ import { Badge, Card, PageHeader, Table } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { dateTime, int } from '@/lib/format';
 import { CARGO } from '@/lib/game/cargo';
-import { DEFAULT_REWARDS, EVENT_METRIC_INFO, EVENT_METRICS, EVENT_TEMPLATES, eventStatus, formatAmount, type EventMetric } from '@/lib/game/events';
+import { DEFAULT_REWARDS, EVENT_METRIC_INFO, EVENT_METRICS, ALL_EVENT_TEMPLATES, eventStatus, formatAmount, type EventMetric } from '@/lib/game/events';
 import { isAdmin } from '@/server/auth/roles';
 import { countries } from '@/server/db/schema';
 import { adminContext } from '@/server/admin-context';
@@ -35,7 +35,7 @@ export default async function AdminEventsPage() {
             metrics={EVENT_METRICS.map((m) => ({ id: m, label: EVENT_METRIC_INFO[m].label, unit: EVENT_METRIC_INFO[m].unit, minContribution: EVENT_METRIC_INFO[m].minContribution }))}
             cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))}
             countries={countryRows}
-            templates={EVENT_TEMPLATES.map((t) => ({ id: t.id, name: t.name, description: t.description, metric: t.metric, cargoType: t.cargoType ?? null, countryCode: t.countryCode ?? null }))}
+            templates={ALL_EVENT_TEMPLATES.map((t) => ({ id: t.id, name: t.name, description: t.description, metric: t.metric, cargoType: t.cargoType ?? null, countryCode: t.countryCode ?? null }))}
             defaults={{ participant: { eur: eur(DEFAULT_REWARDS.participant.cents), xp: DEFAULT_REWARDS.participant.xp, coins: DEFAULT_REWARDS.participant.coins }, top: DEFAULT_REWARDS.top.map((t) => ({ eur: eur(t.cents), xp: t.xp, coins: t.coins, vipDays: t.vipDays })) }}
           />
         </Card>

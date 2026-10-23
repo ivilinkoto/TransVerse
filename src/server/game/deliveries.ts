@@ -8,7 +8,7 @@ import { CONVOY_RULES } from '@/lib/game/convoy';
 import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multistop';
 import { formConvoy } from './convoy';
 import { isEuropeCountry } from '@/lib/geo/scope';
-import { bigConvoyBonus, checkEurotour } from './challenges';
+import { bigConvoyBonus, checkEurotour, checkGrandEurotour } from './challenges';
 import { checkCabotage, requireTeam, transEuropeDone } from './europe';
 import { specializationBonus } from './specialization';
 import { checkLegend } from './heritage';
@@ -557,6 +557,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
   await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
+  // Голям евротур (v1.7): every country of the game in one season.
+  await checkGrandEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
   // The company academy (v1.5): an on-time trip of a student is a course.
   await recordAcademyCourse(tx, company!.ownerId, { onTime, loadedKm: d.loadedKm }, completedAt);
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));

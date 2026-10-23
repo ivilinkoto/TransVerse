@@ -2537,3 +2537,16 @@ export const trailerHires = pgTable(
   },
   (t) => [index('trailer_hires_open_idx').on(t.endedAt, t.until), uniqueIndex('trailer_hires_trailer_idx').on(t.trailerId).where(sql`ended_at is null`)],
 );
+
+/** v1.7 "Кралят на държавата": the player who brought the most tons into a country in a month (Sofia). */
+export const countryKings = pgTable(
+  'country_kings',
+  {
+    month: text('month').notNull(),
+    countryCode: text('country_code').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    tons: real('tons').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.month, t.countryCode] }), index('country_kings_user_idx').on(t.userId)],
+);

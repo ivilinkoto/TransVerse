@@ -1,7 +1,7 @@
 import { and, desc, eq, gt, ilike, isNull, or, sql } from 'drizzle-orm';
-import { EVENT_TEMPLATES } from '@/lib/game/events';
+import { ALL_EVENT_TEMPLATES } from '@/lib/game/events';
 import { featureDate, featureLive } from '@/lib/game/features';
-import { dec, int, km, money } from '@/lib/format';
+import { dec, int, km, money, moneyPrecise } from '@/lib/format';
 import { isStaff } from '@/server/auth/roles';
 import type { DbOrTx } from '@/server/db/client';
 import { allianceMembers, alliances, cities, companies, contracts, organizations, routes, users } from '@/server/db/schema';
@@ -16,7 +16,8 @@ import { albumOf } from '@/server/game/competition';
 import { openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
 import { cupView } from '@/server/game/tournament';
 import { approximateProvider } from '@/server/geo/routing';
-import { isEuropeCountry } from '@/lib/geo/scope';
+import { GAME_COUNTRIES, isEuropeCountry, type GameCountry } from '@/lib/geo/scope';
+import { countryInfo, findCountry } from '@/server/game/countries';
 import { BIG_CONVOY, WEEKLY_CHALLENGE } from '@/lib/game/challenges';
 import type { Embed } from './api';
 import type { Row } from './ui';
@@ -69,6 +70,7 @@ export const COMMANDS = [
     description: 'Път с камион между два града: километри, време, граници, тол',
     options: [{ type: 3, name: 'от', description: 'Начален град', required: true }, { type: 3, name: 'до', description: 'Краен град', required: true }],
   },
+  { name: 'държава', description: 'Държава в играта: дизел днес, тол, забрани, празник, крал и най-добрите товари', options: [{ type: 3, name: 'име', description: 'Държава (напр. Италия)', required: true }] },
   { name: 'предизвикателство', description: 'Предизвикателството на седмицата: мярката, първите и твоето място' },
   { name: 'албум', description: 'Колекцията от градове (без име — твоята)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'ивент', description: 'Текущият ивент на общността и твоят принос' },
@@ -92,7 +94,7 @@ export const COMMANDS = [
     description: 'Пусни ивент в играта от готов шаблон (администратор в играта)',
     default_member_permissions: MANAGE_GUILD,
     options: [
-      { type: 3, name: 'шаблон', description: 'Кой ивент', required: true, choices: EVENT_TEMPLATES.slice(0, 25).map((t) => ({ name: t.name.slice(0, 100), value: t.id })) },
+      { type: 3, name: 'шаблон', description: 'Кой ивент', required: true, choices: ALL_EVENT_TEMPLATES.slice(0, 25).map((t) => ({ name: t.name.slice(0, 100), value: t.id })) },
       { type: 4, name: 'часове', description: 'Колко часа (72 по подразбиране)', required: false, min_value: 1, max_value: 336 },
     ],
   },
@@ -163,6 +165,8 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return cup(db, now);
     case 'маршрут':
       return route(db, input.options['от'] ?? '', input.options['до'] ?? '', now);
+    case 'държава':
+      return country(db, input.options['име'] ?? '', now);
     case 'предизвикателство':
       return challenge(db, me?.id ?? null, now);
     case 'албум':
@@ -378,6 +382,31 @@ async function route(db: DbOrTx, fromName: string, toName: string, now: Date): P
         { name: 'Граници', value: String(r.borders.length), inline: true },
       ],
       footer: { text: approx ? 'Приблизително (маршрутът още не е изчислен в играта) · без почивки и опашки' : 'Истински път (Valhalla / OSM) · без почивки и опашки' },
+    }],
+  };
+}
+
+/** /държава — one country in short (v1.7). */
+async function country(db: DbOrTx, name: string, now: Date): Promise<CommandReply> {
+  if (!featureLive('discord_country', now)) return { ephemeral: true, content: 'Командата идва с обновление 1.7.' };
+  const code = await findCountry(db, name);
+  if (!code || (isEuropeCountry(code) && !featureLive('europe', now)) || !GAME_COUNTRIES.includes(code as GameCountry)) return { ephemeral: true, content: `Няма държава „${name}“ в играта.` };
+  const c = (await countryInfo(db, code, now))!;
+  return {
+    embeds: [{
+      title: `🌍 ${c.name}`,
+      url: `${appUrl()}/game/countries/${c.code}`,
+      color: BRAND,
+      fields: [
+        { name: 'Дизел днес', value: `${moneyPrecise(c.fuelCents)}/л`, inline: true },
+        { name: 'Тол за камион', value: c.toll.kind === 'vignette' ? `винетка ${money(c.toll.cents)}` : `${moneyPrecise(c.toll.centsPerKm)}/км`, inline: true },
+        { name: 'Забрана', value: c.ban ?? 'няма', inline: true },
+        ...(c.zones.length ? [{ name: 'Нискоемисионни зони', value: c.zones.join(', '), inline: true }] : []),
+        ...(c.nationalDay ? [{ name: 'Национален празник', value: `${c.nationalDay.label} (${c.nationalDay.day.split('-').reverse().join('.')})`, inline: true }] : []),
+        { name: 'Крал', value: c.king ? `👑 ${c.king.username} · ${dec(c.king.tons)} т` : 'още няма', inline: true },
+        { name: 'Най-добрите товари към държавата', value: c.loads.length ? c.loads.map((l) => `${l.from} → ${l.to} · ${dec(l.tons)} т · ${money(l.rewardCents)}`).join('\n') : 'Няма отворени сега.' },
+      ],
+      footer,
     }],
   };
 }

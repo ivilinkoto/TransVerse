@@ -16,3 +16,9 @@ export const TRANS_EUROPE = {
 } as const;
 
 export const CABOTAGE = { maxLoads: 3, days: 7 } as const;
+
+/**
+ * Кралят на държавата (v1.7): the player who brought the most tons into a
+ * country in a calendar month (Sofia) holds its title for the next month.
+ */
+export const COUNTRY_KINGS = { minTons: 20, coins: 25 } as const;

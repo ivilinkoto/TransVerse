@@ -526,6 +526,13 @@
       "when": 1792793952900,
       "tag": "0074_calm_ozymandias",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1792794352237,
+      "tag": "0075_wandering_quasar",
+      "breakpoints": true
     }
   ]
 }

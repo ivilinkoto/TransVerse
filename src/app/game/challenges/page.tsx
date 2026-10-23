@@ -2,10 +2,10 @@ import { Globe2, Trophy, Truck } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { dateTime, int } from '@/lib/format';
-import { BIG_CONVOY, EUROTOUR, WEEKLY_CHALLENGE } from '@/lib/game/challenges';
+import { BIG_CONVOY, EUROTOUR, GRAND_EUROTOUR, WEEKLY_CHALLENGE } from '@/lib/game/challenges';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { gameContext } from '@/server/game/context';
-import { eurotourProgress, lastChallengeWinners, openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
+import { eurotourProgress, grandEurotourProgress, lastChallengeWinners, openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
 
 export const metadata = { title: 'Предизвикателства' };
 
@@ -13,14 +13,16 @@ export const metadata = { title: 'Предизвикателства' };
 export default async function ChallengesPage() {
   const { db, user, now, features } = await gameContext();
   if (!features.weekly_challenge) notFound();
-  const [week, tour, convoys, last] = await Promise.all([
+  const [week, tour, grand, convoys, last] = await Promise.all([
     weeklyChallenge(db, now, user.id),
     features.eurotour ? eurotourProgress(db, user.id, now) : null,
+    features.grand_eurotour ? grandEurotourProgress(db, user.id, now) : null,
     features.big_convoy ? openBigConvoys(db, now) : [],
     lastChallengeWinners(db, now),
   ]);
   const prizes = WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${c} TC`).join(' · ');
   const visited = tour?.filter((c) => c.done).length ?? 0;
+  const grandVisited = grand?.countries.filter((c) => c.done).length ?? 0;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -58,6 +60,15 @@ export default async function ChallengesPage() {
             <Meter value={(visited / tour.length) * 100} tone="cyan" className="mt-3" />
             <div className="mt-3 flex flex-wrap gap-2">
               {tour.map((c) => <Badge key={c.code} tone={c.done ? 'green' : 'neutral'}>{c.done ? '✓ ' : ''}{c.name}</Badge>)}
+            </div>
+          </Card>
+        )}
+        {grand && (
+          <Card title={<span className="inline-flex items-center gap-2"><Globe2 className="h-4 w-4 text-amber-sig" />Голям евротур · {grandVisited} / {grand.countries.length}</span>}>
+            <p className="text-sm text-mist-300">Достави до всичките {grand.countries.length} държави на играта в един сезон ({grand.season.name}, до {dateTime(grand.season.endsAt)}) — значка „Голям евротур“ и {GRAND_EUROTOUR.coins} TC.</p>
+            <Meter value={(grandVisited / grand.countries.length) * 100} tone="cyan" className="mt-3" />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {grand.countries.map((c) => <Badge key={c.code} tone={c.done ? 'green' : 'neutral'}>{c.done ? '✓ ' : ''}{c.name}</Badge>)}
             </div>
           </Card>
         )}

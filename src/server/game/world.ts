@@ -8,6 +8,7 @@ import { settleClientContracts } from './clients';
 import { driverMoods } from './moods';
 import { ensureRally, settleRallies } from './rally';
 import { settleWeeklyChallenge } from './challenges';
+import { settleCountryKings } from './kings';
 import { runCup } from './tournament';
 import { ensurePlateAuction, settlePlateAuctions } from './plates';
 import { endTrailerHires } from './trailer-hire';
@@ -256,6 +257,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.6: the challenge of the week pays its top three.
     await every(db, 'weekly-challenge', 30 * 60_000, now, () => settleWeeklyChallenge(db, now));
+    // v1.7: last month's king of every country.
+    if (featureLive('country_kings', now)) await every(db, 'country-kings', 60 * 60_000, now, () => settleCountryKings(db, now));
     if (featureLive('spring_cup', now)) await every(db, 'spring-cup', 30 * 60_000, now, () => runCup(db, now));
     // v1.6: the weekly rare plate auction and trailer hires that ended.
     if (featureLive('plate_auction', now)) await every(db, 'plate-auction', 15 * 60_000, now, async () => {
