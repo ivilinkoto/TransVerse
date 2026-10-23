@@ -146,7 +146,7 @@ async function staffBusView(db: ReturnType<typeof getDb>, userId: string, accoun
 
 type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null; chronicle: Awaited<ReturnType<typeof chronicleOf>> | null; driverOfMonth: boolean };
 
-const CHRONICLE_ICON: Record<string, string> = { driver: '🚚', founded: '🏁', level: '⭐', build: '🏗️', battle: '⚔️', project: '📦', division: '🏆', anniversary: '🎂', alliance: '🛡' };
+const CHRONICLE_ICON: Record<string, string> = { driver: '🚚', founded: '🏁', level: '⭐', build: '🏗️', battle: '⚔️', project: '📦', division: '🏆', anniversary: '🎂', alliance: '🛡', specialization: '🎯' };
 
 /** The company's big moments (v1.5). */
 function Chronicle({ items }: { items: NonNullable<Extras['chronicle']> }) {

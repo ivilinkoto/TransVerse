@@ -10,6 +10,10 @@ import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
 import { playParking } from '@/server/game/parking';
+import { joinCup } from '@/server/game/tournament';
+import { setSpecialization } from '@/server/game/specialization';
+import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
+import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
 import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/community';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
@@ -200,6 +204,10 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('spotStork') }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
+  z.object({ type: z.literal('joinCup') }),
+  z.object({ type: z.literal('setSpecialization'), specialization: z.enum(Object.keys(SPECIALIZATIONS) as [Specialization, ...Specialization[]]).nullable() }),
+  z.object({ type: z.literal('postRecruitment'), kind: z.enum(['company', 'driver']), text: z.string().max(400), minLevel: z.coerce.number().int().min(1).max(100).optional() }),
+  z.object({ type: z.literal('removeRecruitment'), postId: id }),
   z.object({ type: z.literal('parking'), inputs: z.array(z.number().int().min(-1).max(1)).max(400) }),
   z.object({ type: z.literal('driverOfMonthPrize'), cents: z.coerce.number().int().min(0).max(5_000_00) }),
   z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
@@ -316,6 +324,10 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   staffBus: 'staff_bus',
   testDrive: 'test_drive',
   parking: 'parking_game',
+  joinCup: 'spring_cup',
+  setSpecialization: 'specializations',
+  postRecruitment: 'recruitment_board',
+  removeRecruitment: 'recruitment_board',
   driverOfMonthPrize: 'driver_of_month',
   clearStock: 'warehouse_clearance',
   setShowcase: 'profile_showcase',
@@ -780,6 +792,14 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'parking':
       return { ok: true, ...(await playParking(db, user.id, input.inputs)) };
+    case 'joinCup':
+      return { ok: true, ...(await joinCup(db, user.id)) };
+    case 'setSpecialization':
+      return { ok: true, ...(await setSpecialization(db, user.id, input.specialization)) };
+    case 'postRecruitment':
+      return { ok: true, post: await postRecruitment(db, user.id, { kind: input.kind, text: input.text, minLevel: input.minLevel }) };
+    case 'removeRecruitment':
+      return { ok: true, ...(await removeRecruitment(db, user.id, input.postId)) };
     case 'testDrive':
       return { ok: true, ...(await startTestDrive(db, user.id, input.modelId)) };
     case 'staffBus':

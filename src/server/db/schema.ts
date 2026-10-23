@@ -747,6 +747,9 @@ export const organizations = pgTable(
     driverOfMonth: jsonb('driver_of_month').$type<{ userId: string; username: string; month: string; trips: number; tons: number } | null>(),
     /** Division in the monthly company league (v1.5): bronze | silver | gold. */
     division: text('division').notNull().default('bronze'),
+    /** The cargo the company is known for (v1.6): members earn a little more on it. */
+    specialization: text('specialization'),
+    specializationAt: ts('specialization_at'),
     /** The company's private channel and role in the TransVerse Discord server (v1.3). */
     discordChannel: boolean('discord_channel').notNull().default(false),
     discordChannelId: text('discord_channel_id'),
@@ -2410,4 +2413,49 @@ export const passOpenings = pgTable(
     at: ts('at').notNull(),
   },
   (t) => [primaryKey({ columns: [t.year, t.country, t.rank] }), uniqueIndex('pass_openings_user_idx').on(t.year, t.country, t.userId)],
+);
+
+/** Пролетна купа (v1.6): the drivers signed up, seeded by level when the first round starts. */
+export const tournamentEntries = pgTable(
+  'tournament_entries',
+  {
+    tournament: text('tournament').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    seed: integer('seed'),
+    createdAt: ts('created_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tournament, t.userId] })],
+);
+
+/** A pair of a round; an empty side is a bye. Scores are the on-time loaded km of the round's week. */
+export const tournamentMatches = pgTable(
+  'tournament_matches',
+  {
+    tournament: text('tournament').notNull(),
+    round: integer('round').notNull(),
+    slot: integer('slot').notNull(),
+    aUserId: uuid('a_user_id').references(() => users.id, { onDelete: 'set null' }),
+    bUserId: uuid('b_user_id').references(() => users.id, { onDelete: 'set null' }),
+    aKm: real('a_km'),
+    bKm: real('b_km'),
+    winnerId: uuid('winner_id'),
+    settledAt: ts('settled_at'),
+  },
+  (t) => [primaryKey({ columns: [t.tournament, t.round, t.slot] })],
+);
+
+/** The recruitment board (v1.6): one post per company and per driver without a company. */
+export const recruitmentPosts = pgTable(
+  'recruitment_posts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: text('kind').notNull(), // company | driver
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    orgId: uuid('org_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    text: text('text').notNull(),
+    minLevel: integer('min_level').notNull().default(1),
+    createdAt: ts('created_at').notNull(),
+    expiresAt: ts('expires_at').notNull(),
+  },
+  (t) => [uniqueIndex('recruitment_posts_org_idx').on(t.orgId), uniqueIndex('recruitment_posts_driver_idx').on(t.userId, t.kind), index('recruitment_posts_expires_idx').on(t.expiresAt)],
 );

@@ -61,6 +61,7 @@ export const SECTIONS: NavSection[] = [
     tabs: [
       { href: '/game/company', label: 'Моята компания' },
       { href: '/game/companies', label: 'Всички компании' },
+      { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board' },
     ],
   },
   {
@@ -79,6 +80,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/duels', label: 'Дуели', feature: 'duels' },
       { href: '/game/rally', label: 'Рали', feature: 'rally' },
       { href: '/game/challenges', label: 'Предизвикателства', feature: 'weekly_challenge' },
+      { href: '/game/cup', label: 'Пролетна купа', feature: 'spring_cup' },
       { href: '/game/predictions', label: 'Прогнози', feature: 'predictions' },
       { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest' },
       { href: '/game/pass', label: 'Пропуск' },
@@ -88,6 +90,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/seasons', label: 'Сезони' },
       { href: '/game/progress', label: 'Постижения' },
       { href: '/game/collection', label: 'Албум', feature: 'city_album' },
+      { href: '/game/my-map', label: 'Картата ми', feature: 'my_map' },
     ],
   },
 ];

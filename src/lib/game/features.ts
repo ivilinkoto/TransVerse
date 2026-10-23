@@ -131,6 +131,10 @@ export const FEATURES = {
   eurotour: '1.6',
   big_convoy: '1.6',
   weekly_challenge: '1.6',
+  spring_cup: '1.6',
+  specializations: '1.6',
+  recruitment_board: '1.6',
+  my_map: '1.6',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

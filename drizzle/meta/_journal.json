@@ -484,6 +484,13 @@
       "when": 1792743409816,
       "tag": "0068_dashing_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792744081466,
+      "tag": "0069_common_thaddeus_ross",
+      "breakpoints": true
     }
   ]
 }

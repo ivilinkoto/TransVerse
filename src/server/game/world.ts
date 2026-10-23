@@ -7,6 +7,7 @@ import { settleClientContracts } from './clients';
 import { driverMoods } from './moods';
 import { ensureRally, settleRallies } from './rally';
 import { settleWeeklyChallenge } from './challenges';
+import { runCup } from './tournament';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
 import { settleDivisions } from './competition';
@@ -250,6 +251,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.6: the challenge of the week pays its top three.
     await every(db, 'weekly-challenge', 30 * 60_000, now, () => settleWeeklyChallenge(db, now));
+    if (featureLive('spring_cup', now)) await every(db, 'spring-cup', 30 * 60_000, now, () => runCup(db, now));
     if (featureLive('urgent_raise', now)) await every(db, 'urgent-raise', 5 * 60_000, now, () => raiseUrgentPrices(db, now));
     // v1.5: the alliance warehouse returns unsold goods; company birthdays.
     await every(db, 'alliance-market', 10 * 60_000, now, () => expireAllianceListings(db, now));
