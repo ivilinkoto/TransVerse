@@ -69,7 +69,7 @@ describe('v1.7 across Europe', () => {
     await grantLicences(p.userId, 'international', 'customs', 'reefer', 'adr', 'oversize');
     const load = loads[0]!;
     // A load the starter truck can carry: the check under test is the crew.
-    await db().update(contracts).set({ cargoType: 'pallets', weightTons: 1 }).where(eq(contracts.id, load.id));
+    await db().update(contracts).set({ cargoType: 'pallets', weightTons: 1, minLevel: 1 }).where(eq(contracts.id, load.id));
     const [origin] = await db().select().from(contracts).where(eq(contracts.id, load.id));
     const { truck } = await ownTruckAt(p.userId, 'Sofia');
     await db().update(vehicles).set({ cityId: origin!.originCityId }).where(eq(vehicles.id, truck.id));
