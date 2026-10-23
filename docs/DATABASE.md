@@ -166,3 +166,10 @@
 - 0070: `museum_exhibits` (музей на компанията), `users.spare_parts` (резервни части от скрап).
 - 0071: `trailers.hired_out`, `trailers.hire_id`, `trailer_hires` (ремаркета под наем), `plate_auctions` (седмичен търг за редки номера).
 - `job_state`: `eurotour:<играч>:M<месец>`, `weekly-challenge:W<седмица>`. ТрансКоин: причини `challenge`, `tournament`, `legend`, `plate_auction`. Сметката на играча: категория `trailer_hire` (наем на ремарке; ключове `trailer-hire:<наем>:pay/earn`), `holiday_reward` (равноденствие, проходи), `road_events` (охраняем паркинг, кражба на гориво), `company_bonus` (специализация), `convoy_bonus` (голям конвой), `vehicle_sale` (скрап).
+
+## v1.7 — Цяла Европа (миграции 0072–0075)
+- 0072: частичен индекс `deliveries_completed_idx` (`completed_at` при `status = 'completed'`) за седмичните и месечните класации; `reports.post_id` (доклад за обява от борсата за набиране).
+- 0073: `egg_fights` отново (Великден 2027; една битка на двойка и година).
+- 0074: `contracts.trans_europe` (трансевропейски товар).
+- 0075: `country_kings` (месец `M<година>-<месец>`, държава, играч, тонове; ключ месец+държава, индекс по играч).
+- `job_state`: `grand-eurotour:<играч>:<сезон>`, `hire-reminder:<наем>`. ТрансКоин: причина `challenge` и за Голям евротур и Краля на държавата (`country-king:<месец>:<държава>`). Сметката на играча: таксата за нискоемисионни зони е категория `tolls` (ключ `…:lez`).
