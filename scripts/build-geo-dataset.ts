@@ -10,7 +10,7 @@
 import { createReadStream, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import { LAUNCH_COUNTRIES } from '../src/lib/geo/scope';
+import { GAME_COUNTRIES } from '../src/lib/geo/scope';
 
 const RAW = path.resolve('data/raw');
 const OUT = path.resolve('data/geo/launch-region.json');
@@ -26,8 +26,15 @@ const haversineKm = (aLat: number, aLon: number, bLat: number, bLon: number) => 
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 };
 
+function outOfReach(country: string, lat: number, lon: number) {
+  if ((country === 'ES' || country === 'PT') && lon < -10) return true;
+  if (country === 'ES' && lat < 35.95) return true;
+  if (country === 'IT' && lat > 40.68 && lat < 40.8 && lon > 13.82 && lon < 13.97) return true;
+  return false;
+}
+
 async function main() {
-  const scope = new Set<string>(LAUNCH_COUNTRIES);
+  const scope = new Set<string>(GAME_COUNTRIES);
   const bgRegion = new Intl.DisplayNames(['bg'], { type: 'region' });
 
   // Countries
@@ -70,6 +77,8 @@ async function main() {
   const cities = [];
   for await (const c of lines(path.join(RAW, 'cities15000', 'cities15000.txt'))) {
     if (!scope.has(c[8]!)) continue;
+    // Places a truck cannot reach from the mainland of the game (no ferry line for them): the Canaries, Madeira, the Azores, Ceuta, Melilla, Ischia.
+    if (outOfReach(c[8]!, Number(c[4]), Number(c[5]))) continue;
     const id = Number(c[0]);
     const region = regions.get(`${c[8]}.${c[10]}`);
     cities.push({

@@ -9,7 +9,11 @@
 Атрибуцията се показва в долния колонтитул на сайта и в ъгъла на картата.
 
 ## Обхват
-`src/lib/geo/scope.ts`: BG, RO, GR, TR, RS, MK, HU, AT, DE (2 179 града, 97 пристанища). Моделът е глобален — за нови държави се добавя кодът и се изпълнява `scripts/build-geo-dataset.ts`.
+`src/lib/geo/scope.ts`: първоначалният регион BG, RO, GR, TR, RS, MK, HU, AT, DE и от v1.7 „Цяла Европа“ PL, CZ, SK, SI, HR, BA, ME, AL, XK, IT, FR, ES, PT, NL, BE, LU, CH — общо 26 държави, 5 628 града, 508 пристанища. Моделът е глобален — за нови държави се добавя кодът и се изпълнява `scripts/build-geo-dataset.ts`.
+
+Не се внасят места без връзка с континента на играта: Канарските острови, Мадейра, Азорските острови, Сеута, Мелила и Иския. Сицилия, Сардиния, Корсика, Майорка, Ибиса и Менорка имат истински фериботни линии (`src/lib/game/crossings.ts`).
+
+Новите държави се виждат на картата, имат товари и се карат от пускането на 1.7 (`europe` във `FEATURES`); преди това само екипът ги вижда, а генераторът им дава малко товари (5 % от теглото), видими само за екипа.
 
 ## Обновяване на набора
 ```bash
@@ -17,7 +21,7 @@ mkdir -p data/raw && cd data/raw
 curl -O https://download.geonames.org/export/dump/cities15000.zip
 curl -O https://download.geonames.org/export/dump/countryInfo.txt
 curl -O https://download.geonames.org/export/dump/admin1CodesASCII.txt
-for c in BG RO GR TR RS MK HU AT DE; do
+for c in BG RO GR TR RS MK HU AT DE PL CZ SK SI HR BA ME AL XK IT FR ES PT NL BE LU CH; do
   curl -o alt_$c.zip https://download.geonames.org/export/dump/alternatenames/$c.zip
   curl -o all_$c.zip https://download.geonames.org/export/dump/$c.zip
 done

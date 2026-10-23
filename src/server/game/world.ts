@@ -1,3 +1,4 @@
+import { playableCountries } from '@/lib/geo/scope';
 import { and, eq, gt, lte, sql } from 'drizzle-orm';
 import type { Database } from '@/server/db/client';
 import { countries, jobState, marketEvents, rateLimits, sessions } from '@/server/db/schema';
@@ -93,7 +94,6 @@ const EVENT_TEMPLATES = [
   { title: 'Задръстени пристанища', description: 'Пристанищата наваксват — контейнерните превози са по-скъпи.', cargoType: 'container', multiplier: 1.3 },
   { title: 'Отоплителен сезон', description: 'Търсенето на горива расте.', cargoType: 'liquid', multiplier: 1.25 },
 ] as const;
-const EVENT_COUNTRIES = ['BG', 'RO', 'GR', 'TR', 'RS', 'MK', 'HU', 'AT', 'DE'];
 
 async function lastRun(db: Database, key: string): Promise<number> {
   const [row] = await db.select().from(jobState).where(eq(jobState.key, key));
@@ -156,7 +156,7 @@ export async function spawnMarketEvent(db: Database, now: Date) {
   const active = await db.select({ id: marketEvents.id }).from(marketEvents).where(and(lte(marketEvents.startsAt, now), gt(marketEvents.endsAt, now)));
   if (active.length >= 3) return;
   const t = pick(EVENT_TEMPLATES);
-  const country = pick(EVENT_COUNTRIES);
+  const country = pick(playableCountries(featureLive('europe', now)));
   const [c] = await db.select({ nameBg: countries.nameBg }).from(countries).where(eq(countries.code, country));
   await db.insert(marketEvents).values({
     title: `${t.title}: ${c?.nameBg ?? country}`,

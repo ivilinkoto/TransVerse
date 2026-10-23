@@ -28,6 +28,7 @@ import { shipperName } from './names';
 import { notifyFavoriteLane } from './favorites';
 import { broadcast } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
+import { isEuropeCountry } from '@/lib/geo/scope';
 
 /** Consignment size classes so vans, rigids and articulated trucks all have a market. */
 const SIZE_CLASSES = [
@@ -46,7 +47,23 @@ export interface Hub {
   consumes: Map<CargoType, number>; // demand
 }
 
-export async function loadHubs(db: DbOrTx): Promise<Hub[]> {
+// All hubs, read at most once a minute (the market reads them on every run; v1.7: 26 countries).
+let hubCache: { at: number; hubs: Hub[] } | null = null;
+
+/**
+ * The freight hubs (cities with a market). Only the countries playable now:
+ * the countries of "Цяла Европа" come in with the release (v1.7); the market
+ * generator asks for them earlier, so the staff can test them.
+ */
+export async function loadHubs(db: DbOrTx, options: { europe?: boolean; now?: Date } = {}): Promise<Hub[]> {
+  const europe = options.europe ?? featureLive('europe', options.now ?? new Date());
+  const fresh = hubCache && Date.now() - hubCache.at < 60_000 && !process.env.VITEST ? hubCache.hubs : null;
+  const all = fresh ?? (await readHubs(db));
+  if (!fresh) hubCache = { at: Date.now(), hubs: all };
+  return europe ? all : all.filter((h) => !isEuropeCountry(h.countryCode));
+}
+
+async function readHubs(db: DbOrTx): Promise<Hub[]> {
   const rows = await db
     .select({ id: cities.id, countryCode: cities.countryCode, lat: cities.lat, lon: cities.lon, population: cities.population, cargoType: cityMarkets.cargoType, produces: cityMarkets.produces, consumes: cityMarkets.consumes, demand: cityMarkets.demand })
     .from(cityMarkets)
@@ -86,14 +103,17 @@ export interface GenerateOptions {
 /** Generates new market contracts between real cities. Returns how many were created. */
 export async function generateContracts(db: Database, options: GenerateOptions = {}): Promise<number> {
   const now = options.now ?? new Date();
-  const hubs = await loadHubs(db);
+  // Before the release the countries of "Цяла Европа" get only a few loads (seen by the staff only).
+  const europe = featureLive('europe', now);
+  const hubs = await loadHubs(db, { europe: true });
+  const reach = (h: Hub) => (europe || !isEuropeCountry(h.countryCode) ? 1 : 0.05);
   const max = options.max ?? 20;
   let created = 0;
 
   for (let attempt = 0; attempt < max * 3 && created < max; attempt++) {
     const origin = options.originCityId
       ? hubs.find((h) => h.id === options.originCityId)
-      : pickWeighted(hubs.filter((h) => h.produces.size), (h) => Math.sqrt(h.population));
+      : pickWeighted(hubs.filter((h) => h.produces.size), (h) => Math.sqrt(h.population) * reach(h));
     if (!origin || origin.produces.size === 0) break;
 
     const size = options.sizeClass ? SIZE_CLASSES.find((s) => s.id === options.sizeClass)! : pickWeighted(SIZE_CLASSES, (s) => s.weight)!;
@@ -107,7 +127,7 @@ export async function generateContracts(db: Database, options: GenerateOptions =
       (h) => {
         const km = haversineKm([origin.lat, origin.lon], [h.lat, h.lon]) * 1.25;
         if (km > size.maxKm || km < 20) return 0;
-        return (h.consumes.get(cargo) ?? 1) ** 2 * Math.sqrt(h.population) / (1 + km / 500);
+        return ((h.consumes.get(cargo) ?? 1) ** 2 * Math.sqrt(h.population) * (isEuropeCountry(origin.countryCode) ? 1 : reach(h))) / (1 + km / 500);
       },
     );
     if (!destination) continue;
@@ -137,7 +157,8 @@ export async function replenishMarket(db: Database, now = new Date(), provider?:
   const [{ open = 0, companiesCount = 0 } = {}] = await db
     .select({ open: sql<number>`(select count(*) from ${contracts} where ${contracts.status} = 'open')::int`, companiesCount: sql<number>`(select count(*) from ${companies})::int` })
     .from(sql`(select 1) as one`);
-  const target = Math.min(600, 120 + companiesCount * 8);
+  // v1.7: more countries need a bigger board.
+  const target = Math.round(Math.min(600, 120 + companiesCount * 8) * (featureLive('europe', now) ? 1.6 : 1));
   let created = 0;
   if (open < target) created += await generateContracts(db, { now, max: Math.min(25, target - open), provider });
 
@@ -417,6 +438,8 @@ export interface ContractFilter {
   withExchange?: boolean;
   /** The viewer: their own weekly rally load is included (v1.4). */
   viewerUserId?: string | null;
+  /** Loads to and from the countries of "Цяла Европа" (v1.7). */
+  withEurope?: boolean;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
@@ -434,6 +457,7 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (!(filter.withExchange ?? featureLive('freight_exchange', now))) conditions.push(eq(contracts.exchange, false));
   if (!(filter.withOversize ?? featureLive('oversize', now))) conditions.push(eq(contracts.oversize, false));
   const sea = filter.withSea ?? featureLive('ferries', now);
+  const europe = filter.withEurope ?? featureLive('europe', now);
   if (!sea) conditions.push(eq(contracts.port, false));
   // Raw materials and product of a company factory are only for its members.
   conditions.push(filter.viewerUserId ? sql`(${contracts.rallyId} is null or ${contracts.createdBy} = ${filter.viewerUserId})` : isNull(contracts.rallyId));
@@ -468,7 +492,9 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
     .map((r) => ({ ...r, origin: cityMap.get(r.originCityId)!, destination: cityMap.get(r.destCityId)!, route: routeMap.get(r.routeId)!, stopCities: (r.stops ?? []).map((st) => ({ ...st, name: cityMap.get(st.cityId)?.nameBg ?? '', country: cityMap.get(st.cityId)?.countryCode ?? '' })) }))
     .filter((r) => !filter.countryCode || r.origin.countryCode === filter.countryCode || r.destination.countryCode === filter.countryCode)
     // Loads over a ferry wait for the release (staff see them earlier).
-    .filter((r) => sea || !r.route.crossing);
+    .filter((r) => sea || !r.route.crossing)
+    // So do the loads of "Цяла Европа" (v1.7).
+    .filter((r) => europe || ![r.origin.countryCode, r.destination.countryCode, ...r.stopCities.map((s) => s.country)].some(isEuropeCountry));
 }
 
 export type ContractView = Awaited<ReturnType<typeof openContracts>>[number];

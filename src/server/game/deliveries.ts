@@ -7,6 +7,7 @@ import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multistop';
 import { formConvoy } from './convoy';
+import { isEuropeCountry } from '@/lib/geo/scope';
 import { bigConvoyBonus, checkEurotour } from './challenges';
 import { specializationBonus } from './specialization';
 import { checkLegend } from './heritage';
@@ -175,6 +176,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   }
   const crossingLine = loadedRoute?.crossing ? crossingLine_(loadedRoute.crossing.lineId) : null;
   if (crossingLine?.kind === 'ferry' && !(await featureFor(db, userId, 'ferries', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  // "Цяла Европа" (v1.7): the new countries wait for the release (the staff test them earlier).
+  const ends17 = await db.select({ country: cities.countryCode }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId, ...(contract!.stops ?? []).map((st) => st.cityId)]));
+  if (ends17.some((c) => isEuropeCountry(c.country)) && !(await featureFor(db, userId, 'europe', now))) fail('not_released', 'Тези държави идват със следващото обновление.', 403);
   const emptyRoute = vehicle.cityId !== contract!.originCityId ? await getRoute(db, vehicle.cityId, contract!.originCityId, 'truck') : null;
 
   return db.transaction(async (tx) => {

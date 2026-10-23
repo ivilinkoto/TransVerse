@@ -20,7 +20,7 @@ import {
 } from '@/lib/game/events';
 import { contractCountries } from '@/lib/game/licences';
 import type { DeliveryFacts } from '@/lib/game/missions';
-import { LAUNCH_COUNTRIES } from '@/lib/geo/scope';
+import { GAME_COUNTRIES } from '@/lib/geo/scope';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { adminAudit, contracts, countries, deliveries, globalEventContributions, globalEvents, notifications, organizations, routes, users } from '@/server/db/schema';
 import { requireAdminRole, type Staff } from '@/server/admin';
@@ -226,7 +226,7 @@ export const eventSchema = z.object({
   description: z.string().trim().max(400, 'Най-много 400 символа.').default(''),
   metric: z.enum(EVENT_METRICS),
   cargoType: z.enum(CARGO_TYPES as unknown as [CargoType, ...CargoType[]]).nullable().default(null),
-  countryCode: z.enum(LAUNCH_COUNTRIES).nullable().default(null),
+  countryCode: z.enum(GAME_COUNTRIES).nullable().default(null),
   target: z.coerce.number().positive('Целта трябва да е положителна.').max(1e12),
   minContribution: z.coerce.number().min(0).max(1e9),
   /** ISO time; missing or in the past = starts now. */

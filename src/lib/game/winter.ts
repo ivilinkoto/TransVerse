@@ -26,7 +26,11 @@ export const WINTER = {
 } as const;
 
 /** How hard winter hits each country (mountain passes, latitude). */
-export const WINTER_SEVERITY: Record<string, number> = { AT: 1, RS: 0.85, MK: 0.85, BG: 0.8, RO: 0.9, HU: 0.65, DE: 0.6, TR: 0.5, GR: 0.35 };
+export const WINTER_SEVERITY: Record<string, number> = {
+  AT: 1, RS: 0.85, MK: 0.85, BG: 0.8, RO: 0.9, HU: 0.65, DE: 0.6, TR: 0.5, GR: 0.35,
+  // v1.7: Цяла Европа.
+  CH: 1, SI: 0.85, SK: 0.85, BA: 0.85, XK: 0.85, ME: 0.8, PL: 0.75, CZ: 0.7, IT: 0.55, FR: 0.55, HR: 0.5, AL: 0.55, LU: 0.5, BE: 0.4, NL: 0.4, ES: 0.3, PT: 0.2,
+};
 const MONTH_FACTOR: Record<number, number> = { 12: 0.8, 1: 1.1, 2: 1, 3: 0.5 };
 
 export type RoadCondition = 'clear' | 'snow' | 'ice' | 'blizzard';

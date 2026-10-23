@@ -1,7 +1,7 @@
 import { and, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { featureFor } from '@/server/features';
-import { LAUNCH_COUNTRIES } from '@/lib/geo/scope';
+import { GAME_COUNTRIES } from '@/lib/geo/scope';
 import { CONDITION_RANK, conditionFromWeather, type RealConditions, type RoadCondition } from '@/lib/game/winter';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, weatherNow } from '@/server/db/schema';
@@ -25,7 +25,7 @@ export async function fetchWeather(db: Database, now = new Date(), fetcher: type
   const points = await db.execute<{ id: number; country: string; lat: number; lon: number }>(sql`
     select id, country_code as country, lat, lon from (
       select c.*, row_number() over (partition by country_code order by population desc) as n from ${cities} c
-      where country_code in (${sql.join(LAUNCH_COUNTRIES.map((c) => sql`${c}`), sql`, `)})
+      where country_code in (${sql.join(GAME_COUNTRIES.map((c) => sql`${c}`), sql`, `)})
     ) t where n <= ${WEATHER.citiesPerCountry}`);
   const rows = points.rows;
   if (!rows.length) return 0;

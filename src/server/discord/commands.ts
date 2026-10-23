@@ -16,6 +16,7 @@ import { albumOf } from '@/server/game/competition';
 import { openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
 import { cupView } from '@/server/game/tournament';
 import { approximateProvider } from '@/server/geo/routing';
+import { isEuropeCountry } from '@/lib/geo/scope';
 import { BIG_CONVOY, WEEKLY_CHALLENGE } from '@/lib/game/challenges';
 import type { Embed } from './api';
 import type { Row } from './ui';
@@ -359,6 +360,7 @@ async function route(db: DbOrTx, fromName: string, toName: string, now: Date): P
   const find = async (q: string) => (q.trim() ? (await db.select().from(cities).where(or(ilike(cities.nameBg, q.trim()), ilike(cities.name, q.trim()))).orderBy(desc(cities.population)).limit(1))[0] : undefined);
   const [a, b] = [await find(fromName), await find(toName)];
   if (!a || !b) return { ephemeral: true, content: `Няма град „${!a ? fromName : toName}“ в играта.` };
+  if (!featureLive('europe', now) && (isEuropeCountry(a.countryCode) || isEuropeCountry(b.countryCode))) return { ephemeral: true, content: 'Тези държави идват със следващото обновление.' };
   if (a.id === b.id) return { ephemeral: true, content: 'Избери два различни града.' };
   const [stored] = await db.select().from(routes).where(and(eq(routes.fromCityId, a.id), eq(routes.toCityId, b.id), eq(routes.profile, 'truck'))).limit(1);
   const r = stored ?? (await approximateProvider.route({ lat: a.lat, lon: a.lon, country: a.countryCode }, { lat: b.lat, lon: b.lon, country: b.countryCode }, 'truck'));

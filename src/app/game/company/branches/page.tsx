@@ -16,7 +16,7 @@ export default async function BranchesPage() {
   if (!features.branches) notFound();
   const m = await membershipOf(db, user.id);
   if (!m) redirect('/game/company');
-  const [list, options] = await Promise.all([branchesOf(db, m.company.id), branchCities(db, m.company.hqCityId)]);
+  const [list, options] = await Promise.all([branchesOf(db, m.company.id), branchCities(db, m.company.hqCityId, features.europe)]);
   const slots = branchSlots(m.company.companyLevel);
   const canRun = can(m.rank, 'manage_upgrades');
   const free = options.filter((c) => !list.some((b) => b.cityId === c.id));

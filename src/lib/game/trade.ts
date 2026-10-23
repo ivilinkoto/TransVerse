@@ -25,6 +25,7 @@ export const COUNTRY_PRICE_LEVEL: Record<string, number> = {
   BG: 0.85, RO: 0.88, MK: 0.82, RS: 0.87, TR: 0.86, AL: 0.84, ME: 0.88, BA: 0.86, XK: 0.82, MD: 0.8, UA: 0.82,
   GR: 1.0, HU: 0.95, HR: 0.98, SI: 1.03, SK: 0.97, CZ: 1.0, PL: 0.95,
   AT: 1.15, DE: 1.2, IT: 1.1, FR: 1.12, NL: 1.18, BE: 1.15, LU: 1.2, CH: 1.3, DK: 1.22, SE: 1.2, NO: 1.3, FI: 1.15,
+  ES: 1.02, PT: 0.95,
 };
 
 /** "Разчисти склада" (v1.5): goods that sat this long can be sold off at once, for a share of what they cost. */

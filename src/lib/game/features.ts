@@ -141,6 +141,7 @@ export const FEATURES = {
   photo_mode: '1.6',
   plate_auction: '1.6',
   trailer_hire: '1.6',
+  europe: '1.7',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

@@ -1,7 +1,7 @@
 import { and, asc, count, eq, gt, lte, sql } from 'drizzle-orm';
 import { BRANCH, branchSlots, creditRating, creditTier, LOAN, loanTerms } from '@/lib/game/business';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
-import { LAUNCH_COUNTRIES } from '@/lib/geo/scope';
+import { playableCountries } from '@/lib/geo/scope';
 import { haversineKm } from '@/lib/geo/geometry';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, companyBranches, contracts, deliveries, loans, users } from '@/server/db/schema';
@@ -18,11 +18,11 @@ import { pick, pickWeighted, rand } from './random';
 // ── Branches ─────────────────────────────────────────────────────────────
 
 /** Cities a branch may open in: the 8 biggest of every country of the game, not the base city. */
-export async function branchCities(db: DbOrTx, hqCityId: number) {
+export async function branchCities(db: DbOrTx, hqCityId: number, europe = false) {
   const { rows } = await db.execute<{ id: number; name: string; country: string }>(sql`
     select id, name_bg as name, country_code as country from (
       select c.*, row_number() over (partition by country_code order by population desc) as n from ${cities} c
-      where country_code in (${sql.join(LAUNCH_COUNTRIES.map((c) => sql`${c}`), sql`, `)}) and id <> ${hqCityId}
+      where country_code in (${sql.join(playableCountries(europe).map((c) => sql`${c}`), sql`, `)}) and id <> ${hqCityId}
     ) t where n <= 8 order by country, n`);
   return rows;
 }
@@ -44,7 +44,7 @@ export async function openBranch(db: Database, actorId: string, cityId: number, 
     const allowed = branchSlots(actor.company.companyLevel);
     const [{ n = 0 } = {}] = await tx.select({ n: count() }).from(companyBranches).where(eq(companyBranches.organizationId, actor.company.id));
     if (n >= allowed) fail('no_slot', allowed ? `На това ниво компанията може да има ${allowed} ${allowed === 1 ? 'филиал' : 'филиала'}.` : 'Филиали се отварят от ниво 4 на компанията.');
-    const ok = (await branchCities(tx, actor.company.hqCityId)).find((c) => c.id === cityId);
+    const ok = (await branchCities(tx, actor.company.hqCityId, await featureFor(tx, actorId, 'europe', now))).find((c) => c.id === cityId);
     if (!ok) fail('bad_city', 'Филиал се отваря в един от големите градове (не в града на базата).');
     const [row] = await tx.insert(companyBranches).values({ organizationId: actor.company.id, cityId, createdAt: now }).onConflictDoNothing().returning();
     if (!row) fail('already', 'Компанията вече има филиал там.');
