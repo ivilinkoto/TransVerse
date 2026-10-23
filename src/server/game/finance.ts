@@ -66,7 +66,8 @@ export type LedgerCategory =
   | 'member_bonus'
   | 'convoy_perfect'
   | 'staff_bus_bonus'
-  | 'alliance_market';
+  | 'alliance_market'
+  | 'alliance_hall_bonus';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -132,6 +133,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   convoy_perfect: 'Бонус „Перфектен конвой“',
   staff_bus_bonus: 'Бонус за първия курс в компанията',
   alliance_market: 'Склад на съюза (покупки и продажби)',
+  alliance_hall_bonus: 'Бонус от съюзната база',
 };
 
 export interface Posting {

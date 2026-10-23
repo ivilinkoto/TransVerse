@@ -20,6 +20,23 @@ export const ALLIANCE = {
   inviteHours: 72,
 } as const;
 
+/**
+ * The alliance hall (v1.5): a joint building in the leader company's base
+ * city. Members of every company in the alliance haul building materials
+ * (pallets and steel) there; each level adds a bonus to all their trips.
+ */
+export const ALLIANCE_HALL = {
+  /** Tonnes of materials for each level (1, 2, 3). */
+  tons: [200, 400, 700] as const,
+  /** Bonus on the freight of every member of the alliance, per level. */
+  bonusPerLevel: 0.01,
+  cargo: ['pallets', 'steel'] as readonly string[],
+} as const;
+
+export const hallBonusShare = (level: number) => Math.max(0, Math.min(ALLIANCE_HALL.tons.length, level)) * ALLIANCE_HALL.bonusPerLevel;
+/** Tonnes needed for the next level (null at the top). */
+export const hallNextTons = (level: number) => ALLIANCE_HALL.tons[level] ?? null;
+
 export const COMPANY_CONTRACT = {
   days: 7,
   /** The hauler's share of each load's freight, paid from the client's treasury. */

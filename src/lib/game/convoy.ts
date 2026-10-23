@@ -1,5 +1,5 @@
 /**
- * Convoy: a friend or a member of your company leaves on the same lane
+ * Convoy: a friend, a member of your company (or, from v1.5, of your alliance) leaves on the same lane
  * (same origin and destination city) within half an hour of you. Each of
  * you gets a bonus on the reward when the load arrives on time.
  */

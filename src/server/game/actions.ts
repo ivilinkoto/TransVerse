@@ -12,7 +12,7 @@ import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta'
 import { setShowcase, staffBus } from '@/server/game/community';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
-import { createAlliance, dissolveAlliance, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
+import { createAlliance, dissolveAlliance, setAllianceDiscord, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { answerDriver } from '@/server/game/moods';
@@ -207,6 +207,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('respondAllianceInvite'), inviteId: id, accept: z.boolean() }),
   z.object({ type: z.literal('leaveAlliance') }),
   z.object({ type: z.literal('dissolveAlliance') }),
+  z.object({ type: z.literal('allianceDiscord'), on: z.boolean() }),
   z.object({ type: z.literal('allianceMessage'), body: z.string().max(600) }),
   z.object({ type: z.literal('offerCompanyContract'), target: z.string().max(40), sharePct: z.coerce.number().int().min(5).max(30) }),
   z.object({ type: z.literal('respondCompanyContract'), contractId: id, accept: z.boolean() }),
@@ -317,6 +318,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   respondAllianceInvite: 'alliances',
   leaveAlliance: 'alliances',
   dissolveAlliance: 'alliances',
+  allianceDiscord: 'alliance_discord',
   allianceMessage: 'alliances',
   offerCompanyContract: 'company_contracts',
   respondCompanyContract: 'company_contracts',
@@ -736,6 +738,9 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'respondAllianceInvite':
       await respondAllianceInvite(db, user.id, input.inviteId, input.accept);
+      return { ok: true };
+    case 'allianceDiscord':
+      await setAllianceDiscord(db, user.id, input.on);
       return { ok: true };
     case 'dissolveAlliance':
       await dissolveAlliance(db, user.id);

@@ -41,6 +41,8 @@ export interface MapProps {
   ownVip?: boolean;
   /** Баба Марта (v1.5): the stork of the day over a real city — click it to spot it. */
   stork?: { name: string; position: LatLon } | null;
+  /** v1.5: the company's base and the bases of its alliance. */
+  bases?: { name: string; city: string; color: string | null; position: LatLon; own: boolean }[];
 }
 
 interface CityDetails {
@@ -197,7 +199,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [] }: MapProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -357,6 +359,23 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       marker.remove();
     };
   }, [ready, stork]);
+
+  // The company's base and its allies' bases (v1.5): a flag in the company colour.
+  useEffect(() => {
+    if (!ready || !bases.length || !mapRef.current) return;
+    const markers = bases.map((b) => {
+      const el = document.createElement('div');
+      el.title = `${b.own ? 'Базата на компанията' : 'Съюзна база'}: ${b.name} · ${b.city}`;
+      el.setAttribute('aria-label', el.title);
+      el.style.cssText = 'filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));pointer-events:auto';
+      const c = /^#[0-9a-f]{6}$/i.test(b.color ?? '') ? b.color! : b.own ? '#22d3ee' : '#a78bfa';
+      el.innerHTML = `<svg width="26" height="30" viewBox="0 0 26 30"><path d="M5 28 V3" stroke="#e5e7eb" stroke-width="2"/><path d="M6 4 H22 L18 9 L22 14 H6 Z" fill="${c}" stroke="#0b1220" stroke-width="1"/>${b.own ? '<circle cx="5" cy="28" r="2.5" fill="#f6c343"/>' : ''}</svg>`;
+      return new maplibregl.Marker({ element: el, anchor: 'bottom-left' }).setLngLat(toLngLat(b.position)).addTo(mapRef.current!);
+    });
+    return () => {
+      for (const m of markers) m.remove();
+    };
+  }, [ready, bases]);
 
   // Data layers follow server refreshes without recreating the map.
   useEffect(() => {

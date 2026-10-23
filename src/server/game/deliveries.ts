@@ -61,7 +61,7 @@ import { recordShipContainer } from './ports';
 import { recordRallyRun } from './rally';
 import { activeRoadWorks } from './roads';
 import { recordCityVisit, recordPerfectTrip } from './competition';
-import { clientsOf, fuelStationAt, payCompanyContract, recordAcademyCourse, recordAllianceDelivery } from './alliances';
+import { clientsOf, fuelStationAt, payCompanyContract, recordAcademyCourse, allianceHallBonus, recordAllianceDelivery, recordHallDelivery } from './alliances';
 import { FUEL_STATION } from '@/lib/game/alliances';
 import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor } from '@/lib/game/roads';
 import { companyTrailerBonus } from './company-trailers';
@@ -466,6 +466,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.5: a perfect convoy (both on time, together) and the first trip of a new company member.
   const convoyPerfect = await settlePerfectConvoy(tx, d, { userId: company!.ownerId, late: result.late, at: completedAt, rewardCents: result.rewardCents, originCityId: contract.originCityId, destCityId: contract.destCityId });
   const firstTrip = perks ? await firstTripBonus(tx, company!.ownerId, d, result.rewardCents, completedAt) : 0;
+  const hallBonus = perks ? await allianceHallBonus(tx, company!.ownerId, perks.membership.company.id, d, result.rewardCents, completedAt) : 0;
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
   if (station?.cents) await postTreasury(tx, station.orgId, [{ category: 'fuel_station', amountCents: station.cents, description: `Гориво на станцията: ${contract.goods}`, idempotencyKey: key('fuel-station'), refType: 'delivery', refId: d.id }]);
@@ -477,7 +478,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -514,6 +515,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     await addCompanyXp(tx, perks.membership.company.id, companyXp);
     // v1.5: the alliance's week counts the tonnes; a client's load pays the hauler company its share.
     await recordAllianceDelivery(tx, perks.membership.company.id, contract.weightTons, completedAt);
+    await recordHallDelivery(tx, company!.ownerId, perks.membership.company.id, { cargoType: contract.cargoType, destCityId: contract.destCityId, tons: contract.weightTons }, completedAt);
     const client = contract.factoryOrgId ?? contract.branchOrgId;
     if (client && client !== perks.membership.company.id) await payCompanyContract(tx, client, perks.membership.company.id, d.id, result.rewardCents, contract.weightTons, completedAt);
   }

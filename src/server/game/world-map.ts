@@ -4,6 +4,7 @@ import type { DbOrTx } from '@/server/db/client';
 import { cities, companies, companyMembers, contracts, deliveries, friendships, organizations, routes, users, vehicles } from '@/server/db/schema';
 import { onlineUserIds } from '@/server/realtime';
 import { isVip } from '@/lib/game/vip';
+import { featureFor } from '@/server/features';
 
 /** A leg of another player's trip; the geometry is shared through `routes` to keep the payload small. */
 export interface WorldLeg {
@@ -64,6 +65,8 @@ const MAX_TRUCKS = 3000;
  */
 export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: string): Promise<WorldSnapshot> {
   const { friends, mates } = viewerId ? await circleOf(db, viewerId) : { friends: new Set<string>(), mates: new Set<string>() };
+  // v1.5: the alliance's other companies see each other's loads and help on the road.
+  const allies = viewerId && (await featureFor(db, viewerId, 'alliance_help', now)) ? await alliesOf(db, viewerId) : new Set<string>();
   const activeSince = new Date(now.getTime() - IDLE_ACTIVE_DAYS * 86_400_000);
   const rows = await db
     .select({
@@ -132,9 +135,9 @@ export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: str
         originCityId: t.originCityId,
         destCityId: t.destCityId,
         startedAt: t.startedAt.toISOString(),
-        cargo: friends.has(r.userId) || mates.has(r.userId) ? { goods: t.goods, tons: t.tons } : null,
-        // Friends and colleagues may help on the road.
-        deliveryId: friends.has(r.userId) || mates.has(r.userId) ? t.deliveryId : null,
+        cargo: friends.has(r.userId) || mates.has(r.userId) || allies.has(r.userId) ? { goods: t.goods, tons: t.tons } : null,
+        // Friends, colleagues and allies may help on the road.
+        deliveryId: friends.has(r.userId) || mates.has(r.userId) || allies.has(r.userId) ? t.deliveryId : null,
       };
     }
     return {
@@ -159,6 +162,17 @@ export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: str
     players: players.size,
     online: [...players].filter((id) => online.has(id)).length,
   };
+}
+
+/** Members of the other companies in the player's alliance (v1.5; user ids). */
+export async function alliesOf(db: DbOrTx, userId: string): Promise<Set<string>> {
+  const { rows } = await db.execute<{ id: string }>(sql`
+    select cm.user_id as id from company_members cm
+    join alliance_members am on am.organization_id = cm.company_id
+    join alliance_members mine on mine.alliance_id = am.alliance_id
+    join company_members me on me.company_id = mine.organization_id and me.user_id = ${userId}
+    where cm.company_id <> me.company_id`);
+  return new Set(rows.map((r) => r.id));
 }
 
 /** The viewer's friends and the other members of their company (user ids). */

@@ -104,6 +104,12 @@ export const FEATURES = {
   lane_records: '1.5',
   staff_alerts: '1.5',
   compensation: '1.5',
+  alliance_convoy: '1.5',
+  alliance_help: '1.5',
+  alliance_fuel: '1.5',
+  alliance_map: '1.5',
+  alliance_hall: '1.5',
+  alliance_discord: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

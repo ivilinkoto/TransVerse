@@ -2208,6 +2208,13 @@ export const alliances = pgTable('alliances', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull().unique(),
   leaderOrgId: uuid('leader_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  /** The alliance hall (v1.5): its level and the tonnes of materials toward the next one. */
+  hallLevel: integer('hall_level').notNull().default(0),
+  hallTons: real('hall_tons').notNull().default(0),
+  /** The alliance's private channel and role in the Discord server (v1.5). */
+  discordChannel: boolean('discord_channel').notNull().default(false),
+  discordChannelId: text('discord_channel_id'),
+  discordRoleId: text('discord_role_id'),
   createdAt: createdAt(),
 });
 

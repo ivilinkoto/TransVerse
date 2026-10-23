@@ -10,9 +10,9 @@ import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { ALLIANCE_MARKET } from '@/lib/game/community';
 import { allianceMarketView } from '@/server/game/alliance-market';
 import { date, dec, money } from '@/lib/format';
-import { ACADEMY, ALLIANCE, COMPANY_CONTRACT } from '@/lib/game/alliances';
+import { ACADEMY, ALLIANCE, ALLIANCE_HALL, COMPANY_CONTRACT } from '@/lib/game/alliances';
 import { allianceInvites, alliances, companyMembers, users } from '@/server/db/schema';
-import { academyOf, allianceOf, allianceWeekView, contractsOf } from '@/server/game/alliances';
+import { academyOf, allianceHall, allianceOf, allianceWeekView, contractsOf } from '@/server/game/alliances';
 import { gameContext } from '@/server/game/context';
 import { can, membershipOf } from '@/server/game/membership';
 
@@ -33,6 +33,13 @@ export default async function AlliancePage() {
     features.academy ? db.select({ id: users.id, username: users.username, level: users.level }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(eq(companyMembers.companyId, m.company.id)) : [],
   ]);
   const market = alliance && features.alliance_market ? await allianceMarketView(db, user.id, now) : null;
+  const hall = alliance && features.alliance_hall ? await allianceHall(db, alliance.id) : null;
+  const perks = [
+    features.alliance_convoy && 'конвой с членовете на всички компании в съюза',
+    features.alliance_help && 'пътна помощ от съюзници (и вие на тях)',
+    features.alliance_fuel && 'горивна карта: отстъпката на бензиностанциите на всички съюзни компании',
+    features.alliance_map && 'базите на съюза на картата',
+  ].filter(Boolean) as string[];
   const newMember = m.member.joinedAt.getTime() + ACADEMY.joinedDays * 86_400_000 > now.getTime();
   const enrolled = academy.find((s) => s.userId === user.id);
   return (
@@ -64,6 +71,20 @@ export default async function AlliancePage() {
                     {week.rival ? <p className="mt-1">Срещу <b>{week.rival.name}</b>: <span className="num">{dec(week.tons)} т</span> : <span className="num">{dec(week.rival.tons)} т</span></p> : <p className="mt-1 text-mist-400">Противникът ще бъде избран скоро (нужни са поне два съюза).</p>}
                     <p className="mt-1 text-xs text-mist-400">Победителят — {money(ALLIANCE.battleRewardCents)} за всяка компания.</p>
                   </div>
+                </div>
+              )}
+              {hall && (
+                <div className="rounded-xl border border-asphalt-700 p-3">
+                  <div className="flex justify-between"><span>🏛 Съюзна база в {hall.city} · ниво {hall.level}</span>{hall.next ? <span className="num">{dec(hall.tons)} / {hall.next} т</span> : <span className="text-profit">максимално ниво</span>}</div>
+                  {hall.next && <Meter value={(hall.tons / hall.next) * 100} tone="violet" className="mt-2" />}
+                  <p className="mt-1 text-xs text-mist-400">Карайте строителни материали (палети и стомана) до {hall.city} — всеки курс на член на съюза се брои. Всяко ниво дава +{Math.round(ALLIANCE_HALL.bonusPerLevel * 100)} % към заплащането на всички членове{hall.level ? ` (сега +${Math.round(hall.bonusShare * 100)} %)` : ''}.</p>
+                </div>
+              )}
+              {perks.length > 0 && <p className="text-xs text-mist-300">Заедно в съюза: {perks.join(' · ')}.</p>}
+              {features.alliance_discord && manage && alliance.leaderOrgId === m.company.id && (
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span>Канал на съюза в Discord: <b>{alliance.discordChannel ? 'включен' : 'изключен'}</b></span>
+                  <ActionButton action={{ type: 'allianceDiscord', on: !alliance.discordChannel }} className="btn-ghost px-3 py-1 text-xs">{alliance.discordChannel ? 'Изключи' : 'Включи'}</ActionButton>
                 </div>
               )}
               {manage && alliance.leaderOrgId === m.company.id && alliance.members.length < ALLIANCE.maxCompanies && <TextAction label="Покани" action={{ type: 'inviteToAlliance' }} field="target" placeholder="Таг или име на компания" ariaLabel="Компания за съюза" />}

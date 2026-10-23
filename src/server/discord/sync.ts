@@ -1,10 +1,10 @@
-import { and, asc, eq, gt, isNotNull, isNull } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { PERFECT_ROLE_STREAK } from '@/lib/game/competition';
 import { isVip } from '@/lib/game/vip';
 import { isStaff } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
-import { companyMembers, companyRanks, jobState, organizations, userBadges, users } from '@/server/db/schema';
+import { allianceMembers, alliances, companyMembers, companyRanks, jobState, organizations, userBadges, users } from '@/server/db/schema';
 import { discord, DiscordError } from './api';
 import { BADGE_ROLES, COMPANY_CATEGORY, discordConfig } from './config';
 import { ensureRole, forgetGuild, gameRole, guild, managedRoleIds, verifiedRole } from './guild';
@@ -24,7 +24,9 @@ const allow = (...bits: bigint[]) => bits.reduce((a, b) => a | b, 0n).toString()
 /** Company roles the bot made (they are "managed" too: given and taken by the bot only). */
 async function companyRoleIds(db: Database) {
   const rows = await db.select({ id: organizations.discordRoleId }).from(organizations).where(isNotNull(organizations.discordRoleId));
-  return rows.map((r) => r.id!);
+  // The alliances' roles (v1.5) are the bot's too.
+  const allied = await db.select({ id: alliances.discordRoleId }).from(alliances).where(isNotNull(alliances.discordRoleId));
+  return [...rows, ...allied].map((r) => r.id!);
 }
 
 /** The roles a linked player should have: linked, level, VIP, company owner and their company's role. */
@@ -44,6 +46,11 @@ async function desiredRoles(db: Database, userId: string, now: Date) {
   if (m?.isOwner) want.push(await gameRole('owner'));
   if (isStaff(u.role)) want.push(await gameRole('staff'));
   if (m?.org.discordChannel && m.org.discordRoleId) want.push(m.org.discordRoleId);
+  // v1.5: the alliance's role, while its channel is on.
+  if (m) {
+    const [ally] = await db.select({ on: alliances.discordChannel, roleId: alliances.discordRoleId }).from(allianceMembers).innerJoin(alliances, eq(alliances.id, allianceMembers.allianceId)).where(eq(allianceMembers.organizationId, m.org.id));
+    if (ally?.on && ally.roleId) want.push(ally.roleId);
+  }
   // v1.5: the company's division and a live perfect streak.
   if (m && featureLive('divisions', now)) want.push(await gameRole(m.org.division === 'gold' ? 'divisionGold' : m.org.division === 'silver' ? 'divisionSilver' : 'divisionBronze'));
   if (u.perfectStreak >= PERFECT_ROLE_STREAK && featureLive('perfect_run', now)) want.push(await gameRole('perfect10'));
@@ -91,7 +98,7 @@ export async function stripRoles(discordId: string) {
   }
   const { roles } = await guild();
   const managed = await managedRoleIds();
-  const companyRoles = new Set(roles.filter((r) => r.name.startsWith('Компания · ')).map((r) => r.id));
+  const companyRoles = new Set(roles.filter((r) => r.name.startsWith('Компания · ') || r.name.startsWith('Съюз · ')).map((r) => r.id));
   for (const id of member.roles) if (managed.has(id) || companyRoles.has(id)) await discord('DELETE', `/guilds/${guildId}/members/${discordId}/roles/${id}`);
 }
 
@@ -111,6 +118,52 @@ export async function syncAllRoles(db: Database, now = new Date(), page = 40) {
   const next = rows.length < page ? '00000000-0000-0000-0000-000000000000' : rows.at(-1)!.id;
   await db.insert(jobState).values({ key: 'discord-roles-cursor', value: { id: next } }).onConflictDoUpdate({ target: jobState.key, set: { value: { id: next }, updatedAt: now } });
   return rows.length;
+}
+
+/**
+ * An alliance's private channel (v1.5, category "Компании"): the alliance
+ * role sees it; every linked member of its companies gets the role. Removed
+ * when the leader turns it off.
+ */
+export async function ensureAllianceChannel(db: Database, allianceId: string) {
+  const { guildId } = discordConfig();
+  const [a] = await db.select().from(alliances).where(eq(alliances.id, allianceId));
+  if (!a) return;
+  const orgIds = (await db.select({ id: allianceMembers.organizationId }).from(allianceMembers).where(eq(allianceMembers.allianceId, a.id))).map((r) => r.id);
+  const queueMembers = async () => {
+    const members = orgIds.length ? await db.select({ id: users.id }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(and(inArray(companyMembers.companyId, orgIds), isNotNull(users.discordId))) : [];
+    for (const m of members) await enqueue(db, `roles:${m.id}:${Date.now()}`, 'job:roles', { userId: m.id });
+  };
+  if (!a.discordChannel) {
+    await removeAllianceChannel(a.discordChannelId, a.discordRoleId);
+    await db.update(alliances).set({ discordChannelId: null, discordRoleId: null }).where(eq(alliances.id, a.id));
+    await queueMembers();
+    return;
+  }
+  const roleId = a.discordRoleId ?? (await ensureRole(`Съюз · ${a.name}`.slice(0, 100), 0xa78bfa));
+  const g = await guild(true);
+  let categoryId = await layoutCategory(db, 'компании', COMPANY_CATEGORY);
+  if (!categoryId) categoryId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: COMPANY_CATEGORY, type: 4 })).id;
+  const overwrites = [
+    { id: guildId, type: 0, deny: allow(VIEW) },
+    { id: roleId, type: 0, allow: allow(VIEW, SEND, HISTORY, EMBED, ATTACH) },
+    { id: g.botId, type: 1, allow: allow(VIEW, SEND, HISTORY, EMBED) },
+  ];
+  const name = `🛡┃${a.name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'съюз'}`;
+  let channelId = a.discordChannelId && g.channels.some((c) => c.id === a.discordChannelId) ? a.discordChannelId : null;
+  if (!channelId) channelId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name, type: 0, parent_id: categoryId, topic: `Съюзът „${a.name}“ — всички компании в него.`, permission_overwrites: overwrites })).id;
+  else await discord('PATCH', `/channels/${channelId}`, { name, permission_overwrites: overwrites });
+  await db.update(alliances).set({ discordRoleId: roleId, discordChannelId: channelId }).where(eq(alliances.id, a.id));
+  forgetGuild();
+  await queueMembers();
+}
+
+/** Deletes an alliance's channel and role (turned off or the alliance dissolved). */
+export async function removeAllianceChannel(channelId: string | null, roleId: string | null) {
+  const { guildId } = discordConfig();
+  if (channelId) await discord('DELETE', `/channels/${channelId}`).catch(() => undefined);
+  if (roleId) await discord('DELETE', `/guilds/${guildId}/roles/${roleId}`).catch(() => undefined);
+  forgetGuild();
 }
 
 const channelName = (name: string) => `🚚┃${name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'компания'}`;
