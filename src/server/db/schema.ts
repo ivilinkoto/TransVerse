@@ -169,6 +169,8 @@ export const users = pgTable(
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
     /** ТрансКоин — premium currency balance (whole coins). Changes only through coin_entries. */
+    /** Spare parts from the scrapyard (v1.6): each repairs a truck by a quarter. */
+    spareParts: integer('spare_parts').notNull().default(0),
     coins: integer('coins').notNull().default(0),
     /** Double delivery XP while in the future (shop booster). */
     xpBoostUntil: ts('xp_boost_until'),
@@ -2458,4 +2460,22 @@ export const recruitmentPosts = pgTable(
     expiresAt: ts('expires_at').notNull(),
   },
   (t) => [uniqueIndex('recruitment_posts_org_idx').on(t.orgId), uniqueIndex('recruitment_posts_driver_idx').on(t.userId, t.kind), index('recruitment_posts_expires_idx').on(t.expiresAt)],
+);
+
+/** The company museum (v1.6): trucks the members donated, on show for good. */
+export const museumExhibits = pgTable(
+  'museum_exhibits',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').notNull(),
+    modelId: text('model_id').notNull(),
+    plate: text('plate').notNull(),
+    color: text('color').notNull(),
+    livery: text('livery'),
+    odometerKm: real('odometer_km').notNull(),
+    donatedBy: uuid('donated_by').references(() => users.id, { onDelete: 'set null' }),
+    donatedAt: ts('donated_at').notNull(),
+  },
+  (t) => [index('museum_exhibits_org_idx').on(t.organizationId), uniqueIndex('museum_exhibits_vehicle_idx').on(t.vehicleId)],
 );

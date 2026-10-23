@@ -9,6 +9,7 @@ import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multi
 import { formConvoy } from './convoy';
 import { bigConvoyBonus, checkEurotour } from './challenges';
 import { specializationBonus } from './specialization';
+import { checkLegend } from './heritage';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -574,6 +575,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .update(vehicles)
     .set({ status: 'idle', cityId: contract.destCityId, condition: sql`greatest(0, ${vehicles.condition} - ${costs.wear})`, odometerKm: sql`${vehicles.odometerKm} + ${d.emptyKm + d.loadedKm}` })
     .where(eq(vehicles.id, d.vehicleId));
+  // A legendary truck (v1.6): 100 000 / 250 000 / 500 000 km.
+  await checkLegend(tx, company!.ownerId, vehicle!, vehicle!.odometerKm, vehicle!.odometerKm + d.emptyKm + d.loadedKm, completedAt);
   if (d.trailerId) await tx.update(trailers).set({ cityId: contract.destCityId, condition: sql`greatest(0, ${trailers.condition} - ${costs.wear * 0.6})` }).where(eq(trailers.id, d.trailerId));
   // Drivers grow with experience: one skill level per 8 000 XP, never downwards.
   // They also carry the driving hours of this trip until they have rested (a team shares them).

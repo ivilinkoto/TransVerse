@@ -11,6 +11,7 @@ import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
 import { playParking } from '@/server/game/parking';
 import { joinCup } from '@/server/game/tournament';
+import { donateToMuseum, scrapVehicle, repairWithPart } from '@/server/game/heritage';
 import { setSpecialization } from '@/server/game/specialization';
 import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
@@ -205,6 +206,9 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
   z.object({ type: z.literal('joinCup') }),
+  z.object({ type: z.literal('scrapVehicle'), vehicleId: id }),
+  z.object({ type: z.literal('repairWithPart'), vehicleId: id }),
+  z.object({ type: z.literal('donateToMuseum'), vehicleId: id }),
   z.object({ type: z.literal('setSpecialization'), specialization: z.enum(Object.keys(SPECIALIZATIONS) as [Specialization, ...Specialization[]]).nullable() }),
   z.object({ type: z.literal('postRecruitment'), kind: z.enum(['company', 'driver']), text: z.string().max(400), minLevel: z.coerce.number().int().min(1).max(100).optional() }),
   z.object({ type: z.literal('removeRecruitment'), postId: id }),
@@ -325,6 +329,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   testDrive: 'test_drive',
   parking: 'parking_game',
   joinCup: 'spring_cup',
+  scrapVehicle: 'scrapyard',
+  repairWithPart: 'scrapyard',
+  donateToMuseum: 'museum',
   setSpecialization: 'specializations',
   postRecruitment: 'recruitment_board',
   removeRecruitment: 'recruitment_board',
@@ -792,6 +799,12 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'parking':
       return { ok: true, ...(await playParking(db, user.id, input.inputs)) };
+    case 'scrapVehicle':
+      return { ok: true, ...(await scrapVehicle(db, user.id, input.vehicleId)) };
+    case 'repairWithPart':
+      return { ok: true, ...(await repairWithPart(db, user.id, input.vehicleId)) };
+    case 'donateToMuseum':
+      return { ok: true, ...(await donateToMuseum(db, user.id, input.vehicleId)) };
     case 'joinCup':
       return { ok: true, ...(await joinCup(db, user.id)) };
     case 'setSpecialization':

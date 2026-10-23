@@ -1,3 +1,4 @@
+import { MUSEUM } from './heritage';
 /**
  * The company plot (v1.3): every company has a plot in its base city and
  * builds on it — an office first, then a logistics centre, a training centre,
@@ -38,7 +39,7 @@ export type MaterialId = keyof typeof MATERIALS;
 export const MATERIAL_IDS = Object.keys(MATERIALS) as MaterialId[];
 export type Materials = Partial<Record<MaterialId, number>>;
 
-export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel' | 'polygon';
+export type BuildingType = 'office' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel' | 'polygon' | 'museum';
 
 export interface BuildingDef {
   type: BuildingType;
@@ -47,7 +48,7 @@ export interface BuildingDef {
   w: number;
   h: number;
   /** The company upgrade this building drives (its level = building level − offset). */
-  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel' | 'polygon';
+  upgrade: 'capacity' | 'logistics' | 'training' | 'service' | 'parking' | 'warehouse' | 'rest' | 'factory' | 'fuel' | 'polygon' | 'museum';
   offset: number;
   maxLevel: number;
   /** Materials of level 1; later levels need more. */
@@ -180,6 +181,18 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     effect: (l) => `+${l * 15} % опит за шофьорите на членовете — растат по-бързо в умения`,
     minCompanyLevel: [3, 5, 7],
   },
+  museum: {
+    type: 'museum',
+    label: 'Музей',
+    w: 3,
+    h: 3,
+    upgrade: 'museum',
+    offset: 0,
+    maxLevel: 3,
+    base: { bricks: 10, glass: 8, cement: 6, steel: 2 },
+    effect: (l) => `Място за ${MUSEUM.capacity[l] ?? 0} дарени камиона с поне ${MUSEUM.minKm / 1000} 000 км — дарителят получава ${MUSEUM.coins} TC (${MUSEUM.legendCoins} TC за легенда)`,
+    minCompanyLevel: [2, 4, 6],
+  },
 };
 export const BUILDING_TYPES = Object.keys(BUILDINGS) as BuildingType[];
 
@@ -195,6 +208,7 @@ export const BUILDING_LINKS: Record<BuildingType, { href: string; label: string 
   factory: { href: '/game/company/factory', label: 'Отвори фабриката' },
   fuel: { href: '/game/finance', label: 'Отвори финансите' },
   polygon: { href: '/game/staff', label: 'Отвори шофьорите' },
+  museum: { href: '/game/company/museum', label: 'Отвори музея' },
 };
 
 /** How much more each level needs than level 1, and how long it takes (real minutes). */
@@ -341,7 +355,7 @@ export function decorError(kind: DecorKind, x: number, y: number, buildings: rea
 }
 
 /** Where existing companies' buildings go when they get their plot (it all fits next to each other); the factory (v1.4) is always placed by the company. */
-export const DEFAULT_SPOTS: Record<Exclude<BuildingType, 'factory' | 'fuel' | 'polygon'>, { x: number; y: number }> = {
+export const DEFAULT_SPOTS: Record<Exclude<BuildingType, 'factory' | 'fuel' | 'polygon' | 'museum'>, { x: number; y: number }> = {
   office: { x: 1, y: 0 },
   service: { x: 1, y: 3 },
   training: { x: 1, y: 6 },

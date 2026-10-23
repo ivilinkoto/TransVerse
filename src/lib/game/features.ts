@@ -135,6 +135,10 @@ export const FEATURES = {
   specializations: '1.6',
   recruitment_board: '1.6',
   my_map: '1.6',
+  legendary_trucks: '1.6',
+  scrapyard: '1.6',
+  museum: '1.6',
+  photo_mode: '1.6',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;
