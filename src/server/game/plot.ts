@@ -93,6 +93,17 @@ async function onTheWay(db: DbOrTx, buildId: string, now: Date): Promise<Materia
   return Object.fromEntries(rows.filter((r) => r.material).map((r) => [r.material, r.tons])) as Materials;
 }
 
+/** The open material loads of a construction on the freight exchange — any member of the company may take them. */
+export async function constructionLoads(db: DbOrTx, buildId: string, now = new Date()) {
+  return db
+    .select({ id: contracts.id, material: contracts.material, tons: contracts.weightTons, rewardCents: contracts.rewardCents, from: cities.nameBg, expiresAt: contracts.expiresAt })
+    .from(contracts)
+    .innerJoin(cities, eq(cities.id, contracts.originCityId))
+    .where(and(eq(contracts.constructionId, buildId), eq(contracts.status, 'open'), gt(contracts.expiresAt, now)))
+    .orderBy(asc(contracts.expiresAt))
+    .limit(20);
+}
+
 /** Nearest city (at least 30 km away) that produces the material's cargo — where it is bought. */
 async function supplierFor(db: DbOrTx, hqCityId: number, material: MaterialId) {
   const hubs = await loadHubs(db);
