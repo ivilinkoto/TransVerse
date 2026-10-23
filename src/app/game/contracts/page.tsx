@@ -23,7 +23,7 @@ import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
 import { compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { cities as citiesTable, contracts as contractsTable, deliveries } from '@/server/db/schema';
 import { fleetView } from '@/server/game/queries';
 import { LICENCES } from '@/lib/game/licences';
@@ -36,6 +36,7 @@ import { favoriteLanesOf } from '@/server/game/favorites';
 import { membershipOf } from '@/server/game/membership';
 import { isNightShift, NIGHT, oversizeCostCents } from '@/lib/game/roads';
 import { activeRoadWorks } from '@/server/game/roads';
+import { TRAFFIC } from '@/lib/game/traffic';
 
 export const metadata = { title: 'Поръчки' };
 
@@ -87,6 +88,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const seen = new Set<string>();
   const contracts = [...focusLoads, ...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
+  // Traffic from the players (v1.6): trucks on each lane right now.
+  const laneTraffic = new Map<string, number>();
+  if (features.road_traffic) {
+    const rows = await db.select({ o: contractsTable.originCityId, d: contractsTable.destCityId, n: sql<number>`count(*)::int` }).from(deliveries).innerJoin(contractsTable, eq(contractsTable.id, deliveries.contractId)).where(eq(deliveries.status, 'in_progress')).groupBy(contractsTable.originCityId, contractsTable.destCityId);
+    for (const r of rows) laneTraffic.set(`${r.o}:${r.d}`, r.n);
+  }
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];
     // A ferry on the way (islands): no fuel on board, a ticket instead.
@@ -148,6 +155,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       hiredBy: hiredBy.get(c.id) ?? null,
       project: project && project.cargoType === c.cargoType && project.destCityId === c.destCityId ? project.title : null,
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
+      traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,
       weather: (() => {
         const w = routeCondition(c.route.countries, now, real);
         return w.condition === 'clear' ? null : { condition: w.condition, label: CONDITION_LABELS[w.condition], country: w.country! };

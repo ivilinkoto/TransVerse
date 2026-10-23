@@ -13,7 +13,7 @@ export const SHOP_CATEGORIES: Record<ShopCategory, string> = {
   account: 'Профил',
 };
 
-export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename';
+export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename';
 
 /** The retro collection (v1.5): three paints of past decades; all three earn a badge. */
 export const RETRO = {
@@ -33,7 +33,7 @@ export interface ShopItem {
   /** What the buyer has to choose. */
   needs?: 'vehicle' | 'vehicle_city' | 'vehicle_plate' | 'vehicle_color' | 'vehicle_cosmetic' | 'trailer_cosmetic' | 'username' | 'recipient';
   /** Sold only during this holiday (what was bought stays). */
-  seasonal?: 'halloween' | 'christmas';
+  seasonal?: 'halloween' | 'christmas' | 'spring';
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
@@ -48,6 +48,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'paint', category: 'cosmetic', label: 'Пребоядисване', description: 'Нов цвят на твой камион. За VIP е безплатно и с ексклузивни цветове.', price: 50, needs: 'vehicle_color' },
   { id: 'paint_pumpkin', category: 'cosmetic', label: 'Боя „Тиква“ · Хелуин 2026', description: 'Празнична оранжева боя с тиквена усмивка на кабината и ремаркето. Продава се само по Хелуин — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'halloween' },
   { id: 'paint_christmas', category: 'cosmetic', label: 'Боя „Коледа“ · Коледа 2026', description: 'Празнична червена боя с украсена елха на кабината и ремаркето. Продава се само по Коледа — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'christmas' },
+  { id: 'paint_cherry', category: 'cosmetic', label: 'Боя „Цъфнала череша“ · Пролет 2027', description: 'Нежнорозова боя с черешов цвят на кабината и ремаркето. Продава се от 16 март до 15 април — остава на камиона.', price: 70, needs: 'vehicle', seasonal: 'spring' },
   { id: 'paint_retro70', category: 'cosmetic', label: 'Ретро боя „70-те“', description: 'Кафяво-оранжева боя с ивици като на камионите от 70-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
   { id: 'paint_retro80', category: 'cosmetic', label: 'Ретро боя „80-те“', description: 'Тъмносиня боя с неоново розово и синьо от 80-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
   { id: 'paint_retro90', category: 'cosmetic', label: 'Ретро боя „90-те“', description: 'Тюркоазено-лилава боя с ивици от 90-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },

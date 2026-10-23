@@ -51,6 +51,8 @@ export interface PlotFeatures {
   fuel?: boolean;
   /** The driving range (v1.5). */
   polygon?: boolean;
+  /** The museum (v1.6). */
+  museum?: boolean;
 }
 
 /** The company plot: the scene, building on it and the running construction. */
@@ -209,7 +211,7 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
 
   const sel = selected ? data.buildings.find((b) => b.type === selected) : null;
   // The factory comes with v1.4 (staff see it earlier).
-  const notPlaced = BUILDING_TYPES.filter((t) => !data.buildings.some((b) => b.type === t) && (t !== 'factory' || !!features.factory) && (t !== 'fuel' || !!features.fuel) && (t !== 'polygon' || !!features.polygon));
+  const notPlaced = BUILDING_TYPES.filter((t) => !data.buildings.some((b) => b.type === t) && (t !== 'factory' || !!features.factory) && (t !== 'fuel' || !!features.fuel) && (t !== 'polygon' || !!features.polygon) && (t !== 'museum' || !!features.museum));
   const decorSel = selectedDecor ? data.decor.find((d) => d.id === selectedDecor) : null;
   const nextLand = EXPANSIONS[data.expansions];
   const cost = (m: Materials) => materialCostCents(m, false, data.boom);

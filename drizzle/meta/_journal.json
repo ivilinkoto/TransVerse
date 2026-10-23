@@ -470,6 +470,34 @@
       "when": 1792740281461,
       "tag": "0066_colossal_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792742690259,
+      "tag": "0067_giant_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1792743409816,
+      "tag": "0068_dashing_hercules",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792744081466,
+      "tag": "0069_common_thaddeus_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1792745006526,
+      "tag": "0070_perfect_thunderbird",
+      "breakpoints": true
     }
   ]
 }

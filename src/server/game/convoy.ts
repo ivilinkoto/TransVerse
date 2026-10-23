@@ -1,5 +1,6 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, isNull, ne } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
+import { BIG_CONVOY, bigConvoyShare } from '@/lib/game/challenges';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import type { DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, contracts, deliveries, discordVoice, openConvoys, users } from '@/server/db/schema';
@@ -68,15 +69,18 @@ export async function announceConvoy(db: DbOrTx, userId: string, now = new Date(
   return { ...row!, origin: name(trip!.originCityId), destination: name(trip!.destCityId) };
 }
 
-/** Friends', company members', voice convoy mates' and open convoys' trips on this lane that left recently and have no convoy yet. */
-export async function convoyCandidates(db: DbOrTx, userId: string, now: Date, lane?: { originCityId: number; destCityId: number }) {
+/**
+ * Friends', company members', voice convoy mates' and open convoys' trips on this lane that left recently and have no convoy yet
+ * (`grouped`: those already in a convoy, which a big convoy may still take).
+ */
+export async function convoyCandidates(db: DbOrTx, userId: string, now: Date, lane?: { originCityId: number; destCityId: number }, grouped = false) {
   const { friends, mates } = await circleOf(db, userId);
   // v1.5: the other companies of the alliance drive in convoy too.
   const allies = (await featureFor(db, userId, 'alliance_convoy', now)) ? await alliesOf(db, userId) : new Set<string>();
   const ids = [...new Set([...friends, ...mates, ...allies, ...(await voiceMates(db, userId, now)), ...(await openConvoyHosts(db, userId, now, lane))])];
   if (!ids.length) return [];
   return db
-    .select({ deliveryId: deliveries.id, userId: users.id, username: users.username, originCityId: contracts.originCityId, destCityId: contracts.destCityId, startedAt: deliveries.startedAt })
+    .select({ deliveryId: deliveries.id, userId: users.id, username: users.username, originCityId: contracts.originCityId, destCityId: contracts.destCityId, startedAt: deliveries.startedAt, convoyLead: deliveries.convoyLead })
     .from(deliveries)
     .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
     .innerJoin(companies, eq(companies.id, deliveries.companyId))
@@ -85,7 +89,7 @@ export async function convoyCandidates(db: DbOrTx, userId: string, now: Date, la
       and(
         inArray(users.id, ids),
         eq(deliveries.status, 'in_progress'),
-        isNull(deliveries.convoyWith),
+        grouped ? isNotNull(deliveries.convoyLead) : isNull(deliveries.convoyWith),
         gte(deliveries.startedAt, new Date(now.getTime() - CONVOY_RULES.windowMs)),
         ...(lane ? [eq(contracts.originCityId, lane.originCityId), eq(contracts.destCityId, lane.destCityId)] : []),
       ),
@@ -97,12 +101,13 @@ export async function convoyCandidates(db: DbOrTx, userId: string, now: Date, la
 export async function formConvoy(tx: Tx, delivery: { id: string; companyId: string }, userId: string, lane: { originCityId: number; destCityId: number }, now: Date) {
   if (!(await featureFor(tx, userId, 'convoy', now))) return null;
   const [partner] = (await convoyCandidates(tx, userId, now, lane)).filter((c) => c.deliveryId !== delivery.id);
-  if (!partner) return null;
+  if (!partner) return joinBigConvoy(tx, delivery, userId, lane, now);
   // Lock the partner's trip so two new trips cannot both join it.
   const [locked] = await tx.select({ id: deliveries.id }).from(deliveries).where(and(eq(deliveries.id, partner.deliveryId), isNull(deliveries.convoyWith), ne(deliveries.id, delivery.id))).for('update');
   if (!locked) return null;
-  await tx.update(deliveries).set({ convoyWith: delivery.id }).where(eq(deliveries.id, partner.deliveryId));
-  await tx.update(deliveries).set({ convoyWith: partner.deliveryId }).where(eq(deliveries.id, delivery.id));
+  // The earlier trip leads the convoy (v1.6: more trucks may join it).
+  await tx.update(deliveries).set({ convoyWith: delivery.id, convoyLead: partner.deliveryId }).where(eq(deliveries.id, partner.deliveryId));
+  await tx.update(deliveries).set({ convoyWith: partner.deliveryId, convoyLead: partner.deliveryId }).where(eq(deliveries.id, delivery.id));
   const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
   const names = await tx.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [lane.originCityId, lane.destCityId]));
   const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
@@ -111,4 +116,39 @@ export async function formConvoy(tx: Tx, delivery: { id: string; companyId: stri
   await notify(tx, userId, 'success', `Конвой с ${partner.username}`, `${route}: карате заедно — +${bonus} към наградата за всеки, ако пристигнете навреме.`, '/game/map');
   await notify(tx, partner.userId, 'success', `Конвой с ${me!.username}`, `${me!.username} тръгна след теб по ${route}: +${bonus} към наградата за всеки, ако пристигнете навреме.`, '/game/map');
   return partner;
+}
+
+/**
+ * A big convoy (v1.6): with no free partner, a new trip joins a convoy of the
+ * circle on the same lane that has fewer than five trucks. It drives in
+ * convoy with the truck it joined (the usual bonus); from three trucks on,
+ * everyone gets more on arrival.
+ */
+async function joinBigConvoy(tx: Tx, delivery: { id: string; companyId: string }, userId: string, lane: { originCityId: number; destCityId: number }, now: Date) {
+  if (!(await featureFor(tx, userId, 'big_convoy', now))) return null;
+  const groups = (await convoyCandidates(tx, userId, now, lane, true)).filter((c) => c.deliveryId !== delivery.id && c.convoyLead);
+  for (const g of groups) {
+    // Lock the lead so two trips cannot both take the last seat.
+    const [lead] = await tx.select({ id: deliveries.id }).from(deliveries).where(eq(deliveries.id, g.convoyLead!)).for('update');
+    if (!lead) continue;
+    const [{ n = 0 } = {}] = await tx.select({ n: count() }).from(deliveries).where(eq(deliveries.convoyLead, lead.id));
+    if (n >= BIG_CONVOY.maxTrucks) continue;
+    await tx.update(deliveries).set({ convoyWith: g.deliveryId, convoyLead: lead.id }).where(eq(deliveries.id, delivery.id));
+    const size = n + 1;
+    const others = await tx
+      .selectDistinct({ userId: companies.ownerId })
+      .from(deliveries)
+      .innerJoin(companies, eq(companies.id, deliveries.companyId))
+      .where(and(eq(deliveries.convoyLead, lead.id), ne(deliveries.id, delivery.id)));
+    const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
+    const names = await tx.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [lane.originCityId, lane.destCityId]));
+    const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
+    const route = `${name(lane.originCityId)} → ${name(lane.destCityId)}`;
+    const extra = bigConvoyShare(size) ? ` и още +${Math.round(bigConvoyShare(size) * 100)} % за голям конвой` : '';
+    const text = `${route}: ${size} камиона заедно — +${Math.round(CONVOY_RULES.bonusShare * 100)} %${extra} за всеки, който пристигне навреме.`;
+    await notify(tx, userId, 'success', `Голям конвой (${size} камиона)`, text, '/game/map');
+    for (const o of others.filter((o) => o.userId !== userId)) await notify(tx, o.userId, 'success', `${me!.username} се включи в конвоя`, text, '/game/map');
+    return g;
+  }
+  return null;
 }

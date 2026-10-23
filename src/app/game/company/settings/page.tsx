@@ -4,6 +4,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { money } from '@/lib/format';
 import { Card } from '@/components/ui';
 import { COMPANY_LIMITS, RECRUITMENT } from '@/lib/game/company';
+import { SPECIALIZATION, SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
 import { gameContext } from '@/server/game/context';
 import { discordConfig } from '@/server/discord/config';
 import { can, companyHub, companyMembersView } from '@/server/game/membership';
@@ -33,6 +34,21 @@ export default async function CompanySettingsPage() {
         </p>
       </Card>
     </div>
+      {features.specializations && (
+        <Card title="Специализация">
+          <p className="text-sm text-mist-300">
+            С какво е известна компанията: членовете получават +{Math.round(SPECIALIZATION.bonusShare * 100)} % за товарите от този вид. Сменя се веднъж на {SPECIALIZATION.changeDays} дни.
+            {c.specialization && c.specialization in SPECIALIZATIONS ? <> Сега: <span className="font-semibold text-mist-100">{SPECIALIZATIONS[c.specialization as Specialization].label}</span>.</> : ' Сега компанията няма специализация.'}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(Object.keys(SPECIALIZATIONS) as Specialization[]).map((k) => (
+              <ActionButton key={k} action={{ type: 'setSpecialization', specialization: k }} className={c.specialization === k ? 'btn-primary' : 'btn-ghost'} disabled={c.specialization === k} confirm={`Специализация „${SPECIALIZATIONS[k].label}“? Следващата смяна — след ${SPECIALIZATION.changeDays} дни.`}>
+                {SPECIALIZATIONS[k].label}
+              </ActionButton>
+            ))}
+          </div>
+        </Card>
+      )}
       {features.discord_bot && discordConfig().bot && (
         <Card title="Канал в Discord">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm">

@@ -28,6 +28,7 @@ import { membershipOf } from '@/server/game/membership';
 import { claimableCount } from '@/server/game/missions';
 import { isVip } from '@/lib/game/vip';
 import { tutorialState } from '@/server/game/tutorial';
+import { isSpring } from '@/lib/game/spring';
 
 export const metadata: Metadata = { title: 'Игра' };
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const { db, user, company, hq, now } = await gameContext();
   const staff = isStaff(user.role);
   const fresh = unseenRelease(user.seenVersion, now, staff);
-  const holiday = isHalloween(now) ? 'halloween' : isChristmas(now) ? 'christmas' : isMarta(now) ? 'marta' : null;
+  const holiday = [isHalloween(now) && 'halloween', isChristmas(now) && 'christmas', isMarta(now) && 'marta', isSpring(now) && 'spring'].filter(Boolean).join(',') || null;
   // Staff see a badge on the admin button while support questions or reports wait.
   const attention = staff ? (await staffAttention(db)).total : 0;
   const [tutorial, membership, missions] = await Promise.all([tutorialState(db, user.id), membershipOf(db, user.id), claimableCount(db, user.id)]);

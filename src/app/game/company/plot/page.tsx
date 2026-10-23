@@ -51,7 +51,7 @@ export default async function PlotPage() {
       parkedTrucks={Math.min(6, hub.members + 1 + yard)}
       season={season}
       ambience={{ night: features.plot_night && isNight(now), weather: features.plot_weather ? plotWeather(now) : null, visitors }}
-      features={{ decor: features.plot_decor, expand: features.plot_expand, factory: features.factories, fuel: features.fuel_station, polygon: features.polygon }}
+      features={{ decor: features.plot_decor, expand: features.plot_expand, factory: features.factories, fuel: features.fuel_station, polygon: features.polygon, museum: features.museum }}
       coins={coins}
       incoming={incoming}
       data={{

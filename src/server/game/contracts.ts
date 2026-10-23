@@ -21,6 +21,7 @@ import { crossingLine, islandOf } from '@/lib/game/crossings';
 import { featureLive } from '@/lib/game/features';
 import { DAILY_LOAD, sofiaDate, sofiaHourOf } from '@/lib/game/together';
 import { MULTISTOP, splitTons, stopMultiplier, stopWindowMinutes, type ContractStop } from '@/lib/game/multistop';
+import { isSowing, NATIONAL_DAY, nationalDayToday, SOWING } from '@/lib/game/spring';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { licencesForUsers } from './licences';
 import { shipperName } from './names';
@@ -272,10 +273,13 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     { id: 'christmas', goods: isChristmas(now) ? CHRISTMAS.goods[cargo] : undefined, share: CHRISTMAS.contractShare, multiplier: CHRISTMAS.rewardMultiplier },
     { id: 'marta', goods: isMarta(now) && featureLive('marta', now) ? MARTA.goods[cargo] : undefined, share: MARTA.contractShare, multiplier: MARTA.rewardMultiplier },
     { id: 'winter', goods: isWinter(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
+    { id: 'sowing', goods: isSowing(now) && featureLive('sowing', now) ? SOWING.goods[cargo] : undefined, share: SOWING.contractShare, multiplier: SOWING.rewardMultiplier },
   ];
   const theme = extra.featured || extra.oversize ? null : (themes.find((t) => t.goods && rand() < t.share) ?? null);
-  const holiday = theme?.id ?? null;
-  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1);
+  // A national day of the destination country (v1.6): loads there pay more today.
+  const national = !extra.featured && featureLive('national_days', now) ? nationalDayToday(now, destination.countryCode) : null;
+  const holiday = theme?.id ?? (national ? 'national' : null);
+  const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1) * (national ? NATIONAL_DAY.rewardMultiplier : 1);
   const goods = extra.goods ?? (theme ? pick(theme.goods!) : pick(CARGO[cargo].goods));
   // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
   const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)));

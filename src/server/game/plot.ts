@@ -68,7 +68,7 @@ export async function ensurePlot(tx: DbOrTx, org: Pick<Organization, 'id' | 'cre
   if (release && org.createdAt >= release) return;
   const placed = existing.map((b) => ({ type: b.type as BuildingType, x: b.x, y: b.y }));
   for (const type of BUILDING_TYPES) {
-    if (type === 'factory' || type === 'fuel' || type === 'polygon') continue;
+    if (type === 'factory' || type === 'fuel' || type === 'polygon' || type === 'museum') continue;
     const level = type === 'office' ? Math.max(1, levelFromUpgrade(type, upgrades)) : levelFromUpgrade(type, upgrades);
     if (level <= 0) continue;
     const have = existing.find((b) => b.type === type);
@@ -171,6 +171,7 @@ export async function placeBuilding(db: Database, actorId: string, type: Buildin
   if (type === 'factory' && !(await featureFor(db, actorId, 'factories', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   if (type === 'fuel' && !(await featureFor(db, actorId, 'fuel_station', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   if (type === 'polygon' && !(await featureFor(db, actorId, 'polygon', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (type === 'museum' && !(await featureFor(db, actorId, 'museum', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     await ensurePlot(tx, actor.company);

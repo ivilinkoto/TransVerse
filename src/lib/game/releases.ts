@@ -35,6 +35,14 @@ export const BASE_VERSION = '1.0';
 
 export const RELEASES: Release[] = [
   {
+    version: '1.6',
+    name: 'Първа пролет',
+    publishedAt: '2027-03-20T00:00:00+02:00',
+    tagline: 'Равноденствие, отворени проходи, сеитба и още много.',
+    highlights: [],
+    sections: [],
+  },
+  {
     version: '1.5',
     name: 'Пролетен рейс',
     publishedAt: '2027-02-20T00:00:00+02:00',

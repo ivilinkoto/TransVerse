@@ -83,7 +83,7 @@ export async function truckLoads(ctx: Ctx, vehicleId: string, how: 'reply' | 'up
 export async function courseGo(ctx: Ctx, vehicleId: string, pick: string): Promise<Answer> {
   // "<contract>" for the whole load, "<contract>:<tons>" for a part of it.
   const [contractId = '', part] = pick.split(':');
-  const r = await act<{ etaAt: string | Date }>(ctx, { type: 'acceptContract', contractId, vehicleId, rush: false, overload: false, insure: false, ...(part ? { tons: Number(part) } : {}) });
+  const r = await act<{ etaAt: string | Date }>(ctx, { type: 'acceptContract', contractId, vehicleId, rush: false, overload: false, insure: false, route: 'fast', parking: 'free', refuel: false, ...(part ? { tons: Number(part) } : {}) });
   return answer(update({ content: `✅ Камионът тръгна! Пристига ${at(r.etaAt)}. Ще ти пишем, когато стигне.`, components: rows(linkButton('Виж на картата', `${appUrl()}/game/map`, '🗺️')) }));
 }
 

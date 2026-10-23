@@ -314,6 +314,8 @@ export function buildingHeight(type: BuildingType, level: number) {
       return 1.2;
     case 'polygon':
       return 1.4 + level * 0.2;
+    case 'museum':
+      return 1.9 + level * 0.25;
   }
 }
 
@@ -502,6 +504,28 @@ function polygon(f: Footprint, level: number) {
   out.push(shadow(tx, ty, tx + 0.6, ty + 0.6, h), box(tx, ty, tx + 0.6, ty + 0.6, 0, h, faces([226, 232, 240])));
   out.push(onY(ty + 0.6, tx + 0.05, tx + 0.55, h - 0.45, h - 0.1, win('#9fd0f0', 7)));
   out.push(box(tx - 0.05, ty - 0.05, tx + 0.65, ty + 0.65, h, 0.08, faces([224, 69, 69])));
+  return out;
+}
+
+/** A museum: a stone hall with columns under a pediment and a tall glass front over a stone plaza; more columns with each level. */
+function museum(f: Footprint, level: number) {
+  const x0 = f.x + 0.2, y0 = f.y + 0.15, x1 = f.x + f.w - 0.2, y1 = f.y + f.h - 0.75;
+  const h = buildingHeight('museum', level);
+  const stone = { top: '#efe7d6', left: '#d9cdb3', right: '#c2b493' };
+  const out: ReactNode[] = [flat(f.x + 0.05, y1, f.x + f.w - 0.05, f.y + f.h - 0.05, 0.04, '#d9cdb3'), shadow(x0, y0, x1, y1, h)];
+  out.push(box(x0, y0, x1, y1, 0, h, stone));
+  out.push(onY(y1, x0 + 0.35, x1 - 0.35, 0.2, h - 0.45, win('#9fd0f0', 11)));
+  // Columns along the front, more with the level.
+  const columns = 3 + level;
+  for (let i = 0; i < columns; i++) {
+    const cx = x0 + 0.05 + (i * (x1 - x0 - 0.22)) / (columns - 1);
+    out.push(box(cx, y1 + 0.02, cx + 0.12, y1 + 0.14, 0, h, { top: '#f7f2e6', left: '#e6dcc6', right: '#d1c4a6' }));
+  }
+  // The pediment and the roof.
+  out.push(box(x0 - 0.08, y0 - 0.08, x1 + 0.08, y1 + 0.18, h, 0.18, { top: '#c9b98f', left: '#b8a77c', right: '#a3916a' }));
+  out.push(box(x0 + 0.3, y0 + 0.3, x1 - 0.3, y1 - 0.1, h + 0.18, 0.22, { top: '#b8a77c', left: '#a3916a', right: '#8f7e5a' }));
+  // Steps up to the entrance.
+  out.push(box(x0 + 0.6, y1 + 0.15, x1 - 0.6, y1 + 0.45, 0, 0.08, stone), box(x0 + 0.7, y1 + 0.15, x1 - 0.7, y1 + 0.3, 0.08, 0.08, stone));
   return out;
 }
 
@@ -832,7 +856,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     const f = fp(b);
     const building = construction && construction.type === b.type ? construction : null;
     const node: ReactNode[] = [];
-    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : b.type === 'fuel' ? fuelStation(f, lvl) : b.type === 'polygon' ? polygon(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
+    const finished = (lvl: number) => (b.type === 'office' ? office(f, lvl) : b.type === 'logistics' ? logistics(f, lvl) : b.type === 'training' ? training(f, lvl) : b.type === 'service' ? service(f, lvl) : b.type === 'warehouse' ? warehouse(f, lvl) : b.type === 'rest' ? rest(f, lvl) : b.type === 'factory' ? factory(f, lvl) : b.type === 'fuel' ? fuelStation(f, lvl) : b.type === 'polygon' ? polygon(f, lvl) : b.type === 'museum' ? museum(f, lvl) : parking(f, lvl, parkedTrucks, liveryColor));
     if (building && b.level === 0) node.push(...site(f, b.type, building.status, building.progress, building.delivered, null));
     else if (building) node.push(...site(f, b.type, building.status, building.progress, building.delivered, finished(b.level)));
     else if (b.level > 0) node.push(...finished(b.level));

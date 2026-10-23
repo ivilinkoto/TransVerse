@@ -7,7 +7,7 @@ export interface NavTab {
   /** Shown only when the viewer has this release feature. */
   feature?: FeatureId;
   /** Shown only while this holiday's content runs. */
-  holiday?: 'halloween' | 'christmas' | 'marta';
+  holiday?: 'halloween' | 'christmas' | 'marta' | 'spring';
 }
 
 export interface NavSection {
@@ -61,6 +61,7 @@ export const SECTIONS: NavSection[] = [
     tabs: [
       { href: '/game/company', label: 'Моята компания' },
       { href: '/game/companies', label: 'Всички компании' },
+      { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board' },
     ],
   },
   {
@@ -72,11 +73,14 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween' },
       { href: '/game/christmas', label: 'Коледа', holiday: 'christmas' },
       { href: '/game/marta', label: 'Баба Марта', holiday: 'marta', feature: 'marta' },
+      { href: '/game/spring', label: 'Първа пролет', holiday: 'spring', feature: 'spring' },
       { href: '/game/missions', label: 'Мисии' },
       { href: '/game/parking', label: 'Паркирай', feature: 'parking_game' },
       { href: '/game/league', label: 'Лига' },
       { href: '/game/duels', label: 'Дуели', feature: 'duels' },
       { href: '/game/rally', label: 'Рали', feature: 'rally' },
+      { href: '/game/challenges', label: 'Предизвикателства', feature: 'weekly_challenge' },
+      { href: '/game/cup', label: 'Пролетна купа', feature: 'spring_cup' },
       { href: '/game/predictions', label: 'Прогнози', feature: 'predictions' },
       { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest' },
       { href: '/game/pass', label: 'Пропуск' },
@@ -86,6 +90,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/seasons', label: 'Сезони' },
       { href: '/game/progress', label: 'Постижения' },
       { href: '/game/collection', label: 'Албум', feature: 'city_album' },
+      { href: '/game/my-map', label: 'Картата ми', feature: 'my_map' },
     ],
   },
 ];
@@ -107,7 +112,8 @@ const within = (pathname: string, href: string) => (href === '/game' ? pathname 
 
 /** The tabs to show: holiday tabs only during their holiday (and on their own page). */
 export function visibleTabs(section: NavSection, holiday: string | null, pathname: string, has: (feature: FeatureId) => boolean = () => true): NavTab[] {
-  return (section.tabs ?? []).filter((t) => (!t.holiday || t.holiday === holiday || within(pathname, t.href)) && (!t.feature || has(t.feature)));
+  // Several holidays can overlap (Баба Марта and Първа пролет): `holiday` lists them comma-separated.
+  return (section.tabs ?? []).filter((t) => (!t.holiday || (holiday ?? '').split(',').includes(t.holiday) || within(pathname, t.href)) && (!t.feature || has(t.feature)));
 }
 
 /** The tab of a section that matches the path (the longest match wins, so /game/company/chat stays on "Моята компания"). */

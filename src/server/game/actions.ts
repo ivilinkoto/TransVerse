@@ -10,6 +10,11 @@ import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
 import { playParking } from '@/server/game/parking';
+import { joinCup } from '@/server/game/tournament';
+import { donateToMuseum, scrapVehicle, repairWithPart } from '@/server/game/heritage';
+import { setSpecialization } from '@/server/game/specialization';
+import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
+import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
 import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/community';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
@@ -99,7 +104,7 @@ const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]])
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 /** Every player command (the web game and the Discord bot alike). */
 export const Action = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional(), insure: z.boolean().default(false) }),
+  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional(), insure: z.boolean().default(false), route: z.enum(['fast', 'cheap']).default('fast'), parking: z.enum(['secure', 'free']).default('free'), refuel: z.boolean().default(false) }),
   z.object({ type: z.literal('payFine'), fineId: id }),
   z.object({ type: z.literal('dispatchPlan') }),
   z.object({ type: z.literal('auctionBid'), auctionId: id, amountEur: z.coerce.number().positive().max(10_000_000) }),
@@ -200,6 +205,13 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('spotStork') }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
+  z.object({ type: z.literal('joinCup') }),
+  z.object({ type: z.literal('scrapVehicle'), vehicleId: id }),
+  z.object({ type: z.literal('repairWithPart'), vehicleId: id }),
+  z.object({ type: z.literal('donateToMuseum'), vehicleId: id }),
+  z.object({ type: z.literal('setSpecialization'), specialization: z.enum(Object.keys(SPECIALIZATIONS) as [Specialization, ...Specialization[]]).nullable() }),
+  z.object({ type: z.literal('postRecruitment'), kind: z.enum(['company', 'driver']), text: z.string().max(400), minLevel: z.coerce.number().int().min(1).max(100).optional() }),
+  z.object({ type: z.literal('removeRecruitment'), postId: id }),
   z.object({ type: z.literal('parking'), inputs: z.array(z.number().int().min(-1).max(1)).max(400) }),
   z.object({ type: z.literal('driverOfMonthPrize'), cents: z.coerce.number().int().min(0).max(5_000_00) }),
   z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
@@ -316,6 +328,13 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   staffBus: 'staff_bus',
   testDrive: 'test_drive',
   parking: 'parking_game',
+  joinCup: 'spring_cup',
+  scrapVehicle: 'scrapyard',
+  repairWithPart: 'scrapyard',
+  donateToMuseum: 'museum',
+  setSpecialization: 'specializations',
+  postRecruitment: 'recruitment_board',
+  removeRecruitment: 'recruitment_board',
   driverOfMonthPrize: 'driver_of_month',
   clearStock: 'warehouse_clearance',
   setShowcase: 'profile_showcase',
@@ -387,7 +406,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
   if (feature) requireFeature(feature, user.role);
   switch (input.type) {
     case 'acceptContract': {
-      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail, insure: input.insure });
+      const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail, insure: input.insure, route: input.route, parking: input.parking, refuel: input.refuel });
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
     case 'favoriteLane':
@@ -780,6 +799,20 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'parking':
       return { ok: true, ...(await playParking(db, user.id, input.inputs)) };
+    case 'scrapVehicle':
+      return { ok: true, ...(await scrapVehicle(db, user.id, input.vehicleId)) };
+    case 'repairWithPart':
+      return { ok: true, ...(await repairWithPart(db, user.id, input.vehicleId)) };
+    case 'donateToMuseum':
+      return { ok: true, ...(await donateToMuseum(db, user.id, input.vehicleId)) };
+    case 'joinCup':
+      return { ok: true, ...(await joinCup(db, user.id)) };
+    case 'setSpecialization':
+      return { ok: true, ...(await setSpecialization(db, user.id, input.specialization)) };
+    case 'postRecruitment':
+      return { ok: true, post: await postRecruitment(db, user.id, { kind: input.kind, text: input.text, minLevel: input.minLevel }) };
+    case 'removeRecruitment':
+      return { ok: true, ...(await removeRecruitment(db, user.id, input.postId)) };
     case 'testDrive':
       return { ok: true, ...(await startTestDrive(db, user.id, input.modelId)) };
     case 'staffBus':

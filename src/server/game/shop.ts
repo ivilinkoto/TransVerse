@@ -5,6 +5,7 @@ import { PLATE_PATTERN, RETRO, RETRO_BADGE, shopItem, VIP_DAYS, type RetroStyle,
 import { isVip, STANDARD_COLORS, VIP_COLORS } from '@/lib/game/vip';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
+import { isSpring, SPRING } from '@/lib/game/spring';
 import { registerSchema } from '@/server/auth/accounts';
 import type { Database, Tx } from '@/server/db/client';
 import { cityMarkets, companyMembers, drivers, jobState, organizations, trailers, userBadges, users, vehicles } from '@/server/db/schema';
@@ -137,6 +138,14 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         if (v.livery === 'christmas') fail('already_painted', 'Камионът вече е с боя „Коледа“.');
         await tx.update(vehicles).set({ color: CHRISTMAS.paintColor, livery: 'christmas' }).where(eq(vehicles.id, v.id));
         summary = `Боя „Коледа“ за ${v.plate}`;
+        break;
+      }
+      case 'paint_cherry': {
+        if (!isSpring(now) || !(await featureFor(tx, userId, 'spring', now))) fail('not_in_season', 'Боята „Цъфнала череша“ се продава от 16 март до 15 април.');
+        const v = await ownVehicle(tx, account.id, input.vehicleId);
+        if (v.livery === 'cherry') fail('already_painted', 'Камионът вече е с тази боя.');
+        await tx.update(vehicles).set({ color: SPRING.paintColor, livery: 'cherry' }).where(eq(vehicles.id, v.id));
+        summary = `Боя „Цъфнала череша“ за ${v.plate}`;
         break;
       }
       case 'paint_retro70':

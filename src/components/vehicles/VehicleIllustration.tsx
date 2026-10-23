@@ -15,7 +15,7 @@ export interface VehicleIllustrationProps {
   trailerColor?: string;
   className?: string;
   title?: string;
-  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection). */
+  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027). */
   livery?: string | null;
   /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
   cosmetics?: Cosmetics | null;
@@ -100,6 +100,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       {content}
       {livery === 'pumpkin' && decals.map(([x, y, size], i) => <PumpkinDecal key={i} x={x} y={y} size={size} />)}
       {livery === 'christmas' && decals.map(([x, y, size], i) => <ChristmasDecal key={i} x={x} y={y} size={size} />)}
+      {livery === 'cherry' && decals.map(([x, y, size], i) => <CherryDecal key={`c${i}`} x={x} y={y} size={size} />)}
       {livery && livery in RETRO && decals.map(([x, y, size], i) => <RetroDecal key={`r${i}`} x={x} y={y} size={size} stripes={RETRO[livery as RetroStyle].stripes} />)}
       {unit.electric && decals.slice(0, 1).map(([x, y, size], i) => <ElectricDecal key={`e${i}`} x={x} y={y + size * 0.9} size={size * 0.55} />)}
     </svg>
@@ -159,6 +160,23 @@ function ChristmasDecal({ x, y, size }: { x: number; y: number; size: number }) 
       <path d="M16 .8l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" fill="#facc15" />
       {[[13, 12, '#ef4444'], [19, 16, '#facc15'], [11, 21, '#facc15'], [21, 23, '#ef4444'], [16, 19, '#f8fafc']].map(([cx, cy, fill]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.3" fill={fill as string} />)}
       <path d="M10 17.5q6 2 12-1.5M8.5 25q7.5 2.5 15-1.5" stroke="#fde68a" strokeWidth="0.8" fill="none" />
+    </g>
+  );
+}
+
+/** A cherry branch in blossom — the spring paint (v1.6), centred on (x, y). */
+function CherryDecal({ x, y, size }: { x: number; y: number; size: number }) {
+  const k = size / 32;
+  const flowers: [number, number][] = [[8, 10], [16, 6], [24, 12], [13, 18], [21, 22]];
+  return (
+    <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`} opacity="0.95">
+      <path d="M2 28 Q12 18 18 14 T30 4" stroke="#78350f" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+      {flowers.map(([cx, cy]) => (
+        <g key={`${cx}-${cy}`}>
+          {[0, 72, 144, 216, 288].map((a) => <circle key={a} cx={cx + 2.2 * Math.cos((a * Math.PI) / 180)} cy={cy + 2.2 * Math.sin((a * Math.PI) / 180)} r="1.7" fill="#fbcfe8" stroke="#db2777" strokeWidth="0.3" />)}
+          <circle cx={cx} cy={cy} r="0.9" fill="#facc15" />
+        </g>
+      ))}
     </g>
   );
 }

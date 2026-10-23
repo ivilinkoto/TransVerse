@@ -169,6 +169,8 @@ export const users = pgTable(
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
     /** ТрансКоин — premium currency balance (whole coins). Changes only through coin_entries. */
+    /** Spare parts from the scrapyard (v1.6): each repairs a truck by a quarter. */
+    spareParts: integer('spare_parts').notNull().default(0),
     coins: integer('coins').notNull().default(0),
     /** Double delivery XP while in the future (shop booster). */
     xpBoostUntil: ts('xp_boost_until'),
@@ -463,6 +465,8 @@ export const deliveries = pgTable(
     autoDispatched: boolean('auto_dispatched').notNull().default(false),
     /** The other trip of a convoy (a friend or company member on the same lane); both get a bonus on time. */
     convoyWith: uuid('convoy_with'),
+    /** The first trip of a convoy (v1.6): every truck of a big convoy (up to five) points to it. */
+    convoyLead: uuid('convoy_lead'),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
@@ -498,6 +502,7 @@ export const deliveries = pgTable(
     uniqueIndex('deliveries_contract_company_idx').on(t.contractId, t.companyId),
     index('deliveries_due_idx').on(t.status, t.etaAt),
     index('deliveries_company_idx').on(t.companyId, t.status),
+    index('deliveries_convoy_lead_idx').on(t.convoyLead),
   ],
 );
 
@@ -744,6 +749,9 @@ export const organizations = pgTable(
     driverOfMonth: jsonb('driver_of_month').$type<{ userId: string; username: string; month: string; trips: number; tons: number } | null>(),
     /** Division in the monthly company league (v1.5): bronze | silver | gold. */
     division: text('division').notNull().default('bronze'),
+    /** The cargo the company is known for (v1.6): members earn a little more on it. */
+    specialization: text('specialization'),
+    specializationAt: ts('specialization_at'),
     /** The company's private channel and role in the TransVerse Discord server (v1.3). */
     discordChannel: boolean('discord_channel').notNull().default(false),
     discordChannelId: text('discord_channel_id'),
@@ -2393,4 +2401,81 @@ export const companyChronicle = pgTable(
     at: ts('at').notNull(),
   },
   (t) => [index('company_chronicle_org_idx').on(t.organizationId, t.at)],
+);
+
+/** The passes open (v1.6): the first players through each mountain country after the winter. */
+export const passOpenings = pgTable(
+  'pass_openings',
+  {
+    year: integer('year').notNull(),
+    country: text('country').notNull(),
+    rank: integer('rank').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id').notNull(),
+    at: ts('at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.year, t.country, t.rank] }), uniqueIndex('pass_openings_user_idx').on(t.year, t.country, t.userId)],
+);
+
+/** Пролетна купа (v1.6): the drivers signed up, seeded by level when the first round starts. */
+export const tournamentEntries = pgTable(
+  'tournament_entries',
+  {
+    tournament: text('tournament').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    seed: integer('seed'),
+    createdAt: ts('created_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tournament, t.userId] })],
+);
+
+/** A pair of a round; an empty side is a bye. Scores are the on-time loaded km of the round's week. */
+export const tournamentMatches = pgTable(
+  'tournament_matches',
+  {
+    tournament: text('tournament').notNull(),
+    round: integer('round').notNull(),
+    slot: integer('slot').notNull(),
+    aUserId: uuid('a_user_id').references(() => users.id, { onDelete: 'set null' }),
+    bUserId: uuid('b_user_id').references(() => users.id, { onDelete: 'set null' }),
+    aKm: real('a_km'),
+    bKm: real('b_km'),
+    winnerId: uuid('winner_id'),
+    settledAt: ts('settled_at'),
+  },
+  (t) => [primaryKey({ columns: [t.tournament, t.round, t.slot] })],
+);
+
+/** The recruitment board (v1.6): one post per company and per driver without a company. */
+export const recruitmentPosts = pgTable(
+  'recruitment_posts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: text('kind').notNull(), // company | driver
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    orgId: uuid('org_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    text: text('text').notNull(),
+    minLevel: integer('min_level').notNull().default(1),
+    createdAt: ts('created_at').notNull(),
+    expiresAt: ts('expires_at').notNull(),
+  },
+  (t) => [uniqueIndex('recruitment_posts_org_idx').on(t.orgId), uniqueIndex('recruitment_posts_driver_idx').on(t.userId, t.kind), index('recruitment_posts_expires_idx').on(t.expiresAt)],
+);
+
+/** The company museum (v1.6): trucks the members donated, on show for good. */
+export const museumExhibits = pgTable(
+  'museum_exhibits',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').notNull(),
+    modelId: text('model_id').notNull(),
+    plate: text('plate').notNull(),
+    color: text('color').notNull(),
+    livery: text('livery'),
+    odometerKm: real('odometer_km').notNull(),
+    donatedBy: uuid('donated_by').references(() => users.id, { onDelete: 'set null' }),
+    donatedAt: ts('donated_at').notNull(),
+  },
+  (t) => [index('museum_exhibits_org_idx').on(t.organizationId), uniqueIndex('museum_exhibits_vehicle_idx').on(t.vehicleId)],
 );
