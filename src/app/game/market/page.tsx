@@ -15,6 +15,9 @@ import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
 import { openListings } from '@/server/game/used-market';
 import { UsedListings } from '@/components/game/UsedListings';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { like } from 'drizzle-orm';
+import { jobState } from '@/server/db/schema';
 
 export const metadata = { title: 'Пазар' };
 
@@ -50,6 +53,8 @@ function LicenceHint({ body, held }: { body: string | null | undefined; held: Se
 
 export default async function MarketPage({ searchParams }: { searchParams: Promise<{ show?: string; sort?: string }> }) {
   const { db, user, company, now, features } = await gameContext();
+  // v1.5: the models this player already test-drove (once each).
+  const testDriven = new Set(features.test_drive ? (await db.select({ key: jobState.key }).from(jobState).where(like(jobState.key, `test-drive:${user.id}:%`))).map((r) => r.key.split(':')[2]!) : []);
   const params = await searchParams;
   const show: Show = SHOW.some((x) => x.id === params.show) ? (params.show as Show) : 'all';
   const sort: SortId = SORT.some((x) => x.id === params.sort) ? (params.sort as SortId) : 'price_asc';
@@ -126,6 +131,9 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                 <LicenceHint body={m.body} held={held} />
                 <div className="mt-auto space-y-3">
                   <BuyButton type="buyVehicle" modelId={m.id} depots={depotOptions} disabledReason={reason} label="Купи" />
+                  {features.test_drive && !testDriven.has(m.id) && user.level >= m.minLevel && (
+                    <ActionButton action={{ type: 'testDrive', modelId: m.id }} className="btn-ghost w-full justify-center text-sm" confirm={`Тест-драйв на ${m.brand} ${m.name}: ти сядаш в него там, където е камионът ти, и караш един курс без наем. После се връща в салона.`}>Тест-драйв</ActionButton>
+                  )}
                   {features.leasing && m.priceCents >= LEASE.minPriceCents && (() => {
                     const t = leaseTerms(m.priceCents);
                     const leaseReason = user.level < m.minLevel ? `Изисква ниво ${m.minLevel}.` : company.balanceCents < t.downCents ? 'Недостатъчни средства за първата вноска.' : freeSlots <= 0 ? 'Няма свободно място в депата.' : null;

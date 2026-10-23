@@ -4,16 +4,70 @@
  * of their own (right away, or after its current trip), and after a few
  * deliveries the player may buy it out at a lower price.
  */
-import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm';
-import { powerUnitModel, RENTAL_BUYOUT_DELIVERIES, rentalBuyoutCents } from '@/lib/game/catalog';
+import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from 'drizzle-orm';
+import { POWER_UNITS, powerUnitModel, RENTAL_BUYOUT_DELIVERIES, rentalBuyoutCents } from '@/lib/game/catalog';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { deliveries, drivers, trailers, vehicles } from '@/server/db/schema';
+import { deliveries, drivers, jobState, trailers, users, vehicles } from '@/server/db/schema';
+import { featureFor } from '@/server/features';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { logActivity, notify } from './notify';
+import { uniquePlate } from './names';
 
 type Vehicle = typeof vehicles.$inferSelect;
+
+// ── Test drive (v1.5) ─────────────────────────────────────────────────────
+
+/** A test drive not used within this time goes back to the dealer. */
+export const TEST_DRIVE = { hours: 24 } as const;
+
+/** The test truck goes back; the owner-driver sits again in the vehicle they came from (if it is free). */
+async function endTestDrive(tx: Tx, v: Vehicle, now: Date) {
+  const [owner] = await tx.select({ id: drivers.id }).from(drivers).where(and(eq(drivers.vehicleId, v.id), eq(drivers.isOwner, true)));
+  // The player's own trailer stays where the truck stopped, uncoupled.
+  await tx.update(trailers).set({ vehicleId: null }).where(and(eq(trailers.vehicleId, v.id), ne(trailers.ownership, 'rented')));
+  await releaseRental(tx, v, now);
+  if (owner && v.testDriveFrom) {
+    const [from] = await tx.select({ id: vehicles.id }).from(vehicles).where(and(eq(vehicles.id, v.testDriveFrom), isNull(vehicles.soldAt), sql`not exists (select 1 from drivers d where d.vehicle_id = ${vehicles}.id)`));
+    if (from) await tx.update(drivers).set({ vehicleId: from.id }).where(eq(drivers.id, owner.id));
+  }
+}
+
+/**
+ * One trip with a truck from the dealer's range before buying it: the
+ * player's own driver takes it in the city where they stand; no rental fee,
+ * once per model. After the trip (or after a day unused) it goes back.
+ */
+export async function startTestDrive(db: Database, userId: string, modelId: string, now = new Date()) {
+  if (!(await featureFor(db, userId, 'test_drive', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  const model = POWER_UNITS.find((m) => m.id === modelId);
+  if (!model) fail('unknown_model', 'Непознат модел.');
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [u] = await tx.select({ level: users.level }).from(users).where(eq(users.id, userId));
+    if ((u?.level ?? 1) < model!.minLevel) fail('level', `Моделът е от ниво ${model!.minLevel}.`);
+    const [active] = await tx.select({ id: vehicles.id }).from(vehicles).where(and(eq(vehicles.companyId, company.id), isNotNull(vehicles.testDriveFrom), isNull(vehicles.soldAt)));
+    if (active) fail('active', 'Вече имаш камион на тест-драйв.');
+    const [owner] = await tx.select().from(drivers).where(and(eq(drivers.companyId, company.id), eq(drivers.isOwner, true))).for('update');
+    if (!owner?.vehicleId) fail('no_vehicle', 'Седни в свой камион, за да отидеш на тест-драйв.');
+    const [from] = await tx.select().from(vehicles).where(eq(vehicles.id, owner!.vehicleId!));
+    if (from!.status !== 'idle' || (from!.movingUntil && from!.movingUntil > now)) fail('vehicle_busy', 'Камионът ти е на път — изчакай да пристигне.');
+    const [first] = await tx.insert(jobState).values({ key: `test-drive:${userId}:${model!.id}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning({ key: jobState.key });
+    if (!first) fail('already', 'Вече си карал този модел на тест-драйв.');
+    const [truck] = await tx.insert(vehicles).values({ companyId: company.id, modelId: model!.id, plate: await uniquePlate(tx), color: '#f8fafc', cityId: from!.cityId, ownership: 'rented', purchasePriceCents: 0, testDriveFrom: from!.id }).returning();
+    await tx.update(drivers).set({ vehicleId: truck!.id }).where(eq(drivers.id, owner!.id));
+    await logActivity(tx, userId, 'test_drive', { modelId: model!.id, vehicleId: truck!.id });
+    return { vehicleId: truck!.id, cityId: from!.cityId };
+  });
+}
+
+/** Worker: test trucks unused for a day go back to the dealer. */
+export async function expireTestDrives(db: Database, now = new Date()) {
+  const due = await db.select().from(vehicles).where(and(isNotNull(vehicles.testDriveFrom), isNull(vehicles.soldAt), eq(vehicles.status, 'idle'), sql`${vehicles.purchasedAt} < ${new Date(now.getTime() - TEST_DRIVE.hours * 3_600_000)}`));
+  for (const v of due) await db.transaction((tx) => endTestDrive(tx, v, now));
+  return due.length;
+}
 
 /** Completed deliveries made with one vehicle. */
 export async function deliveriesWith(db: DbOrTx, vehicleId: string): Promise<number> {
@@ -49,7 +103,7 @@ export async function retireRentalFor(tx: Tx, companyId: string, newVehicleId: s
     .select({ v: vehicles, owner: drivers.isOwner, driverId: drivers.id })
     .from(vehicles)
     .leftJoin(drivers, eq(drivers.vehicleId, vehicles.id))
-    .where(and(eq(vehicles.companyId, companyId), eq(vehicles.ownership, 'rented'), isNull(vehicles.soldAt), eq(vehicles.returnPending, false)))
+    .where(and(eq(vehicles.companyId, companyId), eq(vehicles.ownership, 'rented'), isNull(vehicles.soldAt), eq(vehicles.returnPending, false), isNull(vehicles.testDriveFrom)))
     .orderBy(desc(sql`coalesce(${drivers.isOwner}, false)`), asc(vehicles.purchasedAt));
   const pick = rentals[0];
   if (!pick) return null;
@@ -70,6 +124,12 @@ export async function retireRentalFor(tx: Tx, companyId: string, newVehicleId: s
 export async function afterRentedTrip(tx: Tx, vehicleId: string, ownerUserId: string, now = new Date()) {
   const [v] = await tx.select().from(vehicles).where(eq(vehicles.id, vehicleId));
   if (!v || v.ownership !== 'rented' || v.soldAt) return;
+  if (v.testDriveFrom) {
+    await endTestDrive(tx, v, now);
+    const model = powerUnitModel(v.modelId);
+    await notify(tx, ownerUserId, 'success', 'Тест-драйвът свърши', `${model.brand} ${model.name} се върна в салона. Хареса ли ти? Купи го от Автопарк → Нов камион.`, '/game/fleet');
+    return;
+  }
   if (v.returnPending) {
     const [owner] = await tx.select({ id: drivers.id }).from(drivers).where(and(eq(drivers.vehicleId, v.id), eq(drivers.isOwner, true)));
     await releaseRental(tx, v, now);
@@ -90,6 +150,7 @@ export async function buyoutRental(db: Database, userId: string, vehicleId: stri
     const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id), isNull(vehicles.soldAt))).for('update');
     if (!v) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
     if (v!.ownership !== 'rented') fail('not_rented', 'Това превозно средство вече е твое.');
+    if (v!.testDriveFrom) fail('test_drive', 'Камионът за тест-драйв не се откупува — купи нов от салона.');
     if (v!.returnPending) fail('return_pending', 'Този камион ще бъде върнат след курса — вече имаш собствен.');
     const done = await deliveriesWith(tx, v!.id);
     if (done < RENTAL_BUYOUT_DELIVERIES) fail('too_early', `Откупуването е възможно след ${RENTAL_BUYOUT_DELIVERIES} доставки с камиона (имаш ${done}).`);

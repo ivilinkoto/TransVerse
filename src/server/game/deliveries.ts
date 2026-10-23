@@ -63,7 +63,7 @@ import { activeRoadWorks } from './roads';
 import { recordCityVisit, recordPerfectTrip } from './competition';
 import { clientsOf, fuelStationAt, payCompanyContract, recordAcademyCourse, allianceHallBonus, recordAllianceDelivery, recordHallDelivery } from './alliances';
 import { FUEL_STATION } from '@/lib/game/alliances';
-import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor } from '@/lib/game/roads';
+import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor, applyRushHour } from '@/lib/game/roads';
 import { companyTrailerBonus } from './company-trailers';
 import { COMPANY_TRAILERS } from '@/lib/game/company-fleet';
 import { recordFactoryDelivery } from './factory';
@@ -284,13 +284,20 @@ export async function acceptContract(db: Database, userId: string, contractId: s
           crew,
           charging,
         });
-    const schedule: Segment[] = contract!.urgent
+    const planned: Segment[] = contract!.urgent
       ? [
           // The truck is moved to the pickup city in one minute, then drives the cargo.
           ...(emptyRoute ? [{ kind: 'drive' as const, leg: 'empty' as const, start: now.getTime(), end: now.getTime() + URGENT_RELOCATION_MS, fromKm: 0, toKm: emptyRoute.distanceKm }] : []),
           ...trip.segments,
         ]
       : trip.segments;
+    // Rush hour in big cities (v1.5): slower loading and unloading by the city's own clock.
+    let schedule = planned;
+    if (await featureFor(tx, userId, 'rush_hour', now)) {
+      const ends = await tx.select({ id: cities.id, population: cities.population, timezone: cities.timezone }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId]));
+      const o = ends.find((c) => c.id === contract!.originCityId), dst = ends.find((c) => c.id === contract!.destCityId);
+      if (o && dst) schedule = applyRushHour(planned, o, dst).segments;
+    }
     const rented = bundle.vehicle.ownership === 'rented';
     // The urgent one-minute relocation costs nothing; only the cargo leg is paid for.
     const chargedEmptyKm = contract!.urgent ? 0 : (emptyRoute?.distanceKm ?? 0);
@@ -333,7 +340,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, cargoInsuranceCents, totalCents: ticket + oversizeCents + cargoInsuranceCents, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, cargoInsuranceCents, fuelStation, totalCents: running.totalCents + ticket + oversizeCents + cargoInsuranceCents };
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
-    const rentalFee = rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
+    // A test drive (v1.5) has no rental fee.
+    const rentalFee = rented && bundle.vehicle.testDriveFrom ? 0 : rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     // The real weather on the roads now (v1.4), when there is a fresh reading.
     const real = await realConditionsFor(tx, userId, now);

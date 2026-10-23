@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lte } from 'drizzle-orm';
 import { ImageResponse } from 'next/og';
 import { Children, Fragment, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { PlotScene, viewFor } from '@/components/company/plot/scene';
@@ -9,7 +9,7 @@ import type { Database } from '@/server/db/client';
 import { getAvatar } from '@/server/game/avatars';
 import { publicPlot } from '@/server/game/plot';
 import { playerCard } from '@/server/game/social';
-import { cities, companies, deliveries, liveryEntries, users } from '@/server/db/schema';
+import { cities, companies, deliveries, liveryEntries, users, vehicles } from '@/server/db/schema';
 import { VehicleDrawing } from '@/components/vehicles/VehicleIllustration';
 import { powerUnitModel } from '@/lib/game/catalog';
 import { fleetView } from '@/server/game/queries';
@@ -331,6 +331,33 @@ export async function liveryCardImage(db: Database, entryId: string) {
       </div>
     ),
     { width: 1200, height: 675, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },
+  );
+}
+
+/** A player's truck as it looks now — paint, livery, parts, trailer (/камион, v1.5). */
+export async function truckCardImage(db: Database, vehicleId: string) {
+  const [row] = await db.select({ companyId: vehicles.companyId, username: users.username }).from(vehicles).innerJoin(companies, eq(companies.id, vehicles.companyId)).innerJoin(users, eq(users.id, companies.ownerId)).where(and(eq(vehicles.id, vehicleId), isNull(vehicles.soldAt)));
+  if (!row) return null;
+  const v = (await fleetView(db, row.companyId)).vehicles.find((x) => x.id === vehicleId);
+  if (!v) return null;
+  const drawn = plain(<VehicleDrawing uid="tc" modelId={v.modelId} trailerModelId={v.trailer?.modelId ?? null} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} trailerCosmetics={v.trailer?.cosmetics} />) as ReactElement<{ children?: ReactNode; viewBox?: string }>;
+  const children = Children.toArray(drawn.props.children).filter((c) => !(isValidElement(c) && c.type === 'title'));
+  const svg = { ...drawn, props: { viewBox: drawn.props.viewBox, xmlns: 'http://www.w3.org/2000/svg', width: 1040, height: 420, preserveAspectRatio: 'xMidYMax meet', children } } as ReactElement;
+  return new ImageResponse(
+    (
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `linear-gradient(180deg, #1b2a40 0%, ${BG} 70%)`, padding: 40, fontFamily: 'Onest', color: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Brand />
+          <span style={{ fontSize: 24, color: MIST }}>{`${Math.round(v.odometerKm).toLocaleString('bg-BG')} км`}</span>
+        </div>
+        <div style={{ display: 'flex', flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>{svg}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+          <span style={{ fontFamily: 'Exo 2', fontSize: 40 }}>{row.username}</span>
+          <span style={{ fontSize: 26, color: MIST }}>{`${v.model.brand} ${v.model.name} · ${v.plate}`}</span>
+        </div>
+      </div>
+    ),
+    { width: 1200, height: 675, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=300' } },
   );
 }
 

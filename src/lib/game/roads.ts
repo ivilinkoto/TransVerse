@@ -80,3 +80,41 @@ export const OVERSIZE = {
 export const CARGO_INSURANCE = { premiumShare: 0.03, covers: 0.8 } as const;
 
 export const oversizeCostCents = (km: number) => OVERSIZE.permitCents + Math.round(km * OVERSIZE.escortCentsPerKm);
+
+/**
+ * Rush hour (v1.5): in big cities (by real population) loading and unloading
+ * take longer between 7 and 9 and between 17 and 19, by the city's own clock.
+ */
+export const RUSH_HOUR = {
+  hours: [[7, 9], [17, 19]] as [number, number][],
+  minPopulation: 300_000,
+  /** Extra share of the loading or unloading time. */
+  extra: 0.5,
+} as const;
+
+export function isRushHour(at: number, timezone: string) {
+  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', hourCycle: 'h23' }).format(at));
+  return RUSH_HOUR.hours.some(([a, b]) => h >= a && h < b);
+}
+
+type Seg = { kind: string; leg: string; start: number; end: number; stop?: number; note?: string };
+
+/** Lengthens the loading in the origin and the final unloading in the destination when they fall in a big city's rush hour; later segments move on. */
+export function applyRushHour<T extends Seg>(segments: readonly T[], origin: { population: number; timezone: string }, dest: { population: number; timezone: string }): { segments: T[]; rush: ('loading' | 'unloading')[] } {
+  let shift = 0;
+  const rush: ('loading' | 'unloading')[] = [];
+  const lastUnload = segments.findLastIndex((s) => s.kind === 'unloading' && s.leg === 'loaded' && !s.stop);
+  const out = segments.map((s, i) => {
+    const seg = { ...s, start: s.start + shift, end: s.end + shift };
+    const city = s.kind === 'loading' && s.leg === 'loaded' ? origin : i === lastUnload ? dest : null;
+    if (city && city.population >= RUSH_HOUR.minPopulation && isRushHour(seg.start, city.timezone)) {
+      const extra = Math.round((seg.end - seg.start) * RUSH_HOUR.extra);
+      seg.end += extra;
+      shift += extra;
+      seg.note = 'Час пик';
+      rush.push(s.kind === 'loading' ? 'loading' : 'unloading');
+    }
+    return seg;
+  });
+  return { segments: out, rush };
+}

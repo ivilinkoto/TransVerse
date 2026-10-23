@@ -55,6 +55,7 @@ export const COMMANDS = [
   { name: 'борса', description: 'Най-добре платените товари от град', options: [{ type: 3, name: 'град', description: 'Град (напр. София)', required: true }] },
   { name: 'дневна', description: 'Вземи дневната награда' },
   { name: 'рекорди', description: 'Рекордите на линиите този месец (с име — на играч)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
+  { name: 'камион', description: 'Картичка с твой камион — боя, ливрея, части (свързан акаунт)', options: [{ type: 3, name: 'номер', description: 'Регистрационен номер (без него — последно купеният)', required: false }] },
   { name: 'съюз', description: 'Съюзът на компанията ти (или съюз по име): компании, седмица и съюзна база', options: [{ type: 3, name: 'име', description: 'Име на съюза', required: false }] },
   { name: 'албум', description: 'Колекцията от градове (без име — твоята)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'ивент', description: 'Текущият ивент на общността и твоят принос' },
@@ -139,6 +140,8 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return plot(db, input.options['компания'] ?? null, me?.id ?? null);
     case 'рекорди':
       return records(db, input.options['играч'] ?? null, now);
+    case 'камион':
+      return me ? truckCard(db, me.id, input.options['номер'] ?? null, now) : { ephemeral: true, content: `Не знам кой си в играта. ${linkHint()}` };
     case 'съюз':
       return alliance(db, input.options['име'] ?? null, me?.id ?? null, now);
     case 'албум':
@@ -346,6 +349,25 @@ async function alliance(db: DbOrTx, name: string | null, viewerId: string | null
         { name: 'Битка', value: week.rival ? `срещу ${week.rival.name}: ${dec(week.tons)} : ${dec(week.rival.tons)} т` : 'още няма противник', inline: true },
         ...(hall && featureLive('alliance_hall', now) ? [{ name: 'Съюзна база', value: `ниво ${hall.level} в ${hall.city}${hall.next ? ` · ${dec(hall.tons)} / ${hall.next} т до следващото` : ' · максимално'}`, inline: true }] : []),
       ],
+      footer,
+    }],
+  };
+}
+
+/** /камион — a card of the player's truck (v1.5). */
+async function truckCard(db: DbOrTx, userId: string, plate: string | null, now: Date): Promise<CommandReply> {
+  if (!featureLive('discord_truck', now)) return { ephemeral: true, content: 'Командата идва с обновление 1.5.' };
+  const [account] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
+  const fleet = account ? (await fleetView(db, account.id)).vehicles : [];
+  const norm = (s: string) => s.replace(/\s+/g, '').toUpperCase();
+  const v = plate ? fleet.find((x) => norm(x.plate) === norm(plate)) : fleet.at(-1);
+  if (!v) return { ephemeral: true, content: plate ? `Нямаш камион с номер „${plate}“.` : 'Още нямаш камион.' };
+  return {
+    embeds: [{
+      title: `🚚 ${v.model.brand} ${v.model.name} · ${v.plate}`,
+      url: `${appUrl()}/game/garage/${v.id}`,
+      color: BRAND,
+      image: { url: `${appUrl()}/api/discord/card/truck/${v.id}?v=${now.getTime()}` },
       footer,
     }],
   };

@@ -114,6 +114,11 @@ export const FEATURES = {
   chronicle: '1.5',
   warehouse_clearance: '1.5',
   driver_of_month: '1.5',
+  test_drive: '1.5',
+  rush_hour: '1.5',
+  parking_game: '1.5',
+  retro_collection: '1.5',
+  discord_truck: '1.5',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

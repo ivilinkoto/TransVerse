@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { companyNameSchema } from '@/server/auth/accounts';
 import { foundCompany } from '@/server/game/company';
-import { buyoutRental, returnRental } from '@/server/game/rentals';
+import { buyoutRental, returnRental, startTestDrive } from '@/server/game/rentals';
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
 import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
@@ -9,6 +9,7 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
+import { playParking } from '@/server/game/parking';
 import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/community';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
@@ -198,6 +199,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('giveMartenitsa'), friendId: id }),
   z.object({ type: z.literal('spotStork') }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
+  z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
+  z.object({ type: z.literal('parking'), inputs: z.array(z.number().int().min(-1).max(1)).max(400) }),
   z.object({ type: z.literal('driverOfMonthPrize'), cents: z.coerce.number().int().min(0).max(5_000_00) }),
   z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
   z.object({ type: z.literal('listForAlliance'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500), pricePerTon: z.coerce.number().positive().max(100_000) }),
@@ -311,6 +314,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   giveMartenitsa: 'marta',
   spotStork: 'marta',
   staffBus: 'staff_bus',
+  testDrive: 'test_drive',
+  parking: 'parking_game',
   driverOfMonthPrize: 'driver_of_month',
   clearStock: 'warehouse_clearance',
   setShowcase: 'profile_showcase',
@@ -773,6 +778,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'driverOfMonthPrize':
       await setDriverOfMonthPrize(db, user.id, input.cents);
       return { ok: true };
+    case 'parking':
+      return { ok: true, ...(await playParking(db, user.id, input.inputs)) };
+    case 'testDrive':
+      return { ok: true, ...(await startTestDrive(db, user.id, input.modelId)) };
     case 'staffBus':
       return { ok: true, ...(await staffBus(db, user.id, input.vehicleId)) };
     case 'setShowcase':

@@ -1,0 +1,1 @@
+ALTER TABLE "vehicles" ADD COLUMN "test_drive_from" uuid;

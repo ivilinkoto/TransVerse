@@ -72,6 +72,7 @@ import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 import { expireAllianceListings } from './alliance-market';
 import { awardDriversOfMonth, celebrateAnniversaries } from './community';
+import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
 
 /**
@@ -251,6 +252,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'alliance-market', 10 * 60_000, now, () => expireAllianceListings(db, now));
     await every(db, 'anniversaries', 60 * 60_000, now, () => celebrateAnniversaries(db, now));
     await every(db, 'driver-of-month', 60 * 60_000, now, () => awardDriversOfMonth(db, now));
+    await every(db, 'test-drives', 15 * 60_000, now, () => expireTestDrives(db, now));
     await every(db, 'staff-alerts', 60 * 60_000, now, () => postStaffAlerts(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.

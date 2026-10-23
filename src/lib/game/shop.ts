@@ -13,7 +13,16 @@ export const SHOP_CATEGORIES: Record<ShopCategory, string> = {
   account: 'Профил',
 };
 
-export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'truck_part' | 'trailer_part' | 'rename';
+export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename';
+
+/** The retro collection (v1.5): three paints of past decades; all three earn a badge. */
+export const RETRO = {
+  retro70: { color: '#7c4a21', stripes: ['#f97316', '#facc15', '#b45309'] },
+  retro80: { color: '#1e1b4b', stripes: ['#ec4899', '#22d3ee', '#a78bfa'] },
+  retro90: { color: '#0f766e', stripes: ['#a855f7', '#2dd4bf', '#f8fafc'] },
+} as const;
+export type RetroStyle = keyof typeof RETRO;
+export const RETRO_BADGE = 'retro-collector';
 
 export interface ShopItem {
   id: ShopItemId;
@@ -39,6 +48,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'paint', category: 'cosmetic', label: 'Пребоядисване', description: 'Нов цвят на твой камион. За VIP е безплатно и с ексклузивни цветове.', price: 50, needs: 'vehicle_color' },
   { id: 'paint_pumpkin', category: 'cosmetic', label: 'Боя „Тиква“ · Хелуин 2026', description: 'Празнична оранжева боя с тиквена усмивка на кабината и ремаркето. Продава се само по Хелуин — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'halloween' },
   { id: 'paint_christmas', category: 'cosmetic', label: 'Боя „Коледа“ · Коледа 2026', description: 'Празнична червена боя с украсена елха на кабината и ремаркето. Продава се само по Коледа — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'christmas' },
+  { id: 'paint_retro70', category: 'cosmetic', label: 'Ретро боя „70-те“', description: 'Кафяво-оранжева боя с ивици като на камионите от 70-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
+  { id: 'paint_retro80', category: 'cosmetic', label: 'Ретро боя „80-те“', description: 'Тъмносиня боя с неоново розово и синьо от 80-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
+  { id: 'paint_retro90', category: 'cosmetic', label: 'Ретро боя „90-те“', description: 'Тюркоазено-лилава боя с ивици от 90-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
   { id: 'truck_part', category: 'cosmetic', label: 'Части за камиона', description: 'Решетка, светлини на покрива, сенник или стикер с името на компанията на вратата. Остават на камиона; нов стил на същата част заменя стария.', price: 50, needs: 'vehicle_cosmetic' },
   { id: 'trailer_part', category: 'cosmetic', label: 'Части за ремаркето', description: 'Боя, лента, калници или светлини на покрива на твое ремарке. Остават на него; нов стил на същата част заменя стария.', price: 30, needs: 'trailer_cosmetic' },
   { id: 'rename', category: 'account', label: 'Смяна на потребителско име', description: 'Ново име в играта (3–20 знака).', price: 300, needs: 'username' },

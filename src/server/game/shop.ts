@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, like, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { PLATE_PATTERN, shopItem, VIP_DAYS, type ShopItemId } from '@/lib/game/shop';
+import { PLATE_PATTERN, RETRO, RETRO_BADGE, shopItem, VIP_DAYS, type RetroStyle, type ShopItemId } from '@/lib/game/shop';
 import { isVip, STANDARD_COLORS, VIP_COLORS } from '@/lib/game/vip';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { registerSchema } from '@/server/auth/accounts';
 import type { Database, Tx } from '@/server/db/client';
-import { cityMarkets, companyMembers, drivers, organizations, trailers, users, vehicles } from '@/server/db/schema';
+import { cityMarkets, companyMembers, drivers, jobState, organizations, trailers, userBadges, users, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { powerUnitModel } from '@/lib/game/catalog';
 import { COSMETIC_PARTS, parseCosmetic, parseTrailerCosmetic, stickerText, TRAILER_COSMETIC_PARTS } from '@/lib/game/cosmetics';
@@ -137,6 +137,24 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         if (v.livery === 'christmas') fail('already_painted', 'Камионът вече е с боя „Коледа“.');
         await tx.update(vehicles).set({ color: CHRISTMAS.paintColor, livery: 'christmas' }).where(eq(vehicles.id, v.id));
         summary = `Боя „Коледа“ за ${v.plate}`;
+        break;
+      }
+      case 'paint_retro70':
+      case 'paint_retro80':
+      case 'paint_retro90': {
+        if (!(await featureFor(tx, userId, 'retro_collection', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+        const style = input.item.slice(6) as RetroStyle;
+        const v = await ownVehicle(tx, account.id, input.vehicleId);
+        if (v.livery === style) fail('already_painted', 'Камионът вече е с тази боя.');
+        await tx.update(vehicles).set({ color: RETRO[style].color, livery: style }).where(eq(vehicles.id, v.id));
+        summary = `Ретро боя „${style.slice(5)}-те“ за ${v.plate}`;
+        // The collection: all three paints bought (on any trucks) earn the badge.
+        await tx.insert(jobState).values({ key: `retro:${userId}:${style}`, value: { at: now.toISOString() } }).onConflictDoNothing();
+        const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(jobState).where(like(jobState.key, `retro:${userId}:%`));
+        if (n >= Object.keys(RETRO).length) {
+          const [got] = await tx.insert(userBadges).values({ userId, badge: RETRO_BADGE }).onConflictDoNothing().returning();
+          if (got) await notify(tx, userId, 'achievement', 'Значка: Ретро колекционер', 'Събра и трите ретро бои.', '/game/profile');
+        }
         break;
       }
       case 'truck_part': {

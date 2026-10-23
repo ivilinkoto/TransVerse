@@ -293,6 +293,8 @@ export const vehicles = pgTable(
     soldAt: ts('sold_at'),
     /** Moving to a depot of the company (v1.4): it is there, but free only from this time. */
     movingUntil: ts('moving_until'),
+    /** A test drive (v1.5): the player's own vehicle the owner-driver came from; the truck goes back to the dealer after one trip. */
+    testDriveFrom: uuid('test_drive_from'),
   },
   (t) => [index('vehicles_company_idx').on(t.companyId)],
 );
