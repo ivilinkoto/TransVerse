@@ -1,22 +1,47 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
 import { hasWinterGrip } from '@/lib/game/catalog';
+import { EASTER, isEaster } from '@/lib/game/easter';
 import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { closeDb } from '@/server/db/client';
-import { companies, contracts, deliveries, ledgerEntries, users, vehicles } from '@/server/db/schema';
+import { companies, contracts, deliveries, ledgerEntries, userBadges, users, vehicles } from '@/server/db/schema';
 import { raiseUrgentPrices, URGENT_RAISE } from '@/server/game/auto-urgent';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
+import { eggFight } from '@/server/game/easter';
 import { GameError } from '@/server/game/errors';
 import { buyVehicle, installUpgrade } from '@/server/game/fleet';
+import { respondFriendRequest, sendFriendRequest } from '@/server/game/social';
 import { tachograph } from '@/server/game/tachograph';
 import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
 
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : (e as Error).message));
+const EASTER_DAY = new Date('2027-05-01T10:00:00Z');
+
+describe('Великден', () => {
+  it('egg fights between friends: once a year, coins for the winner, a badge after five wins', async () => {
+    expect(isEaster(EASTER_DAY)).toBe(true);
+    expect(isEaster(new Date('2027-06-01T10:00:00Z'))).toBe(false);
+    const me = await newPlayer();
+    const friends = [];
+    for (let i = 0; i < EASTER.eggBadgeWins; i++) {
+      const f = await newPlayer();
+      await sendFriendRequest(db(), me.userId, f.userId);
+      const { rows } = await db().execute<{ id: string }>(sql`select id from friendships where requester_id = ${me.userId} and addressee_id = ${f.userId}`);
+      await respondFriendRequest(db(), f.userId, rows[0]!.id, true);
+      friends.push(f);
+    }
+    const coins0 = (await db().select().from(users).where(eq(users.id, me.userId)))[0]!.coins;
+    for (const f of friends) expect((await eggFight(db(), me.userId, f.userId, EASTER_DAY, () => 0)).won).toBe(true);
+    expect(await code(eggFight(db(), friends[0]!.userId, me.userId, EASTER_DAY))).toBe('already');
+    expect((await db().select().from(users).where(eq(users.id, me.userId)))[0]!.coins).toBe(coins0 + EASTER.eggCoins * EASTER.eggBadgeWins);
+    expect(await db().select().from(userBadges).where(and(eq(userBadges.userId, me.userId), eq(userBadges.badge, EASTER.eggBadge)))).toHaveLength(1);
+  });
+});
 
 describe('the road in v1.5, part 2', () => {
   it('one tyre set at a time; all-season tyres grip on snow', async () => {

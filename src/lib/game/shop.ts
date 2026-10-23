@@ -13,7 +13,7 @@ export const SHOP_CATEGORIES: Record<ShopCategory, string> = {
   account: 'Профил',
 };
 
-export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename';
+export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_easter' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename';
 
 /** The retro collection (v1.5): three paints of past decades; all three earn a badge. */
 export const RETRO = {
@@ -33,7 +33,7 @@ export interface ShopItem {
   /** What the buyer has to choose. */
   needs?: 'vehicle' | 'vehicle_city' | 'vehicle_plate' | 'vehicle_color' | 'vehicle_cosmetic' | 'trailer_cosmetic' | 'username' | 'recipient';
   /** Sold only during this holiday (what was bought stays). */
-  seasonal?: 'halloween' | 'christmas' | 'spring';
+  seasonal?: 'halloween' | 'christmas' | 'spring' | 'easter';
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
@@ -52,6 +52,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'paint_retro70', category: 'cosmetic', label: 'Ретро боя „70-те“', description: 'Кафяво-оранжева боя с ивици като на камионите от 70-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
   { id: 'paint_retro80', category: 'cosmetic', label: 'Ретро боя „80-те“', description: 'Тъмносиня боя с неоново розово и синьо от 80-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
   { id: 'paint_retro90', category: 'cosmetic', label: 'Ретро боя „90-те“', description: 'Тюркоазено-лилава боя с ивици от 90-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
+  { id: 'paint_easter', category: 'cosmetic', label: 'Боя „Великден“ · Великден 2027', description: 'Пролетна лилава боя с шарено великденско яйце на кабината и ремаркето. Продава се само около Великден — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'easter' },
   { id: 'truck_part', category: 'cosmetic', label: 'Части за камиона', description: 'Решетка, светлини на покрива, сенник или стикер с името на компанията на вратата. Остават на камиона; нов стил на същата част заменя стария.', price: 50, needs: 'vehicle_cosmetic' },
   { id: 'trailer_part', category: 'cosmetic', label: 'Части за ремаркето', description: 'Боя, лента, калници или светлини на покрива на твое ремарке. Остават на него; нов стил на същата част заменя стария.', price: 30, needs: 'trailer_cosmetic' },
   { id: 'rename', category: 'account', label: 'Смяна на потребителско име', description: 'Ново име в играта (3–20 знака).', price: 300, needs: 'username' },

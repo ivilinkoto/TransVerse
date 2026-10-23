@@ -512,6 +512,13 @@
       "when": 1792790529433,
       "tag": "0072_spicy_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792792298281,
+      "tag": "0073_solid_skaar",
+      "breakpoints": true
     }
   ]
 }

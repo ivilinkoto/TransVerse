@@ -22,6 +22,7 @@ import { FeaturesProvider } from '@/components/game/Features';
 import { liveFeatures } from '@/lib/game/features';
 import { isChristmas } from '@/lib/game/christmas';
 import { isMarta } from '@/lib/game/marta';
+import { isEaster } from '@/lib/game/easter';
 import { isStaff } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
@@ -37,7 +38,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const { db, user, company, hq, now } = await gameContext();
   const staff = isStaff(user.role);
   const fresh = unseenRelease(user.seenVersion, now, staff);
-  const holiday = [isHalloween(now) && 'halloween', isChristmas(now) && 'christmas', isMarta(now) && 'marta', isSpring(now) && 'spring'].filter(Boolean).join(',') || null;
+  const holiday = [isHalloween(now) && 'halloween', isChristmas(now) && 'christmas', isMarta(now) && 'marta', isSpring(now) && 'spring', isEaster(now) && 'easter'].filter(Boolean).join(',') || null;
   // Everything the frame needs, at once (it renders on every page).
   const [attention, tutorial, membership, missions, [{ unread = 0 } = {}], [live]] = await Promise.all([
     // Staff see a badge on the admin button while support questions or reports wait.

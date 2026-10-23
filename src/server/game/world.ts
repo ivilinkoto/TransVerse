@@ -19,6 +19,7 @@ import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent } from './halloween';
 import { ensureChristmasEvent } from './christmas';
 import { ensureMartaEvent } from './marta';
+import { ensureEasterEvent } from './easter';
 import { collectOverdueFines } from './fines';
 import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
@@ -197,6 +198,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     if (featureLive('event_autostart', now)) await every(db, 'event-start', 60_000, now, () => announceStartedEvents(db, now));
     await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
     await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));
+    if (featureLive('easter', now)) await every(db, 'easter-event', 10 * 60_000, now, () => ensureEasterEvent(db, now));
     if (featureLive('marta', now)) await every(db, 'marta-event', 10 * 60_000, now, () => ensureMartaEvent(db, now));
     await every(db, 'mentorships', 10 * 60_000, now, () => expireMentorships(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.

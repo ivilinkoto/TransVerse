@@ -18,6 +18,7 @@ import { setSpecialization } from '@/server/game/specialization';
 import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
 import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/community';
+import { claimEasterQuest, eggFight } from '@/server/game/easter';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
 import { createAlliance, dissolveAlliance, setAllianceDiscord, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
@@ -205,6 +206,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('claimMartaQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('giveMartenitsa'), friendId: id }),
   z.object({ type: z.literal('spotStork') }),
+  z.object({ type: z.literal('claimEasterQuest'), questId: z.string().max(30) }),
+  z.object({ type: z.literal('eggFight'), friendId: id }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
   z.object({ type: z.literal('joinCup') }),
@@ -333,6 +336,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   claimMartaQuest: 'marta',
   giveMartenitsa: 'marta',
   spotStork: 'marta',
+  claimEasterQuest: 'easter',
+  eggFight: 'easter',
   staffBus: 'staff_bus',
   testDrive: 'test_drive',
   parking: 'parking_game',
@@ -841,6 +846,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await removeRecruitment(db, user.id, input.postId)) };
     case 'testDrive':
       return { ok: true, ...(await startTestDrive(db, user.id, input.modelId)) };
+    case 'claimEasterQuest':
+      return { ok: true, ...(await claimEasterQuest(db, user.id, input.questId)) };
+    case 'eggFight':
+      return { ok: true, ...(await eggFight(db, user.id, input.friendId)) };
     case 'staffBus':
       return { ok: true, ...(await staffBus(db, user.id, input.vehicleId)) };
     case 'setShowcase':

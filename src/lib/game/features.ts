@@ -92,6 +92,7 @@ export const FEATURES = {
   predictions: '1.5',
   event_autostart: '1.5',
   trailer_cosmetics: '1.5',
+  easter: '1.7',
   seasonal_tyres: '1.5',
   cargo_insurance: '1.5',
   urgent_raise: '1.5',
