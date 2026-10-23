@@ -42,6 +42,7 @@ export async function createListing(db: Database, userId: string, input: { kind:
       if (!t) fail('trailer_not_found', 'Ремаркето не е намерено.', 404);
       if (t!.ownership !== 'owned') fail('rented', 'Наетите и фирмените ремаркета не могат да се продават.');
       if (t!.listed) fail('already_listed', 'Ремаркето вече е обявено.');
+      if (t!.hiredOut) fail('hired_out', 'Ремаркето е дадено под наем.');
       if (t!.vehicleId) {
         const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t!.vehicleId));
         if (v?.status === 'on_delivery') fail('trailer_busy', 'Ремаркето е на курс.');

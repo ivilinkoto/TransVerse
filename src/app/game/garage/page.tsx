@@ -199,6 +199,11 @@ export default async function GaragePage() {
                       <p className="text-xs text-mist-400">Ремарке на компанията: курсовете с него носят бонус за касата и повече опит за компанията.</p>
                       <ActionButton action={{ type: 'returnOrgTrailer', trailerId: t.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm="Да върнем ли ремаркето на компанията?" disabled={!!tractor?.delivery}>Върни на компанията</ActionButton>
                     </div>
+                  ) : t.ownership === 'hired' || t.hiredOut ? (
+                    <div className="mt-2 space-y-1">
+                      <Badge tone="violet">{t.ownership === 'hired' ? 'наето от играч' : 'дадено под наем'}</Badge>
+                      <p className="text-xs text-mist-400"><Link href="/game/trailer-hire" className="underline">Ремаркета под наем</Link></p>
+                    </div>
                   ) : (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {listing ? (

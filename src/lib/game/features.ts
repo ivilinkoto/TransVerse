@@ -139,6 +139,8 @@ export const FEATURES = {
   scrapyard: '1.6',
   museum: '1.6',
   photo_mode: '1.6',
+  plate_auction: '1.6',
+  trailer_hire: '1.6',
 } as const;
 
 export type FeatureId = keyof typeof FEATURES;

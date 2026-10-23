@@ -148,7 +148,9 @@ export async function sellTrailer(db: Database, userId: string, trailerId: strin
     const t = await ownedTrailer(tx, company.id, trailerId);
     if (t.ownership === 'rented') fail('rented', 'Наетите ремаркета се връщат заедно с влекача.');
     if (t.ownership === 'company') fail('company', 'Фирменото ремарке се връща на компанията, не се продава.');
+    if (t.ownership === 'hired') fail('hired', 'Нает ремарке се връща на собственика, не се продава.');
     if (t.listed) fail('listed', 'Ремаркето е обявено на пазара — първо свали обявата.');
+    if (t.hiredOut) fail('hired_out', 'Ремаркето е дадено под наем — първо го свали от обявите или изчакай да се върне.');
     if (t.vehicleId) {
       const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t.vehicleId));
       if (v?.status === 'on_delivery') fail('trailer_busy', 'Ремаркето е на курс.');
@@ -236,6 +238,7 @@ export async function coupleTrailer(db: Database, userId: string, vehicleId: str
     if (!trailerId) return;
     const t = await ownedTrailer(tx, company.id, trailerId);
     if (t.listed) fail('listed', 'Ремаркето е обявено на пазара.');
+    if (t.hiredOut) fail('hired_out', 'Ремаркето е дадено под наем — първо го свали от обявите или изчакай да се върне.');
     if (t.cityId !== v.cityId) fail('different_city', 'Ремаркето и камионът трябва да са в един град.');
     if (t.vehicleId) {
       const [other] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t.vehicleId));

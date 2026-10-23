@@ -48,6 +48,8 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/analytics', label: 'Анализ' },
       { href: '/game/garage', label: 'Сервиз' },
       { href: '/game/market', label: 'Пазар' },
+      { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire' },
+      { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction' },
       { href: '/game/staff', label: 'Шофьори' },
       { href: '/game/logistics', label: 'Депа' },
       { href: '/game/licences', label: 'Лицензи' },

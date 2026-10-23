@@ -11,6 +11,8 @@ import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
 import { playParking } from '@/server/game/parking';
 import { joinCup } from '@/server/game/tournament';
+import { bidForPlate, fitRarePlate } from '@/server/game/plates';
+import { hireTrailer, offerTrailer, returnHiredTrailer, withdrawTrailer } from '@/server/game/trailer-hire';
 import { donateToMuseum, scrapVehicle, repairWithPart } from '@/server/game/heritage';
 import { setSpecialization } from '@/server/game/specialization';
 import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
@@ -206,6 +208,12 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
   z.object({ type: z.literal('joinCup') }),
+  z.object({ type: z.literal('bidPlate'), coins: z.coerce.number().int().positive().max(1_000_000) }),
+  z.object({ type: z.literal('fitRarePlate'), weekKey: z.string().max(12), vehicleId: id }),
+  z.object({ type: z.literal('offerTrailer'), trailerId: id, pricePerDay: z.coerce.number().positive().max(100_000), maxDays: z.coerce.number().int().min(1).max(7) }),
+  z.object({ type: z.literal('withdrawTrailer'), hireId: id }),
+  z.object({ type: z.literal('hireTrailer'), hireId: id, days: z.coerce.number().int().min(1).max(7) }),
+  z.object({ type: z.literal('returnHiredTrailer'), hireId: id }),
   z.object({ type: z.literal('scrapVehicle'), vehicleId: id }),
   z.object({ type: z.literal('repairWithPart'), vehicleId: id }),
   z.object({ type: z.literal('donateToMuseum'), vehicleId: id }),
@@ -329,6 +337,12 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   testDrive: 'test_drive',
   parking: 'parking_game',
   joinCup: 'spring_cup',
+  bidPlate: 'plate_auction',
+  fitRarePlate: 'plate_auction',
+  offerTrailer: 'trailer_hire',
+  withdrawTrailer: 'trailer_hire',
+  hireTrailer: 'trailer_hire',
+  returnHiredTrailer: 'trailer_hire',
   scrapVehicle: 'scrapyard',
   repairWithPart: 'scrapyard',
   donateToMuseum: 'museum',
@@ -805,6 +819,18 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await repairWithPart(db, user.id, input.vehicleId)) };
     case 'donateToMuseum':
       return { ok: true, ...(await donateToMuseum(db, user.id, input.vehicleId)) };
+    case 'bidPlate':
+      return { ok: true, ...(await bidForPlate(db, user.id, input.coins)) };
+    case 'fitRarePlate':
+      return { ok: true, ...(await fitRarePlate(db, user.id, input.weekKey, input.vehicleId)) };
+    case 'offerTrailer':
+      return { ok: true, offer: await offerTrailer(db, user.id, { trailerId: input.trailerId, pricePerDayCents: Math.round(input.pricePerDay * 100), maxDays: input.maxDays }) };
+    case 'withdrawTrailer':
+      return { ok: true, ...(await withdrawTrailer(db, user.id, input.hireId)) };
+    case 'hireTrailer':
+      return { ok: true, ...(await hireTrailer(db, user.id, input.hireId, input.days)) };
+    case 'returnHiredTrailer':
+      return { ok: true, ...(await returnHiredTrailer(db, user.id, input.hireId)) };
     case 'joinCup':
       return { ok: true, ...(await joinCup(db, user.id)) };
     case 'setSpecialization':
