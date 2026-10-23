@@ -37,6 +37,7 @@ import { membershipOf } from '@/server/game/membership';
 import { isNightShift, NIGHT, oversizeCostCents } from '@/lib/game/roads';
 import { activeRoadWorks } from '@/server/game/roads';
 import { TRAFFIC } from '@/lib/game/traffic';
+import { specializationCovers } from '@/lib/game/specialization';
 
 export const metadata = { title: 'Поръчки' };
 
@@ -155,6 +156,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       hiredBy: hiredBy.get(c.id) ?? null,
       project: project && project.cargoType === c.cargoType && project.destCityId === c.destCityId ? project.title : null,
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
+      specialization: features.specializations && specializationCovers(membership?.company.specialization, c.cargoType),
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,
       weather: (() => {
         const w = routeCondition(c.route.countries, now, real);

@@ -5,6 +5,7 @@ import { Badge, Card, Empty, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { RecruitmentForm } from '@/components/game/RecruitmentForm';
 import { PlayerName } from '@/components/game/PlayerName';
+import { ReportPostButton } from '@/components/game/ReportPostButton';
 import { dateTime } from '@/lib/format';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
 import { isStaff } from '@/server/auth/roles';
@@ -45,7 +46,10 @@ export default async function RecruitmentPage() {
                   <p className="mt-2 whitespace-pre-line text-sm text-mist-200">{p.text}</p>
                   <div className="mt-2 flex items-center justify-between text-xs text-mist-400">
                     <span>{dateTime(p.createdAt)} · <PlayerName name={p.username} /></span>
-                    {canRemove(p) && <ActionButton action={{ type: 'removeRecruitment', postId: p.id }} confirm="Да махнем ли обявата?">Махни</ActionButton>}
+                    <span className="flex items-center gap-3">
+                      {p.userId !== user.id && <ReportPostButton postId={p.id} userId={p.userId} username={p.username} text={p.text} />}
+                      {canRemove(p) && <ActionButton action={{ type: 'removeRecruitment', postId: p.id }} confirm="Да махнем ли обявата?">Махни</ActionButton>}
+                    </span>
                   </div>
                 </li>
               ))}
@@ -68,7 +72,10 @@ export default async function RecruitmentPage() {
                   <p className="mt-2 whitespace-pre-line text-sm text-mist-200">{p.text}</p>
                   <div className="mt-2 flex items-center justify-between text-xs text-mist-400">
                     <span>{dateTime(p.createdAt)}</span>
-                    {canRemove(p) && <ActionButton action={{ type: 'removeRecruitment', postId: p.id }} confirm="Да махнем ли обявата?">Махни</ActionButton>}
+                    <span className="flex items-center gap-3">
+                      {p.userId !== user.id && <ReportPostButton postId={p.id} userId={p.userId} username={p.username} text={p.text} />}
+                      {canRemove(p) && <ActionButton action={{ type: 'removeRecruitment', postId: p.id }} confirm="Да махнем ли обявата?">Махни</ActionButton>}
+                    </span>
                   </div>
                 </li>
               ))}

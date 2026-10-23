@@ -8,4 +8,6 @@ export const TRAILER_HIRE = {
   maxDays: 7,
   minPricePerDayCents: 10_00,
   maxPricePerDayCents: 2_000_00,
+  /** The renter hears this long before the hire ends (v1.7). */
+  reminderMs: 2 * 3_600_000,
 } as const;

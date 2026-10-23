@@ -1,3 +1,4 @@
+import { LEGEND, legendTier } from '@/lib/game/heritage';
 import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Wrench } from 'lucide-react';
 import { leasesOf } from '@/server/game/leasing';
 import Link from 'next/link';
@@ -47,6 +48,7 @@ export default async function FleetPage() {
                   <Badge>{KIND[v.model.kind]}</Badge>
                   {v.ownership === 'rented' && <Badge tone="gold">Нает</Badge>}
                   {v.ownership === 'company' && <Badge tone="cyan">Фирмен</Badge>}
+                  {features.legendary_trucks && legendTier(v.odometerKm) > 0 && <Badge tone="gold">🏆 {LEGEND[legendTier(v.odometerKm) - 1]!.title}</Badge>}
                   {leased.has(v.id) && <a href="/game/finance#leases"><Badge tone="violet">Лизинг {leased.get(v.id)!.paid}/{leased.get(v.id)!.payments}</Badge></a>}
                   {v.delivery ? <Badge tone="cyan">На курс</Badge> : v.status === 'listed' ? <Badge tone="gold">Обявен за продажба</Badge> : <Badge tone="green">Свободен</Badge>}
                 </div>

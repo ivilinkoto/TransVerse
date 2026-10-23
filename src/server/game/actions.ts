@@ -208,7 +208,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
   z.object({ type: z.literal('joinCup') }),
-  z.object({ type: z.literal('bidPlate'), coins: z.coerce.number().int().positive().max(1_000_000) }),
+  z.object({ type: z.literal('bidPlate'), coins: z.coerce.number().int().positive().max(1_000_000), weekKey: z.string().max(12).optional() }),
   z.object({ type: z.literal('fitRarePlate'), weekKey: z.string().max(12), vehicleId: id }),
   z.object({ type: z.literal('offerTrailer'), trailerId: id, pricePerDay: z.coerce.number().positive().max(100_000), maxDays: z.coerce.number().int().min(1).max(7) }),
   z.object({ type: z.literal('withdrawTrailer'), hireId: id }),
@@ -820,7 +820,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'donateToMuseum':
       return { ok: true, ...(await donateToMuseum(db, user.id, input.vehicleId)) };
     case 'bidPlate':
-      return { ok: true, ...(await bidForPlate(db, user.id, input.coins)) };
+      return { ok: true, ...(await bidForPlate(db, user.id, input.coins, new Date(), input.weekKey)) };
     case 'fitRarePlate':
       return { ok: true, ...(await fitRarePlate(db, user.id, input.weekKey, input.vehicleId)) };
     case 'offerTrailer':

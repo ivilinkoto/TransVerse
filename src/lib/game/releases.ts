@@ -35,6 +35,14 @@ export const BASE_VERSION = '1.0';
 
 export const RELEASES: Release[] = [
   {
+    version: '1.7',
+    name: 'Цяла Европа',
+    publishedAt: '2027-04-17T00:00:00+03:00',
+    tagline: 'Нови държави на картата, Великден и много подобрения.',
+    highlights: [],
+    sections: [],
+  },
+  {
     version: '1.6',
     name: 'Първа пролет',
     publishedAt: '2027-03-20T00:00:00+02:00',

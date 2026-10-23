@@ -507,6 +507,8 @@ export const deliveries = pgTable(
     index('deliveries_due_idx').on(t.status, t.etaAt),
     index('deliveries_company_idx').on(t.companyId, t.status),
     index('deliveries_convoy_lead_idx').on(t.convoyLead),
+    // Weekly and monthly rankings read finished trips by arrival time (v1.7).
+    index('deliveries_completed_idx').on(t.completedAt).where(sql`status = 'completed'`),
   ],
 );
 
@@ -1222,9 +1224,11 @@ export const reports = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     reporterId: uuid('reporter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     targetUserId: uuid('target_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    /** player | channel | company | dm */
+    /** player | channel | company | dm | recruitment */
     kind: text('kind').notNull(),
     messageId: bigint('message_id', { mode: 'number' }),
+    /** A reported recruitment post (v1.7). */
+    postId: uuid('post_id'),
     /** The reported message as it was when reported. */
     snippet: text('snippet'),
     reason: text('reason').notNull(),

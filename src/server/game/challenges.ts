@@ -7,6 +7,8 @@ import { periodWindow, sofiaMidnight, sofiaParts } from '@/lib/game/missions';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, contracts, countries, deliveries, jobState, openConvoys, userBadges, users } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
+import { announce } from '@/server/discord/outbox';
+import { appUrl } from '@/server/discord/config';
 import { postCoins } from './coins';
 import { post } from './finance';
 import { notify } from './notify';
@@ -134,7 +136,7 @@ export async function settleWeeklyChallenge(db: Database, now: Date) {
   const last = challengeWeek(new Date(current.startsAt.getTime() - 3_600_000));
   const rows = (await challengeRanking(db, last)).filter((r) => r.value > 0).slice(0, WEEKLY_CHALLENGE.prizes.length);
   return db.transaction(async (tx) => {
-    const [first] = await tx.insert(jobState).values({ key: `weekly-challenge:${last.key}`, value: { winners: rows.map((r) => r.userId) } }).onConflictDoNothing().returning();
+    const [first] = await tx.insert(jobState).values({ key: `weekly-challenge:${last.key}`, value: { metric: last.metric, winners: rows.map((r) => ({ userId: r.userId, username: r.username, value: r.value })) } }).onConflictDoNothing().returning();
     if (!first) return null;
     const m = CHALLENGE_METRICS[last.metric];
     for (const [i, r] of rows.entries()) {
@@ -142,8 +144,22 @@ export async function settleWeeklyChallenge(db: Database, now: Date) {
       await postCoins(tx, r.userId, { amount: coins, reason: 'challenge', description: `Предизвикателство ${last.key}: ${m.title}, ${i + 1}. място`, idempotencyKey: `weekly-challenge:${last.key}:${r.userId}` });
       await notify(tx, r.userId, 'achievement', `Предизвикателство на седмицата: ${i + 1}. място! 🏆`, `„${m.title}“ — ${r.value} ${m.unit}. Награда: ${coins} TC.`, '/game/challenges');
     }
+    if (rows.length && featureLive('discord_bot', now)) {
+      await announce(tx, `weekly-challenge:${last.key}`, 'rankings', {
+        embeds: [{ title: `🏆 Предизвикателство на седмицата: ${m.title}`, url: `${appUrl()}/game/challenges`, color: 0xf6c343, description: rows.map((r, i) => `**${i + 1}.** ${r.username} · ${Math.round(r.value).toLocaleString('bg-BG')} ${m.unit} · ${WEEKLY_CHALLENGE.prizes[i]} TC`).join('\n'), footer: { text: 'TransVerse · игрови данни' } }],
+      }, now);
+    }
     return { week: last.key, winners: rows.length };
   });
+}
+
+/** Last week's winners (once the week is settled), for the page (v1.7). */
+export async function lastChallengeWinners(db: DbOrTx, now: Date) {
+  const last = challengeWeek(new Date(challengeWeek(now).startsAt.getTime() - 3_600_000));
+  const [row] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, `weekly-challenge:${last.key}`));
+  const v = row?.value as { metric?: ChallengeMetric; winners?: { userId: string; username?: string; value?: number }[] } | undefined;
+  if (!v?.metric || !v.winners?.length || typeof v.winners[0] !== 'object') return null;
+  return { ...CHALLENGE_METRICS[v.metric], winners: v.winners };
 }
 
 /** How far in time a convoy can still grow (for the page). */

@@ -88,10 +88,25 @@ export function PhotoMode({ truck, hasTrailer, plate }: { truck: VehicleIllustra
       ctx.globalAlpha = 0.8;
       ctx.fillText('TransVerse', W - 190, H - 30);
       ctx.globalAlpha = 1;
+      const name = `transverse-${plate.replace(/[^\p{L}\p{N}-]+/gu, '-')}.png`;
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) return;
+      const file = new File([blob], name, { type: 'image/png' });
+      // Phones: the share sheet (save to photos, send in a chat). Computers: a download.
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'TransVerse' }).catch(() => undefined);
+        return;
+      }
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
-      a.download = `transverse-${plate.replace(/[^\p{L}\p{N}-]+/gu, '-')}.png`;
+      a.href = url;
+      a.download = name;
+      // Browsers without the download attribute (older iOS) open the picture in a new tab to keep it.
+      if (!('download' in HTMLAnchorElement.prototype)) a.target = '_blank';
+      document.body.appendChild(a);
       a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } finally {
       setBusy(false);
     }

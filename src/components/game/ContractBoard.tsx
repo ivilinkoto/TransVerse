@@ -22,11 +22,14 @@ import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { useFeature } from './Features';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
 import { SECURE_PARKING } from '@/lib/game/traffic';
+import { SPECIALIZATION } from '@/lib/game/specialization';
 
 export interface BoardContract {
   id: string;
   /** Trucks on this lane right now (v1.6; 0 below the traffic threshold). */
   traffic?: number;
+  /** The cargo of the company's specialisation (v1.7 on the board). */
+  specialization?: boolean;
   shipper: string;
   goods: string;
   cargoType: CargoType;
@@ -367,6 +370,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
+            {c.specialization && <Badge tone="violet">🎯 СПЕЦИАЛИЗАЦИЯ · +{Math.round(SPECIALIZATION.bonusShare * 100)}%</Badge>}
             {!!c.traffic && <Badge tone="orange">🚦 НАТОВАРЕНО · {c.traffic} камиона</Badge>}
             {c.holiday === 'sowing' && <Badge tone="green">🌱 СЕИТБА · +{Math.round((SOWING.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.holiday === 'national' && <Badge tone="gold">🎉 НАЦИОНАЛЕН ПРАЗНИК · +{Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100)}%</Badge>}

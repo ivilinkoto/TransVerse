@@ -1,6 +1,9 @@
-import { and, eq, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull, lte, sql } from 'drizzle-orm';
+import { featureLive } from '@/lib/game/features';
+import { announce } from '@/server/discord/outbox';
+import { appUrl } from '@/server/discord/config';
 import { periodWindow } from '@/lib/game/missions';
-import { nextMinBid, RARE_PLATES } from '@/lib/game/plates';
+import { nextMinBid, PLATE_AUCTION, RARE_PLATES } from '@/lib/game/plates';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { plateAuctions, users, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
@@ -25,18 +28,23 @@ export async function ensurePlateAuction(db: Database, now = new Date()) {
   for (const plate of order) {
     if (won.has(plate) || (await plateInUse(db, plate))) continue;
     const [row] = await db.insert(plateAuctions).values({ weekKey: week.key, plate, endsAt: week.endsAt, createdAt: now }).onConflictDoNothing().returning();
+    if (row && featureLive('discord_bot', now)) {
+      await announce(db, `plate-auction:${row.weekKey}`, 'events', {
+        embeds: [{ title: `🏷️ Номер на седмицата: ${row.plate}`, url: `${appUrl()}/game/plates`, color: 0xf6c343, description: `Търг за ТрансКоин до <t:${Math.floor(row.endsAt.getTime() / 1000)}:f>, от ${PLATE_AUCTION.startCoins} TC. Наддава се в играта (Автопарк → Редки номера).`, footer: { text: 'TransVerse · игрови данни' } }],
+      }, now);
+    }
     return row ?? null;
   }
   return null;
 }
 
 /** A bid in ТрансКоин: held at once; the bid it beats goes back to its bidder. */
-export async function bidForPlate(db: Database, userId: string, coins: number, now = new Date()) {
+export async function bidForPlate(db: Database, userId: string, coins: number, now = new Date(), weekKey?: string) {
   if (!(await featureFor(db, userId, 'plate_auction', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
   return db.transaction(async (tx) => {
-    const week = periodWindow('weekly', now);
-    const [a] = await tx.select().from(plateAuctions).where(eq(plateAuctions.weekKey, week.key)).for('update');
-    if (!a || a.endsAt <= now) fail('no_auction', 'Тази седмица няма търг за номер.', 404);
+    // The auction the player saw (or the one closest to its end).
+    const [a] = await tx.select().from(plateAuctions).where(and(isNull(plateAuctions.settledAt), gt(plateAuctions.endsAt, now), ...(weekKey ? [eq(plateAuctions.weekKey, weekKey)] : []))).orderBy(asc(plateAuctions.endsAt)).limit(1).for('update');
+    if (!a) fail('no_auction', 'В момента няма търг за номер.', 404);
     if (a!.bidUserId === userId) fail('leading', 'Твоята оферта води.');
     const min = nextMinBid(a!.bidCoins);
     if (!Number.isSafeInteger(coins) || coins < min) fail('low', `Офертата е поне ${min} TC.`);
@@ -46,8 +54,10 @@ export async function bidForPlate(db: Database, userId: string, coins: number, n
       await postCoins(tx, a!.bidUserId, { amount: a!.bidCoins, reason: 'plate_auction', description: `Върната оферта за номер „${a!.plate}“`, idempotencyKey: `plate-refund:${a!.weekKey}:${a!.bids}` });
       await notify(tx, a!.bidUserId, 'info', `Офертата ти за номер „${a!.plate}“ е надмината`, `Нова оферта: ${coins} TC. Твоите ${a!.bidCoins} TC са върнати.`, '/game/plates');
     }
-    await tx.update(plateAuctions).set({ bidUserId: userId, bidCoins: coins, bids: a!.bids + 1 }).where(eq(plateAuctions.weekKey, a!.weekKey));
-    return { plate: a!.plate, coins };
+    // A bid in the last minutes gives the others time to answer (v1.7).
+    const endsAt = a!.endsAt.getTime() - now.getTime() < PLATE_AUCTION.extendMs ? new Date(now.getTime() + PLATE_AUCTION.extendMs) : a!.endsAt;
+    await tx.update(plateAuctions).set({ bidUserId: userId, bidCoins: coins, bids: a!.bids + 1, endsAt }).where(eq(plateAuctions.weekKey, a!.weekKey));
+    return { plate: a!.plate, coins, endsAt };
   });
 }
 
@@ -57,7 +67,13 @@ export async function settlePlateAuctions(db: Database, now = new Date()) {
   for (const a of due) {
     await db.transaction(async (tx) => {
       const [mine] = await tx.update(plateAuctions).set({ settledAt: now }).where(and(eq(plateAuctions.weekKey, a.weekKey), isNull(plateAuctions.settledAt))).returning();
-      if (mine?.bidUserId) await notify(tx, mine.bidUserId, 'achievement', `Номерът „${mine.plate}“ е твой! 🏷️`, 'Сложи го на свой камион от страницата на търга.', '/game/plates');
+      if (mine?.bidUserId) {
+        await notify(tx, mine.bidUserId, 'achievement', `Номерът „${mine.plate}“ е твой! 🏷️`, 'Сложи го на свой камион от страницата на търга.', '/game/plates');
+        if (featureLive('discord_bot', now)) {
+          const [u] = await tx.select({ username: users.username }).from(users).where(eq(users.id, mine.bidUserId));
+          await announce(tx, `plate-won:${mine.weekKey}`, 'events', { embeds: [{ title: `🏷️ Номерът „${mine.plate}“ е на ${u?.username ?? '—'}`, description: `Спечелен за ${mine.bidCoins} TC след ${mine.bids} оферти.`, color: 0xf6c343, footer: { text: 'TransVerse · игрови данни' } }] }, now);
+        }
+      }
     });
   }
   return due.length;
@@ -82,8 +98,7 @@ export async function fitRarePlate(db: Database, userId: string, weekKey: string
 
 /** This week's auction and the player's won plates not fitted yet. */
 export async function plateAuctionView(db: DbOrTx, userId: string, now: Date) {
-  const week = periodWindow('weekly', now);
-  const [a] = await db.select({ weekKey: plateAuctions.weekKey, plate: plateAuctions.plate, endsAt: plateAuctions.endsAt, bidCoins: plateAuctions.bidCoins, bids: plateAuctions.bids, bidUserId: plateAuctions.bidUserId, leader: users.username }).from(plateAuctions).leftJoin(users, eq(users.id, plateAuctions.bidUserId)).where(eq(plateAuctions.weekKey, week.key));
+  const [a] = await db.select({ weekKey: plateAuctions.weekKey, plate: plateAuctions.plate, endsAt: plateAuctions.endsAt, bidCoins: plateAuctions.bidCoins, bids: plateAuctions.bids, bidUserId: plateAuctions.bidUserId, leader: users.username }).from(plateAuctions).leftJoin(users, eq(users.id, plateAuctions.bidUserId)).where(and(isNull(plateAuctions.settledAt), gt(plateAuctions.endsAt, now))).orderBy(asc(plateAuctions.endsAt)).limit(1);
   const won = await db.select({ weekKey: plateAuctions.weekKey, plate: plateAuctions.plate }).from(plateAuctions).where(and(eq(plateAuctions.bidUserId, userId), isNull(plateAuctions.vehicleId), sql`${plateAuctions.settledAt} is not null`));
   return { auction: a ? { ...a, minBid: nextMinBid(a.bidCoins), mine: a.bidUserId === userId } : null, won };
 }

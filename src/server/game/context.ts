@@ -17,8 +17,8 @@ export const gameContext = cache(async () => {
   if (!user) redirect('/login');
   const db = getDb();
   const base = await userWithCompany(db, user.id);
-  await settleDueDeliveries(db, new Date(), base.company.id);
-  const fresh = await userWithCompany(db, user.id);
+  // Read the player again only when an arrival just changed the balance.
+  const fresh = (await settleDueDeliveries(db, new Date(), base.company.id)) ? await userWithCompany(db, user.id) : base;
   // One timestamp per request keeps every page render consistent (and pure).
   const now = new Date();
   // Features of an update that is not out yet are on only for staff (to test them).

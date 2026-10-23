@@ -2,6 +2,8 @@ import { Tag } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { and, eq, isNull } from 'drizzle-orm';
 import { FitPlateForm, PlateBidForm } from '@/components/game/HireForms';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { isStaff } from '@/server/auth/roles';
 import { Badge, Card, Empty, PageHeader } from '@/components/ui';
 import { dateTime } from '@/lib/format';
 import { powerUnitModel } from '@/lib/game/catalog';
@@ -35,7 +37,8 @@ export default async function PlatesPage() {
               <p className="text-mist-400">Оферти: {auction.bids} · край {dateTime(auction.endsAt)}</p>
             </div>
           </div>
-          {!auction.mine && auction.endsAt > now && <div className="mt-4"><PlateBidForm minBid={auction.minBid} balance={user.coins} /></div>}
+          {!auction.mine && auction.endsAt > now && <div className="mt-4"><PlateBidForm minBid={auction.minBid} balance={user.coins} weekKey={auction.weekKey} /></div>}
+          {isStaff(user.role) && <div className="mt-4 border-t border-white/5 pt-3"><ActionButton endpoint="/api/admin/action" action={{ type: 'cancelPlateAuction', weekKey: auction.weekKey }} className="btn-danger px-3 py-1.5 text-xs" confirm="Да спрем ли търга? Водещата оферта се връща.">Екип: спри търга</ActionButton></div>}
         </Card>
       ) : (
         <Card><Empty icon={Tag} title="Търгът се подготвя">Номерът на седмицата се обявява до четвърт час след началото ѝ.</Empty></Card>

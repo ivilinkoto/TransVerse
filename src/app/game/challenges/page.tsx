@@ -5,7 +5,7 @@ import { dateTime, int } from '@/lib/format';
 import { BIG_CONVOY, EUROTOUR, WEEKLY_CHALLENGE } from '@/lib/game/challenges';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { gameContext } from '@/server/game/context';
-import { eurotourProgress, openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
+import { eurotourProgress, lastChallengeWinners, openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
 
 export const metadata = { title: 'Предизвикателства' };
 
@@ -13,10 +13,11 @@ export const metadata = { title: 'Предизвикателства' };
 export default async function ChallengesPage() {
   const { db, user, now, features } = await gameContext();
   if (!features.weekly_challenge) notFound();
-  const [week, tour, convoys] = await Promise.all([
+  const [week, tour, convoys, last] = await Promise.all([
     weeklyChallenge(db, now, user.id),
     features.eurotour ? eurotourProgress(db, user.id, now) : null,
     features.big_convoy ? openBigConvoys(db, now) : [],
+    lastChallengeWinners(db, now),
   ]);
   const prizes = WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${c} TC`).join(' · ');
   const visited = tour?.filter((c) => c.done).length ?? 0;
@@ -43,6 +44,13 @@ export default async function ChallengesPage() {
           <Empty icon={Trophy} title="Класацията е празна">Първият курс навреме тази седмица я открива.</Empty>
         )}
       </Card>
+      {last && (
+        <Card title={`Миналата седмица: ${last.title}`}>
+          <ol className="space-y-1 text-sm">
+            {last.winners.map((w, i) => <li key={w.userId} className="flex justify-between"><span><span className="num mr-2 text-mist-400">{i + 1}.</span>{w.username ?? '—'}</span><span className="num">{int(w.value ?? 0)} {last.unit} · {WEEKLY_CHALLENGE.prizes[i]} TC</span></li>)}
+          </ol>
+        </Card>
+      )}
       <div className="grid gap-6 lg:grid-cols-2">
         {tour && (
           <Card title={<span className="inline-flex items-center gap-2"><Globe2 className="h-4 w-4 text-cyan-glow" />Евротур · {visited} / {tour.length}</span>}>

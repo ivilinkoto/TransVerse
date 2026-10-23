@@ -16,6 +16,8 @@ export const PLATE_AUCTION = {
   /** A new bid beats the last by at least this share (and at least 10 TC). */
   stepShare: 0.1,
   minStep: 10,
+  /** A bid this close to the end moves the end this far (v1.7). */
+  extendMs: 10 * 60_000,
 } as const;
 
 export const nextMinBid = (current: number | null) => (current ? current + Math.max(PLATE_AUCTION.minStep, Math.ceil(current * PLATE_AUCTION.stepShare)) : PLATE_AUCTION.startCoins);

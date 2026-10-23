@@ -39,10 +39,10 @@ describe('v1.6 plates and trailers', () => {
     expect(isRarePlate(a.plate)).toBe(true);
     const [p1, p2] = [await newPlayer(), await newPlayer()];
     for (const p of [p1, p2]) await db().update(users).set({ coins: 1000 }).where(eq(users.id, p.userId));
-    await bidForPlate(db(), p1.userId, 200);
+    await bidForPlate(db(), p1.userId, 200, new Date(), a.weekKey);
     expect(await coins(p1.userId)).toBe(800);
-    expect(await code(bidForPlate(db(), p2.userId, 210))).toBe('low');
-    await bidForPlate(db(), p2.userId, 220);
+    expect(await code(bidForPlate(db(), p2.userId, 210, new Date(), a.weekKey))).toBe('low');
+    await bidForPlate(db(), p2.userId, 220, new Date(), a.weekKey);
     expect(await coins(p1.userId)).toBe(1000);
     expect(await coins(p2.userId)).toBe(780);
     await settlePlateAuctions(db(), new Date(a.endsAt.getTime() + 1000));

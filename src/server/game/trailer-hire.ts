@@ -1,9 +1,9 @@
-import { and, asc, eq, isNotNull, isNull, lte } from 'drizzle-orm';
+import { and, asc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
 import { trailerModel } from '@/lib/game/catalog';
 import { TRAILER_HIRE } from '@/lib/game/trailer-hire';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, companies, trailerHires, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, companies, jobState, trailerHires, trailers, users, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -79,7 +79,7 @@ export async function hireTrailer(db: Database, userId: string, hireId: string, 
 }
 
 /** Gives a hired trailer back to its owner (not on a trip): wear and place go with it. */
-async function giveBack(tx: Tx, hireId: string, now: Date) {
+export async function giveBack(tx: Tx, hireId: string, now: Date) {
   const [h] = await tx.select().from(trailerHires).where(and(eq(trailerHires.id, hireId), isNull(trailerHires.endedAt))).for('update');
   if (!h || !h.hiredTrailerId) return false;
   const [copy] = await tx.select().from(trailers).where(eq(trailers.id, h.hiredTrailerId)).for('update');
@@ -107,6 +107,14 @@ export async function returnHiredTrailer(db: Database, userId: string, hireId: s
 
 /** Worker: hires that ended go back (those on a trip after the trip). */
 export async function endTrailerHires(db: Database, now = new Date()) {
+  // Two hours before the end the renter hears it (once; v1.7).
+  const soon = await db.select({ id: trailerHires.id, renterId: trailerHires.renterId, until: trailerHires.until }).from(trailerHires).where(and(isNull(trailerHires.endedAt), isNotNull(trailerHires.renterId), gt(trailerHires.until, now), lte(trailerHires.until, new Date(now.getTime() + TRAILER_HIRE.reminderMs))));
+  for (const h of soon) {
+    await db.transaction(async (tx) => {
+      const [first] = await tx.insert(jobState).values({ key: `hire-reminder:${h.id}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning();
+      if (first && h.renterId) await notify(tx, h.renterId, 'info', 'Наемът на ремаркето свършва скоро', `Ремаркето се връща на собственика в ${h.until!.toLocaleTimeString('bg-BG', { timeZone: 'Europe/Sofia', hour: '2-digit', minute: '2-digit' })} (ако е на курс — след него).`, '/game/trailer-hire');
+    });
+  }
   const due = await db.select({ id: trailerHires.id }).from(trailerHires).where(and(isNull(trailerHires.endedAt), isNotNull(trailerHires.renterId), lte(trailerHires.until, now)));
   let n = 0;
   for (const h of due) if (await db.transaction((tx) => giveBack(tx, h.id, now))) n++;
@@ -116,18 +124,19 @@ export async function endTrailerHires(db: Database, now = new Date()) {
 /** Offers open to hire, and the player's own offers and hires. */
 export async function trailerHireView(db: DbOrTx, userId: string) {
   const rows = await db
-    .select({ id: trailerHires.id, ownerId: trailerHires.ownerId, owner: users.username, pricePerDayCents: trailerHires.pricePerDayCents, maxDays: trailerHires.maxDays, renterId: trailerHires.renterId, until: trailerHires.until, modelId: trailers.modelId, plate: trailers.plate, condition: trailers.condition, city: cities.nameBg })
+    .select({ id: trailerHires.id, ownerId: trailerHires.ownerId, owner: users.username, renter: sql<string | null>`(select username from users r where r.id = ${trailerHires.renterId})`, pricePerDayCents: trailerHires.pricePerDayCents, maxDays: trailerHires.maxDays, renterId: trailerHires.renterId, until: trailerHires.until, modelId: trailers.modelId, plate: trailers.plate, condition: trailers.condition, cityId: trailers.cityId, city: cities.nameBg })
     .from(trailerHires)
     .innerJoin(trailers, eq(trailers.id, trailerHires.trailerId))
     .innerJoin(users, eq(users.id, trailerHires.ownerId))
     .innerJoin(cities, eq(cities.id, trailers.cityId))
     .where(isNull(trailerHires.endedAt))
     .orderBy(asc(trailerHires.pricePerDayCents));
-  const out = rows.map((r) => ({ ...r, model: trailerModel(r.modelId).name }));
+  const out = rows.map((r) => ({ ...r, model: trailerModel(r.modelId).name, body: trailerModel(r.modelId).body }));
   return {
     offers: out.filter((r) => !r.renterId && r.ownerId !== userId),
     mine: out.filter((r) => r.ownerId === userId),
     hired: out.filter((r) => r.renterId === userId),
+    all: out,
   };
 }
 

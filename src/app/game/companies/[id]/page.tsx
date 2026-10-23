@@ -8,7 +8,11 @@ import { isWinter } from '@/lib/game/winter';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { publicPlot } from '@/server/game/plot';
 import { isVip } from '@/lib/game/vip';
-import { Building, Building2, ScrollText } from 'lucide-react';
+import { Building, Building2, Landmark, ScrollText } from 'lucide-react';
+import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { LEGEND, legendTier } from '@/lib/game/heritage';
+import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
+import { museumOf } from '@/server/game/heritage';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CompanyBrand } from '@/components/company/CompanyBrand';
@@ -35,7 +39,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
   if (!row) notFound();
   const c = row.company;
   const [assets, members, mine, applications, licences, highlights] = await Promise.all([assetKinds(db, c.id), companyMembersView(db, c.id), membershipOf(db, user.id), myApplications(db, user.id), companyLicenceSet(db, c.id), companyHighlights(db, c.id, now)]);
-  const base = features.plot_guests ? await publicPlot(db, c.id, user.id) : null;
+  const [base, exhibits] = await Promise.all([features.plot_guests ? publicPlot(db, c.id, user.id) : null, features.museum ? museumOf(db, c.id) : []]);
   const showcase = base && features.company_trophies ? await companyShowcase(db, c.id) : null;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   const bonuses = memberBonuses(c.upgrades as UpgradeLevels);
@@ -53,7 +57,21 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
       <CompanyBrand company={c} hasLogo={assets.has('logo')} hasBanner={assets.has('banner')} subtitle={`Собственик ${row.owner} · ${int(row.members)} / ${capacity} членове · ${int(row.deliveries)} курса на членовете`} actions={<Link href="/game/companies" className="btn-ghost">← Всички компании</Link>} />
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 space-y-6">
+          {features.specializations && c.specialization && c.specialization in SPECIALIZATIONS && <div><Badge tone="violet">🎯 Специализация: {SPECIALIZATIONS[c.specialization as Specialization].label}</Badge></div>}
           {features.company_profile && highlights && <CompanyHighlights h={highlights} />}
+          {exhibits.length > 0 && (
+            <Card title={<span className="inline-flex items-center gap-2"><Landmark className="h-4 w-4 text-mist-400" />Музеят · {exhibits.length} камиона</span>}>
+              <ul className="grid gap-3 sm:grid-cols-3">
+                {exhibits.slice(0, 6).map((e) => (
+                  <li key={e.id} className="text-xs text-mist-300">
+                    <VehicleIllustration modelId={e.modelId} trailerModelId={null} color={e.color} livery={e.livery} className="h-auto w-full" />
+                    <div className="mt-1 flex items-center justify-between gap-1"><span className="font-mono">{e.plate}</span><span className="num">{int(e.odometerKm)} км</span></div>
+                    {legendTier(e.odometerKm) > 0 && <div className="text-gold-400">🏆 {LEGEND[legendTier(e.odometerKm) - 1]!.title}</div>}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
           {base && base.buildings.some((b) => b.level > 0 || base.construction) && (
             <Card
               title={<span className="inline-flex items-center gap-2"><Building className="h-4 w-4 text-mist-400" />Базата</span>}
