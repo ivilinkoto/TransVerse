@@ -624,6 +624,13 @@
       "when": 1792858602181,
       "tag": "0088_sturdy_grandmaster",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1792859033259,
+      "tag": "0089_freezing_paper_doll",
+      "breakpoints": true
     }
   ]
 }

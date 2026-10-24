@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { rangeFor } from '@/lib/game/reefer';
 import { Hint } from '@/components/game/Hint';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { ContractBoard, type BoardContract } from '@/components/game/ContractBoard';
@@ -141,6 +142,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       sealed: features.sealed_cargo && c.sealed,
       humanitarian: features.humanitarian && c.humanitarian,
       relayLeg: features.relay ? c.relayLeg : null,
+      temp: features.reefer && c.cargoType === 'refrigerated' && !c.sealed ? (({ min, max }) => `${min}…${max} °C`)(rangeFor(c.goods)) : null,
       haggle: features.haggling && haggleable(c) && !c.reservedByCompanyId ? (haggles.get(c.id) ?? 'open') : null,
       cargoType: c.cargoType as CargoType,
       cargoLabel: cargo.label,

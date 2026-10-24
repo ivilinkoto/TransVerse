@@ -64,6 +64,7 @@ export async function tripLog(db: DbOrTx, id: string, viewer: { userId: string }
     points,
     ledger,
     sharedAt: row.d.sharedAt,
+    reefer: row.d.reefer,
   };
 }
 

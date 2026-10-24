@@ -51,6 +51,8 @@ export interface BoardContract {
   humanitarian?: boolean;
   /** v1.10: a leg of a relay load (1 or 2). */
   relayLeg?: number | null;
+  /** v1.10: the temperature range of a refrigerated load. */
+  temp?: string | null;
   /** v1.8: haggling: 'open' (may ask), the player's ask, or null (not for this load). */
   haggle?: 'open' | { percent: number; accepted: boolean; holdUntil: string; valid: boolean } | null;
   /** What a vehicle needs to take this load (shown above the vehicle list). */
@@ -466,6 +468,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
               {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
               {c.transEurope && <Badge tone="gold">🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{Math.round((TRANS_EUROPE.multiplier - 1) * 100)}%</Badge>}
+              {c.temp && <Badge tone="blue">🌡️ {c.temp}</Badge>}
               {c.relayLeg && <Badge tone="cyan">🏃 {relayLabel(c.relayLeg)} · +{Math.round(RELAY.bonusShare * 100)} % ако и двамата сте навреме</Badge>}
               {c.humanitarian && <Badge tone="red">🆘 ХУМАНИТАРНА ПОМОЩ · +{RELIEF.coins} TC навреме</Badge>}
               {c.sealed && <Badge tone="violet">📦 ЗАПЕЧАТАН · до +{Math.round(SEALED.tiers.at(-1)!.bonus * 100)}% при отваряне</Badge>}

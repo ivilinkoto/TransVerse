@@ -494,6 +494,8 @@ export const deliveries = pgTable(
     organizedConvoyId: uuid('organized_convoy_id'),
     /** v1.10: the player shared the trip log (public page and card). */
     sharedAt: ts('shared_at'),
+    /** v1.10: the temperatures of a refrigerated load and how it arrived. */
+    reefer: jsonb('reefer').$type<{ min: number; max: number; readings: number[]; outcome: 'perfect' | 'slip' | 'spoiled'; cents: number }>(),
     /** v1.10: a decision on the way (Решения в движение). */
     choice: jsonb('choice').$type<{ id: string; at: number; deadline: number; notified?: boolean; decided?: 'a' | 'b'; result?: string; costCents?: number; bonusCents?: number; xpShare?: number }>(),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */

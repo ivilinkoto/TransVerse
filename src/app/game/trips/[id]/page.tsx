@@ -6,6 +6,7 @@ import { dateTime, duration, km, money } from '@/lib/format';
 import { appUrl } from '@/server/discord/config';
 import { gameContext } from '@/server/game/context';
 import { tripLog } from '@/server/game/trip-log';
+import { OUTCOME_LABELS, type ReeferOutcome } from '@/lib/game/reefer';
 
 export const metadata = { title: 'Курс' };
 
@@ -28,6 +29,25 @@ function RouteSketch({ points }: { points: [number, number][] }) {
       <circle cx={x(points[0]!)} cy={y(points[0]!)} r={8} fill="#f97316" />
       <circle cx={x(points[points.length - 1]!)} cy={y(points[points.length - 1]!)} r={8} fill="#2fd27a" />
     </svg>
+  );
+}
+
+/** The temperatures of a refrigerated load along the way, with its range. */
+function TempChart({ r }: { r: { min: number; max: number; readings: number[]; outcome: string; cents: number } }) {
+  const W = 600;
+  const H = 140;
+  const lo = Math.min(r.min - 2, ...r.readings);
+  const hi = Math.max(r.max + 2, ...r.readings);
+  const y = (v: number) => H - ((v - lo) / (hi - lo)) * H;
+  const x = (i: number) => (i / Math.max(1, r.readings.length - 1)) * W;
+  return (
+    <Card title="🌡️ Температура в хладилника" actions={<Badge tone={r.outcome === 'perfect' ? 'green' : r.outcome === 'slip' ? 'gold' : 'red'}>{OUTCOME_LABELS[r.outcome as ReeferOutcome]} · {money(r.cents)}</Badge>}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Температура по пътя">
+        <rect x={0} y={y(r.max)} width={W} height={y(r.min) - y(r.max)} fill="#22d3ee" opacity={0.12} />
+        <polyline points={r.readings.map((v, i) => `${x(i)},${y(v)}`).join(' ')} fill="none" stroke="#f97316" strokeWidth={3} />
+      </svg>
+      <p className="mt-1 text-xs text-mist-400">Норма {r.min}…{r.max} °C (синята ивица). Игрови данни.</p>
+    </Card>
   );
 }
 
@@ -68,6 +88,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
           )}
         </Card>
       </div>
+      {t.reefer && <TempChart r={t.reefer} />}
       <Card title="Сподели">
         {t.sharedAt ? (
           <div className="space-y-3 text-sm">

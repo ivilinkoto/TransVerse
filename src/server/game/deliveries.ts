@@ -89,6 +89,7 @@ import { relayDelivered } from './relay';
 import { growCity, harvestDelivered } from './city-growth';
 import { choiceMoney, choiceXp, planChoice } from './road-choices';
 import { storyDelivered } from './story';
+import { settleReefer } from './reefer';
 import { CONVOYS } from '@/lib/game/convoys';
 import { afterCustoms, checkShadyLoad, compartmentError, customsCheck, honestDelivery } from './smuggling';
 
@@ -567,6 +568,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.10: a relay leg — the hand-over, or the end with its bonus.
   const relayBonus = await relayDelivered(tx, company!.ownerId, d, contract, result.late, completedAt);
   const choiceBonus = await choiceMoney(tx, d);
+  // v1.10: a refrigerated load — how its temperature held.
+  const reeferCents = await settleReefer(tx, company!.ownerId, d, contract, vehicle!.condition, result.rewardCents, completedAt);
   const springBonus = (await equinoxBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await recordPassOpening(tx, company!.ownerId, d, result.late, completedAt));
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
@@ -579,7 +582,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
