@@ -1,0 +1,250 @@
+775755ea8d	In the game now	В игре сейчас
+a33dd5a8dd	In the treasury	В казне
+f52294e556	{0} went into the treasury.	В казну поступило {0}.
+a2d1f59dd3	There isn't enough money in the company treasury.	В казне компании недостаточно средств.
+e42bb20726	In the treasury now	В казне сейчас
+e6fd17632a	In the column	В колонне
+e2ad4e8a94	There are no other members in the company to hand the ownership to.	В компании нет других участников, которым можно передать владение.
+e05eb37603	Which country is the city of {0} in?	В какой стране находится город {0}?
+22338c3453	In the shop: “Cherry blossom” paint until {0}.	В магазине: краска «Цветущая вишня» до {0}.
+897e20cb9b	Currently on: {0}.	Сейчас включена: {0}.
+8246be629a	Your trucks are currently in their own colours.	Сейчас твои грузовики в собственных цветах.
+9324cca159	You aren't taking new students at the moment.	Сейчас ты не принимаешь новых учеников.
+a310205924	You aren't taking offers at the moment.	Сейчас ты не принимаешь предложения.
+497a25223a	You aren't a member of a company right now. Your fleet and licence stay yours — join another player's company or found a new one.	Сейчас ты не состоишь в компании. Твой автопарк и лицензия остаются твоими — вступи в компанию другого игрока или основай новую.
+e85fecbf3b	You are currently wearing the company livery.	Сейчас у тебя ливрея компании.
+91764627b0	No event at the moment	Сейчас нет ивента
+6523c7aab6	No event at the moment. Follow #ивенти!	Сейчас нет ивента. Следи за #ивенти!
+a7e63292ed	There is no open auction at the moment. The next one starts soon — see in the game.	Сейчас нет открытых торгов. Следующие начнутся скоро — смотри в игре.
+dc8c56010a	There are no orders at the moment{0}. See all orders — an empty run to a neighbouring city often pays off.	Сейчас нет заказов{0}. Посмотри все заказы — порожний пробег в соседний город часто окупается.
+528db5d512	There is no holiday theme at the moment.	Сейчас нет праздничной темы.
+8585b623d2	There is no free order on this lane right now. Try again in a while — new orders come out all the time.	Сейчас нет свободного заказа по этой линии. Попробуй чуть позже — новые заказы появляются постоянно.
+737314c3f3	No mentors are free at the moment	Сейчас нет свободных наставников
+82bb721ba3	There are no free loads from here at the moment.	Сейчас отсюда нет свободных грузов.
+504378bd56	There are no free drivers at the moment. Players sign up from Settings → “Available for companies”.	Сейчас нет свободных водителей. Игроки записываются в Настройки → «Доступен для компаний».
+1ddafb2e09	There is no plate auction at the moment.	Сейчас нет торгов за номер.
+5b47ff6d60	You are currently taking offers.	Сейчас ты принимаешь предложения.
+7e0126c5cf	Trucks with at least {0} km go into the museum.	В музей попадают грузовики с пробегом от {0} км.
+edde033deb	A glowing truck with no driver appeared in the fog, flashed its headlights and vanished. Your driver stopped for a moment to catch their breath.	В тумане появился светящийся грузовик без водителя, мигнул фарами и исчез. Твой водитель ненадолго остановился, чтобы перевести дух.
+8f6c02fc42	In some countries heavy trucks don't drive on Sunday (and at certain hours). The truck waits at the border.	В некоторых странах тяжёлые грузовики не ездят по воскресеньям (и в отдельные часы). Грузовик ждёт на границе.
+d74afe59c9	In force from {0}	Действует с {0}
+95dce8757a	In the warehouse	На складе
+8403aebafc	There are {0} t in the warehouse.	На складе {0} т.
+3493cd1a0c	The warehouse has room for {0} t.	На складе есть место для {0} т.
+5b3317c00b	Your warehouse has room for {0} t.	На твоём складе есть место для {0} т.
+ec5d0429f1	In the ledger you see the reward, the rent and the bonuses from every delivery. That way you can judge which trips pay best.	В бухгалтерской книге видны оплата, аренда и бонусы за каждую доставку. Так ты поймёшь, какие рейсы выгоднее всего.
+d868f584cf	An alliance has at most {0} companies.	В союзе не больше {0} компаний.
+50e5447d69	Nothing for trade is produced in this city.	В этом городе не производится ничего для торговли.
+764cc5c9f8	There are no buyers for these goods in this city.	В этом городе нет покупателей на этот товар.
+e73cd1bc7c	In the truck's colour	В цвет грузовика
+5c58860e9d	At the departure time all ready trucks set off together and the column drives at the speed of the slowest — you arrive at the same time, with no road incidents or decisions on the way. Everyone's deadline moves with the column.	Во время отправления все готовые грузовики трогаются вместе, и колонна едет со скоростью самого медленного — вы прибываете одновременно, без дорожных происшествий и решений в пути. Срок каждого сдвигается вместе с колонной.
+d020f824e8	The chat has an emoji button, and with @name you mention a player — they get a notification and their name lights up in the message. While you type @, the game suggests names.	В чате есть кнопка эмодзи, а через @имя ты упоминаешь игрока — он получает уведомление, а его имя подсвечивается в сообщении. Пока пишешь @, игра подсказывает имена.
+a6eb2351db	In numbers	В цифрах
+8e4d5a93e3	ASSIGNED · {0}% for {1}	НАЗНАЧЕН · {0}% для {1}
+a0ae2bf535	Wawel, Kraków	Вавель, Краков
+01d0561eb8	Valid for 1 hour, single use. The action is recorded in the audit log.	Действует 1 час, однократно. Действие записано в журнал аудита.
+737382e533	Vaccines and medicines	Вакцины и лекарства
+e67439d5af	Valencia	Валенсия
+ba27bbe3dd	Van	Фургон
+7a1e3ae56b	Rented van	Арендованный фургон
+b5350eda3e	Vans	Фургоны
+c269237869	The van doesn't pull a trailer.	Фургон не тянет прицеп.
+0e0496a5ee	Varna	Варна
+1010f45500	Varna → Constanța	Варна → Констанца
+b7c31e8dce	Vasil	Васил
+224535e9ac	Vasilev	Василев
+dd6834bbf9	Your role in “{0}” is “{1}”.	Ваша должность в «{0}» — «{1}».
+178ad83bc2	Your role is: {0}.	Ваша должность: {0}.
+e1eab3a7ef	Your role: {0} · {1} / {2} members	Ваша должность: {0} · {1} / {2} участников
+8042fe0916	Your place: {0}. Reward: {1}.	Ваше место: {0}. Награда: {1}.
+68363249eb	Your depots	Ваши депо
+4d36033ca0	Your answer…	Ваш ответ…
+9ae5505c01	Your rating as a carrier:	Ваш рейтинг как перевозчика:
+f00b05bbe9	Raise the salary	Повысить зарплату
+bef5f81f71	Raise to level {0}	Поднять до уровня {0}
+981b8a13a2	Once a day: the truck reverses, you steer. The more precisely you stop at the ramp, the more XP.	Раз в день: грузовик едет задним ходом, ты рулишь. Чем точнее остановишься у рампы, тем больше опыта.
+dbbb409774	Once a week the company picks a big project — a bridge in Ruse, a port in Varna, a metro in Sofia… — and the members haul the needed load together over 7 days. A reward for the treasury and TransCoin for everyone who helped.	Раз в неделю компания выбирает большой проект — мост в Русе, порт в Варне, метро в Софии… — и участники вместе возят нужный груз 7 дней. Награда в казну и ТрансКоин каждому, кто помог.
+141304adc1	Easter	Пасха
+81d3a64b1b	Easter (25 April – 9 May, Easter on 2 May): holiday loads +25 %, egg tapping with a friend (3 TC for the winner, a badge at 5 wins), a paint, tasks and the “Easter 2027” badge.	Пасха (25 апреля – 9 мая, Пасха 2 мая): праздничные грузы +25 %, битьё яйцами с другом (3 TC победителю, значок за 5 побед), краска, задания и значок «Пасха 2027».
+e5acd245ef	Easter on the roads of TransVerse — from 25 April to 9 May (Easter is on 2 May 2027).	Пасха на дорогах TransVerse — с 25 апреля по 9 мая (Пасха — 2 мая 2027).
+ade1a407d0	Easter baskets	Пасхальные корзины
+39231a71bc	Easter missions	Пасхальные миссии
+d8a58315b2	Easter run	Пасхальный рейс
+d6f0af9823	Easter loads	Пасхальные грузы
+f8bcf56297	Easter driver 2027	Пасхальный водитель 2027
+c39d4633a7	Easter loads have the “Easter” label and pay {0}% more. The egg battle has no stake: every pair of friends once a year, the winner gets {1} TC from the game, and at {2} wins — the “{3}” badge. Game data.	Пасхальные грузы помечены «Пасха» и оплачиваются на {0}% больше. Яичный бой — без ставок: каждая пара друзей раз в год, победитель получает {1} TC от игры, а за {2} побед — значок «{3}». Игровые данные.
+d0cfc12daa	The Great Move	Великий переезд
+24d1353bce	Wels	Вельс
+03d8c2e2a1	Faithful partner	Верный партнёр
+3707eb3ce5	The chains are stocking warehouses — pallets pay more.	Сети пополняют склады — паллеты оплачиваются выше.
+75cc5e0337	Version {0}	Версия {0}
+c327f086d9	Version {0} “{1}”	Версия {0} «{1}»
+3d45a28639	The newspaper is written automatically from the game data for the past week (Monday – Sunday, Bulgarian time). All the numbers are game data.	Газета пишется автоматически по игровым данным за прошедшую неделю (понедельник – воскресенье, болгарское время). Все цифры игровые.
+c957f989fb	Road veteran	Ветеран дорог
+e97b053b7f	Veterans	Ветераны
+d421201c93	You already voted for this truck.	Ты уже голосовал за этот грузовик.
+48aa01cd90	You already voted on this report.	Ты уже голосовал за этот сигнал.
+272e65a690	You already voted.	Ты уже голосовал.
+e357157627	You already gave a 👍	Ты уже поставил 👍
+ea566a07ed	You already gave this truck a 👍.	Ты уже поставил 👍 этому грузовику.
+9b08a4675a	They are already in the truck or have left.	Уже в грузовике или ушёл.
+2596a3c302	Already fitted.	Уже установлено.
+38ae04d86c	Already decided.	Уже решено.
+281af8ccbe	You are already fulfilling {0} auctions	Вы уже выполняете {0} торгов
+4abf34cdec	There is already an open poll — wait for it or close it.	Уже есть открытый опрос — дождитесь его окончания или закройте.
+f4a1223f63	There is already an open vote.	Уже идёт голосование.
+2903d62fa0	There is already an offer to this company.	Этой компании уже сделано предложение.
+9b290c7c25	It already has a hidden compartment.	Тайник уже есть.
+4c1dcf8ee3	You already have a depot in this city.	У вас уже есть депо в этом городе.
+3047fe6d74	You already have a duel with {0}.	У вас уже есть дуэль с {0}.
+d5362f06f7	You already have a company trailer — return it before taking another.	У вас уже есть фирменный прицеп — верните его, прежде чем брать другой.
+0365a639f6	Already have an account?	Уже есть аккаунт?
+0038bad327	You already have a requested or current internship.	У тебя уже есть заявленная или текущая стажировка.
+87599f7151	You already have a truck on a test drive.	У тебя уже есть грузовик на тест-драйве.
+ecb62a149d	You already have a loan — pay it off first.	У тебя уже есть кредит — сначала погаси его.
+9316cc82ea	You already have a mentor.	У тебя уже есть наставник.
+d2ac39f977	You already have the premium pass for this season.	У тебя уже есть премиум-пропуск на этот сезон.
+6a270e746e	You already have your own truck — this one will be returned to the lessor once it finishes the trip.	У тебя уже есть собственный грузовик — этот вернётся арендодателю, как только закончит рейс.
+b64c6e7d91	You are already driving a company truck — return it before taking another.	Вы уже водите фирменный грузовик — верните его, прежде чем брать другой.
+722d775701	You can now buy and rent vehicles, hire drivers and open depots.	Теперь вы можете покупать и арендовать технику, нанимать водителей и открывать депо.
+956edda613	You already made a prediction for this battle.	Ты уже сделал прогноз на эту битву.
+de6de66338	You are no longer a member of “{0}”.	Вы больше не состоите в «{0}».
+ec93a81a5e	You already announced a convoy with this trip.	Ты уже объявил колонну с этим рейсом.
+b7ed4258f3	You already answered this question.	Ты уже ответил на этот вопрос.
+4895d0e477	You already called your colleagues for this stop.	Ты уже позвал коллег на эту остановку.
+176579d819	You already get the company bonuses.	Вы уже получаете бонусы компании.
+cf0c0b40eb	You already own this licence.	У вас уже есть эта лицензия.
+dade7cedb6	You are already haggling over this order.	Ты уже торгуешься за этот заказ.
+3b4e572057	You already tapped eggs this year.	Вы уже бились яйцами в этом году.
+bc4e7c2b64	You are already in the academy.	Ты уже в академии.
+bbf89170a1	You are already in a company.	Ты уже в компании.
+634fa28e39	You are already in this convoy.	Ты уже в этой колонне.
+73a2928d75	You are already signed up for the rally this week.	Ты уже записан на ралли на этой неделе.
+7b56e16719	You are already signed up.	Ты уже записан.
+eca6750bee	You already test-drove this model.	Ты уже брал эту модель на тест-драйв.
+1280e8fa26	You already gave them a martenitsa this year.	Ты уже дарил ему мартеничку в этом году.
+7401831959	You already appealed, or the penalty isn't yours.	Ты уже обжаловал, или это наказание не твоё.
+a6d123287f	You already appealed — the team will answer you.	Ты уже подал апелляцию — команда тебе ответит.
+d52db4bff7	You are already VIP!	Вы уже VIP!
+273aa7e522	You have already applied to this company.	Вы уже подали заявку в эту компанию.
+16a2da7861	You have already taken this urgent order — follow it in “Fleet”.	Вы уже взяли этот срочный заказ — следите за ним в «Автопарке».
+a3469def99	You have already taken this urgent order.	Вы уже взяли этот срочный заказ.
+6c5e549b78	You are already friends.	Вы уже друзья.
+089ee52c8a	You are now the owner of “{0}”	Теперь вы владелец «{0}»
+cc38e64f6d	You are already in the contest this month.	Ты уже участвуешь в конкурсе этого месяца.
+1894d553ca	You are already in — good luck! 🍀	Ты уже участвуешь — удачи! 🍀
+e5686f5065	You are already a member of another company. Leave it to join here.	Вы уже состоите в другой компании. Покиньте её, чтобы вступить сюда.
+3ccf20b86e	You are already a member of a company. Leave it (or hand over the ownership) before founding a new one.	Вы уже состоите в компании. Покиньте её (или передайте владение), прежде чем основать новую.
+d3441cc388	You are already a member of a company. Leave it first.	Вы уже состоите в компании. Сначала покиньте её.
+c147c8800f	You are already a member of a company. Leave it first.	Ты уже состоишь в компании. Сначала покинь её.
+7e48f7a783	You already took it	Вы уже взяли его
+aac8a6b28f	In the evening the windows and lamps light up at the base, and the cars drive with headlights on. In autumn and spring it sometimes rains, and in October the trees turn yellow and the leaves fall.	Вечером на базе загораются окна и фонари, а машины едут с фарами. Осенью и весной иногда идёт дождь, а в октябре деревья желтеют и листья опадают.
+8b4c5573bb	In the evening, pick a shipment and one of your trucks.	Вечером выбери посылку и свой грузовик.
+b8dde6c15a	Evening offers	Вечерние предложения
+bf39a1766a	Reward collected ✓	Награда получена ✓
+3ec7ab3663	Collect the rewards.	Забирай награды.
+51d6150449	Take	Взять
+57ce016991	Take {0} + {1} TC	Забрать {0} + {1} TC
+c9968a01bb	Take {0} t and send	Взять {0} т и отправить
+f3ae0c0b72	Collect the daily reward	Забрать ежедневную награду
+d156c6482f	Take for trips	Взять для рейсов
+babe178dec	Get a truck with a 20 % down payment and 10 weekly instalments. You grow faster at the start, but the instalments are taken every week — and after two missed in a row the truck goes back.	Возьми грузовик с первым взносом 20 % и 10 еженедельными взносами. В начале растёшь быстрее, но взносы списываются каждую неделю — и после двух пропущенных подряд грузовик возвращается.
+4dbf3a121b	Take the loan	Взять кредит
+bfab7804e8	Take a trip from the board	Возьми рейс на бирже
+a910570660	Lease	Взять в лизинг
+f81e434899	Collect the reward	Забрать награду
+ba197d653b	Collect the reward in the “Missions” section.	Забери награду в разделе «Миссии».
+c1d7f61005	Collect the rewards	Забрать награды
+ecec66421d	Collect the rewards ({0})	Забрать награды ({0})
+934d0f0dcd	Take the first order	Возьми первый заказ
+dfc6621753	Take the whole load.	Возьми весь груз.
+34e468e4dd	Take a part	Взять часть
+058bf1e266	Take: {0}	Взять: {0}
+623958bbdb	Leased! See it in the fleet; the instalments are paid every week.	Взято в лизинг! Смотрите в автопарке; взносы оплачиваются каждую неделю.
+88f1a5a112	Type	Тип
+e4a565ee78	Ranking type	Тип рейтинга
+a969e23864	Vehicle type	Тип техники
+321b9c59d8	Cargo type	Тип груза
+375ab33061	Cargo type (sets the needed body and licence)	Тип груза (определяет нужный кузов и лицензию)
+e98080de8c	Cargo types	Типы грузов
+528ef632c8	You saw the stork over {0}! +{1} TC 🔴⚪	Ты увидел аиста над {0}! +{1} TC 🔴⚪
+a0fe879392	You are the only member. On closing, the company, the roles and the profile are deleted, and the rest of the treasury ({0}) is transferred to your personal balance.	Вы единственный участник. При закрытии компания, должности и профиль удаляются, а остаток казны ({0}) переводится на ваш личный баланс.
+0fce7c9e95	You are a member of this company.	Вы участник этой компании.
+c0058b4717	Blizzard	Метель
+60cf206ccc	Blizzard · passes closed	Метель · перевалы закрыты
+3f284cf356	A blizzard closed the pass — the truck waits for the snowploughs and puts on chains.	Метель закрыла перевал — грузовик ждёт снегоуборщиков и надевает цепи.
+a4b7ea80d4	Vienna	Вена
+f6b2f139e1	See	Смотреть
+fd80009ba2	See the fleet	Посмотреть автопарк
+c8d3ca2412	See the requirements	Посмотреть требования
+51915f85c1	See which loads you need.	Посмотри, какие грузы тебе нужны.
+9dad437cf8	See the company	Посмотреть компанию
+174d5e5ebc	See where you have been.	Посмотри, где ты побывал.
+58ba9bbabd	See on the map	Показать на карте
+d6d2645730	See the most profitable lanes.	Посмотри самые прибыльные линии.
+d98a306fdf	See the orders	Посмотреть заказы
+c505902164	See the loads waiting for you there — when it arrives, you can send it with “New trip for this truck”.	Посмотри грузы, которые ждут тебя там — когда он прибудет, сможешь отправить его через «Новый рейс для этого грузовика».
+b47c6ccbf1	See the prices by city (game data).	Посмотри цены по городам (игровые данные).
+22788d39a0	See it on your profile.	Посмотри в своём профиле.
+823f1671e5	Visible only to members · updates live	Видно только участникам · обновляется в реальном времени
+c4eb493e2a	You see the evening offers. You can turn them off at any time — the open offers disappear.	Ты видишь вечерние предложения. Их можно отключить в любой момент — открытые предложения исчезнут.
+4e18ff6d1f	You see this because you have permissions in the server	Ты видишь это, потому что у тебя есть права на сервере
+93eca139d2	See the new options in “Development”.	Посмотрите новые возможности в «Развитии».
+8993e653b8	Quiz in Discord	Викторина в Discord
+ae9b17d3d7	Viktoria	Виктория
+3135c6f756	Always: {0}	Всегда: {0}
+84ac062dcf	Vignette once per trip through the country: {0}.	Виньетка один раз за рейс через страну: {0}.
+4a5785ee3f	Wine	Вино
+84ab1e4a6c	Violet	Фиолетовый
+045fd91c7a	High	Высокая
+58ab8525a3	High temperatures raise the demand for refrigerated transport.	Высокие температуры повышают спрос на рефрижераторные перевозки.
+4cee6c4c8d	Vitosha	Витоша
+1cb0c7c1d0	Showcase	Витрина
+d3e6c0865e	Showcase in the garage	Витрина в гараже
+84469df7f6	The truck's showcase in the Service.	Витрина грузовика в Сервисе.
+c7400f3325	Company showcase	Витрина компании
+cb95ac031e	Company showcase (plot and profile): battles won, projects finished, builders of the week, the sum of the building levels and the members' construction badges.	Витрина компании (участок и профиль): выигранные битвы, завершённые проекты, строители недели, сумма уровней зданий и строительные значки участников.
+51c0a14f81	Profile showcase	Витрина профиля
+507a5d4e5f	Profile showcase and trailer parts	Витрина профиля и детали для прицепа
+2288a4de40	Profile showcase: 3 trucks and 3 badges.	Витрина профиля: 3 грузовика и 3 значка.
+b7b12c2d2a	Showcase →	Витрина →
+96fbabb3e8	Turned on in Orders → Shadows or in Settings, and off at any time. The goods are harmless and made up; no weapons, drugs or people. Game money only — never TransCoin.	Включается в Заказы → Тени или в Настройках и отключается в любой момент. Товары безобидные и вымышленные; никакого оружия, наркотиков или людей. Только игровые деньги — никогда ТрансКоин.
+bf558f808e	I'm in	Участвую
+78b7eaa254	Turning on…	Включение…
+b1b254bbd6	On on this device	Включены на этом устройстве
+9ce5f18f21	On: you see the evening shady offers in “Shadows”.	Включено: ты видишь вечерние теневые предложения в «Тенях».
+9c763064eb	Turn on	Включить
+fce05ff016	Turn them on in “Shadows” or in Settings (only if you want).	Включи их в «Тенях» или в Настройках (только если хочешь).
+810683b7c1	Turn on notifications on this device	Включи уведомления на этом устройстве
+7f24aabf7f	Add your truck	Добавь свой грузовик
+b31fdff34b	Add your truck.	Добавь свой грузовик.
+6e9a3c8727	Join	Присоединиться
+a9ccf4b71a	Join an open convoy or create your own (from level 3).	Присоединись к открытой колонне или создай свою (с 3-го уровня).
+0114ede3a2	Turn on the decorations	Включить украшения
+a0cd22bf1b	Turn on “Shady loads” in Settings if you want to see them.	Включи «Теневые грузы» в Настройках, если хочешь их видеть.
+760d76b247	Train	Поезд
+cc0fb2262d	Train for the truck	Поезд для грузовика
+2637feb513	Rail lines for trucks in Germany, Austria, Hungary, Romania and Turkey. The choice is made when taking the load.	Железнодорожные линии для грузовиков в Германии, Австрии, Венгрии, Румынии и Турции. Выбор делается при взятии груза.
+2f684cfc57	The train isn't suitable for this load.	Поезд не подходит для этого груза.
+deecbc10fa	Vlahov	Влахов
+90b4a6b8cc	Log in	Войти
+1223dae72e	Join the department	Вступить в отдел
+14749e0b44	Log in with the new password	Войди с новым паролем
+753e54e061	Logged in	Вошли
+5fbb10db77	Tractor unit	Тягач
+be687e5769	Tractor + car carrier	Тягач + автовоз
+b87a1ddc64	Rented tractor + curtainsider	Арендованный тягач + штора
+34e8b61c90	Tractor + flatbed	Тягач + платформа
+2f11edcb3a	Tractor / truck	Тягач / грузовик
+10e13ecf47	Tractor units	Тягачи
+0ab032ca93	The tractor has no trailer attached.	К тягачу не прицеплен прицеп.
+aa17390248	Joins as {0}.	Вступает как {0}.
+6dcb567588	Logging in…	Вход…
+6e37c164ea	Instead of a part — load everything	Вместо части — загрузить всё
+e2b1fd8775	Paid in	Внесено
+21c6e4e523	Paid into the company treasury	Внесено в казну компании
+5a42f9d954	Paid into the treasury of “{0}”	Внесено в казну «{0}»
+0022cd7d7f	Paid in by {0}	Внесено {0}
+b8e6496bf0	Paid in by a member	Внесено участником
+77ef8aa9ec	Paid into the treasury.	Внесено в казну.
+caf97e8986	Pay in	Внести

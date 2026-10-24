@@ -1,0 +1,250 @@
+aa850a37de	Pay in from your personal money	Внести из личных денег
+c74e6858c4	Customs attention	Внимание таможни
+e4c90a5ea9	Attention, queue at the border…	Внимание, очередь на границе…
+614459d496	Contribution	Взнос
+c853850f88	Contribution {0}% of the reward	Взнос {0}% от оплаты
+71fab22843	Contribution to the treasury	Взнос в казну
+9d10843a68	Contribution to the treasury of “{0}”	Взнос в казну «{0}»
+c0ad359875	Contribution to the company	Взнос в компанию
+08dbae74fe	Members' contribution to the company:	Взнос участников в компанию:
+9d601b8a81	Trip contribution	Взнос с рейса
+19f01db5df	Loan instalment ({0}/{1})	Платёж по кредиту ({0}/{1})
+3fccc5435e	Instalments	Взносы
+9ac1ec1de0	Contributions from members	Взносы участников
+0d197a4265	Water for industry	Вода для промышленности
+6b9f54a9b1	Leader	Ведущий
+70fafb8b5f	Column leader	Ведущий колонны
+63a6293f37	The leader picks a lane, a time and places. Every truck joins with its own load on the lane or with a part of the convoy's shared load. At the departure time all ready trucks in the city set off together and the column drives at the speed of the slowest — you arrive at the same time, with no road incidents. Bonus for arriving on time: +2 % per truck (from +4 % to +12 %), another +5 % if everyone is on time, +2 % for the leader and +1 % for the tail and the scout. A company convoy pays no contribution and gives ×1.5 company XP. The bonus applies to players from level {0}, up to {1} times a day, and only with a real load.	Ведущий выбирает линию, время и места. Каждый грузовик присоединяется со своим грузом по линии или с частью общего груза колонны. Во время отправления все готовые грузовики в городе трогаются вместе, и колонна едет со скоростью самого медленного — вы прибываете одновременно, без дорожных происшествий. Бонус за прибытие вовремя: +2 % за грузовик (от +4 % до +12 %), ещё +5 %, если все вовремя, +2 % ведущему и +1 % замыкающему и разведчику. Фирменная колонна не платит взнос и даёт ×1,5 опыта компании. Бонус действует для игроков с уровня {0}, до {1} раз в день и только с настоящим грузом.
+d90a662213	The leader cancelled the convoy. Your load is free.	Ведущий отменил колонну. Твой груз свободен.
+8848adab11	The leader grows: New leader (4 places) → Leader (6) → Experienced leader (8) → Legendary leader (12). A leaders' ranking and a chat in the column.	Ведущий растёт: Новый ведущий (4 места) → Ведущий (6) → Опытный ведущий (8) → Легендарный ведущий (12). Рейтинг ведущих и разговор в колонне.
+33f0346130	Led	Проведено
+cfc528f81d	Leading offer:	Лучшее предложение:
+782af6e879	The leading company “{0}” dissolved the alliance.	Ведущая компания «{0}» распустила союз.
+38a59ea715	Leads	Ведёт
+8e7420bf1f	**{0}** leads. 	Лидирует **{0}**.
+5704b38006	Lead the column: +2 % and leader points.	Веди колонну: +2 % и очки ведущего.
+298e393629	You lead up to {0} trucks.{1}	Ты ведёшь до {0} грузовиков.{1}
+0d660b96d3	Lead	Лидируют
+6c517e6093	Time on the road	Время в пути
+4dde108631	The time to decide is up.	Время на решение истекло.
+d8b1dea1db	Weather: Open-Meteo.com (CC BY 4.0)	Погода: Open-Meteo.com (CC BY 4.0)
+5bc6215784	The worker's connection to Discord	Связь worker-а с Discord
+c9494c6784	The connection to PayPal ({0}) works — the keys are correct.	Связь с PayPal ({0}) работает — ключи верные.
+fbfc5ac93b	Only returned at the end.	Возвращается только в конце.
+253e05d1eb	You pay back {0} in {1} weekly instalments of {2}. The instalments are taken automatically; without money the instalment is missed and the rating drops.	Ты возвращаешь {0} за {1} еженедельных платежей по {2}. Платежи списываются автоматически; без денег платёж пропускается и рейтинг падает.
+7fc86abf8c	Nobody has contributed yet. Be the first!	Пока никто не внёс вклад. Будь первым!
+05a263d33f	Nobody has founded a company yet. Be the first!	Пока никто не основал компанию. Будьте первыми!
+ec9a51e7d7	No data yet.	Пока нет данных.
+81dc7df110	No events yet. The first automatic one will be created by the background process.	Пока нет ивентов. Первый автоматический создаст фоновый процесс.
+bdf6a981d7	No companies founded yet.	Пока не основано ни одной компании.
+644e011dd2	No payments yet.	Пока нет платежей.
+6290ced51e	No urgent deliveries yet.	Пока нет срочных доставок.
+9216820bb1	Every active player gets {0}. It is recorded in the audit. Are you sure?	Каждый активный игрок получит {0}. Это записывается в аудит. Уверен?
+f0b9120a3a	Every day at 10:00, 14:00, 18:00 and 21:00 — a transformer, a yacht, a helicopter, a museum piece… 15 minutes of reverse bidding: the lowest price for the haul wins, and on delivery there is TransCoin too.	Каждый день в 10:00, 14:00, 18:00 и 21:00 — трансформатор, яхта, вертолёт, музейный экспонат… 15 минут торгов на понижение: побеждает самая низкая цена перевозки, а при доставке — ещё и ТрансКоин.
+2ce669870f	Every finished trip: route, time at the wheel, rests, borders and a card to share.	Каждый завершённый рейс: маршрут, время за рулём, отдых, границы и карточка, которой можно поделиться.
+1f33fac3b4	Every player shows one truck a month — as it is right now (model, trailer, company colour and special paint). The others give a 👍 (once each, not for their own). On the 1st the truck with the most 👍 (at least {0}) wins {1} TransCoin and the “Livery of the month” badge. The trucks are also shown in Discord, in #ливреи.	Каждый игрок раз в месяц показывает один грузовик — таким, какой он сейчас (модель, прицеп, цвет компании и особая краска). Остальные ставят 👍 (по разу, не своему). 1-го числа грузовик с наибольшим числом 👍 (не меньше {0}) выигрывает {1} ТрансКоин и значок «Ливрея месяца». Грузовики показываются и в Discord, в #ливреи.
+a283614053	Every truck joins with its own load on the same lane or with a part of the convoy's shared load (paid ×1.1). The truck must be free in the departure city.	Каждый грузовик присоединяется со своим грузом по той же линии или с частью общего груза колонны (оплата ×1,1). Грузовик должен быть свободен в городе отправления.
+6d99c6feab	Every kilometre counts	Каждый километр на счету
+0b6b1bb2d7	Every member's trip brings XP to the company and it levels up. Upgrades are bought from the company treasury — separate from every member's personal money, the owner's included. The treasury is filled by the contributions from trips and by voluntary contributions from the members. Treasury:	Каждый рейс участника приносит опыт компании, и она растёт в уровнях. Улучшения покупаются из казны компании — отдельно от личных денег каждого участника, включая владельца. Казна пополняется взносами с рейсов и добровольными взносами участников. Казна:
+36f289817f	Every trip with its route, time at the wheel, rests and borders — and a card to share on Facebook.	Каждый рейс с маршрутом, временем за рулём, отдыхом и границами — и карточка, которой можно поделиться в Facebook.
+36bbbac298	Every new city is a card.	Каждый новый город — это карточка.
+ae3d760e9e	Every Monday the active companies meet a company of a similar level. All week the members' tonnes are counted — the winner takes 10,000 lv for the treasury, company XP and a trophy on its profile.	Каждый понедельник активные компании встречаются с компанией близкого уровня. Всю неделю считаются тонны участников — победитель получает 10 000 лв. в казну, опыт компании и трофей в профиле.
+1e680126c0	Every Monday a new issue comes out: the drivers of the week, the record trips, the strongest companies, the fuel prices and what's coming. Competition → “Weekly”.	Каждый понедельник выходит новый номер: водители недели, рекордные рейсы, сильнейшие компании, цены на топливо и что впереди. Соревнования → «Еженедельник».
+fa4afad210	Every Monday the listed company pays the shareholders a share of the week's contributions.	Каждый понедельник компания на бирже платит акционерам долю взносов за неделю.
+96abb1db62	You get a dividend every Monday.	Каждый понедельник ты получаешь дивиденд.
+ee0d22b45a	Every Monday: who drives the most, the records, the fuel and what's coming.	Каждый понедельник: кто ездит больше всех, рекорды, топливо и что впереди.
+99e0028bde	Every season is 28 days.	Каждый сезон длится 28 дней.
+2bc9eba4b0	Every tonne delivered to a city raises it for all players. More developed cities give better-paid loads.	Каждая тонна, доставленная в город, поднимает его для всех игроков. Более развитые города дают лучше оплачиваемые грузы.
+286720bdf5	Every tonne delivered to a city raises it for everyone. More developed cities give better-paid loads, and every week there is a city of the week.	Каждая тонна, доставленная в город, поднимает его для всех. Более развитые города дают лучше оплачиваемые грузы, а каждую неделю выбирается город недели.
+6718a724c3	Every participant	Каждый участник
+508e9eb405	Every member of the company sees the open loads with building materials on the plot and takes them with the “Take” button (only roles with the “Construction” permission build and spend from the treasury).	Каждый участник компании видит на участке открытые грузы со стройматериалами и берёт их кнопкой «Взять» (строят и тратят из казны только должности с правом «Строительство»).
+8a9bb36bb3	Every member of the company can drive them.	Водить их может любой участник компании.
+e6c55a644c	Every driver has a level, a salary and a skill. The hours at the wheel add up and after a long trip the driver has to rest — or you send a double crew that drives without stopping.	У каждого водителя есть уровень, зарплата и навык. Часы за рулём накапливаются, и после долгого рейса водителю нужно отдохнуть — или ты отправляешь двойной экипаж, который едет без остановок.
+d538015e1e	All-season tyres	Всесезонные шины
+109b6e8542	All	Все
+3e6e839a91	All VIP perks for 30 days, added to your current VIP.	Все преимущества VIP на 30 дней, добавляются к текущему VIP.
+c332167f61	All VIP perks for one week. Added to your current VIP.	Все преимущества VIP на неделю. Добавляется к текущему VIP.
+510837354c	All VIP perks for a month.	Все преимущества VIP на месяц.
+7d1c958e20	All types	Все типы
+54a2bdca25	Everyone votes.	Голосуют все.
+d2f7720b87	All cities	Все города
+b174cb1442	All together we deliver pumpkins, sweets, costumes and lanterns. Every holiday order counts. Every participant wins {0}, XP and 20 TC, and the best — VIP and more TransCoin.	Все вместе возим тыквы, сладости, костюмы и фонари. Засчитывается каждый праздничный заказ. Каждый участник получает {0}, опыт и 20 TC, а лучшие — VIP и ещё ТрансКоин.
+ec58247a10	All events	Все ивенты
+7eacac9a41	All players see the same board. The order you take disappears for the others. You choose a load by price, distance, deadline and trailer type — or let the dispatcher suggest the best trip for every free truck.	Все игроки видят одну и ту же биржу. Заказ, который берёшь ты, исчезает у остальных. Ты выбираешь груз по цене, расстоянию, сроку и типу прицепа — или позволяешь диспетчеру предложить самый выгодный рейс для каждого свободного грузовика.
+7ac5184e2a	All players share the same freight market, and the world keeps running when you are not online.	Все игроки делят один грузовой рынок, а мир продолжает жить, даже когда тебя нет в сети.
+f9be578f54	All trucks are on the road:\n{0}	Все грузовики в пути:\n{0}
+8777761dea	All the postcards of Europe	Все открытки Европы
+2e337b0929	All companies	Все компании
+b4b4fe8a29	All updates	Все обновления
+be738dc093	All orders	Все заказы
+8a7e51859d	All the rules — Help	Все правила — Помощь
+8c5081a6a7	All vehicles are on the road. Follow them on the map.	Все машины в пути. Следи за ними на карте.
+8c672b7b3e	Everyone went on without an opponent.	Все прошли дальше без соперника.
+501109d89a	All buildings are on the plot — raise their levels.	Все здания уже на участке — повышай их уровни.
+269e9460ca	All the game's systems in brief. The numbers are game rules.	Все системы игры вкратце. Цифры — правила игры.
+3f13657721	All loads	Все грузы
+117fcf2909	All loads under the contract have already been sent.	Все грузы по договору уже отправлены.
+746fe04822	All loads are on the road — the contract will be fulfilled when they arrive.	Все грузы в пути — договор будет выполнен, когда они прибудут.
+40afe8d557	All members can now take orders with it.	Теперь все участники могут брать заказы с ним.
+3d6339913e	All TransVerse drivers haul a huge amount of cargo together. Every tonne matters.	Все водители TransVerse вместе перевозят огромное количество грузов. Каждая тонна важна.
+714abc1ba3	All →	Все →
+710cf1fc73	Everything	Всё
+89cabddca1	Everything is on — untick what you don't want in Discord. Phone notifications are set separately below.	Всё включено — сними отметку с того, чего не хочешь в Discord. Уведомления на телефоне настраиваются отдельно ниже.
+662cecacdd	Everything is delivered — the construction can begin.	Всё доставлено — стройка может начаться.
+3eb0f4b7f1	Everything missing is already on its way to the plot.	Всё недостающее уже едет на участок.
+25c0213404	Everything missing is on its way to the plot — drive the loads from the board.	Всё недостающее едет на участок — вози грузы с биржи.
+1cde098c98	Everything else (level, achievements, support, payments)	Всё остальное (уровень, достижения, поддержка, платежи)
+47f44991ce	Everything here is a game: made-up goods, game money and game data.	Здесь всё — игра: вымышленные товары, игровые деньги и игровые данные.
+1f11f48975	Every country has a page with its {0} biggest cities from the freight market (real cities). The first delivery to a city unlocks its card. A full page — {1} TransCoin and the “Album” badge.	У каждой страны есть страница с {0} крупнейшими городами грузового рынка (настоящие города). Первая доставка в город открывает его карточку. Полная страница — {1} ТрансКоин и значок «Альбом».
+7d5229e607	Every job runs separately: if one fails, the rest go on. The last error is shown here.	Каждая задача выполняется отдельно: если одна падает, остальные продолжают. Здесь видна последняя ошибка.
+b8d1920a27	Every company now has its own plot — and builds it itself, trip by trip.	Теперь у каждой компании есть свой участок — и она строит его сама, рейс за рейсом.
+61b0dab242	Every listed company has {0} shares; up to {1} can be held outside it, at most {2} per player. The purchase pays the price into the company treasury (+{3} % fee). Bought shares can be sold after {4} days for {5} % of the price. Every day the price moves by up to ±{6} % towards (treasury + {7} × the trip contributions over {8} days) / {9}. The dividend is {10} % of the week's contributions, for the share of the shares outside the company.	У каждой компании на бирже {0} акций; вне её можно держать до {1}, не больше {2} на игрока. При покупке цена идёт в казну компании (+{3} % комиссия). Купленные акции продаются через {4} дней за {5} % цены. Каждый день цена меняется до ±{6} % в сторону (казна + {7} × взносы с рейсов за {8} дней) / {9}. Дивиденд — {10} % взносов за неделю, пропорционально доле акций вне компании.
+8c2981953f	Every Sunday at 20:00 TransVerse sends out its own column with a shared load — join in and see which company brings the most trucks.	Каждое воскресенье в 20:00 TransVerse запускает свою колонну с общим грузом — присоединяйся и посмотри, какая компания приведёт больше всего грузовиков.
+0635308d26	Every new one is +100 XP.	Каждый новый — +100 опыта.
+235b12fc07	Every suitable delivery counts automatically.	Каждая подходящая доставка засчитывается автоматически.
+6ace4328f1	Every suitable delivery counts automatically. If the goal is reached in time, every participant gets a reward, and the best — VIP too. If not — nobody gets anything, so we fight together. The goals and rewards are game data.	Каждая подходящая доставка засчитывается автоматически. Если цель достигнута вовремя, каждый участник получает награду, а лучшие — ещё и VIP. Если нет — никто ничего не получает, поэтому боремся вместе. Цели и награды — игровые данные.
+c5cfd70e9e	Every building needs cement, bricks, glass and steel from real supplier cities. The members haul them — or you order them with delivery at a higher price. Then the construction runs.	Каждому зданию нужны цемент, кирпич, стекло и сталь из реальных городов-поставщиков. Их возят участники — или ты заказываешь их с доставкой по более высокой цене. Затем идёт стройка.
+dff673043b	Every week one short plate goes to auction for TransCoin. A free trailer can be rented to another player for up to 7 days.	Каждую неделю один короткий номер уходит на торги за ТрансКоин. Свободный прицеп можно сдать в аренду другому игроку на срок до 7 дней.
+1f14d3bc08	Every week one short plate that isn't sold in the shop goes to auction for TransCoin.	Каждую неделю один короткий номер, которого нет в магазине, уходит на торги за ТрансКоин.
+4b71d4b070	Every week a new route between two big cities. You sign up once — your rally load ({0} t) appears on the board in the start city. The time from loading to unloading and the fuel (or power) cost per 100 km are measured. The empty run to the start doesn't count. After the end of the week the top three in each category get rewards: {1}. The rewards and the load are game data.	Каждую неделю новый маршрут между двумя крупными городами. Записываешься один раз — на бирже в стартовом городе появляется твой раллийный груз ({0} т). Измеряется время от погрузки до разгрузки и расход топлива (или энергии) на 100 км. Порожний пробег до старта не учитывается. По итогам недели первая тройка в каждой категории получает награды: {1}. Награды и груз — игровые данные.
+0605f7285a	Every week a new measure and a ranking with TransCoin for the top three. Eurotour — deliveries to all 9 countries in a month. A big convoy of up to 5 trucks with an extra bonus and the “Column leader” badge.	Каждую неделю новый показатель и рейтинг с ТрансКоин для первой тройки. Евротур — доставки во все 9 стран за месяц. Большая колонна до 5 грузовиков с дополнительным бонусом и значком «Ведущий колонны».
+44571db487	A new measure every week, a Eurotour through the month and big convoys. Game data.	Каждую неделю новый показатель, Евротур в течение месяца и большие колонны. Игровые данные.
+670bedd272	Every week you choose a goal — easy, normal or hard, at your own pace — with a reward in lev and TransCoin. The new “Economical driver” ranking rewards the lowest costs per kilometre.	Каждую неделю ты выбираешь цель — лёгкую, обычную или трудную, в своём темпе — с наградой в левах и ТрансКоин. Новый рейтинг «Экономичный водитель» награждает самые низкие расходы на километр.
+dc03fad71d	Every week — a group of up to {0} players in your league. The best go up, the last go down: {1}.	Каждую неделю — группа до {0} игроков в твоей лиге. Лучшие поднимаются, последние опускаются: {1}.
+0e78b5aae3	Every week — pairs.	Каждую неделю — пары.
+0d0bfde5c1	Every week — a new real route. It measures who gets there fastest and who most economically. The top three in each category win money and TransCoin.	Каждую неделю — новый настоящий маршрут. Измеряется, кто доедет быстрее всех и кто экономичнее всех. Первая тройка в каждой категории выигрывает деньги и ТрансКоин.
+f8a96f6844	Every week — a new measure.	Каждую неделю — новый показатель.
+adc0a20f32	Every stop has its own deadline. A late stop is worth {0}% of its share of the pay.	У каждой остановки свой срок. Опоздавшая остановка стоит {0}% своей доли оплаты.
+c01bebf505	Every successful shipment from a city gives you a contact there. Every {0} shipments the contact grows.	Каждая успешная посылка из города даёт тебе там знакомого. Каждые {0} посылок контакт растёт.
+abedfcdec0	Every administrative action: who, what, when.	Каждое административное действие: кто, что, когда.
+fe6b5bc622	Every decision has a price. Every kilometre counts.	У каждого решения своя цена. Каждый километр на счету.
+9f1668b001	Every depot of yours has a warehouse (15 t per depot slot). You buy goods from the producers in the depot's city and then haul them with your own truck: for sale in a city that wants them, or to another depot of yours. The prices are game data. They depend on the country (in Germany and Austria goods are dearer than in Bulgaria), on the demand in the city, and change every day by up to ±12%, so choose when and where to sell. The sale is at the price on the day of arrival and lowers the demand there. The trip costs (fuel, tolls) are as with an order, but there is no reward — the profit is the price difference.	У каждого твоего депо есть склад (15 т на место в депо). Ты покупаешь товары у производителей в городе депо, а потом везёшь их своим грузовиком: на продажу в город, где на них спрос, или в другое своё депо. Цены — игровые данные. Они зависят от страны (в Германии и Австрии товары дороже, чем в Болгарии), от спроса в городе и меняются каждый день до ±12%, так что выбирай, когда и где продавать. Продажа идёт по цене в день прибытия и снижает спрос там. Расходы на рейс (топливо, платные дороги) как при заказе, но оплаты нет — прибыль составляет разница в цене.
+13488cf512	The second reputation — from the shady loads. It unlocks dearer shipments and the black market; it doesn't harm the ordinary one, but customs notice it.	Вторая репутация — за теневые грузы. Открывает более дорогие посылки и чёрный рынок; не мешает обычной, но таможня её замечает.
+5606e40635	Second driver (double crew)	Второй водитель (двойной экипаж)
+07205a06c3	Log in	Вход
+1e63929bbb	There is no room for a second driver in the van.	В фургоне нет места для второго водителя.
+35cf29dbfd	In your city	В вашем городе
+488c1b68dc	There are {0} t of products in the factory — put them up for sale.	На фабрике {0} т продукции — выставьте её на продажу.
+f1bb7dffa5	Enter the name of the load.	Введите название груза.
+4836095c18	Enter an e-mail or username.	Введите e-mail или имя пользователя.
+c7f19b89ac	Enter a password.	Введите пароль.
+c07f200d5e	Enter the player's username.	Введите имя пользователя игрока.
+a35a44aa72	Enter the current password.	Введите текущий пароль.
+e0b8c055af	Enter your e-mail and we will send you a link for a new password.	Введи свой e-mail, и мы пришлём ссылку для нового пароля.
+19293af6cb	Air	Воздушный
+b0a716f337	Air cargo licence	Лицензия на авиагрузы
+808ba02955	Air freight.	Авиаперевозка грузов.
+5ac3fb9be6	Assigned trip: {0}	Назначенный рейс: {0}
+ca2e3b1138	Assigned by {0} to {1}	Назначен {0} для {1}
+68afe6196d	Assigned trips: a company member with the “Auctions and assigning” permission picks an order and a free driver (Settings → “Available for companies”), commission 5–25 %. The order is held for the driver for 15 minutes; they take it with their own truck or decline. The commission goes to the treasury on delivery.	Назначенные рейсы: участник компании с правом «Торги и назначение» выбирает заказ и свободного водителя (Настройки → «Доступен для компаний»), комиссия 5–25 %. Заказ закрепляется за водителем на 15 минут; он берёт его своим грузовиком или отказывается. Комиссия поступает в казну при доставке.
+52754fa423	Assigned to me	Назначены мне
+9276c9d81c	Assign	Назначить
+600150f241	Assign a trip to a driver	Назначить рейс водителю
+2637698943	Assign to a free driver for a commission for the treasury	Назначить свободному водителю за комиссию в казну
+3a194c48a2	Assign to a driver	Назначить водителю
+cf75926cc1	Client	Заказчик
+d49f95a033	Reward	Оплата
+96c9d5d028	Rewards	Оплаты
+91441024e3	Trip rewards	Оплата за рейсы
+19b6eccc40	An error occurred.	Произошла ошибка.
+d3c79ef89e	An unexpected error occurred. Please try again.	Произошла непредвиденная ошибка. Попробуйте снова.
+e36684d604	Restored	Восстановлены
+68a9d2daf8	Restore the access of {0}	Восстановить доступ {0}
+f6aee49c45	Question	Вопрос
+95bda0255f	Question (e.g. What should we build after the office?)	Вопрос (например: Что строим после офиса?)
+329adb887c	Question about the game	Вопрос об игре
+38ee7bf042	Questions	Вопросы
+e9ad344594	Questions and answers	Вопросы и ответы
+5ad2471048	The question is already closed.	Вопрос уже закрыт.
+c6992f17e0	The question is too short.	Вопрос слишком короткий.
+6c93d6b227	Refunded a payment of {0} to {1} ({2})	Возврат платежа {0} для {1} ({2})
+8e5c99802d	Deposit returned: {0}	Залог возвращён: {0}
+7752d6909b	Deposit returned: nobody took the haul	Залог возвращён: перевозку никто не взял
+0bf74b72bf	Trailer rent returned (team decision)	Аренда прицепа возвращена (решение команды)
+021eed7586	Bid for plate “{0}” returned	Ставка за номер «{0}» возвращена
+dffbe76435	Bid returned: the auction for “{0}” was stopped	Ставка возвращена: торги за «{0}» остановлены
+e2a420f750	Refunded payment	Возвращённый платёж
+19073ea067	Refunded payment: {0}	Возвращённый платёж: {0}
+3868e6a372	Return	Вернуть
+4123f48d7e	Reset to ×1.00	Вернуть ×1,00
+0c8f503695	Return to the company	Вернуть компании
+71b36fcb4e	Return to the lessor	Вернуть арендодателю
+d0eb27386e	Refund the amount	Вернуть сумму
+02a034113e	Inside there was: {0}.{1}	Внутри было: {0}.{1}
+4b5c9e23c7	A domestic trip in a foreign country. Up to 3 such trips in 7 days in one country are allowed.	Внутренний рейс в чужой стране. Разрешено до 3 таких рейсов за 7 дней в одной стране.
+743b2f5c77	The windmills of Kinderdijk	Ветряные мельницы Киндердейка
+a0c071d86e	Genoa	Генуя
+9bf574f120	Geometry: OpenStreetMap / Valhalla · Cities: GeoNames	Геометрия: OpenStreetMap / Valhalla · Города: GeoNames
+9f0391c44d	Georgi	Георгий
+5b31e2d4ee	Georgi Petrov	Георгий Петров
+92ef0ec64e	Georgi put one more tick on his map and thanked you.	Георгий отметил на своей карте ещё одну галочку и поблагодарил тебя.
+63f9a8591c	Georgiev	Георгиев
+0d8b6dc981	Gergana	Гергана
+62cd360b71	Chapter {0} finished: “{1}” 📖	Глава {0} завершена: «{1}» 📖
+83b78abb99	Chapter {0}: {1}	Глава {0}: {1}
+0775c0a4ce	The chapter unlocks from level {0}.	Глава открывается с уровня {0}.
+bd666a6284	The chapters	Главы
+840e3765f1	Voice channel	Голосовой канал
+99f0b9aa89	Voice channels	Голосовые каналы
+28a5bf5178	Vote	Голосовать
+2e0f3c4d26	The vote has ended.	Голосование завершено.
+a0f74231bd	The vote for this truck has ended.	Голосование за этот грузовик завершено.
+78ad665ad2	Watch the ranking live.	Следи за рейтингом в реальном времени.
+47e3e9093e	Customs fine	Таможенный штраф
+3ce150f6fe	Fine at a check	Штраф при проверке
+42884e5109	Fine: {0}	Штраф: {0}
+02832d4336	Global	Глобальный
+88a5471e3e	Global chat, company chat, a trade channel and direct messages. Add friends and see who is online.	Глобальный чат, чат компании, торговый канал и личные сообщения. Добавляй друзей и смотри, кто в сети.
+86eaa7a7ba	The fine has already been appealed.	Штраф уже обжалован.
+0a74c46f00	The fine is already closed.	Штраф уже закрыт.
+65f69e4e5c	The fine was not found.	Штраф не найден.
+d7e4a37d60	Fines	Штрафы
+c3d5e82ac0	Fines and insurance	Штрафы и страховка
+cfa0af8c3c	Fines, insurance and appeals	Штрафы, страховки и обжалование
+6deaad7ae3	Fines: at a weighbridge check (overload) or a tachograph check (no rest). They are paid within 48 h from Finance → “Fines” or appealed once: a 40 % chance to be dropped, otherwise +25 %. Unpaid ones are deducted with +50 %.	Штрафы: при проверке на весах (перегруз) или тахографа (без отдыха). Оплачиваются в течение 48 ч в Финансы → «Штрафы» или обжалуются один раз: 40 % шанс, что отменят, иначе +25 %. Неоплаченные удерживаются с +50 %.
+c74cf39143	The year in review	Итоги года
+a651305868	Company anniversary	Годовщина компании
+8e0214e148	Company anniversary: a gift in the treasury and the “Company birthday” badge.	Годовщина компании: подарок в казну и значок «День рождения компании».
+7c3cf1c340	Anniversary in {0} {1}	Годовщина через {0} {1}
+f9d8834964	Large or frequent transfers (from {0} or {1}+ times in 7 days)	Крупные или частые переводы (от {0} или {1}+ раз за 7 дней)
+9063ebf09a	Big infrastructure projects are looking for specialised transport.	Крупные инфраструктурные проекты ищут специализированный транспорт.
+b8006a218d	The big ports now have container loads to the interior. Every day a ship arrives with 18 to 36 containers that pay 30 % more. The company that clears the most takes a reward for the treasury. There is a live counter in Discord.	В крупных портах теперь есть контейнерные грузы вглубь страны. Каждый день приходит судно с 18–36 контейнерами, которые оплачиваются на 30 % выше. Компания, которая развезёт больше всех, получает награду в казну. В Discord есть счётчик в реальном времени.
+9ee040baf9	The big convoy comes with update 1.6.	Большая колонна появится в обновлении 1.6.
+85dc98415c	A big city where diesel trucks pay a fee for loading or unloading. Electric ones don't pay.	Крупный город, где дизельные грузовики платят сбор за погрузку или разгрузку. Электрические не платят.
+ef69c6b95a	Grand Eurotour	Большой евротур
+fc130847f7	Grand Eurotour (Competition → Challenges): deliveries to all 26 countries in one season — the “Grand Eurotour” badge and 300 TC.	Большой евротур (Соревнования → Испытания): доставки во все 26 стран за один сезон — значок «Большой евротур» и 300 TC.
+c340f1c074	Grand Eurotour · {0}	Большой евротур · {0}
+6e1a8dac26	Grand Eurotour · {0} / {1}	Большой евротур · {0} / {1}
+48a46a58e0	Grand Eurotour and the King of the country	Большой евротур и Король страны
+89f172ac15	Grand Eurotour! 🌍	Большой евротур! 🌍
+93bf380c0c	Big convoy	Большая колонна
+3208a896d5	Big convoy ({0} trucks)	Большая колонна ({0} грузовиков)
+94739e945a	The TransVerse big convoy	Большая колонна TransVerse
+bdb62eb505	Big convoy: up to 5 trucks on one lane; from 3 trucks up +3/5/7 % for each on time, the “Column leader” badge for the first.	Большая колонна: до 5 грузовиков по одной линии; от 3 грузовиков +3/5/7 % каждому вовремя, значок «Ведущий колонны» первому.
+cb1a29a8c8	A big goal for everyone: in {0} days haul a set amount of cargo together to one city. The reward is for the treasury and company XP, and everyone who hauled at least {1}% of the goal gets {2} TransCoin.{3}	Большая цель для всех: за {0} дней вместе перевезите определённый груз в один город. Награда — в казну и опыт компании, а каждый, кто перевёз не меньше {1}% цели, получает {2} ТрансКоин.{3}
+2ea7327fc9	Hot days	Жаркие дни
+6d8b2c16c8	Fuel	Топливо
+39f23468f8	Fuel ({0} km)	Топливо ({0} км)
+80e658f8e4	Fuel at the station: {0}	Топливо на станции: {0}
+d32eff5d70	Fuel at each country's prices, road tolls, maintenance, salaries, rent. Everything is in the ledger, and the “Analysis” page shows which truck, driver and lane bring the most.	Топливо по ценам каждой страны, платные дороги, обслуживание, зарплаты, аренда. Всё в бухгалтерской книге, а страница «Анализ» показывает, какой грузовик, водитель и линия приносят больше всего.
+373803fe00	Fuel {0} % cheaper for members leaving from the base city · {1} % of the fuel of other players from there goes to the treasury	Топливо на {0} % дешевле для участников, выезжающих из города базы · {1} % топлива других игроков оттуда идёт в казну
+60f1c01bdc	The fuel for the trip is paid at the prices of the countries the truck passes through — in proportion to the kilometres in each.	Топливо за рейс оплачивается по ценам стран, через которые проезжает грузовик, — пропорционально километрам в каждой.
+6e2d99b9ef	Fuel is paid at the prices of the countries on the route (see Finance → Diesel today). On the way there may be a jam, roadworks, a breakdown or a queue at the border — this slows the trip down, and a breakdown costs money for roadside assistance (with a rented truck the lessor pays). A shared market for all players: an order taken by another company disappears from the board. The distances are on the real road network (Valhalla / OpenStreetMap), unless marked “approximate”.	Топливо оплачивается по ценам стран на маршруте (смотри Финансы → Дизель сегодня). В пути возможны пробка, ремонт дороги, поломка или очередь на границе — это замедляет рейс, а поломка стоит денег за помощь на дороге (у арендованного грузовика платит арендодатель). Общий рынок для всех игроков: заказ, взятый другой компанией, исчезает с биржи. Расстояния — по реальной дорожной сети (Valhalla / OpenStreetMap), если не отмечено «приблизительно».
+67e455392d	Forest green	Лесной зелёный
+e69e57d39a	Mustard	Горчичный
+cd945bdccf	The gentleman with the hat	Господин в шляпе
+3c059d7156	Ready template (optional)	Готовый шаблон (необязательно)
+f946c061a6	Finished products	Готовая продукция
+42ada41f12	Ready roles	Готовые должности
+f6167ecc7a	Ready roles “Recruiter” (applications and invitations) and “Accountant” (bonuses for the members from the treasury) — the owner no longer does everything alone.	Готовые должности «Рекрутер» (заявки и приглашения) и «Бухгалтер» (премии участникам из казны) — владелец больше не делает всё сам.
+a1a6a5ab6c	We're ready, leaving at 20:00!	Мы готовы, выезжаем в 20:00!
+4a6ce04d31	Ready around {0}.	Готово около {0}.
+cbdfd0ab89	Done.	Готово.
+6b3f55c128	Done: {0}	Готово: {0}
+7e253c357d	Done: {0} for {1} players.	Готово: {0} для {1} игроков.
+b5bdc72eda	Done: {0} new channels and categories, {1} bot messages.	Готово: {0} новых каналов и категорий, {1} сообщений бота.
+6bc6492ae1	City	Город
+ce05bbb05f	City (e.g. Sofia)	Город (например, София)
+7072ca576f	City for a new depot	Город для нового депо
+084efb11c3	City or goods…	Город или товар…
+bd587cd793	Buyer city	Город-покупатель

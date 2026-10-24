@@ -1,0 +1,250 @@
+09582ce4b4	{0} t {1} · {2}	{0} т {1} · {2}
+57751416a0	{0} t {1} in {2}	{0} т {1} в {2}
+997b269818	{0} t {1} to {2}	{0} т {1} в {2}
+5057b563b0	{0} t {1} are back in the warehouse, and the deposit is in your account.	{0} т {1} снова на складе, а залог — на твоём счёте.
+a4c691765b	{0} t {1} have been unloaded at your depot.	{0} т {1} разгружены в твоём депо.
+aa1183beda	{0} t · {1}	{0} т · {1}
+84ecd54140	{0} t · {1} · {2}{3}	{0} т · {1} · {2}{3}
+81b20d9d31	{0} t · {1} trips	{0} т · {1} рейсов
+c12fb1c518	{0} t in {1} {2}	{0} т в {1} {2}
+c86167128a	{0} t delivered this week · “{1}”.	{0} т доставлено за неделю · «{1}».
+77c2024b39	{0} t for {1} (bought for {2}): {3}{4} before the trip costs.	{0} т за {1} (куплено за {2}): {3}{4} до расходов на рейс.
+a7f9f90a1f	{0} t of materials for the base{1}	{0} т материалов для базы{1}
+732373568e	{0} t of materials for the base{1}.	{0} т материалов для базы{1}.
+fb1272d6d2	{0} t.	{0} т.
+71b451dffa	{0} chose you as a mentor	{0} выбрал тебя наставником
+f6676613c9	{0} invites you to TransVerse	{0} приглашает тебя в TransVerse
+85ef63ec4d	{0} invites you to their company in TransVerse.	{0} приглашает тебя в свою компанию в TransVerse.
+412ceea57d	{0} invites you to join the company.	{0} приглашает тебя вступить в компанию.
+e8d21ee033	{0} gave you a thumbs-up 👍	{0} поприветствовал тебя 👍
+81917a1d8f	{0} invited you to TransVerse — you get {1} lv.	{0} пригласил тебя в TransVerse — ты получаешь {1} лв.
+52a8aacda4	{0} challenged you to a duel ⚔️	{0} вызвал тебя на дуэль ⚔️
+ffca6f9ff5	{0} mentioned you in the chat	{0} упомянул тебя в чате
+f1fd2df0b2	{0} tied a martenitsa on you 🔴⚪	{0} повязал тебе мартеничку 🔴⚪
+221301c2f5	{0} gave you a bonus{1}.	{0} выдал тебе премию{1}.
+ccddc9cc5e	{0} sent you {1}	{0} отправил тебе {1}
+129c666ee6	{0} replied to you in the chat	{0} ответил тебе в чате
+dfd0a7eda0	{0} gave you VIP!	{0} подарил тебе VIP!
+689e9192f0	{0} helped you on the road	{0} помог тебе в пути
+00f3bf1766	{0} loads · {1}	{0} грузов · {1}
+0073fb786c	{0} loads, {1} paid. Rate the carrier.	{0} грузов, {1} оплачено. Оцените перевозчика.
+2893cf7e6e	{0} loads{1}. Bonus {2} lv and +{3} reputation.	{0} грузов{1}. Бонус {2} лв. и +{3} репутации.
+08db273687	{0} points	{0} очков
+31dc631d3d	{0} leaves {1} min earlier. Fee {2}, +{3} XP and reputation.	{0} выезжает на {1} мин раньше. Гонорар {2}, +{3} опыта и репутация.
+b921d0eb3c	{0} set off after you on {1}: +{2} to the reward for each of you if you arrive on time.	{0} поехал за тобой по {1}: +{2} к награде каждому, если прибудете вовремя.
+81c095ea8e	{0} participants	{0} участников
+ac72e75091	{0} h	{0} ч
+764ddaff09	{0} h {1} min	{0} ч {1} мин
+638f90aa11	{0} h{1}	{0} ч{1}
+6a02cd2770	{0} is waiting for roadside help	{0} ждёт помощи в пути
+7549c552f4	{0} hours	{0} часов
+db6c70c274	{0} members	{0} участников
+e76f6db0ec	{0} will be added automatically once the payment is confirmed. The page refreshes by itself.	{0} будет добавлено автоматически, как только платёж подтвердится. Страница обновится сама.
+f32540cacb	{0} will be available when this kind of transport comes to the game.	{0} станет доступен, когда в игре появится этот вид транспорта.
+92b9b01853	{0} took it for {1}. Take it back!	{0} забрал её за {1}. Верни её!
+e9a7891a5d	{0} — {1} votes. Reward: {2} TC{3}.	{0} — {1} голосов. Награда: {2} TC{3}.
+c71e5f30d0	{0} — {1} lv. The refrigeration unit protects better when it is in good condition (repair at the service).	{0} — {1} лв. Холодильная установка лучше сохраняет груз, когда она в хорошем состоянии (ремонт в сервисе).
+6051f4cf87	{0} — {2} orders are waiting in {1}.	{0} — в {1} ждут {2} заказов.
+e88e934eb7	{0} — you already have {1} of {2}.	{0} — у тебя уже {1} из {2}.
+d7b880115a	{0} — claim the reward: {1} and {2} TC.	{0} — забери награду: {1} и {2} TC.
+cf42e333cc	{0} — vote within {1} days.	{0} — голосуй в течение {1} дней.
+f4c660fba4	{0} — both arrived on time and together (within {1} min of each other).	{0} — оба прибыли вовремя и вместе (в пределах {1} мин друг от друга).
+b7f24cf1fe	{0} — added to your profile. Thank you for the support!	{0} — добавлено в твой профиль. Спасибо за поддержку!
+4fcde1e302	{0} — the truck is idle	{0} — грузовик простаивает
+5605f86b49	{0} — level {1}	{0} — уровень {1}
+90916d8515	{0} — you are not allowed to change this role.	{0} — у вас нет права менять эту должность.
+cf4e1a10f3	{0} — roadside assistance	{0} — помощь на дороге
+5104daf0e4	{0} — trailer {1}	{0} — прицеп {1}
+28ddcc275c	{0} — company trailer {1}	{0} — фирменный прицеп {1}
+07ba652b06	{0} → {1} · {2} · {3} t	{0} → {1} · {2} · {3} т
+690be65f69	{0} → {1} · {2} in TransVerse	{0} → {1} · {2} в TransVerse
+5e44f15b59	{0} → {1} · {2} lv · ×{3} faster, to the load in 1 min. Anyone with a free truck can take it until it expires.	{0} → {1} · {2} лв. · в ×{3} быстрее, до груза за 1 мин. Взять может любой со свободным грузовиком, пока не истечёт.
+0b43bdad98	{0} → {1} · {2} min to choose	{0} → {1} · {2} мин на выбор
+94e222f6ab	{0} → {1} · {2} t · {3}	{0} → {1} · {2} т · {3}
+52e15b7670	{0}% · {1} t · {2}	{0}% · {1} т · {2}
+b0cd50a269	{0}% to level {1}	{0}% до уровня {1}
+805ec9a4cb	{0}% of the goal · {1} left	{0}% от цели · осталось {1}
+6377bf32e5	{0}, {1}, is waiting at the exit of {2} and wants to go to {3}. Pick them up within {4} min — {5} on arrival.	{0}, {1}, ждёт на выезде из {2} и хочет в {3}. Подбери в течение {4} мин — {5} по прибытии.
+30eb2eb315	{0}. {1} ({2}) — {3} t, within {4} of accepting	{0}. {1} ({2}) — {3} т, в течение {4} после принятия
+5aced738e3	{0}. {1} ({2}) — the rest, until {3}	{0}. {1} ({2}) — остальное, до {3}
+5800a11c7a	{0}. {1}. Rewards for all participants, and VIP for the best.	{0}. {1}. Награды всем участникам, а лучшим — ещё и VIP.
+4723190065	{0}. If you have a truck within {1} km, help — fee {2}.	{0}. Если у тебя есть грузовик в пределах {1} км, помоги — гонорар {2}.
+8db9f74f5f	{0}. Contribution to the company:	{0}. Взнос в компанию:
+f8823763e9	{0}. Invite the bot again with the applications.commands scope.	{0}. Пригласи бота заново со scope applications.commands.
+56af236d2d	place {0}	{0}-е место
+984bacfce0	place {0} in the division	{0}-е место в дивизионе
+ce32d1f461	place {0} this spring — {1}.	{0}-е место этой весной — {1}.
+3611924b25	{0}/100 km	{0}/100 км
+2a416bd463	{0}/{1} trips ·	{0}/{1} рейсов ·
+c0be7a0124	{0}/day	{0}/день
+ef0cf32dfa	{0}/km	{0}/км
+7e52acfe92	{0}/l	{0}/л
+7dc888b41d	{0}/t	{0}/т
+e7a0fdc299	{0}: {1} · {2} trips	{0}: {1} · {2} рейсов
+12b6963540	{0}: {1} trucks together — +{2} %{3} for everyone who arrives on time.	{0}: {1} грузовиков вместе — +{2} %{3} каждому, кто прибудет вовремя.
+f562af651c	{0}: {1} trips arrived	{0}: прибыло {1} рейсов
+d797387a23	{0}: {1} of {2}	{0}: {1} из {2}
+381b72e494	{0}: {1} vs {2} km.	{0}: {1} против {2} км.
+23227a3446	{0}: {1} vs {2} km. Thanks for playing!	{0}: {1} против {2} км. Спасибо за игру!
+04c76e3452	{0}: {1} t{2}	{0}: {1} т{2}
+68689f9701	{0}: {1} → {2} for {3}, {4} % commission to the company. The order is held for you for {5} min.	{0}: {1} → {2} за {3}, комиссия {4} % компании. Заказ закреплён за тобой на {5} мин.
+059f34e1e7	{0}: {1}, so there is no bonus.	{0}: {1}, поэтому бонуса нет.
+c32b49d122	{0}: place {1}	{0}: {1}-е место
+5996e1c5c8	{0}: place {1}{2}	{0}: {1}-е место{2}
+7a9c2baa9c	{0}: all {1} parts arrived on time — everyone got +{2} % of their part.	{0}: все {1} частей прибыли вовремя — каждый получил +{2} % от своей части.
+e216ee1721	{0}: your sign-up was removed	{0}: твоя запись снята
+13713e679a	{0}: the truck leaves {1} min earlier.	{0}: грузовик выезжает на {1} мин раньше.
+21af4c0f6b	{0}: you drive together — +{1} to the reward for each of you if you arrive on time.	{0}: вы едете вместе — +{1} к награде каждому, если прибудете вовремя.
+69be2ad4ff	{0}: at most {1} t.	{0}: не больше {1} т.
+e2870c1b53	{0}: level {1} / {2}	{0}: уровень {1} / {2}
+9b1384dd77	{0}: out	{0}: выбыл
+a4b4caa272	{0}: more loaded kilometres on time this week — and you go on.	{0}: больше километров с грузом вовремя на этой неделе — и ты проходишь дальше.
+7329def383	{0}: you go on!	{0}: ты проходишь дальше!
+623bf4be0e	{0}: “{1}” is {2}.	{0}: «{1}» — {2}.
+bccf5bb717	{0}[attachment in Discord]	{0}[вложение в Discord]
+2f85060f1d	{0}{1} % per week	{0}{1} % за неделю
+ec79f0a779	{0}{1} ({2} km){3}	{0}{1} ({2} км){3}
+adfea822d7	{0}{1} (game event). For two days we haul aid — every delivery through the country counts, and “Humanitarian aid” loads bring TransCoin and a badge.	{0}{1} (игровое событие). Два дня возим помощь — засчитывается каждая доставка через страну, а грузы «Гуманитарная помощь» приносят ТрансКоин и значок.
+25306b3e3b	{0}{1} km	{0}{1} км
+2175411f07	{0}{1} lv — {2}	{0}{1} лв. — {2}
+58f77b1881	{0}{1} loaded	{0}{1} с грузом
+875e9b5ce3	{0}{1} h {2} min	{0}{1} ч {2} мин
+11d204c3f1	{0}{1}. If you have a truck nearby (within {2} km), help from the map — fee {3}	{0}{1}. Если у тебя есть грузовик рядом (в пределах {2} км), помоги с карты — гонорар {3}
+a3453d025d	{0}{1}{2} vs {3}{4}{5}	{0}{1}{2} против {3}{4}{5}
+ff2085bf79	{0}From level {1}, up to {2} per 24 hours, not to a profile from the same network.	{0}С уровня {1}, до {2} за 24 часа, не на профиль из той же сети.
+3c18a2e009	{0}The payment is made on the payment provider's secure page; card details never pass through TransVerse. TransCoin and VIP are added automatically right after the payment is confirmed.	{0}Оплата производится на защищённой странице платёжного провайдера; данные карты не проходят через TransVerse. ТрансКоин и VIP начисляются автоматически сразу после подтверждения оплаты.
+9fa388969c	{0}Departure <t:{1}:R> · {2} places{3}. Join in the game.	{0}Отправление <t:{1}:R> · {2} мест{3}. Присоединяйся в игре.
+41d51eb533	{0}–{1} kWh · {2} km	{0}–{1} кВт·ч · {2} км
+36bb5120bc	{0}–{1} l	{0}–{1} л
+ec2b424a56	© {0} TransVerse. All rights reserved.	© {0} TransVerse. Все права защищены.
+e7f1a87dd0	± lv	± лв.
+d78fff7e5a	· {0} / {1} trucks{2}	· {0} / {1} грузовиков{2}
+1501bdf8e1	· {0} · {1} ({2}/t) · until {3}	· {0} · {1} ({2}/т) · до {3}
+0a146fc9f4	· {0} · {1} trips · {2} t	· {0} · {1} рейсов · {2} т
+93edf59250	· {0} · {1} t · {2} km	· {0} · {1} т · {2} км
+8b4094b810	· {0} shares	· {0} акций
+1afeca1ac2	· {0} votes	· {0} голосов
+e0f98d9c19	· {0} due for service	· {0} в сервис
+d975b89d02	· {0} trips	· {0} рейсов
+3019c4876d	· {0} times	· {0} раз
+15e179609d	· {0} t of materials{1}	· {0} т материалов{1}
+b52cad57b6	· {0}/day	· {0}/день
+7048315bdd	· Public pages:	· Публичные страницы:
+892b4b2d10	· no one in charge	· без ответственного
+d76dd06ab4	· seen	· просмотрено
+cc5d3c072b	· all in good order	· все исправны
+0fe964b572	· game accounts: {0}	· игровые счета: {0}
+689b17b062	· expires soon	· скоро истекает
+147371dba2	· ends {0} · {1} signed up	· конец {0} · записались {1}
+c585661337	· mentor {0}	· наставник {0}
+9aa2198755	· level {0}	· уровень {0}
+924be009fe	· level {0} · {1}	· уровень {0} · {1}
+5e95821267	· level {0} · {1} trips{2}	· уровень {0} · {1} рейсов{2}
+d78fc7e18a	· level {0} · {1} members	· уровень {0} · {1} участников
+753dc84edf	· level {0}{1}	· уровень {0}{1}
+c9f2530f83	· from {0}	· от {0}
+da28c5180c	· from {0} · until {1}	· с {0} · до {1}
+245b379c06	· from level {0}	· с уровня {0}
+cb440ad94e	· in charge: {0}	· ответственный: {0}
+5b4c31eb88	· unlocks at level 3	· открывается на уровне 3
+8dee01caed	· unlocks at level 5	· открывается на уровне 5
+3e4551eb3c	· you get	· ты получаешь
+0db5d30c81	· missed {0} of {1}	· пропущено {0} из {1}
+9880f2201e	· {0} t free	· свободно {0} т
+5101505e49	· deadline {0}	· срок {0}
+1bb318ddfb	· awaiting approval	· ждёт одобрения
+65ee9404b2	×2 XP {0} h	×2 опыта {0} ч
+ebba361bc5	×2 XP · 24 hours	×2 опыта · 24 часа
+aba1f37052	plc	АО
+6f5e82f20c	Maritsa Motorway (A4)	Автомагистраль «Марица» (A4)
+870a0fb938	Struma Motorway (A6)	Автомагистраль «Струма» (A6)
+8c98f1a0e7	Trakia Motorway (A1)	Автомагистраль «Тракия» (A1)
+0a9e5d5469	Hemus Motorway (A2)	Автомагистраль «Хемус» (A2)
+c3c75e69ae	Austria	Австрия
+125c981f0a	The bus is for the first {0} days in the company.	Автобус — для первых {0} дней в компании.
+dbe543725c	Car carrier	Автовоз
+84f868e6cf	Two-deck car carrier	Двухъярусный автовоз
+556060f5a7	The automatic dispatcher is for VIP players.	Автоматический диспетчер — для VIP-игроков.
+f4e6d9e1ce	The automatic dispatcher is resting	Автоматический диспетчер отдыхает
+bcdeb925b4	Automatically by date	Автоматически по датам
+7dd1c88d5a	Auto-moderation	Автомодерация
+81d6798bd0	Fleet	Автопарк
+2c7a7dfad6	Fleet · illustrations of the models in the game	Автопарк · иллюстрации моделей в игре
+73373701a9	Fleet → Depots	Автопарк → Депо
+d4bdfb40c5	Fleet → “Analysis”: what every truck, driver, lane and cargo type brings, net per kilometre, on-time delivery rate and litres per 100 km.	Автопарк → «Анализ»: что приносит каждый грузовик, водитель, линия и тип груза, чистыми на километр, процент доставок вовремя и литры на 100 км.
+662a94f5ae	Proving ground	Автополигон
+ac488901cd	Proving ground, driver of the month and chronicle	Автополигон, водитель месяца и хроника
+f2950c6a5f	Hitchhiker: {0}	Автостоп: {0}
+0c14ced827	Hitchhikers	Автостопщики
+5810ad3602	Hitchhikers: on 15 % of trips someone (a made-up person) waves at the start; pick them up within 30 min — they pay by the kilometre on arrival (half if late).	Автостопщики: в 15 % рейсов кто-то (вымышленный человек) машет на старте; подбери его в течение 30 мин — он платит за километры по прибытии (половину при опоздании).
+6c143978d9	Hitchhikers come with update 1.8.	Автостопщики появятся в обновлении 1.8.
+e89ac4088e	Car parts	Автозапчасти
+611b28adab	Lamb for the holiday	Ягнятина к празднику
+a8e9347231	Agro	Агро
+80362154c3	Lawyer	Адвокат
+2a709d82fc	Admin	Админ
+467d6b26e9	Admin navigation	Админ-навигация
+6fc4fa15b2	Admin panel	Админ-панель
+146dab8c0d	Administrative building	Административное здание
+36d00fd77c	Administrator	Администратор
+73c892c9fc	Data administrator	Администратор данных
+2d15114a87	An administrator removed your VIP status.	Администратор снял с вас статус VIP.
+345f3b90b0	The administration cancelled the event. No rewards will be given.	Администрация отменила ивент. Награды выдаваться не будут.
+96daab9c37	Test address	Адрес для проверки
+c24b2cee46	Address: {0}	Адрес: {0}
+0787856998	Aerodynamic package	Аэродинамический пакет
+c32f7584cf	Aerodynamic side skirts	Аэродинамические юбки
+1445599cf6	Aerodynamic side skirts, low-resistance tyres, LED lights and a company logo on the trailer — and they show. The company buys trailers with its name: every trip with them brings a bonus to the treasury and more company XP.	Аэродинамические юбки, шины с низким сопротивлением, LED-фары и логотип компании на прицепе — и всё это видно. Компания покупает прицепы со своим именем: каждый рейс с ними приносит бонус в казну и больше опыта компании.
+a921c6dca9	The Eiffel Tower	Эйфелева башня
+81c074fa7e	The academy is for new members (up to {0} days in the company).	Академия — для новых участников (до {0} дней в компании).
+a6bf296f41	Account	Аккаунт
+a50e85f3cc	Account, password and notifications.	Аккаунт, пароль и уведомления.
+5764535caf	If the e-mail is registered, we have sent a link for a new password. Check your inbox and the “Spam” / “Junk” folder — abv.bg and mail.bg often put the messages there. The link is valid for 1 hour. If it doesn't arrive within 10 minutes, write to support.	Если e-mail зарегистрирован, мы отправили ссылку для нового пароля. Проверь входящие и папку «Спам» — abv.bg и mail.bg часто кладут письма туда. Ссылка действует 1 час. Если письмо не придёт за 10 минут, напиши в поддержку.
+b2b7ba7a7f	If you want to leave the company, you first have to hand the ownership to another member. The new owner gets all rights and a licence for their own fleet (and a depot at the headquarters if there is none). The treasury stays with the company.	Если вы хотите покинуть компанию, сначала нужно передать владение другому участнику. Новый владелец получает все права и лицензию на собственный автопарк (и депо в штаб-квартире, если его нет). Казна остаётся компании.
+24b4125f48	If your company has a livery, your trucks are in its colour (special paints from the shop stay). {0}	Если у твоей компании есть ливрея, твои грузовики в её цвете (особые краски из магазина остаются). {0}
+6e8045a81a	If you don't want to see this player's messages, block them from their card.	Если не хочешь видеть сообщения этого игрока, заблокируй его в его карточке.
+b3c8657346	If you don't raise their salary by {0} % within {1} hours, they will leave.	Если не повысишь ему зарплату на {0} % в течение {1} ч, он уйдёт.
+03c25916a0	If a purchase is not delivered or is delivered wrongly because of a technical error on our side, we will deliver it or refund the amount. Write to support (in the game: “Support”) or to the e-mail above.	Если покупка не доставлена или доставлена неправильно из-за технической ошибки с нашей стороны, мы доставим её или вернём сумму. Напиши в поддержку (в игре: «Поддержка») или на e-mail выше.
+d90563e89a	If the problem persists, open a new request.	Если проблема не исчезла, откройте новое обращение.
+0596846d51	If the load is bigger than the truck, you take as much as fits — for that share of the pay. The rest stays on the board.	Если груз больше грузовика, ты берёшь сколько помещается — за соответствующую долю оплаты. Остальное остаётся на бирже.
+bd2cb96c4f	If they leave now, they will stop for a rest after {0} of driving.	Если выедет сейчас, остановится на отдых после {0} за рулём.
+fc827d1ddd	If a driver leaves, the history of their trips stays.	Если водитель уходит, история его рейсов сохраняется.
+b365e566d7	If “behind” keeps growing, the background process isn't getting to the sending — see the errors on the left.	Если «отстают» растёт, фоновый процесс не успевает отправлять — смотри ошибки слева.
+36cffba591	The Acropolis	Акрополь
+5ab43152c3	VIP active until {0}.	VIP активен до {0}.
+6bdb302679	Active until {0}	Активен до {0}
+9854ff7080	Active until {0} — a new purchase extends it.	Активен до {0} — новая покупка продлевает его.
+d6ec3c4084	Active contracts ({0} / {1})	Активные договоры ({0} / {1})
+406518c7f9	Active sessions	Активные сессии
+23a3b474a7	Shares (buys and sales)	Акции (покупки и продажи)
+7c67307b2a	Shares in the other players' companies. The price follows their results.	Акции компаний других игроков. Цена следует за их результатами.
+98919dd6b4	Album	Альбом
+44cc0eb4c9	An album of the cities you have driven to.	Альбом городов, в которые ты ездил.
+7b43a3e794	“Cities” album	Альбом «Города»
+b0ba7c12aa	Album: Austria	Альбом: Австрия
+f282684f28	Album: Bulgaria	Альбом: Болгария
+0cfd509cdb	Album: Germany	Альбом: Германия
+575aee8501	Album: Greece	Альбом: Греция
+713b3cbb4a	Album: Romania	Альбом: Румыния
+e5b85121b6	Album: North Macedonia	Альбом: Северная Македония
+3ddd7facb3	Album: Serbia	Альбом: Сербия
+855ac10be5	Album: Turkey	Альбом: Турция
+8b55062fa5	Album: Hungary	Альбом: Венгрия
+521bace3c3	Alpine run	Альпийский рейс
+93348495cb	Alpine run, Italian summer, Iberian road and more community events. Every country has its own page: diesel today, tolls, bans, holidays, its king and the best loads.	Альпийский рейс, Итальянское лето, Иберийский путь и другие ивенты сообщества. У каждой страны своя страница: дизель сегодня, платные дороги, запреты, праздники, король и лучшие грузы.
+a11ad6f9dc	Alhambra, Granada	Альгамбра, Гранада
+5aa4cc7db8	Amsterdam	Амстердам
+0267f32af9	Analysis	Анализ
+d6c17f909f	Analysis (Fleet → Analysis): what every truck, driver, lane and load brings.	Анализ (Автопарк → Анализ): что приносит каждый грузовик, водитель, линия и груз.
+2274a64f4e	Company analysis	Анализ компании
+d843e31334	Company analysis · sample data	Анализ компании · пример данных
+fc708792fd	Angel	Ангел
+79bfbfe011	Angelov	Ангелов
+3b91e15b8f	The poll is closed.	Опрос закрыт.
+05c012b994	The poll has ended · {0} votes	Опрос завершён · {0} голосов
+affd5efc67	Polls	Опросы
+c3640d4544	Polls in the chat	Опросы в чате
+c97ff70be8	Polls in the company chat: a question with 2–5 answers for 6, 24, 48 or 72 hours; one open at a time. Roles with the “Chat” permission start and close them; every member votes once and can change their vote while the poll is open.	Опросы в чате компании: вопрос с 2–5 вариантами ответа на 6, 24, 48 или 72 часа; одновременно открыт только один. Запускают и закрывают их должности с правом «Чат»; каждый участник голосует один раз и может изменить голос, пока опрос открыт.
+f5d1be607c	Ancona	Анкона
+2a68b530e3	Ancient statue in a crate	Античная статуя в ящике
+ad38716fdc	The Ancient Theatre of Plovdiv	Античный театр в Пловдиве
