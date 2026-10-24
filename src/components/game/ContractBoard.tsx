@@ -6,6 +6,7 @@ import { HALLOWEEN } from '@/lib/game/halloween';
 import { CHRISTMAS } from '@/lib/game/christmas';
 import { WINTER } from '@/lib/game/winter';
 import { CONVOY_RULES } from '@/lib/game/convoy';
+import { RELAY, relayLabel } from '@/lib/game/relay';
 import { PLOT } from '@/lib/game/plot';
 import { MULTISTOP } from '@/lib/game/multistop';
 import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
@@ -25,6 +26,7 @@ import { RELIEF } from '@/lib/game/relief';
 import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { useFeature } from './Features';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
+import { HARVEST } from '@/lib/game/city-growth';
 import { SECURE_PARKING } from '@/lib/game/traffic';
 import { SPECIALIZATION } from '@/lib/game/specialization';
 import { TRANS_EUROPE } from '@/lib/game/europe';
@@ -47,6 +49,10 @@ export interface BoardContract {
   sealed?: boolean;
   /** v1.8: relief goods for a humanitarian convoy. */
   humanitarian?: boolean;
+  /** v1.10: a leg of a relay load (1 or 2). */
+  relayLeg?: number | null;
+  /** v1.10: the temperature range of a refrigerated load. */
+  temp?: string | null;
   /** v1.8: haggling: 'open' (may ask), the player's ask, or null (not for this load). */
   haggle?: 'open' | { percent: number; accepted: boolean; holdUntil: string; valid: boolean } | null;
   /** What a vehicle needs to take this load (shown above the vehicle list). */
@@ -148,7 +154,7 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'sowing' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
@@ -159,6 +165,7 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
   { id: 'christmas', label: 'Коледа', test: (c) => c.holiday === 'christmas' },
   { id: 'marta', label: 'Баба Марта', test: (c) => c.holiday === 'marta' },
   { id: 'sowing', label: '🌱 Сеитба', test: (c) => c.holiday === 'sowing' },
+  { id: 'harvest', label: '🍇 Гроздобер', test: (c) => c.holiday === 'harvest' },
   { id: 'national', label: '🎉 Национален празник', test: (c) => c.holiday === 'national' },
   { id: 'oversize', label: 'Извънгабаритни', test: (c) => !!c.oversizeCents },
   { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
@@ -177,6 +184,7 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['christmas', (c) => c.holiday === 'christmas'],
   ['marta', (c) => c.holiday === 'marta'],
   ['sowing', (c) => c.holiday === 'sowing'],
+  ['harvest', (c) => c.holiday === 'harvest'],
   ['national', (c) => c.holiday === 'national'],
   ['oversize', (c) => !!c.oversizeCents],
   ['winter', (c) => c.holiday === 'winter'],
@@ -460,12 +468,15 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
               {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
               {c.transEurope && <Badge tone="gold">🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{Math.round((TRANS_EUROPE.multiplier - 1) * 100)}%</Badge>}
+              {c.temp && <Badge tone="blue">🌡️ {c.temp}</Badge>}
+              {c.relayLeg && <Badge tone="cyan">🏃 {relayLabel(c.relayLeg)} · +{Math.round(RELAY.bonusShare * 100)} % ако и двамата сте навреме</Badge>}
               {c.humanitarian && <Badge tone="red">🆘 ХУМАНИТАРНА ПОМОЩ · +{RELIEF.coins} TC навреме</Badge>}
               {c.sealed && <Badge tone="violet">📦 ЗАПЕЧАТАН · до +{Math.round(SEALED.tiers.at(-1)!.bonus * 100)}% при отваряне</Badge>}
               {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">🤝 ДОГОВОРЕНО +{c.haggle.percent}%</Badge>}
               {!!c.lez?.length && <Badge tone="green">🌿 ЗОНА · {c.lez.join(', ')}</Badge>}
               {c.specialization && <Badge tone="violet">🎯 СПЕЦИАЛИЗАЦИЯ · +{Math.round(SPECIALIZATION.bonusShare * 100)}%</Badge>}
               {!!c.traffic && <Badge tone="orange">🚦 НАТОВАРЕНО · {c.traffic} камиона</Badge>}
+              {c.holiday === 'harvest' && <Badge tone="orange">🍇 ГРОЗДОБЕР · +{Math.round((HARVEST.rewardMultiplier - 1) * 100)}%</Badge>}
               {c.holiday === 'sowing' && <Badge tone="green">🌱 СЕИТБА · +{Math.round((SOWING.rewardMultiplier - 1) * 100)}%</Badge>}
               {c.holiday === 'national' && <Badge tone="gold">🎉 НАЦИОНАЛЕН ПРАЗНИК · +{Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100)}%</Badge>}
               {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}

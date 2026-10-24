@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { rangeFor } from '@/lib/game/reefer';
 import { Hint } from '@/components/game/Hint';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { ContractBoard, type BoardContract } from '@/components/game/ContractBoard';
@@ -54,7 +55,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const hiredBy = new Map(hiredOffers.map((o) => [o.contractId, { offerId: o.id, company: o.tag ? `[${o.tag}] ${o.company}` : o.company, share: o.share, until: o.expiresAt.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' }) }]));
   // Lanes a friend or company member just left on (first one per lane).
   const convoys = new Map<string, string>();
-  if (features.convoy) for (const c of await convoyCandidates(db, user.id, now)) if (!convoys.has(`${c.originCityId}:${c.destCityId}`)) convoys.set(`${c.originCityId}:${c.destCityId}`, c.username);
+  if (features.convoy && !features.convoy_lobby) for (const c of await convoyCandidates(db, user.id, now)) if (!convoys.has(`${c.originCityId}:${c.destCityId}`)) convoys.set(`${c.originCityId}:${c.destCityId}`, c.username);
   // Every free vehicle always has at least one job it can take in its own city.
   await ensureLocalJobsForFleet(db, now, company.id).catch((e) => console.warn('[contracts] local jobs', e));
   const [fleet, licences, taken] = await Promise.all([
@@ -140,6 +141,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       goods: features.sealed_cargo && c.sealed ? 'Запечатан товар' : c.goods,
       sealed: features.sealed_cargo && c.sealed,
       humanitarian: features.humanitarian && c.humanitarian,
+      relayLeg: features.relay ? c.relayLeg : null,
+      temp: features.reefer && c.cargoType === 'refrigerated' && !c.sealed ? (({ min, max }) => `${min}…${max} °C`)(rangeFor(c.goods)) : null,
       haggle: features.haggling && haggleable(c) && !c.reservedByCompanyId ? (haggles.get(c.id) ?? 'open') : null,
       cargoType: c.cargoType as CargoType,
       cargoLabel: cargo.label,

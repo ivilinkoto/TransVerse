@@ -23,6 +23,8 @@ import { crossingLine, islandOf } from '@/lib/game/crossings';
 import { featureLive } from '@/lib/game/features';
 import { DAILY_LOAD, sofiaDate, sofiaHourOf } from '@/lib/game/together';
 import { MULTISTOP, splitTons, stopMultiplier, stopWindowMinutes, type ContractStop } from '@/lib/game/multistop';
+import { HARVEST, isHarvest } from '@/lib/game/city-growth';
+import { cityPay } from './city-growth';
 import { isSowing, NATIONAL_DAY, nationalDayToday, SOWING } from '@/lib/game/spring';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { licencesForUsers } from './licences';
@@ -298,6 +300,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     { id: 'marta', goods: isMarta(now) && featureLive('marta', now) ? MARTA.goods[cargo] : undefined, share: MARTA.contractShare, multiplier: MARTA.rewardMultiplier },
     { id: 'winter', goods: isWinter(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
     { id: 'sowing', goods: isSowing(now) && featureLive('sowing', now) ? SOWING.goods[cargo] : undefined, share: SOWING.contractShare, multiplier: SOWING.rewardMultiplier },
+    { id: 'harvest', goods: isHarvest(now) && featureLive('harvest', now) ? HARVEST.goods[cargo] : undefined, share: HARVEST.contractShare, multiplier: HARVEST.rewardMultiplier },
   ];
   const theme = extra.featured || extra.oversize ? null : (themes.find((t) => t.goods && rand() < t.share) ?? null);
   // A national day of the destination country (v1.6): loads there pay more today.
@@ -308,7 +311,8 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   // v1.8: now and then the shipper does not say what is inside.
   const sealed = !extra.featured && !extra.oversize && !extra.transEurope && !extra.humanitarian && !extra.portCallId && !theme && !via.length && featureLive('sealed_cargo', now) && rand() < SEALED.share;
   // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
-  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)));
+  // v1.10: loads from a city that has grown pay a little more.
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)));
   const [row] = await db.insert(contracts).values({
     shipper: shipperName(),
     goods,

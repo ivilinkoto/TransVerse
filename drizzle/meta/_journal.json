@@ -596,6 +596,41 @@
       "when": 1792851422395,
       "tag": "0084_watery_sersi",
       "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1792856846196,
+      "tag": "0085_thick_trauma",
+      "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1792857835872,
+      "tag": "0086_sticky_puff_adder",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1792858248798,
+      "tag": "0087_quiet_speedball",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1792858602181,
+      "tag": "0088_sturdy_grandmaster",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1792859033259,
+      "tag": "0089_freezing_paper_doll",
+      "breakpoints": true
     }
   ]
 }

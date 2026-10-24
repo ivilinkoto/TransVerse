@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Globe2, Trophy, Truck } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
@@ -72,7 +73,13 @@ export default async function ChallengesPage() {
             </div>
           </Card>
         )}
-        {features.big_convoy && (
+        {features.convoy_lobby && (
+          <Card title={<span className="inline-flex items-center gap-2"><Truck className="h-4 w-4 text-profit" />Конвои</span>}>
+            <p className="text-sm text-mist-300">Конвоите вече се събират предварително: една линия, един час на тръгване, всички пристигат заедно. Всяка неделя в 20:00 тръгва и големият конвой на TransVerse.</p>
+            <Link href="/game/convoys" className="btn-primary mt-3 inline-flex">Към конвоите</Link>
+          </Card>
+        )}
+        {features.big_convoy && !features.convoy_lobby && (
           <Card title={<span className="inline-flex items-center gap-2"><Truck className="h-4 w-4 text-profit" />Голям конвой</span>}>
             <p className="text-sm text-mist-300">
               До {BIG_CONVOY.maxTrucks} камиона по една линия, тръгнали до {Math.round(CONVOY_RULES.windowMs / 60_000)} мин. един след друг. От {BIG_CONVOY.minTrucks} камиона нагоре всеки, който пристигне навреме, получава още

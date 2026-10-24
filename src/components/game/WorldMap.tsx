@@ -578,7 +578,9 @@ function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number;
   const s = d && now ? stateAt(d.schedule, now) : null;
   const left = d && now ? Math.max(0, Math.round((scheduleEnd(d.schedule) - now) / 60_000)) : 0;
   const roadside = useFeature('roadside');
-  const convoy = useFeature('convoy');
+  const oldConvoy = useFeature('convoy');
+  const lobby = useFeature('convoy_lobby');
+  const convoy = oldConvoy && !lobby;
   const convoyOpen = !!(convoy && d && t.relation && now && now - new Date(d.startedAt).getTime() < CONVOY_RULES.windowMs && !s?.done);
   return (
     <aside className="absolute right-3 top-14 z-10 w-[min(310px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Камион на играч">

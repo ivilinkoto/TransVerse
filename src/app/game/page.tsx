@@ -34,6 +34,8 @@ import { companyStats } from '@/server/game/progression';
 import { fleetView, latestNotifications, netWorthCents } from '@/server/game/queries';
 import { isMarta, MARTA } from '@/lib/game/marta';
 
+import { RoadChoices } from '@/components/game/RoadChoices';
+
 export default async function OverviewPage() {
   const { db, user, company, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
@@ -200,6 +202,7 @@ export default async function OverviewPage() {
           <ChevronRight className="h-4 w-4 shrink-0 text-mist-400 transition group-hover:translate-x-0.5" />
         </Link>
       )}
+      {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
       {steps.length > 0 && (
         <section className="panel p-4" aria-label="Какво да правя сега">
           <h2 className="label mb-2">Какво да правя сега?</h2>

@@ -84,6 +84,13 @@ import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
 import { onVacation } from './moods';
 import { equinoxBonus, recordPassOpening } from './spring';
+import { companyConvoyOf, settleConvoyTruck } from './convoys';
+import { relayDelivered } from './relay';
+import { growCity, harvestDelivered } from './city-growth';
+import { choiceMoney, choiceXp, planChoice } from './road-choices';
+import { storyDelivered } from './story';
+import { settleReefer } from './reefer';
+import { CONVOYS } from '@/lib/game/convoys';
 import { afterCustoms, checkShadyLoad, compartmentError, customsCheck, honestDelivery } from './smuggling';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
@@ -433,6 +440,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         scheduleVersion: SCHEDULE_VERSION,
         roadEvents,
         nextEventAt: roadEvents[0] ? new Date(roadEvents[0].at) : null,
+        // v1.10: some longer trips have a decision half-way.
+        choice: await planChoice(tx, userId, schedule, now),
         startedAt: now,
         etaAt: new Date(scheduleEnd(schedule)),
         deadlineAt: new Date(now.getTime() + (contract!.windowMinutes * 60_000) / timeScale()),
@@ -535,7 +544,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const perks = await bonusesForUser(tx, company!.ownerId);
   const org = perks?.membership.company;
   const companyBonus = perks ? Math.round(result.rewardCents * (perks.bonuses.rewardMultiplier - 1)) : 0;
-  const contribution = org ? Math.round(result.rewardCents * org.contributionRate) : 0;
+  // v1.10: a company convoy pays no contribution (and teaches the company more).
+  const companyConvoy = await companyConvoyOf(tx, d);
+  const contribution = org && !companyConvoy ? Math.round(result.rewardCents * org.contributionRate) : 0;
   if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: `Бонус от „${org!.name}“`, idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
   if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към касата на „${org!.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
@@ -553,7 +564,12 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.6: the equinox and the passes that open after the winter.
   // v1.6: a big convoy (3–5 trucks) on time.
   const specBonus = await specializationBonus(tx, company!.ownerId, org, d, contract.cargoType, result.rewardCents, completedAt);
-  const bigConvoy = await bigConvoyBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt);
+  const bigConvoy = (await bigConvoyBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await settleConvoyTruck(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt));
+  // v1.10: a relay leg — the hand-over, or the end with its bonus.
+  const relayBonus = await relayDelivered(tx, company!.ownerId, d, contract, result.late, completedAt);
+  const choiceBonus = await choiceMoney(tx, d);
+  // v1.10: a refrigerated load — how its temperature held.
+  const reeferCents = await settleReefer(tx, company!.ownerId, d, contract, vehicle!.condition, result.rewardCents, completedAt);
   const springBonus = (await equinoxBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await recordPassOpening(tx, company!.ownerId, d, result.late, completedAt));
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
@@ -566,7 +582,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -576,6 +592,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
   await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
+  // v1.10: the destination city grows; Гроздобер counts its harvest loads.
+  await growCity(tx, contract.destCityId, contract.weightTons, completedAt);
+  await harvestDelivered(tx, company!.ownerId, contract.holiday, result.late, completedAt);
   // v1.8: a humanitarian load on time.
   await reliefDelivered(tx, company!.ownerId, d, contract, result.late, completedAt);
   // v1.8: the sealed load is opened, the haggled extra paid.
@@ -591,6 +610,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.9: the company's own day, and an intern's stay at another company.
   await traditionBonus(tx, company!.ownerId, d, result.rewardCents, completedAt);
   await internDelivery(tx, company!.ownerId, baseXp, completedAt);
+  await choiceXp(tx, company!.ownerId, d, baseXp);
+  await storyDelivered(tx, company!.ownerId, d.companyId, { onTime, km: d.loadedKm, tons: contract.weightTons, foreign: dest!.countryCode !== (await tx.select({ cc: cities.countryCode }).from(cities).where(eq(cities.id, contract.originCityId)))[0]?.cc, convoy: !!d.organizedConvoyId || !!d.convoyWith, destCityId: contract.destCityId }, completedAt);
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
   const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;
@@ -607,7 +628,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     // The company learns from every member trip, at its own (slower) pace; hired drivers' trips count less.
     // A trip with a company trailer (v1.4): more company XP and a bonus into the treasury.
     const orgTrailer = d.trailerId ? (await tx.select({ orgTrailerId: trailers.orgTrailerId }).from(trailers).where(eq(trailers.id, d.trailerId)))[0]?.orgTrailerId : null;
-    const companyXp = Math.round(baseXp * COMPANY_XP_SHARE * (ownerDrove ? 1 : FLEET_XP_SHARE) * (orgTrailer ? COMPANY_TRAILERS.companyXp : 1));
+    const companyXp = Math.round(baseXp * COMPANY_XP_SHARE * (ownerDrove ? 1 : FLEET_XP_SHARE) * (orgTrailer ? COMPANY_TRAILERS.companyXp : 1) * (companyConvoy ? CONVOYS.companyXp : 1));
     if (orgTrailer) {
       const [member] = await tx.select({ username: users.username }).from(users).where(eq(users.id, company!.ownerId));
       await companyTrailerBonus(tx, perks.membership.company.id, d.id, result.rewardCents, member!.username);
@@ -717,7 +738,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     onTime ? `Доставено: ${contract.goods} в ${dest!.nameBg}` : `Закъсняла доставка в ${dest!.nameBg}`,
     `Нетен резултат ${(payout / 100).toLocaleString('bg-BG', { maximumFractionDigits: 0 })} лв., +${playerXp} опит.${drops.length ? ` Спирки навреме: ${drops.filter((x) => !x.late).length} от ${drops.length}.` : ''}${backhaul ? ` Виж товарите обратно от ${dest!.nameBg}.` : ''}`,
     // Straight to the return loads from where the truck now stands.
-    backhaul ? `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}` : '/game/finance',
+    backhaul ? `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}` : (await featureFor(tx, company!.ownerId, 'trip_log', completedAt)) ? `/game/trips/${d.id}` : '/game/finance',
   );
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });

@@ -417,3 +417,56 @@ export async function companyReportImage(db: Database, organizationId: string, f
     { width: 1200, height: 760, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },
   );
 }
+
+/** A shared trip (Бордови дневник, v1.10): the route, the lane and the numbers. Game data. */
+export async function tripCardImage(db: Database, deliveryId: string) {
+  const { tripLog } = await import('@/server/game/trip-log');
+  const t = await tripLog(db, deliveryId, { publicOnly: true });
+  if (!t) return null;
+  const W = 1200;
+  const H = 630;
+  const MAP = { x: 40, y: 120, w: 620, h: 470 };
+  const lats = t.points.map((p) => p[0]);
+  const lons = t.points.map((p) => p[1]);
+  const [south, north, west, east] = [Math.min(...lats), Math.max(...lats), Math.min(...lons), Math.max(...lons)];
+  const k = Math.cos((((south + north) / 2) * Math.PI) / 180);
+  const span = Math.max((north - south) || 0.5, ((east - west) || 0.5) * k);
+  const scale = Math.min(MAP.w, MAP.h) / (span * 1.15);
+  const cx = (west + east) / 2;
+  const cy = (south + north) / 2;
+  const x = (p: [number, number]) => MAP.x + MAP.w / 2 + (p[1] - cx) * k * scale;
+  const y = (p: [number, number]) => MAP.y + MAP.h / 2 - (p[0] - cy) * scale;
+  const path = t.points.map((p, i) => `${i ? 'L' : 'M'}${x(p).toFixed(1)} ${y(p).toFixed(1)}`).join(' ');
+  const first = t.points[0]!;
+  const last = t.points[t.points.length - 1]!;
+  const hours = (m: number) => `${Math.floor(m / 60)} ч ${m % 60} мин`;
+  const stat = (label: string, value: string) => (
+    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 18 }}>
+      <span style={{ fontSize: 20, color: MIST }}>{label}</span>
+      <span style={{ fontFamily: 'Exo 2', fontSize: 36 }}>{value}</span>
+    </div>
+  );
+  return new ImageResponse(
+    (
+      <div style={{ display: 'flex', position: 'relative', width: '100%', height: '100%', background: `radial-gradient(circle at 25% 30%, #16243a 0%, ${BG} 75%)`, fontFamily: 'Onest', color: 'white' }}>
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', left: 0, top: 0 }}>
+          <rect x={MAP.x} y={MAP.y} width={MAP.w} height={MAP.h} rx={24} fill={PANEL} />
+          <path d={path} fill="none" stroke={CYAN} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx={x(first)} cy={y(first)} r={12} fill={ORANGE} stroke={BG} strokeWidth={4} />
+          <circle cx={x(last)} cy={y(last)} r={12} fill="#2fd27a" stroke={BG} strokeWidth={4} />
+        </svg>
+        <div style={{ position: 'absolute', left: 40, top: 32, display: 'flex' }}><Brand /></div>
+        <div style={{ position: 'absolute', left: 700, top: 40, right: 40, display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: 22, color: MIST }}>Бордови дневник · {t.username}</span>
+          <span style={{ fontFamily: 'Exo 2', fontSize: 46, marginTop: 6, marginBottom: 26 }}>{`${t.from} → ${t.to}`}</span>
+          {stat('Товар', `${t.goods} · ${t.tons} т`)}
+          {stat('Разстояние', `${Math.round(t.km).toLocaleString('bg-BG')} км · ${t.countries.length} ${t.countries.length === 1 ? 'държава' : 'държави'}`)}
+          {stat('Време на път', `${hours(t.stats.totalMin)} · ⌀ ${t.stats.avgKmh} км/ч`)}
+          <span style={{ fontSize: 26, color: t.late ? ORANGE : '#2fd27a' }}>{t.late ? 'Пристигна със закъснение' : 'Пристигна навреме ✓'}{t.convoy ? ' · в конвой' : ''}</span>
+        </div>
+        <div style={{ position: 'absolute', right: 40, bottom: 24, display: 'flex', fontSize: 18, color: MIST }}>Реален маршрут · игрови данни</div>
+      </div>
+    ),
+    { width: W, height: H, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },
+  );
+}

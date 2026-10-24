@@ -23,6 +23,8 @@ export const metadata = { title: 'Автопарк' };
 
 const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влекач' } as const;
 
+import { RoadChoices } from '@/components/game/RoadChoices';
+
 export default async function FleetPage() {
   const { db, user, company, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
@@ -40,6 +42,7 @@ export default async function FleetPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Автопарк" subtitle="Твоите превозни средства, къде са и какво правят." actions={<Link href="/game/market" className="btn-primary"><Truck className="h-4 w-4" />Купи техника</Link>} />
+      {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
       {fleet.vehicles.length === 0 && <Empty icon={Truck} title="Нямате превозни средства">Купете първото си превозно средство от пазара.</Empty>}
       <div className="grid gap-4 xl:grid-cols-2">
         {fleet.vehicles.map((v) => (

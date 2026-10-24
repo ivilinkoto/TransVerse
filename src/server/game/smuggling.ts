@@ -76,7 +76,9 @@ export async function smugglingOffers(db: Database, userId: string, now = new Da
   const want = SMUGGLING.offers + (tier >= 3 ? 1 : 0);
   if (list.length >= want) return list;
   const account = await companyForUser(db, userId);
-  const trucks = await db.select({ cityId: vehicles.cityId }).from(vehicles).where(and(eq(vehicles.companyId, account.id), eq(vehicles.ownership, 'owned')));
+  const trucks = await db.select({ cityId: vehicles.cityId, modelId: vehicles.modelId, hidden: vehicles.hiddenCompartment, trailerModelId: trailers.modelId }).from(vehicles).leftJoin(trailers, eq(trailers.vehicleId, vehicles.id)).where(and(eq(vehicles.companyId, account.id), eq(vehicles.ownership, 'owned')));
+  // An offer never weighs more than the player's own trucks in that city can carry.
+  const capacity = (cityId: number) => Math.max(0, ...trucks.filter((t) => t.cityId === cityId).map((t) => combinationCapability({ unit: powerUnitModel(t.modelId), trailer: t.trailerModelId ? trailerModel(t.trailerModelId) : null }).payloadTons - (t.hidden ? SMUGGLING.compartmentPayloadTons : 0)));
   const hubs = await loadHubs(db, { now });
   const starts = [...new Set(trucks.map((t) => t.cityId))].map((id) => hubs.find((h) => h.id === id)).filter((h): h is NonNullable<typeof h> => !!h);
   if (!starts.length) return list;
@@ -92,7 +94,10 @@ export async function smugglingOffers(db: Database, userId: string, now = new Da
     const dest = near.length ? pickOne(near) : null;
     if (!dest) continue;
     const route = await getRoute(db, origin.id, dest.id, 'truck', provider);
-    const tons = Math.round((SMUGGLING.tons.min + Math.random() * (SMUGGLING.tons.max - SMUGGLING.tons.min)) * 10) / 10;
+    const cap = Math.min(SMUGGLING.tons.max, capacity(origin.id));
+    if (cap < 1) continue;
+    const low = Math.min(SMUGGLING.tons.min, cap);
+    const tons = Math.floor((low + Math.random() * (cap - low)) * 10) / 10;
     const top = tierMultiplier(tier);
     const contact = contacts.find((c) => c.cityId === origin.id);
     const mult = (SMUGGLING.multiplier.min + Math.random() * (top - SMUGGLING.multiplier.min)) * (1 + (contact ? contactLevel(contact.runs) * SMUGGLING.contactPay : 0));

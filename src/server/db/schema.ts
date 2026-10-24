@@ -461,6 +461,11 @@ export const contracts = pgTable(
     keyClient: boolean('key_client').notNull().default(false),
     /** v1.9: a shady load (personal to `createdBy`, never on the public board). */
     shady: boolean('shady').notNull().default(false),
+    /** v1.10: a part of an organized convoy's shared load (only for that convoy's trucks). */
+    convoyId: uuid('convoy_id'),
+    /** v1.10: a leg (1 or 2) of a relay load. */
+    relayId: uuid('relay_id'),
+    relayLeg: integer('relay_leg'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -485,6 +490,14 @@ export const deliveries = pgTable(
     convoyWith: uuid('convoy_with'),
     /** The first trip of a convoy (v1.6): every truck of a big convoy (up to five) points to it. */
     convoyLead: uuid('convoy_lead'),
+    /** v1.10: the organized convoy this trip drives in. */
+    organizedConvoyId: uuid('organized_convoy_id'),
+    /** v1.10: the player shared the trip log (public page and card). */
+    sharedAt: ts('shared_at'),
+    /** v1.10: the temperatures of a refrigerated load and how it arrived. */
+    reefer: jsonb('reefer').$type<{ min: number; max: number; readings: number[]; outcome: 'perfect' | 'slip' | 'spoiled'; cents: number }>(),
+    /** v1.10: a decision on the way (Решения в движение). */
+    choice: jsonb('choice').$type<{ id: string; at: number; deadline: number; notified?: boolean; decided?: 'a' | 'b'; result?: string; costCents?: number; bonusCents?: number; xpShare?: number }>(),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
@@ -2865,3 +2878,135 @@ export const smugglingChecks = pgTable(
   },
   (t) => [index('smuggling_checks_at_idx').on(t.at)],
 );
+
+/** v1.10 organized convoys: one lane, one departure, many trucks. */
+export const convoys = pgTable(
+  'convoys',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** personal | company | official (the game's weekly convoy). */
+    kind: text('kind').notNull(),
+    /** open | friends | link (personal convoys). */
+    access: text('access').notNull().default('open'),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    leaderId: uuid('leader_id').references(() => users.id, { onDelete: 'set null' }),
+    title: text('title'),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    routeId: integer('route_id').notNull(),
+    departAt: ts('depart_at').notNull(),
+    seats: integer('seats').notNull(),
+    minLevel: integer('min_level').notNull().default(1),
+    /** A shared load in parts (cargo and tonnes per truck), or null. */
+    sharedCargo: text('shared_cargo'),
+    sharedTons: real('shared_tons'),
+    /** open → departed → arrived, or cancelled. */
+    status: text('status').notNull().default('open'),
+    trucks: integer('trucks').notNull().default(0),
+    allOnTime: boolean('all_on_time'),
+    arrivesAt: ts('arrives_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('convoys_status_idx').on(t.status, t.departAt), index('convoys_org_idx').on(t.organizationId)],
+);
+
+export const convoyMembers = pgTable(
+  'convoy_members',
+  {
+    convoyId: uuid('convoy_id').notNull().references(() => convoys.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').notNull(),
+    contractId: uuid('contract_id').notNull(),
+    role: text('role').notNull().default('member'),
+    /** ready → departed | dropped (with the reason) | left. */
+    status: text('status').notNull().default('ready'),
+    reason: text('reason'),
+    deliveryId: uuid('delivery_id'),
+    joinedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.convoyId, t.userId] }), index('convoy_members_user_idx').on(t.userId, t.status)],
+);
+
+export const convoyMessages = pgTable(
+  'convoy_messages',
+  {
+    id: serial('id').primaryKey(),
+    convoyId: uuid('convoy_id').notNull().references(() => convoys.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('convoy_messages_idx').on(t.convoyId, t.createdAt)],
+);
+
+/** Each player's convoy record: as a driver and as a leader. */
+export const convoyStats = pgTable('convoy_stats', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  convoys: integer('convoys').notNull().default(0),
+  onTime: integer('on_time').notNull().default(0),
+  streak: integer('streak').notNull().default(0),
+  led: integer('led').notNull().default(0),
+  ledOnTime: integer('led_on_time').notNull().default(0),
+  /** 'YYYY-MM-DD:<n>' — convoy bonuses today (at most 3). */
+  bonusesToday: text('bonuses_today'),
+});
+
+/** v1.10 relay loads: two legs, two drivers. */
+export const relays = pgTable(
+  'relays',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    relayCityId: integer('relay_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    leg1ContractId: uuid('leg1_contract_id').notNull(),
+    leg2ContractId: uuid('leg2_contract_id').notNull(),
+    /** leg1 → leg2 → done, or failed / expired. */
+    status: text('status').notNull().default('leg1'),
+    leg1UserId: uuid('leg1_user_id'),
+    leg1DeliveryId: uuid('leg1_delivery_id'),
+    leg1Late: boolean('leg1_late'),
+    leg2UserId: uuid('leg2_user_id'),
+    handoverAt: ts('handover_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('relays_status_idx').on(t.status)],
+);
+
+/** v1.10 "Градът расте": tonnes delivered to each city by all players (game data). */
+export const cityGrowth = pgTable(
+  'city_growth',
+  {
+    cityId: integer('city_id').primaryKey().references(() => cities.id, { onDelete: 'cascade' }),
+    tons: real('tons').notNull().default(0),
+    /** The ISO week (missions' weekly key) and the tonnes in it. */
+    weekKey: text('week_key'),
+    weekTons: real('week_tons').notNull().default(0),
+    updatedAt: createdAt(),
+  },
+  (t) => [index('city_growth_week_idx').on(t.weekKey, t.weekTons)],
+);
+
+/** v1.10 Гроздобер: harvest loads per player and season (year). */
+export const harvestProgress = pgTable(
+  'harvest_progress',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    year: integer('year').notNull(),
+    loads: integer('loads').notNull().default(0),
+    rewarded: boolean('rewarded').notNull().default(false),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.year] })],
+);
+
+/** v1.10 the story: the current chapter and how far each of its three tasks is. */
+export const storyProgress = pgTable('story_progress', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  /** 0-based chapter; equal to the number of chapters once the story is done. */
+  chapter: integer('chapter').notNull().default(0),
+  counts: integer('counts').array().notNull().default(sql`'{0,0,0}'::int[]`),
+  /** Cities visited in this chapter (for "different cities"). */
+  cities: integer('cities').array().notNull().default(sql`'{}'::int[]`),
+  startedAt: createdAt(),
+  finishedAt: ts('finished_at'),
+});
