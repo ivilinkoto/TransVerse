@@ -35,6 +35,14 @@ export const BASE_VERSION = '1.0';
 
 export const RELEASES: Release[] = [
   {
+    version: '1.8',
+    name: 'Жив път',
+    publishedAt: '2027-05-22T00:00:00+03:00',
+    tagline: 'CB радио, пътни сигнали, картички, автостопаджии, акции на компаниите и още.',
+    highlights: [],
+    sections: [],
+  },
+  {
     version: '1.7',
     name: 'Цяла Европа',
     publishedAt: '2027-04-17T00:00:00+03:00',

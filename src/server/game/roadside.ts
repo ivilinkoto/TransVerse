@@ -42,7 +42,7 @@ export async function tripPosition(db: DbOrTx, d: Trip, now: Date): Promise<LatL
 }
 
 /** The distance from the helper's nearest truck (parked or on a trip) to a point, km. */
-async function nearestTruckKm(db: DbOrTx, userId: string, to: LatLon, now: Date): Promise<number | null> {
+export async function nearestTruckKm(db: DbOrTx, userId: string, to: LatLon, now: Date): Promise<number | null> {
   const account = await companyForUser(db, userId);
   const fleet = await db
     .select({ id: vehicles.id, status: vehicles.status, lat: cities.lat, lon: cities.lon })

@@ -25,7 +25,16 @@ export interface NavSection {
  */
 export const SECTIONS: NavSection[] = [
   { key: 'home', href: '/game', label: 'Табло', icon: LayoutDashboard },
-  { key: 'map', href: '/game/map', label: 'Карта', icon: Map },
+  {
+    key: 'map',
+    href: '/game/map',
+    label: 'Карта',
+    icon: Map,
+    tabs: [
+      { href: '/game/map', label: 'Карта' },
+      { href: '/game/road', label: 'Пътят · CB', feature: 'cb_radio' },
+    ],
+  },
   {
     key: 'jobs',
     href: '/game/contracts',

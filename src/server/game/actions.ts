@@ -19,6 +19,8 @@ import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
 import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/community';
 import { claimEasterQuest, eggFight } from '@/server/game/easter';
+import { createReport, sendCb, voteReport } from '@/server/game/live-road';
+import { REPORT_KIND_IDS, type ReportKind } from '@/lib/game/live-road';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
 import { createAlliance, dissolveAlliance, setAllianceDiscord, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
@@ -208,6 +210,9 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('spotStork') }),
   z.object({ type: z.literal('claimEasterQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('eggFight'), friendId: id }),
+  z.object({ type: z.literal('cbSend'), body: z.string().max(400), vehicleId: id.optional() }),
+  z.object({ type: z.literal('roadReport'), kind: z.enum(REPORT_KIND_IDS as [ReportKind, ...ReportKind[]]), vehicleId: id.optional() }),
+  z.object({ type: z.literal('roadVote'), reportId: z.coerce.number().int().positive(), vote: z.union([z.literal(1), z.literal(-1)]) }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
   z.object({ type: z.literal('joinCup') }),
@@ -338,6 +343,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   spotStork: 'marta',
   claimEasterQuest: 'easter',
   eggFight: 'easter',
+  cbSend: 'cb_radio',
+  roadReport: 'road_reports',
+  roadVote: 'road_reports',
   staffBus: 'staff_bus',
   testDrive: 'test_drive',
   parking: 'parking_game',
@@ -850,6 +858,12 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await claimEasterQuest(db, user.id, input.questId)) };
     case 'eggFight':
       return { ok: true, ...(await eggFight(db, user.id, input.friendId)) };
+    case 'cbSend':
+      return { ok: true, ...(await sendCb(db, user.id, input.body, new Date(), input.vehicleId)) };
+    case 'roadReport':
+      return { ok: true, ...(await createReport(db, user.id, input.kind, new Date(), input.vehicleId)) };
+    case 'roadVote':
+      return { ok: true, ...(await voteReport(db, user.id, input.reportId, input.vote)) };
     case 'staffBus':
       return { ok: true, ...(await staffBus(db, user.id, input.vehicleId)) };
     case 'setShowcase':

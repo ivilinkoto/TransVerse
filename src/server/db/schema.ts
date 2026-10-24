@@ -2550,3 +2550,52 @@ export const countryKings = pgTable(
   },
   (t) => [primaryKey({ columns: [t.month, t.countryCode] }), index('country_kings_user_idx').on(t.userId)],
 );
+
+// ── v1.8 "Жив път" ───────────────────────────────────────────────────────
+
+/** CB radio: a message heard only by drivers on the road near where it was sent. */
+export const cbMessages = pgTable(
+  'cb_messages',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    lat: doublePrecision('lat').notNull(),
+    lon: doublePrecision('lon').notNull(),
+    /** The nearest big real city (for "near Plovdiv"). */
+    near: text('near').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('cb_messages_created_idx').on(t.createdAt)],
+);
+
+/** Road reports from drivers (accident, police, jam…), confirmed or denied by others nearby. */
+export const roadReports = pgTable(
+  'road_reports',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    lat: doublePrecision('lat').notNull(),
+    lon: doublePrecision('lon').notNull(),
+    near: text('near').notNull(),
+    confirms: integer('confirms').notNull().default(0),
+    denies: integer('denies').notNull().default(0),
+    /** The reporter got the reputation for a confirmed report (or lost it for a false one). */
+    settled: boolean('settled').notNull().default(false),
+    createdAt: createdAt(),
+    expiresAt: ts('expires_at').notNull(),
+  },
+  (t) => [index('road_reports_expires_idx').on(t.expiresAt)],
+);
+
+export const roadReportVotes = pgTable(
+  'road_report_votes',
+  {
+    reportId: integer('report_id').notNull().references(() => roadReports.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    vote: integer('vote').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.reportId, t.userId] })],
+);
