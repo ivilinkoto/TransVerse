@@ -21,6 +21,7 @@ import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/comm
 import { claimEasterQuest, eggFight } from '@/server/game/easter';
 import { createReport, sendCb, voteReport } from '@/server/game/live-road';
 import { pickHitchhiker } from '@/server/game/road-life';
+import { haggle } from '@/server/game/deals';
 import { REPORT_KIND_IDS, type ReportKind } from '@/lib/game/live-road';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
@@ -213,6 +214,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('eggFight'), friendId: id }),
   z.object({ type: z.literal('cbSend'), body: z.string().max(400), vehicleId: id.optional() }),
   z.object({ type: z.literal('roadReport'), kind: z.enum(REPORT_KIND_IDS as [ReportKind, ...ReportKind[]]), vehicleId: id.optional() }),
+  z.object({ type: z.literal('haggle'), contractId: id, percent: z.union([z.literal(10), z.literal(20), z.literal(30)]) }),
   z.object({ type: z.literal('pickHitchhiker'), id: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('roadVote'), reportId: z.coerce.number().int().positive(), vote: z.union([z.literal(1), z.literal(-1)]) }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
@@ -349,6 +351,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   roadReport: 'road_reports',
   roadVote: 'road_reports',
   pickHitchhiker: 'hitchhikers',
+  haggle: 'haggling',
   staffBus: 'staff_bus',
   testDrive: 'test_drive',
   parking: 'parking_game',
@@ -865,6 +868,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await sendCb(db, user.id, input.body, new Date(), input.vehicleId)) };
     case 'roadReport':
       return { ok: true, ...(await createReport(db, user.id, input.kind, new Date(), input.vehicleId)) };
+    case 'haggle':
+      return { ok: true, ...(await haggle(db, user.id, input.contractId, input.percent)) };
     case 'pickHitchhiker':
       return { ok: true, ...(await pickHitchhiker(db, user.id, input.id)) };
     case 'roadVote':

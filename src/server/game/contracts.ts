@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { SEALED } from '@/lib/game/deals';
 import { CARGO, CARGO_TYPES, type BodyType, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { rewardCents } from '@/lib/game/economy';
@@ -304,6 +305,8 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const holiday = theme?.id ?? (national ? 'national' : null);
   const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1) * (national ? NATIONAL_DAY.rewardMultiplier : 1);
   const goods = extra.goods ?? (theme ? pick(theme.goods!) : pick(CARGO[cargo].goods));
+  // v1.8: now and then the shipper does not say what is inside.
+  const sealed = !extra.featured && !extra.oversize && !extra.transEurope && !extra.portCallId && !theme && !via.length && featureLive('sealed_cargo', now) && rand() < SEALED.share;
   // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
   const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)));
   const [row] = await db.insert(contracts).values({
@@ -327,6 +330,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     port: extra.port ?? false,
     oversize: extra.oversize ?? false,
     transEurope: extra.transEurope ?? false,
+    sealed,
     expiresAt: new Date(now.getTime() + ttlMs),
   }).returning({ id: contracts.id });
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));

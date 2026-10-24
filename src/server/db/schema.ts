@@ -449,6 +449,8 @@ export const contracts = pgTable(
     factorySaleCents: money('factory_sale_cents'),
     /** A trans-European load (v1.7): 2 500 km and more, for a two-driver crew. */
     transEurope: boolean('trans_europe').notNull().default(false),
+    /** v1.8: the shipper does not say what is inside (revealed on arrival). */
+    sealed: boolean('sealed').notNull().default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -493,6 +495,8 @@ export const deliveries = pgTable(
     xpAwarded: integer('xp_awarded'),
     /** Per-delivery fee for rented vehicles (replaces fuel, tolls and maintenance). */
     rentalFeeCents: money('rental_fee_cents'),
+    /** v1.8: the extra share of the pay the shipper agreed to when haggling (percent). */
+    hagglePercent: integer('haggle_percent').notNull().default(0),
     /** 1 = real-time schedule (legacy), 2 = compressed game time. */
     scheduleVersion: integer('schedule_version').notNull().default(1),
     /** Road events planned at acceptance (server only) and applied when the truck gets there. */
@@ -2630,4 +2634,17 @@ export const hitchhikers = pgTable(
     settledAt: ts('settled_at'),
   },
   (t) => [uniqueIndex('hitchhikers_delivery_idx').on(t.deliveryId), index('hitchhikers_user_idx').on(t.userId, t.status)],
+);
+
+/** A player's haggle over a load (v1.8): once per load; a "no" takes the load away from that player. */
+export const contractHaggles = pgTable(
+  'contract_haggles',
+  {
+    contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    percent: integer('percent').notNull(),
+    accepted: boolean('accepted').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.contractId, t.userId] })],
 );

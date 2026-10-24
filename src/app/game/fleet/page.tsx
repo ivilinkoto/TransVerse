@@ -11,6 +11,7 @@ import { dec, int, km, money } from '@/lib/format';
 import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
+import { ghostsFor } from '@/server/game/deals';
 import { RENTAL_BUYOUT_DELIVERIES, UPGRADES, combinationCapability, type UpgradeId } from '@/lib/game/catalog';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { ECONOMY } from '@/lib/game/economy';
@@ -28,6 +29,8 @@ export default async function FleetPage() {
   const marta = features.marta && isMarta(now);
   const vip = isVip(user.vipUntil, now);
   const fleet = await fleetView(db, company.id);
+  // v1.8: the ghost of this month's record on each lane being driven.
+  const ghosts = features.ghost_record ? await ghostsFor(db, fleet.vehicles.flatMap((v) => (v.delivery ? [{ originCityId: v.delivery.contract.originCityId, destCityId: v.delivery.contract.destCityId }] : [])), now) : new Map();
   const leased = new Map((features.leasing ? await leasesOf(db, company.id) : []).filter((l) => l.status === 'active').map((l) => [l.vehicleId, l]));
   const loose = fleet.trailers.filter((t) => !t.vehicleId);
   // The player drives one truck themselves and can switch to another idle one.
@@ -65,10 +68,13 @@ export default async function FleetPage() {
             {v.delivery && (
               <div className="mb-3 rounded-xl border border-asphalt-700 bg-asphalt-850 p-3">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                  <span className="font-semibold">{v.delivery.contract.goods} · {dec(v.delivery.contract.weightTons)} т</span>
+                  <span className="font-semibold">{features.sealed_cargo && v.delivery.contract.sealed ? '📦 Запечатан товар' : v.delivery.contract.goods} · {dec(v.delivery.contract.weightTons)} т</span>
                   <span className="num text-profit">{money(v.delivery.contract.rewardCents)}</span>
                 </div>
-                <DeliveryProgress schedule={v.delivery.schedule} etaAt={v.delivery.etaAt} deadlineAt={v.delivery.deadlineAt} />
+                <DeliveryProgress schedule={v.delivery.schedule} etaAt={v.delivery.etaAt} deadlineAt={v.delivery.deadlineAt} ghost={(() => {
+                  const g = ghosts.get(`${v.delivery.contract.originCityId}:${v.delivery.contract.destCityId}`);
+                  return g ? { username: g.username, minutes: g.minutes, mine: g.userId === user.id } : null;
+                })()} />
                 {features.roadside_paid && (() => {
                   const stop = helpableStop(v.delivery.schedule, now.getTime());
                   return stop ? <RoadsideChoice deliveryId={v.delivery.id} note={stop.note ?? 'Спрял по пътя'} /> : null;

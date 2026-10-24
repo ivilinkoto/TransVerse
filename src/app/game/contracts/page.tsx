@@ -23,6 +23,7 @@ import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
 import { BODY_LABELS, compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
+import { haggleable, hagglesOf } from '@/server/game/deals';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { cities as citiesTable, contracts as contractsTable, deliveries } from '@/server/db/schema';
 import { fleetView } from '@/server/game/queries';
@@ -88,7 +89,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const [focusRow] = focusId ? await db.select({ originCityId: contractsTable.originCityId }).from(contractsTable).where(eq(contractsTable.id, focusId)) : [];
   const focusLoads = focusRow ? (await openContracts(db, { originCityId: focusRow.originCityId, limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe })).filter((c) => c.id === focusId) : [];
   const seen = new Set<string>();
-  const contracts = [...focusLoads, ...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
+  const all = [...focusLoads, ...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
+  // v1.8: a refused haggle took the load away from this player.
+  const haggles = features.haggling ? await hagglesOf(db, user.id, all.map((c) => c.id), now) : new Map();
+  const contracts = all.filter((c) => haggles.get(c.id)?.accepted !== false);
 
   // Traffic from the players (v1.6): trucks on each lane right now.
   const laneTraffic = new Map<string, number>();
@@ -132,7 +136,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
     return {
       id: c.id,
       shipper: c.shipper,
-      goods: c.goods,
+      goods: features.sealed_cargo && c.sealed ? 'Запечатан товар' : c.goods,
+      sealed: features.sealed_cargo && c.sealed,
+      haggle: features.haggling && haggleable(c) && !c.reservedByCompanyId ? (haggles.get(c.id) ?? 'open') : null,
       cargoType: c.cargoType as CargoType,
       cargoLabel: cargo.label,
       needs: { bodies: cargo.bodies.map((b) => BODY_LABELS[b] ?? b), level: Math.max(c.minLevel, cargo.minLevel) },
