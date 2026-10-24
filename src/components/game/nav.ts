@@ -8,6 +8,10 @@ export interface NavTab {
   feature?: FeatureId;
   /** Shown only while this holiday's content runs. */
   holiday?: 'halloween' | 'christmas' | 'marta' | 'spring' | 'easter';
+  /** v1.9: the group the tab belongs to in a long section (shown as a second row). */
+  group?: string;
+  /** v1.9: shown in the menu from this player level (the page itself stays open to everyone). */
+  minLevel?: number;
 }
 
 export interface NavSection {
@@ -32,7 +36,7 @@ export const SECTIONS: NavSection[] = [
     icon: Map,
     tabs: [
       { href: '/game/map', label: 'Карта' },
-      { href: '/game/road', label: 'Пътят · CB', feature: 'cb_radio' },
+      { href: '/game/road', label: 'Пътят · CB', feature: 'cb_radio', minLevel: 2 },
     ],
   },
   {
@@ -42,9 +46,10 @@ export const SECTIONS: NavSection[] = [
     icon: ClipboardList,
     tabs: [
       { href: '/game/contracts', label: 'Поръчки' },
-      { href: '/game/clients', label: 'Клиенти' },
-      { href: '/game/auctions', label: 'Специални товари' },
-      { href: '/game/trade', label: 'Търговия със стоки' },
+      { href: '/game/clients', label: 'Клиенти', minLevel: 3 },
+      { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
+      { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
+      { href: '/game/underground', label: 'Сенки', feature: 'smuggling', minLevel: 10 },
     ],
   },
   {
@@ -53,15 +58,15 @@ export const SECTIONS: NavSection[] = [
     label: 'Автопарк',
     icon: Truck,
     tabs: [
-      { href: '/game/fleet', label: 'Моите превозни средства' },
-      { href: '/game/analytics', label: 'Анализ' },
-      { href: '/game/garage', label: 'Сервиз' },
-      { href: '/game/market', label: 'Пазар' },
-      { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire' },
-      { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction' },
-      { href: '/game/staff', label: 'Шофьори' },
-      { href: '/game/logistics', label: 'Депа' },
-      { href: '/game/licences', label: 'Лицензи' },
+      { href: '/game/fleet', label: 'Моите превозни средства', group: 'Камиони' },
+      { href: '/game/analytics', label: 'Анализ', group: 'Камиони', minLevel: 3 },
+      { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа' },
+      { href: '/game/market', label: 'Пазар', group: 'Камиони' },
+      { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire', group: 'Камиони', minLevel: 6 },
+      { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction', group: 'Камиони', minLevel: 6 },
+      { href: '/game/staff', label: 'Шофьори', group: 'Хора' },
+      { href: '/game/logistics', label: 'Депа', group: 'Сервиз и депа', minLevel: 4 },
+      { href: '/game/licences', label: 'Лицензи', group: 'Хора', minLevel: 2 },
     ],
   },
   {
@@ -72,8 +77,8 @@ export const SECTIONS: NavSection[] = [
     tabs: [
       { href: '/game/company', label: 'Моята компания' },
       { href: '/game/companies', label: 'Всички компании' },
-      { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board' },
-      { href: '/game/shares', label: 'Борса за акции', feature: 'share_market' },
+      { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board', minLevel: 3 },
+      { href: '/game/shares', label: 'Борса за акции', feature: 'share_market', minLevel: 6 },
     ],
   },
   {
@@ -82,30 +87,30 @@ export const SECTIONS: NavSection[] = [
     label: 'Състезание',
     icon: Trophy,
     tabs: [
-      { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween' },
-      { href: '/game/christmas', label: 'Коледа', holiday: 'christmas' },
-      { href: '/game/marta', label: 'Баба Марта', holiday: 'marta', feature: 'marta' },
-      { href: '/game/spring', label: 'Първа пролет', holiday: 'spring', feature: 'spring' },
-      { href: '/game/easter', label: 'Великден', holiday: 'easter', feature: 'easter' },
-      { href: '/game/missions', label: 'Мисии' },
-      { href: '/game/parking', label: 'Паркирай', feature: 'parking_game' },
-      { href: '/game/league', label: 'Лига' },
-      { href: '/game/duels', label: 'Дуели', feature: 'duels' },
-      { href: '/game/rally', label: 'Рали', feature: 'rally' },
-      { href: '/game/challenges', label: 'Предизвикателства', feature: 'weekly_challenge' },
-      { href: '/game/cup', label: 'Пролетна купа', feature: 'spring_cup' },
-      { href: '/game/predictions', label: 'Прогнози', feature: 'predictions' },
-      { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest' },
-      { href: '/game/truck-contest', label: 'Камион на месеца', feature: 'truck_contest' },
-      { href: '/game/pass', label: 'Пропуск' },
-      { href: '/game/events', label: 'Ивенти' },
-      { href: '/game/leaderboards', label: 'Класации' },
-      { href: '/game/news', label: 'Седмичник' },
-      { href: '/game/seasons', label: 'Сезони' },
-      { href: '/game/progress', label: 'Постижения' },
-      { href: '/game/collection', label: 'Албум', feature: 'city_album' },
-      { href: '/game/postcards', label: 'Картички', feature: 'postcards' },
-      { href: '/game/my-map', label: 'Картата ми', feature: 'my_map' },
+      { href: '/game/halloween', label: 'Хелуин', holiday: 'halloween', group: 'Сезонни' },
+      { href: '/game/christmas', label: 'Коледа', holiday: 'christmas', group: 'Сезонни' },
+      { href: '/game/marta', label: 'Баба Марта', holiday: 'marta', feature: 'marta', group: 'Сезонни' },
+      { href: '/game/spring', label: 'Първа пролет', holiday: 'spring', feature: 'spring', group: 'Сезонни' },
+      { href: '/game/easter', label: 'Великден', holiday: 'easter', feature: 'easter', group: 'Сезонни' },
+      { href: '/game/missions', label: 'Мисии', group: 'Днес' },
+      { href: '/game/parking', label: 'Паркирай', feature: 'parking_game', group: 'Днес' },
+      { href: '/game/league', label: 'Лига', group: 'Класации', minLevel: 2 },
+      { href: '/game/duels', label: 'Дуели', feature: 'duels', group: 'Класации', minLevel: 3 },
+      { href: '/game/rally', label: 'Рали', feature: 'rally', group: 'Класации', minLevel: 4 },
+      { href: '/game/challenges', label: 'Предизвикателства', feature: 'weekly_challenge', group: 'Днес', minLevel: 3 },
+      { href: '/game/cup', label: 'Пролетна купа', feature: 'spring_cup', group: 'Класации', minLevel: 5 },
+      { href: '/game/predictions', label: 'Прогнози', feature: 'predictions', group: 'Общност', minLevel: 5 },
+      { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest', group: 'Общност', minLevel: 5 },
+      { href: '/game/truck-contest', label: 'Камион на месеца', feature: 'truck_contest', group: 'Общност', minLevel: 5 },
+      { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2 },
+      { href: '/game/events', label: 'Ивенти', group: 'Днес' },
+      { href: '/game/leaderboards', label: 'Класации', group: 'Класации' },
+      { href: '/game/news', label: 'Седмичник', group: 'Общност' },
+      { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2 },
+      { href: '/game/progress', label: 'Постижения', group: 'Колекции' },
+      { href: '/game/collection', label: 'Албум', feature: 'city_album', group: 'Колекции', minLevel: 2 },
+      { href: '/game/postcards', label: 'Картички', feature: 'postcards', group: 'Колекции', minLevel: 2 },
+      { href: '/game/my-map', label: 'Картата ми', feature: 'my_map', group: 'Колекции', minLevel: 3 },
     ],
   },
 ];
@@ -126,9 +131,39 @@ export const ACCOUNT_MENU = [
 const within = (pathname: string, href: string) => (href === '/game' ? pathname === '/game' : pathname === href || pathname.startsWith(href + '/'));
 
 /** The tabs to show: holiday tabs only during their holiday (and on their own page). */
-export function visibleTabs(section: NavSection, holiday: string | null, pathname: string, has: (feature: FeatureId) => boolean = () => true): NavTab[] {
+export function visibleTabs(section: NavSection, holiday: string | null, pathname: string, has: (feature: FeatureId) => boolean = () => true, player: NavPlayer | null = null): NavTab[] {
   // Several holidays can overlap (Баба Марта and Първа пролет): `holiday` lists them comma-separated.
-  return (section.tabs ?? []).filter((t) => (!t.holiday || (holiday ?? '').split(',').includes(t.holiday) || within(pathname, t.href)) && (!t.feature || has(t.feature)));
+  return (section.tabs ?? []).filter(
+    (t) =>
+      (!t.holiday || (holiday ?? '').split(',').includes(t.holiday) || within(pathname, t.href)) &&
+      (!t.feature || has(t.feature)) &&
+      // v1.9: a newer player's menu grows with the level (the open page always shows).
+      (!player || player.showAll || !t.minLevel || player.level >= t.minLevel || within(pathname, t.href)),
+  );
+}
+
+/** v1.9: what the menu needs to know about the player (null = everything, as before). */
+export interface NavPlayer {
+  level: number;
+  showAll: boolean;
+}
+
+/** v1.9: the groups of a section's visible tabs, in order (empty when the section has none). */
+export function tabGroups(tabs: readonly NavTab[]): { name: string; tabs: NavTab[] }[] {
+  const out: { name: string; tabs: NavTab[] }[] = [];
+  for (const t of tabs) {
+    if (!t.group) return [];
+    const g = out.find((x) => x.name === t.group);
+    if (g) g.tabs.push(t);
+    else out.push({ name: t.group, tabs: [t] });
+  }
+  // Seasonal pages first only while they run; otherwise "Днес" leads.
+  return out;
+}
+
+/** v1.9: tabs that unlock with the level — for the "Ново за теб" window. */
+export function unlockTabs(): (NavTab & { section: string })[] {
+  return SECTIONS.flatMap((s) => (s.tabs ?? []).filter((t) => t.minLevel).map((t) => ({ ...t, section: s.label })));
 }
 
 /** The tab of a section that matches the path (the longest match wins, so /game/company/chat stays on "Моята компания"). */

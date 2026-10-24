@@ -7,7 +7,8 @@ import { AUCTION_RULES, floorBidCents, maxBidCents } from '@/lib/game/auctions';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { auctionsBoard } from '@/server/game/auctions';
 import { gameContext } from '@/server/game/context';
-import { compatibilityError } from '@/server/game/deliveries';
+import { BODY_LABELS, compatibilityError } from '@/server/game/deliveries';
+import { WhyNot } from '@/components/game/WhyNot';
 import { fleetView } from '@/server/game/queries';
 
 export const metadata = { title: 'Специални товари' };
@@ -38,7 +39,7 @@ export default async function AuctionsPage() {
             {board.won.map((w) => {
               const options = fleet.vehicles.map((v) => {
                 const error = compatibilityError({ modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, condition: v.condition, hasDriver: !!v.driver, status: v.status, trailerCondition: v.trailer?.condition ?? null }, { cargoType: w.cargoType, weightTons: w.weightTons, minLevel: 1 }, user.level);
-                return { value: v.id, label: `${v.plate} · ${v.model.name} · ${v.city.nameBg}${error ? ` — ${error}` : ''}`, disabled: !!error };
+                return { value: v.id, label: `${v.plate} · ${v.model.name} · ${v.city.nameBg}${error ? ' (не става)' : ''}`, disabled: !!error, error };
               });
               return (
                 <li key={w.id} className="rounded-xl border border-gold-400/40 bg-gold-400/5 p-3 text-sm">
@@ -48,6 +49,7 @@ export default async function AuctionsPage() {
                   </div>
                   <div className="text-mist-300">{w.from} <ArrowRight className="inline h-3 w-3" /> {w.to} · {km(w.distanceKm)} · изпрати до {dateTime(w.contract.expiresAt)}</div>
                   <div className="mt-2"><SelectAction label="Изпрати" ariaLabel={`Камион за ${w.title}`} value="" options={[{ value: '', label: '— избери камион —' }, ...options]} action={{ type: 'acceptContract', contractId: w.contract.id }} field="vehicleId" /></div>
+                  <div className="mt-2"><WhyNot needs={[{ label: 'Надстройка', value: CARGO[w.cargoType as CargoType].bodies.map((b) => BODY_LABELS[b] ?? b).join(' или ') }, { label: 'Товар', value: `${w.weightTons} т` }]} blocked={options.filter((o) => o.error).map((o) => ({ label: o.label, error: o.error! }))} anyUsable={options.some((o) => !o.error)} /></div>
                 </li>
               );
             })}

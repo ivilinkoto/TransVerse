@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { ExternalLink, MessagesSquare } from 'lucide-react';
+import { GLOSSARY } from '@/lib/game/glossary';
+import { gameContext } from '@/server/game/context';
 import { DISCORD_URL } from '@/lib/community';
 import { Card, PageHeader } from '@/components/ui';
 import { CLIENT_RULES } from '@/lib/game/clients';
@@ -88,7 +90,9 @@ const SECTIONS: { id: string; title: string; items: React.ReactNode[] }[] = [
   },
 ];
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  const { features } = await gameContext();
+  const glossary = features.glossary;
   return (
     <div className="space-y-6">
       <PageHeader title="Помощ и правила" subtitle="Всички системи на играта накратко. Числата са игрови правила." />
@@ -98,9 +102,19 @@ export default function HelpPage() {
         <ExternalLink className="h-4 w-4 shrink-0 text-mist-400" />
       </a>
       <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label="Раздели">
+        {glossary && <a href="#glossary" className="shrink-0 rounded-full border border-cyan-glow/40 px-3 py-1.5 text-sm text-cyan-glow hover:text-white">Речник</a>}
         {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`} className="shrink-0 rounded-full border border-asphalt-700 px-3 py-1.5 text-sm text-mist-300 hover:text-white">{s.title}</a>)}
       </nav>
       <div className="grid gap-6 lg:grid-cols-2">
+        {glossary && (
+          <Card id="glossary" title="Речник" className="lg:col-span-2">
+            <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+              {Object.entries(GLOSSARY).map(([id, g]) => (
+                <div key={id}><dt className="font-semibold text-white">{g.term}</dt><dd className="text-mist-300">{g.text}</dd></div>
+              ))}
+            </dl>
+          </Card>
+        )}
         {SECTIONS.map((s) => (
           <Card key={s.id} id={s.id} title={s.title}>
             <ul className="space-y-2 text-sm text-mist-200">

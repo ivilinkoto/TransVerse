@@ -26,6 +26,7 @@ import { dateTime, km, money } from '@/lib/format';
 import { ACHIEVEMENTS, levelProgress } from '@/lib/game/progression';
 import { achievements, ledgerEntries } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
+import { nextSteps } from '@/server/game/next-steps';
 import { runningEvents } from '@/server/game/events';
 import { missionBoard } from '@/server/game/missions';
 import { missionById } from '@/lib/game/missions';
@@ -41,6 +42,8 @@ export default async function OverviewPage() {
   const [paper] = await latestIssues(db, 1);
   const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
   const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
+  // v1.9: three concrete things to do now.
+  const steps = features.next_steps ? await nextSteps(db, user, company.id, now) : [];
   const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
@@ -196,6 +199,19 @@ export default async function OverviewPage() {
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-mist-400 transition group-hover:translate-x-0.5" />
         </Link>
+      )}
+      {steps.length > 0 && (
+        <section className="panel p-4" aria-label="Какво да правя сега">
+          <h2 className="label mb-2">Какво да правя сега?</h2>
+          <ul className="space-y-2">
+            {steps.map((st) => (
+              <li key={st.text} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span><span className="mr-2">{st.emoji}</span>{st.text}</span>
+                <Link href={st.href} className="btn-ghost px-3 py-1 text-xs">{st.action} →</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       <DailyRewardCard streak={user.loginStreak} lastKey={user.dailyClaimKey} now={now} />
 

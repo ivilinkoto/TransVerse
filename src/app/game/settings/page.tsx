@@ -1,5 +1,5 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
-import { Ban, Bell, MessageSquare, Paintbrush, Sparkles, UserRoundCheck } from 'lucide-react';
+import { Ban, Bell, MessageSquare, Paintbrush, Sparkles, UserRoundCheck, LayoutGrid } from 'lucide-react';
 import { SEASON_IDS, SEASONS, activeSeason } from '@/lib/game/seasonal';
 import { seasonMode } from '@/server/seasonal';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -17,6 +17,8 @@ import { date } from '@/lib/format';
 import { sessions, users } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { HIRE_RULES } from '@/lib/game/hire';
+import { SMUGGLING } from '@/lib/game/smuggling';
+import { smugglingProfile } from '@/server/game/smuggling';
 
 export const metadata = { title: 'Настройки' };
 
@@ -25,7 +27,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const { db, user, now, features } = await gameContext();
   const site = activeSeason(now, await seasonMode(db));
   const [u] = await db.select({ email: users.email, createdAt: users.createdAt, verified: users.emailVerifiedAt, pushPrefs: users.pushPrefs, discordName: users.discordName, discordId: users.discordId, discordPrefs: users.discordPrefs }).from(users).where(eq(users.id, user.id));
-  const [keys, devices, blocked] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id)]);
+  const [keys, devices, blocked, shade] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id), features.smuggling ? smugglingProfile(db, user.id) : null]);
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(sessions).where(and(eq(sessions.userId, user.id), gt(sessions.expiresAt, new Date())));
   return (
     <div className="space-y-6">
@@ -50,6 +52,32 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         {features.discord_bot && (
           <Card title={<span id="discord" className="inline-flex scroll-mt-24 items-center gap-2"><MessageSquare className="h-4 w-4 text-mist-400" />Discord</span>} className="lg:col-span-2">
             <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} />
+          </Card>
+        )}
+        {shade && (
+          <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />Сенчести товари</span>} className="lg:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-mist-300">
+                {user.level < SMUGGLING.minLevel ? `По избор от ниво ${SMUGGLING.minLevel}: вечерни пратки с безобидна „сива“ стока, по-добре платени, но с риск от глоба и конфискация (само игрови пари).` : shade.optIn ? 'Включено: виждаш вечерните сенчести оферти в „Сенки“.' : 'Изключено: играта е само честна. Можеш да ги включиш по всяко време.'}
+              </p>
+              {user.level >= SMUGGLING.minLevel && <ActionButton action={{ type: 'smugglingOptIn', on: !shade.optIn }} className="btn-ghost">{shade.optIn ? 'Изключи' : 'Включи'}</ActionButton>}
+            </div>
+          </Card>
+        )}
+        {(features.progressive_unlock || features.simple_board) && (
+          <Card title={<span className="inline-flex items-center gap-2"><LayoutGrid className="h-4 w-4 text-mist-400" />Как изглежда играта</span>} className="lg:col-span-2">
+            {features.progressive_unlock && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-mist-300">{user.uiPrefs?.showAll ? 'Менюто показва всичко веднага.' : 'Менюто расте с нивото ти — новите страници се отключват постепенно с кратко обяснение. Страниците винаги се отварят и директно.'}</p>
+                <ActionButton action={{ type: 'uiPrefs', showAll: !user.uiPrefs?.showAll }} className="btn-ghost">{user.uiPrefs?.showAll ? 'Постепенно меню' : 'Покажи всичко'}</ActionButton>
+              </div>
+            )}
+            {features.simple_board && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-mist-300">{user.uiPrefs?.boardView === 'full' ? 'Борсата показва всички етикети на поръчките.' : 'Борсата е в прост изглед: маршрут, тонове, пари и подходящ камион; бонусите са в една лента.'}</p>
+                <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost">{user.uiPrefs?.boardView === 'full' ? 'Прост изглед' : 'Разширен изглед'}</ActionButton>
+              </div>
+            )}
           </Card>
         )}
         <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />Празнична украса</span>} className="lg:col-span-2">

@@ -83,7 +83,7 @@ export async function ensureBranchLoads(db: Database, now = new Date(), provider
   const open = await db
     .select({ org: contracts.branchOrgId, city: contracts.originCityId, n: count() })
     .from(contracts)
-    .where(and(sql`${contracts.branchOrgId} is not null`, eq(contracts.status, 'open'), gt(contracts.expiresAt, now)))
+    .where(and(sql`${contracts.branchOrgId} is not null`, eq(contracts.keyClient, false), eq(contracts.status, 'open'), gt(contracts.expiresAt, now)))
     .groupBy(contracts.branchOrgId, contracts.originCityId);
   const hubs = await loadHubs(db);
   let created = 0;

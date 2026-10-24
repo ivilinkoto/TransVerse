@@ -22,8 +22,8 @@ export async function haggle(db: Database, userId: string, contractId: string, p
   return { accepted, percent, holdUntil: new Date(now.getTime() + HAGGLE.holdMin * 60_000).toISOString() };
 }
 
-export const haggleable = (c: Pick<typeof contracts.$inferSelect, 'rewardCents' | 'urgent' | 'tenderId' | 'rallyId' | 'featured' | 'tradeCompanyId' | 'factoryOrgId' | 'branchOrgId' | 'sharedLoadId' | 'constructionId' | 'clientContractId'>) =>
-  c.rewardCents >= HAGGLE.minRewardCents && !c.urgent && !c.tenderId && !c.rallyId && !c.featured && !c.tradeCompanyId && !c.factoryOrgId && !c.branchOrgId && !c.sharedLoadId && !c.constructionId && !c.clientContractId;
+export const haggleable = (c: Pick<typeof contracts.$inferSelect, 'rewardCents' | 'urgent' | 'tenderId' | 'rallyId' | 'featured' | 'tradeCompanyId' | 'factoryOrgId' | 'branchOrgId' | 'sharedLoadId' | 'constructionId' | 'clientContractId'> & { shady?: boolean }) =>
+  c.rewardCents >= HAGGLE.minRewardCents && !c.urgent && !c.tenderId && !c.rallyId && !c.featured && !c.tradeCompanyId && !c.factoryOrgId && !c.branchOrgId && !c.sharedLoadId && !c.constructionId && !c.clientContractId && !c.shady;
 
 /** Before a load is accepted: a "no" bars the player, a fresh "yes" gives the agreed extra percent. */
 export async function agreedHaggle(db: DbOrTx, userId: string, contractId: string, now: Date) {

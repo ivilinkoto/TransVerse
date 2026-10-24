@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { LogoEditor } from '@/components/company/LogoEditor';
 import { AssetUpload, ProfileForm } from '@/components/company/forms';
 import { Card } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -31,6 +32,11 @@ export default async function CompanyProfilePage() {
           <p className="text-xs text-mist-400">Качвайте само собствени изображения или такива, които имате право да използвате. Неподходящо съдържание се премахва от модераторите.</p>
         </div>
       </Card>
+      {features.company_logo && (
+        <Card title="Нарисувай лого" className="lg:col-span-2">
+          <LogoEditor initial={c.logoDesign ?? null} fallbackInitials={(c.tag ?? c.name).replace(/[^\p{L}\p{N}]/gu, '').slice(0, 3) || 'TV'} />
+        </Card>
+      )}
       {features.livery && (
         <Card title="Ливрея на камионите" className="lg:col-span-2">
           <p className="mb-3 text-sm text-mist-300">Цветът, с който се боядисват камионите на членовете — на страниците на автопарка, в гаража и на участъка. Специалните бои от магазина остават. Всеки член може да я изключи за себе си от Настройки.</p>

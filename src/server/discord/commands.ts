@@ -299,7 +299,7 @@ async function board(db: DbOrTx, cityName: string, now: Date): Promise<CommandRe
   const rows = await db
     .select({ goods: contracts.goods, tons: contracts.weightTons, km: contracts.distanceKm, reward: contracts.rewardCents, dest, minLevel: contracts.minLevel })
     .from(contracts)
-    .where(and(eq(contracts.originCityId, city.id), eq(contracts.status, 'open'), gt(contracts.expiresAt, now), isNull(contracts.constructionId), isNull(contracts.trade)))
+    .where(and(eq(contracts.originCityId, city.id), eq(contracts.status, 'open'), eq(contracts.shady, false), gt(contracts.expiresAt, now), isNull(contracts.constructionId), isNull(contracts.trade)))
     .orderBy(desc(contracts.rewardCents))
     .limit(8);
   const lines = rows.map((r) => `📦 **${r.goods}** ${dec(r.tons)} т → ${r.dest} · ${km(r.km)} · **${money(r.reward)}**${r.minLevel > 1 ? ` · ниво ${r.minLevel}+` : ''}`);
