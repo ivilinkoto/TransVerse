@@ -21,6 +21,10 @@ const INTENTS = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 7) | (1 << 9) | (1 << 15)
 const BASIC_INTENTS = (1 << 0) | (1 << 2) | (1 << 7) | (1 << 9);
 /** How often a connection without Message Content tries the full intents again. */
 const RETRY_FULL_MS = 30 * 60_000;
+const HELLO_TIMEOUT_MS = 30_000;
+/** How often a connected worker refreshes its state (the admin panel calls it stale after `GATEWAY_STALE_MS`). */
+const STATE_REFRESH_MS = 5 * 60_000;
+export const GATEWAY_STALE_MS = 20 * 60_000;
 
 interface DiscordMessageEvent {
   id: string;
@@ -152,6 +156,14 @@ export function startGateway(db: Database) {
   let acked = true;
   let limited = false;
   let retryFull: ReturnType<typeof setTimeout> | null = null;
+  let helloTimer: ReturnType<typeof setTimeout> | null = null;
+  let ready = false;
+  let savedAt = 0;
+  // One write after another: a late 'connecting' must never land over 'ready'.
+  let saving = Promise.resolve();
+  const save = (value: GatewayState) => {
+    saving = saving.then(() => saveState(db, value));
+  };
 
   const send = (op: number, d: unknown) => ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ op, d }));
   const reconnect = (delay = 5000) => {
@@ -166,14 +178,30 @@ export function startGateway(db: Database) {
     if (!stopped) setTimeout(() => void connect(), delay);
   };
 
+  const markReady = () => {
+    ready = true;
+    savedAt = Date.now();
+    save({ state: 'ready', at: savedAt, limited });
+  };
+
   async function connect() {
+    ready = false;
+    if (helloTimer) clearTimeout(helloTimer);
     try {
       const url = session?.url ?? (await discord<{ url: string }>('GET', '/gateway/bot')).url;
       ws = new WebSocket(`${url}?v=10&encoding=json`);
-      void saveState(db, { state: 'connecting', at: Date.now(), limited });
+      save({ state: 'connecting', at: Date.now(), limited });
+      // A socket that never says hello (stuck network, proxy): start again instead of waiting forever.
+      const pending = ws;
+      helloTimer = setTimeout(() => {
+        if (ws === pending && !beat) {
+          console.warn('[discord] no hello from the gateway in 30 s — reconnecting');
+          reconnect(5000);
+        }
+      }, HELLO_TIMEOUT_MS);
     } catch (error) {
       console.warn('[discord] gateway url failed', (error as Error).message);
-      void saveState(db, { state: 'closed', at: Date.now(), error: (error as Error).message.slice(0, 300) });
+      save({ state: 'closed', at: Date.now(), error: (error as Error).message.slice(0, 300) });
       return reconnect(30_000);
     }
     const sock = ws;
@@ -193,7 +221,11 @@ export function startGateway(db: Database) {
         }, interval);
         if (session) send(6, { token: discordConfig().token, session_id: session.id, seq });
         else send(2, { token: discordConfig().token, intents: limited ? BASIC_INTENTS : INTENTS, properties: { os: 'linux', browser: 'transverse', device: 'transverse' } });
-      } else if (p.op === 11) acked = true;
+      } else if (p.op === 11) {
+        acked = true;
+        // While connected, refresh the state now and then: the admin panel tells a live worker from a stopped one.
+        if (ready && Date.now() - savedAt > STATE_REFRESH_MS) markReady();
+      }
       else if (p.op === 1) send(1, seq);
       else if (p.op === 7) reconnect(500);
       else if (p.op === 9) {
@@ -204,7 +236,7 @@ export function startGateway(db: Database) {
           const d = p.d as { session_id: string; resume_gateway_url: string };
           session = { id: d.session_id, url: d.resume_gateway_url };
           console.log(`[discord] gateway ready${limited ? ' (without Message Content)' : ''}`);
-          void saveState(db, { state: 'ready', at: Date.now(), limited });
+          markReady();
           // Now and then try again with Message Content, in case it was turned on meanwhile.
           if (limited && !retryFull) {
             retryFull = setTimeout(() => {
@@ -214,13 +246,16 @@ export function startGateway(db: Database) {
               reconnect(0);
             }, RETRY_FULL_MS);
           }
+        } else if (p.t === 'RESUMED') {
+          // A resumed session (after Discord asked to reconnect) sends RESUMED, not READY.
+          markReady();
         } else if (p.t) onEvent(db, p.t, p.d);
       }
     };
     ws.onclose = (event) => {
       // Closed by reconnect(): a new socket is already on its way.
       if (sock !== ws) return;
-      void saveState(db, { state: 'closed', at: Date.now(), code: event.code, limited });
+      save({ state: 'closed', at: Date.now(), code: event.code, limited });
       // 4014: Message Content is not allowed — connect without it (commands keep working).
       if (event.code === 4014 && !limited) {
         console.warn('[discord] Message Content intent is off in the Developer Portal — connecting without it');
@@ -245,6 +280,7 @@ export function startGateway(db: Database) {
     stop: () => {
       stopped = true;
       if (retryFull) clearTimeout(retryFull);
+      if (helloTimer) clearTimeout(helloTimer);
       reconnect(0);
     },
   };

@@ -4,7 +4,7 @@ import { discordOutbox, jobState, users } from '@/server/db/schema';
 import { discord } from './api';
 import { COMMANDS } from './commands';
 import { appUrl, DISCORD_CHANNELS, DISCORD_ROLES, discordConfig } from './config';
-import { GATEWAY_STATE, type GatewayState } from './gateway';
+import { GATEWAY_STALE_MS, GATEWAY_STATE, type GatewayState } from './gateway';
 import { channelKey, forgetGuild } from './guild';
 import { discordRedirectUri } from './link';
 import { enqueue } from './outbox';
@@ -155,18 +155,8 @@ export async function diagnoseDiscord(db: Database): Promise<DiscordCheck[]> {
 
   const [gw] = await db.select().from(jobState).where(eq(jobState.key, GATEWAY_STATE));
   const state = gw?.value as GatewayState | undefined;
-  const intents: Record<number, string> = { 4004: 'грешен токен', 4013: 'невалидни intents', 4014: 'не са включени Server Members Intent и Message Content Intent (Bot → Privileged Gateway Intents)' };
-  add(
-    'Връзка на worker-а с Discord',
-    state?.state === 'ready' && !state.limited,
-    !state
-      ? 'Още няма данни — worker-ът не е стартирал с тази версия.'
-      : state.state === 'ready' && state.limited
-        ? 'Свързан без Server Members и Message Content: командите и бутоните работят, но няма посрещане, логове на съобщенията и мост от Discord към играта. Включи двата intent-а (Bot → Privileged Gateway Intents) — ботът опитва пак на всеки 30 минути.'
-        : state.state === 'ready'
-          ? 'Свързан.'
-          : state.code && intents[state.code] ? `Затворена: ${intents[state.code]}.` : `Състояние: ${state.state}${state.code ? ` (код ${state.code})` : ''}${state.error ? ` — ${state.error}` : ''}.`,
-  );
+  const gwCheck = gatewayCheck(state, Date.now());
+  add('Връзка на worker-а с Discord', gwCheck.ok, gwCheck.text);
 
   const [linkedRow] = await db.select({ linked: sql<number>`count(*)::int` }).from(users).where(isNotNull(users.discordId));
   const [pendingRow] = await db.select({ pending: sql<number>`count(*)::int` }).from(discordOutbox).where(isNull(discordOutbox.sentAt));
@@ -183,4 +173,26 @@ export async function repairDiscord(db: Database, now = new Date()) {
   const linked = await db.select({ id: users.id }).from(users).where(and(isNotNull(users.discordId), isNull(users.bannedAt)));
   for (const u of linked) await enqueue(db, `roles:${u.id}:${now.getTime()}`, 'job:roles', { userId: u.id }, now);
   return { commands, players: linked.length };
+}
+
+const CLOSE_CODES: Record<number, string> = { 4004: 'грешен токен (DISCORD_BOT_TOKEN)', 4013: 'невалидни intents', 4014: 'не са включени Server Members Intent и Message Content Intent (Bot → Privileged Gateway Intents)' };
+
+const ago = (ms: number) => (ms < 90_000 ? 'преди малко' : ms < 90 * 60_000 ? `преди ${Math.round(ms / 60_000)} мин` : `преди ${Math.round(ms / 3_600_000)} ч`);
+
+/** The worker's gateway connection in plain words, from the state it saves (and how old it is). */
+export function gatewayCheck(state: GatewayState | undefined, now: number): { ok: boolean; text: string } {
+  if (!state) return { ok: false, text: 'Още няма данни — worker-ът не е стартирал с тази версия.' };
+  const age = now - state.at;
+  if (state.state === 'ready') {
+    if (age > GATEWAY_STALE_MS) return { ok: false, text: `Последен знак от worker-а ${ago(age)} — вероятно е спрян. Провери дали worker-ът работи (логовете на сървъра).` };
+    if (state.limited) return { ok: false, text: 'Свързан без Server Members и Message Content: командите и бутоните работят, но няма посрещане, логове на съобщенията и мост от Discord към играта. Включи двата intent-а (Bot → Privileged Gateway Intents) — ботът опитва пак на всеки 30 минути.' };
+    return { ok: true, text: 'Свързан.' };
+  }
+  if (state.state === 'connecting') {
+    return age < 2 * 60_000
+      ? { ok: true, text: 'Свързва се в момента — провери пак след минута.' }
+      : { ok: false, text: `Свързва се ${ago(age)} без успех. Ако worker-ът работи, рестартирай го; ако не помогне — провери токена и дали сървърът стига до gateway.discord.gg.` };
+  }
+  const why = state.code && CLOSE_CODES[state.code] ? CLOSE_CODES[state.code] : `код ${state.code ?? '—'}${state.error ? ` — ${state.error}` : ''}`;
+  return { ok: false, text: `Затворена (${ago(age)}): ${why}.` };
 }
