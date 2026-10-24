@@ -68,7 +68,12 @@ export type LedgerCategory =
   | 'staff_bus_bonus'
   | 'alliance_market'
   | 'alliance_hall_bonus'
-  | 'trailer_hire';
+  | 'trailer_hire'
+  | 'hitchhiker'
+  | 'sealed_bonus'
+  | 'haggle_bonus'
+  | 'share_trade'
+  | 'share_dividend';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -136,6 +141,11 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   alliance_market: 'Склад на съюза (покупки и продажби)',
   alliance_hall_bonus: 'Бонус от съюзната база',
   trailer_hire: 'Наем на ремарке между играчи',
+  hitchhiker: 'Автостопаджии',
+  sealed_bonus: 'Запечатан товар',
+  haggle_bonus: 'Пазарлък с клиента',
+  share_trade: 'Акции (покупки и продажби)',
+  share_dividend: 'Дивиденти от акции',
 };
 
 export interface Posting {

@@ -9,6 +9,7 @@ import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multi
 import { formConvoy } from './convoy';
 import { isEuropeCountry } from '@/lib/geo/scope';
 import { bigConvoyBonus, checkEurotour, checkGrandEurotour } from './challenges';
+import { collectPostcards, dropHitchhiker, maybeHitchhiker } from './road-life';
 import { checkCabotage, requireTeam, transEuropeDone } from './europe';
 import { specializationBonus } from './specialization';
 import { checkLegend } from './heritage';
@@ -431,6 +432,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     if (!contract!.urgent) await formConvoy(tx, delivery!, userId, { originCityId: contract!.originCityId, destCityId: contract!.destCityId }, now);
     // A load handed over by a company: the agreed commission is paid when it arrives.
     await acceptJobOffer(tx, userId, contractId, delivery!.id, now);
+    // v1.8: someone may wave at the edge of town.
+    await maybeHitchhiker(tx, userId, delivery!, { originCityId: contract!.originCityId, destCityId: contract!.destCityId, urgent: contract!.urgent }, now);
     await logActivity(tx, userId, 'contract_accepted', { contractId: loadId, ...(partial ? { partOf: contractId } : {}), vehicleId, deliveryId: delivery!.id });
     await broadcast(tx, 'market');
     await broadcast(tx, 'world');
@@ -557,6 +560,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
   await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
+  // v1.8: postcards from the landmarks on the way, and the hitchhiker's fare.
+  await collectPostcards(tx, company!.ownerId, d, completedAt);
+  await dropHitchhiker(tx, company!.ownerId, d, result.late, completedAt);
   // Голям евротур (v1.7): every country of the game in one season.
   await checkGrandEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
   // The company academy (v1.5): an on-time trip of a student is a course.

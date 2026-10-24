@@ -2599,3 +2599,35 @@ export const roadReportVotes = pgTable(
   },
   (t) => [primaryKey({ columns: [t.reportId, t.userId] })],
 );
+
+/** Postcards from real landmarks a loaded trip passed (v1.8). */
+export const userPostcards = pgTable(
+  'user_postcards',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    landmark: text('landmark').notNull(),
+    deliveryId: uuid('delivery_id'),
+    collectedAt: ts('collected_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.landmark] })],
+);
+
+/** Someone waving at the start of a trip (v1.8): waiting, aboard, or done. */
+export const hitchhikers = pgTable(
+  'hitchhikers',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+    persona: integer('persona').notNull(),
+    fromCityId: integer('from_city_id').notNull().references(() => cities.id),
+    toCityId: integer('to_city_id').notNull().references(() => cities.id),
+    fareCents: money('fare_cents').notNull(),
+    /** waiting | aboard | done | missed */
+    status: text('status').notNull().default('waiting'),
+    waitUntil: ts('wait_until').notNull(),
+    createdAt: createdAt(),
+    settledAt: ts('settled_at'),
+  },
+  (t) => [uniqueIndex('hitchhikers_delivery_idx').on(t.deliveryId), index('hitchhikers_user_idx').on(t.userId, t.status)],
+);

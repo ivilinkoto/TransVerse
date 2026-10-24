@@ -102,6 +102,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/seasons', label: 'Сезони' },
       { href: '/game/progress', label: 'Постижения' },
       { href: '/game/collection', label: 'Албум', feature: 'city_album' },
+      { href: '/game/postcards', label: 'Картички', feature: 'postcards' },
       { href: '/game/my-map', label: 'Картата ми', feature: 'my_map' },
     ],
   },

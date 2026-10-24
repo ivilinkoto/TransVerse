@@ -1,6 +1,6 @@
 'use client';
 
-import { Radio, Send, ThumbsDown, ThumbsUp, TriangleAlert } from 'lucide-react';
+import { Hand, Radio, Send, ThumbsDown, ThumbsUp, TriangleAlert } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Card, Empty } from '@/components/ui';
@@ -28,7 +28,20 @@ interface Report {
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
 
-export function RoadClient({ trucks, feed, reports, cbLive, reportsLive }: { trucks: { vehicleId: string; plate: string }[]; feed: Feed | null; reports: Report[]; cbLive: boolean; reportsLive: boolean }) {
+interface Rider {
+  id: number;
+  name: string;
+  who: string;
+  status: string;
+  fareCents: number;
+  waitUntil: string;
+  from: string;
+  to: string;
+}
+
+const RIDER_STATUS: Record<string, string> = { aboard: 'в камиона', done: 'пристигна', missed: 'хвана друга кола' };
+
+export function RoadClient({ trucks, feed, reports, cbLive, reportsLive, riders = [] }: { trucks: { vehicleId: string; plate: string }[]; feed: Feed | null; reports: Report[]; cbLive: boolean; reportsLive: boolean; riders?: Rider[] }) {
   const router = useRouter();
   const [vehicleId, setVehicleId] = useState(trucks[0]?.vehicleId ?? '');
   const [text, setText] = useState('');
@@ -124,6 +137,20 @@ export function RoadClient({ trucks, feed, reports, cbLive, reportsLive }: { tru
                     <button type="button" className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={() => void run({ type: 'roadVote', reportId: r.id, vote: -1 }, 'Отбелязано — няма го.')} aria-label="Отхвърли"><ThumbsDown className="h-3.5 w-3.5" />Няма го</button>
                   </span>
                 )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {riders.length > 0 && (
+        <Card title={<span className="inline-flex items-center gap-2"><Hand className="h-4 w-4 text-profit" />Автостопаджии</span>} className="lg:col-span-2">
+          <ul className="divide-y divide-white/5 text-sm">
+            {riders.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span><b>{r.name}</b>, {r.who} · {r.from} → {r.to} · <span className="num">{(r.fareCents / 100).toLocaleString('bg-BG')} лв.</span>
+                  <span className="block text-[11px] text-mist-400">{r.status === 'waiting' ? `Чака до ${time(r.waitUntil)}` : RIDER_STATUS[r.status] ?? r.status}</span>
+                </span>
+                {r.status === 'waiting' && <button type="button" className="btn-primary px-3 py-1.5 text-sm" disabled={busy} onClick={() => void run({ type: 'pickHitchhiker', id: r.id }, `${r.name} се качи. Плаща при пристигане.`)}>👋 Вземи</button>}
               </li>
             ))}
           </ul>
