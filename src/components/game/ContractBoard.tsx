@@ -10,9 +10,11 @@ import { PLOT } from '@/lib/game/plot';
 import { MULTISTOP } from '@/lib/game/multistop';
 import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
 import { HireDialog } from './HireDialog';
+import { WhyNot } from './WhyNot';
+import { Term } from './Term';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { Children, useEffect, useMemo, useState } from 'react';
 import { Badge, Empty, type BadgeTone } from '@/components/ui';
 import { api } from '@/lib/client/api';
 import { dateTime, dec, duration, int, km, money } from '@/lib/format';
@@ -181,7 +183,7 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['clear', (c) => !!c.weather],
 ]);
 
-export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string }) {
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean }) {
   const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
   const toggleChip = (id: Chip) => setChips((s) => {
     const next = new Set(s);
@@ -304,11 +306,30 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       ) : (
         <ul className="space-y-2">
           {list.map((c) => (
-            <ContractRow key={c.id} contract={c} vip={vip} canAssign={canAssign} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text) => { setSent(text); setOpen(null); }} />
+            <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text) => { setSent(text); setOpen(null); }} />
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/** v1.9: in the simple board the extra tags of a load fold into one "⭐ N бонуса" chip. */
+function Bonuses({ simple, children }: { simple: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const items = Children.toArray(children);
+  if (!simple || items.length <= 1 || open) return <>{items}</>;
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setOpen(true); } }}
+      className="rounded-full border border-gold-400/40 bg-gold-400/10 px-2 py-0.5 text-[11px] font-semibold text-gold-400"
+      title="Покажи етикетите"
+    >
+      ⭐ {items.length} {items.length === 1 ? 'етикет' : 'етикета'} ▾
+    </span>
   );
 }
 
@@ -358,27 +379,12 @@ function HaggleBox({ contractId, rewardCents, haggle }: { contractId: string; re
   );
 }
 
-/** What the player can do about a reason a vehicle cannot take a load, and where. */
-function fixFor(reason: string): { text: string; href: string } | null {
-  if (reason.startsWith('Нужна е надстройка')) return { text: 'Прикачи подходящо ремарке в Сервиз или купи камион/ремарке с тази надстройка в Пазар.', href: '/game/market' };
-  if (reason.includes('няма прикачено ремарке')) return { text: 'Прикачи ремарке към влекача в Сервиз.', href: '/game/garage' };
-  if (reason.includes('заето')) return { text: 'Камионът е на курс — изчакай да пристигне.', href: '/game/fleet' };
-  if (reason.includes('шофьор') || reason.includes('Шофьорът')) return { text: 'Назначи шофьор.', href: '/game/staff' };
-  if (reason.includes('лошо състояние')) return { text: 'Ремонтирай в Сервиз.', href: '/game/garage' };
-  if (reason.includes('надвишава капацитета')) return { text: 'Нужен е камион с по-голяма товароподемност.', href: '/game/market' };
-  if (reason.includes('Обявено за продажба')) return { text: 'Свали обявата.', href: '/game/market' };
-  return null;
-}
-
-function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
+function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
   const usable = c.options.filter((o) => !o.error);
   const blocked = c.options.filter((o) => o.error);
   // The reasons, each once, with the vehicles it stops (the plate is the label's first part).
-  const byReason = new Map<string, string[]>();
-  for (const o of blocked) byReason.set(o.error!, [...(byReason.get(o.error!) ?? []), o.label.split(' · ')[0]!]);
-  const reasons = [...byReason].map(([reason, plates]) => ({ reason, plates }));
   const canSplitHint = c.options.some((o) => o.part);
   const [vehicleId, setVehicleId] = useState(usable[0]?.vehicleId ?? '');
   const [busy, setBusy] = useState(false);
@@ -438,47 +444,49 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             <span className="truncate font-semibold">{c.goods}</span>
             <span className="num text-sm text-mist-400">{dec(c.tons)} т</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />СПЕШНО · ×{dec(c.speedFactor)} по-бързо · до товара за 1 мин</Badge>}
-            {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
-            {c.exchange && <Badge tone="violet">БОРСА МЕЖДУ ИГРАЧИ</Badge>}
-            {c.rally && <Badge tone="orange">🏁 РАЛИ — мери се времето и горивото</Badge>}
-            {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
-            {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{c.port}</Badge>}
-            {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />ТОВАР НА ДЕНЯ · +{DAILY_LOAD.coins} TC</Badge>}
-            {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />ОБЩ ТОВАР НА КОМПАНИЯТА · +{Math.round(SHARED_LOAD.bonusShare * 100)}%</Badge>}
-            {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
-            {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
-            {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
-            {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
-            {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
-            {c.transEurope && <Badge tone="gold">🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{Math.round((TRANS_EUROPE.multiplier - 1) * 100)}%</Badge>}
-            {c.humanitarian && <Badge tone="red">🆘 ХУМАНИТАРНА ПОМОЩ · +{RELIEF.coins} TC навреме</Badge>}
-            {c.sealed && <Badge tone="violet">📦 ЗАПЕЧАТАН · до +{Math.round(SEALED.tiers.at(-1)!.bonus * 100)}% при отваряне</Badge>}
-            {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">🤝 ДОГОВОРЕНО +{c.haggle.percent}%</Badge>}
-            {!!c.lez?.length && <Badge tone="green">🌿 ЗОНА · {c.lez.join(', ')}</Badge>}
-            {c.specialization && <Badge tone="violet">🎯 СПЕЦИАЛИЗАЦИЯ · +{Math.round(SPECIALIZATION.bonusShare * 100)}%</Badge>}
-            {!!c.traffic && <Badge tone="orange">🚦 НАТОВАРЕНО · {c.traffic} камиона</Badge>}
-            {c.holiday === 'sowing' && <Badge tone="green">🌱 СЕИТБА · +{Math.round((SOWING.rewardMultiplier - 1) * 100)}%</Badge>}
-            {c.holiday === 'national' && <Badge tone="gold">🎉 НАЦИОНАЛЕН ПРАЗНИК · +{Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100)}%</Badge>}
-            {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}
-            {c.roadWorks && <Badge tone="orange">🚧 {c.roadWorks}</Badge>}
-            {!!c.urgentRaises && <Badge tone="red">📈 +{c.urgentRaises * 10}% — никой не я е поел</Badge>}
-            {c.toHome && <Badge tone="green"><House className="h-3 w-3" />КЪМ БАЗАТА</Badge>}
-            {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
-            {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />ЗА СТРОЕЖА НА КОМПАНИЯТА</Badge>}
-            {c.lastLoad && <Badge tone="red"><Hammer className="h-3 w-3" />ПОСЛЕДЕН ТОВАР · +{Math.round((PLOT.lastLoadFactor - 1) * 100)}%</Badge>}
-            {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />СБОРЕН · {c.stops.length} {c.stops.length === 1 ? 'СПИРКА' : 'СПИРКИ'} · +{Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100)}%</Badge>}
-            {c.hiredBy && <span className="max-w-full truncate" title={`Възложена от ${c.hiredBy.company} до ${c.hiredBy.until}`}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />ВЪЗЛОЖЕНА · {Math.round(c.hiredBy.share * 100)}% за {c.hiredBy.company}</Badge></span>}
-            {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}
-            {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />ЗИМЕН ТОВАР · +{Math.round((WINTER.rewardMultiplier - 1) * 100)}%</Badge>}
-            {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{c.weather.label} ({c.weather.country})</Badge>}
-            {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />ПРЕМИУМ · репутация {c.minReputation}</Badge>}
-            {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
-            {c.reservedByMe && <Badge tone="gold">Запазена за теб до {c.reservedUntil}</Badge>}
-            {c.reservedByOther && <Badge tone="neutral">Запазена до {c.reservedUntil}</Badge>}
-            {c.opensAt && <Badge tone="violet">VIP · за всички от {c.opensAt}</Badge>}
-            {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />Във вашия град</Badge>}
             {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />Лиценз: {c.missingLicences.join(', ')}</Badge>}
             {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />ниво {c.minLevel}</Badge>}
+            <Bonuses simple={simple}>
+              {c.tender && <Badge tone="violet">ТЪРГ НА КОМПАНИЯТА</Badge>}
+              {c.exchange && <Badge tone="violet">БОРСА МЕЖДУ ИГРАЧИ</Badge>}
+              {c.rally && <Badge tone="orange">🏁 РАЛИ — мери се времето и горивото</Badge>}
+              {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
+              {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{c.port}</Badge>}
+              {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />ТОВАР НА ДЕНЯ · +{DAILY_LOAD.coins} TC</Badge>}
+              {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />ОБЩ ТОВАР НА КОМПАНИЯТА · +{Math.round(SHARED_LOAD.bonusShare * 100)}%</Badge>}
+              {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label="Любима линия" />}
+              {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />ХЕЛУИН · +{Math.round((HALLOWEEN.rewardMultiplier - 1) * 100)}%</Badge>}
+              {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />КОЛЕДА · +{Math.round((CHRISTMAS.rewardMultiplier - 1) * 100)}%</Badge>}
+              {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
+              {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
+              {c.transEurope && <Badge tone="gold">🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{Math.round((TRANS_EUROPE.multiplier - 1) * 100)}%</Badge>}
+              {c.humanitarian && <Badge tone="red">🆘 ХУМАНИТАРНА ПОМОЩ · +{RELIEF.coins} TC навреме</Badge>}
+              {c.sealed && <Badge tone="violet">📦 ЗАПЕЧАТАН · до +{Math.round(SEALED.tiers.at(-1)!.bonus * 100)}% при отваряне</Badge>}
+              {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">🤝 ДОГОВОРЕНО +{c.haggle.percent}%</Badge>}
+              {!!c.lez?.length && <Badge tone="green">🌿 ЗОНА · {c.lez.join(', ')}</Badge>}
+              {c.specialization && <Badge tone="violet">🎯 СПЕЦИАЛИЗАЦИЯ · +{Math.round(SPECIALIZATION.bonusShare * 100)}%</Badge>}
+              {!!c.traffic && <Badge tone="orange">🚦 НАТОВАРЕНО · {c.traffic} камиона</Badge>}
+              {c.holiday === 'sowing' && <Badge tone="green">🌱 СЕИТБА · +{Math.round((SOWING.rewardMultiplier - 1) * 100)}%</Badge>}
+              {c.holiday === 'national' && <Badge tone="gold">🎉 НАЦИОНАЛЕН ПРАЗНИК · +{Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100)}%</Badge>}
+              {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}
+              {c.roadWorks && <Badge tone="orange">🚧 {c.roadWorks}</Badge>}
+              {!!c.urgentRaises && <Badge tone="red">📈 +{c.urgentRaises * 10}% — никой не я е поел</Badge>}
+              {c.toHome && <Badge tone="green"><House className="h-3 w-3" />КЪМ БАЗАТА</Badge>}
+              {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />ФИРМЕН ПРОЕКТ</Badge>}
+              {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />ЗА СТРОЕЖА НА КОМПАНИЯТА</Badge>}
+              {c.lastLoad && <Badge tone="red"><Hammer className="h-3 w-3" />ПОСЛЕДЕН ТОВАР · +{Math.round((PLOT.lastLoadFactor - 1) * 100)}%</Badge>}
+              {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />СБОРЕН · {c.stops.length} {c.stops.length === 1 ? 'СПИРКА' : 'СПИРКИ'} · +{Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100)}%</Badge>}
+              {c.hiredBy && <span className="max-w-full truncate" title={`Възложена от ${c.hiredBy.company} до ${c.hiredBy.until}`}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />ВЪЗЛОЖЕНА · {Math.round(c.hiredBy.share * 100)}% за {c.hiredBy.company}</Badge></span>}
+              {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />КОНВОЙ С {c.convoy} · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</Badge>}
+              {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />ЗИМЕН ТОВАР · +{Math.round((WINTER.rewardMultiplier - 1) * 100)}%</Badge>}
+              {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{c.weather.label} ({c.weather.country})</Badge>}
+              {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />ПРЕМИУМ · репутация {c.minReputation}</Badge>}
+              {c.alreadyTaken && <Badge tone="green">Вече я поехте</Badge>}
+              {c.reservedByMe && <Badge tone="gold">Запазена за теб до {c.reservedUntil}</Badge>}
+              {c.reservedByOther && <Badge tone="neutral">Запазена до {c.reservedUntil}</Badge>}
+              {c.opensAt && <Badge tone="violet">VIP · за всички от {c.opensAt}</Badge>}
+              {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />Във вашия град</Badge>}
+            </Bonuses>
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
             <span className="font-medium">{c.origin.name}</span>
@@ -584,7 +592,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
               <div className="rounded-xl border border-asphalt-600 bg-asphalt-800/60 p-3 text-sm">
                 <div className="label">Какво е нужно за тази поръчка</div>
                 <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-                  <li><span className="text-mist-400">Надстройка: </span><span className="font-semibold">{c.needs.bodies.join(' или ')}</span></li>
+                  <li><span className="text-mist-400"><Term id="body">Надстройка</Term>: </span><span className="font-semibold">{c.needs.bodies.join(' или ')}</span></li>
                   <li><span className="text-mist-400">Товар: </span><span className="num font-semibold">{dec(c.tons)} т</span>{canSplitHint ? <span className="text-mist-400"> (може и на части)</span> : null}</li>
                   {c.needs.level > 1 && <li><span className="text-mist-400">Ниво: </span><span className="font-semibold">{c.needs.level}+</span></li>}
                 </ul>
@@ -690,20 +698,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                   </div>
                 </div>
               )}
-              {reasons.length > 0 && (
-                <div className={`rounded-xl border p-3 text-sm ${usable.length ? 'border-asphalt-600 bg-asphalt-800/40' : 'border-amber-sig/40 bg-amber-sig/5'}`}>
-                  <div className={`font-semibold ${usable.length ? 'text-mist-300' : 'text-amber-sig'}`}>{usable.length ? 'Защо някои камиони не стават' : 'Нито един твой камион не може да поеме тази поръчка'}</div>
-                  <ul className="mt-1.5 space-y-2">
-                    {reasons.map((r) => (
-                      <li key={r.reason}>
-                        <div><AlertTriangle className="mr-1 inline h-3.5 w-3.5 text-amber-sig" />{r.reason}</div>
-                        <div className="text-xs text-mist-400">{r.plates.join(', ')}</div>
-                        {fixFor(r.reason) && <Link href={fixFor(r.reason)!.href} className="mt-0.5 block text-xs text-cyan-glow hover:underline">{fixFor(r.reason)!.text} →</Link>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <WhyNot blocked={blocked.map((o) => ({ label: o.label, error: o.error! }))} anyUsable={usable.length > 0} />
               {error && <p role="alert" className="text-sm text-loss">{error}</p>}
             </div>
           )}

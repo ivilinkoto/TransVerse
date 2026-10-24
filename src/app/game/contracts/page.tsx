@@ -24,6 +24,7 @@ import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
 import { BODY_LABELS, compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
 import { haggleable, hagglesOf } from '@/server/game/deals';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { cities as citiesTable, contracts as contractsTable, deliveries } from '@/server/db/schema';
 import { fleetView } from '@/server/game/queries';
@@ -259,7 +260,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       {!user.seenHints.includes('board') && <Hint id="board" />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
-      <ContractBoard focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      {features.simple_board && (
+        <div className="mb-2 flex justify-end">
+          <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost px-3 py-1 text-xs">{user.uiPrefs?.boardView === 'full' ? 'Прост изглед' : 'Разширен изглед (всички етикети)'}</ActionButton>
+        </div>
+      )}
+      <ContractBoard simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

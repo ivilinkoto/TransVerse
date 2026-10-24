@@ -4,6 +4,7 @@ import { ArrowRight, CalendarClock, Handshake, Lock, Star } from 'lucide-react';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
+import { WhyNot } from '@/components/game/WhyNot';
 import { dateTime, duration, km, money } from '@/lib/format';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { CLIENT_RULES, clientBonusCents, clientFailReputation } from '@/lib/game/clients';
@@ -11,7 +12,7 @@ import { isVip } from '@/lib/game/vip';
 import { cities } from '@/server/db/schema';
 import { clientContractsOf, clientOffers } from '@/server/game/clients';
 import { gameContext } from '@/server/game/context';
-import { compatibilityError } from '@/server/game/deliveries';
+import { BODY_LABELS, compatibilityError } from '@/server/game/deliveries';
 import { fleetView } from '@/server/game/queries';
 
 export const metadata = { title: 'Клиенти' };
@@ -56,7 +57,7 @@ export default async function ClientsPage() {
                   { cargoType: c.cargoType, weightTons: c.tonsPerLoad, minLevel: 1 },
                   user.level,
                 );
-                return { value: v.id, label: `${v.plate} · ${v.model.name} · ${v.city.nameBg}${error ? ` — ${error}` : ''}`, disabled: !!error };
+                return { value: v.id, label: `${v.plate} · ${v.model.name} · ${v.city.nameBg}${error ? ' (не става)' : ''}`, disabled: !!error, error };
               });
               return (
                 <li key={c.id} className="rounded-2xl border border-asphalt-700 bg-asphalt-850 p-4">
@@ -78,7 +79,10 @@ export default async function ClientsPage() {
                   </div>
                   <div className="mt-3">
                     {toSend > 0 ? (
-                      <SelectAction label="Изпрати товар" ariaLabel={`Камион за товар на ${c.client}`} value="" options={[{ value: '', label: '— избери камион —' }, ...options]} action={{ type: 'clientLoad', clientContractId: c.id }} field="vehicleId" />
+                      <>
+                        <SelectAction label="Изпрати товар" ariaLabel={`Камион за товар на ${c.client}`} value="" options={[{ value: '', label: '— избери камион —' }, ...options]} action={{ type: 'clientLoad', clientContractId: c.id }} field="vehicleId" />
+                        <div className="mt-2"><WhyNot needs={[{ label: 'Надстройка', value: CARGO[c.cargoType as CargoType].bodies.map((b) => BODY_LABELS[b] ?? b).join(' или ') }, { label: 'Товар', value: `${c.tonsPerLoad} т` }]} blocked={options.filter((o) => o.error).map((o) => ({ label: o.label, error: o.error! }))} anyUsable={options.some((o) => !o.error)} /></div>
+                      </>
                     ) : (
                       <p className="text-sm text-mist-300">Всички товари са на път — договорът ще се изпълни, когато пристигнат.</p>
                     )}

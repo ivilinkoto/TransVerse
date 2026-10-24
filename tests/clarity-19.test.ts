@@ -52,3 +52,25 @@ describe('v1.9 a clearer game', () => {
     expect(steps.length).toBeLessThanOrEqual(3);
   });
 });
+
+describe('v1.9 clearer words and messages', () => {
+  it('arrivals of one day fold into one line with the net sum; other messages stay', async () => {
+    const { digest } = await import('@/lib/game/digest');
+    const at = new Date('2027-06-20T10:00:00Z');
+    const list = [
+      { title: 'Доставено: Мебели в Пловдив', body: 'Нетен резултат 1 200 лв., +80 опит.', createdAt: at },
+      { title: 'Доставено: Плодове във Варна', body: 'Нетен резултат -150 лв., +40 опит.', createdAt: at },
+      { title: 'Ниво 5!', body: '…', createdAt: at },
+      { title: 'Доставено: Цимент в Русе', body: 'Нетен резултат 300 лв.', createdAt: at },
+    ];
+    const d = digest(list);
+    expect(d.map((g) => [g.kind, g.count, g.netLv])).toEqual([['group', 2, 1050], ['one', 1, 0], ['one', 1, 300]]);
+  });
+
+  it('each reason a vehicle cannot take a load says what fixes it', async () => {
+    const { fixFor } = await import('@/components/game/WhyNot');
+    expect(fixFor('Нужна е надстройка: платформа.')?.href).toBe('/game/market');
+    expect(fixFor('Влекачът няма прикачено ремарке.')?.href).toBe('/game/garage');
+    expect(fixFor('Изисква ниво 4.')?.href).toBe('/game/progress');
+  });
+});
