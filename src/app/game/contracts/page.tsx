@@ -22,7 +22,7 @@ import { realConditionsFor } from '@/server/game/weather';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
-import { compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
+import { BODY_LABELS, compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { cities as citiesTable, contracts as contractsTable, deliveries } from '@/server/db/schema';
 import { fleetView } from '@/server/game/queries';
@@ -135,6 +135,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       goods: c.goods,
       cargoType: c.cargoType as CargoType,
       cargoLabel: cargo.label,
+      needs: { bodies: cargo.bodies.map((b) => BODY_LABELS[b] ?? b), level: Math.max(c.minLevel, cargo.minLevel) },
       tons: c.weightTons,
       origin: { id: c.origin.id, name: c.origin.nameBg, country: c.origin.countryCode },
       destination: { id: c.destination.id, name: c.destination.nameBg, country: c.destination.countryCode },

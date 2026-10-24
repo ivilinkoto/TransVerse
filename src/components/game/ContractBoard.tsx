@@ -39,6 +39,8 @@ export interface BoardContract {
   goods: string;
   cargoType: CargoType;
   cargoLabel: string;
+  /** What a vehicle needs to take this load (shown above the vehicle list). */
+  needs: { bodies: string[]; level: number };
   tons: number;
   origin: { id: number; name: string; country: string };
   destination: { id: number; name: string; country: string };
@@ -302,10 +304,28 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   );
 }
 
+/** What the player can do about a reason a vehicle cannot take a load, and where. */
+function fixFor(reason: string): { text: string; href: string } | null {
+  if (reason.startsWith('Нужна е надстройка')) return { text: 'Прикачи подходящо ремарке в Сервиз или купи камион/ремарке с тази надстройка в Пазар.', href: '/game/market' };
+  if (reason.includes('няма прикачено ремарке')) return { text: 'Прикачи ремарке към влекача в Сервиз.', href: '/game/garage' };
+  if (reason.includes('заето')) return { text: 'Камионът е на курс — изчакай да пристигне.', href: '/game/fleet' };
+  if (reason.includes('шофьор') || reason.includes('Шофьорът')) return { text: 'Назначи шофьор.', href: '/game/staff' };
+  if (reason.includes('лошо състояние')) return { text: 'Ремонтирай в Сервиз.', href: '/game/garage' };
+  if (reason.includes('надвишава капацитета')) return { text: 'Нужен е камион с по-голяма товароподемност.', href: '/game/market' };
+  if (reason.includes('Обявено за продажба')) return { text: 'Свали обявата.', href: '/game/market' };
+  return null;
+}
+
 function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
   const usable = c.options.filter((o) => !o.error);
+  const blocked = c.options.filter((o) => o.error);
+  // The reasons, each once, with the vehicles it stops (the plate is the label's first part).
+  const byReason = new Map<string, string[]>();
+  for (const o of blocked) byReason.set(o.error!, [...(byReason.get(o.error!) ?? []), o.label.split(' · ')[0]!]);
+  const reasons = [...byReason].map(([reason, plates]) => ({ reason, plates }));
+  const canSplitHint = c.options.some((o) => o.part);
   const [vehicleId, setVehicleId] = useState(usable[0]?.vehicleId ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -498,14 +518,27 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             </p>
           ) : (
             <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-asphalt-600 bg-asphalt-800/60 p-3 text-sm">
+                <div className="label">Какво е нужно за тази поръчка</div>
+                <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                  <li><span className="text-mist-400">Надстройка: </span><span className="font-semibold">{c.needs.bodies.join(' или ')}</span></li>
+                  <li><span className="text-mist-400">Товар: </span><span className="num font-semibold">{dec(c.tons)} т</span>{canSplitHint ? <span className="text-mist-400"> (може и на части)</span> : null}</li>
+                  {c.needs.level > 1 && <li><span className="text-mist-400">Ниво: </span><span className="font-semibold">{c.needs.level}+</span></li>}
+                </ul>
+              </div>
               <div className="flex flex-wrap items-center gap-3">
                 <select className="input min-w-0 flex-1" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label="Превозно средство">
                   <option value="">— изберете превозно средство —</option>
-                  {c.options.map((o) => (
-                    <option key={o.vehicleId} value={o.vehicleId} disabled={!!o.error}>
-                      {o.label}{o.error ? ` — ${o.error}` : o.part && !o.overloadPercent ? ` — част: ${dec(o.part.tons)} т` : ''}
-                    </option>
-                  ))}
+                  {usable.length > 0 && (
+                    <optgroup label="Могат да поемат">
+                      {usable.map((o) => <option key={o.vehicleId} value={o.vehicleId}>{o.label}{o.part && !o.overloadPercent ? ` — част: ${dec(o.part.tons)} т` : ''}</option>)}
+                    </optgroup>
+                  )}
+                  {blocked.length > 0 && (
+                    <optgroup label="Не могат (причините са под списъка)">
+                      {blocked.map((o) => <option key={o.vehicleId} value={o.vehicleId} disabled>{o.label}</option>)}
+                    </optgroup>
+                  )}
                 </select>
                 <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload && !part)} onClick={accept}>
                   <ShieldCheck className="h-4 w-4" />{busy ? 'Изпращане…' : part ? `Вземи ${dec(part.tons)} т и изпрати` : 'Приеми и изпрати'}
@@ -594,7 +627,20 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
                   </div>
                 </div>
               )}
-              {usable.length === 0 && <p className="text-sm text-amber-sig">Нито едно от вашите превозни средства не може да поеме тази поръчка. Причините са посочени в списъка.</p>}
+              {reasons.length > 0 && (
+                <div className={`rounded-xl border p-3 text-sm ${usable.length ? 'border-asphalt-600 bg-asphalt-800/40' : 'border-amber-sig/40 bg-amber-sig/5'}`}>
+                  <div className={`font-semibold ${usable.length ? 'text-mist-300' : 'text-amber-sig'}`}>{usable.length ? 'Защо някои камиони не стават' : 'Нито един твой камион не може да поеме тази поръчка'}</div>
+                  <ul className="mt-1.5 space-y-2">
+                    {reasons.map((r) => (
+                      <li key={r.reason}>
+                        <div><AlertTriangle className="mr-1 inline h-3.5 w-3.5 text-amber-sig" />{r.reason}</div>
+                        <div className="text-xs text-mist-400">{r.plates.join(', ')}</div>
+                        {fixFor(r.reason) && <Link href={fixFor(r.reason)!.href} className="mt-0.5 block text-xs text-cyan-glow hover:underline">{fixFor(r.reason)!.text} →</Link>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {error && <p role="alert" className="text-sm text-loss">{error}</p>}
             </div>
           )}
