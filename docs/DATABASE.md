@@ -182,3 +182,9 @@
 - 0080: `contracts.humanitarian`.
 - 0081: `truck_contest_entries` (месец, играч, вид на камиона, гласове), `truck_contest_votes`.
 - Сметката на играча: категории `hitchhiker`, `sealed_bonus`, `haggle_bonus`, `share_trade`, `share_dividend`. Касата: `share_issue`, `share_dividend`. ТрансКоин: причини `postcards`, `truck_contest`, `humanitarian`. `job_state`: `humanitarian`, `truck-contest:<месец>`.
+
+## v1.9 — Светлини и сенки (миграции 0082–0084)
+- 0082: `users.ui_prefs` (jsonb: `showAll`, `boardView`, `seenUnlocks`, `seenPages`).
+- 0083: `organizations.logo_design`, `tradition_day`, `tradition_name`; `company_members.department_id`; `contracts.key_client`; `company_departments`, `company_assemblies`, `assembly_votes` (един глас на член), `key_clients` (месец + град, уникални), `company_owners` (собственици от–до), `intern_stays`, `merger_offers`.
+- 0084: `contracts.shady`, `vehicles.hidden_compartment`; `smuggling_profiles` (избор, внимание, подземна репутация, броячи), `smuggling_contacts` (играч + град), `smuggling_checks` (един на курс: граници, хванат, глоба).
+- Сметката на играча: категории `smuggling_fine`, `black_market`. Хроника: `assembly`, `merger`, `tradition`, `key_client`, `owner`. `job_state`: `company-assemblies`, `key-clients`, `owner-reports`, `interns`, `smuggling-heat`, `customs-weekly`.
