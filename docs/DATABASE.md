@@ -198,8 +198,9 @@
 - Статус на товар `held` (втората част на щафета). ТрансКоин: причини `harvest`, `story`. `job_state`: `convoy-depart`, `weekly-convoy`, `relays`, `relays-expire`, `road-choices`, `city-week`.
 
 
-## v2.0 — Светът се отваря (миграция 0091)
+## v2.0 — Светът се отваря (миграции 0091–0092)
 - `holdings`, `holding_members` (една компания в един холдинг), `holding_invites` — холдинги.
 - `territories` — коя компания държи коя област през седмицата (`week`, държава, област на английски и на български).
 - `legacy_runs` и `users.legacy_stars` — наследство (Ново начало).
 - Нови категории в регистрите: `territory_bonus`, `holding_bonus`, `legacy_bonus`, `legacy_reset` (лична сметка), `holding` (каса).
+- 0092: `intermodal_shipments` (линия, посока, градове, стока, двата курса, статус, първи шофьор, кога пристига линията) и `city_markets.supply`; категория `intermodal_bonus`. `job_state`: `territories`, `holding-fees`, `intermodal`, `intermodal-release`.

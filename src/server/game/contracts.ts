@@ -33,6 +33,7 @@ import { notifyFavoriteLane } from './favorites';
 import { broadcast } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
 import { countryOpen } from '@/lib/geo/scope';
+import { cycleIndex } from '@/lib/game/living';
 import { t as tr } from '@/i18n/t';
 
 /** Consignment size classes so vans, rigids and articulated trucks all have a market. */
@@ -50,6 +51,8 @@ export interface Hub {
   population: number;
   produces: Set<CargoType>;
   consumes: Map<CargoType, number>; // demand
+  /** v2.0: what the city has left to ship of each cargo it produces (1 = full). */
+  supply?: Map<CargoType, number>;
 }
 
 // All hubs, read at most once a minute (the market reads them on every run; v1.7: 26 countries).
@@ -71,13 +74,16 @@ export async function loadHubs(db: DbOrTx, options: { europe?: boolean; openWorl
 
 async function readHubs(db: DbOrTx): Promise<Hub[]> {
   const rows = await db
-    .select({ id: cities.id, countryCode: cities.countryCode, lat: cities.lat, lon: cities.lon, population: cities.population, cargoType: cityMarkets.cargoType, produces: cityMarkets.produces, consumes: cityMarkets.consumes, demand: cityMarkets.demand })
+    .select({ id: cities.id, countryCode: cities.countryCode, lat: cities.lat, lon: cities.lon, population: cities.population, cargoType: cityMarkets.cargoType, produces: cityMarkets.produces, consumes: cityMarkets.consumes, demand: cityMarkets.demand, supply: cityMarkets.supply })
     .from(cityMarkets)
     .innerJoin(cities, eq(cities.id, cityMarkets.cityId));
   const hubs = new Map<number, Hub>();
   for (const r of rows) {
-    const hub = hubs.get(r.id) ?? { id: r.id, countryCode: r.countryCode, lat: r.lat, lon: r.lon, population: r.population, produces: new Set(), consumes: new Map() };
-    if (r.produces) hub.produces.add(r.cargoType as CargoType);
+    const hub = hubs.get(r.id) ?? { id: r.id, countryCode: r.countryCode, lat: r.lat, lon: r.lon, population: r.population, produces: new Set(), consumes: new Map(), supply: new Map() };
+    if (r.produces) {
+      hub.produces.add(r.cargoType as CargoType);
+      hub.supply!.set(r.cargoType as CargoType, r.supply);
+    }
     if (r.consumes) hub.consumes.set(r.cargoType as CargoType, r.demand);
     hubs.set(r.id, hub);
   }
@@ -114,20 +120,23 @@ export async function generateContracts(db: Database, options: GenerateOptions =
   const openWorld = featureLive('open_world', now);
   const hubs = await loadHubs(db, { europe: true, openWorld: true });
   const reach = (h: Hub) => (countryOpen(h.countryCode, europe, openWorld) ? 1 : 0.05);
+  // v2.0 the living economy: a city that has shipped a lot has less to send for a while.
+  const living = featureLive('living_economy', now);
+  const supplyOf = (h: Hub, cargo?: CargoType) => (!living || !h.supply?.size ? 1 : cargo ? (h.supply.get(cargo) ?? 1) : [...h.supply.values()].reduce((s, v) => s + v, 0) / h.supply.size);
   const max = options.max ?? 20;
   let created = 0;
 
   for (let attempt = 0; attempt < max * 3 && created < max; attempt++) {
     const origin = options.originCityId
       ? hubs.find((h) => h.id === options.originCityId)
-      : pickWeighted(hubs.filter((h) => h.produces.size), (h) => Math.sqrt(h.population) * reach(h));
+      : pickWeighted(hubs.filter((h) => h.produces.size), (h) => Math.sqrt(h.population) * reach(h) * supplyOf(h));
     if (!origin || origin.produces.size === 0) break;
 
     const size = options.sizeClass ? SIZE_CLASSES.find((s) => s.id === options.sizeClass)! : pickWeighted(SIZE_CLASSES, (s) => s.weight)!;
     const allowed: CargoType[] = size.id === 'van' ? ['pallets'] : size.id === 'rigid' ? ['pallets', 'refrigerated'] : [...CARGO_TYPES];
     const candidatesCargo = [...origin.produces].filter((c) => allowed.includes(c));
     if (!candidatesCargo.length) continue;
-    const cargo = pick(candidatesCargo);
+    const cargo = pickWeighted(candidatesCargo, (c) => supplyOf(origin, c)) ?? pick(candidatesCargo);
 
     const destination = pickWeighted(
       hubs.filter((h) => h.id !== origin.id && h.consumes.has(cargo) && (!options.domestic || h.countryCode === origin.countryCode)),
@@ -151,6 +160,11 @@ export async function generateContracts(db: Database, options: GenerateOptions =
   }
   if (created) await broadcast(db, 'market');
   return created;
+}
+
+/** v2.0: a load between two hubs with a pay multiplier (intermodal legs). Returns the contract id, or null without a route. */
+export function insertLoad(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider: RoutingProvider | undefined, multiplier: number, extra: { goods?: string } = {}) {
+  return insertContract(db, origin, destination, cargo, tons, now, ttlMs, provider, { minReputation: 0, multiplier }, [], extra);
 }
 
 export async function expireContracts(db: DbOrTx, now = new Date()): Promise<number> {
@@ -315,7 +329,9 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const sealed = !extra.featured && !extra.oversize && !extra.transEurope && !extra.humanitarian && !extra.portCallId && !theme && !via.length && featureLive('sealed_cargo', now) && rand() < SEALED.share;
   // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
   // v1.10: loads from a city that has grown pay a little more.
-  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)));
+  // v2.0: the economic cycle of the destination country.
+  const cycle = featureLive('living_economy', now) ? cycleIndex(now, destination.countryCode) : 1;
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * cycle * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)));
   const [row] = await db.insert(contracts).values({
     shipper: shipperName(),
     goods,

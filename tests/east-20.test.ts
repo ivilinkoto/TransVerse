@@ -14,7 +14,7 @@ import { countryOpen, EAST_COUNTRIES, isEastCountry, playableCountries } from '@
 import { closeDb } from '@/server/db/client';
 import { cities, companies, users, vehicles } from '@/server/db/schema';
 import { loadHubs, openContracts } from '@/server/game/contracts';
-import { acceptContract } from '@/server/game/deliveries';
+import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
 import { nationalBoard, nationalTable } from '@/server/game/queries';
 import { approximateProvider, routeOpen, RoutingUnavailableError, type RoutingProvider } from '@/server/geo/routing';
@@ -102,7 +102,9 @@ describe('before the release', () => {
     await db().update(users).set({ role: 'admin' }).where(eq(users.id, staff.userId));
     const [acc2] = await db().select().from(companies).where(eq(companies.ownerId, staff.userId));
     const [truck2] = await db().select().from(vehicles).where(eq(vehicles.companyId, acc2!.id));
-    expect(await code(acceptContract(db(), staff.userId, c.id, truck2!.id))).not.toBe('not_released');
+    const d = await acceptContract(db(), staff.userId, c.id, truck2!.id);
+    // Arrives at once, so no later test settles it.
+    await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000), acc2!.id);
   });
 });
 

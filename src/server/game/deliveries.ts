@@ -18,6 +18,9 @@ import { specializationBonus } from './specialization';
 import { holdingBonus } from './holdings';
 import { legacyBonus } from './legacy';
 import { territoryBonus } from './territories';
+import { intermodalDelivered } from './intermodal';
+import { SUPPLY } from '@/lib/game/living';
+import { featureLive } from '@/lib/game/features';
 import { checkLegend } from './heritage';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
@@ -570,6 +573,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.6: a big convoy (3–5 trucks) on time.
   const specBonus = await specializationBonus(tx, company!.ownerId, org, d, contract.cargoType, result.rewardCents, completedAt);
   // v2.0: a territory the company holds, the holding's network, the legacy stars.
+  // v2.0: a leg of an intermodal container.
+  const intermodalCents = await intermodalDelivered(tx, company!.ownerId, d, contract.id, result.late, result.rewardCents, completedAt);
   const empireBonus =
     (await territoryBonus(tx, company!.ownerId, d, contract.destCityId, result.rewardCents, completedAt)) +
     (await holdingBonus(tx, company!.ownerId, d, contract.destCityId, result.rewardCents, completedAt)) +
@@ -592,7 +597,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -702,6 +707,11 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .update(cityMarkets)
     .set({ demand: sql`greatest(${ECONOMY.demandFloor}, ${cityMarkets.demand} - ${contract.weightTons * ECONOMY.demandDropPerTon})`, updatedAt: now })
     .where(and(eq(cityMarkets.cityId, contract.destCityId), eq(cityMarkets.cargoType, contract.cargoType)));
+  // v2.0 the living economy: the origin has shipped this cargo and has less of it for a while.
+  if (featureLive('living_economy', completedAt)) await tx
+    .update(cityMarkets)
+    .set({ supply: sql`greatest(${SUPPLY.floor}, ${cityMarkets.supply} - ${contract.weightTons * SUPPLY.dropPerTon})`, updatedAt: now })
+    .where(and(eq(cityMarkets.cityId, contract.originCityId), eq(cityMarkets.cargoType, contract.cargoType), eq(cityMarkets.produces, true)));
 
   await awardXp(tx, company!.ownerId, playerXp, ownerDrove ? 'delivery' : 'fleet');
   // Missions: what this delivery contributes (route countries plus both ends).
@@ -833,6 +843,7 @@ export async function recoverDemand(db: DbOrTx, hours: number) {
       when demand > 1 then greatest(1, demand - ${step})
       else demand end, updated_at = now()
     where demand <> 1`);
+  await db.execute(sql`update city_markets set supply = least(1, supply + ${SUPPLY.recoveryPerHour * hours}), updated_at = now() where supply < 1`);
 }
 
 /**

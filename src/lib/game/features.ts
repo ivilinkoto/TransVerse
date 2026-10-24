@@ -149,6 +149,8 @@ export const FEATURES = {
   holdings: '2.0',
   territories: '2.0',
   legacy: '2.0',
+  intermodal: '2.0',
+  living_economy: '2.0',
   country_tolls: '1.7',
   driving_bans: '1.7',
   low_emission_zones: '1.7',

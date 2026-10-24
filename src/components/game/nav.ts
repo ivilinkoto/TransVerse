@@ -50,6 +50,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
       { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
       { href: '/game/convoys', label: 'Конвои', feature: 'convoy_lobby', minLevel: 2 },
+      { href: '/game/economy', label: 'Икономика и контейнери', feature: 'living_economy', minLevel: 2 },
       { href: '/game/underground', label: 'Сенки', feature: 'smuggling', minLevel: 10 },
     ],
   },

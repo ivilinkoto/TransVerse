@@ -104,6 +104,8 @@ export const cityMarkets = pgTable(
     produces: boolean('produces').notNull(),
     consumes: boolean('consumes').notNull(),
     demand: real('demand').notNull().default(1),
+    /** v2.0: what the city has to ship (1 = full); loads taken from it lower it, it fills up by the hour. */
+    supply: real('supply').notNull().default(1),
     updatedAt: ts('updated_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.cityId, t.cargoType] })],
@@ -3079,4 +3081,27 @@ export const legacyRuns = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex('legacy_runs_user_star_idx').on(t.userId, t.star)],
+);
+
+/** v2.0 intermodal containers: a truck leg to a terminal, a rail or sea line, a truck leg from the other terminal. */
+export const intermodalShipments = pgTable(
+  'intermodal_shipments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    lineId: text('line_id').notNull(),
+    reversed: boolean('reversed').notNull().default(false),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    cargoType: text('cargo_type').notNull(),
+    goods: text('goods').notNull(),
+    tons: real('tons').notNull(),
+    leg1ContractId: uuid('leg1_contract_id').references(() => contracts.id, { onDelete: 'set null' }),
+    leg2ContractId: uuid('leg2_contract_id').references(() => contracts.id, { onDelete: 'set null' }),
+    /** leg1 | on_line | leg2 | done | failed */
+    status: text('status').notNull().default('leg1'),
+    firstUserId: uuid('first_user_id').references(() => users.id, { onDelete: 'set null' }),
+    readyAt: ts('ready_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('intermodal_status_idx').on(t.status, t.readyAt), index('intermodal_leg1_idx').on(t.leg1ContractId), index('intermodal_leg2_idx').on(t.leg2ContractId)],
 );
