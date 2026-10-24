@@ -148,6 +148,16 @@ export const FEATURES = {
   low_emission_zones: '1.7',
   cabotage: '1.7',
   sea_lines: '1.7',
+  // v1.10 "Колони и истории".
+  convoy_lobby: '1.10',
+  weekly_convoy: '1.10',
+  relay: '1.10',
+  trip_log: '1.10',
+  city_growth: '1.10',
+  harvest: '1.10',
+  story: '1.10',
+  road_choices: '1.10',
+  reefer: '1.10',
   // v1.9 "Светлини и сенки".
   simple_nav: '1.9',
   progressive_unlock: '1.9',

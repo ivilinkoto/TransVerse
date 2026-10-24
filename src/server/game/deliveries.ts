@@ -84,6 +84,8 @@ import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
 import { onVacation } from './moods';
 import { equinoxBonus, recordPassOpening } from './spring';
+import { companyConvoyOf, settleConvoyTruck } from './convoys';
+import { CONVOYS } from '@/lib/game/convoys';
 import { afterCustoms, checkShadyLoad, compartmentError, customsCheck, honestDelivery } from './smuggling';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
@@ -535,7 +537,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const perks = await bonusesForUser(tx, company!.ownerId);
   const org = perks?.membership.company;
   const companyBonus = perks ? Math.round(result.rewardCents * (perks.bonuses.rewardMultiplier - 1)) : 0;
-  const contribution = org ? Math.round(result.rewardCents * org.contributionRate) : 0;
+  // v1.10: a company convoy pays no contribution (and teaches the company more).
+  const companyConvoy = await companyConvoyOf(tx, d);
+  const contribution = org && !companyConvoy ? Math.round(result.rewardCents * org.contributionRate) : 0;
   if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: `Бонус от „${org!.name}“`, idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
   if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към касата на „${org!.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
@@ -553,7 +557,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.6: the equinox and the passes that open after the winter.
   // v1.6: a big convoy (3–5 trucks) on time.
   const specBonus = await specializationBonus(tx, company!.ownerId, org, d, contract.cargoType, result.rewardCents, completedAt);
-  const bigConvoy = await bigConvoyBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt);
+  const bigConvoy = (await bigConvoyBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await settleConvoyTruck(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt));
   const springBonus = (await equinoxBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await recordPassOpening(tx, company!.ownerId, d, result.late, completedAt));
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
@@ -607,7 +611,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     // The company learns from every member trip, at its own (slower) pace; hired drivers' trips count less.
     // A trip with a company trailer (v1.4): more company XP and a bonus into the treasury.
     const orgTrailer = d.trailerId ? (await tx.select({ orgTrailerId: trailers.orgTrailerId }).from(trailers).where(eq(trailers.id, d.trailerId)))[0]?.orgTrailerId : null;
-    const companyXp = Math.round(baseXp * COMPANY_XP_SHARE * (ownerDrove ? 1 : FLEET_XP_SHARE) * (orgTrailer ? COMPANY_TRAILERS.companyXp : 1));
+    const companyXp = Math.round(baseXp * COMPANY_XP_SHARE * (ownerDrove ? 1 : FLEET_XP_SHARE) * (orgTrailer ? COMPANY_TRAILERS.companyXp : 1) * (companyConvoy ? CONVOYS.companyXp : 1));
     if (orgTrailer) {
       const [member] = await tx.select({ username: users.username }).from(users).where(eq(users.id, company!.ownerId));
       await companyTrailerBonus(tx, perks.membership.company.id, d.id, result.rewardCents, member!.username);

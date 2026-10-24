@@ -42,6 +42,7 @@ async function openConvoyHosts(db: DbOrTx, userId: string, now: Date, lane?: { o
  * convoy with them (the usual bonus), friends or not.
  */
 export async function announceConvoy(db: DbOrTx, userId: string, now = new Date()) {
+  if (await featureFor(db, userId, 'convoy_lobby', now)) fail('use_lobby', 'Конвоите вече се събират в играта (Поръчки → Конвои): избери линия и час, а колоната тръгва заедно.');
   const account = await companyForUser(db, userId);
   const [trip] = await db
     .select({ id: deliveries.id, startedAt: deliveries.startedAt, convoyWith: deliveries.convoyWith, originCityId: contracts.originCityId, destCityId: contracts.destCityId, goods: contracts.goods, urgent: contracts.urgent })
@@ -100,6 +101,8 @@ export async function convoyCandidates(db: DbOrTx, userId: string, now: Date, la
 /** A new trip joins the earliest matching one into a convoy; both players are told. */
 export async function formConvoy(tx: Tx, delivery: { id: string; companyId: string }, userId: string, lane: { originCityId: number; destCityId: number }, now: Date) {
   if (!(await featureFor(tx, userId, 'convoy', now))) return null;
+  // v1.10: organized convoys replace the automatic ones.
+  if (await featureFor(tx, userId, 'convoy_lobby', now)) return null;
   const [partner] = (await convoyCandidates(tx, userId, now, lane)).filter((c) => c.deliveryId !== delivery.id);
   if (!partner) return joinBigConvoy(tx, delivery, userId, lane, now);
   // Lock the partner's trip so two new trips cannot both join it.

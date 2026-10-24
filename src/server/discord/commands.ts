@@ -14,6 +14,7 @@ import { playerCard } from '@/server/game/social';
 import { laneRecordsView } from '@/server/game/community';
 import { albumOf } from '@/server/game/competition';
 import { openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
+import { openConvoysList } from '@/server/game/convoys';
 import { cupView } from '@/server/game/tournament';
 import { approximateProvider } from '@/server/geo/routing';
 import { GAME_COUNTRIES, isEuropeCountry, type GameCountry } from '@/lib/geo/scope';
@@ -332,6 +333,18 @@ async function records(db: DbOrTx, username: string | null, now: Date): Promise<
 /** /конвой-голям — announced convoys that still have a seat (v1.6). */
 async function bigConvoys(db: DbOrTx, now: Date): Promise<CommandReply> {
   if (!featureLive('big_convoy', now)) return { ephemeral: true, content: 'Големият конвой идва с обновление 1.6.' };
+  if (featureLive('convoy_lobby', now)) {
+    const open = await openConvoysList(db, now);
+    return {
+      embeds: [{
+        title: '🚚 Конвои с място',
+        url: `${appUrl()}/game/convoys`,
+        color: BRAND,
+        description: open.length ? open.map((c) => `**${c.from} → ${c.to}** · ${c.taken}/${c.seats} камиона · тръгва <t:${Math.floor(c.departAt.getTime() / 1000)}:R>`).join('\n') : 'Сега няма отворен конвой. Създай в играта: Поръчки → Конвои.',
+        footer,
+      }],
+    };
+  }
   const rows = await openBigConvoys(db, now);
   return {
     embeds: [{

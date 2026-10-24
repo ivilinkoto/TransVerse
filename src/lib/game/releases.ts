@@ -35,6 +35,14 @@ export const BASE_VERSION = '1.0';
 
 export const RELEASES: Release[] = [
   {
+    version: '1.10',
+    name: 'Колони и истории',
+    publishedAt: '2027-07-17T00:00:00+03:00',
+    tagline: 'Организирани конвои, щафети, градове, които растат, и история за разказване.',
+    highlights: [],
+    sections: [],
+  },
+  {
     version: '1.9',
     name: 'Светлини и сенки',
     publishedAt: '2027-06-19T00:00:00+03:00',

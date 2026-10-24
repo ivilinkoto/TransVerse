@@ -2,7 +2,8 @@ import { and, eq } from 'drizzle-orm';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
-vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
+vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: (id: string) => id !== 'convoy_lobby' }));
+// The automatic convoys (before v1.10, which replaces them with organized convoys — tests/convoys-110.test.ts).
 import { ALLIANCE_HALL, fuelDiscount, hallBonusShare, hallNextTons } from '@/lib/game/alliances';
 import { closeDb } from '@/server/db/client';
 import { allianceInvites, alliances, companies, deliveries, ledgerEntries, organizations, vehicles } from '@/server/db/schema';

@@ -461,6 +461,8 @@ export const contracts = pgTable(
     keyClient: boolean('key_client').notNull().default(false),
     /** v1.9: a shady load (personal to `createdBy`, never on the public board). */
     shady: boolean('shady').notNull().default(false),
+    /** v1.10: a part of an organized convoy's shared load (only for that convoy's trucks). */
+    convoyId: uuid('convoy_id'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -485,6 +487,8 @@ export const deliveries = pgTable(
     convoyWith: uuid('convoy_with'),
     /** The first trip of a convoy (v1.6): every truck of a big convoy (up to five) points to it. */
     convoyLead: uuid('convoy_lead'),
+    /** v1.10: the organized convoy this trip drives in. */
+    organizedConvoyId: uuid('organized_convoy_id'),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
@@ -2865,3 +2869,75 @@ export const smugglingChecks = pgTable(
   },
   (t) => [index('smuggling_checks_at_idx').on(t.at)],
 );
+
+/** v1.10 organized convoys: one lane, one departure, many trucks. */
+export const convoys = pgTable(
+  'convoys',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** personal | company | official (the game's weekly convoy). */
+    kind: text('kind').notNull(),
+    /** open | friends | link (personal convoys). */
+    access: text('access').notNull().default('open'),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    leaderId: uuid('leader_id').references(() => users.id, { onDelete: 'set null' }),
+    title: text('title'),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    routeId: integer('route_id').notNull(),
+    departAt: ts('depart_at').notNull(),
+    seats: integer('seats').notNull(),
+    minLevel: integer('min_level').notNull().default(1),
+    /** A shared load in parts (cargo and tonnes per truck), or null. */
+    sharedCargo: text('shared_cargo'),
+    sharedTons: real('shared_tons'),
+    /** open → departed → arrived, or cancelled. */
+    status: text('status').notNull().default('open'),
+    trucks: integer('trucks').notNull().default(0),
+    allOnTime: boolean('all_on_time'),
+    arrivesAt: ts('arrives_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('convoys_status_idx').on(t.status, t.departAt), index('convoys_org_idx').on(t.organizationId)],
+);
+
+export const convoyMembers = pgTable(
+  'convoy_members',
+  {
+    convoyId: uuid('convoy_id').notNull().references(() => convoys.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').notNull(),
+    contractId: uuid('contract_id').notNull(),
+    role: text('role').notNull().default('member'),
+    /** ready → departed | dropped (with the reason) | left. */
+    status: text('status').notNull().default('ready'),
+    reason: text('reason'),
+    deliveryId: uuid('delivery_id'),
+    joinedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.convoyId, t.userId] }), index('convoy_members_user_idx').on(t.userId, t.status)],
+);
+
+export const convoyMessages = pgTable(
+  'convoy_messages',
+  {
+    id: serial('id').primaryKey(),
+    convoyId: uuid('convoy_id').notNull().references(() => convoys.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('convoy_messages_idx').on(t.convoyId, t.createdAt)],
+);
+
+/** Each player's convoy record: as a driver and as a leader. */
+export const convoyStats = pgTable('convoy_stats', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  convoys: integer('convoys').notNull().default(0),
+  onTime: integer('on_time').notNull().default(0),
+  streak: integer('streak').notNull().default(0),
+  led: integer('led').notNull().default(0),
+  ledOnTime: integer('led_on_time').notNull().default(0),
+  /** 'YYYY-MM-DD:<n>' — convoy bonuses today (at most 3). */
+  bonusesToday: text('bonuses_today'),
+});
