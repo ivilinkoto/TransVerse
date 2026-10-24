@@ -1,0 +1,250 @@
+fce02433fb	You have been accepted into “{0}”!	Вас приняли в «{0}»!
+c940825216	The ghost	Призрак
+4def7394f6	The record's ghost	Призрак рекорда
+b84e1a70df	The record's ghost: in the fleet, a trip on a lane with a record for the month shows the record holder's ghost and the difference.	Призрак рекорда: в автопарке рейс по линии с рекордом месяца показывает призрак рекордсмена и разницу.
+3b897c29a6	Ghost truck	Призрачный грузовик
+cc8f4fbc74	The ghost truck	Призрачный грузовик
+6b817f6f85	The ghost truck brings TransCoin and completes a mission; it slows the trip only for a moment and costs nothing.	Призрачный грузовик приносит ТрансКоин и выполняет миссию; задерживает рейс лишь на миг и ничего не стоит.
+ced11f1c66	Prizren	Призрен
+949acb5104	Attached to {0}	Прицеплен к {0}
+5a5351135f	Attach	Прицепить
+fa1c2bc923	Attach a suitable trailer in the Service or buy a truck/trailer with this body in the Market.	Прицепи подходящий прицеп в Сервисе или купи грузовик/прицеп с таким кузовом на Рынке.
+4170562377	Attach a trailer to the tractor in the Service.	Прицепи прицеп к тягачу в Сервисе.
+4ba2baa9a4	Drawbar trailers go behind a rigid truck with the same body and add their load.	Прицепы идут за одиночным грузовиком с таким же кузовом и добавляют свой груз.
+1543955e1b	Drawbar trailers are for rigid trucks.	Прицепы — для одиночных грузовиков.
+dc5811755d	Drawbar trailer	Прицеп
+93c8f12db5	7.7 m box drawbar trailer	Прицеп-фургон 7,7 м
+14ddeba370	7.7 m refrigerated drawbar trailer	Прицеп-рефрижератор 7,7 м
+99f343551d	The drawbar trailer must have the same body as the truck.	У прицепа должен быть такой же кузов, как у грузовика.
+5b2c181452	Ended · {0} {1}	Завершено · {0} {1}
+7522763802	Finished contracts	Завершённые договоры
+5899ecd983	The TransVerse app	Приложение TransVerse
+26f8d8027c	The application in the Developer Portal	Приложение в Developer Portal
+950be18221	Apply	Применить
+5b12eefdb0	Apply · free (VIP)	Применить · бесплатно (VIP)
+90bd8f4ebf	Contribution	Вклад
+4e8b5bb9ae	Ports	Порты
+202c06dcff	Ports in the region	Порты в регионе
+b3e787a7cc	Ports and “Ship arriving”	Порты и «Судно прибывает»
+336f95d584	The ports and hotels along the coast need deliveries. Every delivery on a route through France counts.	Портам и отелям на побережье нужны поставки. Засчитывается каждая доставка по маршруту через Францию.
+652c4ea8df	The Benelux ports	Порты Бенилюкса
+473ae7d978	The ports are catching up — container hauls are dearer.	Порты наверстывают — контейнерные перевозки дороже.
+dab742badd	Arriving	Прибывает
+1c7dedfd0b	Arrival in	Прибытие через
+30371e8024	Arrival: {0}	Прибытие: {0}
+f73bf95642	You arrive earlier, the client pays extra — more fuel, though.	Прибываешь раньше, клиент доплачивает — но и топлива больше.
+3281367814	Arrived on time ✓	Прибыл вовремя ✓
+2879789bec	Arrived late	Прибыл с опозданием
+70caca0eb4	Arrived — settling…	Прибыл — расчёт…
+97dea4b654	If both of you in the convoy arrive on time and within 10 minutes of each other — another +5 % for each and a post in #конвои. The fastest loaded trip on each lane is the month's record.	Если вы оба из колонны прибудете вовремя и с разницей не больше 10 минут — ещё +5 % каждому и пост в #конвои. Самый быстрый рейс с грузом по каждой линии — рекорд месяца.
+b9376e225a	Arrive on time — the bonus grows with the number of trucks.	Прибудьте вовремя — бонус растёт с числом грузовиков.
+b6987d4d66	Arrive in 2 convoys	Прибудь в 2 колоннах
+4b21923b96	Arrive with a load on Christmas Eve or Christmas Day (24–25 December)	Прибудь с грузом в Сочельник или на Рождество (24–25 декабря)
+ed7ea65736	Arrive with a load on Easter (2 May)	Прибудь с грузом на Пасху (2 мая)
+110b6bac2a	Arrive with a load at night (22:00–06:00)	Прибудь с грузом ночью (22:00–06:00)
+5f165c13b4	Join	Присоединиться
+12cc26c157	Join a company	Вступить в компанию
+f5aa77914f	Joining	Вступление
+c16edd2b0a	Own 10 vehicles.	Владей 10 машинами.
+f518855575	Own 2 vehicles.	Владей 2 машинами.
+c9ed54d761	You own it{0} · since {1}	Принадлежит вам{0} · с {1}
+273fd34294	Income	Доходы
+c3543d75fc	Income · 30 days	Доходы · 30 дней
+edb5421649	Income · {0}	Доходы · {0}
+0975f5faec	Income and expenses by day	Доходы и расходы по дням
+7e419378ba	Income, net and the best lanes for the last 7 days (linked account)	Доходы, чистая прибыль и лучшие линии за последние 7 дней (привязанный аккаунт)
+5977892439	Income, expenses and every movement of money.	Доходы, расходы и каждое движение денег.
+4a9ea52cda	Reason	Причина
+cc6118865b	Reason (the member sees it too)	Причина (её видит и участник)
+f66eb584a7	Reason (everyone sees it, e.g. “outage on 12.03”)	Причина (видят все, например «сбой 12.03»)
+b58bf87765	Reason (e.g. compensation for a bug)	Причина (например, компенсация за ошибку)
+e03ef28198	Reason (e.g. a tournament reward)	Причина (например, награда за турнир)
+19e6c1965e	Reason (e.g. an inappropriate logo)	Причина (например, неподходящий логотип)
+470ff728cc	Reason for blocking	Причина блокировки
+3158ddf8e1	Reason for clearing	Причина очистки
+9a680288b1	Reason for the penalty	Причина наказания
+c7ae41dfc1	Friend	Друг
+009543bbe8	A friend is stuck — breakdown, black ice, closed pass? If you have a truck within 150 km, press “Help on the road” on the map: their stop is halved, and you get a fee, XP and reputation.	Друг застрял — поломка, гололёд, закрытый перевал? Если у тебя есть грузовик в пределах 150 км, нажми «Помочь в пути» на карте: его простой сократится вдвое, а ты получишь гонорар, опыт и репутацию.
+c1942db99b	A friend of a friend	Друг друга
+680f1fd1fc	Friends	Друзья
+cd1bf93a93	Friends · {0} online of {1}	Друзья · {0} в сети из {1}
+96a2cb46b3	Friends and company	Друзья и компания
+87b056acdd	Friends →	Друзья →
+a94a3cc6bb	Have a good drive this week! 🚚	Хорошей дороги на этой неделе! 🚚
+a703b2a569	Test from TransVerse	Тест от TransVerse
+9c262d403e	Try a model from the showroom with one free trip before buying it. In big cities loading and unloading are slower at rush hour, local time.	Попробуй модель из салона в одном бесплатном рейсе, прежде чем покупать. В крупных городах погрузка и разгрузка медленнее в час пик по местному времени.
+47e5f78763	Try the shortcut	Попробовать короткую дорогу
+2759195f16	Test e-mail	Тестовое письмо
+ca03760db2	Shady shipments checked: **{0}**\nCaught: **{1}** · Passed: **{2}**\nFines in total: **{3}**	Проверено теневых посылок: **{0}**\nПоймано: **{1}** · Прошло: **{2}**\nШтрафов всего: **{3}**
+aa5db03056	Check Discord	Проверить Discord
+75b9801937	Check the PayPal connection	Проверить связь с PayPal
+b0f97cbd67	Check again later — players from level 15 up sign up as mentors from this page.	Загляни позже — игроки с 15-го уровня записываются наставниками на этой странице.
+457969b009	Check	Проверка
+ed7c686963	Verifying new members	Проверка новых участников
+1f0b90d8f6	Road check	Проверка на дороге
+bf410cad9e	Checking the device…	Проверка устройства…
+e3b5d49893	Checks live everything the bot must have: the secrets, the Developer Portal settings, the server permissions, the channels and the background process's connection.	Проверяет в реальном времени всё, что нужно боту: секреты, настройки в Developer Portal, права на сервере, каналы и соединение фонового процесса.
+59678a241b	Your battle prediction was correct — +{0} TC.	Твой прогноз на битву оказался точным — +{0} TC.
+6449898496	Predictions	Прогнозы
+c1bf616a0b	Predictions for the company battles.	Прогнозы на битвы компаний.
+7199beacaa	Predictions for this battle are closed.	Прогнозы на эту битву закрыты.
+ca49ec7ca8	Progress and achievements	Прогресс и достижения
+738bf8b9b0	Progress is counted automatically on every delivery; the reward is collected with a button (VIP — automatically). Missions are picked according to your level and licences; VIP gets +1 daily and +1 weekly mission.	Прогресс засчитывается автоматически при каждой доставке; награда забирается кнопкой (VIP — автоматически). Миссии подбираются по твоему уровню и лицензиям; VIP получает +1 ежедневную и +1 еженедельную миссию.
+1a3c2f8664	On sale from {0}	В продаже с {0}
+21df01c49d	Sell goods from your warehouse to the alliance members in the same city. The alliance has its own section in the floating chat, and the leading company can dissolve it.	Продавай товар со своего склада участникам союза в том же городе. У союза есть свой раздел в плавающем чате, а ведущая компания может его распустить.
+2b17213c70	Sell goods from your warehouses to the alliance members — it is bought in the same city, straight into the buyer's warehouse (they need a depot there). The listing is {0} h; what isn't sold comes back to you. Game data.	Продавай товар со своих складов участникам союза — покупка в том же городе, прямо на склад покупателя (ему нужно депо там). Объявление действует {0} ч; непроданное возвращается тебе. Игровые данные.
+006f316c21	Selling / buying…	Продаю / покупаю…
+0381d02046	The seller is gone.	Продавца больше нет.
+a9b386ff83	You sell after 7 days.	Продать можно через 7 дней.
+47be2a8784	You sell after {0}	Продать можно через {0}
+bbd0eb4b54	Sold on the market: {0}	Продано на рынке: {0}
+345da870f2	Company truck sold ({0})	Фирменный грузовик продан ({0})
+73f8852412	Products sold: {0} ({1} t)	Продана продукция: {0} ({1} т)
+1447850fe2	Goods sold in {0}	Товар продан в {0}
+4b75292f6b	{0} shares sold	Продано {0} акций
+5d2d5ef535	{0} shares of {1} sold	Продано {0} акций {1}
+0f14c109f2	Shares sold	Проданные акции
+e4f6a4cec8	Sold in the alliance warehouse	Продано на складе союза
+cde6aba881	Company trailer sold ({0})	Фирменный прицеп продан ({0})
+062bac9084	Sold: {0}	Продано: {0}
+0b69c5ead5	Sale of goods	Продажа товаров
+36559345e9	Sale of vehicles	Продажа техники
+2cb426707c	Sell to a dealer for {0}?	Продать дилеру за {0}?
+fa84a7cd3e	Sale: {0} ({1})	Продажа: {0} ({1})
+817916e2ed	Sale: {0} t {1} in {2}	Продажа: {0} т {1} в {2}
+331911aafa	The sale is immediately to a dealer. If you list the vehicle on the market, another player can buy it at your price (5% fee); while it is listed, it doesn't drive. The listing expires after 7 days.	Продажа сразу идёт дилеру. Если выставишь технику на рынок, другой игрок сможет купить её по твоей цене (комиссия 5%); пока она выставлена, она не ездит. Объявление истекает через 7 дней.
+3cfd26ef7c	Sell	Продать
+522ac2670e	Sell {0} t here · {1}	Продать {0} т здесь · {1}
+cfc109af7e	Sell · {0}	Продать · {0}
+27aae59590	Sell in the city where it is dearest.	Продай в городе, где он дороже всего.
+16cbe13f23	Sell now · {0}	Продать сейчас · {0}
+7d1de88ce4	Sell there	Продать там
+82a9ca014b	Product	Продукт
+b7d35ef83d	Products for sale: {0}	Продукция на продажу: {0}
+bdaff2e173	The products go out as loads for members only; every load pays the treasury on arrival. Untaken loads go back to the factory.	Продукция уходит грузами только для участников; каждый груз платит в казну по прибытии. Невзятые грузы возвращаются на фабрику.
+8180b38fb2	The one with more kilometres goes on.	Дальше проходит тот, у кого больше километров.
+cf92053a47	Went on without a rest.	Поехал дальше без отдыха.
+d6267b4d11	Go on carefully	Ехать дальше осторожно
+e9eb9343b3	Duration	Продолжительность
+8455c16f58	Duration (hours)	Продолжительность (часов)
+50ce4a5a08	The duration is from 1 hour to 14 days.	Продолжительность — от 1 часа до 14 дней.
+31b34c4a5e	Projects	Проекты
+f3b350b0b4	The project is finished: {0}	Проект завершён: {0}
+d88bcabda0	The project isn't finished: {0}	Проект не завершён: {0}
+3292229675	A “What's new” window on the first login after an update and an “Updates” page (the profile menu) with the descriptions of all versions. The version is shown at the bottom of the menu.	Окно «Что нового» при первом входе после обновления и страница «Обновления» (меню профиля) с описаниями всех версий. Версия видна внизу меню.
+170fc91033	Produces goods from raw materials · a batch in {0} % of the time, +{1} % products	Производит товары из сырья · партия за {0} % времени, +{1} % продукции
+1ad1325566	Produce this	Производить это
+4503ea0b36	Production	Производство
+2172316b1d	Spring	Весна
+3d2639e0bc	Spring run	Весенний рейс
+09fa9a7431	Spring driver 2027	Весенний водитель 2027
+04fe8bbe5e	Spring cup	Весенний кубок
+fe258e1b31	Spring cup (Competition → Spring cup): sign-up until 29 March, 4 rounds of a week, rewards 300/150/75 TC and a badge.	Весенний кубок (Соревнования → Весенний кубок): запись до 29 марта, 4 раунда по неделе, награды 300/150/75 TC и значок.
+93c7bfa126	Spring cup 2027	Весенний кубок 2027
+092ff11305	A spring purple paint with a patterned Easter egg on the cab and the trailer. Sold only around Easter — it stays on the truck forever (until repainted).	Весенняя фиолетовая краска с расписным пасхальным яйцом на кабине и прицепе. Продаётся только на Пасху — остаётся на грузовике навсегда (до перекраски).
+18be27f77d	The spring cup comes with update 1.6.	Весенний кубок появится в обновлении 1.6.
+55406d8e27	The spring cup is cancelled with fewer than two signed up; the pairs learn who they face, and the round results come out in Discord.	Весенний кубок отменяется, если записалось меньше двух; пары узнают, против кого играют, а результаты раундов публикуются в Discord.
+9ea18d5a76	The spring cup: the round, the pairs and the kilometres	Весенний кубок: раунд, пары и километры
+0d2479a5ab	Spring vegetables	Весенние овощи
+058378704f	Spring seeds	Весенние семена
+df0abbba64	Spring loads	Весенние грузы
+c519d82991	Spring loads with +{0}%, a martenitsa for a friend, a stork on the map and {1}% cheaper repairs.	Весенние грузы с +{0}%, мартеничка для друга, аист на карте и ремонт на {1}% дешевле.
+570fca292b	Spring loads have the “Baba Marta” label on the board and pay {0}% more. In March the trucks and the base wear martenitsi, and repairs and check-ups are {1}% cheaper (spring cleaning). Every day a stork lands over a real city — find it on the map for {2} TC. Complete the four missions for the “{3}” badge. Game data.	Весенние грузы помечены на бирже меткой «Баба Марта» и оплачиваются на {0}% выше. В марте грузовики и база носят мартенички, а ремонт и ТО на {1}% дешевле (весенняя уборка). Каждый день аист садится над одним настоящим городом — найди его на карте за {2} TC. Выполни четыре миссии ради значка «{3}». Игровые данные.
+2f3109a19a	Spring cleaning in March: −25 % on repairs and check-ups.	Весенняя уборка в марте: −25 % на ремонт и ТО.
+c14482cf6c	Spring is coming	Весна идёт
+8f168e6679	Change	Изменить
+a1a38db5e3	Change the note	Изменить заметку
+5692518a9a	Balance changes	Изменения баланса
+f16da3c9ee	Change of role	Смена должности
+5150e5cc28	Pass	Пропуск
+96b0aa1b49	Pass level {0}	Уровень пропуска {0}
+d82b9bdafa	The pass is complete!	Пропуск пройден!
+7c176b6780	The pass fills with the season points from your deliveries ({0} points per level, {1} levels). Every second level has a free reward. The premium line ({2} TC for the season) adds a reward at every level: money, TransCoin, VIP days and ×2 XP. Premium doesn't give season points and doesn't affect the rankings. Uncollected rewards burn at the end of the season.	Пропуск заполняется сезонными очками за твои доставки ({0} очков на уровень, {1} уровней). На каждом втором уровне — бесплатная награда. Премиум-линия ({2} TC за сезон) добавляет награду на каждом уровне: деньги, ТрансКоин, дни VIP и ×2 опыта. Премиум не даёт сезонных очков и не влияет на рейтинги. Неполученные награды сгорают в конце сезона.
+cd5dffa856	Missed loan instalment	Пропущенный платёж по кредиту
+f7825bab13	Missed lease instalment for {0}	Пропущенный лизинговый платёж за {0}
+46e8aa0c8c	Skip the tutorial	Пропустить обучение
+65fa184721	Follow the truck on the map	Следить за грузовиком на карте
+dc41aefb6d	Simple view	Простой вид
+738d939652	The opponent will be chosen soon (at least two alliances are needed).	Соперник будет выбран скоро (нужно хотя бы два союза).
+a5d9b9afd3	Profile	Профиль
+e9426d3b14	Profile (blocking) →	Профиль (блокировка) →
+c90a7cd206	Profile and login	Профиль и вход
+149da664c1	Profile and game	Профиль и игра
+5b20d4c0cf	Profile and more	Профиль и ещё
+d955a000f3	Profile and more ({0} waiting in the admin panel)	Профиль и ещё ({0} ждут в админ-панели)
+71a6dc4a7e	Profile and friends	Профиль и друзья
+52b52f5397	Profile of {0}	Профиль {0}
+2002bbead3	Company profile	Профиль компании
+5c81441f76	Check-up	ТО
+4549a44e95	Check-up (Fleet → Service): every 6,000 km; overdue — +50 % chance of road incidents, up to 1,500 km after it — −20 %. Price 0.4 % of the truck's price (at least 300 lv), cheaper with the plot's Service and VIP. Rented trucks aren't affected; trucks from before the update start as freshly serviced.	ТО (Автопарк → Сервис): каждые 6 000 км; просроченное — +50 % шанс дорожных происшествий, в течение 1 500 км после него — −20 %. Цена 0,4 % от цены грузовика (не меньше 300 лв.), дешевле с Сервисом на участке и VIP. Арендованных грузовиков это не касается; грузовики, купленные до обновления, начинают как только что обслуженные.
+386645168b	Check-up {0}	ТО {0}
+7c6463ba38	A check-up is done only between trips.	ТО проводится только между рейсами.
+7259dcc215	The profile is blocked{0}. Contact support.	Профиль заблокирован{0}. Свяжитесь с поддержкой.
+7863a63977	Every company's profile: numbers (trips, km, tonnes), records, drivers of the week, history, who is in the game and how many trucks are on the road, free places.	Профиль каждой компании: цифры (рейсы, км, тонны), рекорды, водители недели, история, кто в игре и сколько грузовиков в пути, свободные места.
+9d25bfd7f1	A player profile in TransVerse (no name — yours)	Профиль игрока в TransVerse (без имени — твой)
+656f88e823	The company profile has been cleared	Профиль компании очищен
+7d1e84aaff	The company profile has been cleared.	Профиль компании очищен.
+ff08a9d537	The company profile shows a “Clean” or a “Grey” company. In Discord every Monday — an anonymous customs summary, with no names.	Профиль компании показывает «Чистую» или «Серую» компанию. В Discord каждый понедельник — анонимная таможенная сводка, без имён.
+beb1c4cef4	The profile was not found.	Профиль не найден.
+695a56b5fc	The profile can't make purchases.	Профиль не может совершать покупки.
+94ced6d594	The profile can't send money.	Профиль не может отправлять деньги.
+44df252b06	The profile has no game account.	У профиля нет игрового аккаунта.
+c265f0308b	The passes are open, and the warehouses in Switzerland are waiting. Every delivery on a route through Switzerland counts.	Перевалы открыты, а склады в Швейцарии ждут. Засчитывается каждая доставка по маршруту через Швейцарию.
+bd55572db8	The passes open	Перевалы открываются
+cce278bcb2	The passes open · {0} – {1}	Перевалы открываются · {0} – {1}
+5701ac0fff	The famous roadside café	Знаменитое придорожное кафе
+8dd17b975b	Sprayer	Опрыскиватель
+a3362c033e	A shortcut from the CB radio	Короткая дорога из CB-радио
+4f871deaff	Fresh vegetable seedlings	Свежая овощная рассада
+f5c7240c14	Fresh table grapes	Свежий столовый виноград
+74d5fe4001	Publish	Опубликовать
+efe26bbbbc	Publish the listing	Опубликовать объявление
+f4aebb0ded	Publish an urgent delivery	Опубликовать срочную доставку
+e37966f5e7	Publish an urgent order: it shows at the very top of the board with an “URGENT” badge, the truck reaches the load in 1 minute, and the trip goes faster. Until it expires, any player with a free suitable truck and licences can take it — each once, and each gets the price. Besides here, the system itself launches urgent deliveries at random intervals (1.5–5 hours).	Опубликовать срочный заказ: он показывается в самом верху биржи со значком «СРОЧНО», грузовик доезжает до груза за 1 минуту, а рейс идёт быстрее. Пока заказ не истёк, его может взять любой игрок со свободным подходящим грузовиком и лицензиями — каждый по одному разу, и каждый получает оплату. Кроме того, система сама запускает срочные доставки через случайные промежутки (1,5–5 часов).
+dc759d77e4	Publishing…	Публикация…
+134eb2cfa1	Start the poll	Запустить опрос
+c83720c6fa	Start an event in the game from a ready template (game administrator)	Запустить ивент в игре из готового шаблона (администратор игры)
+35125092a7	Send a truck on a trip (ordinary load) and announce the convoy within {0} min of departure.	Отправь грузовик в рейс (обычный груз) и объяви колонну в течение {0} мин после отправления.
+706ee4f70f	Send a truck on a trip: you choose a truck and a load (linked account)	Отправить грузовик в рейс: выбираешь грузовик и груз (привязанный аккаунт)
+2b88911ed4	Put on the carriers' board	Выставить на биржу перевозчиков
+bfc67e6e63	Post a listing for 7 days.	Размести объявление на 7 дней.
+0e6fe9ca93	Put your goods from the warehouse on the board and another player will haul them for the price you set. Carriers get a star rating.	Выставь свой товар со склада на биржу, и другой игрок перевезёт его за цену, которую ты назначишь. Перевозчики получают оценку звёздами.
+04b7e37d7c	Album complete! {0}	Альбом собран! {0}
+b7ee7d2540	Album complete: {0}	Альбом собран: {0}
+3f18f43986	The full game	Полная игра
+c3d90d57ec	Fill the pages by country.	Заполняй страницы по странам.
+99cbe36026	The full description	Полное описание
+d24c119551	First delivery: {0}	Первая доставка: {0}
+0db347b405	First spring	Первая весна
+4ded396275	First spring (16 March – 15 April): a “First spring” section, equinox 20–23 March (+8 % on time, the “First spring 2027” badge for 10 trips), the “Cherry blossom” paint.	Первая весна (16 марта – 15 апреля): раздел «Первая весна», равноденствие 20–23 марта (+8 % вовремя, значок «Первая весна 2027» за 10 рейсов), краска «Цветущая вишня».
+78a320bfb6	First spring 2027	Первая весна 2027
+200b979419	First brick	Первый кирпич
+a067352602	A member's first delivery gets you into the ranking	Первая доставка участника вводит вас в рейтинг
+6ef8fbe3c8	A member's first delivery gets you into the ranking.	Первая доставка участника вводит вас в рейтинг.
+6b7faa4031	First client	Первый клиент
+0341852a76	First trip	Первый рейс
+df5745e20c	First trip for “{0}”	Первый рейс для «{0}»
+8d3802e271	First answer	Первый ответ
+26136ba9f4	First at {0}! 🚢	Первые в {0}! 🚢
+eb52ac6c34	The first {0} move up to {1}. 	Первые {0} поднимаются в {1}.
+a3db72d7a3	The first get money.	Первые получают деньги.
+d86c56bb1a	The top three win TransCoin.	Первая тройка выигрывает ТрансКоин.
+fdcd3890d9	The first issue comes out on Monday	Первый номер выходит в понедельник
+f9c69def31	The first trip is one registration away.	До первого рейса — одна регистрация.
+ff39a4c52a	The first trip on time this week opens it.	Первый рейс вовремя на этой неделе открывает его.
+1850b436aa	The first trip of 2,500+ km on time, with a double crew.	Первый рейс от 2 500 км вовремя, с двойным экипажем.
+40ac5b7a3a	The first trip will open the ranking.	Первый рейс откроет рейтинг.
+dc5ba7c397	The first trip will appear here as soon as it arrives.	Первый рейс появится здесь, как только прибудет.
+e9148857d1	Your first legendary truck.	Твой первый легендарный грузовик.
+27d684f753	Your first trip as a member brings +{0} % to the reward.	Твой первый рейс в качестве участника приносит +{0} % к оплате.
+033de3f6ee	Your first trans-European trip on time.	Твой первый трансъевропейский рейс вовремя.
+6af22eff31	Your first humanitarian load on time. Thank you!	Твой первый гуманитарный груз вовремя. Спасибо!
+6cc84eb547	First you need {0}.	Сначала нужен {0}.
+4928f57390	First the company needs {0}.	Сначала у компании должен быть {0}.
+8906720202	Buy {0} first.	Сначала купите {0}.
+5ce6c70bc4	Leave the alliance first.	Сначала выйдите из союза.
+4c30ba1aaf	Build a car park on the plot first.	Сначала постройте стоянку на участке.
+ab9404a1a0	Build a factory on the plot first.	Сначала постройте фабрику на участке.
+d3d255d9b7	Confirm your e-mail first — the link is in your mail (or send it again from “Profile and settings”).	Сначала подтверди e-mail — ссылка у тебя в почте (или отправь её снова из «Профиль и настройки»).
+db1a6043f2	First move the members with this role.	Сначала переведите участников с этой должностью.
+60b06f1cc2	First sell the company's trucks and trailers.	Сначала продайте фирменные грузовики и прицепы компании.

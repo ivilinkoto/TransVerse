@@ -1,0 +1,250 @@
+87ecafa290	The order is no longer available.	Заказ больше не доступен.
+fbadc46a18	The order is reserved by another player for a few minutes.	Заказ забронирован другим игроком на несколько минут.
+5c6c40b1c1	The order is reserved by another player.	Заказ забронирован другим игроком.
+7ff584e1df	The order is back on the board.	Заказ снова на бирже.
+2044b5fdf6	Orders	Заказы
+fc2ab6a3cc	Orders on the lane	Заказы по линии
+0c109a486e	Orders → Convoys: the leader (from level 3) chooses a lane, a departure time (in 15 min to 24 h), places and a minimum level. A personal convoy is for everyone, friends only or by link; a company one is for members only.	Заказы → Колонны: ведущий (с 3-го уровня) выбирает линию, время отправления (через 15 мин – 24 ч), места и минимальный уровень. Личная колонна — для всех, только для друзей или по ссылке; фирменная — только для участников.
+d32feb2995	Orders → “Special loads”: an auction 4 times a day for 15 minutes. A bid in the last minute extends the auction. The winner has 3 hours to send a truck, otherwise they lose the load and 5 reputation.	Заказы → «Особые грузы»: торги 4 раза в день по 15 минут. Ставка в последнюю минуту продлевает торги. У победителя 3 часа, чтобы отправить грузовик, иначе он теряет груз и 5 репутации.
+a11f53883d	Visited by you	Посещено тобой
+1516ddc4c7	Visit 10 different cities	Посети 10 разных городов
+dc03005d37	Visit 3 different cities	Посети 3 разных города
+0edeca4451	Visit 6 different cities	Посети 6 разных городов
+976a4ac55f	Visits: the members' trucks that finished a trip to the base city in the last 45 minutes stand in the yard with the driver's name (up to 3).	Визиты: грузовики участников, завершившие рейс в город базы за последние 45 минут, стоят во дворе с именем водителя (до 3).
+604683cdfa	Last login	Последний вход
+bca43ce21d	The worker's last sign of life was {0} — it is probably stopped. Check whether the worker is running (the server logs).	Последний сигнал от worker-а — {0}; вероятно, он остановлен. Проверь, работает ли worker (логи сервера).
+b68bd97379	Last load: when the construction is waiting for only one load on the board (nothing else is on the way), it becomes the “Last load” and pays 50 % more.	Последний груз: когда стройка ждёт только один груз на бирже (ничего другого в пути нет), он становится «Последним грузом» и оплачивается на 50 % выше.
+c1486783e0	Latest administrative actions	Последние административные действия
+ad468a687d	Latest transactions	Последние операции
+f4e2c9862c	Latest deliveries	Последние доставки
+bc6bcf838b	Latest trips	Последние рейсы
+b42f01b07c	Latest e-mails	Последние письма
+83d4903005	Latest payments	Последние платежи
+65d2ee2633	Latest shipments	Последние посылки
+1703827fd4	Latest urgent deliveries	Последние срочные доставки
+ae0a9fc3db	Latest events	Последние события
+407e6cd8c3	Latest auctions	Последние торги
+af1d189a29	The last 30 days	Последние 30 дней
+47fd48928e	The last 7 days: XP and money by source	Последние 7 дней: опыт и деньги по источникам
+6c727f102b	The last {0} go down to {1}.	Последние {0} опускаются в {1}.
+f1091da663	The last go down.	Последние опускаются.
+b1f1d1bf2d	The last truck — guards the column: +1 %.	Последний грузовик — замыкает колонну: +1 %.
+09c9b5723b	Last notification sent #:	Последнее отправленное уведомление №:
+1de7a46785	Last updated	Последнее обновление
+b113d1a298	Last online: {0}	Был в сети: {0}
+3134ab9168	Last: {0}	Последний: {0}
+1c8f62ea5a	Give a reason (at least 3 characters).	Укажите причину (не меньше 3 символов).
+f1f58fad67	Give a reason (at least 5 characters).	Укажите причину (не меньше 5 символов).
+9acc752968	Place	Поставить
+f34ed4461a	Place here	Поставить сюда
+efe7b041e3	Gradual menu	Постепенное меню
+9d088f04da	Gradual unlocking: new pages show in the menu with your level, with a short “how to” on the first unlock. An opened page is always visible; “Show everything” in Settings brings back the whole menu.	Постепенное открытие: новые страницы появляются в меню с ростом уровня, с короткой подсказкой «как это делается» при первом открытии. Открытая страница видна всегда; «Показать всё» в Настройках возвращает всё меню.
+db38f24ef9	Achieved	Достигнуто
+b3468619ce	Achievement: {0}	Достижение: {0}
+2f1224d0fb	Achievements	Достижения
+c1a4a2cf7a	Achievements ({0} / {1})	Достижения ({0} / {1})
+dd52b94395	Achievements →	Достижения →
+7363643673	Regular clients with contracts for several trips.	Постоянные клиенты с договорами на несколько рейсов.
+49d1bf5d41	Build it on	Постройте его на
+342706c398	Confirm that you want the delivery to start immediately.	Подтвердите, что хотите, чтобы доставка началась сразу.
+b0635bac4b	Confirm	Подтвердить
+4c529f6e80	Confirm (free for VIP)	Подтвердить (бесплатно для VIP)
+d77ec6f76c	Confirm the e-mail	Подтвердить e-mail
+49466c3e71	Confirm the e-mail manually	Подтвердить e-mail вручную
+5c3d90958d	Confirm your e-mail	Подтверди свой e-mail
+8ddd1f76c2	Confirm your e-mail in TransVerse	Подтверди свой e-mail в TransVerse
+cc656d871e	Manually confirmed the e-mail of {0}	Вручную подтвердил e-mail {0}
+4f451c0e45	Confirm that this is your e-mail — this way you can recover your profile if you forget the password, and make purchases.	Подтверди, что это твой e-mail, — так ты сможешь восстановить профиль, если забудешь пароль, и совершать покупки.
+d1013565ee	Only a truck within {0} km of the place can confirm.	Подтвердить может только грузовик в пределах {0} км от места.
+76ab83bda1	Confirm the others' reports.	Подтверждай сигналы других.
+f5a7e5d5b6	We're confirming the payment…	Подтверждаем платёж…
+18be4aceeb	E-mail confirmation	Подтверждение e-mail
+f5cbb10ad3	Confirming…	Подтверждение…
+fb6de5dd31	Flows over 7 days (by category)	Потоки за 7 дней (по категориям)
+f8d6f24213	User	Пользователь
+804c3ad4d8	Users	Пользователи
+c1232bca30	Username	Имя пользователя
+22ae34cab5	The player's username	Имя пользователя игрока
+50527eccae	The username must be up to 20 characters.	Имя пользователя должно быть не длиннее 20 символов.
+72c9782a7a	The username must be at least 3 characters.	Имя пользователя должно быть не короче 3 символов.
+e0c102f3dd	The user was not found.	Пользователь не найден.
+fc45843009	The user has no game account.	У пользователя нет игрового аккаунта.
+b6003b2707	Rest	Отдых
+dad2ef795a	Rest (45 min)	Отдых (45 мин)
+8fee135f18	Rest 2 h	Отдых 2 ч
+94ee170d9b	Rest 45 min	Отдых 45 мин
+e1f3347567	Rests	Отдых
+88e8b35ddf	Rest station	Станция отдыха
+6ea0b23679	Rest station (3×3, from company level 2): −15 % rest per level (up to −45 %) for the members' drivers after a trip that ends in the base city.	Станция отдыха (3×3, с 2-го уровня компании): −15 % отдыха за уровень (до −45 %) для водителей участников после рейса, который заканчивается в городе базы.
+be9bc1697c	You rested and learned two or three road tricks from your colleagues.	Ты отдохнул и узнал у коллег пару-тройку дорожных хитростей.
+d423740087	An almost empty border	Почти пустая граница
+931de03200	Mail	Почта
+8d46ca10cf	Mail isn't set up — nothing has been sent.	Почта не настроена — ничего не отправлено.
+ae6088f060	Mail isn't set up: {0} missing.	Почта не настроена: не хватает {0}.
+5d8c8ae714	The mail server refused	Почтовый сервер отказал
+9acfc7fb38	The mail server refused the address: {0}	Почтовый сервер отклонил адрес: {0}
+5b19b10f7c	Permissions	Права
+d55158a544	The bot's permissions in the server	Права бота на сервере
+012b0e52e7	Makes {0} deliveries{1}.	Делает {0} доставок{1}.
+667d8b44a6	Rules	Правила
+0e8d9d8a59	Company rules	Правила компании
+3f492e02be	Rules of the road	Правила в пути
+d69bbe86de	It's empty — the commands come through the worker's connection (it works this way too).	Пусто — команды приходят через соединение worker-а (так тоже работает).
+d2bbfc0149	Empty run	Порожний пробег
+53dedfd9bf	Empty. Buy goods below.	Пусто. Купи товар ниже.
+2fb7a1644b	Republic Day in Italy	День Республики в Италии
+82756fa90d	Holidays (Halloween, the ghost truck)	Праздники (Хэллоуин, призрачный грузовик)
+04de411eb5	The neighbours' holidays	Праздники соседей
+dbb3fc1594	Holiday look	Праздничный вид
+52b872d227	A holiday paint for your truck — {0} TC. Sold only at Halloween and it stays on the truck.	Праздничная краска для твоего грузовика — {0} TC. Продаётся только на Хэллоуин и остаётся на грузовике.
+9e5e885cdd	Holiday reward	Праздничная награда
+dc429a71bf	A holiday orange paint with a pumpkin smile for your truck (80 TC). Sold only at Halloween and it stays on the truck.	Праздничная оранжевая краска с тыквенной улыбкой для твоего грузовика (80 TC). Продаётся только на Хэллоуин и остаётся на грузовике.
+5da6f7f27b	A holiday orange paint with a pumpkin smile on the cab and the trailer. Sold only at Halloween — it stays on the truck forever (until repainted).	Праздничная оранжевая краска с тыквенной улыбкой на кабине и прицепе. Продаётся только на Хэллоуин — остаётся на грузовике навсегда (до перекраски).
+7fa481ff49	Holiday theme	Праздничная тема
+cd2fb4aeca	Holiday decorations	Праздничные украшения
+1d40af852e	A holiday red paint with a decorated tree on the cab and the trailer. Sold only at Christmas — it stays on the truck forever (until repainted).	Праздничная красная краска с наряженной ёлкой на кабине и прицепе. Продаётся только на Рождество — остаётся на грузовике навсегда (до перекраски).
+7198fb1cbf	A holiday red paint with a decorated tree — {0} TC. Sold only at Christmas and it stays on the truck.	Праздничная красная краска с наряженной ёлкой — {0} TC. Продаётся только на Рождество и остаётся на грузовике.
+181562f8fc	Holiday deliveries	Праздничные доставки
+b1a99f13e6	Holiday meats for the table	Праздничное мясо к столу
+6e2ddcdca8	Holiday rewards	Праздничные награды
+594fb5fc2e	Holiday orders	Праздничные заказы
+ad4f2eae2b	Holiday orders with +{0}%, a shared event, Halloween missions and a badge, a ghost truck at night.	Праздничные заказы с +{0}%, общий ивент, хэллоуинские миссии и значок, призрачный грузовик ночью.
+c905074a80	Holiday themes: they turn on by themselves by date and turn off by themselves after the holiday. Administrators can turn them on or off by hand.	Праздничные темы: включаются сами по датам и сами выключаются после праздника. Администраторы могут включать и выключать их вручную.
+6651fa000e	Holiday events count only holiday orders — winter loads no longer mix with them.	Праздничные ивенты засчитывают только праздничные заказы — зимние грузы с ними больше не смешиваются.
+87e48d1213	Holiday orders have an orange “Halloween” label on the board and pay {0}% more. They count for the shared event and the Halloween missions. At night (22:00–06:00) you may meet the ghost truck on the road — it brings {1} TC. Complete all four missions and get the “{2}” badge forever. The holiday content runs from {3} to {4}; you can collect the mission rewards up to a week after the event.	Праздничные заказы помечены на бирже оранжевой меткой «Хэллоуин» и оплачиваются на {0}% выше. Они засчитываются в общий ивент и хэллоуинские миссии. Ночью (22:00–06:00) на дороге можно встретить призрачный грузовик — он приносит {1} TC. Выполни все четыре миссии и получи значок «{2}» навсегда. Праздничный контент — с {3} по {4}; награды за миссии можно забрать в течение недели после ивента.
+e1b9a4db76	Holiday orders count for the event and the missions; you can collect the mission rewards up to a week after the event.	Праздничные заказы засчитываются в ивент и миссии; награды за миссии можно забрать в течение недели после ивента.
+c2a778f460	Send	Отправить
+78ba0ed6a1	The shipment got through 🌙	Посылка прошла 🌙
+771cd1de7b	Shipments up to ×3 and cheap repair on the black market.	Посылки до ×3 и дешёвый ремонт на чёрном рынке.
+5ec7f5366f	Shipments: {0} · caught: {1} · reported: {2}. The company's honest reputation is separate — {3}.	Посылки: {0} · поймано: {1} · сообщено: {2}. Честная репутация компании отдельно — {3}.
+5f6a5aa35a	Repaint	Перекраска
+0a6eecedfa	Repaint of {0}	Перекраска {0}
+47bfbf303d	Transfers between accounts on the same network (7 days)	Переводы между аккаунтами из одной сети (7 дней)
+8afffcdef8	Transfers between players	Переводы между игроками
+c948b273c4	Transfers between players (game money)	Переводы между игроками (игровые деньги)
+b94ac5ef55	Transfers between players: from level 5 and a profile at least 7 days old, up to 50,000 lv in 24 hours, a 3 % fee (paid by the sender; the fee leaves the game). Not to a profile from the same network — so nobody can move money from a second profile. The recipient gets a notification.	Переводы между игроками: с 5-го уровня и профиля не младше 7 дней, до 50 000 лв. за 24 часа, комиссия 3 % (платит отправитель; комиссия выводится из игры). Нельзя на профиль из той же сети — так никто не сможет перегонять деньги со второго профиля. Получатель получает уведомление.
+e579c1a17a	Transport of refrigerated goods at a controlled temperature.	Перевозка рефрижераторных грузов при контролируемой температуре.
+1fd7312ae3	Carrier on the board:	Перевозчик на бирже:
+7b7b779799	Carrier:	Перевозчик:
+4baf27e5a7	The carrier	Перевозчик
+01eb9e0ec8	Hauled	Перевезено
+1e12b878c1	Hauled {0} of {1} t. Next week — a new chance.	Перевезено {0} из {1} т. На следующей неделе — новый шанс.
+25a84bf6d3	Tonnes hauled	Перевезено тонн
+c3ca0eee26	Haul together {0} t of {1} to {2} in {3} days.	Перевезите вместе {0} т {1} в {2} за {3} дней.
+96b75d5223	Haul together {0} tonnes	Перевезите вместе {0} тонн
+46d708d15a	Haul together {0}{1}{2}	Перевезите вместе {0}{1}{2}
+c235975a0c	Hauls	Перевозки
+f618b98498	Haul 100 t with a rigid truck and a drawbar trailer.	Перевези 100 т одиночным грузовиком с прицепом.
+13c5c0d253	Haul {0} t of cargo	Перевези {0} т груза
+b0cabfd5c2	Haul {0} loads over 15 tonnes	Перевези {0} грузов тяжелее 15 тонн
+22b3e11372	Haul {0} tonnes in total	Перевези всего {0} тонн
+fc956010a6	Vehicles for sale	Машины на продажу
+3e8804ef53	Vehicle	Машина
+0a629a3fbd	Vehicle for {0}	Машина для {0}
+588a17c378	The vehicle is busy.	Машина занята.
+91a2c75070	The vehicle is on a trip.	Машина в рейсе.
+bbc53d4406	The vehicle is listed on the market — take down the listing first.	Машина выставлена на рынок — сначала сними объявление.
+c88e4dad95	The vehicle was not found.	Машина не найдена.
+b641270d18	The vehicle changed its location. Try again.	Машина сменила местоположение. Попробуйте снова.
+39a98d7d30	Route preview — {0}{1}	Просмотр маршрута — {0}{1}
+13b2f8850b	Handing over the ownership	Передача владения
+7714aae7ac	You hand “{0}” all the owner's rights{1}. You can't undo this.	Вы передаёте «{0}» все права владельца{1}. Отменить это вы не сможете.
+b79003c270	Hand over	Передать
+ff034f3111	Hand over the ownership	Передать владение
+1fba7a4eb5	Loyal	Преданный
+66e63fcd75	A preview for the staff — players will see it from {0}.	Предпросмотр для персонала — игроки увидят его с {0}.
+2bb22b295c	Challenge a player to a duel: who hauls more tonnes in a week (20 TransCoin for the winner). Every month — a contest for the most beautiful truck with 👍 from the other players and 100 TransCoin for the winner.	Вызови игрока на дуэль: кто перевезёт больше тонн за неделю (20 ТрансКоин победителю). Каждый месяц — конкурс на самый красивый грузовик с 👍 от других игроков и 100 ТрансКоин победителю.
+662107d1f1	Challenge a player from their card (“Duel”) or in Discord with /дуел. They have {0} hours to accept. From the acceptance the tonnes of your deliveries are counted (by arrival time) for {1} days. The winner gets {2} TransCoin and the “Duellist” badge. Up to {3} duels at a time.	Вызови игрока из его карточки («Дуэль») или в Discord через /дуел. У него {0} ч, чтобы принять. С момента принятия {1} дней считаются тонны ваших доставок (по времени прибытия). Победитель получает {2} ТрансКоин и значок «Дуэлянт». До {3} дуэлей одновременно.
+5b1f685202	Challenge someone else!	Вызови кого-нибудь ещё!
+c88df47a64	Challenge a friend.	Вызови друга.
+3ab8b9a53c	Challenges	Испытания
+9b1234c107	Challenge {0}: {1}, place {2}	Испытание {0}: {1}, {2}-е место
+aa45e23002	Challenge of the week (Competition → Challenges): a new measure every week, 60/40/20 TC for the top three.	Испытание недели (Соревнования → Испытания): новый показатель каждую неделю, 60/40/20 TC для первой тройки.
+71d62ff571	Challenge of the week and Eurotour.	Испытание недели и Евротур.
+298b0948a8	Challenge of the week: place {0}! 🏆	Испытание недели: {0}-е место! 🏆
+3573be7b1a	The challenge of the week comes with update 1.6.	Испытание недели появится в обновлении 1.6.
+ea2abe825e	The challenge of the week changes its measure every Monday. All on-time trips that arrived during the week count — not just one route like the rally. After the end of the week the top three get {0}.	Показатель испытания недели меняется каждый понедельник. Засчитываются все рейсы вовремя, прибывшие за неделю, — не один маршрут, как в ралли. По итогам недели первая тройка получает {0}.
+7235abb860	The challenge of the week: the measure, the leaders and your place	Испытание недели: показатель, лидеры и твоё место
+c895c03727	Previous weeks	Прошлые недели
+9a7639fbc2	Previous auctions	Прошлые торги
+4bce4b7cb2	They offer {0} % of every load of theirs (factory, branches) that you drive for {1} days.	Предлагают {0} % от каждого своего груза (фабрика, филиалы), который вы возите {1} дней.
+a48d1150fb	Merger proposal	Предложение о слиянии
+58ab58027c	The proposal is no longer active.	Предложение больше не активно.
+e20d49e5d0	The offer has been sent to {0}. The order is held for them for {1} minutes.	Предложение отправлено {0}. Заказ закреплён за ним на {1} минут.
+7c73f0db49	The proposal isn't valid.	Предложение недействительно.
+5c8b519689	Merger proposals	Предложения о слиянии
+cbaca5e24d	Offer	Предложить
+26885a9a58	Suggest trips	Предложить рейсы
+ae6073935e	Early loan repayment	Досрочное погашение кредита
+228ebf7a9c	Early lease pay-off for {0}	Досрочное погашение лизинга за {0}
+b67d6a1076	Coming up	Впереди
+6ac83a96f6	Upcoming event	Предстоящий ивент
+8c6073de0f	Warn	Предупредить
+a26be840b4	Warn a server member	Предупредить участника сервера
+114266d7d9	Warning in Discord{0}: {1}	Предупреждение в Discord{0}: {1}
+d439a82acd	Warning from a moderator	Предупреждение от модератора
+a0f7bd007e	In winter the plot is covered with snow, and at Christmas the buildings shine with lights and there is a tree in the yard.	Зимой участок покрывается снегом, а на Рождество здания светятся гирляндами и во дворе стоит ёлка.
+8259eff45e	In March all trucks wear martenitsi — for free.	В марте все грузовики носят мартенички — бесплатно.
+09daecc373	During the week of the update and the first 7 days of every month, materials are cheaper and trips with them give more XP. New badges: “First brick”, “Architect”, “Skyscraper” and “Builder”.	В неделю обновления и в первые 7 дней каждого месяца материалы дешевле, а рейсы с ними дают больше опыта. Новые значки: «Первый кирпич», «Архитектор», «Небоскрёб» и «Строитель».
+144dcd2e37	End	Прекратить
+8d9c5b032a	Removed the VIP status of {0}	Снял статус VIP с {0}
+8183c2bfae	Remove	Удалить
+12a9fc9708	Remove VIP	Снять VIP
+1f990210fe	Moving {0}	Перемещение {0}
+3195d8f69b	Moving {0} to the depot ({1} km)	Перемещение {0} в депо ({1} км)
+abf218b92c	Move	Переместить
+92c7ddfe83	Move to a depot (in 1 minute)	Переместить в депо (за 1 минуту)
+9246ba832a	Move trucks there.	Перемести туда грузовики.
+52b84c9805	Bonuses for members	Премии участникам
+0841914d11	Bonuses for the members from the treasury	Премии участникам из казны
+54f9be6024	Bonuses from the treasury: up to {0} per member once every {1} hours, for members of at least {2} days. In 24 hours the company gives up to {3} % of the treasury (at most {4}). {5} left today. Every bonus is shown in the treasury history.	Премии из казны: до {0} на участника раз в {1} ч, для участников со стажем от {2} дней. За 24 часа компания выдаёт до {3} % казны (не больше {4}). Сегодня осталось {5}. Каждая премия видна в истории казны.
+847d6da2f5	Bonuses from the company	Премии от компании
+b25403741f	Premium	Премиум
+61ae82bb4d	Premium · {0} TC	Премиум · {0} TC
+0a2ce928ef	Premium active	Премиум активен
+9b99b5fec5	The game's premium currency. Earned from missions, events and rewards; spent in the shop.	Премиальная валюта игры. Зарабатывается в миссиях, ивентах и наградах; тратится в магазине.
+91fcde0f10	Premium tyres	Премиум-шины
+ef1cbdd379	The premium line gives back 600 TC in total, 13 VIP days and 3 ×2 XP boosters if you reach level {0}.	Премиум-линия возвращает в сумме 600 TC, 13 дней VIP и 3 бустера ×2 опыта, если дойдёшь до уровня {0}.
+b1c179d77b	A premium order — it pays more, but only for carriers with reputation {0}+. Reputation grows with every on-time delivery.	Премиум-заказ — оплачивается выше, но только для перевозчиков с репутацией {0}+. Репутация растёт с каждой доставкой вовремя.
+188abdc4fa	Premium order: reputation {0} is needed (yours is {1}). Reputation grows with on-time deliveries.	Премиум-заказ: нужна репутация {0} (у тебя {1}). Репутация растёт с доставками вовремя.
+2383e234ef	Premium orders ×{0} (from {1})	Премиум-заказы ×{0} (с {1})
+83ff175469	Premium pass level {0}	Премиум-пропуск, уровень {0}
+e8664c15b9	Premium pass: {0}	Премиум-пропуск: {0}
+2238cd6797	The premium pass gives more.	Премиум-пропуск даёт больше.
+60e6a36617	Bonus	Премия
+d65ba1b86c	Bonus {0}	Премия {0}
+659de3e37a	Bonus {0} from “{1}”	Премия {0} от «{1}»
+8f52948724	Bonus for {0} (lv)	Премия для {0} (лв.)
+8c7744f4c6	Bonus for {0}{1}	Премия для {0}{1}
+cad56d3965	Driver of the month bonus	Премия водителю месяца
+72520fb9b5	You can't give a bonus to yourself.	Нельзя выдать премию самому себе.
+ee42973523	Bonus from “{0}”{1}	Премия от «{0}»{1}
+a754ebd6cd	Bonuses are given to members of at least {0} days.	Премии выдаются участникам со стажем от {0} дней.
+4638b59796	Plant protection products	Средства защиты растений
+1edde0617e	Fresh fruit	Свежие фрукты
+a8abe72ea3	Fresh fruit and vegetables from Italy for all of Europe. Every tonne on routes through Italy counts.	Свежие фрукты и овощи из Италии для всей Европы. Засчитывается каждая тонна по маршрутам через Италию.
+f99ba6a6b3	Fresh eggs	Свежие яйца
+46baa2c528	Prestige	Престиж
+b9fb5b71f9	Overload	Перегруз
+9c1ae50b24	At {0}	У {0}
+1126dcd5cf	On a refunded amount (a refund or a payment dispute) the corresponding TransCoin and VIP days are removed from the profile. If they have already been spent, the balance may become negative. Abuse of disputes leads to the profile being blocked.	При возврате суммы (возмещение или оспаривание платежа) соответствующие ТрансКоин и дни VIP снимаются с профиля. Если они уже потрачены, баланс может стать отрицательным. Злоупотребление оспариваниями ведёт к блокировке профиля.
+b229f32dcd	With a big order you can ask for more once. A refusal gives the load to someone else.	По крупному заказу можно один раз попросить больше. Отказ отдаёт груз другому.
+3a46ce2c0f	On delivery there is TransCoin too.	При доставке — ещё и ТрансКоин.
+9552f62439	On early pay-off you pay the remaining principal and half of the remaining interest. A leased truck can't be sold until it is paid off.	При досрочном погашении ты платишь оставшийся основной долг и половину оставшихся процентов. Грузовик в лизинге нельзя продать, пока он не выплачен.
+2c1c37c1af	With your friends	У друзей
+ddfd5ccf65	On success:	При успехе:
+b403197722	Zoom in	Приблизить
+02be76a9fa	Approximate (the route hasn't been calculated in the game yet) · without rests and queues	Приблизительно (маршрут ещё не рассчитан в игре) · без отдыха и очередей
+732dbf3769	Accepted an appeal in Discord{0}	Принял апелляцию в Discord{0}
+3720182423	Accepted another company's offer. Hire a new driver from “Drivers”.	Принял предложение другой компании. Найми нового водителя в «Водителях».
+22aa006221	I take trips	Беру рейсы
+7e298bb2b4	I take students	Беру учеников
+543ab4afb9	The owner and the roles with the “Auctions” permission accept. At most {0} auctions at a time. Treasury:	Принимают владелец и должности с правом «Торги». Не больше {0} торгов одновременно. Казна:
+c40e3d119d	Accept	Принять
+f5abe8e6c3	Accept · {0}	Принять · {0}
+dbb4ba9ba0	Accept the duel	Принять дуэль
+250da69aea	Accept and send	Принять и отправить
+31f32cd0a4	Accept an offer from a client below.	Прими предложение клиента ниже.
+eee28b323a	Accept the friendship	Принять дружбу
+9475e1514c	Accept your first order	Прими свой первый заказ
+d93e175d44	Accept the auction	Принять торги
