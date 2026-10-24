@@ -1,6 +1,6 @@
 'use client';
 
-import { useFeature, useFeatures } from './Features';
+import { useFeature, useFeatures, useNavPlayer } from './Features';
 import { Gem, LogOut, MessagesSquare, MoreHorizontal, ShieldCheck, X } from 'lucide-react';
 import { DISCORD_URL } from '@/lib/community';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Logo, LogoMark } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
-import { ACCOUNT_MENU, SECTIONS, activeTab, sectionFor, visibleTabs, type NavSection } from './nav';
+import { ACCOUNT_MENU, SECTIONS, activeTab, sectionFor, tabGroups, visibleTabs, type NavSection, type NavTab } from './nav';
 
 export interface NavBadges {
   /** Mission rewards waiting to be claimed. */
@@ -74,6 +74,8 @@ export function Sidebar({ badges, version }: { badges: NavBadges; version: strin
 export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
   const pathname = usePathname();
   const has = useFeatures();
+  const player = useNavPlayer();
+  const simple = useFeature('simple_nav');
   const box = useRef<HTMLElement>(null);
   const section = sectionFor(pathname);
   const tab = section ? activeTab(section, pathname) : undefined;
@@ -82,10 +84,25 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
     box.current?.querySelector('[aria-current=page]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }, [tab?.href]);
   if (!section?.tabs) return null;
+  const tabs = visibleTabs(section, holiday, pathname, has, player);
+  // v1.9: long sections show their groups first, then the group's pages.
+  const groups = simple ? tabGroups(tabs) : [];
+  const group = groups.find((g) => g.tabs.some((t) => t.href === tab?.href)) ?? groups[0];
+  const shown: NavTab[] = group ? group.tabs : tabs;
+  if (shown.length < 2 && groups.length < 2) return null;
   return (
     <nav ref={box} aria-label={section.label} className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+      {groups.length > 1 && (
+        <div className="mb-2 flex min-w-max gap-1.5">
+          {groups.map((g) => (
+            <Link key={g.name} href={g.tabs[0]!.href} aria-current={g === group ? 'true' : undefined} className={`rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition ${g === group ? 'border-cyan-glow/60 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>
+              {g.name}
+            </Link>
+          ))}
+        </div>
+      )}
       <div className="inline-flex min-w-max gap-1 rounded-2xl border border-asphalt-800 bg-asphalt-900/70 p-1">
-        {visibleTabs(section, holiday, pathname, has).map((t) => {
+        {shown.map((t) => {
           const active = t.href === tab?.href;
           return (
             <Link key={t.href} href={t.href} aria-current={active ? 'page' : undefined} className={`rounded-xl px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition sm:px-3.5 sm:py-2 sm:text-sm ${active ? 'bg-asphalt-700 text-white shadow-sm' : 'text-mist-400 hover:text-white'}`}>
@@ -104,6 +121,8 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
   const router = useRouter();
   const mentor = useFeature('mentor');
   const has = useFeatures();
+  const player = useNavPlayer();
+  const simple = useFeature('simple_nav');
   const [open, setOpen] = useState(false);
   const current = sectionFor(pathname);
   const main = SECTIONS.filter((s) => ['home', 'jobs', 'map', 'fleet'].includes(s.key));
@@ -159,8 +178,11 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
             {SECTIONS.filter((s) => s.key === 'company' || s.key === 'compete').map((s) => (
               <section key={s.key} className="mb-5">
                 <h2 className="label mb-2 flex items-center gap-2"><s.icon className="h-3.5 w-3.5" />{s.label}</h2>
+                {(simple && tabGroups(visibleTabs(s, holiday, pathname, has, player)).length > 1 ? tabGroups(visibleTabs(s, holiday, pathname, has, player)) : [{ name: '', tabs: visibleTabs(s, holiday, pathname, has, player) }]).map((g) => (
+                <div key={g.name} className="mb-2">
+                {g.name && <p className="mb-1 text-[11px] font-semibold text-mist-400">{g.name}</p>}
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  {visibleTabs(s, holiday, pathname, has).map((t) => (
+                  {g.tabs.map((t) => (
                     <Link key={t.href} href={t.href} onClick={() => setOpen(false)} className={`${tile} ${activeTab(s, pathname)?.href === t.href ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
                       {t.label}
                       {t.href === '/game/missions' && badges.missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[10px] font-bold text-asphalt-950">{badges.missions} награди</span>}
@@ -168,6 +190,8 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
                     </Link>
                   ))}
                 </div>
+                </div>
+                ))}
               </section>
             ))}
             <section>

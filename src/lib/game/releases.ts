@@ -35,6 +35,14 @@ export const BASE_VERSION = '1.0';
 
 export const RELEASES: Release[] = [
   {
+    version: '1.9',
+    name: 'Светлини и сенки',
+    publishedAt: '2027-06-19T00:00:00+03:00',
+    tagline: 'По-ясна игра, по-силни компании и контрабанда за смелите.',
+    highlights: [],
+    sections: [],
+  },
+  {
     version: '1.8',
     name: 'Жив път',
     publishedAt: '2027-05-22T00:00:00+03:00',

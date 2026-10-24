@@ -18,7 +18,11 @@ import { WhatsNew } from '@/components/game/WhatsNew';
 import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isHalloween } from '@/lib/game/halloween';
 import { staffAttention } from '@/server/admin';
-import { FeaturesProvider } from '@/components/game/Features';
+import { FeaturesProvider, PlayerUiProvider } from '@/components/game/Features';
+import { UnlockNotice } from '@/components/game/UnlockNotice';
+import { unlockTabs } from '@/components/game/nav';
+import { UNLOCK_INFO } from '@/lib/game/unlocks';
+import { pendingUnlocks } from '@/server/game/ui-prefs';
 import { liveFeatures } from '@/lib/game/features';
 import { isChristmas } from '@/lib/game/christmas';
 import { isMarta } from '@/lib/game/marta';
@@ -49,8 +53,18 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt))),
     db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1),
   ]);
+  // v1.9: pages the player's level just unlocked in the menu ("Ново за теб").
+  const features = liveFeatures(now, staff);
+  const unlockable = unlockTabs().filter((t) => !t.feature || features[t.feature]).map((t) => ({ ...t, minLevel: t.minLevel! }));
+  const pending = features.progressive_unlock && !user.uiPrefs?.showAll && !(tutorial.active && tutorial.step) && !fresh ? await pendingUnlocks(db, user, unlockable) : [];
+  const unlocks = pending.flatMap((href) => {
+    const t = unlockable.find((x) => x.href === href);
+    const info = UNLOCK_INFO[href];
+    return t && info ? [{ href, label: t.label, section: t.section, ...info }] : [];
+  });
   return (
-    <FeaturesProvider value={liveFeatures(now, staff)}>
+    <FeaturesProvider value={features}>
+      <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll }}>
       <div className="flex min-h-dvh flex-col lg:flex-row">
         <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -76,6 +90,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         <PlayerCardHost />
         <ReportHost />
         <RegisterServiceWorker />
+        {unlocks.length > 0 && <UnlockNotice items={unlocks} />}
         {fresh && !(tutorial.active && tutorial.step) && (
           <WhatsNew version={fresh.version}>
             <ReleaseTitle release={fresh} />
@@ -83,6 +98,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
           </WhatsNew>
         )}
       </div>
+      </PlayerUiProvider>
     </FeaturesProvider>
   );
 }

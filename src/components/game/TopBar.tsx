@@ -5,6 +5,7 @@ import { levelProgress } from '@/lib/game/progression';
 import { money } from '@/lib/format';
 import { AccountMenu, NotificationBell } from './HeaderMenu';
 import { PlayerSearch } from './PlayerSearch';
+import { CommandPalette } from './CommandPalette';
 
 const chip = 'flex h-9 items-center gap-1.5 rounded-full border px-2.5 sm:px-3 transition';
 
@@ -35,6 +36,7 @@ export function TopBar({ title, kind, company, user, vip, hqName, unread, staff,
               <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full bg-gold-400" />
             </Link>
           )}
+          <CommandPalette />
           <PlayerSearch />
           <NotificationBell unread={unread} />
           <AccountMenu staff={staff} attention={attention} user={{ id: user.id, username: user.username, role: user.role, vip, avatarVersion: user.avatarVersion }} level={{ level: lp.level, share: lp.share, current: lp.current, next: lp.next }} reputation={company.reputation} />

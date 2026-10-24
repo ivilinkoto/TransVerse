@@ -20,3 +20,16 @@ export function useFeatures(): (id: FeatureId) => boolean {
 export function useFeature(id: FeatureId): boolean {
   return useContext(Ctx)[id] ?? true;
 }
+
+/** v1.9: the player's level and menu choice, for the menu that grows with the level. */
+const PlayerCtx = createContext<{ level: number; showAll: boolean }>({ level: 99, showAll: true });
+
+export function PlayerUiProvider({ value, children }: { value: { level: number; showAll: boolean }; children: ReactNode }) {
+  return <PlayerCtx.Provider value={value}>{children}</PlayerCtx.Provider>;
+}
+
+/** The menu's view of the player, or null when the menu shows everything (feature off). */
+export function useNavPlayer() {
+  const player = useContext(PlayerCtx);
+  return useFeature('progressive_unlock') ? player : null;
+}

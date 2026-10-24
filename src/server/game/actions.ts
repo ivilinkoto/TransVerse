@@ -24,6 +24,7 @@ import { pickHitchhiker } from '@/server/game/road-life';
 import { haggle } from '@/server/game/deals';
 import { buyShares, listCompany, sellShares } from '@/server/game/shares';
 import { enterTruck, voteTruck } from '@/server/game/truck-contest';
+import { setUiPrefs } from '@/server/game/ui-prefs';
 import { REPORT_KIND_IDS, type ReportKind } from '@/lib/game/live-road';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
@@ -217,6 +218,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cbSend'), body: z.string().max(400), vehicleId: id.optional() }),
   z.object({ type: z.literal('roadReport'), kind: z.enum(REPORT_KIND_IDS as [ReportKind, ...ReportKind[]]), vehicleId: id.optional() }),
   z.object({ type: z.literal('listCompany') }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
@@ -884,6 +886,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await enterTruck(db, user.id, input.vehicleId)) };
     case 'voteTruck':
       return { ok: true, ...(await voteTruck(db, user.id, input.entryId)) };
+    case 'uiPrefs':
+      return { ok: true, ...(await setUiPrefs(db, user.id, input)) };
     case 'listCompany':
       return { ok: true, ...(await listCompany(db, user.id)) };
     case 'buyShares':
