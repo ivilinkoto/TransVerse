@@ -6,6 +6,7 @@ import { HALLOWEEN } from '@/lib/game/halloween';
 import { CHRISTMAS } from '@/lib/game/christmas';
 import { WINTER } from '@/lib/game/winter';
 import { CONVOY_RULES } from '@/lib/game/convoy';
+import { RELAY, relayLabel } from '@/lib/game/relay';
 import { PLOT } from '@/lib/game/plot';
 import { MULTISTOP } from '@/lib/game/multistop';
 import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
@@ -47,6 +48,8 @@ export interface BoardContract {
   sealed?: boolean;
   /** v1.8: relief goods for a humanitarian convoy. */
   humanitarian?: boolean;
+  /** v1.10: a leg of a relay load (1 or 2). */
+  relayLeg?: number | null;
   /** v1.8: haggling: 'open' (may ask), the player's ask, or null (not for this load). */
   haggle?: 'open' | { percent: number; accepted: boolean; holdUntil: string; valid: boolean } | null;
   /** What a vehicle needs to take this load (shown above the vehicle list). */
@@ -460,6 +463,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
               {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
               {c.transEurope && <Badge tone="gold">🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{Math.round((TRANS_EUROPE.multiplier - 1) * 100)}%</Badge>}
+              {c.relayLeg && <Badge tone="cyan">🏃 {relayLabel(c.relayLeg)} · +{Math.round(RELAY.bonusShare * 100)} % ако и двамата сте навреме</Badge>}
               {c.humanitarian && <Badge tone="red">🆘 ХУМАНИТАРНА ПОМОЩ · +{RELIEF.coins} TC навреме</Badge>}
               {c.sealed && <Badge tone="violet">📦 ЗАПЕЧАТАН · до +{Math.round(SEALED.tiers.at(-1)!.bonus * 100)}% при отваряне</Badge>}
               {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">🤝 ДОГОВОРЕНО +{c.haggle.percent}%</Badge>}

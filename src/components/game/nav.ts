@@ -60,6 +60,7 @@ export const SECTIONS: NavSection[] = [
     icon: Truck,
     tabs: [
       { href: '/game/fleet', label: 'Моите превозни средства', group: 'Камиони' },
+      { href: '/game/trips', label: 'Бордови дневник', feature: 'trip_log', group: 'Камиони' },
       { href: '/game/analytics', label: 'Анализ', group: 'Камиони', minLevel: 3 },
       { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа' },
       { href: '/game/market', label: 'Пазар', group: 'Камиони' },

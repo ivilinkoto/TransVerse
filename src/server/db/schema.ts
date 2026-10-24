@@ -463,6 +463,9 @@ export const contracts = pgTable(
     shady: boolean('shady').notNull().default(false),
     /** v1.10: a part of an organized convoy's shared load (only for that convoy's trucks). */
     convoyId: uuid('convoy_id'),
+    /** v1.10: a leg (1 or 2) of a relay load. */
+    relayId: uuid('relay_id'),
+    relayLeg: integer('relay_leg'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -489,6 +492,8 @@ export const deliveries = pgTable(
     convoyLead: uuid('convoy_lead'),
     /** v1.10: the organized convoy this trip drives in. */
     organizedConvoyId: uuid('organized_convoy_id'),
+    /** v1.10: the player shared the trip log (public page and card). */
+    sharedAt: ts('shared_at'),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
@@ -2941,3 +2946,25 @@ export const convoyStats = pgTable('convoy_stats', {
   /** 'YYYY-MM-DD:<n>' — convoy bonuses today (at most 3). */
   bonusesToday: text('bonuses_today'),
 });
+
+/** v1.10 relay loads: two legs, two drivers. */
+export const relays = pgTable(
+  'relays',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    relayCityId: integer('relay_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    leg1ContractId: uuid('leg1_contract_id').notNull(),
+    leg2ContractId: uuid('leg2_contract_id').notNull(),
+    /** leg1 → leg2 → done, or failed / expired. */
+    status: text('status').notNull().default('leg1'),
+    leg1UserId: uuid('leg1_user_id'),
+    leg1DeliveryId: uuid('leg1_delivery_id'),
+    leg1Late: boolean('leg1_late'),
+    leg2UserId: uuid('leg2_user_id'),
+    handoverAt: ts('handover_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('relays_status_idx').on(t.status)],
+);
