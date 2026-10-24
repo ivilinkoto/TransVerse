@@ -1,4 +1,4 @@
-import { EVENT_TEMPLATES } from '@/lib/game/events';
+import { ALL_EVENT_TEMPLATES } from '@/lib/game/events';
 import { isAdmin } from '@/server/auth/roles';
 import { GameError } from '@/server/game/errors';
 import { startTemplateEvent } from '@/server/game/events';
@@ -21,6 +21,7 @@ export const PLAYER_HELP = [
   '`/класация [вид]` — сезон, богатство, курсове, компании, бази',
   '`/борса град` — най-добрите товари от град',
   '`/турнир` — Пролетната купа · `/маршрут от до` — пътят с камион между два града',
+  '`/държава име` — дизел, тол, забрани, празник, крал и товари към държава',
   '',
   '**Със свързан акаунт**',
   '`/камиони` — къде са камионите ти · `/курс` — пусни камион на курс',
@@ -87,4 +88,4 @@ export async function eventStart(ctx: Ctx): Promise<Answer> {
   }
 }
 
-export const EVENT_TEMPLATE_CHOICES = EVENT_TEMPLATES.slice(0, 25).map((t) => ({ name: t.name.slice(0, 100), value: t.id }));
+export const EVENT_TEMPLATE_CHOICES = ALL_EVENT_TEMPLATES.slice(0, 25).map((t) => ({ name: t.name.slice(0, 100), value: t.id }));

@@ -1,13 +1,16 @@
 import { and, asc, count, desc, eq, gt, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { BADGES } from '@/lib/game/halloween';
-import { BIG_CONVOY, bigConvoyShare, CHALLENGE_METRICS, challengeMetric, EUROTOUR, WEEKLY_CHALLENGE, type ChallengeMetric } from '@/lib/game/challenges';
+import { BIG_CONVOY, bigConvoyShare, CHALLENGE_METRICS, challengeMetric, EUROTOUR, GRAND_EUROTOUR, WEEKLY_CHALLENGE, type ChallengeMetric } from '@/lib/game/challenges';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { featureLive } from '@/lib/game/features';
 import { periodWindow, sofiaMidnight, sofiaParts } from '@/lib/game/missions';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, contracts, countries, deliveries, jobState, openConvoys, userBadges, users } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
+import { announce } from '@/server/discord/outbox';
+import { appUrl } from '@/server/discord/config';
 import { postCoins } from './coins';
+import { activeSeason } from './seasons';
 import { post } from './finance';
 import { notify } from './notify';
 
@@ -16,18 +19,44 @@ const monthStart = (at: Date) => {
   return sofiaMidnight(y, m, 1);
 };
 
-/** The countries the player delivered to this month (Sofia), with their names. */
-export async function eurotourProgress(db: DbOrTx, userId: string, now: Date) {
+/** The countries the player delivered to between two times, with their names. */
+async function countriesDelivered(db: DbOrTx, userId: string, list: readonly string[], from: Date, to: Date) {
   const rows = await db
     .selectDistinct({ code: cities.countryCode })
     .from(deliveries)
     .innerJoin(companies, eq(companies.id, deliveries.companyId))
     .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
     .innerJoin(cities, eq(cities.id, contracts.destCityId))
-    .where(and(eq(companies.ownerId, userId), eq(deliveries.status, 'completed'), gte(deliveries.completedAt, monthStart(now)), lt(deliveries.completedAt, periodWindow('monthly', now).endsAt)));
-  const names = await db.select({ code: countries.code, nameBg: countries.nameBg }).from(countries).where(inArray(countries.code, [...EUROTOUR.countries]));
+    .where(and(eq(companies.ownerId, userId), eq(deliveries.status, 'completed'), gte(deliveries.completedAt, from), lt(deliveries.completedAt, to)));
+  const names = await db.select({ code: countries.code, nameBg: countries.nameBg }).from(countries).where(inArray(countries.code, [...list]));
   const done = new Set(rows.map((r) => r.code));
-  return EUROTOUR.countries.map((code) => ({ code, name: names.find((n) => n.code === code)?.nameBg ?? code, done: done.has(code) }));
+  return list.map((code) => ({ code, name: names.find((n) => n.code === code)?.nameBg ?? code, done: done.has(code) }));
+}
+
+/** The countries the player delivered to this month (Sofia), with their names. */
+export async function eurotourProgress(db: DbOrTx, userId: string, now: Date) {
+  return countriesDelivered(db, userId, EUROTOUR.countries, monthStart(now), periodWindow('monthly', now).endsAt);
+}
+
+/** v1.7 Голям евротур: the countries the player delivered to this season, with the season. */
+export async function grandEurotourProgress(db: DbOrTx, userId: string, now: Date) {
+  const season = await activeSeason(db, now);
+  return { season: { id: season.id, name: season.name, endsAt: season.endsAt }, countries: await countriesDelivered(db, userId, GRAND_EUROTOUR.countries, season.startsAt, season.endsAt) };
+}
+
+/** A delivery arrived: with it the player may have reached every country of the game this season (once a season). */
+export async function checkGrandEurotour(tx: Tx, userId: string, destCountry: string, at: Date) {
+  if (!GRAND_EUROTOUR.countries.includes(destCountry) || !(await featureFor(tx, userId, 'grand_eurotour', at))) return false;
+  const { season, countries: list } = await grandEurotourProgress(tx, userId, at);
+  const done = new Set(list.filter((c) => c.done).map((c) => c.code)).add(destCountry);
+  if (!GRAND_EUROTOUR.countries.every((c) => done.has(c))) return false;
+  const key = `grand-eurotour:${userId}:${season.id}`;
+  const [first] = await tx.insert(jobState).values({ key, value: { at: at.toISOString() } }).onConflictDoNothing().returning();
+  if (!first) return false;
+  await tx.insert(userBadges).values({ userId, badge: GRAND_EUROTOUR.badge, awardedAt: at }).onConflictDoNothing();
+  await postCoins(tx, userId, { amount: GRAND_EUROTOUR.coins, reason: 'challenge', description: `Голям евротур · ${season.name}`, idempotencyKey: key });
+  await notify(tx, userId, 'achievement', 'Голям евротур! 🌍', `Доставки до всичките ${GRAND_EUROTOUR.countries.length} държави този сезон — значка „${BADGES[GRAND_EUROTOUR.badge]?.label ?? ''}“ и ${GRAND_EUROTOUR.coins} TC.`, '/game/challenges');
+  return true;
 }
 
 /** A delivery arrived: with it the player may have reached all nine countries this month (once a month). */
@@ -134,7 +163,7 @@ export async function settleWeeklyChallenge(db: Database, now: Date) {
   const last = challengeWeek(new Date(current.startsAt.getTime() - 3_600_000));
   const rows = (await challengeRanking(db, last)).filter((r) => r.value > 0).slice(0, WEEKLY_CHALLENGE.prizes.length);
   return db.transaction(async (tx) => {
-    const [first] = await tx.insert(jobState).values({ key: `weekly-challenge:${last.key}`, value: { winners: rows.map((r) => r.userId) } }).onConflictDoNothing().returning();
+    const [first] = await tx.insert(jobState).values({ key: `weekly-challenge:${last.key}`, value: { metric: last.metric, winners: rows.map((r) => ({ userId: r.userId, username: r.username, value: r.value })) } }).onConflictDoNothing().returning();
     if (!first) return null;
     const m = CHALLENGE_METRICS[last.metric];
     for (const [i, r] of rows.entries()) {
@@ -142,8 +171,22 @@ export async function settleWeeklyChallenge(db: Database, now: Date) {
       await postCoins(tx, r.userId, { amount: coins, reason: 'challenge', description: `Предизвикателство ${last.key}: ${m.title}, ${i + 1}. място`, idempotencyKey: `weekly-challenge:${last.key}:${r.userId}` });
       await notify(tx, r.userId, 'achievement', `Предизвикателство на седмицата: ${i + 1}. място! 🏆`, `„${m.title}“ — ${r.value} ${m.unit}. Награда: ${coins} TC.`, '/game/challenges');
     }
+    if (rows.length && featureLive('discord_bot', now)) {
+      await announce(tx, `weekly-challenge:${last.key}`, 'rankings', {
+        embeds: [{ title: `🏆 Предизвикателство на седмицата: ${m.title}`, url: `${appUrl()}/game/challenges`, color: 0xf6c343, description: rows.map((r, i) => `**${i + 1}.** ${r.username} · ${Math.round(r.value).toLocaleString('bg-BG')} ${m.unit} · ${WEEKLY_CHALLENGE.prizes[i]} TC`).join('\n'), footer: { text: 'TransVerse · игрови данни' } }],
+      }, now);
+    }
     return { week: last.key, winners: rows.length };
   });
+}
+
+/** Last week's winners (once the week is settled), for the page (v1.7). */
+export async function lastChallengeWinners(db: DbOrTx, now: Date) {
+  const last = challengeWeek(new Date(challengeWeek(now).startsAt.getTime() - 3_600_000));
+  const [row] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, `weekly-challenge:${last.key}`));
+  const v = row?.value as { metric?: ChallengeMetric; winners?: { userId: string; username?: string; value?: number }[] } | undefined;
+  if (!v?.metric || !v.winners?.length || typeof v.winners[0] !== 'object') return null;
+  return { ...CHALLENGE_METRICS[v.metric], winners: v.winners };
 }
 
 /** How far in time a convoy can still grow (for the page). */

@@ -22,7 +22,7 @@ import { realConditionsFor } from '@/server/game/weather';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
-import { compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
+import { BODY_LABELS, compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { cities as citiesTable, contracts as contractsTable, deliveries } from '@/server/db/schema';
 import { fleetView } from '@/server/game/queries';
@@ -37,6 +37,8 @@ import { membershipOf } from '@/server/game/membership';
 import { isNightShift, NIGHT, oversizeCostCents } from '@/lib/game/roads';
 import { activeRoadWorks } from '@/server/game/roads';
 import { TRAFFIC } from '@/lib/game/traffic';
+import { specializationCovers } from '@/lib/game/specialization';
+import { LOW_EMISSION_ZONES } from '@/lib/game/europe-roads';
 
 export const metadata = { title: 'Поръчки' };
 
@@ -62,8 +64,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const takenIds = new Set(taken.map((t) => t.contractId));
   const real = await realConditionsFor(db, user.id, now);
   // v1.4: rail terminals (for "С влак") and the ship in port.
-  const terminalIds = [...new Set(CROSSING_LINES.filter((l) => l.kind === 'rail').flatMap((l) => [l.a, l.b]))];
-  const terminals = features.rail ? new Map((await db.select({ id: citiesTable.id, lat: citiesTable.lat, lon: citiesTable.lon }).from(citiesTable).where(inArray(citiesTable.id, terminalIds))).map((t) => [t.id, t])) : new Map();
+  const terminalIds = [...new Set(CROSSING_LINES.filter((l) => l.kind === 'rail' || (l.optional && features.sea_lines)).flatMap((l) => [l.a, l.b]))];
+  const terminals = features.rail || features.sea_lines ? new Map((await db.select({ id: citiesTable.id, lat: citiesTable.lat, lon: citiesTable.lon }).from(citiesTable).where(inArray(citiesTable.id, terminalIds))).map((t) => [t.id, t])) : new Map();
   const ship = features.ship_calls ? await activeShipCall(db) : null;
   const works = features.road_works ? await activeRoadWorks(db, now) : [];
   const vip = isVip(user.vipUntil, now);
@@ -72,19 +74,19 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const membership = await membershipOf(db, user.id);
   const memberOfCompanyId = membership?.company.id ?? null;
   const project = memberOfCompanyId && features.projects ? await activeProject(db, memberOfCompanyId) : null;
-  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }))]);
+  const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe }))]);
   // "Drive in convoy" from the map: only the loads on that lane (from its origin city, all of them).
   const laneMatch = features.convoy ? /^(\d+)-(\d+)$/.exec(params.lane ?? '') : null;
   const lane = laneMatch ? { from: Number(laneMatch[1]), to: Number(laneMatch[2]) } : null;
-  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }) : [];
+  const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe }) : [];
   // "Return load" after a delivery: the loads from where the truck now stands, that truck first.
   const fromCity = features.backhaul && /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
   const backTruck = fromCity ? fleet.vehicles.find((v) => v.id === params.truck && !v.delivery) ?? fleet.vehicles.find((v) => !v.delivery && v.cityId === fromCity) ?? null : null;
-  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id }) : [];
+  const backLoads = fromCity ? await openContracts(db, { originCityId: fromCity, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe }) : [];
   // A load opened by a link (the plot's material loads, Discord): its origin's loads too, so it is on the board even far from the trucks.
   const focusId = /^[0-9a-f-]{36}$/.test(params.load ?? '') && ![...general, ...locals.flat()].some((c) => c.id === params.load) ? params.load! : null;
   const [focusRow] = focusId ? await db.select({ originCityId: contractsTable.originCityId }).from(contractsTable).where(eq(contractsTable.id, focusId)) : [];
-  const focusLoads = focusRow ? (await openContracts(db, { originCityId: focusRow.originCityId, limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id })).filter((c) => c.id === focusId) : [];
+  const focusLoads = focusRow ? (await openContracts(db, { originCityId: focusRow.originCityId, limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe })).filter((c) => c.id === focusId) : [];
   const seen = new Set<string>();
   const contracts = [...focusLoads, ...laneLoads, ...backLoads, ...locals.flat(), ...general].filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 
@@ -133,6 +135,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       goods: c.goods,
       cargoType: c.cargoType as CargoType,
       cargoLabel: cargo.label,
+      needs: { bodies: cargo.bodies.map((b) => BODY_LABELS[b] ?? b), level: Math.max(c.minLevel, cargo.minLevel) },
       tons: c.weightTons,
       origin: { id: c.origin.id, name: c.origin.nameBg, country: c.origin.countryCode },
       destination: { id: c.destination.id, name: c.destination.nameBg, country: c.destination.countryCode },
@@ -155,6 +158,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       hiredBy: hiredBy.get(c.id) ?? null,
       project: project && project.cargoType === c.cargoType && project.destCityId === c.destCityId ? project.title : null,
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
+      specialization: features.specializations && specializationCovers(membership?.company.specialization, c.cargoType),
+      transEurope: features.trans_europe && c.transEurope,
+      lez: features.low_emission_zones ? [c.originCityId, c.destCityId].map((id) => LOW_EMISSION_ZONES[id]).filter((x): x is string => !!x) : [],
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,
       weather: (() => {
         const w = routeCondition(c.route.countries, now, real);
@@ -177,8 +183,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       })(),
       ferry: sea ? { note: crossingNote(sea, c.route.profile.endsWith(':r')), ticketCents: sea.ticketCents } : null,
       port: c.port ? (c.portCallId && ship?.id === c.portCallId ? `КОРАБ ${ship.ship}` : 'ОТ ПРИСТАНИЩЕТО') : null,
-      rail: features.rail && !c.urgent && !c.stops?.length && !sea
-        ? railOptions(c.origin, c.destination, terminals).slice(0, 2).map((o) => ({ id: `${o.line.id}:${o.reversed ? 'r' : 'f'}`, note: crossingNote(o.line, o.reversed), ticketCents: o.line.ticketCents, km: o.line.km }))
+      rail: (features.rail || features.sea_lines) && !c.urgent && !c.stops?.length && !sea
+        ? railOptions(c.origin, c.destination, terminals, c.distanceKm, features.sea_lines).filter((o) => o.line.kind === 'ferry' || features.rail).slice(0, 2).map((o) => ({ id: `${o.line.id}:${o.reversed ? 'r' : 'f'}`, note: crossingNote(o.line, o.reversed), ticketCents: o.line.ticketCents, km: o.line.km, kind: o.line.kind, hours: o.line.hours }))
         : [],
       shared: !!c.sharedLoadId,
       // A member may share a big ordinary load with the company (members take parts of it).

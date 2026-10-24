@@ -1,3 +1,5 @@
+import { featureLive } from '@/lib/game/features';
+import { LEGEND, legendTier } from '@/lib/game/heritage';
 import { and, desc, eq, gte, isNull, lte } from 'drizzle-orm';
 import { ImageResponse } from 'next/og';
 import { Children, Fragment, isValidElement, type ReactElement, type ReactNode } from 'react';
@@ -348,7 +350,7 @@ export async function truckCardImage(db: Database, vehicleId: string) {
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `linear-gradient(180deg, #1b2a40 0%, ${BG} 70%)`, padding: 40, fontFamily: 'Onest', color: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Brand />
-          <span style={{ fontSize: 24, color: MIST }}>{`${Math.round(v.odometerKm).toLocaleString('bg-BG')} км`}</span>
+          <span style={{ fontSize: 24, color: legendTier(v.odometerKm) ? '#f6c343' : MIST }}>{`${legendTier(v.odometerKm) && featureLive('legendary_trucks', new Date()) ? `🏆 ${LEGEND[legendTier(v.odometerKm) - 1]!.title} · ` : ''}${Math.round(v.odometerKm).toLocaleString('bg-BG')} км`}</span>
         </div>
         <div style={{ display: 'flex', flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>{svg}</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>

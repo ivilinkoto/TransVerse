@@ -8,8 +8,9 @@ import { REPORT_REASONS, type ReportReason } from '@/lib/game/moderation';
 export interface ReportTarget {
   targetUserId: string;
   username: string;
-  kind: 'player' | 'channel' | 'company' | 'dm';
+  kind: 'player' | 'channel' | 'company' | 'dm' | 'recruitment';
   messageId?: number;
+  postId?: string;
   snippet?: string | null;
 }
 
@@ -43,7 +44,7 @@ export function ReportHost() {
     setState('busy');
     setError(null);
     try {
-      await api('/api/game/action', { type: 'report', report: { targetUserId: target.targetUserId, kind: target.kind, messageId: target.messageId, reason, details: details || undefined } });
+      await api('/api/game/action', { type: 'report', report: { targetUserId: target.targetUserId, kind: target.kind, messageId: target.messageId, postId: target.postId, reason, details: details || undefined } });
       setState('done');
     } catch (e) {
       setError((e as Error).message);

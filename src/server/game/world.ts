@@ -1,3 +1,4 @@
+import { playableCountries } from '@/lib/geo/scope';
 import { and, eq, gt, lte, sql } from 'drizzle-orm';
 import type { Database } from '@/server/db/client';
 import { countries, jobState, marketEvents, rateLimits, sessions } from '@/server/db/schema';
@@ -7,9 +8,11 @@ import { settleClientContracts } from './clients';
 import { driverMoods } from './moods';
 import { ensureRally, settleRallies } from './rally';
 import { settleWeeklyChallenge } from './challenges';
+import { settleCountryKings } from './kings';
 import { runCup } from './tournament';
 import { ensurePlateAuction, settlePlateAuctions } from './plates';
 import { endTrailerHires } from './trailer-hire';
+import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
 import { settleDivisions } from './competition';
@@ -18,6 +21,7 @@ import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent } from './halloween';
 import { ensureChristmasEvent } from './christmas';
 import { ensureMartaEvent } from './marta';
+import { ensureEasterEvent } from './easter';
 import { collectOverdueFines } from './fines';
 import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
@@ -93,7 +97,6 @@ const EVENT_TEMPLATES = [
   { title: 'Задръстени пристанища', description: 'Пристанищата наваксват — контейнерните превози са по-скъпи.', cargoType: 'container', multiplier: 1.3 },
   { title: 'Отоплителен сезон', description: 'Търсенето на горива расте.', cargoType: 'liquid', multiplier: 1.25 },
 ] as const;
-const EVENT_COUNTRIES = ['BG', 'RO', 'GR', 'TR', 'RS', 'MK', 'HU', 'AT', 'DE'];
 
 async function lastRun(db: Database, key: string): Promise<number> {
   const [row] = await db.select().from(jobState).where(eq(jobState.key, key));
@@ -156,7 +159,7 @@ export async function spawnMarketEvent(db: Database, now: Date) {
   const active = await db.select({ id: marketEvents.id }).from(marketEvents).where(and(lte(marketEvents.startsAt, now), gt(marketEvents.endsAt, now)));
   if (active.length >= 3) return;
   const t = pick(EVENT_TEMPLATES);
-  const country = pick(EVENT_COUNTRIES);
+  const country = pick(playableCountries(featureLive('europe', now)));
   const [c] = await db.select({ nameBg: countries.nameBg }).from(countries).where(eq(countries.code, country));
   await db.insert(marketEvents).values({
     title: `${t.title}: ${c?.nameBg ?? country}`,
@@ -197,6 +200,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     if (featureLive('event_autostart', now)) await every(db, 'event-start', 60_000, now, () => announceStartedEvents(db, now));
     await every(db, 'halloween-event', 10 * 60_000, now, () => ensureHalloweenEvent(db, now));
     await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));
+    if (featureLive('easter', now)) await every(db, 'easter-event', 10 * 60_000, now, () => ensureEasterEvent(db, now));
     if (featureLive('marta', now)) await every(db, 'marta-event', 10 * 60_000, now, () => ensureMartaEvent(db, now));
     await every(db, 'mentorships', 10 * 60_000, now, () => expireMentorships(db, now));
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
@@ -253,6 +257,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.6: the challenge of the week pays its top three.
     await every(db, 'weekly-challenge', 30 * 60_000, now, () => settleWeeklyChallenge(db, now));
+    // v1.7: last month's king of every country.
+    if (featureLive('country_kings', now)) await every(db, 'country-kings', 60 * 60_000, now, () => settleCountryKings(db, now));
     if (featureLive('spring_cup', now)) await every(db, 'spring-cup', 30 * 60_000, now, () => runCup(db, now));
     // v1.6: the weekly rare plate auction and trailer hires that ended.
     if (featureLive('plate_auction', now)) await every(db, 'plate-auction', 15 * 60_000, now, async () => {
@@ -260,6 +266,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await ensurePlateAuction(db, now);
     });
     await every(db, 'trailer-hires', 10 * 60_000, now, () => endTrailerHires(db, now));
+    // v1.7: a few trans-European loads on the board.
+    if (featureLive('trans_europe', now)) await every(db, 'trans-europe', 60 * 60_000, now, () => ensureTransEuropeLoads(db, now, provider));
     if (featureLive('urgent_raise', now)) await every(db, 'urgent-raise', 5 * 60_000, now, () => raiseUrgentPrices(db, now));
     // v1.5: the alliance warehouse returns unsold goods; company birthdays.
     await every(db, 'alliance-market', 10 * 60_000, now, () => expireAllianceListings(db, now));

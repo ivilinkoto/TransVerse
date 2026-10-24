@@ -1,4 +1,7 @@
-import { and, between, gte, sql } from 'drizzle-orm';
+import { and, between, gte, inArray, sql } from 'drizzle-orm';
+import { featureLive } from '@/lib/game/features';
+import { playableCountries } from '@/lib/geo/scope';
+import { isStaff } from '@/server/auth/roles';
 import { z } from 'zod';
 import { getDb } from '@/server/db/client';
 import { cities, cityMarkets, contracts } from '@/server/db/schema';
@@ -12,7 +15,9 @@ const Query = z.object({
 /** Population threshold by zoom keeps the payload small: never the whole world at once. */
 const minPopulation = (zoom: number) => (zoom < 4.5 ? 700_000 : zoom < 5.5 ? 200_000 : zoom < 6.5 ? 60_000 : 15_000);
 
-export const GET = handler({ schema: Query, perMinute: 240 }, async ({ input }) => {
+export const GET = handler({ schema: Query, perMinute: 240 }, async ({ input, user }) => {
+  // "Цяла Европа" (v1.7): the new countries show on the map from the release (the staff see them earlier).
+  const countries = playableCountries(featureLive('europe', new Date(), isStaff(user.role)));
   const [minLon, minLat, maxLon, maxLat] = input.bbox.split(',').map(Number) as [number, number, number, number];
   const db = getDb();
   const rows = await db
@@ -27,7 +32,7 @@ export const GET = handler({ schema: Query, perMinute: 240 }, async ({ input }) 
       open: sql<number>`(select count(*) from ${contracts} c where c.origin_city_id = "cities"."id" and c.status = 'open' and c.tender_id is null and c.expires_at > now())::int`,
     })
     .from(cities)
-    .where(and(between(cities.lat, minLat, maxLat), between(cities.lon, minLon, maxLon), gte(cities.population, minPopulation(input.zoom))))
+    .where(and(between(cities.lat, minLat, maxLat), between(cities.lon, minLon, maxLon), gte(cities.population, minPopulation(input.zoom)), inArray(cities.countryCode, [...countries])))
     .orderBy(sql`${cities.population} desc`)
     .limit(600);
   return {

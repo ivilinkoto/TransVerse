@@ -26,7 +26,7 @@ function useRun() {
 const Err = ({ error }: { error: string | null }) => (error ? <p role="alert" className="text-sm text-loss">{error}</p> : null);
 
 /** A bid on the rare plate of the week (v1.6). */
-export function PlateBidForm({ minBid, balance }: { minBid: number; balance: number }) {
+export function PlateBidForm({ minBid, balance, weekKey }: { minBid: number; balance: number; weekKey: string }) {
   const [coins, setCoins] = useState(minBid);
   const { error, busy, run } = useRun();
   return (
@@ -34,7 +34,7 @@ export function PlateBidForm({ minBid, balance }: { minBid: number; balance: num
       <div className="flex flex-wrap items-center gap-2">
         <input type="number" className="input w-32" min={minBid} value={coins} onChange={(e) => setCoins(Number(e.target.value) || minBid)} />
         <span className="text-sm text-mist-400">TC (поне {minBid}; имаш {balance})</span>
-        <button type="button" className="btn-primary" disabled={busy || coins < minBid || coins > balance} onClick={() => run({ type: 'bidPlate', coins })}>Наддай</button>
+        <button type="button" className="btn-primary" disabled={busy || coins < minBid || coins > balance} onClick={() => run({ type: 'bidPlate', coins, weekKey })}>Наддай</button>
       </div>
       <Err error={error} />
     </div>

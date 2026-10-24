@@ -78,7 +78,7 @@ export const LICENCES: Record<LicenceId, LicenceDefinition> = {
 };
 
 /** Countries in the game that are outside the EU (crossing into them needs customs clearance). */
-export const NON_EU = new Set(['TR', 'RS', 'MK']);
+export const NON_EU = new Set(['TR', 'RS', 'MK', 'CH', 'BA', 'ME', 'AL', 'XK']);
 
 const CARGO_LICENCE: Partial<Record<CargoType, LicenceId>> = { refrigerated: 'reefer', liquid: 'adr', special: 'oversize' };
 

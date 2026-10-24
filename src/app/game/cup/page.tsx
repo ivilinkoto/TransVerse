@@ -4,6 +4,7 @@ import { Badge, Card, Empty, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { dateTime, int } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
+import { isStaff } from '@/server/auth/roles';
 import { cupView } from '@/server/game/tournament';
 
 export const metadata = { title: 'Пролетна купа' };
@@ -21,7 +22,8 @@ export default async function CupPage() {
         subtitle="Елиминации за до 16 шофьори: всяка седмица един кръг, продължава този с повече километри с товар навреме."
         help={`Записване до ${dateTime(cup.rounds[0]!.from)} (ниво ${cup.minLevel}+, първите ${cup.size}). Поставянето е по ниво. При равенство продължава по-високо поставеният. Награди: шампион ${cup.prizes.champion} TC и значка, финалист ${cup.prizes.finalist} TC, полуфиналисти по ${cup.prizes.semifinal} TC. Игрови данни.`}
       />
-      {!started && (
+      {cup.cancelled && <Card><p className="text-sm text-mist-300">Купата се отменя — записаха се твърде малко шофьори. Следващата купа идва със следващо обновление.</p></Card>}
+      {!started && !cup.cancelled && (
         <Card title={`Записани: ${cup.entries.length} / ${cup.size}`}>
           {cup.signupOpen && !cup.joined && cup.entries.length < cup.size && (
             <div className="mb-3"><ActionButton action={{ type: 'joinCup' }} className="btn-primary">Запиши ме</ActionButton></div>
@@ -29,6 +31,12 @@ export default async function CupPage() {
           {cup.joined && <p className="mb-3 text-sm text-profit">Записан си. Първият кръг започва на {dateTime(cup.rounds[0]!.from)}.</p>}
           {!cup.signupOpen && now < cup.rounds[0]!.from && <p className="mb-3 text-sm text-mist-400">Записването започва с обновлението.</p>}
           <div className="flex flex-wrap gap-2">{cup.entries.map((e) => <Badge key={e.userId} tone={e.userId === user.id ? 'cyan' : 'neutral'}>{e.username} · ниво {e.level}</Badge>)}</div>
+          {isStaff(user.role) && cup.entries.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2 border-t border-white/5 pt-3 text-xs">
+              <span className="text-mist-400">Екип:</span>
+              {cup.entries.map((e) => <ActionButton key={e.userId} endpoint="/api/admin/action" action={{ type: 'removeCupEntrant', userId: e.userId }} className="btn-ghost px-2 py-1 text-xs" confirm={`Да махнем ли ${e.username} от купата?`}>Махни {e.username}</ActionButton>)}
+            </div>
+          )}
         </Card>
       )}
       {started ? (

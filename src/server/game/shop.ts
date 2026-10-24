@@ -7,6 +7,7 @@ import { isVip, STANDARD_COLORS, VIP_COLORS } from '@/lib/game/vip';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { isSpring, SPRING } from '@/lib/game/spring';
+import { EASTER, isEaster } from '@/lib/game/easter';
 import { registerSchema } from '@/server/auth/accounts';
 import type { Database, Tx } from '@/server/db/client';
 import { cityMarkets, companyMembers, drivers, jobState, organizations, trailers, userBadges, users, vehicles } from '@/server/db/schema';
@@ -166,6 +167,14 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
           const [got] = await tx.insert(userBadges).values({ userId, badge: RETRO_BADGE }).onConflictDoNothing().returning();
           if (got) await notify(tx, userId, 'achievement', 'Значка: Ретро колекционер', 'Събра и трите ретро бои.', '/game/profile');
         }
+        break;
+      }
+      case 'paint_easter': {
+        if (!isEaster(now) || !(await featureFor(tx, userId, 'easter', now))) fail('not_in_season', 'Боята „Великден“ се продава само около Великден.');
+        const v = await ownVehicle(tx, account.id, input.vehicleId);
+        if (v.livery === 'easter') fail('already_painted', 'Камионът вече е с боя „Великден“.');
+        await tx.update(vehicles).set({ color: EASTER.paintColor, livery: 'easter' }).where(eq(vehicles.id, v.id));
+        summary = `Боя „Великден“ за ${v.plate}`;
         break;
       }
       case 'truck_part': {

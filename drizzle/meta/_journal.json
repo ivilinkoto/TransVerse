@@ -505,6 +505,34 @@
       "when": 1792786312494,
       "tag": "0071_lying_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1792790529433,
+      "tag": "0072_spicy_hairball",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792792298281,
+      "tag": "0073_solid_skaar",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1792793952900,
+      "tag": "0074_calm_ozymandias",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1792794352237,
+      "tag": "0075_wandering_quasar",
+      "breakpoints": true
     }
   ]
 }

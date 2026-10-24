@@ -1,3 +1,5 @@
+import { SCRAP } from '@/lib/game/heritage';
+import { sparePartsOf } from '@/server/game/heritage';
 import Link from 'next/link';
 import { Hint } from '@/components/game/Hint';
 import { maintenanceCostCents, maintenanceState } from '@/lib/game/maintenance';
@@ -31,7 +33,7 @@ export default async function GaragePage() {
   const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
   // The company's service and, in March, spring cleaning (Баба Марта) make repairs cheaper.
   const serviceDiscount = 1 - (1 - ((await bonusesForUser(db, user.id))?.bonuses.repairDiscount ?? 0)) * (1 - (features.marta ? springDiscount(now) : 0));
-  const [fleet, listings, myDepots] = await Promise.all([fleetView(db, company.id), myListings(db, company.id), db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id))]);
+  const [fleet, listings, myDepots, spareParts] = await Promise.all([fleetView(db, company.id), myListings(db, company.id), db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)), features.scrapyard ? sparePartsOf(db, user.id) : 0]);
   const insurance = new Map(fleet.vehicles.map((v) => [v.id, insurancePriceCents(v.model.priceCents + (v.trailer?.model.priceCents ?? 0))]));
   const listingOf = (id: string) => listings.find((l) => l.vehicleId === id || l.trailerId === id);
 
@@ -57,6 +59,12 @@ export default async function GaragePage() {
                     <span className="font-display text-lg font-bold">{v.model.name}</span>
                     <span className="font-mono text-xs text-mist-400">{v.plate}</span>
                     {features.garage_showcase && <Link href={`/game/garage/${v.id}`} className="text-xs text-cyan-glow hover:underline">Витрина →</Link>}
+                    {features.scrapyard && v.ownership === 'owned' && !v.delivery && v.status === 'idle' && (
+                      <>
+                        {spareParts > 0 && v.condition < 100 && <ActionButton action={{ type: 'repairWithPart', vehicleId: v.id }} className="btn-ghost px-2 py-1 text-xs">Ремонт с част (+{SCRAP.repairPerPart} %)</ActionButton>}
+                        <ActionButton action={{ type: 'scrapVehicle', vehicleId: v.id }} className="btn-ghost px-2 py-1 text-xs" confirm={`Камионът отива за скрап: ${money(Math.round(v.model.priceCents * SCRAP.share))} и ${SCRAP.parts[v.model.kind] ?? 1} резервни части. Не може да се върне.`}>За скрап</ActionButton>
+                      </>
+                    )}
                     {listing ? <Badge tone="gold">обявено · {money(listing.priceCents)}</Badge> : v.delivery ? <Badge tone="cyan">на курс</Badge> : v.movingUntil && v.movingUntil > now ? <Badge tone="orange">пътува до {v.city.nameBg} · до минута</Badge> : <Badge tone="green">в {v.city.nameBg}</Badge>}
                   </div>
                   <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} trailerCosmetics={v.trailer?.cosmetics} martenitsa={marta} className="my-3 h-24 w-full" />

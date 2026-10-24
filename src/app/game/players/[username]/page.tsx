@@ -1,12 +1,13 @@
-import { CheckCircle2, Clock, Flag, Globe2, Medal, Route, Sparkles, Trophy, Truck, Weight } from 'lucide-react';
+import { CheckCircle2, Clock, Crown, Flag, Globe2, Medal, Route, Sparkles, Trophy, Truck, Weight } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { PlayerCardLive } from '@/components/game/PlayerCardLive';
 import { Card, Empty, PageHeader } from '@/components/ui';
-import { date, int, km } from '@/lib/format';
+import { date, dec, int, km } from '@/lib/format';
 import { playerCareer } from '@/server/game/career';
 import { gameContext } from '@/server/game/context';
 import { ProfileShowcase } from '@/components/game/ProfileShowcase';
 import { laneRecordsView, showcaseOf } from '@/server/game/community';
+import { kingdomsOf } from '@/server/game/kings';
 import { playerCard } from '@/server/game/social';
 
 export const metadata = { title: 'Кариера на играч' };
@@ -30,7 +31,7 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
   const career = await playerCareer(db, card.id);
   if (!career) notFound();
   const showcase = features.profile_showcase ? await showcaseOf(db, card.id) : null;
-  const records = features.lane_records ? await laneRecordsView(db, now, 10, card.id) : [];
+  const [records, kingdoms] = await Promise.all([features.lane_records ? laneRecordsView(db, now, 10, card.id) : [], features.country_kings ? kingdomsOf(db, card.id) : []]);
   return (
     <div className="space-y-6">
       <PageHeader title={`Кариера · ${card.username}`} subtitle="Курсове, рекорди и любими линии. Игрови данни, без пари." />
@@ -39,6 +40,12 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
           <Card><PlayerCardLive card={card} /></Card>
           {showcase && (showcase.trucks.length > 0 || showcase.badges.length > 0) && (
             <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" />Витрина</span>}><ProfileShowcase showcase={showcase} /></Card>
+          )}
+          {kingdoms.length > 0 && (
+            <Card title={<span className="inline-flex items-center gap-2"><Crown className="h-4 w-4 text-gold-400" />Крал на държавата</span>}>
+              <p className="text-sm text-mist-300">Най-много тонове до {kingdoms.length === 1 ? 'тази държава' : 'тези държави'} миналия месец:</p>
+              <div className="mt-2 flex flex-wrap gap-2">{kingdoms.map((k) => <span key={k.countryCode} className="rounded-full bg-gold-400/10 px-2.5 py-1 text-xs text-gold-400">👑 {k.country} · <span className="num">{dec(k.tons)}</span> т</span>)}</div>
+            </Card>
           )}
           <Card title={<span className="inline-flex items-center gap-2"><Trophy className="h-4 w-4 text-gold-400" />В числа</span>}>
             <div className="grid grid-cols-2 gap-2">

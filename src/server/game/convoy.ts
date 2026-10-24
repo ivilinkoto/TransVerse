@@ -147,7 +147,7 @@ async function joinBigConvoy(tx: Tx, delivery: { id: string; companyId: string }
     const extra = bigConvoyShare(size) ? ` и още +${Math.round(bigConvoyShare(size) * 100)} % за голям конвой` : '';
     const text = `${route}: ${size} камиона заедно — +${Math.round(CONVOY_RULES.bonusShare * 100)} %${extra} за всеки, който пристигне навреме.`;
     await notify(tx, userId, 'success', `Голям конвой (${size} камиона)`, text, '/game/map');
-    for (const o of others.filter((o) => o.userId !== userId)) await notify(tx, o.userId, 'success', `${me!.username} се включи в конвоя`, text, '/game/map');
+    for (const o of others.filter((o) => o.userId !== userId)) await notify(tx, o.userId, 'success', size >= BIG_CONVOY.maxTrucks ? `Конвоят е пълен (${size} камиона)` : `${me!.username} се включи в конвоя`, text, '/game/map');
     return g;
   }
   return null;

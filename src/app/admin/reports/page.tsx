@@ -8,7 +8,7 @@ import { reportList } from '@/server/game/moderation';
 
 export const metadata = { title: 'Доклади' };
 
-const KIND = { player: 'Профил', channel: 'Общ чат', company: 'Чат на компания', dm: 'Лично съобщение' } as const;
+const KIND = { player: 'Профил', channel: 'Общ чат', company: 'Чат на компания', dm: 'Лично съобщение', recruitment: 'Обява за набиране' } as const;
 const RESOLUTION = { dismiss: 'отхвърлен', warn: 'предупреждение', delete_message: 'съобщението е изтрито', mute_h24: 'без чат 24 ч', mute_d7: 'без чат 7 дни' } as const;
 
 export default async function AdminReports({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -46,6 +46,7 @@ export default async function AdminReports({ searchParams }: { searchParams: Pro
             {r.status === 'open' && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {r.messageId && <ActionButton endpoint="/api/admin/action" action={act(r.id, 'delete_message')} className="btn-ghost px-3 py-1.5 text-xs">Изтрий съобщението</ActionButton>}
+                {r.postId && <ActionButton endpoint="/api/admin/action" action={act(r.id, 'delete_message')} className="btn-ghost px-3 py-1.5 text-xs">Изтрий обявата</ActionButton>}
                 <ActionButton endpoint="/api/admin/action" action={act(r.id, 'warn')} className="btn-ghost px-3 py-1.5 text-xs">Предупреди</ActionButton>
                 <ActionButton endpoint="/api/admin/action" action={act(r.id, 'mute_h24')} className="btn-ghost px-3 py-1.5 text-xs">Без чат 24 ч</ActionButton>
                 <ActionButton endpoint="/api/admin/action" action={act(r.id, 'mute_d7')} className="btn-danger px-3 py-1.5 text-xs" confirm="Без чат и лични съобщения за 7 дни?">Без чат 7 дни</ActionButton>

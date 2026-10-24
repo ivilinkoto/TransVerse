@@ -7,7 +7,9 @@ import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multistop';
 import { formConvoy } from './convoy';
-import { bigConvoyBonus, checkEurotour } from './challenges';
+import { isEuropeCountry } from '@/lib/geo/scope';
+import { bigConvoyBonus, checkEurotour, checkGrandEurotour } from './challenges';
+import { checkCabotage, requireTeam, transEuropeDone } from './europe';
 import { specializationBonus } from './specialization';
 import { checkLegend } from './heritage';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
@@ -56,6 +58,8 @@ import { recordChristmasDelivery } from './christmas';
 import { isChristmas } from '@/lib/game/christmas';
 import { isMarta } from '@/lib/game/marta';
 import { recordMartaDelivery } from './marta';
+import { isEaster } from '@/lib/game/easter';
+import { recordEasterDelivery } from './easter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
 import { BOARDING_GAME_MIN, CROSSING_LINES, crossingLine as crossingLine_, crossingNote, DEPARTURE_EVERY_MIN, onBoardGameMinutes, railOptions } from '@/lib/game/crossings';
@@ -70,6 +74,7 @@ import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, road
 import { companyTrailerBonus } from './company-trailers';
 import { COMPANY_TRAILERS } from '@/lib/game/company-fleet';
 import { applyBorderQueues, REFUEL, refuelPriceCents, SECURE_PARKING, trafficFactor } from '@/lib/game/traffic';
+import { applyDrivingBans, countryTollCents, lezFeeCents } from '@/lib/game/europe-roads';
 import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
@@ -160,12 +165,14 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   let loadedRoute = await db.query.routes.findFirst({ where: (r, { eq: e }) => e(r.id, contract!.routeId) });
   // v1.4: the truck may ride a train for the long part ("С влак"); islands are reached by ferry.
   if (risks.rail) {
-    if (!(await featureFor(db, userId, 'rail', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
     const [lineId = '', dir] = risks.rail.split(':');
-    const ends = await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId, ...CROSSING_LINES.filter((l) => l.kind === 'rail').flatMap((l) => [l.a, l.b])]));
+    // v1.7: a sea line between two mainland ports is chosen the same way as a train.
+    const seaLine = !!crossingLine_(lineId)?.optional;
+    if (!(await featureFor(db, userId, seaLine ? 'sea_lines' : 'rail', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+    const ends = await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId, ...CROSSING_LINES.filter((l) => l.kind === 'rail' || l.optional).flatMap((l) => [l.a, l.b])]));
     const at = new Map(ends.map((c) => [c.id, c]));
-    const option = railOptions(at.get(contract!.originCityId)!, at.get(contract!.destCityId)!, at).find((o) => o.line.id === lineId && o.reversed === (dir === 'r'));
-    if (!option || contract!.stops?.length || contract!.urgent) fail('no_rail', 'Влакът не е подходящ за този товар.');
+    const option = railOptions(at.get(contract!.originCityId)!, at.get(contract!.destCityId)!, at, contract!.distanceKm, seaLine).find((o) => o.line.id === lineId && o.reversed === (dir === 'r'));
+    if (!option || contract!.stops?.length || contract!.urgent) fail('no_rail', seaLine ? 'Фериботът не е подходящ за този товар.' : 'Влакът не е подходящ за този товар.');
     loadedRoute = await getCrossingRoute(db, contract!.originCityId, contract!.destCityId, option!.line, option!.reversed, 'truck');
   }
   // v1.6: the cheap way — off the motorways, no tolls, slower (ordinary loads only).
@@ -175,6 +182,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   }
   const crossingLine = loadedRoute?.crossing ? crossingLine_(loadedRoute.crossing.lineId) : null;
   if (crossingLine?.kind === 'ferry' && !(await featureFor(db, userId, 'ferries', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  // "Цяла Европа" (v1.7): the new countries wait for the release (the staff test them earlier).
+  const ends17 = await db.select({ country: cities.countryCode }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId, ...(contract!.stops ?? []).map((st) => st.cityId)]));
+  if (ends17.some((c) => isEuropeCountry(c.country)) && !(await featureFor(db, userId, 'europe', now))) fail('not_released', 'Тези държави идват със следващото обновление.', 403);
   const emptyRoute = vehicle.cityId !== contract!.originCityId ? await getRoute(db, vehicle.cityId, contract!.originCityId, 'truck') : null;
 
   return db.transaction(async (tx) => {
@@ -206,6 +216,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const [to] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.destCityId));
     const missing = missingFor({ cargoType: contract!.cargoType, originCountry: from!.country, destCountry: to!.country, routeCountries: loadedRoute!.countries }, await heldLicences(tx, userId));
     if (missing.length) fail('licence_required', `Нужен е лиценз: ${licenceNames(missing)}. Купува се от раздел „Лицензи“.`);
+    // v1.7: trans-European loads need a two-driver crew; cabotage is limited in a foreign country.
+    if (contract!.transEurope && (await featureFor(tx, userId, 'trans_europe', now))) requireTeam(contract!, bundle.coDriver?.id);
+    await checkCabotage(tx, userId, bundle.vehicle.companyId, contract!, now);
     if (bundle.vehicle.cityId !== (emptyRoute ? emptyRoute.fromCityId : contract!.originCityId)) fail('vehicle_moved', 'Превозното средство смени местоположението си. Опитайте отново.', 409);
 
     // VIP early access to urgent shipments.
@@ -315,6 +328,11 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // Border queues by the day and the hour (v1.6).
     if (await featureFor(tx, userId, 'border_queues', now)) schedule = applyBorderQueues(schedule);
+    // Weekend driving bans for heavy trucks (v1.7): the truck waits at the border or the start.
+    if (unit.kind !== 'van' && (await featureFor(tx, userId, 'driving_bans', now))) {
+      schedule = applyDrivingBans(schedule, { empty: emptyRoute ? { start: parked!.country, borders: emptyRoute.borders } : null, loaded: { start: from!.country, borders: loadedRoute!.borders } }).segments;
+    }
+    const countryTolls = await featureFor(tx, userId, 'country_tolls', now);
     // The daily rests on the way (v1.6): a guarded car park for a fee, or a free lay-by with a small risk of fuel theft.
     const parkingLive = await featureFor(tx, userId, 'secure_parking', now);
     const rests = parkingLive ? schedule.filter((s) => s.kind === 'rest').length : 0;
@@ -338,6 +356,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       tons: load.weightTons,
       payloadTons: combinationCapability({ unit, trailer }).payloadTons,
       tolledRoute: { empty: !contract!.urgent && (emptyRoute?.hasToll ?? false), loaded: loadedRoute!.hasToll },
+      // v1.7: each country's own truck toll (per km, motorway or vignette).
+      tollByLeg: countryTolls ? { empty: countryTollCents(parked!.country, chargedEmptyKm, emptyRoute?.borders ?? [], ECONOMY.tollCentsPerKm), loaded: countryTollCents(from!.country, roadLoadedKm, loadedRoute!.borders, ECONOMY.tollCentsPerKm) } : undefined,
       // Diesel is bought along the way: each leg pays the prices of the countries it crosses.
       fuelPrice: {
         empty: legFuelPriceCents(parked!.country, chargedEmptyKm, emptyRoute?.borders ?? [], now),
@@ -363,8 +383,10 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const insured = !!risks.insure && (await featureFor(tx, userId, 'cargo_insurance', now));
     const cargoInsuranceCents = insured ? Math.round(load.rewardCents * CARGO_INSURANCE.premiumShare) : 0;
     const fuelStation = station && !station.member ? { orgId: station.orgId, cents: Math.round(running.fuelCents * FUEL_STATION.margin) } : null;
-    const extras = oversizeCents + cargoInsuranceCents + parkingCents;
-    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, cargoInsuranceCents, parkingCents, theftCents, totalCents: ticket + extras, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, cargoInsuranceCents, parkingCents, theftCents, fuelStation, totalCents: running.totalCents + ticket + extras };
+    // Low-emission zones (v1.7): a diesel truck pays to load or unload in them.
+    const lezCents = (await featureFor(tx, userId, 'low_emission_zones', now)) ? lezFeeCents([contract!.originCityId, contract!.destCityId, ...(contract!.stops ?? []).map((st) => st.cityId)], { electric: !!unit.electric, van: unit.kind === 'van' }) : 0;
+    const extras = oversizeCents + cargoInsuranceCents + parkingCents + lezCents;
+    const costs = rented ? { fuelCents: 0, tollCents: 0, maintenanceCents: 0, crossingCents: ticket, oversizeCents, cargoInsuranceCents, parkingCents, theftCents, lezCents, totalCents: ticket + extras, wear: 0 } : { ...running, crossingCents: ticket, oversizeCents, cargoInsuranceCents, parkingCents, theftCents, lezCents, fuelStation, totalCents: running.totalCents + ticket + extras };
     // Company members get a cheaper rental through the company's rental partner.
     const perks = rented ? await bonusesForUser(tx, userId) : null;
     // A test drive (v1.5) has no rental fee.
@@ -464,6 +486,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const station = (costs as { fuelStation?: { orgId: string; cents: number } | null }).fuelStation;
   const cargoInsuranceCents = (costs as { cargoInsuranceCents?: number }).cargoInsuranceCents ?? 0;
   if (cargoInsuranceCents) postings.push({ category: 'insurance', amountCents: -cargoInsuranceCents, description: 'Застраховка на товара', idempotencyKey: key('cargo-insurance'), refType: 'delivery', refId: d.id });
+  const lezCents = (costs as { lezCents?: number }).lezCents ?? 0;
+  if (lezCents) postings.push({ category: 'tolls', amountCents: -lezCents, description: 'Такса за нискоемисионна зона', idempotencyKey: key('lez'), refType: 'delivery', refId: d.id });
   const parkingCents = (costs as { parkingCents?: number }).parkingCents ?? 0;
   if (parkingCents) postings.push({ category: 'road_events', amountCents: -parkingCents, description: 'Охраняем паркинг за почивките', idempotencyKey: key('parking'), refType: 'delivery', refId: d.id });
   // A free lay-by (v1.6): fuel stolen during a rest is known only on arrival.
@@ -529,8 +553,12 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
   // The city album (v1.5): a card for the destination.
   await recordCityVisit(tx, company!.ownerId, contract.destCityId, completedAt);
+  // v1.7: the first trans-European load on time earns a badge.
+  await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
   await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
+  // Голям евротур (v1.7): every country of the game in one season.
+  await checkGrandEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
   // The company academy (v1.5): an on-time trip of a student is a course.
   await recordAcademyCourse(tx, company!.ownerId, { onTime, loadedKm: d.loadedKm }, completedAt);
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
@@ -666,6 +694,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // Christmas quests: Christmas loads, arrivals on Christmas Eve and Day.
   // Великден (v1.5).
+  if (isEaster(completedAt)) await recordEasterDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'easter', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // Баба Марта (v1.5): spring loads.
   if (isMarta(completedAt)) await recordMartaDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'marta', loadedKm: d.loadedKm });
   if (isChristmas(completedAt)) await recordChristmasDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'christmas', loadedKm: d.loadedKm, arrivedAt: completedAt });

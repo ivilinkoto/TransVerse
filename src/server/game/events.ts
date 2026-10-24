@@ -6,7 +6,7 @@ import {
   AUTO_EVENT_HOURS,
   DEFAULT_REWARDS,
   EVENT_METRIC_INFO,
-  EVENT_TEMPLATES,
+  ALL_EVENT_TEMPLATES,
   EVENT_METRICS,
   eventIncrement,
   goalText,
@@ -18,9 +18,10 @@ import {
   type EventMetric,
   type EventRewards,
 } from '@/lib/game/events';
+import { featureLive } from '@/lib/game/features';
 import { contractCountries } from '@/lib/game/licences';
 import type { DeliveryFacts } from '@/lib/game/missions';
-import { LAUNCH_COUNTRIES } from '@/lib/geo/scope';
+import { GAME_COUNTRIES } from '@/lib/geo/scope';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { adminAudit, contracts, countries, deliveries, globalEventContributions, globalEvents, notifications, organizations, routes, users } from '@/server/db/schema';
 import { requireAdminRole, type Staff } from '@/server/admin';
@@ -191,7 +192,7 @@ export async function ensureAutoEvent(db: Database, now = new Date()) {
   if (upcoming) return null;
   const [last] = await db.select({ endsAt: globalEvents.endsAt, template: globalEvents.template }).from(globalEvents).where(isNotNull(globalEvents.template)).orderBy(desc(globalEvents.endsAt)).limit(1);
   const window = nextAutoWindow(last?.endsAt ?? null, now);
-  const t = pickTemplate(window.startsAt, last?.template ?? null);
+  const t = pickTemplate(window.startsAt, last?.template ?? null, featureLive('regional_events', window.startsAt));
   const filter = { metric: t.metric, cargoType: t.cargoType ?? null, countryCode: t.countryCode ?? null };
   const target = autoTarget(t.metric, await recentAmount(db, filter, now), 7 * 24, AUTO_EVENT_HOURS);
   return db.transaction(async (tx) => {
@@ -226,7 +227,7 @@ export const eventSchema = z.object({
   description: z.string().trim().max(400, 'Най-много 400 символа.').default(''),
   metric: z.enum(EVENT_METRICS),
   cargoType: z.enum(CARGO_TYPES as unknown as [CargoType, ...CargoType[]]).nullable().default(null),
-  countryCode: z.enum(LAUNCH_COUNTRIES).nullable().default(null),
+  countryCode: z.enum(GAME_COUNTRIES).nullable().default(null),
   target: z.coerce.number().positive('Целта трябва да е положителна.').max(1e12),
   minContribution: z.coerce.number().min(0).max(1e9),
   /** ISO time; missing or in the past = starts now. */
@@ -282,7 +283,7 @@ export async function createEvent(db: Database, actor: Staff, raw: EventInput, n
  */
 export async function startTemplateEvent(db: Database, actor: Staff, templateId: string, hours: number, now = new Date()) {
   requireAdminRole(actor);
-  const t = EVENT_TEMPLATES.find((x) => x.id === templateId);
+  const t = ALL_EVENT_TEMPLATES.find((x) => x.id === templateId);
   if (!t) fail('no_template', 'Няма такъв ивент.');
   if (!(Number.isInteger(hours) && hours >= 1 && hours <= 14 * 24)) fail('bad_hours', 'Продължителността е от 1 час до 14 дни.');
   const filter = { metric: t!.metric, cargoType: t!.cargoType ?? null, countryCode: t!.countryCode ?? null };

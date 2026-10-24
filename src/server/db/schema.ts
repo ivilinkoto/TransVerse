@@ -447,6 +447,8 @@ export const contracts = pgTable(
     branchOrgId: uuid('branch_org_id'),
     /** What the buyer pays the company's treasury for a product load (v1.4). */
     factorySaleCents: money('factory_sale_cents'),
+    /** A trans-European load (v1.7): 2 500 km and more, for a two-driver crew. */
+    transEurope: boolean('trans_europe').notNull().default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -507,6 +509,8 @@ export const deliveries = pgTable(
     index('deliveries_due_idx').on(t.status, t.etaAt),
     index('deliveries_company_idx').on(t.companyId, t.status),
     index('deliveries_convoy_lead_idx').on(t.convoyLead),
+    // Weekly and monthly rankings read finished trips by arrival time (v1.7).
+    index('deliveries_completed_idx').on(t.completedAt).where(sql`status = 'completed'`),
   ],
 );
 
@@ -1222,9 +1226,11 @@ export const reports = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     reporterId: uuid('reporter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     targetUserId: uuid('target_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    /** player | channel | company | dm */
+    /** player | channel | company | dm | recruitment */
     kind: text('kind').notNull(),
     messageId: bigint('message_id', { mode: 'number' }),
+    /** A reported recruitment post (v1.7). */
+    postId: uuid('post_id'),
     /** The reported message as it was when reported. */
     snippet: text('snippet'),
     reason: text('reason').notNull(),
@@ -2355,6 +2361,20 @@ export const predictions = pgTable(
   (t) => [uniqueIndex('predictions_user_battle_idx').on(t.userId, t.battleId), index('predictions_user_week_idx').on(t.userId, t.weekKey)],
 );
 
+/** Egg fights between friends (v1.5, Великден): once per pair a year, no stake. */
+export const eggFights = pgTable(
+  'egg_fights',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userA: uuid('user_a').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userB: uuid('user_b').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    year: integer('year').notNull(),
+    winnerId: uuid('winner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('egg_fights_pair_idx').on(t.userA, t.userB, t.year), index('egg_fights_winner_idx').on(t.winnerId)],
+);
+
 /** Lane records (v1.5): the fastest loaded run on a lane in a month. */
 export const laneRecords = pgTable(
   'lane_records',
@@ -2516,4 +2536,17 @@ export const trailerHires = pgTable(
     createdAt: ts('created_at').notNull(),
   },
   (t) => [index('trailer_hires_open_idx').on(t.endedAt, t.until), uniqueIndex('trailer_hires_trailer_idx').on(t.trailerId).where(sql`ended_at is null`)],
+);
+
+/** v1.7 "Кралят на държавата": the player who brought the most tons into a country in a month (Sofia). */
+export const countryKings = pgTable(
+  'country_kings',
+  {
+    month: text('month').notNull(),
+    countryCode: text('country_code').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    tons: real('tons').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.month, t.countryCode] }), index('country_kings_user_idx').on(t.userId)],
 );

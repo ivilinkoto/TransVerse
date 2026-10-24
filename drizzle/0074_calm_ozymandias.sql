@@ -1,0 +1,1 @@
+ALTER TABLE "contracts" ADD COLUMN "trans_europe" boolean DEFAULT false NOT NULL;

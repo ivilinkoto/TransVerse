@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { MUTE_OPTIONS, REPORT_REASONS } from '@/lib/game/moderation';
 import { rateLimit } from '@/server/auth/rate-limit';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { adminAudit, chatMessages, companyMessages, directMessages, reports, userBlocks, users } from '@/server/db/schema';
+import { adminAudit, chatMessages, companyMessages, directMessages, reports, userBlocks, users, recruitmentPosts } from '@/server/db/schema';
 import { fail } from './errors';
 import { notify } from './notify';
 
@@ -52,8 +52,9 @@ export async function blockList(db: DbOrTx, userId: string) {
 
 export const reportSchema = z.object({
   targetUserId: z.string().uuid(),
-  kind: z.enum(['player', 'channel', 'company', 'dm']),
+  kind: z.enum(['player', 'channel', 'company', 'dm', 'recruitment']),
   messageId: z.coerce.number().int().positive().optional(),
+  postId: z.string().uuid().optional(),
   reason: z.enum(Object.keys(REPORT_REASONS) as [keyof typeof REPORT_REASONS, ...(keyof typeof REPORT_REASONS)[]]),
   details: z.string().trim().max(500).optional(),
 });
@@ -64,7 +65,12 @@ export async function reportPlayer(db: Database, reporterId: string, raw: z.inpu
   if (input.targetUserId === reporterId) fail('self', 'Не можеш да докладваш себе си.');
   await rateLimit(db, `report:${reporterId}`, 10, 3600);
   let snippet: string | null = null;
-  if (input.messageId && input.kind !== 'player') {
+  if (input.kind === 'recruitment') {
+    // A post on the recruitment board (v1.7): its text is kept for the moderators.
+    const [p] = input.postId ? await db.select({ text: recruitmentPosts.text, userId: recruitmentPosts.userId }).from(recruitmentPosts).where(eq(recruitmentPosts.id, input.postId)) : [];
+    if (!p || p.userId !== input.targetUserId) fail('message_not_found', 'Обявата не е намерена.', 404);
+    snippet = p!.text;
+  } else if (input.messageId && input.kind !== 'player') {
     const table = input.kind === 'channel' ? chatMessages : input.kind === 'company' ? companyMessages : null;
     if (table) {
       const [m] = await db.select({ body: table.body, userId: table.userId }).from(table).where(eq(table.id, input.messageId));
@@ -79,7 +85,7 @@ export async function reportPlayer(db: Database, reporterId: string, raw: z.inpu
   }
   const [row] = await db
     .insert(reports)
-    .values({ reporterId, targetUserId: input.targetUserId, kind: input.kind, messageId: input.messageId ?? null, snippet, reason: input.reason, details: input.details || null })
+    .values({ reporterId, targetUserId: input.targetUserId, kind: input.kind, messageId: input.messageId ?? null, postId: input.kind === 'recruitment' ? input.postId! : null, snippet, reason: input.reason, details: input.details || null })
     .returning({ id: reports.id });
   return row!.id;
 }
@@ -122,6 +128,7 @@ export async function resolveReport(db: Database, actor: { id: string }, reportI
       if (r!.kind === 'company') await tx.update(companyMessages).set({ deletedAt: now, deletedBy: actor.id }).where(eq(companyMessages.id, r!.messageId));
       if (r!.kind === 'dm') await tx.update(directMessages).set({ deletedAt: now }).where(eq(directMessages.id, r!.messageId));
     }
+    if (action === 'delete_message' && r!.kind === 'recruitment' && r!.postId) await tx.delete(recruitmentPosts).where(eq(recruitmentPosts.id, r!.postId));
     if (action === 'mute_h24' || action === 'mute_d7') {
       const until = new Date(now.getTime() + MUTE_OPTIONS[action === 'mute_h24' ? 'h24' : 'd7'].ms);
       await tx.update(users).set({ chatMutedUntil: until }).where(eq(users.id, r!.targetUserId));
@@ -129,7 +136,7 @@ export async function resolveReport(db: Database, actor: { id: string }, reportI
     }
     if (action === 'warn') await notify(tx, r!.targetUserId, 'warning', 'Предупреждение от модератор', 'Получихме сигнал за твое поведение в играта. Моля, спазвай правилата — при повторно нарушение следва ограничение.', '/game/support');
     // Every open report about the same message is closed together.
-    const same = r!.messageId ? and(eq(reports.kind, r!.kind), eq(reports.messageId, r!.messageId), eq(reports.status, 'open')) : eq(reports.id, r!.id);
+    const same = r!.postId ? and(eq(reports.postId, r!.postId), eq(reports.status, 'open')) : r!.messageId ? and(eq(reports.kind, r!.kind), eq(reports.messageId, r!.messageId), eq(reports.status, 'open')) : eq(reports.id, r!.id);
     await tx.update(reports).set({ status: action === 'dismiss' ? 'dismissed' : 'resolved', resolution: action, resolvedBy: actor.id, resolvedAt: now }).where(same);
     await tx.insert(adminAudit).values({ actorId: actor.id, action: `report_${action}`, targetUserId: r!.targetUserId, details: { reportId, kind: r!.kind, messageId: r!.messageId } });
   });

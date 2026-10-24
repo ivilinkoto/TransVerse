@@ -17,6 +17,7 @@ import { euro, paidProduct, PAID_PRODUCTS, PAYMENT_STATUS_LABELS } from '@/lib/g
 import { paymentConfig, userPayments } from '@/server/payments';
 import { trailerModel } from '@/lib/game/catalog';
 import { isSpring } from '@/lib/game/spring';
+import { isEaster } from '@/lib/game/easter';
 
 export const metadata = { title: 'Магазин' };
 
@@ -79,7 +80,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <section key={cat}>
           <h2 className="mb-3 font-display text-lg font-bold">{SHOP_CATEGORIES[cat]}</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {SHOP_ITEMS.filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics)).map((i) => (
+            {SHOP_ITEMS.filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics)).map((i) => (
               <Card key={i.id} className="flex flex-col">
                 {i.id === 'paint_christmas' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={CHRISTMAS.paintColor} livery="christmas" className="mb-3 h-16 w-full" />}
                 {i.id === 'trailer_part' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color="#111827" trailerCosmetics={{ paint: '#111827', stripe: 'gold', flaps: 'chrome', toplights: 'amber' }} className="mb-3 h-16 w-full" />}

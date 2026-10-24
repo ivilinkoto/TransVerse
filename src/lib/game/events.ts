@@ -163,6 +163,22 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   { id: 'harvest_convoy', name: 'Конвоят на реколтата', description: 'Зърното трябва да стигне до пристанищата и мелниците. Брои се всеки тон насипен товар.', metric: 'tons', cargoType: 'bulk' },
 ];
 
+/**
+ * Regional events of "Цяла Европа" (v1.7): one country each, in the rotation
+ * once the feature is live.
+ */
+export const REGIONAL_EVENT_TEMPLATES: EventTemplate[] = [
+  { id: 'alpine_run', name: 'Алпийски рейс', description: 'Проходите са отворени, а складовете в Швейцария чакат. Брои се всяка доставка по маршрут през Швейцария.', metric: 'deliveries', countryCode: 'CH' },
+  { id: 'italian_summer', name: 'Италианско лято', description: 'Пресни плодове и зеленчуци от Италия за цяла Европа. Брои се всеки тон по маршрути през Италия.', metric: 'tons', countryCode: 'IT' },
+  { id: 'iberian_road', name: 'Иберийски път', description: 'Дългият път до Испания и Португалия. Брои се всеки километър с товар по маршрути през Испания.', metric: 'km', countryCode: 'ES' },
+  { id: 'french_riviera', name: 'Френска ривиера', description: 'Пристанищата и хотелите по брега имат нужда от доставки. Брои се всяка доставка по маршрут през Франция.', metric: 'deliveries', countryCode: 'FR' },
+  { id: 'polish_corridor', name: 'Полски коридор', description: 'Пътят от Балтика до юга минава през Полша. Брои се всеки тон по маршрути през Полша.', metric: 'tons', countryCode: 'PL' },
+  { id: 'benelux_ports', name: 'Пристанищата на Бенелюкс', description: 'Ротердам и Антверпен не спят. Брои се всяка доставка по маршрут през Нидерландия.', metric: 'deliveries', countryCode: 'NL' },
+];
+
+/** Every template an administrator can start (automatic rotation picks from `rotation()`). */
+export const ALL_EVENT_TEMPLATES: EventTemplate[] = [...EVENT_TEMPLATES, ...REGIONAL_EVENT_TEMPLATES];
+
 export const AUTO_EVENT_HOURS = 72;
 /** Pause between automatic events (the next one is announced during it). */
 export const AUTO_EVENT_GAP_HOURS = 20;
@@ -185,10 +201,11 @@ export function nextAutoWindow(previousEnd: Date | null, now: Date): { startsAt:
 }
 
 /** Deterministic template for a start time, never the same as the previous one. */
-export function pickTemplate(startsAt: Date, previous: string | null): EventTemplate {
-  let i = hash(`event:${startsAt.toISOString()}`) % EVENT_TEMPLATES.length;
-  if (EVENT_TEMPLATES[i]!.id === previous) i = (i + 1) % EVENT_TEMPLATES.length;
-  return EVENT_TEMPLATES[i]!;
+export function pickTemplate(startsAt: Date, previous: string | null, regional = false): EventTemplate {
+  const list = regional ? ALL_EVENT_TEMPLATES : EVENT_TEMPLATES;
+  let i = hash(`event:${startsAt.toISOString()}`) % list.length;
+  if (list[i]!.id === previous) i = (i + 1) % list.length;
+  return list[i]!;
 }
 
 /** Rounds a target to two significant digits (12 345 → 12 000). */
