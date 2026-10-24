@@ -25,6 +25,7 @@ import { haggle } from '@/server/game/deals';
 import { buyShares, listCompany, sellShares } from '@/server/game/shares';
 import { enterTruck, voteTruck } from '@/server/game/truck-contest';
 import { setUiPrefs } from '@/server/game/ui-prefs';
+import { acceptMerger, createDepartment, decideInternship, declineMerger, deleteDepartment, joinDepartment, openAssembly, proposeMerger, requestInternship, setDepartmentHead, setLogoDesign, setTradition, voteAssembly } from '@/server/game/company-life';
 import { REPORT_KIND_IDS, type ReportKind } from '@/lib/game/live-road';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
 import { predictBattle } from '@/server/game/predictions';
@@ -218,6 +219,18 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cbSend'), body: z.string().max(400), vehicleId: id.optional() }),
   z.object({ type: z.literal('roadReport'), kind: z.enum(REPORT_KIND_IDS as [ReportKind, ...ReportKind[]]), vehicleId: id.optional() }),
   z.object({ type: z.literal('listCompany') }),
+  z.object({ type: z.literal('createDepartment'), name: z.string().max(60), goalTons: z.coerce.number().int().optional() }),
+  z.object({ type: z.literal('deleteDepartment'), id: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('joinDepartment'), id: z.coerce.number().int().positive().nullable() }),
+  z.object({ type: z.literal('departmentHead'), id: z.coerce.number().int().positive(), userId: id.nullable() }),
+  z.object({ type: z.literal('openAssembly'), question: z.string().max(200), kind: z.enum(['text', 'rate']).default('text'), options: z.array(z.string().max(80)).max(6).optional() }),
+  z.object({ type: z.literal('voteAssembly'), id: z.coerce.number().int().positive(), option: z.coerce.number().int().min(0).max(5) }),
+  z.object({ type: z.literal('logoDesign'), design: z.object({ shape: z.string().max(20), color: z.string().max(7), accent: z.string().max(7), initials: z.string().max(5), stripe: z.boolean().default(false) }).nullable() }),
+  z.object({ type: z.literal('tradition'), day: z.string().max(5).nullable(), name: z.string().max(60).optional() }),
+  z.object({ type: z.literal('requestInternship'), organizationId: id }),
+  z.object({ type: z.literal('decideInternship'), id: z.coerce.number().int().positive(), accept: z.boolean() }),
+  z.object({ type: z.literal('proposeMerger'), organizationId: id }),
+  z.object({ type: z.literal('decideMerger'), id: z.coerce.number().int().positive(), accept: z.boolean() }),
   z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
@@ -362,6 +375,18 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   pickHitchhiker: 'hitchhikers',
   haggle: 'haggling',
   listCompany: 'share_market',
+  createDepartment: 'departments',
+  deleteDepartment: 'departments',
+  joinDepartment: 'departments',
+  departmentHead: 'departments',
+  openAssembly: 'general_assembly',
+  voteAssembly: 'general_assembly',
+  logoDesign: 'company_logo',
+  tradition: 'company_traditions',
+  requestInternship: 'interns',
+  decideInternship: 'interns',
+  proposeMerger: 'mergers',
+  decideMerger: 'mergers',
   enterTruck: 'truck_contest',
   voteTruck: 'truck_contest',
   buyShares: 'share_market',
@@ -888,6 +913,30 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await voteTruck(db, user.id, input.entryId)) };
     case 'uiPrefs':
       return { ok: true, ...(await setUiPrefs(db, user.id, input)) };
+    case 'createDepartment':
+      return { ok: true, ...(await createDepartment(db, user.id, { name: input.name, goalTons: input.goalTons })) };
+    case 'deleteDepartment':
+      return { ok: true, ...(await deleteDepartment(db, user.id, input.id)) };
+    case 'joinDepartment':
+      return { ok: true, ...(await joinDepartment(db, user.id, input.id)) };
+    case 'departmentHead':
+      return { ok: true, ...(await setDepartmentHead(db, user.id, input.id, input.userId)) };
+    case 'openAssembly':
+      return { ok: true, ...(await openAssembly(db, user.id, { question: input.question, kind: input.kind, options: input.options })) };
+    case 'voteAssembly':
+      return { ok: true, ...(await voteAssembly(db, user.id, input.id, input.option)) };
+    case 'logoDesign':
+      return { ok: true, ...(await setLogoDesign(db, user.id, input.design as Parameters<typeof setLogoDesign>[2])) };
+    case 'tradition':
+      return { ok: true, ...(await setTradition(db, user.id, input.day ? { day: input.day, name: input.name ?? '' } : null)) };
+    case 'requestInternship':
+      return { ok: true, ...(await requestInternship(db, user.id, input.organizationId)) };
+    case 'decideInternship':
+      return { ok: true, ...(await decideInternship(db, user.id, input.id, input.accept)) };
+    case 'proposeMerger':
+      return { ok: true, ...(await proposeMerger(db, user.id, input.organizationId)) };
+    case 'decideMerger':
+      return { ok: true, ...(input.accept ? await acceptMerger(db, user.id, input.id) : await declineMerger(db, user.id, input.id)) };
     case 'listCompany':
       return { ok: true, ...(await listCompany(db, user.id)) };
     case 'buyShares':

@@ -12,6 +12,7 @@ import { bigConvoyBonus, checkEurotour, checkGrandEurotour } from './challenges'
 import { collectPostcards, dropHitchhiker, maybeHitchhiker } from './road-life';
 import { agreedHaggle, settleDeals } from './deals';
 import { reliefDelivered } from './relief';
+import { internDelivery, traditionBonus } from './company-life';
 import { checkCabotage, requireTeam, transEuropeDone } from './europe';
 import { specializationBonus } from './specialization';
 import { checkLegend } from './heritage';
@@ -577,6 +578,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // The company academy (v1.5): an on-time trip of a student is a course.
   await recordAcademyCourse(tx, company!.ownerId, { onTime, loadedKm: d.loadedKm }, completedAt);
   const baseXp = deliveryXp(d.loadedKm, contract.weightTons, onTime, upgradeFactor(vehicle!.upgrades, 'xp'));
+  // v1.9: the company's own day, and an intern's stay at another company.
+  await traditionBonus(tx, company!.ownerId, d, result.rewardCents, completedAt);
+  await internDelivery(tx, company!.ownerId, baseXp, completedAt);
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
   const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;

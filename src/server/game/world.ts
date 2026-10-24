@@ -13,6 +13,7 @@ import { pruneLiveRoad } from './live-road';
 import { payDividends, updateSharePrices } from './shares';
 import { runRelief } from './relief';
 import { settleTruckContest } from './truck-contest';
+import { awardKeyClients, closeAssemblies, endInternships, ownerReports, topUpKeyClientLoads } from './company-life';
 import { runCup } from './tournament';
 import { ensurePlateAuction, settlePlateAuctions } from './plates';
 import { endTrailerHires } from './trailer-hire';
@@ -266,6 +267,14 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await every(db, 'share-prices', 24 * 3_600_000, now, () => updateSharePrices(db, now));
       if (new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'share-dividends', 6 * 3_600_000, now, () => payDividends(db, now));
     }
+    // v1.9: company life — assemblies, key clients, the owner's Monday report, interns.
+    await every(db, 'company-assemblies', 30 * 60_000, now, () => closeAssemblies(db, now));
+    if (featureLive('key_clients', now)) await every(db, 'key-clients', 60 * 60_000, now, async () => {
+      await awardKeyClients(db, now);
+      await topUpKeyClientLoads(db, now);
+    });
+    if (featureLive('owner_report', now) && new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'owner-reports', 7 * 24 * 3_600_000, now, () => ownerReports(db, now));
+    await every(db, 'interns', 60 * 60_000, now, () => endInternships(db, now));
     // v1.8: last month's "Камион на месеца".
     if (featureLive('truck_contest', now)) await every(db, 'truck-contest', 60 * 60_000, now, () => settleTruckContest(db, now));
     // v1.8: humanitarian convoys (every three weeks; loads while one runs).

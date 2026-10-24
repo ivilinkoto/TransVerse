@@ -20,6 +20,8 @@ import { JoinCompanyForm } from '@/components/company/forms';
 import { Badge, Card, Table } from '@/components/ui';
 import { date, int, money } from '@/lib/format';
 import { COMPANY_UPGRADES, memberBonuses, memberCapacity, RECRUITMENT, type UpgradeLevels } from '@/lib/game/company';
+import { companyHistory } from '@/server/game/company-life';
+import { INTERNS } from '@/lib/game/company-life';
 import { gameContext } from '@/server/game/context';
 import { CompanyLicences } from '@/components/company/CompanyLicences';
 import { CompanyHighlights } from '@/components/company/CompanyHighlights';
@@ -41,6 +43,8 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
   const [assets, members, mine, applications, licences, highlights] = await Promise.all([assetKinds(db, c.id), companyMembersView(db, c.id), membershipOf(db, user.id), myApplications(db, user.id), companyLicenceSet(db, c.id), companyHighlights(db, c.id, now)]);
   const [base, exhibits] = await Promise.all([features.plot_guests ? publicPlot(db, c.id, user.id) : null, features.museum ? museumOf(db, c.id) : []]);
   const showcase = base && features.company_trophies ? await companyShowcase(db, c.id) : null;
+  const history = features.company_history ? await companyHistory(db, c.id) : null;
+  const own = mine?.company.id === c.id;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   const bonuses = memberBonuses(c.upgrades as UpgradeLevels);
   const applied = applications.some((a) => a.application.companyId === c.id);
@@ -125,6 +129,32 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
             <p className="mb-4 text-sm text-mist-300">{RECRUITMENT[c.recruitment as keyof typeof RECRUITMENT] ?? c.recruitment}. Вноска към компанията: <span className="num font-semibold">{Math.round(c.contributionRate * 100)}%</span> от възнаграждението за курс.</p>
             <JoinCompanyForm companyId={c.id} mode={c.recruitment === 'open' ? 'open' : 'application'} disabled={blocker} />
           </Card>
+          {!own && (features.interns || (features.mergers && mine?.rank.isOwner)) && (
+            <Card title="Сътрудничество">
+              <div className="space-y-3 text-sm">
+                {features.interns && (
+                  <div>
+                    <p className="mb-2 text-mist-300">Стаж: {INTERNS.days} дни караш с +{Math.round(INTERNS.xpBonus * 100)} % опит, а компанията-домакин печели опит от курсовете ти. Оставаш в своята компания.</p>
+                    <ActionButton action={{ type: 'requestInternship', organizationId: c.id }} className="btn-ghost px-3 py-1.5 text-sm">🎓 Поискай стаж</ActionButton>
+                  </div>
+                )}
+                {features.mergers && mine?.rank.isOwner && (
+                  <div className="border-t border-asphalt-800 pt-3">
+                    <p className="mb-2 text-mist-300">Сливане: предлагаш „{c.name}“ да влезе в твоята компания като отдел. Решава собственикът ѝ.</p>
+                    <ActionButton action={{ type: 'proposeMerger', organizationId: c.id }} confirm={`Да предложим ли на „${c.name}“ да се слее с „${mine.company.name}“?`} className="btn-ghost px-3 py-1.5 text-sm">🤝 Предложи сливане</ActionButton>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+          {history && (
+            <Card title="Династия">
+              <ul className="space-y-1 text-sm">
+                {history.owners.map((o) => <li key={`${o.userId}-${o.fromAt.toISOString()}`} className="flex justify-between gap-2"><span className="font-medium">{o.username}</span><span className="text-xs text-mist-400">{date(o.fromAt)} – {o.toAt ? date(o.toAt) : 'днес'}</span></li>)}
+              </ul>
+              <p className="mt-2 text-xs text-mist-400">Основана {date(history.foundedAt)}.</p>
+            </Card>
+          )}
           <CompanySeason db={db} organizationId={c.id} />
           <CompanyLicences held={licences} />
           <Card title="Какво получават членовете">

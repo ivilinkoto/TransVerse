@@ -455,6 +455,8 @@ export const contracts = pgTable(
     sealed: boolean('sealed').notNull().default(false),
     /** v1.8: relief goods for a humanitarian convoy (a badge and ТрансКоин on time). */
     humanitarian: boolean('humanitarian').notNull().default(false),
+    /** v1.9: a load of the company's key client (members only through branch_org_id). */
+    keyClient: boolean('key_client').notNull().default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -780,6 +782,11 @@ export const organizations = pgTable(
     treasuryCents: money('treasury_cents').notNull().default(0),
     /** v1.8: the company's shares are on the exchange (players outside it may buy). */
     listedAt: ts('listed_at'),
+    /** v1.9: a logo drawn in the game (shape, colours, initials) when none is uploaded. */
+    logoDesign: jsonb('logo_design').$type<{ shape: string; color: string; accent: string; initials: string; stripe?: boolean } | null>(),
+    /** v1.9: the company's own day (MM-DD) and its name. */
+    traditionDay: text('tradition_day'),
+    traditionName: text('tradition_name'),
     sharePriceCents: money('share_price_cents').notNull().default(0),
     foundedAt: ts('founded_at').notNull().defaultNow(),
     createdAt: createdAt(),
@@ -852,6 +859,8 @@ export const companyMembers = pgTable(
     joinedAt: createdAt(),
     deliveries: integer('deliveries').notNull().default(0),
     contributedCents: money('contributed_cents').notNull().default(0),
+    /** v1.9: the member's department in the company. */
+    departmentId: integer('department_id'),
     xpContributed: integer('xp_contributed').notNull().default(0),
     /** The staff bus (v1.5): when the new member's truck rode to the base, and whether the first trip still pays a bonus. */
     busUsedAt: ts('bus_used_at'),
@@ -2709,4 +2718,106 @@ export const truckContestVotes = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.month, t.voterId, t.entryId] })],
+);
+
+// ── v1.9 "Светлини и сенки": companies ─────────────────────────────────────
+
+export const companyDepartments = pgTable(
+  'company_departments',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    headUserId: uuid('head_user_id').references(() => users.id, { onDelete: 'set null' }),
+    goalTons: integer('goal_tons').notNull().default(100),
+    createdAt: createdAt(),
+  },
+  (t) => [index('company_departments_org_idx').on(t.organizationId)],
+);
+
+/** A monthly company vote: a question with 2–4 answers (a contribution rate is applied on its own). */
+export const companyAssemblies = pgTable(
+  'company_assemblies',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    question: text('question').notNull(),
+    /** text | rate */
+    kind: text('kind').notNull(),
+    options: jsonb('options').$type<string[]>().notNull(),
+    closesAt: ts('closes_at').notNull(),
+    result: integer('result'),
+    closedAt: ts('closed_at'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('company_assemblies_org_idx').on(t.organizationId, t.closesAt)],
+);
+
+export const assemblyVotes = pgTable(
+  'assembly_votes',
+  {
+    assemblyId: integer('assembly_id').notNull().references(() => companyAssemblies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    option: integer('option').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.assemblyId, t.userId] })],
+);
+
+/** The key client of a big city for a month: the company that hauled the most there the month before. */
+export const keyClients = pgTable(
+  'key_clients',
+  {
+    month: text('month').notNull(),
+    cityId: integer('city_id').notNull().references(() => cities.id),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    client: text('client').notNull(),
+    tons: real('tons').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.month, t.cityId] }), index('key_clients_org_idx').on(t.organizationId)],
+);
+
+/** The company's owners through time (its dynasty). */
+export const companyOwners = pgTable(
+  'company_owners',
+  {
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    fromAt: ts('from_at').notNull(),
+    toAt: ts('to_at'),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.userId, t.fromAt] })],
+);
+
+/** A member's three-day stay at another company (both learn). */
+export const internStays = pgTable(
+  'intern_stays',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    homeOrgId: uuid('home_org_id').references(() => organizations.id, { onDelete: 'set null' }),
+    hostOrgId: uuid('host_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    /** requested | active | declined | done */
+    status: text('status').notNull().default('requested'),
+    startsAt: ts('starts_at'),
+    endsAt: ts('ends_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('intern_stays_user_idx').on(t.userId, t.status), index('intern_stays_host_idx').on(t.hostOrgId, t.status)],
+);
+
+/** One company proposes to take another in (its members become a department). */
+export const mergerOffers = pgTable(
+  'merger_offers',
+  {
+    id: serial('id').primaryKey(),
+    fromOrgId: uuid('from_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    toOrgId: uuid('to_org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    /** open | accepted | declined | cancelled */
+    status: text('status').notNull().default('open'),
+    createdAt: createdAt(),
+    decidedAt: ts('decided_at'),
+  },
+  (t) => [index('merger_offers_to_idx').on(t.toOrgId, t.status)],
 );

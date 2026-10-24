@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { recordOwnerChange } from './company-life';
 import { and, asc, desc, eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
@@ -558,6 +559,8 @@ export async function transferOwnership(db: Database, ownerId: string, targetUse
     if (leave) await tx.delete(companyMembers).where(eq(companyMembers.userId, ownerId));
     else await tx.update(companyMembers).set({ rankId: senior!.id }).where(eq(companyMembers.userId, ownerId));
     await tx.update(organizations).set({ ownerId: targetUserId }).where(eq(organizations.id, owner!.company.id));
+    // v1.9: the company's dynasty.
+    await recordOwnerChange(tx, owner!.company.id, ownerId, targetUserId, new Date(), owner!.company.createdAt);
 
     // Running a company comes with the operator licence.
     const account = await accountOf(tx, targetUserId);

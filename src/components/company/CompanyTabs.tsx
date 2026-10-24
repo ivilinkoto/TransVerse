@@ -20,6 +20,7 @@ const TABS: Tab[] = [
   { href: '/game/company/factory', label: 'Фабрика', feature: 'factories' },
   { href: '/game/company/branches', label: 'Филиали', feature: 'branches' },
   { href: '/game/company/alliance', label: 'Съюз', feature: 'alliances' },
+  { href: '/game/company/community', label: 'Общност', feature: 'departments' },
   { href: '/game/company/chat', label: 'Чат' },
   { href: '/game/company/missions', label: 'Мисии' },
   { href: '/game/company/tenders', label: 'Търгове' },
