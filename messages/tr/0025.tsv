@@ -1,0 +1,250 @@
+dae8685269	Put in the Live keys (Client ID and Secret from the Live section) or set PAYPAL_ENV=sandbox	Укажите Live-ключи (Client ID и Secret из раздела Live) или задайте PAYPAL_ENV=sandbox
+9e005ffbb6	Put it on your truck from the auction page.	Поставь его на свой грузовик на странице торгов.
+d6cf26e407	Fit the plate	Поставить номер
+69477fc543	Apply the plan's permissions to the existing channels too (read-only, team, stats). Without the tick the permissions are applied only to the new ones.	Применить права из плана и к существующим каналам (только чтение, команда, статистика). Без отметки права применяются только к новым.
+6114489ea1	Sunglasses without labels	Солнечные очки без этикеток
+5cda600759	Sunflower	Подсолнечник
+9b6e942198	Sunflower from the field	Подсолнечник с поля
+726813136b	Change · {0} TC	Сменить · {0} TC
+4021ddf313	Change · free (VIP)	Сменить · бесплатно (VIP)
+1ddf25c2bb	Changed the role of {0}: {1} → {2}	Сменил должность {0}: {1} → {2}
+10c6346675	Change the image	Сменить изображение
+a66405c4f8	Change the password	Сменить пароль
+aeb7a7f7a5	Changed the holiday theme: {0}	Сменил праздничную тему: {0}
+54afdc5d0b	Change the picture	Сменить фото
+2d4269681f	It changes only when the factory is empty (no raw materials, batch or products).	Меняется только когда фабрика пуста (без сырья, партии и продукции).
+7de2fa3380	Smolyan → Thessaloniki · furniture · 6 trips of 11 t	Смолян → Салоники · мебель · 6 рейсов по 11 т
+f0f8c234cd	Swap a mission	Замена миссии
+9cfdbaa2d5	Change of username	Смена имени пользователя
+e7d4ffdb89	The snow, ice and rain on the route come from the real forecast for the cities (Open-Meteo).	Снег, гололёд и дождь на маршруте берутся из реального прогноза для городов (Open-Meteo).
+f8b92d88f0	A picture of a company's base (no name — yours)	Снимок базы компании (без имени — твоей)
+100ddbe90b	Profile picture	Фото профиля
+fd4abcaad7	Picture of the week ({0})	Снимок недели ({0})
+ee42e50981	Picture of the week! 📸	Снимок недели! 📸
+8c67af5439	The picture is too big (at most {0} KB).	Снимок слишком большой (не больше {0} КБ).
+8f1cc9ea0b	The picture is too big.	Снимок слишком большой.
+ead3400b4c	The picture can't be processed.	Снимок не удаётся обработать.
+409b993822	The picture is made in your browser (PNG, 1600 × 900). The drawings are original, the brands made up.	Снимок делается в твоём браузере (PNG, 1600 × 900). Рисунки оригинальные, марки вымышленные.
+79c4f66fef	Snow	Снег
+45bdfcd1bb	Snow on the road	Снег на дороге
+af929a4bf4	Snow, ice and closed passes slow the trip, and on black ice the truck may leave the road. Winter tyres (Service) halve both the chance and the delay; rented trucks already have them. Winter loads pay +{0}%.	Снег, гололёд и закрытые перевалы замедляют рейс, а на гололедице грузовик может съехать с дороги. Зимние шины (Сервис) вдвое снижают и шанс, и задержку; у арендованных грузовиков они уже есть. Зимние грузы оплачиваются +{0}%.
+c1a4ea325a	Own fleet	Собственный автопарк
+39242921d6	Own truck (and its trailer) up to 100% at no cost in lv	Собственный грузовик (и его прицеп) до 100% без затрат в левах
+d356a0bdd4	A custom text on the plate of your truck (2–10 characters).	Собственная надпись на номере твоего грузовика (2–10 символов).
+f3f0e44fe3	Your own company from level {0} for {1}	Своя компания с уровня {0} за {1}
+0b93ffe5ac	Own goods	Собственный товар
+79c99f1701	Own company	Своя фирма
+1c2bf708d2	Own roles (up to 6)	Свои должности (до 6)
+1c50eeaf69	Own trips	Собственные рейсы
+2a38c51307	Own colours	Свои цвета
+4425b6785d	Own colours, plates and holiday paints	Свои цвета, номера и праздничные краски
+e32e7dfb3d	Owner	Владелец
+fed1d2fc6b	Owner {0}	Владелец {0}
+3df3578cbe	Owner {0} · {1} / {2} members · {3} members' trips	Владелец {0} · {1} / {2} участников · {3} рейсов участников
+358bbb703b	Owner {0} · level {1}	Владелец {0} · уровень {1}
+4d9c7e6fd5	The owner of a company at least {0} days old with {1}+ members can list it from this page.	Владелец компании не младше {0} дней с {1}+ участниками может вывести её на биржу на этой странице.
+0e7997fc56	The owner sets a price per day and up to how many days (at most {0}). The renter pays everything in advance and takes the trailer where it stands. At the end the trailer goes back by itself (if it is on a trip — after it) with its wear and the place where it stopped.	Владелец назначает цену за день и на сколько дней (не больше {0}). Арендатор платит всё заранее и забирает прицеп там, где он стоит. В конце прицеп возвращается сам (если он в рейсе — после рейса) с износом и там, где остановился.
+26ec164eef	Owners	Владельцы
+9b7f5560c4	Ownership →	Владение →
+1e8460d060	The ownership has been handed to you. You have all rights in the company.	Вам передано владение. У вас все права в компании.
+ceab91b002	Juices	Соки
+8e454e72d1	Road salt	Дорожная соль
+6350d36c80	Rigid + drawbar trailer	Одиночный + прицеп
+80e2cf0d2a	Rigid truck	Одиночный грузовик
+4729cac7ba	Rented rigid truck	Арендованный одиночный грузовик
+72bdb6bce8	Rigid trucks	Одиночные грузовики
+a049d470b7	Rigid trucks with drawbar trailers (tandem)	Одиночные грузовики с прицепами (автопоезд)
+1ed39e39f8	Thessaloniki	Салоники
+b2a508425c	Sofia	София
+a701f9772a	Sofia → Bucharest	София → Бухарест
+0f43b9c9ae	Sofia → Bucharest · 18 t · 1,420 lv	София → Бухарест · 18 т · 1 420 лв.
+975f670f34	It points to {0} — it should be {1} (or leave it empty: then the commands come through the worker's connection).	Указывает на {0} — должно быть {1} (или оставь пустым: тогда команды придут через соединение worker-а).
+09e6b8af10	Spam or advertising	Спам или реклама
+57f30a0959	Special load	Особый груз
+a94caa0329	A special load at auction	Особый груз на торгах
+7be022c24f	Special load: {0}	Особый груз: {0}
+9fc086731e	Specialisation	Специализация
+7ec68088f8	Company specialisation (+5 % for the chosen cargo type), a driver recruitment board and “My map” — all the cities and lanes you've driven, on the real map.	Специализация компании (+5 % за выбранный тип груза), биржа найма водителей и «Моя карта» — все города и линии, где ты ездил, на настоящей карте.
+781fc7f6f3	Company specialisation (Settings): +5 % for the members on the chosen cargo type, changed once every 30 days.	Специализация компании (Настройки): +5 % участникам за выбранный тип груза, меняется раз в 30 дней.
+1a5afe0fe9	Specialisation of “{0}”: {1}	Специализация «{0}»: {1}
+7e86c48403	Specialisation “{0}”? The next change — in {1} days.	Специализация «{0}»? Следующая смена — через {1} дней.
+c5e02cdcc6	The specialisation changes once every {0} days — the next change from {1}.	Специализация меняется раз в {0} дней — следующая смена с {1}.
+0234939d62	The specialisation — on the company profile and on the board; the museum — on the profile; the legendary truck — in the fleet and on /камион; the scrap and spare part buttons — in the garage.	Специализация — в профиле компании и на бирже; музей — в профиле; легендарный грузовик — в автопарке и в /камион; кнопки металлолома и запчасти — в гараже.
+0e0ebf072d	Specialised loads	Специализированные грузы
+91970b7b81	Special loads	Особые грузы
+4e8372f5ae	Special loads at auction	Особые грузы на торгах
+0f841213d7	Special loads at auction — a transformer, a yacht, a helicopter.	Особые грузы на торгах — трансформатор, яхта, вертолёт.
+2fddc1940e	Won for {0} TC after {1} bids.	Выигран за {0} TC после {1} ставок.
+aaf71bea45	Plate won “{0}”	Выигран номер «{0}»
+d3bd1f6f4e	Egg battle won	Выигранный яичный бой
+4ca72072b1	Battles won, projects finished, builders of the week and the members' badges — on the plot and on the company profile.	Выигранные битвы, завершённые проекты, строители недели и значки участников — на участке и в профиле компании.
+8224982c79	Won — send a truck	Выиграно — отправь грузовик
+9f5f0203ca	You fit the plate you won on your truck.	Выигранный номер ставишь на свой грузовик.
+36ad252d84	Freight earned	Заработанный фрахт
+5bf07afe4a	Earned by the members	Заработано участниками
+5287603a0b	Earn {0} in freight together	Заработайте вместе {0} фрахта
+e0d51931f8	Earn {0} in freight together{1}{2}	Заработайте вместе {0} фрахта{1}{2}
+722daa8e8a	Win 5 egg battles.	Выиграй 5 яичных боёв.
+99ffc6bcb6	Earn {0} from rewards	Заработай {0} на оплате рейсов
+72380e4f1a	Earn {0} from rewards this season	Заработай {0} на оплате рейсов в этом сезоне
+3654cd91a9	Won the Spring cup 2027 (knockouts, 16 drivers).	Выиграл Весенний кубок 2027 (плей-офф, 16 водителей).
+2547ad40c6	Win a duel against another driver.	Выиграй дуэль у другого водителя.
+38273880eb	Win an appeal against a fine.	Выиграй апелляцию по штрафу.
+b0e40c1f0a	A bid of {0} won. Yours was {1}	Победила ставка {0}. Твоя была {1}
+c516755e47	You won a giveaway! 🎉	Ты выиграл раздачу! 🎉
+81f0edda5c	You won the auction: {0}	Ты выиграл торги: {0}
+f5fb8cb178	Win an egg battle with a friend	Выиграй яичный бой с другом
+72da5a804e	You won the egg battle with {0} — +{1} TC. Christ is risen!	Ты выиграл яичный бой с {0} — +{1} TC. Христос воскресе!
+6865386159	An urgent delivery nobody takes gets 10 % dearer every 30 minutes (up to 5 times).	Срочная доставка, которую никто не берёт, дорожает на 10 % каждые 30 минут (до 5 раз).
+3389737f4d	An urgent delivery nobody takes becomes 10 % dearer every 30 minutes (up to 5 times).	Срочная доставка, которую никто не берёт, становится на 10 % дороже каждые 30 минут (до 5 раз).
+856333b930	Urgent delivery: {0}	Срочная доставка: {0}
+5a76b0cc51	Urgent order · TransVerse dispatch centre	Срочный заказ · Диспетчерский центр TransVerse
+41a4d076f6	Urgent order: the truck reaches {0} in 1 minute, wherever it is, and the trip goes ×{1} faster. Any player with a free truck can take it (once each) until it expires from the board.	Срочный заказ: грузовик доберётся до {0} за 1 минуту, где бы он ни был, а рейс пойдёт в ×{1} быстрее. Взять его может любой игрок со свободным грузовиком (по одному разу), пока заказ не исчезнет с биржи.
+6a03265559	The urgent delivery has been published on the board.	Срочная доставка опубликована на бирже.
+4b9b1c907d	The urgent order has already expired.	Срочный заказ уже истёк.
+ef0986ec5b	The urgent order opens for everyone at {0}. VIP players see it 5 minutes earlier.	Срочный заказ открывается для всех в {0}. VIP-игроки видят его на 5 минут раньше.
+ca006716e0	Urgent deliveries	Срочные доставки
+5957f9cb8f	Urgent deliveries are created by an administrator.	Срочные доставки создаются администратором.
+3dce4d3cc8	Urgent medicines for a hospital	Срочные лекарства для больницы
+64e710a931	Urgent orders at a higher price and with a short deadline	Срочные заказы по более высокой цене и с коротким сроком
+bda6b17a08	Urgent deliveries pay 3–4 times more than an ordinary load (until now about 2 times).	Срочные доставки оплачиваются в 3–4 раза выше обычного груза (до сих пор примерно в 2 раза).
+e21d167b48	Urgent deliveries — 5 minutes before the others	Срочные доставки — на 5 минут раньше остальных
+3227a989ce	Urgent orders can't be reserved — anyone can take them.	Срочные заказы нельзя забронировать — их может взять любой.
+e66a417a94	Urgent ones get dearer	Срочные дорожают
+b42b33506f	Split	Сплит
+bb9aaf0902	Share	Поделиться
+0ebfb060d2	Share {0} t with the company — the members drive it in parts and each gets +{1}% if everything arrives on time	Поделись {0} т с компанией — участники повезут груз по частям, и каждый получит +{1}%, если всё прибудет вовремя
+9db467f1ab	Share on Facebook	Поделиться в Facebook
+32bb5e31eb	Share your year	Поделись своим годом
+fb9813ab9a	Share a big load with the company — the members drive it in parts and if everything arrives on time, everyone gets +10 %. Every day at 12:00 the “Load of the day” comes out: better paid and with 10 TransCoin for the first who takes it.	Поделись крупным грузом с компанией — участники повезут его по частям, и если всё прибудет вовремя, каждый получит +10 %. Каждый день в 12:00 появляется «Груз дня»: лучше оплачивается и с 10 ТрансКоин для того, кто возьмёт его первым.
+13f8a4affb	Share the picture	Поделиться картинкой
+bb6d62f4b1	Share the trip	Поделиться рейсом
+f45b121b54	Share the link in a chat, a group or with your colleagues.	Поделись ссылкой в чате, группе или с коллегами.
+95ea491c01	Share → Add to Home Screen	Поделиться → На экран «Домой»
+d1b08834c0	Loads of at least {0} t can be shared.	Поделиться можно грузами от {0} т.
+c5815debe4	A peaceful sleep	Спокойный сон
+d5dcb1fe50	Mention a player	Упомянуть игрока
+baf4922c33	Sports cars for a showroom	Спортивные автомобили для салона
+d38b72c7b9	Stop for coffee and banitsa	Остановиться на кофе с баницей
+1b8c98aa5e	Stop and help	Остановиться и помочь
+eba44bc928	Stop at a car park until it passes	Переждать на стоянке
+969c95a04a	Stop the offers	Прекратить предложения
+7d8be67a4b	Stop sharing	Прекратить делиться
+39babe6ff0	Stop here	Остановиться здесь
+37b1e7a331	Stopped on the way	Остановился в пути
+b235ce3a43	A flat tyre — roadside assistance and a change on the spot.	Пробитое колесо — помощь на дороге и замена на месте.
+3cdb659a75	Silver	Серебро
+8aee278a9f	Silver	Серебряная
+82574080f7	Silver legend	Серебряная легенда
+5ddd4f7e3b	Among the first through the passes of {0}!	Среди первых через перевалы {0}!
+a0ad75ab82	Average	Средний
+71d5df5755	Medium	Средняя
+987d1de549	Average speed	Средняя скорость
+e13141e349	Average per trip	В среднем за рейс
+e8ef2aa038	Met the ghost truck 3 times.	Встретил призрачный грузовик 3 раза.
+36b99df9aa	Meet the ghost truck	Встреть призрачный грузовик
+c249871b65	Meet the ghost truck 3 times.	Встреть призрачный грузовик 3 раза.
+f01e54e3e7	Against	Против
+b1e38e102d	Against {0} — until {1}.	Против {0} — до {1}.
+ba37c4960c	Against abuse: a bonus only for different players from level 3, up to 3 convoy bonuses a day, only with a real load.	Против злоупотреблений: бонус только для разных игроков с 3-го уровня, до 3 бонусов колонны в день, только с настоящим грузом.
+e02e40d077	For real money we only sell	За реальные деньги продаются только
+71e1ea68bb	Deadline	Срок
+a2b5715602	Delivery deadline	Срок доставки
+579c7bdf98	Delivery deadline (minutes from accepting)	Срок доставки (минут с момента принятия)
+6df7a9f633	VIP term in days	Срок VIP в днях
+d1b94a6038	Deadline after accepting:	Срок после принятия:
+5e11b69175	Deadline: {0}{1}	Срок: {0}{1}
+da49403a7d	The term is 4, 8 or 12 weeks.	Срок — 4, 8 или 12 недель.
+e3c39925b0	The term is in whole days.	Срок — в целых днях.
+031c0c77c1	The deadline is at most 48 hours.	Срок — не больше 48 часов.
+43aa6d54e4	The term is from 1 to {0} days (0 removes VIP).	Срок — от 1 до {0} дней (0 снимает VIP).
+d6cf07d648	The deadline is at least 5 minutes.	Срок — не меньше 5 минут.
+e48bf6da0f	The deadline for the reward has passed.	Срок получения награды истёк.
+7647488760	The deadline passed with {0} of {1} loads. −{2} reputation.	Срок истёк при {0} из {1} грузов. −{2} репутации.
+d18468092b	The contract's term has expired.	Срок договора истёк.
+f0740863cd	The {0}-day term has passed without the student reaching level {1}.	Срок в {0} дней прошёл, а ученик так и не достиг уровня {1}.
+e9bb2f6e90	The {0}-day term has passed. You go on alone — good luck on the road!	Срок в {0} дней прошёл. Дальше ты сам — удачи в дороге!
+4b30a2cff8	A stadium in Belgrade	Стадион в Белграде
+79d814ef28	Internship at “{0}” 🎓	Стажировка в «{0}» 🎓
+44a3201684	Internship: for {0} days you drive with +{1} % XP, and the host company earns XP from your trips. You stay in your own company.	Стажировка: {0} дней ты ездишь с +{1} % опыта, а принимающая компания получает опыт за твои рейсы. Ты остаёшься в своей компании.
+4a82341aec	Interns 🎓	Стажёры 🎓
+c064544746	Internships: 3 days in another company (its owner accepts) — +10 % XP for the intern, XP for the host company. A “Request an internship” button on the company profile.	Стажировки: 3 дня в другой компании (её владелец принимает) — +10 % опыта стажёру, опыт принимающей компании. Кнопка «Попросить стажировку» в профиле компании.
+aa77456e39	Internships come with update 1.9.	Стажировки появятся в обновлении 1.9.
+3bfe0caeda	Become the head	Стать руководителем
+561acd83ec	Become a driver in TransVerse	Стань водителем в TransVerse
+c20f9df0b1	Old Nessebar	Старый Несебр
+118aa22cc6	The Old Town of Dubrovnik	Старый город Дубровника
+8cd8630189	The Old Bridge, Mostar	Старый мост, Мостар
+9d82f42cab	Seniority	Старшинство
+f7f293b5c5	Status	Статус
+9044526d43	“Golden truck” statue	Статуя «Золотой грузовик»
+c368fa253c	Stefan	Стефан
+90c8d9767a	Stefan gave you a tip about a shortcut and the number of a good garage.	Стефан посоветовал тебе короткую дорогу и дал номер хорошего сервиса.
+783196d11a	Reached level 10 in the Discord server — a blue frame around the picture.	Достиг 10-го уровня на Discord-сервере — синяя рамка вокруг аватара.
+817036b29d	Reached level 25 in the Discord server — a gold frame around the picture.	Достиг 25-го уровня на Discord-сервере — золотая рамка вокруг аватара.
+a9b1ac7025	Reached level {0} · {1}	Достиг уровня {0} · {1}
+5837a245f7	Sticker with the company's name	Наклейка с названием компании
+8287c6d9b7	The sticker has the company's name — join a company first.	На наклейке название компании — сначала вступи в компанию.
+cfa53839ca	It has stood here for at least {0} days — clear the space for {1} ({2} % of its price).	Лежит здесь не меньше {0} дней — освободи место за {1} ({2} % от его цены).
+835f2eb0b5	Goods	Товар
+57494847c2	The goods in your warehouses and where to sell them (linked account)	Товар на твоих складах и где его продать (привязанный аккаунт)
+ea29c5c154	The goods are in the warehouse in {0}	Товар на складе в {0}
+7d38dec0cd	The goods leave the warehouse, and the sum is held as a deposit. The carrier is paid on delivery; if nobody takes the haul within a day, everything comes back. Suggested ≈ {0} (as much as an ordinary client pays).	Товар уходит со склада, а сумма замораживается как залог. Перевозчику платят при доставке; если за сутки перевозку никто не возьмёт, всё возвращается. Предлагается ≈ {0} (сколько платит обычный заказчик).
+1473057953	The goods came back to your warehouse.	Товар вернулся на твой склад.
+c4170031ac	The goods spoiled	Товар испортился
+d2aedb7e23	The goods spoiled: {0} 🌡️	Товар испортился: {0} 🌡️
+1ec2ed51c3	The goods are unloaded at your depot and wait there.	Товар выгружается в твоём депо и ждёт там.
+a8bdae7230	Steel	Сталь
+9479a96a91	Steel girders	Стальные балки
+440a7c0531	Steel sections	Стальной профиль
+57634724fb	Steel coils	Стальные рулоны
+ce4fa49927	The steel caravan	Стальной караван
+0419c677db	The steel road	Стальная дорога
+ee18f27d26	Stoyan	Стоян
+cda3af1e45	Stoyanov	Стоянов
+f339a5e5a0	Strandzha	Странджа
+5981d247b6	A page for every country (from “My map”): diesel today, tolls, bans, low-emission zones, national holiday, king and the best-paid loads; in “My map” — the countries and how many cities you've visited in each.	Страница для каждой страны (из «Моей карты»): дизель сегодня, платные дороги, запреты, зоны с низким уровнем выбросов, национальный праздник, король и самые оплачиваемые грузы; в «Моей карте» — страны и сколько городов ты посетил в каждой.
+cf8d2d14cd	The company page no longer goes off the phone screen.	Страница компании больше не выходит за край экрана телефона.
+51922d437d	Construction: when everything has been brought, the construction runs from 3 hours (level 1) to 24 hours (level 5). The members get a notification when the building is ready.	Стройка: когда всё привезено, стройка длится от 3 часов (уровень 1) до 24 часов (уровень 5). Участники получают уведомление, когда здание готово.
+8d3e8182c5	Constructions on the plot	Стройки на участке
+1c2a6538ea	The construction has started: {0}	Стройка началась: {0}
+80e7b531f1	Under construction	Строится
+9a2c4e1641	Under construction on the plot →	Строится на участке →
+69fb3585b6	Under construction.	Строится.
+6c38bf5a7f	Builder	Строитель
+3a0f34ef4f	Builder of the week	Строитель недели
+3b7367810a	Builder of the week at “{0}”	Строитель недели в «{0}»
+32bb645770	Builder of the week: {0}	Строитель недели: {0}
+c081921ff0	Builder of the week: every Monday the member who brought the most materials for the base in the past week (at least 5 t) gets 3,000 lv from the treasury (if the treasury has it) and a notification to the whole company.	Строитель недели: каждый понедельник участник, привёзший больше всего материалов для базы за прошедшую неделю (не меньше 5 т), получает 3 000 лв. из казны (если в казне есть) и уведомление для всей компании.
+4389d2538c	Construction boom	Строительный бум
+0f22865780	Construction boom and badges	Строительный бум и значки
+09d9716eae	Construction boom!	Строительный бум!
+1b395769de	Construction boom: 13–20 December 2026 and the first 7 days of every month after that — materials are 30 % cheaper (with delivery too), and trips with materials give +50 % XP.	Строительный бум: 13–20 декабря 2026 года и первые 7 дней каждого месяца после этого — материалы на 30 % дешевле (и с доставкой), а рейсы с материалами дают +50 % опыта.
+e92471667b	Construction machine	Строительная машина
+42dc26e157	Construction chemicals	Строительная химия
+a40f89b82d	Construction (plot and buildings)	Строительство (участок и здания)
+622461902c	You build with trips	Строишь рейсами
+a0b1a24a5a	Build	Строить
+26c828b700	The owner and the roles with the “Construction” permission build. You help by hauling the materials from the board.	Строят владелец и должности с правом «Строительство». Ты помогаешь, вывозя материалы с биржи.
+ea16299559	The cold chain	Холодовая цепь
+fcc344ca08	Glass	Стекло
+c0e2227caf	Glazing units	Стеклопакеты
+b77e77629d	Amount	Сумма
+d200a268da	Amount (lv)	Сумма (лв.)
+8e5bedf5c6	Amount in lv	Сумма в лв.
+54cb0fe809	Amount in lev	Сумма в левах
+34f717f240	Amount in lev (the lower wins)	Сумма в левах (побеждает меньшая)
+8efc126599	The amount {0} has been refunded; the corresponding TransCoin / VIP days have been removed.	Сумма {0} возвращена; соответствующие ТрансКоин / дни VIP сняты.
+3a352bc5d0	The amount is in whole lev.	Сумма — в целых левах.
+a66a281fb5	The amount is between 1,000 lv and {0} lv.	Сумма — от 1 000 лв. до {0} лв.
+5f7fbe75af	The amount is from 0.01 to {0} lv.	Сумма — от 0,01 до {0} лв.
+d5e4937833	The amount must be positive.	Сумма должна быть положительной.
+c72c405796	Raw materials for the factory	Сырьё для фабрики
+6789b27614	Raw materials on the plot	Сырьё на участке
+a018a106c7	Raw materials from real cities, products for real buyers — the money from the sale goes to the treasury.	Сырьё из настоящих городов, продукция для настоящих покупателей — деньги от продажи идут в казну.
+b14a4db63d	Raw materials: {0} ({1} {2})	Сырьё: {0} ({1} {2})
+b2fa1757ce	The raw materials for these batches are already on the plot or on the way.	Сырьё для этих партий уже на участке или в пути.
+b5f5b8d54e	Accountant	Бухгалтер
+8d65224449	Ledger	Бухгалтерская книга
+679c3cf461	Ledger: every movement of money is an entry with the balance after it. All amounts are calculated by the server.	Бухгалтерская книга: каждое движение денег — это запись с остатком после неё. Все суммы рассчитывает сервер.
+06eb80070c	Collect them all.	Собери их все.

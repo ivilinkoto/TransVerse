@@ -1,0 +1,250 @@
+02f3fd7367	Gather a column: one lane, one departure time, everyone arrives together.	Собери колонну: одна линия, одно время отправления, все прибывают вместе.
+ae8a27c9d9	The event is no longer in the feed.	Событие больше не в ленте.
+70014f753d	Collected all three retro paints.	Собрал все три ретро-краски.
+805ec4b6a7	The meeting comes with update 1.9.	Собрание появится в обновлении 1.9.
+246b8f3971	The meeting decided: {0} → “{1}” ({2} votes).	Собрание решило: {0} → «{1}» ({2} голосов).
+b5d2cfa5d4	The meeting “{0}” ended without votes.	Собрание «{0}» завершилось без голосов.
+c74dc6219a	I agree to the	Я согласен(на) с
+57221666e2	Creating the profile…	Создание профиля…
+734a451faa	Creating…	Создание…
+ea5dd407b0	Created the event “{0}”{1}	Создал ивент «{0}»{1}
+1e9f2fe485	Created a new password link for {0}	Создал ссылку для нового пароля для {0}
+ab1c3df7dd	Created an urgent delivery “{0}”: {1} → {2}, {3}, deadline {4} min, ×{5} faster	Создал срочную доставку «{0}»: {1} → {2}, {3}, срок {4} мин, в ×{5} быстрее
+0140ee87c5	Created by	Создано
+527ba91bd5	Created	Создано
+e09e7bcb7a	Create	Создать
+9afc749df9	Create an event	Создать ивент
+499e57139a	Create a channel	Создать канал
+3b02c91feb	Create a convoy	Создать колонну
+27fb60c717	Create your own — your friends and company will see it.	Создай свою — друзья и компания её увидят.
+717503096a	Create an alliance	Создать союз
+d7f01591cb	Message	Сообщение
+a38bef63f0	Message to {0}…	Сообщение для {0}…
+9b94c0f876	Message to the column	Сообщение колонне
+1543abc84f	Message to the company… (Enter sends, Shift+Enter — new line)	Сообщение компании… (Enter — отправить, Shift+Enter — новая строка)
+7d4615756c	Message to the company (optional)	Сообщение компании (необязательно)
+11fb751859	CB message	Сообщение по CB
+05a8c28452	The message has been deleted.	Сообщение удалено.
+d1bc418ea1	The message is empty.	Сообщение пустое.
+d74539fade	The message was not found.	Сообщение не найдено.
+4baede1949	The message you're replying to is gone.	Сообщения, на которое ты отвечаешь, больше нет.
+fc4f41434d	Messages	Сообщения
+731883ca69	Chat messages don't come while you're in the game — only when it isn't open.	Сообщения из чата не приходят, пока ты в игре, — только когда она не открыта.
+bc4ec6d4f3	The bot's messages: {0}	Сообщения бота: {0}
+92a0af18a9	Serbia	Сербия
+dc92674fcc	The Discord server: new categories and channels; tickets (“Отвори тикет” in #тикети) — with a linked account they are tickets in the game too and the answers come to both places; opt-in roles for the announcement notifications; TransCoin giveaways (press “Участвам”); a weekly ranking on Sunday evening; the company's polls in its channel too; voice channels with game stats; a welcome for new members.	Discord-сервер: новые категории и каналы; тикеты («Отвори тикет» в #тикети) — при привязанном аккаунте это и тикеты в игре, а ответы приходят в оба места; роли по выбору для уведомлений об объявлениях; раздачи ТрансКоин (нажми «Участвам»); еженедельный рейтинг в воскресенье вечером; опросы компании и в её канале; голосовые каналы со статистикой игры; приветствие новых участников.
+423917ba60	The server is already set up.	Сервер уже настроен.
+a36e9c33cc	The TransVerse server · if you have a question — open a ticket	Сервер TransVerse · есть вопрос — открой тикет
+272c1d91a9	The server couldn't connect to PayPal (network). Try again.	Серверу не удалось подключиться к PayPal (сеть). Попробуйте снова.
+347c597cf0	The server accepted the e-mail. Check “Inbox” and “Spam” in that mailbox.	Сервер принял письмо. Проверь «Входящие» и «Спам» в этом ящике.
+0b83aee76e	The server: levels for writing and talking with /ранг and /топ (TransCoin at every tenth level), a quiz about the cities and roads, a picture of the week contest, the most active company (money for the treasury), a voice channel and a treasury report for every company, “➕ Създай стая”, auto-moderation, verification of new members, penalty appeals, /помощ for players and for the team.	Сервер: уровни за сообщения и голос с /ранг и /топ (ТрансКоин на каждом десятом уровне), викторина о городах и дорогах, конкурс на снимок недели, самая активная компания (деньги в казну), голосовой канал и отчёт о казне для каждой компании, «➕ Създай стая», автомодерация, проверка новых участников, обжалование наказаний, /помощ для игроков и для команды.
+eaec41c04f	Competition	Соревнования
+a1d8b6e2b5	Condition	Состояние
+9019134839	The state of the world and the community.	Состояние мира и сообщества.
+1e262a0dba	Cooperation	Сотрудничество
+1d5c5e6c81	Existing companies get the plot ready: their upgrades become buildings of the same level, and the office is built.	Существующие компании получают готовый участок: их улучшения становятся зданиями того же уровня, а офис уже построен.
+11108d49a8	Alliance	Союз
+374715decb	Alliance (goal and battle)	Союз (цель и битва)
+d38684d5ed	Alliance · 	Союз ·
+9853194517	Alliance · {0}	Союз · {0}
+9e4cf5cfcc	Alliance and partners	Союз и партнёры
+99d81451f7	An alliance with this name already exists.	Союз с таким названием уже есть.
+2a3db94203	An alliance is created by a role with the “Settings” permission.	Союз создаёт должность с правом «Настройки».
+184e680578	Only the leading company dissolves the alliance.	Распустить союз может только ведущая компания.
+cc944f7fcf	Alliances between companies	Союзы между компаниями
+50f75f6679	Company alliances, haulage contracts between companies, a company academy.	Союзы компаний, договоры перевозки между компаниями, академия компании.
+735af7002e	Alliances with other companies, haulage contracts and the company academy (game data).	Союзы с другими компаниями, договоры перевозки и академия компании (игровые данные).
+823ace33d9	Alliances: convoy and roadside assistance between all companies in the alliance, a fuel card (the discount of the alliance's petrol stations), the alliance's bases on the map, a private channel in Discord and /съюз.	Союзы: колонна и помощь на дороге между всеми компаниями союза, топливная карта (скидка на заправках союза), базы союза на карте, закрытый канал в Discord и /съюз.
+27a8ce759e	Alliances come with update 1.5.	Союзы появятся в обновлении 1.5.
+9f402fda51	Alliance base	База союза
+4b54109c39	An alliance base in the leading company's city: 3 levels from building materials (pallets and steel), +1 % per level to the members' pay.	База союза в городе ведущей компании: 3 уровня из стройматериалов (паллеты и сталь), +1 % за уровень к оплате участников.
+7760580262	Alliance base “{0}” (level {1})	База союза «{0}» (уровень {1})
+2bbe7a144e	The alliance base “{0}” is at level {1}!	База союза «{0}» достигла уровня {1}!
+82ed121030	The alliance is already full.	Союз уже заполнен.
+bd05936f85	The alliance is closer	Союз ближе
+fd08c4df0d	The alliance completed the weekly goal!	Союз выполнил недельную цель!
+d160fbf136	Your company's alliance (or an alliance by name): companies, week and alliance base	Союз твоей компании (или союз по названию): компании, неделя и база союза
+6b52c8e71a	The alliance grows — more tonnes for the shared goal.	Союз растёт — больше тонн для общей цели.
+e13d1f127a	The alliance won the battle! 🏆	Союз выиграл битву! 🏆
+110d8a6d41	The alliance “{0}” has been dissolved	Союз «{0}» распущен
+0e6748ee30	The alliance “{0}” — all the companies in it.	Союз «{0}» — все компании в нём.
+1f86ca6824	TEST mode	ТЕСТОВЫЙ режим
+8b6305cd7b	TEST mode (sandbox)	ТЕСТОВЫЙ режим (sandbox)
+b12f96214e	LOAD OF THE DAY · +{0} TC	ГРУЗ ДНЯ · +{0} TC
+10a3223c3e	AUCTION	ТОРГИ
+383bd3c06e	COMPANY AUCTION	ТОРГИ КОМПАНИИ
+753ce1cef3	Name plate	Табличка с именем
+fbccf96483	Plate “{0}” for {1}	Номер «{0}» для {1}
+1c3f66433b	The plate is 2–10 capital letters, digits, a space or a hyphen.	Номер — это 2–10 заглавных букв, цифр, пробел или дефис.
+c2e2f2650d	Dashboard	Главная
+fd039d2cd6	Dashboard → “With your friends”: trips over 500 km (driven by you), new levels, achievements, mentorship, roadside help, finished projects and battle wins of your friends and company from the last 3 days. “👍 Well done” — once per event; the author gets a notification.	Главная → «У друзей»: рейсы длиннее 500 км (проведённые тобой), новые уровни, достижения, наставничество, помощь в пути, завершённые проекты и победы в битвах друзей и компании за последние 3 дня. «👍 Браво» — один раз на событие; автор получает уведомление.
+fdd81c81a5	The dashboard suggests up to three next steps, and Ctrl+K opens search on every page in the game.	Главная подсказывает до трёх следующих шагов, а Ctrl+K открывает поиск на любой странице игры.
+23c50446ac	Tag	Тег
+f1f38f1b40	Tag or company name	Тег или название компании
+4dda3c426d	Tag or name of the carrier company	Тег или название компании-перевозчика
+b5638f706a	The company tag in the rankings	Тег компании в рейтингах
+5897b26e30	The tag is 2–5 capital letters or digits.	Тег — это 2–5 заглавных букв или цифр.
+653d9afa20	The tag unlocks at company level 5.	Тег открывается на 5-м уровне компании.
+679e17bc8e	This option requires a licence from a founded (or taken-over) transport company.	Эта возможность требует лицензии основанной (или принятой) транспортной компании.
+91dd58431b	This company is already in an alliance.	Эта компания уже в союзе.
+63b923b85a	None this month. The company that brought the most tonnes to a big city (300,000+ inhabitants, at least {0} t) in the month gets a key client there with its own loads (+{1} %).	В этом месяце нет. Компания, привёзшая за месяц больше всего тонн в крупный город (300 000+ жителей, не меньше {0} т), получает там ключевого клиента с собственными грузами (+{1} %).
+650cd366a8	This order can only be taken whole.	Этот заказ можно взять только целиком.
+e65dfb72dd	This shipment isn't for you.	Эта посылка не для тебя.
+5ba111fada	This building is already on the plot.	Это здание уже на участке.
+f766f52afa	This week	На этой неделе
+47198b73b6	This week every tonne you haul counts. The winner takes {0} for the treasury and a trophy.	На этой неделе засчитывается каждая перевезённая тонна. Победитель получает {0} в казну и трофей.
+ca811e568b	The company has already started a project this week — the next one from Monday.	Компания уже начала проект на этой неделе — следующий с понедельника.
+4d0068ba33	The company has no rival this week. Every Monday the active companies (with a delivery in the last {0} days) meet a company of a similar level.	На этой неделе у компании нет соперника. Каждый понедельник активные компании (с доставкой за последние {0} дней) встречаются с компанией близкого уровня.
+44d4ee656f	Your company has no battle this week (the pairs are made on Monday).	На этой неделе у твоей компании нет битвы (пары составляются в понедельник).
+1eacd87dba	No deliveries this week.	На этой неделе доставок нет.
+2ce63eb435	No rally this week.	На этой неделе ралли нет.
+4d92403eb7	This week against	На этой неделе против
+3951e5e24e	These goods are no longer in the warehouse.	Этого товара больше нет на складе.
+b23e1bc8fa	These goods are no longer in the warehouse.	Этого товара на складе уже нет.
+208acaeefd	These goods aren't produced in the depot's city.	Этот товар не производится в городе депо.
+73e096b8fe	This step is counted automatically.	Этот шаг засчитывается автоматически.
+c8c36e3855	Secrets in GitHub Secrets	Секреты в GitHub Secrets
+6e52b7d9c5	Hidden compartment · {0}	Тайник · {0}
+e320ec8d21	A hidden compartment for {0}? It takes {1} t of the payload.	Тайник за {0}? Он занимает {1} т грузоподъёмности.
+d862fbd596	Hidden compartment — {0}	Тайник — {0}
+dd0eab8576	The hidden compartment (from “{0}”) halves the chance of a find, but takes {1} t. The cheap repair (from “{2}”) is noticed: +{3} attention.	Тайник (с уровня «{0}») вдвое снижает шанс находки, но занимает {1} т. Дешёвый ремонт (с уровня «{2}») замечают: +{3} внимания.
+9e33500244	The hidden compartment takes {0} t — there's no room for this load.	Тайник занимает {0} т — для этого груза нет места.
+ff16e9d71c	This is how other players see you. Click any player's name to see their profile.	Так тебя видят другие игроки. Нажми на имя любого игрока, чтобы увидеть его профиль.
+5b6e98c8c5	Such a plate already exists.	Такой номер уже есть.
+246869d0fb	Fee	Комиссия
+44c5f6caf2	Fee {0} %: {1} · total {2} 	Комиссия {0} %: {1} · всего {2}
+351846c974	Low-emission zone fee	Сбор за зону с низким уровнем выбросов
+993964dc1e	Transfer fee ({0} %)	Комиссия за перевод ({0} %)
+1ea96e7462	Registration fee {0}	Регистрационный сбор {0}
+9bbe00d3d2	Market fee (5%)	Комиссия рынка (5%)
+771aa96eff	Used vehicle market fee	Комиссия рынка подержанной техники
+61d97b06bd	Tanya	Таня
+af3b107cb5	Tachograph (7 days)	Тахограф (7 дней)
+b863856b65	The drivers' tachograph (for the team): driving and rest by day.	Тахограф водителей (для команды): вождение и отдых по дням.
+3f75c8c8e7	Your place	Твоё место
+b3d7aea82e	Your egg held! 🥚	Твоё яйцо выдержало! 🥚
+8f3904fd1e	Your trucks	Твои грузовики
+c8345147a5	Your trucks and those of all players — live, on real roads.	Твои грузовики и грузовики всех игроков — в реальном времени, по реальным дорогам.
+eaeabd4d5a	Your trucks: where they are and when they arrive (a linked account is needed)	Твои грузовики: где они и когда прибудут (нужен привязанный аккаунт)
+21df58e914	Your trips	Твои рейсы
+fb12ea013f	Your rights	Твои права
+b30d0cfa9c	Your vehicles, where they are and what they are doing.	Твои машины, где они и что делают.
+063a80fec3	A truck of yours covered 100,000 km.	Твой грузовик проехал 100 000 км.
+990777840b	A truck of yours won the “Truck of the month” vote.	Твой грузовик выиграл голосование «Грузовик месяца».
+e35e4abc0b	It's yours — shown on your profile and on the player's card.	Он твой — виден в профиле и в карточке игрока.
+2606284308	It's yours — shown on your profile.	Он твой — виден в твоём профиле.
+ede923bcf4	It's yours.	Он твой.
+91cdb20fb6	Your choice	Твой выбор
+8eae7ae37c	Your choice: {0}	Твой выбор: {0}
+0d9b4c8634	Your truck	Твой грузовик
+890418a921	Your invitation link	Твоя ссылка-приглашение
+68f9004f4c	Your mentor	Твой наставник
+b886b1dd41	Your contribution	Твой вклад
+960078cc09	Your contribution:	Твой вклад:
+71e8b47af9	Your internship at “{0}”: {1}.	Твоя стажировка в «{0}»: {1}.
+7f89b76957	Yours	Твоя
+0cecb294f3	Your {0} in TransVerse	Твой {0} в TransVerse
+9443455032	Your company	Твоя компания
+525ac08047	Your company on the exchange	Твоя компания на бирже
+254e2059b2	Your league	Твоя лига
+dfb5875a25	Your reward	Твоя награда
+249e80b090	Your bid	Твоя ставка
+5979902405	Your bid is leading.	Твоя ставка лидирует.
+f66e9616cb	Your picture in Discord collected the most ⭐ — +{0} TransCoin.	Твой снимок в Discord собрал больше всего ⭐ — +{0} ТрансКоин.
+a1a83251d1	Your price in lev	Твоя цена в левах
+281a237733	The price is too high.	Слишком высокая цена.
+194590c514	The amount is too large.	Слишком большая сумма.
+9391b1326d	Parking for too long.	Слишком долгая парковка.
+0bc014341a	Too many trips at once.	Слишком много рейсов сразу.
+2d9cdaaf62	Too many attempts. Try again in a little while.	Слишком много попыток. Попробуйте чуть позже.
+dc6ba91413	Weight (t)	Вес (т)
+2ccacb3a33	Heavyweight	Тяжёлая категория
+a4241653b3	Heavy and oversized	Тяжёлые и негабаритные
+7bca4db7ef	Heavy and oversized loads on low-bed trailers.	Тяжёлые и негабаритные грузы на низкорамных прицепах.
+f35e94e3ee	Heavy loads for the big construction sites. Every load over 15 tonnes counts.	Тяжёлые грузы для крупных строек. Засчитывается каждый груз тяжелее 15 тонн.
+163fe6dd8d	These countries come with the next update.	Эти страны появятся в следующем обновлении.
+d13a9fc429	These roles are above the bot's role and it can't give them: {0}. Drag the bot's role above them in Server Settings → Roles.	Эти роли выше роли бота, и он не может их выдавать: {0}. Перетащи роль бота выше них в Server Settings → Roles.
+7b984bab8d	Textiles	Текстиль
+7824f361cd	Current password	Текущий пароль
+cbd6bcb7d5	The current password is wrong.	Текущий пароль неверный.
+db361b7a10	The community's current event and your contribution	Текущий ивент сообщества и твой вклад
+553c45f1b8	Subject	Тема
+ad4a5587b7	The subject and the description are too short.	Тема и описание слишком короткие.
+cda0e2ccdb	The subject must be at least 4 characters.	Тема должна быть не короче 4 символов.
+faebe08e07	Temperature on the way	Температура в пути
+0fd7e7c463	The temperature was within the norm all the way	Температура была в норме весь путь
+70ed552399	The temperature went out of the norm 🌡️	Температура вышла за пределы нормы 🌡️
+d7b77b343b	Test drive	Тест-драйв
+4e7d991ed3	Test drive and rush hour	Тест-драйв и час пик
+bd3267c734	Test drive of {0} {1}: you get in it where your truck is and drive one trip without rent. Then it goes back to the showroom.	Тест-драйв {0} {1}: ты садишься в него там, где стоит твой грузовик, и делаешь один рейс без аренды. Потом он возвращается в салон.
+24e89380a4	Test drive: one free trip with a model from the showroom (once per model), you drive.	Тест-драйв: один бесплатный рейс на модели из салона (один раз на модель), за рулём ты.
+77347c0e82	The test drive is over	Тест-драйв окончен
+07aa01fff5	Test mode — payments use test (sandbox) accounts, no real money is charged.	Тестовый режим — платежи идут с тестовых (sandbox) счетов, реальные деньги не списываются.
+0602564dc9	The vehicle is in bad condition — a repair is needed.	Техника в плохом состоянии — нужен ремонт.
+be80ab1717	Technical error	Техническая ошибка
+e81b7b5bc1	Technical support	Техническая поддержка
+89f0766f9e	Event on	Идёт ивент
+14c2bfb234	Liquid and dangerous loads: fuels, chemicals and other tankers.	Наливные и опасные грузы: топливо, химикаты и прочие цистерны.
+4760aa7641	Liquid loads	Наливные грузы
+2fedd11686	You	Ты
+34e7b6a291	You in the convoys	Ты в колоннах
+ad0d7c3c09	You're leading. You can lower the price further if someone gets ahead of you.	Ты лидируешь. Можно ещё снизить цену, если кто-то тебя обойдёт.
+446f5d108c	You and {0} get a reward: {1} and {2} TC for you.	Вы с {0} получаете награду: {1} и {2} TC для тебя.
+32b27bbe8c	You get	Ты получаешь
+abd08a83e2	You are	Ты
+480aef05af	You are **{0}** of {1} · {2} {3}	Ты **{0}-й** из {1} · {2} {3}
+96836243d3	You're in the TransVerse server — the online transport strategy on real roads. Link your account in #свържи-акаунта and choose your notifications in #роли.	Ты на сервере TransVerse — онлайн-стратегии о перевозках по настоящим дорогам. Привяжи аккаунт в #свържи-акаунта и выбери уведомления в #роли.
+c57255b385	You are the builder of the week!	Ты — строитель недели!
+7852d9e0ae	You: 	Ты:
+f4bea7e1cd	Pumpkin driver 2026	Тыквенный водитель 2026
+e3454ababe	Pumpkin pies	Тыквенные пироги
+780d2ae928	Pumpkins	Тыквы
+13a810b338	Pumpkins for the holiday	Тыквы к празднику
+b79fe3a473	Pumpkins, sweets, costumes and lanterns have to arrive in time for the holiday. Every holiday order counts (with the orange “Halloween” label on the board). All participants win, and the best — VIP and TransCoin.	Тыквы, сладости, костюмы и фонари должны успеть к празднику. Засчитывается каждый праздничный заказ (с оранжевой меткой «Хэллоуин» на бирже). Выигрывают все участники, а лучшие — VIP и ТрансКоин.
+5ac0edbca8	Ticket: {0}	Тикет: {0}
+fc09adfc60	Tickets	Тикеты
+47a0fb51dd	Tickets, replies and penalties for the last 30 days	Тикеты, ответы и наказания за последние 30 дней
+2c02966c08	The ticket is already closed.	Тикет уже закрыт.
+f6f58f38ad	The ticket is in the game too (Support) — the answers come to both places.	Тикет есть и в игре (Поддержка) — ответы приходят в оба места.
+d25691ca40	Type	Тип
+c050708a12	Quiet town	Тихий город
+a0d60780e2	A quiet week on the roads	Тихая неделя на дорогах
+b8a1453c7b	Quiet hours	Тихие часы
+2086ae8851	Quiet hours until	Тихие часы до
+0329c622d8	Quiet hours from	Тихие часы с
+3b4a9dad6a	Quiet hours: {0} – {1} — then no notifications come to the phone or Discord (they stay in the game).	Тихие часы: {0} – {1} — в это время уведомления не приходят на телефон и в Discord (в игре остаются).
+458476f11d	Quiet hours apply here too.	Тихие часы действуют и здесь.
+ddab942a36	The quiet one from the petrol station	Тихоня с заправки
+3e3862fc95	Radio silence. Say something first!	В эфире тишина. Скажи что-нибудь первым!
+21d0e37b47	This is a building now — it is built in Company → Plot.	Теперь это здание — строится в Компания → Участок.
+4bedfe536c	This is missed instalment no. {0} in a row — the leasing company takes the truck.	Это {0}-й пропущенный платёж подряд — лизинговая компания забирает грузовик.
+5b6f5bad5b	This is the highest league. 	Это высшая лига.
+cdbe347666	This is another company's shared load.	Это общий груз другой компании.
+3db1e925f9	This is optional and with game money only (never TransCoin). The goods are harmless — clothes with made-up “brand” labels, undeclared electronics, cheese without papers. The offers come in the evening ({0}:00–24:00), cross a border and pay about ×{1}–3. At every border customs may check: the chance grows with the “Attention” and with police reports on the way, and falls with a hidden compartment and with a trusted contact in the city. If you are caught, the goods are confiscated (no pay) and there is a fine — your money never falls below 0. Not with a rented truck.	Это по желанию и только на игровые деньги (никогда ТрансКоин). Товары безобидные — одежда с вымышленными «брендовыми» этикетками, незадекларированная электроника, сыр без документов. Предложения приходят вечером ({0}:00–24:00), пересекают границу и платят примерно ×{1}–3. На каждой границе таможня может проверить: шанс растёт с «Вниманием» и полицейскими сигналами по пути, а падает с тайником и доверенным контактом в городе. Если поймают, товар конфискуют (без оплаты) и выпишут штраф — твои деньги никогда не уходят ниже 0. С арендованным грузовиком нельзя.
+8f19583eda	This is a test from the TransVerse admin panel. If you see it in “Inbox”, the e-mails reach this mailbox.	Это тест из админ-панели TransVerse. Если ты видишь его во «Входящих», письма доходят до этого ящика.
+f504fbb441	This is the first season.	Это первый сезон.
+d5f861c46b	This is another player's rally.	Это ралли другого игрока.
+e68df7044d	This is your trailer.	Это твой прицеп.
+de24415027	This is your listing.	Это твоё объявление.
+d97d7d930c	This is your convoy. 🙂	Это твоя колонна. 🙂
+75f228b138	This is your company.	Это твоя компания.
+a47d219753	This is your listing.	Это твоё объявление.
+b65ff58479	These are your goods — wait for a carrier or drive them yourself from “Trading”.	Это твой товар — дождись перевозчика или отвези его сам через «Торговлю».
+0423257346	This is your current name.	Это твоё текущее имя.
+eb139c061a	This comes with the next update.	Это появится в следующем обновлении.
+94b8fd0e65	This penalty isn't yours.	Это наказание не твоё.
+8b7b3ad47e	This isn't a ticket.	Это не тикет.
+b755327905	This payment is refunded from the Stripe dashboard.	Этот платёж возвращается через панель Stripe.
+06b5ea04f2	This username is taken.	Это имя пользователя занято.
+c49e0c289b	This vehicle is already yours.	Эта машина уже твоя.
+1237443043	This vehicle is owned.	Эта машина в собственности.
+bc4c5ceddd	This trailer requires a heavy tractor.	Этому прицепу нужен тяжёлый тягач.
+deb36962a3	This starts with the update{0}. 🚚	Это запускается с обновлением{0}. 🚚
+638867d510	Load	Груз
+82c7852d8b	Load of the day	Груз дня
+b96ec8aff0	Load of the day: {0}	Груз дня: {0}
+f028d70a81	Load of the day: every day from 12:00 one load between two big cities (250–900 km) with ×1.6 pay and +10 TransCoin on an on-time delivery; it is taken only whole, by the first. At the top of Orders and in Discord in #товар-на-деня with a “Take” button.	Груз дня: каждый день с 12:00 один груз между двумя крупными городами (250–900 км) с оплатой ×1,6 и +10 ТрансКоин при доставке вовремя; берётся только целиком, первым желающим. Вверху Заказов и в Discord в #товар-на-деня с кнопкой «Взять».
+bfcde491b6	Load:	Груз:
+b176094273	Loading	Погрузка
+41f863493d	Loads	Грузы
+8347f9555c	Loads to Crete, Rhodes, Kos, Lesbos and Chios: the truck reaches Piraeus, waits for the ferry and travels on board, and the driver rests. The ticket is in the trip costs.	Грузы на Крит, Родос, Кос, Лесбос и Хиос: грузовик доезжает до Пирея, ждёт парома и плывёт на борту, а водитель отдыхает. Билет входит в расходы рейса.
