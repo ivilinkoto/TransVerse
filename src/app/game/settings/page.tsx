@@ -1,4 +1,5 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { Ban, Bell, MessageSquare, Paintbrush, Sparkles, UserRoundCheck, LayoutGrid } from 'lucide-react';
 import { SEASON_IDS, SEASONS, activeSeason } from '@/lib/game/seasonal';
 import { seasonMode } from '@/server/seasonal';
@@ -61,6 +62,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} />
           </Card>
         )}
+        <Card title={t('Език')} className="lg:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-mist-300">{t('Играта, известията и имейлите идват на избрания език.')}</p>
+            <LanguageSwitcher />
+          </div>
+        </Card>
         {shade && (
           <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />{t('Сенчести товари')}</span>} className="lg:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-3">

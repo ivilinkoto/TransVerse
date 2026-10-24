@@ -1,4 +1,5 @@
 import { ArrowRight, Bell, BellOff, CalendarRange, Coins, Download, Gavel, Globe2, MapPinned, MessagesSquare, Route, ScrollText, ShieldCheck, Smartphone, Sparkles, Ticket, Trophy, Truck, UserPlus, Users } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { DISCORD_URL } from '@/lib/community';
 import Link from 'next/link';
 import { Logo } from '@/components/brand/Logo';
@@ -63,6 +64,7 @@ export default async function HomePage() {
             <Link href="/updates" className="hover:text-white">{tr('Обновления')}</Link>
           </nav>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher compact />
             <Link href="/login" className="btn-ghost">{tr('Вход')}</Link>
             <Link href="/register" className="btn-primary">{tr('Регистрация')}</Link>
           </div>
