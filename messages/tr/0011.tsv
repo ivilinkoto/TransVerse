@@ -1,0 +1,249 @@
+e02cfe64e7	Notifications ({0} new)	Уведомления ({0} новых)
+c6dcfe8265	Notifications as a direct message in Discord	Уведомления личным сообщением в Discord
+ad4537beca	Notifications to phones	Уведомления на телефоны
+702c2aea73	Notifications on the phone and the computer	Уведомления на телефоне и компьютере
+45292ff64c	Optional phone notifications: new categories (favourite lanes, clients, fines, weekly, holidays) and quiet hours in Settings — then the phone stays silent, and the notifications stay in the game.	Уведомления на телефоне по выбору: новые категории (любимые линии, клиенты, штрафы, еженедельник, праздники) и тихие часы в Настройках — тогда телефон молчит, а уведомления остаются в игре.
+0f5ce42a21	The notifications about trips that arrived in one day are gathered into one line with the total.	Уведомления о прибывших рейсах за день собираются в одну строку с общей суммой.
+3447701041	Phone notifications are sent with high priority — Android no longer holds them back while the phone sleeps.	Уведомления на телефон отправляются с высоким приоритетом — Android больше не задерживает их, пока телефон спит.
+164c58512f	The game's notifications (truck arrived, urgent delivery, message…) now reach the phone even when it is asleep. If one notification can't be sent, it no longer stops the rest.	Уведомления игры (грузовик прибыл, срочная доставка, сообщение…) теперь доходят до телефона, даже когда он спит. Если одно уведомление не удаётся отправить, это больше не останавливает остальные.
+6705e02824	Notifications arrive	Уведомления приходят
+a126e8559e	Notifications work! We'll write to you when the truck arrives or there is an urgent delivery.	Уведомления работают! Напишем, когда грузовик прибудет или появится срочная доставка.
+fe959a07de	Notifications are blocked for this site. Allow them in the browser settings (the padlock icon next to the address) and try again.	Уведомления для этого сайта заблокированы. Разреши их в настройках браузера (значок замка рядом с адресом) и попробуй снова.
+a0eb506222	Notifications are on on this device.	Уведомления на этом устройстве включены.
+673b2450a2	Outside the plan ({0}) — they stay; remove them by hand if they aren't needed	Вне плана ({0}) — остаются; удали вручную, если не нужны
+efb09452dd	Oversized	Негабаритный
+3fda540086	Oversized	Негабаритные
+7df400d0b0	Oversized loads	Негабаритные грузы
+3dea606d8f	Oversized loads (“Oversized loads” licence, low-bed trailer).	Негабаритные грузы (лицензия «Негабаритные грузы», низкорамный прицеп).
+58cbd617ad	Endurance	Выносливость
+449731c44e	Requires level	Требует уровня
+0a29714d36	Requires level {0}.	Требует уровня {0}.
+eb93a598a4	Requirements for founding	Требования для основания
+e604cc5de0	Off (basic design)	Выключена (основной дизайн)
+93abea4abb	You have been removed from the company	Вас исключили из компании
+ee7e3cd09c	It's off: you don't see shady offers and the game is honest only. You turn it on here or in Settings.	Выключено: ты не видишь теневых предложений, и игра только честная. Включается здесь или в Настройках.
+34bc0b1e69	Off: the game is honest only. You can turn them on at any time.	Выключено: игра только честная. Включить можно в любой момент.
+747cdfdaec	Turn off	Выключить
+c5caacbb95	Turn off the shady shipments	Выключить теневые посылки
+460b334abb	Turn off the decorations	Выключить украшения
+b865cdb106	Leave the convoy	Покинуть колонну
+ce2ea319d3	The new issue is out — see the drivers of the week.	Вышел новый номер — посмотри водителей недели.
+b954795cf1	Left the yard.	Выехал со двора.
+54e93a5d0b	Logged out	Вышли
+53403362ff	It goes outside the plot.	Выходит за пределы участка.
+16d7474e91	Cheating or unfair play	Мошенничество или нечестная игра
+f3f389c8fa	Cheating, bots and exploiting bugs in the game lead to a ban both here and in the game.	Мошенничество, боты и использование ошибок игры ведут к бану и здесь, и в игре.
+38dc30d21c	Covered	Пройдено
+ccdb1e4cb1	Cover {0} loaded km together	Проедьте вместе {0} км с грузом
+30eb682049	Cover {0} loaded together{1}{2}	Проедьте вместе {0} с грузом{1}{2}
+fbb211d829	Drive 1,500 km with Easter loads	Проедь 1 500 км с пасхальными грузами
+ce60a88135	Drive 1,500 km with Christmas loads	Проедь 1 500 км с рождественскими грузами
+6e64865b32	Drive 1,500 km with holiday loads	Проедь 1 500 км с праздничными грузами
+dfe2b3bba8	Drive 1,500 km with spring loads	Проедь 1 500 км с весенними грузами
+cd2bf45162	Drive 1,500 km loaded	Проедь 1 500 км с грузом
+94ae6e2a86	Drive 3,000 km loaded	Проедь 3 000 км с грузом
+e0b6be1e8a	Drive 300 km loaded	Проедь 300 км с грузом
+3876346a99	Drive 6,000 km loaded	Проедь 6 000 км с грузом
+59a6087851	Drive {0} km loaded	Проедь {0} км с грузом
+9534d390c2	Drive {0} km loaded this season	Проедь {0} км с грузом в этом сезоне
+5bcc892d85	Drive 10,000 km in total.	Проедь всего 10 000 км.
+c901ba0e5f	Drive 100,000 km in total.	Проедь всего 100 000 км.
+5be1b4f1c0	İzmir	Измир
+690e1ec153	Images	Изображения
+d74921ed77	Behind:	Отстают:
+f1c156f175	Paid off — the truck is fully yours.	Выплачен — грузовик полностью твой.
+29f94d80c6	Paid {0} of {1} · next instalment {2} on {3}{4}	Выплачено {0} из {1} · следующий платёж {2} — {3}{4}
+528167a5b8	Paid to the owner on closing	Выплачено владельцу при закрытии
+b1f0d13119	Pay off early	Погасить досрочно
+7a8d12e52f	Pay off now · {0}	Погасить сейчас · {0}
+c49a871206	We only use the cookie needed to log in to the profile. We don't use advertising cookies or third-party tracking.	Мы используем только необходимый cookie для входа в профиль. Мы не используем рекламные cookie и стороннее отслеживание.
+872a68353d	Sent {0}	Отправлено {0}
+9b69380c05	Sent to {0}{1}	Отправлено {0}{1}
+018089071a	Money sent	Отправленные деньги
+604c3f4567	Invitations sent	Отправленные приглашения
+992a7c29d7	Sent: {0}.{1}	Отправлено: {0}.{1}
+1df4fc241a	Sent to {0} device(s).	Отправлено на {0} устройств(а).
+7cbe23d12f	Sent by {0}.	Отправлено {0}.
+d95b3693fb	Sent — check your mail.	Отправлено — проверь почту.
+36a8952388	Send	Отправить
+e529b7e0e8	Send {0}	Отправить {0}
+42b7c3d8a4	Send {0} to {1}.	Отправить {0} игроку {1}.
+537ba0069f	Send to an address at abv.bg or mail.bg and see whether it reaches “Inbox”, “Spam” or doesn't arrive at all. The server's answer is written to the log.	Отправь на адрес в abv.bg или mail.bg и посмотри, попадёт ли письмо во «Входящие», «Спам» или не дойдёт вовсе. Ответ сервера записывается в журнал.
+e98fa7d1d7	Send a request	Отправить обращение
+96aa64c407	Send a notification to all players	Отправить уведомление всем игрокам
+a47c352608	Send an application	Отправить заявку
+782e262b8d	Send a link for a new password	Отправить ссылку для нового пароля
+6c54e1a9a2	Send the link to a friend.	Отправь ссылку другу.
+3bc75c1901	Send the link again	Отправить ссылку снова
+9f06fed438	Send your personal link: after the first {0} deliveries your friend gets {1}, and you get {2} and {3} TC.	Отправь свою личную ссылку: после первых {0} доставок друг получит {1}, а ты — {2} и {3} TC.
+69b37cc0f9	Send money	Отправить деньги
+9fb5a57c89	Send money to {0}	Отправить деньги {0}
+ce3547c8b9	Send money to another player from their profile → “Send money”, with a note. The history is in Finance → “Transfers between players”.	Отправляй деньги другому игроку из его профиля → «Отправить деньги», с заметкой. История — в Финансы → «Переводы между игроками».
+3eed43ac56	Send a test	Отправить тест
+0c54661f24	Send a test	Отправить пробное
+b703ae3669	Send the report	Отправить сигнал
+cf33f498a7	Send a load	Отправить груз
+bc682acdb0	Sending e-mails isn't turned on yet.	Отправка писем пока не включена.
+58712cb4f5	Sending e-mails isn't turned on yet. Write to the game's support — an administrator will send you a link for a new password.	Отправка писем пока не включена. Напиши в поддержку игры — администратор пришлёт тебе ссылку для нового пароля.
+ec126307de	Sending…	Отправка…
+ee03d13169	You missed the special load “{0}”	Ты упустил особый груз «{0}»
+d96fb1f42b	Auction fulfilled: {0}	Торги выполнены: {0}
+89d0176fdf	Completed · {0} · the reward is in the treasury	Выполнено · {0} · награда в казне
+711edf9b5c	A completed mission can't be swapped.	Выполненную миссию нельзя заменить.
+ce18610b2e	Completed — every company gets {0} in the treasury.	Выполнено — каждая компания получает {0} в казну.
+6b35217286	Completed now	Выполнено сейчас
+011632c645	Meet all the requirements to activate the button.	Выполните все требования, чтобы активировать кнопку.
+9fd4a235f6	Complete {0} {1}{2}{3} together	Выполните вместе {0} {1}{2}{3}
+04b5b46d78	Fulfil 5 client contracts.	Выполни 5 договоров с клиентами.
+6ed51501de	Complete {0} deliveries	Выполни {0} доставок
+54fd412f8c	Complete {0} deliveries for your company	Выполни {0} доставок для своей компании
+9f14616f87	Complete {0} deliveries this season	Выполни {0} доставок в этом сезоне
+1045e6f780	Complete {0} trips	Выполни {0} рейсов
+2a26539ad5	Complete {0} trips over {1} km	Выполни {0} рейсов длиннее {1} км
+4707e0b83b	Complete {0} international deliveries	Выполни {0} международных доставок
+334a6ede1a	Complete all Easter missions 2027.	Выполни все пасхальные миссии 2027.
+255ac04aec	Complete all Easter missions.	Выполни все пасхальные миссии.
+9573495dd0	Complete all Christmas missions in “Christmas fever” 2026.	Выполни все рождественские миссии в «Рождественской лихорадке» 2026.
+84540e5681	Complete all Christmas missions.	Выполни все рождественские миссии.
+c72d587743	Complete all Baba Marta missions 2027.	Выполни все миссии Бабы Марты 2027.
+ea5e91f354	Complete all Baba Marta missions.	Выполни все миссии Бабы Марты.
+4bef36576c	Complete all Halloween missions in “The night of the pumpkins” 2026.	Выполни все хэллоуинские миссии в «Ночи тыкв» 2026.
+4c1cc187e3	Complete all Halloween missions.	Выполни все хэллоуинские миссии.
+a988be8271	Fulfil a client contract.	Выполни договор с клиентом.
+c97d30607a	Complete a few orders and here you'll see what brings the most.	Выполни несколько заказов, и здесь увидишь, что приносит больше всего.
+44dfa16b61	Auctions in progress	Выполняемые торги
+7f6658ecee	Download the app	Скачать приложение
+17cb883825	Expires {0}	Истекает {0}
+6c044d1f4a	Expires from the board	Исчезает с биржи
+ae03b90343	Expiring soon	Скоро истекают
+25a9f0ba89	Source: GeoNames (CC BY 4.0). Port cities generate container loads.	Источник: GeoNames (CC BY 4.0). Портовые города генерируют контейнерные грузы.
+225d81a614	Delete the role	Удалить должность
+39b43e4dde	Delete the ad	Удалить объявление
+75a65fe792	Delete the message	Удалить сообщение
+9cbd4e3fdc	Delete their messages from the last 24 hours	Удалить его сообщения за последние сутки
+5f68e8675c	Delete the chat	Удалить чат
+db71e56347	Log out	Выход
+0bc42ba202	Waited out the storm in a safe place.	Переждал бурю в безопасном месте.
+6566b1b944	Waited patiently in the queue.	Терпеливо ждал в очереди.
+47b4095bef	Wait in the queue	Подождать в очереди
+68a3f50cbe	Clear the logo, banner and texts	Очистить логотип, баннер и тексты
+9f947355a5	Cleared the profile of the company “{0}” of {1}{2}	Очистил профиль компании «{0}» игрока {1}{2}
+7b89b631f8	Clear the whole chat	Очистить весь чат
+c0e082935a	An ⓘ icon next to the difficult words, a glossary in “Help”, a simple view of the board and the notifications about arrived trips — gathered into one line a day.	Значок ⓘ рядом со сложными словами, словарь в «Помощи», простой вид биржи и уведомления о прибывших рейсах — собранные в одну строку за день.
+af7cb326e3	Economy	Экономика
+8bcbf606cc	The economy is normal — no suggestion.	Экономика в норме — предложений нет.
+6d27469aa7	The economy, the companies and the events in the game are simulated.	Экономика, компании и события в игре смоделированы.
+05067b8831	Economical driver	Экономичный водитель
+d7d5b5fb51	Economical driver: place {0}	Экономичный водитель: {0}-е место
+ff7dbf7140	Economical driver: place {0} ({1})	Экономичный водитель: {0}-е место ({1})
+c92be9d5ba	Economical driver: place {0}!	Экономичный водитель: {0}-е место!
+3850d917e9	Economical driving	Экономичное вождение
+75386f59fb	Economy	Экономичность
+e1bc3cb1a0	Iliev	Илиев
+0adcd7607f	Illustration · sample notifications	Иллюстрация · пример уведомлений
+4fbc993150	Illustration of a notification on a phone	Иллюстрация уведомления на телефоне
+b0b5459b03	Illustration of the dashboard · sample data	Иллюстрация главной · пример данных
+d8164de9e1	Illustration of the dashboard in the game	Иллюстрация главной страницы в игре
+8b39a2e396	Got it	Есть
+9223d79933	You have 5 open requests. Wait for an answer or close one.	У вас 5 открытых обращений. Дождитесь ответа или закройте одно.
+4bc103f802	You have several unfinished payments. Try again in a little while.	У вас несколько незавершённых платежей. Попробуйте чуть позже.
+fbe87645b4	You have 3 votes.	У тебя 3 голоса.
+659393cff2	You have {0} TC. TransCoin can be bought from	У тебя {0} TC. ТрансКоин покупаются в
+236ba7e511	You have {0} shares.	У тебя {0} акций.
+7a21b2c1af	You have {0} votes a month — you have already used them.	У тебя {0} голосов в месяц — ты их уже отдал.
+f5a12c6bc7	You have {0} open tickets — wait for an answer or close one.	У тебя {0} открытых тикетов — дождись ответа или закрой один.
+644e74d86b	You have it through the company “{0}” — valid while you are a member.	У тебя это через компанию «{0}» — действует, пока ты участник.
+6791c7ca57	You have an unpaid fine ({0}) — pay or appeal.	У тебя неоплаченный штраф ({0}) — оплати или обжалуй.
+d1532a7b3e	You have the right of access, correction, deletion, restriction, portability and objection (GDPR). Write to us at the e-mail above or through “Support” in the game. You can also lodge a complaint with the Commission for Personal Data Protection (cpdp.bg).	У тебя есть право на доступ, исправление, удаление, ограничение, переносимость и возражение (GDPR). Пиши нам на e-mail выше или через «Поддержку» в игре. Можно также подать жалобу в Комиссию по защите персональных данных (cpdp.bg).
+c65e0d3fad	You have a free vehicle — find it an order.	У тебя есть свободная машина — найди ей заказ.
+02d9ca3c62	Name	Имя
+2913d91776	Name (optional)	Имя (необязательно)
+edee75bf73	In-game name	Имя в игре
+3acabeac60	Company name or tag	Название или тег компании
+bd86de2088	Event name	Название ивента
+05a43b1199	Player or company name	Имя игрока или название компании
+9d7070720f	Player or company name…	Имя игрока или название компании…
+055253ff9e	Company name	Название компании
+66864c42bc	Department name	Название отдела
+90cc0eccb3	Alliance name	Название союза
+5125587b99	Load name	Название груза
+73160bb08b	Tradition name	Название традиции
+2cec8955a1	E-mail	E-mail
+7f6a166258	Contact e-mail:	E-mail для связи:
+645673453a	E-mail or username	E-mail или имя пользователя
+069984ca97	The e-mail you registered with	E-mail, с которым ты регистрировался
+164efecd57	E-mails	Письма
+698fe79ae4	The e-mail is already confirmed.	E-mail уже подтверждён.
+d1edebd1d7	The e-mail is confirmed. Thank you!	E-mail подтверждён. Спасибо!
+31c605e86a	The e-mail or username is already taken.	E-mail или имя пользователя уже заняты.
+c31fbfe2ae	The name is from {0} to {1} characters.	Имя — от {0} до {1} символов.
+c508ab6cd7	The name is at least 3 characters.	Имя — не меньше 3 символов.
+725c3d87b9	The name is too short.	Имя слишком короткое.
+e79236e608	Your company's name on the trailer	Название твоей компании на прицепе
+92a5a9892e	The company name must be at least 3 characters.	Название компании должно быть не короче 3 символов.
+bde458a524	Impex	Импекс
+19d870dcef	The empire is yours.	Империя твоя.
+50e8e6f376	Industrial press	Промышленный пресс
+fa90ceceb3	Industries	Индастриз
+a3ec51dd33	Initials	Инициалы
+341219ed16	Install TransVerse as an app	Установи TransVerse как приложение
+61f28152b5	Install TransVerse on iPhone: press	Установи TransVerse на iPhone: нажми
+9a2acaddb6	Install as an app	Установить как приложение
+08e2c0b13a	Inflation (7 days)	Инфляция (7 дней)
+40ba79179f	Heraklion	Ираклион
+e4cbd96f8b	Wants +{0} % salary ({1} a day).	Хочет +{0} % к зарплате ({1} в день).
+ffa958da06	Wants a day off — won't drive until then.	Просит выходной — до тех пор не будет ездить.
+a7ab34b06a	Istanbul (Ambarlı)	Стамбул (Амбарлы)
+6d54dbb984	Istanbul (Halkalı)	Стамбул (Халкалы)
+dd5e46798d	Real cities. Real roads. Real borders.	Настоящие города. Настоящие дороги. Настоящие границы.
+51332d3b61	Are the cities and roads real?	Города и дороги настоящие?
+648e732af9	Real road (Valhalla / OSM) · without rests and queues	Настоящая дорога (Valhalla / OSM) · без отдыха и очередей
+7a878a398c	Real time on the road	Реальное время в пути
+d5fec7479b	History	История
+403f0765cb	Company history	История компании
+596ff03cd5	The story	История
+2b1018734f	The story (Competition → The story): five chapters with made-up characters (Uncle Stoyan, Maria from dispatch, the “Grey Wolf” company), three delivery tasks each; every chapter brings money, XP and TransCoin, the last one — the “Own way” badge.	История (Соревнования → История): пять глав с вымышленными героями (дядя Стоян, Мария из диспетчерской, фирма «Серый Волк»), по три задания на доставки; каждая глава приносит деньги, опыт и ТрансКоин, последняя — значок «Свой путь».
+4ef2541a92	The story is complete 🎉	История пройдена 🎉
+a83418673a	The story and decisions on the road	История и решения в пути
+5c69f93a42	The story: “{0}”	История: «{0}»
+b18195948f	Italian summer	Итальянское лето
+6bdb4857ba	Yordan	Йордан
+2b6477753a	CHRISTMAS · +{0}%	РОЖДЕСТВО · +{0}%
+d09173711e	CONVOY WITH {0} · +{1}%	КОЛОННА С {0} · +{1}%
+7fa9df8c6a	SHIP {0}	СУДНО {0}
+acd6d9edd4	TO THE BASE	К БАЗЕ
+d4dafcce28	Cabotage	Каботаж
+4a88ed24f4	Cabotage: in a country that isn't the company's, up to 3 domestic trips in 7 days.	Каботаж: в стране, не являющейся страной компании, до 3 внутренних рейсов за 7 дней.
+b2434c6dab	Cabotage: in a foreign country at most {0} domestic trips are driven in {1} days. Take an international load.	Каботаж: в чужой стране можно сделать не больше {0} внутренних рейсов за {1} дней. Возьми международный груз.
+b7dbfbc2c3	Say hello to the column.	Поздоровайся с колонной.
+d66dafc5c3	You told them you'd arrive on time.	Ты сказал ему, что прибудешь в срок.
+8a33af13e9	The Bock Casemates, Luxembourg	Казематы Бок, Люксембург
+b9090ca53b	What the game looks like	Как выглядит игра
+9ee951039a	How it works	Как это работает
+d7bee04296	How does it work?	Как это работает?
+1a63c9b8f1	How the contributions work	Как работают взносы
+b5477b4dbb	How to play	Как играть
+30dd41bc4b	How the company develops	Как развивается компания
+f4e08425d6	What data we collect and why	Какие данные мы собираем и зачем
+ec0f216e04	What	Что
+7e79c41c71	What to get	Что получать
+cb3c52cb04	What to do now	Что делать сейчас
+b201973f89	What to do now?	Что делать сейчас?
+3f9cc2af18	What should be fixed	Что нужно исправить
+7a9842fcc6	What does VIP give?	Что даёт VIP?
+a10f223d0d	What is needed	Что нужно
+e9591f312b	What is needed for this order	Что нужно для этого заказа
+f8136f993a	What is “{0}”?	Что такое «{0}»?
+ca9adec804	What the TransVerse bot can do	Что умеет бот TransVerse
+af22676af3	What's new in every version of TransVerse — the detailed descriptions of the updates.	Что нового в каждой версии TransVerse — подробные описания обновлений.
+cc63a1a9c0	What's new in every version of TransVerse.	Что нового в каждой версии TransVerse.
+6e7a72cac9	What the level unlocks	Что открывает уровень
+136062bc1b	What the members get	Что получают участники
+df274175f1	What you get with a company	Что ты получаешь с компанией
+2fffff5179	What “{0}” offers and who it is looking for (routes, contribution, schedule)…	Что предлагает «{0}» и кого ищет (маршруты, взнос, график)…
+4d9a935aab	What are you selling?	Что продаёшь?
+332335fe04	What counts	Что засчитывается
+d8db3af6ae	What happens at the end of the season?	Что происходит в конце сезона?
+2f2b08b36e	What is happening on the road right now	Что происходит на дороге прямо сейчас
+213263694d	What happened?	Что случилось?
+f0c272df5a	What awaits you	Что тебя ждёт

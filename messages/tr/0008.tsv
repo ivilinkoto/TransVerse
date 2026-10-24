@@ -1,0 +1,250 @@
+8fa67cb595	Branch city	Город филиала
+0329ad5c9e	City with a freight market (number = orders)	Город с грузовым рынком (число = заказы)
+825aec6a72	Cities	Города
+877bc71d61	Cities:	Города:
+e19a85c840	Cities: GeoNames · Routes: Valhalla / OSM	Города: GeoNames · Маршруты: Valhalla / OSM
+8866697ecb	The cities and roads are real (GeoNames, OpenStreetMap)	Города и дороги настоящие (GeoNames, OpenStreetMap)
+f3eeb89207	The cities grow	Города растут
+5730acea06	The cities grow (Competition → The cities grow): the tonnes from all players raise the city — Quiet town, Lively town (300 t), Trading centre (1,500 t), Logistics hub (6,000 t), Freight metropolis (20,000 t). Every level above the first gives +3 % for the loads from the city. A weekly ranking and a city of the week in Discord. Game data.	Города растут (Соревнования → Города растут): тонны от всех игроков поднимают город — Тихий город, Оживлённый город (300 т), Торговый центр (1 500 т), Логистический узел (6 000 т), Грузовой мегаполис (20 000 т). Каждый уровень выше первого даёт +3 % к грузам из города. Еженедельный рейтинг и город недели в Discord. Игровые данные.
+de9ca0e68b	The cities you have delivered to, and the lanes you have driven loaded (a thicker line — more trips).	Города, в которые ты доставлял, и линии, по которым ты ездил с грузом (толще линия — больше рейсов).
+4d8bff85a5	The hail caught you — you stopped under an overpass for almost an hour.	Тебя застал град — ты простоял под эстакадой почти час.
+f0f6e22d1b	The project city was not found.	Город проекта не найден.
+2633b19dd4	The city was not found.	Город не найден.
+2f4cf1e3f4	Borders	Границы
+ecc107a071	Borders are only lines on the map. Every delivery between two countries counts.	Границы — лишь линии на карте. Засчитывается каждая доставка между двумя странами.
+d49677c6ad	Border control	Пограничный контроль
+1a287db9b2	Graphite	Графит
+2107585a1b	Girders for a new bridge	Балки для нового моста
+e3b9a488e9	Wrong e-mail/username or password.	Неверный e-mail/имя пользователя или пароль.
+0292dbc5bd	Wrong answer — press “I'm not a bot” and try again.	Неверный ответ — нажми «Я не бот» и попробуй снова.
+c0e1b4623d	Error {0} · {1} times in a row	Ошибка {0} · {1} раз подряд
+56d5193b82	An error in one server job (auction, event, newspaper…) no longer stops the sending of notifications and the other jobs.	Ошибка в одной задаче сервера (торги, ивент, газета…) больше не останавливает отправку уведомлений и остальные задачи.
+aa3b26d3f1	Error loading the map	Ошибка загрузки карты
+aff3313e12	Grape harvest	Сбор винограда
+6063de1a69	Grape harvest (1 September – 15 October): autumn loads — grapes, must, apples, pumpkins, walnuts, young wine — pay +20 %; 10 on time in the season — the “Grape harvest” badge and 25 TC.	Сбор винограда (1 сентября – 15 октября): осенние грузы — виноград, сусло, яблоки, тыквы, орехи, молодое вино — оплачиваются +20 %; 10 вовремя за сезон — значок «Сбор винограда» и 25 TC.
+5e293fe874	Grape harvest {0}: {1} autumn loads	Сбор винограда {0}: {1} осенних грузов
+2e04e244f2	Grape must	Виноградное сусло
+575fb60877	Grape must (tanker)	Виноградное сусло (цистерна)
+4391020e88	Group	Груп
+bc3f9de2ff	Group · {0} / {1}	Группа · {0} / {1}
+67183d3a7b	Groups of up to 20 players in your league. The best go up, the last go down.	Группы до 20 игроков в твоей лиге. Лучшие поднимаются, последние опускаются.
+8280f52379	Tyres for every season and cargo insurance	Шины на каждый сезон и страхование груза
+3b56071388	Low-resistance tyres	Шины с низким сопротивлением
+ee524dea90	Block {0}? You won't see their messages and they won't be able to write to you.	Заблокировать {0}? Ты не будешь видеть его сообщения, а он не сможет тебе писать.
+20e2a5caa6	Turn on the shady shipments? The risk is yours — a fine and confiscation at a check.	Включить теневые посылки? Риск твой — штраф и конфискация при проверке.
+087928ab2b	Refund {0} to {1}? The TransCoin / VIP days from the purchase will be removed.	Вернуть {0} игроку {1}? ТрансКоин / дни VIP с этой покупки будут сняты.
+c5dce4261e	Return the truck to the company?	Вернуть грузовик компании?
+3c4f6b9734	Return the truck to the company? It stays in the city where it is now.	Вернуть грузовик компании? Он останется в городе, где находится сейчас.
+6848ed7df6	Return the truck to the lessor?	Вернуть грузовик арендодателю?
+8a91380d0f	Return the truck?	Вернуть грузовик?
+82c1b3cf2b	Reset the multiplier to ×1.00?	Вернуть множитель на ×1,00?
+3c50a93eda	Return the trailer to the company?	Вернуть прицеп компании?
+455670b1ea	Return the trailer to the company? It stays in the city where it is now.	Вернуть прицеп компании? Он останется в городе, где находится сейчас.
+27ea48939c	Return the trailer early? The money is not refunded.	Вернуть прицеп раньше? Деньги не возвращаются.
+55f8e7f0ae	Let's start	Начнём
+ee1098829a	Start “{0}”? You have {1} days.	Начать «{0}»? У вас {1} дней.
+1c8ca49840	Close the poll now?	Закрыть опрос сейчас?
+e09524cc3c	Close the branch in {0}? The money is not refunded.	Закрыть филиал в {0}? Деньги не возвращаются.
+013d0709a7	Turn off {0}?	Отключить {0}?
+37cc5c22e8	Pay off the lease on {0} now for {1}?	Погасить лизинг {0} сейчас за {1}?
+f8c56e827d	Pay the remaining {0} at once?	Выплатить оставшиеся {0} сразу?
+39d4cf9c4a	Send {0} to {1}? The fee is {2} — {3} in total	Отправить {0} игроку {1}? Комиссия {2} — всего {3}
+2f04c08173	Delete all messages in the company chat? This cannot be undone.	Удалить все сообщения в чате компании? Это нельзя отменить.
+1b0167dc82	Delete the whole conversation? It disappears only for you.	Удалить весь разговор? Он исчезнет только у тебя.
+ddd7b33a93	Delete the role?	Удалить должность?
+4843146512	Buy {0} from the treasury for {1}?	Купить {0} из казны за {1}?
+d5742374eb	Buy land for {0} from the treasury?	Купить землю за {0} из казны?
+cc42fce159	Buy “{0}” for {1} from the treasury?	Купить «{0}» за {1} из казны?
+5546dace60	Buy what is missing with delivery for {0} (50 % dearer)?	Купить недостающее с доставкой за {0} (на 50 % дороже)?
+815163e8ed	Buy the materials from the treasury for {0}? The members will haul them from the board.	Купить материалы из казны за {0}? Участники будут возить их с биржи.
+dfd52030d4	Buy {0} t for {1}?	Купить {0} т за {1}?
+d21dca7b5a	Mark the e-mail as confirmed? Only do it if the player proves the address is theirs.	Отметить e-mail как подтверждённый? Делай это, только если игрок докажет, что адрес принадлежит ему.
+b5245706de	Mark your e-mail as confirmed?	Отметить твой e-mail как подтверждённый?
+ad1d85b460	Remove {0} from the cup?	Убрать {0} из кубка?
+a4f94c29c1	Remove the company channel from Discord?	Убрать канал компании из Discord?
+3cc9a63986	Remove the ad?	Убрать объявление?
+173894cbb5	Remove the “{0}” department?	Убрать отдел «{0}»?
+c43df99312	Remove the decorations? The money is not refunded.	Убрать украшения? Деньги не возвращаются.
+0cee787227	Leave the company? You lose its bonuses.	Покинуть компанию? Вы потеряете её бонусы.
+4cd5633012	Unlink Discord? The roles in the server will be removed.	Отвязать Discord? Роли на сервере будут сняты.
+1d4d14e901	Cancel the construction?	Отменить стройку?
+313c79a51e	Buy out {0} ({1}) for {2}?	Выкупить {0} ({1}) за {2}?
+9d92ce6708	Cancel the convoy? All loads are released.	Отменить колонну? Все грузы освобождаются.
+8c3f47d92a	Cancel “{0}”? The rewards will not be given.	Отменить «{0}»? Награды не будут выданы.
+a49894d154	Pay {0} for {1}?	Заплатить {0} за {1}?
+49036a9c0d	Pay {0} from the treasury?	Заплатить {0} из казны?
+18981c8570	Pay {0} TC?	Заплатить {0} TC?
+be3916b2ab	Propose to “{0}” to merge with “{1}”?	Предложить «{0}» слияние с «{1}»?
+aa4b72dfad	End the rental? The unused days are refunded to the renter.	Прекратить аренду? Неиспользованные дни возвращаются арендатору.
+d97ea93010	End the mentorship of {0}?	Прекратить наставничество {0}?
+ff0b8011d7	End the mentorship? The level 5 reward is lost.	Прекратить наставничество? Награда за 5-й уровень будет потеряна.
+16d8afacc1	Remove {0} from your friends?	Удалить {0} из друзей?
+f2e7eb29eb	Accept the auction? A deposit of {0} is taken from the treasury; {1} trips must arrive by {2}.	Принять торги? Из казны берётся залог {0}; {1} рейсов должны прибыть до {2}.
+af9df509b4	Apply ×{0} for the new loads?	Применить ×{0} к новым грузам?
+f19943f0f7	Sell {0} t for {1}?	Продать {0} т за {1}?
+d301fa1a1e	Sell the truck? The money goes to the treasury.	Продать грузовик? Деньги пойдут в казну.
+8433955ecb	Sell the trailer? The money goes to the treasury.	Продать прицеп? Деньги пойдут в казну.
+ab21636d48	Dissolve the alliance? It disappears for all companies in it, along with the chat.	Распустить союз? Он исчезнет для всех компаний в нём вместе с чатом.
+1849d2613b	Join “{0}”?	Вступить в «{0}»?
+c498a4d387	Swap this mission for another?	Заменить эту миссию другой?
+ed740a12d0	Stop the auction? The leading bid is returned.	Остановить торги? Лучшая ставка возвращается.
+d7ee9dff0e	Create a link for a new password? Send it only to the profile owner (e.g. in a support ticket).	Создать ссылку для нового пароля? Отправьте её только владельцу профиля (например, в тикете поддержки).
+a5bbaa50c3	Yes — in a shared company, in the chat or as rivals in the leagues. If you invite a friend with your personal link, you both get a reward after their first {0} deliveries.	Да — в общей компании, в чате или соперниками в лигах. Если пригласишь друга по личной ссылке, вы оба получите награду после его первых {0} доставок.
+59f6b073f9	Yes, give it out	Да, раздать
+97fbd5012f	Yes. The cities and ports come from GeoNames, and the routes follow the OpenStreetMap road network, with borders and road tolls. The prices, companies, clients and events in the game are simulated (game data).	Да. Города и порты взяты из GeoNames, а маршруты проложены по дорожной сети OpenStreetMap, с границами и платными дорогами. Цены, компании, клиенты и события в игре смоделированы (игровые данные).
+4b00b47fd2	Yes. The game runs in the phone's browser and can be installed as an app with notifications.	Да. Игра работает в браузере телефона и устанавливается как приложение с уведомлениями.
+4186a91b8e	Yes. The whole game is free. TransCoin (TC) and VIP can be bought, but TC are also earned in the game — from missions, events, the daily reward, auctions and invitations.	Да. Вся игра бесплатна. ТрансКоин (TC) и VIP можно купить, но TC зарабатываются и в игре — в миссиях, ивентах, ежедневной награде, торгах и за приглашения.
+cea7fc0e81	Gives the members bonuses from the treasury for good work.	Выдаёт участникам премии из казны за хорошую работу.
+bdf5cc455f	Gave VIP to {0} for {1} days{2}	Выдал VIP {0} на {1} дней{2}
+2e201a93d0	Gave {0} TransCoin to {1}{2}	Выдал {0} ТрансКоин {1}{2}
+c6ad22e626	Given by an administrator	Выдано администратором
+36d15da8d0	Give VIP	Выдать VIP
+5e95e63f66	Give TransCoin	Выдать ТрансКоин
+11c36deb7b	Give a rest	Дать отдых
+d655b0b4d5	Give the bonus	Выдать премию
+986260db3d	Give a 👍 if you like it — the most liked truck of the month wins.	Поставь 👍, если нравится — самый популярный грузовик месяца побеждает.
+7d23ba10be	Data and licences	Данные и лицензии
+2f8b287176	The merchant's details will be published before sales begin.	Данные продавца будут опубликованы до начала продаж.
+c157009893	Donation to the museum: {0}	Пожертвование в музей: {0}
+ea4cc242e8	Donate the first truck from its showcase in the service.	Подари первый грузовик с его витрины в сервисе.
+41e694373a	Donate to the museum	Подарить музею
+a5b49d2eba	Date	Дата
+2f1a5adc23	Date as MM-DD.	Дата в формате ММ-ДД.
+01ce9b9fd5	Two drivers in one truck — they drive in shifts, without the long rests. Needed for the trans-European trips.	Два водителя в одном грузовике — едут посменно, без долгого отдыха. Нужен для трансъевропейских рейсов.
+9cf3509daf	Two drivers, one load: +{0} % each.	Два водителя, один груз: +{0} % каждому.
+e8e3c6e9f4	You both get the rewards automatically.	Вы оба получите награды автоматически.
+a83b2f6a4d	Two reputations: the underground one grows with successful shipments (Unknown → Known → Trusted → Legend of the shadows) and unlocks dearer shipments and the black market; the honest one (the company's) grows by +1 when you report an offer to customs (up to 3 a day).	Две репутации: подпольная растёт с успешными посылками (Незнакомец → Знакомый → Доверенный → Легенда теней) и открывает более дорогие посылки и чёрный рынок; честная (компании) растёт на +1, когда ты сообщаешь о предложении таможне (до 3 в день).
+f7bb485b17	TransCoin transactions	Операции с ТрансКоин
+6afde424a1	Double crew	Двойной экипаж
+fd37569839	Double crew for {0}	Двойной экипаж для {0}
+235d8cd934	Double crew for the long lanes	Двойной экипаж для дальних линий
+8c9a33ac32	Double crew: Georgi + Maria	Двойной экипаж: Георгий + Мария
+bd74fe33a1	Double XP from deliveries for 24 hours. Doesn't affect season points.	Двойной опыт за доставки на 24 часа. Не влияет на сезонные очки.
+6991659907	The pairs are known after the previous round.	Пары становятся известны после предыдущего раунда.
+12733d2c19	Yard with a ramp	Двор с рампой
+ace2c3ca7f	Schönbrunn Palace, Vienna	Дворец Шёнбрунн, Вена
+4264de7a17	The Palace of the Parliament, Bucharest	Дворец парламента, Бухарест
+42a53a8b01	Devnya	Девня
+4fe9c0675c	Action	Действие
+395b2f58da	The action requires administrator rights.	Для действия нужны права администратора.
+4c1f55a73a	The share is from {0} to {1} %.	Доля — от {0} до {1} %.
+f58ab7b5e7	Day	День
+2bc38ec40e	Day {0}: {1}{2}	День {0}: {1}{2}
+65b2892d00	Day and night on the plot (20:00 – 6:00 Bulgarian time): a dark sky, glowing windows and lamps, car headlights. Rain with puddles on about 1 in 3 days (15 September – 30 November and 16 March – 31 May), autumn trees and falling leaves in October. Only for looks; guests see it too.	День и ночь на участке (20:00 – 6:00 по болгарскому времени): тёмное небо, светящиеся окна и фонари, фары машин. Дождь с лужами примерно в 1 из 3 дней (15 сентября – 30 ноября и 16 марта – 31 мая), осенние деревья и листопад в октябре. Только для красоты; видят и гости.
+f031da181d	Day and night, rain and falling leaves	День и ночь, дождь и листопад
+a704373b5a	Portugal Day	День Португалии
+2f9e9292c0	German Unity Day	День германского единства
+07b36c36c3	Slovenia's Statehood Day	День государственности Словении
+7bb2a03908	Serbia's Statehood Day	День государственности Сербии
+4da599cbae	Croatia's Statehood Day	День государственности Хорватии
+b602593d29	Montenegro's Statehood Day	День государственности Черногории
+0f37df5013	Company day	День компании
+1baed981cb	Company day: one named date in the year; on that day the members get +5 % per trip.	День компании: одна дата в году с названием; в этот день участники получают +5 % за рейс.
+6fc7bbbe26	Slovakia's Constitution Day	День Конституции Словакии
+9bec99958b	King's Day in the Netherlands	День короля в Нидерландах
+a269553435	Independent Czechoslovak State Day	День независимого чехословацкого государства
+5ac3640139	Albania's Independence Day	День независимости Албании
+05c43779a0	Bosnia and Herzegovina's Independence Day	День независимости Боснии и Герцеговины
+2aa4552fe7	Greece's Independence Day	День независимости Греции
+ad91b898cb	Kosovo's Independence Day	День независимости Косово
+5b52ad56c4	Poland's Independence Day	День независимости Польши
+c7575003c3	North Macedonia's Independence Day	День независимости Северной Македонии
+02720fb575	Founding day	День основания
+1db2c7145d	Republic Day of Turkey	День Республики в Турции
+ff186ba43d	Day and night are equal — every trip on time brings +{0} %, by day and by night. {1} trips on time give the “First spring {2}” badge.	День равен ночи — каждый рейс вовремя приносит +{0} %, днём и ночью. {1} рейсов вовремя дают значок «Первая весна {2}».
+b66a6ff516	Depots	Депо
+665e460ebf	Depots in other cities — your trucks leave from there.	Депо в других городах — оттуда выезжают твои грузовики.
+8198099a93	Depots (garages) set where you buy and park vehicles and how many vehicles you can have. You can open them without a company too.	Депо (гаражи) определяют, где вы покупаете и паркуете технику и сколько машин можете иметь. Открывать их можно и без компании.
+7154a14d02	Depot	Депо
+83f527d725	Depot {0}{1}	Депо {0}{1}
+342265362b	Depot for {0}	Депо для {0}
+5ec09b6f0b	Delivery depot	Депо доставки
+47b1fc616e	A depot can only be opened in a city that is part of the freight market.	Депо можно открыть только в городе, входящем в грузовой рынок.
+f4d57d7855	Haul deposit: {0} t {1}	Залог за перевозку: {0} т {1}
+98d04bd188	Auction deposit: {0}	Залог за торги: {0}
+95b481e6f3	Deposit from the treasury	Залог из казны
+07cfbfa010	Auction deposits	Залоги за торги
+d044335397	The depot is at maximum capacity.	Депо на максимальной вместимости.
+7814c8793c	The depot was not found.	Депо не найдено.
+1b0e5843ed	Ten autumn loads on time in one season.	Десять осенних грузов вовремя за один сезон.
+0ac698240c	Desislava	Десислава
+039edffc7a	Destination	Пункт назначения
+1904c9325e	Diamond	Бриллиант
+2ea0339f0f	Dividend	Дивиденд
+7faca91734	Dividend from {0} ({1} shares)	Дивиденд от {0} ({1} акций)
+da5f0640c9	Dividend from {0} 📈	Дивиденд от {0} 📈
+847b9cb2c8	Dividends for week {0}	Дивиденды за неделю {0}
+01127713dc	Shareholder dividends	Дивиденды акционерам
+11e5c60537	Dividends from shares	Дивиденды по акциям
+ad4caf73ae	Divisions	Дивизионы
+19ba7a9fbe	Company divisions (Rankings → Divisions), perfect streak, “Cities” album.	Дивизионы компаний (Рейтинги → Дивизионы), идеальная серия, альбом «Города».
+248ef5cafb	Divisions, perfect streak, album	Дивизионы, идеальная серия, альбом
+a60dac20f9	Diesel today	Дизель сегодня
+bf5ee53e0a	Heating diesel	Печное топливо
+d96fde4775	Diesel fuel	Дизельное топливо
+c6542d0653	Dimitrov	Димитров
+b7466fbbc8	Dimitar	Димитр
+99e3277736	Dynasty	Династия
+61aec32c3a	Dynasty: the owners over the years and the most loyal members — on the public profile too.	Династия: владельцы за все годы и самые верные участники — и в публичном профиле.
+769f642607	Dispatcher	Диспетчер
+ee3e2391d8	Board dispatcher: suggests one trip for every free truck (profit per minute on the road, on time), without urgent orders, auctions or risks; you confirm which ones go. VIP: automatic dispatcher for a single truck, up to 20 trips a day.	Диспетчер биржи: предлагает по одному рейсу для каждого свободного грузовика (прибыль за минуту пути, вовремя), без срочных заказов, торгов и рисков; ты подтверждаешь, какие отправить. VIP: автоматический диспетчер для отдельного грузовика, до 20 рейсов в день.
+6b37b2943b	Dispatcher, favourite lanes and risks	Диспетчер, любимые линии и риски
+358a7a4c4c	Dispatcher: 3 free trucks → 3 suggestions	Диспетчер: 3 свободных грузовика → 3 предложения
+67faf108c2	Dispatcher: “Suggest trips” picks for every free truck the best ordinary order (profit per minute on the road) that will arrive on time. You choose which ones go.	Диспетчер: «Предложить рейсы» выбирает для каждого свободного грузовика самый выгодный обычный заказ (прибыль за минуту пути), который успеет вовремя. Ты выбираешь, какие отправить.
+9dc27e8724	Distribution	Дистрибуция
+5d007b1235	Role	Должность
+ba07706980	Role of {0}	Должность {0}
+e3c08a5faf	Roles	Должности
+7b041e7d51	Roles are ordered by seniority — a smaller number is a higher role. Everyone manages only the roles below their own and can only give permissions they have. Roles: {0} / {1}	Должности упорядочены по старшинству — меньшее число означает более высокую должность. Каждый управляет только должностями ниже своей и может давать только те права, которые есть у него. Должности: {0} / {1}
+be4fc445dc	Your role isn't allowed to change the settings.	Ваша должность не позволяет менять настройки.
+299df08c88	Your role isn't allowed to edit the company profile.	Ваша должность не позволяет редактировать профиль компании.
+db1adf1572	Your role doesn't have this permission.	У вашей должности нет этого права.
+9ac8f153ff	The role was not found.	Должность не найдена.
+02a14373ba	The role must be below yours.	Должность должна быть ниже вашей.
+f3b2a49bba	Daily reward	Ежедневная награда
+0ac13598f4	Daily reward · day {0}	Ежедневная награда · день {0}
+f0a6c79ec7	Daily reward — day {0}	Ежедневная награда — день {0}
+80dd686603	Daily rest	Суточный отдых
+eb8c5195d4	The daily reward hasn't been collected.	Ежедневная награда не получена.
+365a70bddb	The daily reward is waiting for you	Тебя ждёт ежедневная награда
+a6c0e17c77	The daily reward is waiting for you — collect it before midnight.	Тебя ждёт ежедневная награда — забери её до полуночи.
+e08097deca	Daily	Ежедневные
+62c353feef	Daily rewards	Ежедневные награды
+eda3dffd05	Today	Сегодня
+7833f9901e	You already parked today — a new ramp awaits you tomorrow.	Сегодня ты уже парковался — завтра тебя ждёт новая рампа.
+d01b30f94c	Today is the company's birthday!	Сегодня день рождения компании!
+85937bd029	Today you sent {0} trips — the limit for 24 hours is reached.	Сегодня ты отправил {0} рейсов — лимит на 24 часа исчерпан.
+3c090d3e88	Today it landed somewhere on the map. Find it and say “I saw it!”.	Сегодня он приземлился где-то на карте. Найди его и скажи «Я его видел!».
+8c73db61d9	Today the company can give {0} more bonuses.	Сегодня компания может выдать ещё {0} премий.
+bbd819bb45	{0} left for bonuses today.	На премии сегодня осталось {0}.
+4e2d5c874c	Today's reward is already collected. Come back tomorrow for the next one!	Сегодняшняя награда уже получена. Возвращайся завтра за следующей!
+084668f7c9	Today's missions	Миссии на сегодня
+69e38c6fda	You already saw today's stork — tomorrow it will be over another city.	Сегодняшнего аиста ты уже видел — завтра он будет над другим городом.
+acc9dd209e	Today's bonus limit is used up.	Лимит премий на сегодня исчерпан.
+1520dcf506	To	До
+2c285a5142	To 	До
+84ea9dba60	Up to 10 % over the payload. Brings the full pay, but there is a risk of a fine at the weighbridge and faster wear.	До 10 % сверх грузоподъёмности. Приносит полную оплату, но есть риск штрафа на весах и более быстрого износа.
+3dec161cf2	Up to 10 roles	До 10 должностей
+769dcb14b7	Up to 120 characters.	До 120 символов.
+c244c9e658	Until 2 November TransVerse is in Halloween colours — orange and purple, a pumpkin on the logo, cobwebs, bats and fog. After the holiday the game goes back to its usual look by itself. The decorations can be turned off in Settings.	До 2 ноября TransVerse в цветах Хэллоуина — оранжевый и фиолетовый, тыква на логотипе, паутина, летучие мыши и туман. После праздника игра сама вернётся к обычному виду. Украшения отключаются в Настройках.
+66c5470c41	Up to 2 h away	До 2 ч пути
+5ae31c1590	Up to 2 hours	До 2 часов
+d1133e1f01	Up to 3 trucks and 3 badges that others see on your profile.	До 3 грузовиков и 3 значков, которые другие видят в твоём профиле.
+5d85f54900	Up to 4 companies in an alliance: a shared chat, a weekly goal and a battle against another alliance with rewards for the treasuries.	До 4 компаний в союзе: общий чат, еженедельная цель и битва против другого союза с наградами в казны.
+dc24f22fb4	Up to 40 characters.	До 40 символов.
+fb176a25d3	Up to 4000 characters.	До 4000 символов.
+2665f773ed	Up to {0} active contracts at a time	До {0} активных договоров одновременно
+357134f3a8	Up to {0} characters.	До {0} символов.
+351953ca14	Up to {0} trucks on one lane, leaving within {1} min of each other. From {2} trucks up, everyone who arrives on time gets another{3}	До {0} грузовиков по одной линии, выехавших с разницей до {1} мин. От {2} грузовиков каждый, кто прибудет вовремя, получает ещё{3}
+60a56a2e62	Up to {0} companies in an alliance — by invitation only, which the company must accept: a shared chat, a weekly goal ({1} t per company) and a battle against another alliance.	До {0} компаний в союзе — только по приглашению, которое компания должна принять: общий чат, еженедельная цель ({1} т на компанию) и битва против другого союза.
+7e5ee4d618	Up to {0} predictions a week, up to {1} hours before the end of the battle. Nothing is staked — the reward is from the game. You have {2} left for the week.	До {0} прогнозов в неделю, не позже чем за {1} ч до конца битвы. Ничего не ставится — награда от игры. На эту неделю у тебя осталось {2}.
+f4c23da28c	Up to {0} predictions a week.	До {0} прогнозов в неделю.
+87b4855527	To all players…	Всем игрокам…
+fbdf7745d9	To all players… (@name mentions)	Всем игрокам… (@имя — упоминание)
+a8f54f412a	To the company…	Компании…
+2530616b1c	To the company… (@name mentions)	Компании… (@имя — упоминание)
+b1b47f864c	Up to level {0}	До уровня {0}
+a9a5d8cdb3	Until a buyout offer	До предложения о выкупе
+b31699d227	Until the next holiday!	До следующего праздника!
+d9d9e173bb	To the whole alliance…	Всему союзу…
+89cbba7a3a	Left until “{0}”	До «{0}» осталось

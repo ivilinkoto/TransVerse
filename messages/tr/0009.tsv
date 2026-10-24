@@ -1,0 +1,250 @@
+39f2d22782	To “{0}”: {1} km (+{2} TC).	До «{0}»: {1} км (+{2} TC).
+7337a0303a	Add	Добавить
+7b4ca10a52	Add {0} in OAuth2 → Redirects.	Добавь {0} в OAuth2 → Redirects.
+5e1820bc15	Add a role with one click — then give it to a member from the “Members” section.	Добавь должность одним нажатием — затем назначь её участнику в разделе «Участники».
+673e33d0d8	Add to home screen	Добавить на главный экран
+4deb72d6ad	Add a friend	Добавить друга
+949808d9cb	Add friends to give them a martenitsa.	Добавь друзей, чтобы подарить им мартеничку.
+571ed334d8	Add friends to tap eggs with them.	Добавь друзей, чтобы биться с ними яйцами.
+804520740f	Add a point in {0}	Добавь точку в {0}
+7a759d6f9a	Welcome to TransVerse!	Добро пожаловать в TransVerse!
+d5a7e31d6e	Welcome to the company!	Добро пожаловать в компанию!
+9fb507c5c4	Welcome back	С возвращением
+ff882b4db8	Welcome! The company sends a bus: one of your free trucks (with its trailer) comes to {0} in a minute, for free. Valid until {1}.	Добро пожаловать! Компания отправляет автобус: один твой свободный грузовик (с прицепом) приедет в {0} за минуту, бесплатно. Действует до {1}.
+2922686f6d	Welcome, driver!	Добро пожаловать, водитель!
+2d68c27d3b	Good morning	Доброе утро
+b9cc375984	Good morning,	Доброе утро,
+875f60a81d	Good morning, drivers! Last week on the roads of TransVerse: **{0} trips**, **{1}** and **{2} t** of loads from {3} drivers.	Доброе утро, водители! На прошлой неделе на дорогах TransVerse: **{0} рейсов**, **{1}** и **{2} т** грузов от {3} водителей.
+cd5840d864	Good	Хороший
+14e6469657	Good evening	Добрый вечер
+2738ae2f67	Good afternoon	Добрый день
+94c3b02c0f	Trusted	Доверенный
+981c1ec901	Satisfied	Доволен
+88dbea5b71	Finish Uncle Stoyan's story.	Заверши историю дяди Стояна.
+16fdebca1c	Finish a relay on time together with another driver.	Заверши эстафету вовремя вместе с другим водителем.
+3544300a78	Haulage contract from “{0}”	Договор перевозки от «{0}»
+2cbe47726d	Client contract · sample data	Договор с клиентом · пример данных
+f3ddb8aa35	Contract with the lessor	Договор с арендодателем
+fb33b9e4f3	Haulage contracts	Договоры перевозки
+34b5fca95a	Haulage contracts and academy	Договоры перевозки и академия
+1b44420618	Haulage contracts with other companies	Договоры перевозки с другими компаниями
+d6f44b0d81	Client contracts	Договоры с клиентами
+56323047b9	Contracts with regular clients	Договоры с постоянными клиентами
+e41b02f684	The haulage contract has ended	Договор перевозки завершён
+14c988d7fa	The contract is not active.	Договор не активен.
+057eefeff0	The contract can't be rated.	Договор нельзя оценить.
+c155c47c07	The contract with “{0}” is fulfilled	Договор с «{0}» выполнен
+457b15d783	The contract with “{0}” was not fulfilled	Договор с «{0}» не выполнен
+4108526ebc	Next year it will be your turn. Christ is risen!	В следующем году будет твоя очередь. Христос воскресе!
+e062ddd0fa	Brought 5 loads of materials for the company's constructions.	Привёз 5 грузов материалов для строек компании.
+1c7b731e0a	Bring	Привезти
+b2f362827f	While it is listed, the vehicle doesn't take orders. The listing expires on {0}.	Пока машина выставлена, она не берёт заказы. Объявление истекает {0}.
+bdbb22b1b8	As long as the profile exists. We keep payment data as long as accounting law requires.	Пока существует профиль. Платёжные данные храним столько, сколько требует законодательство о бухгалтерском учёте.
+fe2a876b20	While “The night of the pumpkins” is on, the usual automatic events rest.	Пока идёт «Ночь тыкв», обычные автоматические ивенты отдыхают.
+6c34aedad8	Report	Пожаловаться
+aa2d16f80f	Report {0}	Пожаловаться на {0}
+5aa0655f9f	Report to customs (+{0} reputation)	Сообщить таможне (+{0} репутации)
+e395e993d6	Report the message	Пожаловаться на сообщение
+8e2d584d7c	Reports	Жалобы
+4edaa5b5e5	Reports from players	Жалобы игроков
+c90e0289d7	The report was not found.	Жалоба не найдена.
+c0c6caa2a1	The domain is authenticated (SPF, DKIM and DMARC). If some mailbox still doesn't get the messages, send a test and see the answer below.	Домен подтверждён (SPF, DKIM и DMARC). Если какой-то ящик всё ещё не получает письма, отправь тестовое и посмотри ответ ниже.
+9e1b5e3c72	Extra XP	Дополнительный опыт
+c467689e90	Extra rewards for the best	Дополнительные награды лучшим
+5af9acdf9e	Delivered {0} / {1}{2}	Доставлено {0} / {1}{2}
+5c12bb5afd	{0} of {1} trips delivered on time. The deposit of {2} lv is lost.	Вовремя доставлено {0} из {1} рейсов. Залог {2} лв. потерян.
+42a3b19c87	Delivered {0} of {1}{2}{3}	Доставлено {0} из {1}{2}{3}
+7686949738	Delivered:	Доставлено:
+e4a9b13377	Delivered: {0} to {1}	Доставлено: {0} в {1}
+a30ea06ce0	Deliver 2 loads abroad	Доставь 2 груза за границу
+073c1000d1	Deliver 2 loads on time	Доставь 2 груза вовремя
+33e03b817e	Deliver 5 Easter loads	Доставь 5 пасхальных грузов
+d8eaebf308	Deliver 5 Christmas loads	Доставь 5 рождественских грузов
+1644fcea80	Deliver 5 holiday loads	Доставь 5 праздничных грузов
+1a72a9974d	Deliver 5 spring loads	Доставь 5 весенних грузов
+c1010cc6d0	Deliver {0} loads on time	Доставь {0} грузов вовремя
+526e560874	Deliver {0} loads on time this season	Доставь {0} грузов вовремя в этом сезоне
+bc9cebc21e	Deliver {0} refrigerated loads	Доставь {0} рефрижераторных грузов
+b6be633320	Deliver to all 20 biggest cities in Austria (the “Cities” collection).	Доставь во все 20 крупнейших городов Австрии (коллекция «Города»).
+e8a0d9e815	Deliver to all 20 biggest cities in Bulgaria (the “Cities” collection).	Доставь во все 20 крупнейших городов Болгарии (коллекция «Города»).
+58f5ddc5cc	Deliver to all 20 biggest cities in Germany (the “Cities” collection).	Доставь во все 20 крупнейших городов Германии (коллекция «Города»).
+38abbbf384	Deliver to all 20 biggest cities in Greece (the “Cities” collection).	Доставь во все 20 крупнейших городов Греции (коллекция «Города»).
+0c78ab7ae0	Deliver to all 20 biggest cities in Romania (the “Cities” collection).	Доставь во все 20 крупнейших городов Румынии (коллекция «Города»).
+6796bb98c3	Deliver to all 20 biggest cities in North Macedonia (the “Cities” collection).	Доставь во все 20 крупнейших городов Северной Македонии (коллекция «Города»).
+5ebdf1fe47	Deliver to all 20 biggest cities in Serbia (the “Cities” collection).	Доставь во все 20 крупнейших городов Сербии (коллекция «Города»).
+8a95bf5e5b	Deliver to all 20 biggest cities in Turkey (the “Cities” collection).	Доставь во все 20 крупнейших городов Турции (коллекция «Города»).
+7a8e39aab7	Deliver to all 20 biggest cities in Hungary (the “Cities” collection).	Доставь во все 20 крупнейших городов Венгрии (коллекция «Города»).
+5ece4bf056	Deliver to all {0} countries of the game in one calendar month — the “Eurotour” badge and {1} TC (once a month).	Доставь во все {0} стран игры за один календарный месяц — значок «Евротур» и {1} TC (раз в месяц).
+dfaeb9624e	Deliver to all {0} countries of the game in one season ({1}, until {2}) — the “Grand Eurotour” badge and {3} TC.	Доставь во все {0} стран игры за один сезон ({1}, до {2}) — значок «Большой евротур» и {3} TC.
+9724e94a8a	Deliver a load to {0} different countries	Доставь груз в {0} разных стран
+81a615e50c	Deliver a load to all 9 countries on the map	Доставь груз во все 9 стран на карте
+70870460f4	Deliver humanitarian aid on time.	Доставь гуманитарную помощь вовремя.
+dc8330d4e0	You have delivered to all {0} biggest cities — {1} TC and a badge.	Ты доставил во все {0} крупнейших городов — {1} TC и значок.
+df6d5300b1	Deliveries	Доставки
+0569b27886	Deliveries today	Доставки сегодня
+dccf280ad3	Deliveries to all 26 countries in one season — a badge and 300 TC. Every month whoever brings the most tonnes to a country becomes its king for the next month.	Доставки во все 26 стран за один сезон — значок и 300 TC. Каждый месяц тот, кто привезёт в страну больше всего тонн, становится её королём на следующий месяц.
+f18a10e506	Deliveries to all 26 countries of the game in one season.	Доставки во все 26 стран игры за один сезон.
+7b7a3f1c2d	Deliveries to all 9 countries of the game in one month.	Доставки во все 9 стран игры за один месяц.
+f67bb24fef	Deliveries to all {0} countries this month — the “{1}” badge and {2} TC.	Доставки во все {0} стран в этом месяце — значок «{1}» и {2} TC.
+48e9b66726	Deliveries to all {0} countries this season — the “{1}” badge and {2} TC.	Доставки во все {0} стран в этом сезоне — значок «{1}» и {2} TC.
+660dec2273	Deliveries to the most different countries.	Доставки в наибольшее число разных стран.
+73fc5b5006	Deliveries and fleet (truck arrived, delay, buyout)	Доставки и автопарк (грузовик прибыл, опоздание, выкуп)
+3795b6b68c	Deliveries, achievements, levels and events in the company. They arrive live.	Доставки, достижения, уровни и события в компании. Приходят в реальном времени.
+cf98cc98ba	Supplier	Поставщик
+7d5d2d6889	Deliver to 3 different countries.	Доставь в 3 разные страны.
+c4101c176e	Reached level 20.	Достиг 20-го уровня.
+0d9d50e121	You have reached the limit of {0} roles. Develop the company to unlock more.	Вы достигли лимита в {0} должностей. Развивайте компанию, чтобы открыть больше.
+504beef1af	Reach level {0} to take such loads.	Достигните уровня {0}, чтобы брать такие грузы.
+772598bfd2	Reach level {0}.	Достигните уровня {0}.
+155c894f50	Reach a balance of 1,000,000 lv.	Достигни баланса 1 000 000 лв.
+f063eb445b	Reach level 10.	Достигни 10-го уровня.
+f9e05fb4bf	Reach level 20.	Достигни 20-го уровня.
+3273de40d6	Access	Доступ
+604546ddd0	Profile access (e-mail {0})	Доступ к профилю (e-mail {0})
+9a8ec13d61	Clothes with made-up “brand” labels	Одежда с вымышленными «брендовыми» этикетками
+5282153ae2	Have another player haul it	Пусть перевезёт другой игрок
+625c815142	Another player has reserved this order until {0}. After that it is free again.	Другой игрок забронировал этот заказ до {0}. После этого он снова свободен.
+4dc3a63899	Another company just took this order.	Другая компания только что взяла этот заказ.
+8383688811	The other company no longer exists.	Другой компании больше нет.
+7f159ef009	Others	Другие
+1aa75edc2c	Other players can join you — with roles, permissions and shared development	Другие игроки могут присоединиться к тебе — с должностями, правами и общим развитием
+16429f69b3	Other players{0}	Другие игроки{0}
+adc85a7a3b	Other	Другое
+5d496b0871	Duel	Дуэль
+26a625b00e	1-on-1 duel: who hauls more in a week.	Дуэль 1 на 1: кто перевезёт больше за неделю.
+50eab6876d	1-on-1 duel: who hauls more tonnes in a week (without a member — your duels)	Дуэль 1 на 1: кто перевезёт больше тонн за неделю (без участника — твои дуэли)
+f05877188a	Duel against {0}	Дуэль против {0}
+e1f0ce71ab	Duels	Дуэли
+fd2e1dc2ae	Duels (Competition → Duels, “Duel” on a player's card, /дуел in Discord): 7 days, the tonnes of the deliveries are counted by arrival time. The invitation is valid for 24 hours; up to 3 duels at a time. The winner takes 20 TransCoin and the “Duellist” badge.	Дуэли (Соревнования → Дуэли, «Дуэль» в карточке игрока, /дуел в Discord): 7 дней, тонны доставок считаются по времени прибытия. Приглашение действует 24 часа; до 3 дуэлей одновременно. Победитель получает 20 ТрансКоин и значок «Дуэлянт».
+87ae7d3057	Duels and the livery contest	Дуэли и конкурс ливрей
+2b70d3e589	Duellist	Дуэлянт
+f27d09dd68	The duel was declined.	Дуэль отклонена.
+198f35100b	The duel with {0} has ended	Дуэль с {0} завершена
+9f4e79fecc	Duisburg	Дуйсбург
+9bf18eaea6	Danube	Дунай
+c51a29fde6	Danube Agro Ltd · 3 trips · grain	Дунай Агро ООО · 3 рейса · зерно
+35cd76d32d	Durrës	Дуррес
+ad41975100	A long queue of trucks at the border crossing.	Длинная очередь грузовиков на пограничном пункте.
+a05dcdf0c7	The long sections are in groups, and the menu grows with your level — every new page comes with a short explanation. Don't want it this way? Settings → “Show everything”.	Длинные разделы сгруппированы, а меню растёт вместе с твоим уровнем — каждая новая страница появляется с коротким объяснением. Не нравится? Настройки → «Показать всё».
+eb75145103	The long road	Долгая дорога
+3a8d089067	The long road to Spain and Portugal. Every loaded kilometre on routes through Spain counts.	Долгая дорога в Испанию и Португалию. Засчитывается каждый километр с грузом по маршрутам через Испанию.
+9ebcbb5a32	Long-term contracts: several loads on one lane by a deadline. Better pay and a bonus at the end.	Долгосрочные договоры: несколько грузов по одной линии к сроку. Лучшая оплата и бонус в конце.
+8532fc5f62	Long road	Долгий путь
+b6bc8a1095	A long load in two parts: the first driver leaves it in the city halfway, the second finishes it. If both are on time — a bonus and a badge.	Дальний груз в две части: первый водитель оставляет его в городе на полпути, второй довозит. Если оба вовремя — бонус и значок.
+8496044f02	Firewood	Дрова
+6eea228975	Timber	Пиломатериалы
+d507a32030	Wood	Древесина
+56c0e9defe	Country	Страна
+510fb48303	Country (e.g. Italy)	Страна (например, Италия)
+d11d9adbd5	A country in the game: diesel today, tolls, bans, holidays, its king and the best loads	Страна в игре: дизель сегодня, платные дороги, запреты, праздники, король и лучшие грузы
+11806eb681	Countries	Страны
+a88a44a0e6	Countries (deliveries)	Страны (доставки)
+bdfd3c59d3	Countries: {0}	Страны: {0}
+9e3b31d5e3	The countries	Страны
+c68b28e5ce	Boards and beams	Доски и брус
+f98f53dadc	Carrier's share under the contract	Доля перевозчика по договору
+b25b966a52	The share of the reward for every member's trip that goes to the company treasury (by the company's rules).	Доля оплаты за каждый рейс участника, которая идёт в казну компании (по правилам компании).
+4be7ad50b7	Share under a haulage contract	Доля по договору перевозки
+871d4abe3f	Company ID / registration number: {0}	Идентификационный номер: {0}
+815efaf229	Ltd	ООО
+2e3b2047e4	Eurotour	Евротур
+142322d74a	Eurotour {0}	Евротур {0}
+3b6b20e15d	Eurotour · {0} / {1}	Евротур · {0} / {1}
+cce8ad0a75	Eurotour and challenges	Евротур и испытания
+f0cd85c9f9	Eurotour! 🇪🇺	Евротур! 🇪🇺
+913db24611	Eurotour: deliveries to all 9 countries in one month — the “Eurotour” badge and 100 TC.	Евротур: доставки во все 9 стран за один месяц — значок «Евротур» и 100 TC.
+f72b34975a	Cheap route — no motorways or road tolls, on genuinely slower roads. It arrives later; the deadline stays the same.	Дешёвый маршрут — без автомагистралей и платных дорог, по действительно более медленным дорогам. Прибывает позже; срок остаётся прежним.
+d2e15d7129	The cheap repair is for “Trusted” and up.	Дешёвый ремонт — для «Доверенных» и выше.
+625321eb92	The same real route for everyone — who will get there fastest and who most economically?	Один и тот же настоящий маршрут для всех — кто доедет быстрее, а кто экономичнее?
+073a8a510c	One of the members left the company.	Один из участников покинул компанию.
+48fb96e403	An acquaintance	Один знакомый
+ad86bd5250	One world. A shared market. Real rivals.	Один мир. Общий рынок. Настоящие соперники.
+fb193de23f	One report per {0} minutes.	Один сигнал в {0} минут.
+3b56679858	The same network at registration	Одна и та же сеть при регистрации
+336a6902fc	The same amount or TransCoin for every active (unblocked) player — e.g. after an outage. Up to {0} lv or {1} TC. It is recorded in the audit; every player gets a notification with the reason.	Одинаковая сумма или ТрансКоин каждому активному (не заблокированному) игроку — например, после сбоя. До {0} лв. или {1} TC. Записывается в аудит; каждый игрок получает уведомление с причиной.
+b082fcea7e	One lane and a temporary traffic light.	Одна полоса и временный светофор.
+bca9e0238e	One vehicle is	Одна машина
+25b708f56e	Single-character plates and a few short ones are no longer sold in the shop — only at the plate auction.	Односимвольные и несколько коротких номеров больше не продаются в магазине — только на торгах за номера.
+01e2023f0a	Language	Язык
+c5fdb3bd8b	Team:	Команда:
+f655a629ff	Team: all rentals	Команда: все аренды
+c17b22285f	Team: stop the auction	Команда: остановить торги
+a003c05dbe	The team removed your sign-up for the cup. Questions — Support.	Команда сняла твою запись на кубок. Вопросы — в Поддержку.
+f1214968ed	The team can tune the pay of new loads to the game's economy.	Команда может настраивать оплату новых грузов под экономику игры.
+3a0f2d9966	The TransVerse team	Команда TransVerse
+00bec6c8cf	The team gets reports in Discord about possible fraud and a fast-growing economy and can give compensation to all players at once (recorded in the audit).	Команда получает сигналы в Discord о возможном мошенничестве и быстро растущей экономике и может выдать компенсацию всем игрокам разом (записывается в аудит).
+21e5cb8409	The team reviewed the case and the penalty stays.	Команда рассмотрела случай, и наказание остаётся в силе.
+afedf121b7	The team stopped the auction. Your {0} TC have been returned.	Команда остановила торги. Твои {0} TC возвращены.
+5e3c4be0df	Eco Logistic	Эко Лоджистик
+5a25e8e887	Eco engine tuning	Эко-настройка двигателя
+90a93ed49f	Exclusive colours for the trucks	Эксклюзивные цвета для грузовиков
+2a74e5dea3	Come and drive trucks together in TransVerse — real roads, real cities!	Давай кататься на грузовиках вместе в TransVerse — реальные дороги, реальные города!
+dd7c60d1c7	Electric trucks	Электрогрузовики
+fe05debdb8	Electric trucks with charging stops.	Электрогрузовики с остановками на зарядку.
+11765d7920	Electric vehicles	Электромобили
+6d74ef9f90	Elena	Елена
+abcebaa914	Elena takes your photo by the truck — “for the exhibition”.	Елена фотографирует тебя у грузовика — «для выставки».
+79adf46d56	Knockouts for 16 drivers over 4 weeks: every week the one with more loaded kilometres on time goes on. The champion wins a badge and 300 TC.	Плей-офф на 16 водителей за 4 недели: каждую неделю дальше проходит тот, у кого больше километров с грузом вовремя. Чемпион получает значок и 300 TC.
+c6d3789831	Knockouts for up to 16 drivers: one round every week, the one with more loaded kilometres on time goes on.	Плей-офф до 16 водителей: каждую неделю один раунд, дальше проходит тот, у кого больше километров с грузом вовремя.
+0278a32ea6	Elite	Элитный
+095ee8f865	Emil	Эмил
+6a6d145c68	Emoji	Эмодзи
+4868adeee8	Emoji and @mentions	Эмодзи и @упоминания
+46cf8e9ffe	Autumn mushrooms	Осенние грибы
+512aee8853	Autumn loads (grapes, must, apples, pumpkins…) pay +{0} %. {1} on time in the season — the “Grape harvest” badge and {2} TC.	Осенние грузы (виноград, сусло, яблоки, тыквы…) оплачиваются +{0} %. {1} вовремя за сезон — значок «Сбор винограда» и {2} TC.
+83d921cd66	Here is how to start:\n1. Make a profile in the game (it's free).\n2. In **Settings → Discord** link your account — you get roles, your company's channel and 10 TransCoin.\n3. Write to us in #тикети if you have a question.	Вот как начать:\n1. Создай профиль в игре (это бесплатно).\n2. В **Настройки → Discord** привяжи аккаунт — получишь роли, канал своей компании и 10 ТрансКоин.\n3. Пиши нам в #тикети, если есть вопрос.
+2a57a55fb3	Euro	Евро
+56b1aafb76	Rail	Ж/Д
+35eba81405	Rail licence	Ж/Д лицензия
+013fe9d37f	Rail freight.	Железнодорожная перевозка грузов.
+7cf59c24c7	Iron column	Железная колонна
+4f9b650f9d	A living road	Живая дорога
+1eebe6e873	Life at the base	Жизнь на базе
+09eff15e36	Harvest	Жатва
+25b556cc4e	FOR THE COMPANY'S CONSTRUCTION	ДЛЯ СТРОЙКИ КОМПАНИИ
+174e901eec	WINTER LOAD · +{0}%	ЗИМНИЙ ГРУЗ · +{0}%
+a64db3efc9	For {0}	Для {0}
+bba2656bab	To see the other channels, press the button and solve a sum. This is how we protect the server from bots.	Чтобы увидеть остальные каналы, нажми кнопку и реши пример. Так мы защищаем сервер от ботов.
+6a7710232e	To send money, open the player's profile (click their name or search for it above) → “Send money”. In 24 hours you can send {0} more	Чтобы отправить деньги, открой профиль игрока (нажми на имя или найди его вверху) → «Отправить деньги». За 24 часа можно отправить ещё {0}
+d40967f22e	For the team: a red dot on the avatar and a count on the “Admin panel” button when there are open support requests or reports.	Для команды: красная точка на аватаре и счётчик на кнопке «Админ-панель», когда есть открытые обращения в поддержку или жалобы.
+8287cfd78d	What for (optional)	За что (необязательно)
+78d7ae4782	What is the ticket about?	О чём тикет?
+ff5c00105a	For how many minutes (up to 28 days)	На сколько минут (до 28 дней)
+f05bd81672	About the company	О компании
+27bb5b3454	For a shared load choose a type and tonnes.	Для общего груза выбери тип и тонны.
+eb9d7a5c9d	For scrap	На металлолом
+dbee94f871	For the whole game season.	На весь игровой сезон.
+e0658b1f1a	Spot the stork on the map	Найди аиста на карте
+68f84f6194	Forgotten password	Забытый пароль
+0728c7670f	Forgot your password?	Забыли пароль?
+443838682d	Ban	Запрет
+c257229c96	Driving ban	Запрет на движение
+2b8529fc9f	Driving ban ({0}) until {1}	Запрет на движение ({0}) до {1}
+902f30f4c7	Heavy truck ban: {0} (local time). The truck waits at the border.	Запрет для тяжёлых грузовиков: {0} (местное время). Грузовик ждёт на границе.
+605a9285ea	Cheating, exploiting bugs in the game, automated programs, insults and abuse in the chat are forbidden. On a violation the profile can be restricted or blocked.	Запрещены мошенничество, использование ошибок игры, автоматизированные программы, оскорбления и злоупотребления в чате. При нарушении профиль может быть ограничен или заблокирован.
+2ee19929d5	Weekend driving bans (local time) in Germany, Austria, France, Italy, Switzerland, Hungary, Slovakia and Czechia; in Switzerland — every night 22:00 – 5:00 too. The truck waits at the border or at the start. Holidays are not included.	Запреты на движение по выходным (местное время) в Германии, Австрии, Франции, Италии, Швейцарии, Венгрии, Словакии и Чехии; в Швейцарии — ещё и каждую ночь 22:00 – 5:00. Грузовик ждёт на границе или на старте. Праздники не учтены.
+2af3f718ae	13.6 m curtainsider	Штора 13,6 м
+d1931bda2c	Turn right	Поверни направо
+7bd04a0aaa	Turn left	Поверни налево
+c802474717	Project finished: {0}	Проект завершён: {0}
+da53c61eef	Training finished	Обучение завершено
+ab994d0ff2	Finish 10 deliveries.	Заверши 10 доставок.
+c95729219e	Finish 500 deliveries.	Заверши 500 доставок.
+a9ddaa25ce	You finished the academy! 🎓	Ты окончил академию! 🎓
+1415651826	Finish the first delivery	Заверши первую доставку
+07b5ac7cd8	Finish your first delivery.	Заверши свою первую доставку.
+b5ca06a46b	Title (e.g. “Christmas giveaway”)	Заголовок (например, «Рождественская раздача»)
+dd3e3b86ed	Muted in Discord{0}{1}: {2}	Заглушён в Discord{0}{1}: {2}
+c6ad1655c3	Also mute the in-game chat (linked account)	Заглушить и чат в игре (привязанный аккаунт)
+cf14568c95	Mute a server member for a set time	Заглушить участника сервера на время
+f14467e8ee	Lost {0}. Rematch?	Поражение {0}. Реванш?
+c0dd523f40	Lost {0}. Next week — a new rival.	Поражение {0}. На следующей неделе — новый соперник.
+da92458795	Behind the wheel	За рулём
+c64ac28128	Set a new deadline	Задать новый срок
+d108522379	Set a new password	Задай новый пароль
+d8c09f43e7	Set PAYPAL_ENV=live	Задайте PAYPAL_ENV=live
+f08a5c3119	The background process (worker) jobs and the devices with notifications on.	Задачи фонового процесса (worker) и устройства с включёнными уведомлениями.
+dd5269689c	Hold the buttons (or the ← → arrows) to steer.	Удерживай кнопки (или стрелки ← →), чтобы рулить.
+375dfe0c94	Traffic jam	Пробка
+9efb14d826	Traffic jam ahead	Впереди пробка
+ff0444dde1	Congested ports	Загруженные порты

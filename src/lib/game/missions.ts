@@ -105,7 +105,7 @@ export const MISSIONS: MissionDefinition[] = [
   { id: 'd_km', period: 'daily', metric: 'km', base: 600, rewardCents: 500_00, rewardXp: 100, title: (t) => tr('Измини {0} км с товар', num(t)) },
   { id: 'd_earned', period: 'daily', metric: 'earned_cents', base: 1_500_00, rewardCents: 450_00, rewardXp: 90, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
   { id: 'd_tons', period: 'daily', metric: 'tons', base: 8, rewardCents: 400_00, rewardXp: 80, title: (t) => tr('Превози общо {0} тона', num(t)) },
-  { id: 'd_international', period: 'daily', metric: 'international', base: 1, rewardCents: 600_00, rewardXp: 120, title: (t) => tr('Изпълни {0} международн{1}', t, t === 1 ? tr('а доставка') : tr('и доставки')), eligible: international },
+  { id: 'd_international', period: 'daily', metric: 'international', base: 1, rewardCents: 600_00, rewardXp: 120, title: (t) => (t === 1 ? tr('Изпълни 1 международна доставка') : tr('Изпълни {0} международни доставки', t)), eligible: international },
   { id: 'd_company', period: 'daily', metric: 'company_deliveries', base: 2, rewardCents: 450_00, rewardXp: 100, title: (t) => tr('Изпълни {0} доставки за компанията си', t), eligible: (p) => p.inCompany },
 
   // ── Weekly ──

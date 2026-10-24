@@ -105,7 +105,7 @@ export async function convoyJoin(ctx: Ctx, convoyId: string): Promise<Answer> {
       return load ? [{ v, load }] : [];
     })
     .slice(0, 25);
-  if (!picks.length) stop(t('Няма товар {0}по тази линия в момента. Виж борсата: {1}/game/contracts?lane={2}-{3}', loads.length ? t('за твоите свободни камиони ') : '', appUrl(), c!.originCityId, c!.destCityId));
+  if (!picks.length) stop(loads.length ? t('Няма товар за твоите свободни камиони по тази линия в момента. Виж борсата: {0}/game/contracts?lane={1}-{2}', appUrl(), c!.originCityId, c!.destCityId) : t('Няма товар по тази линия в момента. Виж борсата: {0}/game/contracts?lane={1}-{2}', appUrl(), c!.originCityId, c!.destCityId));
   return answer(reply({
     content: t('🚚 С кой камион и товар тръгваш?'),
     components: rows(select(`convoy:go:${convoyId}`, picks.map(({ v, load }) => ({ label: `${v.plate} · ${load.goods}`.slice(0, 100), value: `${v.id}/${load.id}`, description: t('{0} · {1} т · {2}', v.city.nameBg, dec(load.weightTons), money(load.rewardCents)), emoji: { name: '🚚' } })), t('Избери'))),
