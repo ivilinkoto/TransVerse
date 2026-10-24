@@ -188,3 +188,12 @@
 - 0083: `organizations.logo_design`, `tradition_day`, `tradition_name`; `company_members.department_id`; `contracts.key_client`; `company_departments`, `company_assemblies`, `assembly_votes` (един глас на член), `key_clients` (месец + град, уникални), `company_owners` (собственици от–до), `intern_stays`, `merger_offers`.
 - 0084: `contracts.shady`, `vehicles.hidden_compartment`; `smuggling_profiles` (избор, внимание, подземна репутация, броячи), `smuggling_contacts` (играч + град), `smuggling_checks` (един на курс: граници, хванат, глоба).
 - Сметката на играча: категории `smuggling_fine`, `black_market`. Хроника: `assembly`, `merger`, `tradition`, `key_client`, `owner`. `job_state`: `company-assemblies`, `key-clients`, `owner-reports`, `interns`, `smuggling-heat`, `customs-weekly`.
+
+## v1.10 — Колони и истории (миграции 0085–0089)
+- 0085: `convoys` (вид, достъп, водач, линия, тръгване, места, общ товар, статус, камиони, всички навреме), `convoy_members` (камион, товар, роля, статус, причина, курс), `convoy_messages`, `convoy_stats` (конвои, навреме, серия, водени, бонуси днес); `contracts.convoy_id`, `deliveries.organized_convoy_id`.
+- 0086: `relays` (три града, двете части, статус, първият шофьор), `contracts.relay_id`, `contracts.relay_leg`, `deliveries.shared_at` (споделен курс).
+- 0087: `city_growth` (тонове общо и за седмицата), `harvest_progress` (играч + година).
+- 0088: `story_progress` (глава, броячи, посетени градове), `deliveries.choice` (решение по пътя).
+- 0089: `deliveries.reefer` (норма, измервания, резултат, сума).
+- Статус на товар `held` (втората част на щафета). ТрансКоин: причини `harvest`, `story`. `job_state`: `convoy-depart`, `weekly-convoy`, `relays`, `relays-expire`, `road-choices`, `city-week`.
+
