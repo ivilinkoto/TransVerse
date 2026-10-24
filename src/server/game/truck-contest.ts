@@ -103,9 +103,9 @@ export async function settleTruckContest(db: Database, now = new Date()) {
       await notify(tx, t.userId, 'achievement', () => tr('Камион на месеца: {0}. място! 🏆', i + 1), () => tr('{0} — {1} гласа. Награда: {2} TC{3}.', t.title, t.votes, coins, i === 0 ? tr(' и значка „{0}“', BADGES[TRUCK_CONTEST.badge]?.label ?? '') : ''), '/game/truck-contest');
     }
     if (top.length && featureLive('discord_bot', now)) {
-      await announce(tx, key, 'rankings', {
+      await announce(tx, key, 'rankings', () => ({
         embeds: [{ title: tr('🚛 Камион на месеца · {0}', month), url: `${appUrl()}/game/truck-contest`, color: 0xf6c343, description: top.map((t, i) => tr('**{0}.** {1} · {2} · {3} гласа', i + 1, t.username, t.title, t.votes)).join('\n'), footer: { text: tr('TransVerse · игрови данни') } }],
-      }, now);
+      }), now);
     }
     return { month, winners: top.length };
   });

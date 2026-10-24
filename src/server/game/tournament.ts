@@ -163,7 +163,7 @@ async function announceRound(tx: Tx, r: number, title: string, matches: (typeof 
       return t('{0} срещу {1}', side(m.aUserId, m.aKm), side(m.bUserId, m.bKm));
     });
   const final = r === SPRING_CUP.rounds.length;
-  await announce(tx, `cup:${T}:round-${r}`, 'rankings', {
+  await announce(tx, `cup:${T}:round-${r}`, 'rankings', () => ({
     embeds: [{ title: final ? t('🏆 {0}: шампион е {1}!', SPRING_CUP.title, names.get(matches[0]?.winnerId ?? '') ?? '—') : `🏆 ${SPRING_CUP.title} · ${title}`, url: `${appUrl()}/game/cup`, color: 0xf6c343, description: lines.join('\n') || t('Всички продължиха без съперник.'), footer: { text: t('TransVerse · игрови данни') } }],
-  }, now);
+  }), now);
 }

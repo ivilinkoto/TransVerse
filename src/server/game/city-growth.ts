@@ -60,9 +60,9 @@ export async function announceCityOfWeek(db: Database, now = new Date()) {
   const last = weekKey(new Date(now.getTime() - 3 * 86_400_000));
   const [top] = await db.select({ name: cities.nameBg, weekTons: cityGrowth.weekTons, tons: cityGrowth.tons }).from(cityGrowth).innerJoin(cities, eq(cities.id, cityGrowth.cityId)).where(eq(cityGrowth.weekKey, last)).orderBy(desc(cityGrowth.weekTons)).limit(1);
   if (!top) return false;
-  await announce(db, `city-week:${last}`, 'rankings', {
+  await announce(db, `city-week:${last}`, 'rankings', () => ({
     embeds: [{ title: t('🏙️ Град на седмицата: {0}', top.name), url: `${appUrl()}/game/cities`, color: 0x22d3ee, description: t('{0} т доставени за седмицата · „{1}“.', Math.round(top.weekTons).toLocaleString(intlLocale()), cityLevel(top.tons).name), footer: { text: t('TransVerse · игрови данни') } }],
-  }, now);
+  }), now);
   return true;
 }
 

@@ -30,9 +30,9 @@ export async function ensurePlateAuction(db: Database, now = new Date()) {
     if (won.has(plate) || (await plateInUse(db, plate))) continue;
     const [row] = await db.insert(plateAuctions).values({ weekKey: week.key, plate, endsAt: week.endsAt, createdAt: now }).onConflictDoNothing().returning();
     if (row && featureLive('discord_bot', now)) {
-      await announce(db, `plate-auction:${row.weekKey}`, 'events', {
+      await announce(db, `plate-auction:${row.weekKey}`, 'events', () => ({
         embeds: [{ title: t('🏷️ Номер на седмицата: {0}', row.plate), url: `${appUrl()}/game/plates`, color: 0xf6c343, description: t('Търг за ТрансКоин до <t:{0}:f>, от {1} TC. Наддава се в играта (Автопарк → Редки номера).', Math.floor(row.endsAt.getTime() / 1000), PLATE_AUCTION.startCoins), footer: { text: t('TransVerse · игрови данни') } }],
-      }, now);
+      }), now);
     }
     return row ?? null;
   }
@@ -72,7 +72,7 @@ export async function settlePlateAuctions(db: Database, now = new Date()) {
         await notify(tx, mine.bidUserId, 'achievement', () => t('Номерът „{0}“ е твой! 🏷️', mine.plate), () => t('Сложи го на свой камион от страницата на търга.'), '/game/plates');
         if (featureLive('discord_bot', now)) {
           const [u] = await tx.select({ username: users.username }).from(users).where(eq(users.id, mine.bidUserId));
-          await announce(tx, `plate-won:${mine.weekKey}`, 'events', { embeds: [{ title: t('🏷️ Номерът „{0}“ е на {1}', mine.plate, u?.username ?? '—'), description: t('Спечелен за {0} TC след {1} оферти.', mine.bidCoins, mine.bids), color: 0xf6c343, footer: { text: t('TransVerse · игрови данни') } }] }, now);
+          await announce(tx, `plate-won:${mine.weekKey}`, 'events', () => ({ embeds: [{ title: t('🏷️ Номерът „{0}“ е на {1}', mine.plate, u?.username ?? '—'), description: t('Спечелен за {0} TC след {1} оферти.', mine.bidCoins, mine.bids), color: 0xf6c343, footer: { text: t('TransVerse · игрови данни') } }] }), now);
         }
       }
     });

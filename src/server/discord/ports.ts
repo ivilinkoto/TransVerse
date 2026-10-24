@@ -23,7 +23,7 @@ const footer = { text: 'TransVerse · игрови данни (корабите 
 
 export async function announceShipCall(db: Database, call: { id: string; ship: string; containers: number; endsAt: Date; portName: string }, now: Date) {
   if (!featureLive('ship_calls', now)) return;
-  await announce(db, `ship:${call.id}`, 'events', {
+  await announce(db, `ship:${call.id}`, 'events', () => ({
     embeds: [{
       title: t('🚢 {0} пристигна в {1}', call.ship, call.portName),
       url: `${appUrl()}/game/contracts`,
@@ -31,7 +31,7 @@ export async function announceShipCall(db: Database, call: { id: string; ship: s
       description: t('**{0} контейнера** чакат превоз до <t:{1}:R> — с {2} % по-добро заплащане. Компанията, която разкара най-много, взема **{3}** в касата. Брояч на живо в #пристанище.', call.containers, Math.floor(call.endsAt.getTime() / 1000), Math.round((SHIP_CALL.multiplier - 1) * 100), money(SHIP_CALL.prizeCents)),
       footer,
     }],
-  }, now);
+  }), now);
 }
 
 /** Worker: the live message of every running (and just finished) ship call. */

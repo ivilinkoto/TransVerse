@@ -61,9 +61,9 @@ export async function settleCountryKings(db: Database, now: Date) {
         .map((k) => ({ ...k, country: names.get(k.countryCode) ?? k.countryCode, username: best.get(k.countryCode)!.username }))
         .sort((a, b) => a.country.localeCompare(b.country, 'bg'))
         .map((k) => t('**{0}** · {1} · {2} т', k.country, k.username, k.tons.toLocaleString(intlLocale())));
-      await announce(tx, `country-kings:${last.key}`, 'rankings', {
+      await announce(tx, `country-kings:${last.key}`, 'rankings', () => ({
         embeds: [{ title: t('👑 Кралете на държавите · {0}', last.key.slice(1)), url: `${appUrl()}/game/my-map`, color: 0xf6c343, description: lines.join('\n').slice(0, 4000), footer: { text: t('TransVerse · игрови данни') } }],
-      }, now);
+      }), now);
     }
     return { month: last.key, kings: rows.length };
   });

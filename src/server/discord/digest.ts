@@ -59,8 +59,8 @@ export async function announceWeeklyDigest(db: Database, now = new Date()) {
     ...d.ships.map((s) => t('🚢 {0}: {1} контейнера{2}.', s.ship, s.containers, s.winner ? t(' — най-много разкара „{0}“', s.winner) : '')),
     t('Приятно каране тази седмица! 🚚'),
   ].filter(Boolean);
-  await announce(db, `weekly-digest:${d.key}`, 'news', {
+  await announce(db, `weekly-digest:${d.key}`, 'news', () => ({
     embeds: [{ title: t('🎙️ Седмицата в TransVerse'), url: `${appUrl()}/game/news`, color: BRAND, description: lines.join('\n\n'), footer: { text: t('Седмичен обзор · игрови данни') } }],
-  }, now);
+  }), now);
   return true;
 }

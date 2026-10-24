@@ -77,7 +77,7 @@ export async function announceRally(db: Database, rallyId: string, now: Date) {
   if (!featureLive('rally', now)) return;
   const rally = await activeRally(db);
   if (!rally || rally.id !== rallyId) return;
-  await announce(db, `rally:${rally.id}`, 'events', {
+  await announce(db, `rally:${rally.id}`, 'events', () => ({
     embeds: [{
       title: t('🏁 Ралито на седмицата: {0} → {1}', rally.from, rally.to),
       url: `${appUrl()}/game/rally`,
@@ -85,5 +85,5 @@ export async function announceRally(db: Database, rallyId: string, now: Date) {
       description: t('{0} км по истински път, един и същ товар за всички. Мери се времето от товаренето до разтоварването и горивото на 100 км. Първите трима във всяка категория печелят до **{1}** и **{2} TC**. Край <t:{3}:R>.', Math.round(rally.distanceKm), money(RALLY.prizes[0].cents), RALLY.prizes[0].coins, Math.floor(rally.endsAt.getTime() / 1000)),
       footer: { text: t('TransVerse · игрови данни') },
     }],
-  }, now);
+  }), now);
 }

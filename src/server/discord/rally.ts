@@ -23,7 +23,7 @@ const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
 /** A run arrived: one line in #рали (from the settlement transaction, through the outbox). */
 export async function announceRallyFinish(db: DbOrTx, entryKey: string, f: { username: string; minutes: number; fuelCentsPer100: number; from: string; to: string }, now: Date) {
   if (!featureLive('discord_rally', now)) return;
-  await announce(db, `rally-finish:${entryKey}`, 'rally', { content: t('🏁 **{0}** финишира {1} → {2}: {3} · {4}/100 км', f.username, f.from, f.to, hm(f.minutes), money(f.fuelCentsPer100)), ping: false }, now);
+  await announce(db, `rally-finish:${entryKey}`, 'rally', () => ({ content: t('🏁 **{0}** финишира {1} → {2}: {3} · {4}/100 км', f.username, f.from, f.to, hm(f.minutes), money(f.fuelCentsPer100)), ping: false }), now);
 }
 
 /** Worker: the live board of the running rally. */

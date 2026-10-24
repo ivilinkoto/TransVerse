@@ -109,6 +109,37 @@ export const LAYOUT: CategorySpec[] = [
       { key: 'спам-чат', name: '🎲┃спам-чат', topic: 'Всичко останало.' },
     ],
   },
+  // v2.0: the same announcements in English and Russian (LOCALE_CHANNELS in config.ts), and a chat for each.
+  {
+    key: 'english',
+    name: '🇬🇧 ┃ ENGLISH',
+    channels: [
+      { key: 'en-chat', name: '💬┃en-chat', topic: 'TransVerse in English — chat with the other drivers.' },
+      { key: 'en-updates', name: '🆕┃en-updates', access: 'readonly', topic: 'New TransVerse updates — what they bring and when.' },
+      { key: 'en-events', name: '🎯┃en-events', access: 'readonly', topic: 'Community events: when they start, how they go and who won.' },
+      { key: 'en-battles', name: '⚔️┃en-battles', access: 'readonly', topic: 'The weekly company battles — pairs and results.' },
+      { key: 'en-weekly', name: '📰┃en-weekly', access: 'readonly', topic: 'TransVerse Weekly — the new issue every week.' },
+      { key: 'en-rankings', name: '🏆┃en-rankings', access: 'readonly', topic: 'Weekly rankings, records and winners.' },
+      { key: 'en-load-of-the-day', name: '⭐┃en-load-of-the-day', access: 'readonly', topic: 'The load of the day at 12:00 — the first to take it gets it.' },
+      { key: 'en-convoys', name: '🚚┃en-convoys', access: 'readonly', topic: 'Announced convoys — take the same road and drive together for a bonus.' },
+      { key: 'en-rally', name: '🏁┃en-rally', access: 'readonly', topic: 'The weekly rally live.' },
+    ],
+  },
+  {
+    key: 'русский',
+    name: '🇷🇺 ┃ РУССКИЙ',
+    channels: [
+      { key: 'ru-чат', name: '💬┃ru-чат', topic: 'TransVerse на русском — общение с другими водителями.' },
+      { key: 'ru-обновления', name: '🆕┃ru-обновления', access: 'readonly', topic: 'Новые обновления TransVerse — что в них и когда выходят.' },
+      { key: 'ru-ивенты', name: '🎯┃ru-ивенты', access: 'readonly', topic: 'Ивенты сообщества: когда начинаются, как идут и кто победил.' },
+      { key: 'ru-битвы', name: '⚔️┃ru-битвы', access: 'readonly', topic: 'Еженедельные битвы компаний — пары и результаты.' },
+      { key: 'ru-еженедельник', name: '📰┃ru-еженедельник', access: 'readonly', topic: 'Еженедельник TransVerse — новый номер каждую неделю.' },
+      { key: 'ru-рейтинги', name: '🏆┃ru-рейтинги', access: 'readonly', topic: 'Еженедельные рейтинги, рекорды и победители.' },
+      { key: 'ru-груз-дня', name: '⭐┃ru-груз-дня', access: 'readonly', topic: 'Груз дня в 12:00 — достаётся тому, кто возьмёт первым.' },
+      { key: 'ru-колонны', name: '🚚┃ru-колонны', access: 'readonly', topic: 'Объявленные колонны — езжай той же дорогой и получай бонус вместе.' },
+      { key: 'ru-ралли', name: '🏁┃ru-ралли', access: 'readonly', topic: 'Еженедельное ралли в реальном времени.' },
+    ],
+  },
   {
     key: 'поддръжка',
     name: '🛟 ┃ ПОДДРЪЖКА',

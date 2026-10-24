@@ -13,7 +13,7 @@ import { globSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import ts from 'typescript';
 
 const CYR = /[Ѐ-ӿ]/;
-const SKIP = [/src\/i18n\//, /src\/components\/i18n\//, /src\/server\/discord\/config\.ts$/, /src\/server\/discord\/layout\.ts$/, /src\/server\/db\/schema\.ts$/];
+const SKIP = [/src\/i18n\//, /src\/components\/i18n\//, /src\/server\/discord\/config\.ts$/, /src\/server\/discord\/layout\.ts$/, /src\/server\/discord\/register\.ts$/, /src\/server\/db\/schema\.ts$/];
 export const keyId = (key: string) => createHash('sha1').update(key).digest('hex').slice(0, 10);
 
 export function extractKeys(): string[] {

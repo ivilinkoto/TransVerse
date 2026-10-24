@@ -26,7 +26,7 @@ export async function postStaffAlerts(db: Database, now = new Date()) {
   const today = day(now);
   let n = 0;
   const send = async (key: string, title: string, description: string, color = 0xe04545) => {
-    await announce(db, `staff-alert:${key}`, 'staffAlerts', { embeds: [{ title, description, url: link, color, footer }] }, now);
+    await announce(db, `staff-alert:${key}`, 'staffAlerts', () => ({ embeds: [{ title, description, url: link, color, footer }] }), now);
     n++;
   };
   for (const t of fraud.sameNetwork) await send(`net:${t.from}:${t.to}:${today}`, tr('🚨 Пари между акаунти от една мрежа'), tr('**{0}** → **{1}**: {2} ({3} превода за седмица).', t.from, t.to, money(t.amount), t.n));

@@ -49,10 +49,10 @@ export async function awardMostActive(db: Database, now = new Date()) {
   if (!top) return null;
   const paid = await db.transaction((tx) => postTreasury(tx, top.id, [{ category: 'discord_activity', amountCents: ACTIVITY.prizeCents, description: t('Най-активна компания в Discord ({0})', w.key), idempotencyKey: `discord-activity:${w.key}` }]));
   if (!paid) return null;
-  await announce(db, `most-active:${w.key}`, 'rankings', {
+  await announce(db, `most-active:${w.key}`, 'rankings', () => ({
     ping: false,
     embeds: [{ title: t('💬 Най-активна компания в Discord: {0}{1}', top.name, top.tag ? ` [${top.tag}]` : ''), url: `${appUrl()}/game/companies/${top.id}`, description: t('{0} съобщения в канала на компанията миналата седмица · {1} в касата.', int(top.messages), money(ACTIVITY.prizeCents)), color: BRAND, footer: { text: t('Брои се каналът на компанията в Discord · игрови данни') } }],
-  }, now);
+  }), now);
   if (top.channelId) await enqueue(db, `most-active-company:${w.key}`, `msg:${top.channelId}`, { embeds: [{ color: 0x2fd27a, description: t('🏆 Вие сте най-активната компания в Discord миналата седмица! **{0}** влязоха в касата.', money(ACTIVITY.prizeCents)) }] }, now);
   return top.id;
 }

@@ -46,7 +46,7 @@ export async function announceWeeklyRanking(db: Database, now = new Date()) {
   if (!discordConfig().bot || sofiaWeekday(now) !== 'Sun' || sofiaHour(now) < 20) return false;
   const w = await weeklyRanking(db, now);
   if (!w.totals.n) return false;
-  await announce(db, `weekly-ranking:${w.key}`, 'rankings', {
+  await announce(db, `weekly-ranking:${w.key}`, 'rankings', () => ({
     embeds: [{
       title: t('🏆 Най-добрите на седмицата'),
       url: `${appUrl()}/game/leaderboards`,
@@ -59,6 +59,6 @@ export async function announceWeeklyRanking(db: Database, now = new Date()) {
       ],
       footer: { text: t('От понеделник до неделя вечер · игрови данни') },
     }],
-  }, now);
+  }), now);
   return true;
 }

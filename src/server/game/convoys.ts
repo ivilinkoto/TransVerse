@@ -99,7 +99,7 @@ async function announceConvoyOpen(db: DbOrTx, c: typeof convoys.$inferSelect, no
   if (!featureLive('discord_bot', now) || c.kind === 'company' || c.access !== 'open') return;
   const name = await cityNames(db, [c.originCityId, c.destCityId]);
   const [leader] = c.leaderId ? await db.select({ username: users.username }).from(users).where(eq(users.id, c.leaderId)) : [];
-  await announce(db, `convoy-open:${c.id}`, 'convoys', {
+  await announce(db, `convoy-open:${c.id}`, 'convoys', () => ({
     embeds: [{
       title: `🚚 ${c.kind === 'official' ? t('Голям конвой на TransVerse') : t('Конвой')}: ${name(c.originCityId)} → ${name(c.destCityId)}`,
       url: `${appUrl()}/game/convoys/${c.id}`,
@@ -107,7 +107,7 @@ async function announceConvoyOpen(db: DbOrTx, c: typeof convoys.$inferSelect, no
       description: t('{0}Тръгване <t:{1}:R> · {2} места{3}. Включи се в играта.', leader ? t('Води **{0}**. ', leader.username) : '', Math.floor(c.departAt.getTime() / 1000), c.seats, c.sharedCargo ? t(' · общ товар {0}', CARGO[c.sharedCargo as CargoType]?.label ?? '') : ''),
       footer: { text: t('TransVerse · игрови данни') },
     }],
-  }, now);
+  }), now);
 }
 
 /** Can this player see / join this convoy? */
@@ -286,7 +286,7 @@ export async function departConvoys(db: Database, now = new Date()) {
       for (const g of gone) await notify(tx, g.userId, 'success', () => t('Конвоят тръгна ({0} камиона) 🚚', rows.length), () => rows.length >= CONVOYS.minTrucks ? t('Колоната кара заедно — пристигате едновременно.') : t('Само твоят камион тръгна — без конвоен бонус този път.'), `/game/convoys/${c.id}`);
       if (rows.length >= CONVOYS.minTrucks && featureLive('discord_bot', now) && (c.kind === 'official' || (c.kind === 'personal' && c.access === 'open'))) {
         const name = await cityNames(tx, [c.originCityId, c.destCityId]);
-        await announce(tx, `convoy-left:${c.id}`, 'convoys', { embeds: [{ title: t('🚚 Колона от {0} камиона тръгна: {1} → {2}', rows.length, name(c.originCityId), name(c.destCityId)), url: `${appUrl()}/game/convoys/${c.id}`, color: 0x22d3ee, footer: { text: t('TransVerse · игрови данни') } }] }, now);
+        await announce(tx, `convoy-left:${c.id}`, 'convoys', () => ({ embeds: [{ title: t('🚚 Колона от {0} камиона тръгна: {1} → {2}', rows.length, name(c.originCityId), name(c.destCityId)), url: `${appUrl()}/game/convoys/${c.id}`, color: 0x22d3ee, footer: { text: t('TransVerse · игрови данни') } }] }), now);
       }
     });
     left++;
@@ -350,7 +350,7 @@ export async function settleConvoyTruck(tx: Tx, userId: string, d: { id: string;
   const [arrived] = await tx.update(convoys).set({ status: 'arrived' }).where(and(eq(convoys.id, c.id), eq(convoys.status, 'departed'))).returning();
   if (arrived && featureLive('discord_bot', at) && (c.kind === 'official' || (c.kind === 'personal' && c.access === 'open'))) {
     const name = await cityNames(tx, [c.originCityId, c.destCityId]);
-    await announce(tx, `convoy-arrived:${c.id}`, 'convoys', { embeds: [{ title: t('🏁 Колоната пристигна: {0} → {1}', name(c.originCityId), name(c.destCityId)), description: t('{0} камиона{1}.', c.trucks, c.allOnTime ? t(', всички навреме') : ''), color: 0x22d3ee, footer: { text: t('TransVerse · игрови данни') } }] }, at);
+    await announce(tx, `convoy-arrived:${c.id}`, 'convoys', () => ({ embeds: [{ title: t('🏁 Колоната пристигна: {0} → {1}', name(c.originCityId), name(c.destCityId)), description: t('{0} камиона{1}.', c.trucks, c.allOnTime ? t(', всички навреме') : ''), color: 0x22d3ee, footer: { text: t('TransVerse · игрови данни') } }] }), at);
   }
   return bonus;
 }

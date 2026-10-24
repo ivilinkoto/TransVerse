@@ -173,9 +173,9 @@ export async function settleWeeklyChallenge(db: Database, now: Date) {
       await notify(tx, r.userId, 'achievement', () => tr('Предизвикателство на седмицата: {0}. място! 🏆', i + 1), () => tr('„{0}“ — {1} {2}. Награда: {3} TC.', m.title, r.value, m.unit, coins), '/game/challenges');
     }
     if (rows.length && featureLive('discord_bot', now)) {
-      await announce(tx, `weekly-challenge:${last.key}`, 'rankings', {
+      await announce(tx, `weekly-challenge:${last.key}`, 'rankings', () => ({
         embeds: [{ title: tr('🏆 Предизвикателство на седмицата: {0}', m.title), url: `${appUrl()}/game/challenges`, color: 0xf6c343, description: rows.map((r, i) => `**${i + 1}.** ${r.username} · ${Math.round(r.value).toLocaleString(intlLocale())} ${m.unit} · ${WEEKLY_CHALLENGE.prizes[i]} TC`).join('\n'), footer: { text: tr('TransVerse · игрови данни') } }],
-      }, now);
+      }), now);
     }
     return { week: last.key, winners: rows.length };
   });

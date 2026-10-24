@@ -27,6 +27,8 @@ export interface Interaction {
   };
   member?: { user?: { id: string; username?: string; global_name?: string | null }; roles?: string[]; permissions?: string };
   user?: { id: string; username?: string; global_name?: string | null };
+  /** The language of the user's Discord client (e.g. "en-US", "ru", "bg"). */
+  locale?: string;
   message?: { id: string; embeds?: unknown[] };
 }
 

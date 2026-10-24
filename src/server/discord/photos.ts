@@ -71,6 +71,6 @@ export async function photoContest(db: Database, now = new Date()) {
   }
   const embed = { title: t('📸 Снимка на седмицата'), color: BRAND, description: `<@${best.m.author.id}> · ${best.votes} ⭐${u ? t(' · +{0} ТрансКоин', PHOTO_CONTEST.prizeCoins) : t(' · (свържи акаунта си за наградата)')}`, image: { url: picture(best.m)!.url } };
   await enqueue(db, `photo-week:${week.key}`, `msg:${channelId}`, { content: `<@${best.m.author.id}>`, allowed_mentions: { parse: [], users: [best.m.author.id] }, embeds: [embed] }, now);
-  await announce(db, `photo-week-rank:${week.key}`, 'rankings', { ping: false, embeds: [embed] }, now);
+  await announce(db, `photo-week-rank:${week.key}`, 'rankings', () => ({ ping: false, embeds: [embed] }), now);
   return best.m.id;
 }

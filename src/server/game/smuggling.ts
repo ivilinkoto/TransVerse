@@ -300,9 +300,9 @@ export async function customsWeekly(db: Database, now = new Date()) {
     const since = new Date(now.getTime() - 7 * 24 * HOUR);
     const [s] = await tx.select({ total: sql<number>`count(*)::int`, caught: sql<number>`count(*) filter (where ${smugglingChecks.caught})::int`, fines: sql<number>`coalesce(sum(${smugglingChecks.fineCents}), 0)::bigint` }).from(smugglingChecks).where(gte(smugglingChecks.at, since));
     if (!s?.total) return false;
-    await announce(tx, `customs-weekly:${week}`, 'news', {
+    await announce(tx, `customs-weekly:${week}`, 'news', () => ({
       embeds: [{ title: tr('🛃 Митническа сводка за седмицата'), url: `${appUrl()}/game/underground`, color: 0x7c3aed, description: tr('Проверени сенчести пратки: **{0}**\nХванати: **{1}** · Минали: **{2}**\nГлоби общо: **{3}**', s.total, s.caught, s.total - s.caught, money(Number(s.fines))), footer: { text: tr('TransVerse · игрови данни, без имена') } }],
-    }, now);
+    }), now);
     return true;
   });
 }

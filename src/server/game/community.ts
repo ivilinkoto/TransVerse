@@ -49,9 +49,9 @@ export async function settlePerfectConvoy(tx: Tx, d: { id: string; companyId: st
   await notify(tx, own.userId, 'success', () => tr('Перфектен конвой!'), () => tr('{0} с {1}: двамата навреме и заедно — +{2}.', route, partner!.username, money(mine)), '/game/finance');
   await notify(tx, partner!.ownerId, 'success', () => tr('Перфектен конвой!'), () => tr('{0} с {1}: двамата навреме и заедно — +{2}.', route, me!.username, money(theirs)), '/game/finance');
   if (featureLive('discord_bot', own.at)) {
-    await announce(tx, `perfect-convoy:${[d.id, p.id].sort().join(':')}`, 'convoys', {
+    await announce(tx, `perfect-convoy:${[d.id, p.id].sort().join(':')}`, 'convoys', () => ({
       embeds: [{ title: tr('🚚🚚 Перфектен конвой: {0} и {1}', me!.username, partner!.username), description: tr('{0} — двамата пристигнаха навреме и заедно (до {1} мин един от друг).', route, PERFECT_CONVOY.togetherMin), color: 0x34d399, footer: { text: tr('TransVerse · игрови данни') } }],
-    }, own.at);
+    }), own.at);
   }
   return mine;
 }

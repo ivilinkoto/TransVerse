@@ -1,3 +1,7 @@
+import { eq } from 'drizzle-orm';
+import { withLocale } from '@/i18n/als';
+import { isLocale, pickLocale } from '@/i18n/config';
+import { users } from '@/server/db/schema';
 import type { Database } from '@/server/db/client';
 import { runCommand } from './commands';
 import { votePollFromDiscord } from './company-polls';
@@ -119,6 +123,15 @@ async function component(ctx: Ctx, id: string, values: string[]): Promise<Answer
  * gateway): slash commands, buttons, select menus and forms.
  */
 export async function answerInteraction(db: Database, i: Interaction): Promise<Answer> {
+  // v2.0: a linked player gets the language of the game; anyone else the language of their Discord.
+  const discordId = i.member?.user?.id ?? i.user?.id;
+  const [linked] = discordId ? await db.select({ locale: users.locale }).from(users).where(eq(users.discordId, discordId)) : [];
+  const locale = isLocale(linked?.locale) ? linked.locale : pickLocale(i.locale);
+  const a = await withLocale(locale, () => answerIn(db, i));
+  return a.later ? { ...a, later: () => withLocale(locale, a.later!) } : a;
+}
+
+async function answerIn(db: Database, i: Interaction): Promise<Answer> {
   // PING when the endpoint is saved in the Developer Portal.
   if (i.type === 1) return answer({ type: 1 });
   const ctx = await makeCtx(db, i);
