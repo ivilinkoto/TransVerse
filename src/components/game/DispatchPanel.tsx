@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { duration, money } from '@/lib/format';
 import type { DispatchProposal } from '@/server/game/dispatch';
+import { t, tx } from '@/i18n/t';
 
 /** "Изпрати всички свободни": the server proposes a job for every free truck, the player confirms. */
 export function DispatchPanel({ freeTrucks }: { freeTrucks: number }) {
@@ -34,7 +35,7 @@ export function DispatchPanel({ freeTrucks }: { freeTrucks: number }) {
     try {
       const res = await api<{ sent: number; failed: { vehicleId: string; reason: string }[] }>('/api/game/action', { type: 'dispatchRun', plan: plan.filter((p) => chosen.has(p.vehicleId)).map((p) => ({ vehicleId: p.vehicleId, contractId: p.contractId })) });
       setPlan(null);
-      setMessage(`Изпратени: ${res.sent}.${res.failed.length ? ` Не тръгнаха: ${res.failed.length} (${res.failed[0]!.reason})` : ''}`);
+      setMessage(t('Изпратени: {0}.{1}', res.sent, res.failed.length ? t(' Не тръгнаха: {0} ({1})', res.failed.length, res.failed[0]!.reason) : ''));
       router.refresh();
     } catch (e) {
       setMessage((e as Error).message);
@@ -54,15 +55,15 @@ export function DispatchPanel({ freeTrucks }: { freeTrucks: number }) {
     <div className="panel mb-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 font-semibold"><Sparkles className="h-4 w-4 text-gold-400" />Диспечер</div>
-          <p className="text-sm text-mist-400">{freeTrucks ? `Избира най-изгодната поръчка за всеки от свободните ти камиони (${freeTrucks}), която ще стигне навреме.` : 'Нямаш свободни камиони в момента.'}</p>
+          <div className="flex items-center gap-2 font-semibold"><Sparkles className="h-4 w-4 text-gold-400" />{t('Диспечер')}</div>
+          <p className="text-sm text-mist-400">{freeTrucks ? t('Избира най-изгодната поръчка за всеки от свободните ти камиони ({0}), която ще стигне навреме.', freeTrucks) : t('Нямаш свободни камиони в момента.')}</p>
         </div>
-        {!plan && <button type="button" className="btn-gold" disabled={busy || !freeTrucks} onClick={load}>{busy ? 'Търся…' : 'Предложи курсове'}</button>}
-        {plan && <button type="button" className="btn-ghost px-2" onClick={() => setPlan(null)} aria-label="Затвори"><X className="h-4 w-4" /></button>}
+        {!plan && <button type="button" className="btn-gold" disabled={busy || !freeTrucks} onClick={load}>{busy ? t('Търся…') : t('Предложи курсове')}</button>}
+        {plan && <button type="button" className="btn-ghost px-2" onClick={() => setPlan(null)} aria-label={t('Затвори')}><X className="h-4 w-4" /></button>}
       </div>
       {plan && (
         plan.length === 0 ? (
-          <p className="mt-3 text-sm text-mist-300">Няма подходящи поръчки за свободните камиони точно сега — опитай по-късно или виж борсата.</p>
+          <p className="mt-3 text-sm text-mist-300">{t('Няма подходящи поръчки за свободните камиони точно сега — опитай по-късно или виж борсата.')}</p>
         ) : (
           <div className="mt-3 space-y-2">
             <ul className="divide-y divide-asphalt-800 rounded-xl border border-asphalt-700">
@@ -70,8 +71,8 @@ export function DispatchPanel({ freeTrucks }: { freeTrucks: number }) {
                 <li key={p.vehicleId}>
                   <label className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
                     <input type="checkbox" checked={chosen.has(p.vehicleId)} onChange={() => toggle(p.vehicleId)} />
-                    <span className="font-mono text-xs text-mist-400">{p.plate}</span>
-                    <span className="order-last min-w-0 basis-full pl-6 sm:order-none sm:basis-0 sm:flex-1 sm:truncate sm:pl-0"><span className="font-medium">{p.goods}</span> · {p.from} <ArrowRight className="inline h-3 w-3" /> {p.to}</span>
+                    <span className="font-mono text-xs text-mist-400">{tx(p.plate)}</span>
+                    <span className="order-last min-w-0 basis-full pl-6 sm:order-none sm:basis-0 sm:flex-1 sm:truncate sm:pl-0"><span className="font-medium">{tx(p.goods)}</span> · {tx(p.from)} <ArrowRight className="inline h-3 w-3" /> {tx(p.to)}</span>
                     <span className="num ml-auto text-xs text-mist-400 sm:ml-0">≈ {duration(p.minutes)}</span>
                     <span className="num font-semibold text-profit">{money(p.profitCents)}</span>
                   </label>
@@ -79,8 +80,8 @@ export function DispatchPanel({ freeTrucks }: { freeTrucks: number }) {
               ))}
             </ul>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm text-mist-300">Очаквана печалба: <span className="num font-semibold text-profit">{money(total)}</span> <span className="text-xs text-mist-400">(оценка)</span></span>
-              <button type="button" className="btn-primary" disabled={busy || chosen.size === 0} onClick={send}>{busy ? 'Изпращане…' : `Изпрати ${chosen.size}`}</button>
+              <span className="text-sm text-mist-300">{t('Очаквана печалба:')}{' '}<span className="num font-semibold text-profit">{money(total)}</span> <span className="text-xs text-mist-400">{t('(оценка)')}</span></span>
+              <button type="button" className="btn-primary" disabled={busy || chosen.size === 0} onClick={send}>{busy ? t('Изпращане…') : t('Изпрати {0}', chosen.size)}</button>
             </div>
           </div>
         )

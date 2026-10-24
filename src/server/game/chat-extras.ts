@@ -5,6 +5,7 @@ import { chatMessages, chatReactions, companyMessages, directMessages, organizat
 import { fail } from './errors';
 import { membershipOf, requirePermission } from './membership';
 import { blockedIds } from './moderation';
+import { t } from '@/i18n/t';
 
 export type ReactionKind = 'channel' | 'company' | 'dm';
 const ping = (db: DbOrTx, payload: Record<string, unknown>) => db.execute(sql`select pg_notify('tv_events', ${JSON.stringify(payload)})`);
@@ -46,7 +47,7 @@ export async function withReactions<T extends { id: number }>(db: DbOrTx, kind: 
 
 /** Toggles a reaction on a message the player can see (same channel, their company or their conversation). */
 export async function toggleReaction(db: Database, userId: string, tab: string, messageId: number, emoji: string) {
-  if (!(REACTIONS as readonly string[]).includes(emoji)) fail('bad_reaction', 'Непозната реакция.');
+  if (!(REACTIONS as readonly string[]).includes(emoji)) fail('bad_reaction', t('Непозната реакция.'));
   const kind = kindOfTab(tab);
   let ok = false;
   let event: Record<string, unknown> = {};
@@ -68,7 +69,7 @@ export async function toggleReaction(db: Database, userId: string, tab: string, 
     ok = !!m;
     event = { type: 'dm', userId: other, fromId: userId };
   }
-  if (!ok) fail('message_not_found', 'Съобщението не е намерено.', 404);
+  if (!ok) fail('message_not_found', t('Съобщението не е намерено.'), 404);
   const removed = await db.delete(chatReactions).where(and(eq(chatReactions.kind, kind), eq(chatReactions.messageId, messageId), eq(chatReactions.userId, userId), eq(chatReactions.emoji, emoji))).returning({ id: chatReactions.messageId });
   if (!removed.length) await db.insert(chatReactions).values({ kind, messageId, userId, emoji }).onConflictDoNothing();
   await ping(db, event);
@@ -83,7 +84,7 @@ export async function pinCompanyMessage(db: Database, actorId: string, messageId
     const actor = await requirePermission(tx, actorId, 'manage_chat');
     if (messageId) {
       const [m] = await tx.select({ id: companyMessages.id }).from(companyMessages).where(and(eq(companyMessages.id, messageId), eq(companyMessages.companyId, actor.company.id), sql`${companyMessages.deletedAt} is null`));
-      if (!m) fail('message_not_found', 'Съобщението не е намерено.', 404);
+      if (!m) fail('message_not_found', t('Съобщението не е намерено.'), 404);
     }
     await tx.update(organizations).set({ pinnedMessageId: messageId }).where(eq(organizations.id, actor.company.id));
     await tx.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type: 'chat', companyId: actor.company.id })})`);

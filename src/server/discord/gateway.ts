@@ -11,6 +11,7 @@ import { messageXp, resetVoice } from './levels';
 import { starPhoto } from './photos';
 import { voiceChanged } from './rooms';
 import { ticketMessageFromDiscord } from './tickets';
+import { t } from '@/i18n/t';
 
 /**
  * GUILDS | GUILD_MEMBERS | GUILD_MODERATION | GUILD_MESSAGES | MESSAGE_CONTENT
@@ -46,7 +47,7 @@ interface DiscordMessageEvent {
  */
 export async function messageFromDiscord(db: Database, m: DiscordMessageEvent) {
   if (m.author.bot || m.webhook_id || m.guild_id !== discordConfig().guildId) return false;
-  const body = `${m.content ?? ''}${m.attachments?.length ? `${m.content ? ' ' : ''}[прикачен файл в Discord]` : ''}`.trim().slice(0, 500);
+  const body = `${m.content ?? ''}${m.attachments?.length ? t('{0}[прикачен файл в Discord]', m.content ? ' ' : '') : ''}`.trim().slice(0, 500);
   if (!body) return false;
   const [org] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.discordChannelId, m.channel_id));
   if (!org) return false;

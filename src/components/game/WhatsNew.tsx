@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t } from '@/i18n/t';
 
 /**
  * The "Какво ново" window: shown once after a new version, until the player
@@ -27,13 +28,13 @@ export function WhatsNew({ version, children }: { version: string; children: Rea
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
-      <button type="button" className="absolute inset-0 bg-black/70 backdrop-blur-sm" aria-label="Затвори" onClick={close} />
+      <button type="button" className="absolute inset-0 bg-black/70 backdrop-blur-sm" aria-label={t('Затвори')} onClick={close} />
       <div className="whats-new relative flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-asphalt-700 bg-asphalt-900 shadow-2xl sm:rounded-3xl">
-        <button ref={closeButton} type="button" className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" onClick={close} aria-label="Затвори"><X className="h-5 w-5" /></button>
+        <button ref={closeButton} type="button" className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" onClick={close} aria-label={t('Затвори')}><X className="h-5 w-5" /></button>
         <div className="overflow-y-auto p-5 sm:p-7" id="whats-new-title">{children}</div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-asphalt-800 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-7 sm:pb-3">
-          <Link href="/game/updates" onClick={close} className="text-sm text-cyan-glow hover:underline">Всички обновления</Link>
-          <button type="button" className="btn-primary" onClick={close}>Към играта</button>
+          <Link href="/game/updates" onClick={close} className="text-sm text-cyan-glow hover:underline">{t('Всички обновления')}</Link>
+          <button type="button" className="btn-primary" onClick={close}>{t('Към играта')}</button>
         </div>
       </div>
     </div>

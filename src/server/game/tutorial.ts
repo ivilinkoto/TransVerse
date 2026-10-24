@@ -7,6 +7,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
 import { awardXp } from './progression';
+import { t as tr } from '@/i18n/t';
 
 export interface TutorialView {
   active: boolean;
@@ -38,17 +39,17 @@ async function rewardOnce(db: Database, userId: string, companyId: string) {
     const [u] = await tx.select({ tutorial: users.tutorial }).from(users).where(eq(users.id, userId)).for('update');
     if (u?.tutorial.rewarded) return;
     await tx.update(users).set({ tutorial: { ...(u?.tutorial ?? { done: [] }), rewarded: true } }).where(eq(users.id, userId));
-    await post(tx, companyId, [{ category: 'tutorial_reward', amountCents: ECONOMY.tutorialRewardCents, description: 'Завършено обучение', idempotencyKey: `tutorial:${userId}` }]);
+    await post(tx, companyId, [{ category: 'tutorial_reward', amountCents: ECONOMY.tutorialRewardCents, description: tr('Завършено обучение'), idempotencyKey: `tutorial:${userId}` }]);
     await awardXp(tx, userId, ECONOMY.tutorialRewardXp, 'tutorial');
-    await notify(tx, userId, 'achievement', 'Обучението е завършено!', `Награда: ${ECONOMY.tutorialRewardCents / 100} лв. и ${ECONOMY.tutorialRewardXp} опит.`, '/game/finance');
+    await notify(tx, userId, 'achievement', () => tr('Обучението е завършено!'), () => tr('Награда: {0} лв. и {1} опит.', ECONOMY.tutorialRewardCents / 100, ECONOMY.tutorialRewardXp), '/game/finance');
   });
 }
 
 /** Marks a step done by player action ("ack" or a page visit). Auto steps cannot be forced. */
 export async function completeTutorialStep(db: Database, userId: string, key: string) {
   const step = TUTORIAL.find((s) => s.key === key);
-  if (!step) fail('unknown_step', 'Непозната стъпка.');
-  if (step!.completion === 'auto') fail('auto_step', 'Тази стъпка се отчита автоматично.');
+  if (!step) fail('unknown_step', tr('Непозната стъпка.'));
+  if (step!.completion === 'auto') fail('auto_step', tr('Тази стъпка се отчита автоматично.'));
   await db.execute(sql`
     update users set tutorial = jsonb_set(tutorial, '{done}', (select to_jsonb(array(select distinct e from jsonb_array_elements_text(coalesce(tutorial->'done', '[]'::jsonb) || ${JSON.stringify([key])}::jsonb) e))))
     where id = ${userId}`);

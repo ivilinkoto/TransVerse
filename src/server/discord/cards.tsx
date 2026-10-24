@@ -19,6 +19,7 @@ import { companyWeekReport } from '@/server/game/company-report';
 import { tripPosition } from '@/server/game/roadside';
 import type { LatLon } from '@/lib/geo/geometry';
 import { levelOf, rankOf } from './levels';
+import { t as tr, tx, intlLocale } from '@/i18n/t';
 
 /**
  * Pictures for Discord embeds (PNG, made with next/og): the player card of
@@ -91,7 +92,7 @@ export async function playerCardImage(db: Database, username: string, now = new 
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `linear-gradient(135deg, ${BG} 0%, #141d2b 100%)`, padding: 48, fontFamily: 'Onest', color: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Brand />
-          <span style={{ fontSize: 22, color: MIST }}>{card.online ? '🟢 онлайн' : card.lastSeen}</span>
+          <span style={{ fontSize: 22, color: MIST }}>{card.online ? tr('🟢 онлайн') : card.lastSeen}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 40, marginTop: 36 }}>
           {avatarSrc ? (
@@ -102,12 +103,12 @@ export async function playerCardImage(db: Database, username: string, now = new 
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ fontFamily: 'Exo 2', fontSize: 64, color: card.vip ? '#f6c343' : 'white' }}>{card.username}</span>
+              <span style={{ fontFamily: 'Exo 2', fontSize: 64, color: card.vip ? '#f6c343' : 'white' }}>{tx(card.username)}</span>
               {card.vip && <span style={{ fontSize: 24, fontWeight: 600, background: '#f6c343', color: BG, borderRadius: 10, padding: '4px 12px' }}>VIP</span>}
             </div>
-            <span style={{ fontSize: 28, color: MIST }}>{card.company ? `${card.company.name} [${card.company.tag}] · ${card.company.rank}` : card.kind === 'company' ? 'Собствена фирма' : 'Независим шофьор'}</span>
+            <span style={{ fontSize: 28, color: MIST }}>{card.company ? `${card.company.name} [${card.company.tag}] · ${card.company.rank}` : card.kind === 'company' ? tr('Собствена фирма') : tr('Независим шофьор')}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6 }}>
-              <span style={{ fontSize: 28, fontWeight: 600 }}>Ниво {card.level}</span>
+              <span style={{ fontSize: 28, fontWeight: 600 }}>{tr('Ниво {0}', card.level)}</span>
               <div style={{ display: 'flex', width: 360, height: 16, background: '#263347', borderRadius: 8 }}>
                 <div style={{ width: `${Math.round(card.levelShare * 100)}%`, height: 16, background: CYAN, borderRadius: 8 }} />
               </div>
@@ -115,17 +116,17 @@ export async function playerCardImage(db: Database, username: string, now = new 
           </div>
         </div>
         <div style={{ display: 'flex', gap: 20, marginTop: 36 }}>
-          {stat('Курсове', int(card.deliveries))}
-          {stat('Репутация', `${Math.floor(card.reputation)}`)}
-          {stat('Приятели', int(card.friends))}
-          {stat('Значки', int(card.badges.length))}
+          {stat(tr('Курсове'), int(card.deliveries))}
+          {stat(tr('Репутация'), `${Math.floor(card.reputation)}`)}
+          {stat(tr('Приятели'), int(card.friends))}
+          {stat(tr('Значки'), int(card.badges.length))}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 24 }}>
           {card.badges.slice(0, 6).map((b) => (
-            <span key={b.id} style={{ fontSize: 20, background: '#1d2838', color: '#d8dee8', borderRadius: 999, padding: '6px 14px' }}>{b.label}</span>
+            <span key={b.id} style={{ fontSize: 20, background: '#1d2838', color: '#d8dee8', borderRadius: 999, padding: '6px 14px' }}>{tx(b.label)}</span>
           ))}
         </div>
-        <span style={{ marginTop: 'auto', fontSize: 18, color: MIST }}>transverse-bg.com · игрови данни</span>
+        <span style={{ marginTop: 'auto', fontSize: 18, color: MIST }}>{tr('transverse-bg.com · игрови данни')}</span>
       </div>
     ),
     { width: 1200, height: 675, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=600' } },
@@ -178,7 +179,7 @@ export async function plotImage(db: Database, organizationId: string, name: stri
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '22px 36px' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontFamily: 'Exo 2', fontSize: 44 }}>{name}</span>
-            <span style={{ fontSize: 22, color: MIST }}>{`Базата · ${built} ${built === 1 ? 'сграда' : 'сгради'} · ${levels} ${levels === 1 ? 'ниво' : 'нива'} · 👍 ${base.likes}`}</span>
+            <span style={{ fontSize: 22, color: MIST }}>{tr('Базата · {0} {1} · {2} {3} · 👍 {4}', built, built === 1 ? tr('сграда') : tr('сгради'), levels, levels === 1 ? tr('ниво') : tr('нива'), base.likes)}</span>
           </div>
           <Brand />
         </div>
@@ -212,20 +213,20 @@ export async function rankCardImage(db: Database, discordId: string) {
         )}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'Exo 2', fontSize: 54 }}>{r.name || 'Член'}</span>
-            <span style={{ fontSize: 30, color: CYAN }}>#{r.place}</span>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 54 }}>{r.name || tr('Член')}</span>
+            <span style={{ fontSize: 30, color: CYAN }}>#{tx(r.place)}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontFamily: 'Exo 2', fontSize: 40, color: ORANGE }}>Ниво {l.level}</span>
-            <span style={{ fontSize: 22, color: MIST }}>{`${int(l.into)} / ${int(l.next)} опит`}</span>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 40, color: ORANGE }}>{tr('Ниво {0}', l.level)}</span>
+            <span style={{ fontSize: 22, color: MIST }}>{tr('{0} / {1} опит', int(l.into), int(l.next))}</span>
           </div>
           <div style={{ display: 'flex', width: '100%', height: 22, background: '#263347', borderRadius: 11 }}>
             <div style={{ width: `${Math.max(2, Math.round((l.into / l.next) * 100))}%`, height: 22, background: `linear-gradient(90deg, ${CYAN}, ${ORANGE})`, borderRadius: 11 }} />
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-            {box('Съобщения', int(r.messages))}
-            {box('Гласов канал', `${Math.floor(r.voiceMinutes / 60)} ч`)}
-            {box('Опит', int(r.xp))}
+            {box(tr('Съобщения'), int(r.messages))}
+            {box(tr('Гласов канал'), tr('{0} ч', Math.floor(r.voiceMinutes / 60)))}
+            {box(tr('Опит'), int(r.xp))}
           </div>
         </div>
       </div>
@@ -299,9 +300,9 @@ export async function truckMapImage(db: Database, userId: string, now = new Date
         {trucks.map((t) => label(x(t.at) + 14, y(t.at) + 4, t.plate, { color: 'white', fontWeight: 600, background: 'rgba(11,16,24,0.75)', padding: '2px 8px', borderRadius: 8 }))}
         <div style={{ position: 'absolute', left: 32, top: 24, display: 'flex' }}><Brand /></div>
         <div style={{ position: 'absolute', right: 32, bottom: 24, display: 'flex', gap: 20, fontSize: 18, color: MIST }}>
-          <span style={{ color: ORANGE }}>● на път</span>
-          <span style={{ color: '#2fd27a' }}>● свободен</span>
-          <span>Реални координати · игрови данни</span>
+          <span style={{ color: ORANGE }}>{tr('● на път')}</span>
+          <span style={{ color: '#2fd27a' }}>{tr('● свободен')}</span>
+          <span>{tr('Реални координати · игрови данни')}</span>
         </div>
       </div>
     ),
@@ -323,11 +324,11 @@ export async function liveryCardImage(db: Database, entryId: string) {
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `linear-gradient(180deg, #1b2a40 0%, ${BG} 70%)`, padding: 40, fontFamily: 'Onest', color: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Brand />
-          <span style={{ fontSize: 24, color: MIST }}>Конкурс за ливрея</span>
+          <span style={{ fontSize: 24, color: MIST }}>{tr('Конкурс за ливрея')}</span>
         </div>
         <div style={{ display: 'flex', flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>{svg}</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-          <span style={{ fontFamily: 'Exo 2', fontSize: 40 }}>{e.username}</span>
+          <span style={{ fontFamily: 'Exo 2', fontSize: 40 }}>{tx(e.username)}</span>
           <span style={{ fontSize: 26, color: MIST }}>{`${model.brand} ${model.name} · ${e.e.plate}`}</span>
         </div>
       </div>
@@ -350,11 +351,11 @@ export async function truckCardImage(db: Database, vehicleId: string) {
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `linear-gradient(180deg, #1b2a40 0%, ${BG} 70%)`, padding: 40, fontFamily: 'Onest', color: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Brand />
-          <span style={{ fontSize: 24, color: legendTier(v.odometerKm) ? '#f6c343' : MIST }}>{`${legendTier(v.odometerKm) && featureLive('legendary_trucks', new Date()) ? `🏆 ${LEGEND[legendTier(v.odometerKm) - 1]!.title} · ` : ''}${Math.round(v.odometerKm).toLocaleString('bg-BG')} км`}</span>
+          <span style={{ fontSize: 24, color: legendTier(v.odometerKm) ? '#f6c343' : MIST }}>{tr('{0}{1} км', legendTier(v.odometerKm) && featureLive('legendary_trucks', new Date()) ? `🏆 ${LEGEND[legendTier(v.odometerKm) - 1]!.title} · ` : '', Math.round(v.odometerKm).toLocaleString(intlLocale()))}</span>
         </div>
         <div style={{ display: 'flex', flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>{svg}</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-          <span style={{ fontFamily: 'Exo 2', fontSize: 40 }}>{row.username}</span>
+          <span style={{ fontFamily: 'Exo 2', fontSize: 40 }}>{tx(row.username)}</span>
           <span style={{ fontSize: 26, color: MIST }}>{`${v.model.brand} ${v.model.name} · ${v.plate}`}</span>
         </div>
       </div>
@@ -374,44 +375,44 @@ export async function companyReportImage(db: Database, organizationId: string, f
       <span style={{ fontFamily: 'Exo 2', fontSize: 40, color }}>{value}</span>
     </div>
   );
-  const day = (d: Date) => d.toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', timeZone: 'Europe/Sofia' });
-  const lv = (c: number) => `${int(Math.round(c / 100))} лв.`;
+  const day = (d: Date) => d.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'long', timeZone: 'Europe/Sofia' });
+  const lv = (c: number) => tr('{0} лв.', int(Math.round(c / 100)));
   return new ImageResponse(
     (
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `radial-gradient(circle at 20% 0%, #1b2a40 0%, ${BG} 70%)`, fontFamily: 'Onest', color: 'white', padding: 36, gap: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontFamily: 'Exo 2', fontSize: 46 }}>{`${r.name}${r.tag ? ` [${r.tag}]` : ''}`}</span>
-            <span style={{ fontSize: 22, color: MIST }}>{`Седмичен отчет · ${day(from)} – ${day(new Date(to.getTime() - 1))} · ниво ${r.level}`}</span>
+            <span style={{ fontSize: 22, color: MIST }}>{tr('Седмичен отчет · {0} – {1} · ниво {2}', day(from), day(new Date(to.getTime() - 1)), r.level)}</span>
           </div>
           <Brand />
         </div>
         <div style={{ display: 'flex', gap: 16 }}>
-          {tile('Курсове', int(r.trips))}
-          {tile('Тонове', `${r.tons.toLocaleString('bg-BG')} т`)}
-          {tile('Километри', int(r.km))}
+          {tile(tr('Курсове'), int(r.trips))}
+          {tile(tr('Тонове'), tr('{0} т', r.tons.toLocaleString(intlLocale())))}
+          {tile(tr('Километри'), int(r.km))}
         </div>
         <div style={{ display: 'flex', gap: 16 }}>
-          {tile('Спечелено от членовете', lv(r.earnedCents), '#2fd27a')}
-          {tile('Касата за седмицата', `${r.treasuryNetCents >= 0 ? '+' : '−'}${lv(Math.abs(r.treasuryNetCents))}`, r.treasuryNetCents >= 0 ? '#2fd27a' : '#f87171')}
-          {tile('В касата', lv(r.treasuryCents), CYAN)}
+          {tile(tr('Спечелено от членовете'), lv(r.earnedCents), '#2fd27a')}
+          {tile(tr('Касата за седмицата'), `${r.treasuryNetCents >= 0 ? '+' : '−'}${lv(Math.abs(r.treasuryNetCents))}`, r.treasuryNetCents >= 0 ? '#2fd27a' : '#f87171')}
+          {tile(tr('В касата'), lv(r.treasuryCents), CYAN)}
         </div>
         <div style={{ display: 'flex', gap: 16, flex: 1 }}>
           <div style={{ display: 'flex', flexDirection: 'column', flex: 2, background: PANEL, borderRadius: 18, padding: '18px 22px', gap: 8 }}>
-            <span style={{ fontSize: 20, color: MIST }}>Най-много тонове</span>
+            <span style={{ fontSize: 20, color: MIST }}>{tr('Най-много тонове')}</span>
             {r.top.length ? r.top.map((m, i) => (
               <div key={m.username} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 28 }}>
                 <span>{`${['🥇', '🥈', '🥉'][i]} ${m.username}`}</span>
-                <span style={{ color: ORANGE }}>{`${m.tons.toLocaleString('bg-BG')} т · ${m.trips} курса`}</span>
+                <span style={{ color: ORANGE }}>{tr('{0} т · {1} курса', m.tons.toLocaleString(intlLocale()), m.trips)}</span>
               </div>
-            )) : <span style={{ fontSize: 26, color: MIST }}>Тази седмица няма доставки.</span>}
+            )) : <span style={{ fontSize: 26, color: MIST }}>{tr('Тази седмица няма доставки.')}</span>}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: PANEL, borderRadius: 18, padding: '18px 22px', justifyContent: 'center', alignItems: 'center' }}>
-            <span style={{ fontSize: 20, color: MIST }}>Битка на компаниите</span>
-            <span style={{ fontFamily: 'Exo 2', fontSize: 36, color: r.battle?.won ? '#f6c343' : 'white' }}>{!r.battle ? 'без битка' : !r.battle.done ? 'тече' : r.battle.won ? '🏆 победа' : r.battle.draw ? 'равенство' : 'загуба'}</span>
+            <span style={{ fontSize: 20, color: MIST }}>{tr('Битка на компаниите')}</span>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 36, color: r.battle?.won ? '#f6c343' : 'white' }}>{!r.battle ? tr('без битка') : !r.battle.done ? tr('тече') : r.battle.won ? tr('🏆 победа') : r.battle.draw ? tr('равенство') : tr('загуба')}</span>
           </div>
         </div>
-        <span style={{ fontSize: 16, color: MIST }}>Игрови данни · TransVerse</span>
+        <span style={{ fontSize: 16, color: MIST }}>{tr('Игрови данни · TransVerse')}</span>
       </div>
     ),
     { width: 1200, height: 760, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },
@@ -439,7 +440,7 @@ export async function tripCardImage(db: Database, deliveryId: string) {
   const path = t.points.map((p, i) => `${i ? 'L' : 'M'}${x(p).toFixed(1)} ${y(p).toFixed(1)}`).join(' ');
   const first = t.points[0]!;
   const last = t.points[t.points.length - 1]!;
-  const hours = (m: number) => `${Math.floor(m / 60)} ч ${m % 60} мин`;
+  const hours = (m: number) => tr('{0} ч {1} мин', Math.floor(m / 60), m % 60);
   const stat = (label: string, value: string) => (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 18 }}>
       <span style={{ fontSize: 20, color: MIST }}>{label}</span>
@@ -457,14 +458,14 @@ export async function tripCardImage(db: Database, deliveryId: string) {
         </svg>
         <div style={{ position: 'absolute', left: 40, top: 32, display: 'flex' }}><Brand /></div>
         <div style={{ position: 'absolute', left: 700, top: 40, right: 40, display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: 22, color: MIST }}>Бордови дневник · {t.username}</span>
+          <span style={{ fontSize: 22, color: MIST }}>{tr('Бордови дневник · {0}', t.username)}</span>
           <span style={{ fontFamily: 'Exo 2', fontSize: 46, marginTop: 6, marginBottom: 26 }}>{`${t.from} → ${t.to}`}</span>
-          {stat('Товар', `${t.goods} · ${t.tons} т`)}
-          {stat('Разстояние', `${Math.round(t.km).toLocaleString('bg-BG')} км · ${t.countries.length} ${t.countries.length === 1 ? 'държава' : 'държави'}`)}
-          {stat('Време на път', `${hours(t.stats.totalMin)} · ⌀ ${t.stats.avgKmh} км/ч`)}
-          <span style={{ fontSize: 26, color: t.late ? ORANGE : '#2fd27a' }}>{t.late ? 'Пристигна със закъснение' : 'Пристигна навреме ✓'}{t.convoy ? ' · в конвой' : ''}</span>
+          {stat(tr('Товар'), tr('{0} · {1} т', t.goods, t.tons))}
+          {stat(tr('Разстояние'), tr('{0} км · {1} {2}', Math.round(t.km).toLocaleString(intlLocale()), t.countries.length, t.countries.length === 1 ? tr('държава') : tr('държави')))}
+          {stat(tr('Време на път'), tr('{0} · ⌀ {1} км/ч', hours(t.stats.totalMin), t.stats.avgKmh))}
+          <span style={{ fontSize: 26, color: t.late ? ORANGE : '#2fd27a' }}>{t.late ? tr('Пристигна със закъснение') : tr('Пристигна навреме ✓')}{t.convoy ? tr(' · в конвой') : ''}</span>
         </div>
-        <div style={{ position: 'absolute', right: 40, bottom: 24, display: 'flex', fontSize: 18, color: MIST }}>Реален маршрут · игрови данни</div>
+        <div style={{ position: 'absolute', right: 40, bottom: 24, display: 'flex', fontSize: 18, color: MIST }}>{tr('Реален маршрут · игрови данни')}</div>
       </div>
     ),
     { width: W, height: H, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },

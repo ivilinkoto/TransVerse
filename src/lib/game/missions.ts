@@ -1,3 +1,4 @@
+import { t as tr, intlLocale } from '@/i18n/t';
 /**
  * Daily, weekly, monthly and season missions. Pure rules shared by server and UI.
  *
@@ -93,44 +94,44 @@ export interface MissionDefinition {
   fixed?: boolean;
 }
 
-const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} лв.`;
-const num = (n: number) => n.toLocaleString('bg-BG');
+const eur = (cents: number) => tr('{0} лв.', Math.round(cents / 100).toLocaleString(intlLocale()));
+const num = (n: number) => n.toLocaleString(intlLocale());
 const international = (p: PlayerProfile) => p.licences.has('international');
 
 export const MISSIONS: MissionDefinition[] = [
   // ── Daily ──
-  { id: 'd_deliveries', period: 'daily', metric: 'deliveries', base: 3, rewardCents: 400_00, rewardXp: 80, title: (t) => `Изпълни ${t} доставки` },
-  { id: 'd_on_time', period: 'daily', metric: 'on_time', base: 2, rewardCents: 450_00, rewardXp: 90, title: (t) => `Достави ${t} товара навреме` },
-  { id: 'd_km', period: 'daily', metric: 'km', base: 600, rewardCents: 500_00, rewardXp: 100, title: (t) => `Измини ${num(t)} км с товар` },
-  { id: 'd_earned', period: 'daily', metric: 'earned_cents', base: 1_500_00, rewardCents: 450_00, rewardXp: 90, title: (t) => `Спечели ${eur(t)} от възнаграждения` },
-  { id: 'd_tons', period: 'daily', metric: 'tons', base: 8, rewardCents: 400_00, rewardXp: 80, title: (t) => `Превози общо ${num(t)} тона` },
-  { id: 'd_international', period: 'daily', metric: 'international', base: 1, rewardCents: 600_00, rewardXp: 120, title: (t) => `Изпълни ${t} международн${t === 1 ? 'а доставка' : 'и доставки'}`, eligible: international },
-  { id: 'd_company', period: 'daily', metric: 'company_deliveries', base: 2, rewardCents: 450_00, rewardXp: 100, title: (t) => `Изпълни ${t} доставки за компанията си`, eligible: (p) => p.inCompany },
+  { id: 'd_deliveries', period: 'daily', metric: 'deliveries', base: 3, rewardCents: 400_00, rewardXp: 80, title: (t) => tr('Изпълни {0} доставки', t) },
+  { id: 'd_on_time', period: 'daily', metric: 'on_time', base: 2, rewardCents: 450_00, rewardXp: 90, title: (t) => tr('Достави {0} товара навреме', t) },
+  { id: 'd_km', period: 'daily', metric: 'km', base: 600, rewardCents: 500_00, rewardXp: 100, title: (t) => tr('Измини {0} км с товар', num(t)) },
+  { id: 'd_earned', period: 'daily', metric: 'earned_cents', base: 1_500_00, rewardCents: 450_00, rewardXp: 90, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
+  { id: 'd_tons', period: 'daily', metric: 'tons', base: 8, rewardCents: 400_00, rewardXp: 80, title: (t) => tr('Превози общо {0} тона', num(t)) },
+  { id: 'd_international', period: 'daily', metric: 'international', base: 1, rewardCents: 600_00, rewardXp: 120, title: (t) => tr('Изпълни {0} международн{1}', t, t === 1 ? tr('а доставка') : tr('и доставки')), eligible: international },
+  { id: 'd_company', period: 'daily', metric: 'company_deliveries', base: 2, rewardCents: 450_00, rewardXp: 100, title: (t) => tr('Изпълни {0} доставки за компанията си', t), eligible: (p) => p.inCompany },
 
   // ── Weekly ──
-  { id: 'w_deliveries', period: 'weekly', metric: 'deliveries', base: 15, rewardCents: 2_500_00, rewardXp: 500, title: (t) => `Изпълни ${t} доставки` },
-  { id: 'w_on_time', period: 'weekly', metric: 'on_time', base: 12, rewardCents: 2_800_00, rewardXp: 550, title: (t) => `Достави ${t} товара навреме` },
-  { id: 'w_km', period: 'weekly', metric: 'km', base: 4_000, rewardCents: 3_000_00, rewardXp: 600, title: (t) => `Измини ${num(t)} км с товар` },
-  { id: 'w_earned', period: 'weekly', metric: 'earned_cents', base: 10_000_00, rewardCents: 2_800_00, rewardXp: 550, title: (t) => `Спечели ${eur(t)} от възнаграждения` },
-  { id: 'w_international', period: 'weekly', metric: 'international', base: 5, rewardCents: 3_500_00, rewardXp: 700, title: (t) => `Изпълни ${t} международни доставки`, eligible: international },
-  { id: 'w_countries', period: 'weekly', metric: 'countries', base: 3, rewardCents: 3_500_00, rewardXp: 700, title: (t) => `Достави товар в ${t} различни държави`, eligible: international },
-  { id: 'w_refrigerated', period: 'weekly', metric: 'refrigerated', base: 5, rewardCents: 3_200_00, rewardXp: 650, title: (t) => `Достави ${t} хладилни товара`, eligible: (p) => p.licences.has('reefer') },
-  { id: 'w_company', period: 'weekly', metric: 'company_deliveries', base: 12, rewardCents: 3_000_00, rewardXp: 650, title: (t) => `Изпълни ${t} доставки за компанията си`, eligible: (p) => p.inCompany },
+  { id: 'w_deliveries', period: 'weekly', metric: 'deliveries', base: 15, rewardCents: 2_500_00, rewardXp: 500, title: (t) => tr('Изпълни {0} доставки', t) },
+  { id: 'w_on_time', period: 'weekly', metric: 'on_time', base: 12, rewardCents: 2_800_00, rewardXp: 550, title: (t) => tr('Достави {0} товара навреме', t) },
+  { id: 'w_km', period: 'weekly', metric: 'km', base: 4_000, rewardCents: 3_000_00, rewardXp: 600, title: (t) => tr('Измини {0} км с товар', num(t)) },
+  { id: 'w_earned', period: 'weekly', metric: 'earned_cents', base: 10_000_00, rewardCents: 2_800_00, rewardXp: 550, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
+  { id: 'w_international', period: 'weekly', metric: 'international', base: 5, rewardCents: 3_500_00, rewardXp: 700, title: (t) => tr('Изпълни {0} международни доставки', t), eligible: international },
+  { id: 'w_countries', period: 'weekly', metric: 'countries', base: 3, rewardCents: 3_500_00, rewardXp: 700, title: (t) => tr('Достави товар в {0} различни държави', t), eligible: international },
+  { id: 'w_refrigerated', period: 'weekly', metric: 'refrigerated', base: 5, rewardCents: 3_200_00, rewardXp: 650, title: (t) => tr('Достави {0} хладилни товара', t), eligible: (p) => p.licences.has('reefer') },
+  { id: 'w_company', period: 'weekly', metric: 'company_deliveries', base: 12, rewardCents: 3_000_00, rewardXp: 650, title: (t) => tr('Изпълни {0} доставки за компанията си', t), eligible: (p) => p.inCompany },
 
   // ── Monthly ──
-  { id: 'm_deliveries', period: 'monthly', metric: 'deliveries', base: 60, rewardCents: 10_000_00, rewardXp: 2_000, title: (t) => `Изпълни ${t} доставки` },
-  { id: 'm_km', period: 'monthly', metric: 'km', base: 18_000, rewardCents: 12_000_00, rewardXp: 2_400, title: (t) => `Измини ${num(t)} км с товар` },
-  { id: 'm_earned', period: 'monthly', metric: 'earned_cents', base: 45_000_00, rewardCents: 11_000_00, rewardXp: 2_200, title: (t) => `Спечели ${eur(t)} от възнаграждения` },
-  { id: 'm_tons', period: 'monthly', metric: 'tons', base: 250, rewardCents: 10_000_00, rewardXp: 2_000, title: (t) => `Превози общо ${num(t)} тона` },
-  { id: 'm_long_haul', period: 'monthly', metric: 'long_haul', base: 8, rewardCents: 13_000_00, rewardXp: 2_600, title: (t) => `Изпълни ${t} курса над ${LONG_HAUL_KM} км`, eligible: international },
-  { id: 'm_heavy', period: 'monthly', metric: 'heavy', base: 15, rewardCents: 12_000_00, rewardXp: 2_400, title: (t) => `Превози ${t} товара над 15 тона`, eligible: (p) => p.level >= 3 },
+  { id: 'm_deliveries', period: 'monthly', metric: 'deliveries', base: 60, rewardCents: 10_000_00, rewardXp: 2_000, title: (t) => tr('Изпълни {0} доставки', t) },
+  { id: 'm_km', period: 'monthly', metric: 'km', base: 18_000, rewardCents: 12_000_00, rewardXp: 2_400, title: (t) => tr('Измини {0} км с товар', num(t)) },
+  { id: 'm_earned', period: 'monthly', metric: 'earned_cents', base: 45_000_00, rewardCents: 11_000_00, rewardXp: 2_200, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
+  { id: 'm_tons', period: 'monthly', metric: 'tons', base: 250, rewardCents: 10_000_00, rewardXp: 2_000, title: (t) => tr('Превози общо {0} тона', num(t)) },
+  { id: 'm_long_haul', period: 'monthly', metric: 'long_haul', base: 8, rewardCents: 13_000_00, rewardXp: 2_600, title: (t) => tr('Изпълни {0} курса над {1} км', t, LONG_HAUL_KM), eligible: international },
+  { id: 'm_heavy', period: 'monthly', metric: 'heavy', base: 15, rewardCents: 12_000_00, rewardXp: 2_400, title: (t) => tr('Превози {0} товара над 15 тона', t), eligible: (p) => p.level >= 3 },
 
   // ── Season ──
-  { id: 's_deliveries', period: 'season', metric: 'deliveries', base: 150, rewardCents: 30_000_00, rewardXp: 6_000, title: (t) => `Изпълни ${t} доставки този сезон` },
-  { id: 's_km', period: 'season', metric: 'km', base: 50_000, rewardCents: 35_000_00, rewardXp: 7_000, title: (t) => `Измини ${num(t)} км с товар този сезон` },
-  { id: 's_on_time', period: 'season', metric: 'on_time', base: 120, rewardCents: 32_000_00, rewardXp: 6_500, title: (t) => `Достави ${t} товара навреме този сезон` },
-  { id: 's_earned', period: 'season', metric: 'earned_cents', base: 120_000_00, rewardCents: 30_000_00, rewardXp: 6_000, title: (t) => `Спечели ${eur(t)} от възнаграждения този сезон` },
-  { id: 's_countries', period: 'season', metric: 'countries', base: 9, fixed: true, rewardCents: 45_000_00, rewardXp: 9_000, title: () => 'Достави товар във всички 9 държави на картата', eligible: international },
+  { id: 's_deliveries', period: 'season', metric: 'deliveries', base: 150, rewardCents: 30_000_00, rewardXp: 6_000, title: (t) => tr('Изпълни {0} доставки този сезон', t) },
+  { id: 's_km', period: 'season', metric: 'km', base: 50_000, rewardCents: 35_000_00, rewardXp: 7_000, title: (t) => tr('Измини {0} км с товар този сезон', num(t)) },
+  { id: 's_on_time', period: 'season', metric: 'on_time', base: 120, rewardCents: 32_000_00, rewardXp: 6_500, title: (t) => tr('Достави {0} товара навреме този сезон', t) },
+  { id: 's_earned', period: 'season', metric: 'earned_cents', base: 120_000_00, rewardCents: 30_000_00, rewardXp: 6_000, title: (t) => tr('Спечели {0} от възнаграждения този сезон', eur(t)) },
+  { id: 's_countries', period: 'season', metric: 'countries', base: 9, fixed: true, rewardCents: 45_000_00, rewardXp: 9_000, title: () => tr('Достави товар във всички 9 държави на картата'), eligible: international },
 ];
 
 export const missionById = (id: string) => MISSIONS.find((m) => m.id === id);

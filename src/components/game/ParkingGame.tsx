@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { PARKING, parkingStart, step, type TruckPose } from '@/lib/game/parking';
+import { t as tr } from '@/i18n/t';
 
 const SCALE = 16; // px per metre in the drawing
 const TICK_MS = 50;
@@ -35,7 +36,7 @@ export function ParkingGame({ day, played }: { day: string; played: { stars: num
     setRunning(false);
     try {
       const r = await api<{ stars: number; xp: number; crashed: boolean; dist: number }>('/api/game/action', { type: 'parking', inputs: inputs.current });
-      setResult({ stars: r.stars, xp: r.xp, note: r.crashed ? 'Излезе от двора.' : `${r.dist} м от рампата.` });
+      setResult({ stars: r.stars, xp: r.xp, note: r.crashed ? tr('Излезе от двора.') : tr('{0} м от рампата.', r.dist) });
     } catch (e) {
       setError((e as Error).message);
     }
@@ -73,7 +74,7 @@ export function ParkingGame({ day, played }: { day: string; played: { stars: num
   const { bay, yard } = PARKING;
   return (
     <div className="space-y-3">
-      <svg viewBox={`0 0 ${yard.w * SCALE} ${yard.h * SCALE}`} className="w-full rounded-xl bg-[#3f4652]" role="img" aria-label="Двор с рампа">
+      <svg viewBox={`0 0 ${yard.w * SCALE} ${yard.h * SCALE}`} className="w-full rounded-xl bg-[#3f4652]" role="img" aria-label={tr('Двор с рампа')}>
         {/* The ramp and its bay. */}
         <rect x={(bay.x - 1.8) * SCALE} y={(yard.h - bay.y) * SCALE} width={3.6 * SCALE} height={bay.y * SCALE} fill="#6b7280" />
         <rect x={(bay.x - 2.2) * SCALE} y={(yard.h - 1.2) * SCALE} width={4.4 * SCALE} height={1.2 * SCALE} fill="#f6c343" />
@@ -83,13 +84,13 @@ export function ParkingGame({ day, played }: { day: string; played: { stars: num
         <Truck p={pose} color="#2f7bff" />
       </svg>
       {result ? (
-        <p className="text-sm">{'⭐'.repeat(result.stars) || '—'} {result.xp ? `+${result.xp} опит` : ''} {result.note ?? ''} <span className="text-mist-400">Утре те чака нова рампа.</span></p>
+        <p className="text-sm">{'⭐'.repeat(result.stars) || '—'} {result.xp ? tr('+{0} опит', result.xp) : ''} {result.note ?? ''} <span className="text-mist-400">{tr('Утре те чака нова рампа.')}</span></p>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
-          {!running ? <button type="button" className="btn-primary" onClick={() => setRunning(true)}>Тръгни назад</button> : <button type="button" className="btn-gold" onClick={() => void finish()}>Спри тук</button>}
-          <button type="button" className="btn-ghost select-none px-5" disabled={!running} onPointerDown={() => { steer.current = -1; }} onPointerUp={() => { steer.current = 0; }} onPointerLeave={() => { steer.current = 0; }} aria-label="Завий наляво">◀</button>
-          <button type="button" className="btn-ghost select-none px-5" disabled={!running} onPointerDown={() => { steer.current = 1; }} onPointerUp={() => { steer.current = 0; }} onPointerLeave={() => { steer.current = 0; }} aria-label="Завий надясно">▶</button>
-          <span className="text-xs text-mist-400">Задръж бутоните (или стрелките ← →), за да завиваш.</span>
+          {!running ? <button type="button" className="btn-primary" onClick={() => setRunning(true)}>{tr('Тръгни назад')}</button> : <button type="button" className="btn-gold" onClick={() => void finish()}>{tr('Спри тук')}</button>}
+          <button type="button" className="btn-ghost select-none px-5" disabled={!running} onPointerDown={() => { steer.current = -1; }} onPointerUp={() => { steer.current = 0; }} onPointerLeave={() => { steer.current = 0; }} aria-label={tr('Завий наляво')}>◀</button>
+          <button type="button" className="btn-ghost select-none px-5" disabled={!running} onPointerDown={() => { steer.current = 1; }} onPointerUp={() => { steer.current = 0; }} onPointerLeave={() => { steer.current = 0; }} aria-label={tr('Завий надясно')}>▶</button>
+          <span className="text-xs text-mist-400">{tr('Задръж бутоните (или стрелките ← →), за да завиваш.')}</span>
         </div>
       )}
       {error && <p role="alert" className="text-sm text-loss">{error}</p>}

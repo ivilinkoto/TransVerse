@@ -14,8 +14,14 @@ import { DIVISION_LABELS, DIVISION_RULES, DIVISIONS } from '@/lib/game/competiti
 import { divisionTable } from '@/server/game/competition';
 import { LANE_RECORDS } from '@/lib/game/community';
 import { laneRecordsView } from '@/server/game/community';
+import { t as tr, tx, intlLocale } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Класации' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: tr('Класации') };
+}
 
 const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions' | 'records'; label: string; unit: string }[] = [
   { id: 'season', label: 'Сезон', unit: 'точки' },
@@ -31,14 +37,15 @@ const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions' | 'records'; l
 const medal = (i: number) => (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1);
 
 export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  await initLocale();
   const { db, user, company, features } = await gameContext();
   const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions) && (t.id !== 'records' || features.lane_records));
   const requested = (await searchParams).tab;
   const tab = tabs.find((t) => t.id === requested) ?? tabs[0]!;
   return (
     <div className="space-y-5">
-      <PageHeader title="Класации" subtitle="Само реални играчи и техните компании. Няма измислени конкуренти." />
-      <Segmented label="Вид класация" active={tab.id} items={tabs.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
+      <PageHeader title={tr('Класации')} subtitle={tr('Само реални играчи и техните компании. Няма измислени конкуренти.')} />
+      <Segmented label={tr('Вид класация')} active={tab.id} items={tabs.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
       {tab.id === 'records' ? <RecordsBoard /> : tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
     </div>
   );
@@ -54,8 +61,8 @@ async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<Leaderboar
           <li key={r.companyId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.companyId === companyId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
             <div className="min-w-0 flex-1">
-              <div className="truncate font-semibold">{r.company}</div>
-              <div className="flex items-center gap-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>· ниво {r.level}</span></div>
+              <div className="truncate font-semibold">{tx(r.company)}</div>
+              <div className="flex items-center gap-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>{tr('· ниво {0}', r.level)}</span></div>
             </div>
             <div className="shrink-0 text-right">
               <div className="num font-display font-bold text-gold-400">{kind === 'wealth' ? money(r.value) : int(r.value)}</div>
@@ -64,7 +71,7 @@ async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<Leaderboar
           </li>
         ))}
       </ol>
-      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">Все още няма данни.</p>}
+      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Все още няма данни.')}</p>}
     </Card>
   );
 }
@@ -80,19 +87,19 @@ async function CompanyBoard({ userId }: { userId: string }) {
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
             <div className="min-w-0 flex-1">
               <Link href={`/game/companies/${r.companyId}`} className="block truncate font-semibold hover:underline">
-                {r.tag && hasUnlock(r.level, 'tag') && <span style={{ color: r.color ?? undefined }}>[{r.tag}] </span>}
-                {r.company}
+                {r.tag && hasUnlock(r.level, 'tag') && <span style={{ color: r.color ?? undefined }}>[{tx(r.tag)}] </span>}
+                {tx(r.company)}
               </Link>
-              <div className="flex flex-wrap items-center gap-x-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>· ниво {r.level} · {int(r.members)} членове</span></div>
+              <div className="flex flex-wrap items-center gap-x-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>{tr('· ниво {0} · {1} членове', r.level, int(r.members))}</span></div>
             </div>
             <div className="shrink-0 text-right">
               <div className="num font-display font-bold text-gold-400">{int(r.value)}</div>
-              <div className="text-[11px] text-mist-400">опит</div>
+              <div className="text-[11px] text-mist-400">{tr('опит')}</div>
             </div>
           </li>
         ))}
       </ol>
-      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">Все още няма основани компании.</p>}
+      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Все още няма основани компании.')}</p>}
     </Card>
   );
 }
@@ -102,23 +109,23 @@ async function BasesBoard({ userId }: { userId: string }) {
   const [rows, mine] = await Promise.all([topBases(db, now, 50), membershipOf(db, userId)]);
   return (
     <Card className="p-2 sm:p-3">
-      <p className="px-2 pb-2 text-xs text-mist-400 sm:px-3">„Браво“ от други играчи за последните 30 дни (при равенство — повече сгради и нива). Разгледай базата от профила на компанията.</p>
+      <p className="px-2 pb-2 text-xs text-mist-400 sm:px-3">{tr('„Браво“ от други играчи за последните 30 дни (при равенство — повече сгради и нива). Разгледай базата от профила на компанията.')}</p>
       <ol className="divide-y divide-asphalt-800">
         {rows.map((r, i) => (
           <li key={r.id} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.id === mine?.company.id ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
             <div className="min-w-0 flex-1">
-              <Link href={`/game/companies/${r.id}`} className="block truncate font-semibold hover:underline">{r.tag ? `[${r.tag}] ` : ''}{r.name}</Link>
-              <div className="text-xs text-mist-400">ниво {r.level} · сгради и нива {r.buildings}</div>
+              <Link href={`/game/companies/${r.id}`} className="block truncate font-semibold hover:underline">{r.tag ? `[${r.tag}] ` : ''}{tx(r.name)}</Link>
+              <div className="text-xs text-mist-400">{tr('ниво {0} · сгради и нива {1}', r.level, r.buildings)}</div>
             </div>
             <div className="shrink-0 text-right">
               <div className="num font-display font-bold text-gold-400">👍 {int(r.likes)}</div>
-              <div className="text-[11px] text-mist-400">за 30 дни</div>
+              <div className="text-[11px] text-mist-400">{tr('за 30 дни')}</div>
             </div>
           </li>
         ))}
       </ol>
-      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">Още никоя компания не е построила база.</p>}
+      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Още никоя компания не е построила база.')}</p>}
     </Card>
   );
 }
@@ -129,22 +136,22 @@ async function DivisionsBoard({ userId }: { userId: string }) {
   const tables = await Promise.all(DIVISIONS.slice().reverse().map(async (d) => ({ d, rows: await divisionTable(db, d, now) })));
   return (
     <div className="space-y-4">
-      <p className="text-sm text-mist-300">Компаниите се състезават по тоновете на членовете си за месеца. В края на месеца най-добрите {Math.round(DIVISION_RULES.moveShare * 100)} % се качват, последните слизат, а първите трима получават награда в касата. Игрови данни.</p>
+      <p className="text-sm text-mist-300">{tr('Компаниите се състезават по тоновете на членовете си за месеца. В края на месеца най-добрите {0} % се качват, последните слизат, а първите трима получават награда в касата. Игрови данни.', Math.round(DIVISION_RULES.moveShare * 100))}</p>
       {tables.map(({ d, rows }) => (
-        <Card key={d} title={`${d === 'gold' ? '🥇' : d === 'silver' ? '🥈' : '🥉'} ${DIVISION_LABELS[d]} дивизия`} className="p-2 sm:p-3">
-          {rows.length === 0 ? <p className="p-2 text-sm text-mist-400">Още няма компании.</p> : (
+        <Card key={d} title={tr('{0} {1} дивизия', d === 'gold' ? '🥇' : d === 'silver' ? '🥈' : '🥉', DIVISION_LABELS[d])} className="p-2 sm:p-3">
+          {rows.length === 0 ? <p className="p-2 text-sm text-mist-400">{tr('Още няма компании.')}</p> : (
             <ol className="divide-y divide-asphalt-800">
               {rows.slice(0, 20).map((r) => (
                 <li key={r.id} className={`flex items-center gap-3 rounded-xl px-2 py-2 ${r.id === mine ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
                   <span className="num w-8 text-center font-display font-bold text-mist-300">{medal(r.rank - 1)}</span>
-                  <span className="min-w-0 flex-1 truncate font-semibold">{r.name}{r.tag ? <span className="text-xs text-mist-400"> [{r.tag}]</span> : null}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">{tx(r.name)}{r.tag ? <span className="text-xs text-mist-400"> [{tx(r.tag)}]</span> : null}</span>
                   <span className="text-xs">{r.move === 'up' ? <span className="text-profit">⬆</span> : r.move === 'down' ? <span className="text-loss">⬇</span> : null}</span>
-                  <span className="num font-display font-bold text-gold-400">{int(r.tons)} т</span>
+                  <span className="num font-display font-bold text-gold-400">{tr('{0} т', int(r.tons))}</span>
                 </li>
               ))}
             </ol>
           )}
-          <p className="px-2 pt-1 text-xs text-mist-400">Награди: {DIVISION_RULES.prizes[d].map((p) => money(p)).join(' / ')}</p>
+          <p className="px-2 pt-1 text-xs text-mist-400">{tr('Награди:')}{' '}{DIVISION_RULES.prizes[d].map((p) => money(p)).join(' / ')}</p>
         </Card>
       ))}
     </div>
@@ -155,11 +162,11 @@ async function EcoBoardView({ userId }: { userId: string }) {
   const { db, now } = await gameContext();
   const week = ecoWeek(now);
   const rows = await ecoBoard(db, week);
-  const perKm = (r: { perKm: number }) => `${(r.perKm / 100).toFixed(2).replace('.', ',')} лв.`;
+  const perKm = (r: { perKm: number }) => tr('{0} лв.', (r.perKm / 100).toFixed(2).replace('.', ','));
   return (
     <Card className="p-2 sm:p-3">
       <p className="px-2 pb-2 pt-1 text-sm text-mist-300 sm:px-3">
-        Седмицата до {week.to.toLocaleDateString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })}: най-ниски разходи на километър (гориво, пътни такси, поддръжка, пътна помощ) за собствени курсове — наетите камиони не се броят. Нужни са поне {int(ECO.minKm)} км. Първите трима получават {ECO.prizes.map((p) => `${money(p.cents)} + ${p.coins} TC`).join(' / ')}.
+        {tr('Седмицата до {0}: най-ниски разходи на километър (гориво, пътни такси, поддръжка, пътна помощ) за собствени курсове — наетите камиони не се броят. Нужни са поне {1} км. Първите трима получават', week.to.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' }), int(ECO.minKm))}{' '}{ECO.prizes.map((p) => `${money(p.cents)} + ${p.coins} TC`).join(' / ')}.
       </p>
       <ol className="divide-y divide-asphalt-800">
         {rows.map((r, i) => (
@@ -167,16 +174,16 @@ async function EcoBoardView({ userId }: { userId: string }) {
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
             <div className="min-w-0 flex-1">
               <PlayerName name={r.username} className="font-semibold" />
-              <div className="text-xs text-mist-400">{int(r.km)} км · разходи {money(r.costCents)}</div>
+              <div className="text-xs text-mist-400">{tr('{0} км · разходи {1}', int(r.km), money(r.costCents))}</div>
             </div>
             <div className="shrink-0 text-right">
               <div className="num font-display font-bold text-gold-400">{perKm(r)}</div>
-              <div className="text-[11px] text-mist-400">на км</div>
+              <div className="text-[11px] text-mist-400">{tr('на км')}</div>
             </div>
           </li>
         ))}
       </ol>
-      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">Още никой не е изминал {int(ECO.minKm)} км тази седмица.</p>}
+      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Още никой не е изминал {0} км тази седмица.', int(ECO.minKm))}</p>}
     </Card>
   );
 }
@@ -186,17 +193,17 @@ async function RecordsBoard() {
   const rows = await laneRecordsView(db, now, 50);
   return (
     <Card className="p-2 sm:p-3">
-      <p className="px-2 pb-2 text-sm text-mist-300">Най-бързият курс с товар по всяка линия този месец (от натоварването до пристигането, навреме, поне {LANE_RECORDS.minKm} км). Нов месец — нови рекорди. Игрови данни.</p>
+      <p className="px-2 pb-2 text-sm text-mist-300">{tr('Най-бързият курс с товар по всяка линия този месец (от натоварването до пристигането, навреме, поне {0} км). Нов месец — нови рекорди. Игрови данни.', LANE_RECORDS.minKm)}</p>
       {rows.length ? (
         <ul className="divide-y divide-asphalt-800">
           {rows.map((r) => (
             <li key={`${r.originCityId}-${r.destCityId}`} className="flex items-center justify-between gap-3 px-2 py-2.5 text-sm">
-              <span className="min-w-0"><span className="block truncate font-medium">{r.from} → {r.to}</span><span className="block text-xs text-mist-400">{int(Math.round(r.km))} км · <PlayerName name={r.username} /></span></span>
-              <span className="num shrink-0 font-semibold">{Math.floor(r.minutes / 60)} ч {r.minutes % 60} мин</span>
+              <span className="min-w-0"><span className="block truncate font-medium">{tx(r.from)} → {tx(r.to)}</span><span className="block text-xs text-mist-400">{tr('{0} км ·', int(Math.round(r.km)))}{' '}<PlayerName name={r.username} /></span></span>
+              <span className="num shrink-0 font-semibold">{tr('{0} ч {1} мин', Math.floor(r.minutes / 60), r.minutes % 60)}</span>
             </li>
           ))}
         </ul>
-      ) : <p className="px-2 py-4 text-sm text-mist-400">Този месец още няма рекорди.</p>}
+      ) : <p className="px-2 py-4 text-sm text-mist-400">{tr('Този месец още няма рекорди.')}</p>}
     </Card>
   );
 }

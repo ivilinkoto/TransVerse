@@ -17,6 +17,7 @@ import { membershipOf, notifyMembers, requirePermission } from './membership';
 import { notify } from './notify';
 import { fleetView } from './queries';
 import { addChronicle } from './chronicle';
+import { t as tr } from '@/i18n/t';
 
 const cityNames = async (db: DbOrTx, ids: number[]) => {
   const rows = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, ids));
@@ -42,14 +43,14 @@ export async function settlePerfectConvoy(tx: Tx, d: { id: string; companyId: st
   const theirs = Math.round((pc?.rewardCents ?? 0) * PERFECT_CONVOY.bonusShare);
   const name = await cityNames(tx, [own.originCityId, own.destCityId]);
   const route = `${name(own.originCityId)} → ${name(own.destCityId)}`;
-  await post(tx, d.companyId, [{ category: 'convoy_perfect', amountCents: mine, description: `Перфектен конвой с ${partner!.username}`, idempotencyKey: `delivery:${d.id}:perfect-convoy`, refType: 'delivery', refId: d.id }]);
-  const paid = theirs ? await post(tx, p.companyId, [{ category: 'convoy_perfect', amountCents: theirs, description: `Перфектен конвой с ${me!.username}`, idempotencyKey: `delivery:${p.id}:perfect-convoy`, refType: 'delivery', refId: p.id }]) : 0;
+  await post(tx, d.companyId, [{ category: 'convoy_perfect', amountCents: mine, description: tr('Перфектен конвой с {0}', partner!.username), idempotencyKey: `delivery:${d.id}:perfect-convoy`, refType: 'delivery', refId: d.id }]);
+  const paid = theirs ? await post(tx, p.companyId, [{ category: 'convoy_perfect', amountCents: theirs, description: tr('Перфектен конвой с {0}', me!.username), idempotencyKey: `delivery:${p.id}:perfect-convoy`, refType: 'delivery', refId: p.id }]) : 0;
   if (paid) await tx.update(deliveries).set({ payoutCents: sql`coalesce(${deliveries.payoutCents}, 0) + ${theirs}` }).where(eq(deliveries.id, p.id));
-  await notify(tx, own.userId, 'success', 'Перфектен конвой!', `${route} с ${partner!.username}: двамата навреме и заедно — +${money(mine)}.`, '/game/finance');
-  await notify(tx, partner!.ownerId, 'success', 'Перфектен конвой!', `${route} с ${me!.username}: двамата навреме и заедно — +${money(theirs)}.`, '/game/finance');
+  await notify(tx, own.userId, 'success', () => tr('Перфектен конвой!'), () => tr('{0} с {1}: двамата навреме и заедно — +{2}.', route, partner!.username, money(mine)), '/game/finance');
+  await notify(tx, partner!.ownerId, 'success', () => tr('Перфектен конвой!'), () => tr('{0} с {1}: двамата навреме и заедно — +{2}.', route, me!.username, money(theirs)), '/game/finance');
   if (featureLive('discord_bot', own.at)) {
     await announce(tx, `perfect-convoy:${[d.id, p.id].sort().join(':')}`, 'convoys', {
-      embeds: [{ title: `🚚🚚 Перфектен конвой: ${me!.username} и ${partner!.username}`, description: `${route} — двамата пристигнаха навреме и заедно (до ${PERFECT_CONVOY.togetherMin} мин един от друг).`, color: 0x34d399, footer: { text: 'TransVerse · игрови данни' } }],
+      embeds: [{ title: tr('🚚🚚 Перфектен конвой: {0} и {1}', me!.username, partner!.username), description: tr('{0} — двамата пристигнаха навреме и заедно (до {1} мин един от друг).', route, PERFECT_CONVOY.togetherMin), color: 0x34d399, footer: { text: tr('TransVerse · игрови данни') } }],
     }, own.at);
   }
   return mine;
@@ -71,13 +72,13 @@ export async function recordLaneRun(tx: Tx, userId: string, d: { id: string; sch
   else await tx.insert(laneRecords).values(values).onConflictDoNothing();
   const name = await cityNames(tx, [lane.originCityId, lane.destCityId]);
   const route = `${name(lane.originCityId)} → ${name(lane.destCityId)}`;
-  const time = `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`;
+  const time = tr('{0} ч {1} мин', Math.floor(minutes / 60), minutes % 60);
   // A first run on a lane is a record too, but only a beaten one is news.
   if (prev) {
-    await notify(tx, userId, 'achievement', `Рекорд на линията ${route}`, `${time} с товар — най-бързият курс по нея този месец.`, '/game/leaderboards');
+    await notify(tx, userId, 'achievement', () => tr('Рекорд на линията {0}', route), () => tr('{0} с товар — най-бързият курс по нея този месец.', time), '/game/leaderboards');
     if (prev.userId !== userId) {
       const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-      await notify(tx, prev.userId, 'info', `Рекордът ти на ${route} е подобрен`, `${me!.username} я взе за ${time}. Върни си го!`, '/game/leaderboards');
+      await notify(tx, prev.userId, 'info', () => tr('Рекордът ти на {0} е подобрен', route), () => tr('{0} я взе за {1}. Върни си го!', me!.username, time), '/game/leaderboards');
     }
   }
   return { minutes, beaten: !!prev };
@@ -109,21 +110,21 @@ export async function staffBusState(db: DbOrTx, userId: string, now = new Date()
 
 /** A new member's free truck (with its trailer) rides to the company base in a minute, free, once. */
 export async function staffBus(db: Database, userId: string, vehicleId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'staff_bus', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'staff_bus', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const m = await membershipOf(tx, userId, true);
-    if (!m) fail('no_company', 'Не си член на компания.');
-    if (m!.rank.isOwner) fail('owner', 'Фирменият автобус е за новите членове.');
+    if (!m) fail('no_company', tr('Не си член на компания.'));
+    if (m!.rank.isOwner) fail('owner', tr('Фирменият автобус е за новите членове.'));
     const [row] = await tx.select().from(companyMembers).where(eq(companyMembers.userId, userId)).for('update');
-    if (row!.busUsedAt) fail('used', 'Фирменият автобус вече те докара.');
-    if (row!.joinedAt.getTime() + STAFF_BUS.days * 86_400_000 <= now.getTime()) fail('too_late', `Автобусът е за първите ${STAFF_BUS.days} дни в компанията.`);
+    if (row!.busUsedAt) fail('used', tr('Фирменият автобус вече те докара.'));
+    if (row!.joinedAt.getTime() + STAFF_BUS.days * 86_400_000 <= now.getTime()) fail('too_late', tr('Автобусът е за първите {0} дни в компанията.', STAFF_BUS.days));
     const account = await companyForUser(tx, userId);
     const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, account.id), isNull(vehicles.soldAt))).for('update');
-    if (!v) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
-    if (v!.status !== 'idle') fail('vehicle_busy', 'Камионът е на курс.');
-    if (v!.movingUntil && v!.movingUntil > now) fail('moving', 'Камионът вече пътува.');
+    if (!v) fail('vehicle_not_found', tr('Превозното средство не е намерено.'), 404);
+    if (v!.status !== 'idle') fail('vehicle_busy', tr('Камионът е на курс.'));
+    if (v!.movingUntil && v!.movingUntil > now) fail('moving', tr('Камионът вече пътува.'));
     const hq = m!.company.hqCityId;
-    if (v!.cityId === hq) fail('same_city', 'Камионът вече е в града на базата.');
+    if (v!.cityId === hq) fail('same_city', tr('Камионът вече е в града на базата.'));
     const arrivesAt = new Date(now.getTime() + STAFF_BUS.rideMs);
     await tx.update(vehicles).set({ cityId: hq, movingUntil: arrivesAt }).where(eq(vehicles.id, v!.id));
     await tx.update(trailers).set({ cityId: hq }).where(eq(trailers.vehicleId, v!.id));
@@ -140,7 +141,7 @@ export async function firstTripBonus(tx: Tx, userId: string, d: { id: string; co
   const bonus = Math.round(rewardCents * STAFF_BUS.firstTripShare);
   if (!bonus) return 0;
   const [org] = await tx.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, row.companyId));
-  await post(tx, d.companyId, [{ category: 'staff_bus_bonus', amountCents: bonus, description: `Първи курс за „${org!.name}“`, idempotencyKey: `delivery:${d.id}:first-trip`, refType: 'delivery', refId: d.id }]);
+  await post(tx, d.companyId, [{ category: 'staff_bus_bonus', amountCents: bonus, description: tr('Първи курс за „{0}“', org!.name), idempotencyKey: `delivery:${d.id}:first-trip`, refType: 'delivery', refId: d.id }]);
   return bonus;
 }
 
@@ -156,13 +157,13 @@ export async function celebrateAnniversaries(db: Database, now = new Date()) {
     if (!years) continue;
     await db.transaction(async (tx) => {
       const gift = anniversaryGiftCents(years);
-      const applied = await postTreasury(tx, o.id, [{ category: 'anniversary', amountCents: gift, description: `${years} ${years === 1 ? 'година' : 'години'} „${o.name}“`, idempotencyKey: `anniversary:${o.id}:${years}` }]);
+      const applied = await postTreasury(tx, o.id, [{ category: 'anniversary', amountCents: gift, description: `${years} ${years === 1 ? tr('година') : tr('години')} „${o.name}“`, idempotencyKey: `anniversary:${o.id}:${years}` }]);
       if (!applied) return;
       n++;
       const members = await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, o.id));
       if (members.length) await tx.insert(userBadges).values(members.map((m) => ({ userId: m.userId, badge: ANNIVERSARY.badge, awardedAt: now }))).onConflictDoNothing();
       await addChronicle(tx, o.id, 'anniversary', `${years} ${years === 1 ? 'година' : 'години'} компанията`, now);
-      await notifyMembers(tx, o.id, null, `Честит рожден ден, „${o.name}“! 🎂`, `${years} ${years === 1 ? 'година' : 'години'} заедно: ${money(gift)} в касата и значка „${BADGES[ANNIVERSARY.badge]!.label}“ за всеки член.`, '/game/company');
+      await notifyMembers(tx, o.id, null, () => tr('Честит рожден ден, „{0}“! 🎂', o.name), () => tr('{0} {1} заедно: {2} в касата и значка „{3}“ за всеки член.', years, years === 1 ? tr('година') : tr('години'), money(gift), BADGES[ANNIVERSARY.badge]!.label), '/game/company');
     });
   }
   return n;
@@ -202,13 +203,13 @@ export async function awardDriversOfMonth(db: Database, now = new Date()) {
       if (!account || !org || !u || org.driverOfMonth?.month === m.key) return;
       const prize = org.driverOfMonthPrizeCents > 0 && org.treasuryCents >= org.driverOfMonthPrizeCents ? org.driverOfMonthPrizeCents : 0;
       if (prize) {
-        await post(tx, account.id, [{ category: 'member_bonus', amountCents: prize, description: `Шофьор на месеца в „${org.name}“`, idempotencyKey: `driver-month:${org.id}:${m.key}:in`, refType: 'company', refId: org.id }]);
-        await postTreasury(tx, org.id, [{ category: 'member_bonus', amountCents: -prize, description: `Шофьор на месеца: ${u.username}`, idempotencyKey: `driver-month:${org.id}:${m.key}:out`, refType: 'user', refId: r.user_id }]);
+        await post(tx, account.id, [{ category: 'member_bonus', amountCents: prize, description: tr('Шофьор на месеца в „{0}“', org.name), idempotencyKey: `driver-month:${org.id}:${m.key}:in`, refType: 'company', refId: org.id }]);
+        await postTreasury(tx, org.id, [{ category: 'member_bonus', amountCents: -prize, description: tr('Шофьор на месеца: {0}', u.username), idempotencyKey: `driver-month:${org.id}:${m.key}:out`, refType: 'user', refId: r.user_id }]);
       }
       await tx.update(organizations).set({ driverOfMonth: { userId: r.user_id, username: u.username, month: m.key, trips: r.trips, tons: Math.round(r.tons * 10) / 10 } }).where(eq(organizations.id, org.id));
       await tx.insert(userBadges).values({ userId: r.user_id, badge: DRIVER_OF_MONTH.badge, awardedAt: now }).onConflictDoNothing();
       await addChronicle(tx, org.id, 'driver', `Шофьор на месеца (${m.key}): ${u.username} — ${r.trips} курса`, now);
-      await notifyMembers(tx, org.id, null, `Шофьор на месеца: ${u.username}`, `${r.trips} курса и ${Math.round(r.tons)} т за месеца${prize ? ` · премия ${money(prize)} от касата` : ''}.`, '/game/company');
+      await notifyMembers(tx, org.id, null, () => tr('Шофьор на месеца: {0}', u.username), () => tr('{0} курса и {1} т за месеца{2}.', r.trips, Math.round(r.tons), prize ? tr(' · премия {0} от касата', money(prize)) : ''), '/game/company');
       n++;
     });
   }
@@ -218,8 +219,8 @@ export async function awardDriversOfMonth(db: Database, now = new Date()) {
 
 /** The owner (right "Настройки") sets the monthly prize from the treasury. */
 export async function setDriverOfMonthPrize(db: Database, actorId: string, cents: number, now = new Date()) {
-  if (!(await featureFor(db, actorId, 'driver_of_month', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
-  if (!(DRIVER_OF_MONTH.prizes as readonly number[]).includes(cents)) fail('bad_prize', 'Невалидна премия.');
+  if (!(await featureFor(db, actorId, 'driver_of_month', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  if (!(DRIVER_OF_MONTH.prizes as readonly number[]).includes(cents)) fail('bad_prize', tr('Невалидна премия.'));
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     await tx.update(organizations).set({ driverOfMonthPrizeCents: cents }).where(eq(organizations.id, actor.company.id));
@@ -230,17 +231,17 @@ export async function setDriverOfMonthPrize(db: Database, actorId: string, cents
 
 /** Picks up to three own trucks and three own badges for the public profile. */
 export async function setShowcase(db: Database, userId: string, input: { trucks: string[]; badges: string[] }, now = new Date()) {
-  if (!(await featureFor(db, userId, 'profile_showcase', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'profile_showcase', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   const trucks = [...new Set(input.trucks)].slice(0, SHOWCASE.trucks);
   const badges = [...new Set(input.badges)].slice(0, SHOWCASE.badges);
   const account = await companyForUser(db, userId);
   if (trucks.length) {
     const own = await db.select({ id: vehicles.id }).from(vehicles).where(and(eq(vehicles.companyId, account.id), isNull(vehicles.soldAt), inArray(vehicles.id, trucks)));
-    if (own.length !== trucks.length) fail('not_yours', 'Може да показваш само свои камиони.');
+    if (own.length !== trucks.length) fail('not_yours', tr('Може да показваш само свои камиони.'));
   }
   if (badges.length) {
     const own = new Set((await badgesOf(db, userId)).map((b) => b.id));
-    if (badges.some((b) => !own.has(b))) fail('not_yours', 'Може да показваш само свои значки.');
+    if (badges.some((b) => !own.has(b))) fail('not_yours', tr('Може да показваш само свои значки.'));
   }
   await db.update(users).set({ showcase: { trucks, badges } }).where(eq(users.id, userId));
   return { trucks, badges };

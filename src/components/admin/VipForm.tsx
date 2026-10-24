@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t, intlLocale } from '@/i18n/t';
 
 /** Administrator sets VIP for a number of days from today, or removes it. */
 export function VipForm({ userId, activeUntil, today }: { userId: string; activeUntil: string | null; today: string }) {
@@ -22,15 +23,15 @@ export function VipForm({ userId, activeUntil, today }: { userId: string; active
       setBusy(false);
     }
   };
-  const preview = Number(days) > 0 ? new Date(new Date(today).getTime() + Number(days) * 86_400_000).toLocaleDateString('bg-BG') : null;
+  const preview = Number(days) > 0 ? new Date(new Date(today).getTime() + Number(days) * 86_400_000).toLocaleDateString(intlLocale()) : null;
   return (
     <div className="space-y-2">
-      <p className="text-sm text-mist-300">{activeUntil ? `Активен VIP до ${new Date(activeUntil).toLocaleDateString('bg-BG')}.` : 'Няма активен VIP.'}</p>
+      <p className="text-sm text-mist-300">{activeUntil ? t('Активен VIP до {0}.', new Date(activeUntil).toLocaleDateString(intlLocale())) : t('Няма активен VIP.')}</p>
       <div className="flex flex-wrap items-center gap-2">
-        <input className="input w-28" type="number" min={1} max={3650} value={days} onChange={(e) => setDays(e.target.value)} aria-label="Срок на VIP в дни" />
-        <span className="text-sm text-mist-400">дни{preview ? ` · до ${preview}` : ''}</span>
-        <button className="btn-gold" disabled={busy || !(Number(days) >= 1)} onClick={() => run(Number(days))}>{busy ? '…' : activeUntil ? 'Задай нов срок' : 'Дай VIP'}</button>
-        {activeUntil && <button className="btn-ghost text-loss" disabled={busy} onClick={() => run(0)}>Премахни VIP</button>}
+        <input className="input w-28" type="number" min={1} max={3650} value={days} onChange={(e) => setDays(e.target.value)} aria-label={t('Срок на VIP в дни')} />
+        <span className="text-sm text-mist-400">{t('дни{0}', preview ? t(' · до {0}', preview) : '')}</span>
+        <button className="btn-gold" disabled={busy || !(Number(days) >= 1)} onClick={() => run(Number(days))}>{busy ? '…' : activeUntil ? t('Задай нов срок') : t('Дай VIP')}</button>
+        {activeUntil && <button className="btn-ghost text-loss" disabled={busy} onClick={() => run(0)}>{t('Премахни VIP')}</button>}
       </div>
       {error && <p role="alert" className="text-sm text-loss">{error}</p>}
     </div>

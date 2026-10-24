@@ -1,4 +1,5 @@
 import { kmByCountry } from './fuel';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 /**
  * The roads of "Цяла Европа" (v1.7), game data modelled on the real rules:
@@ -90,7 +91,7 @@ export function applyDrivingBans<T extends Seg>(segments: readonly T[], legs: { 
     const until = country ? banEndsAt(country, seg.start) : null;
     if (until && until > seg.start) {
       const wait = until - seg.start;
-      out.push({ ...seg, kind: 'incident', end: seg.start, start: seg.start, toKm: seg.fromKm, note: `Забрана за движение (${country}) до ${new Intl.DateTimeFormat('bg-BG', { timeZone: DRIVING_BANS[country!]!.tz, hour: '2-digit', minute: '2-digit' }).format(until)}` } as T);
+      out.push({ ...seg, kind: 'incident', end: seg.start, start: seg.start, toKm: seg.fromKm, note: tr('Забрана за движение ({0}) до {1}', country, new Intl.DateTimeFormat(intlLocale(), { timeZone: DRIVING_BANS[country!]!.tz, hour: '2-digit', minute: '2-digit' }).format(until)) } as T);
       out[out.length - 1]!.end = until;
       waits.push({ country: country!, minutes: Math.round(wait / 60_000) });
       seg.start += wait;

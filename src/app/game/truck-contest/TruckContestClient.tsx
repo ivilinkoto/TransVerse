@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t, tx } from '@/i18n/t';
 
 export function EnterTruck({ vehicles }: { vehicles: { id: string; label: string }[] }) {
   const router = useRouter();
@@ -11,8 +12,8 @@ export function EnterTruck({ vehicles }: { vehicles: { id: string; label: string
   const [error, setError] = useState<string | null>(null);
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <select className="input min-w-0 flex-1" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label="Камион">
-        {vehicles.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+      <select className="input min-w-0 flex-1" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label={t('Камион')}>
+        {vehicles.map((v) => <option key={v.id} value={v.id}>{tx(v.label)}</option>)}
       </select>
       <button
         type="button"
@@ -31,9 +32,9 @@ export function EnterTruck({ vehicles }: { vehicles: { id: string; label: string
           }
         }}
       >
-        🚛 Включи в конкурса
+        {t('🚛 Включи в конкурса')}
       </button>
-      <p className="w-full text-xs text-mist-400">Камионът участва така, както изглежда сега — един на месец.</p>
+      <p className="w-full text-xs text-mist-400">{t('Камионът участва така, както изглежда сега — един на месец.')}</p>
       {error && <p role="alert" className="w-full text-loss">{error}</p>}
     </div>
   );
@@ -43,7 +44,7 @@ export function VoteButton({ entryId, voted, disabled }: { entryId: number; vote
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (voted) return <p className="mt-2 text-xs text-profit">✓ Гласува за него</p>;
+  if (voted) return <p className="mt-2 text-xs text-profit">{t('✓ Гласува за него')}</p>;
   return (
     <div className="mt-2">
       <button
@@ -63,7 +64,7 @@ export function VoteButton({ entryId, voted, disabled }: { entryId: number; vote
           }
         }}
       >
-        👍 Гласувай
+        {t('👍 Гласувай')}
       </button>
       {error && <p role="alert" className="mt-1 text-xs text-loss">{error}</p>}
     </div>

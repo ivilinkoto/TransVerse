@@ -16,6 +16,7 @@ import { recordChristmasHelp } from './christmas';
 import { addFeed } from './feed';
 import { awardXp } from './progression';
 import { alliesOf, circleOf } from './world-map';
+import { t as tr } from '@/i18n/t';
 
 type Trip = Pick<typeof deliveries.$inferSelect, 'schedule' | 'emptyRouteId' | 'routeId' | 'contractId'>;
 
@@ -80,9 +81,9 @@ async function shorten(tx: DbOrTx, d: typeof deliveries.$inferSelect, stop: Segm
 async function ownStop(tx: DbOrTx, userId: string, deliveryId: string, now: Date) {
   const account = await companyForUser(tx, userId);
   const [d] = await tx.select().from(deliveries).where(and(eq(deliveries.id, deliveryId), eq(deliveries.companyId, account.id), eq(deliveries.status, 'in_progress'))).for('update');
-  if (!d) fail('trip_over', 'Курсът вече е приключил.', 409);
+  if (!d) fail('trip_over', tr('Курсът вече е приключил.'), 409);
   const stop = helpableStop(d!.schedule as Segment[], now.getTime());
-  if (!stop) fail('no_stop', 'Камионът вече не чака помощ.', 409);
+  if (!stop) fail('no_stop', tr('Камионът вече не чака помощ.'), 409);
   return { account, d: d!, stop: stop! };
 }
 
@@ -92,14 +93,14 @@ async function ownStop(tx: DbOrTx, userId: string, deliveryId: string, now: Date
  * is saved for a fee. A stop is shortened once (by a colleague or this).
  */
 export async function paidRoadHelp(db: Database, userId: string, deliveryId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'roadside_paid', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'roadside_paid', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const { account, d, stop } = await ownStop(tx, userId, deliveryId, now);
     const savedMs = Math.round((stop.end - now.getTime()) * ROADSIDE.paidCut);
     const [help] = await tx.insert(roadsideHelps).values({ deliveryId: d.id, stopAt: new Date(stop.start), helperId: userId, savedMs, feeCents: ROADSIDE.paidCents, createdAt: now }).onConflictDoNothing().returning({ id: roadsideHelps.id });
-    if (!help) fail('already_helped', 'На този камион вече е помогнато.', 409);
-    await post(tx, account.id, [{ category: 'roadside_paid', amountCents: -ROADSIDE.paidCents, description: `Платена пътна помощ (${stop.note})`, idempotencyKey: `roadside-paid:${help!.id}`, refType: 'delivery', refId: d.id }], { requireFunds: true });
-    await shorten(tx, d, stop, savedMs, 'пътна помощ');
+    if (!help) fail('already_helped', tr('На този камион вече е помогнато.'), 409);
+    await post(tx, account.id, [{ category: 'roadside_paid', amountCents: -ROADSIDE.paidCents, description: tr('Платена пътна помощ ({0})', stop.note), idempotencyKey: `roadside-paid:${help!.id}`, refType: 'delivery', refId: d.id }], { requireFunds: true });
+    await shorten(tx, d, stop, savedMs, tr('пътна помощ'));
     await broadcast(tx, 'world');
     return { savedMs, feeCents: ROADSIDE.paidCents };
   });
@@ -115,17 +116,17 @@ async function alliesFor(db: DbOrTx, userId: string, now: Date) {
  * only those in the game now) to help; once per stop.
  */
 export async function callForHelp(db: Database, userId: string, deliveryId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'roadside_paid', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'roadside_paid', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const { d, stop } = await ownStop(tx, userId, deliveryId, now);
     const [first] = await tx.insert(jobState).values({ key: `call-help:${d.id}:${stop.start}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning({ key: jobState.key });
-    if (!first) fail('already_called', 'Вече повика колегите за тази спирка.', 409);
+    if (!first) fail('already_called', tr('Вече повика колегите за тази спирка.'), 409);
     const circle = await circleOf(tx, userId);
     const ids = [...new Set([...circle.friends, ...circle.mates, ...(await alliesFor(tx, userId, now))])];
-    if (!ids.length) fail('nobody', 'Нямаш приятели или колеги, които да повикаш.');
+    if (!ids.length) fail('nobody', tr('Нямаш приятели или колеги, които да повикаш.'));
     const asked = await tx.select({ id: users.id }).from(users).where(and(inArray(users.id, ids), isNull(users.bannedAt)));
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-    for (const u of asked) await notify(tx, u.id, 'info', `${me!.username} вика помощ на пътя`, `${stop.note}. Ако имаш камион до ${ROADSIDE.radiusKm} км, помогни — хонорар ${money(ROADSIDE.feeCents)}.`, `/game/map?help=${d.id}`);
+    for (const u of asked) await notify(tx, u.id, 'info', () => tr('{0} вика помощ на пътя', me!.username), () => tr('{0}. Ако имаш камион до {1} км, помогни — хонорар {2}.', stop.note, ROADSIDE.radiusKm, money(ROADSIDE.feeCents)), `/game/map?help=${d.id}`);
     return { asked: asked.length };
   });
 }
@@ -138,36 +139,36 @@ export async function callForHelp(db: Database, userId: string, deliveryId: stri
 export async function helpOnRoad(db: Database, helperId: string, deliveryId: string, now = new Date()) {
   return db.transaction(async (tx) => {
     const [d] = await tx.select().from(deliveries).where(and(eq(deliveries.id, deliveryId), eq(deliveries.status, 'in_progress'))).for('update');
-    if (!d) fail('trip_over', 'Курсът вече е приключил.', 409);
+    if (!d) fail('trip_over', tr('Курсът вече е приключил.'), 409);
     const stop = helpableStop(d!.schedule as Segment[], now.getTime());
-    if (!stop) fail('no_stop', 'Камионът вече не чака помощ.', 409);
+    if (!stop) fail('no_stop', tr('Камионът вече не чака помощ.'), 409);
     const [owner] = await tx.select({ id: users.id, username: users.username }).from(companies).innerJoin(users, eq(users.id, companies.ownerId)).where(eq(companies.id, d!.companyId));
-    if (!owner || owner.id === helperId) fail('self', 'Не можеш да помогнеш на собствения си камион.');
+    if (!owner || owner.id === helperId) fail('self', tr('Не можеш да помогнеш на собствения си камион.'));
     const circle = await circleOf(tx, helperId);
-    if (!circle.friends.has(owner!.id) && !circle.mates.has(owner!.id) && !(await alliesFor(tx, helperId, now)).has(owner!.id)) fail('not_friend', 'Може да помагаш на приятели, на колеги от компанията и на съюзници.', 403);
+    if (!circle.friends.has(owner!.id) && !circle.mates.has(owner!.id) && !(await alliesFor(tx, helperId, now)).has(owner!.id)) fail('not_friend', tr('Може да помагаш на приятели, на колеги от компанията и на съюзници.'), 403);
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(roadsideHelps).where(and(eq(roadsideHelps.helperId, helperId), gte(roadsideHelps.createdAt, new Date(now.getTime() - 86_400_000))));
-    if (n >= ROADSIDE.dailyLimit) fail('daily_limit', `Може да помагаш до ${ROADSIDE.dailyLimit} пъти за 24 часа.`);
+    if (n >= ROADSIDE.dailyLimit) fail('daily_limit', tr('Може да помагаш до {0} пъти за 24 часа.', ROADSIDE.dailyLimit));
     const where = await tripPosition(tx, d!, now);
     const km = where ? await nearestTruckKm(tx, helperId, where, now) : null;
-    if (km === null || km > ROADSIDE.radiusKm) fail('too_far', `Нямаш камион до ${ROADSIDE.radiusKm} км от мястото${km !== null ? ` (най-близкият е на ${Math.round(km)} км)` : ''}.`);
+    if (km === null || km > ROADSIDE.radiusKm) fail('too_far', tr('Нямаш камион до {0} км от мястото{1}.', ROADSIDE.radiusKm, km !== null ? tr(' (най-близкият е на {0} км)', Math.round(km)) : ''));
 
     const savedMs = Math.round((stop!.end - now.getTime()) * ROADSIDE.cut);
     const [help] = await tx.insert(roadsideHelps).values({ deliveryId: d!.id, stopAt: new Date(stop!.start), helperId, savedMs, feeCents: ROADSIDE.feeCents, createdAt: now }).onConflictDoNothing().returning({ id: roadsideHelps.id });
-    if (!help) fail('already_helped', 'Някой вече помогна на този камион.', 409);
+    if (!help) fail('already_helped', tr('Някой вече помогна на този камион.'), 409);
 
     await shorten(tx, d!, stop!, savedMs);
 
     const [helper] = await tx.select({ username: users.username }).from(users).where(eq(users.id, helperId));
     const account = await companyForUser(tx, helperId);
-    await post(tx, account.id, [{ category: 'roadside_help', amountCents: ROADSIDE.feeCents, description: `Помощ на пътя: ${owner!.username} (${stop!.note})`, idempotencyKey: `roadside:${help!.id}`, refType: 'delivery', refId: d!.id }]);
+    await post(tx, account.id, [{ category: 'roadside_help', amountCents: ROADSIDE.feeCents, description: tr('Помощ на пътя: {0} ({1})', owner!.username, stop!.note), idempotencyKey: `roadside:${help!.id}`, refType: 'delivery', refId: d!.id }]);
     const [acc] = await tx.select({ reputation: companies.reputation }).from(companies).where(eq(companies.id, account.id)).for('update');
     await tx.update(companies).set({ reputation: Math.min(100, acc!.reputation + ROADSIDE.reputation) }).where(eq(companies.id, account.id));
     await awardXp(tx, helperId, ROADSIDE.xp, 'roadside');
     await recordChristmasHelp(tx, helperId, now);
-    await addFeed(tx, { userId: helperId, kind: 'help', text: `помогна на ${owner!.username} на пътя (${stop!.note})` }, now);
+    await addFeed(tx, { userId: helperId, kind: 'help', text: tr('помогна на {0} на пътя ({1})', owner!.username, stop!.note) }, now);
     const minutes = Math.max(1, Math.round(savedMs / 60_000));
-    await notify(tx, owner!.id, 'success', `${helper!.username} ти помогна на пътя`, `${stop!.note}: камионът тръгва ${minutes} мин. по-рано.`, '/game/fleet');
-    await notify(tx, helperId, 'success', 'Помогна на колега', `${owner!.username} тръгва ${minutes} мин. по-рано. Хонорар ${money(ROADSIDE.feeCents)}, +${ROADSIDE.xp} опит и репутация.`, '/game/finance');
+    await notify(tx, owner!.id, 'success', () => tr('{0} ти помогна на пътя', helper!.username), () => tr('{0}: камионът тръгва {1} мин. по-рано.', stop!.note, minutes), '/game/fleet');
+    await notify(tx, helperId, 'success', () => tr('Помогна на колега'), () => tr('{0} тръгва {1} мин. по-рано. Хонорар {2}, +{3} опит и репутация.', owner!.username, minutes, money(ROADSIDE.feeCents), ROADSIDE.xp), '/game/finance');
     await broadcast(tx, 'world');
     return { savedMs, feeCents: ROADSIDE.feeCents };
   });
@@ -182,6 +183,6 @@ export async function askForHelp(tx: DbOrTx, ownerId: string, kind: keyof typeof
   if (!ids.length) return 0;
   const online = await tx.select({ id: users.id }).from(users).where(and(inArray(users.id, ids), gte(users.lastSeenAt, new Date(now.getTime() - 10 * 60_000)), isNull(users.bannedAt)));
   const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, ownerId));
-  for (const u of online) await notify(tx, u.id, 'info', `${me!.username} чака помощ на пътя`, `${ROAD_EVENTS[kind].title}${place ? ` по пътя за ${place}` : ''}. Ако имаш камион наблизо (до ${ROADSIDE.radiusKm} км), помогни от картата — хонорар ${money(ROADSIDE.feeCents)}`, deliveryId ? `/game/map?help=${deliveryId}` : '/game/map');
+  for (const u of online) await notify(tx, u.id, 'info', () => tr('{0} чака помощ на пътя', me!.username), () => tr('{0}{1}. Ако имаш камион наблизо (до {2} км), помогни от картата — хонорар {3}', ROAD_EVENTS[kind].title, place ? tr(' по пътя за {0}', place) : '', ROADSIDE.radiusKm, money(ROADSIDE.feeCents)), deliveryId ? `/game/map?help=${deliveryId}` : '/game/map');
   return online.length;
 }

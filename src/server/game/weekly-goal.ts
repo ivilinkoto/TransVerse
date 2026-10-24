@@ -9,6 +9,7 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 /** The player's average week over the last four (deliveries, loaded km, tonnes). */
 async function averageWeek(db: DbOrTx, userId: string, now: Date): Promise<Record<GoalMetric, number>> {
@@ -43,16 +44,16 @@ export async function weeklyGoalState(db: DbOrTx, userId: string, now = new Date
 
 /** The player picks this week's goal (once a week). */
 export async function chooseWeeklyGoal(db: Database, userId: string, difficulty: GoalDifficulty, now = new Date()) {
-  if (!GOAL_LEVELS[difficulty]) fail('invalid_goal', 'Непозната цел.');
+  if (!GOAL_LEVELS[difficulty]) fail('invalid_goal', t('Непозната цел.'));
   const state = await weeklyGoalState(db, userId, now);
-  if (state.goal) fail('goal_chosen', 'Целта за тази седмица вече е избрана.', 409);
+  if (state.goal) fail('goal_chosen', t('Целта за тази седмица вече е избрана.'), 409);
   const c = state.choices.find((x) => x.difficulty === difficulty)!;
   const [row] = await db
     .insert(weeklyGoals)
     .values({ userId, weekKey: state.week, difficulty, metric: c.metric, target: c.target, rewardCents: c.rewardCents, rewardCoins: c.rewardCoins, endsAt: state.endsAt, createdAt: now })
     .onConflictDoNothing()
     .returning();
-  if (!row) fail('goal_chosen', 'Целта за тази седмица вече е избрана.', 409);
+  if (!row) fail('goal_chosen', t('Целта за тази седмица вече е избрана.'), 409);
   return row!;
 }
 
@@ -63,22 +64,22 @@ export async function recordWeeklyGoal(tx: Tx, userId: string, load: { loadedKm:
   if (!g || g.progress >= g.target) return;
   const progress = Math.min(g.target, g.progress + goalIncrement(g.metric as GoalMetric, load));
   await tx.update(weeklyGoals).set({ progress }).where(and(eq(weeklyGoals.userId, userId), eq(weeklyGoals.weekKey, week)));
-  if (progress >= g.target) await notify(tx, userId, 'achievement', 'Седмичната цел е изпълнена!', `${GOAL_METRICS[g.metric as GoalMetric].label(g.target)} — вземи наградата: ${money(g.rewardCents)} и ${g.rewardCoins} TC.`, '/game/missions');
+  if (progress >= g.target) await notify(tx, userId, 'achievement', () => t('Седмичната цел е изпълнена!'), () => t('{0} — вземи наградата: {1} и {2} TC.', GOAL_METRICS[g.metric as GoalMetric].label(g.target), money(g.rewardCents), g.rewardCoins), '/game/missions');
 }
 
 /** Takes the reward of a finished goal (this week or the last one). */
 export async function claimWeeklyGoal(db: Database, userId: string, weekKey: string, now = new Date()) {
   return db.transaction(async (tx) => {
     const [g] = await tx.select().from(weeklyGoals).where(and(eq(weeklyGoals.userId, userId), eq(weeklyGoals.weekKey, weekKey))).for('update');
-    if (!g) fail('not_found', 'Няма такава цел.', 404);
-    if (g!.claimedAt) fail('already_claimed', 'Наградата вече е взета.');
-    if (g!.progress < g!.target) fail('not_done', 'Целта още не е изпълнена.');
+    if (!g) fail('not_found', t('Няма такава цел.'), 404);
+    if (g!.claimedAt) fail('already_claimed', t('Наградата вече е взета.'));
+    if (g!.progress < g!.target) fail('not_done', t('Целта още не е изпълнена.'));
     // A week later the reward is gone.
-    if (now.getTime() > g!.endsAt.getTime() + 7 * 86_400_000) fail('expired', 'Срокът за наградата изтече.');
+    if (now.getTime() > g!.endsAt.getTime() + 7 * 86_400_000) fail('expired', t('Срокът за наградата изтече.'));
     await tx.update(weeklyGoals).set({ claimedAt: now }).where(and(eq(weeklyGoals.userId, userId), eq(weeklyGoals.weekKey, weekKey)));
     const account = await companyForUser(tx, userId);
-    await post(tx, account.id, [{ category: 'mission_reward', amountCents: g!.rewardCents, description: `Седмична цел: ${GOAL_METRICS[g!.metric as GoalMetric].label(g!.target)}`, idempotencyKey: `weekly-goal:${userId}:${weekKey}` }]);
-    await postCoins(tx, userId, { amount: g!.rewardCoins, reason: 'weekly_goal', description: 'Седмична цел', idempotencyKey: `weekly-goal:${userId}:${weekKey}:coins` });
+    await post(tx, account.id, [{ category: 'mission_reward', amountCents: g!.rewardCents, description: t('Седмична цел: {0}', GOAL_METRICS[g!.metric as GoalMetric].label(g!.target)), idempotencyKey: `weekly-goal:${userId}:${weekKey}` }]);
+    await postCoins(tx, userId, { amount: g!.rewardCoins, reason: 'weekly_goal', description: t('Седмична цел'), idempotencyKey: `weekly-goal:${userId}:${weekKey}:coins` });
     return { cents: g!.rewardCents, coins: g!.rewardCoins };
   });
 }

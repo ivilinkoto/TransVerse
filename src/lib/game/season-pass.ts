@@ -1,3 +1,4 @@
+import { t, intlLocale } from '@/i18n/t';
 /**
  * Season pass: 30 levels filled by season points from deliveries. Every level
  * has a free reward; the premium track (bought with ТрансКоин) adds more.
@@ -16,10 +17,10 @@ export interface PassReward {
 
 export function rewardLabel(r: PassReward): string {
   const parts: string[] = [];
-  if (r.cents) parts.push(`${(r.cents / 100).toLocaleString('bg-BG')} лв.`);
+  if (r.cents) parts.push(t('{0} лв.', (r.cents / 100).toLocaleString(intlLocale())));
   if (r.coins) parts.push(`${r.coins} TC`);
-  if (r.vipDays) parts.push(`VIP ${r.vipDays} ${r.vipDays === 1 ? 'ден' : 'дни'}`);
-  if (r.xpBoostHours) parts.push(`×2 опит ${r.xpBoostHours} ч`);
+  if (r.vipDays) parts.push(`VIP ${r.vipDays} ${r.vipDays === 1 ? t('ден') : t('дни')}`);
+  if (r.xpBoostHours) parts.push(t('×2 опит {0} ч', r.xpBoostHours));
   return parts.join(' + ');
 }
 

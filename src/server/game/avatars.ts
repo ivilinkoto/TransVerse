@@ -4,14 +4,15 @@ import type { Database, DbOrTx } from '@/server/db/client';
 import { userAvatars, users } from '@/server/db/schema';
 import { fail } from './errors';
 import { logActivity } from './notify';
+import { t } from '@/i18n/t';
 
 /** The browser resizes to 256×256 before uploading; this is a safety cap. */
 export const AVATAR_MAX_BYTES = 200 * 1024;
 
 export async function setAvatar(db: Database, userId: string, bytes: Uint8Array) {
-  if (bytes.length > AVATAR_MAX_BYTES) fail('too_large', `Снимката е твърде голяма (най-много ${AVATAR_MAX_BYTES / 1024} KB).`);
+  if (bytes.length > AVATAR_MAX_BYTES) fail('too_large', t('Снимката е твърде голяма (най-много {0} KB).', AVATAR_MAX_BYTES / 1024));
   const mime = sniffImage(bytes);
-  if (!mime) fail('bad_image', 'Позволени са само PNG, JPEG и WebP изображения.');
+  if (!mime) fail('bad_image', t('Позволени са само PNG, JPEG и WebP изображения.'));
   const data = Buffer.from(bytes);
   await db.transaction(async (tx) => {
     await tx.insert(userAvatars).values({ userId, mime: mime!, data }).onConflictDoUpdate({ target: userAvatars.userId, set: { mime: mime!, data, updatedAt: new Date() } });

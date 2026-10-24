@@ -8,6 +8,7 @@ import { logActivity, notify } from '@/server/game/notify';
 import { discord } from './api';
 import { appUrl, discordConfig } from './config';
 import { enqueue } from './outbox';
+import { t } from '@/i18n/t';
 
 /** ТрансКоин for linking Discord (once per player). */
 export const DISCORD_LINK_COINS = 10;
@@ -32,12 +33,12 @@ export async function discordAccountFromCode(code: string) {
 export async function linkDiscord(db: Database, userId: string, account: { id: string; name: string }, now = new Date()) {
   return db.transaction(async (tx) => {
     const [other] = await tx.select({ id: users.id }).from(users).where(and(eq(users.discordId, account.id), ne(users.id, userId)));
-    if (other) fail('discord_taken', 'Този Discord акаунт вече е свързан с друг профил в играта.');
+    if (other) fail('discord_taken', t('Този Discord акаунт вече е свързан с друг профил в играта.'));
     await tx.update(users).set({ discordId: account.id, discordName: account.name.slice(0, 60), discordLinkedAt: now }).where(eq(users.id, userId));
     const badge = await tx.insert(userBadges).values({ userId, badge: 'discord', awardedAt: now }).onConflictDoNothing().returning({ badge: userBadges.badge });
     if (badge.length) {
-      await postCoins(tx, userId, { amount: DISCORD_LINK_COINS, reason: 'discord_link', description: 'Свързан Discord', idempotencyKey: `discord-link:${userId}` });
-      await notify(tx, userId, 'success', 'Discord е свързан!', `+${DISCORD_LINK_COINS} ТрансКоин и значка „Discord шофьор“.`, '/game/settings#discord');
+      await postCoins(tx, userId, { amount: DISCORD_LINK_COINS, reason: 'discord_link', description: t('Свързан Discord'), idempotencyKey: `discord-link:${userId}` });
+      await notify(tx, userId, 'success', () => t('Discord е свързан!'), () => t('+{0} ТрансКоин и значка „Discord шофьор“.', DISCORD_LINK_COINS), '/game/settings#discord');
     }
     // The frames for the level the member already has in the server.
     const [member] = await tx.select({ level: discordMembers.level }).from(discordMembers).where(eq(discordMembers.discordUserId, account.id));
@@ -63,6 +64,6 @@ export async function unlinkDiscord(db: Database, userId: string, now = new Date
 /** Which game notifications also come as Discord direct messages (push categories, opt-in). */
 export async function setDiscordPrefs(db: Database, userId: string, prefs: Record<string, boolean>) {
   const [u] = await db.select({ discordId: users.discordId }).from(users).where(eq(users.id, userId));
-  if (!u?.discordId) fail('discord_not_linked', 'Първо свържи Discord.');
+  if (!u?.discordId) fail('discord_not_linked', t('Първо свържи Discord.'));
   await db.update(users).set({ discordPrefs: prefs }).where(eq(users.id, userId));
 }

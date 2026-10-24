@@ -3,6 +3,7 @@ import { desc } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import { mailLog } from '@/server/db/schema';
 import { fromAddress, fromDomain, mailConfig } from '@/server/mail';
+import { t as tr } from '@/i18n/t';
 
 /** Free mailbox domains: a game cannot send "from" them through another server — strict providers reject it. */
 const FREE_MAILBOXES = ['gmail.com', 'googlemail.com', 'abv.bg', 'mail.bg', 'dir.bg', 'yahoo.com', 'outlook.com', 'hotmail.com', 'live.com', 'icloud.com', 'yandex.com', 'gmx.com'];
@@ -43,7 +44,7 @@ export async function checkMailSetup(): Promise<MailCheck> {
   // Which SPF include authorises the SMTP server: Spacemail (Spaceship), Brevo, Google.
   const kind = host.includes('spacemail') ? 'spacemail' : host.includes('brevo') || host.includes('sendinblue') ? 'brevo' : host.includes('gmail') || host.includes('google') ? 'google' : 'other';
   const provider = kind === 'spacemail' ? ['spf.spacemail.com'] : kind === 'brevo' ? ['spf.brevo.com', 'sendinblue.com'] : kind === 'google' ? ['_spf.google.com'] : [];
-  const spfInclude = provider[0] ? `include:${provider[0]}` : 'include:<на доставчика>';
+  const spfInclude = provider[0] ? `include:${provider[0]}` : tr('include:<на доставчика>');
   const spfCoversHost = spf && provider.length ? provider.some((p) => spf.toLowerCase().includes(p)) : null;
   const dmarc = domain ? ((await txt(`_dmarc.${domain}`)).find((t) => t.toLowerCase().startsWith('v=dmarc1')) ?? null) : null;
   const dkim: string[] = [];
@@ -59,22 +60,22 @@ export async function checkMailSetup(): Promise<MailCheck> {
     );
   }
   const problems: string[] = [];
-  if (!config.enabled) problems.push(`Пощата не е настроена: липсват ${config.missing.join(', ')}.`);
-  if (freeMailbox) problems.push(`MAIL_FROM е адрес в ${domain}. Писма „от“ ${domain}, пратени през друг сървър (${host || 'SMTP'}), не минават проверките на abv.bg, mail.bg и др. Използвай адрес на своя домейн, напр. no-reply@transverse-bg.com.`);
+  if (!config.enabled) problems.push(tr('Пощата не е настроена: липсват {0}.', config.missing.join(', ')));
+  if (freeMailbox) problems.push(tr('MAIL_FROM е адрес в {0}. Писма „от“ {1}, пратени през друг сървър ({2}), не минават проверките на abv.bg, mail.bg и др. Използвай адрес на своя домейн, напр. no-reply@transverse-bg.com.', domain, domain, host || 'SMTP'));
   // Spacemail sends only as the mailbox that logs in.
   const user = (process.env.SMTP_USER ?? '').trim().toLowerCase();
-  if (kind === 'spacemail' && from && user && from !== user) problems.push(`MAIL_FROM (${from}) е различен от SMTP_USER (${user}). Spacemail праща само от пощата, с която се влиза — сложи MAIL_FROM: TransVerse <${user}>.`);
-  if (!freeMailbox && domain && !spf) problems.push(`Няма SPF запис за ${domain}. Добави TXT запис на @: v=spf1 ${spfInclude} ~all`);
-  if (spf && spfCoversHost === false) problems.push(`SPF записът на ${domain} не разрешава сървъра ${host}. Добави ${spfInclude} в същия запис (трябва да има само един SPF запис).`);
+  if (kind === 'spacemail' && from && user && from !== user) problems.push(tr('MAIL_FROM ({0}) е различен от SMTP_USER ({1}). Spacemail праща само от пощата, с която се влиза — сложи MAIL_FROM: TransVerse <{2}>.', from, user, user));
+  if (!freeMailbox && domain && !spf) problems.push(tr('Няма SPF запис за {0}. Добави TXT запис на @: v=spf1 {1} ~all', domain, spfInclude));
+  if (spf && spfCoversHost === false) problems.push(tr('SPF записът на {0} не разрешава сървъра {1}. Добави {2} в същия запис (трябва да има само един SPF запис).', domain, host, spfInclude));
   if (!freeMailbox && domain && !dkim.length)
     problems.push(
       kind === 'spacemail'
-        ? `Не е намерен DKIM подпис за ${domain}. В Spaceship → Advanced DNS → Inactive records има запис spacemail._domainkey (TXT, започва с v=DKIM1; k=rsa;) — активирай го. Работи след няколко часа.`
+        ? tr('Не е намерен DKIM подпис за {0}. В Spaceship → Advanced DNS → Inactive records има запис spacemail._domainkey (TXT, започва с v=DKIM1; k=rsa;) — активирай го. Работи след няколко часа.', domain)
         : kind === 'brevo'
-          ? `Не е намерен DKIM подпис за ${domain}. В Brevo: Senders, Domains & Dedicated IPs → Domains → удостовери домейна и добави показаните DNS записи (brevo1/brevo2._domainkey).`
-          : `Не е намерен DKIM подпис за ${domain}. Добави DKIM записа, който дава доставчикът на пощата.`,
+          ? tr('Не е намерен DKIM подпис за {0}. В Brevo: Senders, Domains & Dedicated IPs → Domains → удостовери домейна и добави показаните DNS записи (brevo1/brevo2._domainkey).', domain)
+          : tr('Не е намерен DKIM подпис за {0}. Добави DKIM записа, който дава доставчикът на пощата.', domain),
     );
-  if (!freeMailbox && domain && !dmarc) problems.push(`Няма DMARC запис. Добави TXT запис _dmarc.${domain}: v=DMARC1; p=none; rua=mailto:${process.env.SUPPORT_EMAIL || `postmaster@${domain}`}`);
+  if (!freeMailbox && domain && !dmarc) problems.push(tr('Няма DMARC запис. Добави TXT запис _dmarc.{0}: v=DMARC1; p=none; rua=mailto:{1}', domain, process.env.SUPPORT_EMAIL || `postmaster@${domain}`));
   return { enabled: config.enabled, provider: kind, missing: config.missing, host, from, domain, freeMailbox, spf, spfCoversHost, dmarc, dkim: dkim.sort(), problems };
 }
 

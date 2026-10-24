@@ -9,21 +9,22 @@ import { featureFor } from '@/server/features';
 import { postCoins } from './coins';
 import { fail } from './errors';
 import { notify } from './notify';
+import { t, intlLocale } from '@/i18n/t';
 
 const T = SPRING_CUP.key;
 
 /** Signs the player up for the cup (until the first round; the first sixteen). */
 export async function joinCup(db: Database, userId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'spring_cup', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
-  if (!cupSignupOpen(now)) fail('closed', 'Записването за купата е затворено.');
+  if (!(await featureFor(db, userId, 'spring_cup', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
+  if (!cupSignupOpen(now)) fail('closed', t('Записването за купата е затворено.'));
   return db.transaction(async (tx) => {
     const [u] = await tx.select({ level: users.level }).from(users).where(eq(users.id, userId));
-    if ((u?.level ?? 0) < SPRING_CUP.minLevel) fail('level', `Купата е за шофьори от ниво ${SPRING_CUP.minLevel} нагоре.`);
+    if ((u?.level ?? 0) < SPRING_CUP.minLevel) fail('level', t('Купата е за шофьори от ниво {0} нагоре.', SPRING_CUP.minLevel));
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`cup:${T}`}))`);
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(tournamentEntries).where(eq(tournamentEntries.tournament, T));
-    if (n >= SPRING_CUP.size) fail('full', `Местата (${SPRING_CUP.size}) са заети.`);
+    if (n >= SPRING_CUP.size) fail('full', t('Местата ({0}) са заети.', SPRING_CUP.size));
     const [row] = await tx.insert(tournamentEntries).values({ tournament: T, userId, createdAt: now }).onConflictDoNothing().returning();
-    if (!row) fail('already', 'Вече си записан.');
+    if (!row) fail('already', t('Вече си записан.'));
     return { place: n + 1 };
   });
 }
@@ -60,14 +61,14 @@ export async function runCup(db: Database, now = new Date()) {
     if (entries.length < 2) {
       // Too few drivers: the cup is called off (once) and the one who signed up hears it (v1.7).
       const [first] = await tx.insert(jobState).values({ key: `cup-cancelled:${T}`, value: { entries: entries.length } }).onConflictDoNothing().returning();
-      if (first) for (const e of entries) await notify(tx, e.userId, 'info', `${SPRING_CUP.title} се отменя`, 'Записаха се твърде малко шофьори. Следващата купа — със следващото обновление.', '/game/cup');
+      if (first) for (const e of entries) await notify(tx, e.userId, 'info', () => t('{0} се отменя', SPRING_CUP.title), () => t('Записаха се твърде малко шофьори. Следващата купа — със следващото обновление.'), '/game/cup');
       return;
     }
     for (const [i, e] of entries.entries()) await tx.update(tournamentEntries).set({ seed: i + 1 }).where(and(eq(tournamentEntries.tournament, T), eq(tournamentEntries.userId, e.userId)));
     const bySeed = (s: number) => entries[s - 1]?.userId ?? null;
     const pairs = bracketSeeds(SPRING_CUP.size);
     await tx.insert(tournamentMatches).values(pairs.map(([a, b], slot) => ({ tournament: T, round: 1, slot, aUserId: bySeed(a), bUserId: bySeed(b) }))).onConflictDoNothing();
-    for (const e of entries) await notify(tx, e.userId, 'info', `${SPRING_CUP.title} започва`, `${first.title}: повече километри с товар навреме тази седмица — и продължаваш.`, '/game/cup');
+    for (const e of entries) await notify(tx, e.userId, 'info', () => t('{0} започва', SPRING_CUP.title), () => t('{0}: повече километри с товар навреме тази седмица — и продължаваш.', first.title), '/game/cup');
   });
   for (const [i, round] of SPRING_CUP.rounds.entries()) {
     if (now.getTime() < round.to.getTime() + SPRING_CUP.graceMs) break;
@@ -87,8 +88,8 @@ async function settleRound(tx: Tx, r: number, round: { from: Date; to: Date; tit
     await tx.update(tournamentMatches).set({ aKm: a?.km ?? null, bKm: b?.km ?? null, winnerId, settledAt: now }).where(and(eq(tournamentMatches.tournament, T), eq(tournamentMatches.round, r), eq(tournamentMatches.slot, m.slot)));
     if (a && b) {
       const loser = winnerId === a.id ? b : a;
-      await notify(tx, winnerId!, 'success', `${SPRING_CUP.title}: продължаваш!`, `${round.title}: ${winnerId === a.id ? a.km : b.km} срещу ${loser.km} км.`, '/game/cup');
-      await notify(tx, loser.id, 'info', `${SPRING_CUP.title}: отпадна`, `${round.title}: ${loser.km} срещу ${winnerId === a.id ? a.km : b.km} км. Благодарим за играта!`, '/game/cup');
+      await notify(tx, winnerId!, 'success', () => t('{0}: продължаваш!', SPRING_CUP.title), () => t('{0}: {1} срещу {2} км.', round.title, winnerId === a.id ? a.km : b.km, loser.km), '/game/cup');
+      await notify(tx, loser.id, 'info', () => t('{0}: отпадна', SPRING_CUP.title), () => t('{0}: {1} срещу {2} км. Благодарим за играта!', round.title, loser.km, winnerId === a.id ? a.km : b.km), '/game/cup');
     }
   }
   const all = await tx.select().from(tournamentMatches).where(and(eq(tournamentMatches.tournament, T), eq(tournamentMatches.round, r))).orderBy(asc(tournamentMatches.slot));
@@ -101,7 +102,7 @@ async function settleRound(tx: Tx, r: number, round: { from: Date; to: Date; tit
     const names = new Map((await tx.select({ id: users.id, username: users.username }).from(users).where(inArray(users.id, [...all, ...made].flatMap((m) => [m.aUserId, m.bUserId]).filter((x): x is string => !!x).concat(['00000000-0000-0000-0000-000000000000'])))).map((u) => [u.id, u.username]));
     for (const m of made) {
       for (const [me, other] of [[m.aUserId, m.bUserId], [m.bUserId, m.aUserId]] as const) {
-        if (me) await notify(tx, me, 'info', `${SPRING_CUP.title}: ${nextRound.title}`, other ? `Срещу ${names.get(other) ?? '—'} — до ${nextRound.to.toLocaleDateString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })}.` : 'Без съперник този кръг — продължаваш.', '/game/cup');
+        if (me) await notify(tx, me, 'info', `${SPRING_CUP.title}: ${nextRound.title}`, () => other ? t('Срещу {0} — до {1}.', names.get(other) ?? '—', nextRound.to.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })) : t('Без съперник този кръг — продължаваш.'), '/game/cup');
       }
     }
     await announceRound(tx, r, round.title, all, names, now);
@@ -115,13 +116,13 @@ async function settleRound(tx: Tx, r: number, round: { from: Date; to: Date; tit
   const pay = async (userId: string | null, coins: number, what: string) => {
     if (!userId) return;
     await postCoins(tx, userId, { amount: coins, reason: 'tournament', description: `${SPRING_CUP.title}: ${what}`, idempotencyKey: `cup:${T}:${userId}` });
-    await notify(tx, userId, 'achievement', `${SPRING_CUP.title}: ${what}! 🏆`, `Награда: ${coins} TC.`, '/game/cup');
+    await notify(tx, userId, 'achievement', `${SPRING_CUP.title}: ${what}! 🏆`, () => t('Награда: {0} TC.', coins), '/game/cup');
   };
-  await pay(final.winnerId, SPRING_CUP.prizes.champion, 'шампион');
+  await pay(final.winnerId, SPRING_CUP.prizes.champion, t('шампион'));
   await announceRound(tx, r, round.title, all, new Map((await tx.select({ id: users.id, username: users.username }).from(users).where(inArray(users.id, [final.aUserId, final.bUserId].filter((x): x is string => !!x).concat(['00000000-0000-0000-0000-000000000000'])))).map((u) => [u.id, u.username])), now);
   if (final.winnerId) await tx.insert(userBadges).values({ userId: final.winnerId, badge: SPRING_CUP.badge, awardedAt: now }).onConflictDoNothing();
-  await pay(finalist, SPRING_CUP.prizes.finalist, 'финалист');
-  for (const u of semifinalists) await pay(u, SPRING_CUP.prizes.semifinal, 'полуфиналист');
+  await pay(finalist, SPRING_CUP.prizes.finalist, t('финалист'));
+  for (const u of semifinalists) await pay(u, SPRING_CUP.prizes.semifinal, t('полуфиналист'));
 }
 
 /** The cup for the page and Discord: entries, rounds with names, live km of the running round. */
@@ -158,11 +159,11 @@ async function announceRound(tx: Tx, r: number, title: string, matches: (typeof 
   const lines = matches
     .filter((m) => m.aUserId && m.bUserId)
     .map((m) => {
-      const side = (id: string | null, km: number | null) => `${m.winnerId === id ? '**' : ''}${names.get(id ?? '') ?? '—'} (${Math.round(km ?? 0)} км)${m.winnerId === id ? '**' : ''}`;
-      return `${side(m.aUserId, m.aKm)} срещу ${side(m.bUserId, m.bKm)}`;
+      const side = (id: string | null, km: number | null) => t('{0}{1} ({2} км){3}', m.winnerId === id ? '**' : '', names.get(id ?? '') ?? '—', Math.round(km ?? 0), m.winnerId === id ? '**' : '');
+      return t('{0} срещу {1}', side(m.aUserId, m.aKm), side(m.bUserId, m.bKm));
     });
   const final = r === SPRING_CUP.rounds.length;
   await announce(tx, `cup:${T}:round-${r}`, 'rankings', {
-    embeds: [{ title: final ? `🏆 ${SPRING_CUP.title}: шампион е ${names.get(matches[0]?.winnerId ?? '') ?? '—'}!` : `🏆 ${SPRING_CUP.title} · ${title}`, url: `${appUrl()}/game/cup`, color: 0xf6c343, description: lines.join('\n') || 'Всички продължиха без съперник.', footer: { text: 'TransVerse · игрови данни' } }],
+    embeds: [{ title: final ? t('🏆 {0}: шампион е {1}!', SPRING_CUP.title, names.get(matches[0]?.winnerId ?? '') ?? '—') : `🏆 ${SPRING_CUP.title} · ${title}`, url: `${appUrl()}/game/cup`, color: 0xf6c343, description: lines.join('\n') || t('Всички продължиха без съперник.'), footer: { text: t('TransVerse · игрови данни') } }],
   }, now);
 }

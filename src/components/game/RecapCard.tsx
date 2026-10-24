@@ -2,6 +2,7 @@
 
 import { Download, Share2 } from 'lucide-react';
 import { useState } from 'react';
+import { t } from '@/i18n/t';
 
 export interface RecapLine {
   label: string;
@@ -60,7 +61,7 @@ function draw(canvas: HTMLCanvasElement, title: string, name: string, lines: Rec
   }
   g.fillStyle = '#64748b';
   g.font = font(30, 500);
-  g.fillText('transverse-bg.com · игрови данни', 80, H - 70);
+  g.fillText(t('transverse-bg.com · игрови данни'), 80, H - 70);
 }
 
 /** "Save the picture" and "Share" for the year card. */
@@ -98,8 +99,8 @@ export function RecapCard({ title, name, lines, fileName }: { title: string; nam
   };
   return (
     <div className="flex flex-wrap gap-2">
-      <button type="button" className="btn-primary" onClick={share} disabled={busy}><Share2 className="h-4 w-4" />Сподели картинката</button>
-      <button type="button" className="btn-ghost" onClick={download} disabled={busy}><Download className="h-4 w-4" />Свали</button>
+      <button type="button" className="btn-primary" onClick={share} disabled={busy}><Share2 className="h-4 w-4" />{t('Сподели картинката')}</button>
+      <button type="button" className="btn-ghost" onClick={download} disabled={busy}><Download className="h-4 w-4" />{t('Свали')}</button>
     </div>
   );
 }

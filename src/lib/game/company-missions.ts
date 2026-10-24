@@ -5,6 +5,7 @@
  */
 import { hash, LONG_HAUL_KM, type DeliveryFacts } from './missions';
 import { niceNumber } from './events';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 export type CompanyMetric = 'deliveries' | 'tons' | 'km' | 'on_time' | 'international' | 'earned_cents' | 'active_members' | 'long_haul';
 
@@ -21,18 +22,18 @@ export interface CompanyMissionDefinition {
   minMembers?: number;
 }
 
-const num = (n: number) => n.toLocaleString('bg-BG');
-const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} лв.`;
+const num = (n: number) => n.toLocaleString(intlLocale());
+const eur = (cents: number) => tr('{0} лв.', Math.round(cents / 100).toLocaleString(intlLocale()));
 
 export const COMPANY_MISSIONS: CompanyMissionDefinition[] = [
-  { id: 'c_deliveries', metric: 'deliveries', perMember: 10, rewardCents: 4_000_00, rewardXp: 400, title: (t) => `Членовете да изпълнят ${num(t)} доставки` },
-  { id: 'c_tons', metric: 'tons', perMember: 120, rewardCents: 4_500_00, rewardXp: 450, title: (t) => `Превозете заедно ${num(t)} тона` },
-  { id: 'c_km', metric: 'km', perMember: 3_500, rewardCents: 4_500_00, rewardXp: 450, title: (t) => `Изминете заедно ${num(t)} км с товар` },
-  { id: 'c_on_time', metric: 'on_time', perMember: 8, rewardCents: 4_500_00, rewardXp: 450, title: (t) => `${num(t)} доставки навреме` },
-  { id: 'c_international', metric: 'international', perMember: 3, rewardCents: 5_000_00, rewardXp: 500, title: (t) => `${num(t)} международни доставки` },
-  { id: 'c_earned', metric: 'earned_cents', perMember: 12_000_00, rewardCents: 4_500_00, rewardXp: 450, title: (t) => `Спечелете заедно ${eur(t)} навло` },
-  { id: 'c_long_haul', metric: 'long_haul', perMember: 2, rewardCents: 5_000_00, rewardXp: 500, title: (t) => `${num(t)} курса над ${LONG_HAUL_KM} км` },
-  { id: 'c_active', metric: 'active_members', perMember: 0.6, rewardCents: 3_500_00, rewardXp: 600, title: (t) => `${num(t)} различни членове да направят доставка`, minMembers: 3 },
+  { id: 'c_deliveries', metric: 'deliveries', perMember: 10, rewardCents: 4_000_00, rewardXp: 400, title: (t) => tr('Членовете да изпълнят {0} доставки', num(t)) },
+  { id: 'c_tons', metric: 'tons', perMember: 120, rewardCents: 4_500_00, rewardXp: 450, title: (t) => tr('Превозете заедно {0} тона', num(t)) },
+  { id: 'c_km', metric: 'km', perMember: 3_500, rewardCents: 4_500_00, rewardXp: 450, title: (t) => tr('Изминете заедно {0} км с товар', num(t)) },
+  { id: 'c_on_time', metric: 'on_time', perMember: 8, rewardCents: 4_500_00, rewardXp: 450, title: (t) => tr('{0} доставки навреме', num(t)) },
+  { id: 'c_international', metric: 'international', perMember: 3, rewardCents: 5_000_00, rewardXp: 500, title: (t) => tr('{0} международни доставки', num(t)) },
+  { id: 'c_earned', metric: 'earned_cents', perMember: 12_000_00, rewardCents: 4_500_00, rewardXp: 450, title: (t) => tr('Спечелете заедно {0} навло', eur(t)) },
+  { id: 'c_long_haul', metric: 'long_haul', perMember: 2, rewardCents: 5_000_00, rewardXp: 500, title: (t) => tr('{0} курса над {1} км', num(t), LONG_HAUL_KM) },
+  { id: 'c_active', metric: 'active_members', perMember: 0.6, rewardCents: 3_500_00, rewardXp: 600, title: (t) => tr('{0} различни членове да направят доставка', num(t)), minMembers: 3 },
 ];
 
 export const COMPANY_MISSIONS_PER_WEEK = 3;

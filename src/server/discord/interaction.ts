@@ -15,6 +15,7 @@ import { auctionForm, auctionOffer, auctionView, cheerBase, inviteAnswer, invite
 import { quizAnswer } from './quiz';
 import { convoyCommand, convoyGo, convoyJoin, duelAnswer, duelCommand, financeView, liveryVote, mapCommand, passClaim, passCommand, roadCall, roadHelp, roadPay, takeGo, takeStart, usedBuy } from './together';
 import { reply, say } from './ui';
+import { t } from '@/i18n/t';
 
 export type { Interaction };
 
@@ -110,7 +111,7 @@ async function component(ctx: Ctx, id: string, values: string[]): Promise<Answer
     case 'livery':
       return liveryVote(ctx, b);
   }
-  return answer(say('Този бутон вече не работи.'));
+  return answer(say(t('Този бутон вече не работи.')));
 }
 
 /**
@@ -137,10 +138,10 @@ export async function answerInteraction(db: Database, i: Interaction): Promise<A
       if (kind === 'appeal' && a === 'send') return await appealSend(ctx, Number(b));
       if (kind === 'verify' && a === 'sum') return await verifyAnswer(ctx, b);
     }
-    return answer(say('Непозната команда.'));
+    return answer(say(t('Непозната команда.')));
   } catch (error) {
     if (error instanceof Stop) return error.answer;
     console.error('[discord] interaction failed', i.data?.name ?? i.data?.custom_id, error);
-    return answer(say('Нещо се обърка — опитай пак след малко.'));
+    return answer(say(t('Нещо се обърка — опитай пак след малко.')));
   }
 }

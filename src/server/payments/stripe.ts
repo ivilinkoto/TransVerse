@@ -9,6 +9,7 @@ import type { Database } from '@/server/db/client';
 import { payments } from '@/server/db/schema';
 import { fail } from '@/server/game/errors';
 import { checkoutSchema, describeFailure, markPaymentFailed, paymentConfig, refundLocked, settlePaid, siteUrl, startPayment, type CheckoutInput } from './common';
+import { t } from '@/i18n/t';
 
 /** The part of the Stripe client we use (an interface so tests can pass a fake). */
 export interface StripeLike {
@@ -23,7 +24,7 @@ export interface StripeLike {
 let client: Stripe | null = null;
 export function stripeClient(): StripeLike {
   const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) fail('payments_disabled', 'Плащанията с карта още не са включени.', 503);
+  if (!key) fail('payments_disabled', t('Плащанията с карта още не са включени.'), 503);
   client ??= new Stripe(key!, { maxNetworkRetries: 2, timeout: 20_000, appInfo: { name: 'TransVerse' } });
   return client;
 }
@@ -31,7 +32,7 @@ export function stripeClient(): StripeLike {
 /** Creates a pending payment and a Stripe Checkout Session; returns the URL to send the player to. */
 export async function createCheckout(db: Database, userId: string, raw: CheckoutInput, stripe?: StripeLike, now = new Date(), origin?: string | null) {
   const input = checkoutSchema.parse({ ...raw, provider: 'stripe' });
-  if (!paymentConfig().stripe.enabled) fail('payments_disabled', 'Плащанията с карта още не са включени.', 503);
+  if (!paymentConfig().stripe.enabled) fail('payments_disabled', t('Плащанията с карта още не са включени.'), 503);
   const base = siteUrl(origin);
   const { payment, product, email } = await startPayment(db, userId, input, now);
   const tax = process.env.STRIPE_AUTOMATIC_TAX === 'true';
@@ -68,10 +69,10 @@ export async function createCheckout(db: Database, userId: string, raw: Checkout
   } catch (error) {
     console.error('[payments] stripe checkout failed', error);
     await markPaymentFailed(db, payment.id, describeFailure(error));
-    fail('checkout_failed', 'Плащането не можа да започне. Опитайте отново по-късно.', 502);
+    fail('checkout_failed', t('Плащането не можа да започне. Опитайте отново по-късно.'), 502);
   }
   await db.update(payments).set({ checkoutSessionId: session!.id }).where(eq(payments.id, payment.id));
-  if (!session!.url) fail('checkout_failed', 'Плащането не можа да започне. Опитайте отново.', 502);
+  if (!session!.url) fail('checkout_failed', t('Плащането не можа да започне. Опитайте отново.'), 502);
   return { paymentId: payment.id, url: session!.url! };
 }
 

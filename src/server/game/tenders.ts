@@ -21,6 +21,7 @@ import { postTreasury } from './finance';
 import { addCompanyXp, notifyMembers, requirePermission } from './membership';
 import { broadcast, logActivity } from './notify';
 import { pick, pickWeighted, rand } from './random';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 type Tender = typeof companyTenders.$inferSelect;
 
@@ -93,16 +94,16 @@ export async function acceptTender(db: Database, actorId: string, tenderId: stri
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_tenders');
     const [t] = await tx.select().from(companyTenders).where(and(eq(companyTenders.id, tenderId), eq(companyTenders.companyId, actor.company.id))).for('update');
-    if (!t) fail('tender_not_found', 'Търгът не е намерен.', 404);
-    if (t!.status !== 'offer' || t!.offerExpiresAt <= now) fail('tender_unavailable', 'Офертата вече не е налична.', 409);
+    if (!t) fail('tender_not_found', tr('Търгът не е намерен.'), 404);
+    if (t!.status !== 'offer' || t!.offerExpiresAt <= now) fail('tender_unavailable', tr('Офертата вече не е налична.'), 409);
     const [{ active = 0 } = {}] = await tx.select({ active: sql<number>`count(*)::int` }).from(companyTenders).where(and(eq(companyTenders.companyId, actor.company.id), eq(companyTenders.status, 'active')));
-    if (active >= MAX_ACTIVE_TENDERS) fail('too_many_tenders', `Компанията може да изпълнява до ${MAX_ACTIVE_TENDERS} търга едновременно.`);
-    await postTreasury(tx, actor.company.id, [{ category: 'tender_deposit', amountCents: -t!.depositCents, description: `Депозит за търг: ${t!.title}`, idempotencyKey: `tender-deposit:${t!.id}`, actorUserId: actorId, refType: 'tender', refId: t!.id }], { requireFunds: true });
+    if (active >= MAX_ACTIVE_TENDERS) fail('too_many_tenders', tr('Компанията може да изпълнява до {0} търга едновременно.', MAX_ACTIVE_TENDERS));
+    await postTreasury(tx, actor.company.id, [{ category: 'tender_deposit', amountCents: -t!.depositCents, description: tr('Депозит за търг: {0}', t!.title), idempotencyKey: `tender-deposit:${t!.id}`, actorUserId: actorId, refType: 'tender', refId: t!.id }], { requireFunds: true });
     const deadline = new Date(now.getTime() + t!.durationHours * 3_600_000);
     await tx.update(companyTenders).set({ status: 'active', acceptedBy: actorId, acceptedAt: now, deadlineAt: deadline }).where(eq(companyTenders.id, t!.id));
     await tx.insert(contracts).values(
       Array.from({ length: t!.loads }, (_, i) => ({
-        shipper: `Търг на „${actor.company.name}“ · курс ${i + 1}/${t!.loads}`,
+        shipper: tr('Търг на „{0}“ · курс {1}/{2}', actor.company.name, i + 1, t!.loads),
         goods: t!.goods,
         cargoType: t!.cargoType,
         weightTons: t!.loadTons,
@@ -118,7 +119,7 @@ export async function acceptTender(db: Database, actorId: string, tenderId: stri
       })),
     );
     await logActivity(tx, actorId, 'tender_accepted', { tenderId: t!.id });
-    await notifyMembers(tx, actor.company.id, null, `Нов търг: ${t!.title}`, `${t!.loads} курса по ${t!.loadTons} т до ${deadline.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}. Курсовете са на борсата само за членовете — всеки плаща на шофьора, а при успех касата получава бонус.`, '/game/company/tenders');
+    await notifyMembers(tx, actor.company.id, null, () => tr('Нов търг: {0}', t!.title), () => tr('{0} курса по {1} т до {2}. Курсовете са на борсата само за членовете — всеки плаща на шофьора, а при успех касата получава бонус.', t!.loads, t!.loadTons, deadline.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })), '/game/company/tenders');
     await broadcast(tx, 'market');
     return t!.id;
   });
@@ -136,12 +137,12 @@ export async function recordTenderLoad(tx: Tx, tenderId: string, driverUserId: s
   if (delivered < t.loads) return;
   // Every load arrived in time: bonus and the deposit back to the treasury, XP for the company.
   await postTreasury(tx, t.companyId, [
-    { category: 'tender_bonus', amountCents: t.bonusCents, description: `Изпълнен търг: ${t.title}`, idempotencyKey: `tender-bonus:${t.id}`, refType: 'tender', refId: t.id },
-    { category: 'tender_deposit', amountCents: t.depositCents, description: `Върнат депозит: ${t.title}`, idempotencyKey: `tender-deposit-back:${t.id}`, refType: 'tender', refId: t.id },
+    { category: 'tender_bonus', amountCents: t.bonusCents, description: tr('Изпълнен търг: {0}', t.title), idempotencyKey: `tender-bonus:${t.id}`, refType: 'tender', refId: t.id },
+    { category: 'tender_deposit', amountCents: t.depositCents, description: tr('Върнат депозит: {0}', t.title), idempotencyKey: `tender-deposit-back:${t.id}`, refType: 'tender', refId: t.id },
   ]);
   await addCompanyXp(tx, t.companyId, t.xp);
   await tx.update(companyTenders).set({ status: 'completed', finishedAt: arrivedAt }).where(eq(companyTenders.id, t.id));
-  await notifyMembers(tx, t.companyId, null, `Търгът е изпълнен: ${t.title}`, `+${(t.bonusCents / 100).toLocaleString('bg-BG')} лв. бонус в касата, депозитът е върнат, +${t.xp} опит за компанията.`, '/game/company/tenders');
+  await notifyMembers(tx, t.companyId, null, () => tr('Търгът е изпълнен: {0}', t.title), () => tr('+{0} лв. бонус в касата, депозитът е върнат, +{1} опит за компанията.', (t.bonusCents / 100).toLocaleString(intlLocale()), t.xp), '/game/company/tenders');
 }
 
 /**
@@ -164,7 +165,7 @@ export async function settleTenders(db: Database, now = new Date()) {
       const [row] = await tx.update(companyTenders).set({ status: 'failed', finishedAt: now }).where(and(eq(companyTenders.id, t.id), eq(companyTenders.status, 'active'))).returning({ id: companyTenders.id });
       if (!row) return false;
       await tx.update(contracts).set({ status: 'expired' }).where(and(eq(contracts.tenderId, t.id), eq(contracts.status, 'open')));
-      await notifyMembers(tx, t.companyId, null, `Търгът не е изпълнен: ${t.title}`, `Доставени ${t.deliveredLoads} от ${t.loads} курса навреме. Депозитът от ${(t.depositCents / 100).toLocaleString('bg-BG')} лв. е загубен.`, '/game/company/tenders');
+      await notifyMembers(tx, t.companyId, null, () => tr('Търгът не е изпълнен: {0}', t.title), () => tr('Доставени {0} от {1} курса навреме. Депозитът от {2} лв. е загубен.', t.deliveredLoads, t.loads, (t.depositCents / 100).toLocaleString(intlLocale())), '/game/company/tenders');
       return true;
     });
     if (changed) failed++;
@@ -178,8 +179,8 @@ export async function settleTenders(db: Database, now = new Date()) {
 export async function checkTenderLoad(tx: Tx, tenderId: string, userId: string, now: Date) {
   const [t] = await tx.select({ companyId: companyTenders.companyId, status: companyTenders.status, deadlineAt: companyTenders.deadlineAt }).from(companyTenders).where(eq(companyTenders.id, tenderId));
   const [m] = await tx.select({ companyId: companyMembers.companyId }).from(companyMembers).where(eq(companyMembers.userId, userId));
-  if (!t || !m || m.companyId !== t.companyId) fail('tender_members_only', 'Този курс е част от търг на друга компания.', 403);
-  if (t!.status !== 'active' || !t!.deadlineAt || t!.deadlineAt <= now) fail('contract_unavailable', 'Търгът вече не е активен.', 409);
+  if (!t || !m || m.companyId !== t.companyId) fail('tender_members_only', tr('Този курс е част от търг на друга компания.'), 403);
+  if (t!.status !== 'active' || !t!.deadlineAt || t!.deadlineAt <= now) fail('contract_unavailable', tr('Търгът вече не е активен.'), 409);
 }
 
 /** Everything the company's tenders page shows. */

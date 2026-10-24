@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useFeatures } from '@/components/game/Features';
 import type { FeatureId } from '@/lib/game/features';
 import { usePathname } from 'next/navigation';
+import { t as tr, tx } from '@/i18n/t';
 
 interface Tab {
   href: string;
@@ -45,19 +46,19 @@ export function CompanyTabs({ pending, allowed }: { pending: number; allowed: st
   const tab = (active: boolean) => `relative flex shrink-0 items-center gap-1.5 px-3 py-3 text-sm font-medium transition ${active ? 'text-white' : 'text-mist-400 hover:text-white'}`;
   return (
     <div>
-      <nav className="-mx-4 flex overflow-x-auto border-b border-asphalt-800 px-4 [scrollbar-width:none] sm:mx-0 sm:px-0" aria-label="Раздели на компанията">
+      <nav className="-mx-4 flex overflow-x-auto border-b border-asphalt-800 px-4 [scrollbar-width:none] sm:mx-0 sm:px-0" aria-label={tr('Раздели на компанията')}>
         {tabs.map((t) => {
           const active = isActive(t.href);
           return (
             <Link key={t.href} href={t.href} aria-current={active ? 'page' : undefined} className={tab(active)}>
-              {t.label}
+              {tx(t.label)}
               {t.href === '/game/company/members' && pending > 0 && <span className="num rounded-full bg-amber-sig px-1.5 text-[11px] font-bold text-asphalt-950">{pending}</span>}
               {active && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-cyan-glow" aria-hidden="true" />}
             </Link>
           );
         })}
         <Link href={manage[0]!.href} aria-current={inManage ? 'page' : undefined} className={`${tab(inManage)} ml-auto`}>
-          <Settings2 className="h-4 w-4" />Управление
+          <Settings2 className="h-4 w-4" />{tr('Управление')}
           {inManage && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-cyan-glow" aria-hidden="true" />}
         </Link>
       </nav>
@@ -65,7 +66,7 @@ export function CompanyTabs({ pending, allowed }: { pending: number; allowed: st
         <div className="mt-3 flex gap-1.5">
           {manage.map((t) => (
             <Link key={t.href} href={t.href} aria-current={pathname.startsWith(t.href) ? 'page' : undefined} className={`rounded-full border px-3 py-1 text-xs font-medium transition ${pathname.startsWith(t.href) ? 'border-cyan-glow/50 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>
-              {t.label}
+              {tx(t.label)}
             </Link>
           ))}
         </div>

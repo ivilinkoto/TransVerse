@@ -8,6 +8,7 @@ import { featureLive } from '@/lib/game/features';
 import { appUrl, BRAND, discordConfig } from './config';
 import { reportToken } from './map-token';
 import { announce, enqueue } from './outbox';
+import { t } from '@/i18n/t';
 
 /**
  * Companies in Discord: the most active company channel of the week (a prize
@@ -46,13 +47,13 @@ export async function awardMostActive(db: Database, now = new Date()) {
     .orderBy(desc(discordCompanyActivity.messages))
     .limit(1);
   if (!top) return null;
-  const paid = await db.transaction((tx) => postTreasury(tx, top.id, [{ category: 'discord_activity', amountCents: ACTIVITY.prizeCents, description: `Най-активна компания в Discord (${w.key})`, idempotencyKey: `discord-activity:${w.key}` }]));
+  const paid = await db.transaction((tx) => postTreasury(tx, top.id, [{ category: 'discord_activity', amountCents: ACTIVITY.prizeCents, description: t('Най-активна компания в Discord ({0})', w.key), idempotencyKey: `discord-activity:${w.key}` }]));
   if (!paid) return null;
   await announce(db, `most-active:${w.key}`, 'rankings', {
     ping: false,
-    embeds: [{ title: `💬 Най-активна компания в Discord: ${top.name}${top.tag ? ` [${top.tag}]` : ''}`, url: `${appUrl()}/game/companies/${top.id}`, description: `${int(top.messages)} съобщения в канала на компанията миналата седмица · ${money(ACTIVITY.prizeCents)} в касата.`, color: BRAND, footer: { text: 'Брои се каналът на компанията в Discord · игрови данни' } }],
+    embeds: [{ title: t('💬 Най-активна компания в Discord: {0}{1}', top.name, top.tag ? ` [${top.tag}]` : ''), url: `${appUrl()}/game/companies/${top.id}`, description: t('{0} съобщения в канала на компанията миналата седмица · {1} в касата.', int(top.messages), money(ACTIVITY.prizeCents)), color: BRAND, footer: { text: t('Брои се каналът на компанията в Discord · игрови данни') } }],
   }, now);
-  if (top.channelId) await enqueue(db, `most-active-company:${w.key}`, `msg:${top.channelId}`, { embeds: [{ color: 0x2fd27a, description: `🏆 Вие сте най-активната компания в Discord миналата седмица! **${money(ACTIVITY.prizeCents)}** влязоха в касата.` }] }, now);
+  if (top.channelId) await enqueue(db, `most-active-company:${w.key}`, `msg:${top.channelId}`, { embeds: [{ color: 0x2fd27a, description: t('🏆 Вие сте най-активната компания в Discord миналата седмица! **{0}** влязоха в касата.', money(ACTIVITY.prizeCents)) }] }, now);
   return top.id;
 }
 
@@ -73,7 +74,7 @@ export async function welcomeCompanyMembers(db: Database, now = new Date()) {
     await enqueue(db, `company-welcome:${r.userId}:${r.joinedAt.getTime()}`, `msg:${r.channelId}`, {
       content: r.discordId ? `<@${r.discordId}>` : undefined,
       allowed_mentions: { parse: [], users: r.discordId ? [r.discordId] : [] },
-      embeds: [{ color: 0x2fd27a, description: `👋 **${r.username}** се присъедини към „${r.company}“. Добре дошъл в екипа!${r.discordId ? '' : '\n*(Без свързан Discord — ще вижда канала, щом свърже акаунта си.)*'}` }],
+      embeds: [{ color: 0x2fd27a, description: t('👋 **{0}** се присъедини към „{1}“. Добре дошъл в екипа!{2}', r.username, r.company, r.discordId ? '' : t('\n*(Без свързан Discord — ще вижда канала, щом свърже акаунта си.)*')) }],
     }, now);
   }
   const next = rows.length === 50 ? rows.at(-1)!.joinedAt : now;
@@ -99,15 +100,15 @@ export async function treasuryReports(db: Database, now = new Date()) {
     const sum = (list: typeof rows) => list.reduce((s, r) => s + Number(r.total), 0);
     await enqueue(db, `treasury-report:${o.id}:${w.key}`, `msg:${o.channelId}`, {
       embeds: [{
-        title: `💰 Касата на „${o.name}“ миналата седмица`,
+        title: t('💰 Касата на „{0}“ миналата седмица', o.name),
         url: `${appUrl()}/game/company`,
         color: BRAND,
         fields: [
-          { name: `Приходи · ${money(sum(income))}`, value: income.map((r) => `${label(r.category)}: ${money(Number(r.total))}`).join('\n') || '—', inline: true },
-          { name: `Разходи · ${money(-sum(spent))}`, value: spent.map((r) => `${label(r.category)}: ${money(-Number(r.total))}`).join('\n') || '—', inline: true },
-          { name: 'В касата сега', value: money(o.balance) },
+          { name: t('Приходи · {0}', money(sum(income))), value: income.map((r) => `${label(r.category)}: ${money(Number(r.total))}`).join('\n') || '—', inline: true },
+          { name: t('Разходи · {0}', money(-sum(spent))), value: spent.map((r) => `${label(r.category)}: ${money(-Number(r.total))}`).join('\n') || '—', inline: true },
+          { name: t('В касата сега'), value: money(o.balance) },
         ],
-        footer: { text: `Нетно: ${money(sum(rows))} · игрови данни` },
+        footer: { text: t('Нетно: {0} · игрови данни', money(sum(rows))) },
         // The week in a picture (v1.4).
         ...(featureLive('company_report', now) ? { image: { url: `${appUrl()}/api/discord/card/report/${o.id}?f=${w.from.getTime()}&k=${reportToken(o.id, w.from.getTime())}` } } : {}),
       }],

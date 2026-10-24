@@ -11,6 +11,8 @@ let last: Value = { locale: DEFAULT_LOCALE, messages: null };
 
 setResolver(() => {
   try {
+    // A plain function used while rendering: `use` reads the provider; outside rendering it throws.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const v = use(I18nContext);
     if (v) return v;
   } catch {
@@ -21,7 +23,6 @@ setResolver(() => {
 
 export function I18nProvider({ locale, messages, children }: { locale: Locale; messages: Messages | null; children: ReactNode }) {
   const value = { locale, messages };
-  if (typeof window !== 'undefined') last = value;
   useEffect(() => {
     last = { locale, messages };
     document.documentElement.lang = locale;

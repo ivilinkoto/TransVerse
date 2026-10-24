@@ -4,6 +4,7 @@ import { Meter } from '@/components/ui';
 import { duration } from '@/lib/format';
 import { formatAmount, type EventMetric } from '@/lib/game/events';
 import type { runningEvents } from '@/server/game/events';
+import { t, tx } from '@/i18n/t';
 
 /** Running global events on the overview, with the viewer's contribution. */
 export function EventBanner({ events, now }: { events: Awaited<ReturnType<typeof runningEvents>>; now: Date }) {
@@ -20,15 +21,15 @@ export function EventBanner({ events, now }: { events: Awaited<ReturnType<typeof
               <div className="flex min-w-0 items-center gap-2">
                 <PartyPopper className="h-5 w-5 shrink-0 text-gold-400" />
                 <div className="min-w-0">
-                  <div className="label">Ивент{e.completedAt ? ' · целта е постигната' : left > 0 ? ` · остават ${duration(left / 60_000)}` : ''}</div>
-                  <div className="truncate font-display font-bold">{e.name}</div>
+                  <div className="label">{t('Ивент{0}', e.completedAt ? t(' · целта е постигната') : left > 0 ? t(' · остават {0}', duration(left / 60_000)) : '')}</div>
+                  <div className="truncate font-display font-bold">{tx(e.name)}</div>
                 </div>
               </div>
               <ArrowRight className="h-4 w-4 shrink-0 text-mist-400 transition group-hover:translate-x-0.5 group-hover:text-white" />
             </div>
             <div className="mt-3 flex justify-between text-xs text-mist-400">
               <span className="num">{formatAmount(metric, e.progress)} / {formatAmount(metric, e.target)}</span>
-              <span className="num">Твоят принос: <span className="font-semibold text-white">{formatAmount(metric, mine)}</span></span>
+              <span className="num">{t('Твоят принос:')}{' '}<span className="font-semibold text-white">{formatAmount(metric, mine)}</span></span>
             </div>
             <Meter value={share} tone="gold" className="mt-1" />
           </Link>

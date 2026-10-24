@@ -3,6 +3,7 @@ import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { companies, companyMembers, organizationSeasonScores, organizations, seasonScores, seasons } from '@/server/db/schema';
 import { post, postTreasury } from './finance';
 import { notify } from './notify';
+import { t, intlLocale } from '@/i18n/t';
 
 export interface SeasonRules {
   /** Season length in days. */
@@ -102,10 +103,10 @@ async function closeOrganizationSeason(tx: Tx, season: typeof seasons.$inferSele
   for (const [i, { organization_season_scores: row, organizations: org }] of ranking.entries()) {
     const prize = prizes[i] ?? 0;
     await tx.update(organizationSeasonScores).set({ finalRank: i + 1, prizeCents: prize || null }).where(and(eq(organizationSeasonScores.seasonId, season.id), eq(organizationSeasonScores.organizationId, row.organizationId)));
-    if (prize) await postTreasury(tx, org.id, [{ category: 'season_prize', amountCents: prize, description: `${season.name}: ${i + 1}. място`, idempotencyKey: `season:${season.id}:company-prize:${org.id}` }]);
+    if (prize) await postTreasury(tx, org.id, [{ category: 'season_prize', amountCents: prize, description: t('{0}: {1}. място', season.name, i + 1), idempotencyKey: `season:${season.id}:company-prize:${org.id}` }]);
     const members = await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, org.id));
     for (const m of members) {
-      await notify(tx, m.userId, 'achievement', `${season.name}: „${org.name}“ е ${i + 1}.`, prize ? `Компанията спечели ${(prize / 100).toLocaleString('bg-BG')} лв. за касата.` : `Компанията събра ${row.points} сезонни точки.`, '/game/seasons?tab=companies');
+      await notify(tx, m.userId, 'achievement', () => t('{0}: „{1}“ е {2}.', season.name, org.name, i + 1), () => prize ? t('Компанията спечели {0} лв. за касата.', (prize / 100).toLocaleString(intlLocale())) : t('Компанията събра {0} сезонни точки.', row.points), '/game/seasons?tab=companies');
     }
   }
 }
@@ -124,8 +125,8 @@ export async function rotateSeasons(db: Database, now = new Date()): Promise<num
         await tx.update(seasonScores).set({ finalRank: i + 1 }).where(and(eq(seasonScores.seasonId, season.id), eq(seasonScores.companyId, row.companyId)));
         const prize = rules.prizesCents[i];
         const [company] = await tx.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, row.companyId));
-        if (prize && row.points > 0) await post(tx, row.companyId, [{ category: 'achievement_reward', amountCents: prize, description: `${season.name}: ${i + 1}. място`, idempotencyKey: `season:${season.id}:prize:${row.companyId}` }]);
-        if (company) await notify(tx, company.ownerId, 'achievement', `${season.name} приключи`, `Класирахте се на ${i + 1}. място с ${row.points} точки.`, '/game/seasons');
+        if (prize && row.points > 0) await post(tx, row.companyId, [{ category: 'achievement_reward', amountCents: prize, description: t('{0}: {1}. място', season.name, i + 1), idempotencyKey: `season:${season.id}:prize:${row.companyId}` }]);
+        if (company) await notify(tx, company.ownerId, 'achievement', () => t('{0} приключи', season.name), () => t('Класирахте се на {0}. място с {1} точки.', i + 1, row.points), '/game/seasons');
       }
       await closeOrganizationSeason(tx, season);
       await tx.update(seasons).set({ status: 'finished' }).where(eq(seasons.id, season.id));

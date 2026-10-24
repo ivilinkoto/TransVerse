@@ -18,6 +18,7 @@ import { loadHubs } from './contracts';
 import { notify } from './notify';
 import { announceRallyFinish } from '@/server/discord/rally';
 import { pick } from './random';
+import { t } from '@/i18n/t';
 
 /** Worker: the rally of this week (once per week, a random route between two big cities). */
 export async function ensureRally(db: Database, now = new Date(), provider?: RoutingProvider) {
@@ -54,12 +55,12 @@ export async function activeRally(db: DbOrTx) {
  * the start city (only for them). One run a week.
  */
 export async function joinRally(db: Database, userId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'rally', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'rally', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   const rally = await activeRally(db);
-  if (!rally || rally.endsAt <= now) fail('no_rally', 'Тази седмица няма рали.', 404);
+  if (!rally || rally.endsAt <= now) fail('no_rally', t('Тази седмица няма рали.'), 404);
   return db.transaction(async (tx) => {
     const [entry] = await tx.insert(rallyEntries).values({ rallyId: rally!.id, userId, createdAt: now }).onConflictDoNothing().returning();
-    if (!entry) fail('already_joined', 'Вече си записан за ралито тази седмица.', 409);
+    if (!entry) fail('already_joined', t('Вече си записан за ралито тази седмица.'), 409);
     const [c] = await tx.insert(contracts).values({
       shipper: 'TransVerse Рали', goods: RALLY.goods, cargoType: RALLY.cargo, weightTons: RALLY.tons,
       originCityId: rally!.originCityId, destCityId: rally!.destCityId, routeId: rally!.routeId, distanceKm: rally!.distanceKm,
@@ -119,10 +120,10 @@ export async function settleRallies(db: Database, now = new Date()) {
         for (const [i, row] of results[cat].slice(0, RALLY.prizes.length).entries()) {
           const prize = RALLY.prizes[i]!;
           const account = await companyForUser(tx, row.userId);
-          const label = `Рали ${r.weekKey}: ${RALLY_CATEGORIES[cat].toLowerCase()}, ${i + 1}. място`;
+          const label = t('Рали {0}: {1}, {2}. място', r.weekKey, RALLY_CATEGORIES[cat].toLowerCase(), i + 1);
           await post(tx, account.id, [{ category: 'rally_prize', amountCents: prize.cents, description: label, idempotencyKey: `rally:${r.id}:${cat}:${row.userId}`, refType: 'rally', refId: r.id }]);
           await postCoins(tx, row.userId, { amount: prize.coins, reason: 'rally', description: label, idempotencyKey: `rally:${r.id}:${cat}:${row.userId}:coins` });
-          await notify(tx, row.userId, 'achievement', `Рали: ${RALLY_CATEGORIES[cat]} — ${i + 1}. място! 🏁`, `Награда: ${money(prize.cents)} и ${prize.coins} TC.`, '/game/rally');
+          await notify(tx, row.userId, 'achievement', () => t('Рали: {0} — {1}. място! 🏁', RALLY_CATEGORIES[cat], i + 1), () => t('Награда: {0} и {1} TC.', money(prize.cents), prize.coins), '/game/rally');
         }
       }
     });

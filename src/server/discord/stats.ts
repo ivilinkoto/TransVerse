@@ -6,6 +6,7 @@ import { discord } from './api';
 import { discordConfig } from './config';
 import { guild } from './guild';
 import { layoutState, type StatChannel } from './layout';
+import { t } from '@/i18n/t';
 
 /**
  * The voice channels of "📊 СТАТИСТИКА": their names show live numbers from
@@ -21,10 +22,10 @@ export async function statNames(db: Database, now = new Date()): Promise<Record<
       (select count(*) from organizations)::int as companies`);
   const r = rows[0] ?? { online: 0, road: 0, players: 0, companies: 0 };
   return {
-    'stat-online': `🟢 Онлайн: ${int(Number(r.online))}`,
-    'stat-road': `🚚 На пътя: ${int(Number(r.road))}`,
-    'stat-players': `👥 Шофьори: ${int(Number(r.players))}`,
-    'stat-companies': `🏢 Компании: ${int(Number(r.companies))}`,
+    'stat-online': t('🟢 Онлайн: {0}', int(Number(r.online))),
+    'stat-road': t('🚚 На пътя: {0}', int(Number(r.road))),
+    'stat-players': t('👥 Шофьори: {0}', int(Number(r.players))),
+    'stat-companies': t('🏢 Компании: {0}', int(Number(r.companies))),
   };
 }
 

@@ -7,17 +7,24 @@ import { companyKey, markChannelRead } from '@/server/game/chat-reads';
 import { gameContext } from '@/server/game/context';
 import { can, companyHub } from '@/server/game/membership';
 import { companyPollsView } from '@/server/game/polls';
+import { t } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Чат на компанията' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: t('Чат на компанията') };
+}
 
 export default async function CompanyChatPage() {
+  await initLocale();
   const { db, user, now, features } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
   const view = await companyChat(db, user.id, 0, 80, now);
   await markChannelRead(db, user.id, companyKey(hub.company.id), view.messages.at(-1)?.id ?? 0, now);
   const chat = (
-    <Card title="Чат на компанията" actions={<span className="text-xs text-mist-400">Вижда се само от членовете · обновява се на живо</span>}>
+    <Card title={t('Чат на компанията')} actions={<span className="text-xs text-mist-400">{t('Вижда се само от членовете · обновява се на живо')}</span>}>
       <CompanyChat me={user.id} view={view} replies={features.chat_replies} extras={{ reactions: features.chat_reactions, pins: features.chat_pin, presence: features.chat_online }} />
     </Card>
   );
@@ -26,7 +33,7 @@ export default async function CompanyChatPage() {
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0">{chat}</div>
-      <Card title="Анкети">
+      <Card title={t('Анкети')}>
         <CompanyPolls polls={polls.map((p) => ({ ...p, closesAt: p.closesAt.toISOString() }))} canCreate={can(hub.rank, 'manage_chat')} now={now.getTime()} />
       </Card>
     </div>

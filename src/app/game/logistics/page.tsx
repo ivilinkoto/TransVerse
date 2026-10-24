@@ -8,10 +8,17 @@ import { ECONOMY } from '@/lib/game/economy';
 import { cities, cityMarkets, depots, ports, vehicles } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { depotSlotCostCents } from '@/server/game/fleet';
+import { t, tx, intlLocale } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Депа' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: t('Депа') };
+}
 
 export default async function LogisticsPage() {
+  await initLocale();
   const { db, company } = await gameContext();
   const myDepots = await db
     .select({ id: depots.id, slots: depots.slots, cityId: depots.cityId, name: cities.nameBg, country: cities.countryCode, createdAt: depots.createdAt })
@@ -30,43 +37,43 @@ export default async function LogisticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Депа" subtitle="Къде паркираш и купуваш техника."
-        help="Депата (гаражите) определят къде купувате и паркирате техника и колко превозни средства можете да имате. Може да ги откривате и без компания." />
-      <Card title="Вашите депа">
-        <Table head={['Град', 'Капацитет', 'Паркирани сега', 'Открито', '']}>
+      <PageHeader title={t('Депа')} subtitle={t('Къде паркираш и купуваш техника.')}
+        help={t('Депата (гаражите) определят къде купувате и паркирате техника и колко превозни средства можете да имате. Може да ги откривате и без компания.')} />
+      <Card title={t('Вашите депа')}>
+        <Table head={[t('Град'), t('Капацитет'), t('Паркирани сега'), t('Открито'), '']}>
           {myDepots.map((d) => (
             <tr key={d.id}>
-              <td className="px-3 py-3 font-semibold"><Warehouse className="mr-2 inline h-4 w-4 text-prestige" />{d.name} <span className="text-xs text-mist-400">{d.country}</span></td>
-              <td className="num px-3 py-3">{d.slots} места</td>
+              <td className="px-3 py-3 font-semibold"><Warehouse className="mr-2 inline h-4 w-4 text-prestige" />{tx(d.name)} <span className="text-xs text-mist-400">{tx(d.country)}</span></td>
+              <td className="num px-3 py-3">{t('{0} места', d.slots)}</td>
               <td className="num px-3 py-3">{parked.find((p) => p.cityId === d.cityId)?.n ?? 0}</td>
-              <td className="px-3 py-3 text-mist-400">{d.createdAt.toLocaleDateString('bg-BG')}</td>
+              <td className="px-3 py-3 text-mist-400">{d.createdAt.toLocaleDateString(intlLocale())}</td>
               <td className="px-3 py-3 text-right">
-                <ActionButton action={{ type: 'expandDepot', depotId: d.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={company.balanceCents < depotSlotCostCents(d.slots)}>+1 място · {money(depotSlotCostCents(d.slots))}</ActionButton>
+                <ActionButton action={{ type: 'expandDepot', depotId: d.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={company.balanceCents < depotSlotCostCents(d.slots)}>{t('+1 място · {0}', money(depotSlotCostCents(d.slots)))}</ActionButton>
               </td>
             </tr>
           ))}
         </Table>
       </Card>
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card title="Открий ново депо">
-          <p className="mb-3 text-sm text-mist-400">Ново депо струва {money(ECONOMY.depotPriceCents)} и идва с {ECONOMY.depotSlotsDefault} места. Възможно е в {int(hubs.length)} града, участващи в товарния пазар.</p>
+        <Card title={t('Открий ново депо')}>
+          <p className="mb-3 text-sm text-mist-400">{t('Ново депо струва {0} и идва с {1} места. Възможно е в {2} града, участващи в товарния пазар.', money(ECONOMY.depotPriceCents), ECONOMY.depotSlotsDefault, int(hubs.length))}</p>
           <SelectAction
-            label="Открий"
-            ariaLabel="Град за ново депо"
+            label={t('Открий')}
+            ariaLabel={t('Град за ново депо')}
             value=""
-            options={[{ value: '', label: '— изберете град —' }, ...hubs.filter((h) => !owned.has(h.id)).map((h) => ({ value: String(h.id), label: `${h.name} (${h.country}) · ${int(h.population)} жители` }))]}
+            options={[{ value: '', label: t('— изберете град —') }, ...hubs.filter((h) => !owned.has(h.id)).map((h) => ({ value: String(h.id), label: t('{0} ({1}) · {2} жители', h.name, h.country, int(h.population)) }))]}
             action={{ type: 'buyDepot' }}
             field="cityId"
             numeric
           />
         </Card>
-        <Card title="Пристанища в региона" actions={<Anchor className="h-4 w-4 text-cyan-glow" />}>
+        <Card title={t('Пристанища в региона')} actions={<Anchor className="h-4 w-4 text-cyan-glow" />}>
           <ul className="grid max-h-72 gap-1.5 overflow-y-auto pr-2 text-sm sm:grid-cols-2">
             {portRows.map((p) => (
-              <li key={`${p.name}-${p.city}`} className="flex justify-between gap-2 rounded-lg bg-asphalt-850 px-3 py-1.5"><span className="truncate">{p.nameBg ?? p.name}</span><span className="shrink-0 text-xs text-mist-400">{p.city}, {p.country}</span></li>
+              <li key={`${p.name}-${p.city}`} className="flex justify-between gap-2 rounded-lg bg-asphalt-850 px-3 py-1.5"><span className="truncate">{p.nameBg ?? p.name}</span><span className="shrink-0 text-xs text-mist-400">{tx(p.city)}, {tx(p.country)}</span></li>
             ))}
           </ul>
-          <p className="mt-2 text-[11px] text-mist-400">Източник: GeoNames (CC BY 4.0). Пристанищните градове генерират контейнерни товари.</p>
+          <p className="mt-2 text-[11px] text-mist-400">{t('Източник: GeoNames (CC BY 4.0). Пристанищните градове генерират контейнерни товари.')}</p>
         </Card>
       </div>
     </div>

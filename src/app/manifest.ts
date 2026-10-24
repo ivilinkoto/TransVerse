@@ -1,11 +1,12 @@
 import type { MetadataRoute } from 'next';
+import { t } from '@/i18n/t';
 
 /** Lets players install TransVerse on the home screen (needed for notifications on iPhone). */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TransVerse — транспортна игра',
+    name: t('TransVerse — транспортна игра'),
     short_name: 'TransVerse',
-    description: 'Браузърна мултиплейър транспортна и икономическа игра върху реалната карта.',
+    description: t('Браузърна мултиплейър транспортна и икономическа игра върху реалната карта.'),
     lang: 'bg',
     start_url: '/game',
     scope: '/',

@@ -13,6 +13,7 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { notify } from './notify';
 import { fleetView } from './queries';
+import { t as tr } from '@/i18n/t';
 
 const previousMonth = (at: Date) => {
   const [y, m] = recordMonth(at).split('-').map(Number) as [number, number];
@@ -21,33 +22,33 @@ const previousMonth = (at: Date) => {
 
 /** The player enters one of their own trucks for this month (once a month). */
 export async function enterTruck(db: Database, userId: string, vehicleId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'truck_contest', now))) fail('not_released', '„Камион на месеца“ идва с обновление 1.8.');
+  if (!(await featureFor(db, userId, 'truck_contest', now))) fail('not_released', tr('„Камион на месеца“ идва с обновление 1.8.'));
   const account = await companyForUser(db, userId);
   const v = (await fleetView(db, account.id)).vehicles.find((x) => x.id === vehicleId);
-  if (!v) fail('not_found', 'Няма такъв камион.', 404);
-  if (v!.ownership === 'rented') fail('rented', 'Само собствен камион може да участва.');
+  if (!v) fail('not_found', tr('Няма такъв камион.'), 404);
+  if (v!.ownership === 'rented') fail('rented', tr('Само собствен камион може да участва.'));
   const look: TruckLook = { modelId: v!.modelId, trailerModelId: v!.trailer?.modelId ?? null, color: v!.color, livery: v!.livery ?? null, cosmetics: v!.cosmetics ?? null, trailerUpgrades: v!.trailer?.upgrades ?? [], trailerLogo: v!.trailer?.logo ?? null, trailerCosmetics: v!.trailer?.cosmetics ?? null };
   const [row] = await db
     .insert(truckContestEntries)
     .values({ month: recordMonth(now), userId, vehicleId, look: look as unknown as Record<string, unknown>, title: `${v!.plate} · ${v!.model.name}${v!.trailer ? ` + ${v!.trailer.model.name}` : ''}`, createdAt: now })
     .onConflictDoNothing()
     .returning();
-  if (!row) fail('already_entered', 'Този месец вече имаш камион в конкурса.');
+  if (!row) fail('already_entered', tr('Този месец вече имаш камион в конкурса.'));
   return { id: row!.id };
 }
 
 /** A vote for someone else's truck (three a month). */
 export async function voteTruck(db: Database, userId: string, entryId: number, now = new Date()) {
-  if (!(await featureFor(db, userId, 'truck_contest', now))) fail('not_released', '„Камион на месеца“ идва с обновление 1.8.');
+  if (!(await featureFor(db, userId, 'truck_contest', now))) fail('not_released', tr('„Камион на месеца“ идва с обновление 1.8.'));
   const month = recordMonth(now);
   const [e] = await db.select().from(truckContestEntries).where(eq(truckContestEntries.id, entryId));
-  if (!e || e.month !== month) fail('not_found', 'Няма такъв камион в конкурса този месец.', 404);
-  if (e!.userId === userId) fail('own_entry', 'Не можеш да гласуваш за своя камион.');
+  if (!e || e.month !== month) fail('not_found', tr('Няма такъв камион в конкурса този месец.'), 404);
+  if (e!.userId === userId) fail('own_entry', tr('Не можеш да гласуваш за своя камион.'));
   return db.transaction(async (tx) => {
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(truckContestVotes).where(and(eq(truckContestVotes.month, month), eq(truckContestVotes.voterId, userId)));
-    if (n >= TRUCK_CONTEST.votes) fail('no_votes', `Имаш ${TRUCK_CONTEST.votes} гласа на месец — вече ги даде.`);
+    if (n >= TRUCK_CONTEST.votes) fail('no_votes', tr('Имаш {0} гласа на месец — вече ги даде.', TRUCK_CONTEST.votes));
     const [v] = await tx.insert(truckContestVotes).values({ month, voterId: userId, entryId, createdAt: now }).onConflictDoNothing().returning();
-    if (!v) fail('already_voted', 'Вече гласува за този камион.');
+    if (!v) fail('already_voted', tr('Вече гласува за този камион.'));
     await tx.update(truckContestEntries).set({ votes: sql`${truckContestEntries.votes} + 1` }).where(eq(truckContestEntries.id, entryId));
     return { votesLeft: TRUCK_CONTEST.votes - n - 1 };
   });
@@ -97,13 +98,13 @@ export async function settleTruckContest(db: Database, now = new Date()) {
     if (!first) return null;
     for (const [i, t] of top.entries()) {
       const coins = TRUCK_CONTEST.prizes[i]!;
-      await postCoins(tx, t.userId, { amount: coins, reason: 'truck_contest', description: `Камион на месеца ${month}: ${i + 1}. място`, idempotencyKey: `truck-contest:${month}:${t.userId}` });
+      await postCoins(tx, t.userId, { amount: coins, reason: 'truck_contest', description: tr('Камион на месеца {0}: {1}. място', month, i + 1), idempotencyKey: `truck-contest:${month}:${t.userId}` });
       if (i === 0) await tx.insert(userBadges).values({ userId: t.userId, badge: TRUCK_CONTEST.badge, awardedAt: now }).onConflictDoNothing();
-      await notify(tx, t.userId, 'achievement', `Камион на месеца: ${i + 1}. място! 🏆`, `${t.title} — ${t.votes} гласа. Награда: ${coins} TC${i === 0 ? ` и значка „${BADGES[TRUCK_CONTEST.badge]?.label ?? ''}“` : ''}.`, '/game/truck-contest');
+      await notify(tx, t.userId, 'achievement', () => tr('Камион на месеца: {0}. място! 🏆', i + 1), () => tr('{0} — {1} гласа. Награда: {2} TC{3}.', t.title, t.votes, coins, i === 0 ? tr(' и значка „{0}“', BADGES[TRUCK_CONTEST.badge]?.label ?? '') : ''), '/game/truck-contest');
     }
     if (top.length && featureLive('discord_bot', now)) {
       await announce(tx, key, 'rankings', {
-        embeds: [{ title: `🚛 Камион на месеца · ${month}`, url: `${appUrl()}/game/truck-contest`, color: 0xf6c343, description: top.map((t, i) => `**${i + 1}.** ${t.username} · ${t.title} · ${t.votes} гласа`).join('\n'), footer: { text: 'TransVerse · игрови данни' } }],
+        embeds: [{ title: tr('🚛 Камион на месеца · {0}', month), url: `${appUrl()}/game/truck-contest`, color: 0xf6c343, description: top.map((t, i) => tr('**{0}.** {1} · {2} · {3} гласа', i + 1, t.username, t.title, t.votes)).join('\n'), footer: { text: tr('TransVerse · игрови данни') } }],
       }, now);
     }
     return { month, winners: top.length };

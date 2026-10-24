@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { CONVOYS, CONVOY_ROLES } from '@/lib/game/convoys';
+import { t, tx } from '@/i18n/t';
 
 function useSend() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export function NewConvoy({ origins, destinations, maxSeats, company, cargo }: {
   const [shared, setShared] = useState('');
   const [tons, setTons] = useState(12);
   const [title, setTitle] = useState('');
-  if (!origins.length) return <p className="text-sm text-mist-400">Конвой тръгва от град, където имаш камион.</p>;
+  if (!origins.length) return <p className="text-sm text-mist-400">{t('Конвой тръгва от град, където имаш камион.')}</p>;
   return (
     <form
       className="grid gap-3 text-sm sm:grid-cols-2"
@@ -51,42 +52,42 @@ export function NewConvoy({ origins, destinations, maxSeats, company, cargo }: {
       }}
     >
       {company && (
-        <label className="space-y-1"><span className="label">Вид</span>
-          <select className="input w-full" value={kind} onChange={(e) => setKind(e.target.value as 'personal' | 'company')}><option value="personal">Личен</option><option value="company">Фирмен (само членове)</option></select>
+        <label className="space-y-1"><span className="label">{t('Вид')}</span>
+          <select className="input w-full" value={kind} onChange={(e) => setKind(e.target.value as 'personal' | 'company')}><option value="personal">{t('Личен')}</option><option value="company">{t('Фирмен (само членове)')}</option></select>
         </label>
       )}
       {kind === 'personal' && (
-        <label className="space-y-1"><span className="label">Кой може да се включи</span>
-          <select className="input w-full" value={access} onChange={(e) => setAccess(e.target.value as 'open' | 'friends' | 'link')}><option value="open">Всички</option><option value="friends">Само приятели</option><option value="link">Само с линк</option></select>
+        <label className="space-y-1"><span className="label">{t('Кой може да се включи')}</span>
+          <select className="input w-full" value={access} onChange={(e) => setAccess(e.target.value as 'open' | 'friends' | 'link')}><option value="open">{t('Всички')}</option><option value="friends">{t('Само приятели')}</option><option value="link">{t('Само с линк')}</option></select>
         </label>
       )}
-      <label className="space-y-1"><span className="label">От (град с твой камион)</span>
-        <select className="input w-full" value={from} onChange={(e) => setFrom(Number(e.target.value))}>{origins.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+      <label className="space-y-1"><span className="label">{t('От (град с твой камион)')}</span>
+        <select className="input w-full" value={from} onChange={(e) => setFrom(Number(e.target.value))}>{origins.map((c) => <option key={c.id} value={c.id}>{tx(c.name)}</option>)}</select>
       </label>
-      <label className="space-y-1"><span className="label">До</span>
-        <select className="input w-full" value={to} onChange={(e) => setTo(Number(e.target.value))}>{destinations.filter((c) => c.id !== from).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+      <label className="space-y-1"><span className="label">{t('До')}</span>
+        <select className="input w-full" value={to} onChange={(e) => setTo(Number(e.target.value))}>{destinations.filter((c) => c.id !== from).map((c) => <option key={c.id} value={c.id}>{tx(c.name)}</option>)}</select>
       </label>
-      <label className="space-y-1"><span className="label">Тръгване след</span>
-        <select className="input w-full" value={depart} onChange={(e) => setDepart(Number(e.target.value))}>{[15, 30, 60, 120, 180, 360, 720, 1440].map((m) => <option key={m} value={m}>{m < 60 ? `${m} мин` : `${m / 60} ч`}</option>)}</select>
+      <label className="space-y-1"><span className="label">{t('Тръгване след')}</span>
+        <select className="input w-full" value={depart} onChange={(e) => setDepart(Number(e.target.value))}>{[15, 30, 60, 120, 180, 360, 720, 1440].map((m) => <option key={m} value={m}>{m < 60 ? t('{0} мин', m) : t('{0} ч', m / 60)}</option>)}</select>
       </label>
-      <label className="space-y-1"><span className="label">Места (до {maxSeats})</span>
+      <label className="space-y-1"><span className="label">{t('Места (до {0})', maxSeats)}</span>
         <input type="number" className="input w-full" min={CONVOYS.seats.min} max={maxSeats} value={seats} onChange={(e) => setSeats(Number(e.target.value) || CONVOYS.seats.min)} />
       </label>
-      <label className="space-y-1"><span className="label">Минимално ниво</span>
+      <label className="space-y-1"><span className="label">{t('Минимално ниво')}</span>
         <input type="number" className="input w-full" min={1} max={100} value={minLevel} onChange={(e) => setMinLevel(Number(e.target.value) || 1)} />
       </label>
-      <label className="space-y-1"><span className="label">Общ товар (по избор)</span>
-        <select className="input w-full" value={shared} onChange={(e) => setShared(e.target.value)}><option value="">Без — всеки със свой товар</option>{cargo.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
+      <label className="space-y-1"><span className="label">{t('Общ товар (по избор)')}</span>
+        <select className="input w-full" value={shared} onChange={(e) => setShared(e.target.value)}><option value="">{t('Без — всеки със свой товар')}</option>{cargo.map((c) => <option key={c.id} value={c.id}>{tx(c.label)}</option>)}</select>
       </label>
       {shared && (
-        <label className="space-y-1"><span className="label">Тонове на камион</span>
+        <label className="space-y-1"><span className="label">{t('Тонове на камион')}</span>
           <input type="number" className="input w-full" min={CONVOYS.sharedTons.min} max={CONVOYS.sharedTons.max} value={tons} onChange={(e) => setTons(Number(e.target.value) || CONVOYS.sharedTons.min)} />
         </label>
       )}
-      <label className="space-y-1 sm:col-span-2"><span className="label">Име (по избор)</span>
-        <input className="input w-full" maxLength={60} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Нощна колона към морето" />
+      <label className="space-y-1 sm:col-span-2"><span className="label">{t('Име (по избор)')}</span>
+        <input className="input w-full" maxLength={60} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('Нощна колона към морето')} />
       </label>
-      <div className="sm:col-span-2"><button className="btn-primary" disabled={busy || !to}>Създай конвой</button></div>
+      <div className="sm:col-span-2"><button className="btn-primary" disabled={busy || !to}>{t('Създай конвой')}</button></div>
       {error && <p role="alert" className="text-loss sm:col-span-2">{error}</p>}
     </form>
   );
@@ -97,20 +98,20 @@ export function JoinConvoy({ convoyId, vehicles, loads, shared, roles }: { convo
   const [vehicleId, setVehicle] = useState(vehicles[0]?.id ?? '');
   const [load, setLoad] = useState(shared ? '' : (loads[0]?.id ?? ''));
   const [role, setRole] = useState<'member' | 'tail' | 'scout'>('member');
-  if (!vehicles.length) return <p className="text-sm text-mist-400">Нужен е свободен камион в града на тръгване.</p>;
-  if (!shared && !loads.length) return <p className="text-sm text-mist-400">По линията няма свободен товар сега — погледни пак след малко или избери конвой с общ товар.</p>;
+  if (!vehicles.length) return <p className="text-sm text-mist-400">{t('Нужен е свободен камион в града на тръгване.')}</p>;
+  if (!shared && !loads.length) return <p className="text-sm text-mist-400">{t('По линията няма свободен товар сега — погледни пак след малко или избери конвой с общ товар.')}</p>;
   return (
     <form className="grid gap-2 text-sm sm:grid-cols-3" onSubmit={async (e) => { e.preventDefault(); await send({ type: 'joinConvoy', convoyId, vehicleId, contractId: load || null, role }); }}>
-      <select className="input" aria-label="Камион" value={vehicleId} onChange={(e) => setVehicle(e.target.value)}>{vehicles.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</select>
-      <select className="input" aria-label="Товар" value={load} onChange={(e) => setLoad(e.target.value)}>
-        {shared && <option value="">Част от общия товар · {shared}</option>}
-        {loads.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+      <select className="input" aria-label={t('Камион')} value={vehicleId} onChange={(e) => setVehicle(e.target.value)}>{vehicles.map((v) => <option key={v.id} value={v.id}>{tx(v.label)}</option>)}</select>
+      <select className="input" aria-label={t('Товар')} value={load} onChange={(e) => setLoad(e.target.value)}>
+        {shared && <option value="">{t('Част от общия товар · {0}', shared)}</option>}
+        {loads.map((l) => <option key={l.id} value={l.id}>{tx(l.label)}</option>)}
       </select>
-      <select className="input" aria-label="Роля" value={role} onChange={(e) => setRole(e.target.value as 'member' | 'tail' | 'scout')}>
-        <option value="member">{CONVOY_ROLES.member.emoji} {CONVOY_ROLES.member.label}</option>
-        {roles.map((r) => <option key={r} value={r}>{CONVOY_ROLES[r].emoji} {CONVOY_ROLES[r].label} (+1 %)</option>)}
+      <select className="input" aria-label={t('Роля')} value={role} onChange={(e) => setRole(e.target.value as 'member' | 'tail' | 'scout')}>
+        <option value="member">{tx(CONVOY_ROLES.member.emoji)} {tx(CONVOY_ROLES.member.label)}</option>
+        {roles.map((r) => <option key={r} value={r}>{tx(CONVOY_ROLES[r].emoji)} {tx(CONVOY_ROLES[r].label)} (+1 %)</option>)}
       </select>
-      <div className="sm:col-span-3"><button className="btn-primary" disabled={busy || !vehicleId}>🚚 Включи се</button></div>
+      <div className="sm:col-span-3"><button className="btn-primary" disabled={busy || !vehicleId}>{t('🚚 Включи се')}</button></div>
       {error && <p role="alert" className="text-loss sm:col-span-3">{error}</p>}
     </form>
   );
@@ -121,8 +122,8 @@ export function ConvoyChat({ convoyId }: { convoyId: string }) {
   const [body, setBody] = useState('');
   return (
     <form className="flex gap-2 text-sm" onSubmit={async (e) => { e.preventDefault(); if (await send({ type: 'convoyMessage', convoyId, body })) setBody(''); }}>
-      <input className="input min-w-0 flex-1" maxLength={CONVOYS.messageMax} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Готови сме, тръгваме в 20:00!" aria-label="Съобщение до колоната" />
-      <button className="btn-ghost" disabled={busy || !body.trim()}>Прати</button>
+      <input className="input min-w-0 flex-1" maxLength={CONVOYS.messageMax} value={body} onChange={(e) => setBody(e.target.value)} placeholder={t('Готови сме, тръгваме в 20:00!')} aria-label={t('Съобщение до колоната')} />
+      <button className="btn-ghost" disabled={busy || !body.trim()}>{t('Прати')}</button>
       {error && <p role="alert" className="text-loss">{error}</p>}
     </form>
   );

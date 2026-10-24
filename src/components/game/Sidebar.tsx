@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Logo, LogoMark } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
 import { ACCOUNT_MENU, SECTIONS, activeTab, sectionFor, tabGroups, visibleTabs, type NavSection, type NavTab } from './nav';
+import { t as tr, tx } from '@/i18n/t';
 
 export interface NavBadges {
   /** Mission rewards waiting to be claimed. */
@@ -20,9 +21,9 @@ export interface NavBadges {
 function SectionBadge({ section, badges, compact = false }: { section: NavSection; badges: NavBadges; compact?: boolean }) {
   if (section.key !== 'compete') return null;
   if (badges.missions > 0)
-    return compact ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-gold-400" aria-label={`${badges.missions} награди`} /> : <span className="num rounded-full bg-gold-400 px-1.5 text-[11px] font-bold text-asphalt-950" title="Награди за взимане">{badges.missions}</span>;
+    return compact ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-gold-400" aria-label={tr('{0} награди', badges.missions)} /> : <span className="num rounded-full bg-gold-400 px-1.5 text-[11px] font-bold text-asphalt-950" title={tr('Награди за взимане')}>{tx(badges.missions)}</span>;
   if (badges.eventLive)
-    return compact ? <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-cyan-glow" aria-label="Тече ивент" /> : <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-glow" title="Тече ивент" />;
+    return compact ? <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-cyan-glow" aria-label={tr('Тече ивент')} /> : <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-glow" title={tr('Тече ивент')} />;
   return null;
 }
 
@@ -33,23 +34,23 @@ export function Sidebar({ badges, version }: { badges: NavBadges; version: strin
   return (
     <aside className="sticky top-0 hidden h-dvh w-[84px] shrink-0 flex-col border-r border-asphalt-800/80 bg-asphalt-900/60 px-3 py-5 backdrop-blur lg:flex xl:w-60">
       <div className="mb-8 flex justify-center xl:justify-start xl:px-2">
-        <span className="xl:hidden"><Link href="/game" aria-label="TransVerse — табло"><LogoMark className="h-9 w-9" /></Link></span>
+        <span className="xl:hidden"><Link href="/game" aria-label={tr('TransVerse — табло')}><LogoMark className="h-9 w-9" /></Link></span>
         <span className="hidden xl:block"><Logo href="/game" /></span>
       </div>
-      <nav className="flex flex-col gap-1" aria-label="Игрова навигация">
+      <nav className="flex flex-col gap-1" aria-label={tr('Игрова навигация')}>
         {SECTIONS.map((s) => {
           const active = current?.key === s.key;
           return (
             <Link
               key={s.key}
               href={s.href}
-              title={s.label}
+              title={tx(s.label)}
               aria-current={active ? 'page' : undefined}
               className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition max-xl:flex-col max-xl:gap-1 max-xl:px-1 max-xl:text-[10px] ${active ? 'bg-gradient-to-r from-volt-500/25 to-volt-500/5 text-white' : 'text-mist-300 hover:bg-asphalt-800/80 hover:text-white'}`}
             >
               {active && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-cyan-glow max-xl:-left-3" aria-hidden="true" />}
               <s.icon className={`h-5 w-5 shrink-0 ${active ? 'text-cyan-glow' : 'text-mist-400 group-hover:text-mist-100'}`} />
-              <span className="flex-1 max-xl:leading-none">{s.label}</span>
+              <span className="flex-1 max-xl:leading-none">{tx(s.label)}</span>
               <span className="max-xl:hidden"><SectionBadge section={s} badges={badges} /></span>
               <span className="xl:hidden"><SectionBadge section={s} badges={badges} compact /></span>
             </Link>
@@ -57,14 +58,14 @@ export function Sidebar({ badges, version }: { badges: NavBadges; version: strin
         })}
       </nav>
       <div className="mt-auto">
-        <Link href="/game/shop" title="Магазин и VIP" className="flex items-center gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-br from-gold-400/15 to-transparent p-3 text-gold-400 transition hover:border-gold-400/60 max-xl:justify-center">
+        <Link href="/game/shop" title={tr('Магазин и VIP')} className="flex items-center gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-br from-gold-400/15 to-transparent p-3 text-gold-400 transition hover:border-gold-400/60 max-xl:justify-center">
           <Gem className="h-5 w-5 shrink-0" />
           <span className="max-xl:sr-only">
-            <span className="block text-sm font-semibold">Магазин и VIP</span>
-            <span className="block text-xs text-mist-400">ТрансКоин, бонуси, стил</span>
+            <span className="block text-sm font-semibold">{tr('Магазин и VIP')}</span>
+            <span className="block text-xs text-mist-400">{tr('ТрансКоин, бонуси, стил')}</span>
           </span>
         </Link>
-        <Link href="/game/updates" className="mt-2 block text-center text-[11px] text-mist-500 transition hover:text-cyan-glow" title="Обновления">v{version}</Link>
+        <Link href="/game/updates" className="mt-2 block text-center text-[11px] text-mist-500 transition hover:text-cyan-glow" title={tr('Обновления')}>v{version}</Link>
       </div>
     </aside>
   );
@@ -91,12 +92,12 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
   const shown: NavTab[] = group ? group.tabs : tabs;
   if (shown.length < 2 && groups.length < 2) return null;
   return (
-    <nav ref={box} aria-label={section.label} className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+    <nav ref={box} aria-label={tx(section.label)} className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
       {groups.length > 1 && (
         <div className="mb-2 flex min-w-max gap-1.5">
           {groups.map((g) => (
             <Link key={g.name} href={g.tabs[0]!.href} aria-current={g === group ? 'true' : undefined} className={`rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition ${g === group ? 'border-cyan-glow/60 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>
-              {g.name}
+              {tx(g.name)}
             </Link>
           ))}
         </div>
@@ -106,7 +107,7 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
           const active = t.href === tab?.href;
           return (
             <Link key={t.href} href={t.href} aria-current={active ? 'page' : undefined} className={`rounded-xl px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition sm:px-3.5 sm:py-2 sm:text-sm ${active ? 'bg-asphalt-700 text-white shadow-sm' : 'text-mist-400 hover:text-white'}`}>
-              {t.label}
+              {tx(t.label)}
             </Link>
           );
         })}
@@ -149,7 +150,7 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
 
   return (
     <>
-      <nav aria-label="Основна навигация" className="fixed inset-x-0 bottom-0 z-40 border-t border-asphalt-800 bg-asphalt-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      <nav aria-label={tr('Основна навигация')} className="fixed inset-x-0 bottom-0 z-40 border-t border-asphalt-800 bg-asphalt-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         <div className="mx-auto grid max-w-xl grid-cols-5">
           {main.map((s) => {
             const active = current?.key === s.key && !open;
@@ -157,36 +158,36 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
               <Link key={s.key} href={s.href} aria-current={active ? 'page' : undefined} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${active ? 'text-cyan-glow' : 'text-mist-400'}`}>
                 {active && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-cyan-glow" aria-hidden="true" />}
                 <s.icon className="h-5 w-5" />
-                {s.label}
+                {tx(s.label)}
               </Link>
             );
           })}
-          <button type="button" onClick={() => { if (!open) window.dispatchEvent(new Event('tv:chat-close')); setOpen((o) => !o); }} aria-expanded={open} aria-label="Още" className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
+          <button type="button" onClick={() => { if (!open) window.dispatchEvent(new Event('tv:chat-close')); setOpen((o) => !o); }} aria-expanded={open} aria-label={tr('Още')} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
             {(badges.missions > 0 || badges.eventLive) && !open && attention === 0 && <span className="absolute right-[calc(50%-14px)] top-2 h-2 w-2 rounded-full bg-gold-400" aria-hidden="true" />}
             {staff && attention > 0 && !open && <span className="absolute right-[calc(50%-14px)] top-2 h-2.5 w-2.5 rounded-full bg-loss" aria-hidden="true" />}
             {open ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}
-            Още
+            {tr('Още')}
           </button>
         </div>
       </nav>
 
       {open && (
-        <div className="fixed inset-0 z-30 lg:hidden" role="dialog" aria-modal="true" aria-label="Още раздели">
-          <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="Затвори" onClick={() => setOpen(false)} />
+        <div className="fixed inset-0 z-30 lg:hidden" role="dialog" aria-modal="true" aria-label={tr('Още раздели')}>
+          <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label={tr('Затвори')} onClick={() => setOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-asphalt-700 bg-asphalt-900 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-asphalt-600" aria-hidden="true" />
             {SECTIONS.filter((s) => s.key === 'company' || s.key === 'compete').map((s) => (
               <section key={s.key} className="mb-5">
-                <h2 className="label mb-2 flex items-center gap-2"><s.icon className="h-3.5 w-3.5" />{s.label}</h2>
+                <h2 className="label mb-2 flex items-center gap-2"><s.icon className="h-3.5 w-3.5" />{tx(s.label)}</h2>
                 {(simple && tabGroups(visibleTabs(s, holiday, pathname, has, player)).length > 1 ? tabGroups(visibleTabs(s, holiday, pathname, has, player)) : [{ name: '', tabs: visibleTabs(s, holiday, pathname, has, player) }]).map((g) => (
                 <div key={g.name} className="mb-2">
-                {g.name && <p className="mb-1 text-[11px] font-semibold text-mist-400">{g.name}</p>}
+                {g.name && <p className="mb-1 text-[11px] font-semibold text-mist-400">{tx(g.name)}</p>}
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                   {g.tabs.map((t) => (
                     <Link key={t.href} href={t.href} onClick={() => setOpen(false)} className={`${tile} ${activeTab(s, pathname)?.href === t.href ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
-                      {t.label}
-                      {t.href === '/game/missions' && badges.missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[10px] font-bold text-asphalt-950">{badges.missions} награди</span>}
-                      {t.href === '/game/events' && badges.eventLive && <span className="rounded-full bg-cyan-glow/20 px-1.5 text-[10px] font-bold text-cyan-glow">тече сега</span>}
+                      {tx(t.label)}
+                      {t.href === '/game/missions' && badges.missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[10px] font-bold text-asphalt-950">{tr('{0} награди', badges.missions)}</span>}
+                      {t.href === '/game/events' && badges.eventLive && <span className="rounded-full bg-cyan-glow/20 px-1.5 text-[10px] font-bold text-cyan-glow">{tr('тече сега')}</span>}
                     </Link>
                   ))}
                 </div>
@@ -195,19 +196,19 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
               </section>
             ))}
             <section>
-              <h2 className="label mb-2">Профил</h2>
+              <h2 className="label mb-2">{tr('Профил')}</h2>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                 {ACCOUNT_MENU.filter((item) => mentor || item.href !== '/game/mentor').map((item) => (
                   <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`${tile} ${pathname.startsWith(item.href) ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
                     <item.icon className={`h-5 w-5 ${item.href === '/game/shop' ? 'text-gold-400' : 'text-mist-400'}`} />
-                    {item.label}
+                    {tx(item.label)}
                   </Link>
                 ))}
                 <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className={tile}><MessagesSquare className="h-5 w-5 text-mist-400" />Discord</a>
                 {staff && (
-                  <Link href="/admin" onClick={() => setOpen(false)} className={`${tile} relative text-prestige`}><ShieldCheck className="h-5 w-5" />Админ панел{attention > 0 && <span className="num absolute right-1.5 top-1.5 rounded-full bg-loss px-1.5 text-[11px] font-bold leading-5 text-white">{attention}</span>}</Link>
+                  <Link href="/admin" onClick={() => setOpen(false)} className={`${tile} relative text-prestige`}><ShieldCheck className="h-5 w-5" />{tr('Админ панел')}{attention > 0 && <span className="num absolute right-1.5 top-1.5 rounded-full bg-loss px-1.5 text-[11px] font-bold leading-5 text-white">{attention}</span>}</Link>
                 )}
-                <button type="button" onClick={logout} className={`${tile} text-mist-400`}><LogOut className="h-5 w-5" />Изход</button>
+                <button type="button" onClick={logout} className={`${tile} text-mist-400`}><LogOut className="h-5 w-5" />{tr('Изход')}</button>
               </div>
             </section>
           </div>

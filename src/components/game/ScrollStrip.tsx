@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { t } from '@/i18n/t';
 
 /**
  * A horizontal row that also scrolls without a touch screen: the mouse wheel
@@ -50,7 +51,7 @@ export function ScrollStrip({ children, label, className = '', activeKey }: { ch
   return (
     <div className="relative flex min-w-0 flex-1 items-center">
       {edges.left && (
-        <button type="button" onClick={() => step(-1)} aria-label="Назад" className="absolute left-0 top-0 z-10 mb-2 flex h-[calc(100%-0.5rem)] items-center bg-gradient-to-r from-asphalt-900 via-asphalt-900/90 to-transparent pr-3 text-mist-300 hover:text-white">
+        <button type="button" onClick={() => step(-1)} aria-label={t('Назад')} className="absolute left-0 top-0 z-10 mb-2 flex h-[calc(100%-0.5rem)] items-center bg-gradient-to-r from-asphalt-900 via-asphalt-900/90 to-transparent pr-3 text-mist-300 hover:text-white">
           <ChevronLeft className="h-4 w-4" />
         </button>
       )}
@@ -58,7 +59,7 @@ export function ScrollStrip({ children, label, className = '', activeKey }: { ch
         {children}
       </nav>
       {edges.right && (
-        <button type="button" onClick={() => step(1)} aria-label="Напред" className="absolute right-0 top-0 z-10 mb-2 flex h-[calc(100%-0.5rem)] items-center bg-gradient-to-l from-asphalt-900 via-asphalt-900/90 to-transparent pl-3 text-mist-300 hover:text-white">
+        <button type="button" onClick={() => step(1)} aria-label={t('Напред')} className="absolute right-0 top-0 z-10 mb-2 flex h-[calc(100%-0.5rem)] items-center bg-gradient-to-l from-asphalt-900 via-asphalt-900/90 to-transparent pl-3 text-mist-300 hover:text-white">
           <ChevronRight className="h-4 w-4" />
         </button>
       )}

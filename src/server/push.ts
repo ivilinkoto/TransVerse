@@ -12,6 +12,7 @@ import { featureLive } from '@/lib/game/features';
 import { isStaff } from '@/server/auth/roles';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyMembers, companyMessages, jobState, notifications, organizations, pushSubscriptions, users } from '@/server/db/schema';
+import { t } from '@/i18n/t';
 
 // ── Categories ────────────────────────────────────────────────────────────
 
@@ -151,8 +152,8 @@ export interface PushAction {
 export function pushActionsFor(href: string | null | undefined): PushAction[] | undefined {
   if (!href) return undefined;
   // A delivery arrived: take a load back from there, or look at the whole board.
-  if (href.startsWith('/game/contracts?from=')) return [{ action: 'back', title: 'Обратен товар', url: href }, { action: 'board', title: 'Нов курс', url: '/game/contracts' }];
-  if (href.includes('?chat=')) return [{ action: 'chat', title: 'Отвори чата', url: href }];
+  if (href.startsWith('/game/contracts?from=')) return [{ action: 'back', title: t('Обратен товар'), url: href }, { action: 'board', title: t('Нов курс'), url: '/game/contracts' }];
+  if (href.includes('?chat=')) return [{ action: 'chat', title: t('Отвори чата'), url: href }];
   return undefined;
 }
 
@@ -189,7 +190,7 @@ export async function pushToUser(db: Database, userId: string, message: PushMess
       const e = error as { statusCode?: number; body?: string; message?: string };
       if (e.statusCode === 404 || e.statusCode === 410) await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
       else {
-        const text = `${e.statusCode ?? ''} ${e.body || e.message || 'грешка'}`.trim().slice(0, 500);
+        const text = `${e.statusCode ?? ''} ${e.body || e.message || t('грешка')}`.trim().slice(0, 500);
         console.warn('[push] send failed', text);
         await db.update(pushSubscriptions).set({ lastErrorAt: new Date(), lastError: text }).where(eq(pushSubscriptions.id, sub.id));
       }
@@ -236,7 +237,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
     const message: PushMessage =
       list.length === 1
         ? { title: list[0]!.title, body: list[0]!.body, url: list[0]!.href ?? '/game/notifications', tag: `n${list[0]!.id}`, actions: featureLive('push_actions', now, isStaff(list[0]!.role)) ? pushActionsFor(list[0]!.href) : undefined }
-        : { title: `${list.length} нови известия в TransVerse`, body: list.slice(-3).map((n) => n.title).join(' · '), url: '/game/notifications', tag: 'summary' };
+        : { title: t('{0} нови известия в TransVerse', list.length), body: list.slice(-3).map((n) => n.title).join(' · '), url: '/game/notifications', tag: 'summary' };
     pushed += await pushToUser(db, userId, message, sender);
   }
   // When there were more than the batch, continue from the last one handled.
@@ -273,7 +274,7 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
       const message: PushMessage =
         mine.length === 1
           ? { title: `${last.author} · ${last.company}`, body: last.body, url: '/game/company/chat', tag: 'chat' }
-          : { title: `${mine.length} нови съобщения · ${last.company}`, body: `${last.author}: ${last.body}`, url: '/game/company/chat', tag: 'chat' };
+          : { title: t('{0} нови съобщения · {1}', mine.length, last.company), body: `${last.author}: ${last.body}`, url: '/game/company/chat', tag: 'chat' };
       pushed += await pushToUser(db, m.userId, message, sender);
     }
     await saveCursor(db, 'push-chat-cursor', messages.at(-1)!.id);

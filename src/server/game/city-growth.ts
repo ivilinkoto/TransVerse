@@ -9,6 +9,7 @@ import { appUrl } from '@/server/discord/config';
 import { announce } from '@/server/discord/outbox';
 import { postCoins } from './coins';
 import { notify } from './notify';
+import { t, intlLocale } from '@/i18n/t';
 
 const weekKey = (at: Date) => periodWindow('weekly', at).key;
 
@@ -60,7 +61,7 @@ export async function announceCityOfWeek(db: Database, now = new Date()) {
   const [top] = await db.select({ name: cities.nameBg, weekTons: cityGrowth.weekTons, tons: cityGrowth.tons }).from(cityGrowth).innerJoin(cities, eq(cities.id, cityGrowth.cityId)).where(eq(cityGrowth.weekKey, last)).orderBy(desc(cityGrowth.weekTons)).limit(1);
   if (!top) return false;
   await announce(db, `city-week:${last}`, 'rankings', {
-    embeds: [{ title: `🏙️ Град на седмицата: ${top.name}`, url: `${appUrl()}/game/cities`, color: 0x22d3ee, description: `${Math.round(top.weekTons).toLocaleString('bg-BG')} т доставени за седмицата · „${cityLevel(top.tons).name}“.`, footer: { text: 'TransVerse · игрови данни' } }],
+    embeds: [{ title: t('🏙️ Град на седмицата: {0}', top.name), url: `${appUrl()}/game/cities`, color: 0x22d3ee, description: t('{0} т доставени за седмицата · „{1}“.', Math.round(top.weekTons).toLocaleString(intlLocale()), cityLevel(top.tons).name), footer: { text: t('TransVerse · игрови данни') } }],
   }, now);
   return true;
 }
@@ -73,9 +74,9 @@ export async function harvestDelivered(tx: Tx, userId: string, holiday: string |
   if (!p || p.rewarded || p.loads < HARVEST.loadsForBadge) return;
   const [won] = await tx.update(harvestProgress).set({ rewarded: true }).where(and(eq(harvestProgress.userId, userId), eq(harvestProgress.year, year), eq(harvestProgress.rewarded, false))).returning();
   if (!won) return;
-  await postCoins(tx, userId, { amount: HARVEST.coins, reason: 'harvest', description: `Гроздобер ${year}: ${HARVEST.loadsForBadge} есенни товара`, idempotencyKey: `harvest:${year}:${userId}` });
+  await postCoins(tx, userId, { amount: HARVEST.coins, reason: 'harvest', description: t('Гроздобер {0}: {1} есенни товара', year, HARVEST.loadsForBadge), idempotencyKey: `harvest:${year}:${userId}` });
   await tx.insert(userBadges).values({ userId, badge: HARVEST.badge, awardedAt: at }).onConflictDoNothing();
-  await notify(tx, userId, 'achievement', `Значка: ${BADGES[HARVEST.badge]?.label ?? 'Гроздобер'} 🍇`, `${HARVEST.loadsForBadge} есенни товара навреме: +${HARVEST.coins} TC.`, '/game/progress');
+  await notify(tx, userId, 'achievement', () => t('Значка: {0} 🍇', BADGES[HARVEST.badge]?.label ?? t('Гроздобер')), () => t('{0} есенни товара навреме: +{1} TC.', HARVEST.loadsForBadge, HARVEST.coins), '/game/progress');
 }
 
 export async function harvestOf(db: DbOrTx, userId: string, now: Date) {

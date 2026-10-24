@@ -8,17 +8,18 @@ import { recordMonth } from '@/lib/game/community';
 import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 /** The player asks the shipper for more on a big load (once). A "no" gives the load to someone else. */
 export async function haggle(db: Database, userId: string, contractId: string, percent: HagglePercent, now = new Date()) {
-  if (!(await featureFor(db, userId, 'haggling', now))) fail('not_released', 'Пазарлъкът идва с обновление 1.8.');
-  if (!HAGGLE.asks.some((a) => a.percent === percent)) fail('bad_ask', 'Може да поискаш +10, +20 или +30 %.');
+  if (!(await featureFor(db, userId, 'haggling', now))) fail('not_released', t('Пазарлъкът идва с обновление 1.8.'));
+  if (!HAGGLE.asks.some((a) => a.percent === percent)) fail('bad_ask', t('Може да поискаш +10, +20 или +30 %.'));
   const [c] = await db.select().from(contracts).where(eq(contracts.id, contractId));
-  if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
-  if (!haggleable(c!)) fail('no_haggle', `Пазарлък има само при обикновени поръчки от ${money(HAGGLE.minRewardCents)} нагоре.`);
+  if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', t('Поръчката вече не е налична.'), 409);
+  if (!haggleable(c!)) fail('no_haggle', t('Пазарлък има само при обикновени поръчки от {0} нагоре.', money(HAGGLE.minRewardCents)));
   const accepted = haggleAccepted(contractId, userId, percent);
   const [row] = await db.insert(contractHaggles).values({ contractId, userId, percent, accepted, createdAt: now }).onConflictDoNothing().returning();
-  if (!row) fail('already_haggled', 'Вече се пазари за тази поръчка.');
+  if (!row) fail('already_haggled', t('Вече се пазари за тази поръчка.'));
   return { accepted, percent, holdUntil: new Date(now.getTime() + HAGGLE.holdMin * 60_000).toISOString() };
 }
 
@@ -29,7 +30,7 @@ export const haggleable = (c: Pick<typeof contracts.$inferSelect, 'rewardCents' 
 export async function agreedHaggle(db: DbOrTx, userId: string, contractId: string, now: Date) {
   const [h] = await db.select().from(contractHaggles).where(and(eq(contractHaggles.contractId, contractId), eq(contractHaggles.userId, userId)));
   if (!h) return 0;
-  if (!h.accepted) fail('haggle_refused', 'Клиентът отказа пазарлъка и даде товара на друг превозвач.');
+  if (!h.accepted) fail('haggle_refused', t('Клиентът отказа пазарлъка и даде товара на друг превозвач.'));
   return h.createdAt.getTime() + HAGGLE.holdMin * 60_000 > now.getTime() ? h.percent : 0;
 }
 
@@ -48,14 +49,14 @@ export async function settleDeals(tx: Tx, userId: string, d: { id: string; compa
   let total = 0;
   if (d.hagglePercent > 0) {
     const extra = Math.round((rewardCents * d.hagglePercent) / 100);
-    await post(tx, d.companyId, [{ category: 'haggle_bonus', amountCents: extra, description: `Пазарлък с клиента: +${d.hagglePercent} %`, idempotencyKey: `haggle:${d.id}`, refType: 'delivery', refId: d.id }]);
+    await post(tx, d.companyId, [{ category: 'haggle_bonus', amountCents: extra, description: t('Пазарлък с клиента: +{0} %', d.hagglePercent), idempotencyKey: `haggle:${d.id}`, refType: 'delivery', refId: d.id }]);
     total += extra;
   }
   if (contract.sealed && (await featureFor(tx, userId, 'sealed_cargo', at))) {
     const tier = sealedTier(contract.id);
     const bonus = late ? 0 : Math.round(rewardCents * tier.bonus);
-    if (bonus > 0) await post(tx, d.companyId, [{ category: 'sealed_bonus', amountCents: bonus, description: `Запечатан товар: ${tier.label} (${contract.goods})`, idempotencyKey: `sealed:${d.id}`, refType: 'delivery', refId: d.id }]);
-    await notify(tx, userId, bonus ? 'achievement' : 'info', `Запечатаният товар: ${tier.label}${bonus ? ' 🎉' : ''}`, `Вътре имаше: ${contract.goods}.${bonus ? ` Бонус +${money(bonus)}.` : late ? ' Закъсня, затова без бонус.' : ' Без бонус този път.'}`, '/game/finance');
+    if (bonus > 0) await post(tx, d.companyId, [{ category: 'sealed_bonus', amountCents: bonus, description: t('Запечатан товар: {0} ({1})', tier.label, contract.goods), idempotencyKey: `sealed:${d.id}`, refType: 'delivery', refId: d.id }]);
+    await notify(tx, userId, bonus ? 'achievement' : 'info', () => t('Запечатаният товар: {0}{1}', tier.label, bonus ? ' 🎉' : ''), () => t('Вътре имаше: {0}.{1}', contract.goods, bonus ? t(' Бонус +{0}.', money(bonus)) : late ? t(' Закъсня, затова без бонус.') : t(' Без бонус този път.')), '/game/finance');
     total += bonus;
   }
   return total;

@@ -4,9 +4,12 @@ import { ALL_PERMISSIONS, memberCapacity, type UpgradeLevels } from '@/lib/game/
 import { int } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
 import { companyHub } from '@/server/game/membership';
+import { t } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
 
 /** Members see their company's brand and tabs; everyone else sees the founding / joining view. */
 export default async function CompanyLayout({ children }: { children: React.ReactNode }) {
+  await initLocale();
   const { db, user } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) return children;
@@ -16,7 +19,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
         company={hub.company}
         hasLogo={hub.assets.has('logo')}
         hasBanner={hub.assets.has('banner')}
-        subtitle={`Вашата длъжност: ${hub.rank.name} · ${int(hub.members)} / ${memberCapacity(hub.company.upgrades as UpgradeLevels)} членове`}
+        subtitle={t('Вашата длъжност: {0} · {1} / {2} членове', hub.rank.name, int(hub.members), memberCapacity(hub.company.upgrades as UpgradeLevels))}
       />
       <CompanyTabs pending={hub.pending.length} allowed={hub.rank.isOwner ? [...ALL_PERMISSIONS] : hub.rank.permissions} />
       {children}

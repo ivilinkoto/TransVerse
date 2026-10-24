@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import type { Tx } from '@/server/db/client';
 import { companies, ledgerEntries, organizations, treasuryEntries } from '@/server/db/schema';
 import { fail } from './errors';
+import { t } from '@/i18n/t';
 
 export type LedgerCategory =
   | 'starting_capital'
@@ -169,11 +170,11 @@ export interface Posting {
  */
 export async function post(tx: Tx, companyId: string, postings: Posting[], options: { requireFunds?: boolean } = {}): Promise<number> {
   const [company] = await tx.select({ balance: companies.balanceCents }).from(companies).where(eq(companies.id, companyId)).for('update');
-  if (!company) fail('company_not_found', 'Компанията не е намерена.', 404);
+  if (!company) fail('company_not_found', t('Компанията не е намерена.'), 404);
   let balance = company!.balance;
 
   const total = postings.reduce((s, p) => s + p.amountCents, 0);
-  if (options.requireFunds && total < 0 && balance + total < 0) fail('insufficient_funds', 'Нямате достатъчно средства.');
+  if (options.requireFunds && total < 0 && balance + total < 0) fail('insufficient_funds', t('Нямате достатъчно средства.'));
 
   let applied = 0;
   for (const p of postings) {
@@ -247,10 +248,10 @@ export interface TreasuryPosting {
  */
 export async function postTreasury(tx: Tx, organizationId: string, postings: TreasuryPosting[], options: { requireFunds?: boolean } = {}): Promise<number> {
   const [org] = await tx.select({ balance: organizations.treasuryCents }).from(organizations).where(eq(organizations.id, organizationId)).for('update');
-  if (!org) fail('company_not_found', 'Компанията не е намерена.', 404);
+  if (!org) fail('company_not_found', t('Компанията не е намерена.'), 404);
   let balance = org!.balance;
   const total = postings.reduce((s, p) => s + p.amountCents, 0);
-  if (options.requireFunds && total < 0 && balance + total < 0) fail('insufficient_treasury', 'В касата на компанията няма достатъчно средства.');
+  if (options.requireFunds && total < 0 && balance + total < 0) fail('insufficient_treasury', t('В касата на компанията няма достатъчно средства.'));
 
   let applied = 0;
   for (const p of postings) {

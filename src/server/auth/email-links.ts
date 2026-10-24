@@ -13,6 +13,7 @@ import { logActivity } from '@/server/game/notify';
 import { layoutMail, mailConfig, sendMail } from '@/server/mail';
 import { hashPassword } from './password';
 import { rateLimit } from './rate-limit';
+import { t } from '@/i18n/t';
 
 export type LinkKind = 'verify' | 'reset';
 const TTL: Record<LinkKind, number> = { verify: 48 * 3_600_000, reset: 60 * 60_000 };
@@ -29,13 +30,13 @@ export async function createLinkToken(db: DbOrTx, userId: string, kind: LinkKind
 
 /** Uses a token exactly once; returns the user id or fails. */
 async function consumeToken(db: DbOrTx, token: string, kind: LinkKind, now = new Date()): Promise<string> {
-  if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) fail('invalid_link', 'Линкът е невалиден.');
+  if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) fail('invalid_link', t('Линкът е невалиден.'));
   const [row] = await db
     .update(emailTokens)
     .set({ usedAt: now })
     .where(and(eq(emailTokens.tokenHash, sha(token)), eq(emailTokens.kind, kind), isNull(emailTokens.usedAt), gt(emailTokens.expiresAt, now)))
     .returning({ userId: emailTokens.userId });
-  if (!row) fail('invalid_link', kind === 'reset' ? 'Линкът за нова парола е невалиден или изтекъл. Поискайте нов.' : 'Линкът е невалиден или изтекъл. Изпратете нов от профила си.');
+  if (!row) fail('invalid_link', kind === 'reset' ? t('Линкът за нова парола е невалиден или изтекъл. Поискайте нов.') : t('Линкът е невалиден или изтекъл. Изпратете нов от профила си.'));
   return row!.userId;
 }
 
@@ -52,17 +53,17 @@ export async function resetLinkValid(db: DbOrTx, token: string, now = new Date()
 export async function sendVerification(db: Database, userId: string, base: string) {
   await rateLimit(db, `verify-mail:${userId}`, 3, 3600);
   const [u] = await db.select({ email: users.email, username: users.username, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId));
-  if (!u) fail('user_not_found', 'Профилът не е намерен.', 404);
-  if (u!.verified) fail('already_verified', 'Имейлът вече е потвърден.', 409);
+  if (!u) fail('user_not_found', t('Профилът не е намерен.'), 404);
+  if (u!.verified) fail('already_verified', t('Имейлът вече е потвърден.'), 409);
   const token = await createLinkToken(db, userId, 'verify');
   return sendMail(
     layoutMail({
       to: u!.email,
-      subject: 'Потвърди имейла си в TransVerse',
-      heading: `Здравей, ${u!.username}!`,
-      lines: ['Потвърди, че това е твоят имейл — така ще можеш да възстановиш профила си, ако забравиш паролата, и да правиш покупки.'],
-      button: { label: 'Потвърди имейла', url: `${base}/verify-email?token=${token}` },
-      footer: 'Линкът важи 48 часа. Ако не си се регистрирал в TransVerse, просто игнорирай това писмо.',
+      subject: t('Потвърди имейла си в TransVerse'),
+      heading: t('Здравей, {0}!', u!.username),
+      lines: [t('Потвърди, че това е твоят имейл — така ще можеш да възстановиш профила си, ако забравиш паролата, и да правиш покупки.')],
+      button: { label: t('Потвърди имейла'), url: `${base}/verify-email?token=${token}` },
+      footer: t('Линкът важи 48 часа. Ако не си се регистрирал в TransVerse, просто игнорирай това писмо.'),
     }),
     'verify',
     userId,
@@ -95,11 +96,11 @@ export async function requestPasswordReset(db: Database, raw: z.input<typeof for
   await sendMail(
     layoutMail({
       to: u.email,
-      subject: 'Нова парола за TransVerse',
-      heading: `Здравей, ${u.username}!`,
-      lines: ['Поискана е нова парола за профила ти в TransVerse. Натисни бутона и въведи новата парола.'],
-      button: { label: 'Задай нова парола', url: `${base}/reset-password?token=${token}` },
-      footer: 'Линкът важи 1 час и може да се използва веднъж. Ако не си искал нова парола, игнорирай писмото — старата остава.',
+      subject: t('Нова парола за TransVerse'),
+      heading: t('Здравей, {0}!', u.username),
+      lines: [t('Поискана е нова парола за профила ти в TransVerse. Натисни бутона и въведи новата парола.')],
+      button: { label: t('Задай нова парола'), url: `${base}/reset-password?token=${token}` },
+      footer: t('Линкът важи 1 час и може да се използва веднъж. Ако не си искал нова парола, игнорирай писмото — старата остава.'),
     }),
     'reset',
     u.id,

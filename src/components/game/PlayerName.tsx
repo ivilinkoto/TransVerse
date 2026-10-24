@@ -1,6 +1,7 @@
 'use client';
 
 import { Crown, ShieldCheck } from 'lucide-react';
+import { t } from '@/i18n/t';
 
 const STAFF_SHORT: Record<string, string> = { founder: 'Основател', admin: 'Админ', support: 'Поддръжка' };
 
@@ -16,7 +17,7 @@ export function PlayerName({ name, role, vip, className = '', card = true }: { n
   return (
     <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
       {card ? (
-        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openPlayerCard(name); }} className="cursor-pointer text-left underline-offset-2 hover:underline focus-visible:underline" title={`Профил на ${name}`}>
+        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openPlayerCard(name); }} className="cursor-pointer text-left underline-offset-2 hover:underline focus-visible:underline" title={t('Профил на {0}', name)}>
           {label}
         </button>
       ) : label}
@@ -26,7 +27,7 @@ export function PlayerName({ name, role, vip, className = '', card = true }: { n
         </span>
       )}
       {vip && (
-        <span className="inline-flex items-center gap-0.5 rounded-full border border-gold-400/50 bg-gold-400/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-gold-400" title="VIP играч">
+        <span className="inline-flex items-center gap-0.5 rounded-full border border-gold-400/50 bg-gold-400/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-gold-400" title={t('VIP играч')}>
           <Crown className="h-3 w-3" />VIP
         </span>
       )}

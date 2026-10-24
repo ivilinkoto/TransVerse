@@ -33,6 +33,7 @@ import { notifyFavoriteLane } from './favorites';
 import { broadcast } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
 import { isEuropeCountry } from '@/lib/geo/scope';
+import { t as tr } from '@/i18n/t';
 
 /** Consignment size classes so vans, rigids and articulated trucks all have a market. */
 const SIZE_CLASSES = [
@@ -517,12 +518,12 @@ export async function reserveContract(db: Database, userId: string, contractId: 
   const { fail } = await import('./errors');
   return db.transaction(async (tx) => {
     const [user] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
-    if (!isVip(user?.vipUntil, now)) fail('vip_only', 'Запазването на поръчки е VIP възможност.', 403);
+    if (!isVip(user?.vipUntil, now)) fail('vip_only', tr('Запазването на поръчки е VIP възможност.'), 403);
     const account = await companyForUser(tx, userId);
     const [c] = await tx.select().from(contracts).where(eq(contracts.id, contractId)).for('update');
-    if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
-    if (c!.urgent) fail('urgent', 'Спешните поръчки не се запазват — може да ги поеме всеки.');
-    if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', 'Поръчката вече е запазена от друг играч.', 409);
+    if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', tr('Поръчката вече не е налична.'), 409);
+    if (c!.urgent) fail('urgent', tr('Спешните поръчки не се запазват — може да ги поеме всеки.'));
+    if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', tr('Поръчката вече е запазена от друг играч.'), 409);
     // Only one reservation at a time: release any other one.
     await tx.update(contracts).set({ reservedByCompanyId: null, reservedUntil: null }).where(and(eq(contracts.reservedByCompanyId, account.id), sql`${contracts.id} <> ${contractId}`));
     const until = new Date(now.getTime() + VIP_PERKS.reservationMinutes * 60_000);

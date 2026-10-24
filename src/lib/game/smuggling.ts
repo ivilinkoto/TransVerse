@@ -1,3 +1,4 @@
+import { t as tr } from '@/i18n/t';
 /**
  * Сенчести товари (v1.9) — the smuggling side of the game, as a choice:
  * two reputations, the honest one (the company's reputation) and the
@@ -116,9 +117,9 @@ export const fineCents = (rewardCents: number, balanceCents: number) => Math.max
 
 /** The heat as words. */
 export function heatLabel(heat: number) {
-  if (heat >= 70) return { label: 'Висока', tone: 'red' as const };
-  if (heat >= 35) return { label: 'Средна', tone: 'gold' as const };
-  return { label: 'Ниска', tone: 'green' as const };
+  if (heat >= 70) return { label: tr('Висока'), tone: 'red' as const };
+  if (heat >= 35) return { label: tr('Средна'), tone: 'gold' as const };
+  return { label: tr('Ниска'), tone: 'green' as const };
 }
 
 /** A company's status on its profile: clean, or grey when its members run shady loads. */

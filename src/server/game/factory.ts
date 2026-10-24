@@ -15,6 +15,7 @@ import { postTreasury } from './finance';
 import { notifyMembers, requirePermission } from './membership';
 import { shipperName } from './names';
 import { broadcast } from './notify';
+import { t as tr } from '@/i18n/t';
 
 /**
  * The company factory (v1.4, see lib/game/factory.ts). Raw materials and the
@@ -34,10 +35,10 @@ async function factoryRow(db: DbOrTx, organizationId: string, lock = false) {
 }
 
 async function requireFactory(tx: Tx, actorId: string) {
-  if (!(await featureFor(tx, actorId, 'factories'))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(tx, actorId, 'factories'))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   const actor = await requirePermission(tx, actorId, 'build');
   const level = await factoryLevel(tx, actor.company.id);
-  if (level < 1) fail('no_factory', 'Първо постройте фабрика на участъка.');
+  if (level < 1) fail('no_factory', tr('Първо постройте фабрика на участъка.'));
   return { actor, level, factory: await factoryRow(tx, actor.company.id, true) };
 }
 
@@ -61,12 +62,12 @@ export async function factoryView(db: DbOrTx, organizationId: string, now = new 
 
 export async function chooseRecipe(db: Database, actorId: string, recipeId: string) {
   const recipe = recipeOf(recipeId);
-  if (!recipe) fail('unknown_recipe', 'Непознато производство.');
+  if (!recipe) fail('unknown_recipe', tr('Непознато производство.'));
   return db.transaction(async (tx) => {
     const { actor, factory } = await requireFactory(tx, actorId);
     if (factory.recipe === recipeId) return factory;
     const stocked = Object.values(factory.stock).some((t) => (t ?? 0) > 0);
-    if (factory.batchEndsAt || stocked || factory.productTons > 0) fail('busy', 'Сменя се само когато фабриката е празна (без суровини, партида и продукция).');
+    if (factory.batchEndsAt || stocked || factory.productTons > 0) fail('busy', tr('Сменя се само когато фабриката е празна (без суровини, партида и продукция).'));
     const [row] = await tx.update(companyFactories).set({ recipe: recipeId, updatedAt: new Date() }).where(eq(companyFactories.organizationId, actor.company.id)).returning();
     return row!;
   });
@@ -88,7 +89,7 @@ export async function orderRaw(db: Database, actorId: string, batches: number, n
   const pre = await db.transaction(async (tx) => {
     const { actor, factory } = await requireFactory(tx, actorId);
     const recipe = recipeOf(factory.recipe);
-    if (!recipe) fail('no_recipe', 'Изберете какво произвежда фабриката.');
+    if (!recipe) fail('no_recipe', tr('Изберете какво произвежда фабриката.'));
     return { org: actor.company, recipe: recipe! };
   });
   const plans: { raw: RawId; from: number; routeId: number; km: number }[] = [];
@@ -107,9 +108,9 @@ export async function orderRaw(db: Database, actorId: string, batches: number, n
       const left = t * n - (factory.stock[raw] ?? 0) - (coming[raw] ?? 0);
       if (left > 0.05) need[raw] = Math.round(left * 10) / 10;
     }
-    if (!Object.keys(need).length) fail('enough', 'Суровините за тези партиди вече са на участъка или на път.');
+    if (!Object.keys(need).length) fail('enough', tr('Суровините за тези партиди вече са на участъка или на път.'));
     const cost = Object.entries(need).reduce((s, [raw, t]) => s + RAW[raw as RawId].priceCents * (t ?? 0), 0);
-    await postTreasury(tx, actor.company.id, [{ category: 'factory', amountCents: -Math.round(cost), description: `Суровини: ${recipe.label} (${n} ${n === 1 ? 'партида' : 'партиди'})`, idempotencyKey: `factory:${actor.company.id}:raw:${now.getTime()}`, actorUserId: actorId, refType: 'factory', refId: actor.company.id }], { requireFunds: true });
+    await postTreasury(tx, actor.company.id, [{ category: 'factory', amountCents: -Math.round(cost), description: tr('Суровини: {0} ({1} {2})', recipe.label, n, n === 1 ? tr('партида') : tr('партиди')), idempotencyKey: `factory:${actor.company.id}:raw:${now.getTime()}`, actorUserId: actorId, refType: 'factory', refId: actor.company.id }], { requireFunds: true });
     let loads = 0;
     for (const [raw, tons] of Object.entries(need) as [RawId, number][]) {
       const plan = plans.find((p) => p.raw === raw);
@@ -125,7 +126,7 @@ export async function orderRaw(db: Database, actorId: string, batches: number, n
         loads++;
       }
     }
-    await notifyMembers(tx, actor.company.id, null, 'Суровини за фабриката', `${loads} ${loads === 1 ? 'товар чака' : 'товара чакат'} на борсата — само за членовете.`, '/game/contracts');
+    await notifyMembers(tx, actor.company.id, null, () => tr('Суровини за фабриката'), () => tr('{0} {1} на борсата — само за членовете.', loads, loads === 1 ? tr('товар чака') : tr('товара чакат')), '/game/contracts');
     await broadcast(tx, 'market');
     return { loads, costCents: Math.round(cost) };
   });
@@ -158,7 +159,7 @@ export async function sellProduct(db: Database, actorId: string, buyerCityId: nu
   const pre = await db.transaction(async (tx) => {
     const { actor } = await requireFactory(tx, actorId);
     const b = (await buyers(tx, actor.company.id)).find((x) => x.cityId === buyerCityId);
-    if (!b) fail('no_buyer', 'Този град не купува продукцията.');
+    if (!b) fail('no_buyer', tr('Този град не купува продукцията.'));
     return { org: actor.company, buyer: b! };
   });
   const route = await getRoute(db, pre.org.hqCityId, buyerCityId, 'truck', provider);
@@ -166,7 +167,7 @@ export async function sellProduct(db: Database, actorId: string, buyerCityId: nu
     const { actor, factory } = await requireFactory(tx, actorId);
     const recipe = recipeOf(factory.recipe)!;
     const tons = Math.floor(factory.productTons * 10) / 10;
-    if (tons < 0.5) fail('no_product', 'Няма готова продукция.');
+    if (tons < 0.5) fail('no_product', tr('Няма готова продукция.'));
     const max = recipe.output.cargo === 'bulk' ? FACTORY.bulkLoadTons : recipe.output.cargo === 'steel' ? 20 : FACTORY.loadTons;
     const parts = loadsOf(tons, max);
     for (const t of parts) {
@@ -179,7 +180,7 @@ export async function sellProduct(db: Database, actorId: string, buyerCityId: nu
       });
     }
     await tx.update(companyFactories).set({ productTons: sql`greatest(0, ${companyFactories.productTons} - ${tons})`, updatedAt: now }).where(eq(companyFactories.organizationId, actor.company.id));
-    await notifyMembers(tx, actor.company.id, null, `Продукция за продан: ${recipe.label}`, `${parts.length} ${parts.length === 1 ? 'товар' : 'товара'} (${tons} т) чакат на борсата — парите от продажбата влизат в касата.`, '/game/contracts');
+    await notifyMembers(tx, actor.company.id, null, () => tr('Продукция за продан: {0}', recipe.label), () => tr('{0} {1} ({2} т) чакат на борсата — парите от продажбата влизат в касата.', parts.length, parts.length === 1 ? tr('товар') : tr('товара'), tons), '/game/contracts');
     await broadcast(tx, 'market');
     return { loads: parts.length, tons, valueCents: Math.round(tons * pre.buyer.priceCentsPerTon) };
   });
@@ -191,7 +192,7 @@ export async function recordFactoryDelivery(tx: Tx, contract: { id: string; fact
   const f = await factoryRow(tx, contract.factoryOrgId, true);
   if (contract.material === 'product') {
     const value = contract.factorySaleCents ?? 0;
-    if (value > 0) await postTreasury(tx, contract.factoryOrgId, [{ category: 'factory', amountCents: value, description: `Продадена продукция: ${contract.goods} (${contract.weightTons} т)`, idempotencyKey: `factory-sale:${contract.id}`, refType: 'contract', refId: contract.id }]);
+    if (value > 0) await postTreasury(tx, contract.factoryOrgId, [{ category: 'factory', amountCents: value, description: tr('Продадена продукция: {0} ({1} т)', contract.goods, contract.weightTons), idempotencyKey: `factory-sale:${contract.id}`, refType: 'contract', refId: contract.id }]);
     await tx.update(companyFactories).set({ soldCents: sql`${companyFactories.soldCents} + ${value}`, updatedAt: new Date() }).where(eq(companyFactories.organizationId, f.organizationId));
     return;
   }
@@ -217,7 +218,7 @@ export async function runFactories(db: Database, now = new Date()) {
         productTons = Math.round((productTons + (f.batchTons ?? batchTons(recipe, level))) * 10) / 10;
         batches++;
         batchEndsAt = null;
-        await notifyMembers(tx, f.organizationId, 'build', `Партида готова: ${recipe.label}`, `Във фабриката има ${productTons} т продукция — пуснете я за продан.`, '/game/company/factory');
+        await notifyMembers(tx, f.organizationId, 'build', () => tr('Партида готова: {0}', recipe.label), () => tr('Във фабриката има {0} т продукция — пуснете я за продан.', productTons), '/game/company/factory');
         n++;
       }
       if (!batchEndsAt && level > 0 && canMake(recipe, stock)) {

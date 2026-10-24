@@ -4,6 +4,7 @@ import { Flag, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { REPORT_REASONS, type ReportReason } from '@/lib/game/moderation';
+import { t, tx } from '@/i18n/t';
 
 export interface ReportTarget {
   targetUserId: string;
@@ -52,32 +53,32 @@ export function ReportHost() {
     }
   };
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label="Докладвай">
-      <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="Затвори" onClick={() => setTarget(null)} />
+    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={t('Докладвай')}>
+      <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label={t('Затвори')} onClick={() => setTarget(null)} />
       <div className="relative w-full max-w-md rounded-t-3xl border border-asphalt-700 bg-asphalt-900 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:rounded-3xl sm:pb-5">
-        <button type="button" className="absolute right-3 top-3 rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" onClick={() => setTarget(null)} aria-label="Затвори"><X className="h-5 w-5" /></button>
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold"><Flag className="h-5 w-5 text-loss" />Докладвай {target.username}</h2>
+        <button type="button" className="absolute right-3 top-3 rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" onClick={() => setTarget(null)} aria-label={t('Затвори')}><X className="h-5 w-5" /></button>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold"><Flag className="h-5 w-5 text-loss" />{t('Докладвай {0}', target.username)}</h2>
         {state === 'done' ? (
           <div className="mt-4 space-y-3 text-sm">
-            <p className="text-profit">Благодарим! Модераторите ще прегледат сигнала.</p>
-            <p className="text-mist-400">Ако не искаш да виждаш съобщенията на този играч, блокирай го от картата му.</p>
-            <button type="button" className="btn-ghost" onClick={() => setTarget(null)}>Затвори</button>
+            <p className="text-profit">{t('Благодарим! Модераторите ще прегледат сигнала.')}</p>
+            <p className="text-mist-400">{t('Ако не искаш да виждаш съобщенията на този играч, блокирай го от картата му.')}</p>
+            <button type="button" className="btn-ghost" onClick={() => setTarget(null)}>{t('Затвори')}</button>
           </div>
         ) : (
           <div className="mt-4 space-y-3">
-            {target.snippet && <blockquote className="whitespace-pre-wrap break-words rounded-xl border-l-2 border-amber-sig bg-asphalt-850 px-3 py-2 text-sm">{target.snippet}</blockquote>}
+            {target.snippet && <blockquote className="whitespace-pre-wrap break-words rounded-xl border-l-2 border-amber-sig bg-asphalt-850 px-3 py-2 text-sm">{tx(target.snippet)}</blockquote>}
             <label className="block text-sm">
-              <span className="label">Причина</span>
+              <span className="label">{t('Причина')}</span>
               <select className="input mt-1" value={reason} onChange={(e) => setReason(e.target.value as ReportReason)}>
                 {Object.entries(REPORT_REASONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </label>
             <label className="block text-sm">
-              <span className="label">Подробности (по желание)</span>
-              <textarea className="input mt-1" rows={2} maxLength={500} value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Какво се случи?" />
+              <span className="label">{t('Подробности (по желание)')}</span>
+              <textarea className="input mt-1" rows={2} maxLength={500} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={t('Какво се случи?')} />
             </label>
             {error && <p role="alert" className="text-sm text-loss">{error}</p>}
-            <button type="button" className="btn-danger w-full" disabled={state === 'busy'} onClick={() => void send()}><Flag className="h-4 w-4" />{state === 'busy' ? 'Изпращане…' : 'Изпрати сигнала'}</button>
+            <button type="button" className="btn-danger w-full" disabled={state === 'busy'} onClick={() => void send()}><Flag className="h-4 w-4" />{state === 'busy' ? t('Изпращане…') : t('Изпрати сигнала')}</button>
           </div>
         )}
       </div>

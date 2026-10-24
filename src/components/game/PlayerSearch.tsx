@@ -8,6 +8,7 @@ import { api } from '@/lib/client/api';
 import type { SearchResult } from '@/server/game/search';
 import { Avatar } from './Avatar';
 import { openPlayerCard, PlayerName } from './PlayerName';
+import { t as tr, tx } from '@/i18n/t';
 
 /** Opens the search from anywhere (e.g. the finance page hint). */
 export function openPlayerSearch() {
@@ -81,12 +82,12 @@ function PlayerSearchBox() {
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-full border border-asphalt-700 bg-asphalt-900/60 text-mist-300 transition hover:text-white" title="Търси играч или компания (/)" aria-label="Търси играч или компания">
+      <button type="button" onClick={() => setOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-full border border-asphalt-700 bg-asphalt-900/60 text-mist-300 transition hover:text-white" title={tr('Търси играч или компания (/)')} aria-label={tr('Търси играч или компания')}>
         <Search className="h-4 w-4" />
       </button>
       {open && (
-        <div className="fixed inset-0 z-[55] flex items-start justify-center px-3 pt-[calc(4.5rem+env(safe-area-inset-top))]" role="dialog" aria-modal="true" aria-label="Търсене на играчи">
-          <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="Затвори" onClick={close} />
+        <div className="fixed inset-0 z-[55] flex items-start justify-center px-3 pt-[calc(4.5rem+env(safe-area-inset-top))]" role="dialog" aria-modal="true" aria-label={tr('Търсене на играчи')}>
+          <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label={tr('Затвори')} onClick={close} />
           <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-asphalt-700 bg-asphalt-900 shadow-2xl">
             <div className="flex items-center gap-2 border-b border-asphalt-800 px-3">
               <Search className="h-4 w-4 shrink-0 text-mist-400" />
@@ -94,21 +95,21 @@ function PlayerSearchBox() {
                 ref={input}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Име на играч или компания…"
-                aria-label="Име на играч или компания"
+                placeholder={tr('Име на играч или компания…')}
+                aria-label={tr('Име на играч или компания')}
                 maxLength={40}
                 className="h-12 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-mist-400"
               />
-              <button type="button" onClick={close} className="rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" aria-label="Затвори"><X className="h-4 w-4" /></button>
+              <button type="button" onClick={close} className="rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" aria-label={tr('Затвори')}><X className="h-4 w-4" /></button>
             </div>
             <div className="max-h-[60dvh] overflow-y-auto p-2">
-              {short && <p className="px-2 py-4 text-sm text-mist-400">Напиши поне 2 букви от името.</p>}
-              {busy && !shown && <p className="px-2 py-4 text-sm text-mist-400">Търсене…</p>}
+              {short && <p className="px-2 py-4 text-sm text-mist-400">{tr('Напиши поне 2 букви от името.')}</p>}
+              {busy && !shown && <p className="px-2 py-4 text-sm text-mist-400">{tr('Търсене…')}</p>}
               {!short && error && <p className="px-2 py-4 text-sm text-loss">{error}</p>}
-              {empty && <p className="px-2 py-4 text-sm text-mist-400">Няма играч или компания с „{q.trim()}“.</p>}
+              {empty && <p className="px-2 py-4 text-sm text-mist-400">{tr('Няма играч или компания с „{0}“.', q.trim())}</p>}
               {shown && shown.players.length > 0 && (
                 <>
-                  <p className="label px-2 pb-1 pt-2">Играчи</p>
+                  <p className="label px-2 pb-1 pt-2">{tr('Играчи')}</p>
                   <ul>
                     {shown.players.map((p) => (
                       <li key={p.id}>
@@ -120,8 +121,8 @@ function PlayerSearchBox() {
                           <span className="min-w-0 flex-1">
                             <PlayerName name={p.username} role={p.role} vip={p.vip} card={false} className="font-semibold" />
                             <span className="block truncate text-xs text-mist-400">
-                              ниво {p.level}
-                              {p.companyName && <> · {p.companyTag && <span style={{ color: p.companyColor ?? undefined }}>[{p.companyTag}] </span>}{p.companyName}</>}
+                              {tr('ниво {0}', p.level)}
+                              {p.companyName && <> · {p.companyTag && <span style={{ color: p.companyColor ?? undefined }}>[{tx(p.companyTag)}] </span>}{tx(p.companyName)}</>}
                             </span>
                           </span>
                         </button>
@@ -132,15 +133,15 @@ function PlayerSearchBox() {
               )}
               {shown && shown.companies.length > 0 && (
                 <>
-                  <p className="label px-2 pb-1 pt-3">Компании</p>
+                  <p className="label px-2 pb-1 pt-3">{tr('Компании')}</p>
                   <ul>
                     {shown.companies.map((c) => (
                       <li key={c.id}>
                         <Link href={`/game/companies/${c.id}`} onClick={close} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-asphalt-800">
                           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-asphalt-800" style={{ color: c.color ?? undefined }}><Building2 className="h-4 w-4" /></span>
                           <span className="min-w-0">
-                            <span className="block truncate font-semibold">{c.tag && <span style={{ color: c.color ?? undefined }}>[{c.tag}] </span>}{c.name}</span>
-                            <span className="block text-xs text-mist-400">{c.members} {c.members === 1 ? 'член' : 'членове'}</span>
+                            <span className="block truncate font-semibold">{c.tag && <span style={{ color: c.color ?? undefined }}>[{tx(c.tag)}] </span>}{tx(c.name)}</span>
+                            <span className="block text-xs text-mist-400">{tx(c.members)} {c.members === 1 ? tr('член') : tr('членове')}</span>
                           </span>
                         </Link>
                       </li>

@@ -1,3 +1,4 @@
+import { t } from '@/i18n/t';
 /** A player counts as online while their game tab keeps the live connection open (refreshed every minute). */
 export const ONLINE_MS = 2.5 * 60_000;
 
@@ -5,16 +6,16 @@ export const isOnline = (lastSeenAt: Date | string | null | undefined, now: Date
 
 /** "онлайн", "преди 5 мин", "преди 3 ч", "преди 2 дни", "отдавна". */
 export function lastSeenLabel(lastSeenAt: Date | string | null | undefined, now: Date): string {
-  if (!lastSeenAt) return 'отдавна';
+  if (!lastSeenAt) return t('отдавна');
   const ms = now.getTime() - new Date(lastSeenAt).getTime();
-  if (ms < ONLINE_MS) return 'онлайн';
+  if (ms < ONLINE_MS) return t('онлайн');
   const min = Math.round(ms / 60_000);
-  if (min < 60) return `преди ${min} мин`;
+  if (min < 60) return t('преди {0} мин', min);
   const h = Math.round(min / 60);
-  if (h < 24) return `преди ${h} ч`;
+  if (h < 24) return t('преди {0} ч', h);
   const d = Math.round(h / 24);
-  if (d < 60) return `преди ${d} ${d === 1 ? 'ден' : 'дни'}`;
-  return 'отдавна';
+  if (d < 60) return t('преди {0} {1}', d, d === 1 ? t('ден') : t('дни'));
+  return t('отдавна');
 }
 
 /** World chat channels. Trade is only for buying and selling. */

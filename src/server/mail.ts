@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import nodemailer, { type Transporter } from 'nodemailer';
 import { getDb } from '@/server/db/client';
 import { mailLog } from '@/server/db/schema';
+import { t } from '@/i18n/t';
 
 export interface Mail {
   to: string;
@@ -83,7 +84,7 @@ export async function sendMail(input: Mail, kind?: string, userId?: string | nul
     });
     const rejected = (info.rejected ?? []).length > 0;
     await record(mail, rejected ? 'rejected' : 'sent', info.messageId ?? messageId, String(info.response ?? ''));
-    if (rejected) throw new Error(`Пощенският сървър отказа адреса: ${String(info.response ?? '')}`);
+    if (rejected) throw new Error(t('Пощенският сървър отказа адреса: {0}', String(info.response ?? '')));
     return true;
   } catch (error) {
     if (!(error instanceof Error && error.message.startsWith('Пощенският сървър отказа'))) await record(mail, 'failed', messageId, error instanceof Error ? error.message : String(error));
@@ -96,14 +97,6 @@ const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<':
 /** A simple branded e-mail with one button. */
 export function layoutMail(input: { to: string; subject: string; heading: string; lines: string[]; button: { label: string; url: string }; footer: string }): Mail {
   const text = [input.heading, '', ...input.lines, '', `${input.button.label}: ${input.button.url}`, '', input.footer, '', '— TransVerse'].join('\n');
-  const html = `<!doctype html><html lang="bg"><body style="margin:0;background:#05070b;font-family:Arial,Helvetica,sans-serif;color:#e8eef7">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#05070b;padding:24px 12px"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0e131b;border:1px solid #263347;border-radius:16px;padding:28px">
-<tr><td style="font-size:20px;font-weight:bold;color:#ffffff">Trans<span style="color:#22d3ee">Verse</span></td></tr>
-<tr><td style="padding-top:18px;font-size:18px;font-weight:bold;color:#ffffff">${escape(input.heading)}</td></tr>
-${input.lines.map((l) => `<tr><td style="padding-top:10px;font-size:15px;line-height:1.5;color:#c8d3e1">${escape(l)}</td></tr>`).join('')}
-<tr><td style="padding-top:22px"><a href="${escape(input.button.url)}" style="display:inline-block;background:#2f7bff;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:12px">${escape(input.button.label)}</a></td></tr>
-<tr><td style="padding-top:18px;font-size:12px;line-height:1.5;color:#7c8aa0">${escape(input.footer)}<br>Ако бутонът не работи, отвори: ${escape(input.button.url)}</td></tr>
-</table></td></tr></table></body></html>`;
+  const html = t('<!doctype html><html lang="bg"><body style="margin:0;background:#05070b;font-family:Arial,Helvetica,sans-serif;color:#e8eef7">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#05070b;padding:24px 12px"><tr><td align="center">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0e131b;border:1px solid #263347;border-radius:16px;padding:28px">\n<tr><td style="font-size:20px;font-weight:bold;color:#ffffff">Trans<span style="color:#22d3ee">Verse</span></td></tr>\n<tr><td style="padding-top:18px;font-size:18px;font-weight:bold;color:#ffffff">{0}</td></tr>\n{1}\n<tr><td style="padding-top:22px"><a href="{2}" style="display:inline-block;background:#2f7bff;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:12px">{3}</a></td></tr>\n<tr><td style="padding-top:18px;font-size:12px;line-height:1.5;color:#7c8aa0">{4}<br>Ако бутонът не работи, отвори: {5}</td></tr>\n</table></td></tr></table></body></html>', escape(input.heading), input.lines.map((l) => `<tr><td style="padding-top:10px;font-size:15px;line-height:1.5;color:#c8d3e1">${escape(l)}</td></tr>`).join(''), escape(input.button.url), escape(input.button.label), escape(input.footer), escape(input.button.url));
   return { to: input.to, subject: input.subject, text, html };
 }

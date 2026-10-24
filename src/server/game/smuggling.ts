@@ -22,6 +22,7 @@ import { loadHubs } from './contracts';
 import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
+import { t as tr } from '@/i18n/t';
 
 const HOUR = 3_600_000;
 const SHIPPERS = ['Един познат', 'Приятел на приятел', 'Човек от пазара', 'Братовчед на някого', 'Тихият от бензиностанцията', 'Господинът с шапката'];
@@ -37,20 +38,20 @@ async function ensureProfile(db: DbOrTx, userId: string) {
 }
 
 async function requireSmuggler(db: DbOrTx, userId: string, now: Date) {
-  if (!(await featureFor(db, userId, 'smuggling', now))) fail('not_released', 'Сенчестите товари идват с обновление 1.9.', 403);
+  if (!(await featureFor(db, userId, 'smuggling', now))) fail('not_released', tr('Сенчестите товари идват с обновление 1.9.'), 403);
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
-  if ((u?.level ?? 1) < SMUGGLING.minLevel) fail('level_required', `Сенчестите товари се отключват от ниво ${SMUGGLING.minLevel}.`, 403);
+  if ((u?.level ?? 1) < SMUGGLING.minLevel) fail('level_required', tr('Сенчестите товари се отключват от ниво {0}.', SMUGGLING.minLevel), 403);
   const p = await smugglingProfile(db, userId);
-  if (!p.optIn) fail('not_opted_in', 'Включи „Сенчести товари“ в Настройки, ако искаш да ги виждаш.', 403);
+  if (!p.optIn) fail('not_opted_in', tr('Включи „Сенчести товари“ в Настройки, ако искаш да ги виждаш.'), 403);
   return p;
 }
 
 /** The player's own choice (settings): on from level 10; off at any time. */
 export async function setSmugglingOptIn(db: Database, userId: string, on: boolean, now = new Date()) {
   if (on) {
-    if (!(await featureFor(db, userId, 'smuggling', now))) fail('not_released', 'Сенчестите товари идват с обновление 1.9.', 403);
+    if (!(await featureFor(db, userId, 'smuggling', now))) fail('not_released', tr('Сенчестите товари идват с обновление 1.9.'), 403);
     const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
-    if ((u?.level ?? 1) < SMUGGLING.minLevel) fail('level_required', `Сенчестите товари се отключват от ниво ${SMUGGLING.minLevel}.`, 403);
+    if ((u?.level ?? 1) < SMUGGLING.minLevel) fail('level_required', tr('Сенчестите товари се отключват от ниво {0}.', SMUGGLING.minLevel), 403);
   }
   await ensureProfile(db, userId);
   await db.update(smugglingProfiles).set({ optIn: on, updatedAt: now }).where(eq(smugglingProfiles.userId, userId));
@@ -126,16 +127,16 @@ export async function smugglingOffers(db: Database, userId: string, now = new Da
 /** acceptContract calls this for a shady load: only its own player, opted in, with an own truck. */
 export async function checkShadyLoad(tx: Tx, userId: string, contract: { shady: boolean; createdBy: string | null }, vehicle: { ownership: string }, now: Date) {
   if (!contract.shady) return;
-  if (contract.createdBy !== userId) fail('not_yours', 'Тази пратка не е за теб.', 403);
+  if (contract.createdBy !== userId) fail('not_yours', tr('Тази пратка не е за теб.'), 403);
   await requireSmuggler(tx, userId, now);
-  if (vehicle.ownership !== 'owned') fail('rented_truck', 'Сенчеста пратка не се кара с нает или фирмен камион — само със свой.');
+  if (vehicle.ownership !== 'owned') fail('rented_truck', tr('Сенчеста пратка не се кара с нает или фирмен камион — само със свой.'));
 }
 
 /** A hidden compartment takes payload (any load). */
 export function compartmentError(vehicle: { hiddenCompartment: boolean; modelId: string }, trailerModelId: string | null, tons: number) {
   if (!vehicle.hiddenCompartment) return null;
   const cap = combinationCapability({ unit: powerUnitModel(vehicle.modelId), trailer: trailerModelId ? trailerModel(trailerModelId) : null }).payloadTons;
-  return tons > cap - SMUGGLING.compartmentPayloadTons ? `Тайното отделение заема ${SMUGGLING.compartmentPayloadTons} т — за този товар няма място.` : null;
+  return tons > cap - SMUGGLING.compartmentPayloadTons ? tr('Тайното отделение заема {0} т — за този товар няма място.', SMUGGLING.compartmentPayloadTons) : null;
 }
 
 /** Police reports on the way (a box around the lane) raise the chance of a check. */
@@ -174,7 +175,7 @@ export async function afterCustoms(tx: Tx, userId: string, d: { id: string; comp
   const fine = outcome.caught ? fineCents(contract.rewardCents, balance?.cents ?? 0) : 0;
   const [row] = await tx.insert(smugglingChecks).values({ deliveryId: d.id, userId, borders: outcome.borders, caught: outcome.caught, fineCents: fine, at }).onConflictDoNothing().returning();
   if (!row) return { fine: 0 };
-  if (fine) await post(tx, d.companyId, [{ category: 'smuggling_fine', amountCents: -fine, description: `Митницата: ${contract.goods} (конфискувано)`, idempotencyKey: `delivery:${d.id}:smuggling-fine`, refType: 'delivery', refId: d.id }]);
+  if (fine) await post(tx, d.companyId, [{ category: 'smuggling_fine', amountCents: -fine, description: tr('Митницата: {0} (конфискувано)', contract.goods), idempotencyKey: `delivery:${d.id}:smuggling-fine`, refType: 'delivery', refId: d.id }]);
   await ensureProfile(tx, userId);
   await tx
     .update(smugglingProfiles)
@@ -193,8 +194,8 @@ export async function afterCustoms(tx: Tx, userId: string, d: { id: string; comp
     tx,
     userId,
     outcome.caught ? 'warning' : 'success',
-    outcome.caught ? 'Митницата намери пратката 🚨' : 'Пратката мина 🌙',
-    outcome.caught ? `„${contract.goods}“ е конфискувано${fine ? `, глоба ${money(fine)}` : ''}. Вниманието към теб расте.` : `„${contract.goods}“ стигна. +${SMUGGLING.undergroundRun} подземна репутация.`,
+    () => outcome.caught ? tr('Митницата намери пратката 🚨') : tr('Пратката мина 🌙'),
+    () => outcome.caught ? tr('„{0}“ е конфискувано{1}. Вниманието към теб расте.', contract.goods, fine ? tr(', глоба {0}', money(fine)) : '') : tr('„{0}“ стигна. +{1} подземна репутация.', contract.goods, SMUGGLING.undergroundRun),
     '/game/underground',
   );
   return { fine };
@@ -222,7 +223,7 @@ export async function reportShadyOffer(db: Database, userId: string, contractId:
   await requireSmuggler(db, userId, now);
   return db.transaction(async (tx) => {
     const [c] = await tx.update(contracts).set({ status: 'expired' }).where(and(eq(contracts.id, contractId), eq(contracts.shady, true), eq(contracts.createdBy, userId), eq(contracts.status, 'open'))).returning();
-    if (!c) fail('not_found', 'Няма такава оферта.', 404);
+    if (!c) fail('not_found', tr('Няма такава оферта.'), 404);
     const p = await smugglingProfile(tx, userId);
     const today = sofiaDate(now);
     const [day, n] = (p.reportsToday ?? '').split(':');
@@ -241,15 +242,15 @@ export async function reportShadyOffer(db: Database, userId: string, contractId:
 /** Black market: the hidden compartment (from „Познат“). */
 export async function buyCompartment(db: Database, userId: string, vehicleId: string, now = new Date()) {
   const p = await requireSmuggler(db, userId, now);
-  if (undergroundTier(p.underground).tier < 1) fail('tier_required', 'Черният пазар ти продава тайно отделение, когато те знаят като „Познат“.', 403);
+  if (undergroundTier(p.underground).tier < 1) fail('tier_required', tr('Черният пазар ти продава тайно отделение, когато те знаят като „Познат“.'), 403);
   return db.transaction(async (tx) => {
     const account = await companyForUser(tx, userId);
     const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, account.id))).for('update');
-    if (!v) fail('not_found', 'Няма такъв камион.', 404);
-    if (v!.ownership !== 'owned') fail('rented_truck', 'Само в свой камион.');
-    if (v!.status !== 'idle') fail('vehicle_busy', 'Само между курсовете.');
-    if (v!.hiddenCompartment) fail('already_installed', 'Вече има тайно отделение.');
-    await post(tx, account.id, [{ category: 'black_market', amountCents: -SMUGGLING.compartmentPriceCents, description: `Тайно отделение — ${v!.plate}`, idempotencyKey: `compartment:${v!.id}` }], { requireFunds: true });
+    if (!v) fail('not_found', tr('Няма такъв камион.'), 404);
+    if (v!.ownership !== 'owned') fail('rented_truck', tr('Само в свой камион.'));
+    if (v!.status !== 'idle') fail('vehicle_busy', tr('Само между курсовете.'));
+    if (v!.hiddenCompartment) fail('already_installed', tr('Вече има тайно отделение.'));
+    await post(tx, account.id, [{ category: 'black_market', amountCents: -SMUGGLING.compartmentPriceCents, description: tr('Тайно отделение — {0}', v!.plate), idempotencyKey: `compartment:${v!.id}` }], { requireFunds: true });
     await tx.update(vehicles).set({ hiddenCompartment: true }).where(eq(vehicles.id, v!.id));
     return { installed: true };
   });
@@ -258,18 +259,18 @@ export async function buyCompartment(db: Database, userId: string, vehicleId: st
 /** Black market: a cheap repair (from „Доверен“) — it is noticed (+heat). */
 export async function blackMarketRepair(db: Database, userId: string, vehicleId: string, now = new Date()) {
   const p = await requireSmuggler(db, userId, now);
-  if (undergroundTier(p.underground).tier < 2) fail('tier_required', 'Евтиният ремонт е за „Доверен“ и нагоре.', 403);
+  if (undergroundTier(p.underground).tier < 2) fail('tier_required', tr('Евтиният ремонт е за „Доверен“ и нагоре.'), 403);
   return db.transaction(async (tx) => {
     const account = await companyForUser(tx, userId);
     const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, account.id))).for('update');
-    if (!v) fail('not_found', 'Няма такъв камион.', 404);
-    if (v!.ownership !== 'owned') fail('rented_truck', 'Само свой камион.');
-    if (v!.status !== 'idle') fail('vehicle_busy', 'Само между курсовете.');
+    if (!v) fail('not_found', tr('Няма такъв камион.'), 404);
+    if (v!.ownership !== 'owned') fail('rented_truck', tr('Само свой камион.'));
+    if (v!.status !== 'idle') fail('vehicle_busy', tr('Само между курсовете.'));
     const [trailer] = await tx.select().from(trailers).where(eq(trailers.vehicleId, v!.id));
     const full = repairCostCents(powerUnitModel(v!.modelId).priceCents, v!.condition) + (trailer ? repairCostCents(trailerModel(trailer.modelId).priceCents, trailer.condition) : 0);
-    if (full <= 0) fail('nothing_to_repair', 'Няма нужда от ремонт.');
+    if (full <= 0) fail('nothing_to_repair', tr('Няма нужда от ремонт.'));
     const cost = Math.round(full * SMUGGLING.blackRepairShare);
-    await post(tx, account.id, [{ category: 'black_market', amountCents: -cost, description: `Ремонт „на тъмно“ — ${v!.plate}`, idempotencyKey: `black-repair:${v!.id}:${v!.odometerKm.toFixed(1)}:${v!.condition.toFixed(3)}` }], { requireFunds: true });
+    await post(tx, account.id, [{ category: 'black_market', amountCents: -cost, description: tr('Ремонт „на тъмно“ — {0}', v!.plate), idempotencyKey: `black-repair:${v!.id}:${v!.odometerKm.toFixed(1)}:${v!.condition.toFixed(3)}` }], { requireFunds: true });
     await tx.update(vehicles).set({ condition: 100 }).where(eq(vehicles.id, v!.id));
     if (trailer) await tx.update(trailers).set({ condition: 100 }).where(eq(trailers.id, trailer.id));
     await tx.update(smugglingProfiles).set({ heat: sql`least(${SMUGGLING.heatMax}, ${smugglingProfiles.heat} + ${SMUGGLING.blackRepairHeat})` }).where(eq(smugglingProfiles.userId, userId));
@@ -300,7 +301,7 @@ export async function customsWeekly(db: Database, now = new Date()) {
     const [s] = await tx.select({ total: sql<number>`count(*)::int`, caught: sql<number>`count(*) filter (where ${smugglingChecks.caught})::int`, fines: sql<number>`coalesce(sum(${smugglingChecks.fineCents}), 0)::bigint` }).from(smugglingChecks).where(gte(smugglingChecks.at, since));
     if (!s?.total) return false;
     await announce(tx, `customs-weekly:${week}`, 'news', {
-      embeds: [{ title: '🛃 Митническа сводка за седмицата', url: `${appUrl()}/game/underground`, color: 0x7c3aed, description: `Проверени сенчести пратки: **${s.total}**\nХванати: **${s.caught}** · Минали: **${s.total - s.caught}**\nГлоби общо: **${money(Number(s.fines))}**`, footer: { text: 'TransVerse · игрови данни, без имена' } }],
+      embeds: [{ title: tr('🛃 Митническа сводка за седмицата'), url: `${appUrl()}/game/underground`, color: 0x7c3aed, description: tr('Проверени сенчести пратки: **{0}**\nХванати: **{1}** · Минали: **{2}**\nГлоби общо: **{3}**', s.total, s.caught, s.total - s.caught, money(Number(s.fines))), footer: { text: tr('TransVerse · игрови данни, без имена') } }],
     }, now);
     return true;
   });

@@ -7,6 +7,7 @@
  */
 import type { ReactNode } from 'react';
 import { BUILDINGS, DECOR, PLOT, type BuildingType, type DecorKind, type MaterialId, type PlacedDecor } from '@/lib/game/plot';
+import { t as tr, tx as txl } from '@/i18n/t';
 
 export const TILE = 40;
 const C = Math.cos(Math.PI / 6);
@@ -842,7 +843,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     const vx = PLOT.driveway.x + 1.1 + i * 3.1, vy = PLOT.yardY + 0.05;
     const rgb = liveryColor ? ([1, 3, 5].map((j) => parseInt(liveryColor.slice(j, j + 2), 16)) as [number, number, number]) : ([47, 123, 255] as [number, number, number]);
     add(vx + vy + 3, truck(vx, vy, { cab: rgb, body: [235, 240, 246], rigid: true, along: 'x' }));
-    if (labels) tags.push({ type: `visit-${i}`, x: vx + 1.4, y: vy + 0.45, z: 1.5, text: name, sub: 'пристигна', active: false, visitor: true });
+    if (labels) tags.push({ type: `visit-${i}`, x: vx + 1.4, y: vy + 0.45, z: 1.5, text: name, sub: tr('пристигна'), active: false, visitor: true });
   });
 
   // Material loads arriving at the gate.
@@ -863,7 +864,7 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
     if (selected === b.type) node.unshift(flat(f.x - 0.1, f.y - 0.1, f.x + f.w + 0.1, f.y + f.h + 0.1, 0.06, 'rgba(34,211,238,0.22)', { stroke: '#22d3ee', strokeWidth: 2 }));
     add(f.x + f.w + f.y + f.h - 0.5, <g key={`b-${b.type}`} data-building={b.type}>{node}</g>);
     if (labels) {
-      const lvl = building ? (b.level === 0 ? 'строи се' : `ниво ${b.level} → ${b.level + 1}`) : b.level > 0 ? `ниво ${b.level}` : null;
+      const lvl = building ? (b.level === 0 ? tr('строи се') : tr('ниво {0} → {1}', b.level, b.level + 1)) : b.level > 0 ? tr('ниво {0}', b.level) : null;
       const h = b.level > 0 ? buildingHeight(b.type, b.level) : building?.status === 'building' ? 1.2 : 0.4;
       if (lvl) tags.push({ type: b.type, x: f.x + f.w / 2, y: f.y + f.h / 2, z: h + (b.type === 'training' ? 0.7 : 0.25), text: BUILDINGS[b.type].label, sub: lvl, active: selected === b.type });
     }
@@ -968,8 +969,8 @@ export function PlotScene({ buildings, construction, ghost, selected, parkedTruc
         return (
           <g key={`tag-${t.type}`} data-building={t.visitor ? undefined : t.type} transform={`translate(${px.toFixed(1)} ${(py - 8).toFixed(1)}) scale(${labelScale.toFixed(3)}) translate(0 -22)`} className="cursor-pointer">
             <path d={`M${-w / 2} -16 h${w} a6 6 0 0 1 6 6 v20 a6 6 0 0 1 -6 6 h${-w / 2 + 6} l-6 6 l-6 -6 h${-w / 2 + 6} a6 6 0 0 1 -6 -6 v-20 a6 6 0 0 1 6 -6 z`} fill={t.active ? 'rgba(8,47,73,0.92)' : t.visitor ? 'rgba(30,58,138,0.85)' : 'rgba(10,14,22,0.82)'} stroke={t.active ? '#22d3ee' : 'rgba(255,255,255,0.18)'} strokeWidth={1} />
-            <text x={0} y={-2} textAnchor="middle" fontSize={12} fontWeight={700} fill="#ffffff" fontFamily="inherit">{t.text}</text>
-            <text x={0} y={12} textAnchor="middle" fontSize={10.5} fill={t.visitor ? '#a7f3d0' : t.sub.startsWith('ниво') && !t.sub.includes('→') ? '#f6c343' : '#7dd3fc'} fontFamily="inherit">{t.sub}</text>
+            <text x={0} y={-2} textAnchor="middle" fontSize={12} fontWeight={700} fill="#ffffff" fontFamily="inherit">{txl(t.text)}</text>
+            <text x={0} y={12} textAnchor="middle" fontSize={10.5} fill={t.visitor ? '#a7f3d0' : t.sub.startsWith('ниво') && !t.sub.includes('→') ? '#f6c343' : '#7dd3fc'} fontFamily="inherit">{txl(t.sub)}</text>
           </g>
         );
       })}

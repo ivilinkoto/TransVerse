@@ -7,6 +7,7 @@ import { featureFor } from '@/server/features';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
@@ -35,7 +36,7 @@ export async function driverMoods(db: Database, now = new Date(), random = Math.
         // On a trip: leaves after it (the next run).
         if (await driving(db, d)) continue;
         await db.delete(drivers).where(eq(drivers.id, d.id));
-        await notify(db, ownerId, 'warning', `${d.name} напусна`, 'Прие офертата на друга компания. Наеми нов шофьор от „Шофьори“.', '/game/staff');
+        await notify(db, ownerId, 'warning', () => t('{0} напусна', d.name), () => t('Прие офертата на друга компания. Наеми нов шофьор от „Шофьори“.'), '/game/staff');
         continue;
       }
       await db.update(drivers).set({ request: null, requestAt: null, loyalty: clamp(d.loyalty - 10) }).where(eq(drivers.id, d.id));
@@ -53,7 +54,7 @@ export async function driverMoods(db: Database, now = new Date(), random = Math.
     await db.update(drivers).set({ loyalty, ...(request && !d.request ? { request, requestAt: now } : {}) }).where(eq(drivers.id, d.id));
     if (request && !d.request) {
       asked++;
-      const body = request === 'raise' ? `Иска +${Math.round(MOODS.raiseShare * 100)} % заплата (${money(Math.round(d.salaryCentsPerDay * (1 + MOODS.raiseShare)))} на ден).` : request === 'offer' ? `Ако не му вдигнеш заплатата с ${Math.round(MOODS.counterShare * 100)} % до ${MOODS.answerHours} часа, ще напусне.` : 'Иска един почивен ден — дотогава няма да кара.';
+      const body = request === 'raise' ? t('Иска +{0} % заплата ({1} на ден).', Math.round(MOODS.raiseShare * 100), money(Math.round(d.salaryCentsPerDay * (1 + MOODS.raiseShare)))) : request === 'offer' ? t('Ако не му вдигнеш заплатата с {0} % до {1} часа, ще напусне.', Math.round(MOODS.counterShare * 100), MOODS.answerHours) : t('Иска един почивен ден — дотогава няма да кара.');
       await notify(db, ownerId, request === 'offer' ? 'warning' : 'info', `${d.name} ${REQUEST_TEXT[request]}`, body, `/game/staff?driver=${d.id}`);
     }
   }
@@ -62,11 +63,11 @@ export async function driverMoods(db: Database, now = new Date(), random = Math.
 
 /** The player's answer to a driver's request. */
 export async function answerDriver(db: Database, userId: string, driverId: string, accept: boolean, now = new Date()) {
-  if (!(await featureFor(db, userId, 'driver_moods', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'driver_moods', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const [d] = await tx.select().from(drivers).where(and(eq(drivers.id, driverId), eq(drivers.companyId, company.id))).for('update');
-    if (!d || !d.request) fail('no_request', 'Шофьорът няма искане.', 404);
+    if (!d || !d.request) fail('no_request', t('Шофьорът няма искане.'), 404);
     const request = d!.request as DriverRequest;
     if (request === 'vacation') {
       await tx.update(drivers).set(accept ? { request: null, requestAt: null, vacationUntil: new Date(now.getTime() + MOODS.vacationHours * 3_600_000), lastVacationAt: now, loyalty: clamp(d!.loyalty + 10) } : { request: null, requestAt: null, lastVacationAt: now, loyalty: clamp(d!.loyalty - 10) }).where(eq(drivers.id, d!.id));
@@ -75,7 +76,7 @@ export async function answerDriver(db: Database, userId: string, driverId: strin
     } else if (accept) {
       await tx.update(drivers).set({ request: null, requestAt: null, salaryCentsPerDay: Math.round(d!.salaryCentsPerDay * (1 + MOODS.counterShare)), loyalty: 60 }).where(eq(drivers.id, d!.id));
     } else {
-      if (await driving(tx, d!)) fail('driver_busy', 'Шофьорът е на курс — ще напусне след него, ако не му вдигнеш заплатата.');
+      if (await driving(tx, d!)) fail('driver_busy', t('Шофьорът е на курс — ще напусне след него, ако не му вдигнеш заплатата.'));
       await tx.delete(drivers).where(eq(drivers.id, d!.id));
     }
     return { request, accept };

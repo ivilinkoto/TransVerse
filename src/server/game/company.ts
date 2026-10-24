@@ -9,24 +9,25 @@ import { post } from './finance';
 import { uniquePlate } from './names';
 import { logActivity, notify } from './notify';
 import { checkAchievements } from './progression';
+import { t } from '@/i18n/t';
 
 export type Company = typeof companies.$inferSelect;
 
 /** Name shown for a player: their company's name, or the player as a carrier / independent driver. */
 export function displayName(companyName: string | null | undefined, username: string, kind = 'independent'): string {
-  return companyName ?? `${username} · ${kind === 'company' ? 'частен превозвач' : 'самостоятелен шофьор'}`;
+  return companyName ?? `${username} · ${kind === 'company' ? t('частен превозвач') : t('самостоятелен шофьор')}`;
 }
 
 export async function companyForUser(db: DbOrTx, userId: string): Promise<Company> {
   const [company] = await db.select().from(companies).where(eq(companies.ownerId, userId));
-  if (!company) fail('company_not_found', 'Профилът няма игрови акаунт.', 404);
+  if (!company) fail('company_not_found', t('Профилът няма игрови акаунт.'), 404);
   return company!;
 }
 
 /** Fails unless the player has founded a company (used to gate company-only features). */
 export async function requireFoundedCompany(db: DbOrTx, userId: string): Promise<Company> {
   const company = await companyForUser(db, userId);
-  if (company.kind !== 'company') fail('company_required', 'Тази възможност изисква лиценз от основана (или поета) транспортна компания.', 403);
+  if (company.kind !== 'company') fail('company_required', t('Тази възможност изисква лиценз от основана (или поета) транспортна компания.'), 403);
   return company;
 }
 
@@ -50,7 +51,7 @@ export async function headquarterOptions(db: DbOrTx) {
 /** Adds a rented vehicle (and trailer, for tractor offers) in a city. */
 export async function addRental(tx: Tx, companyId: string, offerId: string, cityId: number) {
   const offer = RENTAL_OFFERS.find((o) => o.id === offerId);
-  if (!offer) fail('unknown_offer', 'Непозната оферта за наем.');
+  if (!offer) fail('unknown_offer', t('Непозната оферта за наем.'));
   const [vehicle] = await tx
     .insert(vehicles)
     .values({ companyId, modelId: offer!.unitId, plate: await uniquePlate(tx), color: '#f8fafc', cityId, ownership: 'rented', purchasePriceCents: 0 })
@@ -67,15 +68,15 @@ export async function addRental(tx: Tx, companyId: string, offerId: string, city
  */
 export async function createIndependent(tx: Tx, input: { userId: string; username: string; startCityId: number }) {
   const options = await headquarterOptions(tx);
-  if (!options.some((c) => c.id === input.startCityId)) fail('invalid_hq', 'Изберете начален град в България.');
+  if (!options.some((c) => c.id === input.startCityId)) fail('invalid_hq', t('Изберете начален град в България.'));
 
   const [account] = await tx.insert(companies).values({ ownerId: input.userId, kind: 'independent', hqCityId: input.startCityId, balanceCents: 0 }).returning();
-  await post(tx, account!.id, [{ category: 'starting_capital', amountCents: ECONOMY.startingBalanceCents, description: 'Начални средства', idempotencyKey: `start:${account!.id}` }]);
+  await post(tx, account!.id, [{ category: 'starting_capital', amountCents: ECONOMY.startingBalanceCents, description: t('Начални средства'), idempotencyKey: `start:${account!.id}` }]);
   const truck = await addRental(tx, account!.id, STARTER_RENTAL, input.startCityId);
   await tx.insert(drivers).values({ companyId: account!.id, name: input.username, skill: 1, salaryCentsPerDay: 0, isOwner: true, vehicleId: truck.id });
 
   await logActivity(tx, input.userId, 'registered_independent', { startCityId: input.startCityId });
-  await notify(tx, input.userId, 'info', 'Добре дошли в TransVerse!', 'Започвате като самостоятелен шофьор с нает камион. Обучението ще ви преведе през първия курс.', '/game/contracts');
+  await notify(tx, input.userId, 'info', () => t('Добре дошли в TransVerse!'), () => t('Започвате като самостоятелен шофьор с нает камион. Обучението ще ви преведе през първия курс.'), '/game/contracts');
   return account!;
 }
 
@@ -104,24 +105,24 @@ export async function foundCompany(db: Database, userId: string, input: { name: 
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const { membershipOf, setupCompanyMembership } = await import('./membership');
-    if (await membershipOf(tx, userId)) fail('already_member', 'Вече членувате в компания. Напуснете я (или предайте собствеността), преди да основете нова.');
+    if (await membershipOf(tx, userId)) fail('already_member', t('Вече членувате в компания. Напуснете я (или предайте собствеността), преди да основете нова.'));
     const check = await foundingCheck(tx, userId);
-    if (!check.level.ok) fail('founding_level', `Нужно е ниво ${check.level.required}.`);
-    if (!check.deliveries.ok) fail('founding_deliveries', `Нужни са поне ${check.deliveries.required} изпълнени доставки.`);
-    if (!check.funds.ok) fail('insufficient_funds', 'Нямате достатъчно средства за регистрация на компания.');
+    if (!check.level.ok) fail('founding_level', t('Нужно е ниво {0}.', check.level.required));
+    if (!check.deliveries.ok) fail('founding_deliveries', t('Нужни са поне {0} изпълнени доставки.', check.deliveries.required));
+    if (!check.funds.ok) fail('insufficient_funds', t('Нямате достатъчно средства за регистрация на компания.'));
 
     const options = await headquarterOptions(tx);
-    if (!options.some((c) => c.id === input.hqCityId)) fail('invalid_hq', 'Изберете град в България за седалище.');
+    if (!options.some((c) => c.id === input.hqCityId)) fail('invalid_hq', t('Изберете град в България за седалище.'));
     const [taken] = await tx.select({ id: organizations.id }).from(organizations).where(sql`lower(${organizations.name}) = lower(${input.name})`);
-    if (taken) fail('company_name_taken', 'Компания с такова име вече съществува.', 409);
+    if (taken) fail('company_name_taken', t('Компания с такова име вече съществува.'), 409);
 
     const [org] = await tx.insert(organizations).values({ ownerId: userId, name: input.name, hqCityId: input.hqCityId }).returning();
-    await post(tx, company.id, [{ category: 'company_founding', amountCents: -ECONOMY.foundingFeeCents, description: `Регистрация на „${input.name}“`, idempotencyKey: `founding:${org!.id}` }], { requireFunds: true });
+    await post(tx, company.id, [{ category: 'company_founding', amountCents: -ECONOMY.foundingFeeCents, description: t('Регистрация на „{0}“', input.name), idempotencyKey: `founding:${org!.id}` }], { requireFunds: true });
     if (company.kind !== 'company') await tx.update(companies).set({ kind: 'company', hqCityId: input.hqCityId, foundedAt: new Date() }).where(eq(companies.id, company.id));
     await tx.insert(depots).values({ companyId: company.id, cityId: input.hqCityId, slots: ECONOMY.depotSlotsDefault }).onConflictDoNothing();
     await setupCompanyMembership(tx, org!.id, userId);
     await logActivity(tx, userId, 'company_founded', { name: input.name, hqCityId: input.hqCityId });
-    await notify(tx, userId, 'achievement', `Основахте „${input.name}“!`, 'Вече можете да купувате и наемате техника, да наемате шофьори и да откривате депа.', '/game/market');
+    await notify(tx, userId, 'achievement', () => t('Основахте „{0}“!', input.name), () => t('Вече можете да купувате и наемате техника, да наемате шофьори и да откривате депа.'), '/game/market');
     await checkAchievements(tx, userId, company.id);
     return org!.id;
   });
@@ -134,6 +135,6 @@ export async function userWithCompany(db: DbOrTx, userId: string) {
     .innerJoin(companies, eq(companies.ownerId, users.id))
     .innerJoin(cities, eq(cities.id, companies.hqCityId))
     .where(eq(users.id, userId));
-  if (!row) fail('company_not_found', 'Профилът няма игрови акаунт.', 404);
+  if (!row) fail('company_not_found', t('Профилът няма игрови акаунт.'), 404);
   return row!;
 }

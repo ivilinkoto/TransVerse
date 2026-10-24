@@ -12,6 +12,7 @@ import { featureFor } from '@/server/features';
 import { pinnedMessage, withReactions } from './chat-extras';
 import { notifyMentions, notifyReply, replyRefs, replyTarget, type ReplyRef } from './messages';
 import { logActivity } from './notify';
+import { t } from '@/i18n/t';
 
 export const chatBodySchema = z.string().trim().min(1, 'Напишете съобщение.').max(500, 'Най-много 500 символа.');
 
@@ -46,7 +47,7 @@ export interface CompanyChatView {
 /** Latest messages of the player's company (oldest first), or only those after `afterId`. */
 export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit = 60, now = new Date()): Promise<CompanyChatView> {
   const m = await membershipOf(db, userId);
-  if (!m) fail('not_member', 'Чатът е само за членове на компанията.', 403);
+  if (!m) fail('not_member', t('Чатът е само за членове на компанията.'), 403);
   const rows = await db
     .select({ message: companyMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, lastSeenAt: users.lastSeenAt, rank: companyRanks.name })
     .from(companyMessages)
@@ -86,7 +87,7 @@ export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit
 export async function sendChatMessage(db: Database, userId: string, raw: string, replyToId?: number | null) {
   const body = chatBodySchema.parse(raw);
   const m = await membershipOf(db, userId);
-  if (!m) fail('not_member', 'Чатът е само за членове на компанията.', 403);
+  if (!m) fail('not_member', t('Чатът е само за членове на компанията.'), 403);
   await assertNotMuted(db, userId);
   // Anti-spam: at most 10 messages a minute per player.
   await rateLimit(db, `chat:${userId}`, 10, 60);
@@ -94,9 +95,9 @@ export async function sendChatMessage(db: Database, userId: string, raw: string,
     const target = replyToId && (await featureFor(tx, userId, 'chat_replies')) ? await replyTarget(tx, 'company', replyToId, eq(companyMessages.companyId, m!.company.id)) : null;
     const [row] = await tx.insert(companyMessages).values({ companyId: m!.company.id, userId, body, replyToId: target?.id ?? null }).returning({ id: companyMessages.id });
     const members = body.includes('@') || target ? (await tx.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, m!.company.id))).map((r) => r.id) : [];
-    const mentioned = body.includes('@') ? await notifyMentions(tx, userId, body, { tab: 'company', where: `Чат на „${m!.company.name}“`, members }) : [];
+    const mentioned = body.includes('@') ? await notifyMentions(tx, userId, body, { tab: 'company', where: t('Чат на „{0}“', m!.company.name), members }) : [];
     // Only someone still in the company hears about the reply.
-    if (target && members.includes(target.userId)) await notifyReply(tx, userId, target, body, { tab: 'company', where: `Чат на „${m!.company.name}“`, mentioned });
+    if (target && members.includes(target.userId)) await notifyReply(tx, userId, target, body, { tab: 'company', where: t('Чат на „{0}“', m!.company.name), mentioned });
     await tx.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type: 'chat', companyId: m!.company.id })})`);
     return row!.id;
   });
@@ -105,11 +106,11 @@ export async function sendChatMessage(db: Database, userId: string, raw: string,
 /** The author, or a member with "manage members" or "chat" rights, hides a message. */
 export async function deleteChatMessage(db: Database, userId: string, messageId: number) {
   const m = await membershipOf(db, userId);
-  if (!m) fail('not_member', 'Чатът е само за членове на компанията.', 403);
+  if (!m) fail('not_member', t('Чатът е само за членове на компанията.'), 403);
   return db.transaction(async (tx) => {
     const [msg] = await tx.select().from(companyMessages).where(and(eq(companyMessages.id, messageId), eq(companyMessages.companyId, m!.company.id))).for('update');
-    if (!msg) fail('message_not_found', 'Съобщението не е намерено.', 404);
-    if (msg!.userId !== userId && !can(m!.rank, 'manage_members') && !can(m!.rank, 'manage_chat')) fail('forbidden', 'Можете да триете само свои съобщения.', 403);
+    if (!msg) fail('message_not_found', t('Съобщението не е намерено.'), 404);
+    if (msg!.userId !== userId && !can(m!.rank, 'manage_members') && !can(m!.rank, 'manage_chat')) fail('forbidden', t('Можете да триете само свои съобщения.'), 403);
     await tx.update(companyMessages).set({ deletedAt: new Date(), deletedBy: userId }).where(eq(companyMessages.id, messageId));
     await tx.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type: 'chat', companyId: m!.company.id })})`);
   });
@@ -118,8 +119,8 @@ export async function deleteChatMessage(db: Database, userId: string, messageId:
 /** The owner, the deputy (or any rank with chat rights) clears the whole company chat. */
 export async function clearCompanyChat(db: Database, userId: string) {
   const m = await membershipOf(db, userId);
-  if (!m) fail('not_member', 'Чатът е само за членове на компанията.', 403);
-  if (!can(m!.rank, 'manage_chat')) fail('forbidden', 'Само собственикът и заместникът могат да изчистят чата.', 403);
+  if (!m) fail('not_member', t('Чатът е само за членове на компанията.'), 403);
+  if (!can(m!.rank, 'manage_chat')) fail('forbidden', t('Само собственикът и заместникът могат да изчистят чата.'), 403);
   return db.transaction(async (tx) => {
     const removed = await tx.delete(companyMessages).where(eq(companyMessages.companyId, m!.company.id)).returning({ id: companyMessages.id });
     await logActivity(tx, userId, 'company_chat_cleared', { companyId: m!.company.id, messages: removed.length });

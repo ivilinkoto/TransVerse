@@ -5,6 +5,7 @@ import { appUrl, BRAND, discordConfig, PING_ROLES, type PingRole } from './confi
 import { ensureRole } from './guild';
 import { layoutChannel, layoutState, saveLayoutState } from './layout';
 import { button, linkButton, rows, say, STYLE, type MessageData } from './ui';
+import { t } from '@/i18n/t';
 
 /**
  * The bot's fixed messages in the layout's channels: the welcome, the rules,
@@ -30,20 +31,20 @@ const PANELS: { key: string; channel: string; onlyNew?: boolean; build: () => Pr
     onlyNew: true,
     build: async () => ({
       embeds: [{
-        title: '🚚 Добре дошъл в TransVerse!',
+        title: t('🚚 Добре дошъл в TransVerse!'),
         color: BRAND,
         description: [
-          'TransVerse е онлайн транспортна стратегия по истински пътища: започваш с един нает камион и изграждаш компания заедно с други шофьори.',
+          t('TransVerse е онлайн транспортна стратегия по истински пътища: започваш с един нает камион и изграждаш компания заедно с други шофьори.'),
           '',
-          '**Първи стъпки**',
-          '1️⃣ Прочети #правила',
-          '2️⃣ Свържи акаунта си в #свържи-акаунта — получаваш роли, канал на компанията и 10 ТрансКоин',
-          '3️⃣ Избери известията си в #роли',
-          '4️⃣ Нужна ти е помощ? Отвори тикет в #тикети',
+          t('**Първи стъпки**'),
+          t('1️⃣ Прочети #правила'),
+          t('2️⃣ Свържи акаунта си в #свържи-акаунта — получаваш роли, канал на компанията и 10 ТрансКоин'),
+          t('3️⃣ Избери известията си в #роли'),
+          t('4️⃣ Нужна ти е помощ? Отвори тикет в #тикети'),
         ].join('\n'),
         footer: { text: 'TransVerse · transverse-bg.com' },
       }],
-      components: rows(linkButton('Играй', appUrl(), '🎮'), linkButton('Свържи Discord', `${appUrl()}/game/settings#discord`, '🔗')),
+      components: rows(linkButton(t('Играй'), appUrl(), '🎮'), linkButton(t('Свържи Discord'), `${appUrl()}/game/settings#discord`, '🔗')),
     }),
   },
   {
@@ -52,10 +53,10 @@ const PANELS: { key: string; channel: string; onlyNew?: boolean; build: () => Pr
     onlyNew: true,
     build: async () => ({
       embeds: [{
-        title: '📜 Правила на сървъра',
+        title: t('📜 Правила на сървъра'),
         color: BRAND,
-        description: `${SERVER_RULES.map((r, n) => `**${n + 1}.** ${r}`).join('\n')}\n\nЗа нарушение: предупреждение, заглушаване или бан — според случая. Правилата на играта важат и тук.`,
-        footer: { text: 'Екипът на TransVerse' },
+        description: t('{0}\n\nЗа нарушение: предупреждение, заглушаване или бан — според случая. Правилата на играта важат и тук.', SERVER_RULES.map((r, n) => `**${n + 1}.** ${r}`).join('\n')),
+        footer: { text: t('Екипът на TransVerse') },
       }],
     }),
   },
@@ -64,18 +65,18 @@ const PANELS: { key: string; channel: string; onlyNew?: boolean; build: () => Pr
     channel: 'свържи-акаунта',
     build: async () => ({
       embeds: [{
-        title: '🔗 Свържи Discord с играта',
+        title: t('🔗 Свържи Discord с играта'),
         color: BRAND,
         description: [
-          'С един клик в **Настройки → Discord** в играта получаваш:',
-          '• роли според нивото, VIP и компанията си',
-          '• частния канал на компанията, свързан с чата в играта',
-          '• известията от играта като лично съобщение (по избор)',
-          '• командите `/камиони`, `/курс`, `/дневна`, `/ивент`, `/битка`',
-          '• **10 ТрансКоин** и значка „Discord шофьор“ първия път',
+          t('С един клик в **Настройки → Discord** в играта получаваш:'),
+          t('• роли според нивото, VIP и компанията си'),
+          t('• частния канал на компанията, свързан с чата в играта'),
+          t('• известията от играта като лично съобщение (по избор)'),
+          t('• командите `/камиони`, `/курс`, `/дневна`, `/ивент`, `/битка`'),
+          t('• **10 ТрансКоин** и значка „Discord шофьор“ първия път'),
         ].join('\n'),
       }],
-      components: rows(linkButton('Свържи акаунта', `${appUrl()}/game/settings#discord`, '🔗'), linkButton('Регистрация', `${appUrl()}/register`, '🚚')),
+      components: rows(linkButton(t('Свържи акаунта'), `${appUrl()}/game/settings#discord`, '🔗'), linkButton(t('Регистрация'), `${appUrl()}/register`, '🚚')),
     }),
   },
   {
@@ -83,9 +84,9 @@ const PANELS: { key: string; channel: string; onlyNew?: boolean; build: () => Pr
     channel: 'роли',
     build: async () => ({
       embeds: [{
-        title: '🎭 Избери известията си',
+        title: t('🎭 Избери известията си'),
         color: BRAND,
-        description: `Натисни бутон, за да получаваш (или да спреш) споменаване при ново обявление:\n\n${Object.values(PING_ROLES).map((r) => `${r.emoji} **${r.label}**`).join('\n')}`,
+        description: t('Натисни бутон, за да получаваш (или да спреш) споменаване при ново обявление:\n\n{0}', Object.values(PING_ROLES).map((r) => `${r.emoji} **${r.label}**`).join('\n')),
       }],
       components: rows(...(Object.entries(PING_ROLES) as [PingRole, (typeof PING_ROLES)[PingRole]][]).map(([key, r]) => button(r.label, `ping:${key}`, STYLE.secondary, r.emoji))),
     }),
@@ -95,11 +96,11 @@ const PANELS: { key: string; channel: string; onlyNew?: boolean; build: () => Pr
     channel: 'тикети',
     build: async () => ({
       embeds: [{
-        title: '🎫 Нужна ти е помощ?',
+        title: t('🎫 Нужна ти е помощ?'),
         color: BRAND,
-        description: 'Натисни **Отвори тикет** — отваря се частен канал само за теб и екипа.\n\nАко акаунтът ти е свързан, тикетът се появява и в играта (Поддръжка), а отговорите идват и на двете места.',
+        description: t('Натисни **Отвори тикет** — отваря се частен канал само за теб и екипа.\n\nАко акаунтът ти е свързан, тикетът се появява и в играта (Поддръжка), а отговорите идват и на двете места.'),
       }],
-      components: rows(button('Отвори тикет', 'ticket:open', STYLE.primary, '🎫')),
+      components: rows(button(t('Отвори тикет'), 'ticket:open', STYLE.primary, '🎫')),
     }),
   },
 ];
@@ -137,10 +138,10 @@ export const pingRole = (key: PingRole) => ensureRole(PING_ROLES[key].name, 0x9a
 
 /** #роли: a button gives or takes one pick-your-pings role. */
 export async function togglePing(ctx: Ctx, key: string): Promise<Answer> {
-  if (!(key in PING_ROLES)) return answer(say('Няма такава роля.'));
+  if (!(key in PING_ROLES)) return answer(say(t('Няма такава роля.')));
   const roleId = await pingRole(key as PingRole);
   const has = ctx.i.member?.roles?.includes(roleId);
   await discord(has ? 'DELETE' : 'PUT', `/guilds/${discordConfig().guildId}/members/${ctx.discordId}/roles/${roleId}`);
   const label = PING_ROLES[key as PingRole].label;
-  return answer(say(has ? `🔕 Спрях споменаванията за **${label}**.` : `🔔 Ще те споменаваме при нови **${label}**.`));
+  return answer(say(has ? t('🔕 Спрях споменаванията за **{0}**.', label) : t('🔔 Ще те споменаваме при нови **{0}**.', label)));
 }

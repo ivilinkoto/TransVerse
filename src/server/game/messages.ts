@@ -11,6 +11,7 @@ import { extractMentions } from '@/lib/game/mentions';
 import { fail } from './errors';
 import { assertNotBlocked, assertNotMuted } from './moderation';
 import { notify } from './notify';
+import { t as tr } from '@/i18n/t';
 
 export const messageBodySchema = z.string().trim().min(1, 'Напиши съобщение.').max(MESSAGE_MAX, `Най-много ${MESSAGE_MAX} символа.`);
 
@@ -67,7 +68,7 @@ export async function replyTarget(tx: DbOrTx, kind: ReplyKind, replyToId: number
   if (!replyToId) return null;
   const { t, author } = REPLY_TABLES[kind];
   const [row] = await tx.select({ id: t.id, userId: author, deletedAt: t.deletedAt }).from(t).where(and(eq(t.id, replyToId), scope));
-  if (!row || row.deletedAt) fail('reply_not_found', 'Съобщението, на което отговаряш, вече го няма.', 404);
+  if (!row || row.deletedAt) fail('reply_not_found', tr('Съобщението, на което отговаряш, вече го няма.'), 404);
   return { id: row!.id, userId: row!.userId };
 }
 
@@ -79,7 +80,7 @@ export async function notifyReply(tx: Tx, authorId: string, target: { userId: st
   const [blocked] = await tx.select({ id: userBlocks.blockerId }).from(userBlocks).where(and(eq(userBlocks.blockerId, target.userId), eq(userBlocks.blockedId, authorId)));
   if (blocked) return;
   const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, authorId));
-  await notify(tx, target.userId, 'info', `${me!.username} ти отговори в чата`, `${where.where}: ${body.slice(0, 140)}`, `/game?chat=${encodeURIComponent(where.tab)}`);
+  await notify(tx, target.userId, 'info', () => tr('{0} ти отговори в чата', me!.username), `${where.where}: ${body.slice(0, 140)}`, `/game?chat=${encodeURIComponent(where.tab)}`);
 }
 
 // ── World chat (global, trade) ───────────────────────────────────────────
@@ -114,8 +115,8 @@ export async function postToChannel(db: Database, userId: string, channel: Chann
 export async function deleteChannelMessage(db: Database, userId: string, role: string, messageId: number) {
   return db.transaction(async (tx) => {
     const [m] = await tx.select().from(chatMessages).where(eq(chatMessages.id, messageId)).for('update');
-    if (!m) fail('message_not_found', 'Съобщението не е намерено.', 404);
-    if (m!.userId !== userId && !isStaff(role)) fail('forbidden', 'Можеш да триеш само свои съобщения.', 403);
+    if (!m) fail('message_not_found', tr('Съобщението не е намерено.'), 404);
+    if (m!.userId !== userId && !isStaff(role)) fail('forbidden', tr('Можеш да триеш само свои съобщения.'), 403);
     await tx.update(chatMessages).set({ deletedAt: new Date(), deletedBy: userId }).where(eq(chatMessages.id, messageId));
     await ping(tx, { type: 'channel', channel: m!.channel });
   });
@@ -138,7 +139,7 @@ export async function notifyMentions(tx: Tx, authorId: string, body: string, whe
   const targets = where.members ? rows.filter((r) => where.members!.includes(r.id)) : rows;
   if (!targets.length) return [];
   const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, authorId));
-  for (const t of targets) await notify(tx, t.id, 'info', `${me!.username} те спомена в чата`, `${where.where}: ${body.slice(0, 140)}`, `/game?chat=${encodeURIComponent(where.tab)}`);
+  for (const t of targets) await notify(tx, t.id, 'info', () => tr('{0} те спомена в чата', me!.username), `${where.where}: ${body.slice(0, 140)}`, `/game?chat=${encodeURIComponent(where.tab)}`);
   return targets.map((t) => t.username);
 }
 
@@ -150,20 +151,20 @@ const visibleTo = (me: string) => or(and(eq(directMessages.senderId, me), eq(dir
 
 export async function sendDirectMessage(db: Database, userId: string, toId: string, raw: string, now = new Date(), replyToId?: number | null) {
   const body = messageBodySchema.parse(raw);
-  if (userId === toId) fail('self', 'Не можеш да пишеш на себе си.');
+  if (userId === toId) fail('self', tr('Не можеш да пишеш на себе си.'));
   await assertNotMuted(db, userId, now);
   await assertNotBlocked(db, userId, toId);
   await rateLimit(db, `dm:${userId}`, 20, 60);
   return db.transaction(async (tx) => {
     const [to] = await tx.select({ id: users.id, bannedAt: users.bannedAt, lastSeenAt: users.lastSeenAt }).from(users).where(eq(users.id, toId));
-    if (!to || to.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
+    if (!to || to.bannedAt) fail('player_not_found', tr('Играчът не е намерен.'), 404);
     const target = replyToId && (await featureFor(tx, userId, 'chat_replies', now)) ? await replyTarget(tx, 'dm', replyToId, and(pair(userId, toId), visibleTo(userId))!) : null;
     const [row] = await tx.insert(directMessages).values({ senderId: userId, recipientId: toId, body, replyToId: target?.id ?? null }).returning({ id: directMessages.id });
     // One notification per conversation while it is unread (not one per message), and only if they are not in the game.
     const [{ unread = 0 } = {}] = await tx.select({ unread: sql<number>`count(*)::int` }).from(directMessages).where(and(eq(directMessages.senderId, userId), eq(directMessages.recipientId, toId), isNull(directMessages.readAt), isNull(directMessages.deletedAt)));
     if (unread === 1 && !isOnline(to!.lastSeenAt, now)) {
       const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-      await notify(tx, toId, 'info', `Ново съобщение от ${me!.username}`, body.slice(0, 140), `/game?chat=dm:${userId}`);
+      await notify(tx, toId, 'info', () => tr('Ново съобщение от {0}', me!.username), body.slice(0, 140), `/game?chat=dm:${userId}`);
     }
     await ping(tx, { type: 'dm', userId: toId, fromId: userId });
     return row!.id;
@@ -196,7 +197,7 @@ export async function markConversationRead(db: DbOrTx, userId: string, otherId: 
 export async function unsendDirectMessage(db: Database, userId: string, messageId: number) {
   return db.transaction(async (tx: Tx) => {
     const [m] = await tx.select().from(directMessages).where(eq(directMessages.id, messageId)).for('update');
-    if (!m || m.senderId !== userId) fail('message_not_found', 'Можеш да триеш само свои съобщения.', 404);
+    if (!m || m.senderId !== userId) fail('message_not_found', tr('Можеш да триеш само свои съобщения.'), 404);
     await tx.update(directMessages).set({ deletedAt: new Date() }).where(eq(directMessages.id, messageId));
     await ping(tx, { type: 'dm', userId: m!.recipientId, fromId: userId });
   });
@@ -226,7 +227,7 @@ export async function conversations(db: DbOrTx, userId: string, now = new Date()
     const o = others.find((x) => x.id === r.other_id);
     const l = last.find((x) => x.id === Number(r.last_id));
     if (!o) return [];
-    return [{ userId: o.id, username: o.username, role: o.role, vip: isVip(o.vipUntil, now), online: isOnline(o.lastSeenAt, now), lastSeen: lastSeenLabel(o.lastSeenAt, now), unread: Number(r.unread), last: l ? (l.deletedAt ? 'Съобщението е изтрито.' : `${l.senderId === userId ? 'Ти: ' : ''}${l.body}`) : '' }];
+    return [{ userId: o.id, username: o.username, role: o.role, vip: isVip(o.vipUntil, now), online: isOnline(o.lastSeenAt, now), lastSeen: lastSeenLabel(o.lastSeenAt, now), unread: Number(r.unread), last: l ? (l.deletedAt ? tr('Съобщението е изтрито.') : `${l.senderId === userId ? tr('Ти: ') : ''}${l.body}`) : '' }];
   });
 }
 

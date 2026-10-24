@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { t as tr, tx } from '@/i18n/t';
 
 export interface TourTab {
   id: string;
@@ -19,7 +20,7 @@ export function FeatureTour({ tabs }: { tabs: TourTab[] }) {
   if (!tab) return null;
   return (
     <div className="mt-10">
-      <div role="tablist" aria-label="Системи в играта" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0">
+      <div role="tablist" aria-label={tr('Системи в играта')} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -31,15 +32,15 @@ export function FeatureTour({ tabs }: { tabs: TourTab[] }) {
             onClick={() => setActive(t.id)}
             className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition ${t.id === tab.id ? 'border-volt-500/60 bg-volt-500/15 text-white' : 'border-asphalt-700 bg-asphalt-900/60 text-mist-300 hover:text-white'}`}
           >
-            {t.icon}
-            {t.label}
+            {tx(t.icon)}
+            {tx(t.label)}
           </button>
         ))}
       </div>
       <div id="tour-panel" role="tabpanel" aria-labelledby={`tour-tab-${tab.id}`} className="panel mt-4 grid gap-6 p-5 sm:p-7 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div>
-          <h3 className="font-display text-2xl font-bold">{tab.title}</h3>
-          <p className="mt-3 leading-relaxed text-mist-300">{tab.text}</p>
+          <h3 className="font-display text-2xl font-bold">{tx(tab.title)}</h3>
+          <p className="mt-3 leading-relaxed text-mist-300">{tx(tab.text)}</p>
           <ul className="mt-5 space-y-2 text-sm">
             {tab.points.map((p) => (
               <li key={p} className="flex gap-2.5">
@@ -49,7 +50,7 @@ export function FeatureTour({ tabs }: { tabs: TourTab[] }) {
             ))}
           </ul>
         </div>
-        <div className="min-w-0">{tab.mockup}</div>
+        <div className="min-w-0">{tx(tab.mockup)}</div>
       </div>
     </div>
   );

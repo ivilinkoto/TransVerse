@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFeature, useFeatures } from './Features';
 import { ACCOUNT_MENU, SECTIONS } from './nav';
+import { t as tr, tx } from '@/i18n/t';
 
 /** Extra words people search for, by page. */
 const KEYWORDS: Record<string, string> = {
@@ -39,7 +40,7 @@ export function CommandPalette() {
   const items = useMemo(
     () => [
       ...SECTIONS.flatMap((s) => (s.tabs?.length ? s.tabs.filter((t) => !t.feature || has(t.feature)).map((t) => ({ href: t.href, label: t.label, where: s.label })) : [{ href: s.href, label: s.label, where: '' }])),
-      ...ACCOUNT_MENU.map((m) => ({ href: m.href, label: m.label, where: 'Профил' })),
+      ...ACCOUNT_MENU.map((m) => ({ href: m.href, label: m.label, where: tr('Профил') })),
     ].filter((x, i, all) => all.findIndex((y) => y.href === x.href) === i),
     [has],
   );
@@ -72,16 +73,16 @@ export function CommandPalette() {
   };
   return (
     <>
-      <button type="button" onClick={() => { setQ(''); setSel(0); setOpen(true); }} className="flex h-9 w-9 items-center justify-center rounded-full border border-asphalt-700 text-mist-300 transition hover:text-white" title="Къде искаш да отидеш? (Ctrl+K)" aria-label="Търси страница">
+      <button type="button" onClick={() => { setQ(''); setSel(0); setOpen(true); }} className="flex h-9 w-9 items-center justify-center rounded-full border border-asphalt-700 text-mist-300 transition hover:text-white" title={tr('Къде искаш да отидеш? (Ctrl+K)')} aria-label={tr('Търси страница')}>
         <Compass className="h-4 w-4" />
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="Търси страница" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label={tr('Търси страница')} onClick={() => setOpen(false)}>
           <div className="w-full max-w-lg rounded-2xl border border-asphalt-700 bg-asphalt-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <input
               ref={input}
               className="w-full rounded-t-2xl bg-transparent px-4 py-3 text-base outline-none"
-              placeholder="Къде искаш да отидеш? (напр. ремарке, акции, глоби)"
+              placeholder={tr('Къде искаш да отидеш? (напр. ремарке, акции, глоби)')}
               value={q}
               onChange={(e) => { setQ(e.target.value); setSel(0); }}
               onKeyDown={(e) => {
@@ -89,15 +90,15 @@ export function CommandPalette() {
                 else if (e.key === 'ArrowUp') { e.preventDefault(); setSel((x) => Math.max(0, x - 1)); }
                 else if (e.key === 'Enter' && found[sel]) go(found[sel]!.href);
               }}
-              aria-label="Търсене"
+              aria-label={tr('Търсене')}
             />
             <ul className="max-h-80 overflow-y-auto border-t border-asphalt-800 p-1.5">
-              {found.length === 0 && <li className="px-3 py-2 text-sm text-mist-400">Нищо не намерих. Опитай с друга дума.</li>}
+              {found.length === 0 && <li className="px-3 py-2 text-sm text-mist-400">{tr('Нищо не намерих. Опитай с друга дума.')}</li>}
               {found.map((it, i) => (
                 <li key={it.href}>
                   <button type="button" onMouseEnter={() => setSel(i)} onClick={() => go(it.href)} className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${i === sel ? 'bg-asphalt-700 text-white' : 'text-mist-200'}`}>
-                    <span>{it.label}</span>
-                    {it.where && <span className="text-xs text-mist-400">{it.where}</span>}
+                    <span>{tx(it.label)}</span>
+                    {it.where && <span className="text-xs text-mist-400">{tx(it.where)}</span>}
                   </button>
                 </li>
               ))}

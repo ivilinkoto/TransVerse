@@ -21,7 +21,7 @@ import { globSync } from 'node:fs';
 const ROOT = path.resolve('src');
 const CYR = /[Ѐ-ӿ]/;
 /** Files whose Bulgarian strings are identifiers (Discord structure) or the i18n machinery. */
-const SKIP_FILES = [/^i18n\//, /^server\/discord\/config\.ts$/, /^server\/discord\/layout\.ts$/, /^server\/db\/schema\.ts$/];
+const SKIP_FILES = [/^i18n\//, /^components\/i18n\//, /^server\/discord\/config\.ts$/, /^server\/discord\/layout\.ts$/, /^server\/db\/schema\.ts$/];
 const DISPLAY_ATTRS = new Set(['title', 'label', 'placeholder', 'aria-label', 'alt', 'subtitle', 'help', 'description', 'text', 'confirm', 'ariaLabel', 'heading', 'hint', 'caption', 'empty', 'message', 'tooltip']);
 const NO_TOUCH_ATTRS = new Set(['className', 'href', 'src', 'key', 'id', 'name', 'type', 'value', 'defaultValue', 'htmlFor', 'role', 'rel', 'target', 'method', 'action', 'd', 'viewBox', 'fill', 'stroke', 'field', 'endpoint', 'pattern']);
 const IDENTITY_METHODS = new Set(['includes', 'startsWith', 'endsWith', 'indexOf', 'lastIndexOf', 'has', 'get', 'set', 'delete', 'split', 'replace', 'replaceAll', 'match', 'test', 'search', 'localeCompare', 'padStart', 'padEnd', 'values']);
@@ -81,8 +81,16 @@ export function transformSource(file: string, src: string): { text: string; chan
     ts.forEachChild(n, collect);
   };
   collect(sf);
-  const alreadyOurs = /import \{[^}]*\} from '@\/i18n\/t'/.test(src);
-  const pick = (base: string, alts: string[]) => (alreadyOurs || !declared.has(base) ? base : alts.find((a) => !declared.has(a))!);
+  const ourImports = [...src.matchAll(/import \{([^}]*)\} from '@\/i18n\/t'/g)].map((m) => m[1]!);
+  const ourImport = ourImports.length ? ourImports.join(',') : null;
+  for (const spec of (ourImport ?? '').split(',')) {
+    const local = spec.trim().split(/\s+as\s+/).pop();
+    if (local) declared.delete(local);
+  }
+  const alreadyOurs = ourImport !== null;
+  // The local name of an import we already added (`t as tr`), so a second run leaves it alone.
+  const localName = (name: string) => (ourImport ? new RegExp(`\\b${name}(?:\\s+as\\s+(\\w+))?\\b`).exec(ourImport.replace(/\btx\b/g, name === 'tx' ? 'tx' : '__'))?.[1] ?? (new RegExp(`\\b${name}\\b`).test(ourImport) ? name : null) : null);
+  const pick = (base: string, alts: string[]) => localName(base) ?? (!declared.has(base) ? base : alts.find((a) => !declared.has(a))!);
   const T = pick('t', ['tr', 'tt', 'tl']);
   const TX = pick('tx', ['txl', 'txt2']);
   let changes = 0;
@@ -233,7 +241,7 @@ export function transformSource(file: string, src: string): { text: string; chan
     if (!mayWork) return full;
 
     // Already translated.
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && [T, TX, 't', 'tx'].includes(node.expression.text) && alreadyOurs) return full;
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && [T, TX].includes(node.expression.text) && alreadyOurs) return full;
 
     if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && node.text === 'bg-BG' && inFunction(node)) {
       // 'bg-BG' inside a function (toLocaleString, Intl): the player's language
@@ -259,12 +267,12 @@ export function transformSource(file: string, src: string): { text: string; chan
       return `${node.name.getText(sf)}={${TX}(${rewrite(node.initializer.expression)})}`;
     }
     // Notification text: written later, in the recipient's language.
-    if (ts.isCallExpression(node) && NOTIFY_CALLS[calleeName(node) ?? '']) {
+    if (ts.isCallExpression(node) && Object.hasOwn(NOTIFY_CALLS, calleeName(node) ?? '')) {
       const idx = NOTIFY_CALLS[calleeName(node)!]!;
       const parts: string[] = [];
       let pos = node.getStart(sf);
       const pieces: string[] = [];
-      for (const child of node.getChildren(sf)) {
+      for (const child of node.getChildren(sf).filter((k) => !ts.isJSDoc(k))) {
         pieces.push(src.slice(pos, child.getStart(sf)));
         if (child.kind === ts.SyntaxKind.SyntaxList) {
           let p2 = child.getStart(sf);
@@ -288,12 +296,14 @@ export function transformSource(file: string, src: string): { text: string; chan
       void parts;
       return pieces.join('') + src.slice(pos, node.getEnd());
     }
-    const kids = node.getChildren(sf);
+    const kids = node.getChildren(sf).filter((k) => !ts.isJSDoc(k));
     if (!kids.length) return full;
     let out = '';
     let pos = node.getStart(sf);
     for (const k of kids) {
-      out += src.slice(pos, k.getStart(sf));
+      const start = k.getStart(sf);
+      if (start < pos) continue;
+      out += src.slice(pos, start);
       out += rewrite(k);
       pos = k.getEnd();
     }

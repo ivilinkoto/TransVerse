@@ -13,6 +13,7 @@ import { postTreasury } from './finance';
 import { notifyMembers } from './membership';
 import { broadcast } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
+import { t } from '@/i18n/t';
 
 const portName = (cityId: number) => CONTAINER_PORTS.find((p) => p.cityId === cityId)?.name ?? '';
 
@@ -120,8 +121,8 @@ export async function settleShipCalls(db: Database, now = new Date()) {
       if (!mine) return;
       await tx.update(contracts).set({ status: 'expired' }).where(and(eq(contracts.portCallId, call.id), eq(contracts.status, 'open')));
       if (top) {
-        await postTreasury(tx, top.organizationId, [{ category: 'ship_call', amountCents: SHIP_CALL.prizeCents, description: `${call.ship} в ${portName(call.portCityId)}: най-много контейнери`, idempotencyKey: `ship:${call.id}`, refType: 'ship_call', refId: call.id }]);
-        await notifyMembers(tx, top.organizationId, null, `Първи при ${call.ship}! 🚢`, `Компанията разкара най-много контейнери (${top.containers}) — ${money(SHIP_CALL.prizeCents)} влязоха в касата.`, '/game/company');
+        await postTreasury(tx, top.organizationId, [{ category: 'ship_call', amountCents: SHIP_CALL.prizeCents, description: t('{0} в {1}: най-много контейнери', call.ship, portName(call.portCityId)), idempotencyKey: `ship:${call.id}`, refType: 'ship_call', refId: call.id }]);
+        await notifyMembers(tx, top.organizationId, null, () => t('Първи при {0}! 🚢', call.ship), () => t('Компанията разкара най-много контейнери ({0}) — {1} влязоха в касата.', top.containers, money(SHIP_CALL.prizeCents)), '/game/company');
       }
       done.push(call.id);
     });

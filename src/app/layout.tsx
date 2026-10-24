@@ -36,6 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = { themeColor: '#05070b', width: 'device-width', initialScale: 1 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await initLocale();
   // Seasonal look (Halloween…): colours and decorations on top of the base design.
   const locale = await initLocale();
   const season = await requestSeason();

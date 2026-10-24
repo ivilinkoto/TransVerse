@@ -1,3 +1,4 @@
+import { t as tr, intlLocale } from '@/i18n/t';
 /**
  * "Седмичник TransVerse": a weekly newspaper written from the game's own data
  * every Monday (Sofia) for the week that just ended. Everything in it is game
@@ -25,22 +26,22 @@ export interface NewsIssue {
   marketEvents: { title: string; endsAt: string }[];
 }
 
-const n = (v: number) => Math.round(v).toLocaleString('bg-BG');
+const n = (v: number) => Math.round(v).toLocaleString(intlLocale());
 
 /** The front-page headline, picked from what happened. */
 export function headline(issue: NewsIssue): string {
-  if (issue.longest && issue.longest.km >= 1500) return `${issue.longest.username} прекоси ${n(issue.longest.km)} км с един товар`;
-  if (issue.topEarners[0]) return `${issue.topEarners[0].username} е шофьорът на седмицата`;
-  if (issue.totals.deliveries > 0) return `${n(issue.totals.deliveries)} ${issue.totals.deliveries === 1 ? 'доставка' : 'доставки'} за една седмица`;
-  return 'Тиха седмица по пътищата';
+  if (issue.longest && issue.longest.km >= 1500) return tr('{0} прекоси {1} км с един товар', issue.longest.username, n(issue.longest.km));
+  if (issue.topEarners[0]) return tr('{0} е шофьорът на седмицата', issue.topEarners[0].username);
+  if (issue.totals.deliveries > 0) return tr('{0} {1} за една седмица', n(issue.totals.deliveries), issue.totals.deliveries === 1 ? tr('доставка') : tr('доставки'));
+  return tr('Тиха седмица по пътищата');
 }
 
 /** A short lead paragraph under the headline. */
 export function lead(issue: NewsIssue): string {
   const t = issue.totals;
-  if (!t.deliveries) return 'Камионите почиваха тази седмица. Борсата е пълна с поръчки — време е да тръгнем отново.';
-  const parts = [`Шофьорите на TransVerse изпълниха ${n(t.deliveries)} ${t.deliveries === 1 ? 'доставка' : 'доставки'}, изминаха ${n(t.km)} км и превозиха ${n(t.tons)} т товари.`];
-  if (t.players) parts.push(`На път ${t.players === 1 ? 'беше 1 играч' : `бяха ${n(t.players)} играчи`}.`);
-  if (t.newPlayers) parts.push(`В играта ${t.newPlayers === 1 ? 'влезе 1 нов играч' : `влязоха ${n(t.newPlayers)} нови играчи`} — добре дошли!`);
+  if (!t.deliveries) return tr('Камионите почиваха тази седмица. Борсата е пълна с поръчки — време е да тръгнем отново.');
+  const parts = [tr('Шофьорите на TransVerse изпълниха {0} {1}, изминаха {2} км и превозиха {3} т товари.', n(t.deliveries), t.deliveries === 1 ? tr('доставка') : tr('доставки'), n(t.km), n(t.tons))];
+  if (t.players) parts.push(tr('На път {0}.', t.players === 1 ? tr('беше 1 играч') : tr('бяха {0} играчи', n(t.players))));
+  if (t.newPlayers) parts.push(tr('В играта {0} — добре дошли!', t.newPlayers === 1 ? tr('влезе 1 нов играч') : tr('влязоха {0} нови играчи', n(t.newPlayers))));
   return parts.join(' ');
 }

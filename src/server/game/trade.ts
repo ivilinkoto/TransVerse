@@ -16,14 +16,15 @@ import { acceptContract } from './deliveries';
 import { fail } from './errors';
 import { post } from './finance';
 import { broadcast, logActivity, notify } from './notify';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 const round1 = (t: number) => Math.round(t * 10) / 10;
-const eur = (c: number) => `${Math.round(c / 100).toLocaleString('bg-BG')} лв.`;
+const eur = (c: number) => tr('{0} лв.', Math.round(c / 100).toLocaleString(intlLocale()));
 
 async function ownDepot(db: DbOrTx, companyId: string, depotId: string, lock = false) {
   const q = db.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, companyId)));
   const [d] = lock ? await q.for('update') : await q;
-  if (!d) fail('depot_not_found', 'Депото не е намерено.', 404);
+  if (!d) fail('depot_not_found', tr('Депото не е намерено.'), 404);
   return d!;
 }
 
@@ -59,17 +60,17 @@ export async function addStock(tx: DbOrTx, depotId: string, cargo: CargoType, to
 /** Buys goods from the producers of the depot's city into its warehouse. */
 export async function buyGoods(db: Database, userId: string, input: { depotId: string; cargo: CargoType; tons: number }, now = new Date()) {
   const tons = round1(input.tons);
-  if (!(tons >= TRADE_RULES.minTons)) fail('bad_tons', `Най-малко ${TRADE_RULES.minTons} т.`);
+  if (!(tons >= TRADE_RULES.minTons)) fail('bad_tons', tr('Най-малко {0} т.', TRADE_RULES.minTons));
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const depot = await ownDepot(tx, company.id, input.depotId, true);
     const m = await market(tx, depot.cityId, input.cargo);
-    if (!m?.produces) fail('not_produced', 'Тази стока не се произвежда в града на депото.');
+    if (!m?.produces) fail('not_produced', tr('Тази стока не се произвежда в града на депото.'));
     const free = (await capacityOf(tx, depot)) - (await usedTons(tx, depot.id));
-    if (tons > free + 1e-6) fail('warehouse_full', `В склада има място за ${round1(Math.max(0, free))} т.`);
+    if (tons > free + 1e-6) fail('warehouse_full', tr('В склада има място за {0} т.', round1(Math.max(0, free))));
     const [city] = await tx.select({ id: cities.id, countryCode: cities.countryCode, nameBg: cities.nameBg }).from(cities).where(eq(cities.id, depot.cityId));
     const cost = Math.round(buyPriceCents(city!, input.cargo, now) * tons);
-    await post(tx, company.id, [{ category: 'trade_purchase', amountCents: -cost, description: `Покупка: ${tons} т ${CARGO[input.cargo].label.toLowerCase()} в ${city!.nameBg}`, idempotencyKey: `trade:buy:${randomUUID()}` }], { requireFunds: true });
+    await post(tx, company.id, [{ category: 'trade_purchase', amountCents: -cost, description: tr('Покупка: {0} т {1} в {2}', tons, CARGO[input.cargo].label.toLowerCase(), city!.nameBg), idempotencyKey: `trade:buy:${randomUUID()}` }], { requireFunds: true });
     await addStock(tx, depot.id, input.cargo, tons, cost);
     await logActivity(tx, userId, 'trade_buy', { depotId: depot.id, cargo: input.cargo, tons, cost });
     return cost;
@@ -88,25 +89,25 @@ export async function shipGoods(
   provider?: RoutingProvider,
 ) {
   const tons = round1(input.tons);
-  if (!(tons >= TRADE_RULES.minTons)) fail('bad_tons', `Най-малко ${TRADE_RULES.minTons} т.`);
+  if (!(tons >= TRADE_RULES.minTons)) fail('bad_tons', tr('Най-малко {0} т.', TRADE_RULES.minTons));
   const company = await companyForUser(db, userId);
   const depot = await ownDepot(db, company.id, input.depotId);
-  if (input.destCityId === depot.cityId) fail('same_city', 'Избери друг град.');
+  if (input.destCityId === depot.cityId) fail('same_city', tr('Избери друг град.'));
   let destDepotId: string | null = null;
   if (input.mode === 'sell') {
     const m = await market(db, input.destCityId, input.cargo);
-    if (!m?.consumes) fail('not_consumed', 'В този град няма купувачи на тази стока.');
+    if (!m?.consumes) fail('not_consumed', tr('В този град няма купувачи на тази стока.'));
   } else {
     const [dest] = await db.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, input.destCityId)));
-    if (!dest) fail('no_depot', 'Нямаш депо в този град.');
-    if (tons > (await capacityOf(db, dest!)) - (await usedTons(db, dest!.id)) + 1e-6) fail('warehouse_full', 'Складът в този град няма толкова място.');
+    if (!dest) fail('no_depot', tr('Нямаш депо в този град.'));
+    if (tons > (await capacityOf(db, dest!)) - (await usedTons(db, dest!.id)) + 1e-6) fail('warehouse_full', tr('Складът в този град няма толкова място.'));
     destDepotId = dest!.id;
   }
   const route = await getRoute(db, depot.cityId, input.destCityId, 'truck', provider);
   // Take the goods out of the warehouse and create the private shipment in one step.
   const contractId = await db.transaction(async (tx) => {
     const [stock] = await tx.select().from(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, input.cargo))).for('update');
-    if (!stock || stock.tons + 1e-6 < tons) fail('not_enough_stock', `В склада има ${round1(stock?.tons ?? 0)} т.`);
+    if (!stock || stock.tons + 1e-6 < tons) fail('not_enough_stock', tr('В склада има {0} т.', round1(stock?.tons ?? 0)));
     const cost = Math.round((stock!.costCents * tons) / stock!.tons);
     const left = round1(stock!.tons - tons);
     if (left <= 0.05) await tx.delete(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, input.cargo)));
@@ -161,27 +162,27 @@ export const exchangeSuggestedCents = (cargo: CargoType, tons: number, km: numbe
  * day → goods and money come back.
  */
 export async function postFreight(db: Database, userId: string, input: { depotId: string; cargo: CargoType; tons: number; destCityId: number; mode: 'sell' | 'store'; priceCents: number }, now = new Date(), provider?: RoutingProvider) {
-  if (!(await featureFor(db, userId, 'freight_exchange', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'freight_exchange', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   const tons = round1(input.tons);
-  if (!(tons >= TRADE_RULES.minTons)) fail('bad_tons', `Най-малко ${TRADE_RULES.minTons} т.`);
+  if (!(tons >= TRADE_RULES.minTons)) fail('bad_tons', tr('Най-малко {0} т.', TRADE_RULES.minTons));
   const company = await companyForUser(db, userId);
   const depot = await ownDepot(db, company.id, input.depotId);
-  if (input.destCityId === depot.cityId) fail('same_city', 'Избери друг град.');
+  if (input.destCityId === depot.cityId) fail('same_city', tr('Избери друг град.'));
   let destDepotId: string | null = null;
   if (input.mode === 'sell') {
     const m = await market(db, input.destCityId, input.cargo);
-    if (!m?.consumes) fail('not_consumed', 'В този град няма купувачи на тази стока.');
+    if (!m?.consumes) fail('not_consumed', tr('В този град няма купувачи на тази стока.'));
   } else {
     const [dest] = await db.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, input.destCityId)));
-    if (!dest) fail('no_depot', 'Нямаш депо в този град.');
+    if (!dest) fail('no_depot', tr('Нямаш депо в този град.'));
     destDepotId = dest!.id;
   }
   const route = await getRoute(db, depot.cityId, input.destCityId, 'truck', provider);
   const fair = exchangeSuggestedCents(input.cargo, tons, route.distanceKm);
-  if (input.priceCents < fair * EXCHANGE.minPriceShare || input.priceCents > fair * EXCHANGE.maxPriceShare) fail('bad_price', `Заплащането трябва да е между ${eur(fair * EXCHANGE.minPriceShare)} и ${eur(fair * EXCHANGE.maxPriceShare)}.`);
+  if (input.priceCents < fair * EXCHANGE.minPriceShare || input.priceCents > fair * EXCHANGE.maxPriceShare) fail('bad_price', tr('Заплащането трябва да е между {0} и {1}.', eur(fair * EXCHANGE.minPriceShare), eur(fair * EXCHANGE.maxPriceShare)));
   return db.transaction(async (tx) => {
     const [stock] = await tx.select().from(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, input.cargo))).for('update');
-    if (!stock || stock.tons + 1e-6 < tons) fail('not_enough_stock', `В склада има ${round1(stock?.tons ?? 0)} т.`);
+    if (!stock || stock.tons + 1e-6 < tons) fail('not_enough_stock', tr('В склада има {0} т.', round1(stock?.tons ?? 0)));
     const cost = Math.round((stock!.costCents * tons) / stock!.tons);
     const left = round1(stock!.tons - tons);
     if (left <= 0.05) await tx.delete(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, input.cargo)));
@@ -198,7 +199,7 @@ export async function postFreight(db: Database, userId: string, input: { depotId
         expiresAt: new Date(now.getTime() + EXCHANGE.hours * 3_600_000),
       })
       .returning({ id: contracts.id });
-    await post(tx, company.id, [{ category: 'freight_escrow', amountCents: -input.priceCents, description: `Депозит за превоз: ${tons} т ${CARGO[input.cargo].label.toLowerCase()}`, idempotencyKey: `exchange:${row!.id}:escrow`, refType: 'contract', refId: row!.id }], { requireFunds: true });
+    await post(tx, company.id, [{ category: 'freight_escrow', amountCents: -input.priceCents, description: tr('Депозит за превоз: {0} т {1}', tons, CARGO[input.cargo].label.toLowerCase()), idempotencyKey: `exchange:${row!.id}:escrow`, refType: 'contract', refId: row!.id }], { requireFunds: true });
     await logActivity(tx, userId, 'freight_posted', { contractId: row!.id, priceCents: input.priceCents });
     await broadcast(tx, 'market');
     return row!.id;
@@ -215,9 +216,9 @@ export async function expireFreight(db: Database, now = new Date()) {
       await tx.update(contracts).set({ status: 'returned' }).where(eq(contracts.id, c.id));
       const [from] = c.trade.fromDepotId ? await tx.select().from(depots).where(eq(depots.id, c.trade.fromDepotId)) : [];
       if (from) await addStock(tx, from.id, c.cargoType as CargoType, c.trade.tons, c.trade.costCents);
-      await post(tx, c.tradeCompanyId, [{ category: 'freight_escrow', amountCents: c.trade.escrowCents ?? c.rewardCents, description: 'Върнат депозит: никой не пое превоза', idempotencyKey: `exchange:${c.id}:refund`, refType: 'contract', refId: c.id }]);
+      await post(tx, c.tradeCompanyId, [{ category: 'freight_escrow', amountCents: c.trade.escrowCents ?? c.rewardCents, description: tr('Върнат депозит: никой не пое превоза'), idempotencyKey: `exchange:${c.id}:refund`, refType: 'contract', refId: c.id }]);
       const [owner] = await tx.select({ id: companies.ownerId }).from(companies).where(eq(companies.id, c.tradeCompanyId));
-      if (owner) await notify(tx, owner.id, 'info', 'Никой не пое превоза', `${c.trade.tons} т ${c.goods} са обратно в склада, а депозитът — в сметката ти.`, '/game/trade');
+      if (owner) await notify(tx, owner.id, 'info', () => tr('Никой не пое превоза'), () => tr('{0} т {1} са обратно в склада, а депозитът — в сметката ти.', c.trade!.tons, c.goods), '/game/trade');
     });
   }
   return due.length;
@@ -228,17 +229,17 @@ export async function settleExchange(tx: Tx, contract: typeof contracts.$inferSe
   if (!contract.exchange || !contract.tradeCompanyId) return;
   const [owner] = await tx.select({ id: companies.ownerId }).from(companies).where(eq(companies.id, contract.tradeCompanyId));
   if (!owner) return;
-  if (penaltyCents > 0) await post(tx, contract.tradeCompanyId, [{ category: 'freight_escrow', amountCents: penaltyCents, description: 'Неустойка от превозвача за закъснение', idempotencyKey: `exchange:${contract.id}:penalty`, refType: 'contract', refId: contract.id }]);
+  if (penaltyCents > 0) await post(tx, contract.tradeCompanyId, [{ category: 'freight_escrow', amountCents: penaltyCents, description: tr('Неустойка от превозвача за закъснение'), idempotencyKey: `exchange:${contract.id}:penalty`, refType: 'contract', refId: contract.id }]);
   await tx.insert(haulerRatings).values({ contractId: contract.id, ownerUserId: owner.id, haulerUserId }).onConflictDoNothing();
   const [hauler] = await tx.select({ username: users.username }).from(users).where(eq(users.id, haulerUserId));
-  await notify(tx, owner.id, 'success', `${hauler?.username ?? 'Превозвачът'} достави стоката ти`, `Оцени превозвача от „Търговия“.`, `/game/trade?rate=${contract.id}`);
+  await notify(tx, owner.id, 'success', () => tr('{0} достави стоката ти', hauler?.username ?? tr('Превозвачът')), () => tr('Оцени превозвача от „Търговия“.'), `/game/trade?rate=${contract.id}`);
 }
 
 /** The goods owner rates the hauler (once). */
 export async function rateHauler(db: Database, userId: string, contractId: string, stars: number) {
   const n = Math.max(1, Math.min(5, Math.round(stars)));
   const [r] = await db.update(haulerRatings).set({ stars: n }).where(and(eq(haulerRatings.contractId, contractId), eq(haulerRatings.ownerUserId, userId), sql`${haulerRatings.stars} is null`)).returning();
-  if (!r) fail('not_found', 'Няма превоз за оценка.', 404);
+  if (!r) fail('not_found', tr('Няма превоз за оценка.'), 404);
   return r!;
 }
 
@@ -265,16 +266,16 @@ export async function settleTradeLot(tx: Tx, contract: typeof contracts.$inferSe
     const [dest] = lot.destDepotId ? await tx.select().from(depots).where(and(eq(depots.id, lot.destDepotId), eq(depots.companyId, companyId))) : [];
     if (dest) {
       await addStock(tx, dest.id, cargo, lot.tons, lot.costCents);
-      await notify(tx, userId, 'success', `Стоката е в склада в ${city!.nameBg}`, `${lot.tons} т ${CARGO[cargo].label.toLowerCase()} са разтоварени в депото ти.`, '/game/trade');
+      await notify(tx, userId, 'success', () => tr('Стоката е в склада в {0}', city!.nameBg), () => tr('{0} т {1} са разтоварени в депото ти.', lot.tons, CARGO[cargo].label.toLowerCase()), '/game/trade');
       return;
     }
   }
   const m = await market(tx, contract.destCityId, cargo);
   const price = sellPriceCents(city!, cargo, m?.demand ?? 1, at);
   const revenue = Math.round(price * lot.tons);
-  await post(tx, companyId, [{ category: 'trade_sale', amountCents: revenue, description: `Продажба: ${lot.tons} т ${CARGO[cargo].label.toLowerCase()} в ${city!.nameBg}`, idempotencyKey: `trade:sell:${contract.id}`, refType: 'contract', refId: contract.id }]);
+  await post(tx, companyId, [{ category: 'trade_sale', amountCents: revenue, description: tr('Продажба: {0} т {1} в {2}', lot.tons, CARGO[cargo].label.toLowerCase(), city!.nameBg), idempotencyKey: `trade:sell:${contract.id}`, refType: 'contract', refId: contract.id }]);
   const margin = revenue - lot.costCents;
-  await notify(tx, userId, margin >= 0 ? 'success' : 'warning', `Продадена стока в ${city!.nameBg}`, `${lot.tons} т за ${eur(revenue)} (купена за ${eur(lot.costCents)}): ${margin >= 0 ? '+' : ''}${eur(margin)} преди разходите за курса.`, '/game/trade');
+  await notify(tx, userId, margin >= 0 ? 'success' : 'warning', () => tr('Продадена стока в {0}', city!.nameBg), () => tr('{0} т за {1} (купена за {2}): {3}{4} преди разходите за курса.', lot.tons, eur(revenue), eur(lot.costCents), margin >= 0 ? '+' : '', eur(margin)), '/game/trade');
 }
 
 // ── Views ─────────────────────────────────────────────────────────────────
@@ -306,17 +307,17 @@ export async function tradeOverview(db: DbOrTx, companyId: string, now = new Dat
 
 /** Sells off goods that sat in the warehouse for a while: a share of what they cost, at once — the place is free again. */
 export async function clearStock(db: Database, userId: string, depotId: string, cargo: CargoType, now = new Date()) {
-  if (!(await featureFor(db, userId, 'warehouse_clearance', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'warehouse_clearance', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const depot = await ownDepot(tx, company.id, depotId);
     const [stock] = await tx.select().from(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, cargo))).for('update');
-    if (!stock) fail('not_enough_stock', 'Тази стока вече я няма в склада.', 404);
-    if (stock!.updatedAt.getTime() > now.getTime() - CLEARANCE.minDays * 86_400_000) fail('too_fresh', `Разчиства се стока, стояла поне ${CLEARANCE.minDays} дни.`);
+    if (!stock) fail('not_enough_stock', tr('Тази стока вече я няма в склада.'), 404);
+    if (stock!.updatedAt.getTime() > now.getTime() - CLEARANCE.minDays * 86_400_000) fail('too_fresh', tr('Разчиства се стока, стояла поне {0} дни.', CLEARANCE.minDays));
     const cents = Math.round(stock!.costCents * CLEARANCE.share);
     const [city] = await tx.select({ nameBg: cities.nameBg }).from(cities).where(eq(cities.id, depot.cityId));
     await tx.delete(warehouseStock).where(and(eq(warehouseStock.depotId, depot.id), eq(warehouseStock.cargoType, cargo)));
-    if (cents > 0) await post(tx, company.id, [{ category: 'trade_sale', amountCents: cents, description: `Разчистен склад: ${round1(stock!.tons)} т ${CARGO[cargo].label.toLowerCase()} в ${city!.nameBg}`, idempotencyKey: `clearance:${depot.id}:${cargo}:${stock!.updatedAt.getTime()}` }]);
+    if (cents > 0) await post(tx, company.id, [{ category: 'trade_sale', amountCents: cents, description: tr('Разчистен склад: {0} т {1} в {2}', round1(stock!.tons), CARGO[cargo].label.toLowerCase(), city!.nameBg), idempotencyKey: `clearance:${depot.id}:${cargo}:${stock!.updatedAt.getTime()}` }]);
     return { tons: round1(stock!.tons), cents };
   });
 }

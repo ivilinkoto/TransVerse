@@ -8,13 +8,14 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { logActivity, notify } from './notify';
+import { t } from '@/i18n/t';
 
 export type VehicleLease = typeof vehicleLeases.$inferSelect;
 
 /** A leased truck cannot be sold or listed until it is paid off. */
 export async function assertNotLeased(tx: DbOrTx, vehicleId: string) {
   const [l] = await tx.select({ id: vehicleLeases.id }).from(vehicleLeases).where(and(eq(vehicleLeases.vehicleId, vehicleId), eq(vehicleLeases.status, 'active')));
-  if (l) fail('leased', 'Камионът е на лизинг — първо изплати лизинга (Финанси → Лизинг).');
+  if (l) fail('leased', t('Камионът е на лизинг — първо изплати лизинга (Финанси → Лизинг).'));
 }
 
 /** The account's leases, running first. */
@@ -35,7 +36,7 @@ async function repossess(tx: Tx, lease: VehicleLease, ownerId: string, plate: st
   await tx.update(drivers).set({ coVehicleId: null }).where(eq(drivers.coVehicleId, lease.vehicleId));
   await tx.update(vehicles).set({ status: 'repossessed', soldAt: now }).where(eq(vehicles.id, lease.vehicleId));
   await tx.update(vehicleLeases).set({ status: 'repossessed', endedAt: now }).where(eq(vehicleLeases.id, lease.id));
-  await notify(tx, ownerId, 'warning', `Лизинговата компания взе ${plate}`, `${LEASE.maxMissed} вноски подред не бяха платени. Платеното дотук не се връща.`, '/game/finance#leases');
+  await notify(tx, ownerId, 'warning', () => t('Лизинговата компания взе {0}', plate), () => t('{0} вноски подред не бяха платени. Платеното дотук не се връща.', LEASE.maxMissed), '/game/finance#leases');
   await logActivity(tx, ownerId, 'lease_repossessed', { leaseId: lease.id, vehicleId: lease.vehicleId });
 }
 
@@ -65,15 +66,15 @@ export async function collectLeases(db: Database, now = new Date()) {
       if (account.balance < l.weeklyCents) {
         const missed = l.missed + 1;
         await tx.update(vehicleLeases).set({ missed, nextDueAt: missed >= LEASE.maxMissed ? now : next }).where(eq(vehicleLeases.id, l.id));
-        await notify(tx, account.ownerId, 'warning', `Пропусната лизингова вноска за ${v.plate}`, missed >= LEASE.maxMissed ? `Това е ${missed}-ра пропусната вноска подред — лизинговата компания взема камиона.` : `Нямаше ${money(l.weeklyCents)} в баланса. При още ${LEASE.maxMissed - missed} пропусната вноска камионът се връща на лизинговата компания.`, '/game/finance#leases');
+        await notify(tx, account.ownerId, 'warning', () => t('Пропусната лизингова вноска за {0}', v.plate), () => missed >= LEASE.maxMissed ? t('Това е {0}-ра пропусната вноска подред — лизинговата компания взема камиона.', missed) : t('Нямаше {0} в баланса. При още {1} пропусната вноска камионът се връща на лизинговата компания.', money(l.weeklyCents), LEASE.maxMissed - missed), '/game/finance#leases');
         if (missed >= LEASE.maxMissed && (v.status === 'idle' || v.status === 'listed')) await repossess(tx, { ...l, missed }, account.ownerId, v.plate, now);
         return;
       }
-      await post(tx, l.companyId, [{ category: 'lease', amountCents: -l.weeklyCents, description: `Лизингова вноска ${l.paid + 1}/${l.payments} за ${v.plate}`, idempotencyKey: `lease:${l.id}:${n}`, refType: 'vehicle', refId: l.vehicleId }]);
+      await post(tx, l.companyId, [{ category: 'lease', amountCents: -l.weeklyCents, description: t('Лизингова вноска {0}/{1} за {2}', l.paid + 1, l.payments, v.plate), idempotencyKey: `lease:${l.id}:${n}`, refType: 'vehicle', refId: l.vehicleId }]);
       const paid = l.paid + 1;
       const done = paid >= l.payments;
       await tx.update(vehicleLeases).set({ paid, missed: 0, nextDueAt: next, status: done ? 'paid' : 'active', endedAt: done ? now : null }).where(eq(vehicleLeases.id, l.id));
-      if (done) await notify(tx, account.ownerId, 'achievement', `${v.plate} е изцяло твой`, 'Лизингът е изплатен — камионът вече може и да се продава.', '/game/fleet');
+      if (done) await notify(tx, account.ownerId, 'achievement', () => t('{0} е изцяло твой', v.plate), () => t('Лизингът е изплатен — камионът вече може и да се продава.'), '/game/fleet');
     });
   }
   return handled;
@@ -84,10 +85,10 @@ export async function payOffLease(db: Database, userId: string, leaseId: string,
   return db.transaction(async (tx) => {
     const account = await companyForUser(tx, userId);
     const [l] = await tx.select().from(vehicleLeases).where(and(eq(vehicleLeases.id, leaseId), eq(vehicleLeases.companyId, account.id))).for('update');
-    if (!l || l.status !== 'active') fail('lease_not_found', 'Няма такъв лизинг.', 404);
+    if (!l || l.status !== 'active') fail('lease_not_found', t('Няма такъв лизинг.'), 404);
     const [v] = await tx.select({ plate: vehicles.plate, status: vehicles.status }).from(vehicles).where(eq(vehicles.id, l!.vehicleId));
     const amount = payoffCents(l!);
-    await post(tx, account.id, [{ category: 'lease', amountCents: -amount, description: `Предсрочно изплащане на лизинга за ${v?.plate ?? ''}`, idempotencyKey: `lease:${l!.id}:payoff`, refType: 'vehicle', refId: l!.vehicleId }], { requireFunds: true });
+    await post(tx, account.id, [{ category: 'lease', amountCents: -amount, description: t('Предсрочно изплащане на лизинга за {0}', v?.plate ?? ''), idempotencyKey: `lease:${l!.id}:payoff`, refType: 'vehicle', refId: l!.vehicleId }], { requireFunds: true });
     await tx.update(vehicleLeases).set({ paid: l!.payments, missed: 0, status: 'paid', endedAt: now }).where(eq(vehicleLeases.id, l!.id));
     await logActivity(tx, userId, 'lease_paid_off', { leaseId: l!.id, amount });
     return amount;

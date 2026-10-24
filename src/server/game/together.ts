@@ -12,6 +12,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { membershipOf, notifyMembers } from './membership';
 import { broadcast, notify } from './notify';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 // ── Shared loads ─────────────────────────────────────────────────────────
 
@@ -21,21 +22,21 @@ import { broadcast, notify } from './notify';
  * arrived on time, each part gets a bonus on its pay.
  */
 export async function shareLoad(db: Database, userId: string, contractId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'shared_loads', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'shared_loads', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const m = await membershipOf(tx, userId);
-    if (!m) fail('no_company', 'Общ товар се споделя с компанията — първо се присъедини към компания.');
+    if (!m) fail('no_company', tr('Общ товар се споделя с компанията — първо се присъедини към компания.'));
     const [c] = await tx.select().from(contracts).where(eq(contracts.id, contractId)).for('update');
-    if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
-    if (c!.sharedLoadId) fail('already_shared', 'Товарът вече е общ.');
-    if (!canSplit(c!)) fail('no_partial', 'Този товар не може да се дели.');
-    if (c!.weightTons < SHARED_LOAD.minTons) fail('too_small', `Споделят се товари от поне ${SHARED_LOAD.minTons} т.`);
+    if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', tr('Поръчката вече не е налична.'), 409);
+    if (c!.sharedLoadId) fail('already_shared', tr('Товарът вече е общ.'));
+    if (!canSplit(c!)) fail('no_partial', tr('Този товар не може да се дели.'));
+    if (c!.weightTons < SHARED_LOAD.minTons) fail('too_small', tr('Споделят се товари от поне {0} т.', SHARED_LOAD.minTons));
     if (c!.reservedUntil && c!.reservedUntil > now) {
       const account = await companyForUser(tx, userId);
-      if (c!.reservedByCompanyId !== account.id) fail('reserved', 'Поръчката е запазена от друг играч.', 409);
+      if (c!.reservedByCompanyId !== account.id) fail('reserved', tr('Поръчката е запазена от друг играч.'), 409);
     }
     const [{ open = 0 } = {}] = await tx.select({ open: sql<number>`count(*)::int` }).from(sharedLoads).where(and(eq(sharedLoads.organizationId, m!.company.id), eq(sharedLoads.status, 'open')));
-    if (open >= SHARED_LOAD.maxOpen) fail('too_many', `Компанията може да има до ${SHARED_LOAD.maxOpen} общи товара наведнъж.`);
+    if (open >= SHARED_LOAD.maxOpen) fail('too_many', tr('Компанията може да има до {0} общи товара наведнъж.', SHARED_LOAD.maxOpen));
     const [shared] = await tx.insert(sharedLoads).values({ contractId, organizationId: m!.company.id, sharedBy: userId, tons: c!.weightTons, createdAt: now }).returning();
     await tx.update(contracts).set({ sharedLoadId: shared!.id, reservedByCompanyId: null, reservedUntil: null }).where(eq(contracts.id, contractId));
     const names = await tx.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [c!.originCityId, c!.destCityId]));
@@ -43,12 +44,12 @@ export async function shareLoad(db: Database, userId: string, contractId: string
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
     const lane = `${name(c!.originCityId)} → ${name(c!.destCityId)}`;
     const bonus = `${Math.round(SHARED_LOAD.bonusShare * 100)} %`;
-    await notifyMembers(tx, m!.company.id, null, `Общ товар: ${c!.goods}, ${lane}`, `${me!.username} сподели ${c!.weightTons} т с компанията. Вземете по част — ако всички части стигнат навреме, всеки получава +${bonus}.`, `/game/contracts?load=${contractId}`);
+    await notifyMembers(tx, m!.company.id, null, () => tr('Общ товар: {0}, {1}', c!.goods, lane), () => tr('{0} сподели {1} т с компанията. Вземете по част — ако всички части стигнат навреме, всеки получава +{2}.', me!.username, c!.weightTons, bonus), `/game/contracts?load=${contractId}`);
     // The company's Discord channel, with a button to take a part.
     await enqueue(tx, `shared:${shared!.id}`, `company:${m!.company.id}`, {
       username: 'TransVerse',
-      embeds: [{ title: `📦 Общ товар: ${c!.goods}`, color: 0x22d3ee, description: `**${lane}** · ${c!.weightTons} т · ${money(c!.rewardCents)}\n${me!.username} го сподели с компанията. Вземете по част — ако всички части стигнат навреме, всеки получава **+${bonus}**.`, footer: { text: `Изтича ${c!.expiresAt.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` } }],
-      components: [{ type: 1, components: [{ type: 2, style: 1, label: 'Вземи част', custom_id: `take:${contractId}`, emoji: { name: '✂️' } }] }],
+      embeds: [{ title: tr('📦 Общ товар: {0}', c!.goods), color: 0x22d3ee, description: tr('**{0}** · {1} т · {2}\n{3} го сподели с компанията. Вземете по част — ако всички части стигнат навреме, всеки получава **+{4}**.', lane, c!.weightTons, money(c!.rewardCents), me!.username, bonus), footer: { text: tr('Изтича {0}', c!.expiresAt.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) } }],
+      components: [{ type: 1, components: [{ type: 2, style: 1, label: tr('Вземи част'), custom_id: `take:${contractId}`, emoji: { name: '✂️' } }] }],
     }, now);
     await broadcast(tx, 'market');
     return shared!;
@@ -59,7 +60,7 @@ export async function shareLoad(db: Database, userId: string, contractId: string
 export async function checkSharedLoad(tx: DbOrTx, sharedLoadId: string, userId: string) {
   const [s] = await tx.select({ organizationId: sharedLoads.organizationId }).from(sharedLoads).where(eq(sharedLoads.id, sharedLoadId));
   const m = await membershipOf(tx, userId);
-  if (!s || m?.company.id !== s.organizationId) fail('members_only', 'Това е общ товар на друга компания.', 403);
+  if (!s || m?.company.id !== s.organizationId) fail('members_only', tr('Това е общ товар на друга компания.'), 403);
 }
 
 /**
@@ -83,13 +84,13 @@ export async function settleSharedPart(tx: Tx, sharedLoadId: string, now: Date) 
     for (const t of trips) {
       const part = parts.find((p) => p.id === t.contractId)!;
       const bonus = Math.round(part.rewardCents * SHARED_LOAD.bonusShare);
-      await post(tx, t.companyId, [{ category: 'shared_load_bonus', amountCents: bonus, description: `Общ товар: ${part.goods}`, idempotencyKey: `shared:${s.id}:${t.id}`, refType: 'delivery', refId: t.id }]);
+      await post(tx, t.companyId, [{ category: 'shared_load_bonus', amountCents: bonus, description: tr('Общ товар: {0}', part.goods), idempotencyKey: `shared:${s.id}:${t.id}`, refType: 'delivery', refId: t.id }]);
       const userId = ownerOf.get(t.companyId);
       if (userId) await tx.insert(userBadges).values({ userId, badge: 'team-haul', awardedAt: now }).onConflictDoNothing();
     }
   }
-  const goods = parts[0]?.goods ?? 'товар';
-  await notifyMembers(tx, s.organizationId, null, onTime ? `Общият товар стигна! 🎉` : 'Общият товар не стигна навреме', onTime ? `${goods}: всички ${trips.length} части пристигнаха навреме — всеки получи +${Math.round(SHARED_LOAD.bonusShare * 100)} % от своята част.` : `${goods}: ${whole ? 'част закъсня' : 'не всички тонове бяха взети'}, затова няма бонус.`, '/game/finance');
+  const goods = parts[0]?.goods ?? tr('товар');
+  await notifyMembers(tx, s.organizationId, null, () => onTime ? tr('Общият товар стигна! 🎉') : tr('Общият товар не стигна навреме'), () => onTime ? tr('{0}: всички {1} части пристигнаха навреме — всеки получи +{2} % от своята част.', goods, trips.length, Math.round(SHARED_LOAD.bonusShare * 100)) : tr('{0}: {1}, затова няма бонус.', goods, whole ? tr('част закъсня') : tr('не всички тонове бяха взети')), '/game/finance');
   return onTime;
 }
 
@@ -116,8 +117,8 @@ export async function closeExpiredSharedLoads(db: Database, now = new Date()) {
 
 /** The load of the day arrived on time: ТрансКоин for the driver (once). */
 export async function deliverDailyLoad(tx: Tx, contract: { id: string; goods: string }, userId: string) {
-  if (await postCoins(tx, userId, { amount: DAILY_LOAD.coins, reason: 'daily_load', description: `Товар на деня: ${contract.goods}`, idempotencyKey: `daily-load:${contract.id}` })) {
-    await notify(tx, userId, 'success', 'Товарът на деня е доставен! ⭐', `+${DAILY_LOAD.coins} ТрансКоин за доставката навреме.`, '/game/shop');
+  if (await postCoins(tx, userId, { amount: DAILY_LOAD.coins, reason: 'daily_load', description: tr('Товар на деня: {0}', contract.goods), idempotencyKey: `daily-load:${contract.id}` })) {
+    await notify(tx, userId, 'success', () => tr('Товарът на деня е доставен! ⭐'), () => tr('+{0} ТрансКоин за доставката навреме.', DAILY_LOAD.coins), '/game/shop');
   }
 }
 
@@ -128,21 +129,21 @@ const openStatus = inArray(duels.status, ['pending', 'active']);
 
 /** A player challenges another to a week of hauling: who carries more tonnes. */
 export async function challengeDuel(db: Database, userId: string, opponentId: string, now = new Date()) {
-  if (userId === opponentId) fail('self', 'Не можеш да се дуелираш със себе си.');
+  if (userId === opponentId) fail('self', tr('Не можеш да се дуелираш със себе си.'));
   return db.transaction(async (tx) => {
     const both = await tx.select({ id: users.id, username: users.username, bannedAt: users.bannedAt }).from(users).where(inArray(users.id, [userId, opponentId]));
     const me = both.find((u) => u.id === userId);
     const rival = both.find((u) => u.id === opponentId);
-    if (!rival || rival.bannedAt) fail('not_found', 'Няма такъв играч.', 404);
+    if (!rival || rival.bannedAt) fail('not_found', tr('Няма такъв играч.'), 404);
     // One open duel per pair; a few at a time per player.
     const [same] = await tx.select({ id: duels.id }).from(duels).where(and(pair(userId, opponentId), openStatus));
-    if (same) fail('already', `Вече имате дуел с ${rival!.username}.`);
+    if (same) fail('already', tr('Вече имате дуел с {0}.', rival!.username));
     for (const id of [userId, opponentId]) {
       const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(duels).where(and(or(eq(duels.challengerId, id), eq(duels.opponentId, id)), openStatus));
-      if (n >= DUEL.maxOpen) fail('too_many', id === userId ? `Може да имаш до ${DUEL.maxOpen} дуела наведнъж.` : `${rival!.username} вече има ${DUEL.maxOpen} дуела.`);
+      if (n >= DUEL.maxOpen) fail('too_many', id === userId ? tr('Може да имаш до {0} дуела наведнъж.', DUEL.maxOpen) : tr('{0} вече има {1} дуела.', rival!.username, DUEL.maxOpen));
     }
     const [d] = await tx.insert(duels).values({ challengerId: userId, opponentId, createdAt: now }).returning();
-    await notify(tx, opponentId, 'info', `${me!.username} те предизвика на дуел ⚔️`, `Кой ще превози повече тонове за ${DUEL.days} дни? Победителят печели ${DUEL.coins} ТрансКоин. Приеми до ${DUEL.pendingHours} часа.`, `/game/duels?duel=${d!.id}`);
+    await notify(tx, opponentId, 'info', () => tr('{0} те предизвика на дуел ⚔️', me!.username), () => tr('Кой ще превози повече тонове за {0} дни? Победителят печели {1} ТрансКоин. Приеми до {2} часа.', DUEL.days, DUEL.coins, DUEL.pendingHours), `/game/duels?duel=${d!.id}`);
     return d!;
   });
 }
@@ -151,17 +152,17 @@ export async function challengeDuel(db: Database, userId: string, opponentId: st
 export async function respondDuel(db: Database, userId: string, duelId: string, accept: boolean, now = new Date()) {
   return db.transaction(async (tx) => {
     const [d] = await tx.select().from(duels).where(eq(duels.id, duelId)).for('update');
-    if (!d || d.opponentId !== userId) fail('not_found', 'Няма такава покана.', 404);
-    if (d!.status !== 'pending' || d!.createdAt.getTime() + DUEL.pendingHours * 3_600_000 <= now.getTime()) fail('expired', 'Поканата вече не е активна.', 409);
+    if (!d || d.opponentId !== userId) fail('not_found', tr('Няма такава покана.'), 404);
+    if (d!.status !== 'pending' || d!.createdAt.getTime() + DUEL.pendingHours * 3_600_000 <= now.getTime()) fail('expired', tr('Поканата вече не е активна.'), 409);
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
     if (!accept) {
       await tx.update(duels).set({ status: 'declined', settledAt: now }).where(eq(duels.id, d!.id));
-      await notify(tx, d!.challengerId, 'info', `${me!.username} отказа дуела`, 'Предизвикай някой друг!', '/game/duels');
+      await notify(tx, d!.challengerId, 'info', () => tr('{0} отказа дуела', me!.username), () => tr('Предизвикай някой друг!'), '/game/duels');
       return { status: 'declined' as const };
     }
     const endsAt = new Date(now.getTime() + DUEL.days * 86_400_000);
     await tx.update(duels).set({ status: 'active', startsAt: now, endsAt }).where(eq(duels.id, d!.id));
-    await notify(tx, d!.challengerId, 'success', `${me!.username} прие дуела ⚔️`, `Броят се тоновете, които превозите до ${endsAt.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.`, '/game/duels');
+    await notify(tx, d!.challengerId, 'success', () => tr('{0} прие дуела ⚔️', me!.username), () => tr('Броят се тоновете, които превозите до {0}.', endsAt.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })), '/game/duels');
     return { status: 'active' as const, endsAt };
   });
 }
@@ -184,15 +185,15 @@ export async function settleDuels(db: Database, now = new Date()) {
       const winnerId = duelWinner(d);
       await tx.update(duels).set({ status: 'done', winnerId, settledAt: now }).where(eq(duels.id, d.id));
       const names = new Map((await tx.select({ id: users.id, username: users.username }).from(users).where(inArray(users.id, [d.challengerId, d.opponentId]))).map((u) => [u.id, u.username]));
-      const score = (id: string) => (id === d.challengerId ? `${Math.round(d.challengerTons)} : ${Math.round(d.opponentTons)} т` : `${Math.round(d.opponentTons)} : ${Math.round(d.challengerTons)} т`);
+      const score = (id: string) => (id === d.challengerId ? tr('{0} : {1} т', Math.round(d.challengerTons), Math.round(d.opponentTons)) : tr('{0} : {1} т', Math.round(d.opponentTons), Math.round(d.challengerTons)));
       if (winnerId) {
-        await postCoins(tx, winnerId, { amount: DUEL.coins, reason: 'duel', description: `Дуел срещу ${names.get(winnerId === d.challengerId ? d.opponentId : d.challengerId)}`, idempotencyKey: `duel:${d.id}` });
+        await postCoins(tx, winnerId, { amount: DUEL.coins, reason: 'duel', description: tr('Дуел срещу {0}', names.get(winnerId === d.challengerId ? d.opponentId : d.challengerId)), idempotencyKey: `duel:${d.id}` });
         await tx.insert(userBadges).values({ userId: winnerId, badge: DUEL.badge, awardedAt: now }).onConflictDoNothing();
       }
       for (const id of [d.challengerId, d.opponentId]) {
         const rival = names.get(id === d.challengerId ? d.opponentId : d.challengerId);
-        const text = !winnerId ? `Равенство (${score(id)}).` : winnerId === id ? `Победа ${score(id)}! +${DUEL.coins} ТрансКоин.` : `Загуба ${score(id)}. Реванш?`;
-        await notify(tx, id, winnerId === id ? 'success' : 'info', `Дуелът с ${rival} приключи`, text, '/game/duels');
+        const text = !winnerId ? tr('Равенство ({0}).', score(id)) : winnerId === id ? tr('Победа {0}! +{1} ТрансКоин.', score(id), DUEL.coins) : tr('Загуба {0}. Реванш?', score(id));
+        await notify(tx, id, winnerId === id ? 'success' : 'info', () => tr('Дуелът с {0} приключи', rival), text, '/game/duels');
       }
     });
   }

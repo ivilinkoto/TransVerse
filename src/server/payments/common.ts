@@ -12,6 +12,7 @@ import { postCoins } from '@/server/game/coins';
 import { fail } from '@/server/game/errors';
 import { notify } from '@/server/game/notify';
 import { mailConfig } from '@/server/mail';
+import { t } from '@/i18n/t';
 
 export type Payment = typeof payments.$inferSelect;
 export type Provider = 'paypal' | 'stripe';
@@ -57,24 +58,24 @@ const validAppUrl = (url: string) => /^https?:\/\/[^\s/]+(\/.*)?$/i.test(url.tri
 export function siteUrl(requestOrigin?: string | null): string {
   const configured = process.env.APP_URL?.trim();
   const base = configured && validAppUrl(configured) ? configured : requestOrigin;
-  if (!base) fail('payments_disabled', 'Липсва адресът на сайта (APP_URL).', 503);
+  if (!base) fail('payments_disabled', t('Липсва адресът на сайта (APP_URL).'), 503);
   return base!.replace(/\/$/, '');
 }
 
 /** Validates the order and records a pending payment with the server's own price. */
 export async function startPayment(db: Database, userId: string, input: z.output<typeof checkoutSchema>, now: Date) {
   const product = paidProduct(input.productId);
-  if (!product) fail('unknown_product', 'Непознат продукт.');
+  if (!product) fail('unknown_product', t('Непознат продукт.'));
   const [user] = await db.select({ email: users.email, bannedAt: users.bannedAt, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId));
-  if (!user || user.bannedAt) fail('forbidden', 'Профилът не може да прави покупки.', 403);
+  if (!user || user.bannedAt) fail('forbidden', t('Профилът не може да прави покупки.'), 403);
   // With e-mail switched on, purchases need a confirmed address (receipts, account recovery).
-  if (mailConfig().enabled && !user!.verified) fail('email_unverified', 'Първо потвърди имейла си — линкът е в пощата ти (или го изпрати отново от „Профил и настройки“).', 403);
+  if (mailConfig().enabled && !user!.verified) fail('email_unverified', t('Първо потвърди имейла си — линкът е в пощата ти (или го изпрати отново от „Профил и настройки“).'), 403);
   // At most a few unfinished checkouts at a time (stops spamming the provider).
   const [{ open = 0 } = {}] = await db
     .select({ open: sql<number>`count(*)::int` })
     .from(payments)
     .where(and(eq(payments.userId, userId), eq(payments.status, 'pending'), sql`${payments.createdAt} > ${new Date(now.getTime() - 3_600_000)}`));
-  if (open >= 5) fail('too_many_checkouts', 'Имате няколко незавършени плащания. Опитайте отново след малко.', 429);
+  if (open >= 5) fail('too_many_checkouts', t('Имате няколко незавършени плащания. Опитайте отново след малко.'), 429);
   const [payment] = await db
     .insert(payments)
     .values({ userId, provider: input.provider, productId: product!.id, coins: product!.coins, vipDays: product!.vipDays, amountCents: product!.priceCents, currency: 'eur', consentAt: now })
@@ -98,7 +99,7 @@ export function describeFailure(error: unknown): string {
     if (e.type || e.code) {
       const se = error as { param?: string; requestId?: string };
       const text = e.message?.replace(/\b(sk|rk|pk|whsec)_[A-Za-z0-9_*]+/g, '[ключ]').slice(0, 160);
-      return [e.type, e.code, se.param && `поле ${se.param}`, text, se.requestId].filter(Boolean).join(' · ').slice(0, 300);
+      return [e.type, e.code, se.param && t('поле {0}', se.param), text, se.requestId].filter(Boolean).join(' · ').slice(0, 300);
     }
     if (e.message) return e.message.slice(0, 200);
   }
@@ -110,12 +111,12 @@ const DAY = 86_400_000;
 /** Delivers a paid order: coins through the coin ledger (idempotent key), VIP days on top of the current ones. */
 export async function deliverPayment(tx: Tx, p: Payment, now: Date) {
   const label = paidProduct(p.productId)?.label ?? p.productId;
-  if (p.coins) await postCoins(tx, p.userId, { amount: p.coins, reason: 'purchase', description: `Покупка: ${label}`, idempotencyKey: `payment:${p.id}` });
+  if (p.coins) await postCoins(tx, p.userId, { amount: p.coins, reason: 'purchase', description: t('Покупка: {0}', label), idempotencyKey: `payment:${p.id}` });
   if (p.vipDays) {
     const [u] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, p.userId)).for('update');
     await tx.update(users).set({ vipUntil: new Date(Math.max(now.getTime(), u?.vipUntil?.getTime() ?? 0) + p.vipDays * DAY) }).where(eq(users.id, p.userId));
   }
-  await notify(tx, p.userId, 'success', 'Плащането е получено', `${label} — добавено към профила ти. Благодарим за подкрепата!`, '/game/shop');
+  await notify(tx, p.userId, 'success', () => t('Плащането е получено'), () => t('{0} — добавено към профила ти. Благодарим за подкрепата!', label), '/game/shop');
 }
 
 /**
@@ -139,12 +140,12 @@ export async function refundLocked(tx: Tx, p: Payment, now: Date) {
   if (p.status !== 'paid') return false;
   await tx.update(payments).set({ status: 'refunded', refundedAt: now }).where(eq(payments.id, p.id));
   // The balance may go below zero if the coins were already spent; nothing more can be bought until it is positive.
-  if (p.coins) await postCoins(tx, p.userId, { amount: -p.coins, reason: 'payment_refund', description: `Върнато плащане: ${paidProduct(p.productId)?.label ?? p.productId}`, idempotencyKey: `payment-refund:${p.id}` });
+  if (p.coins) await postCoins(tx, p.userId, { amount: -p.coins, reason: 'payment_refund', description: t('Върнато плащане: {0}', paidProduct(p.productId)?.label ?? p.productId), idempotencyKey: `payment-refund:${p.id}` });
   if (p.vipDays) {
     const [u] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, p.userId)).for('update');
     if (u?.vipUntil) await tx.update(users).set({ vipUntil: new Date(u.vipUntil.getTime() - p.vipDays * DAY) }).where(eq(users.id, p.userId));
   }
-  await notify(tx, p.userId, 'warning', 'Плащането е възстановено', `Сумата ${euro(p.amountCents)} е върната; съответните ТрансКоин / VIP дни са премахнати.`, '/game/shop');
+  await notify(tx, p.userId, 'warning', () => t('Плащането е възстановено'), () => t('Сумата {0} е върната; съответните ТрансКоин / VIP дни са премахнати.', euro(p.amountCents)), '/game/shop');
   return true;
 }
 

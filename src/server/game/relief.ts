@@ -14,6 +14,7 @@ import { postCoins } from './coins';
 import { addLoad, loadHubs } from './contracts';
 import { announce } from './events';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 const STATE = 'humanitarian';
 const pick = <T,>(xs: readonly T[]) => xs[Math.floor(Math.random() * xs.length)]!;
@@ -62,7 +63,7 @@ async function startRelief(db: Database, now: Date) {
     await tx.insert(jobState).values({ key: STATE, value: v }).onConflictDoUpdate({ target: jobState.key, set: { value: v, updatedAt: now } });
     if (featureLive('discord_bot', now)) {
       await announceDiscord(tx, `humanitarian:${e!.id}`, 'events', {
-        embeds: [{ title: `🆘 Хуманитарен конвой: ${country?.nameBg ?? code}`, url: `${appUrl()}/game/events`, color: 0xef4444, description: `${cause[0]!.toUpperCase()}${cause.slice(1)} (игрово събитие). Два дни караме помощи — всяка доставка през държавата се брои, а товарите „Хуманитарна помощ“ носят ТрансКоин и значка.`, footer: { text: 'TransVerse · игрови данни' } }],
+        embeds: [{ title: t('🆘 Хуманитарен конвой: {0}', country?.nameBg ?? code), url: `${appUrl()}/game/events`, color: 0xef4444, description: t('{0}{1} (игрово събитие). Два дни караме помощи — всяка доставка през държавата се брои, а товарите „Хуманитарна помощ“ носят ТрансКоин и значка.', cause[0]!.toUpperCase(), cause.slice(1)), footer: { text: t('TransVerse · игрови данни') } }],
       }, now);
     }
     return v;
@@ -91,8 +92,8 @@ async function topUpLoads(db: Database, country: string, endsAt: Date, now: Date
 /** A relief load arrived on time: ТрансКоин, reputation and (the first time) the badge. */
 export async function reliefDelivered(tx: Tx, userId: string, d: { id: string; companyId: string }, contract: { humanitarian: boolean }, late: boolean, at: Date) {
   if (!contract.humanitarian || late || !(await featureFor(tx, userId, 'humanitarian', at))) return;
-  await postCoins(tx, userId, { amount: RELIEF.coins, reason: 'humanitarian', description: 'Хуманитарен товар навреме', idempotencyKey: `relief:${d.id}` });
+  await postCoins(tx, userId, { amount: RELIEF.coins, reason: 'humanitarian', description: t('Хуманитарен товар навреме'), idempotencyKey: `relief:${d.id}` });
   await tx.update(companies).set({ reputation: sql`least(100, ${companies.reputation} + ${RELIEF.reputation})` }).where(eq(companies.id, d.companyId));
   const [first] = await tx.insert(userBadges).values({ userId, badge: RELIEF.badge, awardedAt: at }).onConflictDoNothing().returning();
-  if (first) await notify(tx, userId, 'achievement', `Значка: ${BADGES[RELIEF.badge]?.label ?? ''}`, 'Първият ти хуманитарен товар навреме. Благодарим!', '/game/progress');
+  if (first) await notify(tx, userId, 'achievement', () => t('Значка: {0}', BADGES[RELIEF.badge]?.label ?? ''), () => t('Първият ти хуманитарен товар навреме. Благодарим!'), '/game/progress');
 }

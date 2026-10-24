@@ -5,6 +5,7 @@ import { startTemplateEvent } from '@/server/game/events';
 import { answer, hasPerm, linked, opt, PERM, stop, type Answer, type Ctx } from './context';
 import { appUrl, BRAND } from './config';
 import { reply } from './ui';
+import { t as tr } from '@/i18n/t';
 
 /**
  * /помощ in two parts: the players' commands for everyone, and — only for
@@ -66,22 +67,22 @@ export function helpView(ctx: Ctx): Answer {
   const staff = hasPerm(ctx, PERM.moderate) || hasPerm(ctx, PERM.ban) || hasPerm(ctx, PERM.manageGuild);
   return answer(reply({
     embeds: [
-      { title: '🚚 Команди за играчите', color: BRAND, description: PLAYER_HELP, footer },
-      ...(staff ? [{ title: '🛡️ Команди за екипа', color: 0xe04545, description: STAFF_HELP, footer: { text: 'Виждаш това, защото имаш права в сървъра' } }] : []),
+      { title: tr('🚚 Команди за играчите'), color: BRAND, description: PLAYER_HELP, footer },
+      ...(staff ? [{ title: tr('🛡️ Команди за екипа'), color: 0xe04545, description: STAFF_HELP, footer: { text: tr('Виждаш това, защото имаш права в сървъра') } }] : []),
     ],
   }, true));
 }
 
 /** /ивент-старт: one of the automatic events, now (administrators of the game). */
 export async function eventStart(ctx: Ctx): Promise<Answer> {
-  if (!hasPerm(ctx, PERM.manageGuild)) stop('Само за екипа.');
+  if (!hasPerm(ctx, PERM.manageGuild)) stop(tr('Само за екипа.'));
   const me = linked(ctx);
-  if (!isAdmin(me.role)) stop('Ивентите в играта пускат администраторите на играта.');
-  const id = opt(ctx.i, 'шаблон') ?? '';
-  const hours = Math.round(Number(opt(ctx.i, 'часове') ?? 72));
+  if (!isAdmin(me.role)) stop(tr('Ивентите в играта пускат администраторите на играта.'));
+  const id = opt(ctx.i, tr('шаблон')) ?? '';
+  const hours = Math.round(Number(opt(ctx.i, tr('часове')) ?? 72));
   try {
     const e = await startTemplateEvent(ctx.db, { id: me.id, role: me.role, username: me.username }, id, hours, ctx.now);
-    return answer(reply({ content: `🎯 Ивентът „${e.name}“ започна за ${hours} ч. Обявлението излиза в #ивенти до минута.` }, true));
+    return answer(reply({ content: tr('🎯 Ивентът „{0}“ започна за {1} ч. Обявлението излиза в #ивенти до минута.', e.name, hours) }, true));
   } catch (error) {
     if (error instanceof GameError) stop(`⚠️ ${error.message}`);
     throw error;

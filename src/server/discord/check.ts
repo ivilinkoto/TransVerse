@@ -7,6 +7,7 @@ import { forgetGuild, giveVerified, guild, verifiedRole } from './guild';
 import { LAYOUT, layoutChannel, layoutState, saveLayoutState } from './layout';
 import { enqueue } from './outbox';
 import { button, modal, rows, say, STYLE, textInput } from './ui';
+import { t } from '@/i18n/t';
 
 /**
  * The new members' check (off until switched on in the admin panel): only
@@ -88,13 +89,13 @@ async function giveEveryoneVerified(db: Database) {
 }
 
 async function postVerifyPanel(db: Database) {
-  const channelId = await layoutChannel(db, 'добре-дошли');
+  const channelId = await layoutChannel(db, t('добре-дошли'));
   if (!channelId) return;
   const state = await layoutState(db);
   if (state.panels.verify) return;
   const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, {
-    embeds: [{ title: '✅ Влез в сървъра', color: BRAND, description: 'За да видиш останалите канали, натисни бутона и реши една сметка. Така пазим сървъра от ботове.' }],
-    components: rows(button('Не съм бот', 'verify:start', STYLE.success, '✅')),
+    embeds: [{ title: t('✅ Влез в сървъра'), color: BRAND, description: t('За да видиш останалите канали, натисни бутона и реши една сметка. Така пазим сървъра от ботове.') }],
+    components: rows(button(t('Не съм бот'), 'verify:start', STYLE.success, '✅')),
   });
   await saveLayoutState(db, { ...state, panels: { ...state.panels, verify: msg.id } });
 }
@@ -103,11 +104,11 @@ async function postVerifyPanel(db: Database) {
 export function verifyStart(ctx: Ctx): Answer {
   const a = 2 + randomInt(8);
   const b = 2 + randomInt(8);
-  return answer(modal(`verify:sum:${a + b}`, 'Проверка', [textInput('sum', `Колко е ${a} + ${b}?`, { max: 3, placeholder: 'число' })]));
+  return answer(modal(`verify:sum:${a + b}`, t('Проверка'), [textInput('sum', t('Колко е {0} + {1}?', a, b), { max: 3, placeholder: t('число') })]));
 }
 
 export async function verifyAnswer(ctx: Ctx, expected: string): Promise<Answer> {
-  if (field(ctx.i, 'sum').trim() !== expected) return answer(say('Грешен отговор — натисни „Не съм бот“ и опитай пак.'));
+  if (field(ctx.i, 'sum').trim() !== expected) return answer(say(t('Грешен отговор — натисни „Не съм бот“ и опитай пак.')));
   await giveVerified(ctx.discordId);
-  return answer(say('✅ Готово — добре дошъл! Вече виждаш всички канали.'));
+  return answer(say(t('✅ Готово — добре дошъл! Вече виждаш всички канали.')));
 }

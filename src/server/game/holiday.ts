@@ -9,6 +9,7 @@ import { fail } from './errors';
 import { announce } from './events';
 import { post } from './finance';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 /**
  * What every holiday (Halloween, Christmas) shares: quests with progress and
@@ -69,12 +70,12 @@ export async function holidayState(db: DbOrTx, def: HolidayDef, userId: string) 
 /** Takes a quest's reward (up to a week after the event); the last one also gives the badge. */
 export async function claimHolidayQuest(db: Database, def: HolidayDef, userId: string, questId: string, now = new Date()) {
   const quest = def.quests.find((q) => q.id === questId);
-  if (!quest) fail('unknown_quest', 'Непозната мисия.');
-  if (now.getTime() > def.eventWindow().endsAt.getTime() + 7 * 86_400_000 && !def.isActive(now)) fail('season_over', `Мисиите за ${def.label} приключиха.`);
+  if (!quest) fail('unknown_quest', t('Непозната мисия.'));
+  if (now.getTime() > def.eventWindow().endsAt.getTime() + 7 * 86_400_000 && !def.isActive(now)) fail('season_over', t('Мисиите за {0} приключиха.', def.label));
   return db.transaction(async (tx) => {
     const [row] = await tx.select().from(seasonalQuests).where(and(eq(seasonalQuests.userId, userId), eq(seasonalQuests.quest, questKey(def, quest!.id)))).for('update');
-    if (!row || row.progress < quest!.target) fail('not_done', 'Мисията още не е изпълнена.');
-    if (row!.claimedAt) fail('already_claimed', 'Наградата вече е взета.');
+    if (!row || row.progress < quest!.target) fail('not_done', t('Мисията още не е изпълнена.'));
+    if (row!.claimedAt) fail('already_claimed', t('Наградата вече е взета.'));
     await tx.update(seasonalQuests).set({ claimedAt: now }).where(and(eq(seasonalQuests.userId, userId), eq(seasonalQuests.quest, row!.quest)));
     const key = `holiday:${def.key}:${userId}:${quest!.id}`;
     if (quest!.coins) await postCoins(tx, userId, { amount: quest!.coins, reason: 'holiday_reward', description: `${def.label}: ${quest!.title}`, idempotencyKey: `${key}:coins` });
@@ -91,8 +92,8 @@ export async function claimHolidayQuest(db: Database, def: HolidayDef, userId: s
       const inserted = await tx.insert(userBadges).values({ userId, badge: def.badge }).onConflictDoNothing().returning();
       if (inserted.length) {
         badge = true;
-        await postCoins(tx, userId, { amount: QUEST_BADGE_COINS, reason: 'holiday_reward', description: `Значка „${BADGES[def.badge]!.label}“`, idempotencyKey: `holiday:${def.key}:${userId}:badge` });
-        await notify(tx, userId, 'achievement', `Значка „${BADGES[def.badge]!.label}“`, `${def.allDone} +${QUEST_BADGE_COINS} TC и значка завинаги в профила ти.`, def.href);
+        await postCoins(tx, userId, { amount: QUEST_BADGE_COINS, reason: 'holiday_reward', description: t('Значка „{0}“', BADGES[def.badge]!.label), idempotencyKey: `holiday:${def.key}:${userId}:badge` });
+        await notify(tx, userId, 'achievement', () => t('Значка „{0}“', BADGES[def.badge]!.label), () => t('{0} +{1} TC и значка завинаги в профила ти.', def.allDone, QUEST_BADGE_COINS), def.href);
       }
     }
     return { badge };

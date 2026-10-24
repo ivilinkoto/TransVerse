@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t, tx } from '@/i18n/t';
 
 /** Admin → Система: automatic moderation and the new members' check in the Discord server. */
 export function DiscordSwitches({ automod, verification }: { automod: boolean; verification: boolean }) {
@@ -11,12 +12,12 @@ export function DiscordSwitches({ automod, verification }: { automod: boolean; v
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const set = async (key: 'automod' | 'verification', on: boolean) => {
-    if (key === 'verification' && on && !confirm('Новите членове ще виждат само „Добре дошли“, докато не натиснат „Не съм бот“. Всички, които са в сървъра сега, получават ролята „✅ Проверен“. Включваме ли?')) return;
+    if (key === 'verification' && on && !confirm(t('Новите членове ще виждат само „Добре дошли“, докато не натиснат „Не съм бот“. Всички, които са в сървъра сега, получават ролята „✅ Проверен“. Включваме ли?'))) return;
     setBusy(key);
     setMessage(null);
     try {
       const r = await api<{ ok: boolean; errors?: string[]; message?: string }>('/api/admin/action', { type: 'discordSettings', [key]: on });
-      setMessage(!r.ok ? { ok: false, text: r.message ?? 'Не стана.' } : r.errors?.length ? { ok: false, text: `Направено отчасти. Discord отказа: ${r.errors.join(' · ')}` } : { ok: true, text: 'Запазено.' });
+      setMessage(!r.ok ? { ok: false, text: r.message ?? t('Не стана.') } : r.errors?.length ? { ok: false, text: t('Направено отчасти. Discord отказа: {0}', r.errors.join(' · ')) } : { ok: true, text: t('Запазено.') });
       router.refresh();
     } catch (e) {
       setMessage({ ok: false, text: (e as Error).message });
@@ -35,9 +36,9 @@ export function DiscordSwitches({ automod, verification }: { automod: boolean; v
   );
   return (
     <div className="space-y-2 text-sm">
-      {row('automod', automod, 'Автомодерация', 'Трие покани към други сървъри, масово споменаване, линкове от членове в първите 24 часа и спам. Първия път — лично съобщение, втория — предупреждение, после 30 минути заглушаване. Екипът не се проверява.')}
-      {row('verification', verification, 'Проверка на новите членове', 'Новите виждат само „Добре дошли“, докато не натиснат „Не съм бот“ и не решат една сметка. Свързаните играчи минават сами. Каналите извън плана не се пипат.')}
-      {message && <p role="status" className={message.ok ? 'text-profit' : 'text-loss'}>{message.text}</p>}
+      {row('automod', automod, t('Автомодерация'), t('Трие покани към други сървъри, масово споменаване, линкове от членове в първите 24 часа и спам. Първия път — лично съобщение, втория — предупреждение, после 30 минути заглушаване. Екипът не се проверява.'))}
+      {row('verification', verification, t('Проверка на новите членове'), t('Новите виждат само „Добре дошли“, докато не натиснат „Не съм бот“ и не решат една сметка. Свързаните играчи минават сами. Каналите извън плана не се пипат.'))}
+      {message && <p role="status" className={message.ok ? 'text-profit' : 'text-loss'}>{tx(message.text)}</p>}
     </div>
   );
 }

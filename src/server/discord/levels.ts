@@ -13,6 +13,7 @@ import { appUrl, BRAND, discordConfig } from './config';
 import { layoutState } from './layout';
 import { enqueue } from './outbox';
 import { bar, reply } from './ui';
+import { t } from '@/i18n/t';
 
 /**
  * Levels in the Discord server: experience for writing (15–25 at most once a
@@ -77,14 +78,14 @@ async function levelUp(db: Database, discordId: string, level: number, now: Date
   }
   if (u && coins) {
     await db.transaction(async (tx) => {
-      if (await postCoins(tx, u.id, { amount: coins, reason: 'discord_level', description: `Ниво ${level} в Discord`, idempotencyKey: `discord-level:${discordId}:${level}` })) {
-        await notify(tx, u.id, 'success', `Ниво ${level} в Discord! 🎉`, `Получаваш ${coins} ТрансКоин.`, '/game/shop');
+      if (await postCoins(tx, u.id, { amount: coins, reason: 'discord_level', description: t('Ниво {0} в Discord', level), idempotencyKey: `discord-level:${discordId}:${level}` })) {
+        await notify(tx, u.id, 'success', () => t('Ниво {0} в Discord! 🎉', level), () => t('Получаваш {0} ТрансКоин.', coins), '/game/shop');
       }
     });
   }
   await enqueue(db, `level-up:${discordId}:${level}`, 'channel:botCommands', {
     ping: false,
-    content: `🎉 <@${discordId}> стигна **ниво ${level}**!${coins ? (u ? ` +${coins} ТрансКоин в играта.` : ` Свържи акаунта си, за да получаваш ТрансКоин на всяко десето ниво.`) : ''}`,
+    content: t('🎉 <@{0}> стигна **ниво {1}**!{2}', discordId, level, coins ? (u ? t(' +{0} ТрансКоин в играта.', coins) : t(' Свържи акаунта си, за да получаваш ТрансКоин на всяко десето ниво.')) : ''),
     allowed_mentions: { parse: [], users: [discordId] },
   }, now);
 }
@@ -144,22 +145,22 @@ async function rankOf(db: Database, discordId: string) {
 
 /** /ранг [потребител]: level, experience and place, with a picture card. */
 export async function rankView(ctx: Ctx): Promise<Answer> {
-  const id = opt(ctx.i, 'потребител') ?? ctx.discordId;
+  const id = opt(ctx.i, t('потребител')) ?? ctx.discordId;
   const r = await rankOf(ctx.db, id);
-  if (!r) return answer(reply({ content: id === ctx.discordId ? 'Още нямаш опит — пиши в сървъра или влез в гласов канал.' : 'Този член още няма опит.' }, true));
+  if (!r) return answer(reply({ content: id === ctx.discordId ? t('Още нямаш опит — пиши в сървъра или влез в гласов канал.') : t('Този член още няма опит.') }, true));
   const l = levelOf(r.xp);
   return answer(reply({
     embeds: [{
-      title: `Ниво ${l.level} · ${r.name || 'член'}`,
+      title: t('Ниво {0} · {1}', l.level, r.name || t('член')),
       color: BRAND,
-      description: `${bar(l.into / l.next)}\n${int(l.into)} / ${int(l.next)} опит до ниво ${l.level + 1}`,
+      description: t('{0}\n{1} / {2} опит до ниво {3}', bar(l.into / l.next), int(l.into), int(l.next), l.level + 1),
       fields: [
-        { name: 'Място', value: `#${r.place}`, inline: true },
-        { name: 'Съобщения', value: int(r.messages), inline: true },
-        { name: 'В гласов канал', value: `${Math.floor(r.voiceMinutes / 60)} ч ${r.voiceMinutes % 60} мин`, inline: true },
+        { name: t('Място'), value: `#${r.place}`, inline: true },
+        { name: t('Съобщения'), value: int(r.messages), inline: true },
+        { name: t('В гласов канал'), value: t('{0} ч {1} мин', Math.floor(r.voiceMinutes / 60), r.voiceMinutes % 60), inline: true },
       ],
       image: { url: `${appUrl()}/api/discord/card/rank/${id}?v=${Math.floor(Date.now() / 600_000)}` },
-      footer: { text: 'На всяко десето ниво — ТрансКоин в играта (свързан акаунт)' },
+      footer: { text: t('На всяко десето ниво — ТрансКоин в играта (свързан акаунт)') },
     }],
   }));
 }
@@ -170,9 +171,9 @@ export async function topView(ctx: Ctx): Promise<Answer> {
   const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
   return answer(reply({
     embeds: [{
-      title: '🏆 Най-активните в сървъра',
+      title: t('🏆 Най-активните в сървъра'),
       color: BRAND,
-      description: rows.map((r, i) => `${medal(i)} <@${r.discordUserId}> · ниво **${levelOf(r.xp).level}** · ${int(r.xp)} опит`).join('\n') || 'Още никой няма опит.',
+      description: rows.map((r, i) => t('{0} <@{1}> · ниво **{2}** · {3} опит', medal(i), r.discordUserId, levelOf(r.xp).level, int(r.xp))).join('\n') || t('Още никой няма опит.'),
     }],
   }));
 }

@@ -22,7 +22,7 @@ export async function currentUser(): Promise<SessionUser | null> {
 
 export async function requireUser(): Promise<SessionUser> {
   const user = await currentUser();
-  if (!user) throw new GameError('unauthorized', 'Нужно е да влезете в профила си.', 401);
+  if (!user) throw new GameError('unauthorized', t('Нужно е да влезете в профила си.'), 401);
   return user;
 }
 
@@ -31,7 +31,7 @@ async function assertSameOrigin(request: Request) {
   if (request.method === 'GET' || request.method === 'HEAD') return;
   const origin = request.headers.get('origin');
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
-  if (!origin || !host || new URL(origin).host !== host) throw new GameError('bad_origin', 'Невалиден произход на заявката.', 403);
+  if (!origin || !host || new URL(origin).host !== host) throw new GameError('bad_origin', t('Невалиден произход на заявката.'), 403);
 }
 
 export function errorResponse(error: unknown) {

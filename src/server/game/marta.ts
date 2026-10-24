@@ -9,6 +9,7 @@ import { postCoins } from './coins';
 import { fail } from './errors';
 import { addHolidayProgress, claimHolidayQuest, ensureHolidayEvent, holidayState, type HolidayDef } from './holiday';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 export const MARTA_DEF: HolidayDef = {
   key: MARTA.key,
@@ -34,22 +35,22 @@ export const claimMartaQuest = (db: Database, userId: string, questId: string, n
 export const ensureMartaEvent = (db: Database, now = new Date()) => ensureHolidayEvent(db, MARTA_DEF, now);
 
 async function released(db: DbOrTx, userId: string, now: Date) {
-  if (!(await featureFor(db, userId, 'marta', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
-  if (!isMarta(now)) fail('not_in_season', 'Баба Марта е от 1 до 31 март.');
+  if (!(await featureFor(db, userId, 'marta', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
+  if (!isMarta(now)) fail('not_in_season', t('Баба Марта е от 1 до 31 март.'));
 }
 
 /** A martenitsa for a friend: once per friend a year; it counts for the quest. */
 export async function giveMartenitsa(db: Database, userId: string, friendId: string, now = new Date()) {
   await released(db, userId, now);
-  if (friendId === userId) fail('self', 'Мартеничката е за приятел.');
+  if (friendId === userId) fail('self', t('Мартеничката е за приятел.'));
   return db.transaction(async (tx) => {
     const [f] = await tx.select({ id: friendships.id }).from(friendships).where(and(eq(friendships.status, 'accepted'), or(and(eq(friendships.requesterId, userId), eq(friendships.addresseeId, friendId)), and(eq(friendships.requesterId, friendId), eq(friendships.addresseeId, userId)))));
-    if (!f) fail('not_friends', 'Мартеничка се подарява на приятел.');
+    if (!f) fail('not_friends', t('Мартеничка се подарява на приятел.'));
     const [row] = await tx.insert(martenitsas).values({ fromUserId: userId, toUserId: friendId, year: MARTA.year, createdAt: now }).onConflictDoNothing().returning();
-    if (!row) fail('already_given', 'Вече си му подарил мартеничка тази година.', 409);
+    if (!row) fail('already_given', t('Вече си му подарил мартеничка тази година.'), 409);
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
     await addHolidayProgress(tx, MARTA_DEF, userId, 'm_gift', 1);
-    await notify(tx, friendId, 'success', `${me!.username} ти върза мартеничка 🔴⚪`, 'Честита Баба Марта! Бъди здрав и пътувай спокойно.', '/game/marta');
+    await notify(tx, friendId, 'success', () => t('{0} ти върза мартеничка 🔴⚪', me!.username), () => t('Честита Баба Марта! Бъди здрав и пътувай спокойно.'), '/game/marta');
     return row;
   });
 }
@@ -72,10 +73,10 @@ export async function storkOfDay(db: DbOrTx, now: Date) {
 export async function spotStork(db: Database, userId: string, now = new Date()) {
   await released(db, userId, now);
   const stork = await storkOfDay(db, now);
-  if (!stork) fail('no_stork', 'Щъркелът още не е долетял.');
+  if (!stork) fail('no_stork', t('Щъркелът още не е долетял.'));
   return db.transaction(async (tx) => {
-    const fresh = await postCoins(tx, userId, { amount: MARTA.storkCoins, reason: 'holiday_reward', description: `Щъркел над ${stork!.name}`, idempotencyKey: `stork:${userId}:${stork!.day}` });
-    if (!fresh) fail('already_spotted', 'Днешния щъркел вече го видя — утре ще е над друг град.', 409);
+    const fresh = await postCoins(tx, userId, { amount: MARTA.storkCoins, reason: 'holiday_reward', description: t('Щъркел над {0}', stork!.name), idempotencyKey: `stork:${userId}:${stork!.day}` });
+    if (!fresh) fail('already_spotted', t('Днешния щъркел вече го видя — утре ще е над друг град.'), 409);
     await addHolidayProgress(tx, MARTA_DEF, userId, 'm_stork', 1);
     return { city: stork!.name, coins: MARTA.storkCoins };
   });

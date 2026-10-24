@@ -14,10 +14,17 @@ import { storkOfDay } from '@/server/game/marta';
 import { allianceBases } from '@/server/game/alliances';
 import { activeReports } from '@/server/game/live-road';
 import { REPORT_KINDS } from '@/lib/game/live-road';
+import { t } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Карта' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: t('Карта') };
+}
 
 export default async function MapPage({ searchParams }: { searchParams: Promise<{ contract?: string }> }) {
+  await initLocale();
   const { db, user, company, hq, now, features } = await gameContext();
   // Баба Марта (v1.5): the stork of the day.
   const storkRow = features.marta && isMarta(now) ? await storkOfDay(db, now) : null;
@@ -67,8 +74,8 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
     <div>
       <TutorialVisit step="track_map" pending={visitPending} />
       <PageHeader
-        title="Карта"
-        subtitle={preview ? `Преглед на маршрут — ${preview.title}${preview.approximate ? ' (приблизителна линия, пътният маршрут не е наличен)' : ' (реален пътен маршрут за камион)'}` : 'Твоите камиони и тези на всички играчи — на живо, по реални пътища.'}
+        title={t('Карта')}
+        subtitle={preview ? t('Преглед на маршрут — {0}{1}', preview.title, preview.approximate ? t(' (приблизителна линия, пътният маршрут не е наличен)') : t(' (реален пътен маршрут за камион)')) : t('Твоите камиони и тези на всички играчи — на живо, по реални пътища.')}
       />
       <MapClient ownVip={isVip(user.vipUntil, (await gameContext()).now)} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} vehicles={vehicles} depots={depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] }))} preview={preview} stork={storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null} bases={bases} reports={reports} />
     </div>

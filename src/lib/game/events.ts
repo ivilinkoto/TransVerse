@@ -9,6 +9,7 @@
  */
 import { CARGO, type CargoType } from './cargo';
 import { hash, LONG_HAUL_KM, sofiaMidnight, sofiaParts, type DeliveryFacts } from './missions';
+import { t, intlLocale } from '@/i18n/t';
 
 export const EVENT_METRICS = ['tons', 'deliveries', 'km', 'on_time', 'international', 'heavy', 'long_haul', 'earned_cents', 'holiday'] as const;
 export type EventMetric = (typeof EVENT_METRICS)[number];
@@ -69,27 +70,27 @@ export function eventIncrement(e: EventFilter, f: DeliveryFacts): number {
 
 /** "1 250 т", "48 доставки", "75 000 лв.". */
 export function formatAmount(metric: EventMetric, value: number): string {
-  if (metric === 'earned_cents') return `${Math.round(value / 100).toLocaleString('bg-BG')} лв.`;
+  if (metric === 'earned_cents') return t('{0} лв.', Math.round(value / 100).toLocaleString(intlLocale()));
   const v = metric === 'tons' ? Math.round(value * 10) / 10 : Math.round(value);
-  return `${v.toLocaleString('bg-BG')} ${EVENT_METRIC_INFO[metric].unit}`;
+  return `${v.toLocaleString(intlLocale())} ${EVENT_METRIC_INFO[metric].unit}`;
 }
 
 /** Plain-language goal, e.g. "Превозете заедно 1 000 000 т хладилни стоки". */
 export function goalText(e: EventFilter & { target: number }, countryName?: string | null): string {
   const cargo = e.cargoType ? CARGO[e.cargoType as CargoType]?.label.toLowerCase() : null;
-  const where = e.countryCode ? ` по маршрути през ${countryName ?? e.countryCode}` : '';
+  const where = e.countryCode ? t(' по маршрути през {0}', countryName ?? e.countryCode) : '';
   const amount = formatAmount(e.metric, e.target);
   switch (e.metric) {
     case 'tons':
-      return `Превозете заедно ${amount}${cargo ? ` ${cargo}` : ' товари'}${where}`;
+      return t('Превозете заедно {0}{1}{2}', amount, cargo ? ` ${cargo}` : t(' товари'), where);
     case 'km':
-      return `Изминете заедно ${amount} с товар${cargo ? ` (${cargo})` : ''}${where}`;
+      return t('Изминете заедно {0} с товар{1}{2}', amount, cargo ? ` (${cargo})` : '', where);
     case 'earned_cents':
-      return `Спечелете заедно ${amount} навло${cargo ? ` от ${cargo}` : ''}${where}`;
+      return t('Спечелете заедно {0} навло{1}{2}', amount, cargo ? t(' от {0}', cargo) : '', where);
     default: {
-      const n = Math.round(e.target).toLocaleString('bg-BG');
-      const what: Record<string, string> = { deliveries: 'доставки', on_time: 'навременни доставки', international: 'международни доставки', heavy: 'доставки на товари над 15 т', long_haul: `курса над ${LONG_HAUL_KM} км`, holiday: 'празнични доставки' };
-      return `Изпълнете заедно ${n} ${what[e.metric]}${cargo ? ` (${cargo})` : ''}${where}`;
+      const n = Math.round(e.target).toLocaleString(intlLocale());
+      const what: Record<string, string> = { deliveries: t('доставки'), on_time: t('навременни доставки'), international: t('международни доставки'), heavy: t('доставки на товари над 15 т'), long_haul: t('курса над {0} км', LONG_HAUL_KM), holiday: t('празнични доставки') };
+      return t('Изпълнете заедно {0} {1}{2}{3}', n, what[e.metric], cargo ? ` (${cargo})` : '', where);
     }
   }
 }
@@ -131,10 +132,10 @@ export function rewardFor(rewards: EventRewards, rank: number | null): Reward {
 
 export function rewardText(r: Partial<Reward>): string {
   const parts: string[] = [];
-  if (r.vipDays) parts.push(`VIP ${r.vipDays} ${r.vipDays === 1 ? 'ден' : 'дни'}`);
+  if (r.vipDays) parts.push(`VIP ${r.vipDays} ${r.vipDays === 1 ? t('ден') : t('дни')}`);
   if (r.coins) parts.push(`${r.coins} TC`);
-  if (r.cents) parts.push(`${Math.round(r.cents / 100).toLocaleString('bg-BG')} лв.`);
-  if (r.xp) parts.push(`${r.xp.toLocaleString('bg-BG')} опит`);
+  if (r.cents) parts.push(t('{0} лв.', Math.round(r.cents / 100).toLocaleString(intlLocale())));
+  if (r.xp) parts.push(t('{0} опит', r.xp.toLocaleString(intlLocale())));
   return parts.join(' · ') || '—';
 }
 

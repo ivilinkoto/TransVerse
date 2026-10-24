@@ -23,12 +23,13 @@ import { BIG_CONVOY, WEEKLY_CHALLENGE } from '@/lib/game/challenges';
 import type { Embed } from './api';
 import type { Row } from './ui';
 import { appUrl, BRAND } from './config';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 const MODERATE = String(1n << 40n);
 const BAN = String(1n << 2n);
 const MANAGE_GUILD = String(1n << 5n);
 const user = { type: 6, name: 'потребител', description: 'Член на сървъра', required: true };
-const reason = (required: boolean) => ({ type: 3, name: 'причина', description: 'Причина (вижда я и членът)', required, max_length: 500 });
+const reason = (required: boolean) => ({ type: 3, name: tr('причина'), description: tr('Причина (вижда я и членът)'), required, max_length: 500 });
 
 /** Slash commands of the bot (registered in the server by `registerCommands`). Names are Bulgarian. */
 export const COMMANDS = [
@@ -125,7 +126,7 @@ export interface CommandReply {
   ephemeral?: boolean;
 }
 
-const linkHint = () => `Свържи акаунта си от **Настройки → Discord** в играта: ${appUrl()}/game/settings#discord`;
+const linkHint = () => tr('Свържи акаунта си от **Настройки → Discord** в играта: {0}/game/settings#discord', appUrl());
 const footer = { text: 'TransVerse · игрови данни' };
 
 async function linkedUser(db: DbOrTx, discordUserId: string) {
@@ -139,7 +140,7 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
   // Before the release only the staff (linked) can use the bot, to test it.
   if (!featureLive('discord_bot', now, !!me && isStaff(me.role))) {
     const at = featureDate('discord_bot');
-    return { ephemeral: true, content: `Ботът на TransVerse тръгва с обновлението${at ? ` на ${at.toLocaleDateString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })}` : ''}. 🚚` };
+    return { ephemeral: true, content: tr('Ботът на TransVerse тръгва с обновлението{0}. 🚚', at ? tr(' на {0}', at.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })) : '') };
   }
   switch (input.name) {
     case 'профил':
@@ -149,7 +150,7 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
     case 'класация':
       return ranking(db, (input.options['вид'] ?? 'season') as RankingKind, now);
     case 'камиони':
-      return me ? trucks(db, me.id) : { ephemeral: true, content: `Не знам кой си в играта. ${linkHint()}` };
+      return me ? trucks(db, me.id) : { ephemeral: true, content: tr('Не знам кой си в играта. {0}', linkHint()) };
     case 'борса':
       return board(db, input.options['град'] ?? '', now);
     case 'участък':
@@ -157,7 +158,7 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
     case 'рекорди':
       return records(db, input.options['играч'] ?? null, now);
     case 'камион':
-      return me ? truckCard(db, me.id, input.options['номер'] ?? null, now) : { ephemeral: true, content: `Не знам кой си в играта. ${linkHint()}` };
+      return me ? truckCard(db, me.id, input.options['номер'] ?? null, now) : { ephemeral: true, content: tr('Не знам кой си в играта. {0}', linkHint()) };
     case 'съюз':
       return alliance(db, input.options['име'] ?? null, me?.id ?? null, now);
     case 'конвой-голям':
@@ -173,16 +174,16 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
     case 'албум':
       return album(db, input.options['играч'] ?? me?.username ?? null, now);
     case 'свързване':
-      return { ephemeral: true, content: me ? `Свързан си като **${me.username}**. Отвързваш от Настройки → Discord.` : linkHint() };
+      return { ephemeral: true, content: me ? tr('Свързан си като **{0}**. Отвързваш от Настройки → Discord.', me.username) : linkHint() };
     default:
-      return { ephemeral: true, content: 'Непозната команда — виж `/помощ`.' };
+      return { ephemeral: true, content: tr('Непозната команда — виж `/помощ`.') };
   }
 }
 
 async function profile(db: DbOrTx, username: string | null, viewerId: string | null, now: Date): Promise<CommandReply> {
-  if (!username) return { ephemeral: true, content: `Напиши име на играч или свържи акаунта си. ${linkHint()}` };
+  if (!username) return { ephemeral: true, content: tr('Напиши име на играч или свържи акаунта си. {0}', linkHint()) };
   const card = await playerCard(db, viewerId ?? '00000000-0000-0000-0000-000000000000', username.trim(), now);
-  if (!card) return { ephemeral: true, content: `Няма играч „${username}“.` };
+  if (!card) return { ephemeral: true, content: tr('Няма играч „{0}“.', username) };
   return {
     embeds: [{
       title: `${card.username}${card.vip ? ' · VIP' : ''}`,
@@ -190,13 +191,13 @@ async function profile(db: DbOrTx, username: string | null, viewerId: string | n
       color: BRAND,
       image: { url: `${appUrl()}/api/discord/card/player/${encodeURIComponent(card.username)}?v=${pictureVersion()}` },
       fields: [
-        { name: 'Ниво', value: `${card.level} (${Math.round(card.levelShare * 100)} %)`, inline: true },
-        { name: 'Курсове', value: int(card.deliveries), inline: true },
-        { name: 'Репутация', value: `${Math.floor(card.reputation)} · ${card.reputationTier}`, inline: true },
-        { name: 'Компания', value: card.company ? `${card.company.name} [${card.company.tag}] · ${card.company.rank}` : '—', inline: true },
-        { name: 'Приятели', value: int(card.friends), inline: true },
-        { name: 'В играта', value: card.online ? 'онлайн' : card.lastSeen, inline: true },
-        ...(card.badges.length ? [{ name: `Значки (${card.badges.length})`, value: card.badges.slice(0, 8).map((b) => b.label).join(' · ') }] : []),
+        { name: tr('Ниво'), value: `${card.level} (${Math.round(card.levelShare * 100)} %)`, inline: true },
+        { name: tr('Курсове'), value: int(card.deliveries), inline: true },
+        { name: tr('Репутация'), value: `${Math.floor(card.reputation)} · ${card.reputationTier}`, inline: true },
+        { name: tr('Компания'), value: card.company ? `${card.company.name} [${card.company.tag}] · ${card.company.rank}` : '—', inline: true },
+        { name: tr('Приятели'), value: int(card.friends), inline: true },
+        { name: tr('В играта'), value: card.online ? tr('онлайн') : card.lastSeen, inline: true },
+        ...(card.badges.length ? [{ name: tr('Значки ({0})', card.badges.length), value: card.badges.slice(0, 8).map((b) => b.label).join(' · ') }] : []),
       ],
       footer,
     }],
@@ -221,10 +222,10 @@ const pictureVersion = () => Math.floor(Date.now() / 600_000);
 
 async function plot(db: DbOrTx, name: string | null, viewerId: string | null): Promise<CommandReply> {
   const org = await findCompany(db, name, viewerId);
-  if (!org) return { ephemeral: true, content: name ? `Няма компания „${name}“.` : `Напиши име на компания или свържи акаунта си. ${linkHint()}` };
+  if (!org) return { ephemeral: true, content: name ? tr('Няма компания „{0}“.', name) : tr('Напиши име на компания или свържи акаунта си. {0}', linkHint()) };
   return {
     embeds: [{
-      title: `🏗️ Базата на ${org.name}${org.tag ? ` [${org.tag}]` : ''}`,
+      title: tr('🏗️ Базата на {0}{1}', org.name, org.tag ? ` [${org.tag}]` : ''),
       url: `${appUrl()}/game/companies/${org.id}`,
       color: org.liveryColor ? parseInt(org.liveryColor.slice(1), 16) : BRAND,
       image: { url: `${appUrl()}/api/discord/card/plot/${org.id}?v=${pictureVersion()}` },
@@ -235,7 +236,7 @@ async function plot(db: DbOrTx, name: string | null, viewerId: string | null): P
 
 async function company(db: DbOrTx, name: string | null, viewerId: string | null): Promise<CommandReply> {
   const org = await findCompany(db, name, viewerId);
-  if (!org) return { ephemeral: true, content: name ? `Няма компания „${name}“.` : `Напиши име на компания или свържи акаунта си. ${linkHint()}` };
+  if (!org) return { ephemeral: true, content: name ? tr('Няма компания „{0}“.', name) : tr('Напиши име на компания или свържи акаунта си. {0}', linkHint()) };
   const [{ members = 0 } = {}] = await db.execute<{ members: number }>(sql`select count(*)::int as members from company_members where company_id = ${org.id}`).then((r) => r.rows);
   const [hq] = await db.select({ name: cities.nameBg }).from(cities).where(eq(cities.id, org.hqCityId));
   const show = await companyShowcase(db, org.id);
@@ -246,13 +247,13 @@ async function company(db: DbOrTx, name: string | null, viewerId: string | null)
       color: org.liveryColor ? parseInt(org.liveryColor.slice(1), 16) : BRAND,
       description: org.description?.slice(0, 300) || undefined,
       fields: [
-        { name: 'Ниво', value: String(org.companyLevel), inline: true },
-        { name: 'Членове', value: int(Number(members)), inline: true },
-        { name: 'База', value: hq?.name ?? '—', inline: true },
-        { name: 'Битки', value: `${show.battles} победи`, inline: true },
-        { name: 'Проекти', value: String(show.projects), inline: true },
-        { name: 'Нива на сградите', value: String(show.levels), inline: true },
-        ...(show.latestBuilder?.username ? [{ name: 'Строител на седмицата', value: `${show.latestBuilder.username} · ${dec(show.latestBuilder.tons)} т` }] : []),
+        { name: tr('Ниво'), value: String(org.companyLevel), inline: true },
+        { name: tr('Членове'), value: int(Number(members)), inline: true },
+        { name: tr('База'), value: hq?.name ?? '—', inline: true },
+        { name: tr('Битки'), value: tr('{0} победи', show.battles), inline: true },
+        { name: tr('Проекти'), value: String(show.projects), inline: true },
+        { name: tr('Нива на сградите'), value: String(show.levels), inline: true },
+        ...(show.latestBuilder?.username ? [{ name: tr('Строител на седмицата'), value: tr('{0} · {1} т', show.latestBuilder.username, dec(show.latestBuilder.tons)) }] : []),
       ],
       footer,
     }],
@@ -266,36 +267,36 @@ async function ranking(db: DbOrTx, kind: RankingKind, now: Date): Promise<Comman
   let title = '';
   let lines: string[] = [];
   if (kind === 'companies') {
-    title = 'Компании';
-    lines = (await companyLeaderboard(db, 10)).map((r, i) => `${medal(i)} **${r.company}** [${r.tag}] · ниво ${r.level} · ${r.members} членове`);
+    title = tr('Компании');
+    lines = (await companyLeaderboard(db, 10)).map((r, i) => tr('{0} **{1}** [{2}] · ниво {3} · {4} членове', medal(i), r.company, r.tag, r.level, r.members));
   } else if (kind === 'bases') {
-    title = 'Най-красиви бази';
-    lines = (await topBases(db, now, 10)).map((r, i) => `${medal(i)} **${r.name}** [${r.tag}] · 👍 ${r.likes} · ${r.buildings} нива`);
+    title = tr('Най-красиви бази');
+    lines = (await topBases(db, now, 10)).map((r, i) => tr('{0} **{1}** [{2}] · 👍 {3} · {4} нива', medal(i), r.name, r.tag, r.likes, r.buildings));
   } else {
     const { rows, season } = await leaderboard(db, kind, 10);
-    title = kind === 'season' ? `Сезон${season ? ` „${season.name}“` : ''}` : kind === 'wealth' ? 'Най-богати' : 'Най-много курсове';
-    lines = rows.map((r, i) => `${medal(i)} **${r.owner}** · ${kind === 'wealth' ? money(Number(r.value)) : kind === 'deliveries' ? `${int(Number(r.value))} курса` : `${int(Number(r.value))} т.`}`);
+    title = kind === 'season' ? tr('Сезон{0}', season ? ` „${season.name}“` : '') : kind === 'wealth' ? tr('Най-богати') : tr('Най-много курсове');
+    lines = rows.map((r, i) => `${medal(i)} **${r.owner}** · ${kind === 'wealth' ? money(Number(r.value)) : kind === 'deliveries' ? tr('{0} курса', int(Number(r.value))) : tr('{0} т.', int(Number(r.value)))}`);
   }
-  return { embeds: [{ title: `Класация · ${title}`, url: `${appUrl()}/game/leaderboards`, color: BRAND, description: lines.join('\n') || 'Още няма класирани.', footer }] };
+  return { embeds: [{ title: tr('Класация · {0}', title), url: `${appUrl()}/game/leaderboards`, color: BRAND, description: lines.join('\n') || tr('Още няма класирани.'), footer }] };
 }
 
 async function trucks(db: DbOrTx, userId: string): Promise<CommandReply> {
   const [account] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
-  if (!account) return { ephemeral: true, content: 'Нямаш игрови акаунт.' };
+  if (!account) return { ephemeral: true, content: tr('Нямаш игрови акаунт.') };
   const fleet = await fleetView(db, account.id);
   const lines = fleet.vehicles.slice(0, 15).map((v) => {
     const d = v.delivery;
-    const where = d?.etaAt ? `на път към ${d.destination.nameBg} · пристига <t:${Math.floor(new Date(d.etaAt).getTime() / 1000)}:R>` : `в ${v.city.nameBg}`;
+    const where = d?.etaAt ? tr('на път към {0} · пристига <t:{1}:R>', d.destination.nameBg, Math.floor(new Date(d.etaAt).getTime() / 1000)) : tr('в {0}', v.city.nameBg);
     return `🚚 **${v.plate}** · ${v.model.name} · ${where} · ${Math.round(v.condition)} %`;
   });
-  return { ephemeral: true, embeds: [{ title: 'Твоите камиони', url: `${appUrl()}/game/fleet`, color: BRAND, description: lines.join('\n') || 'Нямаш камиони.', footer }] };
+  return { ephemeral: true, embeds: [{ title: tr('Твоите камиони'), url: `${appUrl()}/game/fleet`, color: BRAND, description: lines.join('\n') || tr('Нямаш камиони.'), footer }] };
 }
 
 async function board(db: DbOrTx, cityName: string, now: Date): Promise<CommandReply> {
   const q = cityName.trim();
-  if (!q) return { ephemeral: true, content: 'Напиши град.' };
+  if (!q) return { ephemeral: true, content: tr('Напиши град.') };
   const [city] = await db.select({ id: cities.id, name: cities.nameBg }).from(cities).where(or(ilike(cities.nameBg, q), ilike(cities.name, q))).orderBy(desc(cities.population)).limit(1);
-  if (!city) return { ephemeral: true, content: `Няма град „${q}“ в играта.` };
+  if (!city) return { ephemeral: true, content: tr('Няма град „{0}“ в играта.', q) };
   const dest = sql<string>`(select name_bg from cities c where c.id = ${contracts.destCityId})`;
   const rows = await db
     .select({ goods: contracts.goods, tons: contracts.weightTons, km: contracts.distanceKm, reward: contracts.rewardCents, dest, minLevel: contracts.minLevel })
@@ -303,8 +304,8 @@ async function board(db: DbOrTx, cityName: string, now: Date): Promise<CommandRe
     .where(and(eq(contracts.originCityId, city.id), eq(contracts.status, 'open'), eq(contracts.shady, false), gt(contracts.expiresAt, now), isNull(contracts.constructionId), isNull(contracts.trade)))
     .orderBy(desc(contracts.rewardCents))
     .limit(8);
-  const lines = rows.map((r) => `📦 **${r.goods}** ${dec(r.tons)} т → ${r.dest} · ${km(r.km)} · **${money(r.reward)}**${r.minLevel > 1 ? ` · ниво ${r.minLevel}+` : ''}`);
-  return { embeds: [{ title: `Борса · ${city.name}`, url: `${appUrl()}/game/contracts`, color: BRAND, description: lines.join('\n') || 'В момента няма свободни товари оттук.', footer: { text: 'Поемането на товар става в играта · игрови данни' } }] };
+  const lines = rows.map((r) => tr('📦 **{0}** {1} т → {2} · {3} · **{4}**{5}', r.goods, dec(r.tons), r.dest, km(r.km), money(r.reward), r.minLevel > 1 ? tr(' · ниво {0}+', r.minLevel) : ''));
+  return { embeds: [{ title: tr('Борса · {0}', city.name), url: `${appUrl()}/game/contracts`, color: BRAND, description: lines.join('\n') || tr('В момента няма свободни товари оттук.'), footer: { text: tr('Поемането на товар става в играта · игрови данни') } }] };
 }
 
 async function playerByName(db: DbOrTx, username: string) {
@@ -314,17 +315,17 @@ async function playerByName(db: DbOrTx, username: string) {
 
 /** /рекорди — the fastest loaded runs on the lanes this month (v1.5). */
 async function records(db: DbOrTx, username: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('lane_records', now)) return { ephemeral: true, content: 'Рекордите на линиите идват с обновление 1.5.' };
+  if (!featureLive('lane_records', now)) return { ephemeral: true, content: tr('Рекордите на линиите идват с обновление 1.5.') };
   const who = username ? await playerByName(db, username) : null;
-  if (username && !who) return { ephemeral: true, content: `Няма играч „${username}“.` };
+  if (username && !who) return { ephemeral: true, content: tr('Няма играч „{0}“.', username) };
   const rows = await laneRecordsView(db, now, 10, who?.id);
-  const time = (m: number) => `${Math.floor(m / 60)} ч ${m % 60} мин`;
+  const time = (m: number) => tr('{0} ч {1} мин', Math.floor(m / 60), m % 60);
   return {
     embeds: [{
-      title: who ? `🏁 Рекордите на ${who.username} този месец` : '🏁 Рекорди на линиите този месец',
+      title: who ? tr('🏁 Рекордите на {0} този месец', who.username) : tr('🏁 Рекорди на линиите този месец'),
       url: `${appUrl()}/game/leaderboards?tab=records`,
       color: BRAND,
-      description: rows.length ? rows.map((r) => `**${r.from} → ${r.to}** · ${time(r.minutes)} · ${int(Math.round(r.km))} км${who ? '' : ` · ${r.username}`}`).join('\n') : 'Този месец още няма рекорди.',
+      description: rows.length ? rows.map((r) => tr('**{0} → {1}** · {2} · {3} км{4}', r.from, r.to, time(r.minutes), int(Math.round(r.km)), who ? '' : ` · ${r.username}`)).join('\n') : tr('Този месец още няма рекорди.'),
       footer,
     }],
   };
@@ -332,15 +333,15 @@ async function records(db: DbOrTx, username: string | null, now: Date): Promise<
 
 /** /конвой-голям — announced convoys that still have a seat (v1.6). */
 async function bigConvoys(db: DbOrTx, now: Date): Promise<CommandReply> {
-  if (!featureLive('big_convoy', now)) return { ephemeral: true, content: 'Големият конвой идва с обновление 1.6.' };
+  if (!featureLive('big_convoy', now)) return { ephemeral: true, content: tr('Големият конвой идва с обновление 1.6.') };
   if (featureLive('convoy_lobby', now)) {
     const open = await openConvoysList(db, now);
     return {
       embeds: [{
-        title: '🚚 Конвои с място',
+        title: tr('🚚 Конвои с място'),
         url: `${appUrl()}/game/convoys`,
         color: BRAND,
-        description: open.length ? open.map((c) => `**${c.from} → ${c.to}** · ${c.taken}/${c.seats} камиона · тръгва <t:${Math.floor(c.departAt.getTime() / 1000)}:R>`).join('\n') : 'Сега няма отворен конвой. Създай в играта: Поръчки → Конвои.',
+        description: open.length ? open.map((c) => tr('**{0} → {1}** · {2}/{3} камиона · тръгва <t:{4}:R>', c.from, c.to, c.taken, c.seats, Math.floor(c.departAt.getTime() / 1000))).join('\n') : tr('Сега няма отворен конвой. Създай в играта: Поръчки → Конвои.'),
         footer,
       }],
     };
@@ -348,12 +349,12 @@ async function bigConvoys(db: DbOrTx, now: Date): Promise<CommandReply> {
   const rows = await openBigConvoys(db, now);
   return {
     embeds: [{
-      title: '🚚🚚🚚 Конвои с място',
+      title: tr('🚚🚚🚚 Конвои с място'),
       url: `${appUrl()}/game/challenges`,
       color: BRAND,
       description: rows.length
-        ? rows.map((r) => `**${r.from} → ${r.to}** · ${r.username} · ${r.size}/${BIG_CONVOY.maxTrucks} камиона · до <t:${Math.floor(r.expiresAt.getTime() / 1000)}:t>`).join('\n')
-        : 'Сега няма отворен конвой. Тръгни на курс и го обяви с `/конвой`.',
+        ? rows.map((r) => tr('**{0} → {1}** · {2} · {3}/{4} камиона · до <t:{5}:t>', r.from, r.to, r.username, r.size, BIG_CONVOY.maxTrucks, Math.floor(r.expiresAt.getTime() / 1000))).join('\n')
+        : tr('Сега няма отворен конвой. Тръгни на курс и го обяви с `/конвой`.'),
       footer,
     }],
   };
@@ -361,24 +362,24 @@ async function bigConvoys(db: DbOrTx, now: Date): Promise<CommandReply> {
 
 /** /турнир — the spring cup (v1.6). */
 async function cup(db: DbOrTx, now: Date): Promise<CommandReply> {
-  if (!featureLive('spring_cup', now)) return { ephemeral: true, content: 'Пролетната купа идва с обновление 1.6.' };
+  if (!featureLive('spring_cup', now)) return { ephemeral: true, content: tr('Пролетната купа идва с обновление 1.6.') };
   const c = await cupView(db, now);
   const round = c.rounds.find((r) => r.live) ?? [...c.rounds].reverse().find((r) => r.matches.length);
-  const side = (n: string | null, km: number | null) => (n ? `${n}${km != null ? ` (${int(km)} км)` : ''}` : '—');
+  const side = (n: string | null, km: number | null) => (n ? `${n}${km != null ? tr(' ({0} км)', int(km)) : ''}` : '—');
   const lines = round
-    ? round.matches.map((m) => `${m.settled && m.winner === m.a ? '**' : ''}${side(m.a, m.aKm)}${m.settled && m.winner === m.a ? '**' : ''} срещу ${m.settled && m.winner === m.b ? '**' : ''}${side(m.b, m.bKm)}${m.settled && m.winner === m.b ? '**' : ''}`)
-    : [`Записани: ${c.entries.length} / ${c.size}${c.signupOpen ? ` · записване в играта до <t:${Math.floor(c.rounds[0]!.from.getTime() / 1000)}:f>` : ''}`];
+    ? round.matches.map((m) => tr('{0}{1}{2} срещу {3}{4}{5}', m.settled && m.winner === m.a ? '**' : '', side(m.a, m.aKm), m.settled && m.winner === m.a ? '**' : '', m.settled && m.winner === m.b ? '**' : '', side(m.b, m.bKm), m.settled && m.winner === m.b ? '**' : ''))
+    : [tr('Записани: {0} / {1}{2}', c.entries.length, c.size, c.signupOpen ? tr(' · записване в играта до <t:{0}:f>', Math.floor(c.rounds[0]!.from.getTime() / 1000)) : '')];
   return { embeds: [{ title: `🏆 ${c.title}${round ? ` · ${round.title}` : ''}`, url: `${appUrl()}/game/cup`, color: BRAND, description: lines.join('\n'), footer }] };
 }
 
 /** /маршрут — the truck route between two cities (the stored one, else an approximation; v1.6). */
 async function route(db: DbOrTx, fromName: string, toName: string, now: Date): Promise<CommandReply> {
-  if (!featureLive('my_map', now)) return { ephemeral: true, content: 'Командата идва с обновление 1.6.' };
+  if (!featureLive('my_map', now)) return { ephemeral: true, content: tr('Командата идва с обновление 1.6.') };
   const find = async (q: string) => (q.trim() ? (await db.select().from(cities).where(or(ilike(cities.nameBg, q.trim()), ilike(cities.name, q.trim()))).orderBy(desc(cities.population)).limit(1))[0] : undefined);
   const [a, b] = [await find(fromName), await find(toName)];
-  if (!a || !b) return { ephemeral: true, content: `Няма град „${!a ? fromName : toName}“ в играта.` };
-  if (!featureLive('europe', now) && (isEuropeCountry(a.countryCode) || isEuropeCountry(b.countryCode))) return { ephemeral: true, content: 'Тези държави идват със следващото обновление.' };
-  if (a.id === b.id) return { ephemeral: true, content: 'Избери два различни града.' };
+  if (!a || !b) return { ephemeral: true, content: tr('Няма град „{0}“ в играта.', !a ? fromName : toName) };
+  if (!featureLive('europe', now) && (isEuropeCountry(a.countryCode) || isEuropeCountry(b.countryCode))) return { ephemeral: true, content: tr('Тези държави идват със следващото обновление.') };
+  if (a.id === b.id) return { ephemeral: true, content: tr('Избери два различни града.') };
   const [stored] = await db.select().from(routes).where(and(eq(routes.fromCityId, a.id), eq(routes.toCityId, b.id), eq(routes.profile, 'truck'))).limit(1);
   const r = stored ?? (await approximateProvider.route({ lat: a.lat, lon: a.lon, country: a.countryCode }, { lat: b.lat, lon: b.lon, country: b.countryCode }, 'truck'));
   const approx = r.provider === 'approximate';
@@ -388,22 +389,22 @@ async function route(db: DbOrTx, fromName: string, toName: string, now: Date): P
       title: `🛣️ ${a.nameBg} → ${b.nameBg}`,
       color: BRAND,
       fields: [
-        { name: 'Разстояние', value: `${approx ? '≈ ' : ''}${km(r.distanceKm)}`, inline: true },
-        { name: 'Шофиране', value: `${approx ? '≈ ' : ''}${Math.floor(hours)} ч ${Math.round((hours % 1) * 60)} мин`, inline: true },
-        { name: 'Тол', value: r.hasToll ? 'да' : 'не', inline: true },
-        { name: 'Държави', value: r.countries.join(' → ') || '—', inline: true },
-        { name: 'Граници', value: String(r.borders.length), inline: true },
+        { name: tr('Разстояние'), value: `${approx ? '≈ ' : ''}${km(r.distanceKm)}`, inline: true },
+        { name: tr('Шофиране'), value: tr('{0}{1} ч {2} мин', approx ? '≈ ' : '', Math.floor(hours), Math.round((hours % 1) * 60)), inline: true },
+        { name: tr('Тол'), value: r.hasToll ? tr('да') : tr('не'), inline: true },
+        { name: tr('Държави'), value: r.countries.join(' → ') || '—', inline: true },
+        { name: tr('Граници'), value: String(r.borders.length), inline: true },
       ],
-      footer: { text: approx ? 'Приблизително (маршрутът още не е изчислен в играта) · без почивки и опашки' : 'Истински път (Valhalla / OSM) · без почивки и опашки' },
+      footer: { text: approx ? tr('Приблизително (маршрутът още не е изчислен в играта) · без почивки и опашки') : tr('Истински път (Valhalla / OSM) · без почивки и опашки') },
     }],
   };
 }
 
 /** /държава — one country in short (v1.7). */
 async function country(db: DbOrTx, name: string, now: Date): Promise<CommandReply> {
-  if (!featureLive('discord_country', now)) return { ephemeral: true, content: 'Командата идва с обновление 1.7.' };
+  if (!featureLive('discord_country', now)) return { ephemeral: true, content: tr('Командата идва с обновление 1.7.') };
   const code = await findCountry(db, name);
-  if (!code || (isEuropeCountry(code) && !featureLive('europe', now)) || !GAME_COUNTRIES.includes(code as GameCountry)) return { ephemeral: true, content: `Няма държава „${name}“ в играта.` };
+  if (!code || (isEuropeCountry(code) && !featureLive('europe', now)) || !GAME_COUNTRIES.includes(code as GameCountry)) return { ephemeral: true, content: tr('Няма държава „{0}“ в играта.', name) };
   const c = (await countryInfo(db, code, now))!;
   return {
     embeds: [{
@@ -411,13 +412,13 @@ async function country(db: DbOrTx, name: string, now: Date): Promise<CommandRepl
       url: `${appUrl()}/game/countries/${c.code}`,
       color: BRAND,
       fields: [
-        { name: 'Дизел днес', value: `${moneyPrecise(c.fuelCents)}/л`, inline: true },
-        { name: 'Тол за камион', value: c.toll.kind === 'vignette' ? `винетка ${money(c.toll.cents)}` : `${moneyPrecise(c.toll.centsPerKm)}/км`, inline: true },
-        { name: 'Забрана', value: c.ban ?? 'няма', inline: true },
-        ...(c.zones.length ? [{ name: 'Нискоемисионни зони', value: c.zones.join(', '), inline: true }] : []),
-        ...(c.nationalDay ? [{ name: 'Национален празник', value: `${c.nationalDay.label} (${c.nationalDay.day.split('-').reverse().join('.')})`, inline: true }] : []),
-        { name: 'Крал', value: c.king ? `👑 ${c.king.username} · ${dec(c.king.tons)} т` : 'още няма', inline: true },
-        { name: 'Най-добрите товари към държавата', value: c.loads.length ? c.loads.map((l) => `${l.from} → ${l.to} · ${dec(l.tons)} т · ${money(l.rewardCents)}`).join('\n') : 'Няма отворени сега.' },
+        { name: tr('Дизел днес'), value: tr('{0}/л', moneyPrecise(c.fuelCents)), inline: true },
+        { name: tr('Тол за камион'), value: c.toll.kind === 'vignette' ? tr('винетка {0}', money(c.toll.cents)) : tr('{0}/км', moneyPrecise(c.toll.centsPerKm)), inline: true },
+        { name: tr('Забрана'), value: c.ban ?? tr('няма'), inline: true },
+        ...(c.zones.length ? [{ name: tr('Нискоемисионни зони'), value: c.zones.join(', '), inline: true }] : []),
+        ...(c.nationalDay ? [{ name: tr('Национален празник'), value: `${c.nationalDay.label} (${c.nationalDay.day.split('-').reverse().join('.')})`, inline: true }] : []),
+        { name: tr('Крал'), value: c.king ? tr('👑 {0} · {1} т', c.king.username, dec(c.king.tons)) : tr('още няма'), inline: true },
+        { name: tr('Най-добрите товари към държавата'), value: c.loads.length ? c.loads.map((l) => tr('{0} → {1} · {2} т · {3}', l.from, l.to, dec(l.tons), money(l.rewardCents))).join('\n') : tr('Няма отворени сега.') },
       ],
       footer,
     }],
@@ -426,19 +427,19 @@ async function country(db: DbOrTx, name: string, now: Date): Promise<CommandRepl
 
 /** /предизвикателство — the challenge of the week (v1.6). */
 async function challenge(db: DbOrTx, userId: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('weekly_challenge', now)) return { ephemeral: true, content: 'Предизвикателството на седмицата идва с обновление 1.6.' };
+  if (!featureLive('weekly_challenge', now)) return { ephemeral: true, content: tr('Предизвикателството на седмицата идва с обновление 1.6.') };
   const w = await weeklyChallenge(db, now, userId, 5);
   return {
     embeds: [{
-      title: `🏆 Предизвикателство на седмицата: ${w.title}`,
+      title: tr('🏆 Предизвикателство на седмицата: {0}', w.title),
       url: `${appUrl()}/game/challenges`,
       color: BRAND,
       description: [
         w.description,
-        `Награди: ${WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${c} TC`).join(' · ')} · до <t:${Math.floor(w.endsAt.getTime() / 1000)}:f>`,
+        tr('Награди: {0} · до <t:{1}:f>', WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${c} TC`).join(' · '), Math.floor(w.endsAt.getTime() / 1000)),
         '',
-        w.top.length ? w.top.map((r, i) => `**${i + 1}.** ${r.username} · ${int(r.value)} ${w.unit}`).join('\n') : 'Още няма курс навреме тази седмица.',
-        ...(w.mine ? ['', `Ти си **${w.mine.place}.** от ${int(w.players)} · ${int(w.mine.value)} ${w.unit}`] : []),
+        w.top.length ? w.top.map((r, i) => `**${i + 1}.** ${r.username} · ${int(r.value)} ${w.unit}`).join('\n') : tr('Още няма курс навреме тази седмица.'),
+        ...(w.mine ? ['', tr('Ти си **{0}.** от {1} · {2} {3}', w.mine.place, int(w.players), int(w.mine.value), w.unit)] : []),
       ].join('\n'),
       footer,
     }],
@@ -447,16 +448,16 @@ async function challenge(db: DbOrTx, userId: string | null, now: Date): Promise<
 
 /** /албум — the city album: cards per country (v1.5). */
 async function album(db: DbOrTx, username: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('city_album', now)) return { ephemeral: true, content: 'Колекцията от градове идва с обновление 1.5.' };
-  if (!username) return { ephemeral: true, content: `Напиши име на играч или свържи акаунта си. ${linkHint()}` };
+  if (!featureLive('city_album', now)) return { ephemeral: true, content: tr('Колекцията от градове идва с обновление 1.5.') };
+  if (!username) return { ephemeral: true, content: tr('Напиши име на играч или свържи акаунта си. {0}', linkHint()) };
   const who = await playerByName(db, username);
-  if (!who) return { ephemeral: true, content: `Няма играч „${username}“.` };
+  if (!who) return { ephemeral: true, content: tr('Няма играч „{0}“.', username) };
   const pages = await albumOf(db, who.id);
   const have = pages.reduce((s, p) => s + p.cities.filter((c) => c.at).length, 0);
   const all = pages.reduce((s, p) => s + p.cities.length, 0);
   return {
     embeds: [{
-      title: `📒 Албумът на ${who.username}: ${have} / ${all} града`,
+      title: tr('📒 Албумът на {0}: {1} / {2} града', who.username, have, all),
       url: `${appUrl()}/game/collection`,
       color: BRAND,
       fields: pages.map((p) => {
@@ -470,25 +471,25 @@ async function album(db: DbOrTx, username: string | null, now: Date): Promise<Co
 
 /** /съюз — an alliance: its companies, the week and the hall (v1.5). */
 async function alliance(db: DbOrTx, name: string | null, viewerId: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('alliances', now)) return { ephemeral: true, content: 'Съюзите идват с обновление 1.5.' };
+  if (!featureLive('alliances', now)) return { ephemeral: true, content: tr('Съюзите идват с обновление 1.5.') };
   let id: string | null = null;
   if (name) id = (await db.select({ id: alliances.id }).from(alliances).where(sql`lower(${alliances.name}) = lower(${name.trim()})`))[0]?.id ?? null;
   else if (viewerId) id = (await playerAlliance(db, viewerId, now))?.id ?? null;
-  if (!id) return { ephemeral: true, content: name ? `Няма съюз „${name}“.` : `Компанията ти не е в съюз (или акаунтът ти не е свързан). ${linkHint()}` };
+  if (!id) return { ephemeral: true, content: name ? tr('Няма съюз „{0}“.', name) : tr('Компанията ти не е в съюз (или акаунтът ти не е свързан). {0}', linkHint()) };
   const [a] = await db.select().from(alliances).where(eq(alliances.id, id));
   const members = await db.select({ name: organizations.name, tag: organizations.tag }).from(allianceMembers).innerJoin(organizations, eq(organizations.id, allianceMembers.organizationId)).where(eq(allianceMembers.allianceId, id));
   const week = await allianceWeekView(db, id, members.length, now);
   const hall = await allianceHall(db, id);
   return {
     embeds: [{
-      title: `🛡 Съюз „${a!.name}“`,
+      title: tr('🛡 Съюз „{0}“', a!.name),
       url: `${appUrl()}/game/company/alliance`,
       color: 0xa78bfa,
       fields: [
-        { name: 'Компании', value: members.map((m) => (m.tag ? `[${m.tag}] ${m.name}` : m.name)).join('\n') || '—' },
-        { name: 'Седмична цел', value: `${dec(week.tons)} / ${dec(week.targetTons)} т`, inline: true },
-        { name: 'Битка', value: week.rival ? `срещу ${week.rival.name}: ${dec(week.tons)} : ${dec(week.rival.tons)} т` : 'още няма противник', inline: true },
-        ...(hall && featureLive('alliance_hall', now) ? [{ name: 'Съюзна база', value: `ниво ${hall.level} в ${hall.city}${hall.next ? ` · ${dec(hall.tons)} / ${hall.next} т до следващото` : ' · максимално'}`, inline: true }] : []),
+        { name: tr('Компании'), value: members.map((m) => (m.tag ? `[${m.tag}] ${m.name}` : m.name)).join('\n') || '—' },
+        { name: tr('Седмична цел'), value: tr('{0} / {1} т', dec(week.tons), dec(week.targetTons)), inline: true },
+        { name: tr('Битка'), value: week.rival ? tr('срещу {0}: {1} : {2} т', week.rival.name, dec(week.tons), dec(week.rival.tons)) : tr('още няма противник'), inline: true },
+        ...(hall && featureLive('alliance_hall', now) ? [{ name: tr('Съюзна база'), value: tr('ниво {0} в {1}{2}', hall.level, hall.city, hall.next ? tr(' · {0} / {1} т до следващото', dec(hall.tons), hall.next) : tr(' · максимално')), inline: true }] : []),
       ],
       footer,
     }],
@@ -497,12 +498,12 @@ async function alliance(db: DbOrTx, name: string | null, viewerId: string | null
 
 /** /камион — a card of the player's truck (v1.5). */
 async function truckCard(db: DbOrTx, userId: string, plate: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('discord_truck', now)) return { ephemeral: true, content: 'Командата идва с обновление 1.5.' };
+  if (!featureLive('discord_truck', now)) return { ephemeral: true, content: tr('Командата идва с обновление 1.5.') };
   const [account] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
   const fleet = account ? (await fleetView(db, account.id)).vehicles : [];
   const norm = (s: string) => s.replace(/\s+/g, '').toUpperCase();
   const v = plate ? fleet.find((x) => norm(x.plate) === norm(plate)) : fleet.at(-1);
-  if (!v) return { ephemeral: true, content: plate ? `Нямаш камион с номер „${plate}“.` : 'Още нямаш камион.' };
+  if (!v) return { ephemeral: true, content: plate ? tr('Нямаш камион с номер „{0}“.', plate) : tr('Още нямаш камион.') };
   return {
     embeds: [{
       title: `🚚 ${v.model.brand} ${v.model.name} · ${v.plate}`,

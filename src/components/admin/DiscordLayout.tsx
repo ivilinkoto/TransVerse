@@ -3,6 +3,7 @@
 import { LayoutGrid, Loader2, Megaphone, Wand2 } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t, tx } from '@/i18n/t';
 
 interface Step {
   kind: 'category' | 'channel';
@@ -36,15 +37,15 @@ export function DiscordLayout() {
       if (kind === 'plan') {
         const r = await api<{ ok: boolean; plan?: Plan; message?: string }>('/api/admin/action', { type: 'discordLayoutPlan' });
         if (r.plan) setPlan(r.plan);
-        else setMessage({ ok: false, text: r.message ?? 'Не стана.' });
+        else setMessage({ ok: false, text: r.message ?? t('Не стана.') });
       } else if (kind === 'apply') {
         const r = await api<{ ok: boolean; created?: string[]; panels?: string[]; errors?: string[]; message?: string }>('/api/admin/action', { type: 'discordLayoutApply', permissions: perms });
         const failed = r.errors ?? [];
-        setMessage(!r.ok ? { ok: false, text: r.message ?? 'Не стана.' } : failed.length ? { ok: false, text: `Направено отчасти (${r.created?.length ?? 0} нови). Discord отказа: ${failed.join(' · ')}. Натисни „Покажи плана“ и „Приложи“ пак — продължава оттам.` } : { ok: true, text: `Готово: ${r.created?.length ?? 0} нови канала и категории, ${r.panels?.length ?? 0} съобщения на бота.` });
+        setMessage(!r.ok ? { ok: false, text: r.message ?? t('Не стана.') } : failed.length ? { ok: false, text: t('Направено отчасти ({0} нови). Discord отказа: {1}. Натисни „Покажи плана“ и „Приложи“ пак — продължава оттам.', r.created?.length ?? 0, failed.join(' · ')) } : { ok: true, text: t('Готово: {0} нови канала и категории, {1} съобщения на бота.', r.created?.length ?? 0, r.panels?.length ?? 0) });
         if (r.ok && !failed.length) setPlan(null);
       } else {
         const r = await api<{ ok: boolean; panels?: string[]; message?: string }>('/api/admin/action', { type: 'discordPanels' });
-        setMessage(r.ok ? { ok: true, text: `Обновени съобщения: ${r.panels?.length ?? 0}.` } : { ok: false, text: r.message ?? 'Не стана.' });
+        setMessage(r.ok ? { ok: true, text: t('Обновени съобщения: {0}.', r.panels?.length ?? 0) } : { ok: false, text: r.message ?? t('Не стана.') });
       }
     } catch (e) {
       setMessage({ ok: false, text: (e as Error).message });
@@ -57,39 +58,39 @@ export function DiscordLayout() {
     <div className="space-y-3 text-sm">
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => void run('plan')} disabled={!!busy}>
-          {busy === 'plan' ? <Loader2 className="h-4 w-4 animate-spin" /> : <LayoutGrid className="h-4 w-4" />}Покажи плана
+          {busy === 'plan' ? <Loader2 className="h-4 w-4 animate-spin" /> : <LayoutGrid className="h-4 w-4" />}{t('Покажи плана')}
         </button>
         <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => void run('panels')} disabled={!!busy}>
-          {busy === 'panels' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}Обнови съобщенията на бота
+          {busy === 'panels' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}{t('Обнови съобщенията на бота')}
         </button>
       </div>
       {plan && (
         <div className="space-y-3 rounded-xl border border-asphalt-700 p-3">
-          <p className="text-mist-300">{changes ? `${changes} промени.` : 'Сървърът вече е подреден.'} Нищо не се трие — каналите извън плана остават, където са.</p>
+          <p className="text-mist-300">{t('{0} Нищо не се трие — каналите извън плана остават, където са.', changes ? t('{0} промени.', changes) : t('Сървърът вече е подреден.'))}</p>
           <ul className="max-h-96 space-y-0.5 overflow-auto text-xs">
             {plan.steps.map((s, n) => (
               <li key={n} className={s.kind === 'category' ? 'pt-2 font-semibold' : 'pl-4'}>
-                {s.name} <span className={ACTION[s.action].cls}>· {ACTION[s.action].text}</span>
-                {s.from && <span className="text-mist-400"> (беше „{s.from}“)</span>}
+                {tx(s.name)} <span className={ACTION[s.action].cls}>· {tx(ACTION[s.action].text)}</span>
+                {s.from && <span className="text-mist-400">{' '}{t('(беше „{0}“)', s.from)}</span>}
               </li>
             ))}
           </ul>
           {plan.others.length > 0 && (
             <details className="text-xs">
-              <summary className="cursor-pointer text-mist-300">Извън плана ({plan.others.length}) — остават; махни ги ръчно, ако не трябват</summary>
+              <summary className="cursor-pointer text-mist-300">{t('Извън плана ({0}) — остават; махни ги ръчно, ако не трябват', plan.others.length)}</summary>
               <p className="mt-1 text-mist-400">{plan.others.join(' · ')}</p>
             </details>
           )}
           <label className="flex items-start gap-2 text-xs">
             <input type="checkbox" className="mt-0.5" checked={perms} onChange={(e) => setPerms(e.target.checked)} />
-            <span>Сложи правата от плана и на съществуващите канали (само за четене, екип, статистика). Без отметка правата се слагат само на новите.</span>
+            <span>{t('Сложи правата от плана и на съществуващите канали (само за четене, екип, статистика). Без отметка правата се слагат само на новите.')}</span>
           </label>
           <button type="button" className="btn-primary px-3 py-1.5 text-sm" onClick={() => void run('apply')} disabled={!!busy}>
-            {busy === 'apply' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}Приложи
+            {busy === 'apply' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}{t('Приложи')}
           </button>
         </div>
       )}
-      {message && <p role="status" className={message.ok ? 'text-profit' : 'text-loss'}>{message.text}</p>}
+      {message && <p role="status" className={message.ok ? 'text-profit' : 'text-loss'}>{tx(message.text)}</p>}
     </div>
   );
 }

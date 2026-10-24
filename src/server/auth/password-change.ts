@@ -5,6 +5,7 @@ import { sessions, users } from '@/server/db/schema';
 import { fail } from '@/server/game/errors';
 import { logActivity } from '@/server/game/notify';
 import { hashPassword, verifyPassword } from './password';
+import { t } from '@/i18n/t';
 
 export const passwordSchema = z.object({
   current: z.string().min(1, 'Въведете текущата парола.').max(200),
@@ -14,7 +15,7 @@ export const passwordSchema = z.object({
 /** Changes the password and signs out every other session. */
 export async function changePassword(db: Database, userId: string, sessionId: string | null, input: z.infer<typeof passwordSchema>) {
   const [user] = await db.select().from(users).where(eq(users.id, userId));
-  if (!user || !(await verifyPassword(user.passwordHash, input.current))) fail('invalid_password', 'Текущата парола е грешна.', 400);
+  if (!user || !(await verifyPassword(user.passwordHash, input.current))) fail('invalid_password', t('Текущата парола е грешна.'), 400);
   await db.update(users).set({ passwordHash: await hashPassword(input.next) }).where(eq(users.id, userId));
   await db.delete(sessions).where(sessionId ? and(eq(sessions.userId, userId), ne(sessions.id, sessionId)) : eq(sessions.userId, userId));
   await logActivity(db, userId, 'password_changed');

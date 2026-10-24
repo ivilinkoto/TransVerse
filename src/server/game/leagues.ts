@@ -7,6 +7,7 @@ import { companies, leagueGroups, leagueMembers, users } from '@/server/db/schem
 import { postCoins } from './coins';
 import { post } from './finance';
 import { notify } from './notify';
+import { t, intlLocale } from '@/i18n/t';
 
 /** Adds a delivery's season points to the player's league week, placing them in a group on their first delivery. */
 export async function addLeaguePoints(tx: Tx, userId: string, points: number, now = new Date()) {
@@ -51,11 +52,11 @@ export async function settleLeagues(db: Database, now = new Date()): Promise<num
         const key = `league:${g.weekKey}:${m.userId}`;
         if (prize) {
           const [acct] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, m.userId));
-          if (acct) await post(tx, acct.id, [{ category: 'league_reward', amountCents: prize.cents, description: `Лига ${LEAGUE_TIERS[g.tier]!.name}: ${rank}. място`, idempotencyKey: `${key}:cents` }]);
-          await postCoins(tx, m.userId, { amount: prize.coins, reason: 'league_reward', description: `Лига ${LEAGUE_TIERS[g.tier]!.name}: ${rank}. място`, idempotencyKey: `${key}:coins` });
+          if (acct) await post(tx, acct.id, [{ category: 'league_reward', amountCents: prize.cents, description: t('Лига {0}: {1}. място', LEAGUE_TIERS[g.tier]!.name, rank), idempotencyKey: `${key}:cents` }]);
+          await postCoins(tx, m.userId, { amount: prize.coins, reason: 'league_reward', description: t('Лига {0}: {1}. място', LEAGUE_TIERS[g.tier]!.name, rank), idempotencyKey: `${key}:coins` });
         }
-        const move = outcome === 'up' ? `Качваш се в ${LEAGUE_TIERS[nextTier]!.name}!` : outcome === 'down' ? `Слизаш в ${LEAGUE_TIERS[nextTier]!.name}.` : `Оставаш в ${LEAGUE_TIERS[g.tier]!.name}.`;
-        await notify(tx, m.userId, prize || outcome === 'up' ? 'achievement' : 'info', `Седмичната лига приключи: ${rank}. място`, `${move}${prize ? ` Награда: ${(prize.cents / 100).toLocaleString('bg-BG')} лв. и ${prize.coins} TC.` : ''}`, '/game/league');
+        const move = outcome === 'up' ? t('Качваш се в {0}!', LEAGUE_TIERS[nextTier]!.name) : outcome === 'down' ? t('Слизаш в {0}.', LEAGUE_TIERS[nextTier]!.name) : t('Оставаш в {0}.', LEAGUE_TIERS[g.tier]!.name);
+        await notify(tx, m.userId, prize || outcome === 'up' ? 'achievement' : 'info', () => t('Седмичната лига приключи: {0}. място', rank), () => `${move}${prize ? t(' Награда: {0} лв. и {1} TC.', (prize.cents / 100).toLocaleString(intlLocale()), prize.coins) : ''}`, '/game/league');
       }
       await tx.update(leagueGroups).set({ settledAt: now }).where(eq(leagueGroups.id, g.id));
     });

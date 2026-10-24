@@ -10,6 +10,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { assertNotBlocked } from './moderation';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 export const transferSchema = z.object({
   toUserId: z.string().uuid('Невалиден играч.'),
@@ -28,9 +29,9 @@ export async function sentLast24h(db: DbOrTx, userId: string, now: Date): Promis
 
 /** Why this player cannot send money yet (null when they can). */
 export function senderBlock(u: { level: number; createdAt: Date }, now: Date): string | null {
-  if (u.level < TRANSFER_RULES.minLevel) return `Пари може да се пращат от ниво ${TRANSFER_RULES.minLevel}.`;
+  if (u.level < TRANSFER_RULES.minLevel) return t('Пари може да се пращат от ниво {0}.', TRANSFER_RULES.minLevel);
   const days = (now.getTime() - u.createdAt.getTime()) / 86_400_000;
-  if (days < TRANSFER_RULES.minAccountDays) return `Пари може да се пращат, след като профилът е на ${TRANSFER_RULES.minAccountDays} дни.`;
+  if (days < TRANSFER_RULES.minAccountDays) return t('Пари може да се пращат, след като профилът е на {0} дни.', TRANSFER_RULES.minAccountDays);
   return null;
 }
 
@@ -41,21 +42,21 @@ export function senderBlock(u: { level: number; createdAt: Date }, now: Date): s
  */
 export async function sendMoney(db: Database, userId: string, raw: z.input<typeof transferSchema>, ipHash: string | null, now = new Date()) {
   const input = transferSchema.parse(raw);
-  if (input.toUserId === userId) fail('self', 'Не можеш да пращаш пари на себе си.');
+  if (input.toUserId === userId) fail('self', t('Не можеш да пращаш пари на себе си.'));
   const amountCents = input.amount * 100;
   return db.transaction(async (tx) => {
     // The sender's row is locked so two transfers at once cannot pass the daily limit together.
     const [me] = await tx.select({ id: users.id, username: users.username, level: users.level, createdAt: users.createdAt, bannedAt: users.bannedAt, ipHash: users.signupIpHash }).from(users).where(eq(users.id, userId)).for('update');
     const [to] = await tx.select({ id: users.id, username: users.username, bannedAt: users.bannedAt, ipHash: users.signupIpHash }).from(users).where(eq(users.id, input.toUserId));
-    if (!me || me.bannedAt) fail('forbidden', 'Профилът не може да праща пари.', 403);
-    if (!to || to.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
+    if (!me || me.bannedAt) fail('forbidden', t('Профилът не може да праща пари.'), 403);
+    if (!to || to.bannedAt) fail('player_not_found', t('Играчът не е намерен.'), 404);
     const blocked = senderBlock(me!, now);
     if (blocked) fail('transfer_locked', blocked, 403);
     await assertNotBlocked(tx, userId, to!.id);
     // Same network (at sign-up or now): most likely a second account of the same person.
-    if (to!.ipHash && (to!.ipHash === me!.ipHash || to!.ipHash === ipHash)) fail('same_network', 'Не може да пращаш пари на профил от същата мрежа.', 403);
+    if (to!.ipHash && (to!.ipHash === me!.ipHash || to!.ipHash === ipHash)) fail('same_network', t('Не може да пращаш пари на профил от същата мрежа.'), 403);
     const sent = await sentLast24h(tx, userId, now);
-    if (sent + amountCents > TRANSFER_RULES.dailyLimitCents) fail('daily_limit', `Може да изпратиш още ${money(Math.max(0, TRANSFER_RULES.dailyLimitCents - sent))} за 24 часа.`);
+    if (sent + amountCents > TRANSFER_RULES.dailyLimitCents) fail('daily_limit', t('Може да изпратиш още {0} за 24 часа.', money(Math.max(0, TRANSFER_RULES.dailyLimitCents - sent))));
 
     const feeCents = transferFeeCents(amountCents);
     const [row] = await tx.insert(moneyTransfers).values({ fromUserId: userId, toUserId: to!.id, amountCents, feeCents, note: input.note || null, createdAt: now }).returning({ id: moneyTransfers.id });
@@ -66,13 +67,13 @@ export async function sendMoney(db: Database, userId: string, raw: z.input<typeo
       tx,
       from.id,
       [
-        { category: 'transfer_out', amountCents: -amountCents, description: `Изпратени на ${to!.username}${note}`, idempotencyKey: `transfer:${row!.id}:out`, refType: 'transfer', refId: row!.id },
-        { category: 'transfer_out', amountCents: -feeCents, description: `Такса за превод (${Math.round(TRANSFER_RULES.feeShare * 100)} %)`, idempotencyKey: `transfer:${row!.id}:fee`, refType: 'transfer', refId: row!.id },
+        { category: 'transfer_out', amountCents: -amountCents, description: t('Изпратени на {0}{1}', to!.username, note), idempotencyKey: `transfer:${row!.id}:out`, refType: 'transfer', refId: row!.id },
+        { category: 'transfer_out', amountCents: -feeCents, description: t('Такса за превод ({0} %)', Math.round(TRANSFER_RULES.feeShare * 100)), idempotencyKey: `transfer:${row!.id}:fee`, refType: 'transfer', refId: row!.id },
       ],
       { requireFunds: true },
     );
-    await post(tx, dest.id, [{ category: 'transfer_in', amountCents, description: `Получени от ${me!.username}${note}`, idempotencyKey: `transfer:${row!.id}:in`, refType: 'transfer', refId: row!.id }]);
-    await notify(tx, to!.id, 'success', `${me!.username} ти изпрати ${money(amountCents)}`, input.note ? `„${input.note}“` : 'Парите са в баланса ти.', '/game/finance#transfers');
+    await post(tx, dest.id, [{ category: 'transfer_in', amountCents, description: t('Получени от {0}{1}', me!.username, note), idempotencyKey: `transfer:${row!.id}:in`, refType: 'transfer', refId: row!.id }]);
+    await notify(tx, to!.id, 'success', () => t('{0} ти изпрати {1}', me!.username, money(amountCents)), () => input.note ? `„${input.note}“` : t('Парите са в баланса ти.'), '/game/finance#transfers');
     return { id: row!.id, amountCents, feeCents };
   });
 }

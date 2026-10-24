@@ -1,5 +1,6 @@
 import { Fender, Wheel, type Ids } from './parts';
 import { GRILLE_COLORS, LIGHT_COLORS, type Cosmetics } from '@/lib/game/cosmetics';
+import { tx } from '@/i18n/t';
 
 /** Cab-over European truck cab. `x` = rear of cab, faces right. */
 export function Cab({ x, style, ids, color, aero = false, extras }: { x: number; style: 'day' | 'sleeper' | 'highline'; ids: Ids; color: string; aero?: boolean; extras?: Cosmetics }) {
@@ -79,7 +80,7 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
         </g>
       )}
       {extras?.sticker && (
-        <text x={doorX + 72} y={-121} textAnchor="middle" fontSize="16" fontWeight="800" fill="#fff" stroke="#0b1220" strokeWidth="0.8" paintOrder="stroke" fontFamily="system-ui, sans-serif" letterSpacing="1" {...(extras.sticker.length > 13 ? { textLength: 130, lengthAdjust: 'spacingAndGlyphs' } : {})}>{extras.sticker}</text>
+        <text x={doorX + 72} y={-121} textAnchor="middle" fontSize="16" fontWeight="800" fill="#fff" stroke="#0b1220" strokeWidth="0.8" paintOrder="stroke" fontFamily="system-ui, sans-serif" letterSpacing="1" {...(extras.sticker.length > 13 ? { textLength: 130, lengthAdjust: 'spacingAndGlyphs' } : {})}>{tx(extras.sticker)}</text>
       )}
       {/* headlight, indicator, bumper, step */}
       <rect x={f - 16} y={-150} width={16} height={18} rx={4} fill="#fffbe6" stroke="#9ca3af" />

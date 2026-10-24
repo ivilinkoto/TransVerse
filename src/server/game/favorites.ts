@@ -3,6 +3,7 @@ import type { DbOrTx } from '@/server/db/client';
 import { favoriteLanes } from '@/server/db/schema';
 import { fail } from './errors';
 import { notify } from './notify';
+import { t, intlLocale } from '@/i18n/t';
 
 export const MAX_FAVORITE_LANES = 20;
 
@@ -16,7 +17,7 @@ export async function toggleFavoriteLane(db: DbOrTx, userId: string, originCityI
   const removed = await db.delete(favoriteLanes).where(where).returning({ u: favoriteLanes.userId });
   if (removed.length) return false;
   const mine = await favoriteLanesOf(db, userId);
-  if (mine.length >= MAX_FAVORITE_LANES) fail('too_many_favorites', `Най-много ${MAX_FAVORITE_LANES} любими линии.`);
+  if (mine.length >= MAX_FAVORITE_LANES) fail('too_many_favorites', t('Най-много {0} любими линии.', MAX_FAVORITE_LANES));
   await db.insert(favoriteLanes).values({ userId, originCityId, destCityId }).onConflictDoNothing();
   return true;
 }
@@ -29,7 +30,7 @@ export async function notifyFavoriteLane(db: DbOrTx, lane: { contractId?: string
     .where(and(eq(favoriteLanes.originCityId, lane.originCityId), eq(favoriteLanes.destCityId, lane.destCityId), or(isNull(favoriteLanes.notifiedAt), lt(favoriteLanes.notifiedAt, new Date(now.getTime() - 3_600_000)))))
     .returning({ userId: favoriteLanes.userId });
   for (const { userId } of due) {
-    await notify(db, userId, 'info', `Нова поръчка: ${lane.originName} → ${lane.destName}`, `${lane.goods} за ${Math.round(lane.rewardCents / 100).toLocaleString('bg-BG')} лв. по твоя любима линия.`, lane.contractId ? `/game/contracts?fav=1&load=${lane.contractId}` : '/game/contracts?fav=1');
+    await notify(db, userId, 'info', () => t('Нова поръчка: {0} → {1}', lane.originName, lane.destName), () => t('{0} за {1} лв. по твоя любима линия.', lane.goods, Math.round(lane.rewardCents / 100).toLocaleString(intlLocale())), lane.contractId ? `/game/contracts?fav=1&load=${lane.contractId}` : '/game/contracts?fav=1');
   }
   return due.length;
 }

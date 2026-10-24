@@ -1,4 +1,5 @@
 import { sofiaHourOf } from './together';
+import { t } from '@/i18n/t';
 
 /**
  * Night shift (v1.5): a trip that starts between 22:00 and 05:00 (Sofia)
@@ -125,7 +126,7 @@ export function applyRushHour<T extends Seg>(segments: readonly T[], origin: { p
       const extra = Math.round((seg.end - seg.start) * RUSH_HOUR.extra);
       seg.end += extra;
       shift += extra;
-      seg.note = 'Час пик';
+      seg.note = t('Час пик');
       rush.push(s.kind === 'loading' ? 'loading' : 'unloading');
     }
     return seg;

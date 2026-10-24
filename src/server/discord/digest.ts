@@ -5,6 +5,7 @@ import { periodWindow } from '@/lib/game/missions';
 import type { Database } from '@/server/db/client';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
+import { t } from '@/i18n/t';
 
 /**
  * The weekly digest (v1.5): every Monday from 10:00 (Sofia), in #седмичник,
@@ -50,16 +51,16 @@ export async function announceWeeklyDigest(db: Database, now = new Date()) {
   if (!d.totals.n) return false;
   const happenings = d.events.filter((e) => EVENT_WORDS[e.kind]).slice(0, 4).map((e) => `${int(e.n)} ${EVENT_WORDS[e.kind]}`).join(', ');
   const lines = [
-    `Добро утро, шофьори! Миналата седмица по пътищата на TransVerse: **${int(d.totals.n)} курса**, **${km(d.totals.km)}** и **${int(Math.round(d.totals.tons))} т** товари от ${int(d.totals.drivers)} шофьори.`,
-    d.longest ? `🛣️ Най-дългият курс: **${d.longest.username}**, ${d.longest.from} → ${d.longest.to} (${km(d.longest.km)}).` : '',
-    d.heaviest ? `🏋️ Най-тежкият товар: **${d.heaviest.username}** с ${dec(d.heaviest.tons)} т ${d.heaviest.goods.toLowerCase()}.` : '',
-    d.fresh.length ? `🏢 Нови компании: ${d.fresh.map((o) => `**${o.name}**${o.tag ? ` [${o.tag}]` : ''}`).join(', ')} — добре дошли!` : '',
-    happenings ? `🚧 На пътя се случиха ${happenings}.` : '',
-    ...d.ships.map((s) => `🚢 ${s.ship}: ${s.containers} контейнера${s.winner ? ` — най-много разкара „${s.winner}“` : ''}.`),
-    'Приятно каране тази седмица! 🚚',
+    t('Добро утро, шофьори! Миналата седмица по пътищата на TransVerse: **{0} курса**, **{1}** и **{2} т** товари от {3} шофьори.', int(d.totals.n), km(d.totals.km), int(Math.round(d.totals.tons)), int(d.totals.drivers)),
+    d.longest ? t('🛣️ Най-дългият курс: **{0}**, {1} → {2} ({3}).', d.longest.username, d.longest.from, d.longest.to, km(d.longest.km)) : '',
+    d.heaviest ? t('🏋️ Най-тежкият товар: **{0}** с {1} т {2}.', d.heaviest.username, dec(d.heaviest.tons), d.heaviest.goods.toLowerCase()) : '',
+    d.fresh.length ? t('🏢 Нови компании: {0} — добре дошли!', d.fresh.map((o) => `**${o.name}**${o.tag ? ` [${o.tag}]` : ''}`).join(', ')) : '',
+    happenings ? t('🚧 На пътя се случиха {0}.', happenings) : '',
+    ...d.ships.map((s) => t('🚢 {0}: {1} контейнера{2}.', s.ship, s.containers, s.winner ? t(' — най-много разкара „{0}“', s.winner) : '')),
+    t('Приятно каране тази седмица! 🚚'),
   ].filter(Boolean);
   await announce(db, `weekly-digest:${d.key}`, 'news', {
-    embeds: [{ title: '🎙️ Седмицата в TransVerse', url: `${appUrl()}/game/news`, color: BRAND, description: lines.join('\n\n'), footer: { text: 'Седмичен обзор · игрови данни' } }],
+    embeds: [{ title: t('🎙️ Седмицата в TransVerse'), url: `${appUrl()}/game/news`, color: BRAND, description: lines.join('\n\n'), footer: { text: t('Седмичен обзор · игрови данни') } }],
   }, now);
   return true;
 }

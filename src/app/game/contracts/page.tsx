@@ -42,17 +42,24 @@ import { activeRoadWorks } from '@/server/game/roads';
 import { TRAFFIC } from '@/lib/game/traffic';
 import { specializationCovers } from '@/lib/game/specialization';
 import { LOW_EMISSION_ZONES } from '@/lib/game/europe-roads';
+import { t as tr, tx, intlLocale } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Поръчки' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: tr('Поръчки') };
+}
 
 export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; from?: string; truck?: string; load?: string }> }) {
+  await initLocale();
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
   const { db, user, company, hq, now, features } = await gameContext();
   const favorites = await favoriteLanesOf(db, user.id);
   // Loads companies handed to this player, and whether the player may hand loads out.
   const [hiredOffers, canAssign] = features.hire ? await Promise.all([offersFor(db, user.id, now), canOfferJobs(db, user.id)]) : [[], false] as const;
-  const hiredBy = new Map(hiredOffers.map((o) => [o.contractId, { offerId: o.id, company: o.tag ? `[${o.tag}] ${o.company}` : o.company, share: o.share, until: o.expiresAt.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' }) }]));
+  const hiredBy = new Map(hiredOffers.map((o) => [o.contractId, { offerId: o.id, company: o.tag ? `[${o.tag}] ${o.company}` : o.company, share: o.share, until: o.expiresAt.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' }) }]));
   // Lanes a friend or company member just left on (first one per lane).
   const convoys = new Map<string, string>();
   if (features.convoy && !features.convoy_lobby) for (const c of await convoyCandidates(db, user.id, now)) if (!convoys.has(`${c.originCityId}:${c.destCityId}`)) convoys.set(`${c.originCityId}:${c.destCityId}`, c.username);
@@ -72,7 +79,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const ship = features.ship_calls ? await activeShipCall(db) : null;
   const works = features.road_works ? await activeRoadWorks(db, now) : [];
   const vip = isVip(user.vipUntil, now);
-  const hhmm = (d: Date) => d.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' });
+  const hhmm = (d: Date) => d.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' });
   const localCities = [...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.cityId))];
   const membership = await membershipOf(db, user.id);
   const memberOfCompanyId = membership?.company.id ?? null;
@@ -116,7 +123,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       // A load bigger than the truck: only the part it carries, for the share of the pay (v1.3).
       const partT = strict && features.partial_loads && canSplit(c) ? partTons(c.weightTons, cap.payloadTons) : null;
       const part = partT && compatibilityError(bundle, { ...c, weightTons: partT }, user.level) === null ? { tons: partT, rewardCents: partRewardCents(c, partT) } : null;
-      const error = v.driver?.vacationUntil && v.driver.vacationUntil > now ? 'Шофьорът е в почивен ден' : overloadable || part ? null : strict;
+      const error = v.driver?.vacationUntil && v.driver.vacationUntil > now ? tr('Шофьорът е в почивен ден') : overloadable || part ? null : strict;
       // Planning estimates: empty leg by straight-line × 1.25, loaded leg from the real route.
       const emptyKm = v.cityId === c.originCityId ? 0 : haversineKm([v.city.lat, v.city.lon], [c.origin.lat, c.origin.lon]) * 1.25;
       // The urgent one-minute relocation is free; only the cargo leg costs.
@@ -133,12 +140,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const rented = v.ownership === 'rented';
       const pay = part ? part.rewardCents : c.rewardCents;
       const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents) + (sea?.ticketCents ?? 0) + (c.oversize ? oversizeCostCents(c.distanceKm - seaKm) : 0);
-      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? ' (нает)' : ''}${v.coDriver ? ' · екипаж' : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? ` · почива още ${restMin} мин` : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part };
+      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? tr(' (нает)') : ''}${v.coDriver ? tr(' · екипаж') : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? tr(' · почива още {0} мин', restMin) : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part };
     });
     return {
       id: c.id,
       shipper: c.shipper,
-      goods: features.sealed_cargo && c.sealed ? 'Запечатан товар' : c.goods,
+      goods: features.sealed_cargo && c.sealed ? tr('Запечатан товар') : c.goods,
       sealed: features.sealed_cargo && c.sealed,
       humanitarian: features.humanitarian && c.humanitarian,
       relayLeg: features.relay ? c.relayLeg : null,
@@ -190,10 +197,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       oversizeCents: c.oversize ? oversizeCostCents(c.distanceKm) : null,
       roadWorks: (() => {
         const w = works.find((x) => c.route.countries.includes(x.countryCode));
-        return w ? `Ремонт: ${w.road} · +${Math.round(w.delay * 100)}% време` : null;
+        return w ? tr('Ремонт: {0} · +{1}% време', w.road, Math.round(w.delay * 100)) : null;
       })(),
       ferry: sea ? { note: crossingNote(sea, c.route.profile.endsWith(':r')), ticketCents: sea.ticketCents } : null,
-      port: c.port ? (c.portCallId && ship?.id === c.portCallId ? `КОРАБ ${ship.ship}` : 'ОТ ПРИСТАНИЩЕТО') : null,
+      port: c.port ? (c.portCallId && ship?.id === c.portCallId ? tr('КОРАБ {0}', ship.ship) : tr('ОТ ПРИСТАНИЩЕТО')) : null,
       rail: (features.rail || features.sea_lines) && !c.urgent && !c.stops?.length && !sea
         ? railOptions(c.origin, c.destination, terminals, c.distanceKm, features.sea_lines).filter((o) => o.line.kind === 'ferry' || features.rail).slice(0, 2).map((o) => ({ id: `${o.line.id}:${o.reversed ? 'r' : 'f'}`, note: crossingNote(o.line, o.reversed), ticketCents: o.line.ticketCents, km: o.line.km, kind: o.line.kind, hours: o.line.hours }))
         : [],
@@ -221,43 +228,43 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   return (
     <div>
       <PageHeader
-        title="Поръчки"
-        subtitle="Избери товар, камион и тръгвай. Поръчките са общи за всички играчи."
-        help="Горивото се плаща по цените на държавите по маршрута (виж Финанси → Дизел днес). По пътя може да се случи задръстване, ремонт, повреда или опашка на границата — това забавя курса, а повредата струва пари за пътна помощ (при наетия камион плаща наемодателят). Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“."
+        title={tr('Поръчки')}
+        subtitle={tr('Избери товар, камион и тръгвай. Поръчките са общи за всички играчи.')}
+        help={tr('Горивото се плаща по цените на държавите по маршрута (виж Финанси → Дизел днес). По пътя може да се случи задръстване, ремонт, повреда или опашка на границата — това забавя курса, а повредата струва пари за пътна помощ (при наетия камион плаща наемодателят). Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“.')}
       />
       {features.night_shift && isNightShift(now) && (
         <div className="mb-4 rounded-2xl border border-indigo-400/40 bg-indigo-500/10 px-4 py-3 text-sm">
-          🌙 <b>Нощна смяна</b> — курсовете, тръгнали сега (22:00–05:00), са с {Math.round((NIGHT.faster - 1) * 100)}% по-бързи по празните пътища и носят +{Math.round(NIGHT.bonusShare * 100)}% бонус, ако стигнат навреме. Шофьорът се уморява повече.
+          🌙 <b>{tr('Нощна смяна')}</b>{' '}{tr('— курсовете, тръгнали сега (22:00–05:00), са с {0}% по-бързи по празните пътища и носят +{1}% бонус, ако стигнат навреме. Шофьорът се уморява повече.', Math.round((NIGHT.faster - 1) * 100), Math.round(NIGHT.bonusShare * 100))}
         </div>
       )}
       {works.length > 0 && (
         <div className="mb-4 rounded-2xl border border-amber-sig/40 bg-amber-sig/10 px-4 py-3 text-sm">
-          🚧 <b>Ремонти по пътищата</b> (игрови данни): {works.map((w) => `${w.road} (+${Math.round(w.delay * 100)}% време)`).join(' · ')}. Курсовете през тези държави са по-бавни.
+          🚧 <b>{tr('Ремонти по пътищата')}</b>{' '}{tr('(игрови данни):')}{' '}{works.map((w) => tr('{0} (+{1}% време)', w.road, Math.round(w.delay * 100))).join(' · ')}{tr('. Курсовете през тези държави са по-бавни.')}
         </div>
       )}
       {ship && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-500/40 bg-sky-500/10 px-4 py-3 text-sm">
-          <span>🚢 <b>{ship.ship}</b> е в {ship.portName}: {ship.delivered} от {ship.containers} контейнера са доставени. По-добро заплащане, а компанията с най-много контейнери взема награда в касата. Корабите са игрови данни.</span>
+          <span>🚢 <b>{tx(ship.ship)}</b>{' '}{tr('е в {0}: {1} от {2} контейнера са доставени. По-добро заплащане, а компанията с най-много контейнери взема награда в касата. Корабите са игрови данни.', ship.portName, ship.delivered, ship.containers)}</span>
         </div>
       )}
       {lane && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-prestige/40 bg-prestige/10 px-4 py-3 text-sm">
           <span>
             {laneBoard.length
-              ? <>Поръчки по линията <b>{laneBoard[0]!.origin.name} → {laneBoard[0]!.destination.name}</b> — поеми една до {Math.round(CONVOY_RULES.windowMs / 60_000)} мин след приятеля си и карате в конвой.</>
-              : 'В момента няма свободна поръчка по тази линия. Опитай след малко — нови поръчки излизат постоянно.'}
+              ? <>{tr('Поръчки по линията')}{' '}<b>{tx(laneBoard[0]!.origin.name)} → {tx(laneBoard[0]!.destination.name)}</b>{' '}{tr('— поеми една до {0} мин след приятеля си и карате в конвой.', Math.round(CONVOY_RULES.windowMs / 60_000))}</>
+              : tr('В момента няма свободна поръчка по тази линия. Опитай след малко — нови поръчки излизат постоянно.')}
           </span>
-          <Link href="/game/contracts" className="btn-ghost px-3 py-1.5 text-xs">Всички поръчки</Link>
+          <Link href="/game/contracts" className="btn-ghost px-3 py-1.5 text-xs">{tr('Всички поръчки')}</Link>
         </div>
       )}
       {fromCity && !lane && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 px-4 py-3 text-sm">
           <span>
             {backBoard.length
-              ? <>Обратен товар{fromName ? <> от <b>{fromName}</b></> : ''}{backTruck ? <> за <b>{backTruck.plate}</b></> : ''} — товарите, които камионът може да вземе, са първи{backBoard.some((c) => c.toHome) ? ', а тези към базата ти са отбелязани' : ''}.</>
-              : `В момента няма поръчки${fromName ? ` от ${fromName}` : ''}. Виж всички поръчки — празният курс до съседен град често се изплаща.`}
+              ? <>{tr('Обратен товар')}{fromName ? <>{' '}{tr('от')}{' '}<b>{fromName}</b></> : ''}{backTruck ? <>{' '}{tr('за')}{' '}<b>{tx(backTruck.plate)}</b></> : ''}{' '}{tr('— товарите, които камионът може да вземе, са първи')}{backBoard.some((c) => c.toHome) ? tr(', а тези към базата ти са отбелязани') : ''}.</>
+              : tr('В момента няма поръчки{0}. Виж всички поръчки — празният курс до съседен град често се изплаща.', fromName ? tr(' от {0}', fromName) : '')}
           </span>
-          <Link href="/game/contracts" className="btn-ghost px-3 py-1.5 text-xs">Всички поръчки</Link>
+          <Link href="/game/contracts" className="btn-ghost px-3 py-1.5 text-xs">{tr('Всички поръчки')}</Link>
         </div>
       )}
       {!user.seenHints.includes('board') && <Hint id="board" />}
@@ -265,7 +272,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
       {features.simple_board && (
         <div className="mb-2 flex justify-end">
-          <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost px-3 py-1 text-xs">{user.uiPrefs?.boardView === 'full' ? 'Прост изглед' : 'Разширен изглед (всички етикети)'}</ActionButton>
+          <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost px-3 py-1 text-xs">{user.uiPrefs?.boardView === 'full' ? tr('Прост изглед') : tr('Разширен изглед (всички етикети)')}</ActionButton>
         </div>
       )}
       <ContractBoard simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />

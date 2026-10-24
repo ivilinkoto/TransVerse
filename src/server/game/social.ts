@@ -11,6 +11,7 @@ import { fail } from './errors';
 import { queueRoles } from '@/server/discord/outbox';
 import { can, entryRank, memberCount, membershipOf, notifyMembers, requirePermission } from './membership';
 import { logActivity, notify } from './notify';
+import { t } from '@/i18n/t';
 
 const MAX_FRIENDS = 200;
 
@@ -77,35 +78,35 @@ export type PlayerCard = NonNullable<Awaited<ReturnType<typeof playerCard>>>;
 // ── Friends ───────────────────────────────────────────────────────────────
 
 export async function sendFriendRequest(db: Database, userId: string, targetId: string) {
-  if (userId === targetId) fail('self', 'Не можеш да добавиш себе си.');
+  if (userId === targetId) fail('self', t('Не можеш да добавиш себе си.'));
   await assertNotBlocked(db, userId, targetId);
   return db.transaction(async (tx) => {
     const [target] = await tx.select({ id: users.id, username: users.username, bannedAt: users.bannedAt }).from(users).where(eq(users.id, targetId));
-    if (!target || target.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
+    if (!target || target.bannedAt) fail('player_not_found', t('Играчът не е намерен.'), 404);
     const existing = await pairRow(tx, userId, targetId);
-    if (existing?.status === 'accepted') fail('already_friends', 'Вече сте приятели.', 409);
+    if (existing?.status === 'accepted') fail('already_friends', t('Вече сте приятели.'), 409);
     // They already asked us: accept instead of sending a second request.
     if (existing && existing.requesterId === targetId) return respond(tx, userId, existing.id, true);
-    if (existing) fail('already_sent', 'Поканата вече е изпратена.', 409);
+    if (existing) fail('already_sent', t('Поканата вече е изпратена.'), 409);
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(friendships).where(or(eq(friendships.requesterId, userId), eq(friendships.addresseeId, userId)));
-    if (n >= MAX_FRIENDS) fail('too_many_friends', `Можеш да имаш до ${MAX_FRIENDS} приятели и покани.`);
+    if (n >= MAX_FRIENDS) fail('too_many_friends', t('Можеш да имаш до {0} приятели и покани.', MAX_FRIENDS));
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
     await tx.insert(friendships).values({ requesterId: userId, addresseeId: targetId });
-    await notify(tx, targetId, 'info', 'Покана за приятелство', `${me!.username} иска да сте приятели.`, '/game/profile#friends');
+    await notify(tx, targetId, 'info', () => t('Покана за приятелство'), () => t('{0} иска да сте приятели.', me!.username), '/game/profile#friends');
     return 'sent' as const;
   });
 }
 
 async function respond(tx: DbOrTx, userId: string, friendshipId: string, accept: boolean) {
   const [row] = await tx.select().from(friendships).where(and(eq(friendships.id, friendshipId), eq(friendships.addresseeId, userId), eq(friendships.status, 'pending')));
-  if (!row) fail('request_not_found', 'Поканата не е намерена.', 404);
+  if (!row) fail('request_not_found', t('Поканата не е намерена.'), 404);
   if (!accept) {
     await tx.delete(friendships).where(eq(friendships.id, row!.id));
     return 'declined' as const;
   }
   await tx.update(friendships).set({ status: 'accepted', respondedAt: new Date() }).where(eq(friendships.id, row!.id));
   const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-  await notify(tx, row!.requesterId, 'success', 'Нов приятел', `${me!.username} прие поканата ти за приятелство.`, '/game/profile#friends');
+  await notify(tx, row!.requesterId, 'success', () => t('Нов приятел'), () => t('{0} прие поканата ти за приятелство.', me!.username), '/game/profile#friends');
   return 'accepted' as const;
 }
 
@@ -116,7 +117,7 @@ export async function respondFriendRequest(db: Database, userId: string, friends
 /** Removes a friend, or withdraws a request the player sent. */
 export async function removeFriend(db: Database, userId: string, otherId: string) {
   const row = await pairRow(db, userId, otherId);
-  if (!row) fail('not_friends', 'Не сте приятели.', 404);
+  if (!row) fail('not_friends', t('Не сте приятели.'), 404);
   await db.delete(friendships).where(eq(friendships.id, row!.id));
 }
 
@@ -143,14 +144,14 @@ export async function inviteToCompany(db: Database, actorId: string, targetId: s
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'recruit');
     const [target] = await tx.select({ id: users.id, username: users.username, bannedAt: users.bannedAt }).from(users).where(eq(users.id, targetId));
-    if (!target || target.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
+    if (!target || target.bannedAt) fail('player_not_found', t('Играчът не е намерен.'), 404);
     await assertNotBlocked(tx, actorId, targetId);
-    if (await membershipOf(tx, targetId)) fail('already_member', 'Играчът вече е в компания.', 409);
-    if ((await memberCount(tx, actor.company.id)) >= memberCapacity(actor.company.upgrades as UpgradeLevels)) fail('company_full', 'Компанията няма свободни места.');
+    if (await membershipOf(tx, targetId)) fail('already_member', t('Играчът вече е в компания.'), 409);
+    if ((await memberCount(tx, actor.company.id)) >= memberCapacity(actor.company.upgrades as UpgradeLevels)) fail('company_full', t('Компанията няма свободни места.'));
     const inserted = await tx.insert(companyInvites).values({ companyId: actor.company.id, userId: targetId, invitedBy: actorId }).onConflictDoNothing().returning({ id: companyInvites.id });
-    if (!inserted.length) fail('already_invited', 'Играчът вече е поканен.', 409);
+    if (!inserted.length) fail('already_invited', t('Играчът вече е поканен.'), 409);
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, actorId));
-    await notify(tx, targetId, 'info', `Покана от „${actor.company.name}“`, `${me!.username} те кани да се присъединиш към компанията.`, '/game/profile#invites');
+    await notify(tx, targetId, 'info', () => t('Покана от „{0}“', actor.company.name), () => t('{0} те кани да се присъединиш към компанията.', me!.username), '/game/profile#invites');
     await logActivity(tx, actorId, 'company_invite_sent', { companyId: actor.company.id, targetId });
     return inserted[0]!.id;
   });
@@ -160,16 +161,16 @@ export async function inviteToCompany(db: Database, actorId: string, targetId: s
 export async function respondCompanyInvite(db: Database, userId: string, inviteId: string, accept: boolean) {
   return db.transaction(async (tx) => {
     const [invite] = await tx.select().from(companyInvites).where(and(eq(companyInvites.id, inviteId), eq(companyInvites.userId, userId), eq(companyInvites.status, 'pending'))).for('update');
-    if (!invite) fail('invite_not_found', 'Поканата не е намерена или вече е отговорена.', 404);
+    if (!invite) fail('invite_not_found', t('Поканата не е намерена или вече е отговорена.'), 404);
     const [company] = await tx.select().from(organizations).where(eq(organizations.id, invite!.companyId)).for('update');
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
     if (!accept) {
       await tx.update(companyInvites).set({ status: 'declined', decidedAt: new Date() }).where(eq(companyInvites.id, invite!.id));
-      if (invite!.invitedBy) await notify(tx, invite!.invitedBy, 'info', 'Поканата е отказана', `${me!.username} отказа поканата за „${company!.name}“.`, '/game/company/members');
+      if (invite!.invitedBy) await notify(tx, invite!.invitedBy, 'info', () => t('Поканата е отказана'), () => t('{0} отказа поканата за „{1}“.', me!.username, company!.name), '/game/company/members');
       return 'declined' as const;
     }
-    if (await membershipOf(tx, userId)) fail('already_member', 'Вече членуваш в компания. Първо я напусни.', 409);
-    if ((await memberCount(tx, company!.id)) >= memberCapacity(company!.upgrades as UpgradeLevels)) fail('company_full', 'Компанията вече няма свободни места.');
+    if (await membershipOf(tx, userId)) fail('already_member', t('Вече членуваш в компания. Първо я напусни.'), 409);
+    if ((await memberCount(tx, company!.id)) >= memberCapacity(company!.upgrades as UpgradeLevels)) fail('company_full', t('Компанията вече няма свободни места.'));
     const rank = await entryRank(tx, company!.id);
     await tx.insert(companyMembers).values({ userId, companyId: company!.id, rankId: rank.id, firstTripBonus: true });
     await queueRoles(tx, userId);
@@ -178,7 +179,7 @@ export async function respondCompanyInvite(db: Database, userId: string, inviteI
     await tx.update(companyInvites).set({ status: 'cancelled', decidedAt: new Date() }).where(and(eq(companyInvites.userId, userId), eq(companyInvites.status, 'pending')));
     await tx.update(companyApplications).set({ status: 'withdrawn', decidedAt: new Date() }).where(and(eq(companyApplications.userId, userId), eq(companyApplications.status, 'pending')));
     await logActivity(tx, userId, 'company_joined', { companyId: company!.id, invite: invite!.id });
-    await notifyMembers(tx, company!.id, 'recruit', 'Нов член', `${me!.username} прие поканата и се присъедини към „${company!.name}“.`, '/game/company/members');
+    await notifyMembers(tx, company!.id, 'recruit', () => t('Нов член'), () => t('{0} прие поканата и се присъедини към „{1}“.', me!.username, company!.name), '/game/company/members');
     return 'joined' as const;
   });
 }

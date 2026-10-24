@@ -5,6 +5,7 @@ import { rateLimit } from '@/server/auth/rate-limit';
 import { fail } from './errors';
 import { notify } from './notify';
 import { circleOf } from './world-map';
+import { t } from '@/i18n/t';
 
 export type FeedKind = 'level' | 'achievement' | 'trip' | 'mentor' | 'help' | 'project' | 'battle' | 'build';
 
@@ -51,12 +52,12 @@ export async function cheer(db: Database, userId: string, entryId: string) {
   await rateLimit(db, `cheer:${userId}`, 30, 60);
   return db.transaction(async (tx) => {
     const [entry] = await tx.select().from(feedEntries).where(eq(feedEntries.id, entryId));
-    if (!entry) fail('not_found', 'Събитието вече не е в лентата.', 404);
-    if (entry!.userId === userId) fail('self', 'Не можеш да поздравиш сам себе си.');
+    if (!entry) fail('not_found', t('Събитието вече не е в лентата.'), 404);
+    if (entry!.userId === userId) fail('self', t('Не можеш да поздравиш сам себе си.'));
     const [row] = await tx.insert(feedCheers).values({ entryId, userId }).onConflictDoNothing().returning();
     if (row && entry!.userId) {
       const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-      await notify(tx, entry!.userId, 'info', `${me!.username} те поздрави 👍`, entry!.text, '/game');
+      await notify(tx, entry!.userId, 'info', () => t('{0} те поздрави 👍', me!.username), entry!.text, '/game');
     }
     return { cheered: !!row };
   });

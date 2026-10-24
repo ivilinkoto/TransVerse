@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type ReactNode } from 'react';
 import { api } from '@/lib/client/api';
+import { t } from '@/i18n/t';
 
 /** Posts a game action, shows the server's message on failure and refreshes data on success. */
 export function ActionButton({ action, children, className = 'btn-ghost', confirm, onDone, disabled, endpoint = '/api/game/action' }: { action: Record<string, unknown>; children: ReactNode; className?: string; confirm?: string; onDone?: () => void; disabled?: boolean; endpoint?: string }) {
@@ -31,8 +32,8 @@ export function ActionButton({ action, children, className = 'btn-ghost', confir
     return (
       <span className="inline-flex flex-wrap items-center gap-2 text-sm">
         <span className="text-mist-300">{confirm}</span>
-        <button className="btn-danger px-3 py-1.5" onClick={run} disabled={busy}>Потвърди</button>
-        <button className="btn-ghost px-3 py-1.5" onClick={() => setAsking(false)}>Отказ</button>
+        <button className="btn-danger px-3 py-1.5" onClick={run} disabled={busy}>{t('Потвърди')}</button>
+        <button className="btn-ghost px-3 py-1.5" onClick={() => setAsking(false)}>{t('Отказ')}</button>
         {error && <span role="alert" className="w-full text-xs text-loss">{error}</span>}
       </span>
     );

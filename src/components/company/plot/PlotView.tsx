@@ -10,6 +10,7 @@ import { api } from '@/lib/client/api';
 import { duration, money } from '@/lib/format';
 import { BOOM, BUILDING_LINKS, BUILDINGS, BUILDING_TYPES, DECOR, DECOR_KINDS, decorError, EXPANSIONS, levelSpec, MATERIAL_IDS, MATERIALS, MAX_DECOR, materialCostCents, placementError, PLOT, plotWidth, type BuildingType, type DecorKind, type MaterialId, type Materials } from '@/lib/game/plot';
 import { PlotScene, toTile, viewFor } from './scene';
+import { t as tr, tx } from '@/i18n/t';
 
 export interface PlotData {
   org: { name: string; level: number; treasuryCents: number; liveryColor?: string | null };
@@ -228,29 +229,29 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
           onPointerUp={onUp}
           onPointerLeave={(e) => { drag.current = null; if (e.pointerType === 'mouse') setHover(null); }}
           role="img"
-          aria-label={`Участъкът на „${data.org.name}“`}
+          aria-label={tr('Участъкът на „{0}“', data.org.name)}
         >
           <PlotScene buildings={data.buildings} construction={c ? { type: c.type, status: c.status, progress, delivered: c.delivered } : null} ghost={ghost} selected={selected} parkedTrucks={parkedTrucks} incoming={incoming} grid={!!(placing || placingDecor)} liveryColor={data.org.liveryColor ?? null} plotW={W} decor={data.decor} season={season} selectedDecor={selectedDecor} labelScale={labelScale} moving={moving} night={ambience.night} weather={ambience.weather} visitors={ambience.visitors} />
         </svg>
         <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 px-3 py-2 text-xs text-mist-300 backdrop-blur">
-          <b className="block text-sm text-white">Участък · {data.hq?.nameBg ?? ''}</b>
-          {(() => { const n = data.buildings.filter((b) => b.level > 0).length; return `${n} ${n === 1 ? 'сграда' : 'сгради'}`; })()}{c ? ` · строи се: ${BUILDINGS[c.type].label}` : ''}
+          <b className="block text-sm text-white">{tr('Участък · {0}', data.hq?.nameBg ?? '')}</b>
+          {(() => { const n = data.buildings.filter((b) => b.level > 0).length; return `${n} ${n === 1 ? tr('сграда') : tr('сгради')}`; })()}{c ? tr(' · строи се: {0}', BUILDINGS[c.type].label) : ''}
         </div>
         <div className="absolute right-3 top-3 flex flex-col gap-1.5">
-          <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => zoom(1.25)} aria-label="Приближи"><Plus className="h-4 w-4" /></button>
-          <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => zoom(0.8)} aria-label="Отдалечи"><Minus className="h-4 w-4" /></button>
-          <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => setView({ x: 0, y: 0, zoom: 1 })} aria-label="Целият участък"><Maximize2 className="h-4 w-4" /></button>
+          <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => zoom(1.25)} aria-label={tr('Приближи')}><Plus className="h-4 w-4" /></button>
+          <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => zoom(0.8)} aria-label={tr('Отдалечи')}><Minus className="h-4 w-4" /></button>
+          <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-asphalt-700/60 bg-asphalt-950/80 text-mist-100" onClick={() => setView({ x: 0, y: 0, zoom: 1 })} aria-label={tr('Целият участък')}><Maximize2 className="h-4 w-4" /></button>
         </div>
         {(placing || placingDecor) && (
           <div className="relative m-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-glow/40 bg-asphalt-950/90 px-3 py-2 text-sm backdrop-blur sm:absolute sm:inset-x-3 sm:bottom-3 sm:m-0 sm:bg-asphalt-950/85">
             {placing ? (
-              <span>{mode.kind === 'move' ? 'Премести' : 'Постави'} <b>{BUILDINGS[placing].label}</b> — {touch ? 'докосни свободно място, после „Постави тук“' : 'натисни свободно място на участъка'} ({BUILDINGS[placing].w}×{BUILDINGS[placing].h}).{busy ? ' …' : ''}</span>
+              <span>{mode.kind === 'move' ? tr('Премести') : tr('Постави')} <b>{tx(BUILDINGS[placing].label)}</b> — {touch ? tr('докосни свободно място, после „Постави тук“') : tr('натисни свободно място на участъка')} ({tx(BUILDINGS[placing].w)}×{tx(BUILDINGS[placing].h)}).{busy ? ' …' : ''}</span>
             ) : (
-              <span>Постави <b>{DECOR[placingDecor!].label}</b> ({priceText(placingDecor!)}) — натисни свободно място; можеш да сложиш няколко.{busy ? ' …' : ''}</span>
+              <span>{tr('Постави')}{' '}<b>{tx(DECOR[placingDecor!].label)}</b>{' '}{tr('({0}) — натисни свободно място; можеш да сложиш няколко.{1}', priceText(placingDecor!), busy ? ' …' : '')}</span>
             )}
             <span className="flex gap-2">
-              {touch && ghost && <button type="button" className="btn-primary px-3 py-1.5 text-xs" disabled={!ghost.valid || busy} onClick={() => place(ghost.x, ghost.y)}><Hammer className="h-3.5 w-3.5" />Постави тук</button>}
-              <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => { setMode({ kind: 'view' }); setError(null); setHover(null); }}><X className="h-3.5 w-3.5" />Отказ</button>
+              {touch && ghost && <button type="button" className="btn-primary px-3 py-1.5 text-xs" disabled={!ghost.valid || busy} onClick={() => place(ghost.x, ghost.y)}><Hammer className="h-3.5 w-3.5" />{tr('Постави тук')}</button>}
+              <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => { setMode({ kind: 'view' }); setError(null); setHover(null); }}><X className="h-3.5 w-3.5" />{tr('Отказ')}</button>
             </span>
           </div>
         )}
@@ -271,61 +272,61 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
         {data.boom && (
           <div className="panel flex items-start gap-3 border-gold-400/50 bg-gold-400/10 p-4 text-sm">
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-gold-400" />
-            <div><b className="text-gold-300">Строителен бум!</b> Материалите са с {Math.round((1 - BOOM.priceFactor) * 100)} % по-евтини, а курсовете с материали дават {Math.round((BOOM.xpFactor - 1) * 100)} % повече опит.</div>
+            <div><b className="text-gold-300">{tr('Строителен бум!')}</b>{' '}{tr('Материалите са с {0} % по-евтини, а курсовете с материали дават {1} % повече опит.', Math.round((1 - BOOM.priceFactor) * 100), Math.round((BOOM.xpFactor - 1) * 100))}</div>
           </div>
         )}
         {c && <ConstructionCard c={c} canBuild={canBuild} progress={progress} leftMin={leftMin} />}
         {decorSel && (
           <div className="panel p-4">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-display text-lg font-bold">{DECOR[decorSel.kind].label}</h3>
-              <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSelectedDecor(null)} aria-label="Затвори"><X className="h-4 w-4" /></button>
+              <h3 className="font-display text-lg font-bold">{tx(DECOR[decorSel.kind].label)}</h3>
+              <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSelectedDecor(null)} aria-label={tr('Затвори')}><X className="h-4 w-4" /></button>
             </div>
-            {canBuild && <ActionButton action={{ type: 'removeDecor', decorId: decorSel.id }} className="btn-ghost mt-2 w-full justify-center text-sm text-loss" confirm="Да махнем ли украсата? Парите не се връщат." onDone={() => setSelectedDecor(null)}><Trash2 className="h-4 w-4" />Махни</ActionButton>}
+            {canBuild && <ActionButton action={{ type: 'removeDecor', decorId: decorSel.id }} className="btn-ghost mt-2 w-full justify-center text-sm text-loss" confirm={tr('Да махнем ли украсата? Парите не се връщат.')} onDone={() => setSelectedDecor(null)}><Trash2 className="h-4 w-4" />{tr('Махни')}</ActionButton>}
           </div>
         )}
         {sel && (
           <div id="plot-building" className="panel scroll-mt-24 p-4">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h3 className="font-display text-lg font-bold">{BUILDINGS[sel.type].label}{sel.level > 0 ? ` · ниво ${sel.level}` : ''}</h3>
-                <p className="text-sm text-mist-300">{sel.level > 0 ? BUILDINGS[sel.type].effect(sel.level) : 'Строи се.'}</p>
+                <h3 className="font-display text-lg font-bold">{tx(BUILDINGS[sel.type].label)}{sel.level > 0 ? tr(' · ниво {0}', sel.level) : ''}</h3>
+                <p className="text-sm text-mist-300">{sel.level > 0 ? BUILDINGS[sel.type].effect(sel.level) : tr('Строи се.')}</p>
               </div>
-              <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSelected(null)} aria-label="Затвори"><X className="h-4 w-4" /></button>
+              <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSelected(null)} aria-label={tr('Затвори')}><X className="h-4 w-4" /></button>
             </div>
             {sel.level > 0 && sel.level < BUILDINGS[sel.type].maxLevel && (() => {
               const spec = levelSpec(sel.type, sel.level + 1);
               const locked = data.org.level < spec.minCompanyLevel;
               return (
                 <div className="mt-3 rounded-xl border border-asphalt-700 p-3 text-sm">
-                  <div className="font-semibold">Ниво {sel.level + 1}: {BUILDINGS[sel.type].effect(sel.level + 1)}</div>
-                  <div className="mt-1 text-xs text-mist-400">{materialsText(spec.materials)} · ~{money(cost(spec.materials))} · строеж {duration(spec.minutes)}{locked ? ` · нужно ниво ${spec.minCompanyLevel} на компанията` : ''}</div>
-                  {canBuild && <ActionButton action={{ type: 'upgradeBuilding', building: sel.type }} className="btn-primary mt-2 w-full justify-center text-sm" disabled={locked || !!c}>{c ? 'Компанията вече строи' : `Вдигни на ниво ${sel.level + 1}`}</ActionButton>}
+                  <div className="font-semibold">{tr('Ниво {0}: {1}', sel.level + 1, BUILDINGS[sel.type].effect(sel.level + 1))}</div>
+                  <div className="mt-1 text-xs text-mist-400">{tr('{0} · ~{1} · строеж {2}{3}', materialsText(spec.materials), money(cost(spec.materials)), duration(spec.minutes), locked ? tr(' · нужно ниво {0} на компанията', spec.minCompanyLevel) : '')}</div>
+                  {canBuild && <ActionButton action={{ type: 'upgradeBuilding', building: sel.type }} className="btn-primary mt-2 w-full justify-center text-sm" disabled={locked || !!c}>{c ? tr('Компанията вече строи') : tr('Вдигни на ниво {0}', sel.level + 1)}</ActionButton>}
                 </div>
               );
             })()}
-            {sel.level >= BUILDINGS[sel.type].maxLevel && <p className="mt-2 text-xs text-profit">Най-високото ниво.</p>}
+            {sel.level >= BUILDINGS[sel.type].maxLevel && <p className="mt-2 text-xs text-profit">{tr('Най-високото ниво.')}</p>}
             {canBuild && !(c?.type === sel.type && c.status === 'building') && (
-              <button type="button" className="btn-ghost mt-2 w-full justify-center text-sm" onClick={() => { setMode({ kind: 'move', type: sel.type }); setError(null); }}><Move className="h-4 w-4" />Премести</button>
+              <button type="button" className="btn-ghost mt-2 w-full justify-center text-sm" onClick={() => { setMode({ kind: 'move', type: sel.type }); setError(null); }}><Move className="h-4 w-4" />{tr('Премести')}</button>
             )}
           </div>
         )}
         <div className="panel p-4">
-          <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Building2 className="h-5 w-5 text-cyan-glow" />Строй</h3>
-          {!canBuild && <p className="mt-1 text-sm text-mist-400">Строят собственикът и длъжностите с право „Строителство“. Ти помагаш, като караш материалите от борсата.</p>}
+          <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Building2 className="h-5 w-5 text-cyan-glow" />{tr('Строй')}</h3>
+          {!canBuild && <p className="mt-1 text-sm text-mist-400">{tr('Строят собственикът и длъжностите с право „Строителство“. Ти помагаш, като караш материалите от борсата.')}</p>}
           {notPlaced.length === 0 ? (
-            <p className="mt-2 text-sm text-mist-400">Всички сгради са на участъка — вдигай нивата им.</p>
+            <p className="mt-2 text-sm text-mist-400">{tr('Всички сгради са на участъка — вдигай нивата им.')}</p>
           ) : (
             <ul className="mt-2 space-y-2">
               {notPlaced.map((t) => {
                 const def = BUILDINGS[t];
                 const spec = levelSpec(t, 1);
-                const reason = !office?.level && t !== 'office' ? 'първо офисът' : data.org.level < spec.minCompanyLevel ? `ниво ${spec.minCompanyLevel} на компанията` : c ? 'след текущия строеж' : null;
+                const reason = !office?.level && t !== 'office' ? tr('първо офисът') : data.org.level < spec.minCompanyLevel ? tr('ниво {0} на компанията', spec.minCompanyLevel) : c ? tr('след текущия строеж') : null;
                 return (
                   <li key={t} className={`rounded-xl border border-asphalt-700 p-3 text-sm ${reason ? 'opacity-60' : ''}`}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold">{def.label} <span className="text-xs font-normal text-mist-400">{def.w}×{def.h}</span></span>
-                      {canBuild && <button type="button" className="btn-primary px-3 py-1 text-xs" disabled={!!reason} onClick={() => { setMode({ kind: 'place', type: t }); setSelected(null); setError(null); }}><Hammer className="h-3.5 w-3.5" />Постави</button>}
+                      <span className="font-semibold">{tx(def.label)} <span className="text-xs font-normal text-mist-400">{tx(def.w)}×{tx(def.h)}</span></span>
+                      {canBuild && <button type="button" className="btn-primary px-3 py-1 text-xs" disabled={!!reason} onClick={() => { setMode({ kind: 'place', type: t }); setSelected(null); setError(null); }}><Hammer className="h-3.5 w-3.5" />{tr('Постави')}</button>}
                     </div>
                     <div className="mt-1 text-xs text-mist-300">{def.effect(1)}</div>
                     <div className="mt-0.5 text-xs text-mist-400">{materialsText(spec.materials)} · ~{money(cost(spec.materials))} · {duration(spec.minutes)}{reason ? ` · ${reason}` : ''}</div>
@@ -337,34 +338,34 @@ export function PlotView({ data, canBuild, now: initialNow, parkedTrucks, incomi
         </div>
         {features.decor && (
           <div className="panel p-4">
-            <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Flower2 className="h-5 w-5 text-cyan-glow" />Украса <span className="text-xs font-normal text-mist-400">{data.decor.length} / {MAX_DECOR}</span></h3>
-            {!canBuild && <p className="mt-1 text-sm text-mist-400">Украсяват длъжностите с право „Строителство“.</p>}
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Flower2 className="h-5 w-5 text-cyan-glow" />{tr('Украса')}{' '}<span className="text-xs font-normal text-mist-400">{tx(data.decor.length)} / {MAX_DECOR}</span></h3>
+            {!canBuild && <p className="mt-1 text-sm text-mist-400">{tr('Украсяват длъжностите с право „Строителство“.')}</p>}
             <div className="mt-2 grid grid-cols-2 gap-2">
               {DECOR_KINDS.map((kind) => {
                 const d = DECOR[kind];
                 const poor = d.coins ? coins < d.coins : (d.priceCents ?? 0) > data.org.treasuryCents;
                 return (
                   <button key={kind} type="button" className={`rounded-xl border p-2 text-left text-xs transition ${placingDecor === kind ? 'border-cyan-glow bg-cyan-glow/10' : 'border-asphalt-700 hover:border-asphalt-500'}`} disabled={!canBuild || poor || data.decor.length >= MAX_DECOR} onClick={() => { setMode({ kind: 'decor', decor: kind }); setSelected(null); setSelectedDecor(null); setError(null); }}>
-                    <b className="block text-sm text-mist-100">{d.label}</b>
-                    <span className={poor ? 'text-loss' : 'text-mist-400'}>{priceText(kind)} · {d.w}×{d.h}</span>
+                    <b className="block text-sm text-mist-100">{tx(d.label)}</b>
+                    <span className={poor ? 'text-loss' : 'text-mist-400'}>{priceText(kind)} · {tx(d.w)}×{tx(d.h)}</span>
                   </button>
                 );
               })}
             </div>
-            <p className="mt-2 text-[11px] text-mist-400">Лв. се плащат от касата, ТрансКоин — от твоя портфейл. Украсата е само за красота.</p>
+            <p className="mt-2 text-[11px] text-mist-400">{tr('Лв. се плащат от касата, ТрансКоин — от твоя портфейл. Украсата е само за красота.')}</p>
           </div>
         )}
         {features.expand && (
           <div className="panel p-4 text-sm">
-            <h3 className="flex items-center gap-2 font-display text-lg font-bold"><LandPlot className="h-5 w-5 text-cyan-glow" />Земя</h3>
-            <p className="mt-1 text-mist-300">Участъкът е {W} на {PLOT.h} квадрата.</p>
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold"><LandPlot className="h-5 w-5 text-cyan-glow" />{tr('Земя')}</h3>
+            <p className="mt-1 text-mist-300">{tr('Участъкът е {0} на {1} квадрата.', W, PLOT.h)}</p>
             {nextLand ? (
               <>
-                <p className="mt-1 text-xs text-mist-400">Следващата земя: +{plotWidth(data.expansions + 1) - W} квадрата широчина · {money(nextLand.costCents)} от касата · нужно ниво {nextLand.minCompanyLevel} на компанията.</p>
-                {canBuild && <ActionButton action={{ type: 'expandPlot' }} className="btn-primary mt-2 w-full justify-center text-sm" disabled={data.org.level < nextLand.minCompanyLevel || data.org.treasuryCents < nextLand.costCents} confirm={`Да купим земя за ${money(nextLand.costCents)} от касата?`}>Купи земя · {money(nextLand.costCents)}</ActionButton>}
+                <p className="mt-1 text-xs text-mist-400">{tr('Следващата земя: +{0} квадрата широчина · {1} от касата · нужно ниво {2} на компанията.', plotWidth(data.expansions + 1) - W, money(nextLand.costCents), nextLand.minCompanyLevel)}</p>
+                {canBuild && <ActionButton action={{ type: 'expandPlot' }} className="btn-primary mt-2 w-full justify-center text-sm" disabled={data.org.level < nextLand.minCompanyLevel || data.org.treasuryCents < nextLand.costCents} confirm={tr('Да купим земя за {0} от касата?', money(nextLand.costCents))}>{tr('Купи земя · {0}', money(nextLand.costCents))}</ActionButton>}
               </>
             ) : (
-              <p className="mt-1 text-xs text-profit">Участъкът е с най-големия възможен размер.</p>
+              <p className="mt-1 text-xs text-profit">{tr('Участъкът е с най-големия възможен размер.')}</p>
             )}
           </div>
         )}
@@ -385,34 +386,34 @@ function BuildingMenu({ building, at, upgrading, canMove, onMove, onClose }: { b
   const below = at.y < at.h / 2;
   const place = compact ? { left: 8, right: 8, bottom: 8 } : { left, width: W, ...(below ? { top: at.y + 12 } : { bottom: Math.max(8, at.h - at.y + 12) }) };
   return (
-    <div role="dialog" aria-label={def.label} className={`absolute z-10 rounded-xl border border-cyan-glow/40 bg-asphalt-950/95 text-sm shadow-xl backdrop-blur ${compact ? 'p-2.5' : 'p-3'}`} style={place} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+    <div role="dialog" aria-label={tx(def.label)} className={`absolute z-10 rounded-xl border border-cyan-glow/40 bg-asphalt-950/95 text-sm shadow-xl backdrop-blur ${compact ? 'p-2.5' : 'p-3'}`} style={place} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <b className="block text-white">{def.label}</b>
-          <span className="text-xs text-gold-300">{building.level > 0 ? `Ниво ${building.level} от ${def.maxLevel}` : 'Строи се'}{upgrading && building.level > 0 ? ' · вдига се' : ''}</span>
+          <b className="block text-white">{tx(def.label)}</b>
+          <span className="text-xs text-gold-300">{building.level > 0 ? tr('Ниво {0} от {1}', building.level, def.maxLevel) : tr('Строи се')}{upgrading && building.level > 0 ? tr(' · вдига се') : ''}</span>
         </div>
-        <button type="button" className="text-mist-400 hover:text-white" onClick={onClose} aria-label="Затвори"><X className="h-4 w-4" /></button>
+        <button type="button" className="text-mist-400 hover:text-white" onClick={onClose} aria-label={tr('Затвори')}><X className="h-4 w-4" /></button>
       </div>
       {building.level > 0 && !compact && <p className="mt-1 text-xs text-mist-300">{def.effect(building.level)}</p>}
       <div className={`mt-2 flex gap-1.5 ${compact ? 'flex-row flex-wrap [&>*]:flex-1' : 'flex-col'}`}>
-        {building.level > 0 && <Link href={link.href} className="btn-primary justify-center py-1.5 text-sm">{link.label}<ArrowRight className="h-4 w-4" /></Link>}
-        <a href="#plot-building" className="btn-ghost justify-center whitespace-nowrap py-1.5 text-xs" onClick={() => document.getElementById('plot-building')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Нива и подобрения</a>
-        {canMove && <button type="button" className="btn-ghost justify-center py-1.5 text-xs" onClick={onMove}><Move className="h-3.5 w-3.5" />Премести</button>}
+        {building.level > 0 && <Link href={link.href} className="btn-primary justify-center py-1.5 text-sm">{tx(link.label)}<ArrowRight className="h-4 w-4" /></Link>}
+        <a href="#plot-building" className="btn-ghost justify-center whitespace-nowrap py-1.5 text-xs" onClick={() => document.getElementById('plot-building')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>{tr('Нива и подобрения')}</a>
+        {canMove && <button type="button" className="btn-ghost justify-center py-1.5 text-xs" onClick={onMove}><Move className="h-3.5 w-3.5" />{tr('Премести')}</button>}
       </div>
     </div>
   );
 }
 
-const priceText = (kind: DecorKind) => (DECOR[kind].coins ? `${DECOR[kind].coins} ТрансКоин` : money(DECOR[kind].priceCents ?? 0));
+const priceText = (kind: DecorKind) => (DECOR[kind].coins ? tr('{0} ТрансКоин', DECOR[kind].coins) : money(DECOR[kind].priceCents ?? 0));
 
-const materialsText = (m: Materials) => MATERIAL_IDS.filter((id) => m[id]).map((id) => `${m[id]} т ${MATERIALS[id].label.toLowerCase()}`).join(', ');
+const materialsText = (m: Materials) => MATERIAL_IDS.filter((id) => m[id]).map((id) => tr('{0} т {1}', m[id], MATERIALS[id].label.toLowerCase())).join(', ');
 
 function ConstructionCard({ c, canBuild, progress, leftMin }: { c: NonNullable<PlotData['construction']>; canBuild: boolean; progress: number; leftMin: number }) {
   const def = BUILDINGS[c.type];
   const anyMissing = Object.keys(c.missing).length > 0;
   return (
     <div className="panel border-gold-400/40 p-4">
-      <h3 className="font-display text-lg font-bold">{def.label}{c.targetLevel > 1 ? ` · ниво ${c.targetLevel}` : ''}</h3>
+      <h3 className="font-display text-lg font-bold">{tx(def.label)}{c.targetLevel > 1 ? tr(' · ниво {0}', c.targetLevel) : ''}</h3>
       <p className="text-sm text-mist-300">{def.effect(c.targetLevel)}</p>
       {c.status === 'building' ? (
         <div className="mt-3 flex items-center gap-3">
@@ -420,8 +421,8 @@ function ConstructionCard({ c, canBuild, progress, leftMin }: { c: NonNullable<P
             <span className="num grid h-12 w-12 place-items-center rounded-full bg-asphalt-850 text-sm font-bold">{Math.round(progress * 100)}%</span>
           </div>
           <div>
-            <div className="font-semibold">Строи се</div>
-            <div className="text-sm text-mist-400">{leftMin > 0 ? `готово след ${duration(leftMin)}` : 'завършва…'}</div>
+            <div className="font-semibold">{tr('Строи се')}</div>
+            <div className="text-sm text-mist-400">{leftMin > 0 ? tr('готово след {0}', duration(leftMin)) : tr('завършва…')}</div>
           </div>
         </div>
       ) : (
@@ -432,8 +433,8 @@ function ConstructionCard({ c, canBuild, progress, leftMin }: { c: NonNullable<P
               return (
                 <div key={id}>
                   <div className="flex justify-between text-sm">
-                    <span>{MATERIALS[id].label}</span>
-                    <span className={got >= need ? 'text-profit' : ''}>{got} / {need} т{got >= need ? ' ✓' : way > 0 ? ` · ${way} т на път` : ''}</span>
+                    <span>{tx(MATERIALS[id].label)}</span>
+                    <span className={got >= need ? 'text-profit' : ''}>{tr('{0} / {1} т{2}', got, need, got >= need ? ' ✓' : way > 0 ? tr(' · {0} т на път', way) : '')}</span>
                   </div>
                   <Meter value={(got / need) * 100} tone="cyan" className="mt-1" />
                 </div>
@@ -442,30 +443,30 @@ function ConstructionCard({ c, canBuild, progress, leftMin }: { c: NonNullable<P
           </div>
           {!c.complete && c.loads.length > 0 && (
             <div className="mt-4">
-              <div className="label">Товари за строежа на борсата</div>
+              <div className="label">{tr('Товари за строежа на борсата')}</div>
               <ul className="mt-1.5 divide-y divide-asphalt-800 text-sm">
                 {c.loads.map((l) => (
                   <li key={l.id} className="flex items-center justify-between gap-2 py-1.5">
-                    <span className="min-w-0 truncate">{l.material && l.material in MATERIALS ? MATERIALS[l.material as MaterialId].label : 'Материали'} · {l.tons} т <span className="text-xs text-mist-400">от {l.from} · {money(l.rewardCents)}</span></span>
-                    <a href={`/game/contracts?load=${l.id}`} className="btn-primary shrink-0 px-3 py-1 text-xs">Поеми</a>
+                    <span className="min-w-0 truncate">{tr('{0} · {1} т', l.material && l.material in MATERIALS ? MATERIALS[l.material as MaterialId].label : tr('Материали'), l.tons)}{' '}<span className="text-xs text-mist-400">{tr('от {0} · {1}', l.from, money(l.rewardCents))}</span></span>
+                    <a href={`/game/contracts?load=${l.id}`} className="btn-primary shrink-0 px-3 py-1 text-xs">{tr('Поеми')}</a>
                   </li>
                 ))}
               </ul>
-              <p className="mt-1 text-xs text-mist-400">Всеки член на компанията може да ги кара.</p>
+              <p className="mt-1 text-xs text-mist-400">{tr('Всеки член на компанията може да ги кара.')}</p>
             </div>
           )}
           {c.complete ? (
-            canBuild ? <ActionButton action={{ type: 'startConstruction', buildId: c.id }} className="btn-gold mt-4 w-full justify-center">Започни строежа · {duration(c.minutes)}</ActionButton> : <p className="mt-3 text-sm text-profit">Материалите са доставени — строежът започва скоро.</p>
+            canBuild ? <ActionButton action={{ type: 'startConstruction', buildId: c.id }} className="btn-gold mt-4 w-full justify-center">{tr('Започни строежа · {0}', duration(c.minutes))}</ActionButton> : <p className="mt-3 text-sm text-profit">{tr('Материалите са доставени — строежът започва скоро.')}</p>
           ) : canBuild ? (
             <div className="mt-4 space-y-2">
-              {anyMissing && <ActionButton action={{ type: 'orderMaterials', buildId: c.id }} className="btn-primary w-full justify-center" confirm={`Да купим материалите от касата за ${money(c.orderCostCents)}? Членовете ще ги карат от борсата.`}>Поръчай материалите · {money(c.orderCostCents)}</ActionButton>}
-              {anyMissing && <ActionButton action={{ type: 'buyMaterialsDelivered', buildId: c.id }} className="btn-ghost w-full justify-center" confirm={`Да купим липсващото с доставка за ${money(c.deliveredCostCents)} (50 % по-скъпо)?`}>Поръчай с доставка · {money(c.deliveredCostCents)}</ActionButton>}
-              {!anyMissing && <p className="text-sm text-mist-300">Всичко липсващо пътува към участъка — карай товарите от борсата.</p>}
-              <a href="/game/contracts" className="block text-center text-xs text-cyan-glow hover:underline">Товарите за строежа на борсата →</a>
-              {Object.keys(c.delivered).length === 0 && Object.keys(c.onTheWay).length === 0 && <ActionButton action={{ type: 'cancelBuild', buildId: c.id }} className="btn-ghost w-full justify-center text-xs text-loss" confirm="Да откажем ли строежа?">Откажи строежа</ActionButton>}
+              {anyMissing && <ActionButton action={{ type: 'orderMaterials', buildId: c.id }} className="btn-primary w-full justify-center" confirm={tr('Да купим материалите от касата за {0}? Членовете ще ги карат от борсата.', money(c.orderCostCents))}>{tr('Поръчай материалите · {0}', money(c.orderCostCents))}</ActionButton>}
+              {anyMissing && <ActionButton action={{ type: 'buyMaterialsDelivered', buildId: c.id }} className="btn-ghost w-full justify-center" confirm={tr('Да купим липсващото с доставка за {0} (50 % по-скъпо)?', money(c.deliveredCostCents))}>{tr('Поръчай с доставка · {0}', money(c.deliveredCostCents))}</ActionButton>}
+              {!anyMissing && <p className="text-sm text-mist-300">{tr('Всичко липсващо пътува към участъка — карай товарите от борсата.')}</p>}
+              <a href="/game/contracts" className="block text-center text-xs text-cyan-glow hover:underline">{tr('Товарите за строежа на борсата →')}</a>
+              {Object.keys(c.delivered).length === 0 && Object.keys(c.onTheWay).length === 0 && <ActionButton action={{ type: 'cancelBuild', buildId: c.id }} className="btn-ghost w-full justify-center text-xs text-loss" confirm={tr('Да откажем ли строежа?')}>{tr('Откажи строежа')}</ActionButton>}
             </div>
           ) : (
-            <a href="/game/contracts" className="btn-primary mt-4 w-full justify-center">Карай материали от борсата</a>
+            <a href="/game/contracts" className="btn-primary mt-4 w-full justify-center">{tr('Карай материали от борсата')}</a>
           )}
         </>
       )}

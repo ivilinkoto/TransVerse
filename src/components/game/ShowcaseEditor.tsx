@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { SHOWCASE } from '@/lib/game/community';
+import { t, tx } from '@/i18n/t';
 
 type Option = { id: string; label: string };
 
@@ -29,24 +30,24 @@ export function ShowcaseEditor({ trucks, badges, chosen }: { trucks: Option[]; b
   };
   const group = (title: string, options: Option[], list: string[], set: (l: string[]) => void, max: number) => (
     <fieldset className="space-y-1.5">
-      <legend className="label">{title} ({list.length} / {max})</legend>
+      <legend className="label">{title} ({tx(list.length)} / {max})</legend>
       {options.length ? (
         <div className="flex flex-wrap gap-2">
           {options.map((o) => (
             <label key={o.id} className={`cursor-pointer rounded-lg border px-2.5 py-1.5 text-xs ${list.includes(o.id) ? 'border-cyan-glow text-white' : 'border-asphalt-700 text-mist-300'}`}>
               <input type="checkbox" className="sr-only" checked={list.includes(o.id)} onChange={() => toggle(list, set, o.id, max)} />
-              {o.label}
+              {tx(o.label)}
             </label>
           ))}
         </div>
-      ) : <p className="text-xs text-mist-400">Още нямаш.</p>}
+      ) : <p className="text-xs text-mist-400">{t('Още нямаш.')}</p>}
     </fieldset>
   );
   return (
     <div className="space-y-3">
-      {group('Камиони', trucks, pickT, setPickT, SHOWCASE.trucks)}
-      {group('Значки', badges, pickB, setPickB, SHOWCASE.badges)}
-      <button type="button" className="btn-primary py-2" onClick={save} disabled={busy}>{busy ? '…' : 'Запази витрината'}</button>
+      {group(t('Камиони'), trucks, pickT, setPickT, SHOWCASE.trucks)}
+      {group(t('Значки'), badges, pickB, setPickB, SHOWCASE.badges)}
+      <button type="button" className="btn-primary py-2" onClick={save} disabled={busy}>{busy ? '…' : t('Запази витрината')}</button>
       {error && <p role="alert" className="text-xs text-loss">{error}</p>}
     </div>
   );

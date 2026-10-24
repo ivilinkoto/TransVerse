@@ -11,6 +11,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
 import { awardXp } from './progression';
+import { t } from '@/i18n/t';
 
 // ── Postcards ────────────────────────────────────────────────────────────
 
@@ -38,13 +39,13 @@ export async function collectPostcards(tx: Tx, userId: string, d: { id: string; 
   if (!fresh.length) return [];
   const names = fresh.map((f) => LANDMARKS.find((l) => l.id === f.landmark)!).map((l) => `${l.emoji} ${l.name}`);
   await awardXp(tx, userId, POSTCARDS.xp * fresh.length, 'achievement');
-  await postCoins(tx, userId, { amount: POSTCARDS.coins * fresh.length, reason: 'postcards', description: `Картички: ${names.join(', ')}`.slice(0, 200), idempotencyKey: `postcards:${d.id}` });
+  await postCoins(tx, userId, { amount: POSTCARDS.coins * fresh.length, reason: 'postcards', description: t('Картички: {0}', names.join(', ')).slice(0, 200), idempotencyKey: `postcards:${d.id}` });
   const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(userPostcards).where(eq(userPostcards.userId, userId));
-  await notify(tx, userId, 'achievement', fresh.length === 1 ? 'Нова картичка 📮' : `${fresh.length} нови картички 📮`, `${names.join(', ')} — вече имаш ${n} от ${LANDMARKS.length}.`, '/game/postcards');
+  await notify(tx, userId, 'achievement', () => fresh.length === 1 ? t('Нова картичка 📮') : t('{0} нови картички 📮', fresh.length), () => t('{0} — вече имаш {1} от {2}.', names.join(', '), n, LANDMARKS.length), '/game/postcards');
   for (const [count, badge] of Object.entries(POSTCARDS.badges)) {
     if (n >= Number(count) && n - fresh.length < Number(count)) {
       await tx.insert(userBadges).values({ userId, badge, awardedAt: at }).onConflictDoNothing();
-      await notify(tx, userId, 'achievement', `Значка: ${BADGES[badge]?.label ?? badge}`, BADGES[badge]?.description ?? '', '/game/postcards');
+      await notify(tx, userId, 'achievement', () => t('Значка: {0}', BADGES[badge]?.label ?? badge), BADGES[badge]?.description ?? '', '/game/postcards');
     }
   }
   return fresh.map((f) => f.landmark);
@@ -74,22 +75,22 @@ export async function maybeHitchhiker(tx: Tx, userId: string, d: { id: string; s
   const [from] = await tx.select({ name: cities.nameBg }).from(cities).where(eq(cities.id, lane.originCityId));
   const [to] = await tx.select({ name: cities.nameBg }).from(cities).where(eq(cities.id, lane.destCityId));
   const p = HITCHHIKERS[persona]!;
-  await notify(tx, userId, 'info', `${p.name} маха на пътя 👋`, `${p.name}, ${p.who}, чака на изхода на ${from?.name ?? ''} и иска до ${to?.name ?? ''}. Вземи я/го до ${HITCHHIKE.waitMin} мин — ${money(fare)} при пристигане.`, '/game/road');
+  await notify(tx, userId, 'info', () => t('{0} маха на пътя 👋', p.name), () => t('{0}, {1}, чака на изхода на {2} и иска до {3}. Вземи я/го до {4} мин — {5} при пристигане.', p.name, p.who, from?.name ?? '', to?.name ?? '', HITCHHIKE.waitMin, money(fare)), '/game/road');
   return h;
 }
 
 /** The player takes the hitchhiker along (only while they still wait). */
 export async function pickHitchhiker(db: Database, userId: string, id: number, now = new Date()) {
-  if (!(await featureFor(db, userId, 'hitchhikers', now))) fail('not_released', 'Автостопаджиите идват с обновление 1.8.');
+  if (!(await featureFor(db, userId, 'hitchhikers', now))) fail('not_released', t('Автостопаджиите идват с обновление 1.8.'));
   const [h] = await db.select().from(hitchhikers).where(and(eq(hitchhikers.id, id), eq(hitchhikers.userId, userId)));
-  if (!h) fail('not_found', 'Няма такъв автостопаджия.', 404);
-  if (h!.status !== 'waiting') fail('not_waiting', 'Вече е в камиона или си тръгна.');
+  if (!h) fail('not_found', t('Няма такъв автостопаджия.'), 404);
+  if (h!.status !== 'waiting') fail('not_waiting', t('Вече е в камиона или си тръгна.'));
   if (h!.waitUntil <= now) {
     await db.update(hitchhikers).set({ status: 'missed', settledAt: now }).where(eq(hitchhikers.id, id));
-    fail('too_late', 'Закъсня — хвана друга кола.');
+    fail('too_late', t('Закъсня — хвана друга кола.'));
   }
   const [d] = await db.select({ status: deliveries.status }).from(deliveries).where(eq(deliveries.id, h!.deliveryId));
-  if (d?.status !== 'in_progress') fail('trip_over', 'Курсът вече приключи.');
+  if (d?.status !== 'in_progress') fail('trip_over', t('Курсът вече приключи.'));
   await db.update(hitchhikers).set({ status: 'aboard' }).where(and(eq(hitchhikers.id, id), eq(hitchhikers.status, 'waiting')));
   return { aboard: true, name: HITCHHIKERS[h!.persona]!.name };
 }
@@ -104,10 +105,10 @@ export async function dropHitchhiker(tx: Tx, userId: string, d: { id: string; co
   }
   const fare = late ? Math.round(h.fareCents / 2) : h.fareCents;
   const p = HITCHHIKERS[h.persona]!;
-  await post(tx, d.companyId, [{ category: 'hitchhiker', amountCents: fare, description: `Автостоп: ${p.name}`, idempotencyKey: `hitchhiker:${h.id}`, refType: 'delivery', refId: d.id }]);
+  await post(tx, d.companyId, [{ category: 'hitchhiker', amountCents: fare, description: t('Автостоп: {0}', p.name), idempotencyKey: `hitchhiker:${h.id}`, refType: 'delivery', refId: d.id }]);
   await awardXp(tx, userId, HITCHHIKE.xp, 'other');
   await tx.update(hitchhikers).set({ status: 'done', settledAt: at }).where(eq(hitchhikers.id, h.id));
-  await notify(tx, userId, 'info', `${p.name} пристигна 🙂`, `${p.bye} ${late ? 'Курсът закъсня, затова плати половината: ' : 'Плати '}${money(fare)}.`, '/game/finance');
+  await notify(tx, userId, 'info', () => t('{0} пристигна 🙂', p.name), () => `${p.bye} ${late ? t('Курсът закъсня, затова плати половината: ') : t('Плати ')}${money(fare)}.`, '/game/finance');
   return fare;
 }
 

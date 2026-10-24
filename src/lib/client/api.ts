@@ -1,4 +1,5 @@
 'use client';
+import { t } from '@/i18n/t';
 
 export class ApiError extends Error {
   constructor(
@@ -18,6 +19,6 @@ export async function api<T = { ok: true }>(path: string, body?: unknown, method
     credentials: 'same-origin',
   });
   const data = (await response.json().catch(() => ({}))) as { error?: string; message?: string };
-  if (!response.ok) throw new ApiError(data.error ?? 'error', data.message ?? 'Възникна грешка.');
+  if (!response.ok) throw new ApiError(data.error ?? 'error', data.message ?? t('Възникна грешка.'));
   return data as T;
 }

@@ -5,6 +5,7 @@ import { cities, companies, companyMembers, companyTenders, contracts, deliverie
 import { battleRecord } from './battles';
 import { finishedProjects } from './projects';
 import { organizationSeasonResults } from './seasons';
+import { t as tr } from '@/i18n/t';
 
 /**
  * The public highlights of a company: totals and records of its current
@@ -65,13 +66,13 @@ export async function companyHighlights(db: DbOrTx, organizationId: string, now 
   const battles = await battleRecord(db, organizationId, 10);
   // History: founding, the newest members, completed tenders and season places — newest first.
   const history = [
-    { at: org.foundedAt, kind: 'founded' as const, text: `Компанията е основана в ${org.hq}` },
+    { at: org.foundedAt, kind: 'founded' as const, text: tr('Компанията е основана в {0}', org.hq) },
     // The founder "joins" at the founding itself; that is not news.
-    ...members.filter((m) => m.userId !== org.ownerId || Math.abs(m.joinedAt.getTime() - org.foundedAt.getTime()) > 60_000).map((m) => ({ at: m.joinedAt, kind: 'joined' as const, text: `${m.username} се присъедини` })),
-    ...tenders.filter((t) => t.at).map((t) => ({ at: t.at!, kind: 'tender' as const, text: `Изпълнен търг: ${t.title}` })),
-    ...seasons.filter((s) => (s.rank ?? 99) <= 10).map((s) => ({ at: null, kind: 'season' as const, text: `${s.name}: ${s.rank}. място` })),
-    ...(await finishedProjects(db, organizationId)).filter((p) => p.completedAt).map((p) => ({ at: p.completedAt!, kind: 'project' as const, text: `Завършен проект: ${p.title}` })),
-    ...battles.recent.filter((b) => b.result === 'win').map((b) => ({ at: b.at, kind: 'battle' as const, text: `Победа в битка срещу „${b.rival}“ (${Math.round(b.ourTons)} : ${Math.round(b.theirTons)} т)` })),
+    ...members.filter((m) => m.userId !== org.ownerId || Math.abs(m.joinedAt.getTime() - org.foundedAt.getTime()) > 60_000).map((m) => ({ at: m.joinedAt, kind: 'joined' as const, text: tr('{0} се присъедини', m.username) })),
+    ...tenders.filter((t) => t.at).map((t) => ({ at: t.at!, kind: 'tender' as const, text: tr('Изпълнен търг: {0}', t.title) })),
+    ...seasons.filter((s) => (s.rank ?? 99) <= 10).map((s) => ({ at: null, kind: 'season' as const, text: tr('{0}: {1}. място', s.name, s.rank) })),
+    ...(await finishedProjects(db, organizationId)).filter((p) => p.completedAt).map((p) => ({ at: p.completedAt!, kind: 'project' as const, text: tr('Завършен проект: {0}', p.title) })),
+    ...battles.recent.filter((b) => b.result === 'win').map((b) => ({ at: b.at, kind: 'battle' as const, text: tr('Победа в битка срещу „{0}“ ({1} : {2} т)', b.rival, Math.round(b.ourTons), Math.round(b.theirTons)) })),
   ]
     .sort((a, b) => (b.at?.getTime() ?? 0) - (a.at?.getTime() ?? 0))
     .slice(0, 12);

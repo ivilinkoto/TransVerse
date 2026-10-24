@@ -12,11 +12,17 @@ import { CHRISTMAS } from '@/lib/game/christmas';
 import { ECONOMY } from '@/lib/game/economy';
 import { AUTO_DISPATCH_PER_DAY } from '@/server/game/dispatch';
 import { AUCTION_RULES } from '@/lib/game/auctions';
+import { t as tr, tx, intlLocale } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Помощ и правила' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: tr('Помощ и правила') };
+}
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
-const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} лв.`;
+const eur = (cents: number) => tr('{0} лв.', Math.round(cents / 100).toLocaleString(intlLocale()));
 
 const SECTIONS: { id: string; title: string; items: React.ReactNode[] }[] = [
   {
@@ -45,7 +51,7 @@ const SECTIONS: { id: string; title: string; items: React.ReactNode[] }[] = [
     items: [
       `Шофьорът кара до ${CREW_RULES.soloDailyMin / 60} ч преди дневна почивка. Часовете от последния курс се пренасят; след ${CREW_RULES.restGameMin} мин престой е отпочинал.`,
       `Двоен екипаж (втори шофьор в същия камион): до ${CREW_RULES.teamDailyMin / 60} ч без почивки, по-кратки дълги курсове. Не във ван и не в нает камион.`,
-      <>Умения — точка с всяко ниво: {TRAIT_IDS.map((t) => `${TRAITS[t].short} (${TRAITS[t].perPoint})`).join('; ')}.</>,
+      <>{tr('Умения — точка с всяко ниво:')}{' '}{TRAIT_IDS.map((t) => `${TRAITS[t].short} (${TRAITS[t].perPoint})`).join('; ')}.</>,
     ],
   },
   {
@@ -79,44 +85,45 @@ const SECTIONS: { id: string; title: string; items: React.ReactNode[] }[] = [
     id: 'more',
     title: 'Още',
     items: [
-      <>Анализ (Автопарк → Анализ): какво носи всеки камион, шофьор, линия и товар.</>,
-      <>Седмичник (Състезание): вестник всеки понеделник за изминалата седмица.</>,
+      <>{tr('Анализ (Автопарк → Анализ): какво носи всеки камион, шофьор, линия и товар.')}</>,
+      <>{tr('Седмичник (Състезание): вестник всеки понеделник за изминалата седмица.')}</>,
       `Хелуин (${HALLOWEEN.from.split('-').reverse().join('.')}–${HALLOWEEN.to.split('-').reverse().join('.')}): празнични поръчки с +${pct(HALLOWEEN.rewardMultiplier - 1)}, общ ивент, мисии, значка и призрачен камион нощем.`,
       `Коледа (${CHRISTMAS.from.split('-').reverse().join('.')}–${CHRISTMAS.to.split('-').reverse().join('.')}): коледни поръчки с +${pct(CHRISTMAS.rewardMultiplier - 1)}, общ ивент „Коледна треска“ до Бъдни вечер, мисии, значка и боя „Коледа“.`,
-      <>Наставник (меню на профила): нов играч избира опитен шофьор (ниво 15+) — +10 % опит, а при ниво 5 награда и за двамата.</>,
-      <>Помощ на пътя: приятел или колега закъса — с камион до 150 км натисни „Помогни на пътя“ на картата.</>,
-      <>Обновленията и описанията им са в <Link href="/game/updates" className="text-cyan-glow hover:underline">Обновления</Link>; въпроси — в <Link href="/game/support" className="text-cyan-glow hover:underline">Поддръжка</Link>.</>,
+      <>{tr('Наставник (меню на профила): нов играч избира опитен шофьор (ниво 15+) — +10 % опит, а при ниво 5 награда и за двамата.')}</>,
+      <>{tr('Помощ на пътя: приятел или колега закъса — с камион до 150 км натисни „Помогни на пътя“ на картата.')}</>,
+      <>{tr('Обновленията и описанията им са в')}{' '}<Link href="/game/updates" className="text-cyan-glow hover:underline">{tr('Обновления')}</Link>{tr('; въпроси — в')}{' '}<Link href="/game/support" className="text-cyan-glow hover:underline">{tr('Поддръжка')}</Link>.</>,
     ],
   },
 ];
 
 export default async function HelpPage() {
+  await initLocale();
   const { features } = await gameContext();
   const glossary = features.glossary;
   return (
     <div className="space-y-6">
-      <PageHeader title="Помощ и правила" subtitle="Всички системи на играта накратко. Числата са игрови правила." />
+      <PageHeader title={tr('Помощ и правила')} subtitle={tr('Всички системи на играта накратко. Числата са игрови правила.')} />
       <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="panel flex items-center gap-3 p-3.5 transition hover:border-volt-500/60">
         <MessagesSquare className="h-6 w-6 shrink-0 text-volt-400" />
-        <span className="min-w-0 flex-1"><span className="block font-semibold">Discord сървър на TransVerse</span><span className="block text-sm text-mist-300">Питай другите играчи, следи новините, намери компания.</span></span>
+        <span className="min-w-0 flex-1"><span className="block font-semibold">{tr('Discord сървър на TransVerse')}</span><span className="block text-sm text-mist-300">{tr('Питай другите играчи, следи новините, намери компания.')}</span></span>
         <ExternalLink className="h-4 w-4 shrink-0 text-mist-400" />
       </a>
-      <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label="Раздели">
-        {glossary && <a href="#glossary" className="shrink-0 rounded-full border border-cyan-glow/40 px-3 py-1.5 text-sm text-cyan-glow hover:text-white">Речник</a>}
-        {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`} className="shrink-0 rounded-full border border-asphalt-700 px-3 py-1.5 text-sm text-mist-300 hover:text-white">{s.title}</a>)}
+      <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label={tr('Раздели')}>
+        {glossary && <a href="#glossary" className="shrink-0 rounded-full border border-cyan-glow/40 px-3 py-1.5 text-sm text-cyan-glow hover:text-white">{tr('Речник')}</a>}
+        {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`} className="shrink-0 rounded-full border border-asphalt-700 px-3 py-1.5 text-sm text-mist-300 hover:text-white">{tx(s.title)}</a>)}
       </nav>
       <div className="grid gap-6 lg:grid-cols-2">
         {glossary && (
-          <Card id="glossary" title="Речник" className="lg:col-span-2">
+          <Card id="glossary" title={tr('Речник')} className="lg:col-span-2">
             <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
               {Object.entries(GLOSSARY).map(([id, g]) => (
-                <div key={id}><dt className="font-semibold text-white">{g.term}</dt><dd className="text-mist-300">{g.text}</dd></div>
+                <div key={id}><dt className="font-semibold text-white">{tx(g.term)}</dt><dd className="text-mist-300">{tx(g.text)}</dd></div>
               ))}
             </dl>
           </Card>
         )}
         {SECTIONS.map((s) => (
-          <Card key={s.id} id={s.id} title={s.title}>
+          <Card key={s.id} id={s.id} title={tx(s.title)}>
             <ul className="space-y-2 text-sm text-mist-200">
               {s.items.map((item, i) => <li key={i} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-glow" aria-hidden="true" /><span>{item}</span></li>)}
             </ul>

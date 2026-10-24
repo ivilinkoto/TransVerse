@@ -6,6 +6,7 @@ import { discordConfig, DISCORD_ROLES } from './config';
 import { guild } from './guild';
 import { layoutState } from './layout';
 import { enqueue } from './outbox';
+import { t as tr } from '@/i18n/t';
 
 /**
  * Automatic moderation of messages (on unless turned off in the admin panel):
@@ -50,11 +51,11 @@ export function automodReason(m: AutomodMessage, now: number): string | null {
   list.push({ content: text.trim().toLowerCase(), at: now });
   recent.set(m.author.id, list);
   if (recent.size > 5000) recent.delete(recent.keys().next().value!);
-  if (INVITE.test(text)) return 'покана към друг сървър';
-  if (/@(everyone|here)\b/.test(text) || (m.mentions?.length ?? 0) + (m.mention_roles?.length ?? 0) >= AUTOMOD.massMentions) return 'масово споменаване';
-  if (m.member?.joined_at && now - new Date(m.member.joined_at).getTime() < AUTOMOD.newMemberMs && LINK.test(text)) return 'линк от нов член (първите 24 часа)';
-  if (text && list.filter((x) => x.content === text.trim().toLowerCase()).length >= AUTOMOD.repeat.count) return 'повтарящо се съобщение';
-  if (list.filter((x) => now - x.at < AUTOMOD.flood.windowMs).length >= AUTOMOD.flood.count) return 'твърде много съобщения наведнъж';
+  if (INVITE.test(text)) return tr('покана към друг сървър');
+  if (/@(everyone|here)\b/.test(text) || (m.mentions?.length ?? 0) + (m.mention_roles?.length ?? 0) >= AUTOMOD.massMentions) return tr('масово споменаване');
+  if (m.member?.joined_at && now - new Date(m.member.joined_at).getTime() < AUTOMOD.newMemberMs && LINK.test(text)) return tr('линк от нов член (първите 24 часа)');
+  if (text && list.filter((x) => x.content === text.trim().toLowerCase()).length >= AUTOMOD.repeat.count) return tr('повтарящо се съобщение');
+  if (list.filter((x) => now - x.at < AUTOMOD.flood.windowMs).length >= AUTOMOD.flood.count) return tr('твърде много съобщения наведнъж');
   return null;
 }
 
@@ -76,18 +77,18 @@ export async function automod(db: Database, m: AutomodMessage, now = new Date())
   times.push(now.getTime());
   strikes.set(m.author.id, times);
   const [u] = await db.select({ id: users.id }).from(users).where(eq(users.discordId, m.author.id));
-  let step = 'изтрито';
+  let step = tr('изтрито');
   if (times.length === 2) {
     await db.insert(discordSanctions).values({ discordUserId: m.author.id, userId: u?.id ?? null, kind: 'warn', reason: `Автомодерация: ${reason}`, moderatorDiscordId: 'automod', createdAt: now });
-    step = 'предупреждение';
+    step = tr('предупреждение');
   } else if (times.length >= 3) {
     const until = new Date(now.getTime() + AUTOMOD.timeoutMs);
     await discord('PATCH', `/guilds/${discordConfig().guildId}/members/${m.author.id}`, { communication_disabled_until: until.toISOString() }).catch(() => undefined);
     await db.insert(discordSanctions).values({ discordUserId: m.author.id, userId: u?.id ?? null, kind: 'timeout', reason: `Автомодерация: ${reason}`, until, moderatorDiscordId: 'automod', createdAt: now });
-    step = 'заглушен за 30 минути';
+    step = tr('заглушен за 30 минути');
   }
-  await enqueue(db, `automod-dm:${m.id}`, `dm:${m.author.id}`, { embeds: [{ color: 0xf6c343, title: '🛡️ Съобщението ти беше премахнато', description: `**Причина:** ${reason}${step === 'изтрито' ? '' : `\n**Следва:** ${step}`}\n\nПрочети #правила — при повторение следва заглушаване.` }] }, now);
-  await enqueue(db, `automod-log:${m.id}`, `channel:${step === 'изтрито' ? 'logs' : 'warnings'}`, { ping: false, embeds: [{ color: 0xf6c343, title: `🛡️ Автомодерация · ${step}`, description: `<@${m.author.id}> в <#${m.channel_id}> — ${reason}\n> ${(m.content ?? '').slice(0, 300).replace(/\n/g, ' ')}`, timestamp: now.toISOString() }] }, now);
+  await enqueue(db, `automod-dm:${m.id}`, `dm:${m.author.id}`, { embeds: [{ color: 0xf6c343, title: tr('🛡️ Съобщението ти беше премахнато'), description: tr('**Причина:** {0}{1}\n\nПрочети #правила — при повторение следва заглушаване.', reason, step === 'изтрито' ? '' : tr('\n**Следва:** {0}', step)) }] }, now);
+  await enqueue(db, `automod-log:${m.id}`, `channel:${step === 'изтрито' ? 'logs' : 'warnings'}`, { ping: false, embeds: [{ color: 0xf6c343, title: tr('🛡️ Автомодерация · {0}', step), description: tr('<@{0}> в <#{1}> — {2}\n> {3}', m.author.id, m.channel_id, reason, (m.content ?? '').slice(0, 300).replace(/\n/g, ' ')), timestamp: now.toISOString() }] }, now);
   return { reason, step };
 }
 

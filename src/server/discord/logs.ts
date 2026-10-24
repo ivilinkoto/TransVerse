@@ -6,6 +6,7 @@ import { appUrl, BRAND } from './config';
 import { guild } from './guild';
 import { enqueue } from './outbox';
 import { linkButton, rows } from './ui';
+import { t } from '@/i18n/t';
 
 /**
  * Server events from the gateway: the welcome for new members and the log
@@ -31,7 +32,7 @@ export function rememberMessage(m: { id: string; channel_id: string; content?: s
 }
 
 const ts = (d = new Date()) => d.toISOString();
-const quote = (s: string) => (s ? s.slice(0, 1000).split('\n').map((l) => `> ${l}`).join('\n') : '> *(без текст)*');
+const quote = (s: string) => (s ? s.slice(0, 1000).split('\n').map((l) => `> ${l}`).join('\n') : t('> *(без текст)*'));
 
 function log(db: Database, key: string, embed: Embed) {
   return enqueue(db, `log:${key}:${Date.now()}`, 'channel:logs', { ping: false, embeds: [{ timestamp: ts(), ...embed }] });
@@ -52,20 +53,20 @@ export async function memberJoined(db: Database, d: { user: GatewayUser; roles?:
   if (d.user.bot) return;
   memberRoles.set(d.user.id, d.roles ?? []);
   const [u] = await db.select({ username: users.username }).from(users).where(eq(users.discordId, d.user.id));
-  await log(db, `join:${d.user.id}`, { color: 0x2fd27a, title: '📥 Влезе в сървъра', description: `<@${d.user.id}> · ${nameOf(d.user)}\nАкаунт от <t:${Math.floor(createdAt(d.user.id).getTime() / 1000)}:R>${u ? `\nВ играта: **${u.username}**` : ''}` });
+  await log(db, `join:${d.user.id}`, { color: 0x2fd27a, title: t('📥 Влезе в сървъра'), description: t('<@{0}> · {1}\nАкаунт от <t:{2}:R>{3}', d.user.id, nameOf(d.user), Math.floor(createdAt(d.user.id).getTime() / 1000), u ? t('\nВ играта: **{0}**', u.username) : '') });
   // The welcome in #добре-дошли (mentions only the new member).
   await enqueue(db, `welcome:${d.user.id}:${Date.now()}`, 'channel:welcome', {
     ping: false,
     content: `<@${d.user.id}>`,
     allowed_mentions: { parse: [], users: [d.user.id] },
-    embeds: [{ color: BRAND, title: `👋 Добре дошъл, ${nameOf(d.user)}!`, description: u ? `Радваме се да те видим, **${u.username}**! Акаунтът ти вече е свързан — ролите идват до минута.` : 'Ти си в сървъра на TransVerse — онлайн транспортната стратегия по истински пътища. Свържи акаунта си в #свържи-акаунта и избери известията си в #роли.' }],
-    components: u ? [] : rows(linkButton('Играй безплатно', `${appUrl()}/register`, '🚚'), linkButton('Свържи Discord', `${appUrl()}/game/settings#discord`, '🔗')),
+    embeds: [{ color: BRAND, title: t('👋 Добре дошъл, {0}!', nameOf(d.user)), description: u ? t('Радваме се да те видим, **{0}**! Акаунтът ти вече е свързан — ролите идват до минута.', u.username) : t('Ти си в сървъра на TransVerse — онлайн транспортната стратегия по истински пътища. Свържи акаунта си в #свържи-акаунта и избери известията си в #роли.') }],
+    components: u ? [] : rows(linkButton(t('Играй безплатно'), `${appUrl()}/register`, '🚚'), linkButton(t('Свържи Discord'), `${appUrl()}/game/settings#discord`, '🔗')),
   });
   // Not linked yet: a short private hello with the steps.
   if (!u) {
     await enqueue(db, `welcome-dm:${d.user.id}`, `dm:${d.user.id}`, {
-      embeds: [{ color: BRAND, title: '🚚 Добре дошъл в TransVerse!', description: 'Ето как да започнеш:\n1. Направи профил в играта (безплатно е).\n2. В **Настройки → Discord** свържи акаунта — получаваш роли, канала на компанията и 10 ТрансКоин.\n3. Пиши ни в #тикети, ако имаш въпрос.' }],
-      components: rows(linkButton('Играй', `${appUrl()}/register`, '🎮'), linkButton('Свържи Discord', `${appUrl()}/game/settings#discord`, '🔗')),
+      embeds: [{ color: BRAND, title: t('🚚 Добре дошъл в TransVerse!'), description: t('Ето как да започнеш:\n1. Направи профил в играта (безплатно е).\n2. В **Настройки → Discord** свържи акаунта — получаваш роли, канала на компанията и 10 ТрансКоин.\n3. Пиши ни в #тикети, ако имаш въпрос.') }],
+      components: rows(linkButton(t('Играй'), `${appUrl()}/register`, '🎮'), linkButton(t('Свържи Discord'), `${appUrl()}/game/settings#discord`, '🔗')),
     });
   }
 }
@@ -73,7 +74,7 @@ export async function memberJoined(db: Database, d: { user: GatewayUser; roles?:
 export async function memberLeft(db: Database, d: { user: GatewayUser }) {
   if (d.user.bot) return;
   memberRoles.delete(d.user.id);
-  await log(db, `leave:${d.user.id}`, { color: 0xe04545, title: '📤 Излезе от сървъра', description: `<@${d.user.id}> · ${nameOf(d.user)}` });
+  await log(db, `leave:${d.user.id}`, { color: 0xe04545, title: t('📤 Излезе от сървъра'), description: `<@${d.user.id}> · ${nameOf(d.user)}` });
 }
 
 export async function memberUpdated(db: Database, d: { user: GatewayUser; roles: string[] }) {
@@ -87,14 +88,14 @@ export async function memberUpdated(db: Database, d: { user: GatewayUser; roles:
   if (!added.length && !removed.length) return;
   const { roles } = await guild();
   const name = (id: string) => roles.find((r) => r.id === id)?.name ?? id;
-  await log(db, `roles:${d.user.id}`, { color: 0x9aa3b2, title: '🎭 Промяна на роли', description: `<@${d.user.id}>${added.length ? `\n➕ ${added.map(name).join(', ')}` : ''}${removed.length ? `\n➖ ${removed.map(name).join(', ')}` : ''}` });
+  await log(db, `roles:${d.user.id}`, { color: 0x9aa3b2, title: t('🎭 Промяна на роли'), description: `<@${d.user.id}>${added.length ? `\n➕ ${added.map(name).join(', ')}` : ''}${removed.length ? `\n➖ ${removed.map(name).join(', ')}` : ''}` });
 }
 
 export async function messageDeleted(db: Database, d: { id: string; channel_id: string }) {
   const m = messages.get(d.id);
   if (!m) return;
   messages.delete(d.id);
-  await log(db, `delete:${d.id}`, { color: 0xe04545, title: '🗑️ Изтрито съобщение', description: `От <@${m.authorId}> в <#${m.channelId}>\n${quote(m.content)}${m.attachments ? `\n📎 ${m.attachments} прикачени` : ''}` });
+  await log(db, `delete:${d.id}`, { color: 0xe04545, title: t('🗑️ Изтрито съобщение'), description: t('От <@{0}> в <#{1}>\n{2}{3}', m.authorId, m.channelId, quote(m.content), m.attachments ? t('\n📎 {0} прикачени', m.attachments) : '') });
 }
 
 export async function messageEdited(db: Database, d: { id: string; channel_id: string; content?: string; author?: { id: string; bot?: boolean } }) {
@@ -102,9 +103,9 @@ export async function messageEdited(db: Database, d: { id: string; channel_id: s
   // An edit without text (an embed appeared) or of an unknown message: nothing to show.
   if (!m || d.content === undefined || d.content === m.content) return;
   messages.set(d.id, { ...m, content: d.content });
-  await log(db, `edit:${d.id}`, { color: 0xf6c343, title: '✏️ Редактирано съобщение', description: `От <@${m.authorId}> в <#${m.channelId}>\n**Преди:**\n${quote(m.content)}\n**След:**\n${quote(d.content)}` });
+  await log(db, `edit:${d.id}`, { color: 0xf6c343, title: t('✏️ Редактирано съобщение'), description: t('От <@{0}> в <#{1}>\n**Преди:**\n{2}\n**След:**\n{3}', m.authorId, m.channelId, quote(m.content), quote(d.content)) });
 }
 
 export async function banChanged(db: Database, d: { user: GatewayUser }, banned: boolean) {
-  await log(db, `ban:${d.user.id}`, { color: banned ? 0xe04545 : 0x2fd27a, title: banned ? '🔨 Бан' : '✅ Свален бан', description: `<@${d.user.id}> · ${nameOf(d.user)}` });
+  await log(db, `ban:${d.user.id}`, { color: banned ? 0xe04545 : 0x2fd27a, title: banned ? t('🔨 Бан') : t('✅ Свален бан'), description: `<@${d.user.id}> · ${nameOf(d.user)}` });
 }

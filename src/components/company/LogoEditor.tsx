@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { LOGO } from '@/lib/game/company-life';
 import { DesignedLogo, type LogoDesign } from './CompanyBrand';
+import { t, tx } from '@/i18n/t';
 
 const SHAPE_LABELS: Record<string, string> = { circle: 'Кръг', shield: 'Щит', hex: 'Шестоъгълник', diamond: 'Ромб', square: 'Квадрат' };
 
@@ -19,7 +20,7 @@ export function LogoEditor({ initial, fallbackInitials }: { initial: LogoDesign 
     setMsg(null);
     try {
       await api('/api/game/action', { type: 'logoDesign', design });
-      setMsg(design ? 'Логото е запазено.' : 'Нарисуваното лого е махнато.');
+      setMsg(design ? t('Логото е запазено.') : t('Нарисуваното лого е махнато.'));
       router.refresh();
     } catch (e) {
       setMsg((e as Error).message);
@@ -32,19 +33,19 @@ export function LogoEditor({ initial, fallbackInitials }: { initial: LogoDesign 
       <DesignedLogo design={d} size={112} />
       <div className="min-w-0 flex-1 space-y-2 text-sm">
         <div className="flex flex-wrap gap-1.5">
-          {LOGO.shapes.map((s) => <button key={s} type="button" onClick={() => setD({ ...d, shape: s })} className={`rounded-lg border px-2.5 py-1 text-xs ${d.shape === s ? 'border-cyan-glow text-white' : 'border-asphalt-700 text-mist-300'}`}>{SHAPE_LABELS[s]}</button>)}
+          {LOGO.shapes.map((s) => <button key={s} type="button" onClick={() => setD({ ...d, shape: s })} className={`rounded-lg border px-2.5 py-1 text-xs ${d.shape === s ? 'border-cyan-glow text-white' : 'border-asphalt-700 text-mist-300'}`}>{tx(SHAPE_LABELS[s])}</button>)}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-1.5">Цвят <input type="color" value={d.color} onChange={(e) => setD({ ...d, color: e.target.value })} aria-label="Основен цвят" /></label>
-          <label className="flex items-center gap-1.5">Букви <input type="color" value={d.accent} onChange={(e) => setD({ ...d, accent: e.target.value })} aria-label="Цвят на буквите" /></label>
-          <label className="flex items-center gap-1.5"><input type="checkbox" checked={!!d.stripe} onChange={(e) => setD({ ...d, stripe: e.target.checked })} />Лента</label>
+          <label className="flex items-center gap-1.5">{t('Цвят')}{' '}<input type="color" value={d.color} onChange={(e) => setD({ ...d, color: e.target.value })} aria-label={t('Основен цвят')} /></label>
+          <label className="flex items-center gap-1.5">{t('Букви')}{' '}<input type="color" value={d.accent} onChange={(e) => setD({ ...d, accent: e.target.value })} aria-label={t('Цвят на буквите')} /></label>
+          <label className="flex items-center gap-1.5"><input type="checkbox" checked={!!d.stripe} onChange={(e) => setD({ ...d, stripe: e.target.checked })} />{t('Лента')}</label>
         </div>
-        <input className="input w-28" maxLength={LOGO.initialsMax} value={d.initials} onChange={(e) => setD({ ...d, initials: e.target.value })} aria-label="Инициали" placeholder="TV" />
+        <input className="input w-28" maxLength={LOGO.initialsMax} value={d.initials} onChange={(e) => setD({ ...d, initials: e.target.value })} aria-label={t('Инициали')} placeholder="TV" />
         <div className="flex flex-wrap gap-2 pt-1">
-          <button type="button" className="btn-primary" disabled={busy || !d.initials.trim()} onClick={() => void save(d)}>Запази логото</button>
-          {initial && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void save(null)}>Махни</button>}
+          <button type="button" className="btn-primary" disabled={busy || !d.initials.trim()} onClick={() => void save(d)}>{t('Запази логото')}</button>
+          {initial && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void save(null)}>{t('Махни')}</button>}
         </div>
-        <p className="text-xs text-mist-400">Показва се, когато компанията няма качено лого.</p>
+        <p className="text-xs text-mist-400">{t('Показва се, когато компанията няма качено лого.')}</p>
         {msg && <p className="text-xs text-mist-300">{msg}</p>}
       </div>
     </div>
