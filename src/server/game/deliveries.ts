@@ -86,6 +86,7 @@ import { onVacation } from './moods';
 import { equinoxBonus, recordPassOpening } from './spring';
 import { companyConvoyOf, settleConvoyTruck } from './convoys';
 import { relayDelivered } from './relay';
+import { growCity, harvestDelivered } from './city-growth';
 import { CONVOYS } from '@/lib/game/convoys';
 import { afterCustoms, checkShadyLoad, compartmentError, customsCheck, honestDelivery } from './smuggling';
 
@@ -583,6 +584,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
   await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
+  // v1.10: the destination city grows; Гроздобер counts its harvest loads.
+  await growCity(tx, contract.destCityId, contract.weightTons, completedAt);
+  await harvestDelivered(tx, company!.ownerId, contract.holiday, result.late, completedAt);
   // v1.8: a humanitarian load on time.
   await reliefDelivered(tx, company!.ownerId, d, contract, result.late, completedAt);
   // v1.8: the sealed load is opened, the haggled extra paid.

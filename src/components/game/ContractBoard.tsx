@@ -26,6 +26,7 @@ import { RELIEF } from '@/lib/game/relief';
 import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { useFeature } from './Features';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
+import { HARVEST } from '@/lib/game/city-growth';
 import { SECURE_PARKING } from '@/lib/game/traffic';
 import { SPECIALIZATION } from '@/lib/game/specialization';
 import { TRANS_EUROPE } from '@/lib/game/europe';
@@ -151,7 +152,7 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'sowing' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
@@ -162,6 +163,7 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
   { id: 'christmas', label: 'Коледа', test: (c) => c.holiday === 'christmas' },
   { id: 'marta', label: 'Баба Марта', test: (c) => c.holiday === 'marta' },
   { id: 'sowing', label: '🌱 Сеитба', test: (c) => c.holiday === 'sowing' },
+  { id: 'harvest', label: '🍇 Гроздобер', test: (c) => c.holiday === 'harvest' },
   { id: 'national', label: '🎉 Национален празник', test: (c) => c.holiday === 'national' },
   { id: 'oversize', label: 'Извънгабаритни', test: (c) => !!c.oversizeCents },
   { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
@@ -180,6 +182,7 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['christmas', (c) => c.holiday === 'christmas'],
   ['marta', (c) => c.holiday === 'marta'],
   ['sowing', (c) => c.holiday === 'sowing'],
+  ['harvest', (c) => c.holiday === 'harvest'],
   ['national', (c) => c.holiday === 'national'],
   ['oversize', (c) => !!c.oversizeCents],
   ['winter', (c) => c.holiday === 'winter'],
@@ -470,6 +473,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {!!c.lez?.length && <Badge tone="green">🌿 ЗОНА · {c.lez.join(', ')}</Badge>}
               {c.specialization && <Badge tone="violet">🎯 СПЕЦИАЛИЗАЦИЯ · +{Math.round(SPECIALIZATION.bonusShare * 100)}%</Badge>}
               {!!c.traffic && <Badge tone="orange">🚦 НАТОВАРЕНО · {c.traffic} камиона</Badge>}
+              {c.holiday === 'harvest' && <Badge tone="orange">🍇 ГРОЗДОБЕР · +{Math.round((HARVEST.rewardMultiplier - 1) * 100)}%</Badge>}
               {c.holiday === 'sowing' && <Badge tone="green">🌱 СЕИТБА · +{Math.round((SOWING.rewardMultiplier - 1) * 100)}%</Badge>}
               {c.holiday === 'national' && <Badge tone="gold">🎉 НАЦИОНАЛЕН ПРАЗНИК · +{Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100)}%</Badge>}
               {!!c.oversizeCents && <Badge tone="orange">⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {money(c.oversizeCents)}</Badge>}

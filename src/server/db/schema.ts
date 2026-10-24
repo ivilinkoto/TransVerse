@@ -2968,3 +2968,29 @@ export const relays = pgTable(
   },
   (t) => [index('relays_status_idx').on(t.status)],
 );
+
+/** v1.10 "Градът расте": tonnes delivered to each city by all players (game data). */
+export const cityGrowth = pgTable(
+  'city_growth',
+  {
+    cityId: integer('city_id').primaryKey().references(() => cities.id, { onDelete: 'cascade' }),
+    tons: real('tons').notNull().default(0),
+    /** The ISO week (missions' weekly key) and the tonnes in it. */
+    weekKey: text('week_key'),
+    weekTons: real('week_tons').notNull().default(0),
+    updatedAt: createdAt(),
+  },
+  (t) => [index('city_growth_week_idx').on(t.weekKey, t.weekTons)],
+);
+
+/** v1.10 Гроздобер: harvest loads per player and season (year). */
+export const harvestProgress = pgTable(
+  'harvest_progress',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    year: integer('year').notNull(),
+    loads: integer('loads').notNull().default(0),
+    rewarded: boolean('rewarded').notNull().default(false),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.year] })],
+);

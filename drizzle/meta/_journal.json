@@ -610,6 +610,13 @@
       "when": 1792857835872,
       "tag": "0086_sticky_puff_adder",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1792858248798,
+      "tag": "0087_quiet_speedball",
+      "breakpoints": true
     }
   ]
 }

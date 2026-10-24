@@ -97,6 +97,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/missions', label: 'Мисии', group: 'Днес' },
       { href: '/game/parking', label: 'Паркирай', feature: 'parking_game', group: 'Днес' },
       { href: '/game/league', label: 'Лига', group: 'Класации', minLevel: 2 },
+      { href: '/game/cities', label: 'Градовете растат', feature: 'city_growth', group: 'Класации' },
       { href: '/game/duels', label: 'Дуели', feature: 'duels', group: 'Класации', minLevel: 3 },
       { href: '/game/rally', label: 'Рали', feature: 'rally', group: 'Класации', minLevel: 4 },
       { href: '/game/challenges', label: 'Предизвикателства', feature: 'weekly_challenge', group: 'Днес', minLevel: 3 },
