@@ -451,6 +451,8 @@ export const contracts = pgTable(
     transEurope: boolean('trans_europe').notNull().default(false),
     /** v1.8: the shipper does not say what is inside (revealed on arrival). */
     sealed: boolean('sealed').notNull().default(false),
+    /** v1.8: relief goods for a humanitarian convoy (a badge and ТрансКоин on time). */
+    humanitarian: boolean('humanitarian').notNull().default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -2677,4 +2679,32 @@ export const sharePrices = pgTable(
     priceCents: money('price_cents').notNull(),
   },
   (t) => [primaryKey({ columns: [t.organizationId, t.day] })],
+);
+
+/** "Камион на месеца" (v1.8): one truck per player a month, drawn as it was when entered. */
+export const truckContestEntries = pgTable(
+  'truck_contest_entries',
+  {
+    id: serial('id').primaryKey(),
+    month: text('month').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').notNull(),
+    /** What the picture needs: models, colours, paint, parts. */
+    look: jsonb('look').$type<Record<string, unknown>>().notNull(),
+    title: text('title').notNull(),
+    votes: integer('votes').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('truck_contest_month_user_idx').on(t.month, t.userId), index('truck_contest_month_idx').on(t.month, t.votes)],
+);
+
+export const truckContestVotes = pgTable(
+  'truck_contest_votes',
+  {
+    month: text('month').notNull(),
+    voterId: uuid('voter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    entryId: integer('entry_id').notNull().references(() => truckContestEntries.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.month, t.voterId, t.entryId] })],
 );

@@ -11,6 +11,7 @@ import { isEuropeCountry } from '@/lib/geo/scope';
 import { bigConvoyBonus, checkEurotour, checkGrandEurotour } from './challenges';
 import { collectPostcards, dropHitchhiker, maybeHitchhiker } from './road-life';
 import { agreedHaggle, settleDeals } from './deals';
+import { reliefDelivered } from './relief';
 import { checkCabotage, requireTeam, transEuropeDone } from './europe';
 import { specializationBonus } from './specialization';
 import { checkLegend } from './heritage';
@@ -564,6 +565,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
   await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
+  // v1.8: a humanitarian load on time.
+  await reliefDelivered(tx, company!.ownerId, d, contract, result.late, completedAt);
   // v1.8: the sealed load is opened, the haggled extra paid.
   await settleDeals(tx, company!.ownerId, d, contract, result.rewardCents, result.late, completedAt);
   // v1.8: postcards from the landmarks on the way, and the hitchhiker's fare.

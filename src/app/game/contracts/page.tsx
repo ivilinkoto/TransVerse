@@ -138,6 +138,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       shipper: c.shipper,
       goods: features.sealed_cargo && c.sealed ? 'Запечатан товар' : c.goods,
       sealed: features.sealed_cargo && c.sealed,
+      humanitarian: features.humanitarian && c.humanitarian,
       haggle: features.haggling && haggleable(c) && !c.reservedByCompanyId ? (haggles.get(c.id) ?? 'open') : null,
       cargoType: c.cargoType as CargoType,
       cargoLabel: cargo.label,

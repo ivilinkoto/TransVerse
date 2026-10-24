@@ -1,0 +1,1 @@
+ALTER TABLE "contracts" ADD COLUMN "humanitarian" boolean DEFAULT false NOT NULL;

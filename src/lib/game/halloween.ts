@@ -105,6 +105,8 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   'spring-cup-2027': { label: 'Шампион на Пролетната купа 2027', description: 'Спечели Пролетната купа 2027 (елиминации, 16 шофьори).' },
   'legendary-truck': { label: 'Легендарен камион', description: 'Твой камион измина 100 000 км.' },
   'grand-eurotour': { label: 'Голям евротур', description: 'Доставки до всичките 26 държави на играта за един сезон.' },
+  humanitarian: { label: 'Хуманитарен конвой', description: 'Достави хуманитарна помощ навреме.' },
+  'truck-of-month': { label: 'Камион на месеца', description: 'Твой камион спечели гласуването „Камион на месеца“.' },
   'postcards-10': { label: 'Колекционер на картички', description: '10 картички от забележителности по пътя.' },
   'postcards-all': { label: 'Всички картички на Европа', description: 'Картичка от всяка забележителност в играта.' },
   'trans-europe': { label: 'Трансевропейски шофьор', description: 'Първият курс от 2 500+ км навреме, с двоен екипаж.' },

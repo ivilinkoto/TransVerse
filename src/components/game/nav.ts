@@ -96,6 +96,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/cup', label: 'Пролетна купа', feature: 'spring_cup' },
       { href: '/game/predictions', label: 'Прогнози', feature: 'predictions' },
       { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest' },
+      { href: '/game/truck-contest', label: 'Камион на месеца', feature: 'truck_contest' },
       { href: '/game/pass', label: 'Пропуск' },
       { href: '/game/events', label: 'Ивенти' },
       { href: '/game/leaderboards', label: 'Класации' },

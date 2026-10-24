@@ -19,6 +19,7 @@ import { dateTime, dec, duration, int, km, money } from '@/lib/format';
 import type { CargoType } from '@/lib/game/cargo';
 import { MARTA } from '@/lib/game/marta';
 import { HAGGLE, SEALED } from '@/lib/game/deals';
+import { RELIEF } from '@/lib/game/relief';
 import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { useFeature } from './Features';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
@@ -42,6 +43,8 @@ export interface BoardContract {
   cargoLabel: string;
   /** v1.8: the shipper does not say what is inside. */
   sealed?: boolean;
+  /** v1.8: relief goods for a humanitarian convoy. */
+  humanitarian?: boolean;
   /** v1.8: haggling: 'open' (may ask), the player's ask, or null (not for this load). */
   haggle?: 'open' | { percent: number; accepted: boolean; holdUntil: string; valid: boolean } | null;
   /** What a vehicle needs to take this load (shown above the vehicle list). */
@@ -448,6 +451,7 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
             {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.transEurope && <Badge tone="gold">🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{Math.round((TRANS_EUROPE.multiplier - 1) * 100)}%</Badge>}
+            {c.humanitarian && <Badge tone="red">🆘 ХУМАНИТАРНА ПОМОЩ · +{RELIEF.coins} TC навреме</Badge>}
             {c.sealed && <Badge tone="violet">📦 ЗАПЕЧАТАН · до +{Math.round(SEALED.tiers.at(-1)!.bonus * 100)}% при отваряне</Badge>}
             {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">🤝 ДОГОВОРЕНО +{c.haggle.percent}%</Badge>}
             {!!c.lez?.length && <Badge tone="green">🌿 ЗОНА · {c.lez.join(', ')}</Badge>}
