@@ -6,7 +6,7 @@ vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('
 import { powerUnitModel } from '@/lib/game/catalog';
 import { LEGEND, LEGEND_BADGE, legendTier, legendTiersCrossed, MUSEUM, SCRAP } from '@/lib/game/heritage';
 import { closeDb } from '@/server/db/client';
-import { companies, ledgerEntries, museumExhibits, organizations, userBadges, users, vehicles } from '@/server/db/schema';
+import { companies, ledgerEntries, museumExhibits, organizations, userBadges, users, vehicles, coinEntries } from '@/server/db/schema';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
 import { donateToMuseum, museumOf, scrapVehicle, repairWithPart } from '@/server/game/heritage';
@@ -42,7 +42,10 @@ describe('v1.6 heritage', () => {
     const before = await coins(p.userId);
     const d = await acceptContract(db(), p.userId, (await makeContract('Sofia', 'Plovdiv')).id, truck.id);
     await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000), acc.id);
-    expect(await coins(p.userId)).toBe(before + LEGEND[0].coins);
+    // Only the legend's coins (v1.8: the trip to Plovdiv also brings a postcard).
+    const legend = await db().select().from(coinEntries).where(and(eq(coinEntries.userId, p.userId), eq(coinEntries.reason, 'legend')));
+    expect(legend.map((e) => e.amount)).toEqual([LEGEND[0].coins]);
+    expect(await coins(p.userId)).toBeGreaterThanOrEqual(before + LEGEND[0].coins);
     expect(await db().select().from(userBadges).where(and(eq(userBadges.userId, p.userId), eq(userBadges.badge, LEGEND_BADGE)))).toHaveLength(1);
   });
 
