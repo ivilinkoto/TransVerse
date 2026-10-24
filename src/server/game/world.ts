@@ -10,6 +10,7 @@ import { ensureRally, settleRallies } from './rally';
 import { settleWeeklyChallenge } from './challenges';
 import { settleCountryKings } from './kings';
 import { pruneLiveRoad } from './live-road';
+import { payDividends, updateSharePrices } from './shares';
 import { runCup } from './tournament';
 import { ensurePlateAuction, settlePlateAuctions } from './plates';
 import { endTrailerHires } from './trailer-hire';
@@ -258,6 +259,11 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.6: the challenge of the week pays its top three.
     await every(db, 'weekly-challenge', 30 * 60_000, now, () => settleWeeklyChallenge(db, now));
+    // v1.8: share prices once a day, dividends on Monday (Sofia).
+    if (featureLive('share_market', now)) {
+      await every(db, 'share-prices', 24 * 3_600_000, now, () => updateSharePrices(db, now));
+      if (new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'share-dividends', 6 * 3_600_000, now, () => payDividends(db, now));
+    }
     // v1.8: old CB messages and road reports.
     await every(db, 'live-road-prune', 24 * 3_600_000, now, () => pruneLiveRoad(db, now));
     // v1.7: last month's king of every country.

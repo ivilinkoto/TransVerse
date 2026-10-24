@@ -774,6 +774,9 @@ export const organizations = pgTable(
     brandingVersion: integer('branding_version').notNull().default(0),
     /** The company's own money — separate from every member's (and the owner's) personal balance. */
     treasuryCents: money('treasury_cents').notNull().default(0),
+    /** v1.8: the company's shares are on the exchange (players outside it may buy). */
+    listedAt: ts('listed_at'),
+    sharePriceCents: money('share_price_cents').notNull().default(0),
     foundedAt: ts('founded_at').notNull().defaultNow(),
     createdAt: createdAt(),
   },
@@ -2647,4 +2650,31 @@ export const contractHaggles = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.contractId, t.userId] })],
+);
+
+/** Shares of a listed company held by a player outside it (v1.8). */
+export const shareHoldings = pgTable(
+  'share_holdings',
+  {
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    shares: integer('shares').notNull(),
+    /** What the shares cost in all (for the gain shown to the player). */
+    costCents: money('cost_cents').notNull(),
+    /** Bought shares can be sold after this. */
+    lockedUntil: ts('locked_until').notNull(),
+    updatedAt: ts('updated_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.userId] }), index('share_holdings_user_idx').on(t.userId)],
+);
+
+/** A listed company's share price by day (Sofia). */
+export const sharePrices = pgTable(
+  'share_prices',
+  {
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    day: text('day').notNull(),
+    priceCents: money('price_cents').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.day] })],
 );

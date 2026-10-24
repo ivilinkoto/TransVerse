@@ -73,6 +73,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/company', label: 'Моята компания' },
       { href: '/game/companies', label: 'Всички компании' },
       { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board' },
+      { href: '/game/shares', label: 'Борса за акции', feature: 'share_market' },
     ],
   },
   {

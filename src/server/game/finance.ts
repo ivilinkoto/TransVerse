@@ -191,9 +191,11 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary' | 'share_issue' | 'share_dividend';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
+  share_issue: 'Продадени акции',
+  share_dividend: 'Дивиденти на акционерите',
   member_contribution: 'Вноска от курс',
   deposit: 'Внесени от член',
   company_upgrade: 'Развитие на компанията',
