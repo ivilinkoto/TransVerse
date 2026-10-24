@@ -7,7 +7,8 @@ import { PlayerName } from '@/components/game/PlayerName';
 import { int, money } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
-import { companyLeaderboard, leaderboard, type LeaderboardKind } from '@/server/game/queries';
+import { companyLeaderboard, leaderboard, nationalBoard, nationalTable, type LeaderboardKind } from '@/server/game/queries';
+import { countries } from '@/server/db/schema';
 import { ECO } from '@/lib/game/eco';
 import { ecoBoard, ecoWeek } from '@/server/game/eco';
 import { DIVISION_LABELS, DIVISION_RULES, DIVISIONS } from '@/lib/game/competition';
@@ -23,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: tr('Класации') };
 }
 
-const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions' | 'records'; label: string; unit: string }[] = [
+const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions' | 'records' | 'nations'; label: string; unit: string }[] = [
   { id: 'season', label: 'Сезон', unit: 'точки' },
   { id: 'wealth', label: 'Богатство', unit: 'стойност' },
   { id: 'deliveries', label: 'Доставки', unit: 'доставки' },
@@ -32,21 +33,26 @@ const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions' | 'records'; l
   { id: 'bases', label: 'Най-красиви бази', unit: 'харесвания' },
   { id: 'divisions', label: 'Дивизии', unit: 'тонове' },
   { id: 'records', label: 'Рекорди на линии', unit: 'време' },
+  { id: 'nations', label: 'Държави', unit: 'точки' },
 ];
+
+/** The flag emoji of a country code. */
+const flag = (code: string) => String.fromCodePoint(...[...code.toUpperCase()].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65));
 
 const medal = (i: number) => (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1);
 
-export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ tab?: string; country?: string }> }) {
   await initLocale();
   const { db, user, company, features } = await gameContext();
-  const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions) && (t.id !== 'records' || features.lane_records));
-  const requested = (await searchParams).tab;
+  const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions) && (t.id !== 'records' || features.lane_records) && (t.id !== 'nations' || features.national_rankings));
+  const params = await searchParams;
+  const requested = params.tab;
   const tab = tabs.find((t) => t.id === requested) ?? tabs[0]!;
   return (
     <div className="space-y-5">
       <PageHeader title={tr('Класации')} subtitle={tr('Само реални играчи и техните компании. Няма измислени конкуренти.')} />
       <Segmented label={tr('Вид класация')} active={tab.id} items={tabs.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
-      {tab.id === 'records' ? <RecordsBoard /> : tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
+      {tab.id === 'nations' ? <NationsBoard country={params.country?.toUpperCase().slice(0, 2)} companyId={company.id} /> : tab.id === 'records' ? <RecordsBoard /> : tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
     </div>
   );
 }
@@ -101,6 +107,61 @@ async function CompanyBoard({ userId }: { userId: string }) {
       </ol>
       {rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Все още няма основани компании.')}</p>}
     </Card>
+  );
+}
+
+/** v2.0: national rankings — the countries by their companies' season points, and the companies of one country. */
+async function NationsBoard({ country, companyId }: { country?: string; companyId: string }) {
+  const { db, now } = await gameContext();
+  const [{ rows }, names] = await Promise.all([nationalTable(db), db.select({ code: countries.code, nameBg: countries.nameBg }).from(countries)]);
+  const name = (code: string) => tx(names.find((n) => n.code === code)?.nameBg ?? code);
+  const board = country ? await nationalBoard(db, country, 50) : null;
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-mist-300">{tr('Сезонните точки на компаниите, събрани по държавата на базата им. Избери държава, за да видиш нейната класация.')}</p>
+      <Card className="p-2 sm:p-3">
+        <ol className="divide-y divide-asphalt-800">
+          {rows.map((r, i) => (
+            <li key={r.country}>
+              <Link href={`/game/leaderboards?tab=nations&country=${r.country}`} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-asphalt-800/60 sm:px-3 ${r.country === country ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
+                <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
+                <span className="text-xl" aria-hidden>{flag(r.country)}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">{name(r.country)}</div>
+                  <div className="text-xs text-mist-400">{tr('Компании: {0}', int(r.companies))}</div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="num font-display font-bold text-gold-400">{int(r.points)}</div>
+                  <div className="text-[11px] text-mist-400">{tr('точки')}</div>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ol>
+        {rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Все още няма данни.')}</p>}
+      </Card>
+      {board && country && (
+        <Card className="p-2 sm:p-3">
+          <h2 className="px-2 pb-2 font-display font-bold sm:px-3">{flag(country)} {name(country)}</h2>
+          <ol className="divide-y divide-asphalt-800">
+            {board.rows.map((r, i) => (
+              <li key={r.companyId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.companyId === companyId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
+                <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">{tx(r.company)}</div>
+                  <div className="flex items-center gap-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>{tr('· ниво {0}', r.level)}</span></div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="num font-display font-bold text-gold-400">{int(r.value)}</div>
+                  <div className="text-[11px] text-mist-400">{tr('точки')}</div>
+                </div>
+              </li>
+            ))}
+          </ol>
+          {board.rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Все още няма данни.')}</p>}
+        </Card>
+      )}
+    </div>
   );
 }
 

@@ -32,7 +32,7 @@ import { shipperName } from './names';
 import { notifyFavoriteLane } from './favorites';
 import { broadcast } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
-import { isEuropeCountry } from '@/lib/geo/scope';
+import { countryOpen } from '@/lib/geo/scope';
 import { t as tr } from '@/i18n/t';
 
 /** Consignment size classes so vans, rigids and articulated trucks all have a market. */
@@ -60,12 +60,13 @@ let hubCache: { at: number; hubs: Hub[] } | null = null;
  * the countries of "Цяла Европа" come in with the release (v1.7); the market
  * generator asks for them earlier, so the staff can test them.
  */
-export async function loadHubs(db: DbOrTx, options: { europe?: boolean; now?: Date } = {}): Promise<Hub[]> {
+export async function loadHubs(db: DbOrTx, options: { europe?: boolean; openWorld?: boolean; now?: Date } = {}): Promise<Hub[]> {
   const europe = options.europe ?? featureLive('europe', options.now ?? new Date());
+  const openWorld = options.openWorld ?? featureLive('open_world', options.now ?? new Date());
   const fresh = hubCache && Date.now() - hubCache.at < 60_000 && !process.env.VITEST ? hubCache.hubs : null;
   const all = fresh ?? (await readHubs(db));
   if (!fresh) hubCache = { at: Date.now(), hubs: all };
-  return europe ? all : all.filter((h) => !isEuropeCountry(h.countryCode));
+  return europe && openWorld ? all : all.filter((h) => countryOpen(h.countryCode, europe, openWorld));
 }
 
 async function readHubs(db: DbOrTx): Promise<Hub[]> {
@@ -108,10 +109,11 @@ export interface GenerateOptions {
 /** Generates new market contracts between real cities. Returns how many were created. */
 export async function generateContracts(db: Database, options: GenerateOptions = {}): Promise<number> {
   const now = options.now ?? new Date();
-  // Before the release the countries of "Цяла Европа" get only a few loads (seen by the staff only).
+  // Before the release the countries of "Цяла Европа" (v1.7) and of the east (v2.0) get only a few loads (seen by the staff only).
   const europe = featureLive('europe', now);
-  const hubs = await loadHubs(db, { europe: true });
-  const reach = (h: Hub) => (europe || !isEuropeCountry(h.countryCode) ? 1 : 0.05);
+  const openWorld = featureLive('open_world', now);
+  const hubs = await loadHubs(db, { europe: true, openWorld: true });
+  const reach = (h: Hub) => (countryOpen(h.countryCode, europe, openWorld) ? 1 : 0.05);
   const max = options.max ?? 20;
   let created = 0;
 
@@ -132,7 +134,7 @@ export async function generateContracts(db: Database, options: GenerateOptions =
       (h) => {
         const km = haversineKm([origin.lat, origin.lon], [h.lat, h.lon]) * 1.25;
         if (km > size.maxKm || km < 20) return 0;
-        return ((h.consumes.get(cargo) ?? 1) ** 2 * Math.sqrt(h.population) * (isEuropeCountry(origin.countryCode) ? 1 : reach(h))) / (1 + km / 500);
+        return ((h.consumes.get(cargo) ?? 1) ** 2 * Math.sqrt(h.population) * (reach(origin) < 1 ? 1 : reach(h))) / (1 + km / 500);
       },
     );
     if (!destination) continue;
@@ -453,6 +455,8 @@ export interface ContractFilter {
   viewerUserId?: string | null;
   /** Loads to and from the countries of "Цяла Европа" (v1.7). */
   withEurope?: boolean;
+  /** v2.0: the countries of the east. */
+  withOpenWorld?: boolean;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
@@ -471,6 +475,7 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (!(filter.withOversize ?? featureLive('oversize', now))) conditions.push(eq(contracts.oversize, false));
   const sea = filter.withSea ?? featureLive('ferries', now);
   const europe = filter.withEurope ?? featureLive('europe', now);
+  const openWorld = filter.withOpenWorld ?? featureLive('open_world', now);
   if (!sea) conditions.push(eq(contracts.port, false));
   // Raw materials and product of a company factory are only for its members.
   conditions.push(filter.viewerUserId ? sql`(${contracts.rallyId} is null or ${contracts.createdBy} = ${filter.viewerUserId})` : isNull(contracts.rallyId));
@@ -506,8 +511,8 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
     .filter((r) => !filter.countryCode || r.origin.countryCode === filter.countryCode || r.destination.countryCode === filter.countryCode)
     // Loads over a ferry wait for the release (staff see them earlier).
     .filter((r) => sea || !r.route.crossing)
-    // So do the loads of "Цяла Европа" (v1.7).
-    .filter((r) => europe || ![r.origin.countryCode, r.destination.countryCode, ...r.stopCities.map((s) => s.country)].some(isEuropeCountry));
+    // So do the loads of "Цяла Европа" (v1.7) and of the east (v2.0).
+    .filter((r) => [r.origin.countryCode, r.destination.countryCode, ...r.stopCities.map((s) => s.country)].every((c) => countryOpen(c, europe, openWorld)));
 }
 
 export type ContractView = Awaited<ReturnType<typeof openContracts>>[number];

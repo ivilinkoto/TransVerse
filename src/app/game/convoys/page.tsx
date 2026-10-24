@@ -28,7 +28,7 @@ export default async function ConvoysPage() {
   if (!features.convoy_lobby) notFound();
   const [list, stats, leaders, fleet, member] = await Promise.all([convoysFor(db, user.id, now), myConvoyStats(db, user.id), topLeaders(db), fleetView(db, company.id), membershipOf(db, user.id)]);
   const origins = [...new Map(fleet.vehicles.map((v) => [v.city.id, { id: v.city.id, name: v.city.nameBg }])).values()];
-  const big = await db.select({ id: cities.id, name: cities.nameBg, country: cities.countryCode }).from(cities).where(and(gte(cities.population, 100_000), inArray(cities.countryCode, playableCountries(!!features.europe)))).orderBy(asc(cities.countryCode), asc(cities.nameBg));
+  const big = await db.select({ id: cities.id, name: cities.nameBg, country: cities.countryCode }).from(cities).where(and(gte(cities.population, 100_000), inArray(cities.countryCode, playableCountries(!!features.europe, !!features.open_world)))).orderBy(asc(cities.countryCode), asc(cities.nameBg));
   const destinations = big.map((c) => ({ id: c.id, name: `${c.name} (${c.country})` }));
   const next = LEADER_TIERS[stats.tier.tier + 1];
 

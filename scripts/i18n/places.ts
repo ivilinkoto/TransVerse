@@ -42,6 +42,7 @@ async function alternateNames(countries: string[], wanted: Set<number>) {
     for await (const a of lines(file)) {
       const lang = a[2] as Lang;
       if (!LANGS.includes(lang) || a[7] === '1' || a[6] === '1') continue;
+      if (lang === 'ru' && !CYR.test(a[3]!)) continue;
       const id = Number(a[1]);
       if (!wanted.has(id)) continue;
       const score = (a[4] === '1' ? 2 : 0) + (a[5] === '1' ? 0 : 1);
@@ -77,10 +78,13 @@ async function main() {
     for (const p of data.ports) put(lang, p.nameBg, name(lang, p.id, p.nameBg, p.name));
   }
   // Regions: GeoNames' own English name; Russian from the alternate names, else the English one.
+  // A region named like a city (Пярну) keeps the city's name.
+  const cityNames = new Set(data.cities.map((c) => c.nameBg));
   for (const c of data.cities) {
+    if (c.regionBg && cityNames.has(c.regionBg)) continue;
     const id = regionId(c);
     put('en', c.regionBg, c.region ?? undefined);
-    put('ru', c.regionBg, (id && alt.ru.get(id)?.name.replace(/ (область|край)$/, '')) || (c.regionBg && CYR.test(c.regionBg) ? undefined : c.region) || undefined);
+    put('ru', c.regionBg, (id && alt.ru.get(id)?.name.replace(/ ([Оо]бласть|край)$/, '')) || (c.regionBg && CYR.test(c.regionBg) ? undefined : c.region) || undefined);
   }
 
   for (const lang of LANGS) {

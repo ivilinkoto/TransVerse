@@ -16,8 +16,8 @@ import { albumOf } from '@/server/game/competition';
 import { openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
 import { openConvoysList } from '@/server/game/convoys';
 import { cupView } from '@/server/game/tournament';
-import { approximateProvider } from '@/server/geo/routing';
-import { GAME_COUNTRIES, isEuropeCountry, type GameCountry } from '@/lib/geo/scope';
+import { approximateProvider, routeOpen } from '@/server/geo/routing';
+import { countryOpen, GAME_COUNTRIES, type GameCountry } from '@/lib/geo/scope';
 import { countryInfo, findCountry } from '@/server/game/countries';
 import { BIG_CONVOY, WEEKLY_CHALLENGE } from '@/lib/game/challenges';
 import type { Embed } from './api';
@@ -378,10 +378,10 @@ async function route(db: DbOrTx, fromName: string, toName: string, now: Date): P
   const find = async (q: string) => (q.trim() ? (await db.select().from(cities).where(or(ilike(cities.nameBg, q.trim()), ilike(cities.name, q.trim()))).orderBy(desc(cities.population)).limit(1))[0] : undefined);
   const [a, b] = [await find(fromName), await find(toName)];
   if (!a || !b) return { ephemeral: true, content: tr('Няма град „{0}“ в играта.', !a ? fromName : toName) };
-  if (!featureLive('europe', now) && (isEuropeCountry(a.countryCode) || isEuropeCountry(b.countryCode))) return { ephemeral: true, content: tr('Тези държави идват със следващото обновление.') };
+  if (![a.countryCode, b.countryCode].every((c) => countryOpen(c, featureLive('europe', now), featureLive('open_world', now)))) return { ephemeral: true, content: tr('Тези държави идват със следващото обновление.') };
   if (a.id === b.id) return { ephemeral: true, content: tr('Избери два различни града.') };
   const [stored] = await db.select().from(routes).where(and(eq(routes.fromCityId, a.id), eq(routes.toCityId, b.id), eq(routes.profile, 'truck'))).limit(1);
-  const r = stored ?? (await approximateProvider.route({ lat: a.lat, lon: a.lon, country: a.countryCode }, { lat: b.lat, lon: b.lon, country: b.countryCode }, 'truck'));
+  const r = stored ?? (await routeOpen(approximateProvider, { lat: a.lat, lon: a.lon, country: a.countryCode }, { lat: b.lat, lon: b.lon, country: b.countryCode }, 'truck'));
   const approx = r.provider === 'approximate';
   const hours = r.durationS / 3600;
   return {
@@ -404,7 +404,7 @@ async function route(db: DbOrTx, fromName: string, toName: string, now: Date): P
 async function country(db: DbOrTx, name: string, now: Date): Promise<CommandReply> {
   if (!featureLive('discord_country', now)) return { ephemeral: true, content: tr('Командата идва с обновление 1.7.') };
   const code = await findCountry(db, name);
-  if (!code || (isEuropeCountry(code) && !featureLive('europe', now)) || !GAME_COUNTRIES.includes(code as GameCountry)) return { ephemeral: true, content: tr('Няма държава „{0}“ в играта.', name) };
+  if (!code || !countryOpen(code, featureLive('europe', now), featureLive('open_world', now)) || !GAME_COUNTRIES.includes(code as GameCountry)) return { ephemeral: true, content: tr('Няма държава „{0}“ в играта.', name) };
   const c = (await countryInfo(db, code, now))!;
   return {
     embeds: [{

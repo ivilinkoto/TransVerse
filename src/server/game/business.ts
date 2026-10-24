@@ -19,11 +19,11 @@ import { t, intlLocale } from '@/i18n/t';
 // ── Branches ─────────────────────────────────────────────────────────────
 
 /** Cities a branch may open in: the 8 biggest of every country of the game, not the base city. */
-export async function branchCities(db: DbOrTx, hqCityId: number, europe = false) {
+export async function branchCities(db: DbOrTx, hqCityId: number, europe = false, openWorld = false) {
   const { rows } = await db.execute<{ id: number; name: string; country: string }>(sql`
     select id, name_bg as name, country_code as country from (
       select c.*, row_number() over (partition by country_code order by population desc) as n from ${cities} c
-      where country_code in (${sql.join(playableCountries(europe).map((c) => sql`${c}`), sql`, `)}) and id <> ${hqCityId}
+      where country_code in (${sql.join(playableCountries(europe, openWorld).map((c) => sql`${c}`), sql`, `)}) and id <> ${hqCityId}
     ) t where n <= 8 order by country, n`);
   return rows;
 }
@@ -45,7 +45,7 @@ export async function openBranch(db: Database, actorId: string, cityId: number, 
     const allowed = branchSlots(actor.company.companyLevel);
     const [{ n = 0 } = {}] = await tx.select({ n: count() }).from(companyBranches).where(eq(companyBranches.organizationId, actor.company.id));
     if (n >= allowed) fail('no_slot', allowed ? t('На това ниво компанията може да има {0} {1}.', allowed, allowed === 1 ? t('филиал') : t('филиала')) : t('Филиали се отварят от ниво 4 на компанията.'));
-    const ok = (await branchCities(tx, actor.company.hqCityId, await featureFor(tx, actorId, 'europe', now))).find((c) => c.id === cityId);
+    const ok = (await branchCities(tx, actor.company.hqCityId, await featureFor(tx, actorId, 'europe', now), await featureFor(tx, actorId, 'open_world', now))).find((c) => c.id === cityId);
     if (!ok) fail('bad_city', t('Филиал се отваря в един от големите градове (не в града на базата).'));
     const [row] = await tx.insert(companyBranches).values({ organizationId: actor.company.id, cityId, createdAt: now }).onConflictDoNothing().returning();
     if (!row) fail('already', t('Компанията вече има филиал там.'));

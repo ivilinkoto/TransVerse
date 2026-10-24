@@ -18,10 +18,12 @@ import { t as tr, intlLocale } from '@/i18n/t';
 export const TOLL_FACTOR: Record<string, number> = {
   DE: 1.6, AT: 2, CH: 2.6, FR: 1.4, IT: 1.3, ES: 0.9, PT: 1.2, PL: 0.8, CZ: 1.1, SK: 1, HU: 1.2, SI: 1.3, HR: 1,
   BE: 1.1, BG: 0.9, GR: 0.9, TR: 0.7, RS: 0.8, MK: 0.6, AL: 0.4, BA: 0.6, ME: 0.5, XK: 0.3,
+  // v2.0: per-km systems in Belarus (BelToll) and Russia (Platon); no truck toll in Ukraine, Georgia and Armenia.
+  BY: 0.8, RU: 0.45, UA: 0, GE: 0, AM: 0,
 };
 
 /** Countries with a vignette instead of a per-km toll: cents once per trip through them. */
-export const TOLL_VIGNETTE_CENTS: Record<string, number> = { RO: 25_00, NL: 20_00, LU: 15_00 };
+export const TOLL_VIGNETTE_CENTS: Record<string, number> = { RO: 25_00, NL: 20_00, LU: 15_00, LT: 14_00, LV: 12_00, EE: 10_00, MD: 8_00 };
 
 /** Truck toll of a leg by the kilometres in each country (cents). */
 export function countryTollCents(startCountry: string, km: number, borders: readonly { km: number; to: string }[], baseCentsPerKm: number) {

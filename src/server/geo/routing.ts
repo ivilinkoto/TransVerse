@@ -1,4 +1,5 @@
 import polyline from '@mapbox/polyline';
+import { closedCrossing, detourFor, type Waypoint } from '@/lib/geo/borders';
 import { cumulativeKm, haversineKm, simplify, type LatLon } from '@/lib/geo/geometry';
 
 /**
@@ -30,7 +31,8 @@ export interface RouteResult {
 
 export interface RoutingProvider {
   readonly name: RouteResult['provider'];
-  route(from: RoutePoint, to: RoutePoint, profile: RouteProfile): Promise<RouteResult>;
+  /** `via`: border crossings the route must go through (v2.0, round a closed border). */
+  route(from: RoutePoint, to: RoutePoint, profile: RouteProfile, via?: readonly Waypoint[]): Promise<RouteResult>;
 }
 
 export class RoutingUnavailableError extends Error {}
@@ -38,17 +40,28 @@ export class RoutingUnavailableError extends Error {}
 /** Explicit approximation: great-circle distance × road factor. Never presented as a real road route. */
 export const approximateProvider: RoutingProvider = {
   name: 'approximate',
-  async route(from, to, profile) {
-    const km = haversineKm([from.lat, from.lon], [to.lat, to.lon]) * (profile === 'truck_cheap' ? 1.2 : 1.25);
+  async route(from, to, profile, via = []) {
+    const factor = profile === 'truck_cheap' ? 1.2 : 1.25;
     const speed = profile === 'van' ? 80 : profile === 'truck_cheap' ? 56 : 68;
-    const crossing = from.country !== to.country;
+    // Legs between the points; a border on a waypoint, or halfway along a leg whose ends differ.
+    const points = [{ ...from, at: from.country, next: from.country }, ...via.map((w) => ({ lat: w.lat, lon: w.lon, at: w.from, next: w.to })), { ...to, at: to.country, next: to.country }];
+    let km = 0;
+    const borders: RouteResult['borders'] = [];
+    for (let i = 0; i + 1 < points.length; i++) {
+      const [p, q] = [points[i]!, points[i + 1]!];
+      const leg = haversineKm([p.lat, p.lon], [q.lat, q.lon]) * factor;
+      if (p.next !== q.at) borders.push({ km: Math.round(km + leg / 2), from: p.next, to: q.at });
+      km += leg;
+      if (i + 1 < points.length - 1 && q.at !== q.next) borders.push({ km: Math.round(km), from: q.at, to: q.next });
+    }
+    const countries = [from.country, ...borders.map((b) => b.to)];
     return {
       provider: 'approximate',
       distanceKm: Math.round(km * 10) / 10,
       durationS: Math.round((km / speed) * 3600),
       hasToll: profile === 'truck',
-      borders: crossing ? [{ km: Math.round(km / 2), from: from.country, to: to.country }] : [],
-      countries: crossing ? [from.country, to.country] : [from.country],
+      borders,
+      countries: [...new Set(countries)],
       geometry: null,
     };
   },
@@ -79,13 +92,14 @@ interface ValhallaResponse {
 export function valhallaProvider(baseUrl: string, timeoutMs = 20_000): RoutingProvider {
   return {
     name: 'valhalla',
-    async route(from, to, profile) {
+    async route(from, to, profile, via = []) {
       // City centres are often closed to heavy trucks; real freight is loaded on the
       // nearest major road / industrial area, so snap to secondary roads or better.
       const snap = profile !== 'van' ? { radius: 3000, search_filter: { min_road_class: 'secondary' } } : {};
       const body = {
         locations: [
           { lat: from.lat, lon: from.lon, ...snap },
+          ...via.map((w) => ({ lat: w.lat, lon: w.lon, type: 'through', radius: 5000 })),
           { lat: to.lat, lon: to.lon, ...snap },
         ],
         costing: profile === 'van' ? 'auto' : 'truck',
@@ -132,6 +146,20 @@ export function valhallaProvider(baseUrl: string, timeoutMs = 20_000): RoutingPr
       };
     },
   };
+}
+
+/**
+ * A route that keeps to open borders (v2.0): when the road would cross a
+ * closed border, it goes round through the real open crossings. A provider
+ * that still crosses a closed border is treated as unavailable.
+ */
+export async function routeOpen(provider: RoutingProvider, from: RoutePoint, to: RoutePoint, profile: RouteProfile): Promise<RouteResult> {
+  const direct = await provider.route(from, to, profile);
+  const closed = closedCrossing(direct.borders);
+  if (!closed) return direct;
+  const round = await provider.route(from, to, profile, detourFor(closed.from, closed.to));
+  if (closedCrossing(round.borders)) throw new RoutingUnavailableError(`no open border from ${from.country} to ${to.country}`);
+  return round;
 }
 
 export function configuredProvider(): RoutingProvider {

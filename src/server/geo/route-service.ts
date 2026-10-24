@@ -3,7 +3,7 @@ import { and, eq, inArray, notLike } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import { cities, routes } from '@/server/db/schema';
 import type { CrossingLine } from '@/lib/game/crossings';
-import { approximateProvider, configuredProvider, RoutingUnavailableError, type RouteProfile, type RoutingProvider } from './routing';
+import { approximateProvider, configuredProvider, routeOpen, RoutingUnavailableError, type RouteProfile, type RoutingProvider } from './routing';
 
 export type StoredRoute = typeof routes.$inferSelect;
 
@@ -37,12 +37,12 @@ export async function getRoute(db: DbOrTx, fromCityId: number, toCityId: number,
   let result;
   try {
     if (provider.name !== 'approximate') await throttle(Number(process.env.ROUTING_MIN_INTERVAL_MS ?? 1100));
-    result = await provider.route(a, b, profile);
+    result = await routeOpen(provider, a, b, profile);
   } catch (error) {
     if (!(error instanceof RoutingUnavailableError)) throw error;
     if (cached) return cached;
     console.warn(`[routing] ${error.message} — using approximation for ${from.name} → ${to.name}`);
-    result = await approximateProvider.route(a, b, profile);
+    result = await routeOpen(approximateProvider, a, b, profile);
   }
 
   const values = {

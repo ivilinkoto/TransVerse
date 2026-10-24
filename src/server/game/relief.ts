@@ -36,7 +36,7 @@ export async function runRelief(db: Database, now = new Date()) {
 
 async function startRelief(db: Database, now: Date) {
   const hubs = await loadHubs(db, { now });
-  const choices = playableCountries(featureLive('europe', now)).filter((c) => hubs.some((h) => h.countryCode === c && h.population >= 50_000));
+  const choices = playableCountries(featureLive('europe', now), featureLive('open_world', now)).filter((c) => hubs.some((h) => h.countryCode === c && h.population >= 50_000));
   if (!choices.length) return null;
   const code = pick(choices);
   const [country] = await db.select({ nameBg: countries.nameBg }).from(countries).where(eq(countries.code, code));

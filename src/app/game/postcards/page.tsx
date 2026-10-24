@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { Card, Meter, PageHeader } from '@/components/ui';
 import { date } from '@/lib/format';
 import { POSTCARDS } from '@/lib/game/road-life';
-import { isEuropeCountry } from '@/lib/geo/scope';
+import { countryOpen } from '@/lib/geo/scope';
 import { countries } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { postcardsOf } from '@/server/game/road-life';
@@ -16,14 +16,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Card colours by country (game art, not flags). */
-const HUES: Record<string, string> = { BG: '#16a34a', RO: '#2563eb', GR: '#0ea5e9', TR: '#dc2626', RS: '#b91c1c', MK: '#f59e0b', HU: '#15803d', AT: '#e11d48', DE: '#eab308', PL: '#ef4444', CZ: '#3b82f6', SK: '#1d4ed8', SI: '#0891b2', HR: '#2563eb', BA: '#1e40af', ME: '#b45309', AL: '#dc2626', XK: '#2563eb', IT: '#16a34a', FR: '#1d4ed8', ES: '#f59e0b', PT: '#15803d', NL: '#f97316', BE: '#eab308', LU: '#0ea5e9', CH: '#dc2626' };
+const HUES: Record<string, string> = { BG: '#16a34a', RO: '#2563eb', GR: '#0ea5e9', TR: '#dc2626', RS: '#b91c1c', MK: '#f59e0b', HU: '#15803d', AT: '#e11d48', DE: '#eab308', PL: '#ef4444', CZ: '#3b82f6', SK: '#1d4ed8', SI: '#0891b2', HR: '#2563eb', BA: '#1e40af', ME: '#b45309', AL: '#dc2626', XK: '#2563eb', IT: '#16a34a', FR: '#1d4ed8', ES: '#f59e0b', PT: '#15803d', NL: '#f97316', BE: '#eab308', LU: '#0ea5e9', CH: '#dc2626', MD: '#1d4ed8', UA: '#eab308', BY: '#16a34a', LT: '#15803d', LV: '#9f1239', EE: '#0284c7', RU: '#2563eb', GE: '#dc2626', AM: '#f97316' };
 
 /** v1.8: postcards from the real landmarks a loaded trip passed. */
 export default async function PostcardsPage() {
   await initLocale();
   const { db, user, features } = await gameContext();
   if (!features.postcards) notFound();
-  const all = (await postcardsOf(db, user.id)).filter((p) => features.europe || !isEuropeCountry(p.country));
+  const all = (await postcardsOf(db, user.id)).filter((p) => countryOpen(p.country, features.europe, features.open_world));
   const names = new Map((await db.select({ code: countries.code, nameBg: countries.nameBg }).from(countries)).map((c) => [c.code, c.nameBg]));
   const got = all.filter((p) => p.collectedAt).length;
   return (

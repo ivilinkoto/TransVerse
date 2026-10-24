@@ -1,4 +1,4 @@
-import { GAME_COUNTRIES, LAUNCH_COUNTRIES } from '@/lib/geo/scope';
+import { EUROPE_COUNTRIES, LAUNCH_COUNTRIES } from '@/lib/geo/scope';
 
 /**
  * Challenges of v1.6 (game data):
@@ -17,9 +17,9 @@ export const EUROTOUR = {
   badge: 'eurotour',
 } as const;
 
-/** v1.7: Голям евротур — deliveries to all the game's countries within one season. */
+/** v1.7: Голям евротур — deliveries to all the countries of 1.7 within one season (v2.0 keeps it to those 26). */
 export const GRAND_EUROTOUR = {
-  countries: GAME_COUNTRIES as readonly string[],
+  countries: [...LAUNCH_COUNTRIES, ...EUROPE_COUNTRIES] as readonly string[],
   coins: 300,
   badge: 'grand-eurotour',
 } as const;

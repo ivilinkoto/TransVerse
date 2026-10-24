@@ -143,6 +143,9 @@ export const FEATURES = {
   plate_auction: '1.6',
   trailer_hire: '1.6',
   europe: '1.7',
+  // v2.0 "Светът се отваря".
+  open_world: '2.0',
+  national_rankings: '2.0',
   country_tolls: '1.7',
   driving_bans: '1.7',
   low_emission_zones: '1.7',

@@ -169,7 +169,7 @@ export async function spawnMarketEvent(db: Database, now: Date) {
   const active = await db.select({ id: marketEvents.id }).from(marketEvents).where(and(lte(marketEvents.startsAt, now), gt(marketEvents.endsAt, now)));
   if (active.length >= 3) return;
   const t = pick(EVENT_TEMPLATES);
-  const country = pick(playableCountries(featureLive('europe', now)));
+  const country = pick(playableCountries(featureLive('europe', now), featureLive('open_world', now)));
   const [c] = await db.select({ nameBg: countries.nameBg }).from(countries).where(eq(countries.code, country));
   await db.insert(marketEvents).values({
     title: `${t.title}: ${c?.nameBg ?? country}`,

@@ -12,6 +12,8 @@ export const DIESEL_CENTS_PER_LITRE: Record<string, number> = {
   IT: 178, SM: 170, FR: 174, MC: 180, ES: 148, AD: 132, PT: 164, NL: 182, BE: 178, LU: 138,
   DK: 176, SE: 186, NO: 198, FI: 182, EE: 160, LV: 154, LT: 150, IE: 168, GB: 176,
   UA: 134, MD: 138, BY: 112,
+  // v2.0.
+  RU: 78, GE: 118, AM: 124,
 };
 
 /** Daily movement around the base price: ±6 %. */

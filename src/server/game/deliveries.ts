@@ -7,7 +7,7 @@ import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multistop';
 import { formConvoy } from './convoy';
-import { isEuropeCountry } from '@/lib/geo/scope';
+import { isEastCountry, isEuropeCountry } from '@/lib/geo/scope';
 import { bigConvoyBonus, checkEurotour, checkGrandEurotour } from './challenges';
 import { collectPostcards, dropHitchhiker, maybeHitchhiker } from './road-life';
 import { agreedHaggle, settleDeals } from './deals';
@@ -200,6 +200,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   // "Цяла Европа" (v1.7): the new countries wait for the release (the staff test them earlier).
   const ends17 = await db.select({ country: cities.countryCode }).from(cities).where(inArray(cities.id, [contract!.originCityId, contract!.destCityId, ...(contract!.stops ?? []).map((st) => st.cityId)]));
   if (ends17.some((c) => isEuropeCountry(c.country)) && !(await featureFor(db, userId, 'europe', now))) fail('not_released', t('Тези държави идват със следващото обновление.'), 403);
+  if (ends17.some((c) => isEastCountry(c.country)) && !(await featureFor(db, userId, 'open_world', now))) fail('not_released', t('Тези държави идват със следващото обновление.'), 403);
   const emptyRoute = vehicle.cityId !== contract!.originCityId ? await getRoute(db, vehicle.cityId, contract!.originCityId, 'truck') : null;
 
   return db.transaction(async (tx) => {

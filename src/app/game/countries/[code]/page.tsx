@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { Card, Empty, PageHeader, Stat } from '@/components/ui';
 import { dec, int, km, money, moneyPrecise } from '@/lib/format';
 import { COUNTRY_KINGS } from '@/lib/game/europe';
-import { isEuropeCountry } from '@/lib/geo/scope';
+import { countryOpen } from '@/lib/geo/scope';
 import { gameContext } from '@/server/game/context';
 import { countryInfo } from '@/server/game/countries';
 import { t, tx, intlLocale } from '@/i18n/t';
@@ -23,7 +23,7 @@ export default async function CountryPage({ params }: { params: Promise<{ code: 
   await initLocale();
   const code = decodeURIComponent((await params).code).toUpperCase();
   const { db, user, now, features } = await gameContext();
-  if (!features.country_map || (isEuropeCountry(code) && !features.europe)) notFound();
+  if (!features.country_map || !countryOpen(code, features.europe, features.open_world)) notFound();
   const c = await countryInfo(db, code, now, user.id);
   if (!c) notFound();
   return (

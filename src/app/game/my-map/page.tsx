@@ -24,7 +24,7 @@ export default async function MyMapPage() {
   if (!features.my_map) notFound();
   const data = await footprint(db, user.id);
   // v1.7: the countries of the game, how many cities the player reached in each, and a page for each.
-  const playable = playableCountries(features.europe);
+  const playable = playableCountries(features.europe, features.open_world);
   const names = features.country_map ? new Map((await db.select({ code: countries.code, nameBg: countries.nameBg }).from(countries).where(inArray(countries.code, [...playable]))).map((c) => [c.code, c.nameBg])) : null;
   const perCountry = new Map<string, number>();
   for (const c of data.cities) perCountry.set(c.country, (perCountry.get(c.country) ?? 0) + 1);
