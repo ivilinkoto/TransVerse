@@ -34,7 +34,7 @@ export async function nextSteps(db: DbOrTx, user: { id: string; loginStreak: num
     const loads = await db
       .select({ cityId: contracts.originCityId, n: count() })
       .from(contracts)
-      .where(and(eq(contracts.status, 'open'), gt(contracts.expiresAt, now), inArray(contracts.originCityId, idle.map((v) => v.cityId)), isNull(contracts.tenderId), isNull(contracts.rallyId), isNull(contracts.factoryOrgId), isNull(contracts.branchOrgId)))
+      .where(and(eq(contracts.status, 'open'), eq(contracts.shady, false), gt(contracts.expiresAt, now), inArray(contracts.originCityId, idle.map((v) => v.cityId)), isNull(contracts.tenderId), isNull(contracts.rallyId), isNull(contracts.factoryOrgId), isNull(contracts.branchOrgId)))
       .groupBy(contracts.originCityId);
     const best = idle.map((v) => ({ ...v, n: loads.find((l) => l.cityId === v.cityId)?.n ?? 0 })).sort((a, b) => b.n - a.n)[0]!;
     out.push(

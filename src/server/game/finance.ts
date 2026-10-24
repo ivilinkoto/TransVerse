@@ -73,7 +73,9 @@ export type LedgerCategory =
   | 'sealed_bonus'
   | 'haggle_bonus'
   | 'share_trade'
-  | 'share_dividend';
+  | 'share_dividend'
+  | 'smuggling_fine'
+  | 'black_market';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -146,6 +148,8 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   haggle_bonus: 'Пазарлък с клиента',
   share_trade: 'Акции (покупки и продажби)',
   share_dividend: 'Дивиденти от акции',
+  smuggling_fine: 'Глоба от митницата',
+  black_market: 'Черен пазар',
 };
 
 export interface Posting {

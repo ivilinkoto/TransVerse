@@ -49,6 +49,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/clients', label: 'Клиенти', minLevel: 3 },
       { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
       { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
+      { href: '/game/underground', label: 'Сенки', feature: 'smuggling', minLevel: 10 },
     ],
   },
   {

@@ -84,6 +84,7 @@ import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
 import { onVacation } from './moods';
 import { equinoxBonus, recordPassOpening } from './spring';
+import { afterCustoms, checkShadyLoad, compartmentError, customsCheck, honestDelivery } from './smuggling';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
 
@@ -197,6 +198,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const [user] = await tx.select({ level: users.level, vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
     const vip = isVip(user?.vipUntil, now);
     const bundle = await vehicleBundle(tx, company.id, vehicleId, true);
+    await checkShadyLoad(tx, userId, contract!, bundle.vehicle, now);
     // A partial load re-reads the load under a lock: another truck may have just taken a part of it.
     let load = contract!;
     if (partial) {
@@ -215,6 +217,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       !partial && !!risks.overload,
     );
     if (error) fail('incompatible', error);
+    // v1.9: a hidden compartment takes payload; a shady load is its own player's, in an own truck.
+    const hidden = compartmentError(bundle.vehicle, bundle.trailer?.modelId ?? null, load.weightTons);
+    if (hidden) fail('incompatible', hidden);
     // A driver on a day off does not drive (v1.4).
     if (onVacation(bundle.driver, now) || onVacation(bundle.coDriver, now)) fail('vacation', 'Шофьорът е в почивен ден — назначи друг или изчакай.');
     const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
@@ -479,7 +484,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const [vehicle] = await tx.select().from(vehicles).where(eq(vehicles.id, d.vehicleId));
   const costs = d.estimatedCosts as ReturnType<typeof tripCosts>;
   const completedAt = d.etaAt; // the truck arrived at ETA even if we settle later
-  const result = settle(contract.rewardCents, d.startedAt.getTime(), d.deadlineAt.getTime(), completedAt.getTime());
+  // v1.9: customs may find a shady load — then it is confiscated (no pay, no penalty) and fined after the postings.
+  const customs = contract.shady ? await customsCheck(tx, company!.ownerId, d, contract, completedAt) : null;
+  const settled = settle(contract.rewardCents, d.startedAt.getTime(), d.deadlineAt.getTime(), completedAt.getTime());
+  const result = customs?.caught ? { ...settled, rewardCents: 0, bonusCents: 0, penaltyCents: 0 } : settled;
   const [dest] = await tx.select().from(cities).where(eq(cities.id, contract.destCityId));
   const key = (k: string) => `delivery:${d.id}:${k}`;
 
@@ -531,6 +539,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: `Бонус от „${org!.name}“`, idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
   if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: `Вноска към касата на „${org!.name}“`, idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
+  const customsFine = customs ? (await afterCustoms(tx, company!.ownerId, d, contract, customs, completedAt)).fine : 0;
+  if (!customs) await honestDelivery(tx, company!.ownerId);
   // The perfect trip (v1.5): on time, no breakdown or police, no fine, a full truck — the streak pays.
   const [trailerRow] = d.trailerId ? await tx.select({ modelId: trailers.modelId }).from(trailers).where(eq(trailers.id, d.trailerId)) : [];
   const payloadTons = combinationCapability({ unit: powerUnitModel(vehicle!.modelId), trailer: trailerRow ? trailerModel(trailerRow.modelId) : null }).payloadTons;
@@ -556,7 +566,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);

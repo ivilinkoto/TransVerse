@@ -129,8 +129,8 @@ export default async function FleetPage() {
                 )}
               </div>
             )}
-            {v.upgrades.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">{v.upgrades.map((u) => <Badge key={u} tone="violet">{UPGRADES[u as UpgradeId]?.label ?? u}</Badge>)}</div>
+            {(v.upgrades.length > 0 || v.hiddenCompartment) && (
+              <div className="mt-3 flex flex-wrap gap-1.5">{v.upgrades.map((u) => <Badge key={u} tone="violet">{UPGRADES[u as UpgradeId]?.label ?? u}</Badge>)}{v.hiddenCompartment && <Badge tone="violet">🕳️ Тайно отделение</Badge>}</div>
             )}
           </Card>
         ))}

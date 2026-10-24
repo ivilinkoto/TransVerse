@@ -1,3 +1,4 @@
+import { coolHeat, customsWeekly } from './smuggling';
 import { playableCountries } from '@/lib/geo/scope';
 import { and, eq, gt, lte, sql } from 'drizzle-orm';
 import type { Database } from '@/server/db/client';
@@ -275,6 +276,11 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     if (featureLive('owner_report', now) && new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'owner-reports', 7 * 24 * 3_600_000, now, () => ownerReports(db, now));
     await every(db, 'interns', 60 * 60_000, now, () => endInternships(db, now));
+    // v1.9: smuggling — the heat cools by itself; Monday's anonymous customs summary.
+    if (featureLive('smuggling', now)) {
+      await every(db, 'smuggling-heat', 24 * 3_600_000, now, () => coolHeat(db, now));
+      if (new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'customs-weekly', 7 * 24 * 3_600_000, now, () => customsWeekly(db, now));
+    }
     // v1.8: last month's "Камион на месеца".
     if (featureLive('truck_contest', now)) await every(db, 'truck-contest', 60 * 60_000, now, () => settleTruckContest(db, now));
     // v1.8: humanitarian convoys (every three weeks; loads while one runs).

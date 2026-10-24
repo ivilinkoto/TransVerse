@@ -25,6 +25,7 @@ import { haggle } from '@/server/game/deals';
 import { buyShares, listCompany, sellShares } from '@/server/game/shares';
 import { enterTruck, voteTruck } from '@/server/game/truck-contest';
 import { setUiPrefs } from '@/server/game/ui-prefs';
+import { blackMarketRepair, buyCompartment, reportShadyOffer, setSmugglingOptIn } from '@/server/game/smuggling';
 import { acceptMerger, createDepartment, decideInternship, declineMerger, deleteDepartment, joinDepartment, openAssembly, proposeMerger, requestInternship, setDepartmentHead, setLogoDesign, setTradition, voteAssembly } from '@/server/game/company-life';
 import { REPORT_KIND_IDS, type ReportKind } from '@/lib/game/live-road';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
@@ -231,6 +232,10 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('decideInternship'), id: z.coerce.number().int().positive(), accept: z.boolean() }),
   z.object({ type: z.literal('proposeMerger'), organizationId: id }),
   z.object({ type: z.literal('decideMerger'), id: z.coerce.number().int().positive(), accept: z.boolean() }),
+  z.object({ type: z.literal('smugglingOptIn'), on: z.boolean() }),
+  z.object({ type: z.literal('reportShady'), contractId: id }),
+  z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
+  z.object({ type: z.literal('blackRepair'), vehicleId: id }),
   z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
@@ -387,6 +392,10 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   decideInternship: 'interns',
   proposeMerger: 'mergers',
   decideMerger: 'mergers',
+  smugglingOptIn: 'smuggling',
+  reportShady: 'smuggling',
+  buyCompartment: 'smuggling',
+  blackRepair: 'smuggling',
   enterTruck: 'truck_contest',
   voteTruck: 'truck_contest',
   buyShares: 'share_market',
@@ -937,6 +946,14 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await proposeMerger(db, user.id, input.organizationId)) };
     case 'decideMerger':
       return { ok: true, ...(input.accept ? await acceptMerger(db, user.id, input.id) : await declineMerger(db, user.id, input.id)) };
+    case 'smugglingOptIn':
+      return { ok: true, ...(await setSmugglingOptIn(db, user.id, input.on)) };
+    case 'reportShady':
+      return { ok: true, ...(await reportShadyOffer(db, user.id, input.contractId)) };
+    case 'buyCompartment':
+      return { ok: true, ...(await buyCompartment(db, user.id, input.vehicleId)) };
+    case 'blackRepair':
+      return { ok: true, ...(await blackMarketRepair(db, user.id, input.vehicleId)) };
     case 'listCompany':
       return { ok: true, ...(await listCompany(db, user.id)) };
     case 'buyShares':

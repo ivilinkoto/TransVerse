@@ -26,7 +26,7 @@ export async function countryInfo(db: DbOrTx, code: string, now: Date, viewerId?
       .innerJoin(cities, eq(cities.id, contracts.destCityId))
       .innerJoin(origin, eq(origin.id, contracts.originCityId))
       .where(and(
-        eq(contracts.status, 'open'), gt(contracts.expiresAt, now), eq(cities.countryCode, country.code),
+        eq(contracts.status, 'open'), eq(contracts.shady, false), gt(contracts.expiresAt, now), eq(cities.countryCode, country.code),
         // Only loads anyone may take.
         isNull(contracts.tenderId), isNull(contracts.rallyId), isNull(contracts.factoryOrgId), isNull(contracts.branchOrgId), isNull(contracts.sharedLoadId), isNull(contracts.reservedByCompanyId),
       ))

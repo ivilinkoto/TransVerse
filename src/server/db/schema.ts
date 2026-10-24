@@ -279,6 +279,8 @@ export const vehicles = pgTable(
     /** A company truck a member borrowed (ownership 'company'): the company's own vehicle row. */
     orgVehicleId: uuid('org_vehicle_id'),
     upgrades: text('upgrades').array().notNull().default(sql`'{}'::text[]`),
+    /** v1.9: a hidden compartment from the black market (fewer customs finds, less payload). */
+    hiddenCompartment: boolean('hidden_compartment').notNull().default(false),
     /** Special paint scheme on top of the colour (e.g. 'pumpkin' from Halloween 2026); null = plain colour. */
     livery: text('livery'),
     /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
@@ -457,6 +459,8 @@ export const contracts = pgTable(
     humanitarian: boolean('humanitarian').notNull().default(false),
     /** v1.9: a load of the company's key client (members only through branch_org_id). */
     keyClient: boolean('key_client').notNull().default(false),
+    /** v1.9: a shady load (personal to `createdBy`, never on the public board). */
+    shady: boolean('shady').notNull().default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -2820,4 +2824,44 @@ export const mergerOffers = pgTable(
     decidedAt: ts('decided_at'),
   },
   (t) => [index('merger_offers_to_idx').on(t.toOrgId, t.status)],
+);
+
+/** v1.9 smuggling: a player's choice, heat and underground reputation. */
+export const smugglingProfiles = pgTable('smuggling_profiles', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  optIn: boolean('opt_in').notNull().default(false),
+  heat: integer('heat').notNull().default(0),
+  underground: integer('underground').notNull().default(0),
+  runs: integer('runs').notNull().default(0),
+  caught: integer('caught').notNull().default(0),
+  reports: integer('reports').notNull().default(0),
+  /** 'YYYY-MM-DD:<n>' — reports today (for the honest reputation). */
+  reportsToday: text('reports_today'),
+  heatDecayedAt: ts('heat_decayed_at'),
+  updatedAt: createdAt(),
+});
+
+export const smugglingContacts = pgTable(
+  'smuggling_contacts',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    cityId: integer('city_id').notNull().references(() => cities.id, { onDelete: 'cascade' }),
+    runs: integer('runs').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.cityId] })],
+);
+
+/** One customs outcome per shady delivery (also the anonymous weekly stats). */
+export const smugglingChecks = pgTable(
+  'smuggling_checks',
+  {
+    id: serial('id').primaryKey(),
+    deliveryId: uuid('delivery_id').notNull().unique(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    borders: integer('borders').notNull().default(0),
+    caught: boolean('caught').notNull(),
+    fineCents: money('fine_cents').notNull().default(0),
+    at: ts('at').notNull(),
+  },
+  (t) => [index('smuggling_checks_at_idx').on(t.at)],
 );

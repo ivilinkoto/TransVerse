@@ -21,6 +21,7 @@ import { Badge, Card, Table } from '@/components/ui';
 import { date, int, money } from '@/lib/format';
 import { COMPANY_UPGRADES, memberBonuses, memberCapacity, RECRUITMENT, type UpgradeLevels } from '@/lib/game/company';
 import { companyHistory } from '@/server/game/company-life';
+import { companyShadeOf } from '@/server/game/smuggling';
 import { INTERNS } from '@/lib/game/company-life';
 import { gameContext } from '@/server/game/context';
 import { CompanyLicences } from '@/components/company/CompanyLicences';
@@ -44,6 +45,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
   const [base, exhibits] = await Promise.all([features.plot_guests ? publicPlot(db, c.id, user.id) : null, features.museum ? museumOf(db, c.id) : []]);
   const showcase = base && features.company_trophies ? await companyShowcase(db, c.id) : null;
   const history = features.company_history ? await companyHistory(db, c.id) : null;
+  const shade = features.smuggling ? await companyShadeOf(db, c.id) : null;
   const own = mine?.company.id === c.id;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   const bonuses = memberBonuses(c.upgrades as UpgradeLevels);
@@ -62,6 +64,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 space-y-6">
           {features.specializations && c.specialization && c.specialization in SPECIALIZATIONS && <div><Badge tone="violet">🎯 Специализация: {SPECIALIZATIONS[c.specialization as Specialization].label}</Badge></div>}
+          {shade && <div><Badge tone={shade === 'grey' ? 'neutral' : 'green'}>{shade === 'grey' ? '🌫️ Сива компания — членовете ѝ карат и сенчести пратки' : '✨ Чиста компания'}</Badge></div>}
           {features.company_profile && highlights && <CompanyHighlights h={highlights} />}
           {exhibits.length > 0 && (
             <Card title={<span className="inline-flex items-center gap-2"><Landmark className="h-4 w-4 text-mist-400" />Музеят · {exhibits.length} камиона</span>}>
