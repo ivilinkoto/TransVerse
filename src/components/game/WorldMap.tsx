@@ -43,6 +43,8 @@ export interface MapProps {
   stork?: { name: string; position: LatLon } | null;
   /** v1.5: the company's base and the bases of its alliance. */
   bases?: { name: string; city: string; color: string | null; position: LatLon; own: boolean }[];
+  /** v1.8: road reports from the drivers (accident, police, jam…). */
+  reports?: { id: number; emoji: string; label: string; near: string; position: LatLon }[];
 }
 
 interface CityDetails {
@@ -199,7 +201,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [] }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [] }: MapProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -376,6 +378,23 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       for (const m of markers) m.remove();
     };
   }, [ready, bases]);
+
+  // Road reports (v1.8): an emoji sign where a driver saw it.
+  useEffect(() => {
+    if (!ready || !reports.length || !mapRef.current) return;
+    const markers = reports.map((r) => {
+      const el = document.createElement('a');
+      el.href = '/game/road';
+      el.title = `${r.label} край ${r.near} (сигнал от шофьор)`;
+      el.setAttribute('aria-label', el.title);
+      el.textContent = r.emoji;
+      el.style.cssText = 'font-size:20px;line-height:1;padding:3px;border-radius:9999px;background:rgba(11,18,32,.85);border:1px solid #f59e0b;pointer-events:auto;text-decoration:none';
+      return new maplibregl.Marker({ element: el }).setLngLat(toLngLat(r.position)).addTo(mapRef.current!);
+    });
+    return () => {
+      for (const m of markers) m.remove();
+    };
+  }, [ready, reports]);
 
   // Data layers follow server refreshes without recreating the map.
   useEffect(() => {

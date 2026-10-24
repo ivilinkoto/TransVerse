@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { SEALED } from '@/lib/game/deals';
 import { CARGO, CARGO_TYPES, type BodyType, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { rewardCents } from '@/lib/game/economy';
@@ -280,7 +281,7 @@ async function loadRoute(db: Database, origin: Hub, destination: Hub, provider?:
   return getCrossingRoute(db, origin.id, destination.id, line, !!ia, 'truck', provider);
 }
 
-async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean; oversize?: boolean; goods?: string; transEurope?: boolean } = {}): Promise<string | null> {
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean; oversize?: boolean; goods?: string; transEurope?: boolean; humanitarian?: boolean } = {}): Promise<string | null> {
   const sea = islandOf(origin)?.id !== islandOf(destination)?.id;
   if (sea) via = [];
   const viaRoute = via.length ? await getRouteVia(db, origin.id, via.map((h) => h.id), destination.id, 'truck', provider) : null;
@@ -304,6 +305,8 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const holiday = theme?.id ?? (national ? 'national' : null);
   const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1) * (national ? NATIONAL_DAY.rewardMultiplier : 1);
   const goods = extra.goods ?? (theme ? pick(theme.goods!) : pick(CARGO[cargo].goods));
+  // v1.8: now and then the shipper does not say what is inside.
+  const sealed = !extra.featured && !extra.oversize && !extra.transEurope && !extra.humanitarian && !extra.portCallId && !theme && !via.length && featureLive('sealed_cargo', now) && rand() < SEALED.share;
   // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
   const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)));
   const [row] = await db.insert(contracts).values({
@@ -327,6 +330,8 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     port: extra.port ?? false,
     oversize: extra.oversize ?? false,
     transEurope: extra.transEurope ?? false,
+    sealed,
+    humanitarian: extra.humanitarian ?? false,
     expiresAt: new Date(now.getTime() + ttlMs),
   }).returning({ id: contracts.id });
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));
@@ -336,7 +341,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
 }
 
 /** A load between two given cities (port loads, ship calls); null when there is no way (two different islands). */
-export async function addLoad(db: Database, originId: number, destinationId: number, cargo: CargoType, tons: number, now: Date, ttlMs: number, multiplier: number, extra: { portCallId?: string; port?: boolean; oversize?: boolean; goods?: string; transEurope?: boolean }, provider?: RoutingProvider, hubs?: Hub[]) {
+export async function addLoad(db: Database, originId: number, destinationId: number, cargo: CargoType, tons: number, now: Date, ttlMs: number, multiplier: number, extra: { portCallId?: string; port?: boolean; oversize?: boolean; goods?: string; transEurope?: boolean; humanitarian?: boolean }, provider?: RoutingProvider, hubs?: Hub[]) {
   const all = hubs ?? (await loadHubs(db));
   const origin = all.find((h) => h.id === originId);
   const destination = all.find((h) => h.id === destinationId);

@@ -147,7 +147,7 @@ export async function settleDueEvents(db: Database, now = new Date()): Promise<n
 // ── Automatic events ──────────────────────────────────────────────────────
 
 /** What the last 7 days of deliveries would have given an event (to size automatic targets). */
-async function recentAmount(db: DbOrTx, filter: { metric: EventMetric; cargoType: string | null; countryCode: string | null }, now: Date) {
+export async function recentAmount(db: DbOrTx, filter: { metric: EventMetric; cargoType: string | null; countryCode: string | null }, now: Date) {
   const since = new Date(now.getTime() - 7 * DAY);
   const rows = await db
     .select({

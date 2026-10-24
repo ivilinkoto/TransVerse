@@ -449,6 +449,10 @@ export const contracts = pgTable(
     factorySaleCents: money('factory_sale_cents'),
     /** A trans-European load (v1.7): 2 500 km and more, for a two-driver crew. */
     transEurope: boolean('trans_europe').notNull().default(false),
+    /** v1.8: the shipper does not say what is inside (revealed on arrival). */
+    sealed: boolean('sealed').notNull().default(false),
+    /** v1.8: relief goods for a humanitarian convoy (a badge and ТрансКоин on time). */
+    humanitarian: boolean('humanitarian').notNull().default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -493,6 +497,8 @@ export const deliveries = pgTable(
     xpAwarded: integer('xp_awarded'),
     /** Per-delivery fee for rented vehicles (replaces fuel, tolls and maintenance). */
     rentalFeeCents: money('rental_fee_cents'),
+    /** v1.8: the extra share of the pay the shipper agreed to when haggling (percent). */
+    hagglePercent: integer('haggle_percent').notNull().default(0),
     /** 1 = real-time schedule (legacy), 2 = compressed game time. */
     scheduleVersion: integer('schedule_version').notNull().default(1),
     /** Road events planned at acceptance (server only) and applied when the truck gets there. */
@@ -770,6 +776,9 @@ export const organizations = pgTable(
     brandingVersion: integer('branding_version').notNull().default(0),
     /** The company's own money — separate from every member's (and the owner's) personal balance. */
     treasuryCents: money('treasury_cents').notNull().default(0),
+    /** v1.8: the company's shares are on the exchange (players outside it may buy). */
+    listedAt: ts('listed_at'),
+    sharePriceCents: money('share_price_cents').notNull().default(0),
     foundedAt: ts('founded_at').notNull().defaultNow(),
     createdAt: createdAt(),
   },
@@ -2549,4 +2558,153 @@ export const countryKings = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.month, t.countryCode] }), index('country_kings_user_idx').on(t.userId)],
+);
+
+// ── v1.8 "Жив път" ───────────────────────────────────────────────────────
+
+/** CB radio: a message heard only by drivers on the road near where it was sent. */
+export const cbMessages = pgTable(
+  'cb_messages',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    lat: doublePrecision('lat').notNull(),
+    lon: doublePrecision('lon').notNull(),
+    /** The nearest big real city (for "near Plovdiv"). */
+    near: text('near').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('cb_messages_created_idx').on(t.createdAt)],
+);
+
+/** Road reports from drivers (accident, police, jam…), confirmed or denied by others nearby. */
+export const roadReports = pgTable(
+  'road_reports',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    lat: doublePrecision('lat').notNull(),
+    lon: doublePrecision('lon').notNull(),
+    near: text('near').notNull(),
+    confirms: integer('confirms').notNull().default(0),
+    denies: integer('denies').notNull().default(0),
+    /** The reporter got the reputation for a confirmed report (or lost it for a false one). */
+    settled: boolean('settled').notNull().default(false),
+    createdAt: createdAt(),
+    expiresAt: ts('expires_at').notNull(),
+  },
+  (t) => [index('road_reports_expires_idx').on(t.expiresAt)],
+);
+
+export const roadReportVotes = pgTable(
+  'road_report_votes',
+  {
+    reportId: integer('report_id').notNull().references(() => roadReports.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    vote: integer('vote').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.reportId, t.userId] })],
+);
+
+/** Postcards from real landmarks a loaded trip passed (v1.8). */
+export const userPostcards = pgTable(
+  'user_postcards',
+  {
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    landmark: text('landmark').notNull(),
+    deliveryId: uuid('delivery_id'),
+    collectedAt: ts('collected_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.landmark] })],
+);
+
+/** Someone waving at the start of a trip (v1.8): waiting, aboard, or done. */
+export const hitchhikers = pgTable(
+  'hitchhikers',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+    persona: integer('persona').notNull(),
+    fromCityId: integer('from_city_id').notNull().references(() => cities.id),
+    toCityId: integer('to_city_id').notNull().references(() => cities.id),
+    fareCents: money('fare_cents').notNull(),
+    /** waiting | aboard | done | missed */
+    status: text('status').notNull().default('waiting'),
+    waitUntil: ts('wait_until').notNull(),
+    createdAt: createdAt(),
+    settledAt: ts('settled_at'),
+  },
+  (t) => [uniqueIndex('hitchhikers_delivery_idx').on(t.deliveryId), index('hitchhikers_user_idx').on(t.userId, t.status)],
+);
+
+/** A player's haggle over a load (v1.8): once per load; a "no" takes the load away from that player. */
+export const contractHaggles = pgTable(
+  'contract_haggles',
+  {
+    contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    percent: integer('percent').notNull(),
+    accepted: boolean('accepted').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.contractId, t.userId] })],
+);
+
+/** Shares of a listed company held by a player outside it (v1.8). */
+export const shareHoldings = pgTable(
+  'share_holdings',
+  {
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    shares: integer('shares').notNull(),
+    /** What the shares cost in all (for the gain shown to the player). */
+    costCents: money('cost_cents').notNull(),
+    /** Bought shares can be sold after this. */
+    lockedUntil: ts('locked_until').notNull(),
+    updatedAt: ts('updated_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.userId] }), index('share_holdings_user_idx').on(t.userId)],
+);
+
+/** A listed company's share price by day (Sofia). */
+export const sharePrices = pgTable(
+  'share_prices',
+  {
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    day: text('day').notNull(),
+    priceCents: money('price_cents').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.day] })],
+);
+
+/** "Камион на месеца" (v1.8): one truck per player a month, drawn as it was when entered. */
+export const truckContestEntries = pgTable(
+  'truck_contest_entries',
+  {
+    id: serial('id').primaryKey(),
+    month: text('month').notNull(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').notNull(),
+    /** What the picture needs: models, colours, paint, parts. */
+    look: jsonb('look').$type<Record<string, unknown>>().notNull(),
+    title: text('title').notNull(),
+    votes: integer('votes').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('truck_contest_month_user_idx').on(t.month, t.userId), index('truck_contest_month_idx').on(t.month, t.votes)],
+);
+
+export const truckContestVotes = pgTable(
+  'truck_contest_votes',
+  {
+    month: text('month').notNull(),
+    voterId: uuid('voter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    entryId: integer('entry_id').notNull().references(() => truckContestEntries.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.month, t.voterId, t.entryId] })],
 );

@@ -173,3 +173,12 @@
 - 0074: `contracts.trans_europe` (трансевропейски товар).
 - 0075: `country_kings` (месец `M<година>-<месец>`, държава, играч, тонове; ключ месец+държава, индекс по играч).
 - `job_state`: `grand-eurotour:<играч>:<сезон>`, `hire-reminder:<наем>`. ТрансКоин: причина `challenge` и за Голям евротур и Краля на държавата (`country-king:<месец>:<държава>`). Сметката на играча: таксата за нискоемисионни зони е категория `tolls` (ключ `…:lez`).
+
+## v1.8 — Жив път (миграции 0076–0081)
+- 0076: `cb_messages` (CB радио: текст, позиция, най-близкият град), `road_reports` (вид, позиция, потвърждения, отхвърляния, `settled`, `expires_at`), `road_report_votes` (един глас на играч).
+- 0077: `user_postcards` (картички: играч + забележителност), `hitchhikers` (автостопаджия на курс: персона, такса, waiting / aboard / done / missed).
+- 0078: `contracts.sealed`, `deliveries.haggle_percent`, `contract_haggles` (пазарлък: процент, прието).
+- 0079: `organizations.listed_at`, `organizations.share_price_cents`, `share_holdings` (акции, цена на покупката, заключени до), `share_prices` (цена по ден).
+- 0080: `contracts.humanitarian`.
+- 0081: `truck_contest_entries` (месец, играч, вид на камиона, гласове), `truck_contest_votes`.
+- Сметката на играча: категории `hitchhiker`, `sealed_bonus`, `haggle_bonus`, `share_trade`, `share_dividend`. Касата: `share_issue`, `share_dividend`. ТрансКоин: причини `postcards`, `truck_contest`, `humanitarian`. `job_state`: `humanitarian`, `truck-contest:<месец>`.

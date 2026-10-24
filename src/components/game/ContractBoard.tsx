@@ -18,6 +18,8 @@ import { api } from '@/lib/client/api';
 import { dateTime, dec, duration, int, km, money } from '@/lib/format';
 import type { CargoType } from '@/lib/game/cargo';
 import { MARTA } from '@/lib/game/marta';
+import { HAGGLE, SEALED } from '@/lib/game/deals';
+import { RELIEF } from '@/lib/game/relief';
 import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { useFeature } from './Features';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
@@ -39,6 +41,12 @@ export interface BoardContract {
   goods: string;
   cargoType: CargoType;
   cargoLabel: string;
+  /** v1.8: the shipper does not say what is inside. */
+  sealed?: boolean;
+  /** v1.8: relief goods for a humanitarian convoy. */
+  humanitarian?: boolean;
+  /** v1.8: haggling: 'open' (may ask), the player's ask, or null (not for this load). */
+  haggle?: 'open' | { percent: number; accepted: boolean; holdUntil: string; valid: boolean } | null;
   /** What a vehicle needs to take this load (shown above the vehicle list). */
   needs: { bodies: string[]; level: number };
   tons: number;
@@ -304,6 +312,52 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   );
 }
 
+/** v1.8: ask the shipper for more (once); a "no" gives the load to someone else. */
+function HaggleBox({ contractId, rewardCents, haggle }: { contractId: string; rewardCents: number; haggle: NonNullable<BoardContract['haggle']> }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [answer, setAnswer] = useState<string | null>(null);
+  if (haggle !== 'open') {
+    return haggle.valid ? (
+      <p className="rounded-xl border border-profit/40 bg-profit/10 p-3 text-sm">🤝 Клиентът прие +{haggle.percent}% (+{money(Math.round((rewardCents * haggle.percent) / 100))}) — важи, ако приемеш поръчката до {new Date(haggle.holdUntil).toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' })}.</p>
+    ) : (
+      <p className="rounded-xl border border-asphalt-600 p-3 text-sm text-mist-400">🤝 Договореното +{haggle.percent}% изтече — поръчката е на обичайната цена.</p>
+    );
+  }
+  const ask = async (percent: number) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api<{ accepted: boolean; percent: number }>('/api/game/action', { type: 'haggle', contractId, percent });
+      setAnswer(r.accepted ? `Клиентът прие +${r.percent}%!` : 'Клиентът отказа и даде товара на друг.');
+      setTimeout(() => router.refresh(), 1500);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="rounded-xl border border-gold-400/30 bg-gold-400/5 p-3 text-sm">
+      <div className="font-semibold text-gold-400">🤝 Пазарлък с клиента</div>
+      <p className="mt-1 text-mist-300">Може да поискаш повече веднъж. Колкото повече искаш, толкова по-вероятно е „не“ — и тогава товарът отива при друг.</p>
+      {answer ? (
+        <p className="mt-2 font-semibold">{answer}</p>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {HAGGLE.asks.map((a) => (
+            <button key={a.percent} type="button" className="btn-ghost px-3 py-1.5 text-xs" disabled={busy} onClick={() => void ask(a.percent)}>
+              +{a.percent}% (+{money(Math.round((rewardCents * a.percent) / 100))}) · шанс ~{Math.round(a.chance * 100)}%
+            </button>
+          ))}
+        </div>
+      )}
+      {error && <p role="alert" className="mt-1 text-loss">{error}</p>}
+    </div>
+  );
+}
+
 /** What the player can do about a reason a vehicle cannot take a load, and where. */
 function fixFor(reason: string): { text: string; href: string } | null {
   if (reason.startsWith('Нужна е надстройка')) return { text: 'Прикачи подходящо ремарке в Сервиз или купи камион/ремарке с тази надстройка в Пазар.', href: '/game/market' };
@@ -397,6 +451,9 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             {c.holiday === 'easter' && <Badge tone="violet">🥚 ВЕЛИКДЕН · +25%</Badge>}
             {c.holiday === 'marta' && <Badge tone="red">🔴⚪ БАБА МАРТА · +{Math.round((MARTA.rewardMultiplier - 1) * 100)}%</Badge>}
             {c.transEurope && <Badge tone="gold">🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{Math.round((TRANS_EUROPE.multiplier - 1) * 100)}%</Badge>}
+            {c.humanitarian && <Badge tone="red">🆘 ХУМАНИТАРНА ПОМОЩ · +{RELIEF.coins} TC навреме</Badge>}
+            {c.sealed && <Badge tone="violet">📦 ЗАПЕЧАТАН · до +{Math.round(SEALED.tiers.at(-1)!.bonus * 100)}% при отваряне</Badge>}
+            {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">🤝 ДОГОВОРЕНО +{c.haggle.percent}%</Badge>}
             {!!c.lez?.length && <Badge tone="green">🌿 ЗОНА · {c.lez.join(', ')}</Badge>}
             {c.specialization && <Badge tone="violet">🎯 СПЕЦИАЛИЗАЦИЯ · +{Math.round(SPECIALIZATION.bonusShare * 100)}%</Badge>}
             {!!c.traffic && <Badge tone="orange">🚦 НАТОВАРЕНО · {c.traffic} камиона</Badge>}
@@ -518,6 +575,12 @@ function ContractRow({ contract: c, vip, canAssign, open, onToggle, onAccepted }
             </p>
           ) : (
             <div className="mt-4 space-y-3">
+              {c.sealed && (
+                <p className="rounded-xl border border-prestige/40 bg-prestige/10 p-3 text-sm">
+                  📦 Клиентът не казва какво има вътре. Наградата е поне {money(c.rewardCents)}; при пристигане навреме пратката може да се окаже ценна (+{Math.round(SEALED.tiers[1].bonus * 100)}%) или изключителна (+{Math.round(SEALED.tiers[2].bonus * 100)}%). Само игрови пари.
+                </p>
+              )}
+              {c.haggle && <HaggleBox contractId={c.id} rewardCents={c.rewardCents} haggle={c.haggle} />}
               <div className="rounded-xl border border-asphalt-600 bg-asphalt-800/60 p-3 text-sm">
                 <div className="label">Какво е нужно за тази поръчка</div>
                 <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">

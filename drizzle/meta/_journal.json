@@ -533,6 +533,48 @@
       "when": 1792794352237,
       "tag": "0075_wandering_quasar",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1792845227282,
+      "tag": "0076_square_randall_flagg",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1792845621999,
+      "tag": "0077_reflective_ben_urich",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1792846050780,
+      "tag": "0078_furry_skaar",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1792846338019,
+      "tag": "0079_yellow_donald_blake",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1792846710833,
+      "tag": "0080_dazzling_vindicator",
+      "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1792846746875,
+      "tag": "0081_serious_overlord",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,10 @@ import { driverMoods } from './moods';
 import { ensureRally, settleRallies } from './rally';
 import { settleWeeklyChallenge } from './challenges';
 import { settleCountryKings } from './kings';
+import { pruneLiveRoad } from './live-road';
+import { payDividends, updateSharePrices } from './shares';
+import { runRelief } from './relief';
+import { settleTruckContest } from './truck-contest';
 import { runCup } from './tournament';
 import { ensurePlateAuction, settlePlateAuctions } from './plates';
 import { endTrailerHires } from './trailer-hire';
@@ -257,6 +261,17 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.6: the challenge of the week pays its top three.
     await every(db, 'weekly-challenge', 30 * 60_000, now, () => settleWeeklyChallenge(db, now));
+    // v1.8: share prices once a day, dividends on Monday (Sofia).
+    if (featureLive('share_market', now)) {
+      await every(db, 'share-prices', 24 * 3_600_000, now, () => updateSharePrices(db, now));
+      if (new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'share-dividends', 6 * 3_600_000, now, () => payDividends(db, now));
+    }
+    // v1.8: last month's "Камион на месеца".
+    if (featureLive('truck_contest', now)) await every(db, 'truck-contest', 60 * 60_000, now, () => settleTruckContest(db, now));
+    // v1.8: humanitarian convoys (every three weeks; loads while one runs).
+    await every(db, 'humanitarian', 30 * 60_000, now, () => runRelief(db, now));
+    // v1.8: old CB messages and road reports.
+    await every(db, 'live-road-prune', 24 * 3_600_000, now, () => pruneLiveRoad(db, now));
     // v1.7: last month's king of every country.
     if (featureLive('country_kings', now)) await every(db, 'country-kings', 60 * 60_000, now, () => settleCountryKings(db, now));
     if (featureLive('spring_cup', now)) await every(db, 'spring-cup', 30 * 60_000, now, () => runCup(db, now));

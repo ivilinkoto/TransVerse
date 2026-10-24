@@ -18,6 +18,11 @@ import { DEFAULT_SEASON_RULES } from '@/server/game/seasons';
 import { requestSeason } from '@/server/seasonal';
 import { requestNow } from '@/server/site';
 import { countryNames, liveWorld, publicStats, showcaseRoutes, type LiveWorld } from '@/server/showcase';
+import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
+import { featureLive } from '@/lib/game/features';
+import { getDb } from '@/server/db/client';
+import { lastWinners } from '@/server/game/truck-contest';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +43,8 @@ export default async function HomePage() {
   const now = world?.now ?? requestNow();
   const latest = world ? visibleReleases(now)[0] : undefined;
   const livery = season === 'halloween' ? 'pumpkin' : season === 'christmas' ? 'christmas' : undefined;
+  // v1.8: last month's "Камион на месеца".
+  const truckOfMonth = featureLive('truck_contest', now) ? ((await lastWinners(getDb(), now).catch(() => null))?.winners[0] ?? null) : null;
 
   return (
     <div className="relative overflow-x-clip">
@@ -197,6 +204,21 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {truckOfMonth && (
+        <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+          <div className="panel flex flex-col items-center gap-6 p-6 sm:flex-row">
+            <div className="flex h-32 w-full max-w-md items-end">
+              <VehicleIllustration modelId={truckOfMonth.look.modelId} trailerModelId={truckOfMonth.look.trailerModelId} color={truckOfMonth.look.color} livery={truckOfMonth.look.livery} cosmetics={truckOfMonth.look.cosmetics as Cosmetics | null} trailerUpgrades={truckOfMonth.look.trailerUpgrades} trailerLogo={truckOfMonth.look.trailerLogo} trailerCosmetics={truckOfMonth.look.trailerCosmetics as TrailerCosmetics | null} className="max-h-32 w-full" />
+            </div>
+            <div>
+              <p className="label">Камион на месеца</p>
+              <h3 className="mt-2 font-display text-2xl font-bold">{truckOfMonth.username}</h3>
+              <p className="mt-1 text-sm text-mist-300">{truckOfMonth.title} · {truckOfMonth.votes} гласа от играчите</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Latest update ────────────────────────────────────── */}
       {latest && (

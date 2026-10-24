@@ -68,7 +68,12 @@ export type LedgerCategory =
   | 'staff_bus_bonus'
   | 'alliance_market'
   | 'alliance_hall_bonus'
-  | 'trailer_hire';
+  | 'trailer_hire'
+  | 'hitchhiker'
+  | 'sealed_bonus'
+  | 'haggle_bonus'
+  | 'share_trade'
+  | 'share_dividend';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -136,6 +141,11 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   alliance_market: 'Склад на съюза (покупки и продажби)',
   alliance_hall_bonus: 'Бонус от съюзната база',
   trailer_hire: 'Наем на ремарке между играчи',
+  hitchhiker: 'Автостопаджии',
+  sealed_bonus: 'Запечатан товар',
+  haggle_bonus: 'Пазарлък с клиента',
+  share_trade: 'Акции (покупки и продажби)',
+  share_dividend: 'Дивиденти от акции',
 };
 
 export interface Posting {
@@ -181,9 +191,11 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary';
+export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary' | 'share_issue' | 'share_dividend';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
+  share_issue: 'Продадени акции',
+  share_dividend: 'Дивиденти на акционерите',
   member_contribution: 'Вноска от курс',
   deposit: 'Внесени от член',
   company_upgrade: 'Развитие на компанията',
