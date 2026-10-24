@@ -108,6 +108,7 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   humanitarian: { label: 'Хуманитарен конвой', description: 'Достави хуманитарна помощ навреме.' },
   'convoy-streak': { label: 'Желязна колона', description: '5 конвоя подред без закъснение.' },
   'convoy-europe': { label: 'Колона през Европа', description: 'Конвой през поне 4 държави, навреме.' },
+  story: { label: 'Свой път', description: 'Довърши историята на Бай Стоян.' },
   harvest: { label: 'Гроздобер', description: 'Десет есенни товара навреме в един сезон.' },
   relay: { label: 'Щафета', description: 'Довърши щафета навреме заедно с друг шофьор.' },
   'legend-leader': { label: 'Легендарен водач', description: 'Поведе 50 конвоя.' },

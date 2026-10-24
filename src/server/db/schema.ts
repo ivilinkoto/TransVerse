@@ -494,6 +494,8 @@ export const deliveries = pgTable(
     organizedConvoyId: uuid('organized_convoy_id'),
     /** v1.10: the player shared the trip log (public page and card). */
     sharedAt: ts('shared_at'),
+    /** v1.10: a decision on the way (Решения в движение). */
+    choice: jsonb('choice').$type<{ id: string; at: number; deadline: number; notified?: boolean; decided?: 'a' | 'b'; result?: string; costCents?: number; bonusCents?: number; xpShare?: number }>(),
     /** Risks the player chose for this trip: 'hours' (no rest), 'overload'. */
     violations: text('violations').array().notNull().default(sql`'{}'::text[]`),
     /** Driving minutes the crew has used since its last daily rest when the trip ends (both drivers together). */
@@ -2994,3 +2996,15 @@ export const harvestProgress = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.year] })],
 );
+
+/** v1.10 the story: the current chapter and how far each of its three tasks is. */
+export const storyProgress = pgTable('story_progress', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  /** 0-based chapter; equal to the number of chapters once the story is done. */
+  chapter: integer('chapter').notNull().default(0),
+  counts: integer('counts').array().notNull().default(sql`'{0,0,0}'::int[]`),
+  /** Cities visited in this chapter (for "different cities"). */
+  cities: integer('cities').array().notNull().default(sql`'{}'::int[]`),
+  startedAt: createdAt(),
+  finishedAt: ts('finished_at'),
+});

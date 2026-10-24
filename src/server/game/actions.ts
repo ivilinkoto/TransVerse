@@ -26,6 +26,7 @@ import { buyShares, listCompany, sellShares } from '@/server/game/shares';
 import { enterTruck, voteTruck } from '@/server/game/truck-contest';
 import { setUiPrefs } from '@/server/game/ui-prefs';
 import { shareTrip } from '@/server/game/trip-log';
+import { decideChoice } from '@/server/game/road-choices';
 import { cancelConvoy, createConvoy, joinConvoy, leaveConvoy, postConvoyMessage } from '@/server/game/convoys';
 import { blackMarketRepair, buyCompartment, reportShadyOffer, setSmugglingOptIn } from '@/server/game/smuggling';
 import { acceptMerger, createDepartment, decideInternship, declineMerger, deleteDepartment, joinDepartment, openAssembly, proposeMerger, requestInternship, setDepartmentHead, setLogoDesign, setTradition, voteAssembly } from '@/server/game/company-life';
@@ -238,6 +239,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('createConvoy'), kind: z.enum(['personal', 'company']).default('personal'), access: z.enum(['open', 'friends', 'link']).default('open'), originCityId: z.coerce.number().int().positive(), destCityId: z.coerce.number().int().positive(), departInMin: z.coerce.number().int(), seats: z.coerce.number().int(), minLevel: z.coerce.number().int().min(1).max(100).default(1), sharedCargo: z.string().max(20).nullable().optional(), sharedTons: z.coerce.number().nullable().optional(), title: z.string().max(60).optional() }),
   z.object({ type: z.literal('joinConvoy'), convoyId: id, vehicleId: id, contractId: id.nullable().optional(), role: z.enum(['member', 'tail', 'scout']).optional() }),
   z.object({ type: z.literal('leaveConvoy'), convoyId: id }),
+  z.object({ type: z.literal('roadChoice'), deliveryId: id, option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('shareTrip'), deliveryId: id, on: z.boolean().default(true) }),
   z.object({ type: z.literal('cancelConvoy'), convoyId: id }),
   z.object({ type: z.literal('convoyMessage'), convoyId: id, body: z.string().max(400) }),
@@ -405,6 +407,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   joinConvoy: 'convoy_lobby',
   leaveConvoy: 'convoy_lobby',
   shareTrip: 'trip_log',
+  roadChoice: 'road_choices',
   cancelConvoy: 'convoy_lobby',
   convoyMessage: 'convoy_lobby',
   reportShady: 'smuggling',
@@ -966,6 +969,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     }
     case 'joinConvoy':
       return { ok: true, ...(await joinConvoy(db, user.id, input.convoyId, { vehicleId: input.vehicleId, contractId: input.contractId ?? null, role: input.role })) };
+    case 'roadChoice':
+      return { ok: true, ...(await decideChoice(db, user.id, input.deliveryId, input.option)) };
     case 'shareTrip':
       return { ok: true, ...(await shareTrip(db, user.id, input.deliveryId, input.on)) };
     case 'leaveConvoy':

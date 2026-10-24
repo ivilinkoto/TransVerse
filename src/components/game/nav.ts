@@ -95,6 +95,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/spring', label: 'Първа пролет', holiday: 'spring', feature: 'spring', group: 'Сезонни' },
       { href: '/game/easter', label: 'Великден', holiday: 'easter', feature: 'easter', group: 'Сезонни' },
       { href: '/game/missions', label: 'Мисии', group: 'Днес' },
+      { href: '/game/story', label: 'Историята', feature: 'story', group: 'Днес' },
       { href: '/game/parking', label: 'Паркирай', feature: 'parking_game', group: 'Днес' },
       { href: '/game/league', label: 'Лига', group: 'Класации', minLevel: 2 },
       { href: '/game/cities', label: 'Градовете растат', feature: 'city_growth', group: 'Класации' },

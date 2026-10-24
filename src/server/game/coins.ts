@@ -3,11 +3,12 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { coinEntries, users } from '@/server/db/schema';
 import { fail } from './errors';
 
-export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction' | 'postcards' | 'truck_contest' | 'humanitarian' | 'harvest';
+export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction' | 'postcards' | 'truck_contest' | 'humanitarian' | 'harvest' | 'story';
 
 export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   postcards: 'Картички от пътя',
   harvest: 'Гроздобер',
+  story: 'Историята',
   truck_contest: 'Камион на месеца',
   humanitarian: 'Хуманитарен конвой',
   rally: 'Седмично рали',

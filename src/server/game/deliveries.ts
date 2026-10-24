@@ -87,6 +87,8 @@ import { equinoxBonus, recordPassOpening } from './spring';
 import { companyConvoyOf, settleConvoyTruck } from './convoys';
 import { relayDelivered } from './relay';
 import { growCity, harvestDelivered } from './city-growth';
+import { choiceMoney, choiceXp, planChoice } from './road-choices';
+import { storyDelivered } from './story';
 import { CONVOYS } from '@/lib/game/convoys';
 import { afterCustoms, checkShadyLoad, compartmentError, customsCheck, honestDelivery } from './smuggling';
 
@@ -437,6 +439,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         scheduleVersion: SCHEDULE_VERSION,
         roadEvents,
         nextEventAt: roadEvents[0] ? new Date(roadEvents[0].at) : null,
+        // v1.10: some longer trips have a decision half-way.
+        choice: await planChoice(tx, userId, schedule, now),
         startedAt: now,
         etaAt: new Date(scheduleEnd(schedule)),
         deadlineAt: new Date(now.getTime() + (contract!.windowMinutes * 60_000) / timeScale()),
@@ -562,6 +566,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const bigConvoy = (await bigConvoyBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await settleConvoyTruck(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt));
   // v1.10: a relay leg — the hand-over, or the end with its bonus.
   const relayBonus = await relayDelivered(tx, company!.ownerId, d, contract, result.late, completedAt);
+  const choiceBonus = await choiceMoney(tx, d);
   const springBonus = (await equinoxBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await recordPassOpening(tx, company!.ownerId, d, result.late, completedAt));
   const hireCommission = await payHireCommission(tx, d, result.rewardCents);
   // Personal account first, then treasuries (fixed lock order).
@@ -574,7 +579,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -602,6 +607,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.9: the company's own day, and an intern's stay at another company.
   await traditionBonus(tx, company!.ownerId, d, result.rewardCents, completedAt);
   await internDelivery(tx, company!.ownerId, baseXp, completedAt);
+  await choiceXp(tx, company!.ownerId, d, baseXp);
+  await storyDelivered(tx, company!.ownerId, d.companyId, { onTime, km: d.loadedKm, tons: contract.weightTons, foreign: dest!.countryCode !== (await tx.select({ cc: cities.countryCode }).from(cities).where(eq(cities.id, contract.originCityId)))[0]?.cc, convoy: !!d.organizedConvoyId || !!d.convoyWith, destCityId: contract.destCityId }, completedAt);
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
   const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;

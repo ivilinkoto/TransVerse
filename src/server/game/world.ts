@@ -2,6 +2,7 @@ import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
 import { expireRelays, topUpRelays } from './relay';
 import { announceCityOfWeek } from './city-growth';
+import { tickChoices } from './road-choices';
 import { playableCountries } from '@/lib/geo/scope';
 import { and, eq, gt, lte, sql } from 'drizzle-orm';
 import type { Database } from '@/server/db/client';
@@ -281,6 +282,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'interns', 60 * 60_000, now, () => endInternships(db, now));
     // v1.10: the city of the week (Monday).
     if (featureLive('city_growth', now) && new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'city-week', 7 * 24 * 3_600_000, now, () => announceCityOfWeek(db, now));
+    // v1.10: decisions on the way.
+    if (featureLive('road_choices', now)) await every(db, 'road-choices', 60_000, now, () => tickChoices(db, now));
     // v1.10: relay loads.
     if (featureLive('relay', now)) {
       await every(db, 'relays', 30 * 60_000, now, () => topUpRelays(db, now));

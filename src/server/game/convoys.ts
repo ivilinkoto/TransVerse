@@ -277,7 +277,7 @@ export async function departConvoys(db: Database, now = new Date()) {
         const shift = end - r.etaAt.getTime();
         await tx
           .update(deliveries)
-          .set({ organizedConvoyId: c.id, schedule: stretchSchedule(r.schedule as Segment[], r.startedAt.getTime(), end), etaAt: new Date(end), deadlineAt: new Date(r.deadlineAt.getTime() + shift), roadEvents: [], nextEventAt: null })
+          .set({ organizedConvoyId: c.id, schedule: stretchSchedule(r.schedule as Segment[], r.startedAt.getTime(), end), etaAt: new Date(end), deadlineAt: new Date(r.deadlineAt.getTime() + shift), roadEvents: [], nextEventAt: null, choice: null })
           .where(eq(deliveries.id, r.id));
       }
       const allOnTime = rows.length > 0 && rows.every((r) => r.etaAt.getTime() <= r.deadlineAt.getTime());
