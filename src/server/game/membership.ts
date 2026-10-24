@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { LocalText } from '@/i18n/als';
 import { recordOwnerChange } from './company-life';
 import { and, asc, desc, eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -117,7 +118,7 @@ export async function entryRank(db: DbOrTx, companyId: string): Promise<Rank> {
   return rank!;
 }
 
-export async function notifyMembers(tx: Tx, companyId: string, permission: Permission | null, title: string, body: string, href: string) {
+export async function notifyMembers(tx: Tx, companyId: string, permission: Permission | null, title: LocalText, body: LocalText, href: string) {
   const rows = await tx.select({ userId: companyMembers.userId, rank: companyRanks }).from(companyMembers).innerJoin(companyRanks, eq(companyRanks.id, companyMembers.rankId)).where(eq(companyMembers.companyId, companyId));
   for (const r of rows) if (!permission || can(r.rank, permission)) await notify(tx, r.userId, 'info', title, body, href);
 }

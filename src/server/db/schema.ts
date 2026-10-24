@@ -152,6 +152,8 @@ export const users = pgTable(
     /** Game notifications also as Discord direct messages, by push category (empty = none). */
     discordPrefs: jsonb('discord_prefs').$type<Partial<Record<string, boolean>>>().notNull().default({}),
     /** v1.9: how the game is shown to this player (everything at once, the simple board, unlocks already seen). */
+    /** v2.0: the player's language (bg | en | ru). */
+    locale: text('locale').notNull().default('bg'),
     uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[] }>().notNull().default({}),
     lastSeenAt: ts('last_seen_at'),
     /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
