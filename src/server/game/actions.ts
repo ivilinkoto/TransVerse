@@ -77,6 +77,8 @@ import { enterLiveryContest, voteLivery } from '@/server/game/livery-contest';
 import { announceConvoy } from '@/server/game/convoy';
 import { chooseRecipe, orderRaw, sellProduct } from '@/server/game/factory';
 import { closeBranch, openBranch, repayLoan, takeLoan } from '@/server/game/business';
+import { foundHolding, inviteToHolding, leaveHolding, respondHoldingInvite } from '@/server/game/holdings';
+import { startNewCareer } from '@/server/game/legacy';
 import { cheer } from '@/server/game/feed';
 import type { FeatureId } from '@/lib/game/features';
 import { requireFeature } from '@/server/features';
@@ -276,6 +278,12 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyAllianceListing'), listingId: id }),
   z.object({ type: z.literal('withdrawAllianceListing'), listingId: id }),
   z.object({ type: z.literal('createAlliance'), name: z.string().max(40) }),
+  // v2.0 holdings and legacy.
+  z.object({ type: z.literal('foundHolding'), name: z.string().max(40) }),
+  z.object({ type: z.literal('inviteToHolding'), target: z.string().min(1).max(40) }),
+  z.object({ type: z.literal('respondHoldingInvite'), inviteId: id, accept: z.boolean() }),
+  z.object({ type: z.literal('leaveHolding'), organizationId: id.optional() }),
+  z.object({ type: z.literal('startNewCareer'), cityId, confirm: z.literal(true) }),
   z.object({ type: z.literal('inviteToAlliance'), target: z.string().max(40) }),
   z.object({ type: z.literal('respondAllianceInvite'), inviteId: id, accept: z.boolean() }),
   z.object({ type: z.literal('leaveAlliance') }),
@@ -440,6 +448,11 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   buyAllianceListing: 'alliance_market',
   withdrawAllianceListing: 'alliance_market',
   createAlliance: 'alliances',
+  foundHolding: 'holdings',
+  inviteToHolding: 'holdings',
+  respondHoldingInvite: 'holdings',
+  leaveHolding: 'holdings',
+  startNewCareer: 'legacy',
   inviteToAlliance: 'alliances',
   respondAllianceInvite: 'alliances',
   leaveAlliance: 'alliances',
@@ -857,6 +870,17 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'claimHalloweenQuest':
       return { ok: true, ...(await claimHalloweenQuest(db, user.id, input.questId)) };
+    case 'foundHolding':
+      return { ok: true, id: (await foundHolding(db, user.id, input.name)).id };
+    case 'inviteToHolding':
+      return { ok: true, id: (await inviteToHolding(db, user.id, input.target)).id };
+    case 'respondHoldingInvite':
+      await respondHoldingInvite(db, user.id, input.inviteId, input.accept);
+      return { ok: true };
+    case 'leaveHolding':
+      return { ok: true, ...(await leaveHolding(db, user.id, input.organizationId)) };
+    case 'startNewCareer':
+      return { ok: true, ...(await startNewCareer(db, user.id, input.cityId)) };
     case 'createAlliance':
       return { ok: true, id: (await createAlliance(db, user.id, input.name)).id };
     case 'inviteToAlliance':

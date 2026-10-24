@@ -14,6 +14,8 @@ import { driverMoods } from './moods';
 import { ensureRally, settleRallies } from './rally';
 import { settleWeeklyChallenge } from './challenges';
 import { settleCountryKings } from './kings';
+import { payHoldingFees } from './holdings';
+import { settleTerritories } from './territories';
 import { pruneLiveRoad } from './live-road';
 import { payDividends, updateSharePrices } from './shares';
 import { runRelief } from './relief';
@@ -305,6 +307,9 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'live-road-prune', 24 * 3_600_000, now, () => pruneLiveRoad(db, now));
     // v1.7: last month's king of every country.
     if (featureLive('country_kings', now)) await every(db, 'country-kings', 60 * 60_000, now, () => settleCountryKings(db, now));
+    // v2.0: last week's territories, and the subsidiaries' fees to their holdings.
+    if (featureLive('territories', now)) await every(db, 'territories', 60 * 60_000, now, () => settleTerritories(db, now));
+    if (featureLive('holdings', now)) await every(db, 'holding-fees', 6 * 60 * 60_000, now, () => payHoldingFees(db, now));
     if (featureLive('spring_cup', now)) await every(db, 'spring-cup', 30 * 60_000, now, () => runCup(db, now));
     // v1.6: the weekly rare plate auction and trailer hires that ended.
     if (featureLive('plate_auction', now)) await every(db, 'plate-auction', 15 * 60_000, now, async () => {

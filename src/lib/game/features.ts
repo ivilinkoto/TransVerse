@@ -146,6 +146,9 @@ export const FEATURES = {
   // v2.0 "Светът се отваря".
   open_world: '2.0',
   national_rankings: '2.0',
+  holdings: '2.0',
+  territories: '2.0',
+  legacy: '2.0',
   country_tolls: '1.7',
   driving_bans: '1.7',
   low_emission_zones: '1.7',

@@ -638,6 +638,13 @@
       "when": 1792861872478,
       "tag": "0090_great_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1792872525576,
+      "tag": "0091_bored_sunfire",
+      "breakpoints": true
     }
   ]
 }

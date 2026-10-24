@@ -154,6 +154,8 @@ export const users = pgTable(
     /** v1.9: how the game is shown to this player (everything at once, the simple board, unlocks already seen). */
     /** v2.0: the player's language (bg | en | ru). */
     locale: text('locale').notNull().default('bg'),
+    /** v2.0 legacy stars (New Game+), 0…5. */
+    legacyStars: integer('legacy_stars').notNull().default(0),
     uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[] }>().notNull().default({}),
     lastSeenAt: ts('last_seen_at'),
     /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
@@ -3012,3 +3014,69 @@ export const storyProgress = pgTable('story_progress', {
   startedAt: createdAt(),
   finishedAt: ts('finished_at'),
 });
+
+/** v2.0 holdings: a parent company and the companies it holds. */
+export const holdings = pgTable('holdings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  parentId: uuid('parent_id').notNull().unique().references(() => organizations.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  createdAt: createdAt(),
+});
+
+/** A company in a holding (the parent too); one holding per company. */
+export const holdingMembers = pgTable(
+  'holding_members',
+  {
+    holdingId: uuid('holding_id').notNull().references(() => holdings.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').primaryKey().references(() => organizations.id, { onDelete: 'cascade' }),
+    joinedAt: ts('joined_at').notNull(),
+  },
+  (t) => [index('holding_members_holding_idx').on(t.holdingId)],
+);
+
+/** An invitation into a holding (answered by the invited company). */
+export const holdingInvites = pgTable(
+  'holding_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    holdingId: uuid('holding_id').notNull().references(() => holdings.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    /** pending | accepted | declined */
+    status: text('status').notNull().default('pending'),
+    expiresAt: ts('expires_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('holding_invites_org_idx').on(t.organizationId, t.status)],
+);
+
+/** v2.0 territories: who holds a region (country + GeoNames first-level name) in a week. */
+export const territories = pgTable(
+  'territories',
+  {
+    week: text('week').notNull(),
+    countryCode: text('country_code').notNull(),
+    region: text('region').notNull(),
+    /** The region's Bulgarian name (shown; translated through the place names). */
+    regionBg: text('region_bg'),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    tons: real('tons').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.week, t.countryCode, t.region] }), index('territories_org_idx').on(t.organizationId, t.week)],
+);
+
+/** v2.0 legacy (New Game+): each new start of a career. */
+export const legacyRuns = pgTable(
+  'legacy_runs',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** The star this start earned (1…5). */
+    star: integer('star').notNull(),
+    /** Where the career stood when it ended. */
+    level: integer('level').notNull(),
+    deliveries: integer('deliveries').notNull(),
+    totalKm: real('total_km').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('legacy_runs_user_star_idx').on(t.userId, t.star)],
+);

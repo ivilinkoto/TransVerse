@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { eq } from 'drizzle-orm';
 import { Award, Lock, Unlock } from 'lucide-react';
 import { Badge, Card, Meter, PageHeader } from '@/components/ui';
@@ -22,7 +23,7 @@ const TIER = { bronze: { tone: 'orange', label: 'Бронз' }, silver: { tone: 
 
 export default async function ProgressPage() {
   await initLocale();
-  const { db, user, company } = await gameContext();
+  const { db, user, company, features } = await gameContext();
   const [stats, unlocked] = await Promise.all([companyStats(db, company.id), db.select().from(achievements).where(eq(achievements.userId, user.id))]);
   const lp = levelProgress(user.xp);
   const map = new Map(unlocked.map((a) => [a.key, a.unlockedAt]));
@@ -36,6 +37,11 @@ export default async function ProgressPage() {
     <div className="space-y-6">
       <PageHeader title={tr('Постижения')} subtitle={tr('Нивото, опитът и постиженията ти.')}
         help={tr('Опитът идва от доставки — повече за дълги, тежки и навременни курсове. Наградите се дават само за проверени от сървъра действия.')} />
+      {features.legacy && (
+        <Link href="/game/legacy" className="block rounded-xl border border-gold-500/30 bg-gold-500/5 p-3 text-sm hover:bg-gold-500/10">
+          ⭐ {tr('Наследство: започни кариерата отначало и вземи звезда за постоянен бонус.')}
+        </Link>
+      )}
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

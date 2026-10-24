@@ -197,3 +197,9 @@
 - 0089: `deliveries.reefer` (норма, измервания, резултат, сума).
 - Статус на товар `held` (втората част на щафета). ТрансКоин: причини `harvest`, `story`. `job_state`: `convoy-depart`, `weekly-convoy`, `relays`, `relays-expire`, `road-choices`, `city-week`.
 
+
+## v2.0 — Светът се отваря (миграция 0091)
+- `holdings`, `holding_members` (една компания в един холдинг), `holding_invites` — холдинги.
+- `territories` — коя компания държи коя област през седмицата (`week`, държава, област на английски и на български).
+- `legacy_runs` и `users.legacy_stars` — наследство (Ново начало).
+- Нови категории в регистрите: `territory_bonus`, `holding_bonus`, `legacy_bonus`, `legacy_reset` (лична сметка), `holding` (каса).

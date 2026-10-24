@@ -15,6 +15,9 @@ import { reliefDelivered } from './relief';
 import { internDelivery, traditionBonus } from './company-life';
 import { checkCabotage, requireTeam, transEuropeDone } from './europe';
 import { specializationBonus } from './specialization';
+import { holdingBonus } from './holdings';
+import { legacyBonus } from './legacy';
+import { territoryBonus } from './territories';
 import { checkLegend } from './heritage';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
@@ -566,6 +569,11 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // v1.6: the equinox and the passes that open after the winter.
   // v1.6: a big convoy (3–5 trucks) on time.
   const specBonus = await specializationBonus(tx, company!.ownerId, org, d, contract.cargoType, result.rewardCents, completedAt);
+  // v2.0: a territory the company holds, the holding's network, the legacy stars.
+  const empireBonus =
+    (await territoryBonus(tx, company!.ownerId, d, contract.destCityId, result.rewardCents, completedAt)) +
+    (await holdingBonus(tx, company!.ownerId, d, contract.destCityId, result.rewardCents, completedAt)) +
+    (await legacyBonus(tx, company!.ownerId, d, result.rewardCents, completedAt));
   const bigConvoy = (await bigConvoyBonus(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt)) + (await settleConvoyTruck(tx, company!.ownerId, d, { late: result.late, rewardCents: result.rewardCents }, completedAt));
   // v1.10: a relay leg — the hand-over, or the end with its bonus.
   const relayBonus = await relayDelivered(tx, company!.ownerId, d, contract, result.late, completedAt);
@@ -584,7 +592,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents;
+  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
