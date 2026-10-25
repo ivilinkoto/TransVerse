@@ -157,7 +157,6 @@ export const FEATURES = {
   map_3d: '2.0',
   new_look: '2.0',
   country_tolls: '1.7',
-  driving_bans: '1.7',
   low_emission_zones: '1.7',
   cabotage: '1.7',
   sea_lines: '1.7',

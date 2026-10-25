@@ -90,7 +90,6 @@ describe('v1.7 D3', () => {
     expect(await findCountry(db(), 'CH')).toBe('CH');
     expect(await findCountry(db(), 'Атлантида')).toBeNull();
     const ch = (await countryInfo(db(), 'CH', new Date()))!;
-    expect(ch.ban).toMatch(/неделя/);
     expect(ch.toll.kind).toBe('km');
     expect((await countryInfo(db(), 'RO', new Date()))!.toll.kind).toBe('vignette');
     expect((await countryInfo(db(), 'FR', new Date()))!.zones).toEqual(expect.arrayContaining(['Париж']));

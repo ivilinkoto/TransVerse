@@ -1,4 +1,4 @@
-import { Ban, Crown, Fuel, Leaf, PartyPopper, Receipt, Truck } from 'lucide-react';
+import { Crown, Fuel, Leaf, PartyPopper, Receipt, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Card, Empty, PageHeader, Stat } from '@/components/ui';
@@ -39,7 +39,6 @@ export default async function CountryPage({ params }: { params: Promise<{ code: 
         <Card title={t('Правила по пътя')}>
           <ul className="space-y-2 text-sm text-mist-300">
             <li className="flex gap-2"><Receipt className="mt-0.5 h-4 w-4 shrink-0 text-mist-400" />{c.toll.kind === 'vignette' ? t('Винетка веднъж на курс през държавата: {0}.', money(c.toll.cents)) : t('Тол за тежки камиони по километри: около {0}/км. Бусовете не плащат.', moneyPrecise(c.toll.centsPerKm))}</li>
-            <li className="flex gap-2"><Ban className="mt-0.5 h-4 w-4 shrink-0 text-mist-400" />{features.driving_bans && c.ban ? t('Забрана за тежки камиони: {0} (местно време). Камионът чака на границата.', c.ban) : t('Няма забрана за движение през уикенда.')}</li>
             <li className="flex gap-2"><Leaf className="mt-0.5 h-4 w-4 shrink-0 text-mist-400" />{features.low_emission_zones && c.zones.length ? t('Нискоемисионни зони: {0} — дизеловите камиони плащат такса, електрическите не.', c.zones.join(', ')) : t('Няма нискоемисионни зони в играта.')}</li>
             <li className="flex gap-2"><Fuel className="mt-0.5 h-4 w-4 shrink-0 text-mist-400" />{t('Цената на дизела се мени всеки ден с до ±6 %.')}</li>
             {c.nationalDay && <li className="flex gap-2"><PartyPopper className="mt-0.5 h-4 w-4 shrink-0 text-mist-400" />{t('Национален празник: {0} ({1}).', c.nationalDay.label, dayLabel(c.nationalDay.day))}</li>}

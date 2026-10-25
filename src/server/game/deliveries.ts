@@ -86,7 +86,7 @@ import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, road
 import { companyTrailerBonus } from './company-trailers';
 import { COMPANY_TRAILERS } from '@/lib/game/company-fleet';
 import { applyBorderQueues, REFUEL, refuelPriceCents, SECURE_PARKING, trafficFactor } from '@/lib/game/traffic';
-import { applyDrivingBans, countryTollCents, lezFeeCents } from '@/lib/game/europe-roads';
+import { countryTollCents, lezFeeCents, withoutBanWaits } from '@/lib/game/europe-roads';
 import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
@@ -356,10 +356,6 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // Border queues by the day and the hour (v1.6).
     if (await featureFor(tx, userId, 'border_queues', now)) schedule = applyBorderQueues(schedule);
-    // Weekend driving bans for heavy trucks (v1.7): the truck waits at the border or the start.
-    if (unit.kind !== 'van' && (await featureFor(tx, userId, 'driving_bans', now))) {
-      schedule = applyDrivingBans(schedule, { empty: emptyRoute ? { start: parked!.country, borders: emptyRoute.borders } : null, loaded: { start: from!.country, borders: loadedRoute!.borders } }).segments;
-    }
     const countryTolls = await featureFor(tx, userId, 'country_tolls', now);
     // The daily rests on the way (v1.6): a guarded car park for a fee, or a free lay-by with a small risk of fuel theft.
     const parkingLive = await featureFor(tx, userId, 'secure_parking', now);
@@ -858,6 +854,23 @@ export async function recoverDemand(db: DbOrTx, hours: number) {
  * rescaled from their start, and open contracts get the current windows.
  * Idempotent — safe to call on every worker tick.
  */
+/**
+ * October 2026: weekend driving bans are gone. Trips under way that still wait for
+ * one drop what is left of the wait and arrive that much earlier (the
+ * deadline stays). Safe to run again: a trip without a wait is left alone.
+ */
+export async function dropDrivingBanWaits(db: Database, now = new Date()): Promise<number> {
+  const waiting = await db.select({ id: deliveries.id, schedule: deliveries.schedule }).from(deliveries).where(and(eq(deliveries.status, 'in_progress'), sql`(${deliveries.schedule}::text like '%Забрана за движение (%' or ${deliveries.schedule}::text like '%Driving ban (%' or ${deliveries.schedule}::text like '%Запрет на движение (%')`)).limit(500);
+  let changed = 0;
+  for (const d of waiting) {
+    const { segments, savedMs } = withoutBanWaits(d.schedule as Segment[], now.getTime());
+    if (!savedMs) continue;
+    await db.update(deliveries).set({ schedule: segments, etaAt: new Date(scheduleEnd(segments)) }).where(and(eq(deliveries.id, d.id), eq(deliveries.status, 'in_progress')));
+    changed++;
+  }
+  return changed;
+}
+
 export async function migrateToGameTime(db: Database): Promise<number> {
   const legacy = await db.select().from(deliveries).where(and(eq(deliveries.status, 'in_progress'), lt(deliveries.scheduleVersion, SCHEDULE_VERSION))).limit(200);
   for (const d of legacy) {

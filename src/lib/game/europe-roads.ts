@@ -1,5 +1,4 @@
 import { kmByCountry } from './fuel';
-import { t as tr, intlLocale } from '@/i18n/t';
 
 /**
  * The roads of "Цяла Европа" (v1.7), game data modelled on the real rules:
@@ -7,9 +6,6 @@ import { t as tr, intlLocale } from '@/i18n/t';
  *   Switzerland, Poland, Hungary…) at its own level, motorway tolls (France,
  *   Italy, Spain, Portugal…), and vignettes (Romania, the Netherlands,
  *   Luxembourg) paid once per trip through the country. Vans pay no truck toll.
- * - Weekend driving bans for heavy trucks (local time): the truck waits at
- *   the border (or at the start) until the ban ends. Public holidays are not
- *   modelled.
  * - Low-emission zones in big cities: a diesel truck pays a fee to load or
  *   unload there, an electric one does not.
  */
@@ -36,73 +32,32 @@ export function countryTollCents(startCountry: string, km: number, borders: read
   return Math.round(cents);
 }
 
-/** Weekend bans in local time: [weekday 0 = Sunday, from hour, to hour). */
-export const DRIVING_BANS: Record<string, { tz: string; label: string; windows: [number, number, number][] }> = {
-  DE: { tz: 'Europe/Berlin', label: 'неделя до 22:00', windows: [[0, 0, 22]] },
-  AT: { tz: 'Europe/Vienna', label: 'събота от 15:00 до неделя 22:00', windows: [[6, 15, 24], [0, 0, 22]] },
-  FR: { tz: 'Europe/Paris', label: 'събота от 22:00 до неделя 22:00', windows: [[6, 22, 24], [0, 0, 22]] },
-  IT: { tz: 'Europe/Rome', label: 'неделя 9:00 – 22:00', windows: [[0, 9, 22]] },
-  CH: { tz: 'Europe/Zurich', label: 'цялата неделя и всяка нощ 22:00 – 5:00', windows: [[0, 0, 24], ...[0, 1, 2, 3, 4, 5, 6].flatMap((d) => [[d, 22, 24], [d, 0, 5]] as [number, number, number][])] },
-  HU: { tz: 'Europe/Budapest', label: 'събота от 22:00 до неделя 22:00', windows: [[6, 22, 24], [0, 0, 22]] },
-  SK: { tz: 'Europe/Bratislava', label: 'неделя до 22:00', windows: [[0, 0, 22]] },
-  CZ: { tz: 'Europe/Prague', label: 'неделя 13:00 – 22:00', windows: [[0, 13, 22]] },
-};
-
-const localClock = (t: number, tz: string) => {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(t);
-  const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(parts.find((p) => p.type === 'weekday')!.value);
-  return { wd, minutes: Number(parts.find((p) => p.type === 'hour')!.value) * 60 + Number(parts.find((p) => p.type === 'minute')!.value) };
-};
-
-/** When the ban in a country that covers `t` ends (epoch ms), or null. Back-to-back windows count as one. */
-export function banEndsAt(country: string, t: number): number | null {
-  const ban = DRIVING_BANS[country];
-  if (!ban) return null;
-  let at = t;
-  for (let guard = 0; guard < 8; guard++) {
-    const { wd, minutes } = localClock(at, ban.tz);
-    const w = ban.windows.find(([d, from, to]) => d === wd && minutes >= from * 60 && minutes < to * 60);
-    if (!w) return at === t ? null : at;
-    at += (w[2] * 60 - minutes) * 60_000;
-  }
-  return at;
-}
-
 type Seg = { kind: string; leg: string; start: number; end: number; fromKm: number; toKm: number; note?: string };
 
+/** The note a weekend-ban wait carried (1.7 – 1.10). */
+const BAN_NOTE = /^(Забрана за движение|Driving ban|Запрет на движение) \(/;
+
 /**
- * The truck waits for the end of a ban where it enters a country (at the
- * border) or where it sets off; later segments move on.
+ * Weekend driving bans were taken out of the game (October 2026): on game-time
+ * trips they held a truck for up to a day. A trip under way still carries
+ * its wait — this drops what is left of it and moves the rest of the trip
+ * earlier by as much. Returns the schedule unchanged when there is no wait.
  */
-export function applyDrivingBans<T extends Seg>(segments: readonly T[], legs: { empty?: { start: string; borders: readonly { km: number; to: string }[] } | null; loaded: { start: string; borders: readonly { km: number; to: string }[] } }): { segments: T[]; waits: { country: string; minutes: number }[] } {
+export function withoutBanWaits<T extends Seg>(segments: readonly T[], now: number): { segments: T[]; savedMs: number } {
   let shift = 0;
   const out: T[] = [];
-  const waits: { country: string; minutes: number }[] = [];
-  let lastLeg = '';
   for (const s of segments) {
-    const seg = { ...s, start: s.start + shift, end: s.end + shift };
-    const leg = seg.leg === 'empty' ? legs.empty : legs.loaded;
-    // Setting off on a leg, or crossing into the next country.
-    let country: string | null = null;
-    if (leg && seg.kind === 'drive' && seg.leg !== lastLeg) country = leg.start;
-    if (leg && out.length && out[out.length - 1]!.kind === 'border' && seg.kind !== 'border') {
-      const b = [...leg.borders].sort((x, y) => Math.abs(x.km - seg.fromKm) - Math.abs(y.km - seg.fromKm))[0];
-      if (b) country = b.to;
+    if (s.kind === 'incident' && s.note && BAN_NOTE.test(s.note) && s.end > now) {
+      const from = Math.max(s.start - shift, now);
+      const cut = s.end - shift - from;
+      // The part already waited stays in the log.
+      if (from > s.start - shift) out.push({ ...s, start: s.start - shift, end: from });
+      shift += cut;
+      continue;
     }
-    if (seg.kind === 'drive') lastLeg = seg.leg;
-    const until = country ? banEndsAt(country, seg.start) : null;
-    if (until && until > seg.start) {
-      const wait = until - seg.start;
-      out.push({ ...seg, kind: 'incident', end: seg.start, start: seg.start, toKm: seg.fromKm, note: tr('Забрана за движение ({0}) до {1}', country, new Intl.DateTimeFormat(intlLocale(), { timeZone: DRIVING_BANS[country!]!.tz, hour: '2-digit', minute: '2-digit' }).format(until)) } as T);
-      out[out.length - 1]!.end = until;
-      waits.push({ country: country!, minutes: Math.round(wait / 60_000) });
-      seg.start += wait;
-      seg.end += wait;
-      shift += wait;
-    }
-    out.push(seg);
+    out.push(shift ? { ...s, start: s.start - shift, end: s.end - shift } : s);
   }
-  return { segments: out, waits };
+  return { segments: out, savedMs: shift };
 }
 
 /** Low-emission zones (real cities, GeoNames ids): a fee for a diesel truck loading or unloading there. */
