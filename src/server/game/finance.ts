@@ -81,7 +81,9 @@ export type LedgerCategory =
   | 'holding_bonus'
   | 'legacy_bonus'
   | 'legacy_reset'
-  | 'intermodal_bonus';
+  | 'intermodal_bonus'
+  | 'era_bonus'
+  | 'tournament';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   starting_capital: 'Начален капитал',
@@ -161,6 +163,8 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   legacy_bonus: 'Бонус от наследството',
   legacy_reset: 'Ново начало (наследство)',
   intermodal_bonus: 'Бонус за интермодален контейнер',
+  era_bonus: 'Бонус на ерата',
+  tournament: 'Турнири на общността',
 };
 
 export interface Posting {

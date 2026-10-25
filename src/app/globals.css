@@ -251,3 +251,24 @@ html[data-season='christmas'] .brand-mark::after {
   .season-fog { animation: none; }
   .season-flake { display: none; }
 }
+
+/* v2.0 the cab: the centre line runs towards the truck while it drives. */
+@keyframes cabin-road {
+  to { stroke-dashoffset: -28; }
+}
+.cabin-road { animation: cabin-road 0.6s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .cabin-road { animation: none; } }
+
+/* v2.0 "нов облик": glass panels with a fine gradient edge over a soft aurora (staff-only before the release). */
+[data-look='2'] {
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, rgba(47, 123, 255, 0.12), transparent 60%),
+    radial-gradient(50rem 30rem at -10% 110%, rgba(34, 211, 238, 0.08), transparent 60%);
+}
+[data-look='2'] .panel {
+  background: linear-gradient(180deg, rgba(18, 25, 36, 0.82), rgba(10, 14, 20, 0.78));
+  backdrop-filter: blur(10px);
+  border-color: rgba(79, 147, 255, 0.18);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 18px 40px -20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(34, 211, 238, 0.04);
+}
+[data-look='2'] .panel:hover { border-color: rgba(79, 147, 255, 0.28); }

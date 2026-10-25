@@ -10,6 +10,9 @@ import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
 import { playParking } from '@/server/game/parking';
+import { playLane } from '@/server/game/cabin';
+import { announceCup, cancelCup, createCup, joinCommunityCup, removeFromCup } from '@/server/game/community-cups';
+import { CUP_METRICS } from '@/lib/game/community-cups';
 import { joinCup } from '@/server/game/tournament';
 import { bidForPlate, fitRarePlate } from '@/server/game/plates';
 import { hireTrailer, offerTrailer, returnHiredTrailer, withdrawTrailer } from '@/server/game/trailer-hire';
@@ -272,6 +275,24 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('postRecruitment'), kind: z.enum(['company', 'driver']), text: z.string().max(400), minLevel: z.coerce.number().int().min(1).max(100).optional() }),
   z.object({ type: z.literal('removeRecruitment'), postId: id }),
   z.object({ type: z.literal('parking'), inputs: z.array(z.number().int().min(-1).max(1)).max(400) }),
+  z.object({
+    type: z.literal('cupCreate'),
+    name: z.string().min(1).max(60),
+    description: z.string().max(400).default(''),
+    metric: z.enum(CUP_METRICS),
+    cargoType: z.string().max(20).nullable().default(null),
+    countryCode: z.string().length(2).nullable().default(null),
+    startsAt: z.coerce.date(),
+    endsAt: z.coerce.date(),
+    prizeEur: z.coerce.number().int().positive().max(500_000),
+    feeEur: z.coerce.number().int().min(0).max(10_000).default(0),
+    maxPlayers: z.coerce.number().int().min(2).max(200),
+  }),
+  z.object({ type: z.literal('cupJoin'), cupId: id }),
+  z.object({ type: z.literal('cupRemove'), cupId: id, userId: id }),
+  z.object({ type: z.literal('cupAnnounce'), cupId: id, text: z.string().max(400) }),
+  z.object({ type: z.literal('cupCancel'), cupId: id }),
+  z.object({ type: z.literal('lane'), deliveryId: id, inputs: z.array(z.number().int().min(-1).max(1)).max(300) }),
   z.object({ type: z.literal('driverOfMonthPrize'), cents: z.coerce.number().int().min(0).max(5_000_00) }),
   z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
   z.object({ type: z.literal('listForAlliance'), depotId: id, cargo: z.enum(CARGO_TYPES), tons: z.coerce.number().positive().max(500), pricePerTon: z.coerce.number().positive().max(100_000) }),
@@ -428,6 +449,12 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   staffBus: 'staff_bus',
   testDrive: 'test_drive',
   parking: 'parking_game',
+  lane: 'cabin',
+  cupCreate: 'community_cups',
+  cupJoin: 'community_cups',
+  cupRemove: 'community_cups',
+  cupAnnounce: 'community_cups',
+  cupCancel: 'community_cups',
   joinCup: 'spring_cup',
   bidPlate: 'plate_auction',
   fitRarePlate: 'plate_auction',
@@ -919,6 +946,22 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'driverOfMonthPrize':
       await setDriverOfMonthPrize(db, user.id, input.cents);
       return { ok: true };
+    case 'cupCreate':
+      return { ok: true, id: (await createCup(db, user.id, { name: input.name, description: input.description, metric: input.metric, cargoType: input.cargoType, countryCode: input.countryCode, startsAt: input.startsAt, endsAt: input.endsAt, prizeCents: input.prizeEur * 100, entryFeeCents: input.feeEur * 100, maxPlayers: input.maxPlayers })).id };
+    case 'cupJoin':
+      await joinCommunityCup(db, user.id, input.cupId);
+      return { ok: true };
+    case 'cupRemove':
+      await removeFromCup(db, user.id, input.cupId, input.userId);
+      return { ok: true };
+    case 'cupAnnounce':
+      await announceCup(db, user.id, input.cupId, input.text);
+      return { ok: true };
+    case 'cupCancel':
+      await cancelCup(db, user.id, input.cupId);
+      return { ok: true };
+    case 'lane':
+      return { ok: true, ...(await playLane(db, user.id, input.deliveryId, input.inputs)) };
     case 'parking':
       return { ok: true, ...(await playParking(db, user.id, input.inputs)) };
     case 'scrapVehicle':

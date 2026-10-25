@@ -1,0 +1,93 @@
+# 2.0 part G: cab, lane, eras, community tournaments
+02b6e15099	{0}% in the lane	{0} % в полосе
+f9c1806125	{0} place in the tournament “{1}”	{0} место в турнире «{1}»
+68d5fdf034	{0} place in the tournament “{1}”!	{0} место в турнире «{1}»!
+40990c2fd3	Era bonus	Бонус эпохи
+7d4ef15be3	Once per trip: keep the truck in its lane through the bends. Stars by the share of time in the lane ({0} / {1} / {2}%) · XP {3}.	Один раз за рейс: держи грузовик в полосе на поворотах. Звёзды по доле времени в полосе ({0} / {1} / {2} %) · опыт {3}.
+a9ff8a959e	You are already in.	Ты уже участвуешь.
+2f13756b5b	Take a load and come back to the cab.	Возьми груз и возвращайся в кабину.
+c83b898b2f	Join a tournament (sometimes with a fee that goes into the prize).	Вступи в турнир (иногда со взносом, который идёт в призовой фонд).
+24bdc5b8d4	Join the tournament for {0}?	Вступить в турнир за {0}?
+2cefbee110	Fee returned: tournament “{0}”	Взнос возвращён: турнир «{0}»
+08c8812070	Remove {0} from the tournament?	Убрать {0} из турнира?
+d23f4c6ae4	Cancel the tournament? The prize and the fees come back.	Отменить турнир? Приз и взносы вернутся.
+46a1378615	Days	Дней
+b123ba43cb	Deliveries on time	Доставки вовремя
+4bf34a3975	Keep the truck in the lane — the buttons or the arrow keys ← →.	Держи грузовик в полосе — кнопками или стрелками ← →.
+ff956a7ccf	Electric trucks get +8% on every load.	Электрогрузовики получают +8 % за каждый груз.
+66256897d2	The Motorway Era	Эпоха автострад
+cec7ee8fb5	Era of the month	Эпоха месяца
+e689b467ef	A tournament that has started cannot be cancelled.	Начавшийся турнир нельзя отменить.
+4626d6f24f	The Green Era	Зелёная эпоха
+ab8ed033d3	Players: {0} / {1}	Игроки: {0} / {1}
+f646ad68d7	Players: from {0} to {1}.	Игроков — от {0} до {1}.
+c02ecaf1e7	Remove	Убрать
+f8c362d824	You were removed from the tournament “{0}”	Тебя убрали из турнира «{0}»
+803b65fb4c	The Industrial Era	Индустриальная эпоха
+4f1ecb27bf	Organiser tools	Инструменты организатора
+1011d221df	Cab	Кабина
+05098056c5	Trucks with a retro paint (the 70s, 80s, 90s) get +5% on every load.	Грузовики в ретро-окраске (70-е, 80-е, 90-е) получают +5 % за каждый груз.
+89a4f0631f	Drive	Поехали
+9eac840910	Drive — the loads between the start and the end count.	Езди — засчитываются грузы между началом и концом.
+22671f9369	Trips over 800 km pay +5%.	Рейсы длиннее 800 км оплачиваются на +5 %.
+268ed7677a	The Lane	Полоса
+e70f46a60c	The lane is driven only during a trip.	В «Полосу» можно играть только во время рейса.
+9df455f587	Mini-game “The Lane”	Мини-игра «Полоса»
+3ede7cd1d7	You can organise up to {0} tournaments at a time.	Можно организовать до {0} турниров одновременно.
+613b221e32	Measure	Мера
+f1cb7dfa6a	On the train	На поезде
+93d20549c5	Prize (lv) from your account	Приз (лв.) с твоего счёта
+8aee766803	Prize for the tournament “{0}”	Приз за турнир «{0}»
+57320f1fc1	The prize is in your account.	Приз уже на твоём счёте.
+327c50a37a	The prize is between {0} and {1} lv.	Приз — от {0} до {1} лв.
+8eaaad2ba9	Prizes: {0}	Призы: {0}
+66010274ed	Right	Вправо
+fd57152e02	Most players	Максимум игроков
+32879e7cf1	Left	Влево
+0c2e98a3d9	Bulk loads, steel and containers pay +5%.	Насыпные грузы, сталь и контейнеры оплачиваются на +5 %.
+2ab9b17099	No truck on a trip	Нет грузовика в рейсе
+d0f9c9d315	Organiser: {0} · {1} – {2}	Организатор: {0} · {1} – {2}
+bc60ba5db4	The organiser removed you from the tournament.	Организатор убрал тебя из турнира.
+aebf0c8619	Organise a tournament	Организуй турнир
+a7ecf7b7d5	Organise the tournament	Организовать турнир
+d655598c6a	Cancelled tournament “{0}”	Отменённый турнир «{0}»
+82f924686f	Cancel the tournament	Отменить турнир
+54123f7c4c	No tournaments yet.	Турниров пока нет.
+6787f2b03b	No players yet.	Участников пока нет.
+ee3774b25a	Arrived	Прибыл
+ecb6ba5212	The first three share the prize 50 / 30 / 20%.	Первая тройка делит приз 50 / 30 / 20 %.
+c96b8fabe7	Road with a lane	Дорога с полосой
+79ab2f125a	The Retro Era	Ретро-эпоха
+23edba655d	Only to country	Только в страну
+ab78fbd523	Only the organiser can do that.	Это может только организатор.
+08359d5ce5	Only cargo	Только груз
+c06a7b223d	Sit behind the wheel of your trucks during a trip: the road, the dashboard and the sky by local time.	Садись за руль своих грузовиков во время рейса: дорога, приборная панель и небо по местному времени.
+bbf74183cd	Next border	Следующая граница
+e11a68cde4	Next month: {0} {1}	В следующем месяце: {0} {1}
+547488a052	Stopped	Стоит
+e049a5910d	Message to all players	Сообщение всем игрокам
+5e7e9af8f5	Fee for the tournament “{0}”	Взнос за турнир «{0}»
+de00aa69d0	Entry fee (lv)	Взнос за участие (лв.)
+bc4a0514f9	The fee is up to {0} lv.	Взнос — до {0} лв.
+545a401393	Your fee has been returned.	Твой взнос возвращён.
+a56e68444b	Driving too long.	Слишком долгая езда.
+c637023bad	That player is not in it.	Этот игрок не участвует.
+451cc427d6	This trip already has a result in The Lane.	У этого рейса уже есть результат в «Полосе».
+4df5f93751	Tournament without results: “{0}”	Турнир без результатов: «{0}»
+1e41b76145	Tournament “{0}”	Турнир «{0}»
+4b6f2ea656	Community tournaments	Турниры сообщества
+ce1d37fab4	Tournaments are organised by players of level {0} and up.	Турниры организуют игроки с {0} уровня.
+7b827519a5	Tournaments organised by players: a measure, dates and a prize from the organiser.	Турниры, организованные игроками: мера, даты и приз от организатора.
+fd7107e04b	Tournaments organised by players: a measure, dates and a prize put up by the organiser. The first three share the prize 50 / 30 / 20%.	Турниры, организованные игроками: мера, даты и приз от организатора. Первая тройка делит приз 50 / 30 / 20 %.
+cc7b7cd868	The tournaments	Турниры
+7c0f2c8d68	The tournament has been cancelled.	Турнир отменён.
+fbc89650f6	The tournament is full.	Турнир заполнен.
+a6db885d50	A tournament starts within {0} days.	Турнир начинается не позже чем через {0} дней.
+0f758567f5	Tournament not found.	Турнир не найден.
+9ab404fa9c	The tournament is not taking players.	Турнир не принимает участников.
+a1c1c52285	A tournament lasts from {0} h to {1} days.	Турнир длится от {0} ч до {1} дней.
+05431b40d2	any	любая
+3ae1b7b0f8	any	любой
+bfa77f087e	finished	завершён
+fb93b300d5	empty, to the load	пустой, к грузу
+574897fd81	fee {0}	взнос {0}

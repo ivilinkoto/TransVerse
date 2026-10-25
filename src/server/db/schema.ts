@@ -3105,3 +3105,41 @@ export const intermodalShipments = pgTable(
   },
   (t) => [index('intermodal_status_idx').on(t.status, t.readyAt), index('intermodal_leg1_idx').on(t.leg1ContractId), index('intermodal_leg2_idx').on(t.leg2ContractId)],
 );
+
+/** v2.0 community tournaments: organised by players, the prize held until the end. */
+export const communityTournaments = pgTable(
+  'community_tournaments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizerId: uuid('organizer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    /** tons | deliveries | km | ontime */
+    metric: text('metric').notNull(),
+    cargoType: text('cargo_type'),
+    countryCode: text('country_code'),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    /** The prize put up by the organiser plus the entry fees (cents). */
+    poolCents: money('pool_cents').notNull(),
+    entryFeeCents: money('entry_fee_cents').notNull().default(0),
+    maxPlayers: integer('max_players').notNull(),
+    /** The organiser's latest message to the players. */
+    announcement: text('announcement'),
+    /** open | done | cancelled */
+    status: text('status').notNull().default('open'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('community_tournaments_status_idx').on(t.status, t.endsAt)],
+);
+
+export const communityCupEntries = pgTable(
+  'community_cup_entries',
+  {
+    tournamentId: uuid('tournament_id').notNull().references(() => communityTournaments.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    score: real('score').notNull().default(0),
+    joinedAt: ts('joined_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tournamentId, t.userId] }), index('community_cup_entries_user_idx').on(t.userId)],
+);

@@ -67,7 +67,7 @@ describe('intermodal containers', () => {
     expect(s!.leg1ContractId).toBeTruthy();
     // A light load of pallets, so the starter truck can take it.
     await db().update(intermodalShipments).set({ tons: 5, cargoType: 'pallets' }).where(eq(intermodalShipments.id, s!.id));
-    await db().update(contracts).set({ weightTons: 5, cargoType: 'pallets', minLevel: 1, minReputation: 0 }).where(eq(contracts.id, s!.leg1ContractId!));
+    await db().update(contracts).set({ weightTons: 5, cargoType: 'pallets', minLevel: 1, minReputation: 0, windowMinutes: 7 * 24 * 60 }).where(eq(contracts.id, s!.leg1ContractId!));
     const p = await newPlayer('Sofia');
     await grantLicences(p.userId, 'international', 'customs');
     const leg1 = await drive(p.userId, s!.leg1ContractId!);
@@ -85,7 +85,7 @@ describe('intermodal containers', () => {
     const [c2] = await db().select().from(contracts).where(eq(contracts.id, leg2Row!.leg2ContractId!));
     const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
     expect(c2!.reservedByCompanyId).toBe(account!.id);
-    await db().update(contracts).set({ minLevel: 1, minReputation: 0, reservedUntil: new Date(Date.now() + INTERMODAL.holdHours * 3_600_000) }).where(eq(contracts.id, c2!.id));
+    await db().update(contracts).set({ minLevel: 1, minReputation: 0, windowMinutes: 7 * 24 * 60, reservedUntil: new Date(Date.now() + INTERMODAL.holdHours * 3_600_000) }).where(eq(contracts.id, c2!.id));
     const leg2 = await drive(p.userId, c2!.id);
     const [done] = await db().select().from(intermodalShipments).where(eq(intermodalShipments.id, s!.id));
     expect(done!.status).toBe('done');

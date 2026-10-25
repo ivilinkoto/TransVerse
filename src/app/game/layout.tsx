@@ -71,7 +71,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   return (
     <FeaturesProvider value={features}>
       <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll }}>
-      <div className="flex min-h-dvh flex-col lg:flex-row">
+      <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
         <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />

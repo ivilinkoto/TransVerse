@@ -16,6 +16,7 @@ import { settleWeeklyChallenge } from './challenges';
 import { settleCountryKings } from './kings';
 import { payHoldingFees } from './holdings';
 import { ensureIntermodal, releaseIntermodal } from './intermodal';
+import { settleCups } from './community-cups';
 import { settleTerritories } from './territories';
 import { pruneLiveRoad } from './live-road';
 import { payDividends, updateSharePrices } from './shares';
@@ -345,6 +346,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await ensureBranchLoads(db, now, provider);
     });
     await every(db, 'freight-exchange', 10 * 60_000, now, () => expireFreight(db, now));
+    // v2.0: finished community tournaments pay their prizes.
+    if (featureLive('community_cups', now)) await every(db, 'community-cups', 5 * 60_000, now, () => settleCups(db, now));
     // v2.0: intermodal containers — new ones on the board, and the last leg when the line arrives.
     if (featureLive('intermodal', now)) {
       await every(db, 'intermodal', 30 * 60_000, now, () => ensureIntermodal(db, now, provider));

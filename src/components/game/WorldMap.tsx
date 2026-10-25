@@ -1,6 +1,7 @@
 'use client';
 
 import polyline from '@mapbox/polyline';
+import { nightShade, sunAltitude } from '@/lib/geo/sun';
 import * as maplibregl from 'maplibre-gl';
 import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -213,6 +214,10 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   // The list starts folded on phones, where it would cover the map.
   const [circleOpen, setCircleOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
   const [clock, setClock] = useState(0);
+  // v2.0: the day and night at the map's centre, and the 3D view.
+  const mapLook = useFeature('map_3d');
+  const [shade, setShade] = useState(0);
+  const [tilted, setTilted] = useState(false);
   const circleLive = useFeature('map_circle');
   const roadsideLive = useFeature('roadside');
   // The picked truck by id, so its card follows fresh data (e.g. after help on the road).
@@ -232,6 +237,14 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       attributionControl: { compact: true, customAttribution: tr('Градове: GeoNames · Маршрути: Valhalla / OSM') },
     });
     mapRef.current = map;
+    const updateShade = () => {
+      const c = map.getCenter();
+      setShade(nightShade(sunAltitude(new Date(), c.lat, c.lng)));
+    };
+    map.on('moveend', updateShade);
+    updateShade();
+    const shadeTimer = setInterval(updateShade, 60_000);
+    map.on('remove', () => clearInterval(shadeTimer));
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     map.on('styleimagemissing', (e) => {
       const [kind, fill, ring, flag, side] = e.id.split('|');
@@ -477,9 +490,34 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     return () => clearInterval(id);
   }, [ready, vehicles, ownVip]);
 
+  /** Tilts the map and raises the buildings (where the style has them), or back to flat. */
+  const toggle3d = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = !tilted;
+    setTilted(next);
+    map.easeTo({ pitch: next ? 55 : 0, bearing: next ? -15 : 0, duration: 800 });
+    try {
+      const source = Object.entries(map.getStyle().sources ?? {}).find(([, src]) => src.type === 'vector')?.[0];
+      if (next && source && !map.getLayer('buildings-3d')) {
+        map.addLayer({ id: 'buildings-3d', type: 'fill-extrusion', source, 'source-layer': 'building', minzoom: 13, paint: { 'fill-extrusion-color': '#8b95a7', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.75 } }, 'cities-dot');
+      } else if (!next && map.getLayer('buildings-3d')) {
+        map.removeLayer('buildings-3d');
+      }
+    } catch {
+      // A style without buildings: the tilt alone.
+    }
+  };
+
   return (
     <div className="relative h-[calc(100dvh-210px)] min-h-[420px] overflow-hidden rounded-2xl border border-asphalt-700">
       <div ref={container} className="h-full w-full" />
+      {mapLook && shade > 0 && <div aria-hidden className="pointer-events-none absolute inset-0 transition-colors duration-1000" style={{ background: `rgba(4, 8, 28, ${0.45 * shade})` }} />}
+      {mapLook && (
+        <button type="button" onClick={() => toggle3d()} className="absolute right-12 top-2.5 rounded-lg bg-asphalt-950/85 px-2.5 py-1.5 text-xs font-semibold text-mist-100 backdrop-blur hover:bg-asphalt-900" aria-pressed={tilted}>
+          {tilted ? '2D' : '3D'} {shade > 0.5 ? '🌙' : '☀️'}
+        </button>
+      )}
       {error && <div className="absolute left-3 top-3 rounded-lg bg-loss/90 px-3 py-2 text-sm text-white">{error}</div>}
       {storkNote && <button type="button" onClick={() => setStorkNote(null)} className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg bg-asphalt-900/95 px-3 py-2 text-sm text-white shadow-lg">{storkNote}</button>}
       <div className="absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-xl bg-asphalt-950/85 px-3 py-2 text-[11px] text-mist-300 backdrop-blur">
