@@ -37,7 +37,7 @@ import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
 import { ensureAuction, settleAuctions } from './auctions';
 import { ensureDailyLoad, ensureLocalJobsForFleet, replenishMarket } from './contracts';
-import { migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
+import { dropDrivingBanWaits, migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
 import { dispatchPush, pruneSubscriptions } from '@/server/push';
 import { autoUrgentTick, raiseUrgentPrices } from './auto-urgent';
 import { settleTenders } from './tenders';
@@ -219,6 +219,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'local-jobs', 60_000, now, () => ensureLocalJobsForFleet(db, now, undefined, provider));
     await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));
     await every(db, 'demand', 60 * 60_000, now, (elapsed) => recoverDemand(db, Math.min(48, elapsed / 3_600_000)));
+    // October 2026: trips still waiting for a weekend driving ban drop the wait.
+    await every(db, 'drop-ban-waits', 10 * 60_000, now, () => dropDrivingBanWaits(db, now));
     await every(db, 'events', 6 * 60 * 60_000, now, () => spawnMarketEvent(db, now));
     // Urgent shipments from the automatic dispatcher, at random intervals.
     await job(db, 'auto-urgent', now, () => autoUrgentTick(db, now, provider));

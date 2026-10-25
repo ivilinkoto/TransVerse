@@ -1,6 +1,6 @@
 import { aliasedTable, and, desc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { ECONOMY } from '@/lib/game/economy';
-import { DRIVING_BANS, LOW_EMISSION_ZONES, TOLL_FACTOR, TOLL_VIGNETTE_CENTS } from '@/lib/game/europe-roads';
+import { LOW_EMISSION_ZONES, TOLL_FACTOR, TOLL_VIGNETTE_CENTS } from '@/lib/game/europe-roads';
 import { fuelPriceCents } from '@/lib/game/fuel';
 import { NATIONAL_DAYS } from '@/lib/game/spring';
 import type { DbOrTx } from '@/server/db/client';
@@ -11,7 +11,7 @@ const origin = aliasedTable(cities, 'origin');
 
 /**
  * One country of the game in short (v1.7): today's diesel, the truck toll,
- * the weekend ban, low-emission zones, the national day, its king and the
+ * low-emission zones, the national day, its king and the
  * best open loads into it. Game data; shared by the country page and /държава.
  */
 export async function countryInfo(db: DbOrTx, code: string, now: Date, viewerId?: string | null) {
@@ -44,7 +44,6 @@ export async function countryInfo(db: DbOrTx, code: string, now: Date, viewerId?
     ...country,
     fuelCents: fuelPriceCents(country.code, now),
     toll: vignette ? { kind: 'vignette' as const, cents: vignette } : { kind: 'km' as const, centsPerKm: Math.round(ECONOMY.tollCentsPerKm * (TOLL_FACTOR[country.code] ?? 1) * 10) / 10 },
-    ban: DRIVING_BANS[country.code]?.label ?? null,
     zones: zones.map((z) => z.name),
     nationalDay: NATIONAL_DAYS[country.code] ?? null,
     king,

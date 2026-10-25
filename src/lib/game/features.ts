@@ -144,7 +144,6 @@ export const FEATURES = {
   trailer_hire: '1.6',
   europe: '1.7',
   country_tolls: '1.7',
-  driving_bans: '1.7',
   low_emission_zones: '1.7',
   cabotage: '1.7',
   sea_lines: '1.7',
