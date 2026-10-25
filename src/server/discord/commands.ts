@@ -413,7 +413,6 @@ async function country(db: DbOrTx, name: string, now: Date): Promise<CommandRepl
       fields: [
         { name: 'Дизел днес', value: `${moneyPrecise(c.fuelCents)}/л`, inline: true },
         { name: 'Тол за камион', value: c.toll.kind === 'vignette' ? `винетка ${money(c.toll.cents)}` : `${moneyPrecise(c.toll.centsPerKm)}/км`, inline: true },
-        { name: 'Забрана', value: c.ban ?? 'няма', inline: true },
         ...(c.zones.length ? [{ name: 'Нискоемисионни зони', value: c.zones.join(', '), inline: true }] : []),
         ...(c.nationalDay ? [{ name: 'Национален празник', value: `${c.nationalDay.label} (${c.nationalDay.day.split('-').reverse().join('.')})`, inline: true }] : []),
         { name: 'Крал', value: c.king ? `👑 ${c.king.username} · ${dec(c.king.tons)} т` : 'още няма', inline: true },
