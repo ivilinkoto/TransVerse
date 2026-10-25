@@ -10,8 +10,11 @@ const I18nContext = createContext<Value | null>(null);
 let last: Value = { locale: DEFAULT_LOCALE, messages: null };
 
 setResolver(() => {
+  // In the browser there is one player and one language: the provider keeps `last` current while it renders,
+  // so t() works the same in rendering, effects and event handlers (React warns about `use` inside effects).
+  if (typeof window !== 'undefined') return last;
+  // Server rendering of client components: each request has its own provider.
   try {
-    // A plain function used while rendering: `use` reads the provider; outside rendering it throws.
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const v = use(I18nContext);
     if (v) return v;
@@ -23,9 +26,11 @@ setResolver(() => {
 
 export function I18nProvider({ locale, messages, children }: { locale: Locale; messages: Messages | null; children: ReactNode }) {
   const value = { locale, messages };
+  // Before the children render, so their t() already has this language.
+  // eslint-disable-next-line react-hooks/globals -- one player per browser: the language is global by design
+  if (typeof window !== 'undefined') last = value;
   useEffect(() => {
-    last = { locale, messages };
     document.documentElement.lang = locale;
-  }, [locale, messages]);
+  }, [locale]);
   return <I18nContext value={value}>{children}</I18nContext>;
 }

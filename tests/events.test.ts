@@ -26,8 +26,10 @@ const staff = async (role: 'admin' | 'support') => {
 /** One delivery from `from` to `to`, settled right after arrival. Returns the arrival time. */
 async function deliver(userId: string, from: string, to: string, overrides: Parameters<typeof makeContract>[2] = {}) {
   const contract = await makeContract(from, to, overrides);
-  const d = await acceptContract(db(), userId, contract.id, (await truckOf((await accountOf(userId)).id)).id);
-  await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000));
+  const account = await accountOf(userId);
+  const d = await acceptContract(db(), userId, contract.id, (await truckOf(account.id)).id);
+  // Only this player's trip: deliveries other test files left on the road must not count in the event.
+  await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000), account.id);
   return d.etaAt;
 }
 

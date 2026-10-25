@@ -42,7 +42,7 @@ export function CupForm({ cargo, countries, defaultStart }: { cargo: { id: strin
       <label className={field}><span className="text-mist-300">{t('Само до държава')}</span>
         <select className="input py-2" value={f.countryCode} onChange={(e) => set('countryCode', e.target.value)}><option value="">{t('всяка')}</option>{countries.map((c) => <option key={c.code} value={c.code}>{tx(c.name)}</option>)}</select>
       </label>
-      <label className={field}><span className="text-mist-300">{t('Начало')}</span><input type="datetime-local" className="input py-2" value={f.startsAt} onChange={(e) => set('startsAt', e.target.value)} required /></label>
+      <label className={field}><span className="text-mist-300">{t('Начало на турнира')}</span><input type="datetime-local" className="input py-2" value={f.startsAt} onChange={(e) => set('startsAt', e.target.value)} required /></label>
       <label className={field}><span className="text-mist-300">{t('Дни')}</span><input type="number" className="input py-2" min={1} max={CUPS.maxDays} value={f.days} onChange={(e) => set('days', Number(e.target.value))} /></label>
       <label className={field}><span className="text-mist-300">{t('Награда (лв.) от твоята сметка')}</span><input type="number" className="input py-2" min={CUPS.minPrizeCents / 100} max={CUPS.maxPrizeCents / 100} value={f.prizeEur} onChange={(e) => set('prizeEur', Number(e.target.value))} /></label>
       <label className={field}><span className="text-mist-300">{t('Такса за участие (лв.)')}</span><input type="number" className="input py-2" min={0} max={CUPS.maxFeeCents / 100} value={f.feeEur} onChange={(e) => set('feeEur', Number(e.target.value))} /></label>
