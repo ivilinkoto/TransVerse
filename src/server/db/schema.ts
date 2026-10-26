@@ -309,6 +309,8 @@ export const vehicles = pgTable(
     insuredUntil: ts('insured_until'),
     /** VIP: the dispatcher sends this truck on its next job by itself when it is free. */
     autoDispatch: boolean('auto_dispatch').notNull().default(false),
+    /** 1.1.2: why the VIP dispatcher last could not send this truck (null when it could). */
+    autoDispatchNote: text('auto_dispatch_note'),
     /** owned | rented — rented vehicles pay a fee per delivery instead of running costs. */
     ownership: text('ownership').notNull().default('owned'),
     /** Rented truck to be returned as soon as its current trip ends (the player bought their own). */
