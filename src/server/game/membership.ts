@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import type { LocalText } from '@/i18n/als';
 import { recordOwnerChange } from './company-life';
+import { date } from '@/lib/format';
 import { and, asc, desc, eq, ilike, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   ALL_PERMISSIONS,
   COMPANY_LIMITS,
+  COMPANY_RENAME_DAYS,
   COMPANY_UPGRADES,
   companyLevelForXp,
   DEFAULT_RANKS,
@@ -538,7 +540,7 @@ async function accountOf(tx: Tx, userId: string) {
  * company's HQ city. The previous owner becomes the most senior other rank,
  * or leaves the company when `leave` is set.
  */
-export async function transferOwnership(db: Database, ownerId: string, targetUserId: string, leave: boolean) {
+export async function transferOwnership(db: Database, ownerId: string, targetUserId: string, leave: boolean, confirmName?: string) {
   return db.transaction(async (tx) => {
     const owner = await membershipOf(tx, ownerId, true);
     if (!owner) fail('not_member', t('Не членувате в компания.'), 403);
@@ -548,6 +550,8 @@ export async function transferOwnership(db: Database, ownerId: string, targetUse
     if (!target) fail('member_not_found', t('Новият собственик трябва да е член на компанията.'), 404);
     const [heir] = await tx.select({ username: users.username, bannedAt: users.bannedAt }).from(users).where(eq(users.id, targetUserId));
     if (heir!.bannedAt) fail('invalid_target', t('Този играч е блокиран.'));
+    // 1.1.2: the owner types the heir's name, so the company is never handed to the wrong member by a slip.
+    if (confirmName !== undefined && confirmName.trim().toLowerCase() !== heir!.username.toLowerCase()) fail('confirm_mismatch', t('Напишете точно името на новия собственик.'));
 
     const [senior] = await tx
       .select()
@@ -573,6 +577,25 @@ export async function transferOwnership(db: Database, ownerId: string, targetUse
     await logActivity(tx, ownerId, 'company_transferred', { companyId: owner!.company.id, to: targetUserId, left: leave });
     await notify(tx, targetUserId, 'achievement', () => t('Вече сте собственик на „{0}“', owner!.company.name), () => t('Собствеността ви беше предадена. Имате всички права в компанията.'), '/game/company');
     await notifyMembers(tx, owner!.company.id, null, () => t('Нов собственик'), () => t('{0} е новият собственик на „{1}“.', heir!.username, owner!.company.name), '/game/company/members');
+  });
+}
+
+/** 1.1.2: the owner renames the company (once per RENAME_DAYS). */
+export async function renameCompany(db: Database, ownerId: string, name: string, now = new Date()) {
+  return db.transaction(async (tx) => {
+    const owner = await membershipOf(tx, ownerId, true);
+    if (!owner) fail('not_member', t('Не членувате в компания.'), 403);
+    if (!owner!.rank.isOwner) fail('forbidden', t('Само собственикът може да смени името.'), 403);
+    const c = owner!.company;
+    if (c.name === name) return { name };
+    const next = c.renamedAt ? c.renamedAt.getTime() + COMPANY_RENAME_DAYS * 86_400_000 : 0;
+    if (next > now.getTime()) fail('too_soon', t('Името се сменя веднъж на {0} дни. Следващата смяна — след {1}.', COMPANY_RENAME_DAYS, date(new Date(next))));
+    const [taken] = await tx.select({ id: organizations.id }).from(organizations).where(sql`lower(${organizations.name}) = lower(${name}) and ${organizations.id} <> ${c.id}`);
+    if (taken) fail('company_name_taken', t('Компания с такова име вече съществува.'), 409);
+    await tx.update(organizations).set({ name, renamedAt: now }).where(eq(organizations.id, c.id));
+    await logActivity(tx, ownerId, 'company_renamed', { companyId: c.id, from: c.name, to: name });
+    await notifyMembers(tx, c.id, null, () => t('Компанията има ново име'), () => t('„{0}“ вече се казва „{1}“.', c.name, name), '/game/company');
+    return { name };
   });
 }
 

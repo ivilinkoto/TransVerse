@@ -8,6 +8,6 @@ export const dynamic = 'force-dynamic';
 
 /** Player and company search for the top bar. */
 export const GET = handler({ perMinute: 90, schema: z.object({ q: z.string().max(40).default('') }) }, async ({ user, input }) => {
-  requireFeature('search', user.role);
+  requireFeature('search', user);
   return searchPlayers(getDb(), input.q);
 });

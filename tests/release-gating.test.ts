@@ -33,9 +33,9 @@ describe('release gating', () => {
   });
 
   it('refuses an action of an unreleased feature to players, not to staff', () => {
-    const refused = (role: string, now: Date) => {
+    const refused = (role: string, now: Date, asPlayer = false) => {
       try {
-        requireFeature('transfers', role, now);
+        requireFeature('transfers', { role, asPlayer }, now);
         return null;
       } catch (e) {
         return e instanceof GameError ? e.code : 'other';
@@ -43,6 +43,8 @@ describe('release gating', () => {
     };
     expect(refused('player', before)).toBe('not_released');
     expect(refused('admin', before)).toBeNull();
+    // 1.1.2: staff looking at the game as a player are refused like a player.
+    expect(refused('admin', before, true)).toBe('not_released');
     expect(refused('support', before)).toBeNull();
     expect(refused('player', after)).toBeNull();
   });

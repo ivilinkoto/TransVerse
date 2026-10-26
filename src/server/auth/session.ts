@@ -25,6 +25,8 @@ export interface SessionUser {
   level: number;
   xp: number;
   role: string;
+  /** 1.1.2: a staff member looking at the game as a player. */
+  asPlayer: boolean;
 }
 
 /** Validates a session token; extends it when it is getting old (sliding expiry). */
@@ -32,7 +34,7 @@ export async function validateSession(db: DbOrTx, token: string | undefined): Pr
   if (!token || token.length > 100) return null;
   const id = digest(token);
   const [row] = await db
-    .select({ session: sessions, user: { id: users.id, username: users.username, email: users.email, level: users.level, xp: users.xp, role: users.role, bannedAt: users.bannedAt } })
+    .select({ session: sessions, user: { id: users.id, username: users.username, email: users.email, level: users.level, xp: users.xp, role: users.role, bannedAt: users.bannedAt, uiPrefs: users.uiPrefs } })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
     .where(and(eq(sessions.id, id), gt(sessions.expiresAt, new Date())));
@@ -42,9 +44,9 @@ export async function validateSession(db: DbOrTx, token: string | undefined): Pr
     expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
     await db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id));
   }
-  const { bannedAt: _banned, ...user } = row.user;
+  const { bannedAt: _banned, uiPrefs, ...rest } = row.user;
   void _banned;
-  return { user, expiresAt };
+  return { user: { ...rest, asPlayer: !!uiPrefs?.asPlayer }, expiresAt };
 }
 
 export async function revokeSession(db: DbOrTx, token: string | undefined) {

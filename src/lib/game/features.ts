@@ -10,6 +10,9 @@ export const FEATURES = {
   // v1.1.1 (October 2026): small things that go live at once.
   truck_names: '1.1.1',
   online_now: '1.1.1',
+  // v1.1.2: company rename, report a problem from any page.
+  company_rename: '1.1.2',
+  report_problem: '1.1.2',
   transfers: '1.2',
   search: '1.2',
   map_circle: '1.2',

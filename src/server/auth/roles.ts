@@ -19,6 +19,11 @@ const rank = (role: string) => Math.max(0, ROLES.indexOf(role as Role));
 
 export const isStaff = (role: string) => rank(role) >= rank('support');
 export const isAdmin = (role: string) => rank(role) >= rank('admin');
+/**
+ * Staff test the features of updates that are not out yet, except while they
+ * look at the game as a player (1.1.2, Настройки → Виж като играч).
+ */
+export const testsUnreleased = (u: { role: string; asPlayer?: boolean; uiPrefs?: { asPlayer?: boolean } | null }) => isStaff(u.role) && !u.asPlayer && !u.uiPrefs?.asPlayer;
 export const isFounder = (role: string) => role === 'founder';
 
 /**

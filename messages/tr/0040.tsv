@@ -1,9 +1,54 @@
 # v1.1.2: no cabotage, staff badges for staff, owner transfer
 ae3e54f964	No cabotage	Без каботажа
-0eb7f66c6c	No cabotage, staff badges for the staff only and checked rights for the new owner.	Без каботажа, значки команды только для команды и проверенные права нового владельца.
 e966bd3163	Domestic loads in a foreign country are no longer limited — no more refused jobs because of cabotage.	Внутренние рейсы в чужой стране больше не ограничены — заказы из-за каботажа не отменяются.
 840a0de80e	Staff badges	Значки команды
 3477337192	The staff badges next to names (chat, rankings, companies, player card) are seen by the staff only.	Значки команды рядом с именами (чат, рейтинги, компании, карточка игрока) видит только команда.
-f4e135e1fc	The “Admin”, “Founder” and “Support” badges next to names are seen by the staff only.	Значки «Админ», «Основатель» и «Поддержка» рядом с именами видит только команда.
 f3cb1b7a33	Cabotage is gone entirely: however many domestic loads you drive in one country, the job is not refused.	Каботаж полностью убран: сколько бы внутренних рейсов ты ни сделал в одной стране, заказ не отменяется.
 e88acd9f70	Company handover: the new owner gets the “Owner” rank with every right (checked by a test).	Передача компании: новый владелец получает должность «Владелец» со всеми правами (проверено тестом).
+# v1.1.2: sign-up, company rename, report a problem, view as player
+a2a42408df	: at sign-up your browser solves a small computing puzzle that we run ourselves — no third-party services and no cookies. We keep only the puzzle until it is solved (up to 10 minutes) and the date you accepted the terms.	: при регистрации браузер решает небольшую вычислительную задачу, которую мы запускаем сами — без сторонних сервисов и без cookie. Мы храним только задачу до её решения (до 10 минут) и дату, когда ты принял условия.
+06b0b973e6	No cabotage, safer sign-up, a new company name and a “Report a problem” button.	Без каботажа, более безопасная регистрация, новое имя компании и кнопка «Сообщить о проблеме».
+ee61652310	No third parties	Без третьих сторон
+3f03c9eb84	View as player	Смотреть как игрок
+06e4cccec4	View as player (staff)	Смотреть как игрок (команда)
+b0b6f16efa	Back to the staff view	Вернуть вид команды
+079f6c5976	You see the game as a player: without unreleased features and without staff badges.	Ты видишь игру как игрок: без невыпущенных функций и без значков команды.
+714dea84b4	Report a problem	Сообщить о проблеме
+15c6de6a46	For the staff: “View as player” in Settings — shows the game exactly as players see it, without unreleased features.	Для команды: «Смотреть как игрок» в настройках — показывает игру точно как у игроков, без невыпущенных функций.
+a098deb827	To confirm, type the new owner’s name: {0}	Для подтверждения напишите имя нового владельца: {0}
+90f06ce075	New owner’s name	Имя нового владельца
+e9405bdc2b	The name has been changed.	Имя изменено.
+4dcebd12ef	The name can be changed again on {0}.	Имя можно снова изменить {0}.
+629ae3c500	The name can be changed once every {0} days. Next change — after {1}.	Имя можно менять раз в {0} дней. Следующая смена — после {1}.
+fb72a36ae9	The name can be changed once every {0} days. Members get a notification.	Имя можно менять раз в {0} дней. Участники получают уведомление.
+0d86694d7b	As a staff member you see the features of upcoming updates before players do. Turn on the player view to see the game exactly as they do (e.g. when checking a bug report).	Как член команды ты видишь функции следующих обновлений раньше игроков. Включи вид игрока, чтобы видеть игру точно как они (например, при проверке сообщения об ошибке).
+b2c24d42c3	The company has a new name	У компании новое имя
+52374f746b	Type the new owner’s name exactly.	Напишите точно имя нового владельца.
+759139a260	I’m not a robot	Я не робот
+0eb6a90863	New company name	Новое имя компании
+18023b3af1	From the profile menu: opens a support request with the page you were on already filled in.	Из меню профиля: открывает обращение в поддержку с уже заполненной страницей, на которой ты был.
+062a04c241	The password is entered twice — a mistyped password no longer locks a new account.	Пароль вводится дважды — опечатка в пароле больше не блокирует новый профиль.
+4f5e4ad3c2	Safer sign-up	Более безопасная регистрация
+47ccc104d4	Repeat the password	Повтори пароль
+a117bb43fb	Confirm that you are not a robot.	Подтвердите, что вы не робот.
+d7c0305a68	When handing over the company the owner types the new owner’s name — no more handovers by mistake.	При передаче компании владелец пишет имя нового владельца — больше никаких передач по ошибке.
+e651d2c561	At sign-up the password is typed twice, the terms and the privacy policy are accepted, and the “I’m not a robot” check stops bots — with no third-party services.	При регистрации пароль вводится дважды, принимаются условия и политика конфиденциальности, а проверка «Я не робот» останавливает ботов — без сторонних сервисов.
+adeb2f7a14	I accept	Я принимаю
+6db9e49bf3	Problem on page {0}	Проблема на странице {0}
+60f8cfaba6	“I’m not a robot” check	Проверка «Я не робот»
+80f36b6e70	“I’m not a robot” check: the browser solves a small puzzle in about a second, with no cookies and no third parties.	Проверка «Я не робот»: браузер решает небольшую задачу примерно за секунду, без cookie и без третьих сторон.
+6fcb87e94c	The check failed. Click again.	Проверка не удалась. Нажмите ещё раз.
+e16e193a8d	The “I’m not a robot” check did not pass. Please try again.	Проверка «Я не робот» не пройдена. Попробуйте ещё раз.
+cbf41dbe17	Checking…	Проверка…
+9ea0d66376	Only the owner can change the name.	Только владелец может изменить имя.
+3606ba383b	You now see the game as a regular player: without features from unreleased updates and without staff badges. The admin panel stays available.	Сейчас ты видишь игру как обычный игрок: без функций из невыпущенных обновлений и без значков команды. Админ-панель остаётся доступной.
+3fa87f8b55	Change	Изменить
+8f7c86cdd5	The owner can change the company’s name once every 30 days (Company → Settings); members get a notification.	Владелец может менять имя компании раз в 30 дней (Компания → Настройки); участники получают уведомление.
+0318fdf6e7	The owner changes the company’s name once every 30 days; members get a notification.	Владелец меняет имя компании раз в 30 дней; участники получают уведомление.
+2ac6245716	Page: {0}	Страница: {0}
+c2bd99189a	Agreement to the terms and the privacy policy (we keep the date of agreement).	Согласие с условиями и политикой конфиденциальности (храним дату согласия).
+25d2b89370	You must accept the terms and the privacy policy.	Необходимо принять условия и политику конфиденциальности.
+efe0284990	the terms	условия
+eb904435ee	the privacy policy	политику конфиденциальности
+35bc124fb0	“{0}” is now called “{1}”.	«{0}» теперь называется «{1}».
+14aafdd3dd	“Report a problem” in the profile menu: a support request with the page filled in.	«Сообщить о проблеме» в меню профиля: обращение в поддержку с заполненной страницей.

@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
-import { SettingsForm, TransferOwnershipForm } from '@/components/company/forms';
+import { RenameCompanyForm, SettingsForm, TransferOwnershipForm } from '@/components/company/forms';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { money } from '@/lib/format';
 import { Card } from '@/components/ui';
-import { COMPANY_LIMITS, RECRUITMENT } from '@/lib/game/company';
+import { COMPANY_LIMITS, COMPANY_RENAME_DAYS, RECRUITMENT } from '@/lib/game/company';
+import { date } from '@/lib/format';
 import { SPECIALIZATION, SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
 import { gameContext } from '@/server/game/context';
 import { discordConfig } from '@/server/discord/config';
@@ -19,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function CompanySettingsPage() {
   await initLocale();
-  const { db, user, features } = await gameContext();
+  const { db, user, features, now } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
   if (!can(hub.rank, 'manage_settings')) return <Card><p className="text-sm text-mist-400">{t('Длъжността ви няма право да променя настройките.')}</p></Card>;
@@ -68,13 +69,18 @@ export default async function CompanySettingsPage() {
           </div>
         </Card>
       )}
+      {hub.rank.isOwner && features.company_rename && (
+        <Card title={t('Име на компанията')}>
+          <RenameCompanyForm current={c.name} days={COMPANY_RENAME_DAYS} nextAt={c.renamedAt && c.renamedAt.getTime() + COMPANY_RENAME_DAYS * 86_400_000 > now.getTime() ? date(new Date(c.renamedAt.getTime() + COMPANY_RENAME_DAYS * 86_400_000)) : null} />
+        </Card>
+      )}
       {hub.rank.isOwner && (
         <section id="ownership" className="grid scroll-mt-6 gap-6 lg:grid-cols-[1.2fr_1fr]">
           <Card title={t('Предаване на собствеността')}>
             <p className="mb-4 text-sm text-mist-300">
               {t('Ако искате да напуснете компанията, първо трябва да предадете собствеността на друг член. Новият собственик получава всички права и лиценз за собствен автопарк (и депо в седалището, ако няма). Касата остава на компанията.')}
             </p>
-            <TransferOwnershipForm members={others.map((m) => ({ userId: m.userId, label: t('{0} · {1} · ниво {2}', m.username, m.rank.name, m.level) }))} />
+            <TransferOwnershipForm members={others.map((m) => ({ userId: m.userId, username: m.username, label: t('{0} · {1} · ниво {2}', m.username, m.rank.name, m.level) }))} />
           </Card>
           <Card title={t('Закриване на компанията')}>
             {others.length ? (

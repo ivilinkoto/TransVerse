@@ -1,6 +1,7 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
-import { Ban, Bell, MessageSquare, Paintbrush, Sparkles, UserRoundCheck, LayoutGrid } from 'lucide-react';
+import { Ban, Bell, Eye, MessageSquare, Paintbrush, Sparkles, UserRoundCheck, LayoutGrid } from 'lucide-react';
+import { isStaff } from '@/server/auth/roles';
 import { SEASON_IDS, SEASONS, activeSeason } from '@/lib/game/seasonal';
 import { seasonMode } from '@/server/seasonal';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -92,6 +93,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost">{user.uiPrefs?.boardView === 'full' ? t('Прост изглед') : t('Разширен изглед')}</ActionButton>
               </div>
             )}
+          </Card>
+        )}
+        {isStaff(user.role) && (
+          <Card title={<span className="inline-flex items-center gap-2"><Eye className="h-4 w-4 text-mist-400" />{t('Виж като играч (екип)')}</span>} className="lg:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="max-w-2xl text-sm text-mist-300">{user.uiPrefs?.asPlayer ? t('Сега виждаш играта като обикновен играч: без функциите от неиздадени обновления и без значките на екипа. Админ панелът остава достъпен.') : t('Като член на екипа виждаш функциите от следващите обновления преди играчите. Включи изгледа на играч, за да видиш играта точно като тях (напр. при сигнал за грешка).')}</p>
+              <ActionButton action={{ type: 'uiPrefs', asPlayer: !user.uiPrefs?.asPlayer }} className="btn-ghost">{user.uiPrefs?.asPlayer ? t('Върни изгледа на екипа') : t('Виж като играч')}</ActionButton>
+            </div>
           </Card>
         )}
         <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />{t('Празнична украса')}</span>} className="lg:col-span-2">

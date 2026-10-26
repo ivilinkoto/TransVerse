@@ -24,6 +24,15 @@ export const registerSchema = z.object({
   ref: z.string().trim().max(16).optional(),
 });
 
+/** 1.1.2: the sign-up form also repeats the password, agrees to the terms and solves the captcha. */
+export const signupSchema = registerSchema
+  .extend({
+    passwordConfirm: z.string().max(200),
+    acceptTerms: z.literal(true, 'Трябва да приемете общите условия и политиката за поверителност.'),
+    captcha: z.object({ id: z.string().uuid(), number: z.number().int().min(0) }, 'Потвърдете, че не сте робот.'),
+  })
+  .refine((v) => v.password === v.passwordConfirm, { message: 'Паролите не съвпадат.', path: ['passwordConfirm'] });
+
 export const companyNameSchema = z.string().trim().min(3, 'Името на компанията трябва да е поне 3 символа.').max(40, 'До 40 символа.');
 
 export const loginSchema = z.object({

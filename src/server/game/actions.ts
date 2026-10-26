@@ -115,6 +115,7 @@ import {
   depositToTreasury,
   dissolveCompany,
   transferOwnership,
+  renameCompany,
 } from '@/server/game/membership';
 
 const id = z.string().uuid('Невалиден идентификатор.');
@@ -206,7 +207,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyCompanyUpgrade'), upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('removeCompanyAsset'), kind: z.enum(['logo', 'banner']) }),
   z.object({ type: z.literal('depositTreasury'), amountEur: z.coerce.number() }),
-  z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean() }),
+  z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean(), confirmName: z.string().max(40) }),
+  z.object({ type: z.literal('renameCompany'), name: companyNameSchema }),
   z.object({ type: z.literal('dissolveCompany') }),
   z.object({ type: z.literal('buyLicence'), licence: z.string().max(30) }),
   z.object({ type: z.literal('buyCompanyLicence'), licenceId: z.string().max(20) }),
@@ -253,7 +255,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reportShady'), contractId: id }),
   z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
   z.object({ type: z.literal('blackRepair'), vehicleId: id }),
-  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional() }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
@@ -383,6 +385,7 @@ export const Action = z.discriminatedUnion('type', [
 /** Actions of features that go live with a release (staff can use them earlier, to test). */
 const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   nameVehicle: 'truck_names',
+  renameCompany: 'company_rename',
   sendMoney: 'transfers',
   offerJob: 'hire',
   declineJob: 'hire',
@@ -542,9 +545,9 @@ export type GameAction = z.infer<typeof Action>;
  * bot from its buttons and commands; `ip` is the request's address (hashed
  * for anti-abuse checks).
  */
-export async function runAction(db: Database, user: { id: string; role: string; username: string }, input: GameAction, ip: () => Promise<string>) {
+export async function runAction(db: Database, user: { id: string; role: string; username: string; asPlayer?: boolean }, input: GameAction, ip: () => Promise<string>) {
   const feature = ACTION_FEATURE[input.type];
-  if (feature) requireFeature(feature, user.role);
+  if (feature) requireFeature(feature, user);
   switch (input.type) {
     case 'acceptContract': {
       const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail, insure: input.insure, route: input.route, parking: input.parking, refuel: input.refuel });
@@ -751,8 +754,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'depositTreasury':
       return { ok: true, amountCents: await depositToTreasury(db, user.id, input.amountEur) };
     case 'transferOwnership':
-      await transferOwnership(db, user.id, input.userId, input.leave);
+      await transferOwnership(db, user.id, input.userId, input.leave, input.confirmName);
       return { ok: true };
+    case 'renameCompany':
+      return { ok: true, ...(await renameCompany(db, user.id, input.name)) };
     case 'rerollMission':
       return { ok: true, ...(await rerollMission(db, user.id, input.periodKey, input.missionId)) };
     case 'sendChat':

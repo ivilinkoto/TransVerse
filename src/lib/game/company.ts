@@ -68,6 +68,9 @@ export const BONUS_RULES = {
 export const RECRUITMENT = { open: 'Отворена — всеки може да се присъедини', application: 'С кандидатура — нужно е одобрение', closed: 'Затворена' } as const;
 export type Recruitment = keyof typeof RECRUITMENT;
 
+/** 1.1.2: the owner may rename the company once per this many days. */
+export const COMPANY_RENAME_DAYS = 30;
+
 export const COMPANY_LIMITS = {
   baseMembers: 5,
   contributionMax: 0.2,

@@ -16,15 +16,18 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const TONE = { open: 'gold', answered: 'green', closed: 'neutral' } as const;
 
-export default async function SupportPage() {
+export default async function SupportPage({ searchParams }: { searchParams: Promise<{ report?: string }> }) {
   await initLocale();
-  const { db, user } = await gameContext();
+  const { db, user, features } = await gameContext();
+  // 1.1.2: "Докладвай проблем" from the menu brings the page the player was on.
+  const raw = (await searchParams).report;
+  const report = features.report_problem && raw && raw.startsWith('/game') && raw.length <= 120 ? raw : null;
   const tickets = await myTickets(db, user.id);
   return (
     <div className="space-y-6">
       <PageHeader title={tr('Техническа поддръжка')} subtitle={tr('Пишете ни за проблеми с профила, грешки в играта или въпроси. Отговорът идва тук и като известие.')} />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
-        <Card title={tr('Ново запитване')}><NewTicketForm categories={TICKET_CATEGORIES} /></Card>
+        <Card title={tr('Ново запитване')}><NewTicketForm categories={TICKET_CATEGORIES} report={report} /></Card>
         <Card title={tr('Моите запитвания')}>
           {tickets.length === 0 ? <Empty icon={LifeBuoy} title={tr('Нямате запитвания')} /> : (
             <ul className="divide-y divide-asphalt-800">

@@ -2,7 +2,7 @@ import { ScrollText } from 'lucide-react';
 import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
 import { Card, Empty, PageHeader } from '@/components/ui';
 import { visibleReleases } from '@/lib/game/releases';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
 import { t, intlLocale } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function UpdatesPage() {
   await initLocale();
   const { user, now } = await gameContext();
-  const staff = isStaff(user.role);
+  const staff = testsUnreleased(user);
   const releases = visibleReleases(now, staff);
   return (
     <div className="space-y-6">

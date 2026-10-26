@@ -1,7 +1,7 @@
 import { and, between, gte, inArray, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { playableCountries } from '@/lib/geo/scope';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import { z } from 'zod';
 import { getDb } from '@/server/db/client';
 import { cities, cityMarkets, contracts } from '@/server/db/schema';
@@ -17,7 +17,7 @@ const minPopulation = (zoom: number) => (zoom < 4.5 ? 700_000 : zoom < 5.5 ? 200
 
 export const GET = handler({ schema: Query, perMinute: 240 }, async ({ input, user }) => {
   // "Цяла Европа" (v1.7) and the east (v2.0): the new countries show on the map from the release (the staff see them earlier).
-  const countries = playableCountries(featureLive('europe', new Date(), isStaff(user.role)), featureLive('open_world', new Date(), isStaff(user.role)));
+  const countries = playableCountries(featureLive('europe', new Date(), testsUnreleased(user)), featureLive('open_world', new Date(), testsUnreleased(user)));
   const [minLon, minLat, maxLon, maxLat] = input.bbox.split(',').map(Number) as [number, number, number, number];
   const db = getDb();
   const rows = await db
