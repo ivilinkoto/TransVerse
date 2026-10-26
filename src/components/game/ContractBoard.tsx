@@ -251,11 +251,10 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       distance: (c) => c.distanceKm,
       expires: (c) => new Date(c.expiresAt).getTime(),
     };
-    // Own city first — jobs the player can take right now before the rest.
-    // Urgent shipments first, then the player's own city.
     const takeable = (c: BoardContract) => !c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error);
-    // Favourite lanes the player can take come right after urgent shipments.
-    const rank = (c: BoardContract) => (c.id === focus ? -2 : c.featured ? -1 : c.urgent ? 0 : c.shared && takeable(c) ? 1 : c.favorite && takeable(c) ? 1 : c.tender && takeable(c) ? 2 : c.local ? (takeable(c) ? 2 : 3) : 4);
+    // 1.1.2: what a free truck can take right where it stands comes first, always;
+    // then the load of the day, urgent shipments, favourite lanes and the rest.
+    const rank = (c: BoardContract) => (c.id === focus ? -1 : c.local && takeable(c) ? 0 : c.featured ? 1 : c.urgent ? 2 : (c.shared || c.favorite || c.tender) && takeable(c) ? 3 : takeable(c) ? 4 : c.local ? 5 : 6);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
   }, [contracts, cargo, query, doable, sort, chips, focus]);
 
@@ -497,7 +496,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.reservedByMe && <Badge tone="gold">{t('Запазена за теб до {0}', c.reservedUntil)}</Badge>}
               {c.reservedByOther && <Badge tone="neutral">{t('Запазена до {0}', c.reservedUntil)}</Badge>}
               {c.opensAt && <Badge tone="violet">{t('VIP · за всички от {0}', c.opensAt)}</Badge>}
-              {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{t('Във вашия град')}</Badge>}
+              {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{c.options.some((o) => !o.error && o.emptyKm === 0) ? t('За камиона ти тук') : t('Във вашия град')}</Badge>}
             </Bonuses>
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">

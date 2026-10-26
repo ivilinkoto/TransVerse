@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { SEALED } from '@/lib/game/deals';
 import { CARGO, CARGO_TYPES, type BodyType, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
@@ -195,6 +195,8 @@ export interface LocalNeed {
   level: number;
   /** Licences the player holds; jobs needing others do not count. */
   licences: ReadonlySet<string>;
+  /** The truck's company: loads it holds count as available. */
+  companyId?: string;
 }
 
 /**
@@ -212,7 +214,8 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
     .from(contracts)
     .innerJoin(routes, eq(routes.id, contracts.routeId))
     .innerJoin(cities, eq(cities.id, contracts.destCityId))
-    .where(and(eq(contracts.status, 'open'), eq(contracts.shady, false), eq(contracts.urgent, false), isNull(contracts.tenderId), eq(contracts.originCityId, need.cityId), gt(contracts.expiresAt, now), lte(contracts.weightTons, need.payloadTons), lte(contracts.minLevel, need.level), inArray(contracts.cargoType, compatible)))
+    // A load another company holds does not count (1.1.2).
+    .where(and(eq(contracts.status, 'open'), eq(contracts.shady, false), eq(contracts.urgent, false), isNull(contracts.tenderId), eq(contracts.originCityId, need.cityId), gt(contracts.expiresAt, now), lte(contracts.weightTons, need.payloadTons), lte(contracts.minLevel, need.level), inArray(contracts.cargoType, compatible), or(isNull(contracts.reservedUntil), lte(contracts.reservedUntil, now), need.companyId ? eq(contracts.reservedByCompanyId, need.companyId) : undefined)))
     .limit(50);
   const [here] = await db.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, need.cityId));
   if (!here) return 0;
@@ -413,7 +416,7 @@ export async function ensureDailyLoad(db: Database, now = new Date(), provider?:
 /** Runs the local-job guarantee for every free, crewed vehicle (optionally of one company). */
 export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit = 40): Promise<number> {
   const rows = await db
-    .select({ cityId: vehicles.cityId, modelId: vehicles.modelId, vehicleId: vehicles.id, level: users.level, userId: users.id })
+    .select({ cityId: vehicles.cityId, modelId: vehicles.modelId, vehicleId: vehicles.id, companyId: vehicles.companyId, level: users.level, userId: users.id })
     .from(vehicles)
     .innerJoin(drivers, eq(drivers.vehicleId, vehicles.id))
     .innerJoin(companies, eq(companies.id, vehicles.companyId))
@@ -431,10 +434,10 @@ export async function ensureLocalJobsForFleet(db: Database, now = new Date(), co
     const t = coupled.find((x) => x.vehicleId === r.vehicleId);
     const cap = combinationCapability({ unit, trailer: t ? trailerModel(t.modelId) : null });
     const licences = licencesByUser.get(r.userId) ?? new Set<string>();
-    const key = `${r.cityId}:${cap.bodies.join(',')}:${cap.payloadTons}:${r.level}:${[...licences].sort().join(',')}`;
+    const key = `${r.companyId}:${r.cityId}:${cap.bodies.join(',')}:${cap.payloadTons}:${r.level}:${[...licences].sort().join(',')}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level, licences }, now, provider);
+    created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level, licences, companyId: r.companyId }, now, provider);
   }
   return created;
 }

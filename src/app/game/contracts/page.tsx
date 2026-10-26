@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { TriangleAlert } from 'lucide-react';
+import { truckBlock } from '@/lib/game/truck-ready';
 import { rangeFor } from '@/lib/game/reefer';
 import { Hint } from '@/components/game/Hint';
 import { CONVOY_RULES } from '@/lib/game/convoy';
@@ -72,6 +74,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
     db.select({ contractId: deliveries.contractId }).from(deliveries).innerJoin(contractsTable, eq(contractsTable.id, deliveries.contractId)).where(and(eq(deliveries.companyId, company.id), eq(contractsTable.urgent, true))),
   ]);
   const takenIds = new Set(taken.map((t) => t.contractId));
+  // 1.1.2: trucks that stand free but cannot take any load, with the reason and the fix.
+  const blocks = fleet.vehicles.flatMap((v) => {
+    const b = truckBlock(v, now);
+    return b ? [{ ...b, plate: v.nickname ? `${v.nickname} (${v.plate})` : v.plate, city: v.city.nameBg }] : [];
+  });
+  const blocked = new Set(blocks.map((b) => b.vehicleId));
   const real = await realConditionsFor(db, user.id, now);
   // v1.4: rail terminals (for "С влак") and the ship in port.
   const terminalIds = [...new Set(CROSSING_LINES.filter((l) => l.kind === 'rail' || (l.optional && features.sea_lines)).flatMap((l) => [l.a, l.b]))];
@@ -268,6 +276,19 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         </div>
       )}
       {!user.seenHints.includes('board') && <Hint id="board" />}
+      {blocks.length > 0 && (
+        <div role="alert" className="mb-4 rounded-2xl border border-amber-sig/40 bg-amber-sig/10 p-4 text-sm">
+          <p className="flex items-center gap-2 font-semibold text-amber-sig"><TriangleAlert className="h-4 w-4" />{blocks.length === 1 ? tr('Един камион стои, но не може да поеме товар') : tr('{0} камиона стоят, но не могат да поемат товар', blocks.length)}</p>
+          <ul className="mt-2 space-y-2">
+            {blocks.map((b) => (
+              <li key={b.vehicleId} className="flex flex-wrap items-center justify-between gap-2">
+                <span><span className="font-semibold">{tx(b.plate)}</span>{' · '}{tx(b.city)}{': '}{tr(b.reason)}</span>
+                <Link href={b.href} className="btn-ghost px-3 py-1.5 text-xs">{tr(b.action)}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
       {features.simple_board && (
@@ -275,7 +296,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost px-3 py-1 text-xs">{user.uiPrefs?.boardView === 'full' ? tr('Прост изглед') : tr('Разширен изглед (всички етикети)')}</ActionButton>
         </div>
       )}
-      <ContractBoard simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

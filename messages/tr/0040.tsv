@@ -94,3 +94,17 @@ b4f2e5b7a1	Hide password	Скрыть пароль
 87f071770e	This e-mail is already in use.	Этот имейл уже используется.
 88b501d055	today: {0}	сегодня: {0}
 2bd2b047e6	“Arriving in ~5 min”: a notification before a longer trip ends, with the loads waiting there.	«Прибывает через ~5 мин»: уведомление перед концом долгого рейса, с грузами, которые ждут там.
+# v1.1.2: never stuck without a load
+90cb4c6c02	{0} trucks are standing but cannot take a load	{0} грузовика стоят, но не могут взять груз
+2d1ed4f2c7	If a truck stands but cannot take any load (no driver, listed for sale, tractor without a trailer, needs a repair), the board says why and takes you straight to the fix.	Если грузовик стоит, но не может взять ни одного груза (нет водителя, выставлен на продажу, тягач без прицепа, нужен ремонт), биржа объясняет почему и ведёт прямо туда, где это исправить.
+2bc1d627cc	It is in poor condition — a repair is needed.	Он в плохом состоянии — нужен ремонт.
+5289dd4b1f	The guaranteed load in the free truck’s city does not count if another company holds it — then a new one appears.	Гарантированный груз в городе свободного грузовика не считается, если его держит другая компания — тогда появляется новый.
+50b561a6a2	One truck is standing but cannot take a load	Один грузовик стоит, но не может взять груз
+ae50682bcb	For your truck here	Для твоего грузовика здесь
+4d73604e90	To the listing	К объявлению
+97b32b76c8	To the drivers	К водителям
+3fdc56c931	Assign a driver	Назначь водителя
+c5eef6d46d	Listed for sale — it does not drive while the listing is up.	Выставлен на продажу — пока объявление висит, он не ездит.
+14bcd1e6ee	Loads a free truck can take right where it stands are now at the top of the board (tagged “For your truck here”).	Грузы, которые свободный грузовик может взять прямо там, где стоит, теперь в самом верху биржи (с пометкой «Для твоего грузовика здесь»).
+cb78703c7d	Couple a trailer	Прицепи прицеп
+8b3a20e169	The driver has a day off.	У водителя выходной.
