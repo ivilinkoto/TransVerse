@@ -7,7 +7,7 @@ import { answer, hasPerm, opt, PERM, stop, type Answer, type Ctx } from './conte
 import { discordConfig } from './config';
 import { enqueue } from './outbox';
 import { button, reply, rows, STYLE } from './ui';
-import { t as tr, intlLocale } from '@/i18n/t';
+import { t as tr, tx, intlLocale } from '@/i18n/t';
 
 /**
  * Moderation in the server: /предупреждение, /заглуши, /бан, /разбани and
@@ -124,7 +124,7 @@ export async function history(ctx: Ctx): Promise<Answer> {
   const t = target(ctx);
   const rows = await ctx.db.select().from(discordSanctions).where(eq(discordSanctions.discordUserId, t.id)).orderBy(desc(discordSanctions.createdAt)).limit(10);
   const [game] = await ctx.db.select({ username: users.username, muted: users.chatMutedUntil }).from(users).where(and(eq(users.discordId, t.id), isNull(users.bannedAt)));
-  const lines = rows.map((r) => `${KIND_LABEL[r.kind] ?? r.kind} · ${when(r.createdAt)} · <@${r.moderatorDiscordId}>${r.until ? tr(' · до {0}', when(r.until)) : ''}${r.inGame ? tr(' · и в играта') : ''}\n> ${r.reason}`);
+  const lines = rows.map((r) => `${tx(KIND_LABEL[r.kind] ?? r.kind)} · ${when(r.createdAt)} · <@${r.moderatorDiscordId}>${r.until ? tr(' · до {0}', when(r.until)) : ''}${r.inGame ? tr(' · и в играта') : ''}\n> ${r.reason}`);
   return answer(reply({
     embeds: [{
       title: tr('Наказания · {0}', t.name),

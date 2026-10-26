@@ -453,7 +453,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
             <span className="truncate font-semibold">{tx(c.goods)}</span>
             <span className="num text-sm text-mist-400">{t('{0} т', dec(c.tons))}</span>
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />{t('СПЕШНО · ×{0} по-бързо · до товара за 1 мин', dec(c.speedFactor))}</Badge>}
-            {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />{t('Лиценз: {0}', c.missingLicences.join(', '))}</Badge>}
+            {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />{t('Лиценз: {0}', c.missingLicences.map((l) => tx(l)).join(', '))}</Badge>}
             {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />{t('ниво {0}', c.minLevel)}</Badge>}
             <Bonuses simple={simple}>
               {c.tender && <Badge tone="violet">{t('ТЪРГ НА КОМПАНИЯТА')}</Badge>}

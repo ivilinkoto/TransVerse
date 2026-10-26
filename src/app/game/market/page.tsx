@@ -94,7 +94,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         <Segmented label={tr('Вид техника')} active={show} items={SHOW.map((x) => ({ id: x.id, label: x.label, href: href({ show: x.id }) }))} />
         <nav className="flex flex-wrap items-center gap-1.5 sm:ml-auto" aria-label={tr('Подреждане')}>
           <span className="text-xs text-mist-400">{tr('Подреди:')}</span>
-          {SORT.map((x) => <Link key={x.id} href={href({ sort: x.id })} aria-current={sort === x.id ? 'page' : undefined} className={`rounded-full border px-3 py-1 text-xs font-medium transition ${sort === x.id ? 'border-cyan-glow/50 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>{show === 'used' ? USED_SORT_LABELS[x.id] : x.label}</Link>)}
+          {SORT.map((x) => <Link key={x.id} href={href({ sort: x.id })} aria-current={sort === x.id ? 'page' : undefined} className={`rounded-full border px-3 py-1 text-xs font-medium transition ${sort === x.id ? 'border-cyan-glow/50 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>{show === 'used' ? tx(USED_SORT_LABELS[x.id]) : x.label}</Link>)}
         </nav>
       </div>
       {show === 'used' && (
@@ -131,7 +131,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                   <div><dt className="text-mist-400">{tr('Тип')}</dt><dd>{tx(KIND[m.kind])}</dd></div>
                   <div><dt className="text-mist-400">{tr('Мощност')}</dt><dd className="num">{tr('{0} к.с.', m.powerHp)}</dd></div>
                   <div><dt className="text-mist-400">{tr('Оси')}</dt><dd className="num">{m.axles === 3 ? '6×4' : '4×2'}</dd></div>
-                  <div><dt className="text-mist-400">{tr('Товар')}</dt><dd className="num">{m.kind === 'tractor' ? tr('с ремарке') : tr('{0} т · {1}', m.payloadTons, BODY_LABELS[m.body!])}</dd></div>
+                  <div><dt className="text-mist-400">{tr('Товар')}</dt><dd className="num">{m.kind === 'tractor' ? tr('с ремарке') : tr('{0} т · {1}', m.payloadTons, tx(BODY_LABELS[m.body!]))}</dd></div>
                   <div><dt className="text-mist-400">{m.electric ? tr('Ток · пробег') : tr('Разход')}</dt><dd className="num">{m.electric ? tr('{0}–{1} kWh · {2} км', m.electric.kwhEmpty, m.electric.kwhFull, m.electric.rangeKm) : tr('{0}–{1} л', m.fuelEmpty, m.fuelFull)}</dd></div>
                   <div><dt className="text-mist-400">{tr('Поддръжка')}</dt><dd className="num">{tr('{0} лв./км', (m.maintenanceCentsPerKm / 100).toFixed(2))}</dd></div>
                 </dl>

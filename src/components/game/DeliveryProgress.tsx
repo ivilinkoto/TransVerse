@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { stateAt, type Segment } from '@/lib/game/schedule';
 import { dateTime, duration } from '@/lib/format';
 import { ghostLead } from '@/lib/game/deals';
-import { t } from '@/i18n/t';
+import { t, tx } from '@/i18n/t';
 
 export const PHASE_LABEL: Record<string, string> = {
   drive: 'В движение',
@@ -29,7 +29,7 @@ export function DeliveryProgress({ schedule, etaAt, deadlineAt, compact = false,
   const s = stateAt(schedule, now);
   const eta = new Date(etaAt).getTime();
   const late = eta > new Date(deadlineAt).getTime();
-  const phase = s.done ? t('Пристигнал — уреждане…') : s.segment ? `${s.segment.note ?? PHASE_LABEL[s.segment.kind]}${s.segment.kind === 'drive' ? (s.leg === 'empty' ? t(' · празен към товара') : t(' · с товар')) : ''}` : '';
+  const phase = s.done ? t('Пристигнал — уреждане…') : s.segment ? `${s.segment.note ? tx(s.segment.note) : tx(PHASE_LABEL[s.segment.kind] ?? '')}${s.segment.kind === 'drive' ? (s.leg === 'empty' ? t(' · празен към товара') : t(' · с товар')) : ''}` : '';
   return (
     <div className="w-full">
       <div className="flex items-center justify-between gap-2 text-xs">

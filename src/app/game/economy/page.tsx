@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, lt } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, lt } from 'drizzle-orm';
 import { Container, TrendingUp } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Badge, Card, PageHeader } from '@/components/ui';
@@ -18,7 +18,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('Икономика и контейнери') };
 }
 
-const pct = (v: number) => `${v >= 1 ? '+' : '−'}${Math.abs(Math.round((v - 1) * 100))} %`;
+const pct = (v: number) => {
+  const p = Math.round((v - 1) * 100);
+  return `${p > 0 ? '+' : p < 0 ? '−' : '±'}${Math.abs(p)} %`;
+};
 const TONE = { boom: 'green', steady: 'neutral', slowdown: 'orange' } as const;
 
 /** v2.0 the living economy: the cycle, the hungry markets, the cities short of goods, and the intermodal containers. */
@@ -29,7 +32,7 @@ export default async function EconomyPage() {
   const codes = playableCountries(!!features.europe, !!features.open_world);
   const [names, hungry, short, board] = await Promise.all([
     db.select({ code: countries.code, nameBg: countries.nameBg }).from(countries).where(inArray(countries.code, [...codes])),
-    db.select({ city: cities.nameBg, cityId: cities.id, cargo: cityMarkets.cargoType, demand: cityMarkets.demand }).from(cityMarkets).innerJoin(cities, eq(cities.id, cityMarkets.cityId)).where(and(eq(cityMarkets.consumes, true), inArray(cities.countryCode, [...codes]))).orderBy(desc(cityMarkets.demand)).limit(10),
+    db.select({ city: cities.nameBg, cityId: cities.id, cargo: cityMarkets.cargoType, demand: cityMarkets.demand }).from(cityMarkets).innerJoin(cities, eq(cities.id, cityMarkets.cityId)).where(and(eq(cityMarkets.consumes, true), gt(cityMarkets.demand, 1.05), inArray(cities.countryCode, [...codes]))).orderBy(desc(cityMarkets.demand)).limit(10),
     db.select({ city: cities.nameBg, cityId: cities.id, cargo: cityMarkets.cargoType, supply: cityMarkets.supply }).from(cityMarkets).innerJoin(cities, eq(cities.id, cityMarkets.cityId)).where(and(eq(cityMarkets.produces, true), lt(cityMarkets.supply, 1), inArray(cities.countryCode, [...codes]))).orderBy(asc(cityMarkets.supply)).limit(10),
     features.intermodal ? intermodalBoard(db) : [],
   ]);
@@ -52,9 +55,13 @@ export default async function EconomyPage() {
       </Card>
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={t('Гладни пазари')}>
-          <ul className="divide-y divide-asphalt-800 text-sm">
-            {hungry.map((h) => <li key={`${h.cityId}-${h.cargo}`} className="flex justify-between py-2"><span>{tx(h.city)} · {cargo(h.cargo)}</span><span className="num text-gold-400">×{dec(h.demand)}</span></li>)}
-          </ul>
+          {hungry.length ? (
+            <ul className="divide-y divide-asphalt-800 text-sm">
+              {hungry.map((h) => <li key={`${h.cityId}-${h.cargo}`} className="flex justify-between py-2"><span>{tx(h.city)} · {cargo(h.cargo)}</span><span className="num text-gold-400">×{dec(h.demand)}</span></li>)}
+            </ul>
+          ) : (
+            <p className="text-sm text-mist-400">{t('В момента няма гладни пазари.')}</p>
+          )}
         </Card>
         <Card title={t('Изчерпани градове')}>
           {short.length ? (

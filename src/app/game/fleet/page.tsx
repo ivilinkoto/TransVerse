@@ -68,7 +68,7 @@ export default async function FleetPage() {
                 <div className="mt-0.5 font-mono text-xs text-mist-400">{tx(v.plate)} · {tx(v.model.brand)}</div>
               </div>
               <div className="text-right text-xs text-mist-400">
-                <div className="flex items-center justify-end gap-1"><MapPin className="h-3.5 w-3.5" />{v.delivery ? `${v.delivery.origin.nameBg} → ${v.delivery.destination.nameBg}` : `${v.city.nameBg}, ${v.city.countryCode}`}</div>
+                <div className="flex items-center justify-end gap-1"><MapPin className="h-3.5 w-3.5" />{v.delivery ? `${tx(v.delivery.origin.nameBg)} → ${tx(v.delivery.destination.nameBg)}` : `${tx(v.city.nameBg)}, ${v.city.countryCode}`}</div>
                 <div className="num mt-0.5">{tr('{0} км пробег', int(v.odometerKm))}</div>
               </div>
             </div>
@@ -95,7 +95,7 @@ export default async function FleetPage() {
             <dl className="mt-auto grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <div><dt className="label">{tr('Състояние')}</dt><dd className="num mt-1">{Math.round(v.condition)}%<Meter value={v.condition} className="mt-1" /></dd></div>
               <div><dt className="label">{tr('Капацитет')}</dt><dd className="num mt-1">{v.model.kind === 'tractor' && !v.trailer ? '—' : tr('{0} т', combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null }).payloadTons)}</dd></div>
-              <div><dt className="label">{tr('Надстройка')}</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? BODY_LABELS[v.trailer.model.body] : <span className="text-amber-sig">{tr('без ремарке')}</span>) : `${BODY_LABELS[v.model.body!]}${v.trailer ? tr(' + прикачно') : ''}`}</dd></div>
+              <div><dt className="label">{tr('Надстройка')}</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? tx(BODY_LABELS[v.trailer.model.body]) : <span className="text-amber-sig">{tr('без ремарке')}</span>) : `${tx(BODY_LABELS[v.model.body!])}${v.trailer ? tr(' + прикачно') : ''}`}</dd></div>
               <div><dt className="label">{tr('Шофьор')}</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{tx(v.driver.name)}{v.coDriver ? ` + ${v.coDriver.name}` : ''}</span></> : <span className="text-amber-sig">{tr('няма')}</span>}</dd></div>
             </dl>
             {!v.driver && !v.delivery && self && !selfBusy && (
@@ -140,7 +140,7 @@ export default async function FleetPage() {
               </div>
             )}
             {(v.upgrades.length > 0 || v.hiddenCompartment) && (
-              <div className="mt-3 flex flex-wrap gap-1.5">{v.upgrades.map((u) => <Badge key={u} tone="violet">{UPGRADES[u as UpgradeId]?.label ?? u}</Badge>)}{v.hiddenCompartment && <Badge tone="violet">{tr('🕳️ Тайно отделение')}</Badge>}</div>
+              <div className="mt-3 flex flex-wrap gap-1.5">{v.upgrades.map((u) => <Badge key={u} tone="violet">{tx(UPGRADES[u as UpgradeId]?.label ?? u)}</Badge>)}{v.hiddenCompartment && <Badge tone="violet">{tr('🕳️ Тайно отделение')}</Badge>}</div>
             )}
           </Card>
         ))}

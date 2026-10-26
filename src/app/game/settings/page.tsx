@@ -97,7 +97,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />{t('Празнична украса')}</span>} className="lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
             <p className="max-w-xl text-mist-300">
-              {t('По празници и сезони (')}{SEASON_IDS.map((id) => `${SEASONS[id].label} ${SEASONS[id].from.split('-').reverse().join('.')} – ${SEASONS[id].to.split('-').reverse().join('.')}`).join(', ')}{t(') играта сменя цветовете и добавя украса. {0}', site ? t('В момента е включена: {0}.', SEASONS[site].label) : t('В момента няма празнична тема.'))}
+              {t('По празници и сезони (')}{SEASON_IDS.map((id) => `${tx(SEASONS[id].label)} ${SEASONS[id].from.split('-').reverse().join('.')} – ${SEASONS[id].to.split('-').reverse().join('.')}`).join(', ')}{t(') играта сменя цветовете и добавя украса. {0}', site ? t('В момента е включена: {0}.', SEASONS[site].label) : t('В момента няма празнична тема.'))}
             </p>
             <ActionButton action={{ type: 'seasonalTheme', on: !user.seasonalTheme }} className="btn-ghost">{user.seasonalTheme ? t('Изключи украсата') : t('Включи украсата')}</ActionButton>
           </div>

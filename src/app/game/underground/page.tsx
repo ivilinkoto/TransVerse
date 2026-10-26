@@ -83,7 +83,7 @@ export default async function UndergroundPage() {
                 const risk = (compartment: boolean) => Math.round(runCatchChance(borders, borderCheckChance({ heat: profile.heat, policeReports: 0, compartment, contactLevel: contact?.level ?? 0 })) * 100);
                 const options = own.map((v) => {
                   const error = compatibilityError({ modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, condition: v.condition, hasDriver: !!v.driver, status: v.status, trailerCondition: v.trailer?.condition ?? null }, { cargoType: o.cargoType, weightTons: o.weightTons, minLevel: o.minLevel }, user.level) ?? compartmentError(v, v.trailer?.modelId ?? null, o.weightTons);
-                  return { value: v.id, label: `${v.plate} · ${v.city.nameBg}${v.hiddenCompartment ? ' · 🕳️' : ''}${error ? t(' (не става)') : ''}`, disabled: !!error };
+                  return { value: v.id, label: `${v.plate} · ${tx(v.city.nameBg)}${v.hiddenCompartment ? ' · 🕳️' : ''}${error ? t(' (не става)') : ''}`, disabled: !!error };
                 });
                 return (
                   <li key={o.id} className="flex flex-col rounded-2xl border border-violet-500/30 bg-asphalt-850 p-4">

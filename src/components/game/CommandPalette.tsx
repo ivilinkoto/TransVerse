@@ -37,12 +37,13 @@ export function CommandPalette() {
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const profile = tr('Профил');
   const items = useMemo(
     () => [
       ...SECTIONS.flatMap((s) => (s.tabs?.length ? s.tabs.filter((t) => !t.feature || has(t.feature)).map((t) => ({ href: t.href, label: t.label, where: s.label })) : [{ href: s.href, label: s.label, where: '' }])),
-      ...ACCOUNT_MENU.map((m) => ({ href: m.href, label: m.label, where: tr('Профил') })),
+      ...ACCOUNT_MENU.map((m) => ({ href: m.href, label: m.label, where: profile })),
     ].filter((x, i, all) => all.findIndex((y) => y.href === x.href) === i),
-    [has],
+    [has, profile],
   );
   const found = useMemo(() => {
     const words = norm(q).split(/\s+/).filter(Boolean);

@@ -70,7 +70,7 @@ export default async function LogisticsPage() {
         <Card title={t('Пристанища в региона')} actions={<Anchor className="h-4 w-4 text-cyan-glow" />}>
           <ul className="grid max-h-72 gap-1.5 overflow-y-auto pr-2 text-sm sm:grid-cols-2">
             {portRows.map((p) => (
-              <li key={`${p.name}-${p.city}`} className="flex justify-between gap-2 rounded-lg bg-asphalt-850 px-3 py-1.5"><span className="truncate">{p.nameBg ?? p.name}</span><span className="shrink-0 text-xs text-mist-400">{tx(p.city)}, {tx(p.country)}</span></li>
+              <li key={`${p.name}-${p.city}`} className="flex justify-between gap-2 rounded-lg bg-asphalt-850 px-3 py-1.5"><span className="truncate">{tx(p.nameBg ?? p.name)}</span><span className="shrink-0 text-xs text-mist-400">{tx(p.city)}, {tx(p.country)}</span></li>
             ))}
           </ul>
           <p className="mt-2 text-[11px] text-mist-400">{t('Източник: GeoNames (CC BY 4.0). Пристанищните градове генерират контейнерни товари.')}</p>

@@ -14,7 +14,7 @@ import { storkOfDay } from '@/server/game/marta';
 import { allianceBases } from '@/server/game/alliances';
 import { activeReports } from '@/server/game/live-road';
 import { REPORT_KINDS } from '@/lib/game/live-road';
-import { t } from '@/i18n/t';
+import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
@@ -47,7 +47,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
       const emptyFrom = emptyRoute ? cityById.get(emptyRoute.fromCityId) : null;
       delivery = {
         schedule: d.schedule,
-        title: `${d.contract.goods}: ${d.origin.nameBg} → ${d.destination.nameBg}`,
+        title: `${tx(d.contract.goods)}: ${tx(d.origin.nameBg)} → ${tx(d.destination.nameBg)}`,
         loaded: { geometry: loadedGeom?.geometry ?? null, from: [d.origin.lat, d.origin.lon], to: [d.destination.lat, d.destination.lon], km: d.loadedKm },
         empty: d.emptyRouteId && emptyFrom ? { geometry: geoms.get(d.emptyRouteId)?.geometry ?? null, from: [emptyFrom.lat, emptyFrom.lon], to: [d.origin.lat, d.origin.lon], km: d.emptyKm } : null,
       };
@@ -65,7 +65,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
       const [o] = await db.select().from(cities).where(eq(cities.id, c.originCityId));
       const [dd] = await db.select().from(cities).where(eq(cities.id, c.destCityId));
       const g = (await routeGeometries(db, [c.routeId])).get(c.routeId);
-      preview = { title: `${c.goods}: ${o!.nameBg} → ${dd!.nameBg} · ${km(c.distanceKm)}`, approximate: g?.provider !== 'valhalla', leg: { geometry: g?.geometry ?? null, from: [o!.lat, o!.lon], to: [dd!.lat, dd!.lon], km: c.distanceKm } };
+      preview = { title: `${tx(c.goods)}: ${tx(o!.nameBg)} → ${tx(dd!.nameBg)} · ${km(c.distanceKm)}`, approximate: g?.provider !== 'valhalla', leg: { geometry: g?.geometry ?? null, from: [o!.lat, o!.lon], to: [dd!.lat, dd!.lon], km: c.distanceKm } };
     }
   }
 

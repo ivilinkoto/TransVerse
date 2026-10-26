@@ -26,7 +26,7 @@ export default async function CompanyTendersPage() {
   const board = await tenderBoard(db, hub.company.id, now);
   const canAccept = hub.rank.isOwner || hub.rank.permissions.includes('manage_tenders');
   const full = board.active.length >= MAX_ACTIVE_TENDERS;
-  const place = (c?: { nameBg: string; country: string }) => (c ? `${c.nameBg}${c.country !== 'BG' ? ` (${c.country})` : ''}` : '—');
+  const place = (c?: { nameBg: string; country: string }) => (c ? `${tx(c.nameBg)}${c.country !== 'BG' ? ` (${c.country})` : ''}` : '—');
   return (
     <div className="space-y-5">
       <Card>

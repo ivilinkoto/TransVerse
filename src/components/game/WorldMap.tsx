@@ -637,7 +637,7 @@ function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number;
           {d.cargo && <div className="text-xs text-mist-300">{tr('{0} · {1} т', d.cargo.goods, int(Math.round(d.cargo.tons)))}</div>}
           <div className="h-1.5 overflow-hidden rounded-full bg-asphalt-800"><div className="h-full rounded-full bg-gradient-to-r from-cyan-glow to-volt-500" style={{ width: `${Math.round((s?.progress ?? 0) * 100)}%` }} /></div>
           <div className="flex justify-between text-xs text-mist-400">
-            <span>{s?.done ? tr('Пристига') : s?.segment ? `${s.leg === 'empty' ? tr('Към товара · ') : ''}${SEGMENT_LABEL[s.segment.kind] ?? ''}` : ''}</span>
+            <span>{s?.done ? tr('Пристига') : s?.segment ? `${s.leg === 'empty' ? tr('Към товара · ') : ''}${tx(SEGMENT_LABEL[s.segment.kind]) ?? ''}` : ''}</span>
             <span>{left > 0 ? tr('пристига след {0}', duration(left)) : tr('пристига сега')}</span>
           </div>
           {roadside && d.deliveryId && now && helpableStop(d.schedule, now) && (

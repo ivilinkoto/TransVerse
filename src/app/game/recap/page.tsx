@@ -36,8 +36,8 @@ export default async function RecapPage() {
     { label: t('Курсове'), value: t('{0} · {1} навреме', int(r.trips), onTime) },
     { label: t('Изминати'), value: km(r.km) },
     { label: t('Превозени'), value: t('{0} т в {1} {2}', int(r.tons), r.countries, r.countries === 1 ? t('държава') : t('държави')) },
-    ...(r.longest ? [{ label: t('Най-дълъг курс'), value: `${r.longest.from} → ${r.longest.to} · ${km(r.longest.km)}` }] : []),
-    ...(r.lane ? [{ label: t('Любима линия'), value: `${r.lane.from} → ${r.lane.to} (${r.lane.trips}×)` }] : []),
+    ...(r.longest ? [{ label: t('Най-дълъг курс'), value: `${tx(r.longest.from)} → ${tx(r.longest.to)} · ${km(r.longest.km)}` }] : []),
+    ...(r.lane ? [{ label: t('Любима линия'), value: `${tx(r.lane.from)} → ${tx(r.lane.to)} (${r.lane.trips}×)` }] : []),
     ...(r.convoy ? [{ label: t('Най-често в конвой с'), value: `${r.convoy.username} (${r.convoy.trips}×)` }] : []),
     ...(r.month ? [{ label: t('Най-натоварен месец'), value: t('{0} · {1} курса', MONTHS_BG[r.month.month - 1], r.month.trips) }] : []),
   ].slice(0, 7);
@@ -55,12 +55,12 @@ export default async function RecapPage() {
             <Stat label={t('Държави')} value={r.countries} icon={Globe2} />
             <Stat label={t('Нетно от курсове')} value={money(r.earnedCents)} icon={Flag} tone="gold" />
             <Stat label={t('Постижения')} value={r.achievements} icon={Medal} />
-            <Stat label={t('Най-натоварен месец')} value={r.month ? MONTHS_BG[r.month.month - 1]! : '—'} icon={Clock} hint={r.month ? t('{0} курса', r.month.trips) : undefined} />
+            <Stat label={t('Най-натоварен месец')} value={r.month ? tx(MONTHS_BG[r.month.month - 1]!) : '—'} icon={Clock} hint={r.month ? t('{0} курса', r.month.trips) : undefined} />
             <Stat label={t('Конвой')} value={r.convoy?.username ?? '—'} icon={Users} hint={r.convoy ? t('{0} курса заедно', r.convoy.trips) : t('покарай с приятел')} />
           </div>
           <Card title={t('Рекорди на годината')}>
             <ul className="space-y-2 text-sm">
-              {r.longest && <li>{t('Най-дълъг курс:')}{' '}<b>{tx(r.longest.from)} → {tx(r.longest.to)}</b> · {km(r.longest.km)} · {r.longest.goods.toLowerCase()}</li>}
+              {r.longest && <li>{t('Най-дълъг курс:')}{' '}<b>{tx(r.longest.from)} → {tx(r.longest.to)}</b> · {km(r.longest.km)} · {tx(r.longest.goods).toLowerCase()}</li>}
               {r.lane && <li>{t('Любима линия:')}{' '}<b>{tx(r.lane.from)} → {tx(r.lane.to)}</b>{' '}{t('— {0} пъти', r.lane.trips)}</li>}
               {r.convoy && <li>{t('Най-често в конвой с')}{' '}<b>{tx(r.convoy.username)}</b>{' '}{t('— {0} курса', r.convoy.trips)}</li>}
             </ul>

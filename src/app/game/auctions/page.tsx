@@ -46,7 +46,7 @@ export default async function AuctionsPage() {
             {board.won.map((w) => {
               const options = fleet.vehicles.map((v) => {
                 const error = compatibilityError({ modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, condition: v.condition, hasDriver: !!v.driver, status: v.status, trailerCondition: v.trailer?.condition ?? null }, { cargoType: w.cargoType, weightTons: w.weightTons, minLevel: 1 }, user.level);
-                return { value: v.id, label: `${v.plate} · ${v.model.name} · ${v.city.nameBg}${error ? t(' (не става)') : ''}`, disabled: !!error, error };
+                return { value: v.id, label: `${v.plate} · ${v.model.name} · ${tx(v.city.nameBg)}${error ? t(' (не става)') : ''}`, disabled: !!error, error };
               });
               return (
                 <li key={w.id} className="rounded-xl border border-gold-400/40 bg-gold-400/5 p-3 text-sm">
@@ -56,7 +56,7 @@ export default async function AuctionsPage() {
                   </div>
                   <div className="text-mist-300">{tx(w.from)} <ArrowRight className="inline h-3 w-3" />{' '}{t('{0} · {1} · изпрати до {2}', w.to, km(w.distanceKm), dateTime(w.contract.expiresAt))}</div>
                   <div className="mt-2"><SelectAction label={t('Изпрати')} ariaLabel={t('Камион за {0}', w.title)} value="" options={[{ value: '', label: t('— избери камион —') }, ...options]} action={{ type: 'acceptContract', contractId: w.contract.id }} field="vehicleId" /></div>
-                  <div className="mt-2"><WhyNot needs={[{ label: t('Надстройка'), value: CARGO[w.cargoType as CargoType].bodies.map((b) => BODY_LABELS[b] ?? b).join(t(' или ')) }, { label: t('Товар'), value: t('{0} т', w.weightTons) }]} blocked={options.filter((o) => o.error).map((o) => ({ label: o.label, error: o.error! }))} anyUsable={options.some((o) => !o.error)} /></div>
+                  <div className="mt-2"><WhyNot needs={[{ label: t('Надстройка'), value: CARGO[w.cargoType as CargoType].bodies.map((b) => tx(BODY_LABELS[b] ?? b)).join(t(' или ')) }, { label: t('Товар'), value: t('{0} т', w.weightTons) }]} blocked={options.filter((o) => o.error).map((o) => ({ label: o.label, error: o.error! }))} anyUsable={options.some((o) => !o.error)} /></div>
                 </li>
               );
             })}
@@ -108,7 +108,7 @@ export default async function AuctionsPage() {
                 <span className="min-w-0"><span className="font-medium">{tx(a.title)}</span> <span className="text-mist-400">· {tx(a.from)} → {tx(a.to)}</span></span>
                 <span className="flex items-center gap-2">
                   {a.winningBidCents ? <span className="num text-xs text-mist-300">{money(a.winningBidCents)}{a.lowest ? ` · ${a.lowest.username}` : ''}</span> : null}
-                  <Badge tone={STATUS[a.status]?.tone ?? 'neutral'}>{STATUS[a.status]?.label ?? a.status}</Badge>
+                  <Badge tone={STATUS[a.status]?.tone ?? 'neutral'}>{tx(STATUS[a.status]?.label ?? a.status)}</Badge>
                 </span>
               </li>
             ))}

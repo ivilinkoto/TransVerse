@@ -48,7 +48,7 @@ export default async function TrailerHirePage({ searchParams }: { searchParams: 
         {view.offers.length > 0 && (
           <form className="mb-3 flex flex-wrap items-center gap-2 text-sm" method="get">
             <select name="city" className="input" defaultValue={filter.city ?? ''}><option value="">{tr('Всички градове')}</option>{cityOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
-            <select name="body" className="input" defaultValue={filter.body ?? ''}><option value="">{tr('Всички видове')}</option>{bodyOptions.map((b) => <option key={b} value={b}>{BODY_LABEL[b] ?? b}</option>)}</select>
+            <select name="body" className="input" defaultValue={filter.body ?? ''}><option value="">{tr('Всички видове')}</option>{bodyOptions.map((b) => <option key={b} value={b}>{tx(BODY_LABEL[b] ?? b)}</option>)}</select>
             <button type="submit" className="btn-ghost">{tr('Покажи')}</button>
           </form>
         )}

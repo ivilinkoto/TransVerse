@@ -54,7 +54,7 @@ export default async function BranchesPage() {
               label={t('Отвори')}
               ariaLabel={t('Град на филиала')}
               value={String(free[0]!.id)}
-              options={free.map((c) => ({ value: String(c.id), label: `${c.name} (${c.country})` }))}
+              options={free.map((c) => ({ value: String(c.id), label: `${tx(c.name)} (${c.country})` }))}
               action={{ type: 'openBranch' }}
               field="cityId"
               numeric

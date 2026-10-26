@@ -64,7 +64,7 @@ export default async function ClientsPage() {
                   { cargoType: c.cargoType, weightTons: c.tonsPerLoad, minLevel: 1 },
                   user.level,
                 );
-                return { value: v.id, label: `${v.plate} · ${v.model.name} · ${v.city.nameBg}${error ? t(' (не става)') : ''}`, disabled: !!error, error };
+                return { value: v.id, label: `${v.plate} · ${v.model.name} · ${tx(v.city.nameBg)}${error ? t(' (не става)') : ''}`, disabled: !!error, error };
               });
               return (
                 <li key={c.id} className="rounded-2xl border border-asphalt-700 bg-asphalt-850 p-4">
@@ -88,7 +88,7 @@ export default async function ClientsPage() {
                     {toSend > 0 ? (
                       <>
                         <SelectAction label={t('Изпрати товар')} ariaLabel={t('Камион за товар на {0}', c.client)} value="" options={[{ value: '', label: t('— избери камион —') }, ...options]} action={{ type: 'clientLoad', clientContractId: c.id }} field="vehicleId" />
-                        <div className="mt-2"><WhyNot needs={[{ label: t('Надстройка'), value: CARGO[c.cargoType as CargoType].bodies.map((b) => BODY_LABELS[b] ?? b).join(t(' или ')) }, { label: t('Товар'), value: t('{0} т', c.tonsPerLoad) }]} blocked={options.filter((o) => o.error).map((o) => ({ label: o.label, error: o.error! }))} anyUsable={options.some((o) => !o.error)} /></div>
+                        <div className="mt-2"><WhyNot needs={[{ label: t('Надстройка'), value: CARGO[c.cargoType as CargoType].bodies.map((b) => tx(BODY_LABELS[b] ?? b)).join(t(' или ')) }, { label: t('Товар'), value: t('{0} т', c.tonsPerLoad) }]} blocked={options.filter((o) => o.error).map((o) => ({ label: o.label, error: o.error! }))} anyUsable={options.some((o) => !o.error)} /></div>
                       </>
                     ) : (
                       <p className="text-sm text-mist-300">{t('Всички товари са на път — договорът ще се изпълни, когато пристигнат.')}</p>

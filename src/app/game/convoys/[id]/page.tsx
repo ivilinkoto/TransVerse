@@ -46,7 +46,7 @@ export default async function ConvoyPage({ params }: { params: Promise<{ id: str
     <div className="space-y-6">
       <PageHeader
         title={c.title ?? t('Конвой')}
-        subtitle={`${c.from} → ${c.to} · ${c.kind === 'official' ? t('неделният конвой на TransVerse') : c.kind === 'company' ? t('фирмен конвой на „{0}“', c.company ?? '') : t('води {0} · {1}', c.leader ?? '—', ACCESS_LABELS[c.access as ConvoyAccess])}`}
+        subtitle={`${tx(c.from)} → ${tx(c.to)} · ${c.kind === 'official' ? t('неделният конвой на TransVerse') : c.kind === 'company' ? t('фирмен конвой на „{0}“', c.company ?? '') : t('води {0} · {1}', c.leader ?? '—', tx(ACCESS_LABELS[c.access as ConvoyAccess]))}`}
         actions={<Link href="/game/convoys" className="btn-ghost">{t('← Всички конвои')}</Link>}
       />
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -90,7 +90,7 @@ export default async function ConvoyPage({ params }: { params: Promise<{ id: str
           )}
           {scout && (
             <Card title={<span className="inline-flex items-center gap-2"><Radio className="h-4 w-4 text-mist-400" />{t('Сигнали по линията')}</span>}>
-              {reports.length === 0 ? <p className="text-sm text-mist-400">{t('Няма активни сигнали.')}</p> : <ul className="space-y-1 text-sm">{reports.map((r, i) => <li key={i}>{REPORT_KINDS[r.kind as ReportKind]?.emoji ?? '⚠️'} {REPORT_KINDS[r.kind as ReportKind]?.label ?? r.kind} · {tx(r.near)}</li>)}</ul>}
+              {reports.length === 0 ? <p className="text-sm text-mist-400">{t('Няма активни сигнали.')}</p> : <ul className="space-y-1 text-sm">{reports.map((r, i) => <li key={i}>{REPORT_KINDS[r.kind as ReportKind]?.emoji ?? '⚠️'} {tx(REPORT_KINDS[r.kind as ReportKind]?.label ?? r.kind)} · {tx(r.near)}</li>)}</ul>}
             </Card>
           )}
           {c.byCompany.length > 0 && (

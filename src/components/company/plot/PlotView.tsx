@@ -406,7 +406,7 @@ function BuildingMenu({ building, at, upgrading, canMove, onMove, onClose }: { b
 
 const priceText = (kind: DecorKind) => (DECOR[kind].coins ? tr('{0} ТрансКоин', DECOR[kind].coins) : money(DECOR[kind].priceCents ?? 0));
 
-const materialsText = (m: Materials) => MATERIAL_IDS.filter((id) => m[id]).map((id) => tr('{0} т {1}', m[id], MATERIALS[id].label.toLowerCase())).join(', ');
+const materialsText = (m: Materials) => MATERIAL_IDS.filter((id) => m[id]).map((id) => tr('{0} т {1}', m[id], tx(MATERIALS[id].label).toLowerCase())).join(', ');
 
 function ConstructionCard({ c, canBuild, progress, leftMin }: { c: NonNullable<PlotData['construction']>; canBuild: boolean; progress: number; leftMin: number }) {
   const def = BUILDINGS[c.type];
@@ -447,7 +447,7 @@ function ConstructionCard({ c, canBuild, progress, leftMin }: { c: NonNullable<P
               <ul className="mt-1.5 divide-y divide-asphalt-800 text-sm">
                 {c.loads.map((l) => (
                   <li key={l.id} className="flex items-center justify-between gap-2 py-1.5">
-                    <span className="min-w-0 truncate">{tr('{0} · {1} т', l.material && l.material in MATERIALS ? MATERIALS[l.material as MaterialId].label : tr('Материали'), l.tons)}{' '}<span className="text-xs text-mist-400">{tr('от {0} · {1}', l.from, money(l.rewardCents))}</span></span>
+                    <span className="min-w-0 truncate">{tr('{0} · {1} т', l.material && l.material in MATERIALS ? tx(MATERIALS[l.material as MaterialId].label) : tr('Материали'), l.tons)}{' '}<span className="text-xs text-mist-400">{tr('от {0} · {1}', l.from, money(l.rewardCents))}</span></span>
                     <a href={`/game/contracts?load=${l.id}`} className="btn-primary shrink-0 px-3 py-1 text-xs">{tr('Поеми')}</a>
                   </li>
                 ))}

@@ -51,7 +51,7 @@ export default async function RanksPage() {
                 </>
               ) : (
                 <ul className="list-inside list-disc space-y-1 text-sm text-mist-300">
-                  {(r.isOwner ? shown : r.permissions.filter((p) => shown.includes(p as never))).map((p) => <li key={p}>{PERMISSIONS[p as keyof typeof PERMISSIONS] ?? p}</li>)}
+                  {(r.isOwner ? shown : r.permissions.filter((p) => shown.includes(p as never))).map((p) => <li key={p}>{tx(PERMISSIONS[p as keyof typeof PERMISSIONS] ?? p)}</li>)}
                   {!r.isOwner && r.permissions.length === 0 && <li className="list-none text-mist-400">{tr('Без права за управление — кара курсове и получава бонусите.')}</li>}
                 </ul>
               )}

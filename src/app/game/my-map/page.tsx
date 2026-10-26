@@ -45,7 +45,7 @@ export default async function MyMapPage() {
               const n = perCountry.get(code) ?? 0;
               return (
                 <Link key={code} href={`/game/countries/${code}`} className={`rounded-full px-2.5 py-1 text-xs hover:text-cyan-glow ${n ? 'bg-profit/15 text-profit' : 'bg-asphalt-850 text-mist-400'}`}>
-                  {n ? '✓ ' : ''}{names.get(code) ?? code}{n ? <span className="num ml-1">· {n}</span> : null}
+                  {n ? '✓ ' : ''}{tx(names.get(code) ?? code)}{n ? <span className="num ml-1">· {n}</span> : null}
                 </Link>
               );
             })}

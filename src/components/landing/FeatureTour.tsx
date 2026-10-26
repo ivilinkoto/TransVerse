@@ -45,7 +45,7 @@ export function FeatureTour({ tabs }: { tabs: TourTab[] }) {
             {tab.points.map((p) => (
               <li key={p} className="flex gap-2.5">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-glow" />
-                <span className="text-mist-100">{p}</span>
+                <span className="text-mist-100">{tx(p)}</span>
               </li>
             ))}
           </ul>

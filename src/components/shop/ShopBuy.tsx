@@ -104,7 +104,7 @@ export function ShopBuy({
       {item.needs === 'vehicle_cosmetic' && (
         <select className="input py-2 text-sm" value={cosmetic} onChange={(e) => setCosmetic(e.target.value)} aria-label={tr('Част')}>
           {COSMETIC_IDS.map((part) => (
-            <optgroup key={part} label={`${COSMETIC_PARTS[part].label} · ${COSMETIC_PARTS[part].price} TC`}>
+            <optgroup key={part} label={`${tx(COSMETIC_PARTS[part].label)} · ${COSMETIC_PARTS[part].price} TC`}>
               {COSMETIC_PARTS[part].styles.map((st) => <option key={st.id} value={`${part}:${st.id}`}>{tx(COSMETIC_PARTS[part].label)}: {tx(st.label)}</option>)}
             </optgroup>
           ))}
@@ -118,7 +118,7 @@ export function ShopBuy({
             </select>
             <select className="input py-2 text-sm" value={cosmetic} onChange={(e) => setCosmetic(e.target.value)} aria-label={tr('Част за ремаркето')}>
               {TRAILER_COSMETIC_IDS.map((part) => (
-                <optgroup key={part} label={`${TRAILER_COSMETIC_PARTS[part].label} · ${TRAILER_COSMETIC_PARTS[part].price} TC`}>
+                <optgroup key={part} label={`${tx(TRAILER_COSMETIC_PARTS[part].label)} · ${TRAILER_COSMETIC_PARTS[part].price} TC`}>
                   {TRAILER_COSMETIC_PARTS[part].styles.map((st) => <option key={st.id} value={`${part}:${st.id}`}>{tx(TRAILER_COSMETIC_PARTS[part].label)}: {tx(st.label)}</option>)}
                 </optgroup>
               ))}

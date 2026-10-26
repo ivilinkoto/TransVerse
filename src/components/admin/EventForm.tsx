@@ -98,8 +98,8 @@ export function EventForm({ metrics, cargoTypes, countries, templates, defaults 
         <label className="block"><span className={field}>{tr('Само маршрути през държава')}</span>
           <select className="input" value={form.countryCode} onChange={(e) => set({ countryCode: e.target.value })}><option value="">{tr('Всички')}</option>{countries.map((c) => <option key={c.code} value={c.code}>{tx(c.name)}</option>)}</select>
         </label>
-        <label className="block"><span className={field}>{tr('Обща цел ({0})', metric.unit)}</span><input className="input" type="number" min={1} step="any" required value={form.target} onChange={(e) => set({ target: num(e.target.value) })} /></label>
-        <label className="block"><span className={field}>{tr('Минимален принос за участник ({0})', metric.unit)}</span><input className="input" type="number" min={0} step="any" required value={form.minContribution} onChange={(e) => set({ minContribution: num(e.target.value) })} /></label>
+        <label className="block"><span className={field}>{tr('Обща цел ({0})', tx(metric.unit))}</span><input className="input" type="number" min={1} step="any" required value={form.target} onChange={(e) => set({ target: num(e.target.value) })} /></label>
+        <label className="block"><span className={field}>{tr('Минимален принос за участник ({0})', tx(metric.unit))}</span><input className="input" type="number" min={0} step="any" required value={form.minContribution} onChange={(e) => set({ minContribution: num(e.target.value) })} /></label>
         <label className="block"><span className={field}>{tr('Начало (празно = веднага)')}</span><input className="input" type="datetime-local" value={form.startsAt} onChange={(e) => set({ startsAt: e.target.value })} /></label>
         <label className="block"><span className={field}>{tr('Продължителност (часа)')}</span><input className="input" type="number" min={1} max={720} required value={form.durationHours} onChange={(e) => set({ durationHours: num(e.target.value) })} /></label>
       </div>

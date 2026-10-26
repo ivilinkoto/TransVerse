@@ -9,7 +9,7 @@
  */
 import { CARGO, type CargoType } from './cargo';
 import { hash, LONG_HAUL_KM, sofiaMidnight, sofiaParts, type DeliveryFacts } from './missions';
-import { t, intlLocale } from '@/i18n/t';
+import { t, tx, intlLocale } from '@/i18n/t';
 
 export const EVENT_METRICS = ['tons', 'deliveries', 'km', 'on_time', 'international', 'heavy', 'long_haul', 'earned_cents', 'holiday'] as const;
 export type EventMetric = (typeof EVENT_METRICS)[number];
@@ -72,7 +72,7 @@ export function eventIncrement(e: EventFilter, f: DeliveryFacts): number {
 export function formatAmount(metric: EventMetric, value: number): string {
   if (metric === 'earned_cents') return t('{0} лв.', Math.round(value / 100).toLocaleString(intlLocale()));
   const v = metric === 'tons' ? Math.round(value * 10) / 10 : Math.round(value);
-  return `${v.toLocaleString(intlLocale())} ${EVENT_METRIC_INFO[metric].unit}`;
+  return `${v.toLocaleString(intlLocale())} ${tx(EVENT_METRIC_INFO[metric].unit)}`;
 }
 
 /** Plain-language goal, e.g. "Превозете заедно 1 000 000 т хладилни стоки". */

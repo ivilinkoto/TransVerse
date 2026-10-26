@@ -109,10 +109,10 @@ export default async function MissionsPage() {
           return (
             <Card
               key={period}
-              title={<span className="inline-flex items-center gap-2"><CalendarClock className="h-4 w-4 text-mist-400" />{t('{0} мисии', PERIOD_LABELS[period])}</span>}
+              title={<span className="inline-flex items-center gap-2"><CalendarClock className="h-4 w-4 text-mist-400" />{t('{0} мисии', tx(PERIOD_LABELS[period]))}</span>}
               actions={<Badge tone="cyan">{t('остават {0}', duration(left))}</Badge>}
             >
-              <p className="mb-3 text-xs text-mist-400">{PERIOD_HINT[period]}</p>
+              <p className="mb-3 text-xs text-mist-400">{tx(PERIOD_HINT[period])}</p>
               {rows.length ? <ul className="space-y-3">{rows.map((r) => <MissionCard key={r.missionId} row={r} reroll={reroll} />)}</ul> : <p className="text-sm text-mist-400">{t('Няма мисии за този период.')}</p>}
             </Card>
           );

@@ -52,7 +52,7 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
     <div className="space-y-5">
       <PageHeader title={tr('Класации')} subtitle={tr('Само реални играчи и техните компании. Няма измислени конкуренти.')} />
       <Segmented label={tr('Вид класация')} active={tab.id} items={tabs.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
-      {tab.id === 'nations' ? <NationsBoard country={params.country?.toUpperCase().slice(0, 2)} companyId={company.id} /> : tab.id === 'records' ? <RecordsBoard /> : tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tab.unit} companyId={company.id} />}
+      {tab.id === 'nations' ? <NationsBoard country={params.country?.toUpperCase().slice(0, 2)} companyId={company.id} /> : tab.id === 'records' ? <RecordsBoard /> : tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tx(tab.unit)} companyId={company.id} />}
     </div>
   );
 }
@@ -199,7 +199,7 @@ async function DivisionsBoard({ userId }: { userId: string }) {
     <div className="space-y-4">
       <p className="text-sm text-mist-300">{tr('Компаниите се състезават по тоновете на членовете си за месеца. В края на месеца най-добрите {0} % се качват, последните слизат, а първите трима получават награда в касата. Игрови данни.', Math.round(DIVISION_RULES.moveShare * 100))}</p>
       {tables.map(({ d, rows }) => (
-        <Card key={d} title={tr('{0} {1} дивизия', d === 'gold' ? '🥇' : d === 'silver' ? '🥈' : '🥉', DIVISION_LABELS[d])} className="p-2 sm:p-3">
+        <Card key={d} title={tr('{0} {1} дивизия', d === 'gold' ? '🥇' : d === 'silver' ? '🥈' : '🥉', tx(DIVISION_LABELS[d]))} className="p-2 sm:p-3">
           {rows.length === 0 ? <p className="p-2 text-sm text-mist-400">{tr('Още няма компании.')}</p> : (
             <ol className="divide-y divide-asphalt-800">
               {rows.slice(0, 20).map((r) => (

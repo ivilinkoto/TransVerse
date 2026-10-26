@@ -140,7 +140,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const rented = v.ownership === 'rented';
       const pay = part ? part.rewardCents : c.rewardCents;
       const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents) + (sea?.ticketCents ?? 0) + (c.oversize ? oversizeCostCents(c.distanceKm - seaKm) : 0);
-      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? tr(' (нает)') : ''}${v.coDriver ? tr(' · екипаж') : ''} · ${v.city.nameBg} · ${Math.round(v.condition)}%${restMin ? tr(' · почива още {0} мин', restMin) : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part };
+      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? tr(' (нает)') : ''}${v.coDriver ? tr(' · екипаж') : ''} · ${tx(v.city.nameBg)} · ${Math.round(v.condition)}%${restMin ? tr(' · почива още {0} мин', restMin) : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part };
     });
     return {
       id: c.id,
@@ -153,7 +153,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       haggle: features.haggling && haggleable(c) && !c.reservedByCompanyId ? (haggles.get(c.id) ?? 'open') : null,
       cargoType: c.cargoType as CargoType,
       cargoLabel: cargo.label,
-      needs: { bodies: cargo.bodies.map((b) => BODY_LABELS[b] ?? b), level: Math.max(c.minLevel, cargo.minLevel) },
+      needs: { bodies: cargo.bodies.map((b) => tx(BODY_LABELS[b] ?? b)), level: Math.max(c.minLevel, cargo.minLevel) },
       tons: c.weightTons,
       origin: { id: c.origin.id, name: c.origin.nameBg, country: c.origin.countryCode },
       destination: { id: c.destination.id, name: c.destination.nameBg, country: c.destination.countryCode },
@@ -182,7 +182,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,
       weather: (() => {
         const w = routeCondition(c.route.countries, now, real);
-        return w.condition === 'clear' ? null : { condition: w.condition, label: CONDITION_LABELS[w.condition], country: w.country! };
+        return w.condition === 'clear' ? null : { condition: w.condition, label: tx(CONDITION_LABELS[w.condition]), country: w.country! };
       })(),
       favorite: favorites.some((f) => f.originCityId === c.originCityId && f.destCityId === c.destCityId),
       toHome: features.backhaul && c.destCityId === hq.id,

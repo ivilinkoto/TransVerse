@@ -70,7 +70,7 @@ export default async function FinancePage() {
           <ul className="space-y-2.5 text-sm">
             {sorted.map((c) => (
               <li key={c.category}>
-                <div className="flex justify-between"><span>{LEDGER_LABELS[c.category as LedgerCategory] ?? c.category}</span><span className={`num ${c.total >= 0 ? 'text-profit' : 'text-loss'}`}>{money(c.total)}</span></div>
+                <div className="flex justify-between"><span>{tx(LEDGER_LABELS[c.category as LedgerCategory] ?? c.category)}</span><span className={`num ${c.total >= 0 ? 'text-profit' : 'text-loss'}`}>{money(c.total)}</span></div>
                 <div className="mt-1 h-1.5 rounded-full bg-asphalt-700"><div className={`h-full rounded-full ${c.total >= 0 ? 'bg-profit' : 'bg-loss'}`} style={{ width: `${(Math.abs(c.total) / maxAbs) * 100}%` }} /></div>
               </li>
             ))}
@@ -179,7 +179,7 @@ export default async function FinancePage() {
             <li key={e.id} className="flex items-start gap-3 py-2.5 text-sm first:pt-0 last:pb-0">
               <div className="min-w-0 flex-1">
                 <div className="text-mist-100">{tx(e.description)}</div>
-                <div className="text-xs text-mist-400">{dateTime(e.createdAt)} · {LEDGER_LABELS[e.category as LedgerCategory] ?? e.category}</div>
+                <div className="text-xs text-mist-400">{dateTime(e.createdAt)} · {tx(LEDGER_LABELS[e.category as LedgerCategory] ?? e.category)}</div>
               </div>
               <div className="shrink-0 text-right">
                 <div className={`num whitespace-nowrap font-semibold ${e.amountCents >= 0 ? 'text-profit' : 'text-loss'}`}>{e.amountCents >= 0 ? '+' : ''}{moneyPrecise(e.amountCents)}</div>

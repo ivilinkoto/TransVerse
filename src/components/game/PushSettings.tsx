@@ -217,7 +217,7 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
         {Object.entries(categories).map(([key, label]) => (
           <label key={key} className="flex items-start gap-2">
             <input type="checkbox" className="mt-0.5" checked={prefs[key] !== false} onChange={(e) => void toggle(key, e.target.checked)} />
-            <span>{label}</span>
+            <span>{tx(label)}</span>
           </label>
         ))}
         <p className="text-xs text-mist-400">{t('Съобщения от чата не идват, докато си в играта — само когато я няма отворена.')}</p>

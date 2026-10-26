@@ -38,7 +38,7 @@ export default async function CollectionPage() {
         {pages.map((p) => {
           const got = p.cities.filter((c) => c.at).length;
           return (
-            <Card key={p.code} title={`${p.name} · ${got}/${p.cities.length}`}>
+            <Card key={p.code} title={`${tx(p.name)} · ${got}/${p.cities.length}`}>
               <Meter value={(got / p.cities.length) * 100} tone="gold" />
               <ul className="mt-3 grid grid-cols-2 gap-1.5 text-xs">
                 {p.cities.map((c) => (

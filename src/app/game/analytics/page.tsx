@@ -7,7 +7,7 @@ import { powerUnitModel } from '@/lib/game/catalog';
 import type { Group } from '@/lib/game/analytics';
 import { companyAnalytics } from '@/server/game/analytics';
 import { gameContext } from '@/server/game/context';
-import { t } from '@/i18n/t';
+import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
@@ -109,7 +109,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
               <Ranking rows={a.lanes} name={(g) => a.names.lane[g.key]} />
             </Card>
             <Card title={t('Видове товари')}>
-              <Ranking rows={a.cargo} name={(g) => CARGO[g.key as CargoType]?.label ?? g.key} />
+              <Ranking rows={a.cargo} name={(g) => tx(CARGO[g.key as CargoType]?.label ?? g.key)} />
             </Card>
           </div>
         </>

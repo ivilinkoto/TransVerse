@@ -45,7 +45,8 @@ export async function ensureIntermodal(db: Database, now = new Date(), provider?
     const start = terminals.find((t) => t.id === fromId);
     const end = terminals.find((t) => t.id === toId);
     const terminalHub = hubs.find((h) => h.id === fromId);
-    if (!start || !end || !terminalHub) continue;
+    // Both terminals must be freight hubs, or the last leg could never start.
+    if (!start || !end || !terminalHub || !hubs.some((h) => h.id === toId)) continue;
     const origin = near(hubs, start, null, 'produces');
     if (!origin) continue;
     const cargos = [...origin.produces].filter((c) => c !== 'vehicles' && c !== 'special');
@@ -104,7 +105,11 @@ export async function releaseIntermodal(db: Database, now = new Date(), provider
       continue;
     }
     const leg2 = await insertLoad(db, terminal, dest, s.cargoType as CargoType, s.tons, now, INTERMODAL.ttlHours * 3_600_000, provider, INTERMODAL.multiplier, { goods: s.goods });
-    if (!leg2) continue;
+    if (!leg2) {
+      // No route for the last leg: try again on the next ticks, but a container that never gets one must not hold up the queue.
+      if (now.getTime() - s.readyAt!.getTime() > INTERMODAL.giveUpHours * 3_600_000) await db.update(intermodalShipments).set({ status: 'failed' }).where(eq(intermodalShipments.id, s.id));
+      continue;
+    }
     const [owner] = s.firstUserId ? await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, s.firstUserId)) : [];
     if (owner) await db.update(contracts).set({ reservedByCompanyId: owner.id, reservedUntil: new Date(now.getTime() + INTERMODAL.holdHours * 3_600_000) }).where(eq(contracts.id, leg2));
     await db.update(intermodalShipments).set({ status: 'leg2', leg2ContractId: leg2 }).where(eq(intermodalShipments.id, s.id));

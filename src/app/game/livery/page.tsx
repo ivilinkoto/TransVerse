@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const MONTHS = ['януари', 'февруари', 'март', 'април', 'май', 'юни', 'юли', 'август', 'септември', 'октомври', 'ноември', 'декември'];
-const monthName = (key: string) => `${MONTHS[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`;
+const monthName = (key: string) => `${tx(MONTHS[Number(key.slice(5)) - 1])} ${key.slice(0, 4)}`;
 
 export default async function LiveryPage() {
   await initLocale();

@@ -50,7 +50,7 @@ export default async function ShowcasePage({ params }: { params: Promise<{ id: s
       </Card>
       <div className="grid gap-4 md:grid-cols-3">
         <Card title={tr('Подобрения на камиона')}>
-          {v.upgrades.length ? <ul className="space-y-1 text-sm">{v.upgrades.map((u) => <li key={u}>✔ {UPGRADES[u as UpgradeId]?.label ?? u} <span className="text-xs text-mist-400">· {tx(UPGRADES[u as UpgradeId]?.description)}</span></li>)}</ul> : <p className="text-sm text-mist-400">{tr('Няма.')}</p>}
+          {v.upgrades.length ? <ul className="space-y-1 text-sm">{v.upgrades.map((u) => <li key={u}>✔ {tx(UPGRADES[u as UpgradeId]?.label ?? u)} <span className="text-xs text-mist-400">· {tx(UPGRADES[u as UpgradeId]?.description)}</span></li>)}</ul> : <p className="text-sm text-mist-400">{tr('Няма.')}</p>}
         </Card>
         <Card title={tr('Части')}>
           {parts.length ? <ul className="space-y-1 text-sm">{parts.map(([p, val]) => <li key={p}>✔ {tx(COSMETIC_PARTS[p].label)}: {COSMETIC_PARTS[p].styles.find((s) => s.id === val)?.label ?? val}</li>)}</ul> : <p className="text-sm text-mist-400">{tr('Няма — вземи от магазина.')}</p>}
@@ -59,7 +59,7 @@ export default async function ShowcasePage({ params }: { params: Promise<{ id: s
           {v.trailer ? (
             <div className="space-y-1 text-sm">
               <div>{tx(v.trailer.model.name)} <span className="font-mono text-xs text-mist-400">{tx(v.trailer.plate)}</span> {v.trailer.ownership === 'company' && <Badge tone="cyan">{tr('фирмено')}</Badge>}</div>
-              {v.trailer.upgrades.length ? <ul>{v.trailer.upgrades.map((u) => <li key={u}>✔ {TRAILER_UPGRADES[u as TrailerUpgradeId]?.label ?? u}</li>)}</ul> : <p className="text-mist-400">{tr('Без подобрения.')}</p>}
+              {v.trailer.upgrades.length ? <ul>{v.trailer.upgrades.map((u) => <li key={u}>✔ {tx(TRAILER_UPGRADES[u as TrailerUpgradeId]?.label ?? u)}</li>)}</ul> : <p className="text-mist-400">{tr('Без подобрения.')}</p>}
             </div>
           ) : <p className="text-sm text-mist-400">{tr('Без ремарке.')}</p>}
         </Card>

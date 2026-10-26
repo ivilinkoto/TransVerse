@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
@@ -6,7 +6,8 @@ import { CYCLE, cycleIndex, cyclePhase, INTERMODAL, SUPPLY, supplyAfter } from '
 import { closeDb } from '@/server/db/client';
 import { cityMarkets, companies, contracts, intermodalShipments, ledgerEntries, vehicles } from '@/server/db/schema';
 import { acceptContract, recoverDemand, settleDueDeliveries } from '@/server/game/deliveries';
-import { ensureIntermodal, intermodalBoard, releaseIntermodal } from '@/server/game/intermodal';
+import { loadHubs } from '@/server/game/contracts';
+import { ensureIntermodal, intermodalBoard, lineOf, releaseIntermodal } from '@/server/game/intermodal';
 import { approximateProvider } from '@/server/geo/routing';
 import { cityByName, db, grantLicences, makeContract, newPlayer } from './helpers';
 
@@ -60,10 +61,28 @@ describe('supply', () => {
 });
 
 describe('intermodal containers', () => {
+  it('only opens containers whose other terminal is a freight hub, so the last leg can start', async () => {
+    const now = new Date();
+    await db().update(intermodalShipments).set({ status: 'failed' }).where(inArray(intermodalShipments.status, ['leg1', 'on_line']));
+    for (let i = 0; i < 4; i++) {
+      await ensureIntermodal(db(), now, approximateProvider);
+      await db().update(intermodalShipments).set({ status: 'failed' }).where(eq(intermodalShipments.status, 'leg1'));
+    }
+    const hubs = new Set((await loadHubs(db(), { now })).map((h) => h.id));
+    const made = await db().select().from(intermodalShipments).where(gte(intermodalShipments.createdAt, now));
+    expect(made.length).toBeGreaterThan(0);
+    for (const s of made) {
+      const line = lineOf(s.lineId)!;
+      expect(hubs.has(s.reversed ? line.a : line.b)).toBe(true);
+    }
+  });
+
   it('a truck to the terminal, the line, the last leg first for the same driver — both pay a bonus', async () => {
     const now = new Date();
+    // Containers left open by earlier runs would fill the board (and could be picked here).
+    await db().update(intermodalShipments).set({ status: 'failed' }).where(inArray(intermodalShipments.status, ['leg1', 'on_line']));
     expect(await ensureIntermodal(db(), now, approximateProvider)).toBeGreaterThan(0);
-    const [s] = await db().select().from(intermodalShipments).where(eq(intermodalShipments.status, 'leg1')).limit(1);
+    const [s] = await db().select().from(intermodalShipments).where(eq(intermodalShipments.status, 'leg1')).orderBy(desc(intermodalShipments.createdAt)).limit(1);
     expect(s!.leg1ContractId).toBeTruthy();
     // A light load of pallets, so the starter truck can take it.
     await db().update(intermodalShipments).set({ tons: 5, cargoType: 'pallets' }).where(eq(intermodalShipments.id, s!.id));

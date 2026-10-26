@@ -11,7 +11,7 @@ import { fail } from './errors';
 import { queueRoles } from '@/server/discord/outbox';
 import { can, entryRank, memberCount, membershipOf, notifyMembers, requirePermission } from './membership';
 import { logActivity, notify } from './notify';
-import { t } from '@/i18n/t';
+import { t, tx } from '@/i18n/t';
 
 const MAX_FRIENDS = 200;
 
@@ -58,7 +58,7 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     lastSeen: lastSeenLabel(u.lastSeenAt, now),
     memberSince: u.createdAt.toISOString(),
     reputation: account?.reputation ?? 0,
-    reputationTier: reputationTier(account?.reputation ?? 0).label,
+    reputationTier: tx(reputationTier(account?.reputation ?? 0).label),
     deliveries: account?.deliveries ?? 0,
     kind: account?.kind ?? 'independent',
     company: m ? { id: m.company.id, name: m.company.name, tag: m.company.tag, color: m.company.color, rank: m.rank.name } : null,

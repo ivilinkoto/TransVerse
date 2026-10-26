@@ -253,7 +253,7 @@ function CompanyOverview({ hub, history, licences, extras }: { hub: Hub; history
                     <li key={entry.id} className="flex items-start justify-between gap-3 border-b border-asphalt-800 pb-1.5">
                       <span className="min-w-0">
                         <span className="block truncate">{tx(entry.description)}</span>
-                        <span className="text-xs text-mist-400">{TREASURY_LABELS[entry.category as TreasuryCategory] ?? entry.category}{actor ? ` · ${actor}` : ''} · {dateTime(entry.createdAt)}</span>
+                        <span className="text-xs text-mist-400">{tx(TREASURY_LABELS[entry.category as TreasuryCategory] ?? entry.category)}{actor ? ` · ${actor}` : ''} · {dateTime(entry.createdAt)}</span>
                       </span>
                       <span className={`num shrink-0 font-semibold ${entry.amountCents >= 0 ? 'text-profit' : 'text-loss'}`}>{entry.amountCents >= 0 ? '+' : ''}{money(entry.amountCents)}</span>
                     </li>

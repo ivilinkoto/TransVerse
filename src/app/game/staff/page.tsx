@@ -108,7 +108,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                       {d.vacationUntil && d.vacationUntil > now && <div className="mt-2"><Badge tone="orange">{tr('почивен ден до {0}', d.vacationUntil.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' }))}</Badge></div>}
                       {d.request && (
                         <div className="mt-2 rounded-lg border border-amber-sig/40 p-2">
-                          <p className="text-xs">{tr('{0} {1}{2}. Отговори до {3} часа.', d.name, REQUEST_TEXT[d.request as DriverRequest], d.request === 'raise' ? ` (+${Math.round(MOODS.raiseShare * 100)} %)` : d.request === 'offer' ? tr(' — задържа го само +{0} % заплата', Math.round(MOODS.counterShare * 100)) : '', MOODS.answerHours)}</p>
+                          <p className="text-xs">{tr('{0} {1}{2}. Отговори до {3} часа.', d.name, tx(REQUEST_TEXT[d.request as DriverRequest]), d.request === 'raise' ? ` (+${Math.round(MOODS.raiseShare * 100)} %)` : d.request === 'offer' ? tr(' — задържа го само +{0} % заплата', Math.round(MOODS.counterShare * 100)) : '', MOODS.answerHours)}</p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             <ActionButton className="btn-primary" action={{ type: 'answerDriver', driverId: d.id, accept: true }}>{d.request === 'vacation' ? tr('Дай почивка') : tr('Вдигни заплатата')}</ActionButton>
                             <ActionButton action={{ type: 'answerDriver', driverId: d.id, accept: false }} confirm={d.request === 'offer' ? tr('Шофьорът ще напусне. Сигурен ли си?') : undefined}>{tr('Откажи')}</ActionButton>

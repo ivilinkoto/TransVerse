@@ -15,7 +15,7 @@ import { fleetView } from '@/server/game/queries';
 import { act, answer, released, stop, type Answer, type Ctx } from './context';
 import { appUrl } from './config';
 import { bar, button, linkButton, reply, rows, select, STYLE, update, type MessageData } from './ui';
-import { t } from '@/i18n/t';
+import { t, tx } from '@/i18n/t';
 
 /**
  * The game in Discord: /курс (a truck and a load from menus), "Нов курс"
@@ -109,7 +109,7 @@ export async function eventView(ctx: Ctx): Promise<Answer> {
   const me = released(ctx);
   const list = await runningEvents(ctx.db, me.id, ctx.now);
   if (!list.length) return answer(reply({ content: t('В момента няма ивент. Следи #ивенти!') }, true));
-  const fmt = (metric: string, v: number) => (metric === 'earned_cents' ? money(v) : `${int(Math.round(v))} ${EVENT_METRIC_INFO[metric as EventMetric]?.unit ?? ''}`);
+  const fmt = (metric: string, v: number) => (metric === 'earned_cents' ? money(v) : `${int(Math.round(v))} ${tx(EVENT_METRIC_INFO[metric as EventMetric]?.unit ?? '')}`);
   return answer(reply({
     embeds: list.map(({ event: e, mine }) => ({
       title: `🎯 ${e.name}`,

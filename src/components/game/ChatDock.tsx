@@ -201,16 +201,18 @@ export function ChatDock() {
     if (el && stick.current) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  // Labels outside the memo: t() reads the language while rendering.
+  const names = { global: tr('Глобален'), company: tr('Компания'), alliance: tr('Съюз'), trade: tr('Търговия') };
   const tabs: Tab[] = useMemo(() => {
     const u = inbox?.unread;
-    const out: Tab[] = [{ id: 'global', label: tr('Глобален'), icon: Globe2, unread: u?.global }];
-    if (inbox?.company) out.push({ id: 'company', label: tr('Компания'), icon: Building2, unread: u?.company });
-    if (inbox?.alliance) out.push({ id: 'alliance', label: tr('Съюз'), icon: Shield });
-    out.push({ id: 'trade', label: tr('Търговия'), icon: Store, unread: u?.trade });
+    const out: Tab[] = [{ id: 'global', label: names.global, icon: Globe2, unread: u?.global }];
+    if (inbox?.company) out.push({ id: 'company', label: names.company, icon: Building2, unread: u?.company });
+    if (inbox?.alliance) out.push({ id: 'alliance', label: names.alliance, icon: Shield });
+    out.push({ id: 'trade', label: names.trade, icon: Store, unread: u?.trade });
     for (const c of inbox?.conversations ?? []) out.push({ id: `dm:${c.userId}`, label: c.username, unread: c.unread, online: c.online });
     if (extra && !out.some((t) => t.id === extra.id)) out.push({ id: extra.id, label: extra.title });
     return out;
-  }, [inbox, extra]);
+  }, [inbox, extra, names.global, names.company, names.alliance, names.trade]);
 
   // Everything new: private messages and the channels.
   const unread = tabs.reduce((s, t) => s + (t.unread ?? 0), 0);

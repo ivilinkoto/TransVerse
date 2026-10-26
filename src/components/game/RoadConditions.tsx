@@ -17,7 +17,7 @@ export function RoadConditions({ countries, now, real = null }: { countries: { c
         {rows.map((r) => (
           <li key={r.code} className="flex items-center justify-between gap-2">
             <span className="truncate">{tx(r.nameBg)}</span>
-            <span className={`shrink-0 text-xs font-semibold ${TONE[r.condition]}`}>{r.condition === 'blizzard' ? t('Виелица') : CONDITION_LABELS[r.condition]}</span>
+            <span className={`shrink-0 text-xs font-semibold ${TONE[r.condition]}`}>{r.condition === 'blizzard' ? t('Виелица') : tx(CONDITION_LABELS[r.condition])}</span>
           </li>
         ))}
       </ul>

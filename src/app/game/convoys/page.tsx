@@ -29,7 +29,7 @@ export default async function ConvoysPage() {
   const [list, stats, leaders, fleet, member] = await Promise.all([convoysFor(db, user.id, now), myConvoyStats(db, user.id), topLeaders(db), fleetView(db, company.id), membershipOf(db, user.id)]);
   const origins = [...new Map(fleet.vehicles.map((v) => [v.city.id, { id: v.city.id, name: v.city.nameBg }])).values()];
   const big = await db.select({ id: cities.id, name: cities.nameBg, country: cities.countryCode }).from(cities).where(and(gte(cities.population, 100_000), inArray(cities.countryCode, playableCountries(!!features.europe, !!features.open_world)))).orderBy(asc(cities.countryCode), asc(cities.nameBg));
-  const destinations = big.map((c) => ({ id: c.id, name: `${c.name} (${c.country})` }));
+  const destinations = big.map((c) => ({ id: c.id, name: `${tx(c.name)} (${c.country})` }));
   const next = LEADER_TIERS[stats.tier.tier + 1];
 
   return (
@@ -49,8 +49,8 @@ export default async function ConvoysPage() {
                 <li key={c.id}>
                   <Link href={`/game/convoys/${c.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-asphalt-700 bg-asphalt-850 p-3 hover:border-cyan-glow/50">
                     <span className="min-w-0">
-                      <span className="block font-semibold">{c.title ?? `${c.from} → ${c.to}`}</span>
-                      <span className="block text-xs text-mist-400">{tx(c.from)} → {tx(c.to)} · {c.kind === 'official' ? t('игрови конвой') : c.kind === 'company' ? t('фирмен · {0}', c.company ?? '') : `${c.leader ?? ''} · ${ACCESS_LABELS[c.access as ConvoyAccess]}`}</span>
+                      <span className="block font-semibold">{c.title ?? `${tx(c.from)} → ${tx(c.to)}`}</span>
+                      <span className="block text-xs text-mist-400">{tx(c.from)} → {tx(c.to)} · {c.kind === 'official' ? t('игрови конвой') : c.kind === 'company' ? t('фирмен · {0}', c.company ?? '') : `${c.leader ?? ''} · ${tx(ACCESS_LABELS[c.access as ConvoyAccess])}`}</span>
                     </span>
                     <span className="flex flex-wrap items-center gap-1.5">
                       {c.kind === 'official' && <Badge tone="gold">{t('⭐ Неделен')}</Badge>}

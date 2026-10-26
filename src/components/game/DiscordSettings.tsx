@@ -51,7 +51,7 @@ export function DiscordSettings({ ready, linked, categories, prefs, status, coin
                 <li key={key}>
                   <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-asphalt-700 px-2.5 py-1.5 text-xs">
                     <input type="checkbox" className="mt-0.5" checked={prefs[key] !== false} disabled={busy} onChange={(e) => void toggle(key, e.target.checked)} />
-                    <span>{label}</span>
+                    <span>{tx(label)}</span>
                   </label>
                 </li>
               ))}

@@ -4,7 +4,7 @@ import { Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
-import { t } from '@/i18n/t';
+import { t, tx } from '@/i18n/t';
 
 export function NewTicketForm({ categories }: { categories: Record<string, string> }) {
   const router = useRouter();
@@ -28,7 +28,7 @@ export function NewTicketForm({ categories }: { categories: Record<string, strin
     <form onSubmit={submit} className="space-y-3">
       <input id="subject" name="subject" className="input" placeholder={t('Тема')} required minLength={4} maxLength={120} />
       <select id="category" name="category" className="input" defaultValue="gameplay" aria-label={t('Категория')}>
-        {Object.entries(categories).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        {Object.entries(categories).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}
       </select>
       <textarea id="body" name="body" className="input min-h-32" placeholder={t('Опишете проблема или въпроса си. Ако е грешка — какво направихте и какво се случи.')} required minLength={10} maxLength={4000} />
       {error && <p role="alert" className="text-sm text-loss">{error}</p>}

@@ -53,7 +53,7 @@ export default async function RallyPage() {
           </Card>
           <div className="grid gap-4 md:grid-cols-2">
             {(['fastest', 'eco'] as RallyCategory[]).map((cat) => (
-              <Card key={cat} title={RALLY_CATEGORIES[cat]}>
+              <Card key={cat} title={tx(RALLY_CATEGORIES[cat])}>
                 {results![cat].length === 0 ? (
                   <p className="text-sm text-mist-400">{t('Още никой не е финиширал.')}</p>
                 ) : (

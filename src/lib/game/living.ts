@@ -18,7 +18,7 @@ export const CYCLE = { min: 0.88, max: 1.12, globalAmp: 0.07, globalWeeks: 26, c
 
 export const SUPPLY = { floor: 0.4, dropPerTon: 0.01, recoveryPerHour: 0.01 } as const;
 
-export const INTERMODAL = { open: 6, ttlHours: 30, multiplier: 1.1, nearKm: 350, holdHours: 2, bonusShare: 0.1, sameDriverShare: 0.15 } as const;
+export const INTERMODAL = { open: 6, ttlHours: 30, multiplier: 1.1, nearKm: 350, holdHours: 2, giveUpHours: 6, bonusShare: 0.1, sameDriverShare: 0.15 } as const;
 
 const WEEK_MS = 7 * 86_400_000;
 const weekIndex = (now: Date) => Math.floor(now.getTime() / WEEK_MS);

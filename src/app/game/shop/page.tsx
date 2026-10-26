@@ -44,8 +44,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     userPayments(db, user.id, 8),
   ]);
   const trailerOptions = (await db.select({ id: trailers.id, plate: trailers.plate, modelId: trailers.modelId }).from(trailers).where(and(eq(trailers.companyId, company.id), eq(trailers.ownership, 'owned'), isNull(trailers.soldAt)))).map((t) => ({ id: t.id, label: `${t.plate} · ${trailerModel(t.modelId).name}` }));
-  const vehicleOptions: VehicleOption[] = fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${v.city}${v.ownership === 'rented' ? tr(' (нает)') : ''}${v.status !== 'idle' ? tr(' · на курс') : ''}`, owned: v.ownership === 'owned', idle: v.status === 'idle' }));
-  const hubs = cityRows.filter((c) => isFreightHub({ population: c.population, country: c.country })).map((c) => ({ id: c.id, name: `${c.name} (${c.country})` }));
+  const vehicleOptions: VehicleOption[] = fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${tx(v.city)}${v.ownership === 'rented' ? tr(' (нает)') : ''}${v.status !== 'idle' ? tr(' · на курс') : ''}`, owned: v.ownership === 'owned', idle: v.status === 'idle' }));
+  const hubs = cityRows.filter((c) => isFreightHub({ population: c.population, country: c.country })).map((c) => ({ id: c.id, name: `${tx(c.name)} (${c.country})` }));
   const boostActive = user.xpBoostUntil && user.xpBoostUntil > now;
   const categories = (Object.keys(SHOP_CATEGORIES) as ShopCategory[]).filter((c) => c !== 'vip');
 
@@ -65,7 +65,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
               <div key={b.group}>
                 <div className="label mb-1.5">{tx(b.group)}</div>
                 <ul className="space-y-1 text-sm">
-                  {b.items.map((i) => <li key={i} className="flex gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />{i}</li>)}
+                  {b.items.map((i) => <li key={i} className="flex gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />{tx(i)}</li>)}
                 </ul>
               </div>
             ))}
@@ -85,7 +85,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
       {categories.map((cat) => (
         <section key={cat}>
-          <h2 className="mb-3 font-display text-lg font-bold">{SHOP_CATEGORIES[cat]}</h2>
+          <h2 className="mb-3 font-display text-lg font-bold">{tx(SHOP_CATEGORIES[cat])}</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {SHOP_ITEMS.filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics)).map((i) => (
               <Card key={i.id} className="flex flex-col">
@@ -132,7 +132,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                 {purchases.map((p) => (
                   <li key={p.id} className="flex justify-between gap-2">
                     <span>{dateTime(p.createdAt)} · {paidProduct(p.productId)?.label ?? p.productId}</span>
-                    <span className="num">{euro(p.amountCents)} · <span className={p.status === 'paid' ? 'text-profit' : p.status === 'pending' ? 'text-amber-sig' : 'text-mist-400'}>{PAYMENT_STATUS_LABELS[p.status] ?? p.status}</span></span>
+                    <span className="num">{euro(p.amountCents)} · <span className={p.status === 'paid' ? 'text-profit' : p.status === 'pending' ? 'text-amber-sig' : 'text-mist-400'}>{tx(PAYMENT_STATUS_LABELS[p.status] ?? p.status)}</span></span>
                   </li>
                 ))}
               </ul>
@@ -148,7 +148,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                 <li key={h.id} className="flex items-start justify-between gap-3 border-b border-asphalt-800 pb-1.5">
                   <span className="min-w-0">
                     <span className="block truncate">{tx(h.description)}</span>
-                    <span className="text-xs text-mist-400">{COIN_REASON_LABELS[h.reason as CoinReason] ?? h.reason} · {dateTime(h.createdAt)}</span>
+                    <span className="text-xs text-mist-400">{tx(COIN_REASON_LABELS[h.reason as CoinReason] ?? h.reason)} · {dateTime(h.createdAt)}</span>
                   </span>
                   <span className={`num shrink-0 font-semibold ${h.amount >= 0 ? 'text-profit' : 'text-loss'}`}>{h.amount > 0 ? '+' : ''}{tx(h.amount)} TC</span>
                 </li>

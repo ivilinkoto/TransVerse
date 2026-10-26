@@ -8,7 +8,7 @@ import { featureLive } from '@/lib/game/features';
 import { appUrl, BRAND, discordConfig } from './config';
 import { reportToken } from './map-token';
 import { announce, enqueue } from './outbox';
-import { t } from '@/i18n/t';
+import { t, tx } from '@/i18n/t';
 
 /**
  * Companies in Discord: the most active company channel of the week (a prize
@@ -96,7 +96,7 @@ export async function treasuryReports(db: Database, now = new Date()) {
     if (!rows.length) continue;
     const income = rows.filter((r) => Number(r.total) > 0).sort((a, b) => Number(b.total) - Number(a.total));
     const spent = rows.filter((r) => Number(r.total) < 0).sort((a, b) => Number(a.total) - Number(b.total));
-    const label = (c: string) => TREASURY_LABELS[c as TreasuryCategory] ?? c;
+    const label = (c: string) => tx(TREASURY_LABELS[c as TreasuryCategory] ?? c);
     const sum = (list: typeof rows) => list.reduce((s, r) => s + Number(r.total), 0);
     await enqueue(db, `treasury-report:${o.id}:${w.key}`, `msg:${o.channelId}`, {
       embeds: [{

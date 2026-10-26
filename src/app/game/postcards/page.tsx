@@ -46,7 +46,7 @@ export default async function PostcardsPage() {
                 <div className="text-center text-5xl drop-shadow-lg">{tx(p.emoji)}</div>
                 <div>
                   <div className="font-display text-sm font-bold leading-tight text-white">{tx(p.name)}</div>
-                  <div className="text-[11px] text-white/70">{names.get(p.country) ?? p.country} · {date(p.collectedAt)}</div>
+                  <div className="text-[11px] text-white/70">{tx(names.get(p.country) ?? p.country)} · {date(p.collectedAt)}</div>
                 </div>
               </div>
             </div>
@@ -54,7 +54,7 @@ export default async function PostcardsPage() {
             <div key={p.id} className="flex aspect-[4/3] flex-col items-center justify-center rounded-xl border-2 border-dashed border-asphalt-600 bg-asphalt-850 p-3 text-center">
               <div className="text-3xl opacity-30">📮</div>
               <div className="mt-1 text-xs text-mist-400">{tx(p.name)}</div>
-              <div className="text-[11px] text-mist-500">{names.get(p.country) ?? p.country}</div>
+              <div className="text-[11px] text-mist-500">{tx(names.get(p.country) ?? p.country)}</div>
             </div>
           );
         })}

@@ -1,5 +1,5 @@
 import { haversineKm } from '@/lib/geo/geometry';
-import { t as tr } from '@/i18n/t';
+import { t as tr, tx } from '@/i18n/t';
 
 /**
  * Ferries and trains (v1.4 „Отвъд пътя“). The lines are real — ferries from
@@ -70,7 +70,7 @@ export const CROSSING_LINES: CrossingLine[] = [
 export const crossingLine = (id: string) => CROSSING_LINES.find((l) => l.id === id) ?? null;
 
 /** "Ферибот Пирея → Ираклио" in the direction of travel. */
-export const crossingNote = (line: CrossingLine, reversed: boolean) => `${line.kind === 'ferry' ? tr('Ферибот') : tr('Влак')} ${reversed ? line.bName : line.aName} → ${reversed ? line.aName : line.bName}`;
+export const crossingNote = (line: CrossingLine, reversed: boolean) => `${line.kind === 'ferry' ? tr('Ферибот') : tr('Влак')} ${tx(reversed ? line.bName : line.aName)} → ${tx(reversed ? line.aName : line.bName)}`;
 
 /** Islands reached only by ferry (bounding boxes of the real islands) and their lines. */
 export const ISLANDS = [

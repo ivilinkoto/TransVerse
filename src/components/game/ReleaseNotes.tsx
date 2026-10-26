@@ -60,7 +60,7 @@ export function ReleaseBody({ release }: { release: Release }) {
           <h3 className="label mb-2">{tx(s.title)}</h3>
           <ul className="space-y-1.5 text-sm text-mist-200">
             {s.items.map((item) => (
-              <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-glow" aria-hidden="true" /><span>{item}</span></li>
+              <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-glow" aria-hidden="true" /><span>{tx(item)}</span></li>
             ))}
           </ul>
         </section>

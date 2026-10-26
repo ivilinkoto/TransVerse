@@ -12,7 +12,7 @@ export function Thread({ messages }: { messages: { id: number; body: string; sta
             <span className="flex items-center gap-1.5 font-semibold">
               {m.staff && <ShieldCheck className="h-3.5 w-3.5 text-prestige" />}
               {tx(m.author)}
-              {m.staff && <span className="font-normal text-prestige">· {ROLE_LABELS[m.authorRole as Role] ?? t('Поддръжка')}</span>}
+              {m.staff && <span className="font-normal text-prestige">· {tx(ROLE_LABELS[m.authorRole as Role] ?? t('Поддръжка'))}</span>}
             </span>
             <time className="text-mist-400">{dateTime(m.createdAt)}</time>
           </div>
