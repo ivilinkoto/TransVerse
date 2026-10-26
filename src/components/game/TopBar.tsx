@@ -16,13 +16,14 @@ export function TopBar({ title, kind, company, user, vip, hqName, unread, staff,
   const lp = levelProgress(user.xp);
   return (
     <header className="sticky top-0 z-40 border-b border-asphalt-800/80 bg-asphalt-950/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
-      <div className="flex h-14 items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:h-16">
+      <div className="flex h-14 min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:h-16">
         <Link href="/game" className="shrink-0 lg:hidden" aria-label={t('TransVerse — табло')}><LogoMark className="h-8 w-8" /></Link>
         <div className="hidden min-w-0 flex-1 sm:block">
           <div className="truncate font-display text-base font-bold leading-tight lg:text-lg">{title}</div>
           <div className="truncate text-xs text-mist-400">{t('{0} · база {1}', kind === 'company' ? t('Собствен автопарк') : t('Самостоятелен шофьор'), hqName)}</div>
         </div>
-        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        {/* On a phone the row must fit the screen: the language is in "Още" there and the menu search from 400 px. */}
+        <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
           <Link href="/game/finance" className={`${chip} border-asphalt-700 bg-asphalt-900/60 hover:border-gold-400/50`} title={t('Наличност — финанси')}>
             <Wallet className="h-4 w-4 text-gold-400 max-sm:hidden" />
             <span className={`num whitespace-nowrap font-display text-sm font-bold sm:text-base ${company.balanceCents < 0 ? 'text-loss' : 'text-gold-400'}`}>{money(company.balanceCents)}</span>
@@ -38,8 +39,8 @@ export function TopBar({ title, kind, company, user, vip, hqName, unread, staff,
               <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full bg-gold-400" />
             </Link>
           )}
-          <CommandPalette />
-          <LanguageSwitcher compact />
+          <div className="contents max-[399px]:hidden"><CommandPalette /></div>
+          <div className="max-sm:hidden"><LanguageSwitcher compact /></div>
           <PlayerSearch />
           <NotificationBell unread={unread} />
           <AccountMenu staff={staff} attention={attention} user={{ id: user.id, username: user.username, role: user.role, vip, avatarVersion: user.avatarVersion }} level={{ level: lp.level, share: lp.share, current: lp.current, next: lp.next }} reputation={company.reputation} />

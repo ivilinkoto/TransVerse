@@ -307,6 +307,8 @@ export const vehicles = pgTable(
     movingUntil: ts('moving_until'),
     /** A test drive (v1.5): the player's own vehicle the owner-driver came from; the truck goes back to the dealer after one trip. */
     testDriveFrom: uuid('test_drive_from'),
+    /** v1.1.1: a name the owner gives the truck, shown next to the plate (null = none). */
+    nickname: text('nickname'),
   },
   (t) => [index('vehicles_company_idx').on(t.companyId)],
 );

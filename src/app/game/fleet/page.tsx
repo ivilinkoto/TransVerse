@@ -65,7 +65,7 @@ export default async function FleetPage() {
                   {leased.has(v.id) && <a href="/game/finance#leases"><Badge tone="violet">{tr('Лизинг {0}/{1}', leased.get(v.id)!.paid, leased.get(v.id)!.payments)}</Badge></a>}
                   {v.delivery ? <Badge tone="cyan">{tr('На курс')}</Badge> : v.status === 'listed' ? <Badge tone="gold">{tr('Обявен за продажба')}</Badge> : <Badge tone="green">{tr('Свободен')}</Badge>}
                 </div>
-                <div className="mt-0.5 font-mono text-xs text-mist-400">{tx(v.plate)} · {tx(v.model.brand)}</div>
+                <div className="mt-0.5 font-mono text-xs text-mist-400">{v.nickname && <span className="font-sans font-semibold text-mist-200">„{v.nickname}“ · </span>}{tx(v.plate)} · {tx(v.model.brand)}</div>
               </div>
               <div className="text-right text-xs text-mist-400">
                 <div className="flex items-center justify-end gap-1"><MapPin className="h-3.5 w-3.5" />{v.delivery ? `${tx(v.delivery.origin.nameBg)} → ${tx(v.delivery.destination.nameBg)}` : `${tx(v.city.nameBg)}, ${v.city.countryCode}`}</div>

@@ -2,6 +2,7 @@ import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
 import { stickerText } from '@/lib/game/cosmetics';
+import { cleanTruckName } from '@/lib/game/truck-names';
 import { springDiscount } from '@/lib/game/marta';
 import { fuelPriceCents } from '@/lib/game/fuel';
 import { getRoute } from '@/server/geo/route-service';
@@ -121,6 +122,14 @@ async function ownedTrailer(db: DbOrTx, companyId: string, trailerId: string) {
 }
 
 const ageDays = (d: Date) => (Date.now() - d.getTime()) / 86_400_000;
+
+/** v1.1.1: the owner names a truck (rented ones too, not a borrowed company truck); an empty name clears it. */
+export async function nameVehicle(db: Database, userId: string, vehicleId: string, raw: string) {
+  const company = await companyForUser(db, userId);
+  const rows = await db.update(vehicles).set({ nickname: cleanTruckName(raw) }).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id), ne(vehicles.ownership, 'company'), isNull(vehicles.soldAt))).returning({ nickname: vehicles.nickname });
+  if (!rows.length) fail('vehicle_not_found', tr('Превозното средство не е намерено.'), 404);
+  return rows[0]!.nickname;
+}
 
 export async function sellVehicle(db: Database, userId: string, vehicleId: string) {
   return db.transaction(async (tx) => {

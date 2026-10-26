@@ -1,0 +1,17 @@
+# v1.1.1: truck names, online now
+09be624e10	Truck name	Имя грузовика
+b5cfead38c	Truck name (optional)	Имя грузовика (по желанию)
+8ceca9e585	Online now: {0}	Сейчас в игре: {0}
+8dd700a874	and {0} more	и ещё {0}
+# v1.1.1 release notes
+30b585d99c	The top bar now fits every phone, with no empty strip on the right; the language is chosen from “More”.	Верхняя панель теперь помещается на любом телефоне, без пустой полосы справа; язык выбирается в «Ещё».
+a32b35e423	Give each of your trucks a name (Fleet → Service): it shows next to the number plate in the fleet, in the service and on the dashboard.	Дай имя каждому своему грузовику (Автопарк → Сервис): оно видно рядом с номером в автопарке, в сервисе и на главной.
+d1fd735237	On the phone the language is chosen in “More” → Profile.	На телефоне язык выбирается в «Ещё» → Профиль.
+2d8eedc7ae	Truck name: up to 24 characters, optional; an empty field removes it. For own and rented trucks.	Имя грузовика: до 24 символов, по желанию; пустое поле его убирает. Для своих и арендованных грузовиков.
+490e84121a	Small things	Мелочи
+04d61caf5d	On the dashboard you see which drivers are in the game right now; the name opens the player card.	На главной видно, кто из водителей сейчас в игре; имя открывает карточку игрока.
+1b699007d0	Online now: on the dashboard, when at least one other driver is in the game.	Сейчас в игре: на главной, когда в игре есть хотя бы ещё один водитель.
+50d388c241	Easier on the phone	Удобнее на телефоне
+e3130a90cd	The Discord and Facebook invite on the dashboard: on the phone the buttons are under the text.	Приглашение в Discord и Facebook на главной: на телефоне кнопки под текстом.
+b56e6b4aa6	Phone fixes, truck names and who is online now.	Исправления для телефона, имена грузовиков и кто сейчас в игре.
+434152448b	Phone: the top bar was wider than narrow screens and the page widened with an empty strip on the right.	Телефон: верхняя панель была шире узких экранов, и страница расширялась с пустой полосой справа.

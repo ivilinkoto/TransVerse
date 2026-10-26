@@ -17,6 +17,7 @@ import { friendsFeed } from '@/server/game/feed';
 import { weeklyGoalState } from '@/server/game/weekly-goal';
 import { isRecapTime, recapYear } from '@/lib/game/recap';
 import { DiscordInvite } from '@/components/game/DiscordInvite';
+import { OnlineNow } from '@/components/game/OnlineNow';
 import { FriendsFeed } from '@/components/game/FriendsFeed';
 import { countries as countryTable } from '@/server/db/schema';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
@@ -176,6 +177,7 @@ export default async function OverviewPage() {
         </Link>
       )}
       {!user.seenHints.includes('discord') && <DiscordInvite />}
+      {features.online_now && <OnlineNow db={db} now={now} />}
       {features.year_recap && isRecapTime(now) && (
         <Link href="/game/recap" className="panel group flex items-center gap-3 border-prestige/40 p-3.5 transition hover:border-prestige">
           <CalendarHeart className="h-6 w-6 shrink-0 text-prestige" />
@@ -239,7 +241,7 @@ export default async function OverviewPage() {
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                         <span className="font-semibold">{tx(v.delivery!.origin.nameBg)} → {tx(v.delivery!.destination.nameBg)}</span>
                         <Badge tone="blue">{tx(v.delivery!.contract.goods)}</Badge>
-                        <span className="text-xs text-mist-400">{tx(v.plate)}</span>
+                        <span className="text-xs text-mist-400">{v.nickname ? `„${v.nickname}“ · ` : ''}{tx(v.plate)}</span>
                       </div>
                       <div className="mt-2">
                         <DeliveryProgress schedule={v.delivery!.schedule} etaAt={v.delivery!.etaAt} deadlineAt={v.delivery!.deadlineAt} />

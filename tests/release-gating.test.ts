@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { FEATURES, featureDate, featureLive, liveFeatures } from '@/lib/game/features';
-import { releaseByVersion } from '@/lib/game/releases';
+import { compareVersions, releaseByVersion } from '@/lib/game/releases';
 import { closeDb } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 import { featureFor, requireFeature } from '@/server/features';
@@ -20,12 +20,15 @@ describe('release gating', () => {
     expect(featureLive('convoy', before)).toBe(false);
     expect(featureLive('convoy', before, true)).toBe(true);
     expect(featureLive('convoy', release)).toBe(true);
-    expect(Object.values(liveFeatures(before)).every((on) => !on)).toBe(true);
+    // Before 1.2 only the earlier point releases (1.1.1) are on.
+    const early = (Object.keys(FEATURES) as (keyof typeof FEATURES)[]).filter((id) => compareVersions(FEATURES[id], '1.2') < 0);
+    expect(early.length).toBeGreaterThan(0);
+    expect(Object.entries(liveFeatures(before)).every(([id, on]) => on === early.includes(id as keyof typeof FEATURES))).toBe(true);
     expect(Object.values(liveFeatures(before, true)).every(Boolean)).toBe(true);
     expect(Object.keys(liveFeatures(after))).toEqual(Object.keys(FEATURES));
-    // After the 1.2 release its features are on; a later update's stay off until its own date.
+    // After the 1.2 release its features (and the earlier ones) are on; a later update's stay off until its own date.
     const live = liveFeatures(after);
-    expect((Object.keys(FEATURES) as (keyof typeof FEATURES)[]).every((id) => live[id] === (FEATURES[id] === '1.2'))).toBe(true);
+    expect((Object.keys(FEATURES) as (keyof typeof FEATURES)[]).every((id) => live[id] === (compareVersions(FEATURES[id], '1.2') <= 0))).toBe(true);
     expect(featureLive('company_plot', after)).toBe(false);
   });
 

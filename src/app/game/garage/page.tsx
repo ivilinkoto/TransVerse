@@ -1,3 +1,4 @@
+import { TruckNameForm } from '@/components/game/TruckNameForm';
 import { SCRAP } from '@/lib/game/heritage';
 import { sparePartsOf } from '@/server/game/heritage';
 import Link from 'next/link';
@@ -64,7 +65,7 @@ export default async function GaragePage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-lg font-bold">{tx(v.model.name)}</span>
-                    <span className="font-mono text-xs text-mist-400">{tx(v.plate)}</span>
+                    <span className="font-mono text-xs text-mist-400">{v.nickname && <span className="font-sans font-semibold text-mist-200">„{v.nickname}“ · </span>}{tx(v.plate)}</span>
                     {features.garage_showcase && <Link href={`/game/garage/${v.id}`} className="text-xs text-cyan-glow hover:underline">{tr('Витрина →')}</Link>}
                     {features.scrapyard && v.ownership === 'owned' && !v.delivery && v.status === 'idle' && (
                       <>
@@ -74,6 +75,7 @@ export default async function GaragePage() {
                     )}
                     {listing ? <Badge tone="gold">{tr('обявено · {0}', money(listing.priceCents))}</Badge> : v.delivery ? <Badge tone="cyan">{tr('на курс')}</Badge> : v.movingUntil && v.movingUntil > now ? <Badge tone="orange">{tr('пътува до {0} · до минута', v.city.nameBg)}</Badge> : <Badge tone="green">{tr('в {0}', v.city.nameBg)}</Badge>}
                   </div>
+                  {features.truck_names && v.ownership !== 'company' && <div className="mt-2"><TruckNameForm vehicleId={v.id} nickname={v.nickname} /></div>}
                   <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} trailerCosmetics={v.trailer?.cosmetics} martenitsa={marta} className="my-3 h-24 w-full" />
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
