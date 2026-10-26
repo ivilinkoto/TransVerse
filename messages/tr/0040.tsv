@@ -94,3 +94,35 @@ b4f2e5b7a1	Hide password	Скрыть пароль
 87f071770e	This e-mail is already in use.	Этот имейл уже используется.
 88b501d055	today: {0}	сегодня: {0}
 2bd2b047e6	“Arriving in ~5 min”: a notification before a longer trip ends, with the loads waiting there.	«Прибывает через ~5 мин»: уведомление перед концом долгого рейса, с грузами, которые ждут там.
+# v1.1.2: never stuck without a load
+90cb4c6c02	{0} trucks are standing but cannot take a load	{0} грузовика стоят, но не могут взять груз
+2d1ed4f2c7	If a truck stands but cannot take any load (no driver, listed for sale, tractor without a trailer, needs a repair), the board says why and takes you straight to the fix.	Если грузовик стоит, но не может взять ни одного груза (нет водителя, выставлен на продажу, тягач без прицепа, нужен ремонт), биржа объясняет почему и ведёт прямо туда, где это исправить.
+2bc1d627cc	It is in poor condition — a repair is needed.	Он в плохом состоянии — нужен ремонт.
+5289dd4b1f	The guaranteed load in the free truck’s city does not count if another company holds it — then a new one appears.	Гарантированный груз в городе свободного грузовика не считается, если его держит другая компания — тогда появляется новый.
+50b561a6a2	One truck is standing but cannot take a load	Один грузовик стоит, но не может взять груз
+ae50682bcb	For your truck here	Для твоего грузовика здесь
+4d73604e90	To the listing	К объявлению
+97b32b76c8	To the drivers	К водителям
+3fdc56c931	Assign a driver	Назначь водителя
+c5eef6d46d	Listed for sale — it does not drive while the listing is up.	Выставлен на продажу — пока объявление висит, он не ездит.
+14bcd1e6ee	Loads a free truck can take right where it stands are now at the top of the board (tagged “For your truck here”).	Грузы, которые свободный грузовик может взять прямо там, где стоит, теперь в самом верху биржи (с пометкой «Для твоего грузовика здесь»).
+cb78703c7d	Couple a trailer	Прицепи прицеп
+8b3a20e169	The driver has a day off.	У водителя выходной.
+# v1.1.2: why a load cannot be taken, folded updates
+33cd542f38	· {0} loads	· {0} заказов
+0be8bd069d	Every load you cannot take says why right in the list (“You cannot take it: …”); with “Only doable” and no results the board lists the most common reasons and how to fix them.	Каждый заказ, который ты не можешь взять, сразу в списке объясняет почему («Ты не можешь его взять: …»); при «Только выполнимые» без результатов биржа перечисляет самые частые причины и как их исправить.
+c70234e6a0	Held by another company until {0}.	Забронирован другой компанией до {0}.
+858e7633f7	Why no load is doable	Почему ни один заказ не выполним
+a83a509fb2	Requires reputation {0}.	Требуется репутация {0}.
+e0af42473c	Missing licence: {0}.	Нет лицензии: {0}.
+1455ac271d	You cannot take it: {0}	Ты не можешь его взять: {0}
+903211528d	You have no vehicle.	У тебя нет транспортного средства.
+8e12c2cc8e	Opens to everyone at {0} (VIP see it earlier).	Откроется для всех в {0} (VIP видят раньше).
+7cd22962af	Show all loads	Показать все заказы
+6b1d305856	The “Updates” page is tidier: each update is folded and opens with one tap.	Страница «Обновления» стала аккуратнее: каждое обновление свёрнуто и раскрывается одним нажатием.
+# v1.1.2: VIP dispatcher says why it waits
+af51561798	VIP dispatcher: {0} is waiting	VIP-диспетчер: {0} стоит
+40e6f3b02c	VIP dispatcher: when it cannot send the truck (no driver, no fitting load, VIP expired…), it says why — with a notification and a note in Fleet; if there is no load around the truck, it first secures a local one.	VIP-диспетчер: когда не может отправить грузовик (нет водителя, нет подходящего заказа, истёк VIP…), он объясняет почему — уведомлением и заметкой в «Автопарке»; если вокруг грузовика нет груза, сначала обеспечивает местный заказ.
+9ab9a63ac0	Your VIP status expired, so the automatic dispatcher was switched off.	VIP-статус истёк, поэтому автоматический диспетчер выключен.
+1c75200b69	No load the truck can reach on time and at a profit (empty run up to 600 km). It tries again every minute.	Нет заказа, до которого грузовик доберётся вовремя и с прибылью (порожний пробег до 600 км). Он пробует снова каждую минуту.
+8fc0db523d	Not sending now: {0}	Сейчас не отправляет: {0}

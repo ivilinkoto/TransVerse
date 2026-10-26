@@ -14,12 +14,16 @@ import { notifyArrivingSoon, weeklyNumbers } from '@/server/game/heads-up';
 import { playerCard, setFavoriteTruck } from '@/server/game/social';
 import { testsUnreleased } from '@/server/auth/roles';
 import { closeDb } from '@/server/db/client';
-import { companies, companyChronicle, deliveries, notifications, organizations, users, vehicles } from '@/server/db/schema';
+import { companies, companyChronicle, contracts, deliveries, drivers, notifications, organizations, users, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { GameError } from '@/server/game/errors';
 import { joinCompany, membershipOf, renameCompany, requirePermission, transferOwnership } from '@/server/game/membership';
 import { acceptTerms, setUiPrefs } from '@/server/game/ui-prefs';
-import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
+import { cityByName, db, makeContract, newPlayer, playerWithCompany } from './helpers';
+import { truckBlock } from '@/lib/game/truck-ready';
+import { autoDispatchTick, setAutoDispatch } from '@/server/game/dispatch';
+import { ensureLocalJobsForFleet } from '@/server/game/contracts';
+import { approximateProvider } from '@/server/geo/routing';
 
 afterAll(() => closeDb());
 
@@ -202,5 +206,65 @@ describe('v1.1.2 player features', () => {
     const funnel = await newPlayerFunnel(db());
     expect(funnel.week).toBeGreaterThan(0);
     expect(funnel.first).toBeLessThanOrEqual(funnel.week);
+  });
+});
+
+describe('v1.1.2 never stuck without a load', () => {
+  const base = { id: 'v1', status: 'idle', condition: 90, model: { kind: 'rigid' }, trailer: null, driver: {}, delivery: null };
+  const now = new Date('2026-11-01T10:00:00Z');
+
+  it('says why a free truck cannot take any load, and where to fix it', () => {
+    expect(truckBlock(base, now)).toBeNull();
+    expect(truckBlock({ ...base, driver: null }, now)?.href).toBe('/game/staff');
+    expect(truckBlock({ ...base, status: 'listed' }, now)?.href).toBe('/game/garage');
+    expect(truckBlock({ ...base, model: { kind: 'tractor' } }, now)?.href).toBe('/game/fleet');
+    expect(truckBlock({ ...base, condition: 10 }, now)?.reason).toContain('ремонт');
+    expect(truckBlock({ ...base, driver: { vacationUntil: new Date(now.getTime() + 3_600_000) } }, now)?.href).toBe('/game/staff');
+    // On a trip nothing is wrong.
+    expect(truckBlock({ ...base, driver: null, delivery: {} }, now)).toBeNull();
+  });
+
+  it('a load another company holds does not count as the free truck own job', async () => {
+    const p = await newPlayer();
+    const rival = await newPlayer();
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const [rivalAccount] = await db().select().from(companies).where(eq(companies.ownerId, rival.userId));
+    const [truck] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
+    const town = await cityByName('Vidin');
+    await db().update(contracts).set({ status: 'expired' }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
+    await db().update(vehicles).set({ cityId: town.id }).where(eq(vehicles.id, truck!.id));
+    expect(await ensureLocalJobsForFleet(db(), new Date(), account!.id, approximateProvider)).toBe(1);
+    // Another company holds it: the truck gets another one.
+    await db().update(contracts).set({ reservedByCompanyId: rivalAccount!.id, reservedUntil: new Date(Date.now() + 3_600_000) }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
+    expect(await ensureLocalJobsForFleet(db(), new Date(), account!.id, approximateProvider)).toBe(1);
+    // Held by the player's own company it counts.
+    await db().update(contracts).set({ reservedByCompanyId: account!.id }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
+    expect(await ensureLocalJobsForFleet(db(), new Date(), account!.id, approximateProvider)).toBe(0);
+  });
+});
+
+describe('v1.1.2 VIP dispatcher tells why it waits', () => {
+  it('a truck it cannot send gets a note and one notification; once it can, it goes and the note clears', async () => {
+    const p = await newPlayer();
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const [truck] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
+    await db().update(users).set({ vipUntil: new Date(Date.now() + 86_400_000) }).where(eq(users.id, p.userId));
+    await setAutoDispatch(db(), p.userId, truck!.id, true);
+    const [driver] = await db().select().from(drivers).where(eq(drivers.vehicleId, truck!.id));
+    await db().update(drivers).set({ vehicleId: null }).where(eq(drivers.id, driver!.id));
+
+    await autoDispatchTick(db());
+    await autoDispatchTick(db());
+    const [v] = await db().select().from(vehicles).where(eq(vehicles.id, truck!.id));
+    expect(v!.autoDispatchNote).toBe('Няма назначен шофьор.');
+    const notes = await db().select().from(notifications).where(and(eq(notifications.userId, p.userId), like(notifications.title, '%VIP%')));
+    expect(notes).toHaveLength(1);
+
+    await db().update(drivers).set({ vehicleId: truck!.id }).where(eq(drivers.id, driver!.id));
+    await makeContract('Sofia', 'Plovdiv', { weightTons: 2, rewardCents: 2_000_00 });
+    expect(await autoDispatchTick(db())).toBeGreaterThanOrEqual(1);
+    const [after] = await db().select().from(vehicles).where(eq(vehicles.id, truck!.id));
+    expect(after!.autoDispatchNote).toBeNull();
+    expect(after!.status).toBe('on_delivery');
   });
 });

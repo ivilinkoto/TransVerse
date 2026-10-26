@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { ArrowLeft, ScrollText } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/brand/Logo';
-import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
+import { ReleaseFold } from '@/components/game/ReleaseFold';
 import { visibleReleases } from '@/lib/game/releases';
 import { currentUser } from '@/server/http';
 import { requestNow } from '@/server/site';
@@ -38,10 +38,7 @@ export default async function PublicUpdatesPage() {
           <div className="panel flex items-center gap-3 p-6 text-mist-300"><ScrollText className="h-5 w-5" />{' '}{t('Описанията ще се появяват тук.')}</div>
         ) : (
           releases.map((r, i) => (
-            <article key={r.version} id={`v${r.version}`} className="panel scroll-mt-6 p-5 sm:p-7">
-              <ReleaseTitle release={r} as={i === 0 ? 'h2' : 'h3'} />
-              <div className="mt-5"><ReleaseBody release={r} /></div>
-            </article>
+            <ReleaseFold key={r.version} release={r} heading={i === 0 ? 'h2' : 'h3'} className="panel p-5 sm:p-7" />
           ))
         )}
       </main>

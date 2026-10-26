@@ -680,6 +680,13 @@
       "when": 1793035233115,
       "tag": "0096_acoustic_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1793041899423,
+      "tag": "0097_adorable_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

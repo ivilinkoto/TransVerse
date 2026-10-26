@@ -109,6 +109,7 @@ export default async function FleetPage() {
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs">
                 <span className="text-mist-300"><span className="font-semibold text-gold-400">{tr('VIP диспечер:')}</span>{' '}{tr('{0} (до {1} курса на ден)', v.autoDispatch ? tr('камионът сам поема следващия най-изгоден курс, щом е свободен') : tr('изключен'), AUTO_DISPATCH_PER_DAY)}</span>
                 <ActionButton action={{ type: 'autoDispatch', vehicleId: v.id, on: !v.autoDispatch }} className="btn-ghost px-2.5 py-1 text-xs">{v.autoDispatch ? tr('Изключи') : tr('Включи')}</ActionButton>
+                {v.autoDispatch && v.autoDispatchNote && !v.delivery && <p className="basis-full text-amber-sig">{tr('Сега не изпраща: {0}', tr(v.autoDispatchNote))}</p>}
               </div>
             )}
             {v.rental && (

@@ -1,0 +1,1 @@
+ALTER TABLE "vehicles" ADD COLUMN "auto_dispatch_note" text;

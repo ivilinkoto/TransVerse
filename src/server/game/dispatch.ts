@@ -9,7 +9,8 @@ import { haversineKm } from '@/lib/geo/geometry';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companies, deliveries, users, vehicles } from '@/server/db/schema';
 import { companyForUser } from './company';
-import { openContracts } from './contracts';
+import { ensureLocalJobsForFleet, openContracts } from './contracts';
+import { truckBlock } from '@/lib/game/truck-ready';
 import { acceptContract, compatibilityError } from './deliveries';
 import { fail } from './errors';
 import { heldLicences, missingFor } from './licences';
@@ -108,14 +109,25 @@ export async function setAutoDispatch(db: Database, userId: string, vehicleId: s
   const company = await companyForUser(db, userId);
   const [u] = await db.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
   if (on && !isVip(u?.vipUntil, now)) fail('vip_only', t('Автоматичният диспечер е за VIP играчите.'), 403);
-  const rows = await db.update(vehicles).set({ autoDispatch: on }).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id))).returning({ id: vehicles.id });
+  const rows = await db.update(vehicles).set({ autoDispatch: on, autoDispatchNote: null }).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id))).returning({ id: vehicles.id });
   if (!rows.length) fail('vehicle_not_found', t('Превозното средство не е намерено.'), 404);
+}
+
+/**
+ * 1.1.2: remembers why the dispatcher could not send a truck and tells the
+ * player once per new reason (a silent dispatcher looked broken); a trip sent
+ * clears it.
+ */
+async function noteAutoDispatch(db: Database, v: { vehicleId: string; userId: string; plate: string; note: string | null }, reason: string | null) {
+  if (reason === v.note) return;
+  await db.update(vehicles).set({ autoDispatchNote: reason }).where(eq(vehicles.id, v.vehicleId));
+  if (reason) await notify(db, v.userId, 'warning', () => t('VIP диспечер: {0} стои', v.plate), () => t(reason), '/game/fleet');
 }
 
 /** Worker: VIP players' trucks with auto-dispatch on take the dispatcher's next job when they are free. */
 export async function autoDispatchTick(db: Database, now = new Date()): Promise<number> {
   const rows = await db
-    .select({ vehicleId: vehicles.id, userId: companies.ownerId, vipUntil: users.vipUntil })
+    .select({ vehicleId: vehicles.id, plate: vehicles.plate, note: vehicles.autoDispatchNote, companyId: vehicles.companyId, userId: companies.ownerId, vipUntil: users.vipUntil })
     .from(vehicles)
     .innerJoin(companies, eq(companies.id, vehicles.companyId))
     .innerJoin(users, eq(users.id, companies.ownerId))
@@ -126,6 +138,7 @@ export async function autoDispatchTick(db: Database, now = new Date()): Promise<
   for (const r of rows) {
     if (!isVip(r.vipUntil, now)) {
       await db.update(vehicles).set({ autoDispatch: false }).where(eq(vehicles.id, r.vehicleId));
+      await noteAutoDispatch(db, r, 'VIP статусът изтече, затова автоматичният диспечер се изключи.');
       continue;
     }
     const [{ n = 0 } = {}] = await db
@@ -134,12 +147,25 @@ export async function autoDispatchTick(db: Database, now = new Date()): Promise<
       .innerJoin(companies, eq(companies.id, deliveries.companyId))
       .where(and(eq(companies.ownerId, r.userId), eq(deliveries.autoDispatched, true), gte(deliveries.startedAt, dayStart)));
     if (n >= AUTO_DISPATCH_PER_DAY) continue;
-    const [p] = await planDispatch(db, r.userId, now, r.vehicleId);
-    if (!p) continue;
+    let [p] = await planDispatch(db, r.userId, now, r.vehicleId);
+    if (!p) {
+      // The truck may stand where nothing fits: the guaranteed local job, then one more look.
+      await ensureLocalJobsForFleet(db, now, r.companyId).catch(() => 0);
+      [p] = await planDispatch(db, r.userId, now, r.vehicleId);
+    }
+    if (!p) {
+      const v = (await fleetView(db, r.companyId)).vehicles.find((x) => x.id === r.vehicleId);
+      const block = v ? truckBlock(v, now) : null;
+      await noteAutoDispatch(db, r, block ? block.reason : 'Няма поръчка, която камионът да стигне навреме и на печалба (празен курс до 600 км). Опитва отново всяка минута.');
+      continue;
+    }
     const res = await runDispatch(db, r.userId, [p], now, true);
     if (res.sent) {
       sent++;
-      if (n + 1 === AUTO_DISPATCH_PER_DAY) await notify(db, r.userId, 'info', () => t('Автоматичният диспечер почива'), () => t('Днес изпрати {0} курса — лимитът за 24 часа е достигнат.', AUTO_DISPATCH_PER_DAY), '/game/contracts');
+      await noteAutoDispatch(db, r, null);
+      if (n + 1 === AUTO_DISPATCH_PER_DAY) await notify(db, r.userId, 'info', () => t('Автоматичният диспечер почива'), () => t('Днес изпрати {0} курса — лимитът за 24 часа е достигнат.', AUTO_DISPATCH_PER_DAY), '/game/fleet');
+    } else if (res.failed[0]) {
+      await noteAutoDispatch(db, r, res.failed[0].reason);
     }
   }
   return sent;

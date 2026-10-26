@@ -11,7 +11,7 @@ import { PLOT } from '@/lib/game/plot';
 import { MULTISTOP } from '@/lib/game/multistop';
 import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
 import { HireDialog } from './HireDialog';
-import { WhyNot } from './WhyNot';
+import { fixFor, WhyNot } from './WhyNot';
 import { Term } from './Term';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -251,13 +251,23 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       distance: (c) => c.distanceKm,
       expires: (c) => new Date(c.expiresAt).getTime(),
     };
-    // Own city first — jobs the player can take right now before the rest.
-    // Urgent shipments first, then the player's own city.
     const takeable = (c: BoardContract) => !c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error);
-    // Favourite lanes the player can take come right after urgent shipments.
-    const rank = (c: BoardContract) => (c.id === focus ? -2 : c.featured ? -1 : c.urgent ? 0 : c.shared && takeable(c) ? 1 : c.favorite && takeable(c) ? 1 : c.tender && takeable(c) ? 2 : c.local ? (takeable(c) ? 2 : 3) : 4);
+    // 1.1.2: what a free truck can take right where it stands comes first, always;
+    // then the load of the day, urgent shipments, favourite lanes and the rest.
+    const rank = (c: BoardContract) => (c.id === focus ? -1 : c.local && takeable(c) ? 0 : c.featured ? 1 : c.urgent ? 2 : (c.shared || c.favorite || c.tender) && takeable(c) ? 3 : takeable(c) ? 4 : c.local ? 5 : 6);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
   }, [contracts, cargo, query, doable, sort, chips, focus]);
+
+  // 1.1.2: with "Само изпълними" and nothing left, the most common reasons why.
+  const blockers = useMemo(() => {
+    if (!doable || list.length) return [];
+    const counts = new Map<string, number>();
+    for (const c of contracts) {
+      const why = whyNot(c);
+      if (why) counts.set(why, (counts.get(why) ?? 0) + 1);
+    }
+    return [...counts].sort((a, b) => b[1] - a[1]).slice(0, 3);
+  }, [contracts, doable, list.length]);
 
   return (
     <div className="space-y-4">
@@ -311,7 +321,26 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         </p>
       )}
       {list.length === 0 ? (
-        <Empty icon={Truck} title={t('Няма поръчки по тези критерии')}>{t('Пазарът се обновява на всеки няколко минути.')}</Empty>
+        <>
+          <Empty icon={Truck} title={t('Няма поръчки по тези критерии')}>{t('Пазарът се обновява на всеки няколко минути.')}</Empty>
+          {doable && blockers.length > 0 && (
+            <div className="rounded-2xl border border-amber-sig/40 bg-amber-sig/5 p-4 text-sm">
+              <div className="font-semibold text-amber-sig">{t('Защо нито една поръчка не е изпълнима')}</div>
+              <ul className="mt-2 space-y-2">
+                {blockers.map(([why, n]) => {
+                  const fix = fixFor(why);
+                  return (
+                    <li key={why}>
+                      <div><AlertTriangle className="mr-1 inline h-3.5 w-3.5 text-amber-sig" />{tx(why)} <span className="text-xs text-mist-400">{t('· {0} поръчки', n)}</span></div>
+                      {fix && <Link href={fix.href} className="mt-0.5 block text-xs text-cyan-glow hover:underline">{tx(fix.text)} →</Link>}
+                    </li>
+                  );
+                })}
+              </ul>
+              <button type="button" className="btn-ghost mt-3 px-3 py-1.5 text-xs" onClick={() => setDoable(false)}>{t('Покажи всички поръчки')}</button>
+            </div>
+          )}
+        </>
       ) : (
         <ul className="space-y-2">
           {list.map((c) => (
@@ -388,6 +417,20 @@ function HaggleBox({ contractId, rewardCents, haggle }: { contractId: string; re
   );
 }
 
+/** 1.1.2: the one reason the player cannot take this load right now (null when they can). */
+function whyNot(c: BoardContract): string | null {
+  if (c.alreadyTaken) return null;
+  if (c.locked) return t('Изисква ниво {0}.', c.minLevel);
+  if (c.reputationLocked) return t('Изисква репутация {0}.', c.minReputation);
+  if (c.missingLicences.length) return t('Липсва лиценз: {0}.', c.missingLicences.map((l) => tx(l)).join(', '));
+  if (c.reservedByOther) return t('Запазена е от друга компания до {0}.', c.reservedUntil ?? '');
+  if (c.opensAt) return t('Отваря се за всички в {0} (VIP я виждат по-рано).', c.opensAt);
+  if (!c.options.length) return t('Нямаш превозно средство.');
+  if (c.options.some((o) => !o.error)) return null;
+  // The reason of the truck nearest to the load.
+  return [...c.options].sort((a, b) => a.emptyKm - b.emptyKm)[0]!.error;
+}
+
 function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
@@ -399,6 +442,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const option = c.options.find((o) => o.vehicleId === vehicleId);
+  const reason = whyNot(c);
   const [rush, setRush] = useState(false);
   const [overload, setOverload] = useState(false);
   const [insure, setInsure] = useState(false);
@@ -497,9 +541,10 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.reservedByMe && <Badge tone="gold">{t('Запазена за теб до {0}', c.reservedUntil)}</Badge>}
               {c.reservedByOther && <Badge tone="neutral">{t('Запазена до {0}', c.reservedUntil)}</Badge>}
               {c.opensAt && <Badge tone="violet">{t('VIP · за всички от {0}', c.opensAt)}</Badge>}
-              {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{t('Във вашия град')}</Badge>}
+              {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{c.options.some((o) => !o.error && o.emptyKm === 0) ? t('За камиона ти тук') : t('Във вашия град')}</Badge>}
             </Bonuses>
           </div>
+          {reason && <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-sig"><AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />{t('Не можеш да я вземеш: {0}', reason)}</div>}
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
             <span className="font-medium">{tx(c.origin.name)}</span>
             <span className="text-[11px] text-mist-400">{tx(c.origin.country)}</span>
