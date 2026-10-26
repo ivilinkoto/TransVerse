@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 
@@ -30,4 +30,9 @@ export async function pendingUnlocks(db: DbOrTx, user: { id: string; level: numb
   }
   const seen = new Set(user.uiPrefs.seenUnlocks);
   return unlocked.filter((h) => !seen.has(h));
+}
+
+/** 1.1.2: accounts from before the sign-up asked for it agree to the terms once. */
+export async function acceptTerms(db: DbOrTx, userId: string, now = new Date()) {
+  await db.update(users).set({ termsAcceptedAt: now }).where(and(eq(users.id, userId), isNull(users.termsAcceptedAt)));
 }

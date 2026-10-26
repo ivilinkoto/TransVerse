@@ -10,6 +10,8 @@ export const CAPTCHA = {
   max: 60_000,
   /** A puzzle must be solved within this many minutes. */
   ttlMinutes: 10,
+  /** Wrong passwords (per address or account, 15 min) after which the login asks for it too (1.1.2). */
+  loginAfter: 3,
 } as const;
 
 export interface CaptchaPuzzle {

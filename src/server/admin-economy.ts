@@ -144,3 +144,32 @@ export async function applyPayFactor(db: DbOrTx, actorId: string, factor: number
   await db.execute(sql`insert into admin_audit (actor_id, action, target_user_id, details) values (${actorId}, 'economy_balance', null, ${JSON.stringify({ before, after: f })}::jsonb)`);
   return f;
 }
+
+/**
+ * 1.1.2: sign-up and login signals — many accounts from one network in a
+ * day, many failed "Не съм робот" answers, accounts hit by wrong passwords.
+ */
+export async function securitySignals(db: DbOrTx, now = new Date()) {
+  const day = new Date(now.getTime() - 86_400_000);
+  const { rows: bursts } = await db.execute<{ hash: string; users: string[]; n: number }>(sql`
+    select signup_ip_hash as hash, array_agg(username order by created_at) as users, count(*)::int as n
+    from users where signup_ip_hash is not null and created_at >= ${day} group by signup_ip_hash having count(*) >= ${SECURITY.signupBurst} order by count(*) desc limit 20`);
+  const { rows: captcha } = await db.execute<{ key: string; count: number }>(sql`
+    select key, count from rate_limits where key like 'captchafail:%' and window_start >= ${day} and count >= ${SECURITY.captchaFails} order by count desc limit 20`);
+  const { rows: logins } = await db.execute<{ key: string; count: number }>(sql`
+    select key, count from rate_limits where key like 'loginfail:id:%' and window_start >= ${new Date(now.getTime() - 15 * 60_000)} and count >= ${SECURITY.loginFails} order by count desc limit 20`);
+  return {
+    bursts: bursts.map((b) => ({ hash: b.hash.slice(0, 8), users: b.users, n: b.n })),
+    captcha: captcha.map((c) => ({ hash: c.key.slice('captchafail:'.length, 'captchafail:'.length + 8), n: Number(c.count) })),
+    logins: logins.map((l) => ({ login: l.key.slice('loginfail:id:'.length), n: Number(l.count) })),
+  };
+}
+
+export const SECURITY = {
+  /** Sign-ups from one network within 24 h. */
+  signupBurst: 3,
+  /** Failed captcha answers from one network within 24 h. */
+  captchaFails: 5,
+  /** Wrong passwords for one account within 15 min. */
+  loginFails: 5,
+} as const;

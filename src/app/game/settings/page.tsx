@@ -14,7 +14,7 @@ import { DISCORD_LINK_COINS } from '@/server/discord/link';
 import { QuietHours } from '@/components/game/QuietHours';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { deviceCount, PUSH_CATEGORIES, vapidKeys } from '@/server/push';
-import { PasswordForm } from '@/components/game/PasswordForm';
+import { EmailForm, PasswordForm } from '@/components/game/PasswordForm';
 import { date } from '@/lib/format';
 import { sessions, users } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
@@ -57,7 +57,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <div><dt className="label">{t('Език')}</dt><dd className="mt-1">{t('Български (още езици предстоят)')}</dd></div>
           </dl>
         </Card>
-        <Card title={t('Сигурност')}><PasswordForm /></Card>
+        <Card title={t('Сигурност')}><PasswordForm /><div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Имейл')}</h3><EmailForm current={user.email} /></div></Card>
         {features.discord_bot && (
           <Card title={<span id="discord" className="inline-flex scroll-mt-24 items-center gap-2"><MessageSquare className="h-4 w-4 text-mist-400" />Discord</span>} className="lg:col-span-2">
             <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} />

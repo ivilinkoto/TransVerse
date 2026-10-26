@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { Captcha, type CaptchaSolution } from './Captcha';
-import { Field, Input } from './Field';
+import { Field, Input, PasswordInput } from './Field';
 import { t, tx } from '@/i18n/t';
 
 export function RegisterForm({ cities, referralCode = null }: { cities: { id: number; nameBg: string; population: number }[]; referralCode?: string | null }) {
@@ -50,10 +50,10 @@ export function RegisterForm({ cities, referralCode = null }: { cities: { id: nu
         </Field>
       </div>
       <Field label={t('Парола')} hint={t('Поне 6 символа.')}>
-        <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={6} />
+        <PasswordInput id="password" name="password" autoComplete="new-password" required minLength={6} />
       </Field>
       <Field label={t('Повтори паролата')}>
-        <Input id="passwordConfirm" name="passwordConfirm" type="password" autoComplete="new-password" required minLength={6} />
+        <PasswordInput id="passwordConfirm" name="passwordConfirm" autoComplete="new-password" required minLength={6} />
       </Field>
       <Field label={t('Начален град')} hint={t('Реален град в България. Там те чака наетият камион.')}>
         <select id="startCityId" name="startCityId" className="input" defaultValue={cities[0]?.id}>

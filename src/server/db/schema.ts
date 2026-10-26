@@ -19,6 +19,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
 
@@ -162,6 +163,8 @@ export const users = pgTable(
     uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean }>().notNull().default({}),
     /** 1.1.2: when the player agreed to the terms and the privacy policy (null for accounts made before). */
     termsAcceptedAt: ts('terms_accepted_at'),
+    /** 1.1.2: the truck the player shows on their player card (one of their own). */
+    favoriteVehicleId: uuid('favorite_vehicle_id').references((): AnyPgColumn => vehicles.id, { onDelete: 'set null' }),
     lastSeenAt: ts('last_seen_at'),
     /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
     seenVersion: text('seen_version'),
@@ -530,6 +533,8 @@ export const deliveries = pgTable(
     estimatedCosts: jsonb('estimated_costs').notNull(),
     startedAt: ts('started_at').notNull(),
     etaAt: ts('eta_at').notNull(),
+    /** 1.1.2: when the player was told the truck arrives in ~5 minutes (once per trip). */
+    soonNotifiedAt: ts('soon_notified_at'),
     deadlineAt: ts('deadline_at').notNull(),
     completedAt: ts('completed_at'),
     late: boolean('late'),

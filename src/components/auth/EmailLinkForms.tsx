@@ -4,7 +4,7 @@ import { CheckCircle2, KeyRound, MailCheck, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
-import { Field, Input } from './Field';
+import { Field, Input, PasswordInput } from './Field';
 import { t } from '@/i18n/t';
 
 const errorBox = 'rounded-lg border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-loss';
@@ -78,10 +78,10 @@ export function ResetPasswordForm({ token }: { token: string }) {
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <Field label={t('Нова парола')} hint={t('Поне 6 символа.')}>
-        <Input id="password" name="password" type="password" autoComplete="new-password" minLength={6} required />
+        <PasswordInput id="password" name="password" autoComplete="new-password" minLength={6} required />
       </Field>
       <Field label={t('Повтори новата парола')}>
-        <Input id="repeat" name="repeat" type="password" autoComplete="new-password" minLength={6} required />
+        <PasswordInput id="repeat" name="repeat" autoComplete="new-password" minLength={6} required />
       </Field>
       {error && <p role="alert" className={errorBox}>{error}</p>}
       <button type="submit" className="btn-primary w-full py-3" disabled={busy}><KeyRound className="h-4 w-4" />{busy ? t('Запазване…') : t('Запази новата парола')}</button>

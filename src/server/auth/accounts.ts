@@ -24,12 +24,15 @@ export const registerSchema = z.object({
   ref: z.string().trim().max(16).optional(),
 });
 
+/** 1.1.2: a solved "Не съм робот" puzzle (src/lib/captcha.ts). */
+const captchaSolution = z.object({ id: z.string().uuid(), number: z.number().int().min(0) }, 'Потвърдете, че не сте робот.');
+
 /** 1.1.2: the sign-up form also repeats the password, agrees to the terms and solves the captcha. */
 export const signupSchema = registerSchema
   .extend({
     passwordConfirm: z.string().max(200),
     acceptTerms: z.literal(true, 'Трябва да приемете общите условия и политиката за поверителност.'),
-    captcha: z.object({ id: z.string().uuid(), number: z.number().int().min(0) }, 'Потвърдете, че не сте робот.'),
+    captcha: captchaSolution,
   })
   .refine((v) => v.password === v.passwordConfirm, { message: 'Паролите не съвпадат.', path: ['passwordConfirm'] });
 
@@ -38,6 +41,8 @@ export const companyNameSchema = z.string().trim().min(3, 'Името на ко�
 export const loginSchema = z.object({
   login: z.string().trim().min(1, 'Въведете имейл или потребителско име.').max(254),
   password: z.string().min(1, 'Въведете парола.').max(200),
+  /** 1.1.2: asked for after a few wrong passwords. */
+  captcha: captchaSolution.optional(),
 });
 
 export async function register(db: Database, raw: z.infer<typeof registerSchema>) {

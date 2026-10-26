@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { localeOfRequest } from '@/i18n/server';
 import { users } from '@/server/db/schema';
 import { register, signupSchema } from '@/server/auth/accounts';
-import { verifyCaptcha } from '@/server/auth/captcha';
+import { recordCaptchaFailure, verifyCaptcha } from '@/server/auth/captcha';
 import { sendVerification } from '@/server/auth/email-links';
 import { rateLimit } from '@/server/auth/rate-limit';
 import { createSession, sessionCookie } from '@/server/auth/session';
@@ -16,7 +16,10 @@ import { siteUrl } from '@/server/payments/common';
 export const POST = handler({ auth: false, schema: signupSchema, perMinute: 20 }, async ({ input, request }) => {
   const db = getDb();
   await rateLimit(db, `register:${await clientIp()}`, Number(process.env.REGISTER_LIMIT_PER_HOUR ?? 5), 3600);
-  await verifyCaptcha(db, input.captcha);
+  await verifyCaptcha(db, input.captcha).catch(async (e: unknown) => {
+    await recordCaptchaFailure(db, await hashIp(db, await clientIp()));
+    throw e;
+  });
   const userId = await register(db, input);
   // v2.0: the language the player chose before signing up (or their browser's); 1.1.2: when they agreed to the terms.
   await db.update(users).set({ locale: localeOfRequest(request), termsAcceptedAt: new Date() }).where(eq(users.id, userId));

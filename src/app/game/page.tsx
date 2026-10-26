@@ -41,7 +41,7 @@ import { initLocale } from '@/i18n/server';
 
 export default async function OverviewPage() {
   await initLocale();
-  const { db, user, company, now, features } = await gameContext();
+  const { db, user, company, hq, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
   const marta = features.marta && isMarta(now);
   const real = features.real_weather ? await realConditions(db, now, true) : null;
@@ -84,7 +84,10 @@ export default async function OverviewPage() {
   const next =
     fleet.vehicles.length === 0
       ? { text: t('Нямаш превозно средство. Купи първото си и започни да печелиш.'), href: '/game/market', cta: t('Към пазара'), icon: Truck }
-      : idle.length > 0
+      : idle.length > 0 && company.deliveries === 0
+        ? // 1.1.2: a new player's first step, spelled out — the starter loads wait in their HQ city.
+          { text: t('Първият ти курс те чака: в {0} има товари точно за твоя камион. Избери един и тръгвай.', tx(hq.nameBg)), href: `/game/contracts?from=${hq.id}`, cta: t('Първият курс'), icon: ClipboardList }
+        : idle.length > 0
         ? { text: idle.length === 1 ? t('Имаш свободно превозно средство — намери му поръчка.') : t('{0} свободни превозни средства чакат поръчка.', idle.length), href: '/game/contracts', cta: t('Намери поръчка'), icon: ClipboardList }
         : { text: t('Всички превозни средства са на път. Проследи ги на картата.'), href: '/game/map', cta: t('Към картата'), icon: MapIcon };
   const hero = fleet.vehicles[0];

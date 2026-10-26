@@ -13,6 +13,10 @@ export const FEATURES = {
   // v1.1.2: company rename, report a problem from any page.
   company_rename: '1.1.2',
   report_problem: '1.1.2',
+  arriving_soon: '1.1.2',
+  weekly_report: '1.1.2',
+  favorite_truck: '1.1.2',
+  friends_invite: '1.1.2',
   transfers: '1.2',
   search: '1.2',
   map_circle: '1.2',

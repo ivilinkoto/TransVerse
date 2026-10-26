@@ -594,6 +594,7 @@ export async function renameCompany(db: Database, ownerId: string, name: string,
     if (taken) fail('company_name_taken', t('Компания с такова име вече съществува.'), 409);
     await tx.update(organizations).set({ name, renamedAt: now }).where(eq(organizations.id, c.id));
     await logActivity(tx, ownerId, 'company_renamed', { companyId: c.id, from: c.name, to: name });
+    await addChronicle(tx, c.id, 'name', `Ново име: „${name}“ (досега „${c.name}“).`, now);
     await notifyMembers(tx, c.id, null, () => t('Компанията има ново име'), () => t('„{0}“ вече се казва „{1}“.', c.name, name), '/game/company');
     return { name };
   });

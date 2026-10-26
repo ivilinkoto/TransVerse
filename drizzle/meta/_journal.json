@@ -673,6 +673,13 @@
       "when": 1793032056868,
       "tag": "0095_narrow_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1793035233115,
+      "tag": "0096_acoustic_iron_lad",
+      "breakpoints": true
     }
   ]
 }

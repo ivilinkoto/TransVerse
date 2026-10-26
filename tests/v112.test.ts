@@ -1,18 +1,25 @@
 import { createHash } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, like } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { COMPANY_RENAME_DAYS, ALL_PERMISSIONS } from '@/lib/game/company';
 import { FEATURES } from '@/lib/game/features';
 import { signupSchema } from '@/server/auth/accounts';
-import { issueCaptcha, verifyCaptcha } from '@/server/auth/captcha';
+import { clearLoginFailures, issueCaptcha, loginNeedsCaptcha, recordLoginFailure, verifyCaptcha } from '@/server/auth/captcha';
+import { changeEmail } from '@/server/auth/password-change';
+import { CAPTCHA } from '@/lib/captcha';
+import { securitySignals } from '@/server/admin-economy';
+import { newPlayerFunnel } from '@/server/admin';
+import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
+import { notifyArrivingSoon, weeklyNumbers } from '@/server/game/heads-up';
+import { playerCard, setFavoriteTruck } from '@/server/game/social';
 import { testsUnreleased } from '@/server/auth/roles';
 import { closeDb } from '@/server/db/client';
-import { organizations, users } from '@/server/db/schema';
+import { companies, companyChronicle, deliveries, notifications, organizations, users, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { GameError } from '@/server/game/errors';
 import { joinCompany, membershipOf, renameCompany, requirePermission, transferOwnership } from '@/server/game/membership';
-import { setUiPrefs } from '@/server/game/ui-prefs';
-import { db, newPlayer, playerWithCompany } from './helpers';
+import { acceptTerms, setUiPrefs } from '@/server/game/ui-prefs';
+import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
 
@@ -101,5 +108,99 @@ describe('v1.1.2 small features', () => {
     expect(testsUnreleased({ role: 'admin', uiPrefs: { asPlayer: true } })).toBe(false);
     expect(testsUnreleased({ role: 'admin' })).toBe(true);
     expect(testsUnreleased({ role: 'player' })).toBe(false);
+  });
+});
+
+describe('v1.1.2 account and safety', () => {
+  it('the login asks for the captcha after a few wrong passwords, and forgets them after a good one', async () => {
+    const ip = `test-${Date.now()}`;
+    expect(await loginNeedsCaptcha(db(), ip, 'Someone')).toBe(false);
+    for (let i = 0; i < CAPTCHA.loginAfter; i++) await recordLoginFailure(db(), ip, 'Someone');
+    expect(await loginNeedsCaptcha(db(), ip, 'someone')).toBe(true);
+    // Another address trying the same account is asked too.
+    expect(await loginNeedsCaptcha(db(), `${ip}-2`, 'someone')).toBe(true);
+    await clearLoginFailures(db(), ip, 'someone');
+    expect(await loginNeedsCaptcha(db(), ip, 'someone')).toBe(false);
+  });
+
+  it('the e-mail changes only with the right password, to a free address, and must be confirmed again', async () => {
+    const p = await newPlayer();
+    const other = await newPlayer();
+    const [o] = await db().select({ email: users.email }).from(users).where(eq(users.id, other.userId));
+    await db().update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.id, p.userId));
+    expect(await code(changeEmail(db(), p.userId, { password: 'wrong', email: 'new@example.com' }))).toBe('invalid_password');
+    expect(await code(changeEmail(db(), p.userId, { password: 'correct horse battery', email: o!.email }))).toBe('already_registered');
+    const fresh = `n${Date.now()}@example.com`;
+    await changeEmail(db(), p.userId, { password: 'correct horse battery', email: fresh });
+    const [u] = await db().select().from(users).where(eq(users.id, p.userId));
+    expect(u!.email).toBe(fresh);
+    expect(u!.emailVerifiedAt).toBeNull();
+  });
+
+  it('old accounts accept the terms once', async () => {
+    const p = await newPlayer();
+    const at = new Date('2026-11-01T10:00:00Z');
+    await acceptTerms(db(), p.userId, at);
+    await acceptTerms(db(), p.userId, new Date('2026-12-01T10:00:00Z'));
+    const [u] = await db().select({ at: users.termsAcceptedAt }).from(users).where(eq(users.id, p.userId));
+    expect(u!.at!.toISOString()).toBe(at.toISOString());
+  });
+});
+
+describe('v1.1.2 player features', () => {
+  const after = new Date('2026-11-02T08:00:00Z');
+
+  it('"пристига след 5 мин" comes once, only for long trips', async () => {
+    const p = await newPlayer();
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const [van] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
+    const contract = await makeContract('Sofia', 'Plovdiv');
+    const d = await acceptContract(db(), p.userId, contract.id, van!.id);
+    await db().update(deliveries).set({ startedAt: new Date(after.getTime() - 40 * 60_000), etaAt: new Date(after.getTime() + 3 * 60_000) }).where(eq(deliveries.id, d.id));
+    const count = async () => (await db().select().from(notifications).where(and(eq(notifications.userId, p.userId), like(notifications.href, '/game/contracts?from=%&truck=%')))).length;
+    await notifyArrivingSoon(db(), after);
+    await notifyArrivingSoon(db(), after);
+    expect(await count()).toBe(1);
+  });
+
+  it('the weekly report counts the week of every driver who drove', async () => {
+    const p = await newPlayer();
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const [van] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
+    const contract = await makeContract('Sofia', 'Pernik', { rewardCents: 300_00 });
+    const d = await acceptContract(db(), p.userId, contract.id, van!.id);
+    await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000), account!.id);
+    const mine = (await weeklyNumbers(db(), new Date(d.etaAt.getTime() + 3_600_000))).find((r) => r.userId === p.userId);
+    expect(mine?.trips).toBe(1);
+    expect(mine?.earnedCents).toBe(300_00);
+    expect(mine!.place).toBeGreaterThanOrEqual(1);
+  });
+
+  it('the favourite truck is one of the player own and shows on their card', async () => {
+    const p = await newPlayer();
+    const other = await newPlayer();
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const [otherAccount] = await db().select().from(companies).where(eq(companies.ownerId, other.userId));
+    const [van] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
+    const [foreign] = await db().select().from(vehicles).where(eq(vehicles.companyId, otherAccount!.id));
+    expect(await code(setFavoriteTruck(db(), p.userId, foreign!.id))).toBe('vehicle_not_found');
+    await setFavoriteTruck(db(), p.userId, van!.id);
+    const card = await playerCard(db(), other.userId, p.username, after);
+    expect(card?.favorite?.plate).toBe(van!.plate);
+  });
+
+  it('a rename is written to the company chronicle', async () => {
+    const { owner, org } = await companyWithHeir();
+    await renameCompany(db(), owner.userId, `Хроника ${org.id.slice(0, 6)}`);
+    const rows = await db().select().from(companyChronicle).where(and(eq(companyChronicle.organizationId, org.id), eq(companyChronicle.kind, 'name')));
+    expect(rows.length).toBe(1);
+  });
+
+  it('the staff see sign-up bursts and the new players funnel', async () => {
+    const signals = await securitySignals(db());
+    expect(Array.isArray(signals.bursts) && Array.isArray(signals.captcha) && Array.isArray(signals.logins)).toBe(true);
+    const funnel = await newPlayerFunnel(db());
+    expect(funnel.week).toBeGreaterThan(0);
+    expect(funnel.first).toBeLessThanOrEqual(funnel.week);
   });
 });

@@ -29,6 +29,7 @@ import { isMarta } from '@/lib/game/marta';
 import { isEaster } from '@/lib/game/easter';
 import { isStaff, testsUnreleased } from '@/server/auth/roles';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { TermsPrompt } from '@/components/game/TermsPrompt';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
 import { claimableCount } from '@/server/game/missions';
@@ -106,6 +107,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         <PlayerCardHost />
         <ReportHost />
         <RegisterServiceWorker />
+        {!user.termsAcceptedAt && <TermsPrompt />}
         {unlocks.length > 0 && <UnlockNotice items={unlocks} />}
         {fresh && !(tutorial.active && tutorial.step) && (
           <WhatsNew version={fresh.version}>

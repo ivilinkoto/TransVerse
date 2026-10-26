@@ -14,7 +14,6 @@ ee61652310	No third parties	Без третьих сторон
 b0b6f16efa	Back to the staff view	Вернуть вид команды
 079f6c5976	You see the game as a player: without unreleased features and without staff badges.	Ты видишь игру как игрок: без невыпущенных функций и без значков команды.
 714dea84b4	Report a problem	Сообщить о проблеме
-15c6de6a46	For the staff: “View as player” in Settings — shows the game exactly as players see it, without unreleased features.	Для команды: «Смотреть как игрок» в настройках — показывает игру точно как у игроков, без невыпущенных функций.
 a098deb827	To confirm, type the new owner’s name: {0}	Для подтверждения напишите имя нового владельца: {0}
 90f06ce075	New owner’s name	Имя нового владельца
 e9405bdc2b	The name has been changed.	Имя изменено.
@@ -52,3 +51,46 @@ efe0284990	the terms	условия
 eb904435ee	the privacy policy	политику конфиденциальности
 35bc124fb0	“{0}” is now called “{1}”.	«{0}» теперь называется «{1}».
 14aafdd3dd	“Report a problem” in the profile menu: a support request with the page filled in.	«Сообщить о проблеме» в меню профиля: обращение в поддержку с заполненной страницей.
+# v1.1.2: login captcha, e-mail change, terms prompt, heads-up, weekly report, favourite truck, admin signals
+2b55f33af7	5+ trips	5+ рейсов
+c745dbf9c8	{0} trips · {1} km · {2} from freight. Place {3} of {4} drivers by earnings.	{0} рейсов · {1} км · {2} за грузы. {3} место из {4} водителей по доходу.
+8f64edd5cd	{0} arrives in {1} in ~{2} min	{0} прибывает в {1} через ~{2} мин
+2a70c8aff0	{0} times	{0} раз
+7268a2a760	An eye button in password fields — see what you typed.	Кнопка с глазом в полях пароля — видно, что ты ввёл.
+9aecb02a47	In a company	В компании
+d85fd037a5	See the loads waiting there, so you can leave right away.	Посмотри грузы, которые ждут там, чтобы сразу отправиться дальше.
+49cb57ccd6	Login: after a few wrong passwords “I’m not a robot” is asked too — protection against guessing other people’s passwords.	Вход: после нескольких неверных паролей требуется и «Я не робот» — защита от подбора чужих паролей.
+50dc16c4eb	Came back the next day	Вернулись на следующий день
+99e37e768b	Wrong passwords for one account (15 min, from {0})	Неверные пароли для одного профиля (15 мин, от {0})
+802dc92b82	One agreement, just once	Одно согласие, всего один раз
+88e1b0ea6a	For the staff: “View as player” in Settings — shows the game exactly as players see it, without unreleased features (in the Discord bot too).	Для команды: «Смотреть как игрок» в настройках — показывает игру точно как у игроков, без невыпущенных функций (и в Discord-боте).
+d287a1c1f5	The e-mail has been changed. We sent a confirmation letter to the new address.	Имейл изменён. Мы отправили письмо для подтверждения на новый адрес.
+7d290d161e	The truck others see on your player card.	Грузовик, который другие видят в твоей карточке игрока.
+f342aa20df	Where the percentage drops sharply, that is where new players give up. Bot signals are in “Economy” → “Sign-up and login”.	Где процент резко падает, там новые игроки сдаются. Сигналы о ботах — в «Экономика» → «Регистрация и вход».
+dac1a15321	Favourite truck	Любимый грузовик
+3bedd5af8a	Favourite truck: pick it in Profile — others see it on your player card.	Любимый грузовик: выбери его в профиле — другие видят его в твоей карточке игрока.
+64c1cb99aa	Many sign-ups from one network (24 h, from {0})	Много регистраций из одной сети (24 ч, от {0})
+2afb3935ee	Don’t show	Не показывать
+d84f985c6d	Failed “I’m not a robot” checks (24 h, from {0})	Неудачные «Я не робот» (24 ч, от {0})
+211c705a99	New e-mail	Новый имейл
+c37697bfd3	New players (7 days)	Новые игроки (7 дней)
+7924244549	Several wrong attempts — please confirm you are not a robot.	Несколько неверных попыток — подтвердите, что вы не робот.
+55ff090b8d	Since update 1.1.2 every account accepts the terms and the privacy policy. Your game and account do not change.	С обновления 1.1.2 все профили принимают условия и политику конфиденциальности. Игра и профиль не меняются.
+748d2c314d	Show password	Показать пароль
+aa39c8ea87	Invite a friend to your company straight from the friends list.	Приглашай друга в компанию прямо из списка друзей.
+5291401e73	Signs of bots or attempts at someone else’s account (1.1.2). Addresses are shown only as a hash.	Признаки ботов или попыток войти в чужой профиль (1.1.2). Адреса показаны только как хеш.
+7f3feb0b13	Accounts from before 1.1.2 accept the terms once, at the next login.	Профили до 1.1.2 принимают условия один раз, при следующем входе.
+2784372cb4	The first trip	Первый рейс
+ea0a4a4324	The first trip: the dashboard shows where your first loads are waiting.	Первый рейс: панель показывает, где тебя ждут первые грузы.
+288c161133	Your first trip is waiting: in {0} there are loads just right for your truck. Pick one and go.	Твой первый рейс ждёт: в {0} есть грузы точно для твоего грузовика. Выбери один и в путь.
+f10015bb82	Sign-up and login	Регистрация и вход
+9695048371	Registered	Зарегистрированы
+41f220157f	A weekly report on Monday morning: trips, kilometres, earnings and your place among the drivers.	Еженедельный отчёт в понедельник утром: рейсы, километры, доходы и твоё место среди водителей.
+b4f2e5b7a1	Hide password	Скрыть пароль
+944379bc95	Change e-mail	Сменить имейл
+50b04ee5c0	Change your e-mail in Settings → Security (with your password; the new address is confirmed by mail). The new password is also typed twice.	Смена имейла в Настройки → Безопасность (с паролем; новый адрес подтверждается письмом). Новый пароль тоже вводится дважды.
+31d1c6733c	Your week in TransVerse	Твоя неделя в TransVerse
+455f73500d	This is already your e-mail.	Это уже ваш имейл.
+87f071770e	This e-mail is already in use.	Этот имейл уже используется.
+88b501d055	today: {0}	сегодня: {0}
+2bd2b047e6	“Arriving in ~5 min”: a notification before a longer trip ends, with the loads waiting there.	«Прибывает через ~5 мин»: уведомление перед концом долгого рейса, с грузами, которые ждут там.

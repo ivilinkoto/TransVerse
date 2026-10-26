@@ -4,7 +4,7 @@ import { Badge, Card, Empty, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { dateTime, int } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import { cupView } from '@/server/game/tournament';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -38,7 +38,7 @@ export default async function CupPage() {
           {cup.joined && <p className="mb-3 text-sm text-profit">{t('Записан си. Първият кръг започва на {0}.', dateTime(cup.rounds[0]!.from))}</p>}
           {!cup.signupOpen && now < cup.rounds[0]!.from && <p className="mb-3 text-sm text-mist-400">{t('Записването започва с обновлението.')}</p>}
           <div className="flex flex-wrap gap-2">{cup.entries.map((e) => <Badge key={e.userId} tone={e.userId === user.id ? 'cyan' : 'neutral'}>{t('{0} · ниво {1}', e.username, e.level)}</Badge>)}</div>
-          {isStaff(user.role) && cup.entries.length > 0 && (
+          {testsUnreleased(user) && cup.entries.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2 border-t border-white/5 pt-3 text-xs">
               <span className="text-mist-400">{t('Екип:')}</span>
               {cup.entries.map((e) => <ActionButton key={e.userId} endpoint="/api/admin/action" action={{ type: 'removeCupEntrant', userId: e.userId }} className="btn-ghost px-2 py-1 text-xs" confirm={t('Да махнем ли {0} от купата?', e.username)}>{t('Махни {0}', e.username)}</ActionButton>)}

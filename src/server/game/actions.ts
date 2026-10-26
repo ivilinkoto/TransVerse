@@ -28,7 +28,7 @@ import { pickHitchhiker } from '@/server/game/road-life';
 import { haggle } from '@/server/game/deals';
 import { buyShares, listCompany, sellShares } from '@/server/game/shares';
 import { enterTruck, voteTruck } from '@/server/game/truck-contest';
-import { setUiPrefs } from '@/server/game/ui-prefs';
+import { acceptTerms, setUiPrefs } from '@/server/game/ui-prefs';
 import { shareTrip } from '@/server/game/trip-log';
 import { decideChoice } from '@/server/game/road-choices';
 import { cancelConvoy, createConvoy, joinConvoy, leaveConvoy, postConvoyMessage } from '@/server/game/convoys';
@@ -45,7 +45,7 @@ import { joinRally } from '@/server/game/rally';
 import { buyGoods, clearStock, postFreight, rateHauler, shipGoods } from '@/server/game/trade';
 import { buyPremiumPass, claimPassRewards } from '@/server/game/season-pass';
 import { deleteChannelMessage, deleteConversation, messageBodySchema, postToChannel, sendDirectMessage, unsendDirectMessage } from '@/server/game/messages';
-import { inviteToCompany, removeFriend, respondCompanyInvite, respondFriendRequest, sendFriendRequest } from '@/server/game/social';
+import { inviteToCompany, removeFriend, respondCompanyInvite, respondFriendRequest, sendFriendRequest, setFavoriteTruck } from '@/server/game/social';
 import { buyListing, cancelListing, createListing } from '@/server/game/used-market';
 import { createTicket, replySchema, replyToTicket, setTicketStatus, ticketSchema } from '@/server/game/support';
 import { completeTutorialStep, setTutorialDismissed } from '@/server/game/tutorial';
@@ -209,6 +209,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('depositTreasury'), amountEur: z.coerce.number() }),
   z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean(), confirmName: z.string().max(40) }),
   z.object({ type: z.literal('renameCompany'), name: companyNameSchema }),
+  z.object({ type: z.literal('acceptTerms') }),
+  z.object({ type: z.literal('favoriteTruck'), vehicleId: id.nullable() }),
   z.object({ type: z.literal('dissolveCompany') }),
   z.object({ type: z.literal('buyLicence'), licence: z.string().max(30) }),
   z.object({ type: z.literal('buyCompanyLicence'), licenceId: z.string().max(20) }),
@@ -386,6 +388,7 @@ export const Action = z.discriminatedUnion('type', [
 const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   nameVehicle: 'truck_names',
   renameCompany: 'company_rename',
+  favoriteTruck: 'favorite_truck',
   sendMoney: 'transfers',
   offerJob: 'hire',
   declineJob: 'hire',
@@ -755,6 +758,11 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, amountCents: await depositToTreasury(db, user.id, input.amountEur) };
     case 'transferOwnership':
       await transferOwnership(db, user.id, input.userId, input.leave, input.confirmName);
+      return { ok: true };
+    case 'favoriteTruck':
+      return { ok: true, ...(await setFavoriteTruck(db, user.id, input.vehicleId)) };
+    case 'acceptTerms':
+      await acceptTerms(db, user.id);
       return { ok: true };
     case 'renameCompany':
       return { ok: true, ...(await renameCompany(db, user.id, input.name)) };

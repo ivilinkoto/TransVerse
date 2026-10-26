@@ -1,7 +1,7 @@
 import { Badge, Card, PageHeader, Stat } from '@/components/ui';
 import { int, money } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
-import { balanceSuggestion, economyOverview, FRAUD, fraudSignals, payFactor } from '@/server/admin-economy';
+import { balanceSuggestion, economyOverview, FRAUD, fraudSignals, payFactor, SECURITY, securitySignals } from '@/server/admin-economy';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { CompensationForm } from '@/components/admin/CompensationForm';
 import { featureLive } from '@/lib/game/features';
@@ -24,7 +24,7 @@ const pct = (x: number) => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1).replace('
 export default async function AdminEconomy() {
   await initLocale();
   const { db, now, user } = await adminContext();
-  const [eco, fraud, factor] = await Promise.all([economyOverview(db, now), fraudSignals(db, now), payFactor(db)]);
+  const [eco, fraud, factor, security] = await Promise.all([economyOverview(db, now), fraudSignals(db, now), payFactor(db), securitySignals(db, now)]);
   const suggestion = balanceSuggestion(eco.inflation, factor);
   const payChange = eco.avgPay != null && eco.avgPayLastWeek ? eco.avgPay / eco.avgPayLastWeek - 1 : null;
   return (
@@ -110,6 +110,32 @@ export default async function AdminEconomy() {
                   <span className="num">{money(f.net)} <span className="text-xs text-mist-400">{tr('(превози {0} · други {1})', money(f.freight), money(f.other))}</span></span>
                 </li>
               ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      <h2 className="font-display text-xl font-bold">{tr('Регистрация и вход')}</h2>
+      <p className="-mt-4 text-sm text-mist-400">{tr('Признаци за ботове или опити за чужд профил (1.1.2). Адресите са показани само като хеш.')}</p>
+      <div className="grid gap-6 xl:grid-cols-3">
+        <Card title={tr('Много регистрации от една мрежа (24 ч, от {0})', SECURITY.signupBurst)}>
+          {security.bursts.length === 0 ? <p className="text-sm text-mist-400">{tr('Няма.')}</p> : (
+            <ul className="space-y-1.5 text-sm">
+              {security.bursts.map((n) => <li key={n.hash}><Badge tone="orange">{tr('{0} акаунта', n.n)}</Badge> <span className="font-mono text-xs text-mist-400">{tx(n.hash)}</span> {n.users.join(', ')}</li>)}
+            </ul>
+          )}
+        </Card>
+        <Card title={tr('Неуспешни „Не съм робот“ (24 ч, от {0})', SECURITY.captchaFails)}>
+          {security.captcha.length === 0 ? <p className="text-sm text-mist-400">{tr('Няма.')}</p> : (
+            <ul className="space-y-1.5 text-sm">
+              {security.captcha.map((c) => <li key={c.hash} className="flex justify-between gap-2"><span className="font-mono text-xs text-mist-400">{tx(c.hash)}</span><span className="num">{tr('{0} пъти', c.n)}</span></li>)}
+            </ul>
+          )}
+        </Card>
+        <Card title={tr('Грешни пароли за един профил (15 мин, от {0})', SECURITY.loginFails)}>
+          {security.logins.length === 0 ? <p className="text-sm text-mist-400">{tr('Няма.')}</p> : (
+            <ul className="space-y-1.5 text-sm">
+              {security.logins.map((l) => <li key={l.login} className="flex justify-between gap-2"><span>{tx(l.login)}</span><span className="num text-loss">{tr('{0} пъти', l.n)}</span></li>)}
             </ul>
           )}
         </Card>
