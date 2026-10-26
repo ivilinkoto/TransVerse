@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { Building2, Sparkles, Star, Users } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AvatarUpload } from '@/components/game/AvatarUpload';
@@ -11,7 +11,9 @@ import { PREMIUM_LEVELS, REPUTATION_TIERS, reputationBonusShare, reputationTier 
 import { gameContext } from '@/server/game/context';
 import { ProfileShowcase } from '@/components/game/ProfileShowcase';
 import { ShowcaseEditor } from '@/components/game/ShowcaseEditor';
-import { users } from '@/server/db/schema';
+import { companyInvites, companyMembers, users } from '@/server/db/schema';
+import { SelectAction } from '@/components/ui/SelectAction';
+import { can, membershipOf } from '@/server/game/membership';
 import { showcaseOf } from '@/server/game/community';
 import { badgesOf } from '@/server/game/halloween';
 import { fleetView } from '@/server/game/queries';
@@ -31,6 +33,16 @@ export default async function ProfilePage() {
   const [card, social, invites] = await Promise.all([playerCard(db, user.id, user.username, now), friendsOf(db, user.id, now), myCompanyInvites(db, user.id)]);
   if (!card) notFound();
   const showcase = features.profile_showcase ? { mine: await showcaseOf(db, user.id), fleet: (await fleetView(db, company.id)).vehicles.filter((v) => v.ownership !== 'rented'), badges: await badgesOf(db, user.id), chosen: (await db.select({ s: users.showcase }).from(users).where(eq(users.id, user.id)))[0]!.s } : null;
+  // 1.1.2: the truck on the player card, and "Покани в компанията" next to friends without one.
+  const fleet = features.favorite_truck ? (await fleetView(db, company.id)).vehicles : [];
+  const [{ fav = null } = {}] = features.favorite_truck ? await db.select({ fav: users.favoriteVehicleId }).from(users).where(eq(users.id, user.id)) : [];
+  const mine = features.friends_invite && social.friends.length ? await membershipOf(db, user.id) : null;
+  const friendIds = social.friends.map((f) => f.id);
+  const busy = mine && can(mine.rank, 'recruit') ? new Set([
+    ...(await db.select({ id: companyMembers.userId }).from(companyMembers).where(inArray(companyMembers.userId, friendIds))).map((r) => r.id),
+    ...(await db.select({ id: companyInvites.userId }).from(companyInvites).where(and(eq(companyInvites.companyId, mine.company.id), eq(companyInvites.status, 'pending'), inArray(companyInvites.userId, friendIds)))).map((r) => r.id),
+  ]) : null;
+  const invitable = busy ? friendIds.filter((id) => !busy.has(id)) : [];
   const tier = reputationTier(company.reputation);
   const next = REPUTATION_TIERS.find((t) => t.min > company.reputation);
   return (
@@ -44,6 +56,15 @@ export default async function ProfilePage() {
               <p className="mb-3 text-sm text-mist-300">{tr('До 3 камиона и 3 значки, които другите виждат в профила ти.')}</p>
               <ProfileShowcase showcase={showcase.mine} />
               <div className="mt-4 border-t border-asphalt-800 pt-4"><ShowcaseEditor trucks={showcase.fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${v.model.brand} ${v.model.name}` }))} badges={showcase.badges.map((b) => ({ id: b.id, label: b.label }))} chosen={showcase.chosen} /></div>
+            </Card>
+          )}
+          {features.favorite_truck && fleet.length > 0 && (
+            <Card title={tr('Любим камион')}>
+              <p className="mb-3 text-sm text-mist-300">{tr('Камионът, който другите виждат в картата ти на играч.')}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <SelectAction label={tr('Запази')} ariaLabel={tr('Любим камион')} value={fav ?? fleet[0]!.id} options={fleet.map((v) => ({ value: v.id, label: `${v.nickname ? `${v.nickname} · ` : ''}${v.plate} · ${v.model.brand} ${v.model.name}` }))} action={{ type: 'favoriteTruck' }} field="vehicleId" />
+                {fav && <ActionButton action={{ type: 'favoriteTruck', vehicleId: null }} className="btn-ghost px-3 py-1.5 text-xs">{tr('Не показвай')}</ActionButton>}
+              </div>
             </Card>
           )}
           <Card title={tr('Снимка на профила')}><AvatarUpload userId={user.id} username={user.username} version={user.avatarVersion} vip={card.vip} /></Card>
@@ -76,7 +97,7 @@ export default async function ProfilePage() {
           </Card>
         </div>
         <Card id="friends" title={<span className="inline-flex items-center gap-2"><Users className="h-4 w-4 text-cyan-glow" />{tr('Приятели')}</span>}>
-          <FriendsPanel {...social} />
+          <FriendsPanel {...social} invitable={invitable} />
         </Card>
       </div>
     </div>

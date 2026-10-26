@@ -4,7 +4,8 @@ import { levelProgress, reputationTier } from '@/lib/game/progression';
 import { isOnline, lastSeenLabel } from '@/lib/game/social';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, userBlocks, users, haulerRatings } from '@/server/db/schema';
+import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, userBlocks, users, haulerRatings, vehicles } from '@/server/db/schema';
+import { featureFor } from '@/server/features';
 import { badgesOf } from './halloween';
 import { assertNotBlocked } from './moderation';
 import { fail } from './errors';
@@ -44,6 +45,10 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
   const [{ friends = 0 } = {}] = await db.select({ friends: sql<number>`count(*)::int` }).from(friendships).where(and(eq(friendships.status, 'accepted'), or(eq(friendships.requesterId, u.id), eq(friendships.addresseeId, u.id))));
   // v1.4: stars from the goods owners this player hauled for (the freight exchange).
   const [hauler] = await db.select({ stars: sql<number | null>`avg(${haulerRatings.stars})::float`, count: sql<number>`count(${haulerRatings.stars})::int` }).from(haulerRatings).where(eq(haulerRatings.haulerUserId, u.id));
+  // 1.1.2: the truck the player chose to show (still theirs).
+  const [favorite] = u.favoriteVehicleId && account && (await featureFor(db, viewerId, 'favorite_truck', now))
+    ? await db.select({ modelId: vehicles.modelId, color: vehicles.color, plate: vehicles.plate, nickname: vehicles.nickname }).from(vehicles).where(and(eq(vehicles.id, u.favoriteVehicleId), eq(vehicles.companyId, account.id)))
+    : [];
   return {
     id: u.id,
     username: u.username,
@@ -71,6 +76,7 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     /** The viewer has blocked this player. */
     blocked: !!blockRow,
     hauler: hauler?.count ? { stars: Math.round((hauler.stars ?? 0) * 10) / 10, count: hauler.count } : null,
+    favorite: favorite ?? null,
   };
 }
 export type PlayerCard = NonNullable<Awaited<ReturnType<typeof playerCard>>>;
@@ -193,4 +199,14 @@ export async function myCompanyInvites(db: DbOrTx, userId: string) {
     .leftJoin(users, eq(users.id, companyInvites.invitedBy))
     .where(and(eq(companyInvites.userId, userId), eq(companyInvites.status, 'pending')))
     .orderBy(desc(companyInvites.createdAt));
+}
+
+/** 1.1.2: the truck shown on the player card (one of the player's own; null clears it). */
+export async function setFavoriteTruck(db: DbOrTx, userId: string, vehicleId: string | null) {
+  if (vehicleId) {
+    const [own] = await db.select({ id: vehicles.id }).from(vehicles).innerJoin(companies, eq(companies.id, vehicles.companyId)).where(and(eq(vehicles.id, vehicleId), eq(companies.ownerId, userId)));
+    if (!own) fail('vehicle_not_found', t('Камионът не е намерен.'), 404);
+  }
+  await db.update(users).set({ favoriteVehicleId: vehicleId }).where(eq(users.id, userId));
+  return { vehicleId };
 }

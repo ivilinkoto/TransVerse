@@ -1,6 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { featureDate, featureLive } from '@/lib/game/features';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 import { runAction, type GameAction } from '@/server/game/actions';
@@ -82,7 +82,7 @@ export function linked(ctx: Ctx) {
 /** Game features from Discord follow the release like in the game (staff first). */
 export function released(ctx: Ctx) {
   const me = linked(ctx);
-  if (!featureLive('discord_bot', ctx.now, isStaff(me.role))) {
+  if (!featureLive('discord_bot', ctx.now, testsUnreleased(me))) {
     const at = featureDate('discord_bot');
     stop(t('Това тръгва с обновлението{0}. 🚚', at ? t(' на {0}', at.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })) : ''));
   }

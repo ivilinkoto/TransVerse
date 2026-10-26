@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { liveFeatures } from '@/lib/game/features';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import { getDb } from '@/server/db/client';
 import { currentUser } from '@/server/http';
 import { userWithCompany } from './company';
@@ -22,5 +22,5 @@ export const gameContext = cache(async () => {
   // One timestamp per request keeps every page render consistent (and pure).
   const now = new Date();
   // Features of an update that is not out yet are on only for staff (to test them).
-  return { db, user: fresh.user, company: fresh.company, hq: fresh.hq, now, features: liveFeatures(now, isStaff(fresh.user.role)) };
+  return { db, user: fresh.user, company: fresh.company, hq: fresh.hq, now, features: liveFeatures(now, testsUnreleased(fresh.user)) };
 });

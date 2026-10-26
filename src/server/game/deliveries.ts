@@ -13,7 +13,7 @@ import { collectPostcards, dropHitchhiker, maybeHitchhiker } from './road-life';
 import { agreedHaggle, settleDeals } from './deals';
 import { reliefDelivered } from './relief';
 import { internDelivery, traditionBonus } from './company-life';
-import { checkCabotage, requireTeam, transEuropeDone } from './europe';
+import { requireTeam, transEuropeDone } from './europe';
 import { specializationBonus } from './specialization';
 import { holdingBonus } from './holdings';
 import { legacyBonus } from './legacy';
@@ -244,9 +244,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const [to] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.destCityId));
     const missing = missingFor({ cargoType: contract!.cargoType, originCountry: from!.country, destCountry: to!.country, routeCountries: loadedRoute!.countries }, await heldLicences(tx, userId));
     if (missing.length) fail('licence_required', t('Нужен е лиценз: {0}. Купува се от раздел „Лицензи“.', licenceNames(missing)));
-    // v1.7: trans-European loads need a two-driver crew; cabotage is limited in a foreign country.
+    // v1.7: trans-European loads need a two-driver crew.
     if (contract!.transEurope && (await featureFor(tx, userId, 'trans_europe', now))) requireTeam(contract!, bundle.coDriver?.id);
-    await checkCabotage(tx, userId, bundle.vehicle.companyId, contract!, now);
     if (bundle.vehicle.cityId !== (emptyRoute ? emptyRoute.fromCityId : contract!.originCityId)) fail('vehicle_moved', t('Превозното средство смени местоположението си. Опитайте отново.'), 409);
 
     // VIP early access to urgent shipments.

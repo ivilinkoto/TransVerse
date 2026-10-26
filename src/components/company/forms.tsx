@@ -219,19 +219,43 @@ export function DepositForm() {
   );
 }
 
+/** 1.1.2: the owner renames the company (once per `days`). */
+export function RenameCompanyForm({ current, days, nextAt }: { current: string; days: number; nextAt: string | null }) {
+  const [name, setName] = useState(current);
+  const { error, saved, busy, run } = useSubmit();
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    run(() => api('/api/game/action', { type: 'renameCompany', name: name.trim() }));
+  };
+  return (
+    <form onSubmit={submit} className="space-y-2">
+      <p className="text-sm text-mist-300">{nextAt ? t('Името може да се смени отново на {0}.', nextAt) : t('Името се сменя веднъж на {0} дни. Членовете получават известие.', days)}</p>
+      <div className="flex gap-2">
+        <input id="companyName" className="input min-w-0 flex-1" value={name} onChange={(e) => setName(e.target.value)} minLength={3} maxLength={40} aria-label={t('Име на компанията')} disabled={!!nextAt} />
+        <button className="btn-primary" disabled={busy || !!nextAt || name.trim().length < 3 || name.trim() === current}>{busy ? '…' : t('Смени')}</button>
+      </div>
+      <Feedback error={error} saved={saved} okText={t('Името е сменено.')} />
+    </form>
+  );
+}
+
 /** Owner hands the company over to a member, optionally leaving it right away. */
-export function TransferOwnershipForm({ members }: { members: { userId: string; label: string }[] }) {
+export function TransferOwnershipForm({ members }: { members: { userId: string; username: string; label: string }[] }) {
   const [target, setTarget] = useState(members[0]?.userId ?? '');
   const [leave, setLeave] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [typed, setTyped] = useState('');
   const { error, busy, run } = useSubmit();
   if (!members.length) return <p className="text-sm text-mist-400">{t('В компанията няма други членове, на които да предадете собствеността.')}</p>;
-  const name = members.find((m) => m.userId === target)?.label ?? '';
+  const heir = members.find((m) => m.userId === target);
+  const name = heir?.label ?? '';
+  // 1.1.2: the owner types the heir's name (checked again on the server).
+  const matches = !!heir && typed.trim().toLowerCase() === heir.username.toLowerCase();
   return (
     <div className="space-y-3">
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium text-mist-300">{t('Нов собственик')}</span>
-        <select className="input" value={target} onChange={(e) => { setTarget(e.target.value); setConfirming(false); }} aria-label={t('Нов собственик')}>
+        <select className="input" value={target} onChange={(e) => { setTarget(e.target.value); setConfirming(false); setTyped(''); }} aria-label={t('Нов собственик')}>
           {members.map((m) => <option key={m.userId} value={m.userId}>{tx(m.label)}</option>)}
         </select>
       </label>
@@ -242,9 +266,13 @@ export function TransferOwnershipForm({ members }: { members: { userId: string; 
       {confirming ? (
         <div className="space-y-2 rounded-xl border border-loss/40 bg-loss/10 p-3 text-sm">
           <p>{t('Предавате „{0}“ всички права на собственик{1}. Това не може да се отмени от вас.', name, leave ? t(' и напускате компанията') : t(' и ставате заместник'))}</p>
+          <label className="block">
+            <span className="mb-1 block">{t('За потвърждение напишете името на новия собственик: {0}', heir?.username ?? '')}</span>
+            <input className="input" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" aria-label={t('Име на новия собственик')} />
+          </label>
           <div className="flex gap-2">
-            <button className="btn-danger" disabled={busy} onClick={() => run(() => api('/api/game/action', { type: 'transferOwnership', userId: target, leave }))}>{busy ? '…' : t('Потвърди')}</button>
-            <button className="btn-ghost" onClick={() => setConfirming(false)}>{t('Отказ')}</button>
+            <button className="btn-danger" disabled={busy || !matches} onClick={() => run(() => api('/api/game/action', { type: 'transferOwnership', userId: target, leave, confirmName: typed }))}>{busy ? '…' : t('Потвърди')}</button>
+            <button className="btn-ghost" onClick={() => { setConfirming(false); setTyped(''); }}>{t('Отказ')}</button>
           </div>
         </div>
       ) : (

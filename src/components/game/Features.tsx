@@ -21,11 +21,16 @@ export function useFeature(id: FeatureId): boolean {
   return useContext(Ctx)[id] ?? true;
 }
 
-/** v1.9: the player's level and menu choice, for the menu that grows with the level. */
-const PlayerCtx = createContext<{ level: number; showAll: boolean }>({ level: 99, showAll: true });
+/** v1.9: the player's level and menu choice, for the menu that grows with the level; v1.1.2: whether the viewer is staff. */
+const PlayerCtx = createContext<{ level: number; showAll: boolean; staff?: boolean }>({ level: 99, showAll: true });
 
-export function PlayerUiProvider({ value, children }: { value: { level: number; showAll: boolean }; children: ReactNode }) {
+export function PlayerUiProvider({ value, children }: { value: { level: number; showAll: boolean; staff?: boolean }; children: ReactNode }) {
   return <PlayerCtx.Provider value={value}>{children}</PlayerCtx.Provider>;
+}
+
+/** v1.1.2: is the viewer staff? Staff badges next to names are shown only to the staff. */
+export function useViewerStaff(): boolean {
+  return !!useContext(PlayerCtx).staff;
 }
 
 /** The menu's view of the player, or null when the menu shows everything (feature off). */

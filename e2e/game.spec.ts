@@ -9,6 +9,11 @@ async function register(page: Page) {
   await page.fill('#username', `e2e_${tag}`.slice(0, 20));
   await page.fill('#email', `e2e${tag}@example.com`);
   await page.fill('#password', 'abc123'); // 6 characters are enough
+  await page.fill('#passwordConfirm', 'abc123');
+  await page.check('#acceptTerms');
+  // 1.1.2: the browser solves the "Не съм робот" puzzle.
+  await page.click('#captcha');
+  await expect(page.locator('#captcha')).toHaveAttribute('aria-checked', 'true', { timeout: 30_000 });
   await page.click('button[type=submit]');
   await page.waitForURL('**/game');
   await expect(page.getByRole('heading', { name: 'Табло' })).toBeVisible();

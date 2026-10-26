@@ -6,7 +6,7 @@ import { SelectAction } from '@/components/ui/SelectAction';
 import { SEASON_IDS, SEASONS, activeSeason } from '@/lib/game/seasonal';
 import { seasonMode } from '@/server/seasonal';
 import { dateTime, int } from '@/lib/format';
-import { adminStats, auditLog } from '@/server/admin';
+import { adminStats, auditLog, newPlayerFunnel } from '@/server/admin';
 import { adminContext } from '@/server/admin-context';
 import { describeAudit } from '@/server/audit-format';
 import { isAdmin } from '@/server/auth/roles';
@@ -19,7 +19,8 @@ export default async function AdminDashboard() {
   const { db, user } = await adminContext();
   const mode = await seasonMode(db);
   const season = activeSeason(new Date(), mode);
-  const [stats, tickets, audit] = await Promise.all([adminStats(db), staffTicketList(db, 'open'), isAdmin(user.role) ? auditLog(db, 8) : Promise.resolve([])]);
+  const [stats, tickets, audit, funnel] = await Promise.all([adminStats(db), staffTicketList(db, 'open'), isAdmin(user.role) ? auditLog(db, 8) : Promise.resolve([]), newPlayerFunnel(db)]);
+  const pct = (n: number) => (funnel.week ? Math.round((n / funnel.week) * 100) : 0);
   return (
     <div className="space-y-6">
       <PageHeader title={t('Админ панел')} subtitle={t('Състояние на света и на общността.')} actions={isAdmin(user.role) ? <ActionButton endpoint="/api/admin/action" action={{ type: 'replenishMarket' }}>{t('Попълни пазара сега')}</ActionButton> : undefined} />
@@ -29,6 +30,24 @@ export default async function AdminDashboard() {
         <Stat label={t('Доставки')} value={int(stats.activeDeliveries)} icon={Truck} tone="gold" hint={t('активни · {0} завършени за 24 ч', stats.deliveries24h)} />
         <Stat label={t('Пазар и маршрути')} value={int(stats.openContracts)} icon={Route} tone="profit" hint={t('отворени поръчки · {0} маршрута ({1} приблизителни)', stats.routes, stats.approxRoutes)} />
       </div>
+      <Card title={t('Нови играчи (7 дни)')} actions={<span className="text-xs text-mist-400">{t('днес: {0}', funnel.today)}</span>}>
+        <div className="grid gap-3 sm:grid-cols-5">
+          {[
+            { label: t('Регистрирани'), n: funnel.week, share: 100 },
+            { label: t('Първи курс'), n: funnel.first, share: pct(funnel.first) },
+            { label: t('5+ курса'), n: funnel.five, share: pct(funnel.five) },
+            { label: t('Върнали се на следващия ден'), n: funnel.back, share: pct(funnel.back) },
+            { label: t('В компания'), n: funnel.company, share: pct(funnel.company) },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl border border-asphalt-700 p-3">
+              <div className="text-xs text-mist-400">{s.label}</div>
+              <div className="num mt-1 font-display text-xl font-bold">{int(s.n)} <span className="text-sm font-normal text-mist-400">{s.share}%</span></div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-asphalt-700"><div className="h-full rounded-full bg-cyan-glow" style={{ width: `${s.share}%` }} /></div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-mist-400">{t('Където процентът пада рязко, там новите играчи се отказват. Сигналите за ботове са в „Икономика“ → „Регистрация и вход“.')}</p>
+      </Card>
       {isAdmin(user.role) && (
         <Card title={t('Празнична тема')} actions={<span className="text-xs text-mist-400">{season ? t('сега: {0}', SEASONS[season].label) : t('сега: основен дизайн')}</span>}>
           <div className="grid gap-3 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] sm:items-center">

@@ -1,6 +1,6 @@
 import { and, eq, isNull, lte, sql } from 'drizzle-orm';
 import type { Metadata } from 'next';
-import { MailWarning } from 'lucide-react';
+import { Eye, MailWarning } from 'lucide-react';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { LiveUpdates } from '@/components/game/LiveUpdates';
 import { ChatDock } from '@/components/game/ChatDock';
@@ -27,7 +27,9 @@ import { liveFeatures } from '@/lib/game/features';
 import { isChristmas } from '@/lib/game/christmas';
 import { isMarta } from '@/lib/game/marta';
 import { isEaster } from '@/lib/game/easter';
-import { isStaff } from '@/server/auth/roles';
+import { isStaff, testsUnreleased } from '@/server/auth/roles';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { TermsPrompt } from '@/components/game/TermsPrompt';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
 import { claimableCount } from '@/server/game/missions';
@@ -47,7 +49,9 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   await initLocale();
   const { db, user, company, hq, now } = await gameContext();
   const staff = isStaff(user.role);
-  const fresh = unseenRelease(user.seenVersion, now, staff);
+  // 1.1.2: staff who look at the game as a player see what players see (no unreleased features, no staff badges).
+  const testing = testsUnreleased(user);
+  const fresh = unseenRelease(user.seenVersion, now, testing);
   const holiday = [isHalloween(now) && 'halloween', isChristmas(now) && 'christmas', isMarta(now) && 'marta', isSpring(now) && 'spring', isEaster(now) && 'easter'].filter(Boolean).join(',') || null;
   // Everything the frame needs, at once (it renders on every page).
   const [attention, tutorial, membership, missions, [{ unread = 0 } = {}], [live]] = await Promise.all([
@@ -60,7 +64,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1),
   ]);
   // v1.9: pages the player's level just unlocked in the menu ("Ново за теб").
-  const features = liveFeatures(now, staff);
+  const features = liveFeatures(now, testing);
   const unlockable = unlockTabs().filter((t) => !t.feature || features[t.feature]).map((t) => ({ ...t, minLevel: t.minLevel! }));
   const pending = features.progressive_unlock && !user.uiPrefs?.showAll && !(tutorial.active && tutorial.step) && !fresh ? await pendingUnlocks(db, user, unlockable) : [];
   const unlocks = pending.flatMap((href) => {
@@ -70,12 +74,19 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   });
   return (
     <FeaturesProvider value={features}>
-      <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll }}>
+      <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll, staff: testing }}>
       <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
-        <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
+        <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, testing)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
           <InstallAppBanner />
+          {staff && !testing && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2 text-sm sm:px-6">
+              <Eye className="h-4 w-4 text-cyan-glow" />
+              <span>{tr('Гледаш играта като играч: без неиздадените функции и без значките на екипа.')}</span>
+              <ActionButton action={{ type: 'uiPrefs', asPlayer: false }} className="btn-ghost px-3 py-1 text-xs">{tr('Върни изгледа на екипа')}</ActionButton>
+            </div>
+          )}
           {!user.emailVerifiedAt && mailConfig().enabled && (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
               <MailWarning className="h-4 w-4 text-amber-sig" />
@@ -96,6 +107,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         <PlayerCardHost />
         <ReportHost />
         <RegisterServiceWorker />
+        {!user.termsAcceptedAt && <TermsPrompt />}
         {unlocks.length > 0 && <UnlockNotice items={unlocks} />}
         {fresh && !(tutorial.active && tutorial.step) && (
           <WhatsNew version={fresh.version}>

@@ -19,6 +19,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
 
@@ -158,7 +159,12 @@ export const users = pgTable(
     locale: text('locale').notNull().default('bg'),
     /** v2.0 legacy stars (New Game+), 0…5. */
     legacyStars: integer('legacy_stars').notNull().default(0),
-    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[] }>().notNull().default({}),
+    /** asPlayer (1.1.2): a staff member looks at the game as a player (no unreleased features, no staff badges). */
+    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean }>().notNull().default({}),
+    /** 1.1.2: when the player agreed to the terms and the privacy policy (null for accounts made before). */
+    termsAcceptedAt: ts('terms_accepted_at'),
+    /** 1.1.2: the truck the player shows on their player card (one of their own). */
+    favoriteVehicleId: uuid('favorite_vehicle_id').references((): AnyPgColumn => vehicles.id, { onDelete: 'set null' }),
     lastSeenAt: ts('last_seen_at'),
     /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
     seenVersion: text('seen_version'),
@@ -220,6 +226,14 @@ export const sessions = pgTable(
   },
   (t) => [index('sessions_user_idx').on(t.userId)],
 );
+
+/** 1.1.2: proof-of-work puzzles for sign-up (each is solved once, then deleted). */
+export const captchaChallenges = pgTable('captcha_challenges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  salt: text('salt').notNull(),
+  answer: integer('answer').notNull(),
+  expiresAt: ts('expires_at').notNull(),
+});
 
 export const rateLimits = pgTable('rate_limits', {
   key: text('key').primaryKey(),
@@ -519,6 +533,8 @@ export const deliveries = pgTable(
     estimatedCosts: jsonb('estimated_costs').notNull(),
     startedAt: ts('started_at').notNull(),
     etaAt: ts('eta_at').notNull(),
+    /** 1.1.2: when the player was told the truck arrives in ~5 minutes (once per trip). */
+    soonNotifiedAt: ts('soon_notified_at'),
     deadlineAt: ts('deadline_at').notNull(),
     completedAt: ts('completed_at'),
     late: boolean('late'),
@@ -812,6 +828,8 @@ export const organizations = pgTable(
     /** v1.9: the company's own day (MM-DD) and its name. */
     traditionDay: text('tradition_day'),
     traditionName: text('tradition_name'),
+    /** 1.1.2: when the owner last renamed the company. */
+    renamedAt: ts('renamed_at'),
     sharePriceCents: money('share_price_cents').notNull().default(0),
     foundedAt: ts('founded_at').notNull().defaultNow(),
     createdAt: createdAt(),

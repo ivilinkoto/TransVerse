@@ -115,7 +115,7 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'removeCupEntrant':
       return { ok: true, ...(await adminRemoveCupEntrant(db, user, input.userId)) };
     case 'compensateAll':
-      requireFeature('compensation', user.role);
+      requireFeature('compensation', user);
       return { ok: true, ...(await compensateAll(db, user, { kind: input.kind, amount: input.amount, reason: input.reason })) };
     case 'adjustCoins':
       await adjustCoins(db, user, input.userId, input.amount, input.reason);

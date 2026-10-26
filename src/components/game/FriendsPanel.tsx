@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, MessageSquare, X } from 'lucide-react';
+import { Building2, Check, MessageSquare, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
@@ -22,7 +22,8 @@ interface Friend {
 }
 
 /** Friends with online status, and friendship requests to answer. */
-export function FriendsPanel({ friends, received, sent }: { friends: Friend[]; received: Friend[]; sent: Friend[] }) {
+/** `invitable` (1.1.2): friends the player may invite to their company (not in one, not invited yet). */
+export function FriendsPanel({ friends, received, sent, invitable = [] }: { friends: Friend[]; received: Friend[]; sent: Friend[]; invitable?: string[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const act = async (action: Record<string, unknown>) => {
@@ -71,7 +72,10 @@ export function FriendsPanel({ friends, received, sent }: { friends: Friend[]; r
           <p className="text-sm text-mist-400">{t('Още нямаш приятели. Натисни името на играч — в чата, класациите или компанията — и избери „Добави приятел“.')}</p>
         ) : (
           <ul className="divide-y divide-asphalt-800">
-            {friends.map((f) => row(f, <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => openDirectChat(f.id, f.username)}><MessageSquare className="h-3.5 w-3.5" />{t('Пиши')}</button>))}
+            {friends.map((f) => row(f, <>
+              {invitable.includes(f.id) && <button type="button" className="btn-ghost px-3 py-1.5 text-xs" disabled={busy} onClick={() => void act({ type: 'companyInvite', userId: f.id })}><Building2 className="h-3.5 w-3.5" />{t('Покани')}</button>}
+              <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => openDirectChat(f.id, f.username)}><MessageSquare className="h-3.5 w-3.5" />{t('Пиши')}</button>
+            </>))}
           </ul>
         )}
       </div>

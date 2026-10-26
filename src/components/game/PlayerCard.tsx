@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import type { PlayerCard as Card } from '@/server/game/social';
 import { GhostTruckIcon, PumpkinIcon } from '@/components/seasonal/icons';
+import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { Avatar } from './Avatar';
 import { LeagueBadge } from './LeagueBadge';
 import { PlayerName } from './PlayerName';
@@ -87,6 +88,16 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
         <Stat label={t('Доставки')} value={card.deliveries.toLocaleString(intlLocale())} sub={card.kind === 'company' ? t('собствен автопарк') : t('шофьор')} />
         <Stat label={t('Приятели')} value={card.friends} />
       </div>
+      {card.favorite && (
+        <div className="mt-3 flex items-center gap-3 rounded-xl border border-asphalt-700 bg-asphalt-850/60 px-3 py-2">
+          <VehicleIllustration modelId={card.favorite.modelId} color={card.favorite.color} className="h-12 w-auto max-w-[160px] shrink-0" />
+          <div className="min-w-0 text-sm">
+            <div className="text-[11px] text-mist-400">{t('Любим камион')}</div>
+            <div className="truncate font-semibold">{card.favorite.nickname ? tx(card.favorite.nickname) : card.favorite.plate}</div>
+            {card.favorite.nickname && <div className="text-xs text-mist-400">{card.favorite.plate}</div>}
+          </div>
+        </div>
+      )}
       {card.hauler && <p className="mt-2 text-sm text-mist-300">{t('Превозвач на борсата:')}{' '}<span className="text-gold-400">★ {card.hauler.stars.toLocaleString(intlLocale())}</span>{' '}{t('от {0} {1}', card.hauler.count, card.hauler.count === 1 ? t('оценка') : t('оценки'))}</p>}
 
       {careerLink && career && <Link href={`/game/players/${encodeURIComponent(card.username)}`} onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan-glow hover:underline"><Truck className="h-4 w-4" />{t('Кариера: курсове, рекорди, любими линии →')}</Link>}

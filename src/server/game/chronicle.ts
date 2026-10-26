@@ -3,7 +3,7 @@ import type { DbOrTx } from '@/server/db/client';
 import { companyChronicle, organizations } from '@/server/db/schema';
 import { t } from '@/i18n/t';
 
-export type ChronicleKind = 'level' | 'build' | 'battle' | 'project' | 'division' | 'anniversary' | 'alliance' | 'driver' | 'specialization' | 'museum' | 'assembly' | 'merger' | 'tradition' | 'key_client' | 'owner' | 'holding';
+export type ChronicleKind = 'level' | 'build' | 'battle' | 'project' | 'division' | 'anniversary' | 'alliance' | 'driver' | 'specialization' | 'museum' | 'assembly' | 'merger' | 'tradition' | 'key_client' | 'owner' | 'holding' | 'name';
 
 /** A big moment of a company, written to its chronicle (v1.5). */
 export async function addChronicle(tx: DbOrTx, organizationId: string, kind: ChronicleKind, text: string, at = new Date()) {

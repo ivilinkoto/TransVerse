@@ -2,7 +2,7 @@ import { and, desc, eq, gt, ilike, isNull, or, sql } from 'drizzle-orm';
 import { ALL_EVENT_TEMPLATES } from '@/lib/game/events';
 import { featureDate, featureLive } from '@/lib/game/features';
 import { dec, int, km, money, moneyPrecise } from '@/lib/format';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import type { DbOrTx } from '@/server/db/client';
 import { allianceMembers, alliances, cities, companies, contracts, organizations, routes, users } from '@/server/db/schema';
 import { allianceHall, allianceWeekView, playerAlliance } from '@/server/game/alliances';
@@ -138,7 +138,7 @@ async function linkedUser(db: DbOrTx, discordUserId: string) {
 export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date()): Promise<CommandReply> {
   const me = await linkedUser(db, input.discordUserId);
   // Before the release only the staff (linked) can use the bot, to test it.
-  if (!featureLive('discord_bot', now, !!me && isStaff(me.role))) {
+  if (!featureLive('discord_bot', now, !!me && testsUnreleased(me))) {
     const at = featureDate('discord_bot');
     return { ephemeral: true, content: tr('Ботът на TransVerse тръгва с обновлението{0}. 🚚', at ? tr(' на {0}', at.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })) : '') };
   }

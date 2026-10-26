@@ -8,7 +8,7 @@ import { PlayerName } from '@/components/game/PlayerName';
 import { ReportPostButton } from '@/components/game/ReportPostButton';
 import { dateTime } from '@/lib/format';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
 import { can, membershipOf } from '@/server/game/membership';
 import { recruitmentBoard } from '@/server/game/recruitment';
@@ -28,7 +28,7 @@ export default async function RecruitmentPage() {
   if (!features.recruitment_board) notFound();
   const [board, membership] = await Promise.all([recruitmentBoard(db, now), membershipOf(db, user.id)]);
   const recruiter = !!membership && can(membership.rank, 'recruit');
-  const staff = isStaff(user.role);
+  const staff = testsUnreleased(user);
   const canRemove = (p: { userId: string; orgId: string | null }) => staff || p.userId === user.id || (recruiter && p.orgId === membership!.company.id);
   return (
     <div className="space-y-6">

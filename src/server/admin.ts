@@ -275,3 +275,25 @@ export async function staffAttention(db: DbOrTx) {
     .from(sql`(select 1) as one`);
   return { tickets: row?.tickets ?? 0, reports: row?.reports ?? 0, total: (row?.tickets ?? 0) + (row?.reports ?? 0) };
 }
+
+/**
+ * 1.1.2: how the new players of the last 7 days are doing — who drove their
+ * first load, who drove five, who came back the next day. Shows where people
+ * give up.
+ */
+export async function newPlayerFunnel(db: DbOrTx, now = new Date()) {
+  const week = new Date(now.getTime() - 7 * 86_400_000);
+  const day = new Date(now.getTime() - 86_400_000);
+  const { rows } = await db.execute<{ today: number; week: number; first: number; five: number; back: number; company: number }>(sql`
+    select
+      count(*) filter (where u.created_at >= ${day})::int as today,
+      count(*)::int as week,
+      count(*) filter (where c.deliveries >= 1)::int as first,
+      count(*) filter (where c.deliveries >= 5)::int as five,
+      count(*) filter (where u.last_seen_at >= u.created_at + interval '1 day')::int as back,
+      count(*) filter (where exists (select 1 from company_members m where m.user_id = u.id))::int as company
+    from users u left join companies c on c.owner_id = u.id
+    where u.created_at >= ${week} and u.banned_at is null`);
+  const r = rows[0] ?? { today: 0, week: 0, first: 0, five: 0, back: 0, company: 0 };
+  return { today: Number(r.today), week: Number(r.week), first: Number(r.first), five: Number(r.five), back: Number(r.back), company: Number(r.company) };
+}

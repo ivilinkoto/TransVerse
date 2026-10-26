@@ -10,6 +10,13 @@ export const FEATURES = {
   // v1.1.1 (October 2026): small things that go live at once.
   truck_names: '1.1.1',
   online_now: '1.1.1',
+  // v1.1.2: company rename, report a problem from any page.
+  company_rename: '1.1.2',
+  report_problem: '1.1.2',
+  arriving_soon: '1.1.2',
+  weekly_report: '1.1.2',
+  favorite_truck: '1.1.2',
+  friends_invite: '1.1.2',
   transfers: '1.2',
   search: '1.2',
   map_circle: '1.2',
@@ -161,7 +168,6 @@ export const FEATURES = {
   new_look: '2.0',
   country_tolls: '1.7',
   low_emission_zones: '1.7',
-  cabotage: '1.7',
   sea_lines: '1.7',
   // v1.10 "Колони и истории".
   convoy_lobby: '1.10',

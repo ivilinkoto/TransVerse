@@ -9,7 +9,7 @@ import { trailerModel } from '@/lib/game/catalog';
 import { TRAILER_HIRE } from '@/lib/game/trailer-hire';
 import { cities, trailers } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import { trailerHireView } from '@/server/game/trailer-hire';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -65,7 +65,7 @@ export default async function TrailerHirePage({ searchParams }: { searchParams: 
           <Empty icon={Container} title={tr('Няма свободни ремаркета')}>{tr('Никой не предлага ремарке в момента.')}</Empty>
         )}
       </Card>
-      {isStaff(user.role) && view.all.length > 0 && (
+      {testsUnreleased(user) && view.all.length > 0 && (
         <Card title={tr('Екип: всички наеми')}>
           <ul className="divide-y divide-white/5 text-sm">
             {view.all.map((o) => (

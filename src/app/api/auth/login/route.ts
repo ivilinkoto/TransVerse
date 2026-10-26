@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server';
 import { LOCALE_COOKIE } from '@/i18n/config';
 import { users } from '@/server/db/schema';
 import { authenticate, loginSchema } from '@/server/auth/accounts';
+import { clearLoginFailures, loginNeedsCaptcha, recordCaptchaFailure, recordLoginFailure, verifyCaptcha } from '@/server/auth/captcha';
+import { hashIp } from '@/server/game/referrals';
 import { rateLimit } from '@/server/auth/rate-limit';
+import { fail, GameError } from '@/server/game/errors';
+import { t } from '@/i18n/t';
 import { createSession, sessionCookie } from '@/server/auth/session';
 import { getDb } from '@/server/db/client';
 import { clientIp, handler } from '@/server/http';
@@ -13,7 +17,20 @@ export const POST = handler({ auth: false, schema: loginSchema, perMinute: 30 },
   // Brute-force protection per IP and per account name.
   await rateLimit(db, `login:ip:${await clientIp()}`, 20, 900);
   await rateLimit(db, `login:id:${input.login.toLowerCase()}`, 8, 900);
-  const userId = await authenticate(db, input);
+  // 1.1.2: after a few wrong passwords the form asks "Не съм робот" too.
+  const ip = await clientIp();
+  if (await loginNeedsCaptcha(db, ip, input.login)) {
+    if (!input.captcha) fail('captcha_required', t('Няколко грешни опита — потвърдете, че не сте робот.'), 400);
+    await verifyCaptcha(db, input.captcha!).catch(async (e: unknown) => {
+      await recordCaptchaFailure(db, await hashIp(db, ip));
+      throw e;
+    });
+  }
+  const userId = await authenticate(db, input).catch(async (e: unknown) => {
+    if (e instanceof GameError && e.code === 'invalid_credentials') await recordLoginFailure(db, ip, input.login);
+    throw e;
+  });
+  await clearLoginFailures(db, ip, input.login);
   const { token, expiresAt } = await createSession(db, userId, request.headers.get('user-agent'));
   const response = NextResponse.json({ ok: true });
   response.cookies.set(sessionCookie(token, expiresAt));

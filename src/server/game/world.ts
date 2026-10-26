@@ -65,6 +65,7 @@ import { awardBuildersOfWeek } from './base-life';
 import { announceFromGame } from '@/server/discord/announce';
 import { processOutbox } from '@/server/discord/outbox';
 import { bridgeCompanyChat, relayArrivingSoon, relayNotifications } from '@/server/discord/relay';
+import { notifyArrivingSoon, sendWeeklyReports } from './heads-up';
 import { syncCompanyPolls } from '@/server/discord/company-polls';
 import { awardMostActive, treasuryReports, welcomeCompanyMembers } from '@/server/discord/company-life';
 import { voiceXp } from '@/server/discord/levels';
@@ -294,6 +295,12 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     if (featureLive('relay', now)) {
       await every(db, 'relays', 30 * 60_000, now, () => topUpRelays(db, now));
       await every(db, 'relays-expire', 10 * 60_000, now, () => expireRelays(db, now));
+    }
+    // 1.1.2: "пристига след ~5 мин" in the game, and the player's weekly report on Monday morning (Sofia).
+    await every(db, 'arriving-soon', 60_000, now, () => notifyArrivingSoon(db, now));
+    {
+      const [day, hour] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(now).filter((p) => p.type === 'weekday' || p.type === 'hour').map((p) => p.value);
+      if (day === 'Mon' && Number(hour) >= 9) await every(db, 'weekly-report', 6 * 24 * 3_600_000, now, () => sendWeeklyReports(db, now));
     }
     // v1.10: organized convoys leave on time; the game's Sunday convoy.
     await every(db, 'convoy-depart', 60_000, now, () => departConvoys(db, now));

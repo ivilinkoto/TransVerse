@@ -6,7 +6,8 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { t, tx } from '@/i18n/t';
 
-export function NewTicketForm({ categories }: { categories: Record<string, string> }) {
+/** `report` (1.1.2): the page a player reported a problem from — the form starts as a bug report about it. */
+export function NewTicketForm({ categories, report }: { categories: Record<string, string>; report?: string | null }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -26,11 +27,11 @@ export function NewTicketForm({ categories }: { categories: Record<string, strin
   };
   return (
     <form onSubmit={submit} className="space-y-3">
-      <input id="subject" name="subject" className="input" placeholder={t('Тема')} required minLength={4} maxLength={120} />
-      <select id="category" name="category" className="input" defaultValue="gameplay" aria-label={t('Категория')}>
+      <input id="subject" name="subject" className="input" placeholder={t('Тема')} required minLength={4} maxLength={120} defaultValue={report ? t('Проблем на страница {0}', report) : undefined} />
+      <select id="category" name="category" className="input" defaultValue={report ? 'bug' : 'gameplay'} aria-label={t('Категория')}>
         {Object.entries(categories).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}
       </select>
-      <textarea id="body" name="body" className="input min-h-32" placeholder={t('Опишете проблема или въпроса си. Ако е грешка — какво направихте и какво се случи.')} required minLength={10} maxLength={4000} />
+      <textarea id="body" name="body" className="input min-h-32" placeholder={t('Опишете проблема или въпроса си. Ако е грешка — какво направихте и какво се случи.')} required minLength={10} maxLength={4000} defaultValue={report ? `${t('Страница: {0}', report)}\n\n` : undefined} autoFocus={!!report} />
       {error && <p role="alert" className="text-sm text-loss">{error}</p>}
       <button className="btn-primary" disabled={busy}><Send className="h-4 w-4" />{busy ? t('Изпращане…') : t('Изпрати запитване')}</button>
     </form>

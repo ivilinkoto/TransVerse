@@ -2,6 +2,7 @@
 
 import { Crown, ShieldCheck } from 'lucide-react';
 import { t, tx } from '@/i18n/t';
+import { useViewerStaff } from '@/components/game/Features';
 
 const STAFF_SHORT: Record<string, string> = { founder: 'Основател', admin: 'Админ', support: 'Поддръжка' };
 
@@ -12,7 +13,9 @@ export function openPlayerCard(username: string) {
 
 /** A player's name with their badges: staff role and VIP. Clicking it opens their profile card. */
 export function PlayerName({ name, role, vip, className = '', card = true }: { name: string; role?: string | null; vip?: boolean; className?: string; card?: boolean }) {
-  const staff = role ? tx(STAFF_SHORT[role]) : undefined;
+  // v1.1.2: the staff badge is for the staff only; players see a plain name.
+  const viewerStaff = useViewerStaff();
+  const staff = viewerStaff && role ? tx(STAFF_SHORT[role]) : undefined;
   const label = <span className={vip ? 'font-semibold text-gold-400' : undefined}>{name}</span>;
   return (
     <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>

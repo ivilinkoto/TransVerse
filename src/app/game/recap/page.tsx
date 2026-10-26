@@ -4,7 +4,7 @@ import { RecapCard } from '@/components/game/RecapCard';
 import { Card, Empty, PageHeader, Stat } from '@/components/ui';
 import { int, km, money } from '@/lib/format';
 import { isRecapTime, MONTHS_BG, recapYear } from '@/lib/game/recap';
-import { isStaff } from '@/server/auth/roles';
+import { testsUnreleased } from '@/server/auth/roles';
 import { gameContext } from '@/server/game/context';
 import { yearRecap } from '@/server/game/recap';
 import { t, tx } from '@/i18n/t';
@@ -20,7 +20,7 @@ export default async function RecapPage() {
   await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.year_recap) notFound();
-  const open = isRecapTime(now) || isStaff(user.role);
+  const open = isRecapTime(now) || testsUnreleased(user);
   const year = recapYear(now);
   const r = open ? await yearRecap(db, user.id, year) : null;
   if (!open || !r) {
