@@ -34,11 +34,17 @@ import { claimableCount } from '@/server/game/missions';
 import { isVip } from '@/lib/game/vip';
 import { tutorialState } from '@/server/game/tutorial';
 import { isSpring } from '@/lib/game/spring';
+import { t as tr, tx } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
 
-export const metadata: Metadata = { title: 'Игра' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: tr('Игра') };
+}
 export const dynamic = 'force-dynamic';
 
 export default async function GameLayout({ children }: { children: React.ReactNode }) {
+  await initLocale();
   const { db, user, company, hq, now } = await gameContext();
   const staff = isStaff(user.role);
   const fresh = unseenRelease(user.seenVersion, now, staff);
@@ -65,7 +71,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   return (
     <FeaturesProvider value={features}>
       <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll }}>
-      <div className="flex min-h-dvh flex-col lg:flex-row">
+      <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
         <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
@@ -73,9 +79,9 @@ export default async function GameLayout({ children }: { children: React.ReactNo
           {!user.emailVerifiedAt && mailConfig().enabled && (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
               <MailWarning className="h-4 w-4 text-amber-sig" />
-              <span>Потвърди имейла си <span className="font-semibold">{user.email}</span> — така ще можеш да си върнеш профила и да пазаруваш.</span>
+              <span>{tr('Потвърди имейла си')}{' '}<span className="font-semibold">{tx(user.email)}</span>{' '}{tr('— така ще можеш да си върнеш профила и да пазаруваш.')}</span>
               <ResendVerification />
-              <span className="basis-full text-xs text-mist-400 sm:basis-auto">Не виждаш писмото? Провери „Спам“ / „Нежелана поща“.</span>
+              <span className="basis-full text-xs text-mist-400 sm:basis-auto">{tr('Не виждаш писмото? Провери „Спам“ / „Нежелана поща“.')}</span>
             </div>
           )}
           {tutorial.active && tutorial.step && <TutorialCoach step={tutorial.step} index={tutorial.index} total={tutorial.total} />}

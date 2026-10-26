@@ -4,6 +4,7 @@ import { Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t } from '@/i18n/t';
 
 /** Reply box for a ticket thread; `endpoint` and `action` differ for players and staff. */
 export function ReplyForm({ endpoint, action }: { endpoint: string; action: Record<string, unknown> }) {
@@ -27,9 +28,9 @@ export function ReplyForm({ endpoint, action }: { endpoint: string; action: Reco
   };
   return (
     <form onSubmit={submit} className="space-y-2">
-      <textarea id="reply" className="input min-h-28" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Вашият отговор…" required maxLength={4000} aria-label="Отговор" />
+      <textarea id="reply" className="input min-h-28" value={body} onChange={(e) => setBody(e.target.value)} placeholder={t('Вашият отговор…')} required maxLength={4000} aria-label={t('Отговор')} />
       {error && <p role="alert" className="text-sm text-loss">{error}</p>}
-      <button className="btn-primary" disabled={busy || !body.trim()}><Send className="h-4 w-4" />{busy ? '…' : 'Изпрати'}</button>
+      <button className="btn-primary" disabled={busy || !body.trim()}><Send className="h-4 w-4" />{busy ? '…' : t('Изпрати')}</button>
     </form>
   );
 }

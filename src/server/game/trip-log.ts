@@ -6,6 +6,7 @@ import { simplify, type LatLon } from '@/lib/geo/geometry';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, companies, contracts, deliveries, ledgerEntries, routes, users, vehicles } from '@/server/db/schema';
 import { fail } from './errors';
+import { t } from '@/i18n/t';
 
 /** The finished trips of a player (newest first). */
 export async function tripsOf(db: DbOrTx, userId: string, limit = 30) {
@@ -72,6 +73,6 @@ export async function tripLog(db: DbOrTx, id: string, viewer: { userId: string }
 export async function shareTrip(db: Database, userId: string, id: string, on = true) {
   const [account] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
   const [row] = await db.update(deliveries).set({ sharedAt: on ? new Date() : null }).where(and(eq(deliveries.id, id), eq(deliveries.companyId, account?.id ?? ''), eq(deliveries.status, 'completed'))).returning({ id: deliveries.id });
-  if (!row) fail('not_found', 'Няма такъв курс.', 404);
+  if (!row) fail('not_found', t('Няма такъв курс.'), 404);
   return { shared: on };
 }

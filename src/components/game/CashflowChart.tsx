@@ -1,8 +1,9 @@
 import { money } from '@/lib/format';
+import { t } from '@/i18n/t';
 
 /** Daily income vs expenses, bars drawn to one shared scale. */
 export function CashflowChart({ days }: { days: { day: string; income: number; expense: number }[] }) {
-  if (!days.length) return <p className="text-sm text-mist-400">Още няма движения.</p>;
+  if (!days.length) return <p className="text-sm text-mist-400">{t('Още няма движения.')}</p>;
   const max = Math.max(1, ...days.flatMap((d) => [d.income, d.expense]));
   const W = 640;
   const H = 180;
@@ -12,7 +13,7 @@ export function CashflowChart({ days }: { days: { day: string; income: number; e
   const y = (v: number) => H - 22 - (v / max) * (H - 40);
   return (
     <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-48 w-full min-w-[480px]" role="img" aria-label="Приходи и разходи по дни">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-48 w-full min-w-[480px]" role="img" aria-label={t('Приходи и разходи по дни')}>
         {[0, 0.5, 1].map((f) => (
           <g key={f}>
             <line x1={pad} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="#263347" strokeDasharray="3 4" />
@@ -31,7 +32,7 @@ export function CashflowChart({ days }: { days: { day: string; income: number; e
           );
         })}
       </svg>
-      <div className="mt-1 flex gap-4 text-xs text-mist-400"><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-profit" />Приходи</span><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-loss" />Разходи</span></div>
+      <div className="mt-1 flex gap-4 text-xs text-mist-400"><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-profit" />{t('Приходи')}</span><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-loss" />{t('Разходи')}</span></div>
     </div>
   );
 }

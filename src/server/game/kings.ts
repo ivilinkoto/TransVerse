@@ -8,6 +8,7 @@ import { appUrl } from '@/server/discord/config';
 import { announce } from '@/server/discord/outbox';
 import { postCoins } from './coins';
 import { notify } from './notify';
+import { t, intlLocale } from '@/i18n/t';
 
 const monthWindow = (at: Date) => {
   const { y, m } = sofiaParts(at);
@@ -52,17 +53,17 @@ export async function settleCountryKings(db: Database, now: Date) {
       .returning();
     for (const k of rows) {
       const country = names.get(k.countryCode) ?? k.countryCode;
-      await postCoins(tx, k.userId, { amount: COUNTRY_KINGS.coins, reason: 'challenge', description: `Крал на ${country} (${last.key.slice(1)})`, idempotencyKey: `country-king:${last.key}:${k.countryCode}` });
-      await notify(tx, k.userId, 'achievement', `Крал на ${country}! 👑`, `Най-много тонове до ${country} миналия месец — ${k.tons.toLocaleString('bg-BG')} т. Титлата е твоя този месец, плюс ${COUNTRY_KINGS.coins} TC.`, '/game/my-map');
+      await postCoins(tx, k.userId, { amount: COUNTRY_KINGS.coins, reason: 'challenge', description: t('Крал на {0} ({1})', country, last.key.slice(1)), idempotencyKey: `country-king:${last.key}:${k.countryCode}` });
+      await notify(tx, k.userId, 'achievement', () => t('Крал на {0}! 👑', country), () => t('Най-много тонове до {0} миналия месец — {1} т. Титлата е твоя този месец, плюс {2} TC.', country, k.tons.toLocaleString(intlLocale()), COUNTRY_KINGS.coins), '/game/my-map');
     }
     if (rows.length && featureLive('discord_bot', now)) {
       const lines = rows
         .map((k) => ({ ...k, country: names.get(k.countryCode) ?? k.countryCode, username: best.get(k.countryCode)!.username }))
         .sort((a, b) => a.country.localeCompare(b.country, 'bg'))
-        .map((k) => `**${k.country}** · ${k.username} · ${k.tons.toLocaleString('bg-BG')} т`);
-      await announce(tx, `country-kings:${last.key}`, 'rankings', {
-        embeds: [{ title: `👑 Кралете на държавите · ${last.key.slice(1)}`, url: `${appUrl()}/game/my-map`, color: 0xf6c343, description: lines.join('\n').slice(0, 4000), footer: { text: 'TransVerse · игрови данни' } }],
-      }, now);
+        .map((k) => t('**{0}** · {1} · {2} т', k.country, k.username, k.tons.toLocaleString(intlLocale())));
+      await announce(tx, `country-kings:${last.key}`, 'rankings', () => ({
+        embeds: [{ title: t('👑 Кралете на държавите · {0}', last.key.slice(1)), url: `${appUrl()}/game/my-map`, color: 0xf6c343, description: lines.join('\n').slice(0, 4000), footer: { text: t('TransVerse · игрови данни') } }],
+      }), now);
     }
     return { month: last.key, kings: rows.length };
   });

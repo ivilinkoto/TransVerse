@@ -1,3 +1,4 @@
+import { t } from '@/i18n/t';
 /**
  * Branches and loans (v1.4, game data).
  *
@@ -46,11 +47,11 @@ export function creditRating(c: CreditInput): number {
 }
 
 export function creditTier(rating: number) {
-  if (rating >= 760) return { label: 'Отличен', maxCents: 200_000_00, rateBps: 400 };
-  if (rating >= 680) return { label: 'Много добър', maxCents: 120_000_00, rateBps: 650 };
-  if (rating >= 600) return { label: 'Добър', maxCents: 60_000_00, rateBps: 900 };
-  if (rating >= 520) return { label: 'Среден', maxCents: 20_000_00, rateBps: 1_200 };
-  return { label: 'Слаб', maxCents: 0, rateBps: 0 };
+  if (rating >= 760) return { label: t('Отличен'), maxCents: 200_000_00, rateBps: 400 };
+  if (rating >= 680) return { label: t('Много добър'), maxCents: 120_000_00, rateBps: 650 };
+  if (rating >= 600) return { label: t('Добър'), maxCents: 60_000_00, rateBps: 900 };
+  if (rating >= 520) return { label: t('Среден'), maxCents: 20_000_00, rateBps: 1_200 };
+  return { label: t('Слаб'), maxCents: 0, rateBps: 0 };
 }
 
 /** Total to pay back and the weekly payment (interest for the whole term, longer terms a bit more). */

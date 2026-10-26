@@ -1,3 +1,4 @@
+import { t as tr } from '@/i18n/t';
 /**
  * Partial loads: a truck smaller than the load takes only what it can carry.
  * The pay is the same per tonne (the share of the tonnes), and the rest of the
@@ -32,8 +33,8 @@ export function partRewardCents(load: { weightTons: number; rewardCents: number 
 
 /** Why `tons` is not a valid part of the load for this payload (null when it is). */
 export function partError(weightTons: number, tons: number, payloadTons: number): string | null {
-  if (!(tons >= PARTIAL.minTons)) return `Най-малката част е ${PARTIAL.minTons} т.`;
-  if (tons > payloadTons + 1e-9) return `Камионът побира ${payloadTons} т.`;
-  if (tons > weightTons - PARTIAL.minRestTons + 1e-9) return 'Вземи целия товар.';
+  if (!(tons >= PARTIAL.minTons)) return tr('Най-малката част е {0} т.', PARTIAL.minTons);
+  if (tons > payloadTons + 1e-9) return tr('Камионът побира {0} т.', payloadTons);
+  if (tons > weightTons - PARTIAL.minRestTons + 1e-9) return tr('Вземи целия товар.');
   return null;
 }

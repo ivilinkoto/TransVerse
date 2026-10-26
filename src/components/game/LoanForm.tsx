@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { money } from '@/lib/format';
 import { LOAN, loanTerms } from '@/lib/game/business';
+import { t } from '@/i18n/t';
 
 /** Takes a bank loan: the amount, the term and what it costs (v1.4). */
 export function LoanForm({ maxCents, rateBps }: { maxCents: number; rateBps: number }) {
@@ -29,13 +30,13 @@ export function LoanForm({ maxCents, rateBps }: { maxCents: number; rateBps: num
   return (
     <div className="space-y-2 text-sm">
       <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-        <input className="input" type="number" min={1_000} max={maxCents / 100} step={1_000} value={amount} onChange={(e) => setAmount(Number(e.target.value))} aria-label="Сума (лв.)" />
-        <select className="input" value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} aria-label="Срок">
-          {LOAN.weeksOptions.map((w) => <option key={w} value={w}>{w} седмици</option>)}
+        <input className="input" type="number" min={1_000} max={maxCents / 100} step={1_000} value={amount} onChange={(e) => setAmount(Number(e.target.value))} aria-label={t('Сума (лв.)')} />
+        <select className="input" value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} aria-label={t('Срок')}>
+          {LOAN.weeksOptions.map((w) => <option key={w} value={w}>{t('{0} седмици', w)}</option>)}
         </select>
-        <button type="button" className="btn-primary" disabled={busy || amount < 1_000 || amount * 100 > maxCents} onClick={take}>Вземи кредита</button>
+        <button type="button" className="btn-primary" disabled={busy || amount < 1_000 || amount * 100 > maxCents} onClick={take}>{t('Вземи кредита')}</button>
       </div>
-      <p className="text-xs text-mist-400">Връщаш {money(terms.totalCents)} на {weeks} седмични вноски по {money(terms.weeklyCents)}. Вноските се теглят сами; без пари вноската е пропусната и рейтингът пада.</p>
+      <p className="text-xs text-mist-400">{t('Връщаш {0} на {1} седмични вноски по {2}. Вноските се теглят сами; без пари вноската е пропусната и рейтингът пада.', money(terms.totalCents), weeks, money(terms.weeklyCents))}</p>
       {error && <p role="alert" className="text-loss">{error}</p>}
     </div>
   );

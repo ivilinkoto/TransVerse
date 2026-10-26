@@ -4,10 +4,11 @@ import { compareVersions, releaseByVersion } from '@/lib/game/releases';
 import type { DbOrTx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 import { fail } from './errors';
+import { t } from '@/i18n/t';
 
 /** The player closed the "Какво ново" window of a version (never goes back to an older one). */
 export async function markReleaseSeen(db: DbOrTx, userId: string, version: string) {
-  if (!releaseByVersion(version)) fail('unknown_version', 'Непозната версия.');
+  if (!releaseByVersion(version)) fail('unknown_version', t('Непозната версия.'));
   const [u] = await db.select({ seen: users.seenVersion }).from(users).where(eq(users.id, userId));
   if (u?.seen && compareVersions(u.seen, version) >= 0) return;
   await db.update(users).set({ seenVersion: version }).where(eq(users.id, userId));

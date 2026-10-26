@@ -1,4 +1,7 @@
+import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { LOCALE_COOKIE } from '@/i18n/config';
+import { users } from '@/server/db/schema';
 import { authenticate, loginSchema } from '@/server/auth/accounts';
 import { rateLimit } from '@/server/auth/rate-limit';
 import { createSession, sessionCookie } from '@/server/auth/session';
@@ -14,5 +17,8 @@ export const POST = handler({ auth: false, schema: loginSchema, perMinute: 30 },
   const { token, expiresAt } = await createSession(db, userId, request.headers.get('user-agent'));
   const response = NextResponse.json({ ok: true });
   response.cookies.set(sessionCookie(token, expiresAt));
+  // v2.0: the player's language follows them to every device.
+  const [u] = await db.select({ locale: users.locale }).from(users).where(eq(users.id, userId));
+  if (u) response.cookies.set(LOCALE_COOKIE, u.locale, { path: '/', maxAge: 365 * 24 * 3600, sameSite: 'lax' });
   return response;
 });

@@ -3,6 +3,7 @@
 import { Camera } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { VehicleIllustration, type VehicleIllustrationProps } from '@/components/vehicles/VehicleIllustration';
+import { t as tr, tx } from '@/i18n/t';
 
 const W = 1600;
 const H = 900;
@@ -116,11 +117,11 @@ export function PhotoMode({ truck, hasTrailer, plate }: { truck: VehicleIllustra
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         {(Object.keys(SCENES) as Scene[]).map((s) => (
-          <button key={s} type="button" className={`${scene === s ? 'btn-primary' : 'btn-ghost'} px-3 py-1.5 text-sm`} onClick={() => setScene(s)}>{SCENES[s].label}</button>
+          <button key={s} type="button" className={`${scene === s ? 'btn-primary' : 'btn-ghost'} px-3 py-1.5 text-sm`} onClick={() => setScene(s)}>{tx(SCENES[s].label)}</button>
         ))}
-        {hasTrailer && <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setTrailer((t) => !t)}>{trailer ? 'Без ремаркето' : 'С ремаркето'}</button>}
-        <input className="input min-w-0 flex-1" maxLength={60} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Надпис на снимката (по желание)" />
-        <button type="button" className="btn-primary" onClick={save} disabled={busy}><Camera className="h-4 w-4" />Запази снимка</button>
+        {hasTrailer && <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setTrailer((t) => !t)}>{trailer ? tr('Без ремаркето') : tr('С ремаркето')}</button>}
+        <input className="input min-w-0 flex-1" maxLength={60} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={tr('Надпис на снимката (по желание)')} />
+        <button type="button" className="btn-primary" onClick={save} disabled={busy}><Camera className="h-4 w-4" />{tr('Запази снимка')}</button>
       </div>
       <div ref={frame} className="relative w-full overflow-hidden rounded-2xl border border-asphalt-700" style={{ aspectRatio: `${W} / ${H}` }}>
         <svg ref={backdrop} viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" xmlns="http://www.w3.org/2000/svg"><Backdrop scene={scene} /></svg>
@@ -129,7 +130,7 @@ export function PhotoMode({ truck, hasTrailer, plate }: { truck: VehicleIllustra
         </div>
         {caption.trim() && <p className={`absolute left-[3%] top-[4%] text-lg font-semibold sm:text-2xl ${scene === 'night' ? 'text-mist-100' : 'text-asphalt-950'}`}>{caption}</p>}
       </div>
-      <p className="text-xs text-mist-400">Снимката се прави в браузъра ти (PNG, 1600 × 900). Рисунките са оригинални, марките — измислени.</p>
+      <p className="text-xs text-mist-400">{tr('Снимката се прави в браузъра ти (PNG, 1600 × 900). Рисунките са оригинални, марките — измислени.')}</p>
     </div>
   );
 }

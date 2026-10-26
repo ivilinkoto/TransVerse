@@ -1,0 +1,250 @@
+bf8b7eafb0	Complete 1 international delivery	Выполни 1 международную доставку
+56ea8b5fc7	What the cargo body is: box, curtainsider, reefer, tipper, tanker, flatbed… Every load needs a certain body — it comes from the truck or from the trailer.	Какой грузовой отсек: фургон, штора, рефрижератор, самосвал, цистерна, платформа… Каждому грузу нужен определённый кузов — он есть у грузовика или у прицепа.
+df644638c5	Kalemegdan, Belgrade	Калемегдан, Белград
+d21ba8cb1b	Mudguards	Брызговики
+1d0dd8315e	Kaloyan	Калоян
+496462e82a	Cagliari	Кальяри
+44f23e13a1	Truck	Грузовик
+23a3018d0c	Truck to the base	Грузовик на базу
+f6f107bf09	Truck for {0}	Грузовик для {0}
+f54d9d3061	Truck for a load of {0}	Грузовик для груза {0}
+69d9e85dcb	A player's truck	Грузовик игрока
+4370cb0dcb	A company truck. Fuel and repairs are yours while you drive it; it can't be modified or sold.	Грузовик компании. Топливо и ремонт — за твой счёт, пока ты на нём ездишь; его нельзя модифицировать и продавать.
+ffb129062d	Truck of the month	Грузовик месяца
+360794389d	Truck of the month (Competition → Truck of the month): one own truck a month, 3 votes per player; the top three with at least 3 votes — 100/50/25 TC, the winner — a badge and a place on the home page.	Грузовик месяца (Соревнования → Грузовик месяца): один собственный грузовик в месяц, 3 голоса на игрока; первая тройка с не менее чем 3 голосами — 100/50/25 TC, победитель — значок и место на главной странице.
+42d669b24d	Truck of the month {0}: place {1}	Грузовик месяца {0}: {1}-е место
+09573268b1	Truck of the month — a vote for the most beautiful truck.	Грузовик месяца — голосование за самый красивый грузовик.
+ccd18a5b84	Truck of the month: place {0}! 🏆	Грузовик месяца: {0}-е место! 🏆
+b5cd7f8be7	Trucks	Грузовики
+c83ae0a0b0	You can buy trucks and depots without a company too. Hiring drivers is possible if you are a member of another player's company or found your own (level {0}, at least {1} deliveries, fee {2}).	Грузовики и депо можно покупать и без компании. Нанимать водителей можно, если ты состоишь в компании другого игрока или основал свою (уровень {0}, не меньше {1} доставок, взнос {2}).
+fe4ef53877	Trucks and trailers	Грузовики и прицепы
+fb8f963ea3	Company trucks bought from the treasury. Every member can take one for trips — the fuel and repairs are theirs — and then return it.	Грузовики компании, купленные из казны. Каждый участник может взять один для рейсов — топливо и ремонт за его счёт — а потом вернуть.
+dccfd42680	Trucks on the road	Грузовики в пути
+5a98370faf	The members' trucks are now in the company colour (can be turned off in Settings).	Грузовики участников теперь в цвете компании (отключается в Настройках).
+b60cbfca11	The members' trucks that have just arrived in the base city stop in the yard with the driver's name. The last load for the construction pays 50 % more, and every week there is a “Builder of the week” with a reward from the treasury.	Грузовики участников, только что прибывшие в город базы, останавливаются во дворе с именем водителя. Последний груз для стройки оплачивается на 50 % выше, а каждую неделю выбирается «Строитель недели» с наградой из казны.
+21fa8ff9ac	The trucks rested this week. The board is full of orders — time to set off again.	На этой неделе грузовики отдыхали. Биржа полна заказов — пора снова в путь.
+b080c62ff6	The trucks are waiting for you — just change your password.	Грузовики ждут тебя — просто смени пароль.
+ee6deaebeb	Your trucks kept driving while you were away.	Твои грузовики продолжали ездить, пока тебя не было.
+c0bdaa359d	Truck {0} is idle	Грузовик {0} простаивает
+567fd52ad4	Truck {0} is idle in {1}. Check the board for a load nearby.	Грузовик {0} простаивает в {1}. Посмотри на бирже груз поблизости.
+2cca2ee0c8	Truck {0} collected the most 👍 ({1}) — +{2} TransCoin and a badge.	Грузовик {0} собрал больше всего 👍 ({1}) — +{2} ТрансКоин и значок.
+e7bb0c247b	The truck is already in the base city.	Грузовик уже в городе базы.
+2c34274bf0	The truck is already in this city.	Грузовик уже в этом городе.
+f8869e7505	The truck has already been taken by another member.	Грузовик уже взял другой участник.
+b5f5f01eb9	The truck is somewhere else now — try again.	Грузовик уже в другом месте — попробуй снова.
+3690a9cc4a	The truck already has the “Easter” paint.	У грузовика уже краска «Пасха».
+eabef2f7c3	The truck already has the “Christmas” paint.	У грузовика уже краска «Рождество».
+dcd44bbdfe	The truck already has the “Pumpkin” paint.	У грузовика уже краска «Тыква».
+7c69eb5bf5	The truck already has this paint.	У грузовика уже эта краска.
+8fbfcdca2c	The truck already has this part.	У грузовика уже есть эта деталь.
+aa7613f42f	The truck is no longer waiting for help.	Грузовик больше не ждёт помощи.
+2600956363	The truck is already on the road.	Грузовик уже в пути.
+52fab017fb	The truck is already waiting for another convoy.	Грузовик уже ждёт другую колонну.
+e00a8f8ba5	The truck must be in the departure city with its own load or with a part of the shared one.	Грузовик должен быть в городе отправления со своим грузом или частью общего.
+af6a587f73	The truck is in excellent condition.	Грузовик в отличном состоянии.
+b0609c4a9c	The truck has been returned to the leasing company.	Грузовик возвращён лизинговой компании.
+77c3f21851	The truck is on a trip — return it after it ends.	Грузовик в рейсе — верните его после окончания.
+fe90f088b3	The truck is on a trip — wait for it to arrive.	Грузовик в рейсе — дождись прибытия.
+f5b96a701d	The truck is on a trip.	Грузовик в рейсе.
+118a0242bf	The truck is on lease — pay off the lease first (Finance → Leasing).	Грузовик в лизинге — сначала погаси лизинг (Финансы → Лизинг).
+b82713e867	The truck is listed on the market — take down the listing first.	Грузовик выставлен на рынок — сначала сними объявление.
+757ce68b36	The truck is with a company member — they have to return it first.	Грузовик у участника компании — сначала он должен его вернуть.
+0e884c8b07	The truck has been stopped for a weighbridge and tachograph check.	Грузовик остановлен для проверки на весах и тахографа.
+6d8bb8e12c	The test-drive truck can't be bought out — buy a new one at the showroom.	Грузовик с тест-драйва нельзя выкупить — купи новый в салоне.
+7cf54aa35b	The truck may be in another city — it first goes empty to {0}.	Грузовик может быть в другом городе — сначала он едет порожняком в {0}.
+e3f70f6567	Their truck won the livery contest.	Его грузовик выиграл конкурс ливрей.
+0bf65a65e9	The truck recently had a check-up.	Грузовик недавно прошёл ТО.
+bd681e4271	The truck wasn't in the departure city.	Грузовика не было в городе отправления.
+6525ea7ca5	The truck was not found.	Грузовик не найден.
+970d82c954	The truck couldn't set off.	Грузовик не смог выехать.
+32735480a0	The truck goes to the company museum forever. Shall we donate it?	Грузовик навсегда отправится в музей компании. Подарим его?
+0ddc639e25	The truck goes for scrap: {0} and {1} spare parts. It can't be undone.	Грузовик идёт на металлолом: {0} и {1} запчастей. Это нельзя отменить.
+db9d5e27ec	The truck is still on its way to the depot — in a minute.	Грузовик ещё едет в депо — через минуту.
+b9a8d1a53d	The truck holds {0} t.	Грузовик вмещает {0} т.
+f1abbf3ff7	The truck skidded on the black ice and went onto the verge — it was pulled out by a tow truck.	Грузовик занесло на гололёде, и он съехал на обочину — его вытащил тягач.
+15d67ddfec	The truck has arrived	Грузовик прибыл
+43e7e32b67	The truck has arrived, a new order on a favourite lane, a message from a friend.	Грузовик прибыл, новый заказ по любимой линии, сообщение от друга.
+c3f6abaead	The truck moves along the real road route. The trip time depends on the distance (about 15 minutes for 150 km, about an hour for 1,200 km), and trips go on even when you are not in the game.	Грузовик движется по реальному дорожному маршруту. Время рейса зависит от расстояния (около 15 минут на 150 км, около часа на 1 200 км), и рейсы продолжаются, даже когда тебя нет в игре.
+be0f4c9ea9	Truck broke down? Call paid roadside assistance to set off sooner, or call all your friends and colleagues — from the game or with one button in Discord.	Грузовик сломался? Вызови платную помощь на дороге, чтобы выехать раньше, или позови всех друзей и коллег — из игры или одной кнопкой в Discord.
+973077f99c	The truck is stuck: {0}. If you have a truck within {1} km, help — the remaining stop is halved, and you get a fee of {2}	Грузовик стоит: {0}. Если у тебя есть грузовик в пределах {1} км, помоги — оставшийся простой сократится вдвое, а ты получишь гонорар {2}
+537706a4d9	Your truck is on the road — wait for it to arrive.	Твой грузовик в пути — дождись прибытия.
+fe9513a56b	Your truck didn't set off with the convoy	Твой грузовик не выехал с колонной
+839dcc43e8	The truck sets off	Грузовик выезжает
+f0cf86082d	The truck set off: {0}{1}, {2} → {3}. You can take the next order.	Грузовик выехал: {0}{1}, {2} → {3}. Можешь брать следующий заказ.
+69ec0d1c26	The truck must be in {0} and free at the departure time. Those that aren't ready stay behind.	Грузовик должен быть в {0} и свободен во время отправления. Неготовые остаются.
+f0e0397aa0	The truck must be in the departure city.	Грузовик должен быть в городе отправления.
+f5f6717d28	The truck takes part as it looks now — one a month.	Грузовик участвует в том виде, какой у него сейчас, — один в месяц.
+70bbf18576	Channel #{0}	Канал #{0}
+ed5779eec8	Discord channel	Канал в Discord
+49cfee84d5	The alliance's Discord channel:	Канал союза в Discord:
+77ae91cbe1	The alliance channel is turned on by the leading company.	Канал союза включает ведущая компания.
+613e6240fa	Applicants	Кандидаты
+2e5c38f044	Application to	Заявка в
+ab1fbfbd14	Your application is awaiting approval.	Ваша заявка ждёт одобрения.
+56f6f2cbb2	The application has been sent.	Заявка отправлена.
+2812aa89b8	The application was rejected	Заявка отклонена
+07d99a5fcf	The application was not found or has already been reviewed.	Заявка не найдена или уже рассмотрена.
+de4f2e1c18	The application was not found.	Заявка не найдена.
+97d6023580	Applications ({0})	Заявки ({0})
+29de422e28	The applicant is no longer available.	Кандидат больше не доступен.
+db8c269588	Only the leading company of the alliance invites.	Приглашает только ведущая компания союза.
+4e5d550c16	Capacity	Вместимость
+fb1efef1be	Drives	Ведёт
+fa45d6ec05	Drives in the column.	Едет в колонне.
+e6167e7656	Drive too — for free	Езжай и ты — бесплатно
+55d629b114	Drive trips on time.	Делай рейсы вовремя.
+5ada22faba	Drive the rally lane.	Проедь линию ралли.
+cc74a5e974	Haul materials from the board	Вози материалы с биржи
+e2e14ce14a	Drive on	Ехать дальше
+96ee6f36c9	Drive their loads on time.	Вози его грузы вовремя.
+e0711d6b8d	Drive more trips — the level grows with XP.	Делай больше рейсов — уровень растёт с опытом.
+934076f056	Drive loaded past them.	Проезжай мимо них с грузом.
+c3263727fb	Drive calmly	Езжай спокойно
+683c67c4db	Drive this truck yourself	Веди этот грузовик сам
+5eabb1f776	Drive all week.	Езди всю неделю.
+1250771ff5	Drive {0} to	Везите {0} в
+d075704c1a	Drive together — you both win.	Ездите вместе — выигрываете оба.
+fb5c618eee	Haul building materials (pallets and steel) to {0} — every trip of an alliance member counts. Every level gives +{1} % to the pay of all members{2}.	Возите стройматериалы (паллеты и сталь) в {0} — засчитывается каждый рейс участника союза. Каждый уровень даёт +{1} % к оплате всех участников{2}.
+61efa6ee6c	Driving	Вождение
+ff3e24b9a9	Career · {0}	Карьера · {0}
+e929665744	Every player's career (from their card → “Career”): trips, km, tonnes, on-time rate, records, favourite lanes and the last 20 trips.	Карьера каждого игрока (из его карточки → «Карьера»): рейсы, км, тонны, процент вовремя, рекорды, любимые линии и последние 20 рейсов.
+99aecf22fe	Player career	Карьера игрока
+a740b4c10b	Career: trips, records, favourite lanes →	Карьера: рейсы, рекорды, любимые линии →
+28d0ec1d10	Charles Bridge, Prague	Карлов мост, Прага
+5736d0caff	Map	Карта
+36cce9dd24	The map	Карта
+5f2d377114	My map	Моя карта
+5ab456c24a	The map with all the cities and lanes you have driven.	Карта со всеми городами и линиями, по которым ты ездил.
+afe1c9ccb9	The map: click a truck and see its lane, progress, what it is doing right now and when it arrives; for a friend or a colleague — the load too, and a “Join in a convoy” button that shows the orders on their lane.	Карта: нажми на грузовик и посмотри линию, прогресс, что он делает сейчас и когда прибудет; у друга или коллеги — ещё и груз и кнопку «Поехать колонной», которая показывает заказы на его линии.
+53344ff895	The map: an “Everyone / My people / Only me” switch and a list of friends and colleagues with their direction and the time left until arrival.	Карта: переключатель «Все / Мои люди / Только я» и список друзей и коллег с направлением и оставшимся временем до прибытия.
+0a236a37d6	Maps: ©	Карты: ©
+2d9c0a4707	A picture of your trucks on the map (linked account)	Картинка с твоими грузовиками на карте (привязанный аккаунт)
+d23e2abb46	A picture with your numbers (without money) — for a story, a post or a chat with friends.	Картинка с твоими цифрами (без денег) — для истории, поста или чата с друзьями.
+da1fa98a67	The picture	Картинка
+5dab30982f	A card for every big city you deliver to. Collected: {0} of {1}.	Карточка за каждый крупный город, куда ты доставишь. Собрано: {0} из {1}.
+95ec2c1269	A postcard from every landmark in the game.	Открытка с каждой достопримечательности в игре.
+2924fd78f4	A card with your truck — paint, livery, parts (linked account)	Карточка с твоим грузовиком — краска, ливрея, детали (привязанный аккаунт)
+f9d509b35a	Postcards	Открытки
+231132925c	Postcards (Competition → Postcards): 40 real landmarks in the 26 countries; a loaded trip within 10 km of them brings the postcard, +100 XP and 3 TC; badges for 10 and for all.	Открытки (Соревнования → Открытки): 40 настоящих достопримечательностей в 26 странах; рейс с грузом в пределах 10 км от них приносит открытку, +100 опыта и 3 TC; значки за 10 и за все.
+2a11d79a4d	Postcards from real landmarks on the way.	Открытки с настоящих достопримечательностей по пути.
+171c10b806	Postcards from the road	Открытки с дороги
+a52264eacc	Postcards: {0}	Открытки: {0}
+38f452a7e2	Treasury	Казна
+ecb3d43c4a	Company treasury	Казна компании
+8f21666766	Company treasury: {0}	Казна компании: {0}
+ccc56032b7	Treasury of “{0}” on merging	Казна «{0}» при слиянии
+1e2503d950	Treasury, members, roles and team bonuses	Казна, участники, должности и бонусы для команды
+61219aba1b	The treasury belongs to the company, not to the owner. It is filled by the contributions from every member's trip and by voluntary contributions, and it is spent only on developing the company. Money from the treasury can't be withdrawn personally.	Казна принадлежит компании, а не владельцу. Она пополняется взносами с каждого рейса участника и добровольными взносами, а тратится только на развитие компании. Деньги из казны нельзя вывести лично.
+1a24cc5bf6	The treasury for the week	Казна за неделю
+7e2a5190de	The treasury pays up to {0} (without what is already on the plot or on the way). The treasury has {1}.	Казна платит до {0} (без того, что уже на участке или в пути). В казне {1}.
+1e60b7ff89	Crash	Авария
+4f2a81ee56	Crash, police check, traffic jam, roadworks or bad weather — mark it where your truck is. Drivers nearby confirm; a confirmed report brings reputation, a false one takes it away. The reports are also shown on the map.	Авария, проверка, пробка, ремонт или непогода — отметь это там, где находится твой грузовик. Водители поблизости подтверждают; подтверждённый сигнал приносит репутацию, ложный — отнимает. Сигналы видны и на карте.
+2f9f49616d	Categories and channels with emoji, topics and permissions: welcome, news, community, support with tickets, stats, voice, team, companies. First see the plan — then “Apply”.	Категории и каналы с эмодзи, темами и правами: добро пожаловать, новости, сообщество, поддержка с тикетами, статистика, голосовые, команда, компании. Сначала посмотри план — потом «Применить».
+19c85838e6	Category	Категория
+8f0d2c84f3	As the owner you can leave only after handing the ownership to another member.	Как владелец вы можете уйти только после передачи владения другому участнику.
+9fdaaacd77	As the owner, first hand the ownership to another member (or close the company if you are the only member).	Как владелец сначала передайте владение другому участнику (или закройте компанию, если вы единственный участник).
+2c6e325daf	As “{0}” you lead up to {1} trucks. More places come with more convoys led.	Как «{0}» ты ведёшь до {1} грузовиков. Больше мест появляется с большим числом проведённых колонн.
+16c3579d0e	A brown and orange paint with stripes like the trucks of the 70s. Part of the retro collection — collect all three for a badge.	Коричнево-оранжевая краска с полосами, как у грузовиков 70-х. Часть ретро-коллекции — собери все три ради значка.
+1bb0ed1abf	Upload only your own images or ones you have the right to use. Inappropriate content is removed by the moderators.	Загружайте только свои изображения или те, на использование которых у вас есть право. Неподходящий контент удаляется модераторами.
+8876c8b494	The upload failed.	Загрузка не удалась.
+d10569fbb8	Uploading…	Загрузка…
+fab3564284	You move up to {0}!	Ты поднимаешься в {0}!
+c924f18729	Upload an image	Загрузить изображение
+4f8933e286	Upload a picture	Загрузить снимок
+3bdf369e67	You moved up to division {0}! ⬆	Вы поднялись в дивизион {0}! ⬆
+9cf61f66ce	Cheese without a certificate	Сыр без сертификата
+c9c7b4210b	Square	Квадрат
+0fa79de5bf	A square PNG, JPEG or WebP image, up to {0}.	Квадратное изображение PNG, JPEG или WebP, до {0}.
+b5850eac2f	Kilometres	Километры
+491ce657d6	Loaded kilometres	Километры с грузом
+552f68a275	Kilometres, records, favourite lane and your convoy friend — see your year and share it.	Километры, рекорды, любимая линия и друг по колонне — посмотри свой год и поделись им.
+207f7f234e	Kiril	Кирилл
+bf76f73151	Rankings	Рейтинги
+5eb25f1150	Rankings → “Economical driver”: the lowest costs per km (fuel, road tolls, maintenance, roadside assistance) for own trucks, at least 1,500 km a week. The top three get 5,000 / 3,000 / 1,500 lv and 30 / 20 / 10 TC.	Рейтинги → «Экономичный водитель»: самые низкие расходы на км (топливо, платные дороги, обслуживание, помощь на дороге) для собственных грузовиков, не меньше 1 500 км в неделю. Первая тройка получает 5 000 / 3 000 / 1 500 лв. и 30 / 20 / 10 TC.
+983002b0ed	The TransVerse rankings	Рейтинги TransVerse
+6e79f6eb32	Ranking	Рейтинг
+9105c27ca6	Ranking · {0}	Рейтинг · {0}
+e89827f636	Event ranking	Рейтинг ивента
+292c7717d5	Player ranking	Рейтинг игроков
+1d52d2f823	Company ranking	Рейтинг компаний
+e316daf95a	Ranking →	Рейтинг →
+f7cfb5043c	The ranking is empty	Рейтинг пуст
+a9fc38e276	The company ranking is still taking shape.	Рейтинг компаний только формируется.
+5d4604f24f	Standings	Положение
+6c78856eb4	You finished in place {0} with {1} points.	Вы заняли {0}-е место с {1} очками.
+9aa4bffe1f	Client:	Клиент:
+e2c28f0af0	Clients	Клиенты
+9580a82983	Clients offer a series of {0} to {1} trips on one lane with a deadline. Every trip pays a little above the market, and a fulfilled contract brings a bonus and reputation. Failure costs reputation.	Клиенты предлагают серию из {0}–{1} рейсов по одной линии со сроком. Каждый рейс оплачивается чуть выше рынка, а выполненный договор приносит бонус и репутацию. Провал стоит репутации.
+8c0d8dcae3	Clients value punctuality. Every delivery that arrives on time counts.	Клиенты ценят точность. Засчитывается каждая доставка, прибывшая в срок.
+f6df78719c	The clients will offer new contracts when the current offers expire.	Клиенты предложат новые договоры, когда истекут текущие предложения.
+fe45781b6e	The client is calling	Звонит клиент
+c18be33960	The client wants several loads on one lane by a deadline. Every load pays more than the board, and at the end there is a bonus and reputation. Miss the deadline and you lose reputation.	Клиенту нужно несколько грузов по одной линии к сроку. Каждый груз оплачивается выше, чем на бирже, а в конце — бонус и репутация. Пропустишь срок — потеряешь репутацию.
+88c2bbff67	The client doesn't say what is inside. On arriving on time it may turn out more valuable (+50 % or +150 %).	Клиент не говорит, что внутри. При прибытии вовремя груз может оказаться ценнее (+50 % или +150 %).
+045fccbb34	The client refused and gave the load to someone else.	Клиент отказался и отдал груз другому.
+c10f6f791f	The client refused the haggling and gave the load to another carrier.	Клиент отказался торговаться и отдал груз другому перевозчику.
+7d08822e98	The client accepted +{0}%!	Клиент согласился на +{0}%!
+0ad02bb5f0	The client only works with carriers with a reputation of at least {0} (yours is {1}).	Клиент работает только с перевозчиками с репутацией не ниже {0} (у тебя {1}).
+4b1c7d2480	Key client: {0} 🤝	Ключевой клиент: {0} 🤝
+2739d93ca2	Key client: in every city over 300,000 inhabitants the company that brought the most tonnes there last month (at least 50 t) gets its own client for the month (a made-up name, game data) — two loads at a time for members only, paid ×1.25.	Ключевой клиент: в каждом городе с населением больше 300 000 компания, привёзшая туда больше всего тонн в прошлом месяце (не меньше 50 т), получает на месяц своего клиента (вымышленное название, игровые данные) — по два груза только для участников, с оплатой ×1,25.
+dc0942397c	Uncle Stoyan's keys	Ключи дяди Стояна
+ac7e50e21b	The keys are for {0}, but PAYPAL_ENV is “{1}”. {2} and run Deploy.	Ключи для {0}, а PAYPAL_ENV — «{1}». {2} и запустите Deploy.
+e94bfc7712	The keys are added in GitHub → Settings → Secrets and variables → Actions and are written to the server on the next Deploy (see docs/DEPLOYMENT.md, “Payments”). Never in the code or in a chat.	Ключи добавляются в GitHub → Settings → Secrets and variables → Actions и записываются на сервер при следующем Deploy (см. docs/DEPLOYMENT.md, «Платежи»). Никогда в коде или в чате.
+81fe416cd8	Key clients	Ключевые клиенты
+d75c9acbbb	Km this week	Км за неделю
+c93d5a7813	When	Когда
+8d400a26e5	When you return the rented truck, you now sit in your own truck without a driver, not in a truck that already has an assigned driver.	Когда ты возвращаешь арендованный грузовик, теперь ты садишься в собственный грузовик без водителя, а не в тот, у которого уже есть назначенный водитель.
+5f0a6ac35e	When the game is closed, the notification comes with the phone's sound and vibration (set in the phone's notification settings for TransVerse).	Когда игра закрыта, уведомление приходит со звуком и вибрацией телефона (настраиваются в уведомлениях телефона для TransVerse).
+c11fbded6b	When a player lists a truck or a trailer for sale, you'll see it here. You list your own vehicles from Fleet → Service.	Когда игрок выставит грузовик или прицеп на продажу, ты увидишь его здесь. Свою технику выставляешь в Автопарк → Сервис.
+0757598e12	When a truck doesn't fit a load, under the choice it says exactly what is needed and how to fix it — no riddles.	Когда грузовик не подходит для груза, под выбором точно написано, что нужно и как это исправить, — без загадок.
+39ae18c4e8	When the truck arrives, the notification leads straight to the loads from the same city — first the ones this truck can take. Loads to your base have the “To the base” label. On the phone the notification has “Return load” and “New trip” buttons.	Когда грузовик прибывает, уведомление ведёт прямо к грузам из того же города — сначала к тем, которые этот грузовик может взять. Грузы на твою базу помечены «К базе». На телефоне у уведомления есть кнопки «Обратный груз» и «Новый рейс».
+9f4ec58445	When the truck arrives, the payment comes automatically. You will get a notification. Meanwhile you can look at the rankings and the season.	Когда грузовик прибудет, оплата придёт автоматически. Ты получишь уведомление. А пока можешь посмотреть рейтинги и сезон.
+ce652764cc	When you buy your own truck, the rented one goes back automatically.	Когда ты купишь собственный грузовик, арендованный вернётся автоматически.
+c31b098d43	Who are you inviting	Кого приглашаешь
+cf91712810	Who are you challenging	Кого вызываешь
+e08c52fb4d	What makes money: trucks, drivers, lanes and loads.	Что приносит деньги: грузовики, водители, линии и грузы.
+cc3e4d2113	Cosmetics	Косметика
+7e1346609a	Kozunak	Куличи
+35e8d6394f	Kozunak and Christmas sweets	Куличи и рождественские сладости
+1a8ec893ae	Kozunak with cream	Куличи с кремом
+84a4921786	Kozunak, eggs and the holiday table have to get everywhere before Easter. Every Easter load counts (“Easter” label). All participants win, and the best — VIP and TransCoin.	Куличи, яйца и праздничный стол должны успеть повсюду до Пасхи. Засчитывается каждый пасхальный груз (метка «Пасха»). Выигрывают все участники, а лучшие — VIP и ТрансКоин.
+c3e9232521	Which players to show	Каких игроков показывать
+c6397c18f5	Which trucks, drivers and lanes bring you the most.	Какие грузовики, водители и линии приносят тебе больше всего.
+4251cccd41	Who we are, what we haul, where we work…	Кто мы, что возим, где работаем…
+e70dc5a4f0	Who	Кто
+1ca488d931	Who's online: in the company chat — how many and which members are in the game, and a green dot next to every author's name.	Кто в сети: в чате компании — сколько и какие участники в игре, и зелёная точка у имени каждого автора.
+f6e60ca7ae	Which event	Какой ивент
+28baf7a70e	Who can join	Кто может присоединиться
+5997da489b	Which of these cities has the most inhabitants?	В каком из этих городов больше всего жителей?
+f3d9bd6f6f	Who you are, what you drive, when you play and what kind of company you're looking for…	Кто ты, на чём ездишь, когда играешь и какую компанию ищешь…
+82ad7847d1	Who will haul more tonnes in {0} days? The winner wins {1} TransCoin. Accept within {2} hours.	Кто перевезёт больше тонн за {0} дней? Победитель получит {1} ТрансКоин. Прими в течение {2} ч.
+12dcd587a0	Whoever brings the most materials in the week becomes “Builder of the week” — with a reward of {0} from the treasury.	Кто привезёт больше всего материалов за неделю, становится «Строителем недели» — с наградой {0} из казны.
+8ed8ed0537	Whoever brings the most tonnes to the country in the month (at least {0} t) holds the title next month and gets {1} TC. This month so far:	Кто привезёт в страну больше всего тонн за месяц (не меньше {0} т), носит титул в следующем месяце и получает {1} TC. В этом месяце пока:
+b302dbf7bd	Hesitating	Колеблется
+219b3601ac	Kolev	Колев
+3d83554624	A colleague with a breakdown	Коллега с поломкой
+1d607bb987	The colleagues on the CB swear the banitsa here is the best on the whole road.	Коллеги по CB клянутся, что баница здесь лучшая на всём пути.
+7661b6c7b8	Christmas	Рождество
+4ef8fc2daa	Christmas 2026 on the roads of TransVerse — from 15 December.	Рождество 2026 на дорогах TransVerse — с 15 декабря.
+cfb2b2d833	Christmas on the roads of TransVerse — gifts by Christmas Eve, Christmas missions and a holiday paint.	Рождество на дорогах TransVerse — подарки к Сочельнику, рождественские миссии и праздничная краска.
+77eaab9e7a	Christmas driver 2026	Рождественский водитель 2026
+287b9e0c25	Christmas fever	Рождественская лихорадка
+bca1fe7f5f	Christmas fever (15.12 – 6.01): Christmas orders (pallets and reefers) with a red label and +30 %, a “Christmas” quick filter; a shared event until 24.12 18:00; missions — 5 Christmas loads, 1,500 km with them, arriving on 24–25 December and helping a friend on the road — the “Christmas driver 2026” badge and 50 TC; the “Christmas” paint for 80 TC; Christmas decorations on the site (lights, snow).	Рождественская лихорадка (15.12 – 6.01): рождественские заказы (паллеты и рефрижераторы) с красной меткой и +30 %, быстрый фильтр «Рождество»; общий ивент до 24.12 18:00; миссии — 5 рождественских грузов, 1 500 км с ними, прибытие 24–25 декабря и помощь другу в пути — значок «Рождественский водитель 2026» и 50 TC; краска «Рождество» за 80 TC; рождественские украшения на сайте (гирлянды, снег).
+ac82c33667	Christmas trees	Рождественские ёлки
+22121a6819	Christmas missions	Рождественские миссии
+5175d9233c	Christmas presents	Рождественские подарки
+bb27e9aa8e	Christmas orders	Рождественские заказы
+3ce507a098	Christmas orders with +{0}%, gifts by Christmas Eve, Christmas missions, a badge and a holiday paint.	Рождественские заказы с +{0}%, подарки к Сочельнику, рождественские миссии, значок и праздничная краска.
+c52f48bab6	Christmas orders have a red “Christmas” label on the board and pay {0}% more. They count for the shared event and for the Christmas missions. Complete all four missions and get the “{1}” badge forever. The holiday content runs from {2} to {3}; you can collect the mission rewards until the end of the holiday.	Рождественские заказы помечены на бирже красной меткой «Рождество» и оплачиваются на {0}% выше. Они засчитываются в общий ивент и рождественские миссии. Выполни все четыре миссии и получи значок «{1}» навсегда. Праздничный контент — с {2} по {3}; награды за миссии можно забрать до конца праздника.
+b485c99b9e	Collections	Коллекции
+6bf5808875	Postcard collector	Коллекционер открыток
+db704809ed	The collection · {0} / {1}	Коллекция · {0} / {1}
+2a0732eae6	The city collection (no name — yours)	Коллекция городов (без имени — твоя)
+69a005b6b6	The city collection comes with update 1.5.	Коллекция городов появится в обновлении 1.5.
+4cba411b86	The Colosseum, Rome	Колизей, Рим
+f9a9f3d880	Amount of TransCoin	Количество ТрансКоин
+e2ce5be993	How much	Сколько
+ed92aa108e	How long we keep the data	Как долго мы храним данные
+8e2fa7ae31	What is {0} + {1}?	Сколько будет {0} + {1}?
+2ab4a19f9a	How long is the road by truck from {0} to {1}?	Какое расстояние на грузовике от {0} до {1}?
+c5ca9c091a	How much faster the load goes	Насколько быстрее идёт груз
+313e8681aa	How many tonnes the truck with the trailer holds. A bigger load only in parts or with overload (risk of a fine).	Сколько тонн вмещает грузовик с прицепом. Больший груз — только частями или с перегрузом (риск штрафа).

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { t } from '@/i18n/t';
 
 /** TransVerse mark: two lanes converging into a route chevron. */
 export function LogoMark({ className = 'h-8 w-8' }: { className?: string }) {
@@ -23,7 +24,7 @@ export function LogoMark({ className = 'h-8 w-8' }: { className?: string }) {
 
 export function Logo({ href = '/' }: { href?: string }) {
   return (
-    <Link href={href} className="flex items-center gap-2.5" aria-label="TransVerse — начало">
+    <Link href={href} className="flex items-center gap-2.5" aria-label={t('TransVerse — начало')}>
       <LogoMark />
       <span className="font-display text-lg font-bold tracking-tight">
         Trans<span className="text-cyan-glow">Verse</span>

@@ -8,6 +8,7 @@ import { companies, deliveries, passOpenings, routes, userBadges, users } from '
 import { featureFor } from '@/server/features';
 import { post } from './finance';
 import { notify } from './notify';
+import { t as tr } from '@/i18n/t';
 
 const COUNTRY_BG: Record<string, string> = { AT: 'Австрия', RS: 'Сърбия', MK: 'Северна Македония', BG: 'България', RO: 'Румъния' };
 
@@ -25,13 +26,13 @@ export function equinoxWindow() {
 export async function equinoxBonus(tx: Tx, userId: string, d: { id: string; companyId: string }, f: { late: boolean; rewardCents: number }, at: Date) {
   if (f.late || !isEquinox(at) || !(await featureFor(tx, userId, 'spring', at))) return 0;
   const bonus = Math.round(f.rewardCents * SPRING.equinoxShare);
-  if (bonus) await post(tx, d.companyId, [{ category: 'holiday_reward', amountCents: bonus, description: 'Равноденствие: бонус за курс навреме', idempotencyKey: `delivery:${d.id}:equinox`, refType: 'delivery', refId: d.id }]);
+  if (bonus) await post(tx, d.companyId, [{ category: 'holiday_reward', amountCents: bonus, description: tr('Равноденствие: бонус за курс навреме'), idempotencyKey: `delivery:${d.id}:equinox`, refType: 'delivery', refId: d.id }]);
   const w = equinoxWindow();
   const [{ n = 0 } = {}] = await tx.select({ n: count() }).from(deliveries).where(and(eq(deliveries.companyId, d.companyId), eq(deliveries.status, 'completed'), eq(deliveries.late, false), gte(deliveries.completedAt, w.from), lt(deliveries.completedAt, w.to)));
   // This delivery is not marked completed yet: it counts as one more.
   if (n + 1 >= SPRING.equinoxBadgeTrips) {
     const [got] = await tx.insert(userBadges).values({ userId, badge: SPRING.equinoxBadge, awardedAt: at }).onConflictDoNothing().returning();
-    if (got) await notify(tx, userId, 'achievement', `Значка: ${BADGES[SPRING.equinoxBadge]?.label ?? ''}`, `${SPRING.equinoxBadgeTrips} курса навреме по време на равноденствието.`, '/game/spring');
+    if (got) await notify(tx, userId, 'achievement', () => tr('Значка: {0}', BADGES[SPRING.equinoxBadge]?.label ?? ''), () => tr('{0} курса навреме по време на равноденствието.', SPRING.equinoxBadgeTrips), '/game/spring');
   }
   return bonus;
 }
@@ -49,8 +50,8 @@ export async function recordPassOpening(tx: Tx, userId: string, d: { id: string;
     if (taken.length >= PASS_OPENING.firstN || taken.some((t) => t.userId === userId)) continue;
     const rank = taken.length + 1;
     await tx.insert(passOpenings).values({ year, country, rank, userId, deliveryId: d.id, at });
-    await post(tx, d.companyId, [{ category: 'holiday_reward', amountCents: PASS_OPENING.prizeCents, description: `Отворени проходи: ${rank}. през ${COUNTRY_BG[country] ?? country}`, idempotencyKey: `pass-opening:${year}:${country}:${userId}`, refType: 'delivery', refId: d.id }]);
-    await notify(tx, userId, 'success', `Сред първите през проходите на ${COUNTRY_BG[country] ?? country}!`, `${rank}. място тази пролет — ${money(PASS_OPENING.prizeCents)}.`, '/game/spring');
+    await post(tx, d.companyId, [{ category: 'holiday_reward', amountCents: PASS_OPENING.prizeCents, description: tr('Отворени проходи: {0}. през {1}', rank, COUNTRY_BG[country] ?? country), idempotencyKey: `pass-opening:${year}:${country}:${userId}`, refType: 'delivery', refId: d.id }]);
+    await notify(tx, userId, 'success', () => tr('Сред първите през проходите на {0}!', COUNTRY_BG[country] ?? country), () => tr('{0}. място тази пролет — {1}.', rank, money(PASS_OPENING.prizeCents)), '/game/spring');
     paid += PASS_OPENING.prizeCents;
   }
   return paid;

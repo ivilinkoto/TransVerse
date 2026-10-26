@@ -12,6 +12,7 @@ import { post, postTreasury } from './finance';
 import { can, membershipOf, requirePermission } from './membership';
 import { assertNotBlocked } from './moderation';
 import { broadcast, notify } from './notify';
+import { t } from '@/i18n/t';
 
 export const offerSchema = z.object({
   contractId: z.string().uuid(),
@@ -54,24 +55,24 @@ export async function hireCandidates(db: DbOrTx, actorId: string, contractId: st
 /** A company member with the right hands a board load to a free player; the load is held for them. */
 export async function offerJob(db: Database, actorId: string, raw: z.input<typeof offerSchema>, now = new Date()) {
   const input = offerSchema.parse(raw);
-  if (input.toUserId === actorId) fail('self', 'Не можеш да възложиш курс на себе си.');
+  if (input.toUserId === actorId) fail('self', t('Не можеш да възложиш курс на себе си.'));
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, actorId, 'manage_tenders');
     const [target] = await tx.select({ id: users.id, username: users.username, forHire: users.forHire, bannedAt: users.bannedAt }).from(users).where(eq(users.id, input.toUserId));
-    if (!target || target.bannedAt) fail('player_not_found', 'Играчът не е намерен.', 404);
-    if (!target!.forHire) fail('not_for_hire', 'Играчът не приема курсове от компании.');
+    if (!target || target.bannedAt) fail('player_not_found', t('Играчът не е намерен.'), 404);
+    if (!target!.forHire) fail('not_for_hire', t('Играчът не приема курсове от компании.'));
     await assertNotBlocked(tx, actorId, target!.id);
     const [pending] = await tx.select({ n: sql<number>`count(*)::int` }).from(jobOffers).where(and(eq(jobOffers.organizationId, m.company.id), eq(jobOffers.status, 'pending'), gt(jobOffers.expiresAt, now)));
-    if ((pending?.n ?? 0) >= HIRE_RULES.maxPendingPerCompany) fail('too_many_offers', `Компанията има ${HIRE_RULES.maxPendingPerCompany} чакащи предложения — изчакай отговор.`);
+    if ((pending?.n ?? 0) >= HIRE_RULES.maxPendingPerCompany) fail('too_many_offers', t('Компанията има {0} чакащи предложения — изчакай отговор.', HIRE_RULES.maxPendingPerCompany));
     const [c] = await tx.select().from(contracts).where(eq(contracts.id, input.contractId)).for('update');
-    if (!c || !isPublicOpen(c, now)) fail('contract_unavailable', 'Поръчката вече не е налична за възлагане.', 409);
+    if (!c || !isPublicOpen(c, now)) fail('contract_unavailable', t('Поръчката вече не е налична за възлагане.'), 409);
     const account = await companyForUser(tx, target!.id);
-    if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', 'Поръчката е запазена от друг играч.', 409);
+    if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', t('Поръчката е запазена от друг играч.'), 409);
     const expiresAt = new Date(now.getTime() + HIRE_RULES.offerMinutes * 60_000);
     await tx.update(contracts).set({ reservedByCompanyId: account.id, reservedUntil: expiresAt }).where(eq(contracts.id, c!.id));
     const [offer] = await tx.insert(jobOffers).values({ contractId: c!.id, organizationId: m.company.id, offeredBy: actorId, toUserId: target!.id, share: input.share, expiresAt, createdAt: now }).returning({ id: jobOffers.id });
     const [from, to] = await Promise.all([tx.select({ n: cities.nameBg }).from(cities).where(eq(cities.id, c!.originCityId)), tx.select({ n: cities.nameBg }).from(cities).where(eq(cities.id, c!.destCityId))]);
-    await notify(tx, target!.id, 'info', `„${m.company.name}“ ти възлага курс`, `${c!.goods}: ${from[0]?.n} → ${to[0]?.n} за ${money(c!.rewardCents)}, комисиона ${Math.round(input.share * 100)} % към компанията. Поръчката е запазена за теб ${HIRE_RULES.offerMinutes} мин.`, '/game/contracts?hired=1');
+    await notify(tx, target!.id, 'info', () => t('„{0}“ ти възлага курс', m.company.name), () => t('{0}: {1} → {2} за {3}, комисиона {4} % към компанията. Поръчката е запазена за теб {5} мин.', c!.goods, from[0]?.n, to[0]?.n, money(c!.rewardCents), Math.round(input.share * 100), HIRE_RULES.offerMinutes), '/game/contracts?hired=1');
     await broadcast(tx, 'market');
     return { id: offer!.id, expiresAt };
   });
@@ -81,12 +82,12 @@ export async function offerJob(db: Database, actorId: string, raw: z.input<typeo
 export async function declineJob(db: Database, userId: string, offerId: string, now = new Date()) {
   return db.transaction(async (tx) => {
     const [o] = await tx.select().from(jobOffers).where(and(eq(jobOffers.id, offerId), eq(jobOffers.toUserId, userId))).for('update');
-    if (!o || o.status !== 'pending') fail('offer_closed', 'Предложението вече не е активно.', 409);
+    if (!o || o.status !== 'pending') fail('offer_closed', t('Предложението вече не е активно.'), 409);
     await tx.update(jobOffers).set({ status: 'declined' }).where(eq(jobOffers.id, o!.id));
     const account = await companyForUser(tx, userId);
     await tx.update(contracts).set({ reservedByCompanyId: null, reservedUntil: null }).where(and(eq(contracts.id, o!.contractId), eq(contracts.reservedByCompanyId, account.id)));
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-    if (o!.offeredBy) await notify(tx, o!.offeredBy, 'info', `${me!.username} отказа курса`, 'Поръчката е отново на борсата.', '/game/contracts');
+    if (o!.offeredBy) await notify(tx, o!.offeredBy, 'info', () => t('{0} отказа курса', me!.username), () => t('Поръчката е отново на борсата.'), '/game/contracts');
     await broadcast(tx, 'market');
     return now;
   });
@@ -101,7 +102,7 @@ export async function acceptJobOffer(tx: Tx, userId: string, contractId: string,
     .returning();
   if (o?.offeredBy) {
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-    await notify(tx, o.offeredBy, 'success', `${me!.username} пое възложения курс`, `Комисионата (${Math.round(o.share * 100)} %) влиза в касата при доставката.`, '/game/company');
+    await notify(tx, o.offeredBy, 'success', () => t('{0} пое възложения курс', me!.username), () => t('Комисионата ({0} %) влиза в касата при доставката.', Math.round(o.share * 100)), '/game/company');
   }
   return o ?? null;
 }
@@ -114,8 +115,8 @@ export async function payHireCommission(tx: Tx, delivery: { id: string; companyI
   const [org] = await tx.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, o.organizationId));
   const [driver] = await tx.select({ username: users.username }).from(users).innerJoin(companies, eq(companies.ownerId, users.id)).where(eq(companies.id, delivery.companyId));
   // The driver's account first, then the treasury (the same lock order as delivery settlement).
-  await post(tx, delivery.companyId, [{ category: 'hire_commission', amountCents: -amount, description: `Комисиона към „${org?.name ?? 'компания'}“ (${Math.round(o.share * 100)} %)`, idempotencyKey: `delivery:${delivery.id}:hire`, refType: 'delivery', refId: delivery.id }]);
-  if (org) await postTreasury(tx, o.organizationId, [{ category: 'hire_commission', amountCents: amount, description: `Възложен курс: ${driver?.username ?? ''}`, idempotencyKey: `delivery:${delivery.id}:hire-in`, refType: 'delivery', refId: delivery.id }]);
+  await post(tx, delivery.companyId, [{ category: 'hire_commission', amountCents: -amount, description: t('Комисиона към „{0}“ ({1} %)', org?.name ?? t('компания'), Math.round(o.share * 100)), idempotencyKey: `delivery:${delivery.id}:hire`, refType: 'delivery', refId: delivery.id }]);
+  if (org) await postTreasury(tx, o.organizationId, [{ category: 'hire_commission', amountCents: amount, description: t('Възложен курс: {0}', driver?.username ?? ''), idempotencyKey: `delivery:${delivery.id}:hire-in`, refType: 'delivery', refId: delivery.id }]);
   await tx.update(jobOffers).set({ status: 'done' }).where(eq(jobOffers.id, o.id));
   return amount;
 }

@@ -1,4 +1,5 @@
 import type { BodyType } from './cargo';
+import { t as tr } from '@/i18n/t';
 
 /**
  * Vehicle catalogue. Manufacturers are fictional on purpose (no trademarks);
@@ -205,10 +206,10 @@ export function canCouple(unit: PowerUnitModel, trailer: TrailerModel): boolean 
 /** Why a trailer cannot go behind this vehicle (null when it can). */
 export function couplingError(unit: PowerUnitModel, trailer: TrailerModel): string | null {
   if (canCouple(unit, trailer)) return null;
-  if (unit.kind === 'van') return 'Ванът не тегли ремарке.';
-  if (unit.kind === 'rigid') return trailer.kind === 'semi' ? 'Полуремаркетата се теглят от влекач.' : 'Прикачното ремарке трябва да е със същата надстройка като камиона.';
-  if (trailer.kind === 'drawbar') return 'Прикачните ремаркета са за соло камиони.';
-  return 'Това ремарке изисква тежкотоварен влекач.';
+  if (unit.kind === 'van') return tr('Ванът не тегли ремарке.');
+  if (unit.kind === 'rigid') return trailer.kind === 'semi' ? tr('Полуремаркетата се теглят от влекач.') : tr('Прикачното ремарке трябва да е със същата надстройка като камиона.');
+  if (trailer.kind === 'drawbar') return tr('Прикачните ремаркета са за соло камиони.');
+  return tr('Това ремарке изисква тежкотоварен влекач.');
 }
 
 /** Vehicles available for rent (no purchase price, a fee per delivery instead). */

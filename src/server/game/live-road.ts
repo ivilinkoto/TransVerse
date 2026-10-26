@@ -11,6 +11,7 @@ import { fail } from './errors';
 import { assertNotMuted } from './moderation';
 import { notify } from './notify';
 import { nearestTruckKm, tripPosition } from './roadside';
+import { t as tr } from '@/i18n/t';
 
 /** The player's trucks on a trip now, with where each one is. */
 export async function trucksOnRoad(db: DbOrTx, userId: string, now: Date) {
@@ -43,12 +44,12 @@ export const cbBodySchema = z.string().trim().min(1, 'Напиши съобще�
 
 /** Says something on channel 19 from where the player's truck is (the first one on the road, or the one chosen). */
 export async function sendCb(db: Database, userId: string, raw: string, now = new Date(), vehicleId?: string) {
-  if (!(await featureFor(db, userId, 'cb_radio', now))) fail('not_released', 'CB радиото идва с обновление 1.8.');
+  if (!(await featureFor(db, userId, 'cb_radio', now))) fail('not_released', tr('CB радиото идва с обновление 1.8.'));
   const body = cbBodySchema.parse(raw);
   await assertNotMuted(db, userId, now);
   const trucks = await trucksOnRoad(db, userId, now);
   const truck = trucks.find((t) => t.vehicleId === vehicleId) ?? trucks[0];
-  if (!truck) fail('not_on_road', 'CB радиото работи само от камион на път.');
+  if (!truck) fail('not_on_road', tr('CB радиото работи само от камион на път.'));
   await rateLimit(db, `cb:${userId}`, CB.perMinute, 60);
   const near = await nearCity(db, truck!.position);
   const [row] = await db.insert(cbMessages).values({ userId, body, lat: truck!.position[0], lon: truck!.position[1], near, createdAt: now }).returning();
@@ -78,17 +79,17 @@ export async function cbFeed(db: DbOrTx, userId: string, now = new Date()) {
 
 /** Marks a road report where the player's truck is now. */
 export async function createReport(db: Database, userId: string, kind: ReportKind, now = new Date(), vehicleId?: string) {
-  if (!(await featureFor(db, userId, 'road_reports', now))) fail('not_released', 'Пътните сигнали идват с обновление 1.8.');
-  if (!REPORT_KIND_IDS.includes(kind)) fail('bad_kind', 'Няма такъв сигнал.');
+  if (!(await featureFor(db, userId, 'road_reports', now))) fail('not_released', tr('Пътните сигнали идват с обновление 1.8.'));
+  if (!REPORT_KIND_IDS.includes(kind)) fail('bad_kind', tr('Няма такъв сигнал.'));
   const trucks = await trucksOnRoad(db, userId, now);
   const truck = trucks.find((t) => t.vehicleId === vehicleId) ?? trucks[0];
-  if (!truck) fail('not_on_road', 'Сигнал се дава само от камион на път.');
+  if (!truck) fail('not_on_road', tr('Сигнал се дава само от камион на път.'));
   const [recent] = await db
     .select({ at: roadReports.createdAt })
     .from(roadReports)
     .where(and(eq(roadReports.userId, userId), gt(roadReports.createdAt, new Date(now.getTime() - REPORTS.cooldownMin * 60_000))))
     .limit(1);
-  if (recent) fail('too_soon', `Един сигнал на ${REPORTS.cooldownMin} минути.`);
+  if (recent) fail('too_soon', tr('Един сигнал на {0} минути.', REPORTS.cooldownMin));
   const near = await nearCity(db, truck!.position);
   const [row] = await db
     .insert(roadReports)
@@ -99,15 +100,15 @@ export async function createReport(db: Database, userId: string, kind: ReportKin
 
 /** A driver nearby confirms (+1) or denies (−1) a report; the reporter gains or loses reputation once it is clear. */
 export async function voteReport(db: Database, userId: string, reportId: number, vote: 1 | -1, now = new Date()) {
-  if (!(await featureFor(db, userId, 'road_reports', now))) fail('not_released', 'Пътните сигнали идват с обновление 1.8.');
+  if (!(await featureFor(db, userId, 'road_reports', now))) fail('not_released', tr('Пътните сигнали идват с обновление 1.8.'));
   const [r] = await db.select().from(roadReports).where(eq(roadReports.id, reportId));
-  if (!r || r.expiresAt <= now) fail('report_gone', 'Сигналът вече не е активен.');
-  if (r!.userId === userId) fail('own_report', 'Не можеш да гласуваш за своя сигнал.');
+  if (!r || r.expiresAt <= now) fail('report_gone', tr('Сигналът вече не е активен.'));
+  if (r!.userId === userId) fail('own_report', tr('Не можеш да гласуваш за своя сигнал.'));
   const km = await nearestTruckKm(db, userId, [r!.lat, r!.lon], now);
-  if (km === null || km > REPORTS.voteRadiusKm) fail('too_far', `Потвърждава се само от камион до ${REPORTS.voteRadiusKm} км от мястото.`);
+  if (km === null || km > REPORTS.voteRadiusKm) fail('too_far', tr('Потвърждава се само от камион до {0} км от мястото.', REPORTS.voteRadiusKm));
   return db.transaction(async (tx) => {
     const [v] = await tx.insert(roadReportVotes).values({ reportId, userId, vote, createdAt: now }).onConflictDoNothing().returning();
-    if (!v) fail('already_voted', 'Вече гласува за този сигнал.');
+    if (!v) fail('already_voted', tr('Вече гласува за този сигнал.'));
     const [cur] = await tx
       .update(roadReports)
       .set(vote === 1 ? { confirms: sql`${roadReports.confirms} + 1` } : { denies: sql`${roadReports.denies} + 1` })
@@ -119,11 +120,11 @@ export async function voteReport(db: Database, userId: string, reportId: number,
     if (!report.settled && report.confirms >= REPORTS.confirmsToReward) {
       await tx.update(roadReports).set({ settled: true }).where(eq(roadReports.id, reportId));
       await tx.update(companies).set({ reputation: sql`least(100, ${companies.reputation} + ${REPORTS.reputation})` }).where(eq(companies.ownerId, report.userId));
-      await notify(tx, report.userId, 'achievement', 'Сигналът ти е потвърден 👍', `${kind.emoji} ${kind.label} край ${report.near} — потвърден от ${report.confirms} шофьори. +${REPORTS.reputation} репутация.`, '/game/road');
+      await notify(tx, report.userId, 'achievement', () => tr('Сигналът ти е потвърден 👍'), () => tr('{0} {1} край {2} — потвърден от {3} шофьори. +{4} репутация.', kind.emoji, kind.label, report.near, report.confirms, REPORTS.reputation), '/game/road');
     } else if (!report.settled && report.denies >= REPORTS.deniesToRemove && report.denies > report.confirms) {
       await tx.update(roadReports).set({ settled: true, expiresAt: now }).where(eq(roadReports.id, reportId));
       await tx.update(companies).set({ reputation: sql`greatest(0, ${companies.reputation} - ${REPORTS.reputation})` }).where(eq(companies.ownerId, report.userId));
-      await notify(tx, report.userId, 'info', 'Сигналът ти е отхвърлен', `${kind.emoji} ${kind.label} край ${report.near} — ${report.denies} шофьори казаха, че го няма. −${REPORTS.reputation} репутация.`, '/game/road');
+      await notify(tx, report.userId, 'info', () => tr('Сигналът ти е отхвърлен'), () => tr('{0} {1} край {2} — {3} шофьори казаха, че го няма. −{4} репутация.', kind.emoji, kind.label, report.near, report.denies, REPORTS.reputation), '/game/road');
     }
     return { confirms: report.confirms, denies: report.denies };
   });

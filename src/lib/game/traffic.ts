@@ -1,3 +1,4 @@
+import { t } from '@/i18n/t';
 /**
  * The road in v1.6 (game data):
  * - Secure parking: the daily rest on the way in a guarded car park (a fee per
@@ -47,7 +48,7 @@ export function applyBorderQueues<T extends Seg>(segments: readonly T[]): T[] {
     const delta = Math.round((seg.end - seg.start) * (f - 1));
     seg.end += delta;
     shift += delta;
-    seg.note = f > 1 ? 'Опашка на границата' : 'Почти празна граница';
+    seg.note = f > 1 ? t('Опашка на границата') : t('Почти празна граница');
     return seg;
   });
 }

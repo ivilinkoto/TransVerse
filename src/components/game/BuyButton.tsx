@@ -4,6 +4,7 @@ import { ShoppingCart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t, tx } from '@/i18n/t';
 
 /** Purchase with depot selection (vehicles are delivered to one of your depots). */
 export function BuyButton({ type, modelId, depots, disabledReason, label }: { type: 'buyVehicle' | 'leaseVehicle' | 'buyTrailer'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string }) {
@@ -16,7 +17,7 @@ export function BuyButton({ type, modelId, depots, disabledReason, label }: { ty
     setMessage(null);
     try {
       await api('/api/game/action', { type, modelId, cityId });
-      setMessage({ ok: true, text: type === 'leaseVehicle' ? 'Взет на лизинг! Вижте го в автопарка; вноските се плащат всяка седмица.' : 'Купено! Вижте го в автопарка.' });
+      setMessage({ ok: true, text: type === 'leaseVehicle' ? t('Взет на лизинг! Вижте го в автопарка; вноските се плащат всяка седмица.') : t('Купено! Вижте го в автопарка.') });
       router.refresh();
     } catch (e) {
       setMessage({ ok: false, text: (e as Error).message });
@@ -27,10 +28,10 @@ export function BuyButton({ type, modelId, depots, disabledReason, label }: { ty
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        <select className="input w-auto min-w-0 flex-1 py-2 text-sm" value={cityId} onChange={(e) => setCityId(Number(e.target.value))} aria-label="Депо за доставка">
+        <select className="input w-auto min-w-0 flex-1 py-2 text-sm" value={cityId} onChange={(e) => setCityId(Number(e.target.value))} aria-label={t('Депо за доставка')}>
           {depots.map((d) => (
             <option key={d.cityId} value={d.cityId}>
-              Депо {d.name}{type !== 'buyTrailer' ? ` (${d.free} свободни)` : ''}
+              {t('Депо {0}{1}', d.name, type !== 'buyTrailer' ? t(' ({0} свободни)', d.free) : '')}
             </option>
           ))}
         </select>
@@ -39,7 +40,7 @@ export function BuyButton({ type, modelId, depots, disabledReason, label }: { ty
         </button>
       </div>
       {disabledReason && <p className="text-xs text-mist-400">{disabledReason}</p>}
-      {message && <p role="status" className={`text-xs ${message.ok ? 'text-profit' : 'text-loss'}`}>{message.text}</p>}
+      {message && <p role="status" className={`text-xs ${message.ok ? 'text-profit' : 'text-loss'}`}>{tx(message.text)}</p>}
     </div>
   );
 }

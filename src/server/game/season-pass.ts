@@ -7,6 +7,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { logActivity } from './notify';
 import { activeSeason } from './seasons';
+import { t } from '@/i18n/t';
 
 /** Season points of a delivery also fill the pass. */
 export async function addPassPoints(tx: Tx, userId: string, points: number, now = new Date()) {
@@ -40,8 +41,8 @@ export async function buyPremiumPass(db: Database, userId: string, now = new Dat
   return db.transaction(async (tx) => {
     const season = await activeSeason(tx, now);
     const row = await passRow(tx, season.id, userId, true);
-    if (row.premium) fail('already_premium', 'Вече имаш премиум пропуска за този сезон.', 409);
-    await postCoins(tx, userId, { amount: -PASS_PRICE_COINS, reason: 'season_pass', description: `Премиум пропуск: ${season.name}`, idempotencyKey: `pass:${season.id}:${userId}` }, { requireFunds: true });
+    if (row.premium) fail('already_premium', t('Вече имаш премиум пропуска за този сезон.'), 409);
+    await postCoins(tx, userId, { amount: -PASS_PRICE_COINS, reason: 'season_pass', description: t('Премиум пропуск: {0}', season.name), idempotencyKey: `pass:${season.id}:${userId}` }, { requireFunds: true });
     await tx.update(seasonPasses).set({ premium: true, updatedAt: now }).where(and(eq(seasonPasses.seasonId, season.id), eq(seasonPasses.userId, userId)));
     await logActivity(tx, userId, 'season_pass_bought', { seasonId: season.id });
   });
@@ -77,17 +78,17 @@ export async function claimPassRewards(db: Database, userId: string, now = new D
     let claimed = 0;
     for (const r of PASS_REWARDS.slice(0, Math.min(level, PASS_LEVELS))) {
       if (r.free && !free.has(r.level)) {
-        await grant(tx, userId, r.free, `pass:${season.id}:${userId}:free:${r.level}`, `Пропуск ниво ${r.level}`, now);
+        await grant(tx, userId, r.free, `pass:${season.id}:${userId}:free:${r.level}`, t('Пропуск ниво {0}', r.level), now);
         free.add(r.level);
         claimed++;
       }
       if (row.premium && !prem.has(r.level)) {
-        await grant(tx, userId, r.premium, `pass:${season.id}:${userId}:premium:${r.level}`, `Премиум пропуск ниво ${r.level}`, now);
+        await grant(tx, userId, r.premium, `pass:${season.id}:${userId}:premium:${r.level}`, t('Премиум пропуск ниво {0}', r.level), now);
         prem.add(r.level);
         claimed++;
       }
     }
-    if (!claimed) fail('nothing_to_claim', 'Няма награди за взимане — карай още, за да вдигнеш нивото на пропуска.');
+    if (!claimed) fail('nothing_to_claim', t('Няма награди за взимане — карай още, за да вдигнеш нивото на пропуска.'));
     await tx.update(seasonPasses).set({ claimedFree: [...free].sort((a, b) => a - b), claimedPremium: [...prem].sort((a, b) => a - b), updatedAt: now }).where(and(eq(seasonPasses.seasonId, season.id), eq(seasonPasses.userId, userId)));
     return claimed;
   });

@@ -5,6 +5,7 @@ import { discord, DiscordError } from './api';
 import { discordConfig } from './config';
 import { layoutCategory, layoutState } from './layout';
 import { setVoice } from './levels';
+import { t } from '@/i18n/t';
 
 /**
  * "➕ Създай стая": who joins it gets their own voice channel (they may
@@ -26,15 +27,15 @@ export async function voiceChanged(db: Database, d: { user_id: string; channel_i
   const [before] = await db.select({ channelId: discordVoice.channelId }).from(discordVoice).where(eq(discordVoice.discordUserId, d.user_id));
   await setVoice(db, d.user_id, d.channel_id, now);
   const state = await layoutState(db);
-  if (d.channel_id && d.channel_id === state.channels['създай-стая']) await createRoom(db, d.user_id, d.member?.user?.global_name || d.member?.user?.username || 'шофьор', now);
+  if (d.channel_id && d.channel_id === state.channels['създай-стая']) await createRoom(db, d.user_id, d.member?.user?.global_name || d.member?.user?.username || t('шофьор'), now);
   if (before?.channelId && before.channelId !== d.channel_id) await removeIfEmpty(db, before.channelId);
 }
 
 async function createRoom(db: Database, discordId: string, name: string, now: Date) {
   const { guildId } = discordConfig();
-  const parent = await layoutCategory(db, 'гласови', 'Гласови канали');
+  const parent = await layoutCategory(db, t('гласови'), t('Гласови канали'));
   const room = await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, {
-    name: `🔊 Стаята на ${name}`.slice(0, 100),
+    name: t('🔊 Стаята на {0}', name).slice(0, 100),
     type: 2,
     ...(parent ? { parent_id: parent } : {}),
     permission_overwrites: [{ id: discordId, type: 1, allow: bits(VIEW, CONNECT, SPEAK, MANAGE_CHANNELS, MOVE), deny: '0' }],

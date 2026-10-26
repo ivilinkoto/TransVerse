@@ -2,7 +2,8 @@ import { and, asc, eq, isNull, lte, sql } from 'drizzle-orm';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { discordOutbox, organizations } from '@/server/db/schema';
 import { discord, noPings, type DiscordMessage } from './api';
-import { DISCORD_CHANNELS, discordConfig, type DiscordChannel } from './config';
+import { withLocale } from '@/i18n/als';
+import { DISCORD_CHANNELS, discordConfig, LOCALE_CHANNELS, type DiscordChannel } from './config';
 import { giveVerified, pingRoleFor } from './guild';
 import { layoutChannel } from './layout';
 import { ensureAllianceChannel, ensureCompanyChannel, removeAllianceChannel, stripRoles, syncUserRoles } from './sync';
@@ -14,21 +15,32 @@ export async function enqueue(db: DbOrTx, dedupeKey: string, target: string, pay
   await db.insert(discordOutbox).values({ dedupeKey: dedupeKey.slice(0, 200), target, payload, nextAttemptAt: now }).onConflictDoNothing();
 }
 
-/** An announcement in one of the bot's channels. */
-export const announce = (db: DbOrTx, dedupeKey: string, channel: DiscordChannel, message: DiscordMessage, now = new Date()) => enqueue(db, dedupeKey, `channel:${channel}`, message as Record<string, unknown>, now);
+/**
+ * An announcement in one of the bot's channels. Built by a function, it is
+ * written once per language: Bulgarian in the main channel, English and
+ * Russian in their own channels (LOCALE_CHANNELS), when the channel has one.
+ */
+export async function announce(db: DbOrTx, dedupeKey: string, channel: DiscordChannel, message: DiscordMessage | (() => DiscordMessage), now = new Date()) {
+  if (typeof message !== 'function') return enqueue(db, dedupeKey, `channel:${channel}`, message as Record<string, unknown>, now);
+  await enqueue(db, dedupeKey, `channel:${channel}`, withLocale('bg', message) as Record<string, unknown>, now);
+  for (const lang of ['en', 'ru'] as const) {
+    if (LOCALE_CHANNELS[lang][channel]) await enqueue(db, `${dedupeKey}@${lang}`, `channel:${channel}@${lang}`, withLocale(lang, message) as Record<string, unknown>, now);
+  }
+}
 
 const MAX_ATTEMPTS = 6;
 
 async function send(db: Database, target: string, payload: Record<string, unknown>) {
   const [kind, id] = [target.slice(0, target.indexOf(':')), target.slice(target.indexOf(':') + 1)];
   if (kind === 'channel') {
-    const name = DISCORD_CHANNELS[id as DiscordChannel] ?? id;
+    const [key, lang] = id.split('@') as [DiscordChannel, 'en' | 'ru' | undefined];
+    const name = (lang ? LOCALE_CHANNELS[lang]?.[key] : DISCORD_CHANNELS[key]) ?? key;
     const channelId = await layoutChannel(db, name);
     // No such channel in the server: nothing to send (the owner did not create it).
     if (!channelId) return;
     // Announcements mention the role of those who picked them in #роли (unless `ping: false`).
     const { ping, ...message } = payload as Record<string, unknown> & { ping?: boolean; content?: string };
-    const role = ping === false ? null : await pingRoleFor(id);
+    const role = ping === false ? null : await pingRoleFor(key);
     await discord('POST', `/channels/${channelId}/messages`, role ? { ...message, content: `<@&${role}> ${message.content ?? ''}`.trim(), allowed_mentions: { parse: [], roles: [role] } } : { ...noPings, ...message });
   } else if (kind === 'msg') {
     // A message to a channel by id (tickets, polls): may allow its own mentions.

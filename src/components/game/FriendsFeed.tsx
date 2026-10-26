@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { PlayerName } from './PlayerName';
+import { t, tx } from '@/i18n/t';
 
 export interface FeedItem {
   id: string;
@@ -18,9 +19,9 @@ export interface FeedItem {
 
 const ago = (iso: string, now: number) => {
   const min = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60_000));
-  if (min < 60) return `преди ${min} мин`;
-  if (min < 24 * 60) return `преди ${Math.round(min / 60)} ч`;
-  return `преди ${Math.round(min / 1440)} дни`;
+  if (min < 60) return t('преди {0} мин', min);
+  if (min < 24 * 60) return t('преди {0} ч', Math.round(min / 60));
+  return t('преди {0} дни', Math.round(min / 1440));
 };
 
 /** Friends and company moments with a "Браво" button (one per player; the author is told). */
@@ -46,12 +47,12 @@ export function FriendsFeed({ items, me, now }: { items: FeedItem[]; me: string;
           return (
             <li key={i.id} className="flex items-start gap-2 text-sm">
               <div className="min-w-0 flex-1">
-                {i.username ? <PlayerName name={i.username} className="font-semibold" /> : <span className="font-semibold">„{i.company}“</span>} <span className="text-mist-300">{i.text}</span>
+                {i.username ? <PlayerName name={i.username} className="font-semibold" /> : <span className="font-semibold">„{tx(i.company)}“</span>} <span className="text-mist-300">{tx(i.text)}</span>
                 <div className="text-[11px] text-mist-400">{ago(i.createdAt, now)}</div>
               </div>
               {i.userId !== me && (
-                <button type="button" onClick={() => void bravo(i.id)} disabled={s.cheered} className={`shrink-0 rounded-full border px-2 py-0.5 text-xs transition ${s.cheered ? 'border-gold-400/50 bg-gold-400/10 text-gold-400' : 'border-asphalt-600 text-mist-300 hover:border-gold-400/60'}`} aria-label={`Браво на ${i.username ?? i.company}`}>
-                  👍 {s.cheers > 0 ? s.cheers : 'Браво'}
+                <button type="button" onClick={() => void bravo(i.id)} disabled={s.cheered} className={`shrink-0 rounded-full border px-2 py-0.5 text-xs transition ${s.cheered ? 'border-gold-400/50 bg-gold-400/10 text-gold-400' : 'border-asphalt-600 text-mist-300 hover:border-gold-400/60'}`} aria-label={t('Браво на {0}', i.username ?? i.company)}>
+                  👍 {s.cheers > 0 ? s.cheers : t('Браво')}
                 </button>
               )}
             </li>

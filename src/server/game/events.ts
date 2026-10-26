@@ -31,6 +31,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { broadcast, notify } from './notify';
 import { awardXp } from './progression';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 type GlobalEvent = typeof globalEvents.$inferSelect;
 const DAY = 86_400_000;
@@ -75,10 +76,10 @@ async function payReward(tx: Tx, e: GlobalEvent, userId: string, reward: ReturnT
   const key = `event:${e.id}:${userId}`;
   if (reward.cents) {
     const account = await companyForUser(tx, userId);
-    await post(tx, account.id, [{ category: 'event_reward', amountCents: reward.cents, description: `Ивент „${e.name}“${rank ? ` — ${rank} място` : ''}`, idempotencyKey: `${key}:money`, refType: 'event', refId: e.id }]);
+    await post(tx, account.id, [{ category: 'event_reward', amountCents: reward.cents, description: tr('Ивент „{0}“{1}', e.name, rank ? tr(' — {0} място', rank) : ''), idempotencyKey: `${key}:money`, refType: 'event', refId: e.id }]);
   }
   if (reward.xp) await awardXp(tx, userId, reward.xp, 'event');
-  if (reward.coins) await postCoins(tx, userId, { amount: reward.coins, reason: 'event_reward', description: `Ивент „${e.name}“`, idempotencyKey: `${key}:coins` });
+  if (reward.coins) await postCoins(tx, userId, { amount: reward.coins, reason: 'event_reward', description: tr('Ивент „{0}“', e.name), idempotencyKey: `${key}:coins` });
   if (reward.vipDays) {
     const [u] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId)).for('update');
     const until = new Date(Math.max(now.getTime(), u?.vipUntil?.getTime() ?? 0) + reward.vipDays * DAY);
@@ -122,8 +123,8 @@ export async function settleEvent(db: Database, eventId: string, now = new Date(
         tx,
         r.userId,
         success ? 'achievement' : 'info',
-        success ? `Ивентът „${e.name}“ е успешен!` : `Ивентът „${e.name}“ приключи`,
-        success ? `Вашето място: ${rank}. Награда: ${rewardText(reward!)}.` : `Целта не беше достигната (${Math.round((e.progress / e.target) * 100)}%). Следващия път ще успеем!`,
+        () => success ? tr('Ивентът „{0}“ е успешен!', e.name) : tr('Ивентът „{0}“ приключи', e.name),
+        () => success ? tr('Вашето място: {0}. Награда: {1}.', rank, rewardText(reward!)) : tr('Целта не беше достигната ({0}%). Следващия път ще успеем!', Math.round((e.progress / e.target) * 100)),
         '/game/events',
       );
     }
@@ -207,9 +208,9 @@ export async function ensureAutoEvent(db: Database, now = new Date()) {
 
 export async function announce(tx: Tx, e: GlobalEvent, now: Date) {
   const [country] = e.countryCode ? await tx.select({ nameBg: countries.nameBg }).from(countries).where(eq(countries.code, e.countryCode)) : [];
-  const when = e.startsAt <= now ? 'Започна' : `Започва на ${e.startsAt.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`;
-  const title = `Ивент: ${e.name}`;
-  const body = `${when}. ${goalText({ metric: e.metric as EventMetric, cargoType: e.cargoType, countryCode: e.countryCode, target: e.target }, country?.nameBg)}. Награди за всички участници, а за най-добрите — и VIP.`;
+  const when = e.startsAt <= now ? tr('Започна') : tr('Започва на {0}', e.startsAt.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }));
+  const title = tr('Ивент: {0}', e.name);
+  const body = tr('{0}. {1}. Награди за всички участници, а за най-добрите — и VIP.', when, goalText({ metric: e.metric as EventMetric, cargoType: e.cargoType, countryCode: e.countryCode, target: e.target }, country?.nameBg));
   await tx.execute(sql`insert into ${notifications} (user_id, kind, title, body, href) select ${users.id}, 'info', ${title}, ${body}, '/game/events' from ${users} where ${users.bannedAt} is null`);
   await tx.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type: 'leaderboard' })})`);
 }
@@ -244,7 +245,7 @@ export async function createEvent(db: Database, actor: Staff, raw: EventInput, n
   requireAdminRole(actor);
   const input = eventSchema.parse(raw);
   const startsAt = input.startsAt && input.startsAt > now ? input.startsAt : now;
-  if (startsAt.getTime() - now.getTime() > 60 * DAY) fail('too_far', 'Ивентът може да започва най-много след 60 дни.');
+  if (startsAt.getTime() - now.getTime() > 60 * DAY) fail('too_far', tr('Ивентът може да започва най-много след 60 дни.'));
   // Targets in лв. are entered in euros; stored in cents like every amount of money.
   const scale = input.metric === 'earned_cents' ? 100 : 1;
   const cents = (eur: number) => Math.round(eur * 100);
@@ -284,8 +285,8 @@ export async function createEvent(db: Database, actor: Staff, raw: EventInput, n
 export async function startTemplateEvent(db: Database, actor: Staff, templateId: string, hours: number, now = new Date()) {
   requireAdminRole(actor);
   const t = ALL_EVENT_TEMPLATES.find((x) => x.id === templateId);
-  if (!t) fail('no_template', 'Няма такъв ивент.');
-  if (!(Number.isInteger(hours) && hours >= 1 && hours <= 14 * 24)) fail('bad_hours', 'Продължителността е от 1 час до 14 дни.');
+  if (!t) fail('no_template', tr('Няма такъв ивент.'));
+  if (!(Number.isInteger(hours) && hours >= 1 && hours <= 14 * 24)) fail('bad_hours', tr('Продължителността е от 1 час до 14 дни.'));
   const filter = { metric: t!.metric, cargoType: t!.cargoType ?? null, countryCode: t!.countryCode ?? null };
   const target = autoTarget(t!.metric, await recentAmount(db, filter, now), 7 * 24, hours);
   return db.transaction(async (tx) => {
@@ -304,12 +305,12 @@ export async function cancelEvent(db: Database, actor: Staff, eventId: string, n
   requireAdminRole(actor);
   return db.transaction(async (tx) => {
     const [e] = await tx.select().from(globalEvents).where(eq(globalEvents.id, eventId)).for('update');
-    if (!e) fail('event_not_found', 'Ивентът не е намерен.', 404);
-    if (e!.settledAt) fail('event_settled', 'Ивентът вече е приключил.');
+    if (!e) fail('event_not_found', tr('Ивентът не е намерен.'), 404);
+    if (e!.settledAt) fail('event_settled', tr('Ивентът вече е приключил.'));
     await tx.update(globalEvents).set({ settledAt: now, outcome: 'cancelled' }).where(eq(globalEvents.id, eventId));
     await tx.insert(adminAudit).values({ actorId: actor.id, action: 'cancel_global_event', targetUserId: null, details: { eventId, name: e!.name } });
     const participants = await tx.select({ userId: globalEventContributions.userId }).from(globalEventContributions).where(eq(globalEventContributions.eventId, eventId));
-    for (const p of participants) await notify(tx, p.userId, 'warning', `Ивентът „${e!.name}“ е отменен`, 'Администрацията отмени ивента. Награди няма да бъдат раздадени.', '/game/events');
+    for (const p of participants) await notify(tx, p.userId, 'warning', () => tr('Ивентът „{0}“ е отменен', e!.name), () => tr('Администрацията отмени ивента. Награди няма да бъдат раздадени.'), '/game/events');
     return true;
   });
 }

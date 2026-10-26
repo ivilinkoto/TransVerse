@@ -10,6 +10,7 @@ import type { RoutingProvider } from '@/server/geo/routing';
 import { addLoad, loadHubs } from './contracts';
 import { post } from './finance';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 const HOUR = 3_600_000;
 const pick = <T,>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
@@ -53,7 +54,7 @@ export async function topUpRelays(db: Database, now = new Date(), provider?: Rou
 
 async function badge(tx: Tx, userId: string, at: Date) {
   const [got] = await tx.insert(userBadges).values({ userId, badge: RELAY.badge, awardedAt: at }).onConflictDoNothing().returning();
-  if (got) await notify(tx, userId, 'achievement', `Значка: ${BADGES[RELAY.badge]?.label ?? 'Щафета'}`, BADGES[RELAY.badge]?.description ?? '', '/game/contracts');
+  if (got) await notify(tx, userId, 'achievement', () => t('Значка: {0}', BADGES[RELAY.badge]?.label ?? t('Щафета')), BADGES[RELAY.badge]?.description ?? '', '/game/contracts');
 }
 
 /** On arrival of a relay leg: the hand-over, or the end of the relay with its bonus. */
@@ -66,7 +67,7 @@ export async function relayDelivered(tx: Tx, userId: string, d: { id: string; co
   if (contract.relayLeg === 1 && r.status === 'leg1') {
     await tx.update(relays).set({ status: 'leg2', leg1UserId: userId, leg1DeliveryId: d.id, leg1Late: late, handoverAt: at }).where(eq(relays.id, r.id));
     await tx.update(contracts).set({ status: 'open', expiresAt: new Date(at.getTime() + RELAY.handoverHours * HOUR) }).where(and(eq(contracts.id, r.leg2ContractId), eq(contracts.status, 'held')));
-    await notify(tx, userId, 'success', `Щафетата е в ${name(r.relayCityId)} 🏃`, `„${contract.goods}“ чака друг шофьор до ${name(r.destCityId)} (${RELAY.handoverHours} ч). Ако и двамата сте навреме — по +${Math.round(RELAY.bonusShare * 100)} %.`, `/game/contracts?from=${r.relayCityId}`);
+    await notify(tx, userId, 'success', () => t('Щафетата е в {0} 🏃', name(r.relayCityId)), () => t('„{0}“ чака друг шофьор до {1} ({2} ч). Ако и двамата сте навреме — по +{3} %.', contract.goods, name(r.destCityId), RELAY.handoverHours, Math.round(RELAY.bonusShare * 100)), `/game/contracts?from=${r.relayCityId}`);
     return 0;
   }
   if (contract.relayLeg !== 2 || r.status !== 'leg2') return 0;
@@ -76,11 +77,11 @@ export async function relayDelivered(tx: Tx, userId: string, d: { id: string; co
   const [leg1] = await tx.select({ rewardCents: contracts.rewardCents }).from(contracts).where(eq(contracts.id, r.leg1ContractId));
   const [first] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, r.leg1UserId));
   const mine = Math.round(contract.rewardCents * RELAY.bonusShare);
-  await post(tx, d.companyId, [{ category: 'bonus', amountCents: mine, description: `Щафета навреме (${name(r.destCityId)})`, idempotencyKey: `relay:${r.id}:leg2`, refType: 'delivery', refId: d.id }]);
-  if (first && leg1) await post(tx, first.id, [{ category: 'bonus', amountCents: Math.round(leg1.rewardCents * RELAY.bonusShare), description: `Щафетата ти стигна до ${name(r.destCityId)} навреме`, idempotencyKey: `relay:${r.id}:leg1`, refType: 'delivery', refId: r.leg1DeliveryId ?? undefined }]);
+  await post(tx, d.companyId, [{ category: 'bonus', amountCents: mine, description: t('Щафета навреме ({0})', name(r.destCityId)), idempotencyKey: `relay:${r.id}:leg2`, refType: 'delivery', refId: d.id }]);
+  if (first && leg1) await post(tx, first.id, [{ category: 'bonus', amountCents: Math.round(leg1.rewardCents * RELAY.bonusShare), description: t('Щафетата ти стигна до {0} навреме', name(r.destCityId)), idempotencyKey: `relay:${r.id}:leg1`, refType: 'delivery', refId: r.leg1DeliveryId ?? undefined }]);
   for (const u of [userId, r.leg1UserId]) {
     await badge(tx, u, at);
-    await notify(tx, u, 'success', 'Щафетата стигна навреме 🏁', `Двама шофьори, един товар: +${Math.round(RELAY.bonusShare * 100)} % за всеки.`, '/game/finance');
+    await notify(tx, u, 'success', () => t('Щафетата стигна навреме 🏁'), () => t('Двама шофьори, един товар: +{0} % за всеки.', Math.round(RELAY.bonusShare * 100)), '/game/finance');
   }
   return mine;
 }
@@ -91,7 +92,7 @@ export async function expireRelays(db: Database, now = new Date()) {
   for (const { relays: r } of stale) {
     await db.transaction(async (tx) => {
       const [done] = await tx.update(relays).set({ status: 'failed' }).where(and(eq(relays.id, r.id), eq(relays.status, 'leg2'))).returning();
-      if (done && r.leg1UserId) await notify(tx, r.leg1UserId, 'info', 'Щафетата не продължи', 'Никой не пое втората част навреме — твоят курс е платен, без бонус за щафета.', '/game/contracts');
+      if (done && r.leg1UserId) await notify(tx, r.leg1UserId, 'info', () => t('Щафетата не продължи'), () => t('Никой не пое втората част навреме — твоят курс е платен, без бонус за щафета.'), '/game/contracts');
     });
   }
   // Relays whose first leg nobody took: both legs go.

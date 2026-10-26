@@ -19,6 +19,7 @@ import { heldLicences } from './licences';
 import { shipperName } from './names';
 import { logActivity, notify } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 type ClientContract = typeof clientContracts.$inferSelect;
 
@@ -116,12 +117,12 @@ export async function acceptClientContract(db: Database, userId: string, id: str
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const [cc] = await tx.select().from(clientContracts).where(and(eq(clientContracts.id, id), eq(clientContracts.companyId, company.id))).for('update');
-    if (!cc || cc.status !== 'offer' || cc.offerExpiresAt <= now) fail('offer_unavailable', 'Офертата вече не е налична.', 409);
+    if (!cc || cc.status !== 'offer' || cc.offerExpiresAt <= now) fail('offer_unavailable', tr('Офертата вече не е налична.'), 409);
     const [acct] = await tx.select({ reputation: companies.reputation }).from(companies).where(eq(companies.id, company.id)).for('update');
-    if ((acct?.reputation ?? 0) < cc!.minReputation) fail('reputation_required', `Клиентът работи само с превозвачи с репутация поне ${cc!.minReputation} (твоята е ${Math.floor(acct?.reputation ?? 0)}).`);
+    if ((acct?.reputation ?? 0) < cc!.minReputation) fail('reputation_required', tr('Клиентът работи само с превозвачи с репутация поне {0} (твоята е {1}).', cc!.minReputation, Math.floor(acct?.reputation ?? 0)));
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(clientContracts).where(and(eq(clientContracts.companyId, company.id), eq(clientContracts.status, 'active')));
     const limit = await maxActive(tx, userId, now);
-    if (n >= limit) fail('too_many_clients', `Можеш да имаш до ${limit} активни договора с клиенти едновременно.`);
+    if (n >= limit) fail('too_many_clients', tr('Можеш да имаш до {0} активни договора с клиенти едновременно.', limit));
     await tx.update(clientContracts).set({ status: 'active', acceptedAt: now, dueAt: new Date(now.getTime() + cc!.durationHours * 3_600_000) }).where(eq(clientContracts.id, cc!.id));
     await logActivity(tx, userId, 'client_contract_accepted', { clientContractId: cc!.id });
   });
@@ -130,7 +131,7 @@ export async function acceptClientContract(db: Database, userId: string, id: str
 export async function declineClientContract(db: Database, userId: string, id: string) {
   const company = await companyForUser(db, userId);
   const rows = await db.update(clientContracts).set({ status: 'declined' }).where(and(eq(clientContracts.id, id), eq(clientContracts.companyId, company.id), eq(clientContracts.status, 'offer'))).returning({ id: clientContracts.id });
-  if (!rows.length) fail('offer_unavailable', 'Офертата вече не е налична.', 409);
+  if (!rows.length) fail('offer_unavailable', tr('Офертата вече не е налична.'), 409);
 }
 
 /** Loads of a client contract that are on the road right now. */
@@ -148,9 +149,9 @@ export async function sendClientLoad(db: Database, userId: string, id: string, v
   const company = await companyForUser(db, userId);
   const contractId = await db.transaction(async (tx) => {
     const [cc] = await tx.select().from(clientContracts).where(and(eq(clientContracts.id, id), eq(clientContracts.companyId, company.id))).for('update');
-    if (!cc || cc.status !== 'active') fail('client_contract_inactive', 'Договорът не е активен.', 409);
-    if (cc!.dueAt && cc!.dueAt <= now) fail('client_contract_due', 'Срокът на договора изтече.', 409);
-    if (cc!.loadsDone + (await loadsOnTheRoad(tx, cc!.id)) >= cc!.loadsTotal) fail('all_loads_sent', 'Всички товари по договора вече са изпратени.', 409);
+    if (!cc || cc.status !== 'active') fail('client_contract_inactive', tr('Договорът не е активен.'), 409);
+    if (cc!.dueAt && cc!.dueAt <= now) fail('client_contract_due', tr('Срокът на договора изтече.'), 409);
+    if (cc!.loadsDone + (await loadsOnTheRoad(tx, cc!.id)) >= cc!.loadsTotal) fail('all_loads_sent', tr('Всички товари по договора вече са изпратени.'), 409);
     const [row] = await tx
       .insert(contracts)
       .values({
@@ -194,9 +195,9 @@ export async function recordClientLoad(tx: Tx, clientContractId: string, late: b
   }
   await tx.update(clientContracts).set({ loadsDone: done, loadsLate: lateLoads, status: 'completed', finishedAt: at }).where(eq(clientContracts.id, cc.id));
   const bonus = clientBonusCents(cc.bonusCents, cc.loadsTotal, lateLoads);
-  if (bonus > 0) await post(tx, cc.companyId, [{ category: 'client_bonus', amountCents: bonus, description: `Бонус от „${cc.client}“ за изпълнен договор`, idempotencyKey: `client:${cc.id}:bonus`, refType: 'client_contract', refId: cc.id }]);
+  if (bonus > 0) await post(tx, cc.companyId, [{ category: 'client_bonus', amountCents: bonus, description: tr('Бонус от „{0}“ за изпълнен договор', cc.client), idempotencyKey: `client:${cc.id}:bonus`, refType: 'client_contract', refId: cc.id }]);
   await tx.update(companies).set({ reputation: sql`least(100, ${companies.reputation} + ${CLIENT_RULES.successReputation})` }).where(eq(companies.id, cc.companyId));
-  await notify(tx, ownerId, 'success', `Договорът с „${cc.client}“ е изпълнен`, `${cc.loadsTotal} товара${lateLoads ? ` (${lateLoads} със закъснение)` : ''}. Бонус ${(bonus / 100).toLocaleString('bg-BG')} лв. и +${CLIENT_RULES.successReputation} репутация.`, '/game/clients');
+  await notify(tx, ownerId, 'success', () => tr('Договорът с „{0}“ е изпълнен', cc.client), () => tr('{0} товара{1}. Бонус {2} лв. и +{3} репутация.', cc.loadsTotal, lateLoads ? tr(' ({0} със закъснение)', lateLoads) : '', (bonus / 100).toLocaleString(intlLocale()), CLIENT_RULES.successReputation), '/game/clients');
 }
 
 /** Worker: old offers expire; active contracts past their deadline fail once no load is still on the road. */
@@ -211,7 +212,7 @@ export async function settleClientContracts(db: Database, now = new Date()): Pro
       if (!rows.length) return 0;
       const loss = clientFailReputation(cc.loadsTotal, cc.loadsDone);
       const [acct] = await tx.update(companies).set({ reputation: sql`greatest(0, ${companies.reputation} - ${loss})` }).where(eq(companies.id, cc.companyId)).returning({ ownerId: companies.ownerId });
-      if (acct) await notify(tx, acct.ownerId, 'warning', `Договорът с „${cc.client}“ не е изпълнен`, `Срокът изтече с ${cc.loadsDone} от ${cc.loadsTotal} товара. −${loss} репутация.`, '/game/clients');
+      if (acct) await notify(tx, acct.ownerId, 'warning', () => tr('Договорът с „{0}“ не е изпълнен', cc.client), () => tr('Срокът изтече с {0} от {1} товара. −{2} репутация.', cc.loadsDone, cc.loadsTotal, loss), '/game/clients');
       return 1;
     });
   }

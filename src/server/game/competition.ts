@@ -12,6 +12,7 @@ import { postTreasury } from './finance';
 import { notifyMembers } from './membership';
 import { notify } from './notify';
 import { addChronicle } from './chronicle';
+import { t } from '@/i18n/t';
 
 // ── Divisions ─────────────────────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ export async function settleDivisions(db: Database, now = new Date()) {
         const move = r.tons > 0 ? moves[i]! : division === 'bronze' ? 'stay' : 'down';
         await tx.insert(divisionResults).values({ monthKey: periodWindow('monthly', past).key, organizationId: r.id, division, rank: i + 1, tons: r.tons, move }).onConflictDoNothing();
         const prize = r.tons > 0 ? DIVISION_RULES.prizes[division][i] : undefined;
-        if (prize) await postTreasury(tx, r.id, [{ category: 'division', amountCents: prize, description: `${DIVISION_LABELS[division]} дивизия: ${i + 1}. място`, idempotencyKey: `${key}:${r.id}`, refType: 'division' }]);
+        if (prize) await postTreasury(tx, r.id, [{ category: 'division', amountCents: prize, description: t('{0} дивизия: {1}. място', DIVISION_LABELS[division], i + 1), idempotencyKey: `${key}:${r.id}`, refType: 'division' }]);
         if (move !== 'stay') {
           await tx.update(organizations).set({ division: nextDivision(division, move) }).where(eq(organizations.id, r.id));
           moved++;
@@ -72,7 +73,7 @@ export async function settleDivisions(db: Database, now = new Date()) {
         }
         if (move !== 'stay') await addChronicle(tx, r.id, 'division', move === 'up' ? `Качване в ${DIVISION_LABELS[nextDivision(division, 'up')].toLowerCase()}та дивизия` : `Слизане в ${DIVISION_LABELS[nextDivision(division, 'down')].toLowerCase()}та дивизия`, now);
         else if (prize) await addChronicle(tx, r.id, 'division', `${i + 1}. място в ${DIVISION_LABELS[division].toLowerCase()}та дивизия`, now);
-        if (prize || move !== 'stay') await notifyMembers(tx, r.id, null, move === 'up' ? `Качихте се в ${DIVISION_LABELS[nextDivision(division, 'up')].toLowerCase()}та дивизия! ⬆` : move === 'down' ? `Слизате в ${DIVISION_LABELS[nextDivision(division, 'down')].toLowerCase()}та дивизия` : `${i + 1}. място в дивизията`, prize ? `Награда: ${money(prize)} в касата.` : 'Новият месец е нов шанс.', '/game/leaderboards?tab=divisions');
+        if (prize || move !== 'stay') await notifyMembers(tx, r.id, null, () => move === 'up' ? t('Качихте се в {0}та дивизия! ⬆', DIVISION_LABELS[nextDivision(division, 'up')].toLowerCase()) : move === 'down' ? t('Слизате в {0}та дивизия', DIVISION_LABELS[nextDivision(division, 'down')].toLowerCase()) : t('{0}. място в дивизията', i + 1), () => prize ? t('Награда: {0} в касата.', money(prize)) : t('Новият месец е нов шанс.'), '/game/leaderboards?tab=divisions');
       }
     }
     await tx.insert(jobState).values({ key, value: { moved } });
@@ -101,7 +102,7 @@ export async function recordPerfectTrip(tx: Tx, userId: string, f: Parameters<ty
   for (const [n, badge] of PERFECT.badges) {
     if (streak !== n) continue;
     const [got] = await tx.insert(userBadges).values({ userId, badge }).onConflictDoNothing().returning();
-    if (got) await notify(tx, userId, 'achievement', `Значка: ${BADGES[badge]?.label ?? badge}`, `${n} перфектни курса подред — навреме, без инцидент, без глоба, с пълен камион.`, '/game/profile');
+    if (got) await notify(tx, userId, 'achievement', () => t('Значка: {0}', BADGES[badge]?.label ?? badge), () => t('{0} перфектни курса подред — навреме, без инцидент, без глоба, с пълен камион.', n), '/game/profile');
   }
   return { bonusCents: Math.round(f.rewardCents * perfectBonusShare(streak)), streak };
 }
@@ -133,8 +134,8 @@ export async function recordCityVisit(tx: Tx, userId: string, cityId: number, no
   const badge = albumBadge(city.country);
   const [got] = await tx.insert(userBadges).values({ userId, badge }).onConflictDoNothing().returning();
   if (got) {
-    await postCoins(tx, userId, { amount: ALBUM.coins, reason: 'holiday_reward', description: `Пълен албум: ${BADGES[badge]?.label ?? city.country}`, idempotencyKey: `album:${userId}:${city.country}` });
-    await notify(tx, userId, 'achievement', `Пълен албум! ${BADGES[badge]?.label ?? ''}`, `Доставил си до всичките ${page.length} най-големи града — ${ALBUM.coins} TC и значка.`, '/game/collection');
+    await postCoins(tx, userId, { amount: ALBUM.coins, reason: 'holiday_reward', description: t('Пълен албум: {0}', BADGES[badge]?.label ?? city.country), idempotencyKey: `album:${userId}:${city.country}` });
+    await notify(tx, userId, 'achievement', () => t('Пълен албум! {0}', BADGES[badge]?.label ?? ''), () => t('Доставил си до всичките {0} най-големи града — {1} TC и значка.', page.length, ALBUM.coins), '/game/collection');
   }
   return { country: city.country, have: n, of: page.length };
 }

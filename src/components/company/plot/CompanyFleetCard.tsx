@@ -8,6 +8,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { money } from '@/lib/format';
 import { POWER_UNITS } from '@/lib/game/catalog';
 import { COMPANY_FLEET } from '@/lib/game/company-fleet';
+import { t, tx, intlLocale } from '@/i18n/t';
 
 export interface OrgFleet {
   limit: number;
@@ -22,24 +23,24 @@ export function CompanyFleetCard({ fleet, me, myVehicleId, canManage, treasuryCe
   const model = MODELS.find((m) => m.id === modelId);
   return (
     <div className="panel p-4 text-sm">
-      <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Truck className="h-5 w-5 text-cyan-glow" />Фирмени камиони <span className="text-xs font-normal text-mist-400">{fleet.vehicles.length} / {fleet.limit}</span></h3>
-      <p className="mt-1 text-mist-300">Камиони на компанията, купени от касата. Всеки член може да вземе един за курсове — горивото и ремонтите са негови — и после да го върне.</p>
-      {fleet.limit === 0 && <p className="mt-2 text-xs text-mist-400">Нужен е паркинг на участъка: всяко ниво дава {COMPANY_FLEET.perParkingLevel} места за фирмени камиони.</p>}
+      <h3 className="flex items-center gap-2 font-display text-lg font-bold"><Truck className="h-5 w-5 text-cyan-glow" />{t('Фирмени камиони')}{' '}<span className="text-xs font-normal text-mist-400">{tx(fleet.vehicles.length)} / {tx(fleet.limit)}</span></h3>
+      <p className="mt-1 text-mist-300">{t('Камиони на компанията, купени от касата. Всеки член може да вземе един за курсове — горивото и ремонтите са негови — и после да го върне.')}</p>
+      {fleet.limit === 0 && <p className="mt-2 text-xs text-mist-400">{t('Нужен е паркинг на участъка: всяко ниво дава {0} места за фирмени камиони.', COMPANY_FLEET.perParkingLevel)}</p>}
       {fleet.vehicles.length > 0 && (
         <ul className="mt-3 space-y-2">
           {fleet.vehicles.map((v) => (
             <li key={v.id} className="rounded-xl border border-asphalt-700 p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold">{v.name} <span className="num text-xs font-normal text-mist-400">{v.plate}</span></span>
+                <span className="font-semibold">{tx(v.name)} <span className="num text-xs font-normal text-mist-400">{tx(v.plate)}</span></span>
                 <span className="text-xs text-mist-400">{Math.round(v.condition)} %</span>
               </div>
-              <div className="mt-0.5 text-xs text-mist-400">{v.borrower ? `При ${v.borrower}` : `На паркинга · ${v.city}`} · {Math.round(v.odometerKm).toLocaleString('bg-BG')} км</div>
-              {notes && v.note && <p className="mt-1.5 flex gap-1.5 rounded-lg bg-gold-400/10 px-2 py-1 text-xs text-gold-200"><StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-400" /><span className="break-words">{v.note.text}{v.note.by ? <span className="text-mist-400"> — {v.note.by}</span> : null}</span></p>}
+              <div className="mt-0.5 text-xs text-mist-400">{t('{0} · {1} км', v.borrower ? t('При {0}', v.borrower) : t('На паркинга · {0}', v.city), Math.round(v.odometerKm).toLocaleString(intlLocale()))}</div>
+              {notes && v.note && <p className="mt-1.5 flex gap-1.5 rounded-lg bg-gold-400/10 px-2 py-1 text-xs text-gold-200"><StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-400" /><span className="break-words">{tx(v.note.text)}{v.note.by ? <span className="text-mist-400"> — {tx(v.note.by)}</span> : null}</span></p>}
               {notes && (v.lentTo === me || canManage) && <NoteEditor id={v.id} current={v.note?.text ?? ''} />}
               <div className="mt-2 flex flex-wrap gap-2">
-                {!v.lentTo && !myVehicleId && <ActionButton action={{ type: 'borrowOrgVehicle', orgVehicleId: v.id }} className="btn-primary px-3 py-1 text-xs">Вземи за курсове</ActionButton>}
-                {v.lentTo === me && myVehicleId && <ActionButton action={{ type: 'returnOrgVehicle', vehicleId: myVehicleId }} className="btn-ghost px-3 py-1 text-xs" confirm="Да върнем ли камиона на компанията? Остава в града, където е сега.">Върни на компанията</ActionButton>}
-                {canManage && !v.lentTo && <ActionButton action={{ type: 'sellOrgVehicle', orgVehicleId: v.id }} className="btn-ghost px-3 py-1 text-xs text-loss" confirm="Да продадем ли камиона? Парите отиват в касата.">Продай</ActionButton>}
+                {!v.lentTo && !myVehicleId && <ActionButton action={{ type: 'borrowOrgVehicle', orgVehicleId: v.id }} className="btn-primary px-3 py-1 text-xs">{t('Вземи за курсове')}</ActionButton>}
+                {v.lentTo === me && myVehicleId && <ActionButton action={{ type: 'returnOrgVehicle', vehicleId: myVehicleId }} className="btn-ghost px-3 py-1 text-xs" confirm={t('Да върнем ли камиона на компанията? Остава в града, където е сега.')}>{t('Върни на компанията')}</ActionButton>}
+                {canManage && !v.lentTo && <ActionButton action={{ type: 'sellOrgVehicle', orgVehicleId: v.id }} className="btn-ghost px-3 py-1 text-xs text-loss" confirm={t('Да продадем ли камиона? Парите отиват в касата.')}>{t('Продай')}</ActionButton>}
               </div>
             </li>
           ))}
@@ -47,10 +48,10 @@ export function CompanyFleetCard({ fleet, me, myVehicleId, canManage, treasuryCe
       )}
       {canManage && fleet.limit > fleet.vehicles.length && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <select className="input min-w-0 flex-1 py-1.5 text-sm" value={modelId} onChange={(e) => setModelId(e.target.value)} aria-label="Модел за компанията">
-            {MODELS.map((m) => <option key={m.id} value={m.id}>{m.name} · {money(m.priceCents)}</option>)}
+          <select className="input min-w-0 flex-1 py-1.5 text-sm" value={modelId} onChange={(e) => setModelId(e.target.value)} aria-label={t('Модел за компанията')}>
+            {MODELS.map((m) => <option key={m.id} value={m.id}>{tx(m.name)} · {money(m.priceCents)}</option>)}
           </select>
-          <ActionButton action={{ type: 'buyOrgVehicle', modelId }} className="btn-primary px-3 py-1.5 text-sm" disabled={!model || model.priceCents > treasuryCents} confirm={model ? `Да купим ${model.name} от касата за ${money(model.priceCents)}?` : undefined}>Купи</ActionButton>
+          <ActionButton action={{ type: 'buyOrgVehicle', modelId }} className="btn-primary px-3 py-1.5 text-sm" disabled={!model || model.priceCents > treasuryCents} confirm={model ? t('Да купим {0} от касата за {1}?', model.name, money(model.priceCents)) : undefined}>{t('Купи')}</ActionButton>
         </div>
       )}
     </div>
@@ -63,7 +64,7 @@ function NoteEditor({ id, current }: { id: string; current: string }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(current);
   const [error, setError] = useState<string | null>(null);
-  if (!open) return <button type="button" className="mt-1 text-xs text-cyan-glow hover:underline" onClick={() => setOpen(true)}>{current ? 'Промени бележката' : 'Остави бележка за следващия шофьор'}</button>;
+  if (!open) return <button type="button" className="mt-1 text-xs text-cyan-glow hover:underline" onClick={() => setOpen(true)}>{current ? t('Промени бележката') : t('Остави бележка за следващия шофьор')}</button>;
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -76,9 +77,9 @@ function NoteEditor({ id, current }: { id: string; current: string }) {
   };
   return (
     <form onSubmit={save} className="mt-1.5 flex flex-wrap gap-1.5">
-      <input className="input min-w-0 flex-1 py-1 text-xs" maxLength={140} value={text} onChange={(e) => setText(e.target.value)} placeholder="напр. Гумите са за смяна" aria-label="Бележка за камиона" autoFocus />
-      <button className="btn-primary px-2.5 py-1 text-xs">Запази</button>
-      <button type="button" className="btn-ghost px-2.5 py-1 text-xs" onClick={() => setOpen(false)}>Отказ</button>
+      <input className="input min-w-0 flex-1 py-1 text-xs" maxLength={140} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('напр. Гумите са за смяна')} aria-label={t('Бележка за камиона')} autoFocus />
+      <button className="btn-primary px-2.5 py-1 text-xs">{t('Запази')}</button>
+      <button type="button" className="btn-ghost px-2.5 py-1 text-xs" onClick={() => setOpen(false)}>{t('Отказ')}</button>
       {error && <p role="alert" className="w-full text-xs text-loss">{error}</p>}
     </form>
   );

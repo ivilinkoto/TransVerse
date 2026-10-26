@@ -7,6 +7,7 @@ import { featureFor } from '@/server/features';
 import { postCoins } from './coins';
 import { fail } from './errors';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 /** This week's battles with the player's picks. */
 export async function predictionBoard(db: DbOrTx, userId: string, now = new Date()) {
@@ -29,16 +30,16 @@ export async function predictionBoard(db: DbOrTx, userId: string, now = new Date
 
 /** A free pick: who wins this battle. */
 export async function predictBattle(db: Database, userId: string, battleId: string, pickOrgId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'predictions', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'predictions', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const [battle] = await tx.select().from(companyBattles).where(and(eq(companyBattles.id, battleId), eq(companyBattles.status, 'active')));
-    if (!battle) fail('no_battle', 'Битката вече не е активна.', 404);
-    if (pickOrgId !== battle!.aId && pickOrgId !== battle!.bId) fail('bad_pick', 'Избери една от двете компании.');
-    if (battle!.endsAt.getTime() - PREDICTIONS.closeHours * 3_600_000 <= now.getTime()) fail('closed', 'Прогнозите за тази битка са затворени.');
+    if (!battle) fail('no_battle', t('Битката вече не е активна.'), 404);
+    if (pickOrgId !== battle!.aId && pickOrgId !== battle!.bId) fail('bad_pick', t('Избери една от двете компании.'));
+    if (battle!.endsAt.getTime() - PREDICTIONS.closeHours * 3_600_000 <= now.getTime()) fail('closed', t('Прогнозите за тази битка са затворени.'));
     const [{ n } = { n: 0 }] = await tx.select({ n: count() }).from(predictions).where(and(eq(predictions.userId, userId), eq(predictions.weekKey, battle!.weekKey)));
-    if (n >= PREDICTIONS.perWeek) fail('limit', `До ${PREDICTIONS.perWeek} прогнози на седмица.`);
+    if (n >= PREDICTIONS.perWeek) fail('limit', t('До {0} прогнози на седмица.', PREDICTIONS.perWeek));
     const [row] = await tx.insert(predictions).values({ userId, battleId, pickOrgId, weekKey: battle!.weekKey, createdAt: now }).onConflictDoNothing().returning();
-    if (!row) fail('already', 'Вече направи прогноза за тази битка.', 409);
+    if (!row) fail('already', t('Вече направи прогноза за тази битка.'), 409);
     return row!;
   });
 }
@@ -56,8 +57,8 @@ export async function settlePredictions(db: Database) {
     await db.transaction(async (tx) => {
       const [mine] = await tx.update(predictions).set({ correct }).where(and(eq(predictions.id, r.p.id), isNull(predictions.correct))).returning();
       if (!mine || !correct) return;
-      await postCoins(tx, r.p.userId, { amount: PREDICTIONS.coins, reason: 'event_reward', description: 'Точна прогноза за битка', idempotencyKey: `prediction:${r.p.id}` });
-      await notify(tx, r.p.userId, 'success', 'Познал си! 🔮', `Прогнозата ти за битката беше точна — +${PREDICTIONS.coins} TC.`, '/game/predictions');
+      await postCoins(tx, r.p.userId, { amount: PREDICTIONS.coins, reason: 'event_reward', description: t('Точна прогноза за битка'), idempotencyKey: `prediction:${r.p.id}` });
+      await notify(tx, r.p.userId, 'success', () => t('Познал си! 🔮'), () => t('Прогнозата ти за битката беше точна — +{0} TC.', PREDICTIONS.coins), '/game/predictions');
     });
   }
   return open.length;

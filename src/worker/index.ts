@@ -3,6 +3,7 @@
  * any browser: settles deliveries, refreshes the freight market, pays wages,
  * rotates seasons. Run as a separate process: `pnpm worker`.
  */
+import '../i18n/als';
 import { closeDb, getDb } from '../server/db/client';
 import { loadSecretsFile } from '../server/secrets';
 import { worldTick } from '../server/game/world';

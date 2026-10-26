@@ -18,6 +18,7 @@ import { post, postTreasury } from './finance';
 import { addCompanyXp, entryRank, membershipOf, notifyMembers, requirePermission } from './membership';
 import { notify } from './notify';
 import { awardXp } from './progression';
+import { t as tr } from '@/i18n/t';
 
 const DAY = 86_400_000;
 
@@ -29,9 +30,9 @@ export async function createDepartment(db: Database, userId: string, raw: z.inpu
   const input = departmentSchema.parse(raw);
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'manage_members');
-    if (!(await featureFor(tx, userId, 'departments'))) fail('not_released', 'Отделите идват с обновление 1.9.');
+    if (!(await featureFor(tx, userId, 'departments'))) fail('not_released', tr('Отделите идват с обновление 1.9.'));
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(companyDepartments).where(eq(companyDepartments.organizationId, m.company.id));
-    if (n >= DEPARTMENTS.max) fail('too_many', `Най-много ${DEPARTMENTS.max} отдела.`);
+    if (n >= DEPARTMENTS.max) fail('too_many', tr('Най-много {0} отдела.', DEPARTMENTS.max));
     const [d] = await tx.insert(companyDepartments).values({ organizationId: m.company.id, name: input.name, goalTons: input.goalTons }).returning();
     return { id: d!.id };
   });
@@ -49,10 +50,10 @@ export async function deleteDepartment(db: Database, userId: string, id: number)
 /** A member picks a department (or none); the head is set by a manager. */
 export async function joinDepartment(db: Database, userId: string, id: number | null) {
   const m = await membershipOf(db, userId);
-  if (!m) fail('not_member', 'Не членувате в компания.', 403);
+  if (!m) fail('not_member', tr('Не членувате в компания.'), 403);
   if (id !== null) {
     const [d] = await db.select().from(companyDepartments).where(and(eq(companyDepartments.id, id), eq(companyDepartments.organizationId, m!.company.id)));
-    if (!d) fail('not_found', 'Няма такъв отдел.', 404);
+    if (!d) fail('not_found', tr('Няма такъв отдел.'), 404);
   }
   await db.update(companyMembers).set({ departmentId: id }).where(eq(companyMembers.userId, userId));
   return { departmentId: id };
@@ -63,7 +64,7 @@ export async function setDepartmentHead(db: Database, userId: string, id: number
     const m = await requirePermission(tx, userId, 'manage_members');
     if (headUserId) {
       const [member] = await tx.select({ id: companyMembers.userId }).from(companyMembers).where(and(eq(companyMembers.userId, headUserId), eq(companyMembers.companyId, m.company.id)));
-      if (!member) fail('not_member', 'Началникът трябва да е член.');
+      if (!member) fail('not_member', tr('Началникът трябва да е член.'));
       await tx.update(companyMembers).set({ departmentId: id }).where(eq(companyMembers.userId, headUserId));
     }
     await tx.update(companyDepartments).set({ headUserId }).where(and(eq(companyDepartments.id, id), eq(companyDepartments.organizationId, m.company.id)));
@@ -103,25 +104,25 @@ export async function openAssembly(db: Database, userId: string, raw: z.input<ty
   const input = assemblySchema.parse(raw);
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'manage_settings');
-    if (!(await featureFor(tx, userId, 'general_assembly', now))) fail('not_released', 'Събранието идва с обновление 1.9.');
+    if (!(await featureFor(tx, userId, 'general_assembly', now))) fail('not_released', tr('Събранието идва с обновление 1.9.'));
     const [open] = await tx.select({ id: companyAssemblies.id }).from(companyAssemblies).where(and(eq(companyAssemblies.organizationId, m.company.id), isNull(companyAssemblies.closedAt))).limit(1);
-    if (open) fail('already_open', 'Вече има отворено гласуване.');
+    if (open) fail('already_open', tr('Вече има отворено гласуване.'));
     const options = input.kind === 'rate' ? ASSEMBLY.rateOptions.map((r) => `${Math.round(r * 100)} %`) : input.options;
-    if (!options || options.length < ASSEMBLY.minOptions) fail('bad_options', `Нужни са ${ASSEMBLY.minOptions}–${ASSEMBLY.maxOptions} отговора.`);
+    if (!options || options.length < ASSEMBLY.minOptions) fail('bad_options', tr('Нужни са {0}–{1} отговора.', ASSEMBLY.minOptions, ASSEMBLY.maxOptions));
     const [a] = await tx.insert(companyAssemblies).values({ organizationId: m.company.id, question: input.kind === 'rate' ? `Вноска към касата: ${input.question}` : input.question, kind: input.kind, options: options!, closesAt: new Date(now.getTime() + ASSEMBLY.days * DAY), createdBy: userId, createdAt: now }).returning();
-    await notifyMembers(tx, m.company.id, null, 'Общо събрание 🗳️', `${a!.question} — гласувай до ${ASSEMBLY.days} дни.`, '/game/company/community');
+    await notifyMembers(tx, m.company.id, null, () => tr('Общо събрание 🗳️'), () => tr('{0} — гласувай до {1} дни.', a!.question, ASSEMBLY.days), '/game/company/community');
     return { id: a!.id };
   });
 }
 
 export async function voteAssembly(db: Database, userId: string, assemblyId: number, option: number, now = new Date()) {
   const m = await membershipOf(db, userId);
-  if (!m) fail('not_member', 'Не членувате в компания.', 403);
+  if (!m) fail('not_member', tr('Не членувате в компания.'), 403);
   const [a] = await db.select().from(companyAssemblies).where(and(eq(companyAssemblies.id, assemblyId), eq(companyAssemblies.organizationId, m!.company.id)));
-  if (!a || a.closedAt || a.closesAt <= now) fail('closed', 'Гласуването е приключило.');
-  if (!Number.isInteger(option) || option < 0 || option >= a!.options.length) fail('bad_option', 'Няма такъв отговор.');
+  if (!a || a.closedAt || a.closesAt <= now) fail('closed', tr('Гласуването е приключило.'));
+  if (!Number.isInteger(option) || option < 0 || option >= a!.options.length) fail('bad_option', tr('Няма такъв отговор.'));
   const [v] = await db.insert(assemblyVotes).values({ assemblyId, userId, option, createdAt: now }).onConflictDoNothing().returning();
-  if (!v) fail('already_voted', 'Вече гласува.');
+  if (!v) fail('already_voted', tr('Вече гласува.'));
   return { voted: option };
 }
 
@@ -136,9 +137,9 @@ export async function closeAssemblies(db: Database, now = new Date()) {
       if (!closed) return;
       const answer = best ? a.options[best.option]! : null;
       if (a.kind === 'rate' && best) await tx.update(organizations).set({ contributionRate: ASSEMBLY.rateOptions[best.option] ?? 0.05 }).where(eq(organizations.id, a.organizationId));
-      const text = answer ? `Събранието реши: ${a.question} → „${answer}“ (${best!.n} гласа).` : `Събранието „${a.question}“ приключи без гласове.`;
+      const text = answer ? tr('Събранието реши: {0} → „{1}“ ({2} гласа).', a.question, answer, best!.n) : tr('Събранието „{0}“ приключи без гласове.', a.question);
       await addChronicle(tx, a.organizationId, 'assembly', text, now);
-      await notifyMembers(tx, a.organizationId, null, 'Решение на събранието', text, '/game/company/community');
+      await notifyMembers(tx, a.organizationId, null, () => tr('Решение на събранието'), text, '/game/company/community');
     });
   }
   return due.length;
@@ -187,7 +188,7 @@ export async function awardKeyClients(db: Database, now = new Date()) {
     if (!row) continue;
     await db.transaction(async (tx) => {
       await addChronicle(tx, r.orgId, 'key_client', `Ключов клиент в ${r.city}: ${client} (${Math.round(r.tons)} т миналия месец).`, now);
-      await notifyMembers(tx, r.orgId, null, `Ключов клиент: ${client} 🤝`, `Този месец компанията има собствени товари от ${r.city} (+${Math.round((KEY_CLIENTS.multiplier - 1) * 100)} %).`, '/game/contracts');
+      await notifyMembers(tx, r.orgId, null, () => tr('Ключов клиент: {0} 🤝', client), () => tr('Този месец компанията има собствени товари от {0} (+{1} %).', r.city, Math.round((KEY_CLIENTS.multiplier - 1) * 100)), '/game/contracts');
     });
   }
   return best.size;
@@ -209,7 +210,7 @@ export async function topUpKeyClientLoads(db: Database, now = new Date()) {
       const dest = near[Math.floor(Math.random() * near.length)];
       if (!dest) continue;
       const cargo = [...origin.produces][0] ?? 'pallets';
-      const id = await addLoad(db, origin.id, dest.id, cargo, 8 + Math.round(Math.random() * 10), now, KEY_CLIENTS.ttlHours * 3_600_000, KEY_CLIENTS.multiplier, { goods: `За ${k.client}` });
+      const id = await addLoad(db, origin.id, dest.id, cargo, 8 + Math.round(Math.random() * 10), now, KEY_CLIENTS.ttlHours * 3_600_000, KEY_CLIENTS.multiplier, { goods: tr('За {0}', k.client) });
       if (id) {
         await db.update(contracts).set({ branchOrgId: k.organizationId, keyClient: true }).where(eq(contracts.id, id));
         made++;
@@ -245,12 +246,12 @@ export async function ownerReports(db: Database, now = new Date()) {
     const best = [...trips].sort((a, b) => b.tons - a.tons)[0];
     const idle = members.filter((m) => !trips.some((t) => t.ownerId === m.userId)).map((m) => m.username);
     const body = [
-      `${total} курса за седмицата`,
-      best ? `най-много: ${members.find((m) => m.userId === best.ownerId)?.username ?? '—'} (${Math.round(best.tons)} т)` : null,
-      idle.length ? `без курс: ${idle.slice(0, 5).join(', ')}${idle.length > 5 ? ` и още ${idle.length - 5}` : ''}` : 'всички карат 👍',
-      `каса ${money(o.treasury)}`,
+      tr('{0} курса за седмицата', total),
+      best ? tr('най-много: {0} ({1} т)', members.find((m) => m.userId === best.ownerId)?.username ?? '—', Math.round(best.tons)) : null,
+      idle.length ? tr('без курс: {0}{1}', idle.slice(0, 5).join(', '), idle.length > 5 ? tr(' и още {0}', idle.length - 5) : '') : tr('всички карат 👍'),
+      tr('каса {0}', money(o.treasury)),
     ].filter(Boolean).join(' · ');
-    await db.transaction((tx) => notify(tx, o.ownerId, 'info', `Седмицата на „${o.name}“`, `${body}.`, '/game/company/members'));
+    await db.transaction((tx) => notify(tx, o.ownerId, 'info', () => tr('Седмицата на „{0}“', o.name), `${body}.`, '/game/company/members'));
     sent++;
   }
   return sent;
@@ -270,7 +271,7 @@ export async function setLogoDesign(db: Database, userId: string, raw: z.input<t
   const design = raw ? logoSchema.parse(raw) : null;
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'edit_profile');
-    if (!(await featureFor(tx, userId, 'company_logo'))) fail('not_released', 'Логото идва с обновление 1.9.');
+    if (!(await featureFor(tx, userId, 'company_logo'))) fail('not_released', tr('Логото идва с обновление 1.9.'));
     await tx.update(organizations).set({ logoDesign: design, brandingVersion: sql`${organizations.brandingVersion} + 1` }).where(eq(organizations.id, m.company.id));
     return { saved: !!design };
   });
@@ -282,7 +283,7 @@ export async function setTradition(db: Database, userId: string, raw: z.input<ty
   const t = raw ? traditionSchema.parse(raw) : null;
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'manage_settings');
-    if (!(await featureFor(tx, userId, 'company_traditions'))) fail('not_released', 'Традициите идват с обновление 1.9.');
+    if (!(await featureFor(tx, userId, 'company_traditions'))) fail('not_released', tr('Традициите идват с обновление 1.9.'));
     await tx.update(organizations).set({ traditionDay: t?.day ?? null, traditionName: t?.name ?? null }).where(eq(organizations.id, m.company.id));
     if (t) await addChronicle(tx, m.company.id, 'tradition', `Нова традиция: „${t.name}“ всяка година на ${t.day.split('-').reverse().join('.')}.`);
     return { day: t?.day ?? null };
@@ -321,16 +322,16 @@ export async function recordOwnerChange(tx: Tx, orgId: string, previousOwnerId: 
 // ── Interns ──────────────────────────────────────────────────────────────
 
 export async function requestInternship(db: Database, userId: string, hostOrgId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'interns', now))) fail('not_released', 'Стажовете идват с обновление 1.9.');
+  if (!(await featureFor(db, userId, 'interns', now))) fail('not_released', tr('Стажовете идват с обновление 1.9.'));
   const m = await membershipOf(db, userId);
-  if (m?.company.id === hostOrgId) fail('own_company', 'Това е твоята компания.');
+  if (m?.company.id === hostOrgId) fail('own_company', tr('Това е твоята компания.'));
   const [host] = await db.select({ id: organizations.id, ownerId: organizations.ownerId, name: organizations.name }).from(organizations).where(eq(organizations.id, hostOrgId));
-  if (!host) fail('not_found', 'Няма такава компания.', 404);
+  if (!host) fail('not_found', tr('Няма такава компания.'), 404);
   const [busy] = await db.select({ id: internStays.id }).from(internStays).where(and(eq(internStays.userId, userId), inArray(internStays.status, ['requested', 'active']))).limit(1);
-  if (busy) fail('busy', 'Вече имаш заявен или текущ стаж.');
+  if (busy) fail('busy', tr('Вече имаш заявен или текущ стаж.'));
   const [row] = await db.insert(internStays).values({ userId, homeOrgId: m?.company.id ?? null, hostOrgId, createdAt: now }).returning();
   const [u] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId));
-  await db.transaction((tx) => notify(tx, host!.ownerId, 'info', 'Молба за стаж', `${u?.username ?? 'Играч'} иска ${INTERNS.days} дни стаж в „${host!.name}“.`, '/game/company/community'));
+  await db.transaction((tx) => notify(tx, host!.ownerId, 'info', () => tr('Молба за стаж'), () => tr('{0} иска {1} дни стаж в „{2}“.', u?.username ?? tr('Играч'), INTERNS.days, host!.name), '/game/company/community'));
   return { id: row!.id };
 }
 
@@ -338,9 +339,9 @@ export async function decideInternship(db: Database, userId: string, id: number,
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'recruit');
     const [s] = await tx.select().from(internStays).where(and(eq(internStays.id, id), eq(internStays.hostOrgId, m.company.id), eq(internStays.status, 'requested')));
-    if (!s) fail('not_found', 'Няма такава молба.', 404);
+    if (!s) fail('not_found', tr('Няма такава молба.'), 404);
     await tx.update(internStays).set(accept ? { status: 'active', startsAt: now, endsAt: new Date(now.getTime() + INTERNS.days * DAY) } : { status: 'declined' }).where(eq(internStays.id, id));
-    await notify(tx, s!.userId, accept ? 'success' : 'info', accept ? `Стаж в „${m.company.name}“ 🎓` : 'Молбата за стаж е отказана', accept ? `${INTERNS.days} дни: +${Math.round(INTERNS.xpBonus * 100)} % опит от курсовете, а компанията-домакин учи от теб.` : `„${m.company.name}“ не прие стаж сега.`, '/game/company/community');
+    await notify(tx, s!.userId, accept ? 'success' : 'info', () => accept ? tr('Стаж в „{0}“ 🎓', m.company.name) : tr('Молбата за стаж е отказана'), () => accept ? tr('{0} дни: +{1} % опит от курсовете, а компанията-домакин учи от теб.', INTERNS.days, Math.round(INTERNS.xpBonus * 100)) : tr('„{0}“ не прие стаж сега.', m.company.name), '/game/company/community');
     return { status: accept ? 'active' : 'declined' };
   });
 }
@@ -367,23 +368,23 @@ export async function traditionBonus(tx: Tx, userId: string, d: { id: string; co
   const m = await membershipOf(tx, userId);
   if (!m?.company.traditionDay || m.company.traditionDay !== sofiaMonthDay(at) || !(await featureFor(tx, userId, 'company_traditions', at))) return 0;
   const bonus = Math.round(rewardCents * TRADITION.bonusShare);
-  if (bonus > 0) await post(tx, d.companyId, [{ category: 'company_bonus', amountCents: bonus, description: `${m.company.traditionName ?? 'Ден на компанията'} (+${Math.round(TRADITION.bonusShare * 100)} %)`, idempotencyKey: `tradition:${d.id}`, refType: 'delivery', refId: d.id }]);
+  if (bonus > 0) await post(tx, d.companyId, [{ category: 'company_bonus', amountCents: bonus, description: `${m.company.traditionName ?? tr('Ден на компанията')} (+${Math.round(TRADITION.bonusShare * 100)} %)`, idempotencyKey: `tradition:${d.id}`, refType: 'delivery', refId: d.id }]);
   return bonus;
 }
 
 // ── Mergers ──────────────────────────────────────────────────────────────
 
 export async function proposeMerger(db: Database, userId: string, toOrgId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'mergers', now))) fail('not_released', 'Сливанията идват с обновление 1.9.');
+  if (!(await featureFor(db, userId, 'mergers', now))) fail('not_released', tr('Сливанията идват с обновление 1.9.'));
   const m = await membershipOf(db, userId);
-  if (!m?.rank.isOwner) fail('forbidden', 'Само собственикът предлага сливане.', 403);
-  if (m!.company.id === toOrgId) fail('same', 'Избери друга компания.');
+  if (!m?.rank.isOwner) fail('forbidden', tr('Само собственикът предлага сливане.'), 403);
+  if (m!.company.id === toOrgId) fail('same', tr('Избери друга компания.'));
   const [to] = await db.select({ id: organizations.id, ownerId: organizations.ownerId, name: organizations.name }).from(organizations).where(eq(organizations.id, toOrgId));
-  if (!to) fail('not_found', 'Няма такава компания.', 404);
+  if (!to) fail('not_found', tr('Няма такава компания.'), 404);
   const [open] = await db.select({ id: mergerOffers.id }).from(mergerOffers).where(and(eq(mergerOffers.fromOrgId, m!.company.id), eq(mergerOffers.toOrgId, toOrgId), eq(mergerOffers.status, 'open'))).limit(1);
-  if (open) fail('already', 'Вече има предложение към тази компания.');
+  if (open) fail('already', tr('Вече има предложение към тази компания.'));
   const [row] = await db.insert(mergerOffers).values({ fromOrgId: m!.company.id, toOrgId, createdAt: now }).returning();
-  await db.transaction((tx) => notify(tx, to!.ownerId, 'info', 'Предложение за сливане', `„${m!.company.name}“ предлага „${to!.name}“ да влезе в нея като отдел. Решаваш ти.`, '/game/company/community'));
+  await db.transaction((tx) => notify(tx, to!.ownerId, 'info', () => tr('Предложение за сливане'), () => tr('„{0}“ предлага „{1}“ да влезе в нея като отдел. Решаваш ти.', m!.company.name, to!.name), '/game/company/community'));
   return { id: row!.id };
 }
 
@@ -396,39 +397,39 @@ export async function proposeMerger(db: Database, userId: string, toOrgId: strin
 export async function acceptMerger(db: Database, userId: string, offerId: number, now = new Date()) {
   return db.transaction(async (tx) => {
     const m = await membershipOf(tx, userId, true);
-    if (!m?.rank.isOwner) fail('forbidden', 'Само собственикът решава.', 403);
+    if (!m?.rank.isOwner) fail('forbidden', tr('Само собственикът решава.'), 403);
     const [offer] = await tx.select().from(mergerOffers).where(and(eq(mergerOffers.id, offerId), eq(mergerOffers.toOrgId, m!.company.id), eq(mergerOffers.status, 'open')));
-    if (!offer) fail('not_found', 'Няма такова предложение.', 404);
+    if (!offer) fail('not_found', tr('Няма такова предложение.'), 404);
     const small = m!.company;
     const [big] = await tx.select().from(organizations).where(eq(organizations.id, offer!.fromOrgId)).for('update');
-    if (!big) fail('not_found', 'Другата компания вече я няма.', 404);
+    if (!big) fail('not_found', tr('Другата компания вече я няма.'), 404);
     const [held] = await tx.select({ n: sql<number>`count(*)::int` }).from(shareHoldings).where(eq(shareHoldings.organizationId, small.id));
-    if ((held?.n ?? 0) > 0) fail('has_shares', 'Компанията има акционери — първо трябва те да продадат акциите си.');
+    if ((held?.n ?? 0) > 0) fail('has_shares', tr('Компанията има акционери — първо трябва те да продадат акциите си.'));
     const [ally] = await tx.select({ id: allianceMembers.organizationId }).from(allianceMembers).where(eq(allianceMembers.organizationId, small.id));
-    if (ally) fail('in_alliance', 'Първо напуснете съюза.');
+    if (ally) fail('in_alliance', tr('Първо напуснете съюза.'));
     const [ownTrucks] = await tx.select({ n: sql<number>`count(*)::int` }).from(orgVehicles).where(and(eq(orgVehicles.organizationId, small.id), isNull(orgVehicles.soldAt)));
     const [ownTrailers] = await tx.select({ n: sql<number>`count(*)::int` }).from(orgTrailers).where(and(eq(orgTrailers.organizationId, small.id), isNull(orgTrailers.soldAt)));
-    if ((ownTrucks?.n ?? 0) + (ownTrailers?.n ?? 0) > 0) fail('has_fleet', 'Първо продайте фирмените камиони и ремаркета на компанията.');
+    if ((ownTrucks?.n ?? 0) + (ownTrailers?.n ?? 0) > 0) fail('has_fleet', tr('Първо продайте фирмените камиони и ремаркета на компанията.'));
     const members = await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, small.id));
     const [{ n: bigCount = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(companyMembers).where(eq(companyMembers.companyId, big!.id));
     const rank = await entryRank(tx, big!.id);
     const [dept] = await tx.insert(companyDepartments).values({ organizationId: big!.id, name: small.name.slice(0, DEPARTMENTS.nameMax), headUserId: userId, goalTons: DEPARTMENTS.defaultGoalTons }).returning();
     await tx.update(companyMembers).set({ companyId: big!.id, rankId: rank.id, departmentId: dept!.id }).where(eq(companyMembers.companyId, small.id));
     if (small.treasuryCents > 0) {
-      await postTreasury(tx, small.id, [{ category: 'dissolution', amountCents: -small.treasuryCents, description: `Сливане с „${big!.name}“`, idempotencyKey: `merger:${offer!.id}:out`, actorUserId: userId }]);
-      await postTreasury(tx, big!.id, [{ category: 'deposit', amountCents: small.treasuryCents, description: `Каса на „${small.name}“ при сливане`, idempotencyKey: `merger:${offer!.id}:in`, actorUserId: userId }]);
+      await postTreasury(tx, small.id, [{ category: 'dissolution', amountCents: -small.treasuryCents, description: tr('Сливане с „{0}“', big!.name), idempotencyKey: `merger:${offer!.id}:out`, actorUserId: userId }]);
+      await postTreasury(tx, big!.id, [{ category: 'deposit', amountCents: small.treasuryCents, description: tr('Каса на „{0}“ при сливане', small.name), idempotencyKey: `merger:${offer!.id}:in`, actorUserId: userId }]);
     }
     await tx.update(mergerOffers).set({ status: 'accepted', decidedAt: now }).where(eq(mergerOffers.id, offer!.id));
     await addChronicle(tx, big!.id, 'merger', `„${small.name}“ се сля с компанията (${members.length} членове, вече отдел).`, now);
     await tx.delete(organizations).where(eq(organizations.id, small.id));
-    await notifyMembers(tx, big!.id, null, 'Сливане 🤝', `„${small.name}“ се присъедини като отдел. Компанията вече има ${bigCount + members.length} членове.`, '/game/company');
+    await notifyMembers(tx, big!.id, null, () => tr('Сливане 🤝'), () => tr('„{0}“ се присъедини като отдел. Компанията вече има {1} членове.', small.name, bigCount + members.length), '/game/company');
     return { merged: true, into: big!.id };
   });
 }
 
 export async function declineMerger(db: Database, userId: string, offerId: number, now = new Date()) {
   const m = await membershipOf(db, userId);
-  if (!m?.rank.isOwner) fail('forbidden', 'Само собственикът решава.', 403);
+  if (!m?.rank.isOwner) fail('forbidden', tr('Само собственикът решава.'), 403);
   await db.update(mergerOffers).set({ status: 'declined', decidedAt: now }).where(and(eq(mergerOffers.id, offerId), eq(mergerOffers.toOrgId, m!.company.id), eq(mergerOffers.status, 'open')));
   return { declined: true };
 }

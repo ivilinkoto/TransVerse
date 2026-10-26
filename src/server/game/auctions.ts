@@ -16,6 +16,7 @@ import { fail } from './errors';
 import { heldLicences, missingFor } from './licences';
 import { broadcast, notify } from './notify';
 import { pick, pickWeighted, rand } from './random';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 type Auction = typeof specialAuctions.$inferSelect;
 
@@ -74,7 +75,7 @@ export async function openAuction(db: Database, slot: string, now: Date, endsAt:
 /** Whether the player has some truck (busy or not) and the licences for this load. */
 async function canHaul(db: DbOrTx, userId: string, companyId: string, a: Auction) {
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
-  if ((u?.level ?? 1) < CARGO[a.cargoType as CargoType].minLevel) return `Изисква ниво ${CARGO[a.cargoType as CargoType].minLevel}.`;
+  if ((u?.level ?? 1) < CARGO[a.cargoType as CargoType].minLevel) return tr('Изисква ниво {0}.', CARGO[a.cargoType as CargoType].minLevel);
   const vs = await db.select({ id: vehicles.id, modelId: vehicles.modelId }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt)));
   const ts = vs.length ? await db.select({ vehicleId: trailers.vehicleId, modelId: trailers.modelId }).from(trailers).where(inArray(trailers.vehicleId, vs.map((v) => v.id))) : [];
   const fits = vs.some((v) => {
@@ -82,12 +83,12 @@ async function canHaul(db: DbOrTx, userId: string, companyId: string, a: Auction
     const cap = combinationCapability({ unit: powerUnitModel(v.modelId), trailer: t ? trailerModel(t.modelId) : null });
     return canCarry(cap.bodies, a.cargoType as CargoType) && cap.payloadTons >= a.weightTons;
   });
-  if (!fits) return `Нужен е камион за „${CARGO[a.cargoType as CargoType].label}“ с поне ${a.weightTons} т.`;
+  if (!fits) return tr('Нужен е камион за „{0}“ с поне {1} т.', CARGO[a.cargoType as CargoType].label, a.weightTons);
   const [route] = await db.select({ countries: routes.countries }).from(routes).where(eq(routes.id, a.routeId));
   const ends = await db.select({ id: cities.id, country: cities.countryCode }).from(cities).where(inArray(cities.id, [a.originCityId, a.destCityId]));
   const country = (id: number) => ends.find((c) => c.id === id)!.country;
   const missing = missingFor({ cargoType: a.cargoType, originCountry: country(a.originCityId), destCountry: country(a.destCityId), routeCountries: route?.countries ?? [] }, await heldLicences(db, userId));
-  if (missing.length) return 'Нямаш нужните лицензи за този маршрут.';
+  if (missing.length) return tr('Нямаш нужните лицензи за този маршрут.');
   return null;
 }
 
@@ -95,18 +96,18 @@ async function canHaul(db: DbOrTx, userId: string, companyId: string, a: Auction
 export async function bidAuction(db: Database, userId: string, auctionId: string, amountCents: number, now = new Date()) {
   const company = await companyForUser(db, userId);
   const [pre] = await db.select().from(specialAuctions).where(eq(specialAuctions.id, auctionId));
-  if (!pre || pre.status !== 'open' || pre.endsAt <= now) fail('auction_closed', 'Търгът е приключил.', 409);
+  if (!pre || pre.status !== 'open' || pre.endsAt <= now) fail('auction_closed', tr('Търгът е приключил.'), 409);
   const why = await canHaul(db, userId, company.id, pre!);
   if (why) fail('cannot_haul', why);
   return db.transaction(async (tx) => {
     const [a] = await tx.select().from(specialAuctions).where(eq(specialAuctions.id, auctionId)).for('update');
-    if (!a || a.status !== 'open' || a.endsAt <= now) fail('auction_closed', 'Търгът е приключил.', 409);
+    if (!a || a.status !== 'open' || a.endsAt <= now) fail('auction_closed', tr('Търгът е приключил.'), 409);
     const [lowest] = await tx.select({ amount: auctionBids.amountCents }).from(auctionBids).where(eq(auctionBids.auctionId, a!.id)).orderBy(asc(auctionBids.amountCents)).limit(1);
     const max = maxBidCents(a!.startPriceCents, lowest?.amount ?? null);
     const floor = floorBidCents(a!.startPriceCents);
     const amount = Math.round(amountCents / 100) * 100;
-    if (amount > max) fail('bid_too_high', `Офертата трябва да е най-много ${(max / 100).toLocaleString('bg-BG')} лв.`);
-    if (amount < floor) fail('bid_too_low', `Най-ниската допустима оферта е ${(floor / 100).toLocaleString('bg-BG')} лв.`);
+    if (amount > max) fail('bid_too_high', tr('Офертата трябва да е най-много {0} лв.', (max / 100).toLocaleString(intlLocale())));
+    if (amount < floor) fail('bid_too_low', tr('Най-ниската допустима оферта е {0} лв.', (floor / 100).toLocaleString(intlLocale())));
     await tx
       .insert(auctionBids)
       .values({ auctionId: a!.id, companyId: company.id, userId, amountCents: amount, updatedAt: now })
@@ -154,9 +155,9 @@ export async function settleAuctions(db: Database, now = new Date()): Promise<nu
         })
         .returning({ id: contracts.id });
       await tx.update(specialAuctions).set({ status: 'awarded', winnerCompanyId: win.companyId, winningBidCents: win.amountCents, contractId: c!.id }).where(eq(specialAuctions.id, row.id));
-      const eur = (x: number) => `${Math.round(x / 100).toLocaleString('bg-BG')} лв.`;
-      await notify(tx, win.userId, 'achievement', `Спечели търга: ${row.title}`, `${eur(win.amountCents)} + ${row.coins} TC при доставка. Изпрати камион до ${AUCTION_RULES.sendHours} часа (Поръчки → Търгове).`, '/game/auctions');
-      for (const b of bids.slice(1)) await notify(tx, b.userId, 'info', `Търгът „${row.title}“ приключи`, `Спечели оферта от ${eur(win.amountCents)} Твоята беше ${eur(b.amountCents)}`, '/game/auctions');
+      const eur = (x: number) => tr('{0} лв.', Math.round(x / 100).toLocaleString(intlLocale()));
+      await notify(tx, win.userId, 'achievement', () => tr('Спечели търга: {0}', row.title), () => tr('{0} + {1} TC при доставка. Изпрати камион до {2} часа (Поръчки → Търгове).', eur(win.amountCents), row.coins, AUCTION_RULES.sendHours), '/game/auctions');
+      for (const b of bids.slice(1)) await notify(tx, b.userId, 'info', () => tr('Търгът „{0}“ приключи', row.title), () => tr('Спечели оферта от {0} Твоята беше {1}', eur(win.amountCents), eur(b.amountCents)), '/game/auctions');
       return 1;
     });
   }
@@ -173,7 +174,7 @@ export async function settleAuctions(db: Database, now = new Date()): Promise<nu
       if (!rows.length) return;
       await tx.update(specialAuctions).set({ status: 'forfeited' }).where(eq(specialAuctions.id, a.id));
       const [acct] = await tx.update(companies).set({ reputation: sql`greatest(0, ${companies.reputation} - ${AUCTION_RULES.forfeitReputation})` }).where(eq(companies.id, a.winnerCompanyId!)).returning({ ownerId: companies.ownerId });
-      if (acct) await notify(tx, acct.ownerId, 'warning', `Изпусна специалния товар „${a.title}“`, `Не изпрати камион навреме. −${AUCTION_RULES.forfeitReputation} репутация.`, '/game/auctions');
+      if (acct) await notify(tx, acct.ownerId, 'warning', () => tr('Изпусна специалния товар „{0}“', a.title), () => tr('Не изпрати камион навреме. −{0} репутация.', AUCTION_RULES.forfeitReputation), '/game/auctions');
       n++;
     });
   }
@@ -184,7 +185,7 @@ export async function settleAuctions(db: Database, now = new Date()): Promise<nu
 export async function deliverAuctionLoad(tx: Tx, auctionId: string, ownerId: string) {
   const [a] = await tx.update(specialAuctions).set({ status: 'delivered' }).where(and(eq(specialAuctions.id, auctionId), eq(specialAuctions.status, 'awarded'))).returning();
   if (!a) return;
-  await postCoins(tx, ownerId, { amount: a.coins, reason: 'auction_reward', description: `Специален товар: ${a.title}`, idempotencyKey: `auction:${a.id}:coins` });
+  await postCoins(tx, ownerId, { amount: a.coins, reason: 'auction_reward', description: tr('Специален товар: {0}', a.title), idempotencyKey: `auction:${a.id}:coins` });
 }
 
 /** What the auctions page shows: running auctions with the lowest bid, the player's won jobs, recent results. */

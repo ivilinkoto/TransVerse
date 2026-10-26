@@ -5,6 +5,7 @@ import { Defs, GroundShadow, type Ids } from './parts';
 import { DrawbarTrailer, Trailer, TrailerExtras, type TrailerBody } from './trailers';
 import { Rigid, Tractor, Van } from './units';
 import { RETRO, type RetroStyle } from '@/lib/game/shop';
+import { tx } from '@/i18n/t';
 
 export interface VehicleIllustrationProps {
   /** Power unit model id from the catalogue. */
@@ -116,7 +117,7 @@ export function TrailerIllustration({ modelId, color = '#1d4ed8', className, upg
   const fill = cosmetics?.paint ?? (t.body === 'container' ? '#b45309' : t.body === 'tipper' ? '#ca8a04' : color);
   if (t.kind === 'drawbar') {
     return (
-      <svg viewBox="-10 -450 940 470" className={className} role="img" aria-label={t.name} preserveAspectRatio="xMidYMax meet">
+      <svg viewBox="-10 -450 940 470" className={className} role="img" aria-label={tx(t.name)} preserveAspectRatio="xMidYMax meet">
         <title>{`${t.brand} ${t.name}`}</title>
         <Defs ids={ids} color={color} />
         <GroundShadow from={0} to={900} />
@@ -126,7 +127,7 @@ export function TrailerIllustration({ modelId, color = '#1d4ed8', className, upg
     );
   }
   return (
-    <svg viewBox="-10 -450 1420 470" className={className} role="img" aria-label={t.name} preserveAspectRatio="xMidYMax meet">
+    <svg viewBox="-10 -450 1420 470" className={className} role="img" aria-label={tx(t.name)} preserveAspectRatio="xMidYMax meet">
       <title>{`${t.brand} ${t.name}`}</title>
       <Defs ids={ids} color={color} />
       <GroundShadow from={0} to={1360} />

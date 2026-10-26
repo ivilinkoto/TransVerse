@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useRef } from 'react';
 import { greatCircle, type LatLon } from '@/lib/geo/geometry';
 import type { Footprint } from '@/server/game/footprint';
+import { t } from '@/i18n/t';
 
 const toLngLat = (p: LatLon): [number, number] => [p[1], p[0]];
 
@@ -14,7 +15,7 @@ export function FootprintMap({ styleUrl, center, data }: { styleUrl: string; cen
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!container.current) return;
-    const map = new maplibregl.Map({ container: container.current, style: styleUrl, center: toLngLat(center), zoom: 4.6, attributionControl: { compact: true, customAttribution: 'Градове: GeoNames · Маршрути: Valhalla / OSM' } });
+    const map = new maplibregl.Map({ container: container.current, style: styleUrl, center: toLngLat(center), zoom: 4.6, attributionControl: { compact: true, customAttribution: t('Градове: GeoNames · Маршрути: Valhalla / OSM') } });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(container.current);

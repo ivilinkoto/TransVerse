@@ -9,6 +9,7 @@ import { categoryOf, inQuietHours, type PushCategory } from '@/server/push';
 import { appUrl, BRAND, discordConfig } from './config';
 import { enqueue } from './outbox';
 import { button, linkButton, rows as buttonRows, STYLE } from './ui';
+import { t } from '@/i18n/t';
 
 /** Discord direct messages: every category is on until the player turns it off (like phone notifications). */
 export const wantsDiscord = (prefs: Partial<Record<string, boolean>> | null | undefined, category: PushCategory) => prefs?.[category] !== false;
@@ -29,19 +30,19 @@ export function actionButtons(href: string | null, staff: boolean, now: Date) {
   const id = (key: string) => new RegExp(`[?&]${key}=([0-9a-f-]{36})`).exec(href ?? '')?.[1];
   // A truck arrived: "Нов курс" picks its next load right here (see play.ts).
   const truck = id('truck');
-  if (truck) return [button('Нов курс за този камион', `course:truck:${truck}`, STYLE.primary, '🚚')];
+  if (truck) return [button(t('Нов курс за този камион'), `course:truck:${truck}`, STYLE.primary, '🚚')];
   // A load on a favourite lane, the load of the day or a shared company load: take it.
   const load = id('load');
-  if (load) return [button('Поеми', `take:${load}`, STYLE.success, '🚚')];
+  if (load) return [button(t('Поеми'), `take:${load}`, STYLE.success, '🚚')];
   // The own truck stands after a breakdown: paid roadside assistance or call the colleagues.
   const stop = id('stop');
-  if (stop && featureLive('roadside_paid', now, staff)) return [button(`Пътна помощ (${money(ROADSIDE.paidCents)})`, `road:pay:${stop}`, STYLE.primary, '🛠️'), button('Повикай колеги', `road:call:${stop}`, STYLE.secondary, '📣')];
+  if (stop && featureLive('roadside_paid', now, staff)) return [button(t('Пътна помощ ({0})', money(ROADSIDE.paidCents)), `road:pay:${stop}`, STYLE.primary, '🛠️'), button(t('Повикай колеги'), `road:call:${stop}`, STYLE.secondary, '📣')];
   // A friend's or colleague's truck stands: help it.
   const help = id('help');
-  if (help) return [button('Помогни', `road:help:${help}`, STYLE.success, '🤝')];
+  if (help) return [button(t('Помогни'), `road:help:${help}`, STYLE.success, '🤝')];
   // A duel invitation.
   const duel = id('duel');
-  if (duel && featureLive('duels', now, staff)) return [button('Приеми дуела', `duel:yes:${duel}`, STYLE.success, '⚔️'), button('Откажи', `duel:no:${duel}`, STYLE.secondary)];
+  if (duel && featureLive('duels', now, staff)) return [button(t('Приеми дуела'), `duel:yes:${duel}`, STYLE.success, '⚔️'), button(t('Откажи'), `duel:no:${duel}`, STYLE.secondary)];
   return [];
 }
 
@@ -65,11 +66,11 @@ export async function relayNotifications(db: Database, now = new Date()) {
     const last = list.at(-1)!;
     const link = (href: string | null) => `${appUrl()}${href ?? '/game/notifications'}`;
     await enqueue(db, `dm:${last.userId}:${last.id}`, `dm:${last.discordId}`, {
-      components: buttonRows(...(list.length === 1 ? actionButtons(last.href, isStaff(last.role), now) : []), linkButton('Отвори в играта', link(list.length === 1 ? last.href : null), '🎮')),
+      components: buttonRows(...(list.length === 1 ? actionButtons(last.href, isStaff(last.role), now) : []), linkButton(t('Отвори в играта'), link(list.length === 1 ? last.href : null), '🎮')),
       embeds: [
         list.length === 1
-          ? { title: last.title.slice(0, 250), description: last.body.slice(0, 1500), color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } }
-          : { title: `${list.length} нови известия в TransVerse`, description: list.slice(-6).map((n) => `• **${n.title}** — ${n.body.slice(0, 120)}`).join('\n'), color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } },
+          ? { title: last.title.slice(0, 250), description: last.body.slice(0, 1500), color: BRAND, footer: { text: t('TransVerse · известията в Discord се спират от Настройки') } }
+          : { title: t('{0} нови известия в TransVerse', list.length), description: list.slice(-6).map((n) => `• **${n.title}** — ${n.body.slice(0, 120)}`).join('\n'), color: BRAND, footer: { text: t('TransVerse · известията в Discord се спират от Настройки') } },
       ],
     }, now);
   }
@@ -120,8 +121,8 @@ export async function relayArrivingSoon(db: Database, now = new Date()) {
   for (const r of rows) {
     if (!featureLive('discord_bot', now, isStaff(r.role)) || !wantsDiscord(r.prefs, 'deliveries') || inQuietHours(r.quiet, now)) continue;
     await enqueue(db, `soon:${r.id}`, `dm:${r.discordId}`, {
-      embeds: [{ title: `⏱️ ${r.plate} пристига в ${r.dest} <t:${Math.floor(r.etaAt!.getTime() / 1000)}:R>`, description: 'Виж товарите, които те чакат там — като пристигне, ще можеш да го пуснеш с „Нов курс за този камион“.', color: BRAND, footer: { text: 'TransVerse · известията в Discord се спират от Настройки' } }],
-      components: buttonRows(linkButton(`Товари от ${r.dest}`, `${appUrl()}/game/contracts?from=${r.destId}&truck=${r.vehicleId}`, '📦')),
+      embeds: [{ title: t('⏱️ {0} пристига в {1} <t:{2}:R>', r.plate, r.dest, Math.floor(r.etaAt!.getTime() / 1000)), description: t('Виж товарите, които те чакат там — като пристигне, ще можеш да го пуснеш с „Нов курс за този камион“.'), color: BRAND, footer: { text: t('TransVerse · известията в Discord се спират от Настройки') } }],
+      components: buttonRows(linkButton(t('Товари от {0}', r.dest), `${appUrl()}/game/contracts?from=${r.destId}&truck=${r.vehicleId}`, '📦')),
     }, now);
     n++;
   }

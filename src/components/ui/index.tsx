@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { t as tr, tx } from '@/i18n/t';
 
 export function PageHeader({ title, subtitle, help, actions }: { title: ReactNode; subtitle?: ReactNode; help?: ReactNode; actions?: ReactNode }) {
   return (
@@ -16,8 +17,8 @@ export function PageHeader({ title, subtitle, help, actions }: { title: ReactNod
         <details className="group mt-2 max-w-3xl text-sm">
           <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-cyan-glow/90 hover:text-cyan-glow [&::-webkit-details-marker]:hidden">
             <span className="flex h-4 w-4 items-center justify-center rounded-full border border-cyan-glow/50 text-[10px] font-bold">?</span>
-            <span className="group-open:hidden">Как работи?</span>
-            <span className="hidden group-open:inline">Скрий</span>
+            <span className="group-open:hidden">{tr('Как работи?')}</span>
+            <span className="hidden group-open:inline">{tr('Скрий')}</span>
           </summary>
           <div className="mt-2 rounded-xl border border-asphalt-700 bg-asphalt-900/70 p-3 text-mist-300">{help}</div>
         </details>
@@ -122,7 +123,7 @@ export function Segmented({ items, active, label }: { items: { id: string; label
       <div className="inline-flex min-w-max gap-1 rounded-full border border-asphalt-700 bg-asphalt-900/70 p-1">
         {items.map((t) => (
           <Link key={t.id} href={t.href} aria-current={t.id === active ? 'page' : undefined} className={`rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition ${t.id === active ? 'bg-volt-500 text-white shadow-[0_6px_20px_-8px_rgba(47,123,255,0.8)]' : 'text-mist-400 hover:text-white'}`}>
-            {t.label}
+            {tx(t.label)}
           </Link>
         ))}
       </div>

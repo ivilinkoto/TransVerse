@@ -10,6 +10,7 @@ import { BADGE_ROLES, COMPANY_CATEGORY, discordConfig } from './config';
 import { ensureRole, forgetGuild, gameRole, guild, managedRoleIds, verifiedRole } from './guild';
 import { layoutCategory, layoutState } from './layout';
 import { enqueue } from './outbox';
+import { t } from '@/i18n/t';
 
 const VIEW = 1n << 10n;
 const SEND = 1n << 11n;
@@ -140,18 +141,18 @@ export async function ensureAllianceChannel(db: Database, allianceId: string) {
     await queueMembers();
     return;
   }
-  const roleId = a.discordRoleId ?? (await ensureRole(`Съюз · ${a.name}`.slice(0, 100), 0xa78bfa));
+  const roleId = a.discordRoleId ?? (await ensureRole(t('Съюз · {0}', a.name).slice(0, 100), 0xa78bfa));
   const g = await guild(true);
-  let categoryId = await layoutCategory(db, 'компании', COMPANY_CATEGORY);
+  let categoryId = await layoutCategory(db, t('компании'), COMPANY_CATEGORY);
   if (!categoryId) categoryId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: COMPANY_CATEGORY, type: 4 })).id;
   const overwrites = [
     { id: guildId, type: 0, deny: allow(VIEW) },
     { id: roleId, type: 0, allow: allow(VIEW, SEND, HISTORY, EMBED, ATTACH) },
     { id: g.botId, type: 1, allow: allow(VIEW, SEND, HISTORY, EMBED) },
   ];
-  const name = `🛡┃${a.name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'съюз'}`;
+  const name = `🛡┃${a.name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 90) || t('съюз')}`;
   let channelId = a.discordChannelId && g.channels.some((c) => c.id === a.discordChannelId) ? a.discordChannelId : null;
-  if (!channelId) channelId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name, type: 0, parent_id: categoryId, topic: `Съюзът „${a.name}“ — всички компании в него.`, permission_overwrites: overwrites })).id;
+  if (!channelId) channelId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name, type: 0, parent_id: categoryId, topic: t('Съюзът „{0}“ — всички компании в него.', a.name), permission_overwrites: overwrites })).id;
   else await discord('PATCH', `/channels/${channelId}`, { name, permission_overwrites: overwrites });
   await db.update(alliances).set({ discordRoleId: roleId, discordChannelId: channelId }).where(eq(alliances.id, a.id));
   forgetGuild();
@@ -166,7 +167,7 @@ export async function removeAllianceChannel(channelId: string | null, roleId: st
   forgetGuild();
 }
 
-const channelName = (name: string) => `🚚┃${name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'компания'}`;
+const channelName = (name: string) => `🚚┃${name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 90) || t('компания')}`;
 
 /**
  * A company's private channel in the server (category "Компании"): its own
@@ -186,9 +187,9 @@ export async function ensureCompanyChannel(db: Database, organizationId: string)
     return;
   }
   const color = org.liveryColor ? parseInt(org.liveryColor.slice(1), 16) : 0x2f7bff;
-  const roleId = org.discordRoleId ?? (await ensureRole(`Компания · ${org.name}`.slice(0, 100), color));
+  const roleId = org.discordRoleId ?? (await ensureRole(t('Компания · {0}', org.name).slice(0, 100), color));
   const g = await guild(true);
-  let categoryId = await layoutCategory(db, 'компании', COMPANY_CATEGORY);
+  let categoryId = await layoutCategory(db, t('компании'), COMPANY_CATEGORY);
   if (!categoryId) categoryId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: COMPANY_CATEGORY, type: 4 })).id;
   let channelId = org.discordChannelId && g.channels.some((c) => c.id === org.discordChannelId) ? org.discordChannelId : null;
   const overwrites = [
@@ -197,7 +198,7 @@ export async function ensureCompanyChannel(db: Database, organizationId: string)
     { id: g.botId, type: 1, allow: allow(VIEW, SEND, HISTORY, EMBED, WEBHOOKS) },
   ];
   if (!channelId) {
-    const ch = await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: channelName(org.name), type: 0, parent_id: categoryId, topic: `Чатът на „${org.name}“ — свързан с чата в TransVerse.`, permission_overwrites: overwrites });
+    const ch = await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: channelName(org.name), type: 0, parent_id: categoryId, topic: t('Чатът на „{0}“ — свързан с чата в TransVerse.', org.name), permission_overwrites: overwrites });
     channelId = ch.id;
   } else {
     await discord('PATCH', `/channels/${channelId}`, { name: channelName(org.name), permission_overwrites: overwrites });

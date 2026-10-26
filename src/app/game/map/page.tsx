@@ -14,10 +14,17 @@ import { storkOfDay } from '@/server/game/marta';
 import { allianceBases } from '@/server/game/alliances';
 import { activeReports } from '@/server/game/live-road';
 import { REPORT_KINDS } from '@/lib/game/live-road';
+import { t, tx } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Карта' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: t('Карта') };
+}
 
 export default async function MapPage({ searchParams }: { searchParams: Promise<{ contract?: string }> }) {
+  await initLocale();
   const { db, user, company, hq, now, features } = await gameContext();
   // Баба Марта (v1.5): the stork of the day.
   const storkRow = features.marta && isMarta(now) ? await storkOfDay(db, now) : null;
@@ -40,7 +47,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
       const emptyFrom = emptyRoute ? cityById.get(emptyRoute.fromCityId) : null;
       delivery = {
         schedule: d.schedule,
-        title: `${d.contract.goods}: ${d.origin.nameBg} → ${d.destination.nameBg}`,
+        title: `${tx(d.contract.goods)}: ${tx(d.origin.nameBg)} → ${tx(d.destination.nameBg)}`,
         loaded: { geometry: loadedGeom?.geometry ?? null, from: [d.origin.lat, d.origin.lon], to: [d.destination.lat, d.destination.lon], km: d.loadedKm },
         empty: d.emptyRouteId && emptyFrom ? { geometry: geoms.get(d.emptyRouteId)?.geometry ?? null, from: [emptyFrom.lat, emptyFrom.lon], to: [d.origin.lat, d.origin.lon], km: d.emptyKm } : null,
       };
@@ -58,7 +65,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
       const [o] = await db.select().from(cities).where(eq(cities.id, c.originCityId));
       const [dd] = await db.select().from(cities).where(eq(cities.id, c.destCityId));
       const g = (await routeGeometries(db, [c.routeId])).get(c.routeId);
-      preview = { title: `${c.goods}: ${o!.nameBg} → ${dd!.nameBg} · ${km(c.distanceKm)}`, approximate: g?.provider !== 'valhalla', leg: { geometry: g?.geometry ?? null, from: [o!.lat, o!.lon], to: [dd!.lat, dd!.lon], km: c.distanceKm } };
+      preview = { title: `${tx(c.goods)}: ${tx(o!.nameBg)} → ${tx(dd!.nameBg)} · ${km(c.distanceKm)}`, approximate: g?.provider !== 'valhalla', leg: { geometry: g?.geometry ?? null, from: [o!.lat, o!.lon], to: [dd!.lat, dd!.lon], km: c.distanceKm } };
     }
   }
 
@@ -67,8 +74,8 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
     <div>
       <TutorialVisit step="track_map" pending={visitPending} />
       <PageHeader
-        title="Карта"
-        subtitle={preview ? `Преглед на маршрут — ${preview.title}${preview.approximate ? ' (приблизителна линия, пътният маршрут не е наличен)' : ' (реален пътен маршрут за камион)'}` : 'Твоите камиони и тези на всички играчи — на живо, по реални пътища.'}
+        title={t('Карта')}
+        subtitle={preview ? t('Преглед на маршрут — {0}{1}', preview.title, preview.approximate ? t(' (приблизителна линия, пътният маршрут не е наличен)') : t(' (реален пътен маршрут за камион)')) : t('Твоите камиони и тези на всички играчи — на живо, по реални пътища.')}
       />
       <MapClient ownVip={isVip(user.vipUntil, (await gameContext()).now)} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} vehicles={vehicles} depots={depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] }))} preview={preview} stork={storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null} bases={bases} reports={reports} />
     </div>

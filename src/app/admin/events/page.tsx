@@ -9,8 +9,14 @@ import { isAdmin } from '@/server/auth/roles';
 import { countries } from '@/server/db/schema';
 import { adminContext } from '@/server/admin-context';
 import { adminEvents } from '@/server/game/events';
+import { t as tr, tx } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Ивенти' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: tr('Ивенти') };
+}
 
 const STATUS: Record<string, { label: string; tone: 'cyan' | 'green' | 'gold' | 'red' | 'neutral' }> = {
   scheduled: { label: 'предстои', tone: 'cyan' },
@@ -22,15 +28,16 @@ const STATUS: Record<string, { label: string; tone: 'cyan' | 'green' | 'gold' | 
 };
 
 export default async function AdminEventsPage() {
+  await initLocale();
   const { db, user, now } = await adminContext();
   const [rows, countryRows] = await Promise.all([adminEvents(db), db.select({ code: countries.code, name: countries.nameBg }).from(countries).orderBy(countries.nameBg)]);
   const admin = isAdmin(user.role);
   const eur = (cents: number) => Math.round(cents / 100);
   return (
     <div className="space-y-6">
-      <PageHeader title="Ивенти" subtitle="Общи цели за всички играчи с краен срок. Системата пуска автоматичен ивент на всеки няколко дни (72 часа, от 18:00 ч.); тук можеш да създадеш и свой — с име, цел, период и награди. Наградите се раздават само ако целта бъде постигната." />
+      <PageHeader title={tr('Ивенти')} subtitle={tr('Общи цели за всички играчи с краен срок. Системата пуска автоматичен ивент на всеки няколко дни (72 часа, от 18:00 ч.); тук можеш да създадеш и свой — с име, цел, период и награди. Наградите се раздават само ако целта бъде постигната.')} />
       {admin ? (
-        <Card title="Нов ивент">
+        <Card title={tr('Нов ивент')}>
           <EventForm
             metrics={EVENT_METRICS.map((m) => ({ id: m, label: EVENT_METRIC_INFO[m].label, unit: EVENT_METRIC_INFO[m].unit, minContribution: EVENT_METRIC_INFO[m].minContribution }))}
             cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))}
@@ -40,24 +47,24 @@ export default async function AdminEventsPage() {
           />
         </Card>
       ) : (
-        <Card><p className="text-sm text-mist-400">Ивенти се създават от администратор.</p></Card>
+        <Card><p className="text-sm text-mist-400">{tr('Ивенти се създават от администратор.')}</p></Card>
       )}
-      <Card title="Всички ивенти">
-        <Table head={['Ивент', 'Период', 'Напредък', 'Участници', 'Създаден от', 'Състояние', '']}>
+      <Card title={tr('Всички ивенти')}>
+        <Table head={[tr('Ивент'), tr('Период'), tr('Напредък'), tr('Участници'), tr('Създаден от'), tr('Състояние'), '']}>
           {rows.map(({ event: e, contributors, creator }) => {
             const s = STATUS[eventStatus(e, now)]!;
             return (
               <tr key={e.id}>
-                <td className="px-3 py-2 font-semibold">{e.name}</td>
+                <td className="px-3 py-2 font-semibold">{tx(e.name)}</td>
                 <td className="px-3 py-2 text-mist-400">{dateTime(e.startsAt)} – {dateTime(e.endsAt)}</td>
                 <td className="num px-3 py-2">{formatAmount(e.metric as EventMetric, e.progress)} / {formatAmount(e.metric as EventMetric, e.target)}</td>
                 <td className="num px-3 py-2">{int(contributors)}</td>
-                <td className="px-3 py-2 text-mist-400">{creator ?? 'автоматично'}</td>
-                <td className="px-3 py-2"><Badge tone={s.tone}>{s.label}</Badge></td>
+                <td className="px-3 py-2 text-mist-400">{creator ?? tr('автоматично')}</td>
+                <td className="px-3 py-2"><Badge tone={s.tone}>{tx(s.label)}</Badge></td>
                 <td className="px-3 py-2">
                   {admin && !e.settledAt && (
-                    <ActionButton endpoint="/api/admin/action" action={{ type: 'cancelEvent', eventId: e.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm={`Да отменим ли „${e.name}“? Наградите няма да бъдат раздадени.`}>
-                      <XCircle className="h-3.5 w-3.5" />Отмени
+                    <ActionButton endpoint="/api/admin/action" action={{ type: 'cancelEvent', eventId: e.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm={tr('Да отменим ли „{0}“? Наградите няма да бъдат раздадени.', e.name)}>
+                      <XCircle className="h-3.5 w-3.5" />{tr('Отмени')}
                     </ActionButton>
                   )}
                 </td>
@@ -65,7 +72,7 @@ export default async function AdminEventsPage() {
             );
           })}
         </Table>
-        {rows.length === 0 && <p className="mt-3 text-sm text-mist-400">Все още няма ивенти. Първият автоматичен ще бъде създаден от фоновия процес.</p>}
+        {rows.length === 0 && <p className="mt-3 text-sm text-mist-400">{tr('Все още няма ивенти. Първият автоматичен ще бъде създаден от фоновия процес.')}</p>}
       </Card>
     </div>
   );

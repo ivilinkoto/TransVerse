@@ -17,9 +17,10 @@ import { messageBodySchema } from './messages';
 import { assertNotMuted } from './moderation';
 import { notify } from './notify';
 import { addChronicle } from './chronicle';
+import { t as tr } from '@/i18n/t';
 
 async function released(db: DbOrTx, userId: string, id: 'alliances' | 'company_contracts' | 'academy' | 'alliance_discord', now: Date) {
-  if (!(await featureFor(db, userId, id, now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, id, now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
 }
 
 // ── Fuel station ──────────────────────────────────────────────────────────
@@ -71,16 +72,16 @@ export async function allianceBases(db: DbOrTx, userId: string) {
 export async function createAlliance(db: Database, actorId: string, rawName: string, now = new Date()) {
   await released(db, actorId, 'alliances', now);
   const name = rawName.trim().replace(/\s+/g, ' ');
-  if (name.length < ALLIANCE.nameMin || name.length > ALLIANCE.nameMax) fail('invalid_name', `Името е от ${ALLIANCE.nameMin} до ${ALLIANCE.nameMax} символа.`);
+  if (name.length < ALLIANCE.nameMin || name.length > ALLIANCE.nameMax) fail('invalid_name', tr('Името е от {0} до {1} символа.', ALLIANCE.nameMin, ALLIANCE.nameMax));
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
-    if (await allianceOf(tx, actor.company.id)) fail('in_alliance', 'Компанията вече е в съюз.');
+    if (await allianceOf(tx, actor.company.id)) fail('in_alliance', tr('Компанията вече е в съюз.'));
     const [taken] = await tx.select({ id: alliances.id }).from(alliances).where(sql`lower(${alliances.name}) = lower(${name})`);
-    if (taken) fail('name_taken', 'Съюз с това име вече има.', 409);
+    if (taken) fail('name_taken', tr('Съюз с това име вече има.'), 409);
     const [a] = await tx.insert(alliances).values({ name, leaderOrgId: actor.company.id, createdAt: now }).returning();
     await tx.insert(allianceMembers).values({ allianceId: a!.id, organizationId: actor.company.id, joinedAt: now });
     await addChronicle(tx, actor.company.id, 'alliance', `Основа съюза „${name}“`, now);
-    await notifyMembers(tx, actor.company.id, null, `Нов съюз: „${name}“`, 'Поканете още компании — заедно имате седмична цел и битка срещу друг съюз.', '/game/company/alliance');
+    await notifyMembers(tx, actor.company.id, null, () => tr('Нов съюз: „{0}“', name), () => tr('Поканете още компании — заедно имате седмична цел и битка срещу друг съюз.'), '/game/company/alliance');
     return a!;
   });
 }
@@ -91,16 +92,16 @@ export async function inviteToAlliance(db: Database, actorId: string, target: st
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     const a = await allianceOf(tx, actor.company.id);
-    if (!a) fail('no_alliance', 'Компанията не е в съюз.');
-    if (a!.leaderOrgId !== actor.company.id) fail('not_leader', 'Канят само от водещата компания на съюза.', 403);
-    if (a!.members.length >= ALLIANCE.maxCompanies) fail('full', `В съюза са най-много ${ALLIANCE.maxCompanies} компании.`);
+    if (!a) fail('no_alliance', tr('Компанията не е в съюз.'));
+    if (a!.leaderOrgId !== actor.company.id) fail('not_leader', tr('Канят само от водещата компания на съюза.'), 403);
+    if (a!.members.length >= ALLIANCE.maxCompanies) fail('full', tr('В съюза са най-много {0} компании.', ALLIANCE.maxCompanies));
     const t = target.trim();
     const [org] = await tx.select().from(organizations).where(or(sql`lower(${organizations.tag}) = lower(${t})`, sql`lower(${organizations.name}) = lower(${t})`));
-    if (!org) fail('not_found', 'Няма компания с такъв таг или име.', 404);
-    if (org!.id === actor.company.id) fail('self', 'Това е твоята компания.');
-    if (await allianceOf(tx, org!.id)) fail('in_alliance', 'Тази компания вече е в съюз.');
+    if (!org) fail('not_found', tr('Няма компания с такъв таг или име.'), 404);
+    if (org!.id === actor.company.id) fail('self', tr('Това е твоята компания.'));
+    if (await allianceOf(tx, org!.id)) fail('in_alliance', tr('Тази компания вече е в съюз.'));
     const [inv] = await tx.insert(allianceInvites).values({ allianceId: a!.id, organizationId: org!.id, expiresAt: new Date(now.getTime() + ALLIANCE.inviteHours * 3_600_000), createdAt: now }).returning();
-    await notifyMembers(tx, org!.id, null, `Покана за съюза „${a!.name}“`, `„${actor.company.name}“ кани компанията ви в съюз. Отговаря длъжност с право „Настройки“.`, '/game/company/alliance');
+    await notifyMembers(tx, org!.id, null, () => tr('Покана за съюза „{0}“', a!.name), () => tr('„{0}“ кани компанията ви в съюз. Отговаря длъжност с право „Настройки“.', actor.company.name), '/game/company/alliance');
     return inv!;
   });
 }
@@ -110,17 +111,17 @@ export async function respondAllianceInvite(db: Database, actorId: string, invit
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     const [inv] = await tx.select().from(allianceInvites).where(and(eq(allianceInvites.id, inviteId), eq(allianceInvites.organizationId, actor.company.id), eq(allianceInvites.status, 'pending'))).for('update');
-    if (!inv || inv.expiresAt <= now) fail('no_invite', 'Поканата не е валидна.', 404);
+    if (!inv || inv.expiresAt <= now) fail('no_invite', tr('Поканата не е валидна.'), 404);
     await tx.update(allianceInvites).set({ status: accept ? 'accepted' : 'declined' }).where(eq(allianceInvites.id, inv!.id));
     if (!accept) return null;
-    if (await allianceOf(tx, actor.company.id)) fail('in_alliance', 'Компанията вече е в съюз.');
+    if (await allianceOf(tx, actor.company.id)) fail('in_alliance', tr('Компанията вече е в съюз.'));
     const members = await tx.select().from(allianceMembers).where(eq(allianceMembers.allianceId, inv!.allianceId)).for('update');
-    if (members.length >= ALLIANCE.maxCompanies) fail('full', 'Съюзът вече е пълен.');
+    if (members.length >= ALLIANCE.maxCompanies) fail('full', tr('Съюзът вече е пълен.'));
     await tx.insert(allianceMembers).values({ allianceId: inv!.allianceId, organizationId: actor.company.id, joinedAt: now });
     await queueAllianceRoles(tx, [actor.company.id], now);
     const [joined] = await tx.select({ name: alliances.name }).from(alliances).where(eq(alliances.id, inv!.allianceId));
     await addChronicle(tx, actor.company.id, 'alliance', `Влезе в съюза „${joined?.name ?? ''}“`, now);
-    for (const m of members) await notifyMembers(tx, m.organizationId, null, `„${actor.company.name}“ влезе в съюза`, 'Съюзът расте — повече тонове за общата цел.', '/game/company/alliance');
+    for (const m of members) await notifyMembers(tx, m.organizationId, null, () => tr('„{0}“ влезе в съюза', actor.company.name), () => tr('Съюзът расте — повече тонове за общата цел.'), '/game/company/alliance');
     return inv!.allianceId;
   });
 }
@@ -130,7 +131,7 @@ export async function leaveAlliance(db: Database, actorId: string) {
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     const a = await allianceOf(tx, actor.company.id);
-    if (!a) fail('no_alliance', 'Компанията не е в съюз.');
+    if (!a) fail('no_alliance', tr('Компанията не е в съюз.'));
     await tx.delete(allianceMembers).where(eq(allianceMembers.organizationId, actor.company.id));
     await queueAllianceRoles(tx, [actor.company.id], new Date());
     const left = a!.members.filter((m) => m.id !== actor.company.id);
@@ -144,14 +145,14 @@ export async function dissolveAlliance(db: Database, actorId: string) {
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     const a = await allianceOf(tx, actor.company.id);
-    if (!a) fail('no_alliance', 'Компанията не е в съюз.');
-    if (a!.leaderOrgId !== actor.company.id) fail('not_leader', 'Съюза разпуска само водещата компания.', 403);
+    if (!a) fail('no_alliance', tr('Компанията не е в съюз.'));
+    if (a!.leaderOrgId !== actor.company.id) fail('not_leader', tr('Съюза разпуска само водещата компания.'), 403);
     await tx.delete(chatMessages).where(eq(chatMessages.channel, allianceChannel(a!.id)));
     const [row] = await tx.select({ channelId: alliances.discordChannelId, roleId: alliances.discordRoleId }).from(alliances).where(eq(alliances.id, a!.id));
     if (row?.channelId || row?.roleId) await enqueue(tx, `alliance-channel-remove:${a!.id}`, 'job:alliance-channel-remove', { channelId: row.channelId, roleId: row.roleId });
     await tx.delete(alliances).where(eq(alliances.id, a!.id));
     await queueAllianceRoles(tx, a!.members.map((m) => m.id), new Date());
-    for (const m of a!.members) if (m.id !== actor.company.id) await notifyMembers(tx, m.id, null, `Съюзът „${a!.name}“ е разпуснат`, `Водещата компания „${actor.company.name}“ разпусна съюза.`, '/game/company/alliance');
+    for (const m of a!.members) if (m.id !== actor.company.id) await notifyMembers(tx, m.id, null, () => tr('Съюзът „{0}“ е разпуснат', a!.name), () => tr('Водещата компания „{0}“ разпусна съюза.', actor.company.name), '/game/company/alliance');
   });
 }
 
@@ -197,7 +198,7 @@ export async function postAllianceMessage(db: Database, userId: string, raw: str
   await rateLimit(db, `alliance-chat:${userId}`, 6, 60);
   const m = await membershipOf(db, userId);
   const a = m ? await allianceOf(db, m.company.id) : null;
-  if (!a) fail('no_alliance', 'Компанията ти не е в съюз.');
+  if (!a) fail('no_alliance', tr('Компанията ти не е в съюз.'));
   const [row] = await db.insert(chatMessages).values({ channel: allianceChannel(a!.id), userId, body }).returning({ id: chatMessages.id });
   return row!.id;
 }
@@ -251,7 +252,7 @@ export async function recordHallDelivery(tx: Tx, userId: string, organizationId:
   await tx.update(alliances).set({ hallLevel: level, hallTons: tons }).where(eq(alliances.id, a.id));
   if (level > a.hallLevel) {
     const members = await tx.select({ id: allianceMembers.organizationId }).from(allianceMembers).where(eq(allianceMembers.allianceId, a.id));
-    for (const o of members) await notifyMembers(tx, o.id, null, `Съюзната база „${a.name}“ е на ниво ${level}!`, `+${Math.round(hallBonusShare(level) * 100)} % към заплащането на всеки курс на членовете на съюза.`, '/game/company/alliance');
+    for (const o of members) await notifyMembers(tx, o.id, null, () => tr('Съюзната база „{0}“ е на ниво {1}!', a.name, level), () => tr('+{0} % към заплащането на всеки курс на членовете на съюза.', Math.round(hallBonusShare(level) * 100)), '/game/company/alliance');
   }
   return { level, tons };
 }
@@ -262,7 +263,7 @@ export async function allianceHallBonus(tx: Tx, userId: string, organizationId: 
   const [row] = await tx.select({ level: alliances.hallLevel, name: alliances.name }).from(allianceMembers).innerJoin(alliances, eq(alliances.id, allianceMembers.allianceId)).where(eq(allianceMembers.organizationId, organizationId));
   const bonus = row ? Math.round(rewardCents * hallBonusShare(row.level)) : 0;
   if (!bonus) return 0;
-  await post(tx, d.companyId, [{ category: 'alliance_hall_bonus', amountCents: bonus, description: `Съюзна база „${row!.name}“ (ниво ${row!.level})`, idempotencyKey: `delivery:${d.id}:alliance-hall`, refType: 'delivery', refId: d.id }]);
+  await post(tx, d.companyId, [{ category: 'alliance_hall_bonus', amountCents: bonus, description: tr('Съюзна база „{0}“ (ниво {1})', row!.name, row!.level), idempotencyKey: `delivery:${d.id}:alliance-hall`, refType: 'delivery', refId: d.id }]);
   return bonus;
 }
 
@@ -271,12 +272,12 @@ export async function allianceHallBonus(tx: Tx, userId: string, organizationId: 
 /** The leader company turns the alliance's private Discord channel on or off. */
 export async function setAllianceDiscord(db: Database, actorId: string, on: boolean, now = new Date()) {
   await released(db, actorId, 'alliance_discord', now);
-  if (!discordConfig().bot) fail('discord_off', 'Discord ботът още не е настроен.');
+  if (!discordConfig().bot) fail('discord_off', tr('Discord ботът още не е настроен.'));
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     const a = await allianceOf(tx, actor.company.id);
-    if (!a) fail('no_alliance', 'Компанията не е в съюз.');
-    if (a!.leaderOrgId !== actor.company.id) fail('not_leader', 'Канала на съюза включва водещата компания.', 403);
+    if (!a) fail('no_alliance', tr('Компанията не е в съюз.'));
+    if (a!.leaderOrgId !== actor.company.id) fail('not_leader', tr('Канала на съюза включва водещата компания.'), 403);
     await tx.update(alliances).set({ discordChannel: on }).where(eq(alliances.id, a!.id));
     await enqueue(tx, `alliance-channel:${a!.id}:${now.getTime()}`, 'job:alliance-channel', { allianceId: a!.id }, now);
   });
@@ -321,9 +322,9 @@ export async function runAlliances(db: Database, now = new Date()) {
       if (!mine) return;
       const members = await tx.select({ id: allianceMembers.organizationId }).from(allianceMembers).where(eq(allianceMembers.allianceId, w.allianceId));
       for (const m of members) {
-        if (goal) await postTreasury(tx, m.id, [{ category: 'alliance', amountCents: ALLIANCE.goalRewardCents, description: `Седмичната цел на съюза (${w.weekKey})`, idempotencyKey: `alliance:${w.id}:goal:${m.id}`, refType: 'alliance', refId: w.allianceId }]);
-        if (won) await postTreasury(tx, m.id, [{ category: 'alliance', amountCents: ALLIANCE.battleRewardCents, description: `Победа в битката на съюзите (${w.weekKey})`, idempotencyKey: `alliance:${w.id}:battle:${m.id}`, refType: 'alliance', refId: w.allianceId }]);
-        if (goal || won) await notifyMembers(tx, m.id, null, won ? 'Съюзът спечели битката! 🏆' : 'Съюзът изпълни седмичната цел!', `В касата влязоха ${money((goal ? ALLIANCE.goalRewardCents : 0) + (won ? ALLIANCE.battleRewardCents : 0))}.`, '/game/company/alliance');
+        if (goal) await postTreasury(tx, m.id, [{ category: 'alliance', amountCents: ALLIANCE.goalRewardCents, description: tr('Седмичната цел на съюза ({0})', w.weekKey), idempotencyKey: `alliance:${w.id}:goal:${m.id}`, refType: 'alliance', refId: w.allianceId }]);
+        if (won) await postTreasury(tx, m.id, [{ category: 'alliance', amountCents: ALLIANCE.battleRewardCents, description: tr('Победа в битката на съюзите ({0})', w.weekKey), idempotencyKey: `alliance:${w.id}:battle:${m.id}`, refType: 'alliance', refId: w.allianceId }]);
+        if (goal || won) await notifyMembers(tx, m.id, null, () => won ? tr('Съюзът спечели битката! 🏆') : tr('Съюзът изпълни седмичната цел!'), () => tr('В касата влязоха {0}.', money((goal ? ALLIANCE.goalRewardCents : 0) + (won ? ALLIANCE.battleRewardCents : 0))), '/game/company/alliance');
       }
     });
   }
@@ -336,17 +337,17 @@ export async function runAlliances(db: Database, now = new Date()) {
 export async function offerCompanyContract(db: Database, actorId: string, target: string, sharePct: number, now = new Date()) {
   await released(db, actorId, 'company_contracts', now);
   const share = sharePct / 100;
-  if (!(share >= COMPANY_CONTRACT.minShare && share <= COMPANY_CONTRACT.maxShare)) fail('invalid_share', `Делът е от ${COMPANY_CONTRACT.minShare * 100} до ${COMPANY_CONTRACT.maxShare * 100} %.`);
+  if (!(share >= COMPANY_CONTRACT.minShare && share <= COMPANY_CONTRACT.maxShare)) fail('invalid_share', tr('Делът е от {0} до {1} %.', COMPANY_CONTRACT.minShare * 100, COMPANY_CONTRACT.maxShare * 100));
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     const t = target.trim();
     const [org] = await tx.select().from(organizations).where(or(sql`lower(${organizations.tag}) = lower(${t})`, sql`lower(${organizations.name}) = lower(${t})`));
-    if (!org) fail('not_found', 'Няма компания с такъв таг или име.', 404);
-    if (org!.id === actor.company.id) fail('self', 'Това е твоята компания.');
+    if (!org) fail('not_found', tr('Няма компания с такъв таг или име.'), 404);
+    if (org!.id === actor.company.id) fail('self', tr('Това е твоята компания.'));
     const [open] = await tx.select({ id: companyContracts.id }).from(companyContracts).where(and(eq(companyContracts.clientOrgId, actor.company.id), eq(companyContracts.haulerOrgId, org!.id), inArray(companyContracts.status, ['pending', 'active'])));
-    if (open) fail('exists', 'С тази компания вече има договор.');
+    if (open) fail('exists', tr('С тази компания вече има договор.'));
     const [row] = await tx.insert(companyContracts).values({ clientOrgId: actor.company.id, haulerOrgId: org!.id, share, createdBy: actorId, createdAt: now }).returning();
-    await notifyMembers(tx, org!.id, null, `Договор за превоз от „${actor.company.name}“`, `Предлагат ${Math.round(share * 100)} % от всеки техен товар (фабрика, филиали), който карате ${COMPANY_CONTRACT.days} дни.`, '/game/company/alliance');
+    await notifyMembers(tx, org!.id, null, () => tr('Договор за превоз от „{0}“', actor.company.name), () => tr('Предлагат {0} % от всеки техен товар (фабрика, филиали), който карате {1} дни.', Math.round(share * 100), COMPANY_CONTRACT.days), '/game/company/alliance');
     return row!;
   });
 }
@@ -356,9 +357,9 @@ export async function respondCompanyContract(db: Database, actorId: string, cont
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     const [c] = await tx.select().from(companyContracts).where(and(eq(companyContracts.id, contractId), eq(companyContracts.haulerOrgId, actor.company.id), eq(companyContracts.status, 'pending'))).for('update');
-    if (!c || c.createdAt.getTime() + COMPANY_CONTRACT.inviteHours * 3_600_000 < now.getTime()) fail('no_offer', 'Предложението не е валидно.', 404);
+    if (!c || c.createdAt.getTime() + COMPANY_CONTRACT.inviteHours * 3_600_000 < now.getTime()) fail('no_offer', tr('Предложението не е валидно.'), 404);
     await tx.update(companyContracts).set(accept ? { status: 'active', startsAt: now, endsAt: new Date(now.getTime() + COMPANY_CONTRACT.days * 86_400_000) } : { status: 'declined' }).where(eq(companyContracts.id, c!.id));
-    await notifyMembers(tx, c!.clientOrgId, null, accept ? `„${actor.company.name}“ прие договора за превоз` : `„${actor.company.name}“ отказа договора`, accept ? `${COMPANY_CONTRACT.days} дни техните членове карат вашите товари.` : '', '/game/company/alliance');
+    await notifyMembers(tx, c!.clientOrgId, null, () => accept ? tr('„{0}“ прие договора за превоз', actor.company.name) : tr('„{0}“ отказа договора', actor.company.name), () => accept ? tr('{0} дни техните членове карат вашите товари.', COMPANY_CONTRACT.days) : '', '/game/company/alliance');
     return accept;
   });
 }
@@ -376,8 +377,8 @@ export async function payCompanyContract(tx: Tx, clientOrgId: string, haulerOrgI
   const [client] = await tx.select({ treasury: organizations.treasuryCents }).from(organizations).where(eq(organizations.id, clientOrgId));
   const cents = Math.min(Math.round(rewardCents * c.share), Math.max(0, client?.treasury ?? 0));
   if (cents > 0) {
-    await postTreasury(tx, clientOrgId, [{ category: 'company_contract', amountCents: -cents, description: 'Дял за превозвача по договор', idempotencyKey: `cc:${deliveryId}:out`, refType: 'company_contract', refId: c.id }]);
-    await postTreasury(tx, haulerOrgId, [{ category: 'company_contract', amountCents: cents, description: 'Дял по договор за превоз', idempotencyKey: `cc:${deliveryId}:in`, refType: 'company_contract', refId: c.id }]);
+    await postTreasury(tx, clientOrgId, [{ category: 'company_contract', amountCents: -cents, description: tr('Дял за превозвача по договор'), idempotencyKey: `cc:${deliveryId}:out`, refType: 'company_contract', refId: c.id }]);
+    await postTreasury(tx, haulerOrgId, [{ category: 'company_contract', amountCents: cents, description: tr('Дял по договор за превоз'), idempotencyKey: `cc:${deliveryId}:in`, refType: 'company_contract', refId: c.id }]);
   }
   await tx.update(companyContracts).set({ loads: sql`${companyContracts.loads} + 1`, tons: sql`${companyContracts.tons} + ${tons}`, paidCents: sql`${companyContracts.paidCents} + ${cents}` }).where(eq(companyContracts.id, c.id));
   return cents;
@@ -386,7 +387,7 @@ export async function payCompanyContract(tx: Tx, clientOrgId: string, haulerOrgI
 /** Worker: contracts past their week end. */
 export async function endCompanyContracts(db: Database, now = new Date()) {
   const done = await db.update(companyContracts).set({ status: 'done' }).where(and(eq(companyContracts.status, 'active'), lte(companyContracts.endsAt, now))).returning();
-  for (const c of done) await db.transaction((tx) => notifyMembers(tx, c.clientOrgId, null, 'Договорът за превоз приключи', `${c.loads} товара, ${money(c.paidCents)} платени. Оценете превозвача.`, '/game/company/alliance'));
+  for (const c of done) await db.transaction((tx) => notifyMembers(tx, c.clientOrgId, null, () => tr('Договорът за превоз приключи'), () => tr('{0} товара, {1} платени. Оценете превозвача.', c.loads, money(c.paidCents)), '/game/company/alliance'));
   return done.length;
 }
 
@@ -395,7 +396,7 @@ export async function rateCompanyContract(db: Database, actorId: string, contrac
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_settings');
     const [c] = await tx.update(companyContracts).set({ rating: Math.max(1, Math.min(5, Math.round(stars))) }).where(and(eq(companyContracts.id, contractId), eq(companyContracts.clientOrgId, actor.company.id), eq(companyContracts.status, 'done'), isNull(companyContracts.rating))).returning();
-    if (!c) fail('cannot_rate', 'Договорът не може да се оцени.');
+    if (!c) fail('cannot_rate', tr('Договорът не може да се оцени.'));
   });
 }
 
@@ -418,16 +419,16 @@ export async function enrolAcademy(db: Database, userId: string, mentorId: strin
   await released(db, userId, 'academy', now);
   return db.transaction(async (tx) => {
     const m = await membershipOf(tx, userId);
-    if (!m) fail('not_member', 'Не членуваш в компания.', 403);
-    if (m!.member.joinedAt.getTime() + ACADEMY.joinedDays * 86_400_000 < now.getTime()) fail('not_new', `Академията е за нови членове (до ${ACADEMY.joinedDays} дни в компанията).`);
-    if (mentorId === userId) fail('self', 'Избери друг член за наставник.');
+    if (!m) fail('not_member', tr('Не членуваш в компания.'), 403);
+    if (m!.member.joinedAt.getTime() + ACADEMY.joinedDays * 86_400_000 < now.getTime()) fail('not_new', tr('Академията е за нови членове (до {0} дни в компанията).', ACADEMY.joinedDays));
+    if (mentorId === userId) fail('self', tr('Избери друг член за наставник.'));
     const [mentor] = await tx.select({ id: users.id, level: users.level, username: users.username }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(and(eq(companyMembers.userId, mentorId), eq(companyMembers.companyId, m!.company.id)));
-    if (!mentor) fail('not_member', 'Наставникът трябва да е от компанията.');
-    if (mentor!.level < ACADEMY.mentorMinLevel) fail('low_level', `Наставникът трябва да е поне ниво ${ACADEMY.mentorMinLevel}.`);
+    if (!mentor) fail('not_member', tr('Наставникът трябва да е от компанията.'));
+    if (mentor!.level < ACADEMY.mentorMinLevel) fail('low_level', tr('Наставникът трябва да е поне ниво {0}.', ACADEMY.mentorMinLevel));
     const [row] = await tx.insert(academyStudents).values({ organizationId: m!.company.id, userId, mentorId, startedAt: now }).onConflictDoNothing().returning();
-    if (!row) fail('enrolled', 'Вече си в академията.', 409);
+    if (!row) fail('enrolled', tr('Вече си в академията.'), 409);
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-    await notify(tx, mentorId, 'info', `${me!.username} те избра за наставник`, `Три курса в академията на компанията — помагай със съвети.`, '/game/company/alliance');
+    await notify(tx, mentorId, 'info', () => tr('{0} те избра за наставник', me!.username), () => tr('Три курса в академията на компанията — помагай със съвети.'), '/game/company/alliance');
     return row!;
   });
 }
@@ -442,10 +443,10 @@ export async function recordAcademyCourse(tx: Tx, userId: string, f: { onTime: b
   await tx.update(academyStudents).set({ courses, finishedAt: done ? now : null }).where(eq(academyStudents.id, s.id));
   if (!done) return;
   await tx.update(users).set({ xp: sql`${users.xp} + ${ACADEMY.studentXp}` }).where(eq(users.id, userId));
-  await postCoins(tx, s.mentorId, { amount: ACADEMY.mentorCoins, reason: 'mentor_reward', description: 'Наставник в академията на компанията', idempotencyKey: `academy:${s.id}:mentor` });
-  await postTreasury(tx, s.organizationId, [{ category: 'academy', amountCents: ACADEMY.treasuryCents, description: 'Обучен член в академията', idempotencyKey: `academy:${s.id}:treasury`, refType: 'academy', refId: s.id }]);
+  await postCoins(tx, s.mentorId, { amount: ACADEMY.mentorCoins, reason: 'mentor_reward', description: tr('Наставник в академията на компанията'), idempotencyKey: `academy:${s.id}:mentor` });
+  await postTreasury(tx, s.organizationId, [{ category: 'academy', amountCents: ACADEMY.treasuryCents, description: tr('Обучен член в академията'), idempotencyKey: `academy:${s.id}:treasury`, refType: 'academy', refId: s.id }]);
   await addCompanyXp(tx, s.organizationId, 500);
-  await notify(tx, userId, 'achievement', 'Завърши академията! 🎓', `+${ACADEMY.studentXp} опит. Наставникът и компанията също получиха награда.`, '/game/company/alliance');
+  await notify(tx, userId, 'achievement', () => tr('Завърши академията! 🎓'), () => tr('+{0} опит. Наставникът и компанията също получиха награда.', ACADEMY.studentXp), '/game/company/alliance');
 }
 
 export async function academyOf(db: DbOrTx, organizationId: string) {

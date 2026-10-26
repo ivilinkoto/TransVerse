@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import { pick, randInt } from './random';
+import { t } from '@/i18n/t';
 
 const FIRST_M = ['Иван', 'Георги', 'Димитър', 'Николай', 'Петър', 'Христо', 'Стоян', 'Тодор', 'Васил', 'Красимир', 'Йордан', 'Атанас', 'Милен', 'Стефан', 'Кирил', 'Пламен', 'Радослав', 'Калоян', 'Мартин', 'Ангел', 'Емил', 'Борислав'];
 const FIRST_F = ['Мария', 'Елена', 'Десислава', 'Виктория', 'Ралица', 'Гергана', 'Надежда', 'Таня'];
@@ -8,7 +9,7 @@ const LAST = ['Иванов', 'Петров', 'Георгиев', 'Димитр�
 
 export function driverName(): string {
   const female = randInt(0, 9) < 2;
-  return female ? `${pick(FIRST_F)} ${pick(LAST)}а` : `${pick(FIRST_M)} ${pick(LAST)}`;
+  return female ? t('{0} {1}а', pick(FIRST_F), pick(LAST)) : `${pick(FIRST_M)} ${pick(LAST)}`;
 }
 
 const SHIPPER_PREFIX = ['Балкан', 'Тракия', 'Дунав', 'Родопа', 'Хемус', 'Странджа', 'Пирин', 'Витоша', 'Еуро', 'Транс', 'Агро', 'Мега'];
@@ -16,7 +17,7 @@ const SHIPPER_SUFFIX = ['Трейд', 'Логистик', 'Индъстрийс'
 
 /** Fictional NPC shippers — never real companies. */
 export function shipperName(): string {
-  return `${pick(SHIPPER_PREFIX)} ${pick(SHIPPER_SUFFIX)} ${pick(['ООД', 'ЕООД', 'АД'])}`;
+  return `${pick(SHIPPER_PREFIX)} ${pick(SHIPPER_SUFFIX)} ${pick([t('ООД'), t('ЕООД'), t('АД')])}`;
 }
 
 // Letters that look the same in Latin and Cyrillic (as on Bulgarian plates).

@@ -104,6 +104,8 @@ export const cityMarkets = pgTable(
     produces: boolean('produces').notNull(),
     consumes: boolean('consumes').notNull(),
     demand: real('demand').notNull().default(1),
+    /** v2.0: what the city has to ship (1 = full); loads taken from it lower it, it fills up by the hour. */
+    supply: real('supply').notNull().default(1),
     updatedAt: ts('updated_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.cityId, t.cargoType] })],
@@ -152,6 +154,10 @@ export const users = pgTable(
     /** Game notifications also as Discord direct messages, by push category (empty = none). */
     discordPrefs: jsonb('discord_prefs').$type<Partial<Record<string, boolean>>>().notNull().default({}),
     /** v1.9: how the game is shown to this player (everything at once, the simple board, unlocks already seen). */
+    /** v2.0: the player's language (bg | en | ru). */
+    locale: text('locale').notNull().default('bg'),
+    /** v2.0 legacy stars (New Game+), 0…5. */
+    legacyStars: integer('legacy_stars').notNull().default(0),
     uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[] }>().notNull().default({}),
     lastSeenAt: ts('last_seen_at'),
     /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
@@ -3010,3 +3016,130 @@ export const storyProgress = pgTable('story_progress', {
   startedAt: createdAt(),
   finishedAt: ts('finished_at'),
 });
+
+/** v2.0 holdings: a parent company and the companies it holds. */
+export const holdings = pgTable('holdings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  parentId: uuid('parent_id').notNull().unique().references(() => organizations.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  createdAt: createdAt(),
+});
+
+/** A company in a holding (the parent too); one holding per company. */
+export const holdingMembers = pgTable(
+  'holding_members',
+  {
+    holdingId: uuid('holding_id').notNull().references(() => holdings.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').primaryKey().references(() => organizations.id, { onDelete: 'cascade' }),
+    joinedAt: ts('joined_at').notNull(),
+  },
+  (t) => [index('holding_members_holding_idx').on(t.holdingId)],
+);
+
+/** An invitation into a holding (answered by the invited company). */
+export const holdingInvites = pgTable(
+  'holding_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    holdingId: uuid('holding_id').notNull().references(() => holdings.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    /** pending | accepted | declined */
+    status: text('status').notNull().default('pending'),
+    expiresAt: ts('expires_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('holding_invites_org_idx').on(t.organizationId, t.status)],
+);
+
+/** v2.0 territories: who holds a region (country + GeoNames first-level name) in a week. */
+export const territories = pgTable(
+  'territories',
+  {
+    week: text('week').notNull(),
+    countryCode: text('country_code').notNull(),
+    region: text('region').notNull(),
+    /** The region's Bulgarian name (shown; translated through the place names). */
+    regionBg: text('region_bg'),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    tons: real('tons').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.week, t.countryCode, t.region] }), index('territories_org_idx').on(t.organizationId, t.week)],
+);
+
+/** v2.0 legacy (New Game+): each new start of a career. */
+export const legacyRuns = pgTable(
+  'legacy_runs',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** The star this start earned (1…5). */
+    star: integer('star').notNull(),
+    /** Where the career stood when it ended. */
+    level: integer('level').notNull(),
+    deliveries: integer('deliveries').notNull(),
+    totalKm: real('total_km').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('legacy_runs_user_star_idx').on(t.userId, t.star)],
+);
+
+/** v2.0 intermodal containers: a truck leg to a terminal, a rail or sea line, a truck leg from the other terminal. */
+export const intermodalShipments = pgTable(
+  'intermodal_shipments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    lineId: text('line_id').notNull(),
+    reversed: boolean('reversed').notNull().default(false),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    cargoType: text('cargo_type').notNull(),
+    goods: text('goods').notNull(),
+    tons: real('tons').notNull(),
+    leg1ContractId: uuid('leg1_contract_id').references(() => contracts.id, { onDelete: 'set null' }),
+    leg2ContractId: uuid('leg2_contract_id').references(() => contracts.id, { onDelete: 'set null' }),
+    /** leg1 | on_line | leg2 | done | failed */
+    status: text('status').notNull().default('leg1'),
+    firstUserId: uuid('first_user_id').references(() => users.id, { onDelete: 'set null' }),
+    readyAt: ts('ready_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('intermodal_status_idx').on(t.status, t.readyAt), index('intermodal_leg1_idx').on(t.leg1ContractId), index('intermodal_leg2_idx').on(t.leg2ContractId)],
+);
+
+/** v2.0 community tournaments: organised by players, the prize held until the end. */
+export const communityTournaments = pgTable(
+  'community_tournaments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizerId: uuid('organizer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    /** tons | deliveries | km | ontime */
+    metric: text('metric').notNull(),
+    cargoType: text('cargo_type'),
+    countryCode: text('country_code'),
+    startsAt: ts('starts_at').notNull(),
+    endsAt: ts('ends_at').notNull(),
+    /** The prize put up by the organiser plus the entry fees (cents). */
+    poolCents: money('pool_cents').notNull(),
+    entryFeeCents: money('entry_fee_cents').notNull().default(0),
+    maxPlayers: integer('max_players').notNull(),
+    /** The organiser's latest message to the players. */
+    announcement: text('announcement'),
+    /** open | done | cancelled */
+    status: text('status').notNull().default('open'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('community_tournaments_status_idx').on(t.status, t.endsAt)],
+);
+
+export const communityCupEntries = pgTable(
+  'community_cup_entries',
+  {
+    tournamentId: uuid('tournament_id').notNull().references(() => communityTournaments.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    score: real('score').notNull().default(0),
+    joinedAt: ts('joined_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tournamentId, t.userId] }), index('community_cup_entries_user_idx').on(t.userId)],
+);

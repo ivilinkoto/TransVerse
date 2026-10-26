@@ -5,6 +5,7 @@ import { discord, DiscordError } from './api';
 import { act, answer, type Answer, type Ctx } from './context';
 import { discordConfig } from './config';
 import { bar, button, rows, STYLE, update, type MessageData } from './ui';
+import { t } from '@/i18n/t';
 
 /**
  * Company polls in the company's Discord channel: the same poll as in the
@@ -28,9 +29,9 @@ function view(p: Poll, c: { out: number[]; total: number }, closed: boolean): Me
     embeds: [{
       title: `📊 ${p.question}`,
       color: closed ? 0x9aa3b2 : 0x2f7bff,
-      description: p.options.map((o, i) => `${NUMBERS[i] ?? '•'} **${o}**\n${bar(c.total ? c.out[i]! / c.total : 0)} · ${c.out[i]} гл.`).join('\n\n'),
-      footer: { text: closed ? `Анкетата приключи · ${c.total} гласа` : `${c.total} гласа · гласуваш и от играта (чатът на компанията)` },
-      ...(closed ? {} : { fields: [{ name: 'Край', value: at(p.closesAt), inline: true }] }),
+      description: p.options.map((o, i) => t('{0} **{1}**\n{2} · {3} гл.', NUMBERS[i] ?? '•', o, bar(c.total ? c.out[i]! / c.total : 0), c.out[i])).join('\n\n'),
+      footer: { text: closed ? t('Анкетата приключи · {0} гласа', c.total) : t('{0} гласа · гласуваш и от играта (чатът на компанията)', c.total) },
+      ...(closed ? {} : { fields: [{ name: t('Край'), value: at(p.closesAt), inline: true }] }),
     }],
     components: closed ? [] : rows(...p.options.map((o, i) => button(o, `poll:${p.id}:${i}`, STYLE.secondary, NUMBERS[i]))),
   };

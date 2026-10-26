@@ -12,6 +12,7 @@ import { pingRoleFor } from './guild';
 import { layoutChannel } from './layout';
 import { enqueue } from './outbox';
 import { button, deferred, rows, say, STYLE, update, type MessageData } from './ui';
+import { t } from '@/i18n/t';
 
 /**
  * ТрансКоин giveaways (#раздавания). The team starts one with /раздаване;
@@ -29,32 +30,32 @@ function view(g: Giveaway, entries: number, winners?: { discordId: string | null
       title: `🎁 ${g.title}`,
       color: done ? 0x9aa3b2 : 0xf6c343,
       description: done
-        ? `**Награда:** ${int(g.prizeCoins)} ТрансКоин${g.winners > 1 ? ` × ${g.winners}` : ''}\n**Участваха:** ${int(entries)}\n\n🏆 ${winners!.length ? winners!.map((w) => (w.discordId ? `<@${w.discordId}>` : w.username)).join(', ') : 'Нямаше участници.'}`
-        : `**Награда:** ${int(g.prizeCoins)} ТрансКоин${g.winners > 1 ? ` за ${g.winners} победители` : ''}\n**Край:** ${at(g.endsAt)}\n**Участват:** ${int(entries)}\n\nНатисни **Участвам** — нужен е свързан акаунт в играта.`,
-      footer: { text: done ? 'Раздаването приключи · ТрансКоин са в акаунтите' : 'TransVerse · ТрансКоин влизат в акаунта автоматично' },
+        ? t('**Награда:** {0} ТрансКоин{1}\n**Участваха:** {2}\n\n🏆 {3}', int(g.prizeCoins), g.winners > 1 ? ` × ${g.winners}` : '', int(entries), winners!.length ? winners!.map((w) => (w.discordId ? `<@${w.discordId}>` : w.username)).join(', ') : t('Нямаше участници.'))
+        : t('**Награда:** {0} ТрансКоин{1}\n**Край:** {2}\n**Участват:** {3}\n\nНатисни **Участвам** — нужен е свързан акаунт в играта.', int(g.prizeCoins), g.winners > 1 ? t(' за {0} победители', g.winners) : '', at(g.endsAt), int(entries)),
+      footer: { text: done ? t('Раздаването приключи · ТрансКоин са в акаунтите') : t('TransVerse · ТрансКоин влизат в акаунта автоматично') },
     }],
-    components: done ? [] : rows(button('Участвам', `give:join:${g.id}`, STYLE.success, '🎉')),
+    components: done ? [] : rows(button(t('Участвам'), `give:join:${g.id}`, STYLE.success, '🎉')),
   };
 }
 
 /** /раздаване (team): starts a giveaway in #раздавания. */
 export async function startGiveaway(ctx: Ctx): Promise<Answer> {
-  if (!hasPerm(ctx, PERM.manageGuild)) stop('Само екипът прави раздавания.');
-  const prize = Math.round(Number(opt(ctx.i, 'награда') ?? 0));
-  const hours = Math.round(Number(opt(ctx.i, 'часове') ?? 24));
-  const winners = Math.round(Number(opt(ctx.i, 'победители') ?? 1));
-  const title = (opt(ctx.i, 'заглавие') ?? 'Раздаване').trim().slice(0, 100) || 'Раздаване';
-  if (!(prize >= 1 && prize <= 100_000)) stop('Наградата е между 1 и 100 000 ТрансКоин.');
-  if (!(hours >= 1 && hours <= 24 * 14)) stop('Продължителността е от 1 час до 14 дни.');
-  if (!(winners >= 1 && winners <= 20)) stop('Победителите са от 1 до 20.');
-  const channelId = await layoutChannel(ctx.db, 'раздавания');
-  if (!channelId) stop('Няма канал #раздавания — подреди сървъра от админ панела.');
+  if (!hasPerm(ctx, PERM.manageGuild)) stop(t('Само екипът прави раздавания.'));
+  const prize = Math.round(Number(opt(ctx.i, t('награда')) ?? 0));
+  const hours = Math.round(Number(opt(ctx.i, t('часове')) ?? 24));
+  const winners = Math.round(Number(opt(ctx.i, t('победители')) ?? 1));
+  const title = (opt(ctx.i, t('заглавие')) ?? t('Раздаване')).trim().slice(0, 100) || t('Раздаване');
+  if (!(prize >= 1 && prize <= 100_000)) stop(t('Наградата е между 1 и 100 000 ТрансКоин.'));
+  if (!(hours >= 1 && hours <= 24 * 14)) stop(t('Продължителността е от 1 час до 14 дни.'));
+  if (!(winners >= 1 && winners <= 20)) stop(t('Победителите са от 1 до 20.'));
+  const channelId = await layoutChannel(ctx.db, t('раздавания'));
+  if (!channelId) stop(t('Няма канал #раздавания — подреди сървъра от админ панела.'));
   const [g] = await ctx.db.insert(discordGiveaways).values({ title, prizeCoins: prize, winners, endsAt: new Date(ctx.now.getTime() + hours * 3_600_000), channelId, createdByDiscordId: ctx.discordId, createdByUserId: ctx.me?.id ?? null }).returning();
   return answer(deferred(), async () => {
     const role = await pingRoleFor('giveaways');
     const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, { ...view(g!, 0), ...(role ? { content: `<@&${role}>`, allowed_mentions: { parse: [], roles: [role] } } : {}) });
     await ctx.db.update(discordGiveaways).set({ messageId: msg.id }).where(eq(discordGiveaways.id, g!.id));
-    await editOriginal(ctx.i, { content: `✅ Раздаването започна в <#${channelId}>.` });
+    await editOriginal(ctx.i, { content: t('✅ Раздаването започна в <#{0}>.', channelId) });
   });
 }
 
@@ -64,10 +65,10 @@ const entryCount = async (db: Database, id: string) => (await db.select({ n: cou
 export async function joinGiveaway(ctx: Ctx, id: string): Promise<Answer> {
   const me = linked(ctx);
   const [g] = await ctx.db.select().from(discordGiveaways).where(eq(discordGiveaways.id, id));
-  if (!g) stop('Няма такова раздаване.');
-  if (g!.drawnAt || g!.endsAt <= ctx.now) stop('Раздаването приключи.');
+  if (!g) stop(t('Няма такова раздаване.'));
+  if (g!.drawnAt || g!.endsAt <= ctx.now) stop(t('Раздаването приключи.'));
   const added = await ctx.db.insert(discordGiveawayEntries).values({ giveawayId: id, userId: me.id, createdAt: ctx.now }).onConflictDoNothing().returning();
-  if (!added.length) return answer(say('Вече участваш — успех! 🍀'));
+  if (!added.length) return answer(say(t('Вече участваш — успех! 🍀')));
   return answer(update(view(g!, await entryCount(ctx.db, id))));
 }
 
@@ -85,8 +86,8 @@ export async function drawGiveaways(db: Database, now = new Date()) {
       const picked: string[] = [];
       while (pool.length && picked.length < g.winners) picked.push(pool.splice(randomInt(pool.length), 1)[0]!);
       for (const userId of picked) {
-        await postCoins(tx, userId, { amount: g.prizeCoins, reason: 'giveaway', description: `Раздаване: ${g.title}`, idempotencyKey: `giveaway:${g.id}:${userId}` });
-        await notify(tx, userId, 'success', 'Спечели раздаване! 🎉', `${g.prizeCoins} ТрансКоин от „${g.title}“ в Discord.`, '/game/shop');
+        await postCoins(tx, userId, { amount: g.prizeCoins, reason: 'giveaway', description: t('Раздаване: {0}', g.title), idempotencyKey: `giveaway:${g.id}:${userId}` });
+        await notify(tx, userId, 'success', () => t('Спечели раздаване! 🎉'), () => t('{0} ТрансКоин от „{1}“ в Discord.', g.prizeCoins, g.title), '/game/shop');
       }
       await tx.update(discordGiveaways).set({ winnerIds: picked }).where(eq(discordGiveaways.id, id));
       return { g: { ...g, winnerIds: picked }, entries: entries.length };
@@ -98,7 +99,7 @@ export async function drawGiveaways(db: Database, now = new Date()) {
     const mentions = winners.map((w) => w.discordId).filter((x): x is string => !!x);
     if (g.channelId) {
       await enqueue(db, `giveaway-won:${g.id}`, `msg:${g.channelId}`, {
-        content: winners.length ? `🎉 Честито, ${winners.map((w) => (w.discordId ? `<@${w.discordId}>` : w.username)).join(', ')}! Спечелихте по **${int(g.prizeCoins)} ТрансКоин** от „${g.title}“ — вече са в акаунта ви.` : `Раздаването „${g.title}“ приключи без участници.`,
+        content: winners.length ? t('🎉 Честито, {0}! Спечелихте по **{1} ТрансКоин** от „{2}“ — вече са в акаунта ви.', winners.map((w) => (w.discordId ? `<@${w.discordId}>` : w.username)).join(', '), int(g.prizeCoins), g.title) : t('Раздаването „{0}“ приключи без участници.', g.title),
         allowed_mentions: { parse: [], users: mentions },
       }, now);
     }

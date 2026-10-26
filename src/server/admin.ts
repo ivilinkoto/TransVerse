@@ -11,6 +11,7 @@ import { postCoins } from '@/server/game/coins';
 import { VIP_MAX_DAYS } from '@/lib/game/vip';
 import { createLinkToken } from '@/server/auth/email-links';
 import { layoutMail, sendMail } from '@/server/mail';
+import { t, intlLocale } from '@/i18n/t';
 
 export interface Staff {
   id: string;
@@ -19,10 +20,10 @@ export interface Staff {
 }
 
 export function requireStaff(user: { role: string } | null): asserts user is Staff {
-  if (!user || !isStaff(user.role)) fail('forbidden', 'Нямате достъп до административния панел.', 403);
+  if (!user || !isStaff(user.role)) fail('forbidden', t('Нямате достъп до административния панел.'), 403);
 }
 export function requireAdminRole(user: { role: string }) {
-  if (!isAdmin(user.role)) fail('forbidden', 'Действието изисква права на администратор.', 403);
+  if (!isAdmin(user.role)) fail('forbidden', t('Действието изисква права на администратор.'), 403);
 }
 
 export { audit as recordAudit };
@@ -65,7 +66,7 @@ export async function searchUsers(db: DbOrTx, q: string) {
 
 export async function userDetail(db: DbOrTx, userId: string) {
   const [row] = await db.select({ user: users, company: companies }).from(users).leftJoin(companies, eq(companies.ownerId, users.id)).where(eq(users.id, userId));
-  if (!row) fail('user_not_found', 'Потребителят не е намерен.', 404);
+  if (!row) fail('user_not_found', t('Потребителят не е намерен.'), 404);
   const [org] = await db
     .select({ id: organizations.id, name: organizations.name, ownerId: organizations.ownerId, treasuryCents: organizations.treasuryCents })
     .from(companyMembers)
@@ -78,20 +79,20 @@ export async function userDetail(db: DbOrTx, userId: string) {
 export async function setUserRole(db: Database, actor: Staff, targetId: string, newRole: string) {
   return db.transaction(async (tx) => {
     const [target] = await tx.select({ id: users.id, role: users.role, username: users.username }).from(users).where(eq(users.id, targetId)).for('update');
-    if (!target) fail('user_not_found', 'Потребителят не е намерен.', 404);
-    if (!ROLES.includes(newRole as Role)) fail('invalid_role', 'Невалидна длъжност.');
-    if (!canChangeRole(actor.role, actor.id, target!.role, target!.id, newRole)) fail('forbidden', 'Нямате право да зададете тази длъжност.', 403);
+    if (!target) fail('user_not_found', t('Потребителят не е намерен.'), 404);
+    if (!ROLES.includes(newRole as Role)) fail('invalid_role', t('Невалидна длъжност.'));
+    if (!canChangeRole(actor.role, actor.id, target!.role, target!.id, newRole)) fail('forbidden', t('Нямате право да зададете тази длъжност.'), 403);
     await tx.update(users).set({ role: newRole }).where(eq(users.id, targetId));
     await audit(tx, actor.id, 'set_role', targetId, { from: target!.role, to: newRole });
-    await notify(tx, targetId, 'info', 'Промяна на длъжността', `Вашата длъжност е: ${newRole}.`, '/game/profile');
+    await notify(tx, targetId, 'info', () => t('Промяна на длъжността'), () => t('Вашата длъжност е: {0}.', newRole), '/game/profile');
   });
 }
 
 export async function setBan(db: Database, actor: Staff, targetId: string, banned: boolean, reason: string) {
   return db.transaction(async (tx) => {
     const [target] = await tx.select({ id: users.id, role: users.role }).from(users).where(eq(users.id, targetId)).for('update');
-    if (!target) fail('user_not_found', 'Потребителят не е намерен.', 404);
-    if (!canBan(actor.role, actor.id, target!.role, target!.id)) fail('forbidden', 'Нямате право да блокирате този потребител.', 403);
+    if (!target) fail('user_not_found', t('Потребителят не е намерен.'), 404);
+    if (!canBan(actor.role, actor.id, target!.role, target!.id)) fail('forbidden', t('Нямате право да блокирате този потребител.'), 403);
     await tx.update(users).set(banned ? { bannedAt: new Date(), banReason: reason || null } : { bannedAt: null, banReason: null }).where(eq(users.id, targetId));
     if (banned) await tx.delete(sessions).where(eq(sessions.userId, targetId));
     await audit(tx, actor.id, banned ? 'ban' : 'unban', targetId, { reason });
@@ -101,14 +102,14 @@ export async function setBan(db: Database, actor: Staff, targetId: string, banne
 /** Manual balance correction (e.g. compensation after a bug). Always written to the ledger and audit log. */
 export async function adjustBalance(db: Database, actor: Staff, targetId: string, amountCents: number, reason: string) {
   requireAdminRole(actor);
-  if (!Number.isSafeInteger(amountCents) || amountCents === 0 || Math.abs(amountCents) > 10_000_000_00) fail('invalid_amount', 'Невалидна сума.');
-  if (reason.trim().length < 5) fail('reason_required', 'Посочете причина (поне 5 символа).');
+  if (!Number.isSafeInteger(amountCents) || amountCents === 0 || Math.abs(amountCents) > 10_000_000_00) fail('invalid_amount', t('Невалидна сума.'));
+  if (reason.trim().length < 5) fail('reason_required', t('Посочете причина (поне 5 символа).'));
   return db.transaction(async (tx) => {
     const [company] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, targetId));
-    if (!company) fail('company_not_found', 'Потребителят няма игрови акаунт.', 404);
+    if (!company) fail('company_not_found', t('Потребителят няма игрови акаунт.'), 404);
     const auditId = await audit(tx, actor.id, 'adjust_balance', targetId, { amountCents, reason });
-    await post(tx, company!.id, [{ category: 'admin_adjustment', amountCents, description: `Корекция: ${reason}`, idempotencyKey: `admin:${auditId}` }]);
-    await notify(tx, targetId, 'info', 'Корекция на баланса', `${amountCents > 0 ? '+' : ''}${(amountCents / 100).toFixed(2)} лв. — ${reason}`, '/game/finance');
+    await post(tx, company!.id, [{ category: 'admin_adjustment', amountCents, description: t('Корекция: {0}', reason), idempotencyKey: `admin:${auditId}` }]);
+    await notify(tx, targetId, 'info', () => t('Корекция на баланса'), () => t('{0}{1} лв. — {2}', amountCents > 0 ? '+' : '', (amountCents / 100).toFixed(2), reason), '/game/finance');
   });
 }
 
@@ -122,15 +123,15 @@ export async function adminReplenishMarket(db: Database, actor: Staff) {
 /** Grants VIP until a date (`days` from now, entered by the administrator) or removes it (`days` = 0). */
 export async function setVip(db: Database, actor: Staff, targetId: string, days: number) {
   requireAdminRole(actor);
-  if (!Number.isInteger(days) || days < 0 || days > VIP_MAX_DAYS) fail('invalid_days', `Срокът е от 1 до ${VIP_MAX_DAYS} дни (0 премахва VIP).`);
+  if (!Number.isInteger(days) || days < 0 || days > VIP_MAX_DAYS) fail('invalid_days', t('Срокът е от 1 до {0} дни (0 премахва VIP).', VIP_MAX_DAYS));
   return db.transaction(async (tx) => {
     const [target] = await tx.select({ id: users.id, vipUntil: users.vipUntil }).from(users).where(eq(users.id, targetId)).for('update');
-    if (!target) fail('user_not_found', 'Потребителят не е намерен.', 404);
+    if (!target) fail('user_not_found', t('Потребителят не е намерен.'), 404);
     const until = days > 0 ? new Date(Date.now() + days * 86_400_000) : null;
     await tx.update(users).set({ vipUntil: until }).where(eq(users.id, targetId));
     await audit(tx, actor.id, days > 0 ? 'set_vip' : 'remove_vip', targetId, { days, until: until?.toISOString() ?? null, previous: target!.vipUntil?.toISOString() ?? null });
-    if (until) await notify(tx, targetId, 'achievement', 'Вече сте VIP!', `VIP статусът ви е активен до ${until.toLocaleDateString('bg-BG')}.`, '/game/profile');
-    else await notify(tx, targetId, 'info', 'VIP статусът е премахнат', 'Администратор премахна VIP статуса ви.', '/game/profile');
+    if (until) await notify(tx, targetId, 'achievement', () => t('Вече сте VIP!'), () => t('VIP статусът ви е активен до {0}.', until.toLocaleDateString(intlLocale())), '/game/profile');
+    else await notify(tx, targetId, 'info', () => t('VIP статусът е премахнат'), () => t('Администратор премахна VIP статуса ви.'), '/game/profile');
     return until;
   });
 }
@@ -138,12 +139,12 @@ export async function setVip(db: Database, actor: Staff, targetId: string, days:
 /** Gives (or with a negative amount takes away) ТрансКоин. Audited; the player is notified. */
 export async function adjustCoins(db: Database, actor: Staff, targetId: string, amount: number, reason: string) {
   requireAdminRole(actor);
-  if (!Number.isSafeInteger(amount) || amount === 0 || Math.abs(amount) > 1_000_000) fail('invalid_amount', 'Невалидно количество ТрансКоин.');
-  if (reason.trim().length < 3) fail('reason_required', 'Посочете причина (поне 3 символа).');
+  if (!Number.isSafeInteger(amount) || amount === 0 || Math.abs(amount) > 1_000_000) fail('invalid_amount', t('Невалидно количество ТрансКоин.'));
+  if (reason.trim().length < 3) fail('reason_required', t('Посочете причина (поне 3 символа).'));
   return db.transaction(async (tx) => {
     const auditId = await audit(tx, actor.id, amount > 0 ? 'grant_coins' : 'remove_coins', targetId, { amount, reason });
     await postCoins(tx, targetId, { amount, reason: amount > 0 ? 'admin_grant' : 'admin_remove', description: reason, idempotencyKey: `admin-coins:${auditId}`, actorUserId: actor.id }, { requireFunds: amount < 0 });
-    await notify(tx, targetId, 'info', amount > 0 ? `Получихте ${amount} ТрансКоин` : `Отнети ${-amount} ТрансКоин`, reason, '/game/shop');
+    await notify(tx, targetId, 'info', () => amount > 0 ? t('Получихте {0} ТрансКоин', amount) : t('Отнети {0} ТрансКоин', -amount), reason, '/game/shop');
   });
 }
 
@@ -159,11 +160,11 @@ export async function compensateAll(db: Database, actor: Staff, input: { kind: '
   requireAdminRole(actor);
   const amount = input.kind === 'money' ? Math.round(input.amount * 100) : Math.round(input.amount);
   const max = input.kind === 'money' ? COMPENSATION.maxCents : COMPENSATION.maxCoins;
-  if (!Number.isSafeInteger(amount) || amount <= 0 || amount > max) fail('invalid_amount', input.kind === 'money' ? `Сумата е от 0,01 до ${max / 100} лв.` : `От 1 до ${max} ТрансКоин.`);
+  if (!Number.isSafeInteger(amount) || amount <= 0 || amount > max) fail('invalid_amount', input.kind === 'money' ? t('Сумата е от 0,01 до {0} лв.', max / 100) : t('От 1 до {0} ТрансКоин.', max));
   const reason = input.reason.trim();
-  if (reason.length < 5) fail('reason_required', 'Посочете причина (поне 5 символа).');
+  if (reason.length < 5) fail('reason_required', t('Посочете причина (поне 5 символа).'));
   const auditId = await audit(db, actor.id, 'compensate_all', null, { kind: input.kind, amount, reason });
-  const label = input.kind === 'money' ? `${(amount / 100).toFixed(2)} лв.` : `${amount} ТрансКоин`;
+  const label = input.kind === 'money' ? t('{0} лв.', (amount / 100).toFixed(2)) : t('{0} ТрансКоин', amount);
   let paid = 0;
   let after = '00000000-0000-0000-0000-000000000000';
   for (;;) {
@@ -178,11 +179,11 @@ export async function compensateAll(db: Database, actor: Staff, input: { kind: '
     for (const p of page) {
       await db.transaction(async (tx) => {
         const applied = input.kind === 'money'
-          ? await post(tx, p.companyId, [{ category: 'admin_adjustment', amountCents: amount, description: `Компенсация: ${reason}`, idempotencyKey: `compensation:${auditId}:${p.userId}` }])
-          : (await postCoins(tx, p.userId, { amount, reason: 'admin_grant', description: `Компенсация: ${reason}`, idempotencyKey: `compensation:${auditId}:${p.userId}`, actorUserId: actor.id })) ? 1 : 0;
+          ? await post(tx, p.companyId, [{ category: 'admin_adjustment', amountCents: amount, description: t('Компенсация: {0}', reason), idempotencyKey: `compensation:${auditId}:${p.userId}` }])
+          : (await postCoins(tx, p.userId, { amount, reason: 'admin_grant', description: t('Компенсация: {0}', reason), idempotencyKey: `compensation:${auditId}:${p.userId}`, actorUserId: actor.id })) ? 1 : 0;
         if (!applied) return;
         paid++;
-        await notify(tx, p.userId, 'success', `Компенсация: +${label}`, reason, input.kind === 'money' ? '/game/finance' : '/game/shop');
+        await notify(tx, p.userId, 'success', () => t('Компенсация: +{0}', label), reason, input.kind === 'money' ? '/game/finance' : '/game/shop');
       });
     }
     after = page.at(-1)!.userId;
@@ -193,13 +194,13 @@ export async function compensateAll(db: Database, actor: Staff, input: { kind: '
 
 /** Moderation: removes a company's logo, banner, description, rules and tag. */
 export async function adminResetCompanyBranding(db: Database, actor: Staff, companyId: string, reason: string) {
-  if (reason.trim().length < 5) fail('reason_required', 'Посочете причина (поне 5 символа).');
+  if (reason.trim().length < 5) fail('reason_required', t('Посочете причина (поне 5 символа).'));
   return db.transaction(async (tx) => {
     const [company] = await tx.select({ id: organizations.id, name: organizations.name, ownerId: organizations.ownerId }).from(organizations).where(eq(organizations.id, companyId));
-    if (!company) fail('company_not_found', 'Компанията не е намерена.', 404);
+    if (!company) fail('company_not_found', t('Компанията не е намерена.'), 404);
     await resetBranding(tx, companyId);
     await audit(tx, actor.id, 'reset_company_branding', company!.ownerId, { company: company!.name, reason });
-    await notify(tx, company!.ownerId, 'warning', 'Профилът на компанията е изчистен', `Модератор премахна лого, банер и текстове. Причина: ${reason}`, '/game/company/profile');
+    await notify(tx, company!.ownerId, 'warning', () => t('Профилът на компанията е изчистен'), () => t('Модератор премахна лого, банер и текстове. Причина: {0}', reason), '/game/company/profile');
   });
 }
 
@@ -227,8 +228,8 @@ export async function bootstrapFounder(db: Database, username: string): Promise<
 export async function adminResetLink(db: Database, actor: Staff, targetId: string, base: string) {
   requireAdminRole(actor);
   const [target] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.id, targetId));
-  if (!target) fail('user_not_found', 'Потребителят не е намерен.', 404);
-  if (!canBan(actor.role, actor.id, target!.role, target!.id)) fail('forbidden', 'Нямате право да създавате линк за този профил.', 403);
+  if (!target) fail('user_not_found', t('Потребителят не е намерен.'), 404);
+  if (!canBan(actor.role, actor.id, target!.role, target!.id)) fail('forbidden', t('Нямате право да създавате линк за този профил.'), 403);
   const token = await createLinkToken(db, targetId, 'reset');
   await audit(db, actor.id, 'password_reset_link', targetId);
   return `${base}/reset-password?token=${token}`;
@@ -242,7 +243,7 @@ export async function adminVerifyEmail(db: Database, actor: Staff, targetId: str
   requireAdminRole(actor);
   return db.transaction(async (tx) => {
     const [u] = await tx.select({ id: users.id }).from(users).where(eq(users.id, targetId));
-    if (!u) fail('user_not_found', 'Потребителят не е намерен.', 404);
+    if (!u) fail('user_not_found', t('Потребителят не е намерен.'), 404);
     await tx.update(users).set({ emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` }).where(eq(users.id, targetId));
     await audit(tx, actor.id, 'verify_email', targetId);
   });
@@ -250,15 +251,15 @@ export async function adminVerifyEmail(db: Database, actor: Staff, targetId: str
 
 /** Sends a test e-mail and returns the mail server's answer (or throws its error). */
 export async function sendTestMail(actor: Staff, to: string, base: string) {
-  if (!isStaff(actor.role)) fail('forbidden', 'Нямате достъп.', 403);
+  if (!isStaff(actor.role)) fail('forbidden', t('Нямате достъп.'), 403);
   return sendMail(
     layoutMail({
       to,
-      subject: 'Проба от TransVerse',
-      heading: 'Пробно писмо',
-      lines: ['Това е проба от админ панела на TransVerse. Ако го виждаш във „Входящи“, писмата стигат до тази поща.'],
-      button: { label: 'Към играта', url: `${base}/game` },
-      footer: `Изпратено от ${actor.username}.`,
+      subject: t('Проба от TransVerse'),
+      heading: t('Пробно писмо'),
+      lines: [t('Това е проба от админ панела на TransVerse. Ако го виждаш във „Входящи“, писмата стигат до тази поща.')],
+      button: { label: t('Към играта'), url: `${base}/game` },
+      footer: t('Изпратено от {0}.', actor.username),
     }),
     'test',
   );

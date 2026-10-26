@@ -14,15 +14,16 @@ import { post, postTreasury } from './finance';
 import { membershipOf, notifyMembers, requirePermission } from './membership';
 import { notify } from './notify';
 import { pick, pickWeighted, rand } from './random';
+import { t, intlLocale } from '@/i18n/t';
 
 // ── Branches ─────────────────────────────────────────────────────────────
 
 /** Cities a branch may open in: the 8 biggest of every country of the game, not the base city. */
-export async function branchCities(db: DbOrTx, hqCityId: number, europe = false) {
+export async function branchCities(db: DbOrTx, hqCityId: number, europe = false, openWorld = false) {
   const { rows } = await db.execute<{ id: number; name: string; country: string }>(sql`
     select id, name_bg as name, country_code as country from (
       select c.*, row_number() over (partition by country_code order by population desc) as n from ${cities} c
-      where country_code in (${sql.join(playableCountries(europe).map((c) => sql`${c}`), sql`, `)}) and id <> ${hqCityId}
+      where country_code in (${sql.join(playableCountries(europe, openWorld).map((c) => sql`${c}`), sql`, `)}) and id <> ${hqCityId}
     ) t where n <= 8 order by country, n`);
   return rows;
 }
@@ -38,18 +39,18 @@ export async function branchesOf(db: DbOrTx, organizationId: string) {
 
 /** Opens a branch (the treasury pays); as many as the company level allows. */
 export async function openBranch(db: Database, actorId: string, cityId: number, now = new Date()) {
-  if (!(await featureFor(db, actorId, 'branches', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, actorId, 'branches', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_upgrades');
     const allowed = branchSlots(actor.company.companyLevel);
     const [{ n = 0 } = {}] = await tx.select({ n: count() }).from(companyBranches).where(eq(companyBranches.organizationId, actor.company.id));
-    if (n >= allowed) fail('no_slot', allowed ? `На това ниво компанията може да има ${allowed} ${allowed === 1 ? 'филиал' : 'филиала'}.` : 'Филиали се отварят от ниво 4 на компанията.');
-    const ok = (await branchCities(tx, actor.company.hqCityId, await featureFor(tx, actorId, 'europe', now))).find((c) => c.id === cityId);
-    if (!ok) fail('bad_city', 'Филиал се отваря в един от големите градове (не в града на базата).');
+    if (n >= allowed) fail('no_slot', allowed ? t('На това ниво компанията може да има {0} {1}.', allowed, allowed === 1 ? t('филиал') : t('филиала')) : t('Филиали се отварят от ниво 4 на компанията.'));
+    const ok = (await branchCities(tx, actor.company.hqCityId, await featureFor(tx, actorId, 'europe', now), await featureFor(tx, actorId, 'open_world', now))).find((c) => c.id === cityId);
+    if (!ok) fail('bad_city', t('Филиал се отваря в един от големите градове (не в града на базата).'));
     const [row] = await tx.insert(companyBranches).values({ organizationId: actor.company.id, cityId, createdAt: now }).onConflictDoNothing().returning();
-    if (!row) fail('already', 'Компанията вече има филиал там.');
-    await postTreasury(tx, actor.company.id, [{ category: 'company_branch', amountCents: -BRANCH.priceCents, description: `Филиал в ${ok!.name}`, idempotencyKey: `branch:${row!.id}`, actorUserId: actorId, refType: 'company_branch', refId: row!.id }], { requireFunds: true });
-    await notifyMembers(tx, actor.company.id, null, `Нов филиал: ${ok!.name}`, `Курсовете до ${ok!.name} носят +${Math.round(BRANCH.bonusShare * 100)} %, а оттам тръгват товари само за компанията.`, '/game/company/branches');
+    if (!row) fail('already', t('Компанията вече има филиал там.'));
+    await postTreasury(tx, actor.company.id, [{ category: 'company_branch', amountCents: -BRANCH.priceCents, description: t('Филиал в {0}', ok!.name), idempotencyKey: `branch:${row!.id}`, actorUserId: actorId, refType: 'company_branch', refId: row!.id }], { requireFunds: true });
+    await notifyMembers(tx, actor.company.id, null, () => t('Нов филиал: {0}', ok!.name), () => t('Курсовете до {0} носят +{1} %, а оттам тръгват товари само за компанията.', ok!.name, Math.round(BRANCH.bonusShare * 100)), '/game/company/branches');
     return row!;
   });
 }
@@ -58,7 +59,7 @@ export async function closeBranch(db: Database, actorId: string, branchId: strin
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_upgrades');
     const [row] = await tx.delete(companyBranches).where(and(eq(companyBranches.id, branchId), eq(companyBranches.organizationId, actor.company.id))).returning();
-    if (!row) fail('not_found', 'Няма такъв филиал.', 404);
+    if (!row) fail('not_found', t('Няма такъв филиал.'), 404);
     await tx.update(contracts).set({ status: 'expired' }).where(and(eq(contracts.branchOrgId, actor.company.id), eq(contracts.originCityId, row!.cityId), eq(contracts.status, 'open')));
     return row!;
   });
@@ -72,7 +73,7 @@ export async function branchBonus(tx: Tx, delivery: { id: string; companyId: str
   const [b] = await tx.select({ id: companyBranches.id }).from(companyBranches).where(and(eq(companyBranches.organizationId, m.company.id), eq(companyBranches.cityId, destCityId)));
   if (!b) return 0;
   const bonus = Math.round(rewardCents * BRANCH.bonusShare);
-  if (bonus > 0) await post(tx, delivery.companyId, [{ category: 'branch_bonus', amountCents: bonus, description: `Бонус от филиала на ${m.company.name}`, idempotencyKey: `delivery:${delivery.id}:branch`, refType: 'delivery', refId: delivery.id }]);
+  if (bonus > 0) await post(tx, delivery.companyId, [{ category: 'branch_bonus', amountCents: bonus, description: t('Бонус от филиала на {0}', m.company.name), idempotencyKey: `delivery:${delivery.id}:branch`, refType: 'delivery', refId: delivery.id }]);
   return bonus;
 }
 
@@ -132,18 +133,18 @@ export async function creditOf(db: DbOrTx, userId: string, now = new Date()) {
 
 /** Takes a loan: one at a time, up to what the rating allows; the money comes now. */
 export async function takeLoan(db: Database, userId: string, amountCents: number, weeks: number, now = new Date()) {
-  if (!(await featureFor(db, userId, 'loans', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
-  if (!LOAN.weeksOptions.includes(weeks as 4)) fail('bad_weeks', 'Срокът е 4, 8 или 12 седмици.');
+  if (!(await featureFor(db, userId, 'loans', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
+  if (!LOAN.weeksOptions.includes(weeks as 4)) fail('bad_weeks', t('Срокът е 4, 8 или 12 седмици.'));
   const c = await creditOf(db, userId, now);
-  if (c.active) fail('active_loan', 'Вече имаш кредит — изплати го първо.');
-  if (c.tier.maxCents <= 0) fail('no_credit', 'Кредитният ти рейтинг е твърде нисък — карай още и доставяй навреме.');
-  if (amountCents < 1_000_00 || amountCents > c.tier.maxCents) fail('bad_amount', `Сумата е между 1 000 лв. и ${(c.tier.maxCents / 100).toLocaleString('bg-BG')} лв.`);
+  if (c.active) fail('active_loan', t('Вече имаш кредит — изплати го първо.'));
+  if (c.tier.maxCents <= 0) fail('no_credit', t('Кредитният ти рейтинг е твърде нисък — карай още и доставяй навреме.'));
+  if (amountCents < 1_000_00 || amountCents > c.tier.maxCents) fail('bad_amount', t('Сумата е между 1 000 лв. и {0} лв.', (c.tier.maxCents / 100).toLocaleString(intlLocale())));
   const terms = loanTerms(amountCents, c.tier.rateBps, weeks);
   return db.transaction(async (tx) => {
     const [mine] = await tx.select({ id: loans.id }).from(loans).where(and(eq(loans.companyId, c.accountId), eq(loans.status, 'active'))).for('update');
-    if (mine) fail('active_loan', 'Вече имаш кредит — изплати го първо.');
+    if (mine) fail('active_loan', t('Вече имаш кредит — изплати го първо.'));
     const [loan] = await tx.insert(loans).values({ companyId: c.accountId, principalCents: amountCents, totalCents: terms.totalCents, weeklyCents: terms.weeklyCents, weeks, rateBps: c.tier.rateBps, nextDueAt: new Date(now.getTime() + 7 * 86_400_000), createdAt: now }).returning();
-    await post(tx, c.accountId, [{ category: 'loan', amountCents, description: `Кредит за ${weeks} седмици`, idempotencyKey: `loan:${loan!.id}:out`, refType: 'loan', refId: loan!.id }]);
+    await post(tx, c.accountId, [{ category: 'loan', amountCents, description: t('Кредит за {0} седмици', weeks), idempotencyKey: `loan:${loan!.id}:out`, refType: 'loan', refId: loan!.id }]);
     return loan!;
   });
 }
@@ -153,9 +154,9 @@ export async function repayLoan(db: Database, userId: string, now = new Date()) 
   const account = await companyForUser(db, userId);
   return db.transaction(async (tx) => {
     const [loan] = await tx.select().from(loans).where(and(eq(loans.companyId, account.id), eq(loans.status, 'active'))).for('update');
-    if (!loan) fail('no_loan', 'Нямаш активен кредит.', 404);
+    if (!loan) fail('no_loan', t('Нямаш активен кредит.'), 404);
     const rest = loan!.totalCents - loan!.paidCents;
-    await post(tx, account.id, [{ category: 'loan', amountCents: -rest, description: 'Предсрочно изплащане на кредит', idempotencyKey: `loan:${loan!.id}:repay`, refType: 'loan', refId: loan!.id }], { requireFunds: true });
+    await post(tx, account.id, [{ category: 'loan', amountCents: -rest, description: t('Предсрочно изплащане на кредит'), idempotencyKey: `loan:${loan!.id}:repay`, refType: 'loan', refId: loan!.id }], { requireFunds: true });
     await tx.update(loans).set({ paidCents: loan!.totalCents, status: 'paid', closedAt: now }).where(eq(loans.id, loan!.id));
     return { paidCents: rest };
   });
@@ -178,12 +179,12 @@ export async function collectLoans(db: Database, now = new Date()) {
       const missed = loan.missed + (missedNow ? 1 : 0);
       const defaulted = missed > LOAN.maxMissed;
       const amount = defaulted ? loan.totalCents - loan.paidCents : Math.min(loan.weeklyCents, loan.totalCents - loan.paidCents);
-      await post(tx, loan.companyId, [{ category: 'loan', amountCents: -amount, description: defaulted ? 'Кредит: просрочие — събран остатъкът' : `Вноска по кредит (${week}/${loan.weeks})`, idempotencyKey: `loan:${loan.id}:week:${week}`, refType: 'loan', refId: loan.id }]);
+      await post(tx, loan.companyId, [{ category: 'loan', amountCents: -amount, description: defaulted ? t('Кредит: просрочие — събран остатъкът') : t('Вноска по кредит ({0}/{1})', week, loan.weeks), idempotencyKey: `loan:${loan.id}:week:${week}`, refType: 'loan', refId: loan.id }]);
       const paid = loan.paidCents + amount;
       const done = paid >= loan.totalCents;
       await tx.update(loans).set({ paidCents: paid, missed, status: defaulted ? 'defaulted' : done ? 'paid' : 'active', nextDueAt: new Date(loan.nextDueAt.getTime() + 7 * 86_400_000), closedAt: defaulted || done ? now : null }).where(eq(loans.id, loan.id));
       if (acc && (missedNow || defaulted || done)) {
-        await notify(tx, acc.ownerId, defaulted || missedNow ? 'warning' : 'success', defaulted ? 'Кредитът е просрочен' : missedNow ? 'Пропусната вноска по кредита' : 'Кредитът е изплатен 🎉', defaulted ? 'Остатъкът е събран наведнъж, а кредитният ти рейтинг падна.' : missedNow ? 'Нямаше достатъчно пари — вноската е взета на минус и рейтингът ти пада.' : 'Кредитният ти рейтинг се повиши.', '/game/finance#credit');
+        await notify(tx, acc.ownerId, defaulted || missedNow ? 'warning' : 'success', () => defaulted ? t('Кредитът е просрочен') : missedNow ? t('Пропусната вноска по кредита') : t('Кредитът е изплатен 🎉'), () => defaulted ? t('Остатъкът е събран наведнъж, а кредитният ти рейтинг падна.') : missedNow ? t('Нямаше достатъчно пари — вноската е взета на минус и рейтингът ти пада.') : t('Кредитният ти рейтинг се повиши.'), '/game/finance#credit');
       }
     });
   }

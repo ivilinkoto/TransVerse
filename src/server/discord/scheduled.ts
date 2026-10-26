@@ -9,6 +9,7 @@ import { activeRally } from '@/server/game/rally';
 import { discord } from './api';
 import { appUrl, discordConfig } from './config';
 import { announce } from './outbox';
+import { t } from '@/i18n/t';
 
 /**
  * Discord scheduled events (v1.4): the weekly rally, the company battles of
@@ -30,11 +31,11 @@ export async function scheduledItems(db: Database, now: Date): Promise<Scheduled
   const items: ScheduledItem[] = [];
   const rally = await activeRally(db);
   if (rally && rally.endsAt > now) {
-    items.push({ key: `rally:${rally.id}`, name: `🏁 Рали: ${rally.from} → ${rally.to}`, description: `Седмичното рали — ${Math.round(rally.distanceKm)} км. Най-бързите и най-икономичните трима печелят до ${money(RALLY.prizes[0].cents)} и ${RALLY.prizes[0].coins} TC. Записване: ${appUrl()}/game/rally`, startsAt: rally.startsAt, endsAt: rally.endsAt });
+    items.push({ key: `rally:${rally.id}`, name: t('🏁 Рали: {0} → {1}', rally.from, rally.to), description: t('Седмичното рали — {0} км. Най-бързите и най-икономичните трима печелят до {1} и {2} TC. Записване: {3}/game/rally', Math.round(rally.distanceKm), money(RALLY.prizes[0].cents), RALLY.prizes[0].coins, appUrl()), startsAt: rally.startsAt, endsAt: rally.endsAt });
   }
   const [battle] = await db.select({ weekKey: companyBattles.weekKey, endsAt: companyBattles.endsAt, createdAt: companyBattles.createdAt }).from(companyBattles).where(and(eq(companyBattles.status, 'active'), gt(companyBattles.endsAt, now))).limit(1);
   if (battle) {
-    items.push({ key: `battles:${battle.weekKey}`, name: '⚔️ Битка на компаниите', description: `Компаниите се борят по двойки: всеки превозен тон се брои. Победителят взема ${money(BATTLE_RULES.rewardCents)} за касата. ${appUrl()}/game/company/missions`, startsAt: battle.createdAt, endsAt: battle.endsAt });
+    items.push({ key: `battles:${battle.weekKey}`, name: t('⚔️ Битка на компаниите'), description: t('Компаниите се борят по двойки: всеки превозен тон се брои. Победителят взема {0} за касата. {1}/game/company/missions', money(BATTLE_RULES.rewardCents), appUrl()), startsAt: battle.createdAt, endsAt: battle.endsAt });
   }
   const events = await db.select().from(globalEvents).where(and(isNull(globalEvents.settledAt), gt(globalEvents.endsAt, now), lte(globalEvents.startsAt, new Date(now.getTime() + 7 * 86_400_000)))).limit(5);
   for (const e of events) items.push({ key: `event:${e.id}`, name: `🌍 ${e.name}`, description: `${e.description}\n${appUrl()}/game/events`.trim().slice(0, 1000), startsAt: e.startsAt, endsAt: e.endsAt });
@@ -76,13 +77,13 @@ export async function announceRally(db: Database, rallyId: string, now: Date) {
   if (!featureLive('rally', now)) return;
   const rally = await activeRally(db);
   if (!rally || rally.id !== rallyId) return;
-  await announce(db, `rally:${rally.id}`, 'events', {
+  await announce(db, `rally:${rally.id}`, 'events', () => ({
     embeds: [{
-      title: `🏁 Ралито на седмицата: ${rally.from} → ${rally.to}`,
+      title: t('🏁 Ралито на седмицата: {0} → {1}', rally.from, rally.to),
       url: `${appUrl()}/game/rally`,
       color: 0xf97316,
-      description: `${Math.round(rally.distanceKm)} км по истински път, един и същ товар за всички. Мери се времето от товаренето до разтоварването и горивото на 100 км. Първите трима във всяка категория печелят до **${money(RALLY.prizes[0].cents)}** и **${RALLY.prizes[0].coins} TC**. Край <t:${Math.floor(rally.endsAt.getTime() / 1000)}:R>.`,
-      footer: { text: 'TransVerse · игрови данни' },
+      description: t('{0} км по истински път, един и същ товар за всички. Мери се времето от товаренето до разтоварването и горивото на 100 км. Първите трима във всяка категория печелят до **{1}** и **{2} TC**. Край <t:{3}:R>.', Math.round(rally.distanceKm), money(RALLY.prizes[0].cents), RALLY.prizes[0].coins, Math.floor(rally.endsAt.getTime() / 1000)),
+      footer: { text: t('TransVerse · игрови данни') },
     }],
-  }, now);
+  }), now);
 }

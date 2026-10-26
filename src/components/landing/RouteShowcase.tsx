@@ -1,4 +1,5 @@
 import polyline from '@mapbox/polyline';
+import { t, tx } from '@/i18n/t';
 
 interface City {
   id: number;
@@ -34,7 +35,7 @@ export function RouteShowcase({ routes }: { routes: ShowRoute[] }) {
   const cities = new Map(pts.map((c) => [c.id, c]));
 
   return (
-    <svg viewBox={`0 0 ${W.toFixed(0)} ${H.toFixed(0)}`} className="h-full w-full" role="img" aria-label="Реални маршрути между реални градове">
+    <svg viewBox={`0 0 ${W.toFixed(0)} ${H.toFixed(0)}`} className="h-full w-full" role="img" aria-label={t('Реални маршрути между реални градове')}>
       <defs>
         <linearGradient id="route-grad" x1="0" x2="1">
           <stop offset="0" stopColor="#22d3ee" />
@@ -62,7 +63,7 @@ export function RouteShowcase({ routes }: { routes: ShowRoute[] }) {
             <circle cx={x} cy={y} r={9} fill="#05070b" stroke="#f6c343" strokeWidth="3" />
             <circle cx={x} cy={y} r={3} fill="#f6c343" />
             <text x={x + 13} y={y - 10} fontSize="17" fontWeight="600" fill="#e8eef7" stroke="#05070b" strokeWidth="5" paintOrder="stroke" fontFamily="var(--font-onest), sans-serif">
-              {c.nameBg}
+              {tx(c.nameBg)}
             </text>
           </g>
         );

@@ -14,6 +14,10 @@ import { driverMoods } from './moods';
 import { ensureRally, settleRallies } from './rally';
 import { settleWeeklyChallenge } from './challenges';
 import { settleCountryKings } from './kings';
+import { payHoldingFees } from './holdings';
+import { ensureIntermodal, releaseIntermodal } from './intermodal';
+import { settleCups } from './community-cups';
+import { settleTerritories } from './territories';
 import { pruneLiveRoad } from './live-road';
 import { payDividends, updateSharePrices } from './shares';
 import { runRelief } from './relief';
@@ -169,7 +173,7 @@ export async function spawnMarketEvent(db: Database, now: Date) {
   const active = await db.select({ id: marketEvents.id }).from(marketEvents).where(and(lte(marketEvents.startsAt, now), gt(marketEvents.endsAt, now)));
   if (active.length >= 3) return;
   const t = pick(EVENT_TEMPLATES);
-  const country = pick(playableCountries(featureLive('europe', now)));
+  const country = pick(playableCountries(featureLive('europe', now), featureLive('open_world', now)));
   const [c] = await db.select({ nameBg: countries.nameBg }).from(countries).where(eq(countries.code, country));
   await db.insert(marketEvents).values({
     title: `${t.title}: ${c?.nameBg ?? country}`,
@@ -307,6 +311,9 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'live-road-prune', 24 * 3_600_000, now, () => pruneLiveRoad(db, now));
     // v1.7: last month's king of every country.
     if (featureLive('country_kings', now)) await every(db, 'country-kings', 60 * 60_000, now, () => settleCountryKings(db, now));
+    // v2.0: last week's territories, and the subsidiaries' fees to their holdings.
+    if (featureLive('territories', now)) await every(db, 'territories', 60 * 60_000, now, () => settleTerritories(db, now));
+    if (featureLive('holdings', now)) await every(db, 'holding-fees', 6 * 60 * 60_000, now, () => payHoldingFees(db, now));
     if (featureLive('spring_cup', now)) await every(db, 'spring-cup', 30 * 60_000, now, () => runCup(db, now));
     // v1.6: the weekly rare plate auction and trailer hires that ended.
     if (featureLive('plate_auction', now)) await every(db, 'plate-auction', 15 * 60_000, now, async () => {
@@ -341,6 +348,13 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await ensureBranchLoads(db, now, provider);
     });
     await every(db, 'freight-exchange', 10 * 60_000, now, () => expireFreight(db, now));
+    // v2.0: finished community tournaments pay their prizes.
+    if (featureLive('community_cups', now)) await every(db, 'community-cups', 5 * 60_000, now, () => settleCups(db, now));
+    // v2.0: intermodal containers — new ones on the board, and the last leg when the line arrives.
+    if (featureLive('intermodal', now)) {
+      await every(db, 'intermodal', 30 * 60_000, now, () => ensureIntermodal(db, now, provider));
+      await every(db, 'intermodal-release', 5 * 60_000, now, () => releaseIntermodal(db, now, provider));
+    }
     await every(db, 'ports', 30 * 60_000, now, async () => {
       await settleShipCalls(db, now);
       await ensurePortLoads(db, now, provider);

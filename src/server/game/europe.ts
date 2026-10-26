@@ -13,6 +13,7 @@ import { addLoad, loadHubs } from './contracts';
 import { fail } from './errors';
 import { notify } from './notify';
 import { pick, pickWeighted, rand } from './random';
+import { t } from '@/i18n/t';
 
 /** Worker: keeps a few trans-European loads (2 500 km and more) on the board. */
 export async function ensureTransEuropeLoads(db: Database, now = new Date(), provider?: RoutingProvider) {
@@ -35,14 +36,14 @@ export async function ensureTransEuropeLoads(db: Database, now = new Date(), pro
 
 /** A trans-European load needs a two-driver crew. */
 export function requireTeam(contract: { transEurope: boolean }, coDriverId: string | null | undefined) {
-  if (contract.transEurope && !coDriverId) fail('needs_team', 'Трансевропейски курс — само с двоен екипаж (втори шофьор в камиона).');
+  if (contract.transEurope && !coDriverId) fail('needs_team', t('Трансевропейски курс — само с двоен екипаж (втори шофьор в камиона).'));
 }
 
 /** The first trans-European load on time earns the badge. */
 export async function transEuropeDone(tx: Tx, userId: string, contract: { transEurope: boolean }, late: boolean, at: Date) {
   if (!contract.transEurope || late || !(await featureFor(tx, userId, 'trans_europe', at))) return;
   const [got] = await tx.insert(userBadges).values({ userId, badge: TRANS_EUROPE.badge, awardedAt: at }).onConflictDoNothing().returning();
-  if (got) await notify(tx, userId, 'achievement', `Значка: ${BADGES[TRANS_EUROPE.badge]?.label ?? ''}`, 'Първият ти трансевропейски курс навреме.', '/game/progress');
+  if (got) await notify(tx, userId, 'achievement', () => t('Значка: {0}', BADGES[TRANS_EUROPE.badge]?.label ?? ''), () => t('Първият ти трансевропейски курс навреме.'), '/game/progress');
 }
 
 /**
@@ -73,5 +74,5 @@ export async function checkCabotage(db: DbOrTx, userId: string, companyId: strin
   const [home] = await db.select({ country: cities.countryCode }).from(companies).innerJoin(cities, eq(cities.id, companies.hqCityId)).where(eq(companies.id, companyId));
   if (!home || home.country === o) return;
   const used = await cabotageUsed(db, companyId, o, now);
-  if (used >= CABOTAGE.maxLoads) fail('cabotage', `Каботаж: в чужда държава се карат най-много ${CABOTAGE.maxLoads} вътрешни курса за ${CABOTAGE.days} дни. Вземи международен товар.`);
+  if (used >= CABOTAGE.maxLoads) fail('cabotage', t('Каботаж: в чужда държава се карат най-много {0} вътрешни курса за {1} дни. Вземи международен товар.', CABOTAGE.maxLoads, CABOTAGE.days));
 }

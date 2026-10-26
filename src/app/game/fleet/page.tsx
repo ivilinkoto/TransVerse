@@ -19,13 +19,20 @@ import { isVip } from '@/lib/game/vip';
 import { AUTO_DISPATCH_PER_DAY } from '@/server/game/dispatch';
 import { isMarta } from '@/lib/game/marta';
 
-export const metadata = { title: 'Автопарк' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: tr('Автопарк') };
+}
 
 const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влекач' } as const;
 
 import { RoadChoices } from '@/components/game/RoadChoices';
+import { t as tr, tx } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
 export default async function FleetPage() {
+  await initLocale();
   const { db, user, company, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
   const marta = features.marta && isMarta(now);
@@ -41,28 +48,28 @@ export default async function FleetPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Автопарк" subtitle="Твоите превозни средства, къде са и какво правят." actions={<Link href="/game/market" className="btn-primary"><Truck className="h-4 w-4" />Купи техника</Link>} />
+      <PageHeader title={tr('Автопарк')} subtitle={tr('Твоите превозни средства, къде са и какво правят.')} actions={<Link href="/game/market" className="btn-primary"><Truck className="h-4 w-4" />{tr('Купи техника')}</Link>} />
       {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
-      {fleet.vehicles.length === 0 && <Empty icon={Truck} title="Нямате превозни средства">Купете първото си превозно средство от пазара.</Empty>}
+      {fleet.vehicles.length === 0 && <Empty icon={Truck} title={tr('Нямате превозни средства')}>{tr('Купете първото си превозно средство от пазара.')}</Empty>}
       <div className="grid gap-4 xl:grid-cols-2">
         {fleet.vehicles.map((v) => (
           <Card key={v.id} className="flex flex-col">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-lg font-bold">{v.model.name}</span>
-                  <Badge>{KIND[v.model.kind]}</Badge>
-                  {v.ownership === 'rented' && <Badge tone="gold">Нает</Badge>}
-                  {v.ownership === 'company' && <Badge tone="cyan">Фирмен</Badge>}
-                  {features.legendary_trucks && legendTier(v.odometerKm) > 0 && <Badge tone="gold">🏆 {LEGEND[legendTier(v.odometerKm) - 1]!.title}</Badge>}
-                  {leased.has(v.id) && <a href="/game/finance#leases"><Badge tone="violet">Лизинг {leased.get(v.id)!.paid}/{leased.get(v.id)!.payments}</Badge></a>}
-                  {v.delivery ? <Badge tone="cyan">На курс</Badge> : v.status === 'listed' ? <Badge tone="gold">Обявен за продажба</Badge> : <Badge tone="green">Свободен</Badge>}
+                  <span className="font-display text-lg font-bold">{tx(v.model.name)}</span>
+                  <Badge>{tx(KIND[v.model.kind])}</Badge>
+                  {v.ownership === 'rented' && <Badge tone="gold">{tr('Нает')}</Badge>}
+                  {v.ownership === 'company' && <Badge tone="cyan">{tr('Фирмен')}</Badge>}
+                  {features.legendary_trucks && legendTier(v.odometerKm) > 0 && <Badge tone="gold">🏆 {tx(LEGEND[legendTier(v.odometerKm) - 1]!.title)}</Badge>}
+                  {leased.has(v.id) && <a href="/game/finance#leases"><Badge tone="violet">{tr('Лизинг {0}/{1}', leased.get(v.id)!.paid, leased.get(v.id)!.payments)}</Badge></a>}
+                  {v.delivery ? <Badge tone="cyan">{tr('На курс')}</Badge> : v.status === 'listed' ? <Badge tone="gold">{tr('Обявен за продажба')}</Badge> : <Badge tone="green">{tr('Свободен')}</Badge>}
                 </div>
-                <div className="mt-0.5 font-mono text-xs text-mist-400">{v.plate} · {v.model.brand}</div>
+                <div className="mt-0.5 font-mono text-xs text-mist-400">{tx(v.plate)} · {tx(v.model.brand)}</div>
               </div>
               <div className="text-right text-xs text-mist-400">
-                <div className="flex items-center justify-end gap-1"><MapPin className="h-3.5 w-3.5" />{v.delivery ? `${v.delivery.origin.nameBg} → ${v.delivery.destination.nameBg}` : `${v.city.nameBg}, ${v.city.countryCode}`}</div>
-                <div className="num mt-0.5">{int(v.odometerKm)} км пробег</div>
+                <div className="flex items-center justify-end gap-1"><MapPin className="h-3.5 w-3.5" />{v.delivery ? `${tx(v.delivery.origin.nameBg)} → ${tx(v.delivery.destination.nameBg)}` : `${tx(v.city.nameBg)}, ${v.city.countryCode}`}</div>
+                <div className="num mt-0.5">{tr('{0} км пробег', int(v.odometerKm))}</div>
               </div>
             </div>
             <div className="my-3 flex h-28 items-end justify-center rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
@@ -71,7 +78,7 @@ export default async function FleetPage() {
             {v.delivery && (
               <div className="mb-3 rounded-xl border border-asphalt-700 bg-asphalt-850 p-3">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                  <span className="font-semibold">{features.sealed_cargo && v.delivery.contract.sealed ? '📦 Запечатан товар' : v.delivery.contract.goods} · {dec(v.delivery.contract.weightTons)} т</span>
+                  <span className="font-semibold">{tr('{0} · {1} т', features.sealed_cargo && v.delivery.contract.sealed ? tr('📦 Запечатан товар') : v.delivery.contract.goods, dec(v.delivery.contract.weightTons))}</span>
                   <span className="num text-profit">{money(v.delivery.contract.rewardCents)}</span>
                 </div>
                 <DeliveryProgress schedule={v.delivery.schedule} etaAt={v.delivery.etaAt} deadlineAt={v.delivery.deadlineAt} ghost={(() => {
@@ -80,73 +87,73 @@ export default async function FleetPage() {
                 })()} />
                 {features.roadside_paid && (() => {
                   const stop = helpableStop(v.delivery.schedule, now.getTime());
-                  return stop ? <RoadsideChoice deliveryId={v.delivery.id} note={stop.note ?? 'Спрял по пътя'} /> : null;
+                  return stop ? <RoadsideChoice deliveryId={v.delivery.id} note={stop.note ?? tr('Спрял по пътя')} /> : null;
                 })()}
-                <div className="mt-2 text-xs text-mist-400">{v.delivery.emptyKm > 0 && `${km(v.delivery.emptyKm)} празен курс + `}{km(v.delivery.loadedKm)} с товар</div>
+                <div className="mt-2 text-xs text-mist-400">{tr('{0}{1} с товар', v.delivery.emptyKm > 0 && tr('{0} празен курс + ', km(v.delivery.emptyKm)), km(v.delivery.loadedKm))}</div>
               </div>
             )}
             <dl className="mt-auto grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-              <div><dt className="label">Състояние</dt><dd className="num mt-1">{Math.round(v.condition)}%<Meter value={v.condition} className="mt-1" /></dd></div>
-              <div><dt className="label">Капацитет</dt><dd className="num mt-1">{v.model.kind === 'tractor' && !v.trailer ? '—' : `${combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null }).payloadTons} т`}</dd></div>
-              <div><dt className="label">Надстройка</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? BODY_LABELS[v.trailer.model.body] : <span className="text-amber-sig">без ремарке</span>) : `${BODY_LABELS[v.model.body!]}${v.trailer ? ' + прикачно' : ''}`}</dd></div>
-              <div><dt className="label">Шофьор</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{v.driver.name}{v.coDriver ? ` + ${v.coDriver.name}` : ''}</span></> : <span className="text-amber-sig">няма</span>}</dd></div>
+              <div><dt className="label">{tr('Състояние')}</dt><dd className="num mt-1">{Math.round(v.condition)}%<Meter value={v.condition} className="mt-1" /></dd></div>
+              <div><dt className="label">{tr('Капацитет')}</dt><dd className="num mt-1">{v.model.kind === 'tractor' && !v.trailer ? '—' : tr('{0} т', combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null }).payloadTons)}</dd></div>
+              <div><dt className="label">{tr('Надстройка')}</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? tx(BODY_LABELS[v.trailer.model.body]) : <span className="text-amber-sig">{tr('без ремарке')}</span>) : `${tx(BODY_LABELS[v.model.body!])}${v.trailer ? tr(' + прикачно') : ''}`}</dd></div>
+              <div><dt className="label">{tr('Шофьор')}</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{tx(v.driver.name)}{v.coDriver ? ` + ${v.coDriver.name}` : ''}</span></> : <span className="text-amber-sig">{tr('няма')}</span>}</dd></div>
             </dl>
             {!v.driver && !v.delivery && self && !selfBusy && (
               <div className="mt-3">
                 <ActionButton action={{ type: 'assignDriver', driverId: self.id, vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">
-                  <UserRound className="h-4 w-4" />Карай този камион сам
+                  <UserRound className="h-4 w-4" />{tr('Карай този камион сам')}
                 </ActionButton>
               </div>
             )}
             {vip && v.driver && (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs">
-                <span className="text-mist-300"><span className="font-semibold text-gold-400">VIP диспечер:</span> {v.autoDispatch ? 'камионът сам поема следващия най-изгоден курс, щом е свободен' : 'изключен'} (до {AUTO_DISPATCH_PER_DAY} курса на ден)</span>
-                <ActionButton action={{ type: 'autoDispatch', vehicleId: v.id, on: !v.autoDispatch }} className="btn-ghost px-2.5 py-1 text-xs">{v.autoDispatch ? 'Изключи' : 'Включи'}</ActionButton>
+                <span className="text-mist-300"><span className="font-semibold text-gold-400">{tr('VIP диспечер:')}</span>{' '}{tr('{0} (до {1} курса на ден)', v.autoDispatch ? tr('камионът сам поема следващия най-изгоден курс, щом е свободен') : tr('изключен'), AUTO_DISPATCH_PER_DAY)}</span>
+                <ActionButton action={{ type: 'autoDispatch', vehicleId: v.id, on: !v.autoDispatch }} className="btn-ghost px-2.5 py-1 text-xs">{v.autoDispatch ? tr('Изключи') : tr('Включи')}</ActionButton>
               </div>
             )}
             {v.rental && (
               <div className="mt-3 space-y-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
-                <p>Нает камион: {Math.round(ECONOMY.rentalShare * 100)}% от възнаграждението за курса + {(ECONOMY.rentalCentsPerKm / 100).toFixed(2)} лв./км; без разходи за гориво, такси и сервиз.</p>
+                <p>{tr('Нает камион: {0}% от възнаграждението за курса + {1} лв./км; без разходи за гориво, такси и сервиз.', Math.round(ECONOMY.rentalShare * 100), (ECONOMY.rentalCentsPerKm / 100).toFixed(2))}</p>
                 {v.returnPending ? (
-                  <p className="font-semibold text-amber-sig">Вече имаш собствен камион — този ще бъде върнат на наемодателя, щом приключи курса.</p>
+                  <p className="font-semibold text-amber-sig">{tr('Вече имаш собствен камион — този ще бъде върнат на наемодателя, щом приключи курса.')}</p>
                 ) : (
                   <>
-                    <p>Когато купиш собствен камион, наетият се връща автоматично.</p>
+                    <p>{tr('Когато купиш собствен камион, наетият се връща автоматично.')}</p>
                     {v.rental.trips >= RENTAL_BUYOUT_DELIVERIES ? (
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span>Наемодателят ти предлага да го откупиш за <span className="num font-bold text-gold-400">{money(v.rental.buyoutCents)}</span> <span className="text-mist-400">(нов: {money(v.model.priceCents)})</span>.</span>
-                        <ActionButton action={{ type: 'buyoutRental', vehicleId: v.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={company.balanceCents < v.rental.buyoutCents} confirm={`Да откупим ли ${v.model.name} (${v.plate}) за ${money(v.rental.buyoutCents)}?`}>
-                          <BadgeEuro className="h-3.5 w-3.5" />Откупи
+                        <span>{tr('Наемодателят ти предлага да го откупиш за')}{' '}<span className="num font-bold text-gold-400">{money(v.rental.buyoutCents)}</span> <span className="text-mist-400">{tr('(нов: {0})', money(v.model.priceCents))}</span>.</span>
+                        <ActionButton action={{ type: 'buyoutRental', vehicleId: v.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={company.balanceCents < v.rental.buyoutCents} confirm={tr('Да откупим ли {0} ({1}) за {2}?', v.model.name, v.plate, money(v.rental.buyoutCents))}>
+                          <BadgeEuro className="h-3.5 w-3.5" />{tr('Откупи')}
                         </ActionButton>
                       </div>
                     ) : (
                       <div>
-                        <div className="flex justify-between"><span>До предложение за откупуване</span><span className="num">{v.rental.trips} / {RENTAL_BUYOUT_DELIVERIES} доставки</span></div>
+                        <div className="flex justify-between"><span>{tr('До предложение за откупуване')}</span><span className="num">{tr('{0} / {1} доставки', v.rental.trips, RENTAL_BUYOUT_DELIVERIES)}</span></div>
                         <Meter value={(v.rental.trips / RENTAL_BUYOUT_DELIVERIES) * 100} tone="gold" className="mt-1" />
                       </div>
                     )}
                   </>
                 )}
                 {fleet.vehicles.length > 1 && !v.delivery && !v.driver?.isOwner && !v.returnPending && (
-                  <ActionButton action={{ type: 'returnRental', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm="Да върнем ли камиона на наемодателя?">Върни</ActionButton>
+                  <ActionButton action={{ type: 'returnRental', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-xs" confirm={tr('Да върнем ли камиона на наемодателя?')}>{tr('Върни')}</ActionButton>
                 )}
               </div>
             )}
             {(v.upgrades.length > 0 || v.hiddenCompartment) && (
-              <div className="mt-3 flex flex-wrap gap-1.5">{v.upgrades.map((u) => <Badge key={u} tone="violet">{UPGRADES[u as UpgradeId]?.label ?? u}</Badge>)}{v.hiddenCompartment && <Badge tone="violet">🕳️ Тайно отделение</Badge>}</div>
+              <div className="mt-3 flex flex-wrap gap-1.5">{v.upgrades.map((u) => <Badge key={u} tone="violet">{tx(UPGRADES[u as UpgradeId]?.label ?? u)}</Badge>)}{v.hiddenCompartment && <Badge tone="violet">{tr('🕳️ Тайно отделение')}</Badge>}</div>
             )}
           </Card>
         ))}
       </div>
 
       {loose.length > 0 && (
-        <Card title="Свободни ремаркета">
+        <Card title={tr('Свободни ремаркета')}>
           <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {loose.map((t) => (
               <li key={t.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-3">
                 <TrailerIllustration modelId={t.modelId} className="h-16 w-full" />
-                <div className="mt-2 flex items-center justify-between text-sm"><span className="font-semibold">{t.model.name}</span><span className="text-xs text-mist-400">{t.city.nameBg}</span></div>
-                <div className="mt-1 flex items-center gap-2 text-xs text-mist-400"><Gauge className="h-3.5 w-3.5" />{Math.round(t.condition)}% · {t.model.payloadTons} т · {t.plate}</div>
+                <div className="mt-2 flex items-center justify-between text-sm"><span className="font-semibold">{tx(t.model.name)}</span><span className="text-xs text-mist-400">{tx(t.city.nameBg)}</span></div>
+                <div className="mt-1 flex items-center gap-2 text-xs text-mist-400"><Gauge className="h-3.5 w-3.5" />{tr('{0}% · {1} т · {2}', Math.round(t.condition), t.model.payloadTons, t.plate)}</div>
               </li>
             ))}
           </ul>

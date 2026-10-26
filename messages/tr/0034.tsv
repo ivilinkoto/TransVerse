@@ -1,0 +1,78 @@
+# 2.0 part E: holdings, territories, legacy (New Game+)
+71d7a6cf32	No holding	Без холдинга
+eb54562ecd	This week's battle	Битва этой недели
+557d739a37	Bonus on every load: +{0}%.	Бонус на каждый груз: +{0} %.
+46aac8b913	Legacy bonus	Бонус наследия
+d8f8ab67fc	Territory bonus	Бонус территорий
+2c946edfcd	Holding bonus	Бонус холдинга
+814132854a	All trucks must be free (no trip and no listing).	Все грузовики должны быть свободны (без рейса и без объявления).
+ef85ce1bd0	Return the company vehicles and the hired trailers (and take back what you have hired out).	Верни фирменную технику и арендованные прицепы (и забери то, что сдал в аренду).
+09e30305bb	Close the holding?	Закрыть холдинг?
+58343055bb	Let “{0}” go from the holding?	Отпустить «{0}» из холдинга?
+9d668a5bda	Close the holding	Закрыть холдинг
+18651e84eb	Stars: {0} / {1}	Звёзды: {0} / {1}
+287f26d083	You have all {0} legacy stars.	У тебя все {0} звёзд наследия.
+7671f62c31	Holding name	Название холдинга
+42c3293db3	Only the parent company can invite.	Приглашать может только материнская компания.
+88d7ffd176	Your career starts again with a rented truck. Your legacy stars pay +{0}% on every load.	Карьера начинается заново с арендованным грузовиком. Звёзды наследия дают +{0} % за каждый груз.
+d55dc8af3f	Who holds what	Кто чем владеет
+fb8aa96fd3	Company for the holding	Компания для холдинга
+c0087c3bc9	A parent company and up to {0} subsidiaries. A load to a base or branch of any of them pays the driver +{1}%; every Monday the subsidiaries pay the parent {2}% of their contributions for the week (game data).	Материнская компания и до {0} дочерних. Груз до базы или филиала любой из них даёт водителю +{1} %; каждый понедельник дочерние платят материнской {2} % своих взносов за неделю (игровые данные).
+0be8e73bb7	The company is already in a holding.	Компания уже в холдинге.
+4c7e9ea2ca	Should the company leave the holding?	Компании выйти из холдинга?
+d0984b9118	The company can leave the holding {0} days after joining.	Компания может выйти из холдинга через {0} дней после вступления.
+90a1ad6a25	The company is not in a holding.	Компания не в холдинге.
+b50e3b9b2d	The company that brought the most tonnes into a region in a week (at least {0} t) holds it the next week: its members' loads there pay +{1}%. Game data on the real regions.	Компания, привёзшая больше всего тонн в область за неделю (не менее {0} т), владеет ею следующую неделю: грузы её участников туда дают +{1} %. Игровые данные на реальных областях.
+77a2bf1c76	Network: {0} cities with a base or branch.	Сеть: {0} городов с базой или филиалом.
+62d8df89b2	Network of the holding “{0}”	Сеть холдинга «{0}»
+e241942499	The network is growing — more bases for bonus loads.	Сеть растёт — больше баз для грузов с бонусом.
+ba189f23d9	Leave the holding	Выйти из холдинга
+3d5220e146	Legacy	Наследие
+130680edf7	Legacy: {0} ⭐	Наследие: {0} ⭐
+3a25dcc209	Legacy: start your career over and earn a star for a permanent bonus.	Наследие: начни карьеру заново и получи звезду с постоянным бонусом.
+5e9f03fb4d	Our territories	Наши территории
+2b0fef1cde	Us: {0} t · “{1}” leads with {2} t	Мы: {0} т · лидирует «{1}» с {2} т
+f5d096302c	New holding: “{0}”	Новый холдинг: «{0}»
+f4ab8792a7	New territories: {0}	Новые территории: {0}
+9011b24f22	New start	Новое начало
+8ab4e5ba95	New start (legacy)	Новое начало (наследие)
+f91209dd98	New start · legacy star {0}	Новое начало · звезда наследия {0}
+aadb94fd92	A new start is possible once every {0} days.	Новое начало возможно раз в {0} дней.
+766c02e462	A new start! ⭐ {0}	Новое начало! ⭐ {0}
+2dd4933bba	Founding of the holding “{0}”	Основание холдинга «{0}»
+3a93429166	Found a holding ({0})	Основать холдинг ({0})
+b31dbbb16e	From level {0} you can start your career over — with a rented truck and the starting money. Each new start gives a star: +{1}% on every load, for good (up to {2} stars). TransCoin, VIP, badges, licences and friends stay.	С уровня {0} можно начать карьеру заново — с арендованным грузовиком и стартовыми деньгами. Каждое новое начало даёт звезду: +{1} % за каждый груз навсегда (до {2} звёзд). ТрансКоины, VIP, значки, лицензии и друзья остаются.
+a4f80e9619	Nobody holds a territory yet.	Пока никто не владеет территорией.
+8b639170e4	No deliveries by the members this week yet.	На этой неделе у участников ещё нет доставок.
+56cb405a0e	No holdings yet.	Холдингов пока нет.
+088cc35ed3	You have no legacy star yet.	У тебя пока нет звезды наследия.
+0b489c09cb	Invitation to the holding “{0}”	Приглашение в холдинг «{0}»
+e4486634f2	Invite up to {0} companies — loads to all their bases and branches pay more.	Пригласите до {0} компаний — грузы до баз и филиалов всех из них оплачиваются выше.
+48da574916	Let go	Отпустить
+0382f3f25f	Repay the loan first.	Сначала погаси кредит.
+7f593b0d10	Hand over the ownership of your company first.	Сначала передай право собственности на свою компанию.
+74237b4a41	Finish the lease first.	Сначала закрой лизинг.
+53253ef6ed	Let the subsidiaries go first.	Сначала отпустите дочерние компании.
+593a6259b0	I understand: my trucks, trailers, depots, hired drivers and money are gone, and my level becomes 1. This cannot be undone.	Я понимаю: мои грузовики, прицепы, депо, нанятые водители и деньги исчезнут, а уровень станет 1. Это нельзя отменить.
+d8218f33c8	That company is already in a holding.	Эта компания уже в холдинге.
+a5c83cadb9	That company is not in the holding.	Этой компании нет в холдинге.
+c940c7787f	This week the company holds: {0}. Loads there pay more.	На этой неделе компания владеет: {0}. Грузы туда оплачиваются выше.
+5318d15d58	The company holds no territory this week.	На этой неделе у компании нет территорий.
+9bba9039af	Fee to the holding “{0}” ({1})	Взнос в холдинг «{0}» ({1})
+3401acf471	Fee from “{0}” ({1})	Взнос от «{0}» ({1})
+797289b240	Territories	Территории
+51b7b4a315	Territory of “{0}”: {1}	Территория «{0}»: {1}
+bfdd74c4c5	A holding is founded by a company of level {0} (a rank with the “Development” right), with {1} from the treasury.	Холдинг основывает компания уровня {0} (должность с правом «Развитие»), за {1} из кассы.
+17275ed324	A holding with that name already exists.	Холдинг с таким названием уже есть.
+edf52afa5d	A holding can be founded from company level {0}.	Холдинг можно основать с {0} уровня компании.
+7ef7ee1845	The holdings	Холдинги
+0ae60d95ae	The holding is already full.	Холдинг уже заполнен.
+4055bd9a8a	A holding holds at most {0} companies.	В холдинге не более {0} компаний.
+23f71165d4	The holding “{0}” is now without it.	Холдинг «{0}» теперь без неё.
+88414429d2	subsidiary	дочерняя
+2254850af9	parent company	материнская компания
+e98cef282b	total level {0}	общий уровень {0}
+acf4dc45f2	“{0}” joined the holding	«{0}» вступила в холдинг
+341d0a40b3	“{0}” invites your company into its holding. A rank with the “Development” right answers.	«{0}» приглашает вашу компанию в свой холдинг. Отвечает должность с правом «Развитие».
+aaa1b7a41c	“{0}” left the holding	«{0}» вышла из холдинга
+c8a99be789	⭐ {0} · {1}: level {2}, {3} deliveries, {4} km	⭐ {0} · {1}: уровень {2}, доставок: {3}, {4} км

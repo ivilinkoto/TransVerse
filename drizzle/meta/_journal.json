@@ -631,6 +631,34 @@
       "when": 1792859033259,
       "tag": "0089_freezing_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1792861872478,
+      "tag": "0090_great_black_bird",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1792872525576,
+      "tag": "0091_bored_sunfire",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1792873392795,
+      "tag": "0092_even_pyro",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1792916131100,
+      "tag": "0093_perpetual_mantis",
+      "breakpoints": true
     }
   ]
 }

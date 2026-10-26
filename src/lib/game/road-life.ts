@@ -59,6 +59,21 @@ export const LANDMARKS: Landmark[] = [
   { id: 'atomium', name: 'Атомиумът, Брюксел', country: 'BE', emoji: '⚛️', lat: 50.8949, lon: 4.3415 },
   { id: 'luxembourg-bock', name: 'Казематите Бок, Люксембург', country: 'LU', emoji: '🏰', lat: 49.6116, lon: 6.1366 },
   { id: 'chillon', name: 'Замъкът Шийон', country: 'CH', emoji: '🏰', lat: 46.4142, lon: 6.9275 },
+  // v2.0: the east and the Caucasus.
+  { id: 'red-square', name: 'Червеният площад, Москва', country: 'RU', emoji: '🏰', lat: 55.7539, lon: 37.6208 },
+  { id: 'hermitage', name: 'Ермитажът, Санкт Петербург', country: 'RU', emoji: '🏛️', lat: 59.9398, lon: 30.3146 },
+  { id: 'kazan-kremlin', name: 'Казанският кремъл', country: 'RU', emoji: '🕌', lat: 55.7986, lon: 49.1064 },
+  { id: 'pechersk-lavra', name: 'Киево-Печерската лавра', country: 'UA', emoji: '⛪', lat: 50.4347, lon: 30.5572 },
+  { id: 'lviv-old-town', name: 'Старият град на Лвов', country: 'UA', emoji: '🏘️', lat: 49.8419, lon: 24.0315 },
+  { id: 'mir-castle', name: 'Мирският замък', country: 'BY', emoji: '🏰', lat: 53.4513, lon: 26.4729 },
+  { id: 'trakai', name: 'Замъкът Тракай', country: 'LT', emoji: '🏰', lat: 54.6522, lon: 24.9336 },
+  { id: 'riga-old-town', name: 'Старата Рига', country: 'LV', emoji: '⛪', lat: 56.9475, lon: 24.1069 },
+  { id: 'tallinn-old-town', name: 'Старият град на Талин', country: 'EE', emoji: '🏰', lat: 59.437, lon: 24.745 },
+  { id: 'orheiul-vechi', name: 'Стария Орхей', country: 'MD', emoji: '⛰️', lat: 47.3036, lon: 28.9614 },
+  { id: 'narikala', name: 'Нарикала, Тбилиси', country: 'GE', emoji: '🏰', lat: 41.6878, lon: 44.8086 },
+  { id: 'jvari', name: 'Манастирът Джвари, Мцхета', country: 'GE', emoji: '⛪', lat: 41.8383, lon: 44.7333 },
+  { id: 'yerevan-cascade', name: 'Каскадата, Ереван', country: 'AM', emoji: '🪜', lat: 40.1912, lon: 44.5152 },
+  { id: 'khor-virap', name: 'Хор Вирап', country: 'AM', emoji: '⛪', lat: 39.8783, lon: 44.5761 },
 ];
 
 export const POSTCARDS = { radiusKm: 10, xp: 100, coins: 3, badges: { 10: 'postcards-10', [LANDMARKS.length]: 'postcards-all' } as Record<number, string> } as const;

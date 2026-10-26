@@ -1,3 +1,4 @@
+import { t, intlLocale } from '@/i18n/t';
 /**
  * The player's own weekly goal: on any day of the week the player picks one of
  * three goals sized to their own pace (the average week of the last four):
@@ -8,9 +9,9 @@ export type GoalMetric = 'deliveries' | 'km' | 'tons';
 export type GoalDifficulty = 'easy' | 'normal' | 'hard';
 
 export const GOAL_METRICS: Record<GoalMetric, { label: (n: number) => string; floor: number; round: number }> = {
-  deliveries: { label: (n) => `Изпълни ${n.toLocaleString('bg-BG')} курса`, floor: 5, round: 1 },
-  km: { label: (n) => `Измини ${n.toLocaleString('bg-BG')} км с товар`, floor: 1_500, round: 100 },
-  tons: { label: (n) => `Превози ${n.toLocaleString('bg-BG')} т товар`, floor: 60, round: 10 },
+  deliveries: { label: (n) => t('Изпълни {0} курса', n.toLocaleString(intlLocale())), floor: 5, round: 1 },
+  km: { label: (n) => t('Измини {0} км с товар', n.toLocaleString(intlLocale())), floor: 1_500, round: 100 },
+  tons: { label: (n) => t('Превози {0} т товар', n.toLocaleString(intlLocale())), floor: 60, round: 10 },
 };
 
 export const GOAL_LEVELS: Record<GoalDifficulty, { label: string; factor: number; cents: number; coins: number }> = {

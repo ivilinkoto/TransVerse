@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { Field, Input } from './Field';
+import { t } from '@/i18n/t';
 
 export function LoginForm() {
   const router = useRouter();
@@ -31,18 +32,18 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <Field label="Имейл или потребителско име">
+      <Field label={t('Имейл или потребителско име')}>
         <Input id="login" name="login" autoComplete="username" required />
       </Field>
-      <Field label="Парола" hint={<Link href="/forgot-password" className="text-cyan-glow hover:underline">Забравена парола?</Link>}>
+      <Field label={t('Парола')} hint={<Link href="/forgot-password" className="text-cyan-glow hover:underline">{t('Забравена парола?')}</Link>}>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </Field>
       {error && <p role="alert" className="rounded-lg border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-loss">{error}</p>}
       <button type="submit" className="btn-primary w-full py-3" disabled={busy}>
-        <LogIn className="h-4 w-4" /> {busy ? 'Влизане…' : 'Влез'}
+        <LogIn className="h-4 w-4" /> {busy ? t('Влизане…') : t('Влез')}
       </button>
       <p className="text-center text-sm text-mist-400">
-        Нямаш акаунт? <Link href="/register" className="font-semibold text-cyan-glow hover:underline">Регистрирай се</Link>
+        {t('Нямаш акаунт?')}{' '}<Link href="/register" className="font-semibold text-cyan-glow hover:underline">{t('Регистрирай се')}</Link>
       </p>
     </form>
   );

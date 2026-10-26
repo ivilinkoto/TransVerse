@@ -19,6 +19,7 @@ import { createUrgentContract, urgentSchema } from '@/server/urgent';
 import { applyPayFactor } from '@/server/admin-economy';
 import { requireFeature } from '@/server/features';
 import { adminCancelPlateAuction, adminEndTrailerHire, adminRemoveCupEntrant } from '@/server/staff-tools';
+import { t } from '@/i18n/t';
 
 const id = z.string().uuid('Невалиден идентификатор.');
 
@@ -143,24 +144,24 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true, checks: await diagnoseDiscord(db) };
     case 'discordLayoutPlan':
       requireAdminRole(user);
-      if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
+      if (!discordConfig().bot) return { ok: false, message: t('Discord ботът не е настроен.') };
       return { ok: true, plan: await planLayout(db) };
     case 'discordLayoutApply': {
       requireAdminRole(user);
-      if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
+      if (!discordConfig().bot) return { ok: false, message: t('Discord ботът не е настроен.') };
       const { created, errors } = await applyLayout(db, { permissions: input.permissions });
-      const panels = await postPanels(db, created).catch((e: Error) => (errors.push(`Съобщенията на бота: ${e.message.slice(0, 300)}`), [] as string[]));
+      const panels = await postPanels(db, created).catch((e: Error) => (errors.push(t('Съобщенията на бота: {0}', e.message.slice(0, 300))), [] as string[]));
       await recordAudit(db, user.id, 'discord_layout', null, { created, panels, permissions: input.permissions, errors: errors.length });
       return { ok: true, created, panels, errors };
     }
     case 'discordPanels': {
       requireAdminRole(user);
-      if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
+      if (!discordConfig().bot) return { ok: false, message: t('Discord ботът не е настроен.') };
       return { ok: true, panels: await postPanels(db) };
     }
     case 'discordSettings': {
       requireAdminRole(user);
-      if (!discordConfig().bot) return { ok: false, message: 'Discord ботът не е настроен.' };
+      if (!discordConfig().bot) return { ok: false, message: t('Discord ботът не е настроен.') };
       const state = await layoutState(db);
       let errors: string[] = [];
       if (input.automod !== undefined) await saveLayoutState(db, { ...state, settings: { ...state.settings, automod: input.automod } });

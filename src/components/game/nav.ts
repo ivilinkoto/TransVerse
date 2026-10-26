@@ -50,6 +50,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
       { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
       { href: '/game/convoys', label: 'Конвои', feature: 'convoy_lobby', minLevel: 2 },
+      { href: '/game/economy', label: 'Икономика и контейнери', feature: 'living_economy', minLevel: 2 },
       { href: '/game/underground', label: 'Сенки', feature: 'smuggling', minLevel: 10 },
     ],
   },
@@ -61,6 +62,7 @@ export const SECTIONS: NavSection[] = [
     tabs: [
       { href: '/game/fleet', label: 'Моите превозни средства', group: 'Камиони' },
       { href: '/game/trips', label: 'Бордови дневник', feature: 'trip_log', group: 'Камиони' },
+      { href: '/game/cabin', label: 'Кабина', feature: 'cabin', group: 'Камиони' },
       { href: '/game/analytics', label: 'Анализ', group: 'Камиони', minLevel: 3 },
       { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа' },
       { href: '/game/market', label: 'Пазар', group: 'Камиони' },
@@ -103,6 +105,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/rally', label: 'Рали', feature: 'rally', group: 'Класации', minLevel: 4 },
       { href: '/game/challenges', label: 'Предизвикателства', feature: 'weekly_challenge', group: 'Днес', minLevel: 3 },
       { href: '/game/cup', label: 'Пролетна купа', feature: 'spring_cup', group: 'Класации', minLevel: 5 },
+      { href: '/game/cups', label: 'Турнири на общността', feature: 'community_cups', group: 'Общност', minLevel: 3 },
       { href: '/game/predictions', label: 'Прогнози', feature: 'predictions', group: 'Общност', minLevel: 5 },
       { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest', group: 'Общност', minLevel: 5 },
       { href: '/game/truck-contest', label: 'Камион на месеца', feature: 'truck_contest', group: 'Общност', minLevel: 5 },

@@ -10,7 +10,8 @@
 import { createReadStream, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import { GAME_COUNTRIES } from '../src/lib/geo/scope';
+import { EAST_COUNTRIES, GAME_COUNTRIES } from '../src/lib/geo/scope';
+import { fromRomanian, fromRussian, fromUkrainian, isCyrillic } from './geo/bulgarian';
 
 const RAW = path.resolve('data/raw');
 const OUT = path.resolve('data/geo/launch-region.json');
@@ -30,8 +31,31 @@ function outOfReach(country: string, lat: number, lon: number) {
   if ((country === 'ES' || country === 'PT') && lon < -10) return true;
   if (country === 'ES' && lat < 35.95) return true;
   if (country === 'IT' && lat > 40.68 && lat < 40.8 && lon > 13.82 && lon < 13.97) return true;
+  // European Russia only: up to the Urals.
+  if (country === 'RU' && lon >= 60) return true;
   return false;
 }
+
+/**
+ * v2.0: places where freight cannot go now because of the war — Crimea,
+ * Sevastopol, the Donetsk, Luhansk and Kherson regions, the south of the
+ * Zaporizhzhia region and the east of the Kharkiv region; in Georgia,
+ * Abkhazia and South Ossetia. They are left out
+ * of the game; it takes no side on the territories (docs/GEODATA.md).
+ */
+function warZone(country: string, admin1: string, lat: number, lon: number) {
+  // Abkhazia and South Ossetia: no crossing for freight from the rest of Georgia.
+  if (country === 'GE') return admin1 === '02' || (admin1 === '73' && lat > 42.15 && lon > 43.7 && lon < 44.4);
+  if (country !== 'UA') return false;
+  if (['05', '08', '11', '14', '20'].includes(admin1)) return true;
+  if (admin1 === '26' && lat < 47.6) return true;
+  if (admin1 === '07' && lon > 36.9) return true;
+  return false;
+}
+const EAST = new Set<string>(EAST_COUNTRIES);
+
+/** v2.0: the established Bulgarian names GeoNames lacks (by geonameid). */
+const BG_NAMES: Record<number, string> = { 703447: 'Киев', 687700: 'Запорожие', 689558: 'Виница', 618069: 'Кишинев' };
 
 async function main() {
   const scope = new Set<string>(GAME_COUNTRIES);
@@ -54,15 +78,30 @@ async function main() {
 
   // Bulgarian alternate names, keyed by geonameid
   const bgNames = new Map<number, { name: string; score: number }>();
+  // v2.0: the Russian and Ukrainian names in the east, for places without a Bulgarian one.
+  const local = { ru: new Map<number, { name: string; score: number }>(), uk: new Map<number, { name: string; score: number }>() };
   for (const code of scope) {
     for await (const a of lines(path.join(RAW, `alt_${code}`, `${code}.txt`))) {
-      if (a[2] !== 'bg' || a[7] === '1' || a[6] === '1') continue; // skip historic & colloquial
+      if (a[7] === '1' || a[6] === '1') continue; // skip historic & colloquial
+      const lang = a[2];
+      const into = lang === 'bg' ? bgNames : EAST.has(code) && (lang === 'ru' || lang === 'uk') ? local[lang] : null;
+      if (!into || (lang !== 'bg' && !isCyrillic(a[3]!))) continue;
       const id = Number(a[1]);
       const score = (a[4] === '1' ? 2 : 0) + (a[5] === '1' ? 0 : 1);
-      const prev = bgNames.get(id);
-      if (!prev || score > prev.score) bgNames.set(id, { name: a[3]!, score });
+      const prev = into.get(id);
+      if (!prev || score > prev.score) into.set(id, { name: a[3]!, score });
     }
   }
+  /** The Bulgarian name of a place: GeoNames' own, else spelled from the Ukrainian / Russian / Romanian name (v2.0). */
+  const bulgarian = (id: number, country: string, name: string): string | undefined => {
+    const own = BG_NAMES[id] ?? bgNames.get(id)?.name;
+    if (own || !EAST.has(country)) return own;
+    const uk = local.uk.get(id)?.name;
+    if (country === 'UA' && uk) return fromUkrainian(uk);
+    const ru = local.ru.get(id)?.name;
+    if (country === 'MD') return fromRomanian(name);
+    return ru ? fromRussian(ru) : undefined;
+  };
 
   // Administrative regions (first level)
   const regions = new Map<string, { en: string; bg: string }>();
@@ -70,7 +109,8 @@ async function main() {
     const [country] = r[0]!.split('.');
     if (!scope.has(country!)) continue;
     const id = Number(r[3]);
-    regions.set(r[0]!, { en: r[1]!, bg: (bgNames.get(id)?.name ?? r[1]!).replace(/^Област /, '') });
+    const en = r[1]!.replace(/^Raionul /, '').replace(/ (Municipality|District)$/, '');
+    regions.set(r[0]!, { en: r[1]!, bg: (bulgarian(id, country!, en) ?? r[1]!).replace(/^Област /, '').replace(/ [Оо]бласт[ь]?$/, '') });
   }
 
   // Cities (population >= 15 000)
@@ -79,12 +119,15 @@ async function main() {
     if (!scope.has(c[8]!)) continue;
     // Places a truck cannot reach from the mainland of the game (no ferry line for them): the Canaries, Madeira, the Azores, Ceuta, Melilla, Ischia.
     if (outOfReach(c[8]!, Number(c[4]), Number(c[5]))) continue;
+    if (warZone(c[8]!, c[10]!, Number(c[4]), Number(c[5]))) continue;
+    // v2.0 countries: no historical or abandoned places.
+    if (EAST.has(c[8]!) && (c[7] === 'PPLH' || c[7] === 'PPLQ')) continue;
     const id = Number(c[0]);
     const region = regions.get(`${c[8]}.${c[10]}`);
     cities.push({
       id,
       name: c[1]!,
-      nameBg: bgNames.get(id)?.name ?? c[1]!,
+      nameBg: bulgarian(id, c[8]!, c[1]!) ?? c[1]!,
       country: c[8]!,
       region: region?.en ?? null,
       regionBg: region?.bg ?? null,
@@ -114,7 +157,7 @@ async function main() {
       }
       if (!nearest || best > 25) continue;
       const id = Number(p[0]);
-      ports.push({ id, name: p[1]!, nameBg: bgNames.get(id)?.name ?? null, country: code, lat, lon, cityId: nearest.id });
+      ports.push({ id, name: p[1]!, nameBg: bulgarian(id, code, p[1]!) ?? null, country: code, lat, lon, cityId: nearest.id });
     }
   }
 

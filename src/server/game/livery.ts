@@ -5,14 +5,15 @@ import { companies, organizations, users } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { fail } from './errors';
 import { membershipOf, notifyMembers, requirePermission } from './membership';
+import { t } from '@/i18n/t';
 
 /** Sets (or clears) the company's livery; members' trucks wear it unless they opted out. */
 export async function setLivery(db: Database, actorId: string, color: string | null) {
-  if (color !== null && !isLiveryColor(color)) fail('bad_color', 'Непознат цвят.');
+  if (color !== null && !isLiveryColor(color)) fail('bad_color', t('Непознат цвят.'));
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'edit_profile');
     await tx.update(organizations).set({ liveryColor: color }).where(eq(organizations.id, actor.company.id));
-    if (color) await notifyMembers(tx, actor.company.id, null, 'Нова ливрея на компанията', 'Камионите на членовете вече са в цвета на компанията (може да се изключи от Настройки).', '/game/fleet');
+    if (color) await notifyMembers(tx, actor.company.id, null, () => t('Нова ливрея на компанията'), () => t('Камионите на членовете вече са в цвета на компанията (може да се изключи от Настройки).'), '/game/fleet');
   });
 }
 

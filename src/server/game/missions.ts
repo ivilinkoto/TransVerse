@@ -11,6 +11,7 @@ import { post } from './finance';
 import { notify } from './notify';
 import { awardXp } from './progression';
 import { activeSeason } from './seasons';
+import { t, intlLocale } from '@/i18n/t';
 
 export interface MissionWindow {
   period: MissionPeriod;
@@ -65,7 +66,7 @@ type MissionRow = typeof missionProgress.$inferSelect;
 async function payMission(tx: Tx, userId: string, row: MissionRow) {
   const def = missionById(row.missionId);
   const account = await companyForUser(tx, userId);
-  await post(tx, account.id, [{ category: 'mission_reward', amountCents: row.rewardCents, description: `Мисия: ${def ? def.title(row.target) : row.missionId}`, idempotencyKey: `mission:${userId}:${row.periodKey}:${row.missionId}` }]);
+  await post(tx, account.id, [{ category: 'mission_reward', amountCents: row.rewardCents, description: t('Мисия: {0}', def ? def.title(row.target) : row.missionId), idempotencyKey: `mission:${userId}:${row.periodKey}:${row.missionId}` }]);
   await awardXp(tx, userId, row.rewardXp, 'mission');
   await tx
     .update(missionProgress)
@@ -107,9 +108,9 @@ export async function recordMissionProgress(tx: Tx, userId: string, facts: Deliv
     if (vip) {
       // VIP: rewards are claimed automatically.
       await payMission(tx, userId, { ...row, progress: row.target, completedAt: now });
-      await notify(tx, userId, 'achievement', `Мисията е изпълнена: ${def.title(row.target)}`, `Наградата е взета автоматично (VIP): +${(row.rewardCents / 100).toLocaleString('bg-BG')} лв., +${row.rewardXp} опит.`, '/game/missions');
+      await notify(tx, userId, 'achievement', () => t('Мисията е изпълнена: {0}', def.title(row.target)), () => t('Наградата е взета автоматично (VIP): +{0} лв., +{1} опит.', (row.rewardCents / 100).toLocaleString(intlLocale()), row.rewardXp), '/game/missions');
     } else {
-      await notify(tx, userId, 'achievement', `Мисията е изпълнена: ${def.title(row.target)}`, 'Вземи наградата от раздел „Мисии“.', '/game/missions');
+      await notify(tx, userId, 'achievement', () => t('Мисията е изпълнена: {0}', def.title(row.target)), () => t('Вземи наградата от раздел „Мисии“.'), '/game/missions');
     }
   }
 }
@@ -122,9 +123,9 @@ export async function claimMission(db: Database, userId: string, periodKey: stri
       .from(missionProgress)
       .where(and(eq(missionProgress.userId, userId), eq(missionProgress.periodKey, periodKey), eq(missionProgress.missionId, missionId)))
       .for('update');
-    if (!row) fail('mission_not_found', 'Мисията не е намерена.', 404);
-    if (!row!.completedAt) fail('mission_incomplete', 'Мисията още не е изпълнена.');
-    if (row!.claimedAt) fail('mission_claimed', 'Наградата вече е взета.', 409);
+    if (!row) fail('mission_not_found', t('Мисията не е намерена.'), 404);
+    if (!row!.completedAt) fail('mission_incomplete', t('Мисията още не е изпълнена.'));
+    if (row!.claimedAt) fail('mission_claimed', t('Наградата вече е взета.'), 409);
     return payMission(tx, userId, row!);
   });
 }
@@ -137,14 +138,14 @@ export async function rerollMission(db: Database, userId: string, periodKey: str
   return db.transaction(async (tx) => {
     const windows = await currentWindows(tx, now);
     const w = windows.find((x) => x.key === periodKey);
-    if (!w) fail('mission_expired', 'Може да се сменят само мисии от текущите периоди.');
+    if (!w) fail('mission_expired', t('Може да се сменят само мисии от текущите периоди.'));
     const [row] = await tx
       .select()
       .from(missionProgress)
       .where(and(eq(missionProgress.userId, userId), eq(missionProgress.periodKey, periodKey), eq(missionProgress.missionId, missionId)))
       .for('update');
-    if (!row) fail('mission_not_found', 'Мисията не е намерена.', 404);
-    if (row!.completedAt) fail('mission_done', 'Изпълнена мисия не може да се сменя.');
+    if (!row) fail('mission_not_found', t('Мисията не е намерена.'), 404);
+    if (row!.completedAt) fail('mission_done', t('Изпълнена мисия не може да се сменя.'));
     const [user] = await tx.select({ level: users.level, vipUntil: users.vipUntil, vipRerollKey: users.vipRerollKey }).from(users).where(eq(users.id, userId)).for('update');
     const dailyKey = windows.find((x) => x.period === 'daily')!.key;
     const free = isVip(user!.vipUntil, now) && user!.vipRerollKey !== dailyKey;
@@ -154,10 +155,10 @@ export async function rerollMission(db: Database, userId: string, periodKey: str
     const [member] = await tx.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.userId, userId));
     const profile = { level: user!.level, licences, inCompany: !!member };
     const [next] = pickMissions(w!.period, profile, `${userId}:${periodKey}:reroll:${assigned.size}:${now.getTime()}`, 1, assigned);
-    if (!next) fail('no_alternative', 'Няма друга мисия за този период.');
+    if (!next) fail('no_alternative', t('Няма друга мисия за този период.'));
 
     if (free) await tx.update(users).set({ vipRerollKey: dailyKey }).where(eq(users.id, userId));
-    else await postCoins(tx, userId, { amount: -MISSION_REROLL_COINS, reason: 'shop', description: 'Смяна на мисия', idempotencyKey: `reroll:${userId}:${periodKey}:${missionId}:${now.getTime()}` }, { requireFunds: true });
+    else await postCoins(tx, userId, { amount: -MISSION_REROLL_COINS, reason: 'shop', description: t('Смяна на мисия'), idempotencyKey: `reroll:${userId}:${periodKey}:${missionId}:${now.getTime()}` }, { requireFunds: true });
 
     await tx.delete(missionProgress).where(and(eq(missionProgress.userId, userId), eq(missionProgress.periodKey, periodKey), eq(missionProgress.missionId, missionId)));
     const reward = scaledReward(next!, profile.level);

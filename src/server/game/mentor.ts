@@ -11,13 +11,14 @@ import { post } from './finance';
 import { assertNotBlocked } from './moderation';
 import { addFeed } from './feed';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 const DAY = 86_400_000;
 
 /** A level 15+ player offers (or stops offering) to mentor newcomers. */
 export async function setMentorOpen(db: DbOrTx, userId: string, on: boolean) {
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
-  if (on && (u?.level ?? 0) < MENTOR.mentorLevel) fail('level_too_low', `Наставник може да бъде играч от ниво ${MENTOR.mentorLevel} нагоре.`);
+  if (on && (u?.level ?? 0) < MENTOR.mentorLevel) fail('level_too_low', t('Наставник може да бъде играч от ниво {0} нагоре.', MENTOR.mentorLevel));
   await db.update(users).set({ mentorOpen: on }).where(eq(users.id, userId));
 }
 
@@ -46,23 +47,23 @@ export async function availableMentors(db: DbOrTx, userId: string, now = new Dat
 
 /** A newcomer picks a mentor. `ipHash` is the newcomer's network now (no mentoring your own second account). */
 export async function chooseMentor(db: Database, menteeId: string, mentorId: string, ipHash: string | null, now = new Date()) {
-  if (menteeId === mentorId) fail('self', 'Не можеш да си наставник сам на себе си.');
+  if (menteeId === mentorId) fail('self', t('Не можеш да си наставник сам на себе си.'));
   return db.transaction(async (tx) => {
     // The mentor's row is locked: two newcomers at once cannot take the last place together.
     const [mentor] = await tx.select({ id: users.id, username: users.username, level: users.level, open: users.mentorOpen, bannedAt: users.bannedAt, ipHash: users.signupIpHash }).from(users).where(eq(users.id, mentorId)).for('update');
     const [me] = await tx.select({ username: users.username, level: users.level, createdAt: users.createdAt, ipHash: users.signupIpHash, rewarded: sql<boolean>`exists (select 1 from ${mentorships} m where m.mentee_id = ${users.id} and m.status = 'done')` }).from(users).where(eq(users.id, menteeId));
-    if (!mentor || mentor.bannedAt || !mentor.open || mentor.level < MENTOR.mentorLevel) fail('mentor_unavailable', 'Този играч не приема нови ученици.');
-    if (!me || !isNewcomer(me, now) || me.rewarded) fail('not_newcomer', `Наставник могат да си изберат нови играчи (до ${MENTOR.newcomerDays} дни в играта и под ниво ${MENTOR.goalLevel}).`);
+    if (!mentor || mentor.bannedAt || !mentor.open || mentor.level < MENTOR.mentorLevel) fail('mentor_unavailable', t('Този играч не приема нови ученици.'));
+    if (!me || !isNewcomer(me, now) || me.rewarded) fail('not_newcomer', t('Наставник могат да си изберат нови играчи (до {0} дни в играта и под ниво {1}).', MENTOR.newcomerDays, MENTOR.goalLevel));
     await assertNotBlocked(tx, menteeId, mentorId);
-    if (mentor!.ipHash && (mentor!.ipHash === me!.ipHash || mentor!.ipHash === ipHash)) fail('same_network', 'Наставникът не може да е от същата мрежа.', 403);
-    if ((await activeCount(tx, mentorId)) >= MENTOR.maxMentees) fail('mentor_full', 'Наставникът вече има максимален брой ученици.');
+    if (mentor!.ipHash && (mentor!.ipHash === me!.ipHash || mentor!.ipHash === ipHash)) fail('same_network', t('Наставникът не може да е от същата мрежа.'), 403);
+    if ((await activeCount(tx, mentorId)) >= MENTOR.maxMentees) fail('mentor_full', t('Наставникът вече има максимален брой ученици.'));
     const [row] = await tx
       .insert(mentorships)
       .values({ mentorId, menteeId, createdAt: now, endsAt: new Date(now.getTime() + MENTOR.days * DAY) })
       .onConflictDoNothing()
       .returning({ id: mentorships.id });
-    if (!row) fail('has_mentor', 'Вече имаш наставник.');
-    await notify(tx, mentorId, 'success', `${me!.username} те избра за наставник`, `Помогни му да стигне ниво ${MENTOR.goalLevel} за ${MENTOR.days} дни — тогава и двамата получавате награда.`, '/game/mentor');
+    if (!row) fail('has_mentor', t('Вече имаш наставник.'));
+    await notify(tx, mentorId, 'success', () => t('{0} те избра за наставник', me!.username), () => t('Помогни му да стигне ниво {0} за {1} дни — тогава и двамата получавате награда.', MENTOR.goalLevel, MENTOR.days), '/game/mentor');
     return { id: row!.id };
   });
 }
@@ -71,11 +72,11 @@ export async function chooseMentor(db: Database, menteeId: string, mentorId: str
 export async function endMentorship(db: Database, userId: string, id: string, now = new Date()) {
   return db.transaction(async (tx) => {
     const [m] = await tx.select().from(mentorships).where(and(eq(mentorships.id, id), eq(mentorships.status, 'active'))).for('update');
-    if (!m || (m.mentorId !== userId && m.menteeId !== userId)) fail('not_found', 'Наставничеството не е намерено.', 404);
+    if (!m || (m.mentorId !== userId && m.menteeId !== userId)) fail('not_found', t('Наставничеството не е намерено.'), 404);
     await tx.update(mentorships).set({ status: 'ended', finishedAt: now }).where(eq(mentorships.id, m!.id));
     const other = m!.mentorId === userId ? m!.menteeId : m!.mentorId;
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-    await notify(tx, other, 'info', 'Наставничеството приключи', `${me!.username} прекрати наставничеството.`, '/game/mentor');
+    await notify(tx, other, 'info', () => t('Наставничеството приключи'), () => t('{0} прекрати наставничеството.', me!.username), '/game/mentor');
   });
 }
 
@@ -97,14 +98,14 @@ export async function completeMentorship(tx: Tx, menteeId: string, level: number
   ]);
   // The newcomer's account first: a delivery settling right now has already locked it.
   const [menteeAccount, mentorAccount] = await Promise.all([companyForUser(tx, menteeId), companyForUser(tx, m.mentorId)]);
-  await post(tx, menteeAccount.id, [{ category: 'mentor_reward', amountCents: MENTOR.menteeCents, description: `Ниво ${MENTOR.goalLevel} с наставник ${mentor!.username}`, idempotencyKey: `mentor:${menteeId}:mentee`, refType: 'mentorship', refId: m.id }]);
-  await post(tx, mentorAccount.id, [{ category: 'mentor_reward', amountCents: MENTOR.mentorCents, description: `Наставник на ${mentee!.username} до ниво ${MENTOR.goalLevel}`, idempotencyKey: `mentor:${menteeId}:mentor`, refType: 'mentorship', refId: m.id }]);
-  await postCoins(tx, m.mentorId, { amount: MENTOR.mentorCoins, reason: 'mentor_reward', description: `Наставник на ${mentee!.username}`, idempotencyKey: `mentor:${menteeId}:mentor-coins` });
-  await postCoins(tx, menteeId, { amount: MENTOR.menteeCoins, reason: 'mentor_reward', description: `Ниво ${MENTOR.goalLevel} с наставник`, idempotencyKey: `mentor:${menteeId}:mentee-coins` });
+  await post(tx, menteeAccount.id, [{ category: 'mentor_reward', amountCents: MENTOR.menteeCents, description: t('Ниво {0} с наставник {1}', MENTOR.goalLevel, mentor!.username), idempotencyKey: `mentor:${menteeId}:mentee`, refType: 'mentorship', refId: m.id }]);
+  await post(tx, mentorAccount.id, [{ category: 'mentor_reward', amountCents: MENTOR.mentorCents, description: t('Наставник на {0} до ниво {1}', mentee!.username, MENTOR.goalLevel), idempotencyKey: `mentor:${menteeId}:mentor`, refType: 'mentorship', refId: m.id }]);
+  await postCoins(tx, m.mentorId, { amount: MENTOR.mentorCoins, reason: 'mentor_reward', description: t('Наставник на {0}', mentee!.username), idempotencyKey: `mentor:${menteeId}:mentor-coins` });
+  await postCoins(tx, menteeId, { amount: MENTOR.menteeCoins, reason: 'mentor_reward', description: t('Ниво {0} с наставник', MENTOR.goalLevel), idempotencyKey: `mentor:${menteeId}:mentee-coins` });
   await tx.insert(userBadges).values({ userId: m.mentorId, badge: MENTOR.badge, awardedAt: now }).onConflictDoNothing();
-  await addFeed(tx, { userId: m.mentorId, kind: 'mentor', text: `изведе ${mentee!.username} до ниво ${MENTOR.goalLevel} като наставник` }, now);
-  await notify(tx, m.mentorId, 'achievement', `${mentee!.username} стигна ниво ${MENTOR.goalLevel}!`, `Благодарим, наставнико: ${money(MENTOR.mentorCents)} и ${MENTOR.mentorCoins} TC са твои, а значката „Наставник“ — в профила ти.`, '/game/mentor');
-  await notify(tx, menteeId, 'achievement', `Ниво ${MENTOR.goalLevel} с наставник!`, `Ти и ${mentor!.username} получавате награда: ${money(MENTOR.menteeCents)} и ${MENTOR.menteeCoins} TC за теб.`, '/game/mentor');
+  await addFeed(tx, { userId: m.mentorId, kind: 'mentor', text: t('изведе {0} до ниво {1} като наставник', mentee!.username, MENTOR.goalLevel) }, now);
+  await notify(tx, m.mentorId, 'achievement', () => t('{0} стигна ниво {1}!', mentee!.username, MENTOR.goalLevel), () => t('Благодарим, наставнико: {0} и {1} TC са твои, а значката „Наставник“ — в профила ти.', money(MENTOR.mentorCents), MENTOR.mentorCoins), '/game/mentor');
+  await notify(tx, menteeId, 'achievement', () => t('Ниво {0} с наставник!', MENTOR.goalLevel), () => t('Ти и {0} получавате награда: {1} и {2} TC за теб.', mentor!.username, money(MENTOR.menteeCents), MENTOR.menteeCoins), '/game/mentor');
   return true;
 }
 
@@ -112,8 +113,8 @@ export async function completeMentorship(tx: Tx, menteeId: string, level: number
 export async function expireMentorships(db: Database, now = new Date()) {
   const due = await db.update(mentorships).set({ status: 'expired', finishedAt: now }).where(and(eq(mentorships.status, 'active'), lte(mentorships.endsAt, now))).returning();
   for (const m of due) {
-    await notify(db, m.menteeId, 'info', 'Наставничеството изтече', `Срокът от ${MENTOR.days} дни мина. Продължаваш сам — успех на пътя!`, '/game/mentor');
-    await notify(db, m.mentorId, 'info', 'Наставничеството изтече', `Срокът от ${MENTOR.days} дни мина, без ученикът да стигне ниво ${MENTOR.goalLevel}.`, '/game/mentor');
+    await notify(db, m.menteeId, 'info', () => t('Наставничеството изтече'), () => t('Срокът от {0} дни мина. Продължаваш сам — успех на пътя!', MENTOR.days), '/game/mentor');
+    await notify(db, m.mentorId, 'info', () => t('Наставничеството изтече'), () => t('Срокът от {0} дни мина, без ученикът да стигне ниво {1}.', MENTOR.days, MENTOR.goalLevel), '/game/mentor');
   }
   return due.length;
 }

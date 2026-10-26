@@ -9,6 +9,7 @@ import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { can, membershipOf } from './membership';
 import { logActivity, notify } from './notify';
+import { t } from '@/i18n/t';
 
 export const bonusSchema = z.object({
   userId: z.string().uuid('Невалиден член.'),
@@ -38,12 +39,12 @@ export function bonusRoomCents(treasuryCents: number, paidToday: number): number
  */
 export async function payBonus(db: Database, actorId: string, raw: z.input<typeof bonusSchema>, ipHash: string | null, now = new Date()) {
   const input = bonusSchema.parse(raw);
-  if (input.userId === actorId) fail('self', 'Премия не се дава на себе си.');
+  if (input.userId === actorId) fail('self', t('Премия не се дава на себе си.'));
   const amountCents = input.amount * 100;
   return db.transaction(async (tx) => {
     const actor = await membershipOf(tx, actorId);
-    if (!actor) fail('not_member', 'Не членувате в компания.', 403);
-    if (!can(actor!.rank, 'pay_bonuses')) fail('forbidden', 'Длъжността ви няма това право.', 403);
+    if (!actor) fail('not_member', t('Не членувате в компания.'), 403);
+    if (!can(actor!.rank, 'pay_bonuses')) fail('forbidden', t('Длъжността ви няма това право.'), 403);
     // Same lock order as delivery settlement: the member's account first, then the company
     // (whose row lock keeps two bonuses at once from passing the daily room together).
     await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, input.userId)).for('update');
@@ -53,25 +54,25 @@ export async function payBonus(db: Database, actorId: string, raw: z.input<typeo
       .from(companyMembers)
       .innerJoin(users, eq(users.id, companyMembers.userId))
       .where(and(eq(companyMembers.userId, input.userId), eq(companyMembers.companyId, org!.id)));
-    if (!member || member.bannedAt) fail('not_member', 'Играчът не е член на компанията.', 404);
-    if (now.getTime() - member!.joinedAt.getTime() < BONUS_RULES.minMemberDays * 86_400_000) fail('too_new', `Премия се дава на членове от поне ${BONUS_RULES.minMemberDays} дни.`);
+    if (!member || member.bannedAt) fail('not_member', t('Играчът не е член на компанията.'), 404);
+    if (now.getTime() - member!.joinedAt.getTime() < BONUS_RULES.minMemberDays * 86_400_000) fail('too_new', t('Премия се дава на членове от поне {0} дни.', BONUS_RULES.minMemberDays));
     const [me] = await tx.select({ username: users.username, ipHash: users.signupIpHash }).from(users).where(eq(users.id, actorId));
-    if (member!.ipHash && (member!.ipHash === me?.ipHash || member!.ipHash === ipHash)) fail('same_network', 'Не може премия на профил от същата мрежа.', 403);
+    if (member!.ipHash && (member!.ipHash === me?.ipHash || member!.ipHash === ipHash)) fail('same_network', t('Не може премия на профил от същата мрежа.'), 403);
     const [recent] = await tx
       .select({ id: treasuryEntries.id })
       .from(treasuryEntries)
       .where(and(eq(treasuryEntries.organizationId, org!.id), eq(treasuryEntries.category, 'member_bonus'), eq(treasuryEntries.refId, input.userId), gte(treasuryEntries.createdAt, new Date(now.getTime() - BONUS_RULES.perMemberHours * 3_600_000))))
       .limit(1);
-    if (recent) fail('bonus_today', `${member!.username} вече получи премия през последните ${BONUS_RULES.perMemberHours} часа.`);
+    if (recent) fail('bonus_today', t('{0} вече получи премия през последните {1} часа.', member!.username, BONUS_RULES.perMemberHours));
     const room = bonusRoomCents(org!.treasuryCents, await bonusesLast24h(tx, org!.id, now));
-    if (amountCents > room) fail('bonus_limit', room > 0 ? `Днес компанията може да даде още ${money(room)} премии.` : 'Днешният лимит за премии е изчерпан.');
+    if (amountCents > room) fail('bonus_limit', room > 0 ? t('Днес компанията може да даде още {0} премии.', money(room)) : t('Днешният лимит за премии е изчерпан.'));
 
     const op = `${org!.id}:${input.userId}:${now.getTime()}`;
     const note = input.note ? ` — „${input.note}“` : '';
-    await postTreasury(tx, org!.id, [{ category: 'member_bonus', amountCents: -amountCents, description: `Премия за ${member!.username}${note}`, idempotencyKey: `bonus:${op}:out`, actorUserId: actorId, refType: 'user', refId: input.userId }], { requireFunds: true });
+    await postTreasury(tx, org!.id, [{ category: 'member_bonus', amountCents: -amountCents, description: t('Премия за {0}{1}', member!.username, note), idempotencyKey: `bonus:${op}:out`, actorUserId: actorId, refType: 'user', refId: input.userId }], { requireFunds: true });
     const account = await companyForUser(tx, input.userId);
-    await post(tx, account.id, [{ category: 'member_bonus', amountCents, description: `Премия от „${org!.name}“${note}`, idempotencyKey: `bonus:${op}:in`, refType: 'company', refId: org!.id }]);
-    await notify(tx, input.userId, 'success', `Премия ${money(amountCents)} от „${org!.name}“`, `${me!.username} ти даде премия${input.note ? `: „${input.note}“` : ' за добрата работа'}.`, '/game/finance');
+    await post(tx, account.id, [{ category: 'member_bonus', amountCents, description: t('Премия от „{0}“{1}', org!.name, note), idempotencyKey: `bonus:${op}:in`, refType: 'company', refId: org!.id }]);
+    await notify(tx, input.userId, 'success', () => t('Премия {0} от „{1}“', money(amountCents), org!.name), () => t('{0} ти даде премия{1}.', me!.username, input.note ? `: „${input.note}“` : t(' за добрата работа')), '/game/finance');
     await logActivity(tx, actorId, 'member_bonus', { companyId: org!.id, userId: input.userId, amountCents });
     return { amountCents };
   });

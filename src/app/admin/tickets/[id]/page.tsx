@@ -7,10 +7,17 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { adminContext } from '@/server/admin-context';
 import { GameError } from '@/server/game/errors';
 import { TICKET_CATEGORIES, TICKET_STATUS, ticketThread } from '@/server/game/support';
+import { t as tr, tx } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Запитване' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: tr('Запитване') };
+}
 
 export default async function AdminTicket({ params }: { params: Promise<{ id: string }> }) {
+  await initLocale();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const { db, user } = await adminContext();
@@ -22,17 +29,17 @@ export default async function AdminTicket({ params }: { params: Promise<{ id: st
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t.subject}
-        subtitle={<span className="inline-flex flex-wrap items-center gap-2">От <Link className="text-cyan-glow hover:underline" href={`/admin/users/${thread.owner.id}`}>{thread.owner.username}</Link> ({thread.owner.email})<Badge>{TICKET_CATEGORIES[t.category as keyof typeof TICKET_CATEGORIES]}</Badge><Badge tone="gold">{TICKET_STATUS[t.status as keyof typeof TICKET_STATUS]}</Badge>{thread.assignee ? `· отговорник: ${thread.assignee}` : '· без отговорник'}</span>}
+        title={tx(t.subject)}
+        subtitle={<span className="inline-flex flex-wrap items-center gap-2">{tr('От')}{' '}<Link className="text-cyan-glow hover:underline" href={`/admin/users/${thread.owner.id}`}>{tx(thread.owner.username)}</Link> ({tx(thread.owner.email)})<Badge>{tx(TICKET_CATEGORIES[t.category as keyof typeof TICKET_CATEGORIES])}</Badge><Badge tone="gold">{tx(TICKET_STATUS[t.status as keyof typeof TICKET_STATUS])}</Badge>{thread.assignee ? tr('· отговорник: {0}', thread.assignee) : tr('· без отговорник')}</span>}
         actions={
           <>
-            {!thread.assignee && <ActionButton endpoint="/api/admin/action" action={{ type: 'ticketAssign', ticketId: id }}>Поеми</ActionButton>}
-            {t.status !== 'closed' ? <ActionButton endpoint="/api/admin/action" action={{ type: 'ticketStatus', ticketId: id, status: 'closed' }}>Затвори</ActionButton> : <ActionButton endpoint="/api/admin/action" action={{ type: 'ticketStatus', ticketId: id, status: 'open' }}>Отвори отново</ActionButton>}
+            {!thread.assignee && <ActionButton endpoint="/api/admin/action" action={{ type: 'ticketAssign', ticketId: id }}>{tr('Поеми')}</ActionButton>}
+            {t.status !== 'closed' ? <ActionButton endpoint="/api/admin/action" action={{ type: 'ticketStatus', ticketId: id, status: 'closed' }}>{tr('Затвори')}</ActionButton> : <ActionButton endpoint="/api/admin/action" action={{ type: 'ticketStatus', ticketId: id, status: 'open' }}>{tr('Отвори отново')}</ActionButton>}
           </>
         }
       />
       <Thread messages={thread.messages} />
-      <Card title="Отговор от поддръжката"><ReplyForm endpoint="/api/admin/action" action={{ type: 'ticketReply', ticketId: id }} /></Card>
+      <Card title={tr('Отговор от поддръжката')}><ReplyForm endpoint="/api/admin/action" action={{ type: 'ticketReply', ticketId: id }} /></Card>
     </div>
   );
 }

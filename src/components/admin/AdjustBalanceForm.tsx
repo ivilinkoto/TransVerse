@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t, tx } from '@/i18n/t';
 
 export function AdjustBalanceForm({ userId }: { userId: string }) {
   const router = useRouter();
@@ -16,7 +17,7 @@ export function AdjustBalanceForm({ userId }: { userId: string }) {
     setMsg(null);
     try {
       await api('/api/admin/action', { type: 'adjustBalance', userId, amountEur: form.get('amount'), reason: form.get('reason') });
-      setMsg({ ok: true, text: 'Корекцията е записана в счетоводната книга и одита.' });
+      setMsg({ ok: true, text: t('Корекцията е записана в счетоводната книга и одита.') });
       formEl.reset();
       router.refresh();
     } catch (e) {
@@ -28,11 +29,11 @@ export function AdjustBalanceForm({ userId }: { userId: string }) {
   return (
     <form onSubmit={submit} className="space-y-2">
       <div className="flex gap-2">
-        <input id="amount" name="amount" type="number" step="0.01" className="input w-36" placeholder="± лв." required aria-label="Сума в лева" />
-        <input id="reason" name="reason" className="input flex-1" placeholder="Причина (напр. компенсация за грешка)" required minLength={5} maxLength={300} aria-label="Причина" />
+        <input id="amount" name="amount" type="number" step="0.01" className="input w-36" placeholder={t('± лв.')} required aria-label={t('Сума в лева')} />
+        <input id="reason" name="reason" className="input flex-1" placeholder={t('Причина (напр. компенсация за грешка)')} required minLength={5} maxLength={300} aria-label={t('Причина')} />
       </div>
-      <button className="btn-ghost" disabled={busy}>{busy ? '…' : 'Запиши корекция'}</button>
-      {msg && <p role="status" className={`text-sm ${msg.ok ? 'text-profit' : 'text-loss'}`}>{msg.text}</p>}
+      <button className="btn-ghost" disabled={busy}>{busy ? '…' : t('Запиши корекция')}</button>
+      {msg && <p role="status" className={`text-sm ${msg.ok ? 'text-profit' : 'text-loss'}`}>{tx(msg.text)}</p>}
     </form>
   );
 }

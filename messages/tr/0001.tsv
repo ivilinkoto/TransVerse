@@ -1,0 +1,250 @@
+92f09c7ee1	\n\nThe first correct answer (linked account) wins **{0} TransCoin**. One try.	\n\nПервый правильный ответ (привязанный аккаунт) получает **{0} ТрансКоин**. Одна попытка.
+b61c78d4f6	\n*(No linked Discord — they will see the channel once they link their account.)*	\n*(Без привязанного Discord — канал станет виден после привязки аккаунта.)*
+532006df2d	\n**Next:** {0}	\n**Дальше:** {0}
+3b38afc095	\nIn the game: **{0}**	\nВ игре: **{0}**
+8bee5ca2ca	\nEnds <t:{0}:R>	\nКонец <t:{0}:R>
+dc4239b5bb	\n…and {0} more	\n…и ещё {0}
+86df119fde	\n📎 {0} attached	\n📎 {0} вложений
+21d0bd7756	(+{0} on the way)	(+{0} в пути)
+ff0870c3cf	({0} km)	({0} км)
+551ba9fc1b	({0} free)	({0} свободно)
+7df183459a	({0} late)	({0} с опозданием)
+1fce40e52e	({0}, {1} in the game)	({0}, {1} в игре)
+98fcca1a93	(second driver)	(второй водитель)
+5f137d3796	(until {0})	(до {0})
+33fddffdb7	(kept from earlier trips)	(сохранено с прошлых рейсов)
+11d1d2b73e	(and in the game)	(и в игре)
+28a267c8c5	(comes empty)	(едет порожняком)
+9755ea8217	(rented)	(арендован)
+5368d4bc9c	(the nearest is {0} km away)	(ближайший в {0} км)
+f0aca7879e	(won't do)	(не подходит)
+2265d3c293	(level {0})	(уровень {0})
+f2e8999664	(from {0})	(от {0})
+4aefd82b83	(with another truck)	(у другого грузовика)
+72a6c5d4cd	(approximate line, the road route is not available)	(приблизительная линия, дорожный маршрут недоступен)
+f9251e0212	(reason: {0})	(причина: {0})
+63045244e4	(sold)	(продан)
+6be6431d8d	(real truck road route)	(реальный дорожный маршрут для грузовика)
+d8998d1363	(now +{0} %)	(сейчас +{0} %)
+2793fdebcf	(now: {0})	(сейчас: {0})
+2cf7cafb64	(being created…)	(создаётся…)
+35b2cc2167	+ {0} TransCoin	+ {0} ТрансКоин
+986970a08e	+ drawbar trailer	+ прицеп
+c801e1456f	+{0} TransCoin in the game.	+{0} ТрансКоин в игре.
+199673d4ec	{0} min	{0} мин
+a16f9b36ce	· (link your account for the reward)	· (привяжи аккаунт, чтобы получить награду)
+043f897a94	· +{0} TransCoin	· +{0} ТрансКоин
+873ba21d4d	· 1 min	· 1 мин
+438722286f	· {0} + {1} XP	· {0} + {1} опыта
+5c3ceec111	· {0} / {1} t to the next	· {0} / {1} т до следующего
+176bb49a60	· {0} km	· {0} км
+3fef3aa846	· {0} km to the load	· {0} км до груза
+aa7c8bf85f	· {0} km from you	· {0} км от тебя
+2e18852d65	· {0} on the way	· {0} в пути
+7f373affe7	· {0} upgrades	· {0} улучшений
+2bbd60d8b3	· {0} late	· {0} с опозданием
+eb1a708475	· {0} t on the way	· {0} т в пути
+5b62f9e049	· no webhook (reconciled by the background process)	· без webhook (сверка в фоновом процессе)
+0413e397e6	· no driver	· без водителя
+54edfca887	· in convoy	· в конвое
+a9c98dede4	· being raised	· повышается
+becca8690a	· until {0}	· до {0}
+ad2a613a36	· crew	· экипаж
+5240a2b794	· muted until {0}	· заглушён до {0}
+59644c3308	· sign up in the game until <t:{0}:f>	· запись в игре до <t:{0}:f>
+359009fd40	· badge “{0}”	· значок «{0}»
+1b710afc52	· and in the game	· и в игре
+925ded601c	· requires company level {0}	· нужен уровень компании {0}
+89bfc5fce9	· ends {0}	· конец {0}
+b6642aff27	· maximum	· максимум
+5555b29637	· on a trip	· в рейсе
+43bae64859	· on site	· на месте
+71647c0442	· on the way {0}	· в пути {0}
+febe97e701	· reward {0}	· награда {0}
+5d419ebb7e	· reward {0} from the treasury	· награда {0} из казны
+0626dd9862	· level {0}	· уровень {0}
+d4140d2e21	· level {0}+	· уровень {0}+
+f6764bb7be	· company level {0} needed	· нужен уровень компании {0}
+6865bb7ed7	· shared load {0}	· общий груз {0}
+84f98f89f8	· online	· онлайн
+4d14c570dd	· {0} left	· осталось {0}
+8515fa2e53	· from level {0}	· с уровня {0}
+cbd36d864c	· a delay is expected	· ожидается опоздание
+02f267d7e9	· more unlock at level {0}	· больше откроется на уровне {0}
+fd99f4d7e3	· helped {0}	· помог {0}
+b3afaf2056	· recent errors: {0}	· последние ошибки: {0}
+390d9d56f2	· resting another {0} min	· отдыхает ещё {0} мин
+f71237de03	· empty, to the load	· порожняком к грузу
+7acedc129b	· premium	· премиум
+634d2d7785	· bonus {0} from the treasury	· премия {0} из казны
+f58d832b9a	· missed: {0}	· пропущено: {0}
+14e06c0c17	· loaded	· с грузом
+fe0d54f3d7	· urgent	· срочный
+12366f0f22	· due {0}	· срок {0}
+24e795edb6	· building: {0}	· строится: {0}
+9f0d03e8c8	· fee {0}	· сбор {0}
+35e5d80daa	· yours: {0}	· твоя: {0}
+44f6e2e697	· toll	· платная дорога
+ed5638824a	· the whole load	· весь груз
+c3fe3cd747	· goal reached	· цель достигнута
+fd499e7a16	· part {0} t for {1}	· часть {0} т за {1}
+c83fc9c3d7	No bonus this time.	Без бонуса на этот раз.
+33cb4006b2	Bonus +{0}.	Бонус +{0}.
+8fe71727df	See the loads back from {0}.	Посмотри грузы обратно из {0}.
+cb872b3e90	You were late, so no bonus.	Опоздание — поэтому без бонуса.
+881b508dca	Pick a project for the week:	Выбери проект на неделю:
+a52141a0cb	Reward: {0} lv and {1} TC.	Награда: {0} лв. и {1} TC.
+1e52aec10d	Didn't leave: {0} ({1})	Не выехали: {0} ({1})
+1fb8d31c40	{0} more convoys led to “{1}” ({2} seats).	Ещё {0} проведённых конвоев до «{1}» ({2} мест).
+5b70e7b240	A friend or colleague with a truck nearby can help.	Друг или коллега с грузовиком рядом может помочь.
+16385c1088	A project is started by a member with the “Tenders and assigning” right.	Проект запускает участник с правом «Тендеры и назначение».
+7b84dc0bd9	Roadside assistance: {0} lv.	Помощь на дороге: {0} лв.
+a532f6911c	Roadside assistance ({0} lv) is covered by the insurance.	Помощь на дороге ({0} лв.) оплачивает страховка.
+de278aa42f	Link your account to get TransCoin at every tenth level.	Привяжи аккаунт, чтобы получать ТрансКоин на каждом десятом уровне.
+47ab0b63b3	The company has no specialisation now.	Сейчас у компании нет специализации.
+ef2046cf55	Drops on time: {0} of {1}.	Точек вовремя: {0} из {1}.
+312b194368	The company already had a project this week — new proposals from Monday.	На этой неделе у компании уже был проект — новые предложения с понедельника.
+e722a5beca	for {0}	за {0}
+09eba19a2e	for {0} winners	для {0} победителей
+38e003b485	for the good work	за хорошую работу
+d9f764e051	and the badge “{0}”	и значок «{0}»
+59a3c693e4	and you leave the company	и вы покидаете компанию
+a2f3936a83	and another +{0} % for a big convoy	и ещё +{0} % за большой конвой
+ea32d997fe	and {0} more	и ещё {0}
+2927a02f82	and confirms their e-mail	и подтверждает свою почту
+1f3977fb13	and a bonus of {0} from the treasury	и премия {0} из казны
+a350f94de8	and you become deputy	и вы становитесь заместителем
+8bad5b26cf	or	или
+e950a04635	to {0}	на {0}
+18d23a3653	and up.	и выше.
+817938d897	from {0}	от {0}
+3eccdfb1f9	on routes through {0}	по маршрутам через {0}
+ec45b2e24d	on the way to {0}	по дороге в {0}
+9545768c72	with {0} t	с {0} т
+2a62ba92bd	loads	грузы
+d2c1a203b5	— {0} place	— {0} место
+8b69926c51	— only a +{0} % raise keeps them	— удержит только прибавка +{0} % к зарплате
+da67ef4550	— and in the game chat	— и в чате игры
+1585dac0ab	— only with overloading	— только с перегрузом
+ab2ce86b95	— “{0}” hauled the most	— больше всех перевезла «{0}»
+af4a40073e	— finished	— завершено
+2b7711e939	— part: {0} t	— часть: {0} т
+aa8e45df7b	#{0} · {1} t.	#{0} · {1} т.
+68fb89e4d3	% share	% доля
+7b933d0132	(1.00 = no change). It changes only when an administrator applies it; loads already taken are not affected.	(1,00 = без изменений). Меняется только когда администратор его применит; уже взятые грузы не затрагиваются.
+96f0503925	({0} km by sea, ~{1} h) — the truck boards the ferry, the driver rests, and the road to the ports is shorter than the whole way by land. Ticket {2}; ferries leave every hour (game timetable).	({0} км по морю, ~{1} ч) — грузовик заезжает на паром, водитель отдыхает, а путь до портов короче всего пути по суше. Билет {2}; паромы отходят каждый час (игровое расписание).
+d8389c1f70	({0} km by rail) — the truck boards the train, the driver rests, and these kilometres cost no fuel, tolls or wear. Ticket {1}; trains leave every 30 min (game timetable).	({0} км по железной дороге) — грузовик заезжает на поезд, водитель отдыхает, а за эти километры нет топлива, сборов и износа. Билет {1}; поезда отходят каждые 30 мин (игровое расписание).
+10c7f5f874	({0} lv/l).	({0} лв./л).
+427000e68c	({0} lv/l); the most expensive:	({0} лв./л); самое дорогое:
+04e2179a2d	({0} ratings)	({0} оценок)
+e9b79fb97e	({0} t last month)	({0} т в прошлом месяце)
+0d06a9b387	({0}) — {1} 👍 so far.	({0}) — {1} 👍 пока.
+d453dcc220	({0}) — tap a free spot; you can place several.{1}	({0}) — нажми на свободное место; можно поставить несколько.{1}
+ede2c77c2d	(was “{0}”)	(было «{0}»)
+b9da6a9e3b	(the share of the tonnes). The other {0} t stay on the board for other trucks.	(доля от тоннажа). Остальные {0} т остаются на бирже для других грузовиков.
+775c52e857	(until {0})	(до {0})
+8fdf44d2d5	(game data):	(игровые данные):
+d4fff780cd	(the square with an arrow) →	(квадратик со стрелкой) →
+d8c523c5cb	(can be in parts)	(можно частями)
+a3cea08577	(new: {0})	(новое: {0})
+ee1e9974af	(rating)	(оценка)
+5d85e68715	(hauling {0} · other {1})	(перевозки {0} · прочее {1})
+bdf0a4e428	(with a compartment ~{0} %)	(с тайником ~{0} %)
+89ee54ce31	(you)	(ты)
+2128b9308c	) and brings back the standard design afterwards by itself. Players can turn the decorations off in Settings.	) и сама возвращает обычный дизайн после него. Игроки могут отключить украшения в Настройках.
+6fd1e20d53	) the game changes the colours and adds decorations. {0}	) игра меняет цвета и добавляет украшения. {0}
+763646b495	**{0} containers** wait for transport until <t:{1}:R> — with {2} % better pay. The company that hauls the most gets **{3}** in its treasury. Live counter in #пристанище.	**{0} контейнеров** ждут перевозки до <t:{1}:R> — с оплатой на {2} % выше. Компания, которая вывезет больше всех, получит **{3}** в казну. Счётчик в реальном времени в #пристанище.
+6be8339d51	**{0} → {1}** · {2} · {3} km{4}	**{0} → {1}** · {2} · {3} км{4}
+2ab3218725	**{0} → {1}** · {2} · {3}/{4} trucks · until <t:{5}:t>	**{0} → {1}** · {2} · {3}/{4} грузовиков · до <t:{5}:t>
+2f6015bed4	**{0} → {1}** · {2}/{3} trucks · leaves <t:{4}:R>	**{0} → {1}** · {2}/{3} грузовиков · выезд <t:{4}:R>
+50c4c56c5e	**{0}** : **{1}** t\n{2}	**{0}** : **{1}** т\n{2}
+525abebea6	**{0}** · {1} · {2} t	**{0}** · {1} · {2} т
+3f61f65497	**{0}** · {1} t · {2}\n{3} shared it with the company. Take a part each — if all parts arrive on time, everyone gets **+{4}**.	**{0}** · {1} т · {2}\n{3} поделился им с компанией. Возьмите по части — если все части прибудут вовремя, каждый получит **+{4}**.
+1d68a43b7f	**{0}** · {1} t in {2} (average {3}/t). Where shall we sell it?	**{0}** · {1} т в {2} (в среднем {3}/т). Где продадим?
+3727a38e94	**{0}** · {1} t in {2} · average {3}/t	**{0}** · {1} т в {2} · в среднем {3}/т
+23ef8a5e16	**{0}** · condition {1} % · {2}\nSeller: {3} · until <t:{4}:d>	**{0}** · состояние {1} % · {2}\nПродаёт: {3} · до <t:{4}:d>
+e96889684a	**{0}** is on the way to {1} — arrives {2}.	**{0}** в пути в {1} — прибывает {2}.
+af2b4cab5e	**{0}** vs **{1}**	**{0}** против **{1}**
+da6d8a5af8	**{0}** → **{1}**: {2} ({3} transfers in a week).	**{0}** → **{1}**: {2} ({3} переводов за неделю).
+e3767aaf05	**{0}**: +{1} in 24 h (from trips {2}, other {3}).	**{0}**: +{1} за 24 ч (с рейсов {2}, прочее {3}).
+7916975f0e	**{0}**{1} is hauling {2}. Leave on the same route by <t:{3}:t> and you drive in convoy — **+{4} %** on the reward for each of you if you arrive on time.	**{0}**{1} везёт {2}. Выезжай тем же маршрутом до <t:{3}:t> — и вы едете конвоем: **+{4} %** к награде каждому, если прибудете вовремя.
+af77ab8992	**{0}.** {1} · {2} · {3} votes	**{0}.** {1} · {2} · {3} голосов
+56767e5359	**Automatic**	**Автоматически**
+56a697585f	**Bans** (Ban Members permission)	**Баны** (право Ban Members)
+8e75a5349e	**The game**	**Игра**
+8ef670e91a	**Moderation** (Moderate Members permission)	**Модерация** (право Moderate Members)
+3b8cee799f	**Prize:** {0} TransCoin{1}\n**Ends:** {2}\n**Entries:** {3}\n\nPress **Join** — a linked game account is needed.	**Приз:** {0} ТрансКоин{1}\n**Конец:** {2}\n**Участвуют:** {3}\n\nНажми **Участвую** — нужен привязанный аккаунт в игре.
+a46628dc4a	**Prize:** {0} TransCoin{1}\n**Entered:** {2}\n\n🏆 {3}	**Приз:** {0} ТрансКоин{1}\n**Участвовали:** {2}\n\n🏆 {3}
+1e85841e9b	**Reason:** {0}{1}\n\nRead #правила — next time you will be muted.	**Причина:** {0}{1}\n\nПрочитай #правила — при повторении последует заглушение.
+aaee09e98b	**First steps**	**Первые шаги**
+9bce5d14fe	**The server**	**Сервер**
+e6585a5f62	**The server** (Manage Server permission)	**Сервер** (право Manage Server)
+78ea2e4299	**With a linked account**	**С привязанным аккаунтом**
+c8b11837c7	+1 daily and +1 weekly mission	+1 ежедневная и +1 еженедельная миссия
+cddd43163b	+1 slot · {0}	+1 место · {0}
+d23a0feefa	+1 slot in every depot	+1 место в каждом депо
+8ec51111a2	+10 % XP from deliveries	+10 % опыта за доставки
+8e36d143d7	+10% XP from deliveries	+10% опыта за доставки
+e33deaf9cc	+18,240 lv	+18 240 лв.
+d20d5c7abe	+3,860 lv	+3 860 лв.
+58715c3248	+30 min of driving before a break	+30 мин вождения до перерыва
+46faff4587	+6,140 lv	+6 140 лв.
+9ec8faca81	+{0} % pay on the members' trips	+{0} % к оплате рейсов участников
+037e896d39	+{0} % on the pay of every trip of the alliance members.	+{0} % к оплате каждого рейса участников альянса.
+f1e1c06ccc	+{0} % XP for the members' drivers — they grow faster in skills	+{0} % опыта водителям участников — быстрее растут навыки
+ceddbc359e	+{0} % XP from the members' trips	+{0} % опыта с рейсов участников
+3b6d064d16	+{0} {1} per truck in the depot of every member in the base city	+{0} {1} за грузовик в депо каждого участника в городе базы
+2fe65300e2	+{0} TransCoin for the delivery on time.	+{0} ТрансКоин за доставку вовремя.
+9f6ca0d41e	+{0} TransCoin and the “Discord driver” badge.	+{0} ТрансКоин и значок «Discord-водитель».
+6595675641	+{0} TransCoin.	+{0} ТрансКоин.
+5833fa8c69	+{0} in 24 h · {1} logins	+{0} за 24 ч · {1} входов
+ce50481865	+{0} lv bonus in the treasury, the deposit is returned, +{1} XP for the company.	+{0} лв. бонус в казну, залог возвращён, +{1} опыта компании.
+f68b233938	+{0} lv in the treasury and +{1} XP for the company.	+{0} лв. в казну и +{1} опыта компании.
+ed659d6017	+{0} lv in the treasury, +{1} XP for the company and {2} TC for everyone who helped.	+{0} лв. в казну, +{1} опыта компании и {2} TC каждому, кто помог.
+54b092f7e3	+{0} XP	+{0} опыта
+88f14367b2	+{0} XP. The mentor and the company were rewarded too.	+{0} опыта. Наставник и компания тоже получили награду.
+e434f4d67c	+{0} bonus	+{0} в подарок
+dbd319a18f	+{0} t of warehouse space for every member in the base city	+{0} т места на складе каждого участника в городе базы
+b75507d1b2	+{0} company XP	+{0} опыта компании
+6621da06d2	+{0}% (+{1}) · chance ~{2}%	+{0}% (+{1}) · шанс ~{2}%
+9ac6bcbbc2	+{0}% pay	+{0}% к оплате
+b0ed05d7cb	+{0}% pay on every trip of the members	+{0}% к оплате каждого рейса участников
+619590775c	+{0}% XP	+{0}% опыта
+188f657227	+{0}% XP from deliveries for the members	+{0}% опыта за доставки для участников
+ec16503c63	, +{0} XP	, +{0} опыта
+0706ef2435	, and those to your base are marked	, а грузы к твоей базе отмечены
+dbe4c0df84	, no contribution to the treasury and ×1.5 company XP	, без взноса в казну и ×1,5 опыта компании
+066970f39c	, all on time	, все вовремя
+6ee74c2185	, fine {0}	, штраф {0}
+3dd46b5f64	, on time	, вовремя
+e2222bbaec	, open TransVerse from there and turn on the notifications here.	, открой TransVerse оттуда и включи уведомления здесь.
+bcfd0392f0	, your friend —	, твой друг —
+24aead3e67	, with the permissions	, с правами
+86dfde8602	. On the Discord server you have your roles from the game, and commands like	. На сервере Discord у тебя есть роли из игры, а команды вроде
+6bdd8a0dd6	. Game money (lev in the game) is not for sale. Prices are final, in euro:	. Игровые деньги (левы в игре) не продаются. Цены окончательные, в евро:
+6bccfb7bbb	. Trips through these countries are slower.	. Рейсы через эти страны медленнее.
+11ea6fe12b	. If you fail: −{0} reputation (less if you deliver a part).	. При провале: −{0} репутации (меньше, если доставишь часть).
+4ddfb52267	. This way you will also get notifications.	. Так ты будешь получать и уведомления.
+56119e1f49	/ day	/ день
+f8823bbcb9	/държава name — everything about a country. The kings of the countries are announced in #класации.	/държава название — всё о стране. Короли стран объявляются в #класации.
+f2fd689814	/камиони	/камиони
+2b0be818b6	/конвой-голям, /предизвикателство, /турнир and /маршрут from to.	/конвой-голям, /предизвикателство, /турнир и /маршрут откуда куда.
+e43bbd32e9	/профил	/профил
+4e8a63ac71	0.94 lv	0,94 лв.
+5ef078d7ec	1,000 TC + 200 bonus.	1 000 TC + 200 в подарок.
+96131d127a	1,190 lv	1 190 лв.
+4171f7813a	1,200 TransCoin	1 200 ТрансКоин
+89749e759d	1,380 lv	1 380 лв.
+548313decb	1,420 lv	1 420 лв.
+462829135e	1,450 lv/t	1 450 лв./т
+c83c8f833b	1 vs 1: who hauls more tonnes in {0} days.	1 на 1: кто перевезёт больше тонн за {0} дн.
+88d86b3a50	1. We deliver on time.\n2. We help the new drivers.	1. Доставляем вовремя.\n2. Помогаем новым водителям.
+876f89538e	1. Who provides the service	1. Кто предоставляет услугу
+6eef2771e7	10,000 kilometres	10 000 километров
+616940424a	10 deliveries of metals and timber.	10 доставок металлов и лесоматериалов.
+6e84224b44	10 deliveries of new cars.	10 доставок новых автомобилей.
+358c2aa4d0	10 postcards from landmarks on the way.	10 открыток с достопримечательностей по пути.
+4d357f73a7	10 postcards — the “Postcard collector” badge; all of them — “All the postcards of Europe”.	10 открыток — значок «Коллекционер открыток»; все — «Все открытки Европы».
+ea2240418a	10 trips on time during the 2027 equinox.	10 рейсов вовремя во время равноденствия 2027.
+14d96128e6	10 trips with a two-driver crew.	10 рейсов с двойным экипажем.
+6df3588788	10 perfect trips in a row.	10 идеальных рейсов подряд.

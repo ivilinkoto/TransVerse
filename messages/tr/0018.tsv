@@ -1,0 +1,250 @@
+48141fb87f	No such truck in the contest this month.	Такого грузовика в конкурсе этого месяца нет.
+14f7f3c41e	No such truck.	Такого грузовика нет.
+5bf9a69099	No such channel (its announcements are skipped).	Такого канала нет (объявления для него пропускаются).
+a25eaa4858	No such convoy.	Такой колонны нет.
+a904f919b7	No such trip.	Такого рейса нет.
+47fba05cc4	No such lease.	Такого лизинга нет.
+7b824d6f86	No such open convoy.	Такой открытой колонны нет.
+2d469461a9	No such answer.	Такого ответа нет.
+9f7ac95812	No such department.	Такого отдела нет.
+c91ceb83b7	No such report.	Такого сигнала нет.
+20a30fb97f	No such construction.	Такой стройки нет.
+344c420ca5	No such branch.	Такого филиала нет.
+b0165c780f	No such company truck.	Такого фирменного грузовика нет.
+ac3ce44f12	No vehicles for service	Нет техники для сервиса
+146d31f851	There is no load for your free trucks on this lane right now. See the board: {0}/game/contracts?lane={1}-{2}	Сейчас нет груза для твоих свободных грузовиков по этой линии. Смотри биржу: {0}/game/contracts?lane={1}-{2}
+f7335fc4b8	There is no load on this lane right now. See the board: {0}/game/contracts?lane={1}-{2}	Сейчас нет груза по этой линии. Смотри биржу: {0}/game/contracts?lane={1}-{2}
+2e1f975fde	There is no load **{0}** can take from {1} right now.	Сейчас нет груза, который **{0}** может взять из {1}.
+35530fb5c7	No auction at the moment	Сейчас нет торгов
+a78e685627	No pending requests.	Нет ожидающих обращений.
+bb6bf1e488	No pending applications.	Нет ожидающих заявок.
+8f0559b50f	None — get one from the shop.	Нет — возьми в магазине.
+6e09bb1ba7	None.	Нет.
+1c617beaa6	You don't have a depot in this city.	У вас нет депо в этом городе.
+75f9e5cd5b	You don't have enough TransCoin.	У вас недостаточно ТрансКоин.
+141039e715	You don't have enough funds to register a company.	У вас недостаточно средств для регистрации компании.
+a1d67e8b2d	You don't have enough funds.	У вас недостаточно средств.
+04d5173377	You don't have access to the admin panel.	У вас нет доступа к админ-панели.
+ba42449029	You don't have access.	У вас нет доступа.
+0eca1df304	You have no requests	У вас нет обращений
+098f3f16e3	You don't have permissions.	У вас нет прав.
+3bec629e6b	You are not allowed to block this user.	У вас нет права блокировать этого пользователя.
+5bee92b0ef	You are not allowed to set this role.	У вас нет права назначать эту должность.
+788614018e	You are not allowed to create a link for this profile.	У вас нет права создавать ссылку для этого профиля.
+cc9062f48c	You have no vehicles	У вас нет машин
+4ba9828e68	You have no free depot slots. Expand a depot or open a new one.	В ваших депо нет свободных мест. Расширьте депо или откройте новое.
+aab4ab37b2	You have no drivers	У вас нет водителей
+4aae7d8777	You don't have VIP	У тебя нет VIP
+cb91ce580f	Don't have an account?	Нет аккаунта?
+6ae62e3071	You have no active loan.	У тебя нет активного кредита.
+e0d064eb03	You have no active contracts	У тебя нет активных договоров
+bc2f76c919	You have no depot	У тебя нет депо
+d9819c39a4	You have no depot in this city.	У тебя нет депо в этом городе.
+8977bf2fe5	You have no other depot.	У тебя нет другого депо.
+cafdd2f531	You have no duels. Challenge someone: `/дуел @user` — {0} days, more tonnes wins {1} TransCoin.	У тебя нет дуэлей. Вызови кого-нибудь: `/дуел @пользователь` — {0} дней, больше тонн выигрывает {1} ТрансКоин.
+43117d6b89	You have no game account.	У тебя нет игрового аккаунта.
+bb02797389	You have no truck within {0} km of the place{1}.	У тебя нет грузовика в пределах {0} км от места{1}.
+c09bbe2c82	You have no truck with the plate “{0}”.	У тебя нет грузовика с номером «{0}».
+71472af357	You have no truck to show.	У тебя нет грузовика, который можно показать.
+1e4704653b	You have no trucks.	У тебя нет грузовиков.
+0d3cdcf2a0	You have no rented trailers. You attach a rented trailer from the service, like your own.	У тебя нет арендованных прицепов. Арендованный прицеп цепляется в сервисе, как свой.
+2ebb15d746	You don't have the needed licences for this route.	У тебя нет нужных лицензий для этого маршрута.
+4786b1b38d	You have no suitable own truck.	У тебя нет подходящего собственного грузовика.
+dc547b3baa	You are not allowed to ban.	У тебя нет права банить.
+b87ef18b88	You are not allowed to view the penalties.	У тебя нет права смотреть наказания.
+3a94e08250	You are not allowed to mute.	У тебя нет права заглушать.
+52adaf61bf	You are not allowed to warn.	У тебя нет права выносить предупреждения.
+6e46c6c1b7	You are not allowed to decide this.	У тебя нет права это решать.
+9ea97883de	You are not allowed to lift a ban.	У тебя нет права снимать бан.
+5f1b141f5d	You have no vehicle. Buy your first and start earning.	У тебя нет машины. Купи первую и начни зарабатывать.
+212a0f73c0	You have no friends or colleagues to call.	У тебя нет друзей или коллег, которых можно позвать.
+19a825d87a	You have no spare parts — a scrapped truck gives them.	У тебя нет запчастей — их даёт грузовик, сданный на металлолом.
+59fecb4d1d	You have no free truck outside {0}.	У тебя нет свободного грузовика за пределами {0}.
+c334906e64	You have no free truck with a driver.	У тебя нет свободного грузовика с водителем.
+90ad676c1a	You have no free truck that can take this load (body type, capacity, level or driver).	У тебя нет свободного грузовика, который может взять этот груз (тип кузова, вместимость, уровень или водитель).
+05568631c8	You have no free truck.	У тебя нет свободного грузовика.
+f4c3701104	You have no free trucks at the moment.	Сейчас у тебя нет свободных грузовиков.
+29ebdaf589	You have no free space in the depots. Expand a depot or open a new one.	В твоих депо нет свободного места. Расширь депо или открой новое.
+a367215603	You have no free vehicle with a body for {0}.	У тебя нет свободной машины с кузовом для {0}.
+6c6f247976	You have no free trailer of your own.	У тебя нет свободного собственного прицепа.
+3a954ca056	You have no truck of your own.	У тебя нет своего грузовика.
+2db1b3e6d5	You have no warehouse. Trading starts with a depot (Fleet → Depots).	У тебя нет склада. Торговля начинается с депо (Автопарк → Депо).
+db6aa49d74	You have no own truck for the plate.	У тебя нет собственного грузовика для номера.
+2a164d1324	You have no trailer of your own.	У тебя нет собственного прицепа.
+24809daefc	You have no goods in your warehouses — buy from “Trading” to sell to the alliance.	На твоих складах нет товара — купи в «Торговле», чтобы продавать союзу.
+3c7dda722d	There wasn't {0} in the balance. After {1} more missed instalment the truck goes back to the leasing company.	На балансе не было {0}. Ещё {1} пропущенный платёж — и грузовик вернётся лизинговой компании.
+590bd60cdc	There wasn't enough money — the instalment was taken into the red and your rating drops.	Денег не хватило — платёж списан в минус, и твой рейтинг падает.
+9bebd972d3	There were no participants.	Участников не было.
+a417077313	COMPANY SHARED LOAD · +{0}%	ОБЩИЙ ГРУЗ КОМПАНИИ · +{0}%
+2d100b1c7d	Ltd	ООО
+f1be29f9ba	FROM THE PORT	ИЗ ПОРТА
+6c6df32bdc	Call roadside assistance and go on	Вызови помощь на дороге и продолжай
+288876d47b	Call roadside assistance and go on.	Вызови помощь на дороге и продолжай.
+61fe59258e	Compensation {0} Release?	Компенсация {0} Освободить?
+20521d84d1	Compensation from the cargo insurance	Компенсация по страховке груза
+d7e6203663	Compensation: {0}	Компенсация: {0}
+b78e6fb96b	Compensations	Компенсации
+9b83a74fef	Insurance compensations	Страховые компенсации
+c869597251	Appeal	Обжаловать
+c737c97fa0	Appeal: {0}	Апелляция: {0}
+3112c212bb	Appeal: a {0}% chance the fine is dropped, otherwise it becomes {1}% bigger. Do you appeal?	Обжалование: {0}% шанс, что штраф отменят, иначе он вырастет на {1}%. Обжалуешь?
+39c6387206	Overview	Обзор
+712aeb5ade	Insults or harassment	Оскорбления или травля
+62a957059c	Round logs	Кругляк
+522749c5af	Messages updated: {0}.	Обновлено сообщений: {0}.
+ff20c32b83	Updated	Обновлено
+45c99292fb	Update the bot's messages	Обновить сообщения бота
+d5708e5919	Update {0} — “{1}”	Обновление {0} — «{1}»
+1392090686	Updates	Обновления
+1a3fddfffe	The updates and their descriptions are in	Обновления и их описания — в
+d10b2035d6	Updated every 24 hours	Обновляются каждые 24 часа
+b240baaac1	Return load	Обратный груз
+93a6b9cebd	Return load: the delivery notification opens the board with the loads from the arrival city (the truck is selected, the loads it can take come first, then those to the base and the best-paid). A new label and quick filter “To the base”.	Обратный груз: уведомление о доставке открывает биржу с грузами из города прибытия (грузовик выбран, сначала грузы, которые он может взять, потом — на базу и самые оплачиваемые). Новая метка и быстрый фильтр «К базе».
+d6eab51e08	Back to the login	Назад ко входу
+05a9d6a81c	Trained member in the academy	Обученный участник в академии
+bbf2a0879d	Tutorial	Обучение
+f5d8ec0a56	Tutorial · step {0} of {1}	Обучение · шаг {0} из {1}
+74d10ee79d	The tutorial is finished!	Обучение завершено!
+5fa5cf90bf	A detour through the villages	Объезд через сёла
+3c00d8e265	A shared event from 24 October (18:00) to 1 November: all together we deliver holiday loads. Every participant wins 2,000 lv, XP and 20 TC, and the best — VIP and more TransCoin.	Общий ивент с 24 октября (18:00) по 1 ноября: все вместе возим праздничные грузы. Каждый участник получает 2 000 лв., опыт и 20 TC, а лучшие — VIP и ещё ТрансКоин.
+9d20239fdf	A shared order market	Общий рынок заказов
+fbee41d358	A shared market, season rankings, a tutorial for the first steps	Общий рынок, сезонные рейтинги, обучение первым шагам
+f6cf7da92f	Shared load (Orders → expand a load of at least 8 t → “Share with the company”): the load disappears from the public board and is seen only by the members; everyone takes a part (partial loading). When all the tonnes arrive on time, every part gets +10 % of its pay and the “Team load” badge; if something is late or left untaken, there is no bonus. Up to 2 shared loads per company at a time. In Discord the company channel gets a message with “Take a part”.	Общий груз (Заказы → разверни груз от 8 т → «Поделиться с компанией»): груз исчезает с общей биржи и виден только участникам; каждый берёт часть (частичная погрузка). Когда все тонны прибывают вовремя, каждая часть получает +10 % своей оплаты и значок «Командный груз»; если что-то опоздало или осталось невзятым, бонуса нет. До 2 общих грузов на компанию одновременно. В Discord канал компании получает сообщение с кнопкой «Взять часть».
+5533c92dde	Shared load (optional)	Общий груз (необязательно)
+4bc6b0b795	Shared load and load of the day	Общий груз и груз дня
+ed2b803d2a	The company's shared load: take it in parts with your trucks. If all parts arrive on time, everyone gets +{0}% of their part and the “Team load” badge.	Общий груз компании: возьмите его по частям своими грузовиками. Если все части прибудут вовремя, каждый получит +{0}% от своей части и значок «Командный груз».
+197ebaa65e	The convoy's shared load	Общий груз колонны
+ac93657b60	A shared load is shared with the company — join a company first.	Общим грузом делятся с компанией — сначала вступи в компанию.
+d10693ee2c	Shared load: {0}	Общий груз: {0}
+de977a9996	Shared load: {0} · {1} t per truck, paid ×{2}.	Общий груз: {0} · {1} т на грузовик, оплата ×{2}.
+226833d4ca	Shared load: {0}, {1}	Общий груз: {0}, {1}
+65398ad6cd	Shared chat	Общий чат
+bcb6655dd0	A shared building in the leading company's city: haul building materials there and every level gives +1 % to the pay of all alliance members.	Общее здание в городе ведущей компании: возите туда стройматериалы, и каждый уровень даёт +1 % к оплате всех участников союза.
+5b261bcfbb	Shared goal ({0})	Общая цель ({0})
+7b0330a157	Terms and conditions	Пользовательское соглашение
+4bfadc8903	Terms of use and purchase	Условия использования и покупок
+bea8aab035	Shared goals for all players with a deadline. The system launches an automatic event every few days (72 hours, from 18:00); here you can create your own too — with a name, goal, period and rewards. The rewards are given only if the goal is reached.	Общие цели для всех игроков со сроком. Система запускает автоматический ивент каждые несколько дней (72 часа, с 18:00); здесь можно создать и свой — с названием, целью, периодом и наградами. Награды выдаются, только если цель достигнута.
+74f527fed0	Shared goals for all players with rewards for every participant — the next one comes soon.	Общие цели для всех игроков с наградами каждому участнику — следующая скоро.
+512932ce76	Shared goals for all players with participation rewards, holiday events, missions every day and a season pass with rewards by level.	Общие цели для всех игроков с наградами за участие, праздничные ивенты, миссии каждый день и сезонный пропуск с наградами по уровням.
+117ca5913a	Shared goals for all players — we reach them together.	Общие цели для всех игроков — достигаем их вместе.
+040013d4fd	The company's shared money. It is filled by the contributions from the members' trips and by deposits; it is spent on buildings, development and rewards.	Общие деньги компании. Пополняются взносами с рейсов участников и вкладами; тратятся на здания, развитие и награды.
+df8ac7fc22	The terms and conditions	Пользовательское соглашение
+fd86d66c7e	The shared event “Christmas fever”	Общий ивент «Рождественская лихорадка»
+471ef60894	The shared event “The night of the pumpkins”	Общий ивент «Ночь тыкв»
+eb99b718cd	The shared load didn't arrive in time	Общий груз не прибыл вовремя
+9784c423f0	The shared load arrived! 🎉	Общий груз прибыл! 🎉
+b6b8f989e3	Community	Сообщество
+dd23d1aa62	The company's community	Сообщество компании
+32129c0b39	Total time	Общее время
+ec5a509fad	Total to	Всего до
+a003eecb00	General meeting 🗳️	Общее собрание 🗳️
+c71a41f6c9	General meeting: one question with 2–4 answers for 3 days, one vote each; the question about the treasury contribution (3 / 5 / 8 / 10 %) changes the contribution by itself when it ends. The decisions go into the chronicle.	Общее собрание: один вопрос с 2–4 вариантами ответа на 3 дня, по одному голосу; вопрос о взносе в казну (3 / 5 / 8 / 10 %) сам меняет взнос по окончании. Решения попадают в хронику.
+c85403fece	Total:	Всего:
+bd2913deed	Recruitment ad	Объявление о наборе
+5fc425ef47	A listing can only be posted for a free vehicle.	Объявление можно выставить только для свободной машины.
+1478e038e2	The listing in the alliance warehouse has expired	Объявление на складе союза истекло
+9b3fe26229	The listing is no longer active.	Объявление больше не активно.
+02d42ca5c2	The listing is gone.	Объявления больше нет.
+92f4267e35	The listing is for another alliance.	Объявление для другого союза.
+d388c51ac6	The listing has expired	Объявление истекло
+889f45e026	The listing was not found.	Объявление не найдено.
+64bd15c1c7	The listing is gone.	Объявления нет.
+ee204e6bcf	Listed for sale	Выставлен на продажу
+9857ddb020	The announced convoys (/конвой in Discord) that have room:	Объявленные колонны (/конвой в Discord), в которых есть места:
+849438c1eb	The announced convoys that have room (big convoy — up to 5 trucks)	Объявленные колонны, в которых есть места (большая колонна — до 5 грузовиков)
+99942dfc6e	Listed for sale	Выставлено на продажу
+2657b9cc15	Listed for sale — take down the listing to drive.	Выставлено на продажу — сними объявление, чтобы ездить.
+f6167e0b5d	Listings	Объявления
+2f6f8a8532	Announce in #конвои the trip you just set off on — others join in (linked account)	Объяви в #конвои рейс, на который только что выехал, — другие присоединятся (привязанный аккаунт)
+647e7d033b	List on the market	Выставить на рынок
+a707918c0b	Ads on the recruitment board can be reported.	На объявления на бирже найма можно пожаловаться.
+3ab0190389	Chat restriction	Ограничение в чате
+bb8c803af2	Audit log	Журнал аудита
+0805bf65b0	Audit for this user	Аудит по этому пользователю
+ad6aa14e05	Lively town	Оживлённый город
+64f6c2297d	Ocean	Океанская
+a7ffd4de70	Ocean licence	Океанская лицензия
+b315f52758	Ocean container transport.	Океанская перевозка контейнеров.
+cdca11eb6d	Olbia	Ольбия
+3dbd263fe2	Cooking oil	Растительное масло
+76e9fb6aa1	Online	В сети
+1cb99a7487	Online now	Сейчас в сети
+8c317bc92c	Packaging	Упаковка
+c326f3210a	Tail	Замыкающий
+cff50ed649	Queue to Discord	Очередь в Discord
+b8c47c6c14	Queue at the border	Очередь на границе
+7e700c0a20	Border queues by day and hour (Friday afternoon and Sunday evening — longer, at night — shorter) and slower lanes when many players drive on them.	Очереди на границах в зависимости от дня и часа (в пятницу днём и в воскресенье вечером — длиннее, ночью — короче) и более медленные линии, когда по ним ездит много игроков.
+f5441f6aee	Description	Описание
+ebe5649577	Description and rules	Описание и правила
+73b31e1cbd	The descriptions will appear here.	Описания появятся здесь.
+571d43d394	XP	Опыт
+650f03ff74	XP · total	Опыт · всего
+c0136064db	XP for place {0}	Опыт за {0}-е место
+b633f92146	XP to collect	Опыт к получению
+c98ee0028c	XP for the company	Опыт для компании
+ce7b213fff	Try another name.	Попробуйте другое имя.
+4e59274921	Experienced leader	Опытный ведущий
+4eb3765d92	An experienced driver leads you to level {0}: +{1} % XP, and at the end a reward for both.	Опытный водитель ведёт тебя до уровня {0}: +{1} % опыта, а в конце награда обоим.
+63b61fd690	Experienced drivers help the new ones — and both win.	Опытные водители помогают новичкам — и выигрывают оба.
+cc799b72c4	XP comes from deliveries — more for long, heavy and on-time trips. Rewards are given only for actions verified by the server.	Опыт даётся за доставки — больше за дальние, тяжёлые и своевременные рейсы. Награды выдаются только за действия, проверенные сервером.
+bc8aa9df7e	Describe your problem or question. If it's a bug — what you did and what happened.	Опишите свою проблему или вопрос. Если это ошибка — что вы сделали и что произошло.
+6c3ca42ca8	Describe the problem in at least 10 characters.	Опишите проблему хотя бы в 10 символах.
+25c642f3b3	Describe the problem — what you did, what you expected, what happened.	Опиши проблему — что сделал, что ожидал, что произошло.
+f42826c0fa	Calmly describe what happened.	Спокойно опиши, что произошло.
+04bd464156	Optimisation	Оптимизация
+e1b62b5ca6	Orange	Оранжевая
+1f78f5bf5c	Orange	Оранжевые
+34d5f8d17a	Orange	Оранжевый
+e100d71579	Organ for a concert hall	Орган для концертного зала
+bf10667a56	Organised convoys	Организованные колонны
+e3f12a417d	Organised convoys, relays, cities that grow and a story to tell.	Организованные колонны, эстафеты, растущие города и история, которую стоит рассказать.
+81cbc0efc2	Walnuts in sacks	Орехи в мешках
+4f45db7cfd	Release	Освободить
+6549799c09	The Liberation of Bulgaria	Освобождение Болгарии
+6cf9a30ba6	Axles	Оси
+eb48b60b14	Round of 16	1/8 финала
+1a9bcf0eea	Founded	Основана
+25aea61d3c	Founded {0}	Основана {0}
+819d19663e	Founded {0}.	Основана {0}.
+135f45b763	Founded on {0}.	Основана {0}.
+5b8db90ca1	Founder	Основатель
+24636a26a1	Founder / Chief administrator	Основатель / Главный администратор
+c8c1df72c7	You founded “{0}”!	Вы основали «{0}»!
+b739005900	Main colour	Основной цвет
+ce1e99d93c	Found a company · {0}	Основать компанию · {0}
+42ee3d74a9	Found a company or join someone else's: a shared treasury, company missions and auctions, depots in different countries and a company ranking.	Основай компанию или вступи в чужую: общая казна, миссии и торги компании, депо в разных странах и рейтинг компаний.
+a9e9b82dd9	Main navigation	Основная навигация
+3d3c3bc6c3	Stays on the board (hours)	Остаётся на бирже (часов)
+687c1eb2bb	Left	Осталось
+ec89566fb9	{0} left	Осталось {0}
+b245058798	You stay in {0}.	Ты остаёшься в {0}.
+fa4a5c6165	Leave a note for the next driver	Оставь заметку следующему водителю
+dbbcc657a5	Stayed on the safe route.	Остался на безопасном маршруте.
+69edb4c020	Stay on the main road	Остаться на главной дороге
+97685d9026	Rest of the treasury of “{0}”	Остаток казны «{0}»
+29713573b6	Rest of the treasury on closing	Остаток казны при закрытии
+598b72f942	The remainder was collected at once, and your credit rating fell.	Остаток взыскан разом, а твой кредитный рейтинг упал.
+5017b952d6	Islands with ferries: Sicily, Sardinia, Corsica, Mallorca, Ibiza and Menorca.	Острова с паромами: Сицилия, Сардиния, Корсика, Майорка, Ибица и Менорка.
+dd1abf2d44	From	Откуда
+63d98aa1b1	From 	Из
+30d943e60a	From (a city with your truck)	Откуда (город с твоим грузовиком)
+38d300cf53	From 1 December to 15 March the roads have winter conditions for the day: snow, black ice or a blizzard with closed passes. Winter tyres from the Service help, and winter loads — salt, pellets, heating diesel — pay 15 % more. The site dresses in winter colours with falling snow.	С 1 декабря по 15 марта на дорогах зимняя обстановка дня: снег, гололедица или метель с закрытыми перевалами. Зимние шины из Сервиса помогают, а зимние грузы — соль, пеллеты, печное топливо — оплачиваются на 15 % выше. Сайт одевается в зимние цвета со снегопадом.
+d9333df55c	From 1 to 31 March: spring loads with +25 %, martenitsi on the trucks and at the base, a martenitsa for a friend and a stork that lands over a different city on the map every day. Spring cleaning — repairs and check-ups are 25 % cheaper.	С 1 по 31 марта: весенние грузы с +25 %, мартенички на грузовиках и на базе, мартеничка для друга и аист, который каждый день садится над другим городом на карте. Весенняя уборка — ремонт и ТО на 25 % дешевле.
+cab9f57b29	From 1 to {0} TransCoin.	От 1 до {0} ТрансКоин.
+39cf2a45e5	From 1 to {0} shares.	От 1 до {0} акций.
+fe2552abc3	From 15 December to 6 January: Christmas orders with +30 %, a shared event “gifts by Christmas Eve”, four Christmas missions with a badge, the “Christmas” paint for the truck and holiday decorations on the site.	С 15 декабря по 6 января: рождественские заказы с +30 %, общий ивент «подарки к Сочельнику», четыре рождественские миссии со значком, краска «Рождество» для грузовика и праздничные украшения на сайте.
+337a2489ca	From 15 December: your year in TransVerse — kilometres, records, favourite lane and your convoy friend — and a picture to share.	С 15 декабря: твой год в TransVerse — километры, рекорды, любимая линия и друг по колонне — и картинка, чтобы поделиться.
+15a563c8fb	From 16 March to 15 April: a “First spring” section, the “Cherry blossom” paint in the shop, and around the equinox (20–23 March) every trip on time brings +8 % and 10 trips give a badge.	С 16 марта по 15 апреля: раздел «Первая весна», краска «Цветущая вишня» в магазине, а в дни равноденствия (20–23 марта) каждый рейс вовремя приносит +8 %, а 10 рейсов дают значок.
+af12ca8486	From 25 April to 9 May (Easter is on 2 May): kozunak and painted eggs with +25 %, egg tapping with friends, a paint and Easter tasks.	С 25 апреля по 9 мая (Пасха — 2 мая): куличи и крашеные яйца с +25 %, битьё яйцами с друзьями, краска и пасхальные задания.
+118c2670b1	From <@{0}> in <#{1}>\n**Before:**\n{2}\n**After:**\n{3}	От <@{0}> в <#{1}>\n**До:**\n{2}\n**После:**\n{3}
+c7d0b5766f	From <@{0}> in <#{1}>\n{2}{3}	От <@{0}> в <#{1}>\n{2}{3}
+b75e60fb79	From {0} · {1}	Из {0} · {1}
+f61d46ad93	From the board you choose a load your truck can haul. The route follows the real roads, with tolls and borders. The tutorial guides you step by step.	На бирже ты выбираешь груз, который может перевезти твой грузовик. Маршрут проходит по настоящим дорогам, с платными участками и границами. Обучение ведёт тебя шаг за шагом.
+c5542e0be4	From which truck	С какого грузовика
+81e4a15991	From a courier van to a heavy 6×4. Every load needs a suitable body: refrigerated for food, a tanker for fuels, a car carrier for cars, a flatbed for steel, a low-bed for oversized loads.	От курьерского фургона до тяжёлого 6×4. Каждому грузу нужен подходящий кузов: рефрижератор для продуктов, цистерна для топлива, автовоз для машин, платформа для стали, низкорамник для негабаритных грузов.
+06a36fe2f6	From March to May — seeds, fertilisers and farm machinery with +15 %. On the national holiday of every country in the game, loads there pay +10 %.	С марта по май — семена, удобрения и сельхозтехника с +15 %. В национальный праздник каждой страны игры грузы туда оплачиваются +10 %.
+c8e4a2a249	From the browser menu — “Add to home screen”.	Из меню браузера — «Добавить на главный экран».
+0075629986	From level 10, only if you turn it on: evening shady shipments with harmless goods (cheese without papers, “almost original” perfumes), paid ×2–3. But customs check.	С 10-го уровня и только если ты это включишь: вечерние теневые посылки с безобидным товаром (сыр без документов, «почти оригинальные» духи), с оплатой ×2–3. Но таможня проверяет.
+da97d943e1	From level {0}	С уровня {0}
+ca25da61ed	From level {0} you found a company: you buy trucks, hire drivers, open depots and compete in the rankings.	С уровня {0} ты основываешь компанию: покупаешь грузовики, нанимаешь водителей, открываешь депо и соревнуешься в рейтингах.
+8a7e185d53	From Monday to Sunday evening · game data	С понедельника до вечера воскресенья · игровые данные

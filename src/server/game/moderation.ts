@@ -6,11 +6,12 @@ import type { Database, DbOrTx } from '@/server/db/client';
 import { adminAudit, chatMessages, companyMessages, directMessages, reports, userBlocks, users, recruitmentPosts } from '@/server/db/schema';
 import { fail } from './errors';
 import { notify } from './notify';
+import { t, intlLocale } from '@/i18n/t';
 
 // ── Blocking ──────────────────────────────────────────────────────────────
 
 export async function blockUser(db: Database, userId: string, targetId: string) {
-  if (userId === targetId) fail('self', 'Не можеш да блокираш себе си.');
+  if (userId === targetId) fail('self', t('Не можеш да блокираш себе си.'));
   await db.insert(userBlocks).values({ blockerId: userId, blockedId: targetId }).onConflictDoNothing();
 }
 
@@ -35,13 +36,13 @@ export async function blockedEither(db: DbOrTx, a: string, b: string): Promise<b
 }
 
 export async function assertNotBlocked(db: DbOrTx, a: string, b: string) {
-  if (await blockedEither(db, a, b)) fail('blocked', 'Не можеш да направиш това — един от вас е блокирал другия.', 403);
+  if (await blockedEither(db, a, b)) fail('blocked', t('Не можеш да направиш това — един от вас е блокирал другия.'), 403);
 }
 
 /** Muted players cannot write in any chat or send private messages. */
 export async function assertNotMuted(db: DbOrTx, userId: string, now = new Date()) {
   const [u] = await db.select({ until: users.chatMutedUntil }).from(users).where(eq(users.id, userId));
-  if (u?.until && u.until > now) fail('muted', `Не можеш да пишеш до ${u.until.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} (решение на модератор).`, 403);
+  if (u?.until && u.until > now) fail('muted', t('Не можеш да пишеш до {0} (решение на модератор).', u.until.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })), 403);
 }
 
 export async function blockList(db: DbOrTx, userId: string) {
@@ -62,24 +63,24 @@ export const reportSchema = z.object({
 /** A player reports another player, optionally a specific message (a copy of it is kept for the moderators). */
 export async function reportPlayer(db: Database, reporterId: string, raw: z.input<typeof reportSchema>) {
   const input = reportSchema.parse(raw);
-  if (input.targetUserId === reporterId) fail('self', 'Не можеш да докладваш себе си.');
+  if (input.targetUserId === reporterId) fail('self', t('Не можеш да докладваш себе си.'));
   await rateLimit(db, `report:${reporterId}`, 10, 3600);
   let snippet: string | null = null;
   if (input.kind === 'recruitment') {
     // A post on the recruitment board (v1.7): its text is kept for the moderators.
     const [p] = input.postId ? await db.select({ text: recruitmentPosts.text, userId: recruitmentPosts.userId }).from(recruitmentPosts).where(eq(recruitmentPosts.id, input.postId)) : [];
-    if (!p || p.userId !== input.targetUserId) fail('message_not_found', 'Обявата не е намерена.', 404);
+    if (!p || p.userId !== input.targetUserId) fail('message_not_found', t('Обявата не е намерена.'), 404);
     snippet = p!.text;
   } else if (input.messageId && input.kind !== 'player') {
     const table = input.kind === 'channel' ? chatMessages : input.kind === 'company' ? companyMessages : null;
     if (table) {
       const [m] = await db.select({ body: table.body, userId: table.userId }).from(table).where(eq(table.id, input.messageId));
-      if (!m || m.userId !== input.targetUserId) fail('message_not_found', 'Съобщението не е намерено.', 404);
+      if (!m || m.userId !== input.targetUserId) fail('message_not_found', t('Съобщението не е намерено.'), 404);
       snippet = m!.body;
     } else {
       const [m] = await db.select({ body: directMessages.body, senderId: directMessages.senderId, recipientId: directMessages.recipientId }).from(directMessages).where(eq(directMessages.id, input.messageId));
       // Only a message the reporter received can be reported.
-      if (!m || m.senderId !== input.targetUserId || m.recipientId !== reporterId) fail('message_not_found', 'Съобщението не е намерено.', 404);
+      if (!m || m.senderId !== input.targetUserId || m.recipientId !== reporterId) fail('message_not_found', t('Съобщението не е намерено.'), 404);
       snippet = m!.body;
     }
   }
@@ -122,7 +123,7 @@ export type ReportAction = 'dismiss' | 'warn' | 'delete_message' | 'mute_h24' | 
 export async function resolveReport(db: Database, actor: { id: string }, reportId: string, action: ReportAction, now = new Date()) {
   return db.transaction(async (tx) => {
     const [r] = await tx.select().from(reports).where(eq(reports.id, reportId)).for('update');
-    if (!r) fail('report_not_found', 'Докладът не е намерен.', 404);
+    if (!r) fail('report_not_found', t('Докладът не е намерен.'), 404);
     if (action === 'delete_message' && r!.messageId) {
       if (r!.kind === 'channel') await tx.update(chatMessages).set({ deletedAt: now, deletedBy: actor.id }).where(eq(chatMessages.id, r!.messageId));
       if (r!.kind === 'company') await tx.update(companyMessages).set({ deletedAt: now, deletedBy: actor.id }).where(eq(companyMessages.id, r!.messageId));
@@ -132,9 +133,9 @@ export async function resolveReport(db: Database, actor: { id: string }, reportI
     if (action === 'mute_h24' || action === 'mute_d7') {
       const until = new Date(now.getTime() + MUTE_OPTIONS[action === 'mute_h24' ? 'h24' : 'd7'].ms);
       await tx.update(users).set({ chatMutedUntil: until }).where(eq(users.id, r!.targetUserId));
-      await notify(tx, r!.targetUserId, 'warning', 'Ограничение в чата', `Заради нарушение на правилата не можеш да пишеш в чата и лични съобщения до ${until.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.`, '/game/support');
+      await notify(tx, r!.targetUserId, 'warning', () => t('Ограничение в чата'), () => t('Заради нарушение на правилата не можеш да пишеш в чата и лични съобщения до {0}.', until.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })), '/game/support');
     }
-    if (action === 'warn') await notify(tx, r!.targetUserId, 'warning', 'Предупреждение от модератор', 'Получихме сигнал за твое поведение в играта. Моля, спазвай правилата — при повторно нарушение следва ограничение.', '/game/support');
+    if (action === 'warn') await notify(tx, r!.targetUserId, 'warning', () => t('Предупреждение от модератор'), () => t('Получихме сигнал за твое поведение в играта. Моля, спазвай правилата — при повторно нарушение следва ограничение.'), '/game/support');
     // Every open report about the same message is closed together.
     const same = r!.postId ? and(eq(reports.postId, r!.postId), eq(reports.status, 'open')) : r!.messageId ? and(eq(reports.kind, r!.kind), eq(reports.messageId, r!.messageId), eq(reports.status, 'open')) : eq(reports.id, r!.id);
     await tx.update(reports).set({ status: action === 'dismiss' ? 'dismissed' : 'resolved', resolution: action, resolvedBy: actor.id, resolvedAt: now }).where(same);

@@ -1,0 +1,250 @@
+bb6442cc0f	on a trip with {0}{1}	в рейсе с {0}{1}
+b72679f59c	at level {0}	на уровне {0}
+0945a7aebd	on the road	в пути
+048c9ae293	on the road · {0} trucks	в пути · {0} грузовиков
+78dea84369	on the road · arrives {0}	в пути · прибудет {0}
+e3add0b2e1	on the way to {0} · arrives <t:{1}:R>	в пути в {0} · прибудет <t:{1}:R>
+288c5aa364	on the way to the winner	в пути к победителю
+1afcd4b5d9	on an internship until {0}	на стажировке до {0}
+50ccf5a728	flood	наводнение
+5e1af95183	on time	вовремя
+feb3d0b1f8	on-time deliveries	доставки вовремя
+dea9c6b757	reward	награда
+daf1b5ee4d	a reward is waiting for you	тебя ждёт награда
+877902649a	a reward is waiting	ждёт награда
+b62bbf3aec	rewarded	награждены
+5dae02dde7	rewarded	награждено
+ff30dc437d	rewards are waiting for you	тебя ждут награды
+c302498c0b	rewards are waiting	ждут награды
+c2522bc3cd	exceeds the capacity	превышает вместимость
+36223e78ce	rented by {0} until {1}	арендован {0} до {1}
+d6792bdc8c	rented from a player	арендован у игрока
+f79eb1ca8c	the most: {0} ({1} t)	больше всего: {0} ({1} т)
+4356822b07	penalties	наказания
+90928740d3	available	доступно
+8987e63894	{0} available	доступно {0}
+ea6330f62e	written in the game	написано в игре
+41861d0c1a	e.g. 4500	например, 4500
+a46fa3cb63	e.g. The tyres need changing	например: Шины пора менять
+179f38e67d	e.g. someone@abv.bg	например, кто-то@abv.bg
+86bae3e99a	bulk materials	сыпучие материалы
+dd9aca32dc	settings menu view	настройки меню вид
+285e09be0b	tap a free spot on the plot	нажми на свободное место на участке
+1f9bc980fc	head: {0}	руководитель: {0}
+12cdb89f4e	beginner	новичок
+ce6256afd6	no	нет
+317e8b9702	not all tonnes were taken	взяли не все тонны
+334ab35fb3	not found	не найден
+60d6e6e054	not from hauls	не от перевозок
+a6b065fdbb	Server Members Intent and Message Content Intent are not turned on (Bot → Privileged Gateway Intents)	не включены Server Members Intent и Message Content Intent (Bot → Privileged Gateway Intents)
+b34f4f9b06	not checked	не проверяется
+214a05ba2e	not checked (free mail)	не проверяется (бесплатная почта)
+28844306ad	didn't set off	не выехал
+c3b25883d1	invalid intents	недопустимые intents
+f13fd0a5e0	the TransVerse Sunday convoy	воскресная колонна TransVerse
+a29d6a379a	Sunday 13:00 – 22:00	воскресенье 13:00 – 22:00
+7e5a1ef4cb	Sunday 9:00 – 22:00	воскресенье 9:00 – 22:00
+8c5016c526	Sunday until 22:00	воскресенье до 22:00
+6d62bf70ac	unknown device	неизвестное устройство
+580a2fac98	not fulfilled	не выполнен
+220b6ad179	unconfirmed	не подтверждён
+9ccb4983bf	net value {0}	чистая стоимость {0}
+de274a13fc	net {0}{1} lv ▾	чистыми {0}{1} лв. ▾
+35420a1e66	failed	неудачный
+c3f4ccd2e1	failed	не удалось
+cdf15f7f93	levels	уровни
+5e59898acb	building levels	уровни зданий
+8091b2ed5d	level	уровень
+3b72e29003	level {0}	уровень {0}
+48ebf89349	level {0} · {1}	уровень {0} · {1}
+995d0be74c	level {0} · {1} deliveries	уровень {0} · {1} доставок
+d6d936a195	level {0} · {1} shipments	уровень {0} · {1} посылок
+16dd72fce9	level {0} · {1} members · {2} deliveries	уровень {0} · {1} участников · {2} доставок
+e8ef9b870a	level {0} · invited by {1} · {2}	уровень {0} · приглашён {1} · {2}
+f62f55247d	level {0} · buildings and levels {1}	уровень {0} · здания и уровни {1}
+b888dbbd12	level {0} in {1}{2}	уровень {0} в {1}{2}
+7393f22ec6	company level {0}	уровень компании {0}
+bfe63018d8	level {0} → {1}	уровень {0} → {1}
+53d97fac5c	level {0}+	уровень {0}+
+301a21bc3f	level {0}{1}{2} · {3}/{4} students	уровень {0}{1}{2} · {3}/{4} учеников
+cdc2f5a046	low-bed	низкорамный
+960c4ac46e	low-bed trailer	низкорамный прицеп
+1e9b297e40	new	новый
+af71f3f99a	new conversation	новый разговор
+9e832a5c53	new password	новый пароль
+5b5496433f	new name	новое имя
+c41488d229	November	ноября
+77df8996f7	plate	номер
+0b5480df29	repair needed	нужен ремонт
+d9bcc0ce79	a depot in {0} is needed	нужно депо в {0}
+3ca66ba27c	none	нет
+894a658ca5	no trailer attached	прицеп не прицеплен
+dfc7b3997d	no linked account	нет привязанного аккаунта
+e11af11ebe	no comparison	нет сравнения
+89208ac419	ordinary shipment	обычная посылка
+a42ad07d9c	heavy snowfall	сильный снегопад
+f46965641e	shared load	общий груз
+249437a867	listed · {0}	выставлено · {0}
+6adae78059	October	октября
+f56d3f64f3	online	в сети
+006b49ac8c	border queues	очереди на границе
+346403d707	XP	опыт
+d65b51c0a6	released driver	освобождённый водитель
+5aa7d84d1c	founded companies / independents	основанные компании / самостоятельные
+a7ba566317	31 h left	осталось 31 ч
+60d4354c94	{0} left	осталось {0}
+3f6a7b268c	left	осталось
+dba126a790	from	от
+a6a2f41167	from 	от
+fbaafa3452	of 100. It grows with every on-time delivery and falls by 3 when late.	из 100. Растёт с каждой доставкой вовремя и падает на 3 при опоздании.
+9a07e5954a	from {0}	от {0}
+d175112e04	from {0} {1}	от {0} {1}
+e65523ae22	from {0} ·	от {0} ·
+b3625df45e	from {0} · {1}	от {0} · {1}
+e424f9ce34	from {0} · {1}{2}	от {0} · {1}{2}
+e042bfecbe	of {0} rewards	от {0} оплаты
+d31f732142	of the trip reward	от оплаты рейса
+def606607c	of the trip reward.	от оплаты рейса.
+c63a682ce7	from the current members' trips	с рейсов нынешних участников
+d49d7889a4	from level {0}	с уровня {0}
+22862ebe62	open	открыта
+b2127c7b1d	open orders · {0} routes ({1} approximate)	открытые заказы · {0} маршрутов ({1} приблизительных)
+b492b59675	отворени-тикети	отворени-тикети
+77fc8bcfa8	open	открыто
+e8a7226136	long ago	давно
+a6f052b4df	declined	отклонён
+aff5b13efc	unlocked	открыто
+480c03ea88	unlocked {0}	открыто {0}
+dc0fae054b	cancelled	отменён
+3d8c1e4dc3	cancelled	отменена
+134983f4e2	rested	отдохнул
+64a2f54097	rejected	отклонён
+ba335c6b3b	bid	ставка
+d5682135c7	bids	ставки
+30dbd10854	chilled	охлаждённый
+3d89c4fdd3	rating	оценка
+99367ebd9b	ratings	оценки
+12172dab32	awaiting payment	ожидает оплаты
+955c8169ff	{0} more days	ещё {0} дней
+d950566611	not sent yet	ещё не отправлено
+1b20794afe	none yet	пока нет
+36d3961707	no opponent yet	соперника пока нет
+974889c8e4	market	рынок
+0384af04af	palletised goods	паллетные товары
+96ecb4e89b	money fines account diesel fuel	деньги штрафы счёт дизель топливо
+3c8bf9ed4a	batch	партия
+0bf1c3cc38	batches	партии
+5173389ae9	profit	прибыль
+22a57bbbc5	paid	оплачена
+5cfa1b8314	paid	оплачено
+25a44d28c2	flatbed	платформа
+2ccb3168c6	payment within {0} h, then +{1}%	оплата в течение {0} ч, затем +{1}%
+b2217b8330	cheaper rent	дешевле аренда
+f968dc39a9	win	победа
+d33d418cad	win · +{0} TC	победа · +{0} TC
+aa94d12cc0	winners	победители
+1bbb7b2e84	breakdowns	поломки
+b0a69de938	repeated message	повторяющееся сообщение
+6b093a1c88	below the warehouse price	ниже цены склада
+2f28b2bd68	in a row.	подряд.
+5a413f174d	an invitation for you	приглашение для тебя
+e0527de5a6	invitation to another server	приглашение на другой сервер
+8fbba8a8f1	invited	приглашено
+5358626710	invitations	приглашения
+c159190bea	drive with a friend	покатайся с другом
+87b96423d0	field {0}	поле {0}
+ccb6b99af1	police checks	полицейские проверки
+98f62572b8	semi-trailer — for a tractor	полуприцеп — для тягача
+dc0f549954	semi-finalist	полуфиналист
+8eac50a339	helped {0} on the road ({1})	помог {0} в пути ({1})
+39bd915a63	help	помощь
+4e71bc1c02	help from a colleague	помощь коллеги
+9fa9f03a52	help rules glossary	помощь правила словарь
+87ce6b7386	Monday	понедельник
+b79ad19348	built	построено
+7769a7b0fe	built “{0}”	построил «{0}»
+82272aac74	confirmed	подтверждён
+b529479743	confirmation	подтверждение
+5f27a54e20	user	пользователь
+7a6804b621	day off until {0}	выходной до {0}
+ffad2f4452	almost new	почти новый
+69b46d600c	rules	правила
+f9be114289	holiday deliveries	праздничные доставки
+495a35e051	{0} hauled it — rate it:	{0} перевёз его — оцени:
+8552c0878b	{0} {1} ago	{0} {1} назад
+bbfa099944	{0} days ago	{0} дней назад
+74a39cf9bc	{0} min ago	{0} мин назад
+9b8841b4f6	{0} h ago	{0} ч назад
+94ec1039ce	a moment ago	только что
+10f3d59a83	challenge	испытание
+0f74a61624	coming up	впереди
+b0cdc223c2	warning	предупреждение
+e40f15c3aa	the previous 7: {0}	предыдущие 7: {0}
+0d955e5462	moving	перемещается
+a2f81ebcc5	rough estimate	приблизительная оценка
+615f487788	approximate	приблизительно
+ea868392f2	accepted	принят
+b48970b808	drawbar — for a rigid truck	прицеп — для одиночного грузовика
+6cde99fc52	ending	заканчивается
+b5954b8d0d	ending · giving out the rewards	заканчивается · выдача наград
+eea68005f7	ending…	заканчивается…
+7a17b98878	ended	завершено
+475977cac1	port	порт
+6e88017f29	arrives at {0}	прибывает в {0}
+5af3a4dde7	arriving now	прибывает сейчас
+a587e4cb0d	arrives in {0}	прибудет через {0}
+05c3a584d1	arrived	прибыл
+e98cc8c395	income {0}	доходы {0}
+560b19b120	reason	причина
+07977e3844	friend/colleague	друг/коллега
+3b6a56a2d7	friends and colleagues	друзья и коллеги
+f670d073e0	test	тест
+6a1c101b47	verification of new {0}	проверка новых {0}
+a999f2433b	sale after {0}	продажа через {0}
+b5e0a0b19c	produces	производит
+b602c57d22	pass	пропуск
+9e9557e5d0	overdue by {0} km — more frequent breakdowns on the road	просрочено на {0} км — чаще поломки в пути
+694efdc49b	profile	профиль
+0121351773	public profile	публичный профиль
+2d847b6e89	first {0}	сначала {0}
+3d4e5d37b3	the office first	сначала офис
+243b6d443b	road route · {0}	дорожный маршрут · {0}
+44bad06ab5	roadside assistance	помощь на дороге
+891cfeffcb	roadside assistance from allies (and from you to them)	помощь на дороге от союзников (и от вас им)
+1d244867cf	travelling to {0} · within a minute	едет в {0} · в течение минуты
+242db13c77	working	работает
+1a252cb37d	draw	ничья
+48e66e5c6c	unban	разбанить
+e3a31c0cf5	giveaway	раздача
+543340f54f	giveaways	раздачи
+b58c5ba404	rally	ралли
+fe4ef792aa	rank	ранг
+65562daf82	live mode	реальный режим
+af144c5998	live mode (live)	реальный режим (live)
+d398f95129	the real weather now · Open-Meteo.com (CC BY 4.0)	реальная погода сейчас · Open-Meteo.com (CC BY 4.0)
+7ca45c09b0	records	рекорды
+e1be13f962	repair service trailer attach tyres upgrades	ремонт сервис прицеп прицепить шины улучшения
+a855e06c77	reputation 0+	репутация 0+
+a6fd5f4e7d	reputation 40+	репутация 40+
+757c57f43b	a fisherman with rods	рыбак с удочками
+9f1b2c821e	risk of delay	риск опоздания
+6ac3a26e1b	roles	роли
+e2056bbe79	the growth of the players' money for the week	рост денег игроков за неделю
+c69e3e7af5	by application	по заявке
+c8e9d7adbe	with trailer	с прицепом
+65bd4bb904	members only	только для участников
+1b3cdf7a7a	own trucks only	только собственные грузовики
+d7075b888d	tipper	самосвал
+925d58417b	independent driver	самостоятельный водитель
+67010b6d86	landslides	оползни
+76d0f155b5	free · {0}	свободен · {0}
+72939882aa	a free truck in {0}{1}	свободный грузовик в {0}{1}
+bf7ab4776f	free point	свободное очко
+3f02833b8b	free points	свободные очки
+c01fd05423	free	свободно
+59d90b4069	свържи-акаунта	свържи-акаунта
+bec6452c81	connecting	подключение
+d1201d8d19	building	здание
+450112fdf8	buildings	здания
+126faee9fd	now	сейчас
+53ee3647e5	now {0}	сейчас {0}

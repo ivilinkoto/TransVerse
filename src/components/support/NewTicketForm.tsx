@@ -4,6 +4,7 @@ import { Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t, tx } from '@/i18n/t';
 
 export function NewTicketForm({ categories }: { categories: Record<string, string> }) {
   const router = useRouter();
@@ -25,13 +26,13 @@ export function NewTicketForm({ categories }: { categories: Record<string, strin
   };
   return (
     <form onSubmit={submit} className="space-y-3">
-      <input id="subject" name="subject" className="input" placeholder="Тема" required minLength={4} maxLength={120} />
-      <select id="category" name="category" className="input" defaultValue="gameplay" aria-label="Категория">
-        {Object.entries(categories).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+      <input id="subject" name="subject" className="input" placeholder={t('Тема')} required minLength={4} maxLength={120} />
+      <select id="category" name="category" className="input" defaultValue="gameplay" aria-label={t('Категория')}>
+        {Object.entries(categories).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}
       </select>
-      <textarea id="body" name="body" className="input min-h-32" placeholder="Опишете проблема или въпроса си. Ако е грешка — какво направихте и какво се случи." required minLength={10} maxLength={4000} />
+      <textarea id="body" name="body" className="input min-h-32" placeholder={t('Опишете проблема или въпроса си. Ако е грешка — какво направихте и какво се случи.')} required minLength={10} maxLength={4000} />
       {error && <p role="alert" className="text-sm text-loss">{error}</p>}
-      <button className="btn-primary" disabled={busy}><Send className="h-4 w-4" />{busy ? 'Изпращане…' : 'Изпрати запитване'}</button>
+      <button className="btn-primary" disabled={busy}><Send className="h-4 w-4" />{busy ? t('Изпращане…') : t('Изпрати запитване')}</button>
     </form>
   );
 }

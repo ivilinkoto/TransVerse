@@ -5,6 +5,7 @@ import { weekEndsAt, weekKey } from '@/lib/game/leagues';
 import { headline, type NewsIssue } from '@/lib/game/news';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, companyMembers, contracts, countries, deliveries, globalEvents, marketEvents, newspapers, notifications, organizations, users } from '@/server/db/schema';
+import { t as tr } from '@/i18n/t';
 
 const DAY = 86_400_000;
 
@@ -102,7 +103,7 @@ export async function publishWeeklyNews(db: Database, now = new Date()) {
     const [{ last = 0 } = {}] = await tx.select({ last: sql<number>`coalesce(max(${newspapers.number}), 0)::int` }).from(newspapers);
     const [row] = await tx.insert(newspapers).values({ weekKey: key, number: last + 1, content, publishedAt: now }).onConflictDoNothing().returning();
     if (!row) return null;
-    const title = `Седмичник TransVerse, брой ${row.number}`;
+    const title = tr('Седмичник TransVerse, брой {0}', row.number);
     await tx.execute(sql`insert into ${notifications} (user_id, kind, title, body, href) select ${users.id}, 'info', ${title}, ${headline(content)}, '/game/news' from ${users} where ${users.bannedAt} is null`);
     return row;
   });

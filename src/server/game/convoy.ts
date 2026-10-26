@@ -10,6 +10,7 @@ import { fail } from './errors';
 import { layoutState } from '@/server/discord/layout';
 import { notify } from './notify';
 import { alliesOf, circleOf } from './world-map';
+import { t } from '@/i18n/t';
 
 /**
  * Linked players who are in the Discord voice channel "Конвой" together with
@@ -42,7 +43,7 @@ async function openConvoyHosts(db: DbOrTx, userId: string, now: Date, lane?: { o
  * convoy with them (the usual bonus), friends or not.
  */
 export async function announceConvoy(db: DbOrTx, userId: string, now = new Date()) {
-  if (await featureFor(db, userId, 'convoy_lobby', now)) fail('use_lobby', 'Конвоите вече се събират в играта (Поръчки → Конвои): избери линия и час, а колоната тръгва заедно.');
+  if (await featureFor(db, userId, 'convoy_lobby', now)) fail('use_lobby', t('Конвоите вече се събират в играта (Поръчки → Конвои): избери линия и час, а колоната тръгва заедно.'));
   const account = await companyForUser(db, userId);
   const [trip] = await db
     .select({ id: deliveries.id, startedAt: deliveries.startedAt, convoyWith: deliveries.convoyWith, originCityId: contracts.originCityId, destCityId: contracts.destCityId, goods: contracts.goods, urgent: contracts.urgent })
@@ -51,21 +52,21 @@ export async function announceConvoy(db: DbOrTx, userId: string, now = new Date(
     .where(and(eq(deliveries.companyId, account.id), eq(deliveries.status, 'in_progress'), gte(deliveries.startedAt, new Date(now.getTime() - CONVOY_RULES.windowMs))))
     .orderBy(desc(deliveries.startedAt))
     .limit(1);
-  if (!trip || trip.urgent) fail('no_trip', `Пусни камион на курс (обикновен товар) и обяви конвоя до ${Math.round(CONVOY_RULES.windowMs / 60_000)} мин. след тръгването.`);
-  if (trip!.convoyWith) fail('already', 'Този камион вече кара в конвой.');
+  if (!trip || trip.urgent) fail('no_trip', t('Пусни камион на курс (обикновен товар) и обяви конвоя до {0} мин. след тръгването.', Math.round(CONVOY_RULES.windowMs / 60_000)));
+  if (trip!.convoyWith) fail('already', t('Този камион вече кара в конвой.'));
   const expiresAt = new Date(trip!.startedAt.getTime() + CONVOY_RULES.windowMs);
   const [row] = await db.insert(openConvoys).values({ deliveryId: trip!.id, userId, originCityId: trip!.originCityId, destCityId: trip!.destCityId, expiresAt, createdAt: now }).onConflictDoNothing().returning();
-  if (!row) fail('already', 'Вече обяви конвой с този курс.');
+  if (!row) fail('already', t('Вече обяви конвой с този курс.'));
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [trip!.originCityId, trip!.destCityId]));
   const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
   const [me] = await db.select({ username: users.username, discordId: users.discordId }).from(users).where(eq(users.id, userId));
   await enqueue(db, `convoy:${row!.id}`, 'channel:convoys', {
     embeds: [{
-      title: `🚚 Конвой: ${name(trip!.originCityId)} → ${name(trip!.destCityId)}`,
+      title: t('🚚 Конвой: {0} → {1}', name(trip!.originCityId), name(trip!.destCityId)),
       color: 0x22d3ee,
-      description: `**${me!.username}**${me!.discordId ? ` (<@${me!.discordId}>)` : ''} кара ${trip!.goods}. Тръгни по същия път до <t:${Math.floor(expiresAt.getTime() / 1000)}:t> и карате в конвой — **+${Math.round(CONVOY_RULES.bonusShare * 100)} %** към наградата за всеки, ако пристигнете навреме.`,
+      description: t('**{0}**{1} кара {2}. Тръгни по същия път до <t:{3}:t> и карате в конвой — **+{4} %** към наградата за всеки, ако пристигнете навреме.', me!.username, me!.discordId ? ` (<@${me!.discordId}>)` : '', trip!.goods, Math.floor(expiresAt.getTime() / 1000), Math.round(CONVOY_RULES.bonusShare * 100)),
     }],
-    components: [{ type: 1, components: [{ type: 2, style: 3, label: 'Включвам се', custom_id: `convoy:join:${row!.id}`, emoji: { name: '🚚' } }] }],
+    components: [{ type: 1, components: [{ type: 2, style: 3, label: t('Включвам се'), custom_id: `convoy:join:${row!.id}`, emoji: { name: '🚚' } }] }],
   }, now);
   return { ...row!, origin: name(trip!.originCityId), destination: name(trip!.destCityId) };
 }
@@ -116,8 +117,8 @@ export async function formConvoy(tx: Tx, delivery: { id: string; companyId: stri
   const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
   const bonus = `${Math.round(CONVOY_RULES.bonusShare * 100)} %`;
   const route = `${name(lane.originCityId)} → ${name(lane.destCityId)}`;
-  await notify(tx, userId, 'success', `Конвой с ${partner.username}`, `${route}: карате заедно — +${bonus} към наградата за всеки, ако пристигнете навреме.`, '/game/map');
-  await notify(tx, partner.userId, 'success', `Конвой с ${me!.username}`, `${me!.username} тръгна след теб по ${route}: +${bonus} към наградата за всеки, ако пристигнете навреме.`, '/game/map');
+  await notify(tx, userId, 'success', () => t('Конвой с {0}', partner.username), () => t('{0}: карате заедно — +{1} към наградата за всеки, ако пристигнете навреме.', route, bonus), '/game/map');
+  await notify(tx, partner.userId, 'success', () => t('Конвой с {0}', me!.username), () => t('{0} тръгна след теб по {1}: +{2} към наградата за всеки, ако пристигнете навреме.', me!.username, route, bonus), '/game/map');
   return partner;
 }
 
@@ -147,10 +148,10 @@ async function joinBigConvoy(tx: Tx, delivery: { id: string; companyId: string }
     const names = await tx.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [lane.originCityId, lane.destCityId]));
     const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
     const route = `${name(lane.originCityId)} → ${name(lane.destCityId)}`;
-    const extra = bigConvoyShare(size) ? ` и още +${Math.round(bigConvoyShare(size) * 100)} % за голям конвой` : '';
-    const text = `${route}: ${size} камиона заедно — +${Math.round(CONVOY_RULES.bonusShare * 100)} %${extra} за всеки, който пристигне навреме.`;
-    await notify(tx, userId, 'success', `Голям конвой (${size} камиона)`, text, '/game/map');
-    for (const o of others.filter((o) => o.userId !== userId)) await notify(tx, o.userId, 'success', size >= BIG_CONVOY.maxTrucks ? `Конвоят е пълен (${size} камиона)` : `${me!.username} се включи в конвоя`, text, '/game/map');
+    const extra = bigConvoyShare(size) ? t(' и още +{0} % за голям конвой', Math.round(bigConvoyShare(size) * 100)) : '';
+    const text = t('{0}: {1} камиона заедно — +{2} %{3} за всеки, който пристигне навреме.', route, size, Math.round(CONVOY_RULES.bonusShare * 100), extra);
+    await notify(tx, userId, 'success', () => t('Голям конвой ({0} камиона)', size), text, '/game/map');
+    for (const o of others.filter((o) => o.userId !== userId)) await notify(tx, o.userId, 'success', () => size >= BIG_CONVOY.maxTrucks ? t('Конвоят е пълен ({0} камиона)', size) : t('{0} се включи в конвоя', me!.username), text, '/game/map');
     return g;
   }
   return null;

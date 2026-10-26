@@ -11,6 +11,7 @@ import { MUSEUM } from './heritage';
 import { COMPANY_UPGRADES, type UpgradeLevels } from './company';
 import type { CargoType } from './cargo';
 import { FUEL_STATION } from './alliances';
+import { t as tr } from '@/i18n/t';
 
 export const PLOT = {
   /** Grid size in tiles (x to the right-down, y to the left-down on screen). */
@@ -70,7 +71,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 1,
     maxLevel: upgradeLevels('capacity').length + 1,
     base: { cement: 14, bricks: 14, glass: 3 },
-    effect: (l) => `${5 + 5 * (l - 1)} места за членове`,
+    effect: (l) => tr('{0} места за членове', 5 + 5 * (l - 1)),
     minCompanyLevel: [1, ...upgradeLevels('capacity').map((x) => x.minCompanyLevel)],
   },
   logistics: {
@@ -82,7 +83,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: upgradeLevels('logistics').length,
     base: { cement: 20, steel: 12, bricks: 10, glass: 2 },
-    effect: (l) => `+${l * 2} % заплащане на курсовете на членовете`,
+    effect: (l) => tr('+{0} % заплащане на курсовете на членовете', l * 2),
     minCompanyLevel: upgradeLevels('logistics').map((x) => x.minCompanyLevel),
   },
   training: {
@@ -94,7 +95,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: upgradeLevels('training').length,
     base: { cement: 12, bricks: 14, glass: 4, steel: 4 },
-    effect: (l) => `+${l * 5} % опит от курсовете на членовете`,
+    effect: (l) => tr('+{0} % опит от курсовете на членовете', l * 5),
     minCompanyLevel: upgradeLevels('training').map((x) => x.minCompanyLevel),
   },
   service: {
@@ -106,7 +107,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { cement: 14, steel: 8, bricks: 8 },
-    effect: (l) => `−${l * 10} % цена на ремонтите за членовете`,
+    effect: (l) => tr('−{0} % цена на ремонтите за членовете', l * 10),
     minCompanyLevel: [2, 4, 6],
   },
   parking: {
@@ -118,7 +119,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { cement: 24, steel: 2 },
-    effect: (l) => `+${l} ${l === 1 ? 'място' : 'места'} за камион в депото на всеки член в града на базата`,
+    effect: (l) => tr('+{0} {1} за камион в депото на всеки член в града на базата', l, l === 1 ? tr('място') : tr('места')),
     minCompanyLevel: [2, 3, 5],
   },
   warehouse: {
@@ -130,7 +131,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { cement: 18, steel: 10, bricks: 6 },
-    effect: (l) => `+${l * 40} т място в склада на всеки член в града на базата`,
+    effect: (l) => tr('+{0} т място в склада на всеки член в града на базата', l * 40),
     minCompanyLevel: [2, 4, 6],
   },
   rest: {
@@ -142,7 +143,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { cement: 12, bricks: 12, glass: 3, steel: 2 },
-    effect: (l) => `−${l * 15} % почивка на шофьорите след курс до града на базата`,
+    effect: (l) => tr('−{0} % почивка на шофьорите след курс до града на базата', l * 15),
     minCompanyLevel: [2, 3, 5],
   },
   factory: {
@@ -154,7 +155,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { cement: 20, steel: 14, bricks: 8, glass: 2 },
-    effect: (l) => `Произвежда стоки от суровини · партида за ${Math.round(100 / (1 + 0.5 * (l - 1)))} % от времето, +${(l - 1) * 25} % продукция`,
+    effect: (l) => tr('Произвежда стоки от суровини · партида за {0} % от времето, +{1} % продукция', Math.round(100 / (1 + 0.5 * (l - 1))), (l - 1) * 25),
     minCompanyLevel: [3, 5, 7],
   },
   fuel: {
@@ -166,7 +167,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { cement: 12, steel: 10, glass: 4, bricks: 4 },
-    effect: (l) => `Гориво с ${[0, 6, 10, 14][l]} % по-евтино за членовете, тръгващи от града на базата · ${Math.round(FUEL_STATION.margin * 100)} % от горивото на другите играчи оттам влиза в касата`,
+    effect: (l) => tr('Гориво с {0} % по-евтино за членовете, тръгващи от града на базата · {1} % от горивото на другите играчи оттам влиза в касата', [0, 6, 10, 14][l], Math.round(FUEL_STATION.margin * 100)),
     minCompanyLevel: [2, 4, 6],
   },
   polygon: {
@@ -178,7 +179,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { cement: 18, steel: 4, bricks: 4 },
-    effect: (l) => `+${l * 15} % опит за шофьорите на членовете — растат по-бързо в умения`,
+    effect: (l) => tr('+{0} % опит за шофьорите на членовете — растат по-бързо в умения', l * 15),
     minCompanyLevel: [3, 5, 7],
   },
   museum: {
@@ -190,7 +191,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { bricks: 10, glass: 8, cement: 6, steel: 2 },
-    effect: (l) => `Място за ${MUSEUM.capacity[l] ?? 0} дарени камиона с поне ${MUSEUM.minKm / 1000} 000 км — дарителят получава ${MUSEUM.coins} TC (${MUSEUM.legendCoins} TC за легенда)`,
+    effect: (l) => tr('Място за {0} дарени камиона с поне {1} 000 км — дарителят получава {2} TC ({3} TC за легенда)', MUSEUM.capacity[l] ?? 0, MUSEUM.minKm / 1000, MUSEUM.coins, MUSEUM.legendCoins),
     minCompanyLevel: [2, 4, 6],
   },
 };
@@ -328,18 +329,18 @@ interface Area {
 }
 /** Why something of this size cannot stand at (x, y): off the plot, on the driveway or over a building or decoration. */
 function areaError(area: Area, x: number, y: number, buildings: readonly PlacedBuilding[], decor: readonly PlacedDecor[], plotW: number, skip: { type?: BuildingType; decor?: PlacedDecor }): string | null {
-  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x + area.w > plotW || y + area.h > PLOT.h) return 'Излиза извън участъка.';
-  for (let i = x; i < x + area.w; i++) for (let j = y; j < y + area.h; j++) if (isDriveway(i, j)) return 'Тук минава пътят към двора.';
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x + area.w > plotW || y + area.h > PLOT.h) return tr('Излиза извън участъка.');
+  for (let i = x; i < x + area.w; i++) for (let j = y; j < y + area.h; j++) if (isDriveway(i, j)) return tr('Тук минава пътят към двора.');
   const hits = (ox: number, oy: number, ow: number, oh: number) => x < ox + ow && ox < x + area.w && y < oy + oh && oy < y + area.h;
   for (const o of buildings) {
     if (o.type === skip.type) continue;
     const d = BUILDINGS[o.type];
-    if (hits(o.x, o.y, d.w, d.h)) return `Мястото е заето от „${d.label}“.`;
+    if (hits(o.x, o.y, d.w, d.h)) return tr('Мястото е заето от „{0}“.', d.label);
   }
   for (const o of decor) {
     if (o === skip.decor) continue;
     const d = DECOR[o.kind];
-    if (hits(o.x, o.y, d.w, d.h)) return `Мястото е заето от „${d.label}“.`;
+    if (hits(o.x, o.y, d.w, d.h)) return tr('Мястото е заето от „{0}“.', d.label);
   }
   return null;
 }

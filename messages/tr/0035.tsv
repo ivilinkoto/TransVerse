@@ -1,0 +1,27 @@
+# 2.0 part F: living economy, intermodal containers
+593108bac6	{0} is at the terminal — the last leg is yours for {1} h, then for everyone.	{0} на терминале — последний рейс твой {1} ч, потом для всех.
+9c736c617e	A slow wave for the whole game (half a year) and a faster one for each country (three months). New loads to a country in a boom pay more.	Медленная волна для всей игры (полгода) и более быстрая для каждой страны (три месяца). Новые грузы в страну на подъёме оплачиваются выше.
+057a719c3c	Intermodal container bonus	Бонус за интермодальный контейнер
+5957d4cae1	No containers at the moment.	Сейчас контейнеров нет.
+0a94f47d84	All cities have full warehouses.	У всех городов полные склады.
+77a3ed0509	Hungry markets	Голодные рынки
+4e47183ecd	A city that ships a lot of one cargo sends fewer such loads for a while.	Город, из которого много везут одного товара, какое-то время отправляет меньше таких грузов.
+6a3064dc2c	Cities running short	Истощённые города
+d544b9b09b	Economy and containers	Экономика и контейнеры
+f8525f1cd7	The economy is alive: the cycle of boom and slowdown changes the pay of new loads, cities fill up and run short. Everything here is game data.	Экономика живёт: цикл подъёма и спада меняет оплату новых грузов, города насыщаются и истощаются. Всё здесь — игровые данные.
+55f18ad555	The economic cycle	Экономический цикл
+d6146651c5	Intermodal containers	Интермодальные контейнеры
+4dcdeb6ecb	A truck takes the container to a terminal, the train or ship carries it along the real line, and the last leg from the other terminal is yours first ({0} h), then for everyone. Each leg on time: +{1}%; both by one driver: +{2}%.	Грузовик везёт контейнер до терминала, поезд или судно — по настоящей линии, а последний рейс от другого терминала сначала твой ({0} ч), потом для всех. Каждый рейс вовремя: +{1} %; оба одним водителем: +{2} %.
+6440b91ba9	Container to the consignee: {0}	Контейнер получателю: {0}
+6feb253bbb	Container to the terminal: {0}	Контейнер до терминала: {0}
+e8b071ed15	The container reached the terminal	Контейнер прибыл на терминал
+9a1108cfc7	Boom	Подъём
+a1e3b81dae	Slowdown	Спад
+ff0f761ddb	Steady	Стабильно
+c0ef59b081	on the line	в пути по линии
+7101961673	last leg	последний рейс
+4ae2df9357	waiting for a truck to the terminal	ждёт грузовик до терминала
+7248e6abb9	Take a container to a terminal — the last leg is yours first.	Возьми контейнер до терминала — последний рейс сначала твой.
+1dd87a355f	See which country is in a boom — loads there pay more.	Посмотри, какая страна на подъёме — грузы туда оплачиваются выше.
+ebbfb789ac	How the economy lives: the cycle of boom and slowdown, the hungry markets and the intermodal containers (game data).	Как живёт экономика: цикл подъёма и спада, голодные рынки и интермодальные контейнеры (игровые данные).
+af892f6a4e	Drive to the hungry markets, avoid the cities running short.	Вези на голодные рынки, избегай истощённых городов.

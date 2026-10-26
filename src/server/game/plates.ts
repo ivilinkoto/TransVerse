@@ -11,6 +11,7 @@ import { postCoins } from './coins';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 const plateInUse = async (db: DbOrTx, plate: string) => {
   const { rows } = await db.execute<{ taken: boolean }>(sql`select exists(select 1 from vehicles where upper(plate) = ${plate} and sold_at is null) or exists(select 1 from trailers where upper(plate) = ${plate} and sold_at is null) as taken`);
@@ -29,9 +30,9 @@ export async function ensurePlateAuction(db: Database, now = new Date()) {
     if (won.has(plate) || (await plateInUse(db, plate))) continue;
     const [row] = await db.insert(plateAuctions).values({ weekKey: week.key, plate, endsAt: week.endsAt, createdAt: now }).onConflictDoNothing().returning();
     if (row && featureLive('discord_bot', now)) {
-      await announce(db, `plate-auction:${row.weekKey}`, 'events', {
-        embeds: [{ title: `🏷️ Номер на седмицата: ${row.plate}`, url: `${appUrl()}/game/plates`, color: 0xf6c343, description: `Търг за ТрансКоин до <t:${Math.floor(row.endsAt.getTime() / 1000)}:f>, от ${PLATE_AUCTION.startCoins} TC. Наддава се в играта (Автопарк → Редки номера).`, footer: { text: 'TransVerse · игрови данни' } }],
-      }, now);
+      await announce(db, `plate-auction:${row.weekKey}`, 'events', () => ({
+        embeds: [{ title: t('🏷️ Номер на седмицата: {0}', row.plate), url: `${appUrl()}/game/plates`, color: 0xf6c343, description: t('Търг за ТрансКоин до <t:{0}:f>, от {1} TC. Наддава се в играта (Автопарк → Редки номера).', Math.floor(row.endsAt.getTime() / 1000), PLATE_AUCTION.startCoins), footer: { text: t('TransVerse · игрови данни') } }],
+      }), now);
     }
     return row ?? null;
   }
@@ -40,19 +41,19 @@ export async function ensurePlateAuction(db: Database, now = new Date()) {
 
 /** A bid in ТрансКоин: held at once; the bid it beats goes back to its bidder. */
 export async function bidForPlate(db: Database, userId: string, coins: number, now = new Date(), weekKey?: string) {
-  if (!(await featureFor(db, userId, 'plate_auction', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!(await featureFor(db, userId, 'plate_auction', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     // The auction the player saw (or the one closest to its end).
     const [a] = await tx.select().from(plateAuctions).where(and(isNull(plateAuctions.settledAt), gt(plateAuctions.endsAt, now), ...(weekKey ? [eq(plateAuctions.weekKey, weekKey)] : []))).orderBy(asc(plateAuctions.endsAt)).limit(1).for('update');
-    if (!a) fail('no_auction', 'В момента няма търг за номер.', 404);
-    if (a!.bidUserId === userId) fail('leading', 'Твоята оферта води.');
+    if (!a) fail('no_auction', t('В момента няма търг за номер.'), 404);
+    if (a!.bidUserId === userId) fail('leading', t('Твоята оферта води.'));
     const min = nextMinBid(a!.bidCoins);
-    if (!Number.isSafeInteger(coins) || coins < min) fail('low', `Офертата е поне ${min} TC.`);
+    if (!Number.isSafeInteger(coins) || coins < min) fail('low', t('Офертата е поне {0} TC.', min));
     // Fixed lock order: the bidder first, then the one outbid (both personal).
-    await postCoins(tx, userId, { amount: -coins, reason: 'plate_auction', description: `Оферта за номер „${a!.plate}“`, idempotencyKey: `plate-bid:${a!.weekKey}:${a!.bids + 1}` }, { requireFunds: true });
+    await postCoins(tx, userId, { amount: -coins, reason: 'plate_auction', description: t('Оферта за номер „{0}“', a!.plate), idempotencyKey: `plate-bid:${a!.weekKey}:${a!.bids + 1}` }, { requireFunds: true });
     if (a!.bidUserId && a!.bidCoins) {
-      await postCoins(tx, a!.bidUserId, { amount: a!.bidCoins, reason: 'plate_auction', description: `Върната оферта за номер „${a!.plate}“`, idempotencyKey: `plate-refund:${a!.weekKey}:${a!.bids}` });
-      await notify(tx, a!.bidUserId, 'info', `Офертата ти за номер „${a!.plate}“ е надмината`, `Нова оферта: ${coins} TC. Твоите ${a!.bidCoins} TC са върнати.`, '/game/plates');
+      await postCoins(tx, a!.bidUserId, { amount: a!.bidCoins, reason: 'plate_auction', description: t('Върната оферта за номер „{0}“', a!.plate), idempotencyKey: `plate-refund:${a!.weekKey}:${a!.bids}` });
+      await notify(tx, a!.bidUserId, 'info', () => t('Офертата ти за номер „{0}“ е надмината', a!.plate), () => t('Нова оферта: {0} TC. Твоите {1} TC са върнати.', coins, a!.bidCoins), '/game/plates');
     }
     // A bid in the last minutes gives the others time to answer (v1.7).
     const endsAt = a!.endsAt.getTime() - now.getTime() < PLATE_AUCTION.extendMs ? new Date(now.getTime() + PLATE_AUCTION.extendMs) : a!.endsAt;
@@ -68,10 +69,10 @@ export async function settlePlateAuctions(db: Database, now = new Date()) {
     await db.transaction(async (tx) => {
       const [mine] = await tx.update(plateAuctions).set({ settledAt: now }).where(and(eq(plateAuctions.weekKey, a.weekKey), isNull(plateAuctions.settledAt))).returning();
       if (mine?.bidUserId) {
-        await notify(tx, mine.bidUserId, 'achievement', `Номерът „${mine.plate}“ е твой! 🏷️`, 'Сложи го на свой камион от страницата на търга.', '/game/plates');
+        await notify(tx, mine.bidUserId, 'achievement', () => t('Номерът „{0}“ е твой! 🏷️', mine.plate), () => t('Сложи го на свой камион от страницата на търга.'), '/game/plates');
         if (featureLive('discord_bot', now)) {
           const [u] = await tx.select({ username: users.username }).from(users).where(eq(users.id, mine.bidUserId));
-          await announce(tx, `plate-won:${mine.weekKey}`, 'events', { embeds: [{ title: `🏷️ Номерът „${mine.plate}“ е на ${u?.username ?? '—'}`, description: `Спечелен за ${mine.bidCoins} TC след ${mine.bids} оферти.`, color: 0xf6c343, footer: { text: 'TransVerse · игрови данни' } }] }, now);
+          await announce(tx, `plate-won:${mine.weekKey}`, 'events', () => ({ embeds: [{ title: t('🏷️ Номерът „{0}“ е на {1}', mine.plate, u?.username ?? '—'), description: t('Спечелен за {0} TC след {1} оферти.', mine.bidCoins, mine.bids), color: 0xf6c343, footer: { text: t('TransVerse · игрови данни') } }] }), now);
         }
       }
     });
@@ -83,13 +84,13 @@ export async function settlePlateAuctions(db: Database, now = new Date()) {
 export async function fitRarePlate(db: Database, userId: string, weekKey: string, vehicleId: string) {
   return db.transaction(async (tx) => {
     const [a] = await tx.select().from(plateAuctions).where(eq(plateAuctions.weekKey, weekKey)).for('update');
-    if (!a || !a.settledAt || a.bidUserId !== userId) fail('not_won', 'Този номер не е твой.', 403);
-    if (a!.vehicleId) fail('fitted', 'Номерът вече е сложен.');
+    if (!a || !a.settledAt || a.bidUserId !== userId) fail('not_won', t('Този номер не е твой.'), 403);
+    if (a!.vehicleId) fail('fitted', t('Номерът вече е сложен.'));
     const account = await companyForUser(tx, userId);
     const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, account.id), isNull(vehicles.soldAt))).for('update');
-    if (!v) fail('vehicle_not_found', 'Камионът не е намерен.', 404);
-    if (v!.ownership !== 'owned') fail('rented', 'Само на собствен камион.');
-    if (await plateInUse(tx, a!.plate)) fail('plate_taken', 'Такава табела вече има.', 409);
+    if (!v) fail('vehicle_not_found', t('Камионът не е намерен.'), 404);
+    if (v!.ownership !== 'owned') fail('rented', t('Само на собствен камион.'));
+    if (await plateInUse(tx, a!.plate)) fail('plate_taken', t('Такава табела вече има.'), 409);
     await tx.update(vehicles).set({ plate: a!.plate }).where(eq(vehicles.id, v!.id));
     await tx.update(plateAuctions).set({ vehicleId: v!.id }).where(eq(plateAuctions.weekKey, weekKey));
     return { plate: a!.plate };

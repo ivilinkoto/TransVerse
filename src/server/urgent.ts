@@ -9,6 +9,7 @@ import { fail } from '@/server/game/errors';
 import { broadcast } from '@/server/game/notify';
 import { getRoute } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
+import { t, intlLocale } from '@/i18n/t';
 
 export const urgentSchema = z.object({
   goods: z.string().trim().min(2, 'Въведете име на товара.').max(60, 'Най-много 60 символа.'),
@@ -31,18 +32,18 @@ export type UrgentInput = z.infer<typeof urgentSchema>;
 export async function createUrgentContract(db: Database, actor: Staff, raw: UrgentInput, provider?: RoutingProvider) {
   requireAdminRole(actor);
   const input = urgentSchema.parse(raw);
-  if (input.originCityId === input.destCityId) fail('same_city', 'Началната и крайната точка трябва да са различни.');
+  if (input.originCityId === input.destCityId) fail('same_city', t('Началната и крайната точка трябва да са различни.'));
   const ends = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [input.originCityId, input.destCityId]));
   const from = ends.find((c) => c.id === input.originCityId);
   const to = ends.find((c) => c.id === input.destCityId);
-  if (!from || !to) fail('city_not_found', 'Градът не е намерен.', 404);
+  if (!from || !to) fail('city_not_found', t('Градът не е намерен.'), 404);
   const cargo = CARGO[input.cargoType];
-  if (input.weightTons > cargo.tons[1]) fail('too_heavy', `${cargo.label}: най-много ${cargo.tons[1]} т.`);
+  if (input.weightTons > cargo.tons[1]) fail('too_heavy', t('{0}: най-много {1} т.', cargo.label, cargo.tons[1]));
 
   // Real road route (network call) before writing anything.
   const route = await getRoute(db, input.originCityId, input.destCityId, 'truck', provider);
   const fastest = Math.ceil(gameDurationMinutes(route.distanceKm) / input.speedFactor);
-  if (input.windowMinutes < fastest) fail('window_too_short', `Курсът с товар трае около ${fastest} мин при ×${input.speedFactor}. Дайте поне толкова срок (плюс време за празния курс до товара).`);
+  if (input.windowMinutes < fastest) fail('window_too_short', t('Курсът с товар трае около {0} мин при ×{1}. Дайте поне толкова срок (плюс време за празния курс до товара).', fastest, input.speedFactor));
 
   return db.transaction(async (tx) => {
     const contract = await insertUrgent(
@@ -105,8 +106,8 @@ export async function insertUrgent(tx: Tx, v: UrgentValues, names: { from: strin
     .returning();
   if (announce !== 'none') {
     // One notification per player, in a single statement.
-    const title = `Спешна доставка: ${v.goods}`;
-    const body = `${names.from} → ${names.to} · ${(v.rewardCents / 100).toLocaleString('bg-BG')} лв. · ×${v.speedFactor} по-бързо, до товара за 1 мин. Може да я поеме всеки със свободен камион, докато не изтече.`;
+    const title = t('Спешна доставка: {0}', v.goods);
+    const body = t('{0} → {1} · {2} лв. · ×{3} по-бързо, до товара за 1 мин. Може да я поеме всеки със свободен камион, докато не изтече.', names.from, names.to, (v.rewardCents / 100).toLocaleString(intlLocale()), v.speedFactor);
     const active = announce === 'active' ? sql`and ${users.lastSeenAt} > now() - interval '3 days'` : sql``;
     await tx.execute(sql`insert into ${notifications} (user_id, kind, title, body, href) select ${users.id}, 'warning', ${title}, ${body}, '/game/contracts' from ${users} where ${users.bannedAt} is null ${active}`);
   }

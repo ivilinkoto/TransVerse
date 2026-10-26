@@ -5,6 +5,8 @@ import { rateLimit } from '@/server/auth/rate-limit';
 import { SESSION_COOKIE, validateSession, type SessionUser } from '@/server/auth/session';
 import { getDb } from '@/server/db/client';
 import { GameError } from '@/server/game/errors';
+import { localeOfRequest, withLocale } from '@/i18n/server';
+import { t, tx } from '@/i18n/t';
 
 export async function clientIp(): Promise<string> {
   const h = await headers();
@@ -20,7 +22,7 @@ export async function currentUser(): Promise<SessionUser | null> {
 
 export async function requireUser(): Promise<SessionUser> {
   const user = await currentUser();
-  if (!user) throw new GameError('unauthorized', 'Нужно е да влезете в профила си.', 401);
+  if (!user) throw new GameError('unauthorized', t('Нужно е да влезете в профила си.'), 401);
   return user;
 }
 
@@ -29,14 +31,15 @@ async function assertSameOrigin(request: Request) {
   if (request.method === 'GET' || request.method === 'HEAD') return;
   const origin = request.headers.get('origin');
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
-  if (!origin || !host || new URL(origin).host !== host) throw new GameError('bad_origin', 'Невалиден произход на заявката.', 403);
+  if (!origin || !host || new URL(origin).host !== host) throw new GameError('bad_origin', t('Невалиден произход на заявката.'), 403);
 }
 
 export function errorResponse(error: unknown) {
-  if (error instanceof GameError) return NextResponse.json({ error: error.code, message: error.message }, { status: error.status });
-  if (error instanceof ZodError) return NextResponse.json({ error: 'invalid_input', message: error.issues[0]?.message ?? 'Невалидни данни.' }, { status: 400 });
+  // Messages are Bulgarian text keys: shown in the player's language (fixed schema messages too).
+  if (error instanceof GameError) return NextResponse.json({ error: error.code, message: tx(error.message) }, { status: error.status });
+  if (error instanceof ZodError) return NextResponse.json({ error: 'invalid_input', message: tx(error.issues[0]?.message ?? 'Невалидни данни.') }, { status: 400 });
   console.error('[api] unexpected error', error);
-  return NextResponse.json({ error: 'internal', message: 'Възникна неочаквана грешка. Опитайте отново.' }, { status: 500 });
+  return NextResponse.json({ error: 'internal', message: t('Възникна неочаквана грешка. Опитайте отново.') }, { status: 500 });
 }
 
 interface HandlerOptions<T> {
@@ -48,7 +51,8 @@ interface HandlerOptions<T> {
 
 /** Wraps a route handler with origin check, auth, rate limiting, validation and error mapping. */
 export function handler<T = undefined>(options: HandlerOptions<T>, fn: (ctx: { user: SessionUser; input: T; request: Request }) => Promise<unknown>) {
-  return async (request: Request) => {
+  // v2.0: the request runs in the player's language (cookie, else the browser's).
+  return async (request: Request) => withLocale(localeOfRequest(request), async () => {
     try {
       await assertSameOrigin(request);
       const user = options.auth === false ? (null as unknown as SessionUser) : await requireUser();
@@ -64,5 +68,5 @@ export function handler<T = undefined>(options: HandlerOptions<T>, fn: (ctx: { u
     } catch (error) {
       return errorResponse(error);
     }
-  };
+  });
 }

@@ -7,6 +7,7 @@ import { mailConfig } from '@/server/mail';
 import { postCoins } from './coins';
 import { post } from './finance';
 import { logActivity, notify } from './notify';
+import { t, intlLocale } from '@/i18n/t';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -96,11 +97,11 @@ export async function rewardReferral(tx: Tx, userId: string, now = new Date()) {
   const [mine] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
   const [theirs] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, inviter.id));
   const key = `referral:${userId}`;
-  if (mine) await post(tx, mine.id, [{ category: 'referral_reward', amountCents: REFERRAL.inviteeCents, description: `Награда: поканен от ${inviter.username}`, idempotencyKey: `${key}:invitee` }]);
-  if (theirs) await post(tx, theirs.id, [{ category: 'referral_reward', amountCents: REFERRAL.inviterCents, description: `Награда за поканен приятел: ${me.username}`, idempotencyKey: `${key}:inviter` }]);
-  await postCoins(tx, inviter.id, { amount: REFERRAL.inviterCoins, reason: 'referral_reward', description: `Поканен приятел: ${me.username}`, idempotencyKey: `${key}:coins` });
-  await notify(tx, userId, 'success', 'Награда за добър старт', `${inviter.username} те покани в TransVerse — получаваш ${(REFERRAL.inviteeCents / 100).toLocaleString('bg-BG')} лв.`, '/game/finance');
-  await notify(tx, inviter.id, 'success', `${me.username} вече кара!`, `Поканеният ти приятел направи ${REFERRAL.deliveriesNeeded} доставки. Получаваш ${(REFERRAL.inviterCents / 100).toLocaleString('bg-BG')} лв. и ${REFERRAL.inviterCoins} TC.`, '/game/invite');
+  if (mine) await post(tx, mine.id, [{ category: 'referral_reward', amountCents: REFERRAL.inviteeCents, description: t('Награда: поканен от {0}', inviter.username), idempotencyKey: `${key}:invitee` }]);
+  if (theirs) await post(tx, theirs.id, [{ category: 'referral_reward', amountCents: REFERRAL.inviterCents, description: t('Награда за поканен приятел: {0}', me.username), idempotencyKey: `${key}:inviter` }]);
+  await postCoins(tx, inviter.id, { amount: REFERRAL.inviterCoins, reason: 'referral_reward', description: t('Поканен приятел: {0}', me.username), idempotencyKey: `${key}:coins` });
+  await notify(tx, userId, 'success', () => t('Награда за добър старт'), () => t('{0} те покани в TransVerse — получаваш {1} лв.', inviter.username, (REFERRAL.inviteeCents / 100).toLocaleString(intlLocale())), '/game/finance');
+  await notify(tx, inviter.id, 'success', () => t('{0} вече кара!', me.username), () => t('Поканеният ти приятел направи {0} доставки. Получаваш {1} лв. и {2} TC.', REFERRAL.deliveriesNeeded, (REFERRAL.inviterCents / 100).toLocaleString(intlLocale()), REFERRAL.inviterCoins), '/game/invite');
   return true;
 }
 

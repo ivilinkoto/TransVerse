@@ -16,10 +16,17 @@ import { orgFleetView } from '@/server/game/company-fleet';
 import { gameContext } from '@/server/game/context';
 import { can, companyHub } from '@/server/game/membership';
 import { constructionLoads, plotView } from '@/server/game/plot';
+import { t } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Участък' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: t('Участък') };
+}
 
 export default async function PlotPage() {
+  await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.company_plot) notFound();
   const hub = await companyHub(db, user.id);

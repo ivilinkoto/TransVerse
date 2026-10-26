@@ -8,6 +8,7 @@ import { GameError } from '@/server/game/errors';
 import { discord } from './api';
 import { appUrl, discordConfig } from './config';
 import { say, type MessageData, type Response } from './ui';
+import { t, intlLocale } from '@/i18n/t';
 
 export interface Interaction {
   id?: string;
@@ -26,6 +27,8 @@ export interface Interaction {
   };
   member?: { user?: { id: string; username?: string; global_name?: string | null }; roles?: string[]; permissions?: string };
   user?: { id: string; username?: string; global_name?: string | null };
+  /** The language of the user's Discord client (e.g. "en-US", "ru", "bg"). */
+  locale?: string;
   message?: { id: string; embeds?: unknown[] };
 }
 
@@ -58,7 +61,7 @@ export async function makeCtx(db: Database, i: Interaction, now = new Date()): P
   return { db, i, discordId, discordName: u?.global_name || u?.username || 'Discord', me: me ?? null, perms: BigInt(i.member?.permissions ?? '0'), now };
 }
 
-export const linkHint = () => `Свържи акаунта си от **Настройки → Discord** в играта: ${appUrl()}/game/settings#discord`;
+export const linkHint = () => t('Свържи акаунта си от **Настройки → Discord** в играта: {0}/game/settings#discord', appUrl());
 
 /** Stops a handler with an answer to the player (caught by the dispatcher). */
 export class Stop extends Error {
@@ -72,7 +75,7 @@ export const stop = (content: string): never => {
 
 /** The linked account, or a hint how to link. */
 export function linked(ctx: Ctx) {
-  if (!ctx.me) stop(`Не знам кой си в играта. ${linkHint()}`);
+  if (!ctx.me) stop(t('Не знам кой си в играта. {0}', linkHint()));
   return ctx.me!;
 }
 
@@ -81,7 +84,7 @@ export function released(ctx: Ctx) {
   const me = linked(ctx);
   if (!featureLive('discord_bot', ctx.now, isStaff(me.role))) {
     const at = featureDate('discord_bot');
-    stop(`Това тръгва с обновлението${at ? ` на ${at.toLocaleDateString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })}` : ''}. 🚚`);
+    stop(t('Това тръгва с обновлението{0}. 🚚', at ? t(' на {0}', at.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' })) : ''));
   }
   return me;
 }

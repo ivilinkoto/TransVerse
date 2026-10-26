@@ -17,6 +17,7 @@ export const DRIVING_RULES = {
 } as const;
 
 import { CREW_RULES, dailyLimitMin, type Crew } from './crew';
+import { t as tr } from '@/i18n/t';
 
 export type SegmentKind = 'drive' | 'break' | 'rest' | 'border' | 'loading' | 'unloading' | 'incident' | 'ferry' | 'rail' | 'charge';
 
@@ -281,7 +282,7 @@ export function compressWithCrossing(segments: readonly Segment[], startAt: numb
       // On the quay (or the terminal) until the departure, then on board.
       const every = (cross.everyMin * MIN) / timeScale;
       const departs = Math.ceil((t + (cross.boardingMin * MIN) / timeScale) / every) * every;
-      const wait: Segment = { ...s, start: t, end: departs, toKm: s.fromKm, note: s.kind === 'ferry' ? 'На пристанището — чака ферибота' : 'На терминала — чака влака' };
+      const wait: Segment = { ...s, start: t, end: departs, toKm: s.fromKm, note: s.kind === 'ferry' ? tr('На пристанището — чака ферибота') : tr('На терминала — чака влака') };
       const board: Segment = { ...s, start: departs, end: departs + (cross.gameMin * MIN) / timeScale };
       t = board.end;
       return [wait, board];

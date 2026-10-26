@@ -4,6 +4,7 @@ import { isStaff } from '@/server/auth/roles';
 import type { DbOrTx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 import { fail } from '@/server/game/errors';
+import { t } from '@/i18n/t';
 
 // The role per connection or transaction: one settlement asks for many features of the same player.
 const roles = new WeakMap<object, Map<string, string | null>>();
@@ -25,5 +26,5 @@ export async function featureFor(db: DbOrTx, userId: string, id: FeatureId, now 
 
 /** Refuses an action of a feature that is not out yet for this player. */
 export function requireFeature(id: FeatureId, role: string, now = new Date()) {
-  if (!featureLive(id, now, isStaff(role))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!featureLive(id, now, isStaff(role))) fail('not_released', t('Това идва със следващото обновление.'), 403);
 }

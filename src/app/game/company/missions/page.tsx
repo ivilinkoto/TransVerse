@@ -15,10 +15,17 @@ import { periodWindow } from '@/lib/game/missions';
 import { cities, companyProjects, users } from '@/server/db/schema';
 import { canOfferJobs } from '@/server/game/hire';
 import { activeProject, projectChoices } from '@/server/game/projects';
+import { t, tx } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Мисии на компанията' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: t('Мисии на компанията') };
+}
 
 export default async function CompanyMissionsPage() {
+  await initLocale();
   const { db, user, now, features } = await gameContext();
   const hub = await companyHub(db, user.id);
   if (!hub) redirect('/game/company');
@@ -42,10 +49,10 @@ export default async function CompanyMissionsPage() {
         running={project && { title: project.title, cargo: project.cargoType as CargoType, city: cityRows.find((r) => r.id === project.destCityId)?.nameBg ?? '', progress: project.progressTons, target: project.targetTons, rewardCents: project.rewardCents, rewardXp: project.rewardXp, endsAt: project.endsAt, helpers: Object.entries(project.contributions).sort((a, b) => b[1] - a[1]).map(([id, tons]) => ({ username: helperNames.find((h) => h.id === id)?.username ?? '—', tons })) }}
       />}
       <Card
-        title={<span className="inline-flex items-center gap-2"><Target className="h-4 w-4 text-cyan-glow" />Седмични мисии на компанията</span>}
-        actions={<span className="text-xs text-mist-400">Нови след {duration((board.window.endsAt.getTime() - now.getTime()) / 60_000)} · {dateTime(board.window.endsAt)}</span>}
+        title={<span className="inline-flex items-center gap-2"><Target className="h-4 w-4 text-cyan-glow" />{t('Седмични мисии на компанията')}</span>}
+        actions={<span className="text-xs text-mist-400">{t('Нови след {0} · {1}', duration((board.window.endsAt.getTime() - now.getTime()) / 60_000), dateTime(board.window.endsAt))}</span>}
       >
-        <p className="mb-4 text-sm text-mist-400">Цели за всички членове заедно. Всяка доставка на член се брои автоматично. Наградата отива директно в касата на компанията, заедно с фирмен опит. Целите растат с броя на членовете.</p>
+        <p className="mb-4 text-sm text-mist-400">{t('Цели за всички членове заедно. Всяка доставка на член се брои автоматично. Наградата отива директно в касата на компанията, заедно с фирмен опит. Целите растат с броя на членовете.')}</p>
         <ul className="grid gap-3 lg:grid-cols-3">
           {board.missions.map((m) => {
             const def = companyMissionById(m.missionId);
@@ -57,21 +64,21 @@ export default async function CompanyMissionsPage() {
                   <span>{def ? def.title(m.target) : m.missionId}</span>
                 </div>
                 <div className="mt-2 flex gap-3 text-xs">
-                  <span className="num inline-flex items-center gap-1 text-gold-400"><Landmark className="h-3.5 w-3.5" />{money(m.rewardCents)} в касата</span>
-                  <span className="num text-prestige">+{int(m.rewardXp)} фирмен опит</span>
+                  <span className="num inline-flex items-center gap-1 text-gold-400"><Landmark className="h-3.5 w-3.5" />{t('{0} в касата', money(m.rewardCents))}</span>
+                  <span className="num text-prestige">{t('+{0} фирмен опит', int(m.rewardXp))}</span>
                 </div>
                 <div className="mt-3 flex justify-between text-xs text-mist-400">
                   <span className="num">{amount(def?.metric, m.progress)} / {amount(def?.metric, m.target)}</span>
                   <span className="num">{Math.floor(Math.min(100, share))}%</span>
                 </div>
                 <Meter value={share} tone={m.completedAt ? 'auto' : 'cyan'} className="mt-1" />
-                {m.completedAt && <p className="mt-2 text-xs text-profit">Изпълнена · {dateTime(m.completedAt)} · наградата е в касата</p>}
+                {m.completedAt && <p className="mt-2 text-xs text-profit">{t('Изпълнена · {0} · наградата е в касата', dateTime(m.completedAt))}</p>}
                 {m.contributors.length > 0 && (
                   <div className="mt-3 border-t border-asphalt-800 pt-2">
-                    <div className="label mb-1">Принос</div>
+                    <div className="label mb-1">{t('Принос')}</div>
                     <ul className="space-y-0.5 text-xs">
                       {m.contributors.slice(0, 5).map((c) => (
-                        <li key={c.username} className="flex justify-between"><span className="truncate">{c.username}</span><span className="num text-mist-300">{def?.metric === 'active_members' ? `${int(c.amount)} дост.` : amount(def?.metric, c.amount)}</span></li>
+                        <li key={c.username} className="flex justify-between"><span className="truncate">{tx(c.username)}</span><span className="num text-mist-300">{def?.metric === 'active_members' ? t('{0} дост.', int(c.amount)) : amount(def?.metric, c.amount)}</span></li>
                       ))}
                     </ul>
                   </div>
@@ -82,12 +89,12 @@ export default async function CompanyMissionsPage() {
         </ul>
       </Card>
       {board.history.length > 0 && (
-        <Card title="Предишни седмици">
+        <Card title={t('Предишни седмици')}>
           <ul className="divide-y divide-asphalt-800 text-sm">
             {board.history.map((h) => (
               <li key={h.periodKey} className="flex justify-between py-2">
-                <span>Седмица {h.periodKey.slice(1).replace('-', ' / ')}</span>
-                <span className="num text-mist-300">{h.done} от {h.total} изпълнени · <span className="text-gold-400">{money(h.earned)}</span></span>
+                <span>{t('Седмица {0}', h.periodKey.slice(1).replace('-', ' / '))}</span>
+                <span className="num text-mist-300">{t('{0} от {1} изпълнени ·', h.done, h.total)}{' '}<span className="text-gold-400">{money(h.earned)}</span></span>
               </li>
             ))}
           </ul>

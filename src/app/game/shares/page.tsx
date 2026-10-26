@@ -7,8 +7,14 @@ import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
 import { listingStatus, shareMarketView } from '@/server/game/shares';
 import { ListCompanyButton, ShareTrade } from './SharesClient';
+import { t, tx } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Борса за акции' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: t('Борса за акции') };
+}
 
 /** A small price line from the last 30 days. */
 function Spark({ values, up }: { values: number[]; up: boolean }) {
@@ -21,6 +27,7 @@ function Spark({ values, up }: { values: number[]; up: boolean }) {
 
 /** v1.8: shares of the players' companies. Game money; the price follows each company's results. */
 export default async function SharesPage() {
+  await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.share_market) notFound();
   const [market, membership] = await Promise.all([shareMarketView(db, user.id, now), membershipOf(db, user.id)]);
@@ -29,24 +36,24 @@ export default async function SharesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Борса за акции"
-        subtitle="Купувай дялове от компаниите на другите играчи. Цената следва резултатите им; всеки понеделник касата им плаща дивидент. Игрови пари."
-        help={`Всяка листната компания има ${SHARES.total} акции; извън нея могат да се държат до ${SHARES.outsideMax}, най-много ${SHARES.perPlayerMax} на играч. Покупката плаща цената в касата на компанията (+${Math.round(SHARES.feeShare * 100)} % такса). Купените акции се продават след ${SHARES.lockDays} дни за ${Math.round(SHARES.sellShare * 100)} % от цената. Цената всеки ден се движи с до ±${Math.round(SHARES.maxDailyMove * 100)} % към (каса + ${SHARES.contributionsWeight} × вноските от курсовете за ${SHARES.windowDays} дни) / ${SHARES.total}. Дивидентът е ${Math.round(SHARES.dividendShare * 100)} % от вноските за седмицата, за дела на акциите извън компанията.`}
+        title={t('Борса за акции')}
+        subtitle={t('Купувай дялове от компаниите на другите играчи. Цената следва резултатите им; всеки понеделник касата им плаща дивидент. Игрови пари.')}
+        help={t('Всяка листната компания има {0} акции; извън нея могат да се държат до {1}, най-много {2} на играч. Покупката плаща цената в касата на компанията (+{3} % такса). Купените акции се продават след {4} дни за {5} % от цената. Цената всеки ден се движи с до ±{6} % към (каса + {7} × вноските от курсовете за {8} дни) / {9}. Дивидентът е {10} % от вноските за седмицата, за дела на акциите извън компанията.', SHARES.total, SHARES.outsideMax, SHARES.perPlayerMax, Math.round(SHARES.feeShare * 100), SHARES.lockDays, Math.round(SHARES.sellShare * 100), Math.round(SHARES.maxDailyMove * 100), SHARES.contributionsWeight, SHARES.windowDays, SHARES.total, Math.round(SHARES.dividendShare * 100))}
       />
       {own && !own.listed && (
-        <Card title="Твоята компания на борсата">
-          <p className="text-sm text-mist-300">Листната компания получава в касата парите от продадените акции, а всеки понеделник плаща дивиденти от касата.</p>
-          {own.oldEnough && own.bigEnough ? <ListCompanyButton /> : <p className="mt-2 text-sm text-amber-sig">Нужни са поне {SHARES.minAgeDays} дни от основаването и {SHARES.minMembers} членове.</p>}
+        <Card title={t('Твоята компания на борсата')}>
+          <p className="text-sm text-mist-300">{t('Листната компания получава в касата парите от продадените акции, а всеки понеделник плаща дивиденти от касата.')}</p>
+          {own.oldEnough && own.bigEnough ? <ListCompanyButton /> : <p className="mt-2 text-sm text-amber-sig">{t('Нужни са поне {0} дни от основаването и {1} членове.', SHARES.minAgeDays, SHARES.minMembers)}</p>}
         </Card>
       )}
       {holdings.length > 0 && (
-        <Card title="Моите акции">
+        <Card title={t('Моите акции')}>
           <ul className="divide-y divide-white/5 text-sm">
             {holdings.map((m) => {
               const gain = m.holding!.valueCents - m.holding!.costCents;
               return (
                 <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                  <span><b>{m.name}</b> · {m.holding!.shares} акции</span>
+                  <span><b>{tx(m.name)}</b>{' '}{t('· {0} акции', m.holding!.shares)}</span>
                   <span className="num">{money(m.holding!.valueCents)} <span className={gain >= 0 ? 'text-profit' : 'text-loss'}>({gain >= 0 ? '+' : ''}{money(gain)})</span></span>
                 </li>
               );
@@ -54,23 +61,23 @@ export default async function SharesPage() {
           </ul>
         </Card>
       )}
-      <Card title="Листнати компании">
+      <Card title={t('Листнати компании')}>
         {market.length === 0 ? (
-          <Empty icon={TrendingUp} title="Още няма листнати компании">Собственик на компания на поне {SHARES.minAgeDays} дни с {SHARES.minMembers}+ членове може да я листне от тази страница.</Empty>
+          <Empty icon={TrendingUp} title={t('Още няма листнати компании')}>{t('Собственик на компания на поне {0} дни с {1}+ членове може да я листне от тази страница.', SHARES.minAgeDays, SHARES.minMembers)}</Empty>
         ) : (
           <ul className="divide-y divide-white/5">
             {market.map((m) => (
               <li key={m.id} className="py-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="font-semibold">{m.name}{m.tag ? <span className="ml-1 text-xs text-mist-400">[{m.tag}]</span> : null}{m.own ? <span className="ml-2 text-xs text-cyan-glow">твоята</span> : null}</div>
-                    <div className="text-xs text-mist-400">Свободни: {m.free} акции</div>
+                    <div className="font-semibold">{tx(m.name)}{m.tag ? <span className="ml-1 text-xs text-mist-400">[{tx(m.tag)}]</span> : null}{m.own ? <span className="ml-2 text-xs text-cyan-glow">{t('твоята')}</span> : null}</div>
+                    <div className="text-xs text-mist-400">{t('Свободни: {0} акции', m.free)}</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Spark values={m.history} up={m.changeWeek >= 0} />
                     <div className="text-right">
                       <div className="num font-display text-lg font-bold">{money(m.priceCents)}</div>
-                      <div className={`num text-xs ${m.changeWeek >= 0 ? 'text-profit' : 'text-loss'}`}>{m.changeWeek >= 0 ? '+' : ''}{(m.changeWeek * 100).toFixed(1)} % за седмица</div>
+                      <div className={`num text-xs ${m.changeWeek >= 0 ? 'text-profit' : 'text-loss'}`}>{t('{0}{1} % за седмица', m.changeWeek >= 0 ? '+' : '', (m.changeWeek * 100).toFixed(1))}</div>
                     </div>
                   </div>
                 </div>

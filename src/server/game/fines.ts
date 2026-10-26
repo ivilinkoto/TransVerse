@@ -8,8 +8,9 @@ import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
 import { checkAchievements } from './progression';
+import { t as tr, intlLocale } from '@/i18n/t';
 
-const eur = (cents: number) => `${Math.round(cents / 100).toLocaleString('bg-BG')} лв.`;
+const eur = (cents: number) => tr('{0} лв.', Math.round(cents / 100).toLocaleString(intlLocale()));
 
 /** A roadside check found a risk the player took: the fine waits to be paid or appealed (once per delivery and violation). */
 export async function issueFine(tx: Tx, f: { companyId: string; userId: string; deliveryId: string; violation: Violation; amountCents: number; at: Date }) {
@@ -19,21 +20,21 @@ export async function issueFine(tx: Tx, f: { companyId: string; userId: string; 
     .onConflictDoNothing()
     .returning({ id: fines.id });
   if (!rows.length) return;
-  await notify(tx, f.userId, 'warning', `Глоба: ${VIOLATION_LABELS[f.violation].toLowerCase()}`, `Пътна полиция те спря: ${eur(f.amountCents)} Плати или обжалвай до ${FINE_RULES.dueHours} часа — после се удържа автоматично с ${Math.round(FINE_RULES.latePayShare * 100)}% надбавка.`, '/game/finance#fines');
+  await notify(tx, f.userId, 'warning', () => tr('Глоба: {0}', VIOLATION_LABELS[f.violation].toLowerCase()), () => tr('Пътна полиция те спря: {0} Плати или обжалвай до {1} часа — после се удържа автоматично с {2}% надбавка.', eur(f.amountCents), FINE_RULES.dueHours, Math.round(FINE_RULES.latePayShare * 100)), '/game/finance#fines');
 }
 
 async function ownFine(tx: Tx, userId: string, fineId: string) {
   const company = await companyForUser(tx, userId);
   const [f] = await tx.select().from(fines).where(and(eq(fines.id, fineId), eq(fines.companyId, company.id))).for('update');
-  if (!f) fail('fine_not_found', 'Глобата не е намерена.', 404);
-  if (f!.status !== 'unpaid') fail('fine_closed', 'Глобата вече е приключена.', 409);
+  if (!f) fail('fine_not_found', tr('Глобата не е намерена.'), 404);
+  if (f!.status !== 'unpaid') fail('fine_closed', tr('Глобата вече е приключена.'), 409);
   return f!;
 }
 
 export async function payFine(db: Database, userId: string, fineId: string, now = new Date()) {
   return db.transaction(async (tx) => {
     const f = await ownFine(tx, userId, fineId);
-    await post(tx, f.companyId, [{ category: 'fines', amountCents: -f.amountCents, description: `Глоба: ${VIOLATION_LABELS[f.violation as Violation].toLowerCase()}`, idempotencyKey: `fine:${f.id}`, refType: 'fine', refId: f.id }], { requireFunds: true });
+    await post(tx, f.companyId, [{ category: 'fines', amountCents: -f.amountCents, description: tr('Глоба: {0}', VIOLATION_LABELS[f.violation as Violation].toLowerCase()), idempotencyKey: `fine:${f.id}`, refType: 'fine', refId: f.id }], { requireFunds: true });
     await tx.update(fines).set({ status: 'paid', resolvedAt: now }).where(eq(fines.id, f.id));
   });
 }
@@ -42,7 +43,7 @@ export async function payFine(db: Database, userId: string, fineId: string, now 
 export async function appealFine(db: Database, userId: string, fineId: string, now = new Date(), roll = Math.random()) {
   return db.transaction(async (tx) => {
     const f = await ownFine(tx, userId, fineId);
-    if (f.appealed) fail('already_appealed', 'Глобата вече е обжалвана.', 409);
+    if (f.appealed) fail('already_appealed', tr('Глобата вече е обжалвана.'), 409);
     if (roll < FINE_RULES.appealWinChance) {
       await tx.update(fines).set({ status: 'dropped', appealed: true, resolvedAt: now, note: 'Отменена след обжалване.' }).where(eq(fines.id, f.id));
       await checkAchievements(tx, userId, f.companyId);
@@ -63,9 +64,9 @@ export async function collectOverdueFines(db: Database, now = new Date()): Promi
       const [row] = await tx.select().from(fines).where(and(eq(fines.id, f.id), eq(fines.status, 'unpaid'))).for('update', { skipLocked: true });
       if (!row) return;
       const amount = Math.round(row.amountCents * (1 + FINE_RULES.latePayShare));
-      await post(tx, row.companyId, [{ category: 'fines', amountCents: -amount, description: `Неплатена глоба (+${Math.round(FINE_RULES.latePayShare * 100)}%): ${VIOLATION_LABELS[row.violation as Violation].toLowerCase()}`, idempotencyKey: `fine:${row.id}`, refType: 'fine', refId: row.id }]);
+      await post(tx, row.companyId, [{ category: 'fines', amountCents: -amount, description: tr('Неплатена глоба (+{0}%): {1}', Math.round(FINE_RULES.latePayShare * 100), VIOLATION_LABELS[row.violation as Violation].toLowerCase()), idempotencyKey: `fine:${row.id}`, refType: 'fine', refId: row.id }]);
       await tx.update(fines).set({ status: 'auto_paid', amountCents: amount, resolvedAt: now }).where(eq(fines.id, row.id));
-      await notify(tx, row.userId, 'warning', 'Неплатена глоба е удържана', `${eur(amount)} с надбавка за закъснение.`, '/game/finance#fines');
+      await notify(tx, row.userId, 'warning', () => tr('Неплатена глоба е удържана'), () => tr('{0} с надбавка за закъснение.', eur(amount)), '/game/finance#fines');
       n++;
     });
   }
@@ -81,13 +82,13 @@ export async function buyInsurance(db: Database, userId: string, vehicleId: stri
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id))).for('update');
-    if (!v || v.soldAt) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
-    if (v!.ownership === 'rented') fail('rented', 'Наетите камиони са застраховани от наемодателя.');
+    if (!v || v.soldAt) fail('vehicle_not_found', tr('Превозното средство не е намерено.'), 404);
+    if (v!.ownership === 'rented') fail('rented', tr('Наетите камиони са застраховани от наемодателя.'));
     const price = await insuranceQuote(tx, v!);
     const from = v!.insuredUntil && v!.insuredUntil > now ? v!.insuredUntil : now;
     const until = new Date(from.getTime() + INSURANCE.days * 86_400_000);
-    if (until.getTime() - now.getTime() > 3 * INSURANCE.days * 86_400_000) fail('too_far', 'Застраховката може да се плати най-много 90 дни напред.');
-    await post(tx, company.id, [{ category: 'insurance', amountCents: -price, description: `Застраховка ${v!.plate} до ${until.toLocaleDateString('bg-BG', { timeZone: 'Europe/Sofia' })}`, idempotencyKey: `insurance:${v!.id}:${until.toISOString()}`, refType: 'vehicle', refId: v!.id }], { requireFunds: true });
+    if (until.getTime() - now.getTime() > 3 * INSURANCE.days * 86_400_000) fail('too_far', tr('Застраховката може да се плати най-много 90 дни напред.'));
+    await post(tx, company.id, [{ category: 'insurance', amountCents: -price, description: tr('Застраховка {0} до {1}', v!.plate, until.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia' })), idempotencyKey: `insurance:${v!.id}:${until.toISOString()}`, refType: 'vehicle', refId: v!.id }], { requireFunds: true });
     await tx.update(vehicles).set({ insuredUntil: until }).where(eq(vehicles.id, v!.id));
     await checkAchievements(tx, userId, company.id);
     return { until, price };

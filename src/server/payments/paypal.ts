@@ -17,6 +17,7 @@ import { adminAudit, payments } from '@/server/db/schema';
 import { requireAdminRole, type Staff } from '@/server/admin';
 import { fail } from '@/server/game/errors';
 import { checkoutSchema, describeFailure, markPaymentFailed, paymentConfig, paypalMode, refundLocked, settlePaid, siteUrl, startPayment, toCents, type CheckoutInput, type Payment } from './common';
+import { t } from '@/i18n/t';
 
 // ── API client ────────────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ const API = { sandbox: 'https://api-m.sandbox.paypal.com', live: 'https://api-m.
 function realApi(): PayPalApi {
   const id = process.env.PAYPAL_CLIENT_ID;
   const secret = process.env.PAYPAL_CLIENT_SECRET;
-  if (!id || !secret) fail('payments_disabled', 'Плащанията с PayPal още не са включени.', 503);
+  if (!id || !secret) fail('payments_disabled', t('Плащанията с PayPal още не са включени.'), 503);
   const base = API[paypalMode()];
   let token: { value: string; until: number } | null = null;
 
@@ -131,7 +132,7 @@ export async function diagnosePaypal(fetcher: typeof fetch = fetch) {
   const id = process.env.PAYPAL_CLIENT_ID?.trim();
   const secret = process.env.PAYPAL_CLIENT_SECRET?.trim();
   const mode = paypalMode();
-  if (!id || !secret) return { mode, ok: false, message: 'Липсват PAYPAL_CLIENT_ID или PAYPAL_CLIENT_SECRET.' };
+  if (!id || !secret) return { mode, ok: false, message: t('Липсват PAYPAL_CLIENT_ID или PAYPAL_CLIENT_SECRET.') };
   const tryLogin = async (m: 'live' | 'sandbox') => {
     try {
       const res = await fetcher(`${API[m]}/v1/oauth2/token`, {
@@ -146,13 +147,13 @@ export async function diagnosePaypal(fetcher: typeof fetch = fetch) {
     }
   };
   const status = await tryLogin(mode);
-  if (status === 200) return { mode, ok: true, message: `Връзката с PayPal (${mode}) работи — ключовете са верни.` };
-  if (status === 0) return { mode, ok: false, message: 'Сървърът не успя да се свърже с PayPal (мрежа). Опитайте отново.' };
+  if (status === 200) return { mode, ok: true, message: t('Връзката с PayPal ({0}) работи — ключовете са верни.', mode) };
+  if (status === 0) return { mode, ok: false, message: t('Сървърът не успя да се свърже с PayPal (мрежа). Опитайте отново.') };
   const other = mode === 'live' ? 'sandbox' : 'live';
   if ((await tryLogin(other)) === 200) {
-    return { mode, ok: false, message: `Ключовете са за ${other}, а PAYPAL_ENV е „${mode}“. ${other === 'live' ? 'Задайте PAYPAL_ENV=live' : 'Сложете Live ключовете (Client ID и Secret от раздел Live) или задайте PAYPAL_ENV=sandbox'} и пуснете Deploy.` };
+    return { mode, ok: false, message: t('Ключовете са за {0}, а PAYPAL_ENV е „{1}“. {2} и пуснете Deploy.', other, mode, other === 'live' ? t('Задайте PAYPAL_ENV=live') : t('Сложете Live ключовете (Client ID и Secret от раздел Live) или задайте PAYPAL_ENV=sandbox')) };
   }
-  return { mode, ok: false, message: `PayPal отхвърли ключовете (HTTP ${status}) и в live, и в sandbox. Проверете дали Client ID и Secret са копирани изцяло, без интервали, от едно и също приложение.` };
+  return { mode, ok: false, message: t('PayPal отхвърли ключовете (HTTP {0}) и в live, и в sandbox. Проверете дали Client ID и Secret са копирани изцяло, без интервали, от едно и също приложение.', status) };
 }
 
 // ── Checkout ──────────────────────────────────────────────────────────────
@@ -160,7 +161,7 @@ export async function diagnosePaypal(fetcher: typeof fetch = fetch) {
 /** Records a pending payment and creates the PayPal order; returns PayPal's approval page. */
 export async function createPaypalCheckout(db: Database, userId: string, raw: CheckoutInput, api?: PayPalApi, now = new Date(), origin?: string | null) {
   const input = checkoutSchema.parse({ ...raw, provider: 'paypal' });
-  if (!paymentConfig().paypal.enabled) fail('payments_disabled', 'Плащанията с PayPal още не са включени.', 503);
+  if (!paymentConfig().paypal.enabled) fail('payments_disabled', t('Плащанията с PayPal още не са включени.'), 503);
   const base = siteUrl(origin);
   const { payment, product } = await startPayment(db, userId, input, now);
   let order: PayPalOrder;
@@ -196,11 +197,11 @@ export async function createPaypalCheckout(db: Database, userId: string, raw: Ch
   } catch (error) {
     console.error('[payments] paypal order failed', error);
     await markPaymentFailed(db, payment.id, describeFailure(error));
-    fail('checkout_failed', 'Плащането не можа да започне. Опитайте отново по-късно.', 502);
+    fail('checkout_failed', t('Плащането не можа да започне. Опитайте отново по-късно.'), 502);
   }
   const url = order!.links?.find((l) => l.rel === 'payer-action' || l.rel === 'approve')?.href;
   await db.update(payments).set({ orderId: order!.id }).where(eq(payments.id, payment.id));
-  if (!url) fail('checkout_failed', 'Плащането не можа да започне. Опитайте отново.', 502);
+  if (!url) fail('checkout_failed', t('Плащането не можа да започне. Опитайте отново.'), 502);
   return { paymentId: payment.id, url: url! };
 }
 
@@ -304,17 +305,17 @@ export async function reconcilePaypal(db: Database, now = new Date(), api?: PayP
 export async function refundPaypalPayment(db: Database, actor: Staff, paymentId: string, api?: PayPalApi, now = new Date()) {
   requireAdminRole(actor);
   const [p] = await db.select().from(payments).where(eq(payments.id, paymentId));
-  if (!p) fail('payment_not_found', 'Плащането не е намерено.', 404);
-  if (p!.provider !== 'paypal') fail('wrong_provider', 'Това плащане се възстановява от таблото на Stripe.');
-  if (p!.status !== 'paid' || !p!.captureId) fail('not_refundable', 'Може да се възстанови само платено плащане.');
+  if (!p) fail('payment_not_found', t('Плащането не е намерено.'), 404);
+  if (p!.provider !== 'paypal') fail('wrong_provider', t('Това плащане се възстановява от таблото на Stripe.'));
+  if (p!.status !== 'paid' || !p!.captureId) fail('not_refundable', t('Може да се възстанови само платено плащане.'));
   let refund: { id: string; status: string };
   try {
     refund = await (api ?? paypalApi()).refundCapture(p!.captureId!, `refund:${p!.id}`);
   } catch (error) {
     console.error('[payments] paypal refund failed', error);
-    fail('refund_failed', 'PayPal отказа възстановяването. Опитайте от сайта на PayPal.', 502);
+    fail('refund_failed', t('PayPal отказа възстановяването. Опитайте от сайта на PayPal.'), 502);
   }
-  if (refund!.status !== 'COMPLETED' && refund!.status !== 'PENDING') fail('refund_failed', `PayPal върна статус ${refund!.status}.`, 502);
+  if (refund!.status !== 'COMPLETED' && refund!.status !== 'PENDING') fail('refund_failed', t('PayPal върна статус {0}.', refund!.status), 502);
   return db.transaction(async (tx) => {
     const [locked] = await tx.select().from(payments).where(eq(payments.id, paymentId)).for('update');
     const changed = await refundLocked(tx, locked!, now);

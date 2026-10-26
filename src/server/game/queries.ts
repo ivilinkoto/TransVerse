@@ -159,6 +159,35 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   return { season: null, rows: rows.map((r) => ({ ...r, value: Number(r.value) })) };
 }
 
+/** v2.0 national rankings: the countries by the season points of the companies based in them (the base city's country). */
+export async function nationalTable(db: DbOrTx) {
+  const season = await activeSeason(db);
+  const rows = await db
+    .select({ country: cities.countryCode, points: sql<number>`sum(${seasonScores.points})::int`, companies: sql<number>`count(*)::int` })
+    .from(seasonScores)
+    .innerJoin(companies, eq(companies.id, seasonScores.companyId))
+    .innerJoin(cities, eq(cities.id, companies.hqCityId))
+    .where(and(eq(seasonScores.seasonId, season.id), sql`${seasonScores.points} > 0`))
+    .groupBy(cities.countryCode)
+    .orderBy(desc(sql`sum(${seasonScores.points})`));
+  return { season, rows };
+}
+
+/** v2.0: the season ranking of the companies based in one country. */
+export async function nationalBoard(db: DbOrTx, country: string, limit = 50) {
+  const season = await activeSeason(db);
+  const rows = await db
+    .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
+    .from(seasonScores)
+    .innerJoin(companies, eq(companies.id, seasonScores.companyId))
+    .innerJoin(users, eq(users.id, companies.ownerId))
+    .innerJoin(cities, eq(cities.id, companies.hqCityId))
+    .where(and(eq(seasonScores.seasonId, season.id), eq(cities.countryCode, country)))
+    .orderBy(desc(seasonScores.points))
+    .limit(limit);
+  return { season, rows };
+}
+
 export async function routeGeometries(db: DbOrTx, ids: number[]) {
   if (!ids.length) return new Map<number, { geometry: string | null; provider: string; distanceKm: number }>();
   const rows = await db.select({ id: routes.id, geometry: routes.geometry, provider: routes.provider, distanceKm: routes.distanceKm }).from(routes).where(inArray(routes.id, ids));

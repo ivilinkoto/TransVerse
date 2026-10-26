@@ -7,6 +7,7 @@ import { createIndependent } from '@/server/game/company';
 import { fail } from '@/server/game/errors';
 import { logActivity } from '@/server/game/notify';
 import { hashPassword, verifyAgainstDummy, verifyPassword } from './password';
+import { t } from '@/i18n/t';
 
 export const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email('Невалиден имейл адрес.').max(254),
@@ -38,7 +39,7 @@ export async function register(db: Database, raw: z.infer<typeof registerSchema>
   } catch (error) {
     // Two simultaneous sign-ups with the same name: the unique index decides.
     if ((error as { cause?: { code?: string } }).cause?.code === '23505' || (error as { code?: string }).code === '23505') {
-      fail('already_registered', 'Имейлът или потребителското име вече са заети.', 409);
+      fail('already_registered', t('Имейлът или потребителското име вече са заети.'), 409);
     }
     throw error;
   }
@@ -51,8 +52,8 @@ function registerTx(db: Database, input: z.infer<typeof registerSchema>, passwor
       .from(users)
       .where(sql`lower(${users.email}) = ${input.email} or lower(${users.username}) = lower(${input.username})`);
     if (existing) {
-      if (existing.email.toLowerCase() === input.email) fail('email_taken', 'Този имейл вече е регистриран.', 409);
-      fail('username_taken', 'Това потребителско име е заето.', 409);
+      if (existing.email.toLowerCase() === input.email) fail('email_taken', t('Този имейл вече е регистриран.'), 409);
+      fail('username_taken', t('Това потребителско име е заето.'), 409);
     }
     // New players start on the current version: the tutorial shows them around instead of the release notes.
     const [user] = await tx.insert(users).values({ email: input.email, username: input.username, passwordHash, seenVersion: currentVersion(new Date()) }).returning({ id: users.id });
@@ -69,8 +70,8 @@ export async function authenticate(db: Database, input: z.infer<typeof loginSche
     .from(users)
     .where(sql`lower(${users.email}) = ${login} or lower(${users.username}) = ${login}`);
   const ok = user ? await verifyPassword(user.passwordHash, input.password) : await verifyAgainstDummy(input.password);
-  if (!user || !ok) fail('invalid_credentials', 'Грешен имейл/потребител или парола.', 401);
-  if (user!.bannedAt) fail('banned', `Профилът е блокиран${user!.banReason ? `: ${user!.banReason}` : ''}. Свържете се с поддръжката.`, 403);
+  if (!user || !ok) fail('invalid_credentials', t('Грешен имейл/потребител или парола.'), 401);
+  if (user!.bannedAt) fail('banned', t('Профилът е блокиран{0}. Свържете се с поддръжката.', user!.banReason ? `: ${user!.banReason}` : ''), 403);
   await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, user!.id));
   await logActivity(db, user!.id, 'login');
   return user!.id;

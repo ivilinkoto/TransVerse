@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
+import { t } from '@/i18n/t';
 
 /**
  * The game economy for administrators (v1.4): the money in the game (players,
@@ -126,11 +127,11 @@ export function balanceSuggestion(inflation: number, current: number): { factor:
   const round = (x: number) => Math.round(x * 100) / 100;
   if (inflation > BALANCE.highInflation) {
     const step = Math.min(BALANCE.maxStep, Math.round((inflation - BALANCE.highInflation) * 100) / 100 + 0.03);
-    return { factor: round(Math.max(BALANCE.min, current * (1 - step))), reason: `Парите растат с ${(inflation * 100).toFixed(1)} % за седмица — предлагам ${Math.round(step * 100)} % по-ниско заплащане на новите товари.` };
+    return { factor: round(Math.max(BALANCE.min, current * (1 - step))), reason: t('Парите растат с {0} % за седмица — предлагам {1} % по-ниско заплащане на новите товари.', (inflation * 100).toFixed(1), Math.round(step * 100)) };
   }
   if (inflation < BALANCE.lowInflation) {
     const step = Math.min(BALANCE.maxStep, Math.round((BALANCE.lowInflation - inflation) * 100) / 100 + 0.03);
-    return { factor: round(Math.min(BALANCE.max, current * (1 + step))), reason: `Парите намаляват с ${(-inflation * 100).toFixed(1)} % за седмица — предлагам ${Math.round(step * 100)} % по-високо заплащане на новите товари.` };
+    return { factor: round(Math.min(BALANCE.max, current * (1 + step))), reason: t('Парите намаляват с {0} % за седмица — предлагам {1} % по-високо заплащане на новите товари.', (-inflation * 100).toFixed(1), Math.round(step * 100)) };
   }
   return null;
 }

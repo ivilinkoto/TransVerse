@@ -7,6 +7,7 @@ import { api } from '@/lib/client/api';
 import { Avatar } from './Avatar';
 import { openDirectChat } from './PlayerCard';
 import { PlayerName } from './PlayerName';
+import { t } from '@/i18n/t';
 
 interface Friend {
   friendshipId: string;
@@ -41,7 +42,7 @@ export function FriendsPanel({ friends, received, sent }: { friends: Friend[]; r
       </span>
       <div className="min-w-0 flex-1 text-sm">
         <PlayerName name={f.username} role={f.role} vip={f.vip} className="font-semibold" />
-        <div className={`text-xs ${f.online ? 'text-profit' : 'text-mist-400'}`}>ниво {f.level} · {f.lastSeen}</div>
+        <div className={`text-xs ${f.online ? 'text-profit' : 'text-mist-400'}`}>{t('ниво {0} · {1}', f.level, f.lastSeen)}</div>
       </div>
       <div className="flex shrink-0 gap-1.5">{actions}</div>
     </li>
@@ -51,13 +52,13 @@ export function FriendsPanel({ friends, received, sent }: { friends: Friend[]; r
     <div className="space-y-5">
       {received.length > 0 && (
         <div>
-          <h3 className="label mb-2 text-gold-400">Покани за приятелство ({received.length})</h3>
+          <h3 className="label mb-2 text-gold-400">{t('Покани за приятелство ({0})', received.length)}</h3>
           <ul className="divide-y divide-asphalt-800">
             {received.map((f) =>
               row(f, (
                 <>
-                  <button type="button" className="btn-gold px-3 py-1.5 text-xs" disabled={busy} onClick={() => void act({ type: 'friendRespond', friendshipId: f.friendshipId, accept: true })}><Check className="h-3.5 w-3.5" />Приеми</button>
-                  <button type="button" className="btn-ghost px-2 py-1.5 text-xs" disabled={busy} onClick={() => void act({ type: 'friendRespond', friendshipId: f.friendshipId, accept: false })} aria-label="Откажи"><X className="h-3.5 w-3.5" /></button>
+                  <button type="button" className="btn-gold px-3 py-1.5 text-xs" disabled={busy} onClick={() => void act({ type: 'friendRespond', friendshipId: f.friendshipId, accept: true })}><Check className="h-3.5 w-3.5" />{t('Приеми')}</button>
+                  <button type="button" className="btn-ghost px-2 py-1.5 text-xs" disabled={busy} onClick={() => void act({ type: 'friendRespond', friendshipId: f.friendshipId, accept: false })} aria-label={t('Откажи')}><X className="h-3.5 w-3.5" /></button>
                 </>
               )),
             )}
@@ -65,20 +66,20 @@ export function FriendsPanel({ friends, received, sent }: { friends: Friend[]; r
         </div>
       )}
       <div>
-        <h3 className="label mb-2">Приятели · {online} онлайн от {friends.length}</h3>
+        <h3 className="label mb-2">{t('Приятели · {0} онлайн от {1}', online, friends.length)}</h3>
         {friends.length === 0 ? (
-          <p className="text-sm text-mist-400">Още нямаш приятели. Натисни името на играч — в чата, класациите или компанията — и избери „Добави приятел“.</p>
+          <p className="text-sm text-mist-400">{t('Още нямаш приятели. Натисни името на играч — в чата, класациите или компанията — и избери „Добави приятел“.')}</p>
         ) : (
           <ul className="divide-y divide-asphalt-800">
-            {friends.map((f) => row(f, <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => openDirectChat(f.id, f.username)}><MessageSquare className="h-3.5 w-3.5" />Пиши</button>))}
+            {friends.map((f) => row(f, <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={() => openDirectChat(f.id, f.username)}><MessageSquare className="h-3.5 w-3.5" />{t('Пиши')}</button>))}
           </ul>
         )}
       </div>
       {sent.length > 0 && (
         <div>
-          <h3 className="label mb-2">Изпратени покани</h3>
+          <h3 className="label mb-2">{t('Изпратени покани')}</h3>
           <ul className="divide-y divide-asphalt-800">
-            {sent.map((f) => row(f, <button type="button" className="btn-ghost px-3 py-1.5 text-xs" disabled={busy} onClick={() => void act({ type: 'friendRemove', userId: f.id })}>Отмени</button>))}
+            {sent.map((f) => row(f, <button type="button" className="btn-ghost px-3 py-1.5 text-xs" disabled={busy} onClick={() => void act({ type: 'friendRemove', userId: f.id })}>{t('Отмени')}</button>))}
           </ul>
         </div>
       )}

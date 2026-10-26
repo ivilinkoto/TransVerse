@@ -3,6 +3,7 @@
  * Pure rules shared by server and UI.
  */
 import type { FeatureId } from './features';
+import { t } from '@/i18n/t';
 
 export const PERMISSIONS = {
   edit_profile: 'Редактиране на профила (описание, правила, лого, банер)',
@@ -104,7 +105,7 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
   {
     id: 'logistics',
     label: 'Логистичен отдел',
-    description: (l) => `+${l * 2}% възнаграждение за всеки курс на членовете`,
+    description: (l) => t('+{0}% възнаграждение за всеки курс на членовете', l * 2),
     levels: [
       { costCents: 8_000_00, minCompanyLevel: 1 },
       { costCents: 16_000_00, minCompanyLevel: 2 },
@@ -116,7 +117,7 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
   {
     id: 'rental_partner',
     label: 'Договор с наемодател',
-    description: (l) => `−${l * 5} процентни пункта наем за наетите камиони на членовете`,
+    description: (l) => t('−{0} процентни пункта наем за наетите камиони на членовете', l * 5),
     levels: [
       { costCents: 10_000_00, minCompanyLevel: 1 },
       { costCents: 25_000_00, minCompanyLevel: 3 },
@@ -126,7 +127,7 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
   {
     id: 'training',
     label: 'Учебен център',
-    description: (l) => `+${l * 5}% опит от доставки за членовете`,
+    description: (l) => t('+{0}% опит от доставки за членовете', l * 5),
     levels: [
       { costCents: 6_000_00, minCompanyLevel: 1 },
       { costCents: 15_000_00, minCompanyLevel: 2 },
@@ -136,7 +137,7 @@ export const COMPANY_UPGRADES: CompanyUpgrade[] = [
   {
     id: 'capacity',
     label: 'Административна сграда',
-    description: (l) => `${COMPANY_LIMITS.baseMembers + l * 5} места за членове`,
+    description: (l) => t('{0} места за членове', COMPANY_LIMITS.baseMembers + l * 5),
     levels: [
       { costCents: 5_000_00, minCompanyLevel: 1 },
       { costCents: 12_000_00, minCompanyLevel: 2 },

@@ -12,6 +12,7 @@ import { fleetCapacity } from './fleet';
 import { broadcast, logActivity, notify } from './notify';
 import { checkAchievements } from './progression';
 import { retireRentalFor } from './rentals';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 const ageDays = (d: Date, now: Date) => (now.getTime() - d.getTime()) / 86_400_000;
 
@@ -26,32 +27,32 @@ export async function createListing(db: Database, userId: string, input: { kind:
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const [{ open = 0 } = {}] = await tx.select({ open: sql<number>`count(*)::int` }).from(vehicleListings).where(and(eq(vehicleListings.sellerCompanyId, company.id), eq(vehicleListings.status, 'open')));
-    if (open >= USED_MARKET.maxOpenListings) fail('too_many_listings', `Можеш да имаш до ${USED_MARKET.maxOpenListings} активни обяви.`);
+    if (open >= USED_MARKET.maxOpenListings) fail('too_many_listings', tr('Можеш да имаш до {0} активни обяви.', USED_MARKET.maxOpenListings));
     let row: { modelId: string; condition: number; purchasedAt: Date; cityId: number; plate: string };
     if (input.kind === 'vehicle') {
       const [v] = await tx.select().from(vehicles).where(and(eq(vehicles.id, input.id), eq(vehicles.companyId, company.id), sql`${vehicles.soldAt} is null`)).for('update');
-      if (!v) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
-      if (v!.ownership !== 'owned') fail('rented', 'Наетите и фирмените превозни средства не могат да се продават.');
-      if (v!.status !== 'idle') fail('vehicle_busy', 'Обява се пуска само за свободно превозно средство.');
+      if (!v) fail('vehicle_not_found', tr('Превозното средство не е намерено.'), 404);
+      if (v!.ownership !== 'owned') fail('rented', tr('Наетите и фирмените превозни средства не могат да се продават.'));
+      if (v!.status !== 'idle') fail('vehicle_busy', tr('Обява се пуска само за свободно превозно средство.'));
       await assertNotLeased(tx, v!.id);
       await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v!.id));
       await tx.update(vehicles).set({ status: 'listed' }).where(eq(vehicles.id, v!.id));
       row = v!;
     } else {
       const [t] = await tx.select().from(trailers).where(and(eq(trailers.id, input.id), eq(trailers.companyId, company.id), sql`${trailers.soldAt} is null`)).for('update');
-      if (!t) fail('trailer_not_found', 'Ремаркето не е намерено.', 404);
-      if (t!.ownership !== 'owned') fail('rented', 'Наетите и фирмените ремаркета не могат да се продават.');
-      if (t!.listed) fail('already_listed', 'Ремаркето вече е обявено.');
-      if (t!.hiredOut) fail('hired_out', 'Ремаркето е дадено под наем.');
+      if (!t) fail('trailer_not_found', tr('Ремаркето не е намерено.'), 404);
+      if (t!.ownership !== 'owned') fail('rented', tr('Наетите и фирмените ремаркета не могат да се продават.'));
+      if (t!.listed) fail('already_listed', tr('Ремаркето вече е обявено.'));
+      if (t!.hiredOut) fail('hired_out', tr('Ремаркето е дадено под наем.'));
       if (t!.vehicleId) {
         const [v] = await tx.select({ status: vehicles.status }).from(vehicles).where(eq(vehicles.id, t!.vehicleId));
-        if (v?.status === 'on_delivery') fail('trailer_busy', 'Ремаркето е на курс.');
+        if (v?.status === 'on_delivery') fail('trailer_busy', tr('Ремаркето е на курс.'));
       }
       await tx.update(trailers).set({ vehicleId: null, listed: true }).where(eq(trailers.id, t!.id));
       row = t!;
     }
     const bounds = boundsFor(input.kind, row, now);
-    if (input.priceCents < bounds.min || input.priceCents > bounds.max) fail('bad_price', `Цената трябва да е между ${(bounds.min / 100).toLocaleString('bg-BG')} лв. и ${(bounds.max / 100).toLocaleString('bg-BG')} лв.`);
+    if (input.priceCents < bounds.min || input.priceCents > bounds.max) fail('bad_price', tr('Цената трябва да е между {0} лв. и {1} лв.', (bounds.min / 100).toLocaleString(intlLocale()), (bounds.max / 100).toLocaleString(intlLocale())));
     const [listing] = await tx
       .insert(vehicleListings)
       .values({
@@ -86,7 +87,7 @@ export async function cancelListing(db: Database, userId: string, listingId: str
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const [listing] = await tx.select().from(vehicleListings).where(and(eq(vehicleListings.id, listingId), eq(vehicleListings.sellerCompanyId, company.id))).for('update');
-    if (!listing || listing.status !== 'open') fail('listing_unavailable', 'Обявата вече не е активна.', 409);
+    if (!listing || listing.status !== 'open') fail('listing_unavailable', tr('Обявата вече не е активна.'), 409);
     await release(tx, listing!, 'cancelled', now);
     await broadcast(tx, 'market');
   });
@@ -97,23 +98,23 @@ export async function buyListing(db: Database, userId: string, listingId: string
   return db.transaction(async (tx) => {
     const buyer = await companyForUser(tx, userId);
     const [listing] = await tx.select().from(vehicleListings).where(eq(vehicleListings.id, listingId)).for('update');
-    if (!listing || listing.status !== 'open' || listing.expiresAt <= now) fail('listing_unavailable', 'Обявата вече не е активна.', 409);
-    if (listing!.sellerCompanyId === buyer.id) fail('own_listing', 'Това е твоя обява.');
+    if (!listing || listing.status !== 'open' || listing.expiresAt <= now) fail('listing_unavailable', tr('Обявата вече не е активна.'), 409);
+    if (listing!.sellerCompanyId === buyer.id) fail('own_listing', tr('Това е твоя обява.'));
     const [me] = await tx.select({ level: users.level }).from(users).where(eq(users.id, userId));
     const model = listing!.kind === 'vehicle' ? powerUnitModel(listing!.modelId) : trailerModel(listing!.modelId);
-    if ((me?.level ?? 1) < model.minLevel) fail('level', `Изисква ниво ${model.minLevel}.`);
+    if ((me?.level ?? 1) < model.minLevel) fail('level', tr('Изисква ниво {0}.', model.minLevel));
     if (listing!.kind === 'vehicle') {
       const cap = await fleetCapacity(tx, buyer.id);
-      if (cap.used >= cap.slots) fail('no_capacity', 'Нямаш свободно място в депата. Разшири депо или открий ново.');
+      if (cap.used >= cap.slots) fail('no_capacity', tr('Нямаш свободно място в депата. Разшири депо или открий ново.'));
     }
     const [seller] = await tx.select().from(companies).where(eq(companies.id, listing!.sellerCompanyId));
     const fee = marketFeeCents(listing!.priceCents);
     const [city] = await tx.select({ nameBg: cities.nameBg }).from(cities).where(eq(cities.id, listing!.cityId));
     const key = (k: string) => `used:${listing!.id}:${k}`;
-    const buy: Posting[] = [{ category: 'vehicle_purchase', amountCents: -listing!.priceCents, description: `Употребяван ${model.name} (${city?.nameBg ?? ''})`, idempotencyKey: key('buyer'), refType: 'listing', refId: listing!.id }];
+    const buy: Posting[] = [{ category: 'vehicle_purchase', amountCents: -listing!.priceCents, description: tr('Употребяван {0} ({1})', model.name, city?.nameBg ?? ''), idempotencyKey: key('buyer'), refType: 'listing', refId: listing!.id }];
     const sell: Posting[] = [
-      { category: 'vehicle_sale', amountCents: listing!.priceCents, description: `Продаден на пазара: ${model.name}`, idempotencyKey: key('seller'), refType: 'listing', refId: listing!.id },
-      { category: 'market_fee', amountCents: -fee, description: 'Такса на пазара (5%)', idempotencyKey: key('fee'), refType: 'listing', refId: listing!.id },
+      { category: 'vehicle_sale', amountCents: listing!.priceCents, description: tr('Продаден на пазара: {0}', model.name), idempotencyKey: key('seller'), refType: 'listing', refId: listing!.id },
+      { category: 'market_fee', amountCents: -fee, description: tr('Такса на пазара (5%)'), idempotencyKey: key('fee'), refType: 'listing', refId: listing!.id },
     ];
     // Lock both accounts in a fixed order so two crossing purchases cannot deadlock.
     if (buyer.id < seller!.id) {
@@ -133,7 +134,7 @@ export async function buyListing(db: Database, userId: string, listingId: string
       await tx.update(trailers).set({ companyId: buyer.id, listed: false, vehicleId: null, purchasePriceCents: listing!.priceCents }).where(eq(trailers.id, listing!.trailerId));
     }
     await tx.update(vehicleListings).set({ status: 'sold', buyerCompanyId: buyer.id, closedAt: now }).where(eq(vehicleListings.id, listing!.id));
-    await notify(tx, seller!.ownerId, 'success', `Продадено: ${model.name}`, `Получи ${((listing!.priceCents - fee) / 100).toLocaleString('bg-BG')} лв. след таксата на пазара.`, '/game/finance');
+    await notify(tx, seller!.ownerId, 'success', () => tr('Продадено: {0}', model.name), () => tr('Получи {0} лв. след таксата на пазара.', ((listing!.priceCents - fee) / 100).toLocaleString(intlLocale())), '/game/finance');
     await logActivity(tx, userId, 'listing_bought', { listingId: listing!.id });
     await checkAchievements(tx, userId, buyer.id);
     await broadcast(tx, 'market');
@@ -148,7 +149,7 @@ export async function expireListings(db: Database, now = new Date()): Promise<nu
     for (const l of due) {
       await release(tx, l, 'expired', now);
       const [seller] = await tx.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, l.sellerCompanyId));
-      if (seller) await notify(tx, seller.ownerId, 'info', 'Обявата изтече', 'Никой не купи техниката за 7 дни — тя е отново в автопарка ти. Можеш да я обявиш пак.', '/game/fleet');
+      if (seller) await notify(tx, seller.ownerId, 'info', () => tr('Обявата изтече'), () => tr('Никой не купи техниката за 7 дни — тя е отново в автопарка ти. Можеш да я обявиш пак.'), '/game/fleet');
     }
     return due.length;
   });

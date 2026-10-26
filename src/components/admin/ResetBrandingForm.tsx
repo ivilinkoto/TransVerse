@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
+import { t } from '@/i18n/t';
 
 /** Moderation: clears a company's logo, banner and texts (audited on the server). */
 export function ResetBrandingForm({ companyId }: { companyId: string }) {
@@ -26,10 +27,10 @@ export function ResetBrandingForm({ companyId }: { companyId: string }) {
   };
   return (
     <div className="space-y-2">
-      <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Причина (напр. неподходящо лого)" maxLength={300} aria-label="Причина за изчистване" />
-      <button className="btn-danger" onClick={run} disabled={busy}>{busy ? '…' : 'Изчисти лого, банер и текстове'}</button>
+      <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Причина (напр. неподходящо лого)')} maxLength={300} aria-label={t('Причина за изчистване')} />
+      <button className="btn-danger" onClick={run} disabled={busy}>{busy ? '…' : t('Изчисти лого, банер и текстове')}</button>
       {error && <p role="alert" className="text-sm text-loss">{error}</p>}
-      {done && <p role="status" className="text-sm text-profit">Профилът на компанията е изчистен.</p>}
+      {done && <p role="status" className="text-sm text-profit">{t('Профилът на компанията е изчистен.')}</p>}
     </div>
   );
 }

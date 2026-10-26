@@ -9,6 +9,7 @@ import { post, postTreasury } from './finance';
 import { notifyMembers } from './membership';
 import { notify } from './notify';
 import { announceBuilderOfWeek } from '@/server/discord/announce';
+import { t } from '@/i18n/t';
 
 /**
  * Worker, after a week ends: in every company, the member who delivered the
@@ -46,14 +47,14 @@ export async function awardBuildersOfWeek(db: Database, now = new Date()) {
       let prize = 0;
       if (org && org.treasuryCents >= BUILDER_WEEK.rewardCents) {
         prize = BUILDER_WEEK.rewardCents;
-        await postTreasury(tx, org.id, [{ category: 'member_bonus', amountCents: -prize, description: `Строител на седмицата: ${u!.username}`, idempotencyKey: `builder-week:${org.id}:${key}:out`, refType: 'user', refId: r.user_id }]);
-        await post(tx, account.id, [{ category: 'member_bonus', amountCents: prize, description: `Строител на седмицата в „${org.name}“`, idempotencyKey: `builder-week:${org.id}:${key}:in`, refType: 'company', refId: org.id }]);
+        await postTreasury(tx, org.id, [{ category: 'member_bonus', amountCents: -prize, description: t('Строител на седмицата: {0}', u!.username), idempotencyKey: `builder-week:${org.id}:${key}:out`, refType: 'user', refId: r.user_id }]);
+        await post(tx, account.id, [{ category: 'member_bonus', amountCents: prize, description: t('Строител на седмицата в „{0}“', org.name), idempotencyKey: `builder-week:${org.id}:${key}:in`, refType: 'company', refId: org.id }]);
         await tx.update(companyBuilderWeeks).set({ rewardCents: prize }).where(and(eq(companyBuilderWeeks.organizationId, org.id), eq(companyBuilderWeeks.weekKey, key)));
       }
       const tons = Math.round(r.tons * 10) / 10;
-      await notifyMembers(tx, r.organization_id, null, `Строител на седмицата: ${u!.username}`, `${tons} т материали за базата${prize ? ` · награда ${money(prize)} от касата` : ''}.`, '/game/company/plot');
+      await notifyMembers(tx, r.organization_id, null, () => t('Строител на седмицата: {0}', u!.username), () => t('{0} т материали за базата{1}.', tons, prize ? t(' · награда {0} от касата', money(prize)) : ''), '/game/company/plot');
       await announceBuilderOfWeek(tx, key, org?.name ?? '', u!.username, r.tons, prize, now);
-      if (prize) await notify(tx, r.user_id, 'success', 'Ти си строител на седмицата!', `Награда ${money(prize)} от касата на „${org!.name}“.`, '/game/finance');
+      if (prize) await notify(tx, r.user_id, 'success', () => t('Ти си строител на седмицата!'), () => t('Награда {0} от касата на „{1}“.', money(prize), org!.name), '/game/finance');
       n++;
     });
   }

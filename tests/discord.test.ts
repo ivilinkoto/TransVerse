@@ -167,6 +167,7 @@ describe('announcements', () => {
     const at = new Date(new Date(r.publishedAt).getTime() + 3_600_000);
     await announceFromGame(db(), at);
     await announceFromGame(db(), at);
-    expect(await outbox('release:1.3')).toHaveLength(1);
+    // Once per language (v2.0): the Bulgarian channel and the English and Russian ones.
+    expect((await outbox('release:1.3')).map((r) => r.target).sort()).toEqual(['channel:updates', 'channel:updates@en', 'channel:updates@ru']);
   });
 });

@@ -1,5 +1,6 @@
 import { ROAD_EVENTS, type RoadEventKind } from './road-events';
 import type { Segment } from './schedule';
+import { t } from '@/i18n/t';
 
 /**
  * Help on the road: when a truck stands after a breakdown, an accident on the
@@ -35,7 +36,7 @@ export function helpableStop(schedule: readonly Segment[], now: number): Segment
 }
 
 /** Shortens the stop that runs at `now` by `savedMs`: everything after it moves earlier. */
-export function shortenStop(schedule: readonly Segment[], stop: Segment, savedMs: number, label = 'помощ от колега'): Segment[] {
+export function shortenStop(schedule: readonly Segment[], stop: Segment, savedMs: number, label = t('помощ от колега')): Segment[] {
   let after = false;
   return schedule.map((s) => {
     if (after) return { ...s, start: s.start - savedMs, end: s.end - savedMs };

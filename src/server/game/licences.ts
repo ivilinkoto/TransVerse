@@ -7,6 +7,7 @@ import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
 import { notifyMembers, requirePermission } from './membership';
+import { t } from '@/i18n/t';
 
 /** Licences of several players at once: their own plus their company's. */
 export async function licencesForUsers(db: DbOrTx, userIds: readonly string[]): Promise<Map<string, Set<LicenceId>>> {
@@ -37,18 +38,18 @@ export async function companyLicenceSet(db: DbOrTx, companyId: string) {
 /** A company buys a licence from its treasury at double price; all members may use it. */
 export async function buyCompanyLicence(db: Database, actorId: string, licenceId: string) {
   return db.transaction(async (tx) => {
-    if (!LICENCE_IDS.includes(licenceId as LicenceId)) fail('unknown_licence', 'Непознат лиценз.');
+    if (!LICENCE_IDS.includes(licenceId as LicenceId)) fail('unknown_licence', t('Непознат лиценз.'));
     const def = LICENCES[licenceId as LicenceId];
-    if (!def.available) fail('licence_unavailable', `${def.label} ще бъде наличен, когато в играта се появи този вид транспорт.`);
+    if (!def.available) fail('licence_unavailable', t('{0} ще бъде наличен, когато в играта се появи този вид транспорт.', def.label));
     const actor = await requirePermission(tx, actorId, 'manage_upgrades');
     const held = new Set((await companyLicenceSet(tx, actor.company.id)).map((l) => l.licence));
-    if (held.has(def.id)) fail('licence_owned', 'Компанията вече има този лиценз.', 409);
-    if (def.requires && !held.has(def.requires)) fail('licence_prerequisite', `Първо компанията трябва да има ${LICENCES[def.requires].label}.`);
+    if (held.has(def.id)) fail('licence_owned', t('Компанията вече има този лиценз.'), 409);
+    if (def.requires && !held.has(def.requires)) fail('licence_prerequisite', t('Първо компанията трябва да има {0}.', LICENCES[def.requires].label));
     const price = companyLicencePrice(def.id);
-    await postTreasury(tx, actor.company.id, [{ category: 'company_licence', amountCents: -price, description: `Лиценз: ${def.label}`, idempotencyKey: `company-licence:${actor.company.id}:${def.id}`, actorUserId: actorId }], { requireFunds: true });
+    await postTreasury(tx, actor.company.id, [{ category: 'company_licence', amountCents: -price, description: t('Лиценз: {0}', def.label), idempotencyKey: `company-licence:${actor.company.id}:${def.id}`, actorUserId: actorId }], { requireFunds: true });
     await tx.insert(companyLicences).values({ companyId: actor.company.id, licence: def.id, priceCents: price, boughtBy: actorId });
     await logActivity(tx, actorId, 'company_licence_bought', { companyId: actor.company.id, licence: def.id });
-    await notifyMembers(tx, actor.company.id, null, `Компанията има нов лиценз: ${def.label}`, 'Всички членове вече могат да поемат поръчки с него.', '/game/licences');
+    await notifyMembers(tx, actor.company.id, null, () => t('Компанията има нов лиценз: {0}', def.label), () => t('Всички членове вече могат да поемат поръчки с него.'), '/game/licences');
     return def.id;
   });
 }
@@ -56,19 +57,19 @@ export async function buyCompanyLicence(db: Database, actorId: string, licenceId
 /** Buys a licence with the player's personal money (once; it never expires). */
 export async function buyLicence(db: Database, userId: string, licenceId: string) {
   return db.transaction(async (tx) => {
-    if (!LICENCE_IDS.includes(licenceId as LicenceId)) fail('unknown_licence', 'Непознат лиценз.');
+    if (!LICENCE_IDS.includes(licenceId as LicenceId)) fail('unknown_licence', t('Непознат лиценз.'));
     const def = LICENCES[licenceId as LicenceId];
-    if (!def.available) fail('licence_unavailable', `${def.label} ще бъде наличен, когато в играта се появи този вид транспорт.`);
+    if (!def.available) fail('licence_unavailable', t('{0} ще бъде наличен, когато в играта се появи този вид транспорт.', def.label));
     const held = new Set((await tx.select({ l: userLicences.licence }).from(userLicences).where(eq(userLicences.userId, userId))).map((r) => r.l));
-    if (held.has(def.id)) fail('licence_owned', 'Вече притежавате този лиценз.', 409);
+    if (held.has(def.id)) fail('licence_owned', t('Вече притежавате този лиценз.'), 409);
     const [user] = await tx.select({ level: users.level }).from(users).where(eq(users.id, userId));
-    if ((user?.level ?? 1) < def.minLevel) fail('level', `${def.label} изисква ниво ${def.minLevel}.`);
-    if (def.requires && !held.has(def.requires)) fail('licence_prerequisite', `Първо е нужен ${LICENCES[def.requires].label}.`);
+    if ((user?.level ?? 1) < def.minLevel) fail('level', t('{0} изисква ниво {1}.', def.label, def.minLevel));
+    if (def.requires && !held.has(def.requires)) fail('licence_prerequisite', t('Първо е нужен {0}.', LICENCES[def.requires].label));
     const account = await companyForUser(tx, userId);
     await post(tx, account.id, [{ category: 'licences', amountCents: -def.priceCents, description: def.label, idempotencyKey: `licence:${userId}:${def.id}` }], { requireFunds: true });
     await tx.insert(userLicences).values({ userId, licence: def.id, priceCents: def.priceCents, source: 'purchase' });
     await logActivity(tx, userId, 'licence_bought', { licence: def.id });
-    await notify(tx, userId, 'achievement', `Нов лиценз: ${def.label}`, def.description, '/game/licences');
+    await notify(tx, userId, 'achievement', () => t('Нов лиценз: {0}', def.label), def.description, '/game/licences');
     return def.id;
   });
 }

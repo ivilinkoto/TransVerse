@@ -4,6 +4,7 @@ import { Bell, BellOff, Download, Send, Smartphone, Volume2 } from 'lucide-react
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { playChime, setSoundEnabled, soundEnabled, unlockSound } from '@/lib/client/sound';
+import { t, tx } from '@/i18n/t';
 
 const supported = () => typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
@@ -80,17 +81,17 @@ export function InstallAppBanner() {
 
   if (mode === 'hidden') return null;
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2 text-sm sm:px-6" role="region" aria-label="Приложение TransVerse">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2 text-sm sm:px-6" role="region" aria-label={t('Приложение TransVerse')}>
       <Smartphone className="h-4 w-4 shrink-0 text-cyan-glow" />
       {mode === 'prompt' ? (
         <>
-          <span className="flex-1">TransVerse има приложение — по-бързо стартиране, цял екран и известия, когато камионът пристигне.</span>
-          <button type="button" className="btn-primary px-3 py-1.5 text-sm" onClick={() => void install()}><Download className="h-4 w-4" />Изтегли приложението</button>
+          <span className="flex-1">{t('TransVerse има приложение — по-бързо стартиране, цял екран и известия, когато камионът пристигне.')}</span>
+          <button type="button" className="btn-primary px-3 py-1.5 text-sm" onClick={() => void install()}><Download className="h-4 w-4" />{t('Изтегли приложението')}</button>
         </>
       ) : (
-        <span className="flex-1">Инсталирай TransVerse на iPhone: натисни <span className="font-semibold">Сподели</span> (квадратчето със стрелка) → <span className="font-semibold">Добави към началния екран</span>. Така ще получаваш и известия.</span>
+        <span className="flex-1">{t('Инсталирай TransVerse на iPhone: натисни')}{' '}<span className="font-semibold">{t('Сподели')}</span>{' '}{t('(квадратчето със стрелка) →')}{' '}<span className="font-semibold">{t('Добави към началния екран')}</span>{t('. Така ще получаваш и известия.')}</span>
       )}
-      <button type="button" className="text-mist-400 hover:text-white" onClick={dismiss} aria-label="Скрий">✕</button>
+      <button type="button" className="text-mist-400 hover:text-white" onClick={dismiss} aria-label={t('Скрий')}>✕</button>
     </div>
   );
 }
@@ -147,9 +148,9 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
       const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) }));
       await api('/api/push/subscribe', sub.toJSON());
       setState('on');
-      setMessage({ ok: true, text: 'Известията са включени на това устройство.' });
+      setMessage({ ok: true, text: t('Известията са включени на това устройство.') });
     } catch (e) {
-      setMessage({ ok: false, text: (e as Error).message || 'Неуспешно включване на известията.' });
+      setMessage({ ok: false, text: (e as Error).message || t('Неуспешно включване на известията.') });
     } finally {
       setBusy(false);
     }
@@ -177,7 +178,7 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
     setMessage(null);
     try {
       const r = await api<{ sent: number }>('/api/push/test', {});
-      setMessage(r.sent ? { ok: true, text: `Изпратено до ${r.sent} устройство(а).` } : { ok: false, text: 'Няма активно устройство — включи известията отново.' });
+      setMessage(r.sent ? { ok: true, text: t('Изпратено до {0} устройство(а).', r.sent) } : { ok: false, text: t('Няма активно устройство — включи известията отново.') });
     } catch (e) {
       setMessage({ ok: false, text: (e as Error).message });
     }
@@ -190,40 +191,40 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
 
   return (
     <div className="space-y-4 text-sm">
-      {state === 'loading' && <p className="text-mist-400">Проверка на устройството…</p>}
-      {state === 'unsupported' && <p className="text-mist-400">Този браузър не поддържа известия. Опитай с Chrome, Edge или Firefox, или инсталирай играта като приложение.</p>}
+      {state === 'loading' && <p className="text-mist-400">{t('Проверка на устройството…')}</p>}
+      {state === 'unsupported' && <p className="text-mist-400">{t('Този браузър не поддържа известия. Опитай с Chrome, Edge или Firefox, или инсталирай играта като приложение.')}</p>}
       {state === 'ios' && (
         <p className="rounded-lg border border-cyan-glow/30 bg-cyan-glow/5 p-3 text-mist-200">
-          <Smartphone className="mr-1 inline h-4 w-4 text-cyan-glow" />На iPhone известията работят, когато играта е добавена на началния екран: в Safari натисни <span className="font-semibold">Сподели → Добави към началния екран</span>, отвори TransVerse оттам и включи известията тук.
+          <Smartphone className="mr-1 inline h-4 w-4 text-cyan-glow" />{t('На iPhone известията работят, когато играта е добавена на началния екран: в Safari натисни')}{' '}<span className="font-semibold">{t('Сподели → Добави към началния екран')}</span>{t(', отвори TransVerse оттам и включи известията тук.')}
         </p>
       )}
-      {state === 'denied' && <p className="text-amber-sig">Известията са блокирани за този сайт. Разреши ги от настройките на браузъра (иконката с катинара до адреса) и опитай отново.</p>}
+      {state === 'denied' && <p className="text-amber-sig">{t('Известията са блокирани за този сайт. Разреши ги от настройките на браузъра (иконката с катинара до адреса) и опитай отново.')}</p>}
       {state === 'off' && (
-        <button type="button" className="btn-primary" onClick={enable} disabled={busy}><Bell className="h-4 w-4" />{busy ? 'Включване…' : 'Включи известията на това устройство'}</button>
+        <button type="button" className="btn-primary" onClick={enable} disabled={busy}><Bell className="h-4 w-4" />{busy ? t('Включване…') : t('Включи известията на това устройство')}</button>
       )}
       {state === 'on' && (
         <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-profit"><Bell className="h-4 w-4" />Включени на това устройство</span>
-          <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={test}><Send className="h-3.5 w-3.5" />Изпрати пробно</button>
-          <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={disable} disabled={busy}><BellOff className="h-3.5 w-3.5" />Изключи</button>
+          <span className="inline-flex items-center gap-1.5 font-semibold text-profit"><Bell className="h-4 w-4" />{t('Включени на това устройство')}</span>
+          <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={test}><Send className="h-3.5 w-3.5" />{t('Изпрати пробно')}</button>
+          <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={disable} disabled={busy}><BellOff className="h-3.5 w-3.5" />{t('Изключи')}</button>
         </div>
       )}
-      {message && <p role="status" className={message.ok ? 'text-profit' : 'text-loss'}>{message.text}</p>}
-      {devices > 0 && <p className="text-xs text-mist-400">Устройства с включени известия: {devices}</p>}
+      {message && <p role="status" className={message.ok ? 'text-profit' : 'text-loss'}>{tx(message.text)}</p>}
+      {devices > 0 && <p className="text-xs text-mist-400">{t('Устройства с включени известия: {0}', devices)}</p>}
 
       <fieldset className="space-y-1.5 border-t border-asphalt-800 pt-3">
-        <legend className="label mb-1">Какво да получавам</legend>
+        <legend className="label mb-1">{t('Какво да получавам')}</legend>
         {Object.entries(categories).map(([key, label]) => (
           <label key={key} className="flex items-start gap-2">
             <input type="checkbox" className="mt-0.5" checked={prefs[key] !== false} onChange={(e) => void toggle(key, e.target.checked)} />
-            <span>{label}</span>
+            <span>{tx(label)}</span>
           </label>
         ))}
-        <p className="text-xs text-mist-400">Съобщения от чата не идват, докато си в играта — само когато я няма отворена.</p>
+        <p className="text-xs text-mist-400">{t('Съобщения от чата не идват, докато си в играта — само когато я няма отворена.')}</p>
       </fieldset>
 
       <fieldset className="space-y-1.5 border-t border-asphalt-800 pt-3">
-        <legend className="label mb-1">Звук</legend>
+        <legend className="label mb-1">{t('Звук')}</legend>
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
@@ -238,14 +239,14 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
               }
             }}
           />
-          <span>Кратък звук при ново известие, докато играта е отворена (на това устройство)</span>
+          <span>{t('Кратък звук при ново известие, докато играта е отворена (на това устройство)')}</span>
         </label>
-        <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => { unlockSound(); setTimeout(playChime, 50); }}><Volume2 className="h-3.5 w-3.5" />Чуй звука</button>
-        <p className="text-xs text-mist-400">Когато играта е затворена, известието идва със звука и вибрацията на телефона (настройват се от известията на телефона за TransVerse).</p>
+        <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => { unlockSound(); setTimeout(playChime, 50); }}><Volume2 className="h-3.5 w-3.5" />{t('Чуй звука')}</button>
+        <p className="text-xs text-mist-400">{t('Когато играта е затворена, известието идва със звука и вибрацията на телефона (настройват се от известията на телефона за TransVerse).')}</p>
       </fieldset>
 
       {install && (
-        <button type="button" className="btn-ghost" onClick={() => void install.prompt().then(() => { window.__tvInstall = null; setInstall(null); })}><Download className="h-4 w-4" />Инсталирай TransVerse като приложение</button>
+        <button type="button" className="btn-ghost" onClick={() => void install.prompt().then(() => { window.__tvInstall = null; setInstall(null); })}><Download className="h-4 w-4" />{t('Инсталирай TransVerse като приложение')}</button>
       )}
     </div>
   );

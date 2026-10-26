@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { money } from '@/lib/format';
 import { BONUS_RULES } from '@/lib/game/company';
+import { t } from '@/i18n/t';
 
 /** A bonus from the treasury for one member (amount and a short note). */
 export function BonusButton({ userId, username, roomCents }: { userId: string; username: string; roomCents: number }) {
@@ -15,7 +16,7 @@ export function BonusButton({ userId, username, roomCents }: { userId: string; u
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (!open) return <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setOpen(true)} disabled={roomCents < BONUS_RULES.minCents} title={roomCents < BONUS_RULES.minCents ? 'Днешният лимит за премии е изчерпан.' : undefined}><Gift className="h-4 w-4" />Премия</button>;
+  if (!open) return <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setOpen(true)} disabled={roomCents < BONUS_RULES.minCents} title={roomCents < BONUS_RULES.minCents ? t('Днешният лимит за премии е изчерпан.') : undefined}><Gift className="h-4 w-4" />{t('Премия')}</button>;
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -32,15 +33,15 @@ export function BonusButton({ userId, username, roomCents }: { userId: string; u
   };
   return (
     <form onSubmit={send} className="flex min-w-[220px] flex-col gap-1.5 text-left">
-      <label className="text-xs text-mist-400" htmlFor={`bonus-${userId}`}>Премия за {username} (лв.)</label>
+      <label className="text-xs text-mist-400" htmlFor={`bonus-${userId}`}>{t('Премия за {0} (лв.)', username)}</label>
       <input id={`bonus-${userId}`} className="input py-1.5 text-sm" type="number" inputMode="numeric" min={BONUS_RULES.minCents / 100} max={Math.min(BONUS_RULES.maxCents, roomCents) / 100} step={1} value={amount} onChange={(e) => setAmount(e.target.value)} required />
-      <input className="input py-1.5 text-sm" maxLength={BONUS_RULES.noteMax} placeholder="За какво (по желание)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Бележка към премията" />
+      <input className="input py-1.5 text-sm" maxLength={BONUS_RULES.noteMax} placeholder={t('За какво (по желание)')} value={note} onChange={(e) => setNote(e.target.value)} aria-label={t('Бележка към премията')} />
       <div className="flex gap-2">
-        <button className="btn-gold flex-1 justify-center px-3 py-1.5 text-sm" disabled={busy}>{busy ? '…' : 'Дай премията'}</button>
-        <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setOpen(false)}>Отказ</button>
+        <button className="btn-gold flex-1 justify-center px-3 py-1.5 text-sm" disabled={busy}>{busy ? '…' : t('Дай премията')}</button>
+        <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setOpen(false)}>{t('Отказ')}</button>
       </div>
       {error && <p role="alert" className="text-xs text-loss">{error}</p>}
-      <p className="text-[11px] text-mist-400">Днес остават {money(roomCents)} за премии.</p>
+      <p className="text-[11px] text-mist-400">{t('Днес остават {0} за премии.', money(roomCents))}</p>
     </form>
   );
 }

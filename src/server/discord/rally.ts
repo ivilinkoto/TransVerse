@@ -9,6 +9,7 @@ import { discord } from './api';
 import { appUrl, discordConfig } from './config';
 import { layoutChannel } from './layout';
 import { announce } from './outbox';
+import { t } from '@/i18n/t';
 
 /**
  * The weekly rally in Discord (v1.5): one live message in #рали with the
@@ -16,13 +17,13 @@ import { announce } from './outbox';
  * every finish, and a voice channel "Рали — на живо" next to it.
  */
 
-const hm = (min: number) => `${Math.floor(min / 60)} ч ${String(min % 60).padStart(2, '0')} мин`;
+const hm = (min: number) => t('{0} ч {1} мин', Math.floor(min / 60), String(min % 60).padStart(2, '0'));
 const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}.`;
 
 /** A run arrived: one line in #рали (from the settlement transaction, through the outbox). */
 export async function announceRallyFinish(db: DbOrTx, entryKey: string, f: { username: string; minutes: number; fuelCentsPer100: number; from: string; to: string }, now: Date) {
   if (!featureLive('discord_rally', now)) return;
-  await announce(db, `rally-finish:${entryKey}`, 'rally', { content: `🏁 **${f.username}** финишира ${f.from} → ${f.to}: ${hm(f.minutes)} · ${money(f.fuelCentsPer100)}/100 км`, ping: false }, now);
+  await announce(db, `rally-finish:${entryKey}`, 'rally', () => ({ content: t('🏁 **{0}** финишира {1} → {2}: {3} · {4}/100 км', f.username, f.from, f.to, hm(f.minutes), money(f.fuelCentsPer100)), ping: false }), now);
 }
 
 /** Worker: the live board of the running rally. */
@@ -33,15 +34,15 @@ export async function liveRally(db: Database, now = new Date()) {
   const results = await rallyResults(db, rally.id);
   const message = {
     embeds: [{
-      title: `🏁 Рали: ${rally.from} → ${rally.to}`,
+      title: t('🏁 Рали: {0} → {1}', rally.from, rally.to),
       url: `${appUrl()}/game/rally`,
       color: 0xf97316,
-      description: `${Math.round(rally.distanceKm)} км · записани ${results.entries} · край <t:${Math.floor(rally.endsAt.getTime() / 1000)}:R>\nНаграда за първите трима: до ${money(RALLY.prizes[0].cents)} и ${RALLY.prizes[0].coins} TC.`,
+      description: t('{0} км · записани {1} · край <t:{2}:R>\nНаграда за първите трима: до {3} и {4} TC.', Math.round(rally.distanceKm), results.entries, Math.floor(rally.endsAt.getTime() / 1000), money(RALLY.prizes[0].cents), RALLY.prizes[0].coins),
       fields: [
-        { name: 'Най-бързи', value: results.fastest.slice(0, 5).map((r, i) => `${medal(i)} ${r.username} · ${hm(r.minutes)}`).join('\n') || 'Още никой не е финиширал.', inline: true },
-        { name: 'Най-икономични', value: results.eco.slice(0, 5).map((r, i) => `${medal(i)} ${r.username} · ${money(r.fuelCentsPer100)}/100 км`).join('\n') || '—', inline: true },
+        { name: t('Най-бързи'), value: results.fastest.slice(0, 5).map((r, i) => `${medal(i)} ${r.username} · ${hm(r.minutes)}`).join('\n') || t('Още никой не е финиширал.'), inline: true },
+        { name: t('Най-икономични'), value: results.eco.slice(0, 5).map((r, i) => t('{0} {1} · {2}/100 км', medal(i), r.username, money(r.fuelCentsPer100))).join('\n') || '—', inline: true },
       ],
-      footer: { text: 'TransVerse · игрови данни' },
+      footer: { text: t('TransVerse · игрови данни') },
     }],
     allowed_mentions: { parse: [] },
   };
@@ -52,7 +53,7 @@ export async function liveRally(db: Database, now = new Date()) {
     await discord('PATCH', `/channels/${saved.channelId}/messages/${saved.messageId}`, message).catch(() => undefined);
     return 1;
   }
-  const channelId = await layoutChannel(db, 'рали');
+  const channelId = await layoutChannel(db, t('рали'));
   if (!channelId) return 0;
   const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, message);
   await db.insert(jobState).values({ key, value: { channelId, messageId: msg.id } }).onConflictDoNothing();

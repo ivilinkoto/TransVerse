@@ -1,0 +1,250 @@
+9d482239f3	How many hours (72 by default)	Сколько часов (по умолчанию 72)
+6f23d6ef85	How many hours it lasts	Сколько часов длится
+854887268f	A column of trucks: one lane, one hour, you arrive together and with a bonus.	Колонна грузовиков: одна линия, один час, прибываете вместе и с бонусом.
+dc10663646	A queue of cars — the truck crawls.	Колонна машин — грузовик ползёт.
+96d0828e3b	Column across Europe	Колонна через Европу
+4bf745af97	The column	Колонна
+2a763abfb3	The column drives together — you arrive at the same time.	Колонна едет вместе — вы прибываете одновременно.
+a04d22e96f	Columns and stories	Колонны и истории
+276e465366	The command comes with update 1.5.	Команда появится в обновлении 1.5.
+51723cf61e	The command comes with update 1.6.	Команда появится в обновлении 1.6.
+a665c3e6a4	The command comes with update 1.7.	Команда появится в обновлении 1.7.
+86f821ec5f	Commands (/помощ …)	Команды (/помощ …)
+2368465f3b	The commands are registered ({0}); the roles of {1} linked players are updated within a minute.	Команды зарегистрированы ({0}); роли {1} привязанных игроков обновятся в течение минуты.
+98bf2d2135	Commission in per cent	Комиссия в процентах
+df97ca7482	Commission to the treasury	Комиссия в казну
+594bc5adb3	Commission to “{0}” ({1} %)	Комиссия «{0}» ({1} %)
+8274003599	The commission ({0} %) goes to the treasury on delivery.	Комиссия ({0} %) поступает в казну при доставке.
+3d69188079	Commissions to companies for assigned trips	Комиссии компаниям за назначенные рейсы
+084e09a1f9	Commissions from assigned trips	Комиссии с назначенных рейсов
+c56f383b7e	Companies	Компании
+95eccda18e	Companies / drivers	Компании / водители
+21a07547b3	Companies looking for drivers	Компании ищут водителей
+fa1606acfd	Companies look for drivers, drivers look for a company. One ad per company and per driver, for one week.	Компании ищут водителей, водители ищут компанию. Одно объявление на компанию и на водителя, на одну неделю.
+ee3dadc7e6	Companies that live	Живые компании
+2585d0d40a	The companies	Компании
+7a6aa87046	The companies in the column	Компании в колонне
+2d8d4a0548	The companies and the community	Компании и сообщество
+b23bbc155c	Companies can assign you trips from the board: the load is held for you for {0} minutes, you drive with your own truck and on delivery you pay the company the agreed commission ({1}–{2} %). You can decline any offer. {3}	Компании могут назначать тебе рейсы с биржи: груз закрепляется за тобой на {0} минут, ты едешь на своём грузовике, а при доставке платишь компании оговорённую комиссию ({1}–{2} %). От любого предложения можно отказаться. {3}
+5c047bdfc1	Companies aren't looking for drivers here yet.	Компании здесь пока не ищут водителей.
+d25042b488	The companies rested.	Компании отдыхали.
+9e194c4b12	The companies fight in pairs: every tonne hauled counts. The winner takes {0} for the treasury. {1}/game/company/missions	Компании сражаются парами: засчитывается каждая перевезённая тонна. Победитель получает {0} в казну. {1}/game/company/missions
+f4413efd05	The companies compete in bronze, silver and gold divisions. Perfect trips in a row bring up to +10 %, and the “Cities” album collects a card for every big city.	Компании соревнуются в бронзовом, серебряном и золотом дивизионах. Идеальные рейсы подряд дают до +10 %, а альбом «Города» собирает карточку за каждый крупный город.
+1345f8008e	The companies compete on their members' tonnes for the month. At the end of the month the best {0} % go up, the last go down, and the top three get a reward for the treasury. Game data.	Компании соревнуются по тоннам своих участников за месяц. В конце месяца лучшие {0} % поднимаются, последние опускаются, а первая тройка получает награду в казну. Игровые данные.
+d8f9fefadb	Company	Компания
+e50f3d3c55	Company (members, treasury, company missions)	Компания (участники, казна, миссии компании)
+795db2585a	Company · 	Компания ·
+ef43a8a3b8	Company · {0}	Компания · {0}
+c47212854a	A company in TransVerse (no name — yours)	Компания в TransVerse (без имени — твоя)
+22c387ca1c	Company for the alliance	Компания для союза
+f7f4fe6e36	Company of the week	Компания недели
+c38d2b67b4	Carrier company	Компания-перевозчик
+02d42c155f	A company with that name already exists.	Компания с таким названием уже существует.
+c043fcf247	A company with members can't be closed — hand the ownership to one of them.	Компанию с участниками нельзя закрыть — передайте владение одному из них.
+90f0847108	Company → Plot: a plot in the base city (14 × 12 fields) with a road to the yard; buildings are placed freely, without blocking the road or another building. The office is built first.	Компания → Участок: участок в городе базы (14 × 12 полей) с дорогой во двор; здания ставятся свободно, не перекрывая дорогу или другое здание. Первым строится офис.
+9000e21078	The company	Компания
+005a0aea9d	The company isn't taking new members at the moment.	Компания сейчас не принимает новых участников.
+ca070d8845	The company in numbers	Компания в цифрах
+91bcd184f9	The company is already in an alliance.	Компания уже в союзе.
+b4b3912ef7	The company is already listed on the exchange.	Компания уже на бирже.
+bf768185b1	The company already has a current project.	У компании уже есть текущий проект.
+90cf68a6cb	The company already has this licence.	У компании уже есть эта лицензия.
+48c56a1a87	The company already has a branch there.	У компании там уже есть филиал.
+044cb2a226	The company has no free places left.	У компании больше нет свободных мест.
+a83da2a844	The company is already building	Компания уже строит
+bce306d54e	The company is already building — finish the current construction.	Компания уже строит — завершите текущую стройку.
+9ecc6c1b10	Should the company leave the alliance?	Выйти компании из союза?
+a2766d6613	The company was founded in {0}	Компания основана в {0}
+1be982b496	The company chooses a livery.	Компания выбирает ливрею.
+6b7cc76239	The company chooses a colour and all members' trucks wear it — in the fleet, in the garage and on the plot.	Компания выбирает цвет, и его носят грузовики всех участников — в автопарке, в гараже и на участке.
+c7254f766e	The company has {0} pending offers — wait for an answer.	У компании {0} ожидающих предложений — дождись ответа.
+55f22faed5	The company has shareholders — they have to sell their shares first.	У компании есть акционеры — сначала они должны продать свои акции.
+e7f3a91ee0	The company has other members — hand the ownership to one of them.	В компании есть другие участники — передайте владение одному из них.
+2fa1fc451c	The company has a new licence: {0}	У компании новая лицензия: {0}
+0aa59b5412	The company has a private channel in the TransVerse Discord server{0}. Only members with a linked Discord see it, and messages go both ways with the in-game chat.	У компании есть закрытый канал на Discord-сервере TransVerse{0}. Его видят только участники с привязанным Discord, а сообщения ходят в обе стороны с чатом в игре.
+3f426fe969	The company bought land next to the base — the plot is now {0} by {1} squares.	Компания купила землю рядом с базой — теперь участок {0} на {1} клеток.
+ffe7246819	The company buys vans and trucks without a trailer.	Компания покупает фургоны и грузовики без прицепа.
+df5b780789	The company buys trucks from the treasury and they wait in the car park. Every member takes one for trips and then returns it.	Компания покупает грузовики из казны, и они ждут на стоянке. Каждый участник берёт один для рейсов, а потом возвращает.
+3f1f6ebf07	The company can fulfil up to {0} auctions at a time.	Компания может выполнять до {0} торгов одновременно.
+44c93aa822	The company can have up to {0} shared loads at a time.	У компании может быть до {0} общих грузов одновременно.
+a5e5ab6049	The company isn't in an alliance.	Компания не состоит в союзе.
+10f7d8b27d	The company isn't listed on the exchange.	Компании нет на бирже.
+4eb95089de	The company was not found.	Компания не найдена.
+dba8c0800e	The company isn't taking new members.	Компания не принимает новых участников.
+415f208353	The company has no role for new members.	У компании нет должности для новых участников.
+26ddf09bed	The company has no other role.	У компании нет другой должности.
+c7fff6aaf8	The company has no free places.	У компании нет свободных мест.
+e7fb0e34a2	The company opens branches in other cities: the members' deliveries to them bring a bonus, and better-paid loads for members only leave from there. Need money for a truck? Take a loan — the terms depend on your credit rating.	Компания открывает филиалы в других городах: доставки участников туда приносят бонус, а оттуда уходят лучше оплачиваемые грузы только для участников. Нужны деньги на грузовик? Возьми кредит — условия зависят от твоего кредитного рейтинга.
+3f1e007814	The company doesn't have a museum on the plot yet.	У компании пока нет музея на участке.
+eae9a8f83a	The company doesn't have a museum yet — build it on the plot.	У компании пока нет музея — постройте его на участке.
+98ebbd8739	The company doesn't have a description yet.	У компании пока нет описания.
+96d7e9f05e	The company doesn't have a factory yet	У компании пока нет фабрики
+2f8d99be0e	The company doesn't have a branch yet	У компании пока нет филиала
+bfedc27229	The company gets half of the XP from a member's trip; a trip with a hired driver — 10 % of that. Company levels need more XP (level 10 ≈ 420,000).	Компания получает половину опыта за рейс участника; рейс с наёмным водителем — 10 % от этого. Уровни компании требуют больше опыта (уровень 10 ≈ 420 000).
+b7b83b090b	The company accepts players from level {0} (you are level {1}).	Компания принимает игроков с уровня {0} (у вас уровень {1}).
+37cbe6910a	The company accepts players from level {0}.	Компания принимает игроков с уровня {0}.
+3dd8de8cf8	The company cleared the most containers ({0}) — {1} went into the treasury.	Компания развезла больше всего контейнеров ({0}) — {1} поступило в казну.
+5316a77119	The company develops	Компания развивается
+a7b9c310ed	The company won {0} lv for the treasury.	Компания выиграла {0} лв. в казну.
+8c57c5f080	The company builds a factory, the members bring raw materials (timber, flour, cement, steel, fruit), and the finished goods are sold to a buyer — the money goes to the treasury.	Компания строит фабрику, участники привозят сырьё (пиломатериалы, муку, цемент, сталь, фрукты), а готовый товар продаётся покупателю — деньги идут в казну.
+a1c127bc26	The company collected {0} season points.	Компания набрала {0} сезонных очков.
+ee7d77b2ae	Your company in your pocket	Твоя компания у тебя в кармане
+6616ad4b4a	Your company isn't in an alliance (or your account isn't linked). {0}	Твоя компания не в союзе (или твой аккаунт не привязан). {0}
+d66919af55	Your company isn't in an alliance.	Твоя компания не в союзе.
+49ca76adc4	The company must be at least {0} days old.	Компании должно быть не меньше {0} дней.
+3ce272a639	The company will be deleted permanently. Continue?	Компания будет удалена безвозвратно. Продолжить?
+cc84dfd3b8	Compensation for everyone	Компенсация для всех
+9a17fb003a	Compensation: +{0}	Компенсация: +{0}
+960b196f05	Compensation: {0}	Компенсация: {0}
+53bf33582d	Comfortable cab	Комфортная кабина
+b8ca2e8cdb	Convoys	Колонны
+bb968877a7	Convoys are now gathered in the game (Orders → Convoys): choose a lane and a time, and the column sets off together.	Колонны теперь собираются в игре (Заказы → Колонны): выбери линию и время, и колонна выедет вместе.
+a795d3ad4c	Convoys are now gathered in advance: one lane, one departure time, everyone arrives together. Every Sunday at 20:00 the big TransVerse convoy sets off too.	Колонны теперь собираются заранее: одна линия, одно время отправления, все прибывают вместе. Каждое воскресенье в 20:00 отправляется и большая колонна TransVerse.
+7572b9bdc4	Convoys come with update 1.10.	Колонны появятся в обновлении 1.10.
+4900739eff	Convoy	Колонна
+4ac5950111	Convoy and roadside assistance between all companies in the alliance, a fuel card for the alliance's petrol stations, the alliance's bases on the map and a private channel in Discord.	Колонна и помощь на дороге между всеми компаниями союза, топливная карта для заправок союза, базы союза на карте и закрытый канал в Discord.
+5af9908e58	A convoy is possible up to {0} min after departure.	Колонна возможна до {0} мин после отправления.
+daaec250e6	Convoy of {0} trucks{1}{2}	Колонна из {0} грузовиков{1}{2}
+7955cfb403	A convoy through at least 4 countries, on time.	Колонна через не менее чем 4 страны, вовремя.
+bda83f2b69	Convoy with {0}	Колонна с {0}
+5c8a44ad2e	A convoy can be led from level {0}.	Вести колонну можно с уровня {0}.
+862faa67d0	A convoy can be led from level {0}. Until then, join other people's.	Вести колонну можно с уровня {0}. До тех пор присоединяйся к чужим.
+71c8145b09	A convoy leaves from a city where you have a truck.	Колонна выезжает из города, где у тебя есть грузовик.
+72b62ef310	Convoy: an order on a lane on which a friend or a member of your company set off up to 30 minutes earlier has a “Convoy with …” label; you both get +5 % of the reward on an on-time delivery.	Колонна: заказ по линии, по которой друг или участник твоей компании выехал не более 30 минут назад, помечен «Колонна с …»; вы оба получаете +5 % к оплате при доставке вовремя.
+3b251f2de8	The convoy is already leaving or has left.	Колонна уже выезжает или выехала.
+7b22208554	The convoy has already left — next time!	Колонна уже уехала — в следующий раз!
+664e30f04d	The convoy is cancelled	Колонна отменена
+eed6788a31	The convoy is cancelled.	Колонна отменена.
+e5bb442c81	The convoy is full ({0} trucks)	Колонна заполнена ({0} грузовиков)
+dd005de93e	The convoy is full.	Колонна заполнена.
+bc7223a1ea	The convoy is for the leader's friends only.	Колонна только для друзей ведущего.
+f44abe8662	The convoy is for company members only.	Колонна только для участников компании.
+f96ec174a3	The harvest convoy	Колонна урожая
+f13c7acb40	The convoy accepts from level {0}.	Колонна принимает с уровня {0}.
+fd825c0a93	The convoy has set off ({0} trucks) 🚚	Колонна выехала ({0} грузовиков) 🚚
+e35bc3dbe8	A livery contest for the companies.	Конкурс ливрей для компаний.
+145f6d7abf	Livery contest	Конкурс ливрей
+aa8740e8a2	Livery contest (Competition → Liveries): one truck a month — as it is (model, trailer, colour, special paint). The other players give a 👍 (in the game or in Discord, in #ливреи, where the truck appears with a picture). On the 1st at 10:00 the truck with the most 👍 (at least 3) wins 100 TransCoin and the “Livery of the month” badge.	Конкурс ливрей (Соревнования → Ливреи): один грузовик в месяц — такой, как есть (модель, прицеп, цвет, особая краска). Другие игроки ставят 👍 (в игре или в Discord, в #ливреи, где грузовик появляется с картинкой). 1-го числа в 10:00 грузовик с наибольшим числом 👍 (не меньше 3) выигрывает 100 ТрансКоин и значок «Ливрея месяца».
+69955f656b	Photo contest	Фотоконкурс
+d29701eb59	Contact in {0}: level {1} (better pay, lower risk)	Контакт в {0}: уровень {1} (лучше оплата, меньше риск)
+1f9e7d09cf	Contacts	Контакты
+4c3ab87d4c	Contacts: every successful shipment from a city gives you an acquaintance there; every 3 shipments — better pay (+5 %) and lower risk.	Контакты: каждая успешная посылка из города даёт тебе там знакомого; каждые 3 посылки — лучше оплата (+5 %) и меньше риск.
+03847e5274	Containers	Контейнеры
+8702513da7	Containers and car carriers	Контейнеры и автовозы
+2283477454	Container loads from the big ports and “Ship arriving” with a reward for the company.	Контейнерные грузы из крупных портов и «Судно прибывает» с наградой для компании.
+8faff4c335	40′ container chassis	Контейнерное шасси 40′
+6e8101145e	A concert organ in parts	Концертный орган по частям
+3a1d7c8db5	Coordinates	Координаты
+1576acb0e9	Copy	Копировать
+a1c49bb2fa	Copied	Скопировано
+9a97522ada	Ship arriving — first place	Судно прибывает — первое место
+8f139cd2a6	Balance correction	Корректировка баланса
+0af42664fa	Balance correction for {0}: {1}{2}{3}	Корректировка баланса {0}: {1}{2}{3}
+5584a10c05	Correction by an administrator	Корректировка администратора
+afdd680b7e	Correction: {0}	Корректировка: {0}
+45334eda8f	The correction is recorded in the ledger and the audit.	Корректировка записана в бухгалтерскую книгу и аудит.
+16eb977702	Driving without the mandatory rest	Вождение без обязательного отдыха
+3fef86e470	Driving today	Вождение сегодня
+e2b1e6f24c	Crane body	Корпус крана
+ff2c85827b	Corsica	Корсика
+fbc9a1f630	Kos	Кос
+dd8ac0975a	Kostov	Костов
+96ba037c78	Kotor	Котор
+f816554e51	Which ranking	Какой рейтинг
+917053047d	Which building do we build next?	Какое здание строим следующим?
+4e98d97eb4	Destination city	Конечный город
+03b4fd2a05	End	Конец
+53e72f5f38	Ends {0} · updates every 10 minutes	Конец {0} · обновляется каждые 10 минут
+c3d0e279fe	Coastal	Каботажный
+7be8733b7d	Coastal licence	Каботажная лицензия
+1be514bef8	End point	Конечная точка
+07ab14a71e	King	Король
+0131b80905	King of {0} ({1})	Король {0} ({1})
+13446a1f0c	King of {0}! 👑	Король {0}! 👑
+bf0d21b874	King of the country	Король страны
+dcd87d0317	Royal blue	Королевский синий
+293da11dab	The King of the country	Король страны
+a23c84176c	The King of the country: the most tonnes to a country in the month (at least 20 t) — the title for the next month, 25 TC, on the profile and in Discord.	Король страны: больше всего тонн в страну за месяц (не меньше 20 т) — титул на следующий месяц, 25 TC, в профиле и в Discord.
+b41044b826	Krasimir	Красимир
+d3065ce35e	Short hints on the first encounter with the new systems (drivers, board, clients, analysis, insurance) and a “Help and rules” page in the profile menu.	Короткие подсказки при первой встрече с новыми системами (водители, биржа, клиенты, анализ, страховка) и страница «Помощь и правила» в меню профиля.
+756c0a7a24	Brief deviation from the norm	Кратковременное отклонение от нормы
+cf143d6cfb	A short sound on a new notification while the game is open (on this device)	Короткий звук при новом уведомлении, пока игра открыта (на этом устройстве)
+3611757d6f	Loan	Кредит
+253b4b1114	Loan (disbursement and instalments)	Кредит (выдача и платежи)
+280c1528a0	Loan for {0} weeks	Кредит на {0} недель
+e5c943a02d	Loan: overdue — the remainder collected	Кредит: просрочка — остаток взыскан
+4b5df8cc64	Your credit rating is too low — drive more and deliver on time.	Твой кредитный рейтинг слишком низкий — езди больше и доставляй вовремя.
+dbf9277b40	Your credit rating went up.	Твой кредитный рейтинг повысился.
+27c8308bb9	The loan is paid off 🎉	Кредит погашен 🎉
+bea8ec6592	The loan is overdue	Кредит просрочен
+559734ad5f	Crete	Крит
+d349355a8f	Pears and quinces	Груши и айва
+c2a95f403c	Round	Раунд
+3a0b58327f	Belém Tower, Lisbon	Башня Белен, Лиссабон
+8e5edf43c2	The cup has already started.	Кубок уже начался.
+bca0eb27cb	The cup is for drivers from level {0} up.	Кубок — для водителей с уровня {0}.
+b70b2af0aa	The cup is cancelled — too few drivers signed up. The next cup comes with the next update.	Кубок отменён — записалось слишком мало водителей. Следующий кубок — со следующим обновлением.
+67d077f95b	Bought vehicles are parked in a depot. First open a depot in the section	Купленная техника паркуется в депо. Сначала открой депо в разделе
+ff953bbe05	Bought shares can be sold after {0}.	Купленные акции можно продать через {0}.
+1ed75ae33d	Bought! See it in the fleet.	Куплено! Смотрите в автопарке.
+bcee895f67	Buy your first vehicle from the market.	Купите свою первую машину на рынке.
+4c575487af	Buy	Купить
+d8f290b0f0	Buy · {0}	Купить · {0}
+50b667a650	Buy · {0} TC	Купить · {0} TC
+68967a2040	Buy TransCoin and VIP	Купить ТрансКоин и VIP
+f89ace3a9e	Buy a depot in a city with many loads.	Купи депо в городе с большим количеством грузов.
+a1b03751cc	Buy up to 100 shares of a company.	Купи до 100 акций компании.
+f4d895a101	Buy cheap where it is produced, haul it yourself and sell dear where it is wanted.	Покупай дёшево там, где производят, вези сам и продавай дорого там, где есть спрос.
+2c3a5758b0	Buy cheap, sell dear	Купи дёшево, продай дорого
+8ab8aa2e93	Buy land · {0}	Купить землю · {0}
+d5d7e18b82	Buy and load your goods.	Купи и загрузи свой товар.
+928f6755fb	Buy all three retro paints (the 70s, 80s, 90s).	Купи все три ретро-краски (70-е, 80-е, 90-е).
+0636a5b461	Buy the licence once.	Купи лицензию один раз.
+c1209207ad	Buy from producers in {0}	Купить у производителей в {0}
+521797a6f0	Buy vehicles	Купить технику
+725161728c	Buy stakes in the other players' companies. The price follows their results, and every Monday their treasury pays a dividend.	Покупай доли в компаниях других игроков. Цена следует за их результатами, а каждый понедельник их казна платит дивиденд.
+cc31469d6c	Buy stakes in the other players' companies. The price follows their results; every Monday their treasury pays a dividend. Game money.	Покупай доли в компаниях других игроков. Цена следует за их результатами; каждый понедельник их казна платит дивиденд. Игровые деньги.
+7b22aa1ffc	Any player can buy them — with or without a company. Trailers don't take up depot space.	Их может купить любой игрок — с компанией или без. Прицепы не занимают места в депо.
+6e5d4a3751	They are bought from the treasury at double price and apply to all company members.	Покупаются из казны по двойной цене и действуют для всех участников компании.
+bb11b79d3b	Buyers	Покупатели
+811e47a387	Buy {0} for {1}?	Покупаешь {0} за {1}?
+819ad01566	You buy goods cheap in one city and sell them dear in another.	Ты покупаешь товар дёшево в одном городе и продаёшь дорого в другом.
+85ac50e4eb	You buy goods where they are cheap, keep them in a warehouse and haul them to the city where they are wanted. Prices move with demand, the season and events. Used trucks are sold between players.	Ты покупаешь товар там, где он дёшев, хранишь на складе и везёшь в город, где на него спрос. Цены меняются со спросом, сезоном и событиями. Подержанные грузовики продаются между игроками.
+c704bcd2ec	Trip	Рейс
+3e7240a132	A hired driver's trip gives the owner 10 % of the XP (it was 25 %).	Рейс наёмного водителя даёт владельцу 10 % опыта (было 25 %).
+6d7eed6c07	Trip with a company trailer: {0}	Рейс с фирменным прицепом: {0}
+fcca626e26	Trips	Рейсы
+bdada3906b	Hired drivers' trips	Рейсы наёмных водителей
+268b0ab0b6	Members' trips	Рейсы участников
+c25ed07d57	Trips from companies	Рейсы от компаний
+4377e5dbd2	Trips across the EU's external border — to and from Turkey, Serbia and North Macedonia.	Рейсы через внешнюю границу ЕС — в Турцию, Сербию и Северную Македонию и обратно.
+8ea267a8f5	Trips in which the load crosses a border between two countries.	Рейсы, в которых груз пересекает границу между двумя странами.
+80bd4d741b	Trips, records and favourite lanes. Game data, no money.	Рейсы, рекорды и любимые линии. Игровые данные, без денег.
+62c045b819	Trips to {0} bring +{1} %, and loads for the company only leave from there.	Рейсы в {0} приносят +{1} %, а оттуда уходят грузы только для компании.
+7281b0a4b7	Your account's trips (yours and your hired drivers'), finished during the year by Bulgarian time. Game data.	Рейсы твоего аккаунта (твои и наёмных водителей), завершённые за год по болгарскому времени. Игровые данные.
+60f339feb9	Trips go on on the server even when the browser is closed.	Рейсы продолжаются на сервере, даже когда браузер закрыт.
+7d6d5a6af8	Trips run even while you're not in the game	Рейсы идут, даже когда тебя нет в игре
+ed9fd94855	Trips last twice as long (about an hour for 500 km), hired drivers bring the owner less XP, and companies level up more slowly. Levels now mean weeks of play, not two days. Levels already reached stay.	Рейсы длятся вдвое дольше (около часа на 500 км), наёмные водители приносят владельцу меньше опыта, а компании растут в уровнях медленнее. Теперь уровни — это недели игры, а не два дня. Достигнутые уровни сохраняются.
+362b9f49af	The trip has already ended.	Рейс уже завершён.
+7a638b98b8	The trip has already finished.	Рейс уже закончился.
+5b5a67891c	The trip is public: anyone with the link sees the route, the load and the numbers (without the sums from your bill).	Рейс публичный: любой со ссылкой видит маршрут, груз и цифры (без сумм из твоего счёта).
+930dfeac40	The trip was late, so they paid half: 	Рейс опоздал, поэтому заплатил половину:
+5a309505d4	The loaded trip takes about {0} min at ×{1}. Give at least that much time (plus time for the empty run to the load).	Рейс с грузом длится около {0} мин при ×{1}. Дайте не меньше этого срока (плюс время на порожний пробег до груза).
+75b602c1ec	A trip lasts from {0} minutes for a short distance to about {1} for 2,000 km. You can close the game — the truck arrives without you.	Рейс длится от {0} минут на короткое расстояние до примерно {1} на 2 000 км. Можешь закрыть игру — грузовик доедет и без тебя.
+81e3e95eab	Where do you want to go? (Ctrl+K)	Куда хочешь перейти? (Ctrl+K)
+b1579836ba	Where do you want to go? (e.g. trailer, shares, fines)	Куда хочешь перейти? (например, прицеп, акции, штрафы)
+52ecbe3e68	Where you park and buy vehicles.	Где ты паркуешь и покупаешь технику.
+c0a34cccc5	To {0}	В {0}
+8cc830afba	To the base	К базе
+78fe2b0180	To the board	К бирже
+5f0e82d852	To the showcase	К витрине
+8c9b8e8554	To the login	Ко входу
+895e39a82d	To the fines	К штрафам
+882ae4b099	To the game	В игру
+201fbadf60	To the map	К карте
+a880e0c108	To the convoys	К колоннам
+092c167f81	To the licences →	К лицензиям →
+9011fa7bd3	To the shop	В магазин
+a394feeaaf	To my warehouse	На мой склад
+8e00c5f1d3	To level {0}	К уровню {0}
+1793cb226e	To founding a company	К основанию компании

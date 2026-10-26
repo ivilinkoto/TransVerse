@@ -16,6 +16,7 @@ import { heldLicences, missingFor } from './licences';
 import { membershipOf } from './membership';
 import { notify } from './notify';
 import { fleetView } from './queries';
+import { t } from '@/i18n/t';
 
 /** VIP auto-dispatch: at most this many automatic trips per player and day. */
 export const AUTO_DISPATCH_PER_DAY = 20;
@@ -88,7 +89,7 @@ export async function planDispatch(db: DbOrTx, userId: string, now = new Date(),
 
 /** Sends the trucks of a plan (each acceptance is checked again; a taken job is skipped). */
 export async function runDispatch(db: Database, userId: string, plan: { vehicleId: string; contractId: string }[], now = new Date(), auto = false) {
-  if (plan.length > 50) fail('too_many', 'Твърде много курсове наведнъж.');
+  if (plan.length > 50) fail('too_many', t('Твърде много курсове наведнъж.'));
   const sent: string[] = [];
   const failed: { vehicleId: string; reason: string }[] = [];
   for (const p of plan) {
@@ -106,9 +107,9 @@ export async function runDispatch(db: Database, userId: string, plan: { vehicleI
 export async function setAutoDispatch(db: Database, userId: string, vehicleId: string, on: boolean, now = new Date()) {
   const company = await companyForUser(db, userId);
   const [u] = await db.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
-  if (on && !isVip(u?.vipUntil, now)) fail('vip_only', 'Автоматичният диспечер е за VIP играчите.', 403);
+  if (on && !isVip(u?.vipUntil, now)) fail('vip_only', t('Автоматичният диспечер е за VIP играчите.'), 403);
   const rows = await db.update(vehicles).set({ autoDispatch: on }).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id))).returning({ id: vehicles.id });
-  if (!rows.length) fail('vehicle_not_found', 'Превозното средство не е намерено.', 404);
+  if (!rows.length) fail('vehicle_not_found', t('Превозното средство не е намерено.'), 404);
 }
 
 /** Worker: VIP players' trucks with auto-dispatch on take the dispatcher's next job when they are free. */
@@ -138,7 +139,7 @@ export async function autoDispatchTick(db: Database, now = new Date()): Promise<
     const res = await runDispatch(db, r.userId, [p], now, true);
     if (res.sent) {
       sent++;
-      if (n + 1 === AUTO_DISPATCH_PER_DAY) await notify(db, r.userId, 'info', 'Автоматичният диспечер почива', `Днес изпрати ${AUTO_DISPATCH_PER_DAY} курса — лимитът за 24 часа е достигнат.`, '/game/contracts');
+      if (n + 1 === AUTO_DISPATCH_PER_DAY) await notify(db, r.userId, 'info', () => t('Автоматичният диспечер почива'), () => t('Днес изпрати {0} курса — лимитът за 24 часа е достигнат.', AUTO_DISPATCH_PER_DAY), '/game/contracts');
     }
   }
   return sent;

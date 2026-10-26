@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { api } from '@/lib/client/api';
 import { POLL } from '@/lib/game/polls';
+import { t, tx } from '@/i18n/t';
 
 export interface PollItem {
   id: string;
@@ -59,34 +60,34 @@ export function CompanyPolls({ polls, canCreate, now }: { polls: PollItem[]; can
   return (
     <div className="space-y-3">
       {open && <PollCard poll={open} onVote={vote} now={now} />}
-      {open && canCreate && <ActionButton action={{ type: 'closePoll', pollId: open.id }} className="btn-ghost px-3 py-1 text-xs" confirm="Да затворим ли анкетата сега?">Затвори анкетата</ActionButton>}
+      {open && canCreate && <ActionButton action={{ type: 'closePoll', pollId: open.id }} className="btn-ghost px-3 py-1 text-xs" confirm={t('Да затворим ли анкетата сега?')}>{t('Затвори анкетата')}</ActionButton>}
       {!open && canCreate && !creating && (
-        <button type="button" className="btn-ghost w-full justify-center text-sm" onClick={() => setCreating(true)}><Plus className="h-4 w-4" />Нова анкета</button>
+        <button type="button" className="btn-ghost w-full justify-center text-sm" onClick={() => setCreating(true)}><Plus className="h-4 w-4" />{t('Нова анкета')}</button>
       )}
       {creating && (
         <form onSubmit={create} className="space-y-2 rounded-xl border border-asphalt-700 p-3">
-          <input className="input w-full text-sm" maxLength={POLL.questionMax} placeholder="Въпрос (напр. Кое да строим след офиса?)" value={question} onChange={(e) => setQuestion(e.target.value)} aria-label="Въпрос" required />
+          <input className="input w-full text-sm" maxLength={POLL.questionMax} placeholder={t('Въпрос (напр. Кое да строим след офиса?)')} value={question} onChange={(e) => setQuestion(e.target.value)} aria-label={t('Въпрос')} required />
           {options.map((o, i) => (
             <div key={i} className="flex gap-2">
-              <input className="input min-w-0 flex-1 py-1.5 text-sm" maxLength={POLL.optionMax} placeholder={`Отговор ${i + 1}`} value={o} onChange={(e) => setOptions(options.map((x, j) => (j === i ? e.target.value : x)))} aria-label={`Отговор ${i + 1}`} />
-              {options.length > POLL.minOptions && <button type="button" className="text-mist-400 hover:text-white" onClick={() => setOptions(options.filter((_, j) => j !== i))} aria-label="Махни отговора"><X className="h-4 w-4" /></button>}
+              <input className="input min-w-0 flex-1 py-1.5 text-sm" maxLength={POLL.optionMax} placeholder={t('Отговор {0}', i + 1)} value={o} onChange={(e) => setOptions(options.map((x, j) => (j === i ? e.target.value : x)))} aria-label={t('Отговор {0}', i + 1)} />
+              {options.length > POLL.minOptions && <button type="button" className="text-mist-400 hover:text-white" onClick={() => setOptions(options.filter((_, j) => j !== i))} aria-label={t('Махни отговора')}><X className="h-4 w-4" /></button>}
             </div>
           ))}
           <div className="flex flex-wrap items-center gap-2">
-            {options.length < POLL.maxOptions && <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => setOptions([...options, ''])}><Plus className="h-3.5 w-3.5" />Отговор</button>}
-            <select className="input py-1 text-xs" value={hours} onChange={(e) => setHours(Number(e.target.value))} aria-label="Продължителност">
-              {POLL.hours.map((h) => <option key={h} value={h}>{h} часа</option>)}
+            {options.length < POLL.maxOptions && <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => setOptions([...options, ''])}><Plus className="h-3.5 w-3.5" />{t('Отговор')}</button>}
+            <select className="input py-1 text-xs" value={hours} onChange={(e) => setHours(Number(e.target.value))} aria-label={t('Продължителност')}>
+              {POLL.hours.map((h) => <option key={h} value={h}>{t('{0} часа', h)}</option>)}
             </select>
           </div>
           <div className="flex gap-2">
-            <button className="btn-primary flex-1 justify-center text-sm" disabled={busy}>{busy ? '…' : 'Пусни анкетата'}</button>
-            <button type="button" className="btn-ghost text-sm" onClick={() => setCreating(false)}>Отказ</button>
+            <button className="btn-primary flex-1 justify-center text-sm" disabled={busy}>{busy ? '…' : t('Пусни анкетата')}</button>
+            <button type="button" className="btn-ghost text-sm" onClick={() => setCreating(false)}>{t('Отказ')}</button>
           </div>
         </form>
       )}
       {error && <p role="alert" className="text-xs text-loss">{error}</p>}
       {past.map((p) => <PollCard key={p.id} poll={p} now={now} />)}
-      {!polls.length && !canCreate && <p className="text-sm text-mist-400">Още няма анкети.</p>}
+      {!polls.length && !canCreate && <p className="text-sm text-mist-400">{t('Още няма анкети.')}</p>}
     </div>
   );
 }
@@ -99,8 +100,8 @@ function PollCard({ poll, onVote, now }: { poll: PollItem; onVote?: (pollId: str
       <div className="flex items-start gap-2">
         <BarChart3 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-glow" />
         <div className="min-w-0 flex-1">
-          <p className="break-words font-semibold">{poll.question}</p>
-          <p className="text-xs text-mist-400">{poll.open ? `Отворена още ${leftH} ч · ${poll.total} ${poll.total === 1 ? 'глас' : 'гласа'}` : `Приключила · ${poll.total} ${poll.total === 1 ? 'глас' : 'гласа'}`}</p>
+          <p className="break-words font-semibold">{tx(poll.question)}</p>
+          <p className="text-xs text-mist-400">{poll.open ? t('Отворена още {0} ч · {1} {2}', leftH, poll.total, poll.total === 1 ? t('глас') : t('гласа')) : t('Приключила · {0} {1}', poll.total, poll.total === 1 ? t('глас') : t('гласа'))}</p>
         </div>
       </div>
       <ul className="mt-2 space-y-1.5">

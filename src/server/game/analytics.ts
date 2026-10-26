@@ -3,6 +3,7 @@ import { analyze, type DeliveryRow } from '@/lib/game/analytics';
 import type { TripCosts } from '@/lib/game/economy';
 import type { DbOrTx } from '@/server/db/client';
 import { cities, contracts, deliveries, drivers, vehicles } from '@/server/db/schema';
+import { tx } from '@/i18n/t';
 
 /** The company's analytics for the last `days` days (finished deliveries), with names for the groups. */
 export async function companyAnalytics(db: DbOrTx, companyId: string, days: number, now: Date) {
@@ -51,7 +52,7 @@ export async function companyAnalytics(db: DbOrTx, companyId: string, days: numb
       driver: Object.fromEntries(dRows.map((d) => [d.id, d.name])) as Record<string, string>,
       lane: Object.fromEntries(result.lanes.map((l) => {
         const [a, b] = l.key.split('>').map(Number);
-        return [l.key, `${city(a!)} → ${city(b!)}`];
+        return [l.key, `${tx(city(a!))} → ${tx(city(b!))}`];
       })) as Record<string, string>,
     },
   };

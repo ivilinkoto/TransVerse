@@ -7,6 +7,7 @@ import { postCoins } from './coins';
 import { post } from './finance';
 import { notify } from './notify';
 import { awardXp } from './progression';
+import { t as tr } from '@/i18n/t';
 
 export async function storyOf(db: DbOrTx, userId: string) {
   const [p] = await db.select().from(storyProgress).where(eq(storyProgress.userId, userId));
@@ -33,9 +34,9 @@ export async function storyDelivered(tx: Tx, userId: string, accountId: string, 
   const last = next >= STORY.length;
   await tx.insert(storyProgress).values({ userId, chapter: next, counts: [0, 0, 0], cities: [], startedAt: at, finishedAt: last ? at : null }).onConflictDoUpdate({ target: storyProgress.userId, set: { chapter: next, counts: [0, 0, 0], cities: [], startedAt: at, finishedAt: last ? at : null } });
   const key = `story:${p.chapter}:${userId}`;
-  await post(tx, accountId, [{ category: 'achievement_reward', amountCents: chapter.rewardCents, description: `Историята: „${chapter.title}“`, idempotencyKey: key }]);
+  await post(tx, accountId, [{ category: 'achievement_reward', amountCents: chapter.rewardCents, description: tr('Историята: „{0}“', chapter.title), idempotencyKey: key }]);
   await awardXp(tx, userId, chapter.xp, 'achievement');
-  await postCoins(tx, userId, { amount: chapter.coins, reason: 'story', description: `Историята: „${chapter.title}“`, idempotencyKey: key });
+  await postCoins(tx, userId, { amount: chapter.coins, reason: 'story', description: tr('Историята: „{0}“', chapter.title), idempotencyKey: key });
   if (last) await tx.insert(userBadges).values({ userId, badge: STORY_BADGE, awardedAt: at }).onConflictDoNothing();
-  await notify(tx, userId, 'achievement', `Глава ${p.chapter + 1} завърши: „${chapter.title}“ 📖`, `${chapter.outro} Награда: +${chapter.xp} опит и ${chapter.coins} TC.`, '/game/story');
+  await notify(tx, userId, 'achievement', () => tr('Глава {0} завърши: „{1}“ 📖', p.chapter + 1, chapter.title), () => tr('{0} Награда: +{1} опит и {2} TC.', chapter.outro, chapter.xp, chapter.coins), '/game/story');
 }

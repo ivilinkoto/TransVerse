@@ -2,6 +2,7 @@ import { desc, eq, sql } from 'drizzle-orm';
 import type { DbOrTx, Tx } from '@/server/db/client';
 import { coinEntries, users } from '@/server/db/schema';
 import { fail } from './errors';
+import { t } from '@/i18n/t';
 
 export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction' | 'postcards' | 'truck_contest' | 'humanitarian' | 'harvest' | 'story';
 
@@ -56,9 +57,9 @@ export async function postCoins(
 ): Promise<boolean> {
   if (!Number.isSafeInteger(entry.amount) || entry.amount === 0) throw new Error(`Invalid coin amount ${entry.amount}`);
   const [user] = await tx.select({ coins: users.coins }).from(users).where(eq(users.id, userId)).for('update');
-  if (!user) fail('user_not_found', 'Потребителят не е намерен.', 404);
+  if (!user) fail('user_not_found', t('Потребителят не е намерен.'), 404);
   const next = user!.coins + entry.amount;
-  if (options.requireFunds && next < 0) fail('insufficient_coins', 'Нямате достатъчно ТрансКоин.');
+  if (options.requireFunds && next < 0) fail('insufficient_coins', t('Нямате достатъчно ТрансКоин.'));
   const inserted = await tx
     .insert(coinEntries)
     .values({ userId, amount: entry.amount, balanceAfter: next, reason: entry.reason, description: entry.description, actorUserId: entry.actorUserId ?? null, idempotencyKey: entry.idempotencyKey })

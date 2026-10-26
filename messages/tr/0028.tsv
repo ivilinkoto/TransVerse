@@ -1,0 +1,250 @@
+fc9c40f14e	Company projects	Проекты компании
+7cbe84531b	Company projects (Company → Missions): 3 suggestions a week, one project a week, a 7-day deadline; every delivery by a member with the project's load to its city counts. A reward for the treasury, company XP and 15 TC for everyone who hauled at least 5 % of the goal. The project's orders have a label on the board.	Проекты компании (Компания → Миссии): 3 предложения в неделю, один проект в неделю, срок 7 дней; засчитывается каждая доставка участника с грузом проекта в его город. Награда в казну, опыт компании и 15 TC каждому, кто перевёз не меньше 5 % цели. Заказы проекта помечены на бирже.
+9b55a231b6	Company trailers	Фирменные прицепы
+2934888e3f	Company trailers (purchases and bonus from trips)	Фирменные прицепы (покупки и бонус с рейсов)
+0b6465ddc4	Company auctions for companies	Торги компаний для компаний
+80f46bdf25	The company bus has already brought you.	Фирменный автобус уже тебя привёз.
+d50c3e9eab	The company bus is for new members.	Фирменный автобус — для новых участников.
+0533069bc9	The company truck belongs to the company — return it, it isn't sold.	Фирменный грузовик принадлежит компании — верните его, он не продаётся.
+36b69ffcb9	The company truck is on a trip — return it to the company after the trip ends.	Фирменный грузовик в рейсе — верните его компании после окончания рейса.
+40ed0c2d08	A company convoy pays no contribution to the treasury and gives ×1.5 company XP.	Фирменная колонна не платит взнос в казну и даёт ×1,5 опыта компании.
+a20bc4f6f9	The company colour unlocks at company level 3.	Фирменный цвет открывается на 3-м уровне компании.
+31221ba054	Company	Фирменное
+1bd7f7ca85	Company logo	Логотип компании
+ce607daa2c	Company trailer: {0} ({1})	Фирменный прицеп: {0} ({1})
+e554e49ec2	The company trailer goes back to the company, it isn't sold.	Фирменный прицеп возвращается компании, а не продаётся.
+6dc5c4ce19	The client firms are made up (game data). Every load under the contract pays about {0} % above the board. When you complete all loads by the deadline, you get a bonus and +{1} reputation; late loads reduce the bonus. If the deadline passes, you lose reputation. You can have up to {2} active contracts (VIP — {3}). New offers come when the old ones expire.	Фирмы-клиенты вымышлены (игровые данные). Каждый груз по договору оплачивается примерно на {0} % выше биржи. Когда выполнишь все грузы к сроку, получишь бонус и +{1} репутации; опоздавшие грузы уменьшают бонус. Если срок истечёт, теряешь репутацию. Можно иметь до {2} активных договоров (VIP — {3}). Новые предложения приходят, когда истекают старые.
+6e828b96c1	Background process	Фоновый процесс
+fbe942230b	Fountain	Фонтан
+ccf77db4c7	Photo mode	Фоторежим
+35166ce3f7	Photo mode (Showcase → Photo mode): 5 scenes, a caption, a PNG picture.	Фоторежим (Витрина → Фоторежим): 5 сцен, подпись, снимок PNG.
+bc99becaad	Photo mode: on the phone the picture is shared, otherwise it is downloaded or opened in a new tab.	Фоторежим: на телефоне снимком можно поделиться, в остальных случаях он скачивается или открывается в новой вкладке.
+9c7d3d7d6d	French Riviera	Французская Ривьера
+03b8ce9dc2	Foods	Фудс
+b07d4cfa90	HALLOWEEN · +{0}%	ХЭЛЛОУИН · +{0}%
+e40ea5c297	Hamburg	Гамбург
+46ab253ace	Chania	Ханья
+ded0d5de02	Liked	Понравилось
+24f9a9ae8c	I like it	Нравится
+5965954f26	Helicopter (without rotors)	Вертолёт (без лопастей)
+4ea35bae58	Helicopter for an air show	Вертолёт для авиашоу
+8d9daead2a	Halloween	Хэллоуин
+a583c8a263	Halloween 2026 is over. Thanks to all the drivers!	Хэллоуин 2026 завершён. Спасибо всем водителям!
+5bd2e62046	Halloween is coming to the roads of TransVerse: a holiday look, an event with a ranking, pumpkin orders, a ghost truck and a new paint.	На дороги TransVerse идёт Хэллоуин: праздничный вид, ивент с рейтингом, тыквенные заказы, призрачный грузовик и новая краска.
+d3be143f5f	Halloween on the roads of TransVerse — holiday orders, an event, missions and a ghost truck.	Хэллоуин на дорогах TransVerse — праздничные заказы, ивент, миссии и призрачный грузовик.
+46079e2aab	Halloween costumes and masks	Хэллоуинские костюмы и маски
+5619b724b3	Halloween missions	Хэллоуинские миссии
+377bb60f1e	Halloween missions and a badge	Хэллоуинские миссии и значок
+3cd0cc9719	Halloween sweets	Хэллоуинские сладости
+c1bf3f38ac	Hemus	Хемус
+5e02d0440a	Chemicals	Химикаты
+c437b93b4c	Chios	Хиос
+cd02b0a8ce	Refrigerated	Рефрижераторная
+b2bbe90953	Rented reefer truck	Арендованный рефрижератор
+b9fef3fe93	Refrigerated container	Рефрижераторный контейнер
+e40b409e7d	Refrigerated licence (ATP)	Рефрижераторная лицензия (ATP)
+e1e9469dbd	Reefer department	Рефрижераторный отдел
+0e609fd59a	Refrigerated transport	Рефрижераторные перевозки
+8b60c74d24	The reefer market in Thessaloniki	Рефрижераторная биржа в Салониках
+c7ab99fc2e	Refrigerated shipments	Рефрижераторные отправки
+f306d8f9f4	Refrigerated goods	Рефрижераторные товары
+1654435898	Refrigerated loads and the grape harvest	Рефрижераторные грузы и сбор винограда
+4fe7193048	Refrigerated loads with temperature: each has a norm (chilled 0…6 °C, frozen −22…−18 °C, medicines 2…8 °C, flowers 2…6 °C). The condition of the refrigeration unit, the trip length and summer decide: within the norm +3 %, a brief deviation −10 %, spoiled goods −40 %. The chart is in the trip log.	Рефрижераторные грузы с температурой: у каждого своя норма (охлаждённые 0…6 °C, замороженные −22…−18 °C, лекарства 2…8 °C, цветы 2…6 °C). Решают состояние холодильной установки, длина рейса и лето: в норме +3 %, кратковременное отклонение −10 %, испорченный товар −40 %. График — в бортовом журнале.
+b03ddef9e8	Refrigerated loads now keep their temperature — a good unit brings a bonus. And from 1 September the autumn grape harvest arrives.	Рефрижераторные грузы теперь держат температуру — хорошая установка приносит бонус. А с 1 сентября начинается осенний сбор винограда.
+d6b2925fd4	13.6 m refrigerated trailer	Рефрижераторный прицеп 13,6 м
+9ab7ea63ad	Bread and pastry	Хлеб и выпечка
+cfecd7d3b8	Bread and pastry products	Хлеб и хлебобулочные изделия
+85f4b3ee07	Season progress	Ход сезона
+0ab496e201	Holding	Холдинг
+038142c9be	People	Люди
+9537b2ec1d	Hristo	Христо
+63f2983ac1	Hristov	Христов
+2ba46c4d14	Christ is risen! Kozunak and eggs on the roads, egg battles with friends and a spring paint.	Христос воскресе! Куличи и яйца на дорогах, яичные бои с друзьями и весенняя краска.
+8ea556f64d	Chrome	Хром
+b89a316d6f	Chrome	Хромированные
+c6102d7e4b	Chronicle	Хроника
+f7bb305984	The company chronicle: founding, levels, buildings, battles, projects, divisions, anniversaries, alliances.	Хроника компании: основание, уровни, здания, битвы, проекты, дивизионы, годовщины, союзы.
+b87c808b99	Humanitarian convoy	Гуманитарная колонна
+32f205990b	Humanitarian load on time	Гуманитарный груз вовремя
+997f5089eb	Humanitarian aid: water and food	Гуманитарная помощь: вода и еда
+39209dd2bf	Humanitarian aid: generators	Гуманитарная помощь: генераторы
+8f61b7c2e4	Humanitarian aid: medicines	Гуманитарная помощь: лекарства
+8d44371727	Humanitarian aid: blankets and tents	Гуманитарная помощь: одеяла и палатки
+f4ccdf29ff	Humanitarian aid: building materials	Гуманитарная помощь: стройматериалы
+9aa5616e33	Humanitarian convoys and Truck of the month	Гуманитарные колонны и Грузовик месяца
+14c853d993	Humanitarian convoys: every 21 days a 48-hour shared event in a country of the game (a game event) and “Humanitarian aid” loads (+20 %); on time — 3 TC, +1 reputation and the “Humanitarian convoy” badge.	Гуманитарные колонны: каждые 21 день 48-часовой общий ивент в одной из стран игры (игровое событие) и грузы «Гуманитарная помощь» (+20 %); вовремя — 3 TC, +1 репутации и значок «Гуманитарная колонна».
+e7b5a8de31	Tsarevets, Veliko Tarnovo	Царевец, Велико-Тырново
+4af2bfc548	Maize from the new harvest	Кукуруза нового урожая
+f5d8c1c44b	Tsvetkov	Цветков
+4bc439bb37	Flower bed	Клумба
+8d6aac751c	Flower beds, benches, trees, a flag in the company colour, a name plate, a fountain and the “Golden truck” statue. When it gets crowded, the company buys land next to the plot and it gets wider.	Клумбы, скамейки, деревья, флаг в цвете компании, табличка с названием, фонтан и статуя «Золотой грузовик». Когда станет тесно, компания покупает землю рядом с участком, и он становится шире.
+3a702dacdb	The colour the members' trucks are painted in — on the fleet pages, in the garage and on the plot. The special paints from the shop stay. Every member can turn it off for themselves in Settings.	Цвет, в который окрашены грузовики участников, — на страницах автопарка, в гараже и на участке. Особые краски из магазина остаются. Каждый участник может отключить его для себя в Настройках.
+7d26eba6f8	Flowers	Цветы
+9df7890657	Flowers and seedlings	Цветы и рассада
+333f81e143	Colour	Цвет
+939da065c0	Letter colour	Цвет букв
+d973d400c1	Goal in tonnes for a week	Цель в тоннах на неделю
+b53c4d1647	Goals for all members together. Every member's delivery counts automatically. The reward goes straight to the company treasury, together with company XP. The goals grow with the number of members.	Цели для всех участников вместе. Каждая доставка участника засчитывается автоматически. Награда идёт прямо в казну компании вместе с опытом компании. Цели растут с числом участников.
+de22078753	Goals for the day, the week, the month and the season.	Цели на день, неделю, месяц и сезон.
+6abea25ceb	Full truckloads of pallets	Целые машины паллет
+9db527ebc2	The whole plot	Весь участок
+ea2a4ffc25	The goal for this week has already been chosen.	Цель на эту неделю уже выбрана.
+ce357f3a59	The goal was not reached ({0} of {1}).	Цель не достигнута ({0} из {1}).
+1645cf8a87	The goal was not reached ({0}%). Next time we'll make it!	Цель не достигнута ({0}%). В следующий раз получится!
+e68823dbd4	The goal hasn't been reached yet.	Цель ещё не выполнена.
+57df6c3226	The goal must be positive.	Цель должна быть положительной.
+367e2792c1	Price	Цена
+c519e64ab4	Price for the other players (lv)	Цена для других игроков (лв.)
+7103bf43c8	Delivery price (lv)	Цена доставки (лв.)
+f1f0c1788c	Price ↑	Цена ↑
+3b3a04d1f6	Price ↓	Цена ↓
+18d719ab9c	The price is in whole lev.	Цена — в целых левах.
+0f21369580	The price is between {0} and {1} lv per tonne.	Цена — от {0} до {1} лв. за тонну.
+2f03752215	The price is from {0} to {1} per day.	Цена — от {0} до {1} в день.
+9b82ab7fde	The price is at least 1 lv.	Цена — не меньше 1 лв.
+4056c9bcb4	The diesel price changes every day by up to ±6 %.	Цена дизеля меняется каждый день до ±6 %.
+d1c0d458b1	The price must be between {0} lv and {1} lv.	Цена должна быть от {0} лв. до {1} лв.
+8e30556aa8	Prices that react to all players' deliveries	Цены, реагирующие на доставки всех игроков
+6c48ece72c	A 7-day cycle	Цикл 7 дней
+1513a79233	Cement	Цемент
+ee09461554	Cement on pallets	Цемент на паллетах
+a2e340c110	32,000 l tanker	Цистерна 32 000 л
+1cc0ad4f77	All of Europe	Вся Европа
+46cd8f194d	A whole page — a reward.	Целая страница — награда.
+7395cd4847	A whole number.	Целое число.
+7b36c433d3	Waiting until {0}	Ждёт до {0}
+98f9de4a44	Waiting for roadside help	Ждёт помощи в пути
+8f17bda57f	Waiting for raw materials	Ждёт сырьё
+2bcfb5530c	Pending support requests and reports	Ожидающие обращения в поддержку и жалобы
+48093c8318	Pending rewards	Ожидающие награды
+51fcf38cd8	Gravel	Щебень
+ea14e0b871	Gravel and sand	Щебень и песок
+fbb92ba256	Rush hour	Час пик
+3edd26f240	Rush hour: in cities over 300,000 inhabitants loading and unloading take 50 % longer 7–9 and 17–19 h local time.	Час пик: в городах с населением больше 300 000 погрузка и разгрузка длятся на 50 % дольше в 7–9 и 17–19 ч по местному времени.
+a9adf0d7c8	The driving hours carry over between trips: if you send the driver out again right away, they will stop for a rest sooner. A second driver in the same truck drives up to 18 hours without a rest. With every level the driver gets a skill point.	Часы за рулём переносятся между рейсами: если сразу отправишь водителя снова, он остановится на отдых раньше. Второй водитель в том же грузовике едет до 18 часов без отдыха. С каждым уровнем водитель получает очко навыка.
+7b2d85832b	Part	Часть
+cb97e487ae	Trailer part	Деталь для прицепа
+99232afce7	A part of the company with a head and its own weekly goal (e.g. “Reefer department”). The member chooses a department.	Часть компании со своим руководителем и еженедельной целью (например, «Рефрижераторный отдел»). Участник выбирает отдел.
+1ab203457d	Part of the shared load · {0}	Часть общего груза · {0}
+22fabf6fc1	Part of the load	Часть груза
+85beaf7ab1	Part of the load:	Часть груза:
+d7eb2d0914	Part of the load: when the load on the board is bigger than what the truck holds, you can take only as much as it holds (at least 0.5 t, and at least 0.5 t must remain on the board). The pay is the share of the tonnes; the rest stays on the board with the same deadline and the rest of the money. It doesn't apply to urgent, groupage and private loads (auctions, clients, construction, own goods). In Discord with /курс too.	Часть груза: когда груз на бирже больше, чем вмещает грузовик, можно взять столько, сколько помещается (не меньше 0,5 т, и на бирже должно остаться не меньше 0,5 т). Оплата — по доле тонн; остальное остаётся на бирже с тем же сроком и остатком денег. Не действует для срочных, сборных и частных грузов (торги, клиенты, стройка, свой товар). В Discord — тоже через /курс.
+d24c92a38a	A private channel for the company in the TransVerse Discord server: only members with a linked Discord see it (the bot adds and removes people by itself), and the messages go both ways with the in-game chat.	Закрытый канал компании на Discord-сервере TransVerse: его видят только участники с привязанным Discord (бот сам добавляет и убирает людей), а сообщения ходят в обе стороны с чатом в игре.
+e6871d8720	Parts	Детали
+070f5593d6	Truck parts	Детали для грузовика
+57ffa82607	Truck parts in the shop: grille, lights, sun visor and sticker.	Детали для грузовика в магазине: решётка, огни, козырёк и наклейка.
+89033bc1f9	Trailer parts	Детали для прицепа
+2497348b06	Trailer parts for TransCoin: paint, stripe, mudguards, lights.	Детали для прицепа за ТрансКоин: краска, полоса, брызговики, огни.
+4bac82f53f	The parts are for trucks, not for vans.	Детали — для грузовиков, а не для фургонов.
+8c77e45816	Chat	Чат
+1b10062732	Chat ({0} unread)	Чат ({0} непрочитанных)
+2cf8f54631	Chat (deleting messages, clearing the chat and polls)	Чат (удаление сообщений, очистка чата и опросы)
+6c1e116820	Chat and friends	Чат и друзья
+0fffe49070	Company chat	Чат компании
+c9deb6c1c1	The company chat	Чат компании
+c413273983	The company chat and direct messages	Чат компании и личные сообщения
+6d539740d5	Chat on a computer: the section strip (Global, Company, Trade, direct conversations) scrolls with the mouse wheel and with arrows, and the selected section is always visible.	Чат на компьютере: полоса разделов (Глобальный, Компания, Торговля, личные разговоры) прокручивается колёсиком мыши и стрелками, а выбранный раздел всегда виден.
+2a0f8fa1d3	Chat of “{0}”	Чат «{0}»
+3b0cea5c7a	Chat: an emoji button; @name mentions a player (a notification and a link to the chat; not if they have blocked you), name suggestions while you type @, your name is coloured gold.	Чат: кнопка эмодзи; @имя упоминает игрока (уведомление и ссылка на чат; если он тебя не заблокировал), подсказки имён, пока пишешь @, твоё имя выделено золотым.
+4fd07757b8	Chat: a ↩ “Reply” button next to every message (global, trade, company, direct) — the new message shows a quote of the original, you click it and the chat scrolls to it; the author gets a notification. Every section shows the number of new messages since it was last opened (without yours and without blocked players), and the chat button — the total; over 99 it says “99+”.	Чат: кнопка ↩ «Ответить» у каждого сообщения (глобальный, торговля, компания, личные) — новое сообщение показывает цитату оригинала, нажимаешь — и чат прокручивается к нему; автор получает уведомление. Каждый раздел показывает число новых сообщений с последнего открытия (без твоих и без заблокированных игроков), а кнопка чата — общее число; больше 99 — «99+».
+9927a9edab	The in-game chat is muted only by the game team (linked account).	Чат в игре заглушает только команда игры (привязанный аккаунт).
+1d4861daef	The chat is for company members only.	Чат только для участников компании.
+ed46e11766	The chat of “{0}” — linked with the chat in TransVerse.	Чат «{0}» — связан с чатом в TransVerse.
+b6cadddfcf	Red	Красная
+5cc73403c1	Red	Красные
+6b905af3c8	Red	Красный
+0a16b41aaa	Black	Чёрный
+6a63f614b1	Black market	Чёрный рынок
+784842b1d2	Black market: a hidden compartment (6,500 lv, from “Known”; half the chance of a find, but −2 t of payload) and a repair “off the books” at −40 % (from “Trusted”; +5 attention).	Чёрный рынок: тайник (6 500 лв., с уровня «Знакомый»; вдвое меньше шанс находки, но −2 т грузоподъёмности) и ремонт «втёмную» со скидкой 40 % (с уровня «Доверенный»; +5 внимания).
+554b6cc395	Black	Чёрная
+ebc24451e9	Black	Чёрные
+878fabb87d	The black market sells you a hidden compartment once they know you as “Known”.	Чёрный рынок продаёт тебе тайник, когда тебя знают как «Знакомого».
+c721bfd71b	Happy birthday, “{0}”! 🎂	С днём рождения, «{0}»! 🎂
+a490af0cc3	Happy Baba Marta!	С Бабой Мартой!
+cdf4502406	Happy Baba Marta! Be healthy and travel safely.	С Бабой Мартой! Будь здоров и езжай спокойно.
+e83b83637a	Happy Baba Marta! Spring loads, martenitsi on the trucks and a stork over some city every day.	С Бабой Мартой! Весенние грузы, мартенички на грузовиках и аист над каким-нибудь городом каждый день.
+bf3a8162cd	Frequently asked	Частые вопросы
+f7b031d730	Quarter-final	Четвертьфинал
+742dca46f0	Four holiday missions with TransCoin and money. Complete them all and get the “Pumpkin driver 2026” badge forever — with an orange frame around your picture.	Четыре праздничные миссии с ТрансКоин и деньгами. Выполни все и получи значок «Тыквенный водитель 2026» навсегда — с оранжевой рамкой вокруг аватара.
+8ce27df7e6	Civitavecchia	Чивитавеккья
+74d225989c	The numbers	Цифры
+082acf97e3	Clean record	Чистая репутация
+1b5ec38d73	Clear roads	Чистые дороги
+b726c5d17c	Member	Участник
+d306e48468	A member donates their own truck with at least {0} km from its showcase in the service. The truck stays in the museum forever, the donor gets {1} TC ({2} TC for a legend).	Участник дарит свой грузовик с пробегом от {0} км с его витрины в сервисе. Грузовик остаётся в музее навсегда, даритель получает {1} TC ({2} TC за легенду).
+7d793ce4ff	Server member	Участник сервера
+c3549ea168	A member left the company	Участник покинул компанию
+e111d27eba	Members	Участники
+39c7b78483	Company members	Участники компании
+59c1c6c5ff	The members to complete {0} deliveries	Участникам выполнить {0} доставок
+83a90d3db2	The member was not found.	Участник не найден.
+3a83669e4d	A man from the market	Человек с рынка
+a3347d7ae6	Hear the sound	Послушать звук
+4394f4ca42	Tap eggs	Стукнуться яйцами
+6f564801f5	Tap eggs with a friend.	Стукнись яйцами с другом.
+b588082570	Champion of the Spring cup 2027	Чемпион Весеннего кубка 2027
+d0bc5bf0af	Swiss watch	Швейцарские часы
+81758cc4e8	Hexagon	Шестиугольник
+9566b96c6f	A wide PNG, JPEG or WebP image (about 1500×400), up to {0}.	Широкое изображение PNG, JPEG или WebP (около 1500×400), до {0}.
+406ca37515	Chocolates	Шоколадные конфеты
+2f24ce12bb	Chocolate gifts	Шоколадные подарки
+6e3b7c2b0f	Chocolate eggs	Шоколадные яйца
+8c47609948	Driving	Вождение
+0e8a217180	Driver	Водитель
+935184bcb7	Driver of the month	Водитель месяца
+319af5af95	Driver of the month in the company: a badge and a bonus from the treasury at the owner's choice.	Водитель месяца в компании: значок и премия из казны по выбору владельца.
+c3fea9f8d1	Driver of the month at “{0}”	Водитель месяца в «{0}»
+247d4d2df0	Driver of the month: {0}	Водитель месяца: {0}
+0cda8d0263	Driver of the week	Водитель недели
+1d92137904	Drivers	Водители
+b9d5dec4b3	Drivers ({0})	Водители ({0})
+d0b5fa52b9	Drivers · sample data	Водители · пример данных
+d1a9abd314	Drivers of the week	Водители недели
+212283ec73	Drivers with character	Водители с характером
+21aec5bbe3	Drivers looking for a company	Водители ищут компанию
+396ccb2713	Drivers:	Водители:
+a565e1ea7f	The drivers of TransVerse completed {0} {1}, covered {2} km and hauled {3} t of cargo.	Водители TransVerse выполнили {0} {1}, проехали {2} км и перевезли {3} т грузов.
+194d84919c	Drivers grow with experience and want a higher salary	Водители растут с опытом и хотят более высокую зарплату
+3cebbc1943	The driver	Водитель
+720255743a	The driver is on a day off	У водителя выходной
+6f4c382a5d	The driver is on a day off — assign another or wait.	У водителя выходной — назначь другого или подожди.
+f58788439f	The driver is on a trip — they will leave after it if you don't raise their salary.	Водитель в рейсе — он уйдёт после него, если не повысишь ему зарплату.
+8aa8cc019c	The driver is on a trip.	Водитель в рейсе.
+ea71eb132f	The driver drives with their own truck and pays their own costs; on delivery they pay the company the commission.	Водитель едет на своём грузовике и сам оплачивает расходы; при доставке платит компании комиссию.
+0cb330d8c0	The driver can drive 9 hours before a daily rest. The hours of the last trip carry over: if you send them out again right away, they will stop for a rest sooner and the trip will be longer. After {0} minutes of idle time they are rested. A double crew (a second driver in the same truck) drives up to 18 hours without rests — long trips become much faster. With every skill level the driver gets a point for Economy, Safety or Endurance.	Водитель может ехать 9 часов до суточного отдыха. Часы последнего рейса переносятся: если сразу отправишь его снова, он остановится на отдых раньше, и рейс будет дольше. После {0} минут простоя он отдохнул. Двойной экипаж (второй водитель в том же грузовике) едет до 18 часов без отдыха — дальние рейсы становятся намного быстрее. С каждым уровнем навыка водитель получает очко в Экономичность, Безопасность или Выносливость.
+7ad8b186fc	The driver isn't signed up.	Водитель не записан.
+ba3eb993e9	The driver was not found.	Водитель не найден.
+6f44fe33c0	The driver has no request.	У водителя нет просьбы.
+fae80ada61	The driver rests 45 min after 4.5 hours and 11 hours after the day. Without a rest you arrive faster, but you risk a tachograph fine.	Водитель отдыхает 45 мин после 4,5 часа и 11 часов после рабочего дня. Без отдыха прибываешь быстрее, но рискуешь штрафом по тахографу.
+b1e3bac392	The driver will leave. Are you sure?	Водитель уйдёт. Уверен?
+05766df6e0	RELAY 1/2	ЭСТАФЕТА 1/2
+a827ebf09f	RELAY 2/2	ЭСТАФЕТА 2/2
+5ff68c969c	Crates of grapes	Ящики с виноградом
+03505a571d	Relay	Эстафета
+feec8e19b6	Relay (🏃 on the board): a load of 600 to 1,400 km in two parts via a city in the middle. The second part opens as soon as the first arrives, and waits 6 h. Each part pays ×1.15; if two different drivers are on time — +10 % for each and the “Relay” badge.	Эстафета (🏃 на бирже): груз на 600–1 400 км в две части через город посередине. Вторая часть открывается, как только прибудет первая, и ждёт 6 ч. Каждая часть оплачивается ×1,15; если два разных водителя успеют вовремя — +10 % каждому и значок «Эстафета».
+31cf8eb2bc	Relay on time ({0})	Эстафета вовремя ({0})
+5b6baabaea	The relay is in {0} 🏃	Эстафета в {0} 🏃
+fe43c9250e	The relay didn't continue	Эстафета не продолжилась
+81b3ad91a5	The relay arrived on time 🏁	Эстафета прибыла вовремя 🏁
+f9d1b85860	Your relay reached {0} on time	Твоя эстафета прибыла в {0} вовремя
+408d0123d1	Shield	Щит
+8f8e0bb548	As soon as a new player chooses you, you'll get a notification.	Как только новый игрок тебя выберет, ты получишь уведомление.
+c4abafd8f3	Stork	Аист
+e9385b32cc	Stork over {0}	Аист над {0}
+6ff620239f	The storks come on 1 March.	Аисты прилетают 1 марта.
+2698b305fe	The stork of the day	Аист дня
+1e36c7d306	The stork hasn't flown in yet.	Аист ещё не прилетел.
+465152fed0	Apples in crates	Яблоки в ящиках
+7a6f99625b	Egg battle	Яичный бой
+d5f600f9ac	An egg battle — only with a friend.	Яичный бой — только с другом.
+d91ec3547c	Egg battles are around Easter.	Яичные бои — на Пасху.
+34f27fb0ab	Yankov	Янков
+69080cdff9	A yacht for the marina	Яхта для порта
+4c19ee7021	August	августа
+39eed71320	car carrier	автовоз
+e1b4aec088	automatic event	автоматический ивент
+65b169d0e8	automatic	автоматическая
+a08d22d6a9	automatically	автоматически
+e7915ec18b	automatically by date	автоматически по датам
+ce6ded12ff	auto-moderation {0}	автомодерация {0}
+1ca03e05e4	active · {0} finished in 24 h	активные · {0} завершено за 24 ч

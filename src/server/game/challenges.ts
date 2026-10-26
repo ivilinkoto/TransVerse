@@ -13,6 +13,7 @@ import { postCoins } from './coins';
 import { activeSeason } from './seasons';
 import { post } from './finance';
 import { notify } from './notify';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 const monthStart = (at: Date) => {
   const { y, m } = sofiaParts(at);
@@ -54,8 +55,8 @@ export async function checkGrandEurotour(tx: Tx, userId: string, destCountry: st
   const [first] = await tx.insert(jobState).values({ key, value: { at: at.toISOString() } }).onConflictDoNothing().returning();
   if (!first) return false;
   await tx.insert(userBadges).values({ userId, badge: GRAND_EUROTOUR.badge, awardedAt: at }).onConflictDoNothing();
-  await postCoins(tx, userId, { amount: GRAND_EUROTOUR.coins, reason: 'challenge', description: `Голям евротур · ${season.name}`, idempotencyKey: key });
-  await notify(tx, userId, 'achievement', 'Голям евротур! 🌍', `Доставки до всичките ${GRAND_EUROTOUR.countries.length} държави този сезон — значка „${BADGES[GRAND_EUROTOUR.badge]?.label ?? ''}“ и ${GRAND_EUROTOUR.coins} TC.`, '/game/challenges');
+  await postCoins(tx, userId, { amount: GRAND_EUROTOUR.coins, reason: 'challenge', description: tr('Голям евротур · {0}', season.name), idempotencyKey: key });
+  await notify(tx, userId, 'achievement', () => tr('Голям евротур! 🌍'), () => tr('Доставки до всичките {0} държави този сезон — значка „{1}“ и {2} TC.', GRAND_EUROTOUR.countries.length, BADGES[GRAND_EUROTOUR.badge]?.label ?? '', GRAND_EUROTOUR.coins), '/game/challenges');
   return true;
 }
 
@@ -69,8 +70,8 @@ export async function checkEurotour(tx: Tx, userId: string, destCountry: string,
   const [first] = await tx.insert(jobState).values({ key: `eurotour:${userId}:${month}`, value: { at: at.toISOString() } }).onConflictDoNothing().returning();
   if (!first) return false;
   await tx.insert(userBadges).values({ userId, badge: EUROTOUR.badge, awardedAt: at }).onConflictDoNothing();
-  await postCoins(tx, userId, { amount: EUROTOUR.coins, reason: 'challenge', description: `Евротур ${month.slice(1)}`, idempotencyKey: `eurotour:${userId}:${month}` });
-  await notify(tx, userId, 'achievement', 'Евротур! 🇪🇺', `Доставки до всичките ${EUROTOUR.countries.length} държави този месец — значка „${BADGES[EUROTOUR.badge]?.label ?? ''}“ и ${EUROTOUR.coins} TC.`, '/game/challenges');
+  await postCoins(tx, userId, { amount: EUROTOUR.coins, reason: 'challenge', description: tr('Евротур {0}', month.slice(1)), idempotencyKey: `eurotour:${userId}:${month}` });
+  await notify(tx, userId, 'achievement', () => tr('Евротур! 🇪🇺'), () => tr('Доставки до всичките {0} държави този месец — значка „{1}“ и {2} TC.', EUROTOUR.countries.length, BADGES[EUROTOUR.badge]?.label ?? '', EUROTOUR.coins), '/game/challenges');
   return true;
 }
 
@@ -91,10 +92,10 @@ export async function bigConvoyBonus(tx: Tx, userId: string, d: { id: string; co
   const size = await convoySize(tx, d.convoyLead);
   const bonus = Math.round(f.rewardCents * bigConvoyShare(size));
   if (!bonus) return 0;
-  await post(tx, d.companyId, [{ category: 'convoy_bonus', amountCents: bonus, description: `Голям конвой (${size} камиона)`, idempotencyKey: `delivery:${d.id}:big-convoy`, refType: 'delivery', refId: d.id }]);
+  await post(tx, d.companyId, [{ category: 'convoy_bonus', amountCents: bonus, description: tr('Голям конвой ({0} камиона)', size), idempotencyKey: `delivery:${d.id}:big-convoy`, refType: 'delivery', refId: d.id }]);
   if (d.id === d.convoyLead) {
     const [got] = await tx.insert(userBadges).values({ userId, badge: BIG_CONVOY.badge, awardedAt: at }).onConflictDoNothing().returning();
-    if (got) await notify(tx, userId, 'achievement', `Значка: ${BADGES[BIG_CONVOY.badge]?.label ?? ''}`, `Поведе колона от ${size} камиона и пристигна навреме.`, '/game/challenges');
+    if (got) await notify(tx, userId, 'achievement', () => tr('Значка: {0}', BADGES[BIG_CONVOY.badge]?.label ?? ''), () => tr('Поведе колона от {0} камиона и пристигна навреме.', size), '/game/challenges');
   }
   return bonus;
 }
@@ -168,13 +169,13 @@ export async function settleWeeklyChallenge(db: Database, now: Date) {
     const m = CHALLENGE_METRICS[last.metric];
     for (const [i, r] of rows.entries()) {
       const coins = WEEKLY_CHALLENGE.prizes[i]!;
-      await postCoins(tx, r.userId, { amount: coins, reason: 'challenge', description: `Предизвикателство ${last.key}: ${m.title}, ${i + 1}. място`, idempotencyKey: `weekly-challenge:${last.key}:${r.userId}` });
-      await notify(tx, r.userId, 'achievement', `Предизвикателство на седмицата: ${i + 1}. място! 🏆`, `„${m.title}“ — ${r.value} ${m.unit}. Награда: ${coins} TC.`, '/game/challenges');
+      await postCoins(tx, r.userId, { amount: coins, reason: 'challenge', description: tr('Предизвикателство {0}: {1}, {2}. място', last.key, m.title, i + 1), idempotencyKey: `weekly-challenge:${last.key}:${r.userId}` });
+      await notify(tx, r.userId, 'achievement', () => tr('Предизвикателство на седмицата: {0}. място! 🏆', i + 1), () => tr('„{0}“ — {1} {2}. Награда: {3} TC.', m.title, r.value, m.unit, coins), '/game/challenges');
     }
     if (rows.length && featureLive('discord_bot', now)) {
-      await announce(tx, `weekly-challenge:${last.key}`, 'rankings', {
-        embeds: [{ title: `🏆 Предизвикателство на седмицата: ${m.title}`, url: `${appUrl()}/game/challenges`, color: 0xf6c343, description: rows.map((r, i) => `**${i + 1}.** ${r.username} · ${Math.round(r.value).toLocaleString('bg-BG')} ${m.unit} · ${WEEKLY_CHALLENGE.prizes[i]} TC`).join('\n'), footer: { text: 'TransVerse · игрови данни' } }],
-      }, now);
+      await announce(tx, `weekly-challenge:${last.key}`, 'rankings', () => ({
+        embeds: [{ title: tr('🏆 Предизвикателство на седмицата: {0}', m.title), url: `${appUrl()}/game/challenges`, color: 0xf6c343, description: rows.map((r, i) => `**${i + 1}.** ${r.username} · ${Math.round(r.value).toLocaleString(intlLocale())} ${m.unit} · ${WEEKLY_CHALLENGE.prizes[i]} TC`).join('\n'), footer: { text: tr('TransVerse · игрови данни') } }],
+      }), now);
     }
     return { week: last.key, winners: rows.length };
   });

@@ -7,6 +7,7 @@ import { postCoins } from './coins';
 import { companyForUser } from './company';
 import { post } from './finance';
 import { notify } from './notify';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 const WEEK = 7 * 86_400_000;
 
@@ -67,9 +68,9 @@ export async function settleEcoWeek(db: Database, now = new Date(), minKm: numbe
     for (const [i, row] of top.entries()) {
       const prize = ECO.prizes[i]!;
       const account = await companyForUser(tx, row.userId);
-      await post(tx, account.id, [{ category: 'league_reward', amountCents: prize.cents, description: `Икономичен шофьор: ${i + 1}. място (${week.key})`, idempotencyKey: `eco:${week.key}:${row.userId}` }]);
-      await postCoins(tx, row.userId, { amount: prize.coins, reason: 'league_reward', description: `Икономичен шофьор: ${i + 1}. място`, idempotencyKey: `eco:${week.key}:${row.userId}:coins` });
-      await notify(tx, row.userId, 'achievement', `Икономичен шофьор: ${i + 1}. място!`, `${(row.perKm / 100).toFixed(2).replace('.', ',')} лв./км за ${row.km.toLocaleString('bg-BG')} км. Награда: ${(prize.cents / 100).toLocaleString('bg-BG')} лв. и ${prize.coins} TC.`, '/game/leaderboards?tab=eco');
+      await post(tx, account.id, [{ category: 'league_reward', amountCents: prize.cents, description: tr('Икономичен шофьор: {0}. място ({1})', i + 1, week.key), idempotencyKey: `eco:${week.key}:${row.userId}` }]);
+      await postCoins(tx, row.userId, { amount: prize.coins, reason: 'league_reward', description: tr('Икономичен шофьор: {0}. място', i + 1), idempotencyKey: `eco:${week.key}:${row.userId}:coins` });
+      await notify(tx, row.userId, 'achievement', () => tr('Икономичен шофьор: {0}. място!', i + 1), () => tr('{0} лв./км за {1} км. Награда: {2} лв. и {3} TC.', (row.perKm / 100).toFixed(2).replace('.', ','), row.km.toLocaleString(intlLocale()), (prize.cents / 100).toLocaleString(intlLocale()), prize.coins), '/game/leaderboards?tab=eco');
     }
     await tx.insert(jobState).values({ key, value: { paid: top.map((t) => t.userId) } });
     paid = top.length;

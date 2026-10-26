@@ -49,6 +49,7 @@ import { notifyMembers, requirePermission } from './membership';
 import { shipperName } from './names';
 import { broadcast, logActivity, notify } from './notify';
 import { addChronicle } from './chronicle';
+import { t as tr, intlLocale } from '@/i18n/t';
 
 type Organization = typeof organizations.$inferSelect;
 export type CompanyBuilding = typeof companyBuildings.$inferSelect;
@@ -161,26 +162,26 @@ async function activeBuild(tx: DbOrTx, organizationId: string) {
 async function newConstruction(tx: Tx, orgId: string, buildingId: string, type: BuildingType, level: number, actorId: string, now: Date) {
   const spec = levelSpec(type, level);
   const [row] = await tx.insert(companyBuilds).values({ organizationId: orgId, buildingId, targetLevel: level, needs: spec.materials, minutes: spec.minutes, createdBy: actorId, createdAt: now }).returning();
-  await notifyMembers(tx, orgId, null, `Нов строеж: ${BUILDINGS[type].label}${level > 1 ? ` (ниво ${level})` : ''}`, `Нужни са ${Object.entries(spec.materials).map(([m, t]) => `${t} т ${MATERIALS[m as MaterialId].label.toLowerCase()}`).join(', ')}. Поръчките за материали ще се появят на борсата.`, '/game/company/plot');
+  await notifyMembers(tx, orgId, null, () => tr('Нов строеж: {0}{1}', BUILDINGS[type].label, level > 1 ? tr(' (ниво {0})', level) : ''), () => tr('Нужни са {0}. Поръчките за материали ще се появят на борсата.', Object.entries(spec.materials).map(([m, t]) => tr('{0} т {1}', t, MATERIALS[m as MaterialId].label.toLowerCase())).join(', ')), '/game/company/plot');
   return row!;
 }
 
 /** Places a new building on the plot and opens its first construction (office first). */
 export async function placeBuilding(db: Database, actorId: string, type: BuildingType, x: number, y: number, now = new Date()) {
-  if (!BUILDINGS[type]) fail('unknown_building', 'Непозната сграда.');
-  if (type === 'factory' && !(await featureFor(db, actorId, 'factories', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
-  if (type === 'fuel' && !(await featureFor(db, actorId, 'fuel_station', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
-  if (type === 'polygon' && !(await featureFor(db, actorId, 'polygon', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
-  if (type === 'museum' && !(await featureFor(db, actorId, 'museum', now))) fail('not_released', 'Това идва със следващото обновление.', 403);
+  if (!BUILDINGS[type]) fail('unknown_building', tr('Непозната сграда.'));
+  if (type === 'factory' && !(await featureFor(db, actorId, 'factories', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  if (type === 'fuel' && !(await featureFor(db, actorId, 'fuel_station', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  if (type === 'polygon' && !(await featureFor(db, actorId, 'polygon', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  if (type === 'museum' && !(await featureFor(db, actorId, 'museum', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     await ensurePlot(tx, actor.company);
     const buildings = await tx.select().from(companyBuildings).where(eq(companyBuildings.organizationId, actor.company.id));
-    if (buildings.some((b) => b.type === type)) fail('already_placed', 'Тази сграда вече е на участъка.');
-    if (type !== 'office' && !buildings.some((b) => b.type === 'office' && b.level >= 1)) fail('office_first', 'Първо се строи офисът.');
-    if (await activeBuild(tx, actor.company.id)) fail('busy', 'Компанията вече строи — завършете текущия строеж.', 409);
+    if (buildings.some((b) => b.type === type)) fail('already_placed', tr('Тази сграда вече е на участъка.'));
+    if (type !== 'office' && !buildings.some((b) => b.type === 'office' && b.level >= 1)) fail('office_first', tr('Първо се строи офисът.'));
+    if (await activeBuild(tx, actor.company.id)) fail('busy', tr('Компанията вече строи — завършете текущия строеж.'), 409);
     const spec = levelSpec(type, 1);
-    if (actor.company.companyLevel < spec.minCompanyLevel) fail('company_level', `Нужно е ниво ${spec.minCompanyLevel} на компанията.`);
+    if (actor.company.companyLevel < spec.minCompanyLevel) fail('company_level', tr('Нужно е ниво {0} на компанията.', spec.minCompanyLevel));
     const error = placementError(type, x, y, buildings.map((b) => ({ type: b.type as BuildingType, x: b.x, y: b.y })), { plotW: plotWidth(actor.company.plotExpansions), decor: await decorOf(tx, actor.company.id) });
     if (error) fail('bad_place', error);
     const [building] = await tx.insert(companyBuildings).values({ organizationId: actor.company.id, type, x, y, level: 0, createdAt: now }).returning();
@@ -196,12 +197,12 @@ export async function upgradeBuilding(db: Database, actorId: string, type: Build
     const actor = await requirePermission(tx, actorId, 'build');
     await ensurePlot(tx, actor.company);
     const [building] = await tx.select().from(companyBuildings).where(and(eq(companyBuildings.organizationId, actor.company.id), eq(companyBuildings.type, type)));
-    if (!building || building.level < 1) fail('not_built', 'Сградата още не е построена.');
+    if (!building || building.level < 1) fail('not_built', tr('Сградата още не е построена.'));
     const def = BUILDINGS[type];
-    if (building!.level >= def.maxLevel) fail('max_level', 'Сградата е на най-високото ниво.');
-    if (await activeBuild(tx, actor.company.id)) fail('busy', 'Компанията вече строи — завършете текущия строеж.', 409);
+    if (building!.level >= def.maxLevel) fail('max_level', tr('Сградата е на най-високото ниво.'));
+    if (await activeBuild(tx, actor.company.id)) fail('busy', tr('Компанията вече строи — завършете текущия строеж.'), 409);
     const spec = levelSpec(type, building!.level + 1);
-    if (actor.company.companyLevel < spec.minCompanyLevel) fail('company_level', `Нужно е ниво ${spec.minCompanyLevel} на компанията.`);
+    if (actor.company.companyLevel < spec.minCompanyLevel) fail('company_level', tr('Нужно е ниво {0} на компанията.', spec.minCompanyLevel));
     return newConstruction(tx, actor.company.id, building!.id, type, building!.level + 1, actorId, now);
   });
 }
@@ -212,9 +213,9 @@ export async function moveBuilding(db: Database, actorId: string, type: Building
     const actor = await requirePermission(tx, actorId, 'build');
     const buildings = await tx.select().from(companyBuildings).where(eq(companyBuildings.organizationId, actor.company.id));
     const building = buildings.find((b) => b.type === type);
-    if (!building) fail('not_built', 'Сградата не е на участъка.');
+    if (!building) fail('not_built', tr('Сградата не е на участъка.'));
     const active = await activeBuild(tx, actor.company.id);
-    if (active?.buildingId === building!.id && active.status === 'building') fail('building', 'Сграда в строеж не може да се мести.');
+    if (active?.buildingId === building!.id && active.status === 'building') fail('building', tr('Сграда в строеж не може да се мести.'));
     const error = placementError(type, x, y, buildings.map((b) => ({ type: b.type as BuildingType, x: b.x, y: b.y })), { plotW: plotWidth(actor.company.plotExpansions), decor: await decorOf(tx, actor.company.id) });
     if (error) fail('bad_place', error);
     await tx.update(companyBuildings).set({ x, y }).where(eq(companyBuildings.id, building!.id));
@@ -226,9 +227,9 @@ export async function cancelBuild(db: Database, actorId: string, buildId: string
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     const build = await activeBuild(tx, actor.company.id);
-    if (!build || build.id !== buildId) fail('not_found', 'Няма такъв строеж.', 404);
+    if (!build || build.id !== buildId) fail('not_found', tr('Няма такъв строеж.'), 404);
     const [load] = await tx.select({ id: contracts.id }).from(contracts).where(eq(contracts.constructionId, buildId)).limit(1);
-    if (build!.status !== 'materials' || load || Object.keys(build!.delivered).length) fail('started', 'Материалите вече са поръчани — строежът не може да се откаже.');
+    if (build!.status !== 'materials' || load || Object.keys(build!.delivered).length) fail('started', tr('Материалите вече са поръчани — строежът не може да се откаже.'));
     await tx.update(companyBuilds).set({ status: 'cancelled' }).where(eq(companyBuilds.id, buildId));
     await tx.delete(companyBuildings).where(and(eq(companyBuildings.id, build!.buildingId), eq(companyBuildings.level, 0)));
   });
@@ -244,7 +245,7 @@ export async function orderMaterials(db: Database, actorId: string, buildId: str
   const pre = await db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     const build = await activeBuild(tx, actor.company.id);
-    if (!build || build.id !== buildId || build.status !== 'materials') fail('not_found', 'Няма строеж, който чака материали.', 404);
+    if (!build || build.id !== buildId || build.status !== 'materials') fail('not_found', tr('Няма строеж, който чака материали.'), 404);
     return { org: actor.company };
   });
   const plans: { material: MaterialId; supplierId: number; routeId: number; km: number }[] = [];
@@ -257,7 +258,7 @@ export async function orderMaterials(db: Database, actorId: string, buildId: str
   const result = await db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     const build = await activeBuild(tx, actor.company.id);
-    if (!build || build.id !== buildId || build.status !== 'materials') fail('not_found', 'Няма строеж, който чака материали.', 404);
+    if (!build || build.id !== buildId || build.status !== 'materials') fail('not_found', tr('Няма строеж, който чака материали.'), 404);
     // Expired loads come back to the board for free.
     const reopened = await tx
       .update(contracts)
@@ -266,7 +267,7 @@ export async function orderMaterials(db: Database, actorId: string, buildId: str
       .returning({ id: contracts.id });
     const left = missing(build!.needs, build!.delivered, await onTheWay(tx, buildId, now));
     const cost = materialCostCents(left, false, await boomFor(tx, actorId, now));
-    if (cost > 0) await postTreasury(tx, actor.company.id, [{ category: 'company_build', amountCents: -cost, description: `Материали за ${BUILDINGS[(await buildingType(tx, build!.buildingId))].label}`, idempotencyKey: `build:${buildId}:order:${randomUUID()}`, actorUserId: actorId, refType: 'company_build', refId: buildId }], { requireFunds: true });
+    if (cost > 0) await postTreasury(tx, actor.company.id, [{ category: 'company_build', amountCents: -cost, description: tr('Материали за {0}', BUILDINGS[(await buildingType(tx, build!.buildingId))].label), idempotencyKey: `build:${buildId}:order:${randomUUID()}`, actorUserId: actorId, refType: 'company_build', refId: buildId }], { requireFunds: true });
     let loads = 0;
     for (const [material, tons] of Object.entries(left) as [MaterialId, number][]) {
       const plan = plans.find((p) => p.material === material);
@@ -295,7 +296,7 @@ export async function orderMaterials(db: Database, actorId: string, buildId: str
       }
     }
     if (loads || reopened.length) {
-      await notifyMembers(tx, actor.company.id, null, 'Материали за строежа', `${loads + reopened.length} ${loads + reopened.length === 1 ? 'товар чака' : 'товара чакат'} на борсата — само за членовете. Всеки курс приближава строежа.`, '/game/contracts');
+      await notifyMembers(tx, actor.company.id, null, () => tr('Материали за строежа'), () => tr('{0} {1} на борсата — само за членовете. Всеки курс приближава строежа.', loads + reopened.length, loads + reopened.length === 1 ? tr('товар чака') : tr('товара чакат')), '/game/contracts');
       await broadcast(tx, 'market');
     }
     return { loads: loads + reopened.length, costCents: cost };
@@ -313,15 +314,15 @@ export async function buyDelivered(db: Database, actorId: string, buildId: strin
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     const build = await activeBuild(tx, actor.company.id);
-    if (!build || build.id !== buildId || build.status !== 'materials') fail('not_found', 'Няма строеж, който чака материали.', 404);
+    if (!build || build.id !== buildId || build.status !== 'materials') fail('not_found', tr('Няма строеж, който чака материали.'), 404);
     const left = missing(build!.needs, build!.delivered, await onTheWay(tx, buildId, now));
     const cost = materialCostCents(left, true, await boomFor(tx, actorId, now));
-    if (cost <= 0) fail('nothing_missing', 'Всичко липсващо вече пътува към участъка.');
-    await postTreasury(tx, actor.company.id, [{ category: 'company_build', amountCents: -cost, description: `Материали с доставка за ${BUILDINGS[await buildingType(tx, build!.buildingId)].label}`, idempotencyKey: `build:${buildId}:delivered:${randomUUID()}`, actorUserId: actorId, refType: 'company_build', refId: buildId }], { requireFunds: true });
+    if (cost <= 0) fail('nothing_missing', tr('Всичко липсващо вече пътува към участъка.'));
+    await postTreasury(tx, actor.company.id, [{ category: 'company_build', amountCents: -cost, description: tr('Материали с доставка за {0}', BUILDINGS[await buildingType(tx, build!.buildingId)].label), idempotencyKey: `build:${buildId}:delivered:${randomUUID()}`, actorUserId: actorId, refType: 'company_build', refId: buildId }], { requireFunds: true });
     const delivered = { ...build!.delivered };
     for (const [m, t] of Object.entries(left) as [MaterialId, number][]) delivered[m] = Math.round(((delivered[m] ?? 0) + t) * 10) / 10;
     await tx.update(companyBuilds).set({ delivered }).where(eq(companyBuilds.id, buildId));
-    if (isComplete(build!.needs, delivered)) await notifyMembers(tx, actor.company.id, 'build', 'Материалите са на участъка', 'Всичко е доставено — строежът може да започне.', '/game/company/plot');
+    if (isComplete(build!.needs, delivered)) await notifyMembers(tx, actor.company.id, 'build', () => tr('Материалите са на участъка'), () => tr('Всичко е доставено — строежът може да започне.'), '/game/company/plot');
     return { costCents: cost };
   });
 }
@@ -338,7 +339,7 @@ export async function recordMaterialDelivery(tx: Tx, contract: { constructionId:
   await tx.update(companyBuilds).set({ delivered }).where(eq(companyBuilds.id, build.id));
   if (userId) await markLastLoad(tx, build.id, userId, now);
   if (isComplete(build.needs, delivered) && !isComplete(build.needs, build.delivered)) {
-    await notifyMembers(tx, build.organizationId, 'build', 'Материалите са на участъка', 'Всичко е доставено — строежът може да започне.', '/game/company/plot');
+    await notifyMembers(tx, build.organizationId, 'build', () => tr('Материалите са на участъка'), () => tr('Всичко е доставено — строежът може да започне.'), '/game/company/plot');
   }
 }
 
@@ -360,7 +361,7 @@ async function markLastLoad(tx: Tx, buildId: string, userId: string, now: Date) 
 async function giveBadge(tx: Tx, userId: string, role: string, badge: string, title: string, now: Date) {
   if (!featureLive('build_badges' satisfies FeatureId, now, isStaff(role))) return;
   const added = await tx.insert(userBadges).values({ userId, badge, awardedAt: now }).onConflictDoNothing().returning({ badge: userBadges.badge });
-  if (added.length) await notify(tx, userId, 'info', `Нова значка: ${title}`, 'Виж я в профила си.', '/game/profile');
+  if (added.length) await notify(tx, userId, 'info', () => tr('Нова значка: {0}', title), () => tr('Виж я в профила си.'), '/game/profile');
 }
 
 /** "Строител": the player hauled enough material loads (this one included). */
@@ -374,15 +375,15 @@ async function builderBadge(tx: Tx, userId: string, now: Date) {
     .innerJoin(companies, eq(companies.id, deliveries.companyId))
     .where(and(eq(companies.ownerId, userId), eq(deliveries.status, 'completed'), sql`${contracts.constructionId} is not null`));
   // The current load is being settled: it counts too.
-  if (n + 1 >= BUILDER_LOADS) await giveBadge(tx, userId, u.role, BUILD_BADGES.builder, 'Строител', now);
+  if (n + 1 >= BUILDER_LOADS) await giveBadge(tx, userId, u.role, BUILD_BADGES.builder, tr('Строител'), now);
 }
 
 /** The building badges for everyone in the company at the moment a building is finished. */
 async function buildingBadges(tx: Tx, organizationId: string, all: { type: string; level: number }[], finished: { type: BuildingType; level: number }, now: Date) {
   const badges: { badge: string; title: string }[] = [];
-  if (all.filter((b) => b.level > 0).length === 1 && finished.level === 1) badges.push({ badge: BUILD_BADGES.firstBrick, title: 'Първа тухла' });
-  if (BUILDING_TYPES.every((t) => all.some((b) => b.type === t && b.level > 0))) badges.push({ badge: BUILD_BADGES.architect, title: 'Архитект' });
-  if (finished.type === 'office' && finished.level >= BUILDINGS.office.maxLevel) badges.push({ badge: BUILD_BADGES.skyscraper, title: 'Небостъргач' });
+  if (all.filter((b) => b.level > 0).length === 1 && finished.level === 1) badges.push({ badge: BUILD_BADGES.firstBrick, title: tr('Първа тухла') });
+  if (BUILDING_TYPES.every((t) => all.some((b) => b.type === t && b.level > 0))) badges.push({ badge: BUILD_BADGES.architect, title: tr('Архитект') });
+  if (finished.type === 'office' && finished.level >= BUILDINGS.office.maxLevel) badges.push({ badge: BUILD_BADGES.skyscraper, title: tr('Небостъргач') });
   if (!badges.length) return;
   const members = await tx.select({ userId: companyMembers.userId, role: users.role }).from(companyMembers).innerJoin(users, eq(users.id, companyMembers.userId)).where(eq(companyMembers.companyId, organizationId));
   for (const m of members) for (const b of badges) await giveBadge(tx, m.userId, m.role, b.badge, b.title, now);
@@ -393,12 +394,12 @@ export async function startConstruction(db: Database, actorId: string, buildId: 
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     const build = await activeBuild(tx, actor.company.id);
-    if (!build || build.id !== buildId || build.status !== 'materials') fail('not_found', 'Няма строеж, който чака старт.', 404);
-    if (!isComplete(build!.needs, build!.delivered)) fail('materials_missing', 'Още не са доставени всички материали.');
+    if (!build || build.id !== buildId || build.status !== 'materials') fail('not_found', tr('Няма строеж, който чака старт.'), 404);
+    if (!isComplete(build!.needs, build!.delivered)) fail('materials_missing', tr('Още не са доставени всички материали.'));
     const endsAt = new Date(now.getTime() + build!.minutes * 60_000);
     await tx.update(companyBuilds).set({ status: 'building', startedAt: now, endsAt }).where(eq(companyBuilds.id, buildId));
     const type = await buildingType(tx, build!.buildingId);
-    await notifyMembers(tx, actor.company.id, null, `Строежът започна: ${BUILDINGS[type].label}`, `Готово около ${endsAt.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.`, '/game/company/plot');
+    await notifyMembers(tx, actor.company.id, null, () => tr('Строежът започна: {0}', BUILDINGS[type].label), () => tr('Готово около {0}.', endsAt.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })), '/game/company/plot');
     return endsAt;
   });
 }
@@ -418,8 +419,8 @@ export async function finishConstructions(db: Database, now = new Date()) {
       const type = all.find((b) => b.id === build.buildingId)!.type as BuildingType;
       const def = BUILDINGS[type];
       await buildingBadges(tx, build.organizationId, all, { type, level: build.targetLevel }, now);
-      await notifyMembers(tx, build.organizationId, null, `${def.label} е ${build.targetLevel > 1 ? `на ниво ${build.targetLevel}` : 'построен'}!`, `${def.effect(build.targetLevel)}.`, '/game/company/plot');
-      await addFeed(tx, { organizationId: build.organizationId, kind: 'build', text: `компанията ${build.targetLevel > 1 ? `вдигна „${def.label}“ на ниво ${build.targetLevel}` : `построи „${def.label}“`}` }, now);
+      await notifyMembers(tx, build.organizationId, null, () => tr('{0} е {1}!', def.label, build.targetLevel > 1 ? tr('на ниво {0}', build.targetLevel) : tr('построен')), `${def.effect(build.targetLevel)}.`, '/game/company/plot');
+      await addFeed(tx, { organizationId: build.organizationId, kind: 'build', text: tr('компанията {0}', build.targetLevel > 1 ? tr('вдигна „{0}“ на ниво {1}', def.label, build.targetLevel) : tr('построи „{0}“', def.label)) }, now);
       await announceBuild(tx, build.id, { id: org!.id, name: org!.name, tag: org!.tag }, def.label, build.targetLevel, now);
       await addChronicle(tx, build.organizationId, 'build', build.targetLevel > 1 ? `„${def.label}“ стана ниво ${build.targetLevel}` : `Построен „${def.label}“`, now);
     });
@@ -432,20 +433,20 @@ export async function finishConstructions(db: Database, now = new Date()) {
 /** Puts a decoration on the plot: лв. from the treasury, or the buyer's own ТрансКоин. */
 export async function placeDecor(db: Database, actorId: string, kind: DecorKind, x: number, y: number, now = new Date()) {
   const def = DECOR[kind];
-  if (!def) fail('unknown_decor', 'Непозната украса.');
+  if (!def) fail('unknown_decor', tr('Непозната украса.'));
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     const [org] = await tx.select().from(organizations).where(eq(organizations.id, actor.company.id)).for('update');
     const buildings = await tx.select().from(companyBuildings).where(eq(companyBuildings.organizationId, org!.id));
     const decor = await decorOf(tx, org!.id);
-    if (decor.length >= MAX_DECOR) fail('decor_full', `На участъка има място за най-много ${MAX_DECOR} украси.`);
+    if (decor.length >= MAX_DECOR) fail('decor_full', tr('На участъка има място за най-много {0} украси.', MAX_DECOR));
     const error = decorError(kind, x, y, buildings.map((b) => ({ type: b.type as BuildingType, x: b.x, y: b.y })), decor, plotWidth(org!.plotExpansions));
     if (error) fail('bad_place', error);
     const [row] = await tx.insert(companyDecor).values({ organizationId: org!.id, kind, x, y, createdAt: now }).returning();
     if (def.priceCents) {
-      await postTreasury(tx, org!.id, [{ category: 'company_decor', amountCents: -def.priceCents, description: `Украса: ${def.label}`, idempotencyKey: `decor:${row!.id}`, actorUserId: actorId, refType: 'company_decor', refId: row!.id }], { requireFunds: true });
+      await postTreasury(tx, org!.id, [{ category: 'company_decor', amountCents: -def.priceCents, description: tr('Украса: {0}', def.label), idempotencyKey: `decor:${row!.id}`, actorUserId: actorId, refType: 'company_decor', refId: row!.id }], { requireFunds: true });
     } else if (def.coins) {
-      await postCoins(tx, actorId, { amount: -def.coins, reason: 'shop', description: `Украса за базата: ${def.label}`, idempotencyKey: `decor:${row!.id}` }, { requireFunds: true });
+      await postCoins(tx, actorId, { amount: -def.coins, reason: 'shop', description: tr('Украса за базата: {0}', def.label), idempotencyKey: `decor:${row!.id}` }, { requireFunds: true });
     }
     await logActivity(tx, actorId, 'plot_decor', { kind, x, y });
     return row!;
@@ -457,7 +458,7 @@ export async function removeDecor(db: Database, actorId: string, decorId: string
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'build');
     const removed = await tx.delete(companyDecor).where(and(eq(companyDecor.id, decorId), eq(companyDecor.organizationId, actor.company.id))).returning({ id: companyDecor.id });
-    if (!removed.length) fail('not_found', 'Няма такава украса.', 404);
+    if (!removed.length) fail('not_found', tr('Няма такава украса.'), 404);
   });
 }
 
@@ -467,13 +468,13 @@ export async function expandPlot(db: Database, actorId: string, now = new Date()
     const actor = await requirePermission(tx, actorId, 'build');
     const [org] = await tx.select().from(organizations).where(eq(organizations.id, actor.company.id)).for('update');
     const step = EXPANSIONS[org!.plotExpansions];
-    if (!step) fail('max_size', 'Участъкът е с най-големия възможен размер.');
-    if (org!.companyLevel < step!.minCompanyLevel) fail('company_level', `Нужно е ниво ${step!.minCompanyLevel} на компанията.`);
+    if (!step) fail('max_size', tr('Участъкът е с най-големия възможен размер.'));
+    if (org!.companyLevel < step!.minCompanyLevel) fail('company_level', tr('Нужно е ниво {0} на компанията.', step!.minCompanyLevel));
     const next = org!.plotExpansions + 1;
-    await postTreasury(tx, org!.id, [{ category: 'company_land', amountCents: -step!.costCents, description: `Земя до участъка (${next})`, idempotencyKey: `land:${org!.id}:${next}`, actorUserId: actorId, refType: 'organization', refId: org!.id }], { requireFunds: true });
+    await postTreasury(tx, org!.id, [{ category: 'company_land', amountCents: -step!.costCents, description: tr('Земя до участъка ({0})', next), idempotencyKey: `land:${org!.id}:${next}`, actorUserId: actorId, refType: 'organization', refId: org!.id }], { requireFunds: true });
     await tx.update(organizations).set({ plotExpansions: next }).where(eq(organizations.id, org!.id));
-    await notifyMembers(tx, org!.id, null, 'Участъкът стана по-голям', `Компанията купи земя до базата — участъкът вече е ${plotWidth(next)} на ${PLOT.h} квадрата.`, '/game/company/plot');
-    await addFeed(tx, { organizationId: org!.id, kind: 'build', text: 'компанията купи още земя за базата си' }, now);
+    await notifyMembers(tx, org!.id, null, () => tr('Участъкът стана по-голям'), () => tr('Компанията купи земя до базата — участъкът вече е {0} на {1} квадрата.', plotWidth(next), PLOT.h), '/game/company/plot');
+    await addFeed(tx, { organizationId: org!.id, kind: 'build', text: tr('компанията купи още земя за базата си') }, now);
     return { expansions: next };
   });
 }
@@ -484,9 +485,9 @@ export async function expandPlot(db: Database, actorId: string, now = new Date()
 export async function likePlot(db: Database, userId: string, organizationId: string, now = new Date()) {
   return db.transaction(async (tx) => {
     const [org] = await tx.select({ id: organizations.id, name: organizations.name }).from(organizations).where(eq(organizations.id, organizationId));
-    if (!org) fail('company_not_found', 'Компанията не е намерена.', 404);
+    if (!org) fail('company_not_found', tr('Компанията не е намерена.'), 404);
     const [mine] = await tx.select({ id: companyMembers.userId }).from(companyMembers).where(and(eq(companyMembers.userId, userId), eq(companyMembers.companyId, organizationId)));
-    if (mine) fail('own_base', 'Своята база не се харесва — покажи я на другите.');
+    if (mine) fail('own_base', tr('Своята база не се харесва — покажи я на другите.'));
     const removed = await tx.delete(plotLikes).where(and(eq(plotLikes.userId, userId), eq(plotLikes.organizationId, organizationId))).returning({ id: plotLikes.userId });
     if (removed.length) return { liked: false };
     await tx.insert(plotLikes).values({ userId, organizationId, createdAt: now });

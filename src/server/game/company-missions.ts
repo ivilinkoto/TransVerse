@@ -5,6 +5,7 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { companyMembers, companyMissionProgress, organizations, users } from '@/server/db/schema';
 import { postTreasury } from './finance';
 import { addCompanyXp, notifyMembers } from './membership';
+import { t, intlLocale } from '@/i18n/t';
 
 /** Gives the company its missions for the current week (sized by the members it has now). */
 export async function ensureCompanyMissions(db: DbOrTx, companyId: string, now: Date) {
@@ -60,9 +61,9 @@ export async function recordCompanyMissionProgress(tx: Tx, companyId: string, us
       .where(and(eq(companyMissionProgress.companyId, companyId), eq(companyMissionProgress.periodKey, row.periodKey), eq(companyMissionProgress.missionId, row.missionId)));
     if (!done) continue;
     const title = def.title(row.target);
-    await postTreasury(tx, companyId, [{ category: 'company_mission', amountCents: row.rewardCents, description: `Фирмена мисия: ${title}`, idempotencyKey: `company-mission:${companyId}:${row.periodKey}:${row.missionId}`, refType: 'company_mission', refId: row.missionId }]);
+    await postTreasury(tx, companyId, [{ category: 'company_mission', amountCents: row.rewardCents, description: t('Фирмена мисия: {0}', title), idempotencyKey: `company-mission:${companyId}:${row.periodKey}:${row.missionId}`, refType: 'company_mission', refId: row.missionId }]);
     await addCompanyXp(tx, companyId, row.rewardXp);
-    await notifyMembers(tx, companyId, null, `Фирмената мисия е изпълнена: ${title}`, `+${(row.rewardCents / 100).toLocaleString('bg-BG')} лв. в касата и +${row.rewardXp} опит за компанията.`, '/game/company/missions');
+    await notifyMembers(tx, companyId, null, () => t('Фирмената мисия е изпълнена: {0}', title), () => t('+{0} лв. в касата и +{1} опит за компанията.', (row.rewardCents / 100).toLocaleString(intlLocale()), row.rewardXp), '/game/company/missions');
   }
 }
 

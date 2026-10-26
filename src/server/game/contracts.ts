@@ -32,7 +32,9 @@ import { shipperName } from './names';
 import { notifyFavoriteLane } from './favorites';
 import { broadcast } from './notify';
 import { pick, pickWeighted, rand, randInt } from './random';
-import { isEuropeCountry } from '@/lib/geo/scope';
+import { countryOpen } from '@/lib/geo/scope';
+import { cycleIndex } from '@/lib/game/living';
+import { t as tr } from '@/i18n/t';
 
 /** Consignment size classes so vans, rigids and articulated trucks all have a market. */
 const SIZE_CLASSES = [
@@ -49,6 +51,8 @@ export interface Hub {
   population: number;
   produces: Set<CargoType>;
   consumes: Map<CargoType, number>; // demand
+  /** v2.0: what the city has left to ship of each cargo it produces (1 = full). */
+  supply?: Map<CargoType, number>;
 }
 
 // All hubs, read at most once a minute (the market reads them on every run; v1.7: 26 countries).
@@ -59,23 +63,27 @@ let hubCache: { at: number; hubs: Hub[] } | null = null;
  * the countries of "Цяла Европа" come in with the release (v1.7); the market
  * generator asks for them earlier, so the staff can test them.
  */
-export async function loadHubs(db: DbOrTx, options: { europe?: boolean; now?: Date } = {}): Promise<Hub[]> {
+export async function loadHubs(db: DbOrTx, options: { europe?: boolean; openWorld?: boolean; now?: Date } = {}): Promise<Hub[]> {
   const europe = options.europe ?? featureLive('europe', options.now ?? new Date());
+  const openWorld = options.openWorld ?? featureLive('open_world', options.now ?? new Date());
   const fresh = hubCache && Date.now() - hubCache.at < 60_000 && !process.env.VITEST ? hubCache.hubs : null;
   const all = fresh ?? (await readHubs(db));
   if (!fresh) hubCache = { at: Date.now(), hubs: all };
-  return europe ? all : all.filter((h) => !isEuropeCountry(h.countryCode));
+  return europe && openWorld ? all : all.filter((h) => countryOpen(h.countryCode, europe, openWorld));
 }
 
 async function readHubs(db: DbOrTx): Promise<Hub[]> {
   const rows = await db
-    .select({ id: cities.id, countryCode: cities.countryCode, lat: cities.lat, lon: cities.lon, population: cities.population, cargoType: cityMarkets.cargoType, produces: cityMarkets.produces, consumes: cityMarkets.consumes, demand: cityMarkets.demand })
+    .select({ id: cities.id, countryCode: cities.countryCode, lat: cities.lat, lon: cities.lon, population: cities.population, cargoType: cityMarkets.cargoType, produces: cityMarkets.produces, consumes: cityMarkets.consumes, demand: cityMarkets.demand, supply: cityMarkets.supply })
     .from(cityMarkets)
     .innerJoin(cities, eq(cities.id, cityMarkets.cityId));
   const hubs = new Map<number, Hub>();
   for (const r of rows) {
-    const hub = hubs.get(r.id) ?? { id: r.id, countryCode: r.countryCode, lat: r.lat, lon: r.lon, population: r.population, produces: new Set(), consumes: new Map() };
-    if (r.produces) hub.produces.add(r.cargoType as CargoType);
+    const hub = hubs.get(r.id) ?? { id: r.id, countryCode: r.countryCode, lat: r.lat, lon: r.lon, population: r.population, produces: new Set(), consumes: new Map(), supply: new Map() };
+    if (r.produces) {
+      hub.produces.add(r.cargoType as CargoType);
+      hub.supply!.set(r.cargoType as CargoType, r.supply);
+    }
     if (r.consumes) hub.consumes.set(r.cargoType as CargoType, r.demand);
     hubs.set(r.id, hub);
   }
@@ -107,31 +115,35 @@ export interface GenerateOptions {
 /** Generates new market contracts between real cities. Returns how many were created. */
 export async function generateContracts(db: Database, options: GenerateOptions = {}): Promise<number> {
   const now = options.now ?? new Date();
-  // Before the release the countries of "Цяла Европа" get only a few loads (seen by the staff only).
+  // Before the release the countries of "Цяла Европа" (v1.7) and of the east (v2.0) get only a few loads (seen by the staff only).
   const europe = featureLive('europe', now);
-  const hubs = await loadHubs(db, { europe: true });
-  const reach = (h: Hub) => (europe || !isEuropeCountry(h.countryCode) ? 1 : 0.05);
+  const openWorld = featureLive('open_world', now);
+  const hubs = await loadHubs(db, { europe: true, openWorld: true });
+  const reach = (h: Hub) => (countryOpen(h.countryCode, europe, openWorld) ? 1 : 0.05);
+  // v2.0 the living economy: a city that has shipped a lot has less to send for a while.
+  const living = featureLive('living_economy', now);
+  const supplyOf = (h: Hub, cargo?: CargoType) => (!living || !h.supply?.size ? 1 : cargo ? (h.supply.get(cargo) ?? 1) : [...h.supply.values()].reduce((s, v) => s + v, 0) / h.supply.size);
   const max = options.max ?? 20;
   let created = 0;
 
   for (let attempt = 0; attempt < max * 3 && created < max; attempt++) {
     const origin = options.originCityId
       ? hubs.find((h) => h.id === options.originCityId)
-      : pickWeighted(hubs.filter((h) => h.produces.size), (h) => Math.sqrt(h.population) * reach(h));
+      : pickWeighted(hubs.filter((h) => h.produces.size), (h) => Math.sqrt(h.population) * reach(h) * supplyOf(h));
     if (!origin || origin.produces.size === 0) break;
 
     const size = options.sizeClass ? SIZE_CLASSES.find((s) => s.id === options.sizeClass)! : pickWeighted(SIZE_CLASSES, (s) => s.weight)!;
     const allowed: CargoType[] = size.id === 'van' ? ['pallets'] : size.id === 'rigid' ? ['pallets', 'refrigerated'] : [...CARGO_TYPES];
     const candidatesCargo = [...origin.produces].filter((c) => allowed.includes(c));
     if (!candidatesCargo.length) continue;
-    const cargo = pick(candidatesCargo);
+    const cargo = pickWeighted(candidatesCargo, (c) => supplyOf(origin, c)) ?? pick(candidatesCargo);
 
     const destination = pickWeighted(
       hubs.filter((h) => h.id !== origin.id && h.consumes.has(cargo) && (!options.domestic || h.countryCode === origin.countryCode)),
       (h) => {
         const km = haversineKm([origin.lat, origin.lon], [h.lat, h.lon]) * 1.25;
         if (km > size.maxKm || km < 20) return 0;
-        return ((h.consumes.get(cargo) ?? 1) ** 2 * Math.sqrt(h.population) * (isEuropeCountry(origin.countryCode) ? 1 : reach(h))) / (1 + km / 500);
+        return ((h.consumes.get(cargo) ?? 1) ** 2 * Math.sqrt(h.population) * (reach(origin) < 1 ? 1 : reach(h))) / (1 + km / 500);
       },
     );
     if (!destination) continue;
@@ -148,6 +160,11 @@ export async function generateContracts(db: Database, options: GenerateOptions =
   }
   if (created) await broadcast(db, 'market');
   return created;
+}
+
+/** v2.0: a load between two hubs with a pay multiplier (intermodal legs). Returns the contract id, or null without a route. */
+export function insertLoad(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider: RoutingProvider | undefined, multiplier: number, extra: { goods?: string } = {}) {
+  return insertContract(db, origin, destination, cargo, tons, now, ttlMs, provider, { minReputation: 0, multiplier }, [], extra);
 }
 
 export async function expireContracts(db: DbOrTx, now = new Date()): Promise<number> {
@@ -312,7 +329,9 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const sealed = !extra.featured && !extra.oversize && !extra.transEurope && !extra.humanitarian && !extra.portCallId && !theme && !via.length && featureLive('sealed_cargo', now) && rand() < SEALED.share;
   // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
   // v1.10: loads from a city that has grown pay a little more.
-  const reward = rewardCents(cargo, tons, route.distanceKm, market * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)));
+  // v2.0: the economic cycle of the destination country.
+  const cycle = featureLive('living_economy', now) ? cycleIndex(now, destination.countryCode) : 1;
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * cycle * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)));
   const [row] = await db.insert(contracts).values({
     shipper: shipperName(),
     goods,
@@ -452,6 +471,8 @@ export interface ContractFilter {
   viewerUserId?: string | null;
   /** Loads to and from the countries of "Цяла Европа" (v1.7). */
   withEurope?: boolean;
+  /** v2.0: the countries of the east. */
+  withOpenWorld?: boolean;
 }
 
 export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now = new Date()) {
@@ -470,6 +491,7 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
   if (!(filter.withOversize ?? featureLive('oversize', now))) conditions.push(eq(contracts.oversize, false));
   const sea = filter.withSea ?? featureLive('ferries', now);
   const europe = filter.withEurope ?? featureLive('europe', now);
+  const openWorld = filter.withOpenWorld ?? featureLive('open_world', now);
   if (!sea) conditions.push(eq(contracts.port, false));
   // Raw materials and product of a company factory are only for its members.
   conditions.push(filter.viewerUserId ? sql`(${contracts.rallyId} is null or ${contracts.createdBy} = ${filter.viewerUserId})` : isNull(contracts.rallyId));
@@ -505,8 +527,8 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
     .filter((r) => !filter.countryCode || r.origin.countryCode === filter.countryCode || r.destination.countryCode === filter.countryCode)
     // Loads over a ferry wait for the release (staff see them earlier).
     .filter((r) => sea || !r.route.crossing)
-    // So do the loads of "Цяла Европа" (v1.7).
-    .filter((r) => europe || ![r.origin.countryCode, r.destination.countryCode, ...r.stopCities.map((s) => s.country)].some(isEuropeCountry));
+    // So do the loads of "Цяла Европа" (v1.7) and of the east (v2.0).
+    .filter((r) => [r.origin.countryCode, r.destination.countryCode, ...r.stopCities.map((s) => s.country)].every((c) => countryOpen(c, europe, openWorld)));
 }
 
 export type ContractView = Awaited<ReturnType<typeof openContracts>>[number];
@@ -517,12 +539,12 @@ export async function reserveContract(db: Database, userId: string, contractId: 
   const { fail } = await import('./errors');
   return db.transaction(async (tx) => {
     const [user] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
-    if (!isVip(user?.vipUntil, now)) fail('vip_only', 'Запазването на поръчки е VIP възможност.', 403);
+    if (!isVip(user?.vipUntil, now)) fail('vip_only', tr('Запазването на поръчки е VIP възможност.'), 403);
     const account = await companyForUser(tx, userId);
     const [c] = await tx.select().from(contracts).where(eq(contracts.id, contractId)).for('update');
-    if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', 'Поръчката вече не е налична.', 409);
-    if (c!.urgent) fail('urgent', 'Спешните поръчки не се запазват — може да ги поеме всеки.');
-    if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', 'Поръчката вече е запазена от друг играч.', 409);
+    if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', tr('Поръчката вече не е налична.'), 409);
+    if (c!.urgent) fail('urgent', tr('Спешните поръчки не се запазват — може да ги поеме всеки.'));
+    if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', tr('Поръчката вече е запазена от друг играч.'), 409);
     // Only one reservation at a time: release any other one.
     await tx.update(contracts).set({ reservedByCompanyId: null, reservedUntil: null }).where(and(eq(contracts.reservedByCompanyId, account.id), sql`${contracts.id} <> ${contractId}`));
     const until = new Date(now.getTime() + VIP_PERKS.reservationMinutes * 60_000);

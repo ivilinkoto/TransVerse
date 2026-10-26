@@ -12,6 +12,7 @@ import { LIVERY_CONTEST } from '@/lib/game/together';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
 import { button, rows, STYLE } from './ui';
+import { t } from '@/i18n/t';
 
 const HOUR = 3_600_000;
 const footer = { text: 'TransVerse · игрови данни' };
@@ -19,62 +20,59 @@ const footer = { text: 'TransVerse · игрови данни' };
 /** A building finished (from finishConstructions). */
 export async function announceBuild(db: DbOrTx, buildId: string, company: { name: string; tag: string | null; id: string }, label: string, level: number, now: Date) {
   if (!featureLive('discord_bot', now)) return;
-  await announce(db, `build:${buildId}`, 'builds', {
-    embeds: [{ title: level > 1 ? `🏗️ ${company.name} вдигна „${label}“ на ниво ${level}` : `🏗️ ${company.name} построи „${label}“`, url: `${appUrl()}/game/companies/${company.id}`, color: BRAND, footer }],
+  await announce(db, `build:${buildId}`, 'builds', () => ({
+    embeds: [{ title: level > 1 ? t('🏗️ {0} вдигна „{1}“ на ниво {2}', company.name, label, level) : t('🏗️ {0} построи „{1}“', company.name, label), url: `${appUrl()}/game/companies/${company.id}`, color: BRAND, footer }],
     // "Браво" is a like for the base in the game (market.ts).
-    components: rows(button('Браво', `cheer:${company.id}`, STYLE.success, '👍')),
-  }, now);
+    components: rows(button(t('Браво'), `cheer:${company.id}`, STYLE.success, '👍')),
+  }), now);
 }
 
 /** "Строител на седмицата" (from awardBuildersOfWeek). */
 export async function announceBuilderOfWeek(db: DbOrTx, key: string, company: string, username: string, tons: number, rewardCents: number, now: Date) {
   if (!featureLive('discord_bot', now)) return;
-  await announce(db, `builder-week:${key}:${company}`, 'builds', {
-    embeds: [{ title: `👷 Строител на седмицата в „${company}“: ${username}`, description: `${dec(tons)} т материали за базата${rewardCents ? ` · награда ${money(rewardCents)}` : ''}`, color: 0xf6c343, footer }],
-  }, now);
+  await announce(db, `builder-week:${key}:${company}`, 'builds', () => ({
+    embeds: [{ title: t('👷 Строител на седмицата в „{0}“: {1}', company, username), description: t('{0} т материали за базата{1}', dec(tons), rewardCents ? t(' · награда {0}', money(rewardCents)) : ''), color: 0xf6c343, footer }],
+  }), now);
 }
 
 /** A used truck or trailer on the market (from createListing): "Купи" buys it from Discord. */
 export async function announceListing(db: DbOrTx, listing: { id: string; kind: string; modelId: string; priceCents: number; expiresAt: Date }, details: { city: string; condition: number; seller: string }, now: Date) {
   if (!featureLive('discord_bot', now)) return;
   const model = listing.kind === 'vehicle' ? powerUnitModel(listing.modelId) : trailerModel(listing.modelId);
-  await announce(db, `listing:${listing.id}`, 'usedMarket', {
+  await announce(db, `listing:${listing.id}`, 'usedMarket', () => ({
     embeds: [{
       title: `🏷️ ${model.brand} ${model.name}`,
       url: `${appUrl()}/game/market`,
       color: BRAND,
-      description: `**${money(listing.priceCents)}** · състояние ${Math.round(details.condition)} % · ${details.city}
-Продава: ${details.seller} · до <t:${Math.floor(listing.expiresAt.getTime() / 1000)}:d>`,
+      description: t('**{0}** · състояние {1} % · {2}\nПродава: {3} · до <t:{4}:d>', money(listing.priceCents), Math.round(details.condition), details.city, details.seller, Math.floor(listing.expiresAt.getTime() / 1000)),
       footer,
     }],
-    components: rows(button('Купи', `used:buy:${listing.id}`, STYLE.success, '🛒')),
-  }, now);
+    components: rows(button(t('Купи'), `used:buy:${listing.id}`, STYLE.success, '🛒')),
+  }), now);
 }
 
 /** "Товар на деня" (from the worker): the first one to take it gets it. */
 export async function announceDailyLoad(db: DbOrTx, load: { id: string; goods: string; weightTons: number; distanceKm: number; rewardCents: number; expiresAt: Date }, lane: { from: string; to: string }, coins: number, now: Date) {
   if (!featureLive('daily_load', now)) return;
-  await announce(db, `daily-load:${load.id}`, 'dailyLoad', {
+  await announce(db, `daily-load:${load.id}`, 'dailyLoad', () => ({
     embeds: [{
-      title: `⭐ Товар на деня: ${lane.from} → ${lane.to}`,
+      title: t('⭐ Товар на деня: {0} → {1}', lane.from, lane.to),
       url: `${appUrl()}/game/contracts?load=${load.id}`,
       color: 0xf6c343,
-      description: `${load.goods} · ${dec(load.weightTons)} т · ${km(load.distanceKm)}
-**${money(load.rewardCents)}** + **${coins} ТрансКоин** при доставка навреме.
-Взима го първият — до <t:${Math.floor(load.expiresAt.getTime() / 1000)}:t>.`,
+      description: t('{0} · {1} т · {2}\n**{3}** + **{4} ТрансКоин** при доставка навреме.\nВзима го първият — до <t:{5}:t>.', load.goods, dec(load.weightTons), km(load.distanceKm), money(load.rewardCents), coins, Math.floor(load.expiresAt.getTime() / 1000)),
       footer,
     }],
-    components: rows(button('Поеми', `take:${load.id}`, STYLE.success, '🚚')),
-  }, now);
+    components: rows(button(t('Поеми'), `take:${load.id}`, STYLE.success, '🚚')),
+  }), now);
 }
 
 /** The livery of the month (from settleLiveryContest). */
 export async function announceLiveryWinner(db: DbOrTx, entry: { id: string; monthKey: string; userId: string; plate: string; votes: number }, now: Date) {
   if (!featureLive('livery_contest', now)) return;
   const [u] = await db.select({ username: users.username }).from(users).where(eq(users.id, entry.userId));
-  await announce(db, `livery-win:${entry.monthKey}`, 'livery', {
-    embeds: [{ title: `🎨 Ливрея на месеца: ${u?.username ?? ''}`, description: `${entry.plate} събра ${entry.votes} 👍 — +${LIVERY_CONTEST.coins} ТрансКоин и значка „Ливрея на месеца“. Новият конкурс вече тече: покажи камиона си от Състезание → Ливреи.`, color: 0xa66bff, image: { url: `${appUrl()}/api/discord/card/livery/${entry.id}` }, footer }],
-  }, now);
+  await announce(db, `livery-win:${entry.monthKey}`, 'livery', () => ({
+    embeds: [{ title: t('🎨 Ливрея на месеца: {0}', u?.username ?? ''), description: t('{0} събра {1} 👍 — +{2} ТрансКоин и значка „Ливрея на месеца“. Новият конкурс вече тече: покажи камиона си от Състезание → Ливреи.', entry.plate, entry.votes, LIVERY_CONTEST.coins), color: 0xa66bff, image: { url: `${appUrl()}/api/discord/card/livery/${entry.id}` }, footer }],
+  }), now);
 }
 
 /** Worker: announcements that come from what is in the database (releases, events, battles, the newspaper). */
@@ -85,31 +83,31 @@ export async function announceFromGame(db: Database, now = new Date()) {
   for (const r of RELEASES) {
     const at = new Date(r.publishedAt);
     if (at > now || now.getTime() - at.getTime() > 72 * HOUR) continue;
-    await announce(db, `release:${r.version}`, 'updates', {
-      content: '🚚 **Ново обновление в TransVerse!**',
+    await announce(db, `release:${r.version}`, 'updates', () => ({
+      content: t('🚚 **Ново обновление в TransVerse!**'),
       embeds: [{
-        title: `Обновление ${r.version} — „${r.name}“`,
+        title: t('Обновление {0} — „{1}“', r.version, r.name),
         url: `${appUrl()}/updates`,
         description: `${r.tagline}\n\n${r.highlights.slice(0, 10).map((h) => `• **${h.title}** — ${h.body}`).join('\n').slice(0, 3800)}`,
         color: BRAND,
         footer,
       }],
-    }, now);
+    }), now);
   }
 
   // Community events: started in the last two hours, settled in the last six.
   const started = await db.select().from(globalEvents).where(and(lte(globalEvents.startsAt, now), gte(globalEvents.startsAt, new Date(now.getTime() - 2 * HOUR))));
   for (const e of started) {
-    await announce(db, `event:start:${e.id}`, 'events', {
-      embeds: [{ title: `🎯 Започна ивент: ${e.name}`, url: `${appUrl()}/game/events`, description: e.description.slice(0, 1500), fields: [{ name: 'До', value: `<t:${Math.floor(e.endsAt.getTime() / 1000)}:f>`, inline: true }], color: 0x22d3ee, footer }],
-    }, now);
+    await announce(db, `event:start:${e.id}`, 'events', () => ({
+      embeds: [{ title: t('🎯 Започна ивент: {0}', e.name), url: `${appUrl()}/game/events`, description: e.description.slice(0, 1500), fields: [{ name: t('До'), value: `<t:${Math.floor(e.endsAt.getTime() / 1000)}:f>`, inline: true }], color: 0x22d3ee, footer }],
+    }), now);
   }
   const settled = await db.select().from(globalEvents).where(and(gte(globalEvents.settledAt, new Date(now.getTime() - 6 * HOUR)), lte(globalEvents.settledAt, now)));
   for (const e of settled) {
     const ok = e.outcome === 'success';
-    await announce(db, `event:end:${e.id}`, 'events', {
-      embeds: [{ title: ok ? `🏆 Ивентът „${e.name}“ е изпълнен!` : `Ивентът „${e.name}“ приключи`, url: `${appUrl()}/game/events`, description: ok ? 'Наградите са раздадени на участниците.' : `Целта не беше достигната (${int(e.progress)} от ${int(e.target)}).`, color: ok ? 0x2fd27a : 0x9aa3b2, footer }],
-    }, now);
+    await announce(db, `event:end:${e.id}`, 'events', () => ({
+      embeds: [{ title: ok ? t('🏆 Ивентът „{0}“ е изпълнен!', e.name) : t('Ивентът „{0}“ приключи', e.name), url: `${appUrl()}/game/events`, description: ok ? t('Наградите са раздадени на участниците.') : t('Целта не беше достигната ({0} от {1}).', int(e.progress), int(e.target)), color: ok ? 0x2fd27a : 0x9aa3b2, footer }],
+    }), now);
   }
 
   // Company battles: this week's pairs (once they are all made), last week's results.
@@ -124,9 +122,9 @@ export async function announceFromGame(db: Database, now = new Date()) {
     .innerJoin(b, eq(b.id, companyBattles.bId))
     .where(eq(companyBattles.weekKey, thisWeek));
   if (pairs.length && pairs.every((p) => now.getTime() - p.createdAt.getTime() > 20 * 60_000)) {
-    await announce(db, `battles:pairs:${thisWeek}`, 'battles', {
-      embeds: [{ title: '⚔️ Битките на компаниите тази седмица', url: `${appUrl()}/game/company/missions`, description: pairs.slice(0, 25).map((p) => `**${p.a}** срещу **${p.b}**`).join('\n') + (pairs.length > 25 ? `\n…и още ${pairs.length - 25}` : ''), color: 0xe04545, footer: { text: 'Броят се тоновете на членовете до неделя 24:00 · игрови данни' } }],
-    }, now);
+    await announce(db, `battles:pairs:${thisWeek}`, 'battles', () => ({
+      embeds: [{ title: t('⚔️ Битките на компаниите тази седмица'), url: `${appUrl()}/game/company/missions`, description: pairs.slice(0, 25).map((p) => t('**{0}** срещу **{1}**', p.a, p.b)).join('\n') + (pairs.length > 25 ? t('\n…и още {0}', pairs.length - 25) : ''), color: 0xe04545, footer: { text: t('Броят се тоновете на членовете до неделя 24:00 · игрови данни') } }],
+    }), now);
   }
   const lastWeek = weekKey(new Date(now.getTime() - 7 * 86_400_000));
   const results = await db
@@ -137,28 +135,28 @@ export async function announceFromGame(db: Database, now = new Date()) {
     .leftJoin(w, eq(w.id, companyBattles.winnerId))
     .where(eq(companyBattles.weekKey, lastWeek));
   if (results.length && results.every((r) => r.status === 'done')) {
-    await announce(db, `battles:results:${lastWeek}`, 'battles', {
-      embeds: [{ title: '🏁 Резултати от битките на компаниите', description: results.slice(0, 25).map((r) => `${r.winner ? `🏆 **${r.winner}**` : '🤝 Равенство'} · ${r.a} ${dec(r.aTons)} т — ${dec(r.bTons)} т ${r.b}`).join('\n'), color: 0xf6c343, footer }],
-    }, now);
+    await announce(db, `battles:results:${lastWeek}`, 'battles', () => ({
+      embeds: [{ title: t('🏁 Резултати от битките на компаниите'), description: results.slice(0, 25).map((r) => t('{0} · {1} {2} т — {3} т {4}', r.winner ? `🏆 **${r.winner}**` : t('🤝 Равенство'), r.a, dec(r.aTons), dec(r.bTons), r.b)).join('\n'), color: 0xf6c343, footer }],
+    }), now);
   }
 
   // The weekly newspaper, when a new issue comes out.
   const issues = await db.select().from(newspapers).where(and(gte(newspapers.publishedAt, new Date(now.getTime() - 12 * HOUR)), lte(newspapers.publishedAt, now)));
   for (const n of issues) {
     const issue = n.content as NewsIssue;
-    await announce(db, `news:${n.weekKey}`, 'news', {
+    await announce(db, `news:${n.weekKey}`, 'news', () => ({
       embeds: [{
-        title: `📰 Седмичник TransVerse № ${n.number}: ${headline(issue)}`,
+        title: t('📰 Седмичник TransVerse № {0}: {1}', n.number, headline(issue)),
         url: `${appUrl()}/game/news`,
         color: BRAND,
         fields: [
-          { name: 'Седмицата', value: `${int(issue.totals.deliveries)} курса · ${km(issue.totals.km)} · ${int(issue.totals.tons)} т`, inline: false },
-          ...(issue.topDrivers[0] ? [{ name: 'Шофьор на седмицата', value: `${issue.topDrivers[0].username} · ${int(issue.topDrivers[0].value)} курса`, inline: true }] : []),
-          ...(issue.topCompanies[0] ? [{ name: 'Компания на седмицата', value: `${issue.topCompanies[0].name} · ${int(issue.topCompanies[0].deliveries)} курса`, inline: true }] : []),
-          ...(issue.longest ? [{ name: 'Най-дълъг курс', value: `${issue.longest.username}: ${issue.longest.from} → ${issue.longest.to}, ${km(issue.longest.km)}`, inline: false }] : []),
+          { name: t('Седмицата'), value: t('{0} курса · {1} · {2} т', int(issue.totals.deliveries), km(issue.totals.km), int(issue.totals.tons)), inline: false },
+          ...(issue.topDrivers[0] ? [{ name: t('Шофьор на седмицата'), value: t('{0} · {1} курса', issue.topDrivers[0].username, int(issue.topDrivers[0].value)), inline: true }] : []),
+          ...(issue.topCompanies[0] ? [{ name: t('Компания на седмицата'), value: t('{0} · {1} курса', issue.topCompanies[0].name, int(issue.topCompanies[0].deliveries)), inline: true }] : []),
+          ...(issue.longest ? [{ name: t('Най-дълъг курс'), value: `${issue.longest.username}: ${issue.longest.from} → ${issue.longest.to}, ${km(issue.longest.km)}`, inline: false }] : []),
         ],
         footer,
       }],
-    }, now);
+    }), now);
   }
 }

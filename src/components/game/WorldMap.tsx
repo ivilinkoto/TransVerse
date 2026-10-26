@@ -1,6 +1,7 @@
 'use client';
 
 import polyline from '@mapbox/polyline';
+import { nightShade, sunAltitude } from '@/lib/geo/sun';
 import * as maplibregl from 'maplibre-gl';
 import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -16,6 +17,7 @@ import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { api } from '@/lib/client/api';
 import { useFeature } from './Features';
+import { t as tr, tx } from '@/i18n/t';
 
 export interface MapLeg {
   geometry: string | null;
@@ -181,9 +183,9 @@ function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number, 
 
 /** "→ Виена · 1 ч 20 мин" or "в София". */
 function truckStatus(t: WorldTruck, now: number): string {
-  if (!t.delivery) return `в ${t.city}`;
+  if (!t.delivery) return tr('в {0}', t.city);
   const left = Math.max(0, Math.round((scheduleEnd(t.delivery.schedule) - now) / 60_000));
-  return left > 0 ? `→ ${t.delivery.destination} · ${duration(left)}` : `пристига в ${t.delivery.destination}`;
+  return left > 0 ? `→ ${t.delivery.destination} · ${duration(left)}` : tr('пристига в {0}', t.delivery.destination);
 }
 
 function routeFeatures(vehicles: MapVehicle[], preview: MapProps['preview']): GeoJSON.FeatureCollection {
@@ -212,6 +214,10 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   // The list starts folded on phones, where it would cover the map.
   const [circleOpen, setCircleOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
   const [clock, setClock] = useState(0);
+  // v2.0: the day and night at the map's centre, and the 3D view.
+  const mapLook = useFeature('map_3d');
+  const [shade, setShade] = useState(0);
+  const [tilted, setTilted] = useState(false);
   const circleLive = useFeature('map_circle');
   const roadsideLive = useFeature('roadside');
   // The picked truck by id, so its card follows fresh data (e.g. after help on the road).
@@ -228,9 +234,17 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       style: styleUrl,
       center: toLngLat(initial.current.center),
       zoom: 5.4,
-      attributionControl: { compact: true, customAttribution: 'Градове: GeoNames · Маршрути: Valhalla / OSM' },
+      attributionControl: { compact: true, customAttribution: tr('Градове: GeoNames · Маршрути: Valhalla / OSM') },
     });
     mapRef.current = map;
+    const updateShade = () => {
+      const c = map.getCenter();
+      setShade(nightShade(sunAltitude(new Date(), c.lat, c.lng)));
+    };
+    map.on('moveend', updateShade);
+    updateShade();
+    const shadeTimer = setInterval(updateShade, 60_000);
+    map.on('remove', () => clearInterval(shadeTimer));
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     map.on('styleimagemissing', (e) => {
       const [kind, fill, ring, flag, side] = e.id.split('|');
@@ -240,7 +254,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     });
     map.on('error', (e) => {
       if (e.error?.message?.includes('could not be loaded')) return; // missing sprite icons are harmless
-      setError(e.error?.message ?? 'Грешка при зареждане на картата');
+      setError(e.error?.message ?? tr('Грешка при зареждане на картата'));
     });
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(container.current);
@@ -344,14 +358,14 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     if (!ready || !stork || !mapRef.current) return;
     const el = document.createElement('button');
     el.type = 'button';
-    el.setAttribute('aria-label', 'Щъркел');
+    el.setAttribute('aria-label', tr('Щъркел'));
     el.style.cssText = 'background:none;border:0;cursor:pointer;padding:0;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))';
     // A white stork with black wing tips, red beak and legs (original drawing).
     el.innerHTML = '<svg width="38" height="38" viewBox="0 0 40 40"><path d="M8 22 Q14 14 24 16 L30 13 L34 14 L30 17 Q28 24 20 25 Z" fill="#fff" stroke="#0b1220" stroke-width="1"/><path d="M10 21 Q14 18 20 20 L16 24 Z" fill="#111827"/><path d="M33 14 L39 16 L33 15.5 Z" fill="#dc2626"/><circle cx="31" cy="14" r="0.9" fill="#0b1220"/><path d="M18 25 L17 36 M21 25 L22 36" stroke="#dc2626" stroke-width="1.4"/></svg>';
     el.onclick = async () => {
       try {
         const data = await api<{ coins: number; city: string }>('/api/game/action', { type: 'spotStork' });
-        setStorkNote(`Видя щъркела над ${data.city}! +${data.coins} TC 🔴⚪`);
+        setStorkNote(tr('Видя щъркела над {0}! +{1} TC 🔴⚪', data.city, data.coins));
       } catch (e) {
         setStorkNote((e as Error).message);
       }
@@ -367,7 +381,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     if (!ready || !bases.length || !mapRef.current) return;
     const markers = bases.map((b) => {
       const el = document.createElement('div');
-      el.title = `${b.own ? 'Базата на компанията' : 'Съюзна база'}: ${b.name} · ${b.city}`;
+      el.title = `${b.own ? tr('Базата на компанията') : tr('Съюзна база')}: ${b.name} · ${b.city}`;
       el.setAttribute('aria-label', el.title);
       el.style.cssText = 'filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));pointer-events:auto';
       const c = /^#[0-9a-f]{6}$/i.test(b.color ?? '') ? b.color! : b.own ? '#22d3ee' : '#a78bfa';
@@ -385,7 +399,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     const markers = reports.map((r) => {
       const el = document.createElement('a');
       el.href = '/game/road';
-      el.title = `${r.label} край ${r.near} (сигнал от шофьор)`;
+      el.title = tr('{0} край {1} (сигнал от шофьор)', r.label, r.near);
       el.setAttribute('aria-label', el.title);
       el.textContent = r.emoji;
       el.style.cssText = 'font-size:20px;line-height:1;padding:3px;border-radius:9999px;background:rgba(11,18,32,.85);border:1px solid #f59e0b;pointer-events:auto;text-decoration:none';
@@ -476,41 +490,66 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     return () => clearInterval(id);
   }, [ready, vehicles, ownVip]);
 
+  /** Tilts the map and raises the buildings (where the style has them), or back to flat. */
+  const toggle3d = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = !tilted;
+    setTilted(next);
+    map.easeTo({ pitch: next ? 55 : 0, bearing: next ? -15 : 0, duration: 800 });
+    try {
+      const source = Object.entries(map.getStyle().sources ?? {}).find(([, src]) => src.type === 'vector')?.[0];
+      if (next && source && !map.getLayer('buildings-3d')) {
+        map.addLayer({ id: 'buildings-3d', type: 'fill-extrusion', source, 'source-layer': 'building', minzoom: 13, paint: { 'fill-extrusion-color': '#8b95a7', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.75 } }, 'cities-dot');
+      } else if (!next && map.getLayer('buildings-3d')) {
+        map.removeLayer('buildings-3d');
+      }
+    } catch {
+      // A style without buildings: the tilt alone.
+    }
+  };
+
   return (
     <div className="relative h-[calc(100dvh-210px)] min-h-[420px] overflow-hidden rounded-2xl border border-asphalt-700">
       <div ref={container} className="h-full w-full" />
+      {mapLook && shade > 0 && <div aria-hidden className="pointer-events-none absolute inset-0 transition-colors duration-1000" style={{ background: `rgba(4, 8, 28, ${0.45 * shade})` }} />}
+      {mapLook && (
+        <button type="button" onClick={() => toggle3d()} className="absolute right-12 top-2.5 rounded-lg bg-asphalt-950/85 px-2.5 py-1.5 text-xs font-semibold text-mist-100 backdrop-blur hover:bg-asphalt-900" aria-pressed={tilted}>
+          {tilted ? '2D' : '3D'} {shade > 0.5 ? '🌙' : '☀️'}
+        </button>
+      )}
       {error && <div className="absolute left-3 top-3 rounded-lg bg-loss/90 px-3 py-2 text-sm text-white">{error}</div>}
       {storkNote && <button type="button" onClick={() => setStorkNote(null)} className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg bg-asphalt-900/95 px-3 py-2 text-sm text-white shadow-lg">{storkNote}</button>}
       <div className="absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-xl bg-asphalt-950/85 px-3 py-2 text-[11px] text-mist-300 backdrop-blur">
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-gold-400" />Град с товарен пазар (число = поръчки)</span>
-        <span className="flex items-center gap-1.5"><TruckGlyph ring="#22d3ee" fill="#f8fafc" />Твоите камиони</span>
-        <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-cyan-glow" />С товар</span>
-        <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 border-t-2 border-dotted border-mist-400" />Празен курс</span>
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-prestige" />Депо</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-gold-400" />{tr('Град с товарен пазар (число = поръчки)')}</span>
+        <span className="flex items-center gap-1.5"><TruckGlyph ring="#22d3ee" fill="#f8fafc" />{tr('Твоите камиони')}</span>
+        <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-cyan-glow" />{tr('С товар')}</span>
+        <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 border-t-2 border-dotted border-mist-400" />{tr('Празен курс')}</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-prestige" />{tr('Депо')}</span>
         <span className="flex items-center gap-1.5">
           <TruckGlyph ring="#ef4444" />
-          Други играчи{world ? ` (${world.players}, ${world.online} в играта)` : ''}
+          {tr('Други играчи{0}', world ? tr(' ({0}, {1} в играта)', world.players, world.online) : '')}
         </span>
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: RELATION_COLOR.friend, background: `${RELATION_COLOR.friend}55` }} />Приятели</span>
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: RELATION_COLOR.company, background: `${RELATION_COLOR.company}55` }} />Компанията</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: RELATION_COLOR.friend, background: `${RELATION_COLOR.friend}55` }} />{tr('Приятели')}</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: RELATION_COLOR.company, background: `${RELATION_COLOR.company}55` }} />{tr('Компанията')}</span>
         <span className="flex items-center gap-1.5">
-          <TruckGlyph ring="#34d399" />в играта сега
+          <TruckGlyph ring="#34d399" />{tr('в играта сега')}
         </span>
         <span className="flex items-center gap-1.5">
           <TruckGlyph ring="#d4af37" />VIP
         </span>
       </div>
       <div className="absolute left-3 top-3 flex max-h-[calc(100%-120px)] w-[min(280px,calc(100%-70px))] flex-col gap-2">
-        {circleLive && <div role="radiogroup" aria-label="Кои играчи да се виждат" className="flex rounded-full border border-asphalt-700 bg-asphalt-950/85 p-0.5 text-[11px] backdrop-blur">
-          {([['all', 'Всички'], ['circle', 'Моите хора'], ['none', 'Само аз']] as const).map(([id, label]) => (
-            <button key={id} type="button" role="radio" aria-checked={mode === id} title={id === 'circle' ? 'Приятели и компания' : undefined} onClick={() => setMode(id)} className={`flex-1 whitespace-nowrap rounded-full px-2 py-1 transition ${mode === id ? 'bg-volt-500 text-white' : 'text-mist-300 hover:text-white'}`}>{label}</button>
+        {circleLive && <div role="radiogroup" aria-label={tr('Кои играчи да се виждат')} className="flex rounded-full border border-asphalt-700 bg-asphalt-950/85 p-0.5 text-[11px] backdrop-blur">
+          {([['all', tr('Всички')], ['circle', tr('Моите хора')], ['none', tr('Само аз')]] as const).map(([id, label]) => (
+            <button key={id} type="button" role="radio" aria-checked={mode === id} title={id === 'circle' ? tr('Приятели и компания') : undefined} onClick={() => setMode(id)} className={`flex-1 whitespace-nowrap rounded-full px-2 py-1 transition ${mode === id ? 'bg-volt-500 text-white' : 'text-mist-300 hover:text-white'}`}>{label}</button>
           ))}
         </div>}
         {world && mode !== 'none' && circleLive && (
-          <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-asphalt-700 bg-asphalt-950/90 text-sm backdrop-blur" aria-label="Заедно на пътя">
+          <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-asphalt-700 bg-asphalt-950/90 text-sm backdrop-blur" aria-label={tr('Заедно на пътя')}>
             <button type="button" onClick={() => setCircleOpen((v) => !v)} aria-expanded={circleOpen} className="flex items-center justify-between gap-2 px-3 py-2 font-semibold">
-              <span className="flex items-center gap-2"><Users className="h-4 w-4 text-prestige" />Заедно на пътя</span>
-              <span className="num text-xs text-mist-400">{circle.length} {circleOpen ? '▴' : '▾'}</span>
+              <span className="flex items-center gap-2"><Users className="h-4 w-4 text-prestige" />{tr('Заедно на пътя')}</span>
+              <span className="num text-xs text-mist-400">{tx(circle.length)} {circleOpen ? '▴' : '▾'}</span>
             </button>
             {circleOpen && (
               circle.length ? (
@@ -520,15 +559,15 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
                       <button type="button" onClick={() => follow(t)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-asphalt-800">
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: RELATION_COLOR[t.relation!] }} />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[13px] font-medium">{t.player}{t.online && <span className="ml-1 text-profit">●</span>}</span>
-                          <span className="block truncate text-[11px] text-mist-400">{roadsideLive && t.delivery?.deliveryId && clock && helpableStop(t.delivery.schedule, clock) ? <span className="font-semibold text-amber-sig">Чака помощ на пътя</span> : truckStatus(t, clock || 0)}</span>
+                          <span className="block truncate text-[13px] font-medium">{tx(t.player)}{t.online && <span className="ml-1 text-profit">●</span>}</span>
+                          <span className="block truncate text-[11px] text-mist-400">{roadsideLive && t.delivery?.deliveryId && clock && helpableStop(t.delivery.schedule, clock) ? <span className="font-semibold text-amber-sig">{tr('Чака помощ на пътя')}</span> : truckStatus(t, clock || 0)}</span>
                         </span>
                       </button>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="border-t border-asphalt-800 px-3 py-2 text-xs text-mist-400">Тук ще виждаш камионите на приятелите си и на компанията. Добави приятели от профила им или с търсачката горе.</p>
+                <p className="border-t border-asphalt-800 px-3 py-2 text-xs text-mist-400">{tr('Тук ще виждаш камионите на приятелите си и на компанията. Добави приятели от профила им или с търсачката горе.')}</p>
               )
             )}
           </section>
@@ -539,29 +578,29 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         <aside className="absolute right-3 top-14 w-[min(320px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <div className="font-display text-lg font-bold">{city.name}</div>
-              <div className="text-xs text-mist-400">{city.nameLatin} · {city.country} ({city.countryCode}){city.region ? ` · ${city.region}` : ''}</div>
+              <div className="font-display text-lg font-bold">{tx(city.name)}</div>
+              <div className="text-xs text-mist-400">{tx(city.nameLatin)} · {tx(city.country)} ({tx(city.countryCode)}){city.region ? ` · ${city.region}` : ''}</div>
             </div>
-            <button className="text-mist-400 hover:text-white" onClick={() => setCity(null)} aria-label="Затвори">✕</button>
+            <button className="text-mist-400 hover:text-white" onClick={() => setCity(null)} aria-label={tr('Затвори')}>✕</button>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <div><dt className="text-mist-400">Население</dt><dd className="num">{int(city.population)}</dd></div>
-            <div><dt className="text-mist-400">Координати</dt><dd className="num">{city.lat.toFixed(4)}, {city.lon.toFixed(4)}</dd></div>
-            <div><dt className="text-mist-400">Отворени поръчки</dt><dd className="num">{city.openContracts}</dd></div>
-            <div><dt className="text-mist-400">Пристанища</dt><dd>{city.ports.length ? city.ports.join(', ') : '—'}</dd></div>
+            <div><dt className="text-mist-400">{tr('Население')}</dt><dd className="num">{int(city.population)}</dd></div>
+            <div><dt className="text-mist-400">{tr('Координати')}</dt><dd className="num">{city.lat.toFixed(4)}, {city.lon.toFixed(4)}</dd></div>
+            <div><dt className="text-mist-400">{tr('Отворени поръчки')}</dt><dd className="num">{tx(city.openContracts)}</dd></div>
+            <div><dt className="text-mist-400">{tr('Пристанища')}</dt><dd>{city.ports.length ? city.ports.join(', ') : '—'}</dd></div>
           </dl>
           {city.market.length > 0 && (
             <div className="mt-3">
-              <div className="label">Игрови пазарен профил</div>
+              <div className="label">{tr('Игрови пазарен профил')}</div>
               <ul className="mt-1.5 space-y-1 text-xs">
                 {city.market.map((m) => (
                   <li key={m.cargo} className="flex justify-between gap-2">
-                    <span>{m.cargo}</span>
-                    <span className="text-mist-400">{[m.produces && 'произвежда', m.consumes && `търси (${m.demand.toFixed(2)}×)`].filter(Boolean).join(' · ')}</span>
+                    <span>{tx(m.cargo)}</span>
+                    <span className="text-mist-400">{[m.produces && tr('произвежда'), m.consumes && tr('търси ({0}×)', m.demand.toFixed(2))].filter(Boolean).join(' · ')}</span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-[10px] text-mist-400">Симулирани данни на играта, не реална статистика.</p>
+              <p className="mt-2 text-[10px] text-mist-400">{tr('Симулирани данни на играта, не реална статистика.')}</p>
             </div>
           )}
         </aside>
@@ -583,39 +622,39 @@ function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number;
   const convoy = oldConvoy && !lobby;
   const convoyOpen = !!(convoy && d && t.relation && now && now - new Date(d.startedAt).getTime() < CONVOY_RULES.windowMs && !s?.done);
   return (
-    <aside className="absolute right-3 top-14 z-10 w-[min(310px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label="Камион на играч">
+    <aside className="absolute right-3 top-14 z-10 w-[min(310px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur" aria-label={tr('Камион на играч')}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="font-display text-lg font-bold"><PlayerName name={t.player} role={t.role} vip={t.vip} /></div>
-          <div className="truncate text-xs text-mist-400">{t.company ? `${t.tag ? `[${t.tag}] ` : ''}${t.company}` : 'Самостоятелен шофьор'}</div>
-          {t.relation && <div className="mt-1 text-xs font-semibold" style={{ color: RELATION_COLOR[t.relation] }}>{t.relation === 'friend' ? 'Приятел' : 'От твоята компания'}</div>}
+          <div className="truncate text-xs text-mist-400">{t.company ? `${t.tag ? `[${t.tag}] ` : ''}${t.company}` : tr('Самостоятелен шофьор')}</div>
+          {t.relation && <div className="mt-1 text-xs font-semibold" style={{ color: RELATION_COLOR[t.relation] }}>{t.relation === 'friend' ? tr('Приятел') : tr('От твоята компания')}</div>}
         </div>
-        <button className="text-mist-400 hover:text-white" onClick={onClose} aria-label="Затвори">✕</button>
+        <button className="text-mist-400 hover:text-white" onClick={onClose} aria-label={tr('Затвори')}>✕</button>
       </div>
       {d ? (
         <div className="mt-3 space-y-2">
-          <div className="font-semibold">{d.origin} → {d.destination}</div>
-          {d.cargo && <div className="text-xs text-mist-300">{d.cargo.goods} · {int(Math.round(d.cargo.tons))} т</div>}
+          <div className="font-semibold">{tx(d.origin)} → {tx(d.destination)}</div>
+          {d.cargo && <div className="text-xs text-mist-300">{tr('{0} · {1} т', d.cargo.goods, int(Math.round(d.cargo.tons)))}</div>}
           <div className="h-1.5 overflow-hidden rounded-full bg-asphalt-800"><div className="h-full rounded-full bg-gradient-to-r from-cyan-glow to-volt-500" style={{ width: `${Math.round((s?.progress ?? 0) * 100)}%` }} /></div>
           <div className="flex justify-between text-xs text-mist-400">
-            <span>{s?.done ? 'Пристига' : s?.segment ? `${s.leg === 'empty' ? 'Към товара · ' : ''}${SEGMENT_LABEL[s.segment.kind] ?? ''}` : ''}</span>
-            <span>{left > 0 ? `пристига след ${duration(left)}` : 'пристига сега'}</span>
+            <span>{s?.done ? tr('Пристига') : s?.segment ? `${s.leg === 'empty' ? tr('Към товара · ') : ''}${tx(SEGMENT_LABEL[s.segment.kind]) ?? ''}` : ''}</span>
+            <span>{left > 0 ? tr('пристига след {0}', duration(left)) : tr('пристига сега')}</span>
           </div>
           {roadside && d.deliveryId && now && helpableStop(d.schedule, now) && (
             <div className="rounded-xl border border-amber-sig/40 bg-amber-sig/10 p-2.5">
-              <p className="text-xs text-amber-sig">Камионът стои: {helpableStop(d.schedule, now)!.note}. Ако имаш камион до {ROADSIDE.radiusKm} км, помогни — оставащият престой пада наполовина, а ти получаваш хонорар {money(ROADSIDE.feeCents)}</p>
-              <ActionButton action={{ type: 'helpOnRoad', deliveryId: d.deliveryId }} onDone={() => window.dispatchEvent(new Event('tv:world'))} className="btn-primary mt-2 w-full justify-center text-xs">Помогни на пътя</ActionButton>
+              <p className="text-xs text-amber-sig">{tr('Камионът стои: {0}. Ако имаш камион до {1} км, помогни — оставащият престой пада наполовина, а ти получаваш хонорар {2}', helpableStop(d.schedule, now)!.note, ROADSIDE.radiusKm, money(ROADSIDE.feeCents))}</p>
+              <ActionButton action={{ type: 'helpOnRoad', deliveryId: d.deliveryId }} onDone={() => window.dispatchEvent(new Event('tv:world'))} className="btn-primary mt-2 w-full justify-center text-xs">{tr('Помогни на пътя')}</ActionButton>
             </div>
           )}
           {convoyOpen && (
-            <a href={`/game/contracts?lane=${d.originCityId}-${d.destCityId}`} className="btn-primary mt-1 w-full justify-center text-xs">Тръгни в конвой · +{Math.round(CONVOY_RULES.bonusShare * 100)}%</a>
+            <a href={`/game/contracts?lane=${d.originCityId}-${d.destCityId}`} className="btn-primary mt-1 w-full justify-center text-xs">{tr('Тръгни в конвой · +{0}%', Math.round(CONVOY_RULES.bonusShare * 100))}</a>
           )}
-          {convoy && t.relation && !convoyOpen && !s?.done && <p className="text-[11px] text-mist-400">Конвой може до {Math.round(CONVOY_RULES.windowMs / 60_000)} мин след тръгването.</p>}
+          {convoy && t.relation && !convoyOpen && !s?.done && <p className="text-[11px] text-mist-400">{tr('Конвой може до {0} мин след тръгването.', Math.round(CONVOY_RULES.windowMs / 60_000))}</p>}
         </div>
       ) : (
-        <p className="mt-3 text-sm">Паркиран в {t.city}</p>
+        <p className="mt-3 text-sm">{tr('Паркиран в {0}', t.city)}</p>
       )}
-      <p className={`mt-2 text-xs ${t.online ? 'text-profit' : 'text-mist-400'}`}>{t.online ? '● В играта сега' : '○ Не е в играта в момента'}</p>
+      <p className={`mt-2 text-xs ${t.online ? 'text-profit' : 'text-mist-400'}`}>{t.online ? tr('● В играта сега') : tr('○ Не е в играта в момента')}</p>
     </aside>
   );
 }

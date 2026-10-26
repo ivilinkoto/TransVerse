@@ -4,6 +4,7 @@ import { periodWindow } from '@/lib/game/missions';
 import type { Database } from '@/server/db/client';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
+import { t } from '@/i18n/t';
 
 /**
  * "Най-добрите на седмицата" in #класации every Sunday from 20:00 (Sofia):
@@ -45,19 +46,19 @@ export async function announceWeeklyRanking(db: Database, now = new Date()) {
   if (!discordConfig().bot || sofiaWeekday(now) !== 'Sun' || sofiaHour(now) < 20) return false;
   const w = await weeklyRanking(db, now);
   if (!w.totals.n) return false;
-  await announce(db, `weekly-ranking:${w.key}`, 'rankings', {
+  await announce(db, `weekly-ranking:${w.key}`, 'rankings', () => ({
     embeds: [{
-      title: '🏆 Най-добрите на седмицата',
+      title: t('🏆 Най-добрите на седмицата'),
       url: `${appUrl()}/game/leaderboards`,
       color: BRAND,
-      description: `${int(w.totals.n)} курса · ${km(w.totals.km)} · ${int(Math.round(w.totals.tons))} т`,
+      description: t('{0} курса · {1} · {2} т', int(w.totals.n), km(w.totals.km), int(Math.round(w.totals.tons))),
       fields: [
-        { name: '🚚 Шофьори', value: w.drivers.map((d, i) => `${medal(i)} **${d.username}** · ${d.n} курса · ${dec(d.tons)} т`).join('\n') || '—' },
-        { name: '🏢 Компании', value: w.orgs.map((o, i) => `${medal(i)} **${o.name}**${o.tag ? ` [${o.tag}]` : ''} · ${o.n} курса`).join('\n') || '—' },
-        ...(w.longest ? [{ name: '🛣️ Най-дълъг курс', value: `**${w.longest.username}**: ${w.longest.from} → ${w.longest.to}, ${km(w.longest.km)}` }] : []),
+        { name: t('🚚 Шофьори'), value: w.drivers.map((d, i) => t('{0} **{1}** · {2} курса · {3} т', medal(i), d.username, d.n, dec(d.tons))).join('\n') || '—' },
+        { name: t('🏢 Компании'), value: w.orgs.map((o, i) => t('{0} **{1}**{2} · {3} курса', medal(i), o.name, o.tag ? ` [${o.tag}]` : '', o.n)).join('\n') || '—' },
+        ...(w.longest ? [{ name: t('🛣️ Най-дълъг курс'), value: `**${w.longest.username}**: ${w.longest.from} → ${w.longest.to}, ${km(w.longest.km)}` }] : []),
       ],
-      footer: { text: 'От понеделник до неделя вечер · игрови данни' },
+      footer: { text: t('От понеделник до неделя вечер · игрови данни') },
     }],
-  }, now);
+  }), now);
   return true;
 }

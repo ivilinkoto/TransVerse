@@ -7,6 +7,7 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { achievements, companies, deliveries, depots, drivers, cities, ledgerEntries, userBadges, users, vehicles, xpEntries } from '@/server/db/schema';
 import { post } from './finance';
 import { notify } from './notify';
+import { t } from '@/i18n/t';
 
 export async function companyStats(db: DbOrTx, companyId: string): Promise<CompanyStats> {
   const [company] = await db.select().from(companies).where(eq(companies.id, companyId));
@@ -72,8 +73,8 @@ export async function companyStats(db: DbOrTx, companyId: string): Promise<Compa
   };
 }
 
-export type XpReason = 'delivery' | 'fleet' | 'mission' | 'event' | 'achievement' | 'daily' | 'tutorial' | 'roadside' | 'parking' | 'other';
-export const XP_REASON_LABELS: Record<XpReason, string> = { delivery: 'Собствени курсове', fleet: 'Курсове на наети шофьори', mission: 'Мисии', event: 'Ивенти', achievement: 'Постижения', daily: 'Дневна награда', tutorial: 'Обучение', roadside: 'Помощ на пътя', parking: 'Мини-игра „Паркирай“', other: 'Други' };
+export type XpReason = 'delivery' | 'fleet' | 'mission' | 'event' | 'achievement' | 'daily' | 'tutorial' | 'roadside' | 'parking' | 'lane' | 'other';
+export const XP_REASON_LABELS: Record<XpReason, string> = { delivery: 'Собствени курсове', fleet: 'Курсове на наети шофьори', mission: 'Мисии', event: 'Ивенти', achievement: 'Постижения', daily: 'Дневна награда', tutorial: 'Обучение', roadside: 'Помощ на пътя', parking: 'Мини-игра „Паркирай“', lane: 'Мини-игра „Лентата“', other: 'Други' };
 
 /** Adds XP (logged with its source), recomputes the level and notifies on level-up. */
 export async function awardXp(tx: Tx, userId: string, xp: number, reason: XpReason = 'other'): Promise<{ level: number; leveledUp: boolean }> {
@@ -82,9 +83,9 @@ export async function awardXp(tx: Tx, userId: string, xp: number, reason: XpReas
   const level = levelForXp(user!.xp);
   if (level > user!.level) {
     await tx.update(users).set({ level }).where(eq(users.id, userId));
-    await notify(tx, userId, 'achievement', `Ниво ${level}!`, 'Отключихте нови възможности. Вижте „Прогрес“.', '/game/progress');
+    await notify(tx, userId, 'achievement', () => t('Ниво {0}!', level), () => t('Отключихте нови възможности. Вижте „Прогрес“.'), '/game/progress');
     await completeMentorship(tx, userId, level);
-    await addFeed(tx, { userId, kind: 'level', text: `достигна ниво ${level}` });
+    await addFeed(tx, { userId, kind: 'level', text: t('достигна ниво {0}', level) });
     return { level, leveledUp: true };
   }
   return { level, leveledUp: false };
@@ -99,11 +100,11 @@ export async function checkAchievements(tx: Tx, userId: string, companyId: strin
     const inserted = await tx.insert(achievements).values({ userId, key: a.key }).onConflictDoNothing().returning({ key: achievements.key });
     if (!inserted.length) continue;
     unlocked.push(a.key);
-    if (a.rewardCents) await post(tx, companyId, [{ category: 'achievement_reward', amountCents: a.rewardCents, description: `Постижение: ${a.title}`, idempotencyKey: `achievement:${userId}:${a.key}` }]);
+    if (a.rewardCents) await post(tx, companyId, [{ category: 'achievement_reward', amountCents: a.rewardCents, description: t('Постижение: {0}', a.title), idempotencyKey: `achievement:${userId}:${a.key}` }]);
     if (a.rewardXp) await awardXp(tx, userId, a.rewardXp, 'achievement');
     if (a.badge) await tx.insert(userBadges).values({ userId, badge: a.badge }).onConflictDoNothing();
-    await notify(tx, userId, 'achievement', `Постижение: ${a.title}`, a.description, '/game/progress');
-    await addFeed(tx, { userId, kind: 'achievement', text: `спечели постижението „${a.title}“` });
+    await notify(tx, userId, 'achievement', () => t('Постижение: {0}', a.title), a.description, '/game/progress');
+    await addFeed(tx, { userId, kind: 'achievement', text: t('спечели постижението „{0}“', a.title) });
   }
   return unlocked;
 }

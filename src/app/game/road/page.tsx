@@ -5,11 +5,18 @@ import { gameContext } from '@/server/game/context';
 import { activeReports, cbFeed, trucksOnRoad } from '@/server/game/live-road';
 import { hitchhikersOf } from '@/server/game/road-life';
 import { RoadClient } from './RoadClient';
+import { t as tr } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Пътят' };
+export async function generateMetadata(): Promise<Metadata> {
+  await initLocale();
+  return { title: tr('Пътят') };
+}
 
 /** v1.8: CB radio (channel 19) and road reports from the drivers. Made by the players. */
 export default async function RoadPage() {
+  await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.cb_radio && !features.road_reports && !features.hitchhikers) notFound();
   const trucks = await trucksOnRoad(db, user.id, now);
@@ -21,9 +28,9 @@ export default async function RoadPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Пътят"
-        subtitle={`CB радио канал ${CB.channel} и сигнали от шофьорите. Чуваш тези до ${CB.radiusKm} км от камионите си на път. Съобщенията и сигналите са от играчите.`}
-        help={`Сигнал се дава от камион на път и стои ${REPORTS.ttlMin} мин; всяко потвърждение го удължава. Потвърждават и отхвърлят шофьори с камион до ${REPORTS.voteRadiusKm} км от мястото. При ${REPORTS.confirmsToReward} потвърждения авторът получава +${REPORTS.reputation} репутация, а при ${REPORTS.deniesToRemove} отхвърляния (повече от потвържденията) губи толкова.`}
+        title={tr('Пътят')}
+        subtitle={tr('CB радио канал {0} и сигнали от шофьорите. Чуваш тези до {1} км от камионите си на път. Съобщенията и сигналите са от играчите.', CB.channel, CB.radiusKm)}
+        help={tr('Сигнал се дава от камион на път и стои {0} мин; всяко потвърждение го удължава. Потвърждават и отхвърлят шофьори с камион до {1} км от мястото. При {2} потвърждения авторът получава +{3} репутация, а при {4} отхвърляния (повече от потвържденията) губи толкова.', REPORTS.ttlMin, REPORTS.voteRadiusKm, REPORTS.confirmsToReward, REPORTS.reputation, REPORTS.deniesToRemove)}
       />
       <RoadClient
         trucks={trucks.map((t) => ({ vehicleId: t.vehicleId, plate: t.plate }))}

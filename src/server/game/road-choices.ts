@@ -10,6 +10,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
 import { awardXp } from './progression';
+import { t } from '@/i18n/t';
 
 const MIN = 60_000;
 type Choice = NonNullable<typeof deliveries.$inferSelect.choice>;
@@ -45,10 +46,10 @@ export async function decideChoice(db: Database, userId: string, deliveryId: str
   return db.transaction(async (tx) => {
     const account = await companyForUser(tx, userId);
     const [d] = await tx.select().from(deliveries).where(and(eq(deliveries.id, deliveryId), eq(deliveries.companyId, account.id), eq(deliveries.status, 'in_progress'))).for('update');
-    if (!d?.choice) fail('not_found', 'Няма решение за този курс.', 404);
-    if (d!.choice!.decided) fail('already', 'Решението вече е взето.');
-    if (now.getTime() < d!.choice!.at) fail('too_early', 'Още не сте стигнали дотам.');
-    if (now.getTime() > d!.choice!.deadline) fail('too_late', 'Времето за решение изтече.');
+    if (!d?.choice) fail('not_found', t('Няма решение за този курс.'), 404);
+    if (d!.choice!.decided) fail('already', t('Решението вече е взето.'));
+    if (now.getTime() < d!.choice!.at) fail('too_early', t('Още не сте стигнали дотам.'));
+    if (now.getTime() > d!.choice!.deadline) fail('too_late', t('Времето за решение изтече.'));
     const c = await apply(tx, d!, option, now, random);
     return { result: c?.result ?? '' };
   });
@@ -66,11 +67,11 @@ export async function tickChoices(db: Database, now = new Date(), random = Math.
       const [owner] = await tx.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, d.companyId));
       if (now.getTime() > d.choice.deadline) {
         const c = await apply(tx, d, CHOICES.defaultOption, now, random);
-        if (owner && c) await notify(tx, owner.ownerId, 'info', `${scenario?.emoji ?? '🛣️'} Шофьорът реши сам`, `${scenario?.title ?? ''}: ${c.result}`, '/game/fleet');
+        if (owner && c) await notify(tx, owner.ownerId, 'info', () => t('{0} Шофьорът реши сам', scenario?.emoji ?? '🛣️'), `${scenario?.title ?? ''}: ${c.result}`, '/game/fleet');
         n++;
       } else if (!d.choice.notified) {
         await tx.update(deliveries).set({ choice: { ...d.choice, notified: true } }).where(eq(deliveries.id, d.id));
-        if (owner && scenario) await notify(tx, owner.ownerId, 'warning', `${scenario.emoji} Решение на пътя: ${scenario.title}`, `${scenario.text} Имаш ${CHOICES.windowMin} мин да избереш.`, '/game/fleet');
+        if (owner && scenario) await notify(tx, owner.ownerId, 'warning', () => t('{0} Решение на пътя: {1}', scenario.emoji, scenario.title), () => t('{0} Имаш {1} мин да избереш.', scenario.text, CHOICES.windowMin), '/game/fleet');
         n++;
       }
     });
@@ -84,8 +85,8 @@ export async function choiceMoney(tx: Tx, d: { id: string; companyId: string; ch
   if (!c?.decided) return 0;
   const scenario = scenarioById(c.id);
   const lines = [
-    ...(c.costCents ? [{ category: 'road_events' as const, amountCents: -c.costCents, description: `Решение по пътя: ${scenario?.title ?? ''}`, idempotencyKey: `delivery:${d.id}:choice-cost`, refType: 'delivery', refId: d.id }] : []),
-    ...(c.bonusCents ? [{ category: 'bonus' as const, amountCents: c.bonusCents, description: `Решение по пътя: ${scenario?.title ?? ''}`, idempotencyKey: `delivery:${d.id}:choice-bonus`, refType: 'delivery', refId: d.id }] : []),
+    ...(c.costCents ? [{ category: 'road_events' as const, amountCents: -c.costCents, description: t('Решение по пътя: {0}', scenario?.title ?? ''), idempotencyKey: `delivery:${d.id}:choice-cost`, refType: 'delivery', refId: d.id }] : []),
+    ...(c.bonusCents ? [{ category: 'bonus' as const, amountCents: c.bonusCents, description: t('Решение по пътя: {0}', scenario?.title ?? ''), idempotencyKey: `delivery:${d.id}:choice-bonus`, refType: 'delivery', refId: d.id }] : []),
   ];
   if (lines.length) await post(tx, d.companyId, lines);
   return (c.bonusCents ?? 0) - (c.costCents ?? 0);

@@ -4,6 +4,7 @@ import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { userBadges } from '@/server/db/schema';
 import { postCoins } from './coins';
 import { addHolidayProgress, claimHolidayQuest, ensureHolidayEvent, holidayState, HOLIDAY_EVENT_REWARDS, type HolidayDef } from './holiday';
+import { t } from '@/i18n/t';
 
 export { hasBadge } from './holiday';
 
@@ -30,7 +31,7 @@ export async function recordHalloweenDelivery(tx: Tx, userId: string, facts: Que
 
 /** The ghost truck appeared on the player's trip: a few ТрансКоин and the quest. */
 export async function meetGhostTruck(tx: Tx, userId: string, deliveryId: string) {
-  await postCoins(tx, userId, { amount: HALLOWEEN.ghostCoins, reason: 'holiday_reward', description: 'Призрачният камион', idempotencyKey: `delivery:${deliveryId}:ghost` });
+  await postCoins(tx, userId, { amount: HALLOWEEN.ghostCoins, reason: 'holiday_reward', description: t('Призрачният камион'), idempotencyKey: `delivery:${deliveryId}:ghost` });
   await addHolidayProgress(tx, HALLOWEEN_DEF, userId, 'h_ghost', 1);
 }
 

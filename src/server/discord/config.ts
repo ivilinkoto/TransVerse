@@ -47,6 +47,15 @@ export const DISCORD_CHANNELS = {
   staffAlerts: 'сигнали',
 } as const;
 export type DiscordChannel = keyof typeof DISCORD_CHANNELS;
+
+/**
+ * The English and Russian channels (v2.0): the same announcements, written in
+ * that language. A channel missing here (or in the server) gets nothing.
+ */
+export const LOCALE_CHANNELS: Record<'en' | 'ru', Partial<Record<DiscordChannel, string>>> = {
+  en: { updates: 'en-updates', events: 'en-events', battles: 'en-battles', news: 'en-weekly', rankings: 'en-rankings', dailyLoad: 'en-load-of-the-day', convoys: 'en-convoys', rally: 'en-rally' },
+  ru: { updates: 'ru-обновления', events: 'ru-ивенты', battles: 'ru-битвы', news: 'ru-еженедельник', rankings: 'ru-рейтинги', dailyLoad: 'ru-груз-дня', convoys: 'ru-колонны', rally: 'ru-ралли' },
+};
 /** The category the companies' private channels go into (matched without emoji and decorations). */
 export const COMPANY_CATEGORY = 'Компании';
 /** The category of the support tickets' private channels. */

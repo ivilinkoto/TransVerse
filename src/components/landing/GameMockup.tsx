@@ -1,5 +1,6 @@
 import { Bell, Coins, Gauge, LayoutDashboard, Map as MapIcon, Package, Truck, Users, Wallet } from 'lucide-react';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { t, tx } from '@/i18n/t';
 
 /**
  * A drawn picture of the game's dashboard for the public page (not a
@@ -7,15 +8,15 @@ import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
  */
 export function GameMockup({ livery }: { livery?: 'pumpkin' | 'christmas' }) {
   const nav = [
-    { icon: LayoutDashboard, label: 'Табло', on: true },
-    { icon: Package, label: 'Поръчки' },
-    { icon: Truck, label: 'Автопарк' },
-    { icon: Users, label: 'Шофьори' },
-    { icon: MapIcon, label: 'Карта' },
-    { icon: Wallet, label: 'Финанси' },
+    { icon: LayoutDashboard, label: t('Табло'), on: true },
+    { icon: Package, label: t('Поръчки') },
+    { icon: Truck, label: t('Автопарк') },
+    { icon: Users, label: t('Шофьори') },
+    { icon: MapIcon, label: t('Карта') },
+    { icon: Wallet, label: t('Финанси') },
   ];
   return (
-    <figure className="relative" aria-label="Илюстрация на таблото в играта">
+    <figure className="relative" aria-label={t('Илюстрация на таблото в играта')}>
       <div className="overflow-hidden rounded-2xl border border-asphalt-700 bg-asphalt-950 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)]">
         {/* window bar */}
         <div className="flex items-center gap-2 border-b border-asphalt-800 bg-asphalt-900/80 px-3 py-2">
@@ -28,18 +29,18 @@ export function GameMockup({ livery }: { livery?: 'pumpkin' | 'christmas' }) {
           <nav className="hidden w-32 space-y-1 border-r border-asphalt-800 p-2 sm:block" aria-hidden="true">
             {nav.map((n) => (
               <div key={n.label} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] ${n.on ? 'bg-volt-500/15 text-white' : 'text-mist-400'}`}>
-                <n.icon className="h-3.5 w-3.5" /> {n.label}
+                <n.icon className="h-3.5 w-3.5" /> {tx(n.label)}
               </div>
             ))}
           </nav>
           <div className="min-w-0 space-y-3 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <div className="text-[10px] text-mist-400">Добро утро,</div>
-                <div className="font-display text-sm font-bold">Балкан Карго ООД</div>
+                <div className="text-[10px] text-mist-400">{t('Добро утро,')}</div>
+                <div className="font-display text-sm font-bold">{t('Балкан Карго ООД')}</div>
               </div>
               <div className="flex items-center gap-1.5 text-[11px]">
-                <span className="num rounded-lg border border-asphalt-700 px-2 py-1 text-profit">48 320 лв.</span>
+                <span className="num rounded-lg border border-asphalt-700 px-2 py-1 text-profit">{t('48 320 лв.')}</span>
                 <span className="num flex items-center gap-1 rounded-lg border border-asphalt-700 px-2 py-1 text-gold-400"><Coins className="h-3 w-3" />240</span>
                 <span className="rounded-lg border border-asphalt-700 p-1 text-mist-300"><Bell className="h-3 w-3" /></span>
               </div>
@@ -55,45 +56,45 @@ export function GameMockup({ livery }: { livery?: 'pumpkin' | 'christmas' }) {
                   <circle cx="270" cy="30" r="4" fill="#2f7bff" />
                   <circle cx="160" cy="75" r="5" fill="#22d3ee" stroke="#05070b" strokeWidth="2" />
                 </svg>
-                <span className="absolute bottom-2 left-2 rounded bg-asphalt-950/80 px-1.5 py-0.5 text-[10px]">София</span>
-                <span className="absolute right-2 top-2 rounded bg-asphalt-950/80 px-1.5 py-0.5 text-[10px]">Виена</span>
+                <span className="absolute bottom-2 left-2 rounded bg-asphalt-950/80 px-1.5 py-0.5 text-[10px]">{t('София')}</span>
+                <span className="absolute right-2 top-2 rounded bg-asphalt-950/80 px-1.5 py-0.5 text-[10px]">{t('Виена')}</span>
               </div>
               {/* trip in progress */}
               <div className="rounded-xl border border-asphalt-800 bg-asphalt-900/60 p-2.5">
-                <div className="flex items-center justify-between text-[10px] text-mist-400"><span>На път · СВ 4821 КТ</span><span className="text-cyan-glow">навреме</span></div>
+                <div className="flex items-center justify-between text-[10px] text-mist-400"><span>{t('На път · СВ 4821 КТ')}</span><span className="text-cyan-glow">{t('навреме')}</span></div>
                 <VehicleIllustration modelId="danubia-t440" trailerModelId="reefer-13" color="#0f766e" livery={livery} className="mt-1 h-12 w-full" />
-                <div className="mt-1 text-[11px] font-semibold">Плодове и зеленчуци · 21 т</div>
+                <div className="mt-1 text-[11px] font-semibold">{t('Плодове и зеленчуци · 21 т')}</div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-asphalt-800"><div className="h-full w-[58%] rounded-full bg-gradient-to-r from-cyan-glow to-volt-500" /></div>
-                <div className="num mt-1 flex justify-between text-[10px] text-mist-400"><span>612 / 1 054 км</span><span>+3 860 лв.</span></div>
+                <div className="num mt-1 flex justify-between text-[10px] text-mist-400"><span>{t('612 / 1 054 км')}</span><span>{t('+3 860 лв.')}</span></div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: 'Днес', value: '+6 140 лв.', tone: 'text-profit' },
-                { label: 'Камиони на път', value: '4 / 5', tone: '' },
-                { label: 'Ниво', value: '12 · 64%', tone: 'text-prestige' },
+                { label: t('Днес'), value: t('+6 140 лв.'), tone: 'text-profit' },
+                { label: t('Камиони на път'), value: '4 / 5', tone: '' },
+                { label: t('Ниво'), value: '12 · 64%', tone: 'text-prestige' },
               ].map((k) => (
                 <div key={k.label} className="rounded-lg border border-asphalt-800 bg-asphalt-900/50 px-2.5 py-1.5">
-                  <div className="text-[10px] text-mist-400">{k.label}</div>
-                  <div className={`num text-sm font-bold ${k.tone}`}>{k.value}</div>
+                  <div className="text-[10px] text-mist-400">{tx(k.label)}</div>
+                  <div className={`num text-sm font-bold ${k.tone}`}>{tx(k.value)}</div>
                 </div>
               ))}
             </div>
             <div className="space-y-1">
               {[
-                { lane: 'Пловдив → Солун', goods: 'Мрамор', t: '24 т', pay: '2 310 лв.' },
-                livery ? { lane: 'Русе → Букурещ', goods: livery === 'christmas' ? 'Коледни подаръци' : 'Тикви за празника', t: '9 т', pay: '640 лв.' } : { lane: 'Русе → Букурещ', goods: 'Мебели', t: '9 т', pay: '590 лв.' },
+                { lane: t('Пловдив → Солун'), goods: t('Мрамор'), t: t('24 т'), pay: t('2 310 лв.') },
+                livery ? { lane: t('Русе → Букурещ'), goods: livery === 'christmas' ? t('Коледни подаръци') : t('Тикви за празника'), t: t('9 т'), pay: t('640 лв.') } : { lane: t('Русе → Букурещ'), goods: t('Мебели'), t: t('9 т'), pay: t('590 лв.') },
               ].map((c) => (
                 <div key={c.lane} className="flex items-center justify-between gap-2 rounded-lg border border-asphalt-800 px-2.5 py-1.5 text-[11px]">
-                  <span className="flex min-w-0 items-center gap-1.5 truncate"><Gauge className="h-3 w-3 shrink-0 text-gold-400" /> {c.lane} <span className="text-mist-400">· {c.goods} · {c.t}</span></span>
-                  <span className="num shrink-0 font-semibold text-profit">{c.pay}</span>
+                  <span className="flex min-w-0 items-center gap-1.5 truncate"><Gauge className="h-3 w-3 shrink-0 text-gold-400" /> {tx(c.lane)} <span className="text-mist-400">· {tx(c.goods)} · {tx(c.t)}</span></span>
+                  <span className="num shrink-0 font-semibold text-profit">{tx(c.pay)}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
       </div>
-      <figcaption className="mt-2 text-right text-[10px] text-mist-400">Илюстрация на таблото · примерни данни</figcaption>
+      <figcaption className="mt-2 text-right text-[10px] text-mist-400">{t('Илюстрация на таблото · примерни данни')}</figcaption>
     </figure>
   );
 }
