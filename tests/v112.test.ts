@@ -21,6 +21,7 @@ import { joinCompany, membershipOf, renameCompany, requirePermission, transferOw
 import { acceptTerms, setUiPrefs } from '@/server/game/ui-prefs';
 import { cityByName, db, makeContract, newPlayer, playerWithCompany } from './helpers';
 import { truckBlock } from '@/lib/game/truck-ready';
+import { LOCAL_JOBS } from '@/lib/game/local-jobs';
 import { autoDispatchTick, setAutoDispatch } from '@/server/game/dispatch';
 import { ensureLocalJobsForFleet } from '@/server/game/contracts';
 import { approximateProvider } from '@/server/geo/routing';
@@ -233,10 +234,10 @@ describe('v1.1.2 never stuck without a load', () => {
     const town = await cityByName('Vidin');
     await db().update(contracts).set({ status: 'expired' }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
     await db().update(vehicles).set({ cityId: town.id }).where(eq(vehicles.id, truck!.id));
-    expect(await ensureLocalJobsForFleet(db(), new Date(), account!.id, approximateProvider)).toBe(1);
-    // Another company holds it: the truck gets another one.
+    expect(await ensureLocalJobsForFleet(db(), new Date(), account!.id, approximateProvider)).toBe(3);
+    // Another company holds them: the truck gets new ones.
     await db().update(contracts).set({ reservedByCompanyId: rivalAccount!.id, reservedUntil: new Date(Date.now() + 3_600_000) }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
-    expect(await ensureLocalJobsForFleet(db(), new Date(), account!.id, approximateProvider)).toBe(1);
+    expect(await ensureLocalJobsForFleet(db(), new Date(), account!.id, approximateProvider)).toBe(3);
     // Held by the player's own company it counts.
     await db().update(contracts).set({ reservedByCompanyId: account!.id }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
     expect(await ensureLocalJobsForFleet(db(), new Date(), account!.id, approximateProvider)).toBe(0);
@@ -266,5 +267,21 @@ describe('v1.1.2 VIP dispatcher tells why it waits', () => {
     const [after] = await db().select().from(vehicles).where(eq(vehicles.id, truck!.id));
     expect(after!.autoDispatchNote).toBeNull();
     expect(after!.status).toBe('on_delivery');
+  });
+});
+
+describe('v1.1.2 loads wait where the trucks are', () => {
+  it('a truck arriving within the hour already finds loads at its destination', async () => {
+    const p = await newPlayer();
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const [truck] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
+    const town = await cityByName('Vidin');
+    await db().update(contracts).set({ status: 'expired' }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
+    const load = await makeContract('Sofia', 'Vidin');
+    const d = await acceptContract(db(), p.userId, load.id, truck!.id);
+    const now = new Date(d.etaAt.getTime() - 30 * 60_000);
+    expect(await ensureLocalJobsForFleet(db(), now, account!.id, approximateProvider)).toBeGreaterThanOrEqual(LOCAL_JOBS.perTruck);
+    const waiting = await db().select().from(contracts).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
+    expect(waiting.length).toBeGreaterThanOrEqual(LOCAL_JOBS.perTruck);
   });
 });
