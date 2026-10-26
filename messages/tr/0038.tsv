@@ -17,3 +17,8 @@ fe6d52e1f1	The risk is your choice: skip the mandatory rest (a check with a {0} 
 697be637fd	Special loads (Orders → Special loads): an auction every day at {0} for {1} minutes. The lowest price wins; the winner has {2} hours to send a truck, otherwise loses the load and {3} reputation.	Особые грузы (Заказы → Особые грузы): аукцион каждый день в {0} на {1} минут. Побеждает самая низкая цена; у победителя {2} часа, чтобы отправить грузовик, иначе он теряет груз и {3} репутации.
 b5fe5f2688	Halloween ({0}–{1}): holiday orders with +{2}, a shared event, missions, a badge and a ghost truck at night.	Хэллоуин ({0}–{1}): праздничные заказы с +{2}, общий ивент, миссии, значок и призрачный грузовик ночью.
 7d2ddc024f	A driver drives up to {0} h before the daily rest. The hours from the last trip carry over; after a {1} min stop the driver is rested.	Водитель едет до {0} ч до ежедневного отдыха. Часы с прошлого рейса переносятся; после {1} мин стоянки он отдохнул.
+# The Facebook page
+2a8f4ac16f	Facebook page	Страница в Facebook
+de5961efb5	TransVerse on Facebook	TransVerse в Facebook
+998f677a6c	News about the updates, questions, looking for a company and friends for a convoy. The news is on Facebook too.	Новости об обновлениях, вопросы, поиск компании и друзей для колонны. Новости есть и в Facebook.
+f2b4c515e0	The game's news and updates.	Новости и обновления игры.

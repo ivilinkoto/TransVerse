@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { ExternalLink, MessagesSquare } from 'lucide-react';
+import { ExternalLink, MessagesSquare, ThumbsUp } from 'lucide-react';
 import { GLOSSARY } from '@/lib/game/glossary';
 import { gameContext } from '@/server/game/context';
-import { DISCORD_URL } from '@/lib/community';
+import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import { Card, PageHeader } from '@/components/ui';
 import { CLIENT_RULES } from '@/lib/game/clients';
 import { CREW_RULES, TRAIT_IDS, TRAITS } from '@/lib/game/crew';
@@ -108,6 +108,11 @@ export default async function HelpPage() {
       <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="panel flex items-center gap-3 p-3.5 transition hover:border-volt-500/60">
         <MessagesSquare className="h-6 w-6 shrink-0 text-volt-400" />
         <span className="min-w-0 flex-1"><span className="block font-semibold">{tr('Discord сървър на TransVerse')}</span><span className="block text-sm text-mist-300">{tr('Питай другите играчи, следи новините, намери компания.')}</span></span>
+        <ExternalLink className="h-4 w-4 shrink-0 text-mist-400" />
+      </a>
+      <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="panel flex items-center gap-3 p-3.5 transition hover:border-volt-500/60">
+        <ThumbsUp className="h-6 w-6 shrink-0 text-volt-400" />
+        <span className="min-w-0 flex-1"><span className="block font-semibold">{tr('TransVerse във Facebook')}</span><span className="block text-sm text-mist-300">{tr('Новините и обновленията на играта.')}</span></span>
         <ExternalLink className="h-4 w-4 shrink-0 text-mist-400" />
       </a>
       <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label={tr('Раздели')}>
