@@ -659,6 +659,13 @@
       "when": 1792916131100,
       "tag": "0093_perpetual_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1792987130516,
+      "tag": "0094_great_lady_mastermind",
+      "breakpoints": true
     }
   ]
 }

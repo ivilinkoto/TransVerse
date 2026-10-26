@@ -2,6 +2,7 @@
 
 import { useFeature, useFeatures, useNavPlayer } from './Features';
 import { Gem, LogOut, MessagesSquare, MoreHorizontal, ShieldCheck, ThumbsUp, X } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -196,7 +197,7 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
               </section>
             ))}
             <section>
-              <h2 className="label mb-2">{tr('Профил')}</h2>
+              <h2 className="label mb-2 flex items-center justify-between gap-2">{tr('Профил')}<span className="sm:hidden"><LanguageSwitcher /></span></h2>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                 {ACCOUNT_MENU.filter((item) => mentor || item.href !== '/game/mentor').map((item) => (
                   <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`${tile} ${pathname.startsWith(item.href) ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>

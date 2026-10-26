@@ -1,3 +1,4 @@
+import { TruckNameForm } from '@/components/game/TruckNameForm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Camera } from 'lucide-react';
@@ -40,10 +41,11 @@ export default async function ShowcasePage({ params }: { params: Promise<{ id: s
     <div className="space-y-6">
       <Link href="/game/garage" className="inline-flex items-center gap-1 text-sm text-mist-300 hover:text-white"><ArrowLeft className="h-4 w-4" />{tr('Към сервиза')}</Link>
       <PageHeader
-        title={`${v.model.brand} ${v.model.name}`}
+        title={v.nickname ? `„${v.nickname}“ · ${v.model.brand} ${v.model.name}` : `${v.model.brand} ${v.model.name}`}
         subtitle={tr('{0} · {1} км · {2} %', v.plate, int(v.odometerKm), Math.round(v.condition))}
         actions={features.photo_mode ? <Link href={`/game/garage/${v.id}/photo`} className="btn-ghost"><Camera className="h-4 w-4" />{tr('Фото режим')}</Link> : undefined}
       />
+      {features.truck_names && v.ownership !== 'company' && <TruckNameForm vehicleId={v.id} nickname={v.nickname} />}
       {tier > 0 && <div><Badge tone={tier === 3 ? 'gold' : tier === 2 ? 'neutral' : 'orange'}>🏆 {tx(LEGEND[tier - 1]!.title)}</Badge></div>}
       <Card>
         <Showcase hasTrailer={!!v.trailer} truck={{ modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, color: v.color, livery: v.livery, cosmetics: v.cosmetics, trailerUpgrades: v.trailer?.upgrades, trailerLogo: v.trailer?.logo, trailerCosmetics: v.trailer?.cosmetics, martenitsa: features.marta && isMarta(now) }} />

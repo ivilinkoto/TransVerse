@@ -7,6 +7,9 @@ import { releaseByVersion } from './releases';
  * here: they apply at once for everyone.
  */
 export const FEATURES = {
+  // v1.1.1 (October 2026): small things that go live at once.
+  truck_names: '1.1.1',
+  online_now: '1.1.1',
   transfers: '1.2',
   search: '1.2',
   map_circle: '1.2',

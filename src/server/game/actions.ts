@@ -20,6 +20,7 @@ import { donateToMuseum, scrapVehicle, repairWithPart } from '@/server/game/heri
 import { setSpecialization } from '@/server/game/specialization';
 import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
+import { TRUCK_NAME_MAX } from '@/lib/game/truck-names';
 import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/community';
 import { claimEasterQuest, eggFight } from '@/server/game/easter';
 import { createReport, sendCb, voteReport } from '@/server/game/live-road';
@@ -55,7 +56,7 @@ import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispat
 import { toggleFavoriteLane } from '@/server/game/favorites';
 import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
-import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveToDepot, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
+import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveToDepot, nameVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
@@ -133,6 +134,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('favoriteLane'), originCityId: cityId, destCityId: cityId }),
   z.object({ type: z.literal('dispatchRun'), plan: z.array(z.object({ vehicleId: id, contractId: id })).min(1).max(50) }),
   z.object({ type: z.literal('autoDispatch'), vehicleId: id, on: z.boolean() }),
+  z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
   z.object({ type: z.literal('appealFine'), fineId: id }),
   z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
   z.object({ type: z.literal('buyVehicle'), modelId: z.string().max(40), cityId }),
@@ -380,6 +382,7 @@ export const Action = z.discriminatedUnion('type', [
 
 /** Actions of features that go live with a release (staff can use them earlier, to test). */
 const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
+  nameVehicle: 'truck_names',
   sendMoney: 'transfers',
   offerJob: 'hire',
   declineJob: 'hire',
@@ -561,6 +564,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, plan: await planDispatch(db, user.id) };
     case 'dispatchRun':
       return { ok: true, ...(await runDispatch(db, user.id, input.plan)) };
+    case 'nameVehicle':
+      return { ok: true, nickname: await nameVehicle(db, user.id, input.vehicleId, input.name) };
     case 'autoDispatch':
       await setAutoDispatch(db, user.id, input.vehicleId, input.on);
       return { ok: true };
