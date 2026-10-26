@@ -213,11 +213,15 @@ describe('player feedback fixes', () => {
     await db().update(contracts).set({ status: 'expired' }).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
     await db().update(vehicles).set({ cityId: town.id }).where(eq(vehicles.id, truck!.id));
 
-    expect(await ensureLocalJobsForFleet(db(), new Date(), company.id, approximateProvider)).toBe(1);
+    // 1.1.2: a few of them, each to a different city.
+    expect(await ensureLocalJobsForFleet(db(), new Date(), company.id, approximateProvider)).toBe(3);
     const local = await db().select().from(contracts).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
-    expect(local).toHaveLength(1);
-    expect(local[0]!.weightTons).toBeLessThanOrEqual(7.5);
-    expect(local[0]!.cargoType).toBe('pallets');
+    expect(local).toHaveLength(3);
+    expect(new Set(local.map((c) => c.destCityId)).size).toBe(3);
+    for (const c of local) {
+      expect(c.weightTons).toBeLessThanOrEqual(7.5);
+      expect(c.cargoType).toBe('pallets');
+    }
     // Idempotent while the job is still there.
     expect(await ensureLocalJobsForFleet(db(), new Date(), company.id, approximateProvider)).toBe(0);
     // And the truck can really take it.

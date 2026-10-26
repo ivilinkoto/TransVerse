@@ -8,6 +8,7 @@ import { haversineKm } from '@/lib/geo/geometry';
 import { contractCountries, missingLicences, requiredLicences } from '@/lib/game/licences';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractWindowMinutes } from '@/lib/game/schedule';
+import { LOCAL_JOBS } from '@/lib/game/local-jobs';
 import { seasonalFactor } from '@/lib/game/seasonality';
 import { isWinter, WINTER } from '@/lib/game/winter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
@@ -17,7 +18,7 @@ import { EASTER, isEaster } from '@/lib/game/easter';
 import { OVERSIZE } from '@/lib/game/roads';
 import { payFactor } from '@/server/admin-economy';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cities, cityMarkets, companies, contracts, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, contracts, deliveries, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getCrossingRoute, getRoute, getRouteVia } from '@/server/geo/route-service';
 import { crossingLine, islandOf } from '@/lib/game/crossings';
 import { featureLive } from '@/lib/game/features';
@@ -200,17 +201,19 @@ export interface LocalNeed {
 }
 
 /**
- * Guarantee: wherever a player's free vehicle stands, there is at least one
- * open contract from that city it can actually take — whatever the reward or
- * the distance. Creates one when missing. Returns how many were created.
+ * Guarantee: wherever a player's free vehicle stands (or is about to arrive),
+ * there are a few open contracts from that city it can actually take —
+ * whatever the reward or the distance — so the player never has to drive
+ * empty to another city just to find work. Creates the missing ones, each to
+ * a different destination. Returns how many were created.
  */
-export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Date(), provider?: RoutingProvider): Promise<number> {
+export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Date(), provider?: RoutingProvider, want: number = LOCAL_JOBS.perTruck): Promise<number> {
   const compatible = CARGO_TYPES.filter(
     (c) => CARGO[c].minLevel <= need.level && CARGO[c].bodies.some((b) => need.bodies.includes(b)) && missingLicences(requiredLicences(c, []), need.licences).length === 0,
   );
   if (!compatible.length || need.payloadTons <= 0) return 0;
   const candidates = await db
-    .select({ cargoType: contracts.cargoType, routeCountries: routes.countries, destCountry: cities.countryCode })
+    .select({ cargoType: contracts.cargoType, routeCountries: routes.countries, destCountry: cities.countryCode, destId: contracts.destCityId })
     .from(contracts)
     .innerJoin(routes, eq(routes.id, contracts.routeId))
     .innerJoin(cities, eq(cities.id, contracts.destCityId))
@@ -219,8 +222,9 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
     .limit(50);
   const [here] = await db.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, need.cityId));
   if (!here) return 0;
-  const doable = candidates.some((c) => missingLicences(requiredLicences(c.cargoType, contractCountries(here.country, c.destCountry, c.routeCountries)), need.licences).length === 0);
-  if (doable) return 0;
+  const doable = candidates.filter((c) => missingLicences(requiredLicences(c.cargoType, contractCountries(here.country, c.destCountry, c.routeCountries)), need.licences).length === 0);
+  const missing = want - doable.length;
+  if (missing <= 0) return 0;
 
   const hubs = await loadHubs(db);
   let origin = hubs.find((h) => h.id === need.cityId);
@@ -230,10 +234,9 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
     origin = { id: city.id, countryCode: city.countryCode, lat: city.lat, lon: city.lon, population: city.population, produces: new Set(), consumes: new Map() };
   }
   const local = compatible.filter((c) => origin!.produces.has(c));
-  const cargo = pick(local.length ? local : compatible);
-  // Without cross-border licences the guaranteed job stays inside the country.
+  // Without cross-border licences the guaranteed jobs stay inside the country.
   const domesticOnly = !need.licences.has('international') || !need.licences.has('customs');
-  // On an island the guaranteed job stays on it when it can (no ferry needed).
+  // On an island the guaranteed jobs stay on it when they can (no ferry needed).
   const island = islandOf(origin);
   const sameIsland = island ? hubs.filter((h) => h.id !== origin!.id && islandOf(h)?.id === island.id) : [];
   const others = sameIsland.length ? sameIsland : hubs.filter((h) => h.id !== origin!.id && (!domesticOnly || h.countryCode === origin!.countryCode) && !(island && islandOf(h)));
@@ -241,17 +244,24 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
     const km = haversineKm([origin!.lat, origin!.lon], [h.lat, h.lon]);
     return km < 15 ? 0 : Math.sqrt(h.population) / (1 + km / 400);
   };
-  // Any distance is fine; consumers of the cargo first, otherwise any city.
-  const destination = pickWeighted(others.filter((h) => h.consumes.has(cargo)), weight) ?? pickWeighted(others, weight);
-  if (!destination) return 0;
-
-  const [minT, maxT] = CARGO[cargo].tons;
-  const hi = Math.min(maxT, need.payloadTons);
-  const lo = Math.min(hi, Math.max(0.2, minT));
-  const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
-  if (!(await insertContract(db, origin, destination, cargo, tons, now, 12 * 3_600_000, provider))) return 0;
-  await broadcast(db, 'market');
-  return 1;
+  // Different destinations, so the player has a real choice.
+  const used = new Set(doable.map((c) => c.destId));
+  let created = 0;
+  for (let i = 0; i < missing; i++) {
+    const cargo = pick(local.length ? local : compatible);
+    const free = others.filter((h) => !used.has(h.id));
+    // Any distance is fine; consumers of the cargo first, otherwise any city.
+    const destination = pickWeighted(free.filter((h) => h.consumes.has(cargo)), weight) ?? pickWeighted(free, weight) ?? pickWeighted(others, weight);
+    if (!destination) break;
+    used.add(destination.id);
+    const [minT, maxT] = CARGO[cargo].tons;
+    const hi = Math.min(maxT, need.payloadTons);
+    const lo = Math.min(hi, Math.max(0.2, minT));
+    const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
+    if (await insertContract(db, origin, destination, cargo, tons, now, LOCAL_JOBS.ttlHours * 3_600_000, provider)) created++;
+  }
+  if (created) await broadcast(db, 'market');
+  return created;
 }
 
 /**
@@ -414,17 +424,29 @@ export async function ensureDailyLoad(db: Database, now = new Date(), provider?:
 }
 
 /** Runs the local-job guarantee for every free, crewed vehicle (optionally of one company). */
-export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit = 40): Promise<number> {
-  const rows = await db
+export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit = LOCAL_JOBS.maxTrucks): Promise<number> {
+  // Free crewed trucks where they stand, and (1.1.2) trucks that arrive soon where they will stand.
+  const free = await db
     .select({ cityId: vehicles.cityId, modelId: vehicles.modelId, vehicleId: vehicles.id, companyId: vehicles.companyId, level: users.level, userId: users.id })
     .from(vehicles)
     .innerJoin(drivers, eq(drivers.vehicleId, vehicles.id))
     .innerJoin(companies, eq(companies.id, vehicles.companyId))
     .innerJoin(users, eq(users.id, companies.ownerId))
     .where(and(eq(vehicles.status, 'idle'), isNull(vehicles.soldAt), companyId ? eq(vehicles.companyId, companyId) : undefined))
+    .orderBy(desc(users.lastSeenAt))
     .limit(limit);
+  const arriving = await db
+    .select({ cityId: contracts.destCityId, modelId: vehicles.modelId, vehicleId: vehicles.id, companyId: vehicles.companyId, level: users.level, userId: users.id })
+    .from(deliveries)
+    .innerJoin(vehicles, eq(vehicles.id, deliveries.vehicleId))
+    .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
+    .innerJoin(companies, eq(companies.id, vehicles.companyId))
+    .innerJoin(users, eq(users.id, companies.ownerId))
+    .where(and(eq(deliveries.status, 'in_progress'), lte(deliveries.etaAt, new Date(now.getTime() + LOCAL_JOBS.arrivingWithinMin * 60_000)), companyId ? eq(vehicles.companyId, companyId) : undefined))
+    .limit(limit);
+  const rows = [...free, ...arriving];
   if (!rows.length) return 0;
-  const coupled = await db.select().from(trailers).where(inArray(trailers.vehicleId, rows.map((r) => r.vehicleId)));
+  const coupled = await db.select().from(trailers).where(inArray(trailers.vehicleId, [...new Set(rows.map((r) => r.vehicleId))]));
   // Personal licences plus those of the player's company.
   const licencesByUser: Map<string, Set<string>> = await licencesForUsers(db, [...new Set(rows.map((r) => r.userId))]);
   const seen = new Set<string>();
@@ -438,6 +460,8 @@ export async function ensureLocalJobsForFleet(db: Database, now = new Date(), co
     if (seen.has(key)) continue;
     seen.add(key);
     created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level, licences, companyId: r.companyId }, now, provider);
+    // A bounded amount of new loads per run; the rest comes on the next one.
+    if (created >= LOCAL_JOBS.maxNewPerRun) break;
   }
   return created;
 }

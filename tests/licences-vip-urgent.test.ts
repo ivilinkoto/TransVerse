@@ -66,14 +66,17 @@ describe('licences in the game', () => {
     const varna = await cityByName('Varna');
     // Clear Varna's open jobs so a new one has to be created.
     await db().update(contracts).set({ status: 'expired' }).where(and(eq(contracts.originCityId, varna.id), eq(contracts.status, 'open')));
-    expect(await ensureLocalJob(db(), { cityId: varna.id, bodies: ['box'], payloadTons: 7.5, level: 1, licences: new Set() }, new Date(), approximateProvider)).toBe(1);
-    const [job] = await db()
+    expect(await ensureLocalJob(db(), { cityId: varna.id, bodies: ['box'], payloadTons: 7.5, level: 1, licences: new Set() }, new Date(), approximateProvider)).toBe(3);
+    const jobs = await db()
       .select({ country: cities.countryCode, cargo: contracts.cargoType })
       .from(contracts)
       .innerJoin(cities, eq(cities.id, contracts.destCityId))
       .where(and(eq(contracts.originCityId, varna.id), eq(contracts.status, 'open')));
-    expect(job?.country).toBe('BG');
-    expect(job?.cargo).toBe('pallets');
+    expect(jobs.length).toBe(3);
+    for (const job of jobs) {
+      expect(job.country).toBe('BG');
+      expect(job.cargo).toBe('pallets');
+    }
     expect(p.hq.id).toBe(varna.id);
   });
 });
