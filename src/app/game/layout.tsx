@@ -70,7 +70,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   });
   return (
     <FeaturesProvider value={features}>
-      <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll }}>
+      <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll, staff }}>
       <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
         <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, staff)} />
         <div className="flex min-w-0 flex-1 flex-col">

@@ -1,6 +1,6 @@
 import { and, count, eq, gt, gte, inArray, sql } from 'drizzle-orm';
 import { BADGES } from '@/lib/game/halloween';
-import { CABOTAGE, TRANS_EUROPE } from '@/lib/game/europe';
+import { TRANS_EUROPE } from '@/lib/game/europe';
 import { CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
 import { islandOf } from '@/lib/game/crossings';
 import { featureLive } from '@/lib/game/features';
@@ -44,35 +44,4 @@ export async function transEuropeDone(tx: Tx, userId: string, contract: { transE
   if (!contract.transEurope || late || !(await featureFor(tx, userId, 'trans_europe', at))) return;
   const [got] = await tx.insert(userBadges).values({ userId, badge: TRANS_EUROPE.badge, awardedAt: at }).onConflictDoNothing().returning();
   if (got) await notify(tx, userId, 'achievement', () => t('Значка: {0}', BADGES[TRANS_EUROPE.badge]?.label ?? ''), () => t('Първият ти трансевропейски курс навреме.'), '/game/progress');
-}
-
-/**
- * Cabotage: in a country that is not the company's home, at most three
- * domestic loads within seven days (counted from the start of each trip).
- */
-export async function cabotageUsed(db: DbOrTx, companyId: string, country: string, now: Date) {
-  const since = new Date(now.getTime() - CABOTAGE.days * 86_400_000);
-  const [row] = await db
-    .select({ n: count() })
-    .from(deliveries)
-    .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
-    .where(and(
-      eq(deliveries.companyId, companyId),
-      gte(deliveries.startedAt, since),
-      sql`(select country_code from cities where id = ${contracts.originCityId}) = ${country}`,
-      sql`(select country_code from cities where id = ${contracts.destCityId}) = ${country}`,
-    ));
-  return row?.n ?? 0;
-}
-
-export async function checkCabotage(db: DbOrTx, userId: string, companyId: string, contract: { originCityId: number; destCityId: number }, now: Date) {
-  if (!(await featureFor(db, userId, 'cabotage', now))) return;
-  const ends = await db.select({ id: cities.id, country: cities.countryCode }).from(cities).where(inArray(cities.id, [contract.originCityId, contract.destCityId]));
-  const o = ends.find((c) => c.id === contract.originCityId)?.country;
-  const d = ends.find((c) => c.id === contract.destCityId)?.country;
-  if (!o || o !== d) return;
-  const [home] = await db.select({ country: cities.countryCode }).from(companies).innerJoin(cities, eq(cities.id, companies.hqCityId)).where(eq(companies.id, companyId));
-  if (!home || home.country === o) return;
-  const used = await cabotageUsed(db, companyId, o, now);
-  if (used >= CABOTAGE.maxLoads) fail('cabotage', t('Каботаж: в чужда държава се карат най-много {0} вътрешни курса за {1} дни. Вземи международен товар.', CABOTAGE.maxLoads, CABOTAGE.days));
 }

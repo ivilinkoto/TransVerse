@@ -1,0 +1,9 @@
+# v1.1.2: no cabotage, staff badges for staff, owner transfer
+ae3e54f964	No cabotage	Без каботажа
+0eb7f66c6c	No cabotage, staff badges for the staff only and checked rights for the new owner.	Без каботажа, значки команды только для команды и проверенные права нового владельца.
+e966bd3163	Domestic loads in a foreign country are no longer limited — no more refused jobs because of cabotage.	Внутренние рейсы в чужой стране больше не ограничены — заказы из-за каботажа не отменяются.
+840a0de80e	Staff badges	Значки команды
+3477337192	The staff badges next to names (chat, rankings, companies, player card) are seen by the staff only.	Значки команды рядом с именами (чат, рейтинги, компании, карточка игрока) видит только команда.
+f4e135e1fc	The “Admin”, “Founder” and “Support” badges next to names are seen by the staff only.	Значки «Админ», «Основатель» и «Поддержка» рядом с именами видит только команда.
+f3cb1b7a33	Cabotage is gone entirely: however many domestic loads you drive in one country, the job is not refused.	Каботаж полностью убран: сколько бы внутренних рейсов ты ни сделал в одной стране, заказ не отменяется.
+e88acd9f70	Company handover: the new owner gets the “Owner” rank with every right (checked by a test).	Передача компании: новый владелец получает должность «Владелец» со всеми правами (проверено тестом).

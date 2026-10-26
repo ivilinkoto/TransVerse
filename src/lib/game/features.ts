@@ -161,7 +161,6 @@ export const FEATURES = {
   new_look: '2.0',
   country_tolls: '1.7',
   low_emission_zones: '1.7',
-  cabotage: '1.7',
   sea_lines: '1.7',
   // v1.10 "Колони и истории".
   convoy_lobby: '1.10',

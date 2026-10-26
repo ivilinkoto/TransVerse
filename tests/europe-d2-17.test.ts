@@ -4,12 +4,11 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
 import { railOptions } from '@/lib/game/crossings';
-import { CABOTAGE } from '@/lib/game/europe';
 import { closeDb } from '@/server/db/client';
 import { companies, contracts, deliveries, routes, vehicles } from '@/server/db/schema';
 import { acceptContract } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
-import { cabotageUsed, ensureTransEuropeLoads } from '@/server/game/europe';
+import { ensureTransEuropeLoads } from '@/server/game/europe';
 import { cityByName, db, grantLicences, makeContract, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
@@ -41,23 +40,20 @@ describe('v1.7 across Europe', () => {
     expect((row!.schedule as { kind: string }[]).some((s) => s.kind === 'ferry')).toBe(true);
   });
 
-  it('cabotage: three domestic loads in a foreign country within a week, then an international one is needed', async () => {
+  it('cabotage is gone (1.1.2): domestic loads in a foreign country are not limited', async () => {
     const p = await newPlayer();
     await grantLicences(p.userId, 'international');
-    const { acc, truck } = await ownTruckAt(p.userId, 'Milan');
+    const { truck } = await ownTruckAt(p.userId, 'Milan');
     const first = await acceptContract(db(), p.userId, (await makeContract('Milan', 'Turin')).id, truck.id);
     const [row] = await db().select().from(deliveries).where(eq(deliveries.id, first.id));
-    for (let i = 0; i < CABOTAGE.maxLoads - 1; i++) {
+    for (let i = 0; i < 3; i++) {
       const c = await makeContract('Milan', 'Bologna');
       const { id: _id, ...rest } = row!;
       await db().insert(deliveries).values({ ...rest, contractId: c.id, status: 'completed', completedAt: new Date() });
     }
-    expect(await cabotageUsed(db(), acc.id, 'IT', new Date())).toBe(CABOTAGE.maxLoads);
     await db().update(deliveries).set({ status: 'completed', completedAt: new Date() }).where(eq(deliveries.id, first.id));
     await db().update(vehicles).set({ status: 'idle' }).where(eq(vehicles.id, truck.id));
-    expect(await code(acceptContract(db(), p.userId, (await makeContract('Milan', 'Genoa')).id, truck.id))).toBe('cabotage');
-    // An international load is fine (and a load at home never counts).
-    expect(await code(acceptContract(db(), p.userId, (await makeContract('Milan', 'Vienna')).id, truck.id))).toBe('ok');
+    expect(await code(acceptContract(db(), p.userId, (await makeContract('Milan', 'Genoa')).id, truck.id))).toBe('ok');
   });
 
   it('trans-European loads: far ends, a two-driver crew needed', async () => {
