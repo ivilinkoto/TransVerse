@@ -1,8 +1,8 @@
 'use client';
 
 import { useFeature } from './Features';
-import { Bell, ExternalLink, LogOut, MessagesSquare, ShieldCheck, Star } from 'lucide-react';
-import { DISCORD_URL } from '@/lib/community';
+import { Bell, ExternalLink, LogOut, MessagesSquare, ShieldCheck, ThumbsUp, Star } from 'lucide-react';
+import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -111,6 +111,9 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
             })}
             <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" role="menuitem" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-mist-300 transition hover:bg-asphalt-800 hover:text-white">
               <MessagesSquare className="h-4 w-4" />Discord сървър<ExternalLink className="ml-auto h-3.5 w-3.5 text-mist-500" />
+            </a>
+            <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" role="menuitem" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-mist-300 transition hover:bg-asphalt-800 hover:text-white">
+              <ThumbsUp className="h-4 w-4" />Facebook страница<ExternalLink className="ml-auto h-3.5 w-3.5 text-mist-500" />
             </a>
             {staff && (
               <Link href="/admin" role="menuitem" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-prestige hover:bg-prestige/10">

@@ -1,5 +1,5 @@
-import { ArrowRight, Bell, BellOff, CalendarRange, Coins, Download, Gavel, Globe2, MapPinned, MessagesSquare, Route, ScrollText, ShieldCheck, Smartphone, Sparkles, Ticket, Trophy, Truck, UserPlus, Users } from 'lucide-react';
-import { DISCORD_URL } from '@/lib/community';
+import { ArrowRight, Bell, BellOff, CalendarRange, Coins, Download, Gavel, Globe2, MapPinned, MessagesSquare, Route, ScrollText, ShieldCheck, Smartphone, Sparkles, ThumbsUp, Ticket, Trophy, Truck, UserPlus, Users } from 'lucide-react';
+import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
 import { Logo } from '@/components/brand/Logo';
 import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
@@ -322,6 +322,7 @@ export default async function HomePage() {
               <li><Link href="/login" className="hover:text-white">Вход</Link></li>
               <li><Link href="/updates" className="hover:text-white">Обновления</Link></li>
               <li><a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white"><MessagesSquare className="mr-1 inline h-3.5 w-3.5" />Discord сървър</a></li>
+              <li><a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white"><ThumbsUp className="mr-1 inline h-3.5 w-3.5" />Facebook страница</a></li>
               <li><a href="#map" className="hover:text-white"><MapPinned className="mr-1 inline h-3.5 w-3.5" />Картата</a></li>
               <li><a href="#faq" className="hover:text-white">Въпроси и отговори</a></li>
               <li><Link href="/terms" className="hover:text-white">Общи условия</Link></li>
