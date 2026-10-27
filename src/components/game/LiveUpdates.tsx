@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { playArrival, playChime, soundEnabled, unlockSound } from '@/lib/client/sound';
+import { arrivalSoundEnabled, playArrival, playChime, soundEnabled, unlockSound } from '@/lib/client/sound';
 import { useFeature } from '@/components/game/Features';
 
 /** Listens to server events and refreshes server-rendered data (debounced). */
@@ -44,8 +44,9 @@ export function LiveUpdates() {
       }
       // A new notification for this player: a short chime while the game is in view.
       if (data.type === 'notification' && soundEnabled() && document.visibilityState === 'visible') {
-        if (data.sound === 'arrival' && arrival.current) playArrival();
-        else playChime();
+        if (data.sound === 'arrival' && arrival.current) {
+          if (arrivalSoundEnabled()) playArrival();
+        } else playChime();
       }
       clearTimeout(timer.current);
       timer.current = setTimeout(() => router.refresh(), 600);

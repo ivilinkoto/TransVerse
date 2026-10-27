@@ -113,3 +113,78 @@ d5d57e0c3b	Free places: {0} of {1}.	Свободных мест: {0} из {1}.
 0e7a16ed10	shown until {0}	показывается до {0}
 935d68a136	After {0} deliveries it is time for a truck of your own (the cheapest costs {1}): no rent on every trip, and the profit stays with you.	После {0} доставок пора обзавестись своим грузовиком (самый дешёвый стоит {1}): без аренды за каждый рейс, а прибыль остаётся тебе.
 4480b7afa7	1 day	1 день
+# v1.1.3: third batch
+b0155e103b	 · also in Discord	 · и в Discord
+8395cfcfa1	, fuel {0}–{1} l (yours {2}–{3} l)	, расход {0}–{1} л (твой {2}–{3} л)
+ce0d1946dd	TransVerse — your profile's data. The economy in the game is game data (made up); the geography is real.	TransVerse — данные твоего профиля. Экономика в игре игровая (вымышленная), география настоящая.
+aeeef81cf4	{0} The deletion was cancelled.	{0} Удаление отменено.
+d3be3cbbde	{0} hp (yours {1})	{0} л.с. (твой {1})
+04b40c808c	{0} on {1}	{0} на {1}
+44d438fda9	{0} t load	{0} т груза
+dd44f3e427	Fleet shows how much you have paid for rent in total so far.	Автопарк показывает, сколько ты всего заплатил за аренду.
+4ce37d4281	If you did not ask for this, sign in at once and change your password.	Если ты этого не просил, сразу войди и смени пароль.
+9b6cd0eb66	If it was you, all is well. If not, change your password and sign out of all other devices.	Если это ты — всё в порядке. Если нет, смени пароль и выйди на всех других устройствах.
+1c4708e28d	Without a start time it shows at once.	Без времени начала показывается сразу.
+2de9edfb91	The trip log and the phone notification for a finished trip have a "Same trip again" button.	В бортовом журнале и в уведомлении на телефоне о завершённом рейсе есть кнопка «Тот же рейс снова».
+27e5a5de40	See which devices are signed in and sign them out one by one, get an e-mail when a new device signs in, change your name, download your data and delete your profile if you want. A confirmed e-mail brings +10 TransCoin.	Смотри, какие устройства вошли, и выходи на каждом по отдельности, получай письмо о входе с нового устройства, меняй имя, скачивай свои данные и при желании удаляй профиль. За подтверждённый e-mail — +10 ТрансКоин.
+ed9f9ffd70	Sign in and cancel	Войти и отменить
+d73ba60921	You signed in again, so your profile stays. If you still want to delete it, do it again from Settings → Security.	Ты снова вошёл, поэтому профиль остаётся. Если всё же хочешь его удалить, сделай это снова в Настройках → Безопасность.
+b9b57f0e91	Sign-ins (30 days)	Входы (30 дней)
+bdfcd0761d	Sign-in to TransVerse from a new device	Вход в TransVerse с нового устройства
+89dd1dd23b	Today from 22:00 to 22:15 the game will be updated. Trips continue, but the page may not respond for a few minutes.	Сегодня с 22:00 до 22:15 игра обновится. Рейсы продолжаются, но страница может несколько минут не отвечать.
+9bcc7a7e14	You have paid {0} for rent in total so far.	Всего за аренду ты заплатил {0}.
+d85c72723f	Sound: a separate switch for the arrival sound and the volume (Settings → Notifications).	Звук: отдельный переключатель для звука прибытия и громкость (Настройки → Уведомления).
+9067d790c8	We know about a problem with … and are working on it. Thank you for your patience!	Мы знаем о проблеме с … и работаем над ней. Спасибо за терпение!
+85a018e800	Also in Discord (updates)	И в Discord (обновления)
+f28c550545	The event starts! See the rewards and rules under "Events".	Ивент начинается! Награды и правила — в разделе «Ивенты».
+04ba258050	Known problem	Известная проблема
+8a8ae3b41b	Sign out	Выйти
+07c2d45b9c	You are signed out of every device, and after 7 days the profile is deleted for good: your e-mail, name, password, Discord link, picture and friendships are removed; money, trucks and TransCoin are lost. Signing in before then cancels the deletion. If you are the only member of a company, it is closed; if it has other members, hand over the ownership first.	Ты выходишь на всех устройствах, а через 7 дней профиль удаляется навсегда: e-mail, имя, пароль, связь с Discord, фото и дружба удаляются, деньги, грузовики и ТрансКоин теряются. Если войдёшь до этого, удаление отменяется. Если ты единственный член компании, она закрывается; если есть другие члены — сначала передай владение.
+39c824c6c3	You are signed out of every device. The profile will be deleted on {0}. If you change your mind, just sign in before then.	Ты вышел на всех устройствах. Профиль будет удалён {0}. Если передумаешь, просто войди до этого.
+6879bbb6f7	Download your data	Скачать свои данные
+d18fc67674	The profile deletion was cancelled	Удаление профиля отменено
+84f2dc51e9	An e-mail when someone signs in to your profile from a device we have not seen in the last 6 months (for a confirmed e-mail).	Письмо, когда кто-то входит в твой профиль с устройства, которого не было последние 6 месяцев (для подтверждённого e-mail).
+76d6245cf4	The name changes once every 30 days. Trips, money and friends stay.	Имя меняется раз в 30 дней. Рейсы, деньги и друзья остаются.
+0e77a061dc	The name changes once every {0} days — the next change is possible after {1}.	Имя меняется раз в {0} дней — следующая смена возможна после {1}.
+bec7534759	To the start page	На главную
+95fd55c10b	To security	К безопасности
+6e1a0cd915	At most 30 days ahead.	Не более чем на 30 дней вперёд.
+c4cfd21275	Settings → Security → "Delete profile": with your password and username. You are signed out of every device and after 7 days the profile is deleted for good — your e-mail, name, password, Discord link, picture and friendships are removed. Signing in before then cancels it. If you are the only member of a company, it is closed; if there are others, you hand over the ownership first.	Настройки → Безопасность → «Удалить профиль»: с паролем и именем пользователя. Ты выходишь на всех устройствах, а через 7 дней профиль удаляется навсегда — e-mail, имя, пароль, связь с Discord, фото и дружба удаляются. Вход до этого отменяет удаление. Если ты единственный член компании, она закрывается; если есть другие — сначала передаёшь владение.
+c87cc3da96	Unknown device	Неизвестное устройство
+88f60546d5	Someone signed in to your profile from {0} at {1}.	Кто-то вошёл в твой профиль с {0} в {1}.
+eae3259b3a	No sign-ins recorded (recorded from 1.1.3).	Входов не записано (записываются с 1.1.3).
+ce87c5aa13	A separate sound (and vibration) when a truck arrives	Отдельный звук (и вибрация), когда грузовик прибывает
+8d70b477b8	Market: every model is compared with the truck you drive now — load (or power for tractors) and fuel.	Рынок: каждая модель сравнивается с грузовиком, на котором ты ездишь, — груз (или мощность у тягачей) и расход.
+43cd6afee0	This e-mail is sent when you sign in from a device we have not seen in the last 6 months.	Письмо отправляется, когда ты входишь с устройства, которого не было последние 6 месяцев.
+8b6a6e9ed1	Schedule	Запланировать
+b307a6eeac	You asked to delete your profile. It will be deleted for good on {0}.	Ты попросил удалить профиль. Он будет удалён навсегда {0}.
+f08fdab301	Shown from	Показывается с
+5c86dfb34f	Fixed	Исправлено
+e2c6eaebfd	The problem with … is fixed. If you still see it, reload the page or write in "Help".	Проблема с … исправлена. Если всё ещё её видишь, обнови страницу или напиши в «Помощь».
+fbc41b78d8	The profile was not deleted	Профиль не был удалён
+8648fc9b20	Your TransVerse profile will be deleted	Твой профиль в TransVerse будет удалён
+2346c85368	Your profile, trips, account movements, TransCoin and sign-ins — in one file (JSON).	Профиль, рейсы, движения по счёту, ТрансКоин и входы — в одном файле (JSON).
+b6f1ccb747	Different devices: {0}	Разных устройств: {0}
+56ce4d794b	Changed your mind? Just sign in to the profile before then — the deletion is cancelled.	Передумал? Просто войди в профиль до этого — удаление отменится.
+d71aa45a86	Volume	Громкость
+3cfe5fba03	Next name change: after {0}.	Следующая смена имени: после {0}.
+4aa6cadf38	Change the name	Сменить имя
+a9ab851f97	Changing the username — once every 30 days, in Settings → Account.	Смена имени пользователя — раз в 30 дней, в Настройках → Аккаунт.
+a4bd889091	A list of the signed-in devices (browser and system) with a "Sign out" button for each.	Список устройств, на которых выполнен вход (браузер и система), с кнопкой «Выйти» для каждого.
+1468f34cb2	Compared with your {0}:	По сравнению с твоим {0}:
+bc53fbf634	A player's page in the admin panel shows their sign-ins for 30 days (device and time) and whether the profile is waiting to be deleted.	Страница игрока в админ-панели показывает его входы за 30 дней (устройство и время) и ждёт ли профиль удаления.
+1d24c6d24b	A message to all players: an administrator posts a strip at the top of the game (news or warning) for a chosen time — at once or from a chosen hour — and takes it down when they want. There are ready templates and it can also go to Discord. Players can hide it.	Сообщение всем игрокам: администратор размещает полосу вверху игры (новость или внимание) на выбранный срок — сразу или с выбранного часа — и убирает её, когда захочет. Есть готовые шаблоны, и оно может выйти и в Discord. Игрок может её скрыть.
+6d347108ab	Your data	Твои данные
+b59df6bec9	That is already your name.	Это уже твоё имя.
+9dec9fad25	This is the device you are on — sign out from the profile menu.	Это устройство, с которого ты сейчас, — выйди через меню профиля.
+2ce799e8a9	This name is reserved.	Это имя зарезервировано.
+03cfbb4682	The device was signed out of the profile.	Устройство вышло из профиля.
+1d5306a74f	The device was not found.	Устройство не найдено.
+18ce5a81f9	Hear the arrival	Послушать прибытие
+5460c7561f	Templates:	Шаблоны:
+c276eb9886	signed in on {0}	вход {0}
+4d94975aa1	deleted on {0}	удаляется {0}
+bebc85672f	scheduled: {0} – {1}	запланировано: {0} – {1}
+7fbe06b8ff	the same load	тот же груз
+13519e14b8	this device	это устройство
+b239fde5f6	"Download your data": your profile, trips, account movements, TransCoin and sign-ins in one file.	«Скачать свои данные»: профиль, рейсы, движения по счёту, ТрансКоин и входы в одном файле.

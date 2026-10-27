@@ -3,7 +3,8 @@
 import { Bell, BellOff, Download, Send, Smartphone, Volume2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
-import { playChime, setSoundEnabled, soundEnabled, unlockSound } from '@/lib/client/sound';
+import { arrivalSoundEnabled, playArrival, playChime, setArrivalSoundEnabled, setSoundEnabled, setSoundVolume, soundEnabled, soundVolume, unlockSound } from '@/lib/client/sound';
+import { useFeature } from '@/components/game/Features';
 import { t, tx } from '@/i18n/t';
 
 const supported = () => typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -116,6 +117,10 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [install, setInstall] = useState<InstallEvent | null>(null);
   const [sound, setSound] = useState(true);
+  // 1.1.3: the arrival sound on its own, and how loud.
+  const soundSettings = useFeature('sound_settings');
+  const [arrival, setArrival] = useState(true);
+  const [volume, setVolume] = useState(1);
 
   useEffect(() => {
     const onPrompt = () => setInstall(window.__tvInstall ?? null);
@@ -123,6 +128,8 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
     (async () => {
       onPrompt();
       setSound(soundEnabled());
+      setArrival(arrivalSoundEnabled());
+      setVolume(soundVolume());
       const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
       const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
       if (!supported()) return setState(ios && !standalone ? 'ios' : 'unsupported');
@@ -241,7 +248,36 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
           />
           <span>{t('Кратък звук при ново известие, докато играта е отворена (на това устройство)')}</span>
         </label>
-        <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => { unlockSound(); setTimeout(playChime, 50); }}><Volume2 className="h-3.5 w-3.5" />{t('Чуй звука')}</button>
+        {soundSettings && (
+          <>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={arrival}
+                disabled={!sound}
+                onChange={(e) => {
+                  setArrival(e.target.checked);
+                  setArrivalSoundEnabled(e.target.checked);
+                  if (e.target.checked) {
+                    unlockSound();
+                    setTimeout(playArrival, 50);
+                  }
+                }}
+              />
+              <span>{t('Отделен звук (и вибрация), когато камион пристигне')}</span>
+            </label>
+            <label className="flex flex-wrap items-center gap-2">
+              <span>{t('Сила на звука')}</span>
+              <input type="range" min={0.1} max={1} step={0.1} value={volume} disabled={!sound} className="w-40 accent-cyan-glow" onChange={(e) => { const v = Number(e.target.value); setVolume(v); setSoundVolume(v); }} onPointerUp={() => { unlockSound(); setTimeout(playChime, 50); }} aria-label={t('Сила на звука')} />
+              <span className="num text-xs text-mist-400">{Math.round(volume * 100)}%</span>
+            </label>
+          </>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => { unlockSound(); setTimeout(playChime, 50); }}><Volume2 className="h-3.5 w-3.5" />{t('Чуй звука')}</button>
+          {soundSettings && <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => { unlockSound(); setTimeout(playArrival, 50); }}><Volume2 className="h-3.5 w-3.5" />{t('Чуй пристигането')}</button>}
+        </div>
         <p className="text-xs text-mist-400">{t('Когато играта е затворена, известието идва със звука и вибрацията на телефона (настройват се от известията на телефона за TransVerse).')}</p>
       </fieldset>
 

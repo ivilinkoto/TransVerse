@@ -10,6 +10,8 @@ import { fail, GameError } from '@/server/game/errors';
 import { t } from '@/i18n/t';
 import { createSession, sessionCookie } from '@/server/auth/session';
 import { getDb } from '@/server/db/client';
+import { afterLogin } from '@/server/auth/login-events';
+import { siteUrl } from '@/server/payments/common';
 import { clientIp, handler } from '@/server/http';
 
 export const POST = handler({ auth: false, schema: loginSchema, perMinute: 30 }, async ({ input, request }) => {
@@ -32,6 +34,14 @@ export const POST = handler({ auth: false, schema: loginSchema, perMinute: 30 },
   });
   await clearLoginFailures(db, ip, input.login);
   const { token, expiresAt } = await createSession(db, userId, request.headers.get('user-agent'));
+  // 1.1.3: remembers the device, cancels a pending deletion, mails about a new device.
+  let base = '';
+  try {
+    base = siteUrl(request.headers.get('origin'));
+  } catch {
+    /* no site address: the mail link stays relative */
+  }
+  await afterLogin(db, userId, request.headers.get('user-agent'), base);
   const response = NextResponse.json({ ok: true });
   response.cookies.set(sessionCookie(token, expiresAt));
   // v2.0: the player's language follows them to every device.

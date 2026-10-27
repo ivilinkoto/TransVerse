@@ -51,3 +51,18 @@ export async function firstOwnTruck(db: DbOrTx, companyId: string, deliveriesDon
   const cheapest = Math.min(...POWER_UNITS.filter((m) => m.minLevel <= 1 && !m.electric).map((m) => m.priceCents));
   return { rental: { plate: rental!.plate, onTrip: rental!.status !== 'idle' }, depots: myDepots.map((d) => d.name), free: cap.slots - cap.used, slots: cap.slots, cheapestCents: cheapest };
 }
+
+/**
+ * 1.1.3, "Същия курс отново" from a finished trip: an open (not urgent) load on
+ * the same lane now, or null. `originCityId` is where to look otherwise.
+ */
+export async function sameLaneAgain(db: DbOrTx, companyId: string, userId: string, deliveryId: string, now: Date) {
+  const [trip] = await db
+    .select({ originId: contracts.originCityId, destId: contracts.destCityId })
+    .from(deliveries)
+    .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
+    .where(and(eq(deliveries.id, deliveryId), eq(deliveries.companyId, companyId)));
+  if (!trip) return null;
+  const load = (await openContracts(db, { originCityId: trip.originId, limit: 100, viewerUserId: userId }, now)).find((c) => c.destCityId === trip.destId && !c.urgent);
+  return { originCityId: trip.originId, loadId: load?.id ?? null };
+}

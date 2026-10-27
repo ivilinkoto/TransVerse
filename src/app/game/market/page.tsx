@@ -86,6 +86,13 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
   const [rental] = depotInfo
     ? await db.select({ plate: vehicles.plate, status: vehicles.status }).from(vehicles).where(and(eq(vehicles.companyId, company.id), eq(vehicles.ownership, 'rented'), isNull(vehicles.soldAt), eq(vehicles.returnPending, false), isNull(vehicles.testDriveFrom))).limit(1)
     : [];
+  // 1.1.3: each model next to the truck the player drives now (the biggest one they have).
+  const mine = features.truck_compare
+    ? (await db.select({ modelId: vehicles.modelId }).from(vehicles).where(and(eq(vehicles.companyId, company.id), isNull(vehicles.soldAt), isNull(vehicles.testDriveFrom))))
+        .map((v) => POWER_UNITS.find((m) => m.id === v.modelId))
+        .filter((m): m is NonNullable<typeof m> => !!m)
+        .sort((a, b) => b.payloadTons - a.payloadTons || b.powerHp - a.powerHp)[0] ?? null
+    : null;
   const fullFix = depotInfo ? (depotRows.length === 0 ? { href: '/game/logistics', label: tr('Открий депо') } : { href: '/game/logistics', label: tr('Разшири депото') }) : null;
   const noRoomReason = depotRows.length === 0 && depotInfo ? tr('Нямаш депо, в което да паркираш.') : freeSlots <= 0 ? tr('Няма свободно място в депата.') : null;
   const used = show === 'used' ? await openListings(db, { sort: sort === 'price_asc' ? 'cheap' : sort === 'level' ? 'condition' : 'new' }) : [];
@@ -157,6 +164,15 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                   <div><dt className="text-mist-400">{m.electric ? tr('Ток · пробег') : tr('Разход')}</dt><dd className="num">{m.electric ? tr('{0}–{1} kWh · {2} км', m.electric.kwhEmpty, m.electric.kwhFull, m.electric.rangeKm) : tr('{0}–{1} л', m.fuelEmpty, m.fuelFull)}</dd></div>
                   <div><dt className="text-mist-400">{tr('Поддръжка')}</dt><dd className="num">{tr('{0} лв./км', (m.maintenanceCentsPerKm / 100).toFixed(2))}</dd></div>
                 </dl>
+                {mine && mine.id !== m.id && (
+                  <p className="mb-2 text-xs text-mist-300">
+                    {tr('Спрямо твоя {0}:', mine.name)}{' '}
+                    {m.kind === 'tractor' || mine.kind === 'tractor'
+                      ? tr('{0} к.с. (твоят {1})', m.powerHp, mine.powerHp)
+                      : m.payloadTons === mine.payloadTons ? tr('същият товар') : tr('{0} т товар', `${m.payloadTons > mine.payloadTons ? '+' : ''}${Math.round((m.payloadTons - mine.payloadTons) * 10) / 10}`)}
+                    {!m.electric && !mine.electric ? tr(', разход {0}–{1} л (твоят {2}–{3} л)', m.fuelEmpty, m.fuelFull, mine.fuelEmpty, mine.fuelFull) : ''}
+                  </p>
+                )}
                 <LicenceHint body={m.body} held={held} />
                 <div className="mt-auto space-y-3">
                   <BuyButton type="buyVehicle" modelId={m.id} depots={depotOptions} disabledReason={reason} label={tr('Купи')} fix={reason === noRoomReason ? fullFix : null} />

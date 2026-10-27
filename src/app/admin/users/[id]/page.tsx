@@ -13,6 +13,8 @@ import { date, dateTime, int, km, money } from '@/lib/format';
 import { userDetail } from '@/server/admin';
 import { truckBlock } from '@/lib/game/truck-ready';
 import { fleetView } from '@/server/game/queries';
+import { loginHistory } from '@/server/auth/login-events';
+import { pendingDeletion } from '@/server/auth/account-close';
 import { adminContext } from '@/server/admin-context';
 import { describeAudit } from '@/server/audit-format';
 import { canBan, canChangeRole, isAdmin, ROLE_LABELS, type Role } from '@/server/auth/roles';
@@ -37,7 +39,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const { user, company, org } = detail;
-  const [xp, cash, fleet] = await Promise.all([xpBySource(db, user.id, 7, now), company ? moneyBySource(db, company.id, 7, now) : Promise.resolve([]), company ? fleetView(db, company.id) : Promise.resolve(null)]);
+  const [xp, cash, fleet, logins, deletingAt] = await Promise.all([xpBySource(db, user.id, 7, now), company ? moneyBySource(db, company.id, 7, now) : Promise.resolve([]), company ? fleetView(db, company.id) : Promise.resolve(null), loginHistory(db, user.id, now), pendingDeletion(db, user.id)]);
   const roleOptions = (['player', 'support', 'admin'] as const).filter((r) => r === user.role || canChangeRole(actor.role, actor.id, user.role, user.id, r));
   return (
     <div className="space-y-6">
@@ -73,6 +75,15 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               })}
             </ul>
           )}
+        </Card>
+        {/* 1.1.3: sign-ins of the last 30 days (device and time) — for "someone got into my profile". */}
+        <Card title={t('Влизания (30 дни)')} className="lg:col-span-2" actions={deletingAt ? <Badge tone="red">{t('изтрива се на {0}', date(deletingAt))}</Badge> : undefined}>
+          {logins.length === 0 ? <p className="text-sm text-mist-400">{t('Няма записани влизания (записват се от 1.1.3).')}</p> : (
+            <ul className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+              {logins.slice(0, 30).map((l, i) => <li key={i} className="flex justify-between gap-3"><span>{tx(l.device)}</span><span className="shrink-0 text-xs text-mist-400">{dateTime(l.at)}</span></li>)}
+            </ul>
+          )}
+          {logins.length > 0 && <p className="mt-2 text-xs text-mist-400">{t('Различни устройства: {0}', new Set(logins.map((l) => l.device)).size)}</p>}
         </Card>
         <Card title={t('Последните 7 дни: опит и пари по източници')} className="lg:col-span-2">
           <div className="grid gap-6 md:grid-cols-2">

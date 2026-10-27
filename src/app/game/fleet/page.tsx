@@ -1,7 +1,7 @@
 import { LEGEND, legendTier } from '@/lib/game/heritage';
 import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Warehouse, Wrench } from 'lucide-react';
 import { leasesOf } from '@/server/game/leasing';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { cities, depots, ledgerEntries } from '@/server/db/schema';
 import { fleetCapacity } from '@/server/game/fleet';
 import Link from 'next/link';
@@ -56,6 +56,8 @@ export default async function FleetPage() {
   // 1.1.3: what the rent costs on average per trip (last 10 trips), to compare with buying out.
   const rentRows = features.rent_vs_buy && fleet.vehicles.some((v) => v.rental) ? await db.select({ cents: ledgerEntries.amountCents }).from(ledgerEntries).where(and(eq(ledgerEntries.companyId, company.id), eq(ledgerEntries.category, 'rental'))).orderBy(desc(ledgerEntries.createdAt)).limit(10) : [];
   const avgRentCents = rentRows.length ? Math.round(rentRows.reduce((s, r) => s - Number(r.cents), 0) / rentRows.length) : 0;
+  // 1.1.3: what the rent has cost so far, all trips together.
+  const [{ total: rentTotal = 0 } = {}] = rentRows.length ? await db.select({ total: sql<number>`coalesce(-sum(${ledgerEntries.amountCents}), 0)::bigint` }).from(ledgerEntries).where(and(eq(ledgerEntries.companyId, company.id), eq(ledgerEntries.category, 'rental'))) : [];
 
   return (
     <div className="space-y-6">
@@ -144,6 +146,7 @@ export default async function FleetPage() {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span>{tr('Наемодателят ти предлага да го откупиш за')}{' '}<span className="num font-bold text-gold-400">{money(v.rental.buyoutCents)}</span> <span className="text-mist-400">{tr('(нов: {0})', money(v.model.priceCents))}</span>.</span>
                         {features.rent_vs_buy && avgRentCents > 0 && <span className="basis-full text-mist-300">{tr('Наемът ти струва средно {0} на курс — откупуването се изплаща за около {1} курса. После печелиш целия курс, но плащаш гориво, такси и сервиз.', money(avgRentCents), Math.ceil(v.rental.buyoutCents / avgRentCents))}</span>}
+                        {features.rent_vs_buy && Number(rentTotal) > 0 && <span className="basis-full text-mist-400">{tr('Досега си платил за наем общо {0}.', money(Number(rentTotal)))}</span>}
                         <ActionButton action={{ type: 'buyoutRental', vehicleId: v.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={company.balanceCents < v.rental.buyoutCents} confirm={tr('Да откупим ли {0} ({1}) за {2}?', v.model.name, v.plate, money(v.rental.buyoutCents))}>
                           <BadgeEuro className="h-3.5 w-3.5" />{tr('Откупи')}
                         </ActionButton>

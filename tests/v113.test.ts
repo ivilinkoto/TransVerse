@@ -6,17 +6,21 @@ vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('
 import { FEATURES } from '@/lib/game/features';
 import { upcomingRelease } from '@/lib/game/releases';
 import { authenticate } from '@/server/auth/accounts';
-import { deleteAccount, signOutOthers } from '@/server/auth/account-close';
+import { cancelDeletion, eraseAccount, listSessions, pendingDeletion, requestAccountDeletion, runDueDeletions, signOutOthers, signOutSession } from '@/server/auth/account-close';
+import { changeUsername, exportAccount } from '@/server/auth/account-data';
+import { afterLogin, loginHistory } from '@/server/auth/login-events';
+import { pushActionsFor } from '@/server/push';
+import { deviceLabel } from '@/lib/device';
 import { createLinkToken, verifyEmail } from '@/server/auth/email-links';
 import { EMAIL_REWARD_COINS, rewardEarlierVerified } from '@/server/auth/email-reward';
 import { createSession, sessionDigest } from '@/server/auth/session';
-import { activeBroadcast, setBroadcast } from '@/server/broadcast';
+import { activeBroadcast, postBroadcastToDiscord, setBroadcast } from '@/server/broadcast';
 import { closeDb } from '@/server/db/client';
 import { companies, contracts, deliveries, notifications, organizations, seasonalQuests, sessions, users, vehicles } from '@/server/db/schema';
 import { acceptContract } from '@/server/game/deliveries';
 import { HALLOWEEN_DEF } from '@/server/game/halloween';
 import { remindUnclaimedHoliday, unclaimedHolidayQuests } from '@/server/game/holiday';
-import { firstOwnTruck, FIRST_OWN_TRUCK_AFTER, recentTrips } from '@/server/game/overview';
+import { firstOwnTruck, FIRST_OWN_TRUCK_AFTER, recentTrips, sameLaneAgain } from '@/server/game/overview';
 import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
@@ -26,7 +30,7 @@ const accountOf = async (userId: string) => (await db().select().from(companies)
 
 describe('v1.1.3', () => {
   it('registers its features under 1.1.3', () => {
-    for (const id of ['rent_vs_buy', 'help_faq', 'notification_filter', 'next_update', 'depot_on_market', 'first_own_truck', 'delete_account', 'sign_out_others', 'email_reward', 'recent_trips', 'arrival_sound'] as const) expect(FEATURES[id]).toBe('1.1.3');
+    for (const id of ['rent_vs_buy', 'help_faq', 'notification_filter', 'next_update', 'depot_on_market', 'first_own_truck', 'delete_account', 'sign_out_others', 'email_reward', 'recent_trips', 'arrival_sound', 'session_list', 'data_export', 'login_alert', 'username_change', 'truck_compare', 'sound_settings'] as const) expect(FEATURES[id]).toBe('1.1.3');
   });
 
   it('after the Halloween event, players with finished quests not taken get one reminder', async () => {
@@ -69,6 +73,15 @@ describe('v1.1.3', () => {
     expect(await activeBroadcast(db(), new Date(now.getTime() + 3 * 3_600_000))).toBeNull();
     await setBroadcast(db(), { id: admin.userId, role: 'admin' }, { text: '', hours: 1 }, now);
     expect(await activeBroadcast(db(), now)).toBeNull();
+    // Scheduled: not before its time; posted to Discord once when it starts.
+    const later = new Date(now.getTime() + 5 * 3_600_000);
+    await setBroadcast(db(), { id: admin.userId, role: 'admin' }, { text: 'Ивент в 15:00', hours: 2, startsAt: later.toISOString(), discord: true }, now);
+    expect(await activeBroadcast(db(), now)).toBeNull();
+    expect(await postBroadcastToDiscord(db(), now)).toBe(false);
+    expect(await activeBroadcast(db(), new Date(later.getTime() + 60_000))).toMatchObject({ text: 'Ивент в 15:00' });
+    expect(await postBroadcastToDiscord(db(), new Date(later.getTime() + 60_000))).toBe(true);
+    expect(await postBroadcastToDiscord(db(), new Date(later.getTime() + 120_000))).toBe(false);
+    expect(await activeBroadcast(db(), new Date(later.getTime() + 3 * 3_600_000))).toBeNull();
   });
 
   it('a confirmed e-mail pays ТрансКоин once, earlier confirmations too', async () => {
@@ -98,23 +111,74 @@ describe('v1.1.3', () => {
     expect((await db().select().from(sessions).where(eq(sessions.userId, p.userId))).map((s) => s.id)).toEqual([sessionDigest(here.token)]);
   });
 
-  it('deleting the profile empties it and closes a one-member company', async () => {
+  it('deleting the profile: signed out at once, deleted after the grace period, signing in cancels it', async () => {
     const p = await newPlayer();
-    await expect(deleteAccount(db(), p.userId, { password: 'wrong', confirm: p.username })).rejects.toThrow();
-    await expect(deleteAccount(db(), p.userId, { password: 'correct horse battery', confirm: 'someone' })).rejects.toThrow();
+    const now = new Date();
+    await expect(requestAccountDeletion(db(), p.userId, { password: 'wrong', confirm: p.username }, '')).rejects.toThrow();
+    await expect(requestAccountDeletion(db(), p.userId, { password: 'correct horse battery', confirm: 'someone' }, '')).rejects.toThrow();
     await createSession(db(), p.userId);
-    await deleteAccount(db(), p.userId, { password: 'correct horse battery', confirm: p.username.toUpperCase() });
+    const at = await requestAccountDeletion(db(), p.userId, { password: 'correct horse battery', confirm: p.username.toUpperCase() }, '', now);
+    expect(await db().select().from(sessions).where(eq(sessions.userId, p.userId))).toHaveLength(0);
+    expect((await pendingDeletion(db(), p.userId))?.getTime()).toBe(at.getTime());
+    // Signing in cancels it.
+    expect(await cancelDeletion(db(), p.userId)).toBe(true);
+    expect(await pendingDeletion(db(), p.userId)).toBeNull();
+    // Asked again: nothing happens before the date, then the profile is emptied.
+    await requestAccountDeletion(db(), p.userId, { password: 'correct horse battery', confirm: p.username }, '', now);
+    await runDueDeletions(db(), new Date(now.getTime() + 86_400_000));
+    expect((await userOf(p.userId)).bannedAt).toBeNull();
+    await runDueDeletions(db(), new Date(at.getTime() + 60_000));
     const u = await userOf(p.userId);
     expect(u.username).toMatch(/^deleted-/);
     expect(u.email).toContain('@deleted.invalid');
     expect(u.bannedAt).not.toBeNull();
-    expect(await db().select().from(sessions).where(eq(sessions.userId, p.userId))).toHaveLength(0);
+    expect(await pendingDeletion(db(), p.userId)).toBeNull();
     await expect(authenticate(db(), { login: p.username, password: 'correct horse battery' })).rejects.toThrow();
 
     const owner = await playerWithCompany();
     const [org] = await db().select().from(organizations).where(eq(organizations.ownerId, owner.userId));
-    await deleteAccount(db(), owner.userId, { password: 'correct horse battery', confirm: owner.username });
+    await eraseAccount(db(), owner.userId);
     expect(await db().select().from(organizations).where(eq(organizations.id, org!.id))).toHaveLength(0);
+  });
+
+  it('devices: listed, signed out one by one, new devices remembered', async () => {
+    const p = await newPlayer();
+    const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+    expect(deviceLabel(ua)).toBe('Chrome на Windows');
+    expect(deviceLabel('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1')).toBe('Safari на iOS');
+    const here = await createSession(db(), p.userId, ua);
+    await createSession(db(), p.userId, 'Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36');
+    const list = await listSessions(db(), p.userId, sessionDigest(here.token));
+    expect(list).toHaveLength(2);
+    expect(list[0]).toMatchObject({ current: true, device: 'Chrome на Windows' });
+    await expect(signOutSession(db(), p.userId, list[0]!.key, sessionDigest(here.token))).rejects.toThrow();
+    await signOutSession(db(), p.userId, list[1]!.key, sessionDigest(here.token));
+    expect(await listSessions(db(), p.userId, sessionDigest(here.token))).toHaveLength(1);
+    // Another player's key does nothing.
+    const other = await newPlayer();
+    await expect(signOutSession(db(), other.userId, list[0]!.key, null)).rejects.toThrow();
+
+    await afterLogin(db(), p.userId, ua, '');
+    await afterLogin(db(), p.userId, ua, '');
+    const history = await loginHistory(db(), p.userId, new Date());
+    expect(history.map((h) => h.device)).toEqual(['Chrome на Windows', 'Chrome на Windows']);
+  });
+
+  it('the data export and a new username once in 30 days', async () => {
+    const p = await newPlayer();
+    const data = await exportAccount(db(), p.userId);
+    expect(data.profile.username).toBe(p.username);
+    expect(JSON.stringify(data)).not.toContain('passwordHash');
+    expect(data.vehicles.length).toBeGreaterThan(0);
+
+    const now = new Date();
+    const name = `n_${Date.now().toString(36)}`.slice(0, 20);
+    await changeUsername(db(), p.userId, name, now);
+    expect((await userOf(p.userId)).username).toBe(name);
+    await expect(changeUsername(db(), p.userId, `${name}x`.slice(0, 20), new Date(now.getTime() + 86_400_000))).rejects.toThrow();
+    const other = await newPlayer();
+    await expect(changeUsername(db(), other.userId, name.toUpperCase(), now)).rejects.toThrow();
+    await changeUsername(db(), p.userId, `${name}y`.slice(0, 20), new Date(now.getTime() + 31 * 86_400_000));
   });
 
   it('the dashboard: last trips with the same lane again, and the first own truck after a few deliveries', async () => {
@@ -130,6 +194,10 @@ describe('v1.1.3', () => {
     expect(trips).toHaveLength(1);
     expect(trips[0]!.againId).toBeTruthy();
     expect((await db().select().from(contracts).where(eq(contracts.id, trips[0]!.againId!)))[0]!.destCityId).toBe(again.destCityId);
+
+    expect((await sameLaneAgain(db(), company.id, p.userId, d.id, new Date()))?.loadId).toBe(trips[0]!.againId);
+    expect(await sameLaneAgain(db(), company.id, p.userId, '00000000-0000-0000-0000-000000000000', new Date())).toBeNull();
+    expect(pushActionsFor(`/game/trips/${d.id}`)?.[0]?.url).toBe(`/game/again/${d.id}`);
 
     expect(await firstOwnTruck(db(), company.id, FIRST_OWN_TRUCK_AFTER - 1)).toBeNull();
     const own = await firstOwnTruck(db(), company.id, FIRST_OWN_TRUCK_AFTER);

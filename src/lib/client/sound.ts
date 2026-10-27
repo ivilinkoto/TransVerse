@@ -24,6 +24,44 @@ export function setSoundEnabled(on: boolean) {
   }
 }
 
+const ARRIVAL_KEY = 'tv-sound-arrival';
+const VOLUME_KEY = 'tv-sound-volume';
+
+/** 1.1.3: the arrival sound on its own (on unless switched off). */
+export function arrivalSoundEnabled(): boolean {
+  try {
+    return localStorage.getItem(ARRIVAL_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+export function setArrivalSoundEnabled(on: boolean) {
+  try {
+    localStorage.setItem(ARRIVAL_KEY, on ? 'on' : 'off');
+  } catch {
+    /* private mode — keep the default */
+  }
+}
+
+/** 1.1.3: loudness 0…1 (default 1). */
+export function soundVolume(): number {
+  try {
+    const v = Number(localStorage.getItem(VOLUME_KEY) ?? '1');
+    return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+export function setSoundVolume(v: number) {
+  try {
+    localStorage.setItem(VOLUME_KEY, String(Math.min(1, Math.max(0, v))));
+  } catch {
+    /* private mode */
+  }
+}
+
 function context(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -49,7 +87,7 @@ export function playChime() {
     osc.frequency.value = freq;
     const t = start + i * 0.13;
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.18 * soundVolume()), t + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
     osc.connect(gain).connect(c.destination);
     osc.start(t);
@@ -77,8 +115,9 @@ export function playArrival() {
     osc.frequency.value = freq;
     const t = start + i * 0.22;
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
-    gain.gain.setValueAtTime(0.22, t + 0.13);
+    const peak = Math.max(0.0002, 0.22 * soundVolume());
+    gain.gain.exponentialRampToValueAtTime(peak, t + 0.02);
+    gain.gain.setValueAtTime(peak, t + 0.13);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
     osc.connect(gain).connect(c.destination);
     osc.start(t);

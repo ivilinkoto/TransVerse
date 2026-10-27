@@ -69,7 +69,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const st = t.stats;
   return (
     <div className="space-y-6">
-      <PageHeader title={`${tx(t.from)} → ${tx(t.to)}`} subtitle={tr('{0} · {1} т · {2} · {3}', t.goods, t.tons, t.plate ?? '', dateTime(t.completedAt))} actions={<Link href="/game/trips" className="btn-ghost">{tr('← Дневник')}</Link>} />
+      <PageHeader title={`${tx(t.from)} → ${tx(t.to)}`} subtitle={tr('{0} · {1} т · {2} · {3}', t.goods, t.tons, t.plate ?? '', dateTime(t.completedAt))} actions={<div className="flex flex-wrap gap-2">{features.recent_trips && <Link href={`/game/again/${id}`} className="btn-primary">{tr('Същия курс отново')}</Link>}<Link href="/game/trips" className="btn-ghost">{tr('← Дневник')}</Link></div>} />
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <Card title={tr('Маршрут')} actions={<Badge tone={t.late ? 'red' : 'green'}>{t.late ? tr('закъснял') : tr('навреме')}</Badge>}>
           <RouteSketch points={t.points} />
