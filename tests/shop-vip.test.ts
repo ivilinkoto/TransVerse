@@ -8,7 +8,7 @@ import { coinEntries, companies, contracts, missionProgress, users, vehicles } f
 import { reserveContract } from '@/server/game/contracts';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
-import { buyDepot, buyVehicle, fleetCapacity, repairVehicle } from '@/server/game/fleet';
+import { buyVehicle, fleetCapacity, repairVehicle } from '@/server/game/fleet';
 import { missionBoard, rerollMission } from '@/server/game/missions';
 import { buyShopItem } from '@/server/game/shop';
 import { approximateProvider } from '@/server/geo/routing';
@@ -71,7 +71,7 @@ describe('shop', () => {
     expect(await code(buyShopItem(db(), p.userId, { item: 'custom_plate', vehicleId: rented.id, plate: 'TRANS 1' }))).toBe('rented');
 
     await db().update(companies).set({ balanceCents: 100_000_00 }).where(eq(companies.id, account.id));
-    await buyDepot(db(), p.userId, p.hq.id);
+    // 1.1.2: the start city's depot comes with the account.
     const own = await buyVehicle(db(), p.userId, 'sokol-courier', p.hq.id);
     await buyShopItem(db(), p.userId, { item: 'custom_plate', vehicleId: own.id, plate: 'trans 1' });
     expect((await db().select().from(vehicles).where(eq(vehicles.id, own.id)))[0]!.plate).toBe('TRANS 1');
@@ -79,7 +79,7 @@ describe('shop', () => {
     await adjustCoins(db(), admin, other.userId, 500, 'тест');
     const otherAccount = await accountOf(other.userId);
     await db().update(companies).set({ balanceCents: 100_000_00 }).where(eq(companies.id, otherAccount.id));
-    await buyDepot(db(), other.userId, other.hq.id);
+    // (the start city's depot comes with the account)
     const otherTruck = await buyVehicle(db(), other.userId, 'sokol-courier', other.hq.id);
     expect(await code(buyShopItem(db(), other.userId, { item: 'custom_plate', vehicleId: otherTruck.id, plate: 'TRANS 1' }))).toBe('plate_taken');
 
@@ -130,7 +130,7 @@ describe('VIP perks', () => {
     const p = await newPlayer('Sofia');
     const account = await accountOf(p.userId);
     await db().update(companies).set({ balanceCents: 200_000_00 }).where(eq(companies.id, account.id));
-    await buyDepot(db(), p.userId, p.hq.id);
+    // 1.1.2: the start city's depot comes with the account.
     expect((await fleetCapacity(db(), account.id)).slots).toBe(3);
     await setVip(db(), admin, p.userId, 5);
     expect((await fleetCapacity(db(), account.id)).slots).toBe(4);

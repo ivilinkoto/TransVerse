@@ -74,6 +74,8 @@ export async function createIndependent(tx: Tx, input: { userId: string; usernam
   await post(tx, account!.id, [{ category: 'starting_capital', amountCents: ECONOMY.startingBalanceCents, description: t('Начални средства'), idempotencyKey: `start:${account!.id}` }]);
   const truck = await addRental(tx, account!.id, STARTER_RENTAL, input.startCityId);
   await tx.insert(drivers).values({ companyId: account!.id, name: input.username, skill: 1, salaryCentsPerDay: 0, isOwner: true, vehicleId: truck.id });
+  // 1.1.2: the first depot, free, in the start city (where the player buys and parks their own trucks).
+  await tx.insert(depots).values({ companyId: account!.id, cityId: input.startCityId, slots: ECONOMY.depotSlotsDefault }).onConflictDoNothing();
 
   await logActivity(tx, input.userId, 'registered_independent', { startCityId: input.startCityId });
   await notify(tx, input.userId, 'info', () => t('Добре дошли в TransVerse!'), () => t('Започвате като самостоятелен шофьор с нает камион. Обучението ще ви преведе през първия курс.'), '/game/contracts');
