@@ -4,7 +4,7 @@ import { featureLive } from '@/lib/game/features';
 import { dec, int, km, money } from '@/lib/format';
 import { weekKey } from '@/lib/game/leagues';
 import { headline, type NewsIssue } from '@/lib/game/news';
-import { RELEASES } from '@/lib/game/releases';
+import { RELEASES, type Release } from '@/lib/game/releases';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyBattles, globalEvents, newspapers, organizations, users } from '@/server/db/schema';
@@ -12,7 +12,7 @@ import { LIVERY_CONTEST } from '@/lib/game/together';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
 import { button, rows, STYLE } from './ui';
-import { t } from '@/i18n/t';
+import { t, tx } from '@/i18n/t';
 
 const HOUR = 3_600_000;
 const footer = { text: 'TransVerse · игрови данни' };
@@ -75,6 +75,38 @@ export async function announceLiveryWinner(db: DbOrTx, entry: { id: string; mont
   }), now);
 }
 
+/** Discord's limits for one message (embed description, field value, fields, all text together). */
+const LIMIT = { description: 4096, fieldValue: 1024, fields: 25, total: 6000 } as const;
+const cut = (text: string, max: number) => (text.length <= max ? text : `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`);
+
+/**
+ * 1.1.3: the whole release in one Discord message, in the channel's language
+ * (the notes are translation keys): the tagline and the highlights, then every
+ * section as a field. What does not fit Discord's limits ends with "…" and the
+ * link to the full notes.
+ */
+export function releaseAnnouncement(r: Release) {
+  const title = t('Обновление {0} — „{1}“', r.version, tx(r.name));
+  const more = t('Всички бележки: {0}', `${appUrl()}/updates`);
+  const highlights = r.highlights.map((h) => `• **${tx(h.title)}** — ${tx(h.body)}`);
+  let description = `${tx(r.tagline)}\n\n${highlights.join('\n')}`;
+  // Room is left for the sections (a big release has many highlights).
+  description = cut(description, Math.min(LIMIT.description - more.length - 2, 3200));
+  const fields: { name: string; value: string }[] = [];
+  let used = title.length + description.length + more.length + 200;
+  for (const section of r.sections.slice(0, LIMIT.fields)) {
+    const name = cut(tx(section.title), 256);
+    const value = cut(section.items.map((i) => `• ${tx(i)}`).join('\n'), LIMIT.fieldValue);
+    if (used + name.length + value.length > LIMIT.total) break;
+    used += name.length + value.length;
+    fields.push({ name, value });
+  }
+  return {
+    content: t('🚚 **Ново обновление в TransVerse — вече е в играта за всички!**'),
+    embeds: [{ title, url: `${appUrl()}/updates`, description: `${description}\n\n${more}`, fields, color: BRAND, footer }],
+  };
+}
+
 /** Worker: announcements that come from what is in the database (releases, events, battles, the newspaper). */
 export async function announceFromGame(db: Database, now = new Date()) {
   if (!discordConfig().bot || !featureLive('discord_bot', now)) return;
@@ -83,16 +115,7 @@ export async function announceFromGame(db: Database, now = new Date()) {
   for (const r of RELEASES) {
     const at = new Date(r.publishedAt);
     if (at > now || now.getTime() - at.getTime() > 72 * HOUR) continue;
-    await announce(db, `release:${r.version}`, 'updates', () => ({
-      content: t('🚚 **Ново обновление в TransVerse!**'),
-      embeds: [{
-        title: t('Обновление {0} — „{1}“', r.version, r.name),
-        url: `${appUrl()}/updates`,
-        description: `${r.tagline}\n\n${r.highlights.slice(0, 10).map((h) => `• **${h.title}** — ${h.body}`).join('\n').slice(0, 3800)}`,
-        color: BRAND,
-        footer,
-      }],
-    }), now);
+    await announce(db, `release:${r.version}`, 'updates', () => releaseAnnouncement(r), now);
   }
 
   // Community events: started in the last two hours, settled in the last six.
