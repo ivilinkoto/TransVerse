@@ -4,10 +4,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // As released (before the date these are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true, featureDate: () => new Date('2026-01-01T00:00:00Z') }));
-import { releaseByVersion } from '@/lib/game/releases';
+import { RELEASES, releaseByVersion } from '@/lib/game/releases';
+import { withLocale } from '@/i18n/als';
 import { closeDb } from '@/server/db/client';
 import { companyMessages, discordOutbox, notifications, organizations, userBadges, users } from '@/server/db/schema';
-import { announceFromGame } from '@/server/discord/announce';
+import { announceFromGame, releaseAnnouncement } from '@/server/discord/announce';
 import { runCommand } from '@/server/discord/commands';
 import { answerInteraction } from '@/server/discord/interaction';
 import { messageFromDiscord } from '@/server/discord/gateway';
@@ -169,5 +170,23 @@ describe('announcements', () => {
     await announceFromGame(db(), at);
     // Once per language (v2.0): the Bulgarian channel and the English and Russian ones.
     expect((await outbox('release:1.3')).map((r) => r.target).sort()).toEqual(['channel:updates', 'channel:updates@en', 'channel:updates@ru']);
+  });
+
+  it('the release message carries the whole notes within Discord limits, in the channel language', () => {
+    for (const r of RELEASES) {
+      for (const lang of ['bg', 'en', 'ru'] as const) {
+        const m = withLocale(lang, () => releaseAnnouncement(r));
+        const e = m.embeds[0]!;
+        expect(e.description.length).toBeLessThanOrEqual(4096);
+        expect(e.fields.length).toBeLessThanOrEqual(25);
+        for (const f of e.fields) expect(f.value.length).toBeLessThanOrEqual(1024);
+        expect(e.title.length + e.description.length + e.fields.reduce((n, f) => n + f.name.length + f.value.length, 0) + m.content.length).toBeLessThanOrEqual(6000);
+      }
+    }
+    const small = releaseByVersion('1.1.3')!;
+    const bg = releaseAnnouncement(small);
+    expect(bg.embeds[0]!.fields.map((f) => f.name)).toEqual(small.sections.map((s) => s.title));
+    const en = withLocale('en', () => releaseAnnouncement(small));
+    expect(en.embeds[0]!.description).not.toContain(small.tagline);
   });
 });
