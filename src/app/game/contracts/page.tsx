@@ -48,6 +48,9 @@ import { t as tr, tx, intlLocale } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
+/** 1.1.3: up to this level the board opens with "Само изпълними" on. */
+const NEW_PLAYER_LEVEL = 3;
+
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
   return { title: tr('Поръчки') };
@@ -296,7 +299,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost px-3 py-1 text-xs">{user.uiPrefs?.boardView === 'full' ? tr('Прост изглед') : tr('Разширен изглед (всички етикети)')}</ActionButton>
         </div>
       )}
-      <ContractBoard simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard doableDefault={user.level <= NEW_PLAYER_LEVEL} simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

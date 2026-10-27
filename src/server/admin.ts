@@ -8,6 +8,7 @@ import { post } from '@/server/game/finance';
 import { resetBranding } from '@/server/game/membership';
 import { notify } from '@/server/game/notify';
 import { postCoins } from '@/server/game/coins';
+import { rewardVerifiedEmail } from '@/server/auth/email-reward';
 import { VIP_MAX_DAYS } from '@/lib/game/vip';
 import { createLinkToken } from '@/server/auth/email-links';
 import { layoutMail, sendMail } from '@/server/mail';
@@ -246,6 +247,7 @@ export async function adminVerifyEmail(db: Database, actor: Staff, targetId: str
     if (!u) fail('user_not_found', t('Потребителят не е намерен.'), 404);
     await tx.update(users).set({ emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` }).where(eq(users.id, targetId));
     await audit(tx, actor.id, 'verify_email', targetId);
+    await rewardVerifiedEmail(tx, targetId);
   });
 }
 

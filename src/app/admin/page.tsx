@@ -13,13 +13,16 @@ import { isAdmin } from '@/server/auth/roles';
 import { staffTicketList, TICKET_STATUS } from '@/server/game/support';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
+import { BroadcastForm } from '@/components/admin/BroadcastForm';
+import { storedBroadcast } from '@/server/broadcast';
 
 export default async function AdminDashboard() {
   await initLocale();
-  const { db, user } = await adminContext();
+  const { db, user, now } = await adminContext();
   const mode = await seasonMode(db);
   const season = activeSeason(new Date(), mode);
-  const [stats, tickets, audit, funnel] = await Promise.all([adminStats(db), staffTicketList(db, 'open'), isAdmin(user.role) ? auditLog(db, 8) : Promise.resolve([]), newPlayerFunnel(db)]);
+  const [stats, tickets, audit, funnel, broadcast] = await Promise.all([adminStats(db), staffTicketList(db, 'open'), isAdmin(user.role) ? auditLog(db, 8) : Promise.resolve([]), newPlayerFunnel(db), storedBroadcast(db)]);
+  const live = broadcast && new Date(broadcast.until) > now ? broadcast : null;
   const pct = (n: number) => (funnel.week ? Math.round((n / funnel.week) * 100) : 0);
   return (
     <div className="space-y-6">
@@ -48,6 +51,12 @@ export default async function AdminDashboard() {
         </div>
         <p className="mt-3 text-xs text-mist-400">{t('Където процентът пада рязко, там новите играчи се отказват. Сигналите за ботове са в „Икономика“ → „Регистрация и вход“.')}</p>
       </Card>
+      {isAdmin(user.role) && (
+        <Card title={t('Съобщение до всички играчи')} actions={<span className="text-xs text-mist-400">{!live ? t('няма') : new Date(live.startsAt) > now ? t('планирано: {0} – {1}', dateTime(live.startsAt), dateTime(live.until)) : t('показва се до {0}', dateTime(live.until))}{live?.discord ? t(' · и в Discord') : ''}</span>}>
+          <p className="mb-3 text-sm text-mist-300">{t('Лента най-горе на всяка страница на играта — за поддръжка, ивент или известен проблем. Играчът може да я скрие; новото съобщение се показва отново. Текстът се показва както е написан (не се превежда).')}</p>
+          <BroadcastForm current={live ? { text: live.text, tone: live.tone, until: live.until } : null} />
+        </Card>
+      )}
       {isAdmin(user.role) && (
         <Card title={t('Празнична тема')} actions={<span className="text-xs text-mist-400">{season ? t('сега: {0}', SEASONS[season].label) : t('сега: основен дизайн')}</span>}>
           <div className="grid gap-3 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] sm:items-center">

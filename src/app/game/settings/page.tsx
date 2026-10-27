@@ -14,7 +14,7 @@ import { DISCORD_LINK_COINS } from '@/server/discord/link';
 import { QuietHours } from '@/components/game/QuietHours';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { deviceCount, PUSH_CATEGORIES, vapidKeys } from '@/server/push';
-import { EmailForm, PasswordForm } from '@/components/game/PasswordForm';
+import { DeleteAccount, EmailForm, ExportData, PasswordForm, SignOutOthers, UsernameForm } from '@/components/game/PasswordForm';
 import { date } from '@/lib/format';
 import { sessions, users } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
@@ -22,6 +22,10 @@ import { HIRE_RULES } from '@/lib/game/hire';
 import { SMUGGLING } from '@/lib/game/smuggling';
 import { smugglingProfile } from '@/server/game/smuggling';
 import { t, tx } from '@/i18n/t';
+import { listSessions } from '@/server/auth/account-close';
+import { lastUsernameChange, USERNAME_CHANGE_DAYS } from '@/server/auth/account-data';
+import { SESSION_COOKIE, sessionDigest } from '@/server/auth/session';
+import { cookies } from 'next/headers';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
@@ -38,13 +42,18 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const [u] = await db.select({ email: users.email, createdAt: users.createdAt, verified: users.emailVerifiedAt, pushPrefs: users.pushPrefs, discordName: users.discordName, discordId: users.discordId, discordPrefs: users.discordPrefs }).from(users).where(eq(users.id, user.id));
   const [keys, devices, blocked, shade] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id), features.smuggling ? smugglingProfile(db, user.id) : null]);
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(sessions).where(and(eq(sessions.userId, user.id), gt(sessions.expiresAt, new Date())));
+  // 1.1.3: the signed-in devices and when the name can change again.
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const mySessions = features.session_list ? await listSessions(db, user.id, token ? sessionDigest(token) : null) : null;
+  const lastRename = features.username_change ? await lastUsernameChange(db, user.id) : null;
+  const nextRename = lastRename && lastRename.getTime() + USERNAME_CHANGE_DAYS * 86_400_000 > now.getTime() ? new Date(lastRename.getTime() + USERNAME_CHANGE_DAYS * 86_400_000) : null;
   return (
     <div className="space-y-6">
       <PageHeader title={t('Настройки')} subtitle={t('Акаунт, парола и известия.')} />
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={t('Акаунт')}>
           <dl className="grid grid-cols-2 gap-4 text-sm">
-            <div><dt className="label">{t('Потребител')}</dt><dd className="mt-1 font-semibold">{tx(user.username)}</dd></div>
+            <div className="col-span-2"><dt className="label">{t('Потребител')}</dt><dd className="mt-1 font-semibold">{tx(user.username)}</dd>{features.username_change && <dd className="mt-1.5"><UsernameForm current={user.username} nextAt={nextRename?.toISOString() ?? null} /></dd>}</div>
             <div className="col-span-2">
               <dt className="label">{t('Имейл')}</dt>
               <dd className="mt-1 flex flex-wrap items-center gap-2">
@@ -57,7 +66,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <div><dt className="label">{t('Език')}</dt><dd className="mt-1">{t('Български (още езици предстоят)')}</dd></div>
           </dl>
         </Card>
-        <Card title={t('Сигурност')}><PasswordForm /><div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Имейл')}</h3><EmailForm current={user.email} /></div></Card>
+        <Card title={t('Сигурност')}>
+          <PasswordForm />
+          <div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Имейл')}</h3><EmailForm current={user.email} /></div>
+          {features.sign_out_others && <div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Устройства')}</h3><SignOutOthers devices={mySessions?.map((d) => ({ ...d, since: d.createdAt.toISOString() }))} /></div>}
+          {features.data_export && <div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Твоите данни')}</h3><ExportData /></div>}
+          {features.delete_account && <div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Изтриване на профила')}</h3><DeleteAccount username={user.username} /></div>}
+        </Card>
         {features.discord_bot && (
           <Card title={<span id="discord" className="inline-flex scroll-mt-24 items-center gap-2"><MessageSquare className="h-4 w-4 text-mist-400" />Discord</span>} className="lg:col-span-2">
             <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} />

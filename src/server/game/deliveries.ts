@@ -760,6 +760,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     () => t('Нетен резултат {0} лв., +{1} опит.{2}{3}', (payout / 100).toLocaleString(intlLocale(), { maximumFractionDigits: 0 }), playerXp, drops.length ? t(' Спирки навреме: {0} от {1}.', drops.filter((x) => !x.late).length, drops.length) : '', backhaul ? t(' Виж товарите обратно от {0}.', dest!.nameBg) : ''),
     // Straight to the return loads from where the truck now stands.
     backhaul ? `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}` : (await featureFor(tx, company!.ownerId, 'trip_log', completedAt)) ? `/game/trips/${d.id}` : '/game/finance',
+    { sound: 'arrival' },
   );
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });

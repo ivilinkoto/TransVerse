@@ -11,6 +11,7 @@ import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
 import { POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
 import { cities, depots, vehicles } from '@/server/db/schema';
+import { Warehouse } from 'lucide-react';
 import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
 import { openListings } from '@/server/game/used-market';
@@ -80,11 +81,39 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
   const { used: usedSlots, slots: totalSlots } = await fleetCapacity(db, company.id);
   const freeSlots = totalSlots - usedSlots;
   const depotOptions = depotRows.map((d) => ({ cityId: d.cityId, name: d.name, free: freeSlots }));
+  // 1.1.3: where a new truck parks, how many places are left, and the way out when there are none.
+  const depotInfo = features.depot_on_market;
+  const [rental] = depotInfo
+    ? await db.select({ plate: vehicles.plate, status: vehicles.status }).from(vehicles).where(and(eq(vehicles.companyId, company.id), eq(vehicles.ownership, 'rented'), isNull(vehicles.soldAt), eq(vehicles.returnPending, false), isNull(vehicles.testDriveFrom))).limit(1)
+    : [];
+  // 1.1.3: each model next to the truck the player drives now (the biggest one they have).
+  const mine = features.truck_compare
+    ? (await db.select({ modelId: vehicles.modelId }).from(vehicles).where(and(eq(vehicles.companyId, company.id), isNull(vehicles.soldAt), isNull(vehicles.testDriveFrom))))
+        .map((v) => POWER_UNITS.find((m) => m.id === v.modelId))
+        .filter((m): m is NonNullable<typeof m> => !!m)
+        .sort((a, b) => b.payloadTons - a.payloadTons || b.powerHp - a.powerHp)[0] ?? null
+    : null;
+  const fullFix = depotInfo ? (depotRows.length === 0 ? { href: '/game/logistics', label: tr('Открий депо') } : { href: '/game/logistics', label: tr('Разшири депото') }) : null;
+  const noRoomReason = depotRows.length === 0 && depotInfo ? tr('Нямаш депо, в което да паркираш.') : freeSlots <= 0 ? tr('Няма свободно място в депата.') : null;
   const used = show === 'used' ? await openListings(db, { sort: sort === 'price_asc' ? 'cheap' : sort === 'level' ? 'condition' : 'new' }) : [];
 
   return (
     <div className="space-y-6">
       <PageHeader title={tr('Пазар на техника')} subtitle={tr('Нови превозни средства и ремаркета. Места в депата: {0} / {1}.', usedSlots, totalSlots)} help={tr('Купуват се от всеки играч — със или без компания. Ремаркетата не заемат място в депото.')} />
+      {depotInfo && depotRows.length > 0 && (
+        <div className={`flex flex-wrap items-start gap-3 rounded-xl border px-4 py-3 text-sm ${freeSlots > 0 ? 'border-asphalt-700 bg-asphalt-900/60' : 'border-amber-sig/40 bg-amber-sig/10'}`}>
+          <Warehouse className={`mt-0.5 h-4 w-4 shrink-0 ${freeSlots > 0 ? 'text-cyan-glow' : 'text-amber-sig'}`} />
+          <div className="min-w-0 flex-1 space-y-1">
+            <p>
+              {tr('Новата техника се паркира в депо: {0}.', depotRows.map((d) => tx(d.name)).join(', '))}{' '}
+              <b className="num">{freeSlots > 0 ? tr('Свободни места: {0} от {1}.', freeSlots, totalSlots) : tr('Всички {0} места са заети.', totalSlots)}</b>
+            </p>
+            {rental && <p className="text-xs text-mist-300">{rental.status === 'idle' ? tr('Наетият камион {0} се връща, щом купиш собствен — мястото му се освобождава.', rental.plate) : tr('Наетият камион {0} е на курс: връща се, когато пристигне, а мястото му се освобождава.', rental.plate)}</p>}
+            {freeSlots <= 0 && <p className="text-xs text-mist-300">{tr('Разшири депото с още едно място (от {0}) или открий депо в друг град.', money(ECONOMY.depotSlotUpgradeCents))}</p>}
+          </div>
+          {freeSlots <= 0 && <Link href="/game/logistics" className="btn-gold shrink-0 px-3 py-1.5 text-xs">{tr('Разшири депото')}</Link>}
+        </div>
+      )}
       {depotRows.length === 0 && (
         <p className="rounded-xl border border-gold-400/40 bg-gold-400/10 px-4 py-3 text-sm text-mist-200">
           {tr('Купената техника се паркира в депо. Първо открий депо в раздел')}{' '}<Link href="/game/logistics" className="font-semibold text-cyan-glow hover:underline">{tr('Автопарк → Депа')}</Link>.
@@ -109,7 +138,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         <h2 className="mb-3 font-display text-lg font-bold">{show === 'tractor' ? tr('Влекачи') : show === 'van' ? tr('Ванове') : show === 'rigid' ? tr('Соло камиони') : tr('Превозни средства за покупка')}</h2>
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {units.map((m) => {
-            const reason = user.level < m.minLevel ? tr('Изисква ниво {0}.', m.minLevel) : company.balanceCents < m.priceCents ? tr('Недостатъчни средства.') : freeSlots <= 0 ? tr('Няма свободно място в депата.') : null;
+            const reason = user.level < m.minLevel ? tr('Изисква ниво {0}.', m.minLevel) : company.balanceCents < m.priceCents ? tr('Недостатъчни средства.') : noRoomReason;
             return (
               <Card key={m.id} className="flex flex-col">
                 <div className="flex items-start justify-between gap-2">
@@ -135,21 +164,30 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                   <div><dt className="text-mist-400">{m.electric ? tr('Ток · пробег') : tr('Разход')}</dt><dd className="num">{m.electric ? tr('{0}–{1} kWh · {2} км', m.electric.kwhEmpty, m.electric.kwhFull, m.electric.rangeKm) : tr('{0}–{1} л', m.fuelEmpty, m.fuelFull)}</dd></div>
                   <div><dt className="text-mist-400">{tr('Поддръжка')}</dt><dd className="num">{tr('{0} лв./км', (m.maintenanceCentsPerKm / 100).toFixed(2))}</dd></div>
                 </dl>
+                {mine && mine.id !== m.id && (
+                  <p className="mb-2 text-xs text-mist-300">
+                    {tr('Спрямо твоя {0}:', mine.name)}{' '}
+                    {m.kind === 'tractor' || mine.kind === 'tractor'
+                      ? tr('{0} к.с. (твоят {1})', m.powerHp, mine.powerHp)
+                      : m.payloadTons === mine.payloadTons ? tr('същият товар') : tr('{0} т товар', `${m.payloadTons > mine.payloadTons ? '+' : ''}${Math.round((m.payloadTons - mine.payloadTons) * 10) / 10}`)}
+                    {!m.electric && !mine.electric ? tr(', разход {0}–{1} л (твоят {2}–{3} л)', m.fuelEmpty, m.fuelFull, mine.fuelEmpty, mine.fuelFull) : ''}
+                  </p>
+                )}
                 <LicenceHint body={m.body} held={held} />
                 <div className="mt-auto space-y-3">
-                  <BuyButton type="buyVehicle" modelId={m.id} depots={depotOptions} disabledReason={reason} label={tr('Купи')} />
+                  <BuyButton type="buyVehicle" modelId={m.id} depots={depotOptions} disabledReason={reason} label={tr('Купи')} fix={reason === noRoomReason ? fullFix : null} />
                   {features.test_drive && !testDriven.has(m.id) && user.level >= m.minLevel && (
                     <ActionButton action={{ type: 'testDrive', modelId: m.id }} className="btn-ghost w-full justify-center text-sm" confirm={tr('Тест-драйв на {0} {1}: ти сядаш в него там, където е камионът ти, и караш един курс без наем. После се връща в салона.', m.brand, m.name)}>{tr('Тест-драйв')}</ActionButton>
                   )}
                   {features.leasing && m.priceCents >= LEASE.minPriceCents && (() => {
                     const t = leaseTerms(m.priceCents);
-                    const leaseReason = user.level < m.minLevel ? tr('Изисква ниво {0}.', m.minLevel) : company.balanceCents < t.downCents ? tr('Недостатъчни средства за първата вноска.') : freeSlots <= 0 ? tr('Няма свободно място в депата.') : null;
+                    const leaseReason = user.level < m.minLevel ? tr('Изисква ниво {0}.', m.minLevel) : company.balanceCents < t.downCents ? tr('Недостатъчни средства за първата вноска.') : noRoomReason;
                     return (
                       <div className="rounded-xl border border-asphalt-700 p-3">
                         <p className="mb-2 text-xs text-mist-300">
                           <b>{tr('Лизинг:')}</b>{' '}{tr('{0} сега и {1} седмични вноски по {2} (общо {3}). Вноските се теглят сами; при {4} пропуснати подред камионът се връща.', money(t.downCents), t.payments, money(t.weeklyCents), money(t.totalCents), LEASE.maxMissed)}
                         </p>
-                        <BuyButton type="leaseVehicle" modelId={m.id} depots={depotOptions} disabledReason={leaseReason} label={tr('Вземи на лизинг')} />
+                        <BuyButton type="leaseVehicle" modelId={m.id} depots={depotOptions} disabledReason={leaseReason} label={tr('Вземи на лизинг')} fix={leaseReason === noRoomReason ? fullFix : null} />
                       </div>
                     );
                   })()}
@@ -166,7 +204,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         <p className="mb-3 text-sm text-mist-400">{tr('Полуремаркетата се теглят от влекач. Прикачните ремаркета вървят зад соло камион със същата надстройка и почти удвояват товара му.')}</p>
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {order(TRAILERS).map((t) => {
-            const reason = user.level < t.minLevel ? tr('Изисква ниво {0}.', t.minLevel) : company.balanceCents < t.priceCents ? tr('Недостатъчни средства.') : null;
+            const reason = user.level < t.minLevel ? tr('Изисква ниво {0}.', t.minLevel) : company.balanceCents < t.priceCents ? tr('Недостатъчни средства.') : depotRows.length === 0 && depotInfo ? tr('Нямаш депо, в което да паркираш.') : null;
             return (
               <Card key={t.id} className="flex flex-col">
                 <div className="flex items-start justify-between gap-2">
@@ -184,7 +222,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                   <span className="num">{tr('{0} т', t.payloadTons)}</span><span>{tr('{0} оси', t.axles)}</span>{t.kind === 'drawbar' ? <Badge tone="cyan">{tr('прикачно — за соло камион')}</Badge> : <Badge tone="neutral">{tr('полуремарке — за влекач')}</Badge>}{t.requiresHeavyHaul && <Badge tone="violet">{tr('изисква тежък влекач 6×4')}</Badge>}
                 </div>
                 <LicenceHint body={t.body} held={held} />
-                <div className="mt-auto"><BuyButton type="buyTrailer" modelId={t.id} depots={depotOptions} disabledReason={reason} label={tr('Купи')} /></div>
+                <div className="mt-auto"><BuyButton type="buyTrailer" modelId={t.id} depots={depotOptions} disabledReason={reason} label={tr('Купи')} fix={depotRows.length === 0 && depotInfo && reason ? fullFix : null} /></div>
               </Card>
             );
           })}

@@ -154,6 +154,9 @@ export function pushActionsFor(href: string | null | undefined): PushAction[] | 
   // A delivery arrived: take a load back from there, or look at the whole board.
   if (href.startsWith('/game/contracts?from=')) return [{ action: 'back', title: t('Обратен товар'), url: href }, { action: 'board', title: t('Нов курс'), url: '/game/contracts' }];
   if (href.includes('?chat=')) return [{ action: 'chat', title: t('Отвори чата'), url: href }];
+  // 1.1.3: a finished trip (its trip log): the same lane again, or a new trip.
+  const trip = /^\/game\/trips\/([0-9a-f-]{36})$/.exec(href);
+  if (trip) return [{ action: 'again', title: t('Същия курс отново'), url: `/game/again/${trip[1]}` }, { action: 'board', title: t('Нов курс'), url: '/game/contracts' }];
   return undefined;
 }
 
