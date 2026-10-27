@@ -5,6 +5,7 @@ import { dateTime } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
 import { markNotificationsRead } from '@/server/game/notify';
 import { latestNotifications } from '@/server/game/queries';
+import { categoryOf, type PushCategory } from '@/server/push';
 import { digest } from '@/lib/game/digest';
 import { t, tx, intlLocale } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -15,17 +16,37 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('Известия') };
 }
 
+/** 1.1.3: the filters on top of the list, each a group of notification categories. */
+const FILTERS: { id: string; label: string; categories: PushCategory[] }[] = [
+  { id: 'trips', label: 'Курсове', categories: ['deliveries', 'urgent', 'favorites', 'fines', 'clients'] },
+  { id: 'company', label: 'Компания', categories: ['company'] },
+  { id: 'chat', label: 'Съобщения', categories: ['chat'] },
+  { id: 'events', label: 'Ивенти и мисии', categories: ['events', 'holiday', 'news'] },
+  { id: 'other', label: 'Други', categories: ['general'] },
+];
+
 const DOT = { success: 'bg-profit', warning: 'bg-amber-sig', achievement: 'bg-prestige', info: 'bg-volt-400' } as const;
 
-export default async function NotificationsPage() {
+export default async function NotificationsPage({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
   await initLocale();
   const { db, user, now, features } = await gameContext();
-  const list = await latestNotifications(db, user.id, 100);
+  const all = await latestNotifications(db, user.id, 100);
+  const wanted = (await searchParams).f;
+  const filter = features.notification_filter ? FILTERS.find((f) => f.id === wanted) : undefined;
+  const list = filter ? all.filter((n) => filter.categories.includes(categoryOf(n.href))) : all;
   // Opening the page reads everything; this visit still highlights what was new.
-  if (list.some((n) => !n.readAt)) await markNotificationsRead(db, user.id);
+  if (all.some((n) => !n.readAt)) await markNotificationsRead(db, user.id);
   return (
     <div className="space-y-6">
       <PageHeader title={t('Известия')} subtitle={t('Доставки, постижения, нива и събития в компанията. Пристигат на живо.')} />
+      {features.notification_filter && (
+        <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label={t('Филтър')}>
+          {[{ id: '', label: 'Всички' }, ...FILTERS].map((f) => {
+            const active = (filter?.id ?? '') === f.id;
+            return <Link key={f.id} href={f.id ? `/game/notifications?f=${f.id}` : '/game/notifications'} aria-current={active ? 'page' : undefined} className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${active ? 'border-volt-500 bg-volt-500/20 text-white' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}>{tx(f.label)}</Link>;
+          })}
+        </nav>
+      )}
       <Card>
         {list.length === 0 ? <Empty icon={Bell} title={t('Няма известия')} /> : (
           <ul className="divide-y divide-asphalt-800">

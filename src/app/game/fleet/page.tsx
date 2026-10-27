@@ -1,6 +1,9 @@
 import { LEGEND, legendTier } from '@/lib/game/heritage';
-import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Wrench } from 'lucide-react';
+import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Warehouse, Wrench } from 'lucide-react';
 import { leasesOf } from '@/server/game/leasing';
+import { and, desc, eq } from 'drizzle-orm';
+import { cities, depots, ledgerEntries } from '@/server/db/schema';
+import { fleetCapacity } from '@/server/game/fleet';
 import Link from 'next/link';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { RoadsideChoice } from '@/components/game/RoadsideChoice';
@@ -45,11 +48,28 @@ export default async function FleetPage() {
   // The player drives one truck themselves and can switch to another idle one.
   const self = fleet.drivers.find((d) => d.isOwner);
   const selfBusy = !!self?.vehicleId && fleet.vehicles.some((x) => x.id === self.vehicleId && x.status !== 'idle');
+  // 1.1.3: the depots at a glance (where own trucks are bought and parked).
+  const [myDepots, capacity] = await Promise.all([
+    db.select({ name: cities.nameBg, slots: depots.slots }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)),
+    fleetCapacity(db, company.id),
+  ]);
+  // 1.1.3: what the rent costs on average per trip (last 10 trips), to compare with buying out.
+  const rentRows = features.rent_vs_buy && fleet.vehicles.some((v) => v.rental) ? await db.select({ cents: ledgerEntries.amountCents }).from(ledgerEntries).where(and(eq(ledgerEntries.companyId, company.id), eq(ledgerEntries.category, 'rental'))).orderBy(desc(ledgerEntries.createdAt)).limit(10) : [];
+  const avgRentCents = rentRows.length ? Math.round(rentRows.reduce((s, r) => s - Number(r.cents), 0) / rentRows.length) : 0;
 
   return (
     <div className="space-y-6">
       <PageHeader title={tr('Автопарк')} subtitle={tr('Твоите превозни средства, къде са и какво правят.')} actions={<Link href="/game/market" className="btn-primary"><Truck className="h-4 w-4" />{tr('Купи техника')}</Link>} />
       {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
+      <div className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+        <span className="flex items-center gap-2">
+          <Warehouse className="h-4 w-4 text-prestige" />
+          {myDepots.length
+            ? <span>{tr('Депа: {0}', myDepots.map((d) => tx(d.name)).join(', '))}{' · '}<span className="num font-semibold">{tr('{0} / {1} места', capacity.used, capacity.slots)}</span></span>
+            : <span>{tr('Нямаш депо — първото е безплатно, там купуваш и паркираш собствени камиони.')}</span>}
+        </span>
+        <Link href="/game/logistics" className="btn-ghost px-3 py-1.5 text-xs">{myDepots.length ? tr('Депа') : tr('Открий депо')}</Link>
+      </div>
       {fleet.vehicles.length === 0 && <Empty icon={Truck} title={tr('Нямате превозни средства')}>{tr('Купете първото си превозно средство от пазара.')}</Empty>}
       <div className="grid gap-4 xl:grid-cols-2">
         {fleet.vehicles.map((v) => (
@@ -123,6 +143,7 @@ export default async function FleetPage() {
                     {v.rental.trips >= RENTAL_BUYOUT_DELIVERIES ? (
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span>{tr('Наемодателят ти предлага да го откупиш за')}{' '}<span className="num font-bold text-gold-400">{money(v.rental.buyoutCents)}</span> <span className="text-mist-400">{tr('(нов: {0})', money(v.model.priceCents))}</span>.</span>
+                        {features.rent_vs_buy && avgRentCents > 0 && <span className="basis-full text-mist-300">{tr('Наемът ти струва средно {0} на курс — откупуването се изплаща за около {1} курса. После печелиш целия курс, но плащаш гориво, такси и сервиз.', money(avgRentCents), Math.ceil(v.rental.buyoutCents / avgRentCents))}</span>}
                         <ActionButton action={{ type: 'buyoutRental', vehicleId: v.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={company.balanceCents < v.rental.buyoutCents} confirm={tr('Да откупим ли {0} ({1}) за {2}?', v.model.name, v.plate, money(v.rental.buyoutCents))}>
                           <BadgeEuro className="h-3.5 w-3.5" />{tr('Откупи')}
                         </ActionButton>

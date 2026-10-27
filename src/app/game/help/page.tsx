@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ExternalLink, MessagesSquare, ThumbsUp } from 'lucide-react';
+import { ChevronDown, ExternalLink, MessagesSquare, ThumbsUp } from 'lucide-react';
 import { GLOSSARY } from '@/lib/game/glossary';
 import { gameContext } from '@/server/game/context';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
@@ -10,6 +10,9 @@ import { FINE_RULES, INSURANCE } from '@/lib/game/fines';
 import { HALLOWEEN } from '@/lib/game/halloween';
 import { CHRISTMAS } from '@/lib/game/christmas';
 import { ECONOMY } from '@/lib/game/economy';
+import { RENTAL_BUYOUT_DELIVERIES } from '@/lib/game/catalog';
+import { VIP_PERKS } from '@/lib/game/vip';
+import { depotSlotCostCents } from '@/server/game/fleet';
 import { AUTO_DISPATCH_PER_DAY } from '@/server/game/dispatch';
 import { AUCTION_RULES } from '@/lib/game/auctions';
 import { t as tr, tx, intlLocale } from '@/i18n/t';
@@ -23,6 +26,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const eur = (cents: number) => tr('{0} лв.', Math.round(cents / 100).toLocaleString(intlLocale()));
+
+/** 1.1.3: the questions players ask most (on Discord too), with the game's real numbers. */
+const faq = (): { q: string; a: string }[] => [
+  { q: tr('Какво става с наетия камион, когато купя свой?'), a: tr('Ако е свободен, връща се веднага и минаваш на новия. Ако е на курс, довършва го — получаваш парите за доставката (минус наема) — и чак тогава се връща. Една покупка връща един нает камион.') },
+  { q: tr('Трябва ли ми ново депо за втори камион?'), a: tr('Не непременно. Всяко депо има {0} места (с VIP — по още {1}), а наетият камион също заема място. Ново депо струва {2}; може и да разшириш сегашното (първото място е {3}).', ECONOMY.depotSlotsDefault, VIP_PERKS.extraSlotsPerDepot, eur(ECONOMY.depotPriceCents), eur(depotSlotCostCents(ECONOMY.depotSlotsDefault))) },
+  { q: tr('Къде е депото ми?'), a: tr('Получаваш го при регистрация в началния си град. Ако нямаш нито едно, първото е безплатно — Автопарк → Депа.') },
+  { q: tr('Защо не мога да взема поръчка?'), a: tr('Причината пише под самата поръчка („Не можеш да я вземеш: …“). Най-честите: няма шофьор, влекачът няма ремарке, нужна е друга надстройка, товарът е по-тежък от камиона, нужно е по-високо ниво или лиценз, камионът иска ремонт.') },
+  { q: tr('Защо стои камионът след доставка?'), a: tr('Камионът чака следващата ти поръчка. В града, където е, винаги има поне няколко подходящи — най-отгоре на борсата, с етикет „За камиона ти тук“.') },
+  { q: tr('Как работи VIP диспечерът?'), a: tr('Включваш го за камион от Автопарк. Щом камионът е свободен, сам поема най-изгодната поръчка, която стига навреме и е на печалба (празен курс до 600 км) — до {0} курса за 24 часа. Ако не може да го прати, в Автопарк пише защо.', AUTO_DISPATCH_PER_DAY) },
+  { q: tr('Как да откупя наетия камион?'), a: tr('След {0} доставки с него наемодателят ти го предлага наполовина от цената на нов — бутонът е в Автопарк.', RENTAL_BUYOUT_DELIVERIES) },
+  { q: tr('Как да сменя паролата или имейла?'), a: tr('Настройки → Сигурност. И за двете трябва текущата парола; новият имейл се потвърждава с писмо.') },
+  { q: tr('Къде да питам или да съобщя за грешка?'), a: tr('В менюто на профила е „Докладвай проблем“ — запитването стига до екипа с вече попълнена страница. Питай и в Discord сървъра.') },
+];
 
 /** Built while rendering, so the texts are in the player's language. */
 const sections = (): { id: string; title: string; items: React.ReactNode[] }[] => [
@@ -116,9 +132,24 @@ export default async function HelpPage() {
         <ExternalLink className="h-4 w-4 shrink-0 text-mist-400" />
       </a>
       <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label={tr('Раздели')}>
+        {features.help_faq && <a href="#faq" className="shrink-0 rounded-full border border-gold-400/40 px-3 py-1.5 text-sm text-gold-400 hover:text-white">{tr('Въпроси')}</a>}
         {glossary && <a href="#glossary" className="shrink-0 rounded-full border border-cyan-glow/40 px-3 py-1.5 text-sm text-cyan-glow hover:text-white">{tr('Речник')}</a>}
         {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`} className="shrink-0 rounded-full border border-asphalt-700 px-3 py-1.5 text-sm text-mist-300 hover:text-white">{tx(s.title)}</a>)}
       </nav>
+      {features.help_faq && (
+        <Card id="faq" title={tr('Често задавани въпроси')}>
+          <div className="divide-y divide-asphalt-800">
+            {faq().map((f) => (
+              <details key={f.q} className="group py-2.5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold [&::-webkit-details-marker]:hidden">
+                  {f.q}<ChevronDown className="h-4 w-4 shrink-0 text-mist-400 transition group-open:rotate-180" />
+                </summary>
+                <p className="mt-1.5 text-sm text-mist-300">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </Card>
+      )}
       <div className="grid gap-6 lg:grid-cols-2">
         {glossary && (
           <Card id="glossary" title={tr('Речник')} className="lg:col-span-2">

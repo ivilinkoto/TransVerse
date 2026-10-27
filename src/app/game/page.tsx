@@ -28,6 +28,8 @@ import { ACHIEVEMENTS, levelProgress } from '@/lib/game/progression';
 import { achievements, ledgerEntries } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { nextSteps } from '@/server/game/next-steps';
+import { HALLOWEEN_DEF } from '@/server/game/halloween';
+import { unclaimedHolidayQuests } from '@/server/game/holiday';
 import { runningEvents } from '@/server/game/events';
 import { missionBoard } from '@/server/game/missions';
 import { missionById } from '@/lib/game/missions';
@@ -50,6 +52,9 @@ export default async function OverviewPage() {
   const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
   // v1.9: three concrete things to do now.
   const steps = features.next_steps ? await nextSteps(db, user, company.id, now) : [];
+  // 1.1.3: finished Halloween quests with rewards not taken, from the end of the event for a week.
+  const hwEnd = HALLOWEEN_DEF.eventWindow().endsAt.getTime();
+  const halloweenLeft = now.getTime() >= hwEnd && now.getTime() <= hwEnd + 7 * 86_400_000 ? ((await unclaimedHolidayQuests(db, HALLOWEEN_DEF, user.id)).get(user.id) ?? 0) : 0;
   const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
@@ -140,6 +145,13 @@ export default async function OverviewPage() {
         </dl>
       </section>
 
+      {halloweenLeft > 0 && (
+        <Link href="/game/halloween" className="panel flex items-center gap-3 border-orange-500/50 p-3.5 transition hover:border-orange-500/80">
+          <PumpkinIcon className="h-8 w-8 shrink-0" />
+          <span className="min-w-0 flex-1 text-sm"><span className="block font-semibold">{t('Невзети награди от Хелуин')}</span><span className="text-mist-300">{t('{0} изпълнени мисии чакат — наградите се взимат до седмица след ивента.', halloweenLeft)}</span></span>
+          <span className="btn-primary px-3 py-1.5 text-xs">{t('Вземи')}</span>
+        </Link>
+      )}
       {isHalloween(now) && (
         <Link href="/game/halloween" className="panel group flex items-center gap-4 border-orange-500/40 p-4 transition hover:border-orange-500/80">
           <PumpkinIcon className="h-11 w-11 shrink-0 transition group-hover:scale-110" />

@@ -11,6 +11,8 @@ import { Badge, Card, PageHeader } from '@/components/ui';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { date, dateTime, int, km, money } from '@/lib/format';
 import { userDetail } from '@/server/admin';
+import { truckBlock } from '@/lib/game/truck-ready';
+import { fleetView } from '@/server/game/queries';
 import { adminContext } from '@/server/admin-context';
 import { describeAudit } from '@/server/audit-format';
 import { canBan, canChangeRole, isAdmin, ROLE_LABELS, type Role } from '@/server/auth/roles';
@@ -35,7 +37,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const { user, company, org } = detail;
-  const [xp, cash] = await Promise.all([xpBySource(db, user.id, 7, now), company ? moneyBySource(db, company.id, 7, now) : Promise.resolve([])]);
+  const [xp, cash, fleet] = await Promise.all([xpBySource(db, user.id, 7, now), company ? moneyBySource(db, company.id, 7, now) : Promise.resolve([]), company ? fleetView(db, company.id) : Promise.resolve(null)]);
   const roleOptions = (['player', 'support', 'admin'] as const).filter((r) => r === user.role || canChangeRole(actor.role, actor.id, user.role, user.id, r));
   return (
     <div className="space-y-6">
@@ -51,6 +53,26 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
             <div><dt className="label">{t('Доставки')}</dt><dd className="num mt-1">{company?.deliveries ?? 0} · {km(company?.totalKm ?? 0)}</dd></div>
             {user.banReason && <div className="col-span-2"><dt className="label">{t('Причина за блокиране')}</dt><dd className="mt-1">{tx(user.banReason)}</dd></div>}
           </dl>
+        </Card>
+        {/* 1.1.3: what each truck is doing and why it may stand — the usual support question. */}
+        <Card title={t('Камиони')}>
+          {!fleet || fleet.vehicles.length === 0 ? <p className="text-sm text-mist-400">{t('Няма превозни средства.')}</p> : (
+            <ul className="space-y-2 text-sm">
+              {fleet.vehicles.map((v) => {
+                const block = truckBlock(v, now);
+                return (
+                  <li key={v.id} className="rounded-lg bg-asphalt-850 px-3 py-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold">{tx(v.plate)} <span className="font-normal text-mist-400">· {tx(v.model.name)} · {tx(v.city.nameBg)}{v.ownership === 'rented' ? t(' · нает') : ''}</span></span>
+                      {v.delivery ? <Badge tone="cyan">{t('на курс до {0}', dateTime(v.delivery.etaAt))}</Badge> : block ? <Badge tone="red">{t('не може да кара')}</Badge> : <Badge tone="green">{t('свободен')}</Badge>}
+                    </div>
+                    {block && <p className="mt-1 text-xs text-amber-sig">{t(block.reason)}</p>}
+                    {v.autoDispatch && <p className="mt-1 text-xs text-mist-300">{t('VIP диспечер: включен')}{v.autoDispatchNote ? t(' · не изпраща: {0}', t(v.autoDispatchNote)) : ''}</p>}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </Card>
         <Card title={t('Последните 7 дни: опит и пари по източници')} className="lg:col-span-2">
           <div className="grid gap-6 md:grid-cols-2">

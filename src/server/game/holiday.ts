@@ -9,6 +9,7 @@ import { fail } from './errors';
 import { announce } from './events';
 import { post } from './finance';
 import { notify } from './notify';
+import { date } from '@/lib/format';
 import { t } from '@/i18n/t';
 
 /**
@@ -136,4 +137,33 @@ export async function ensureHolidayEvent(db: Database, def: HolidayDef, now = ne
     await announce(tx, e!, now);
     return e!;
   });
+}
+
+/** 1.1.3: players with finished holiday quests whose rewards they have not taken yet. */
+export async function unclaimedHolidayQuests(db: DbOrTx, def: HolidayDef, userId?: string) {
+  const rows = await db
+    .select({ userId: seasonalQuests.userId, quest: seasonalQuests.quest, progress: seasonalQuests.progress })
+    .from(seasonalQuests)
+    .where(and(like(seasonalQuests.quest, `${def.key}:%`), sql`${seasonalQuests.claimedAt} is null`, userId ? eq(seasonalQuests.userId, userId) : undefined));
+  const byUser = new Map<string, number>();
+  for (const r of rows) {
+    const q = def.quests.find((x) => questKey(def, x.id) === r.quest);
+    if (q && r.progress >= q.target) byUser.set(r.userId, (byUser.get(r.userId) ?? 0) + 1);
+  }
+  return byUser;
+}
+
+/**
+ * Worker (1.1.3): once the holiday event is over, one reminder to everyone who
+ * still has rewards to take — the page leaves the menu with the holiday, the
+ * rewards stay for a week after the event.
+ */
+export async function remindUnclaimedHoliday(db: Database, def: HolidayDef, now = new Date()) {
+  const end = def.eventWindow().endsAt.getTime();
+  if (now.getTime() < end || now.getTime() > end + 7 * 86_400_000) return 0;
+  const left = await unclaimedHolidayQuests(db, def);
+  for (const [userId, n] of left) {
+    await notify(db, userId, 'info', () => t('Невзети награди: {0}', def.label), () => t('Имаш {0} изпълнени мисии с невзети награди. Можеш да ги вземеш до {1}.', n, date(new Date(end + 7 * 86_400_000 - 1))), def.href);
+  }
+  return left.size;
 }

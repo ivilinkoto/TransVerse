@@ -192,7 +192,8 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['clear', (c) => !!c.weather],
 ]);
 
-export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean }) {
+/** `doableDefault` (1.1.3): new players start with "Само изпълними" on. */
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false, doableDefault = false }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean; doableDefault?: boolean }) {
   const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
   const toggleChip = (id: Chip) => setChips((s) => {
     const next = new Set(s);
@@ -202,7 +203,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   });
   const [cargo, setCargo] = useState<string>('');
   const [query, setQuery] = useState('');
-  const [doable, setDoable] = useState(false);
+  const [doable, setDoable] = useState(doableDefault);
   const [sort, setSort] = useState<Sort>('reward');
   // A link to one load (a notification, Discord) opens it first.
   const [open, setOpen] = useState<string | null>(() => (focus && contracts.some((c) => c.id === focus) ? focus : null));

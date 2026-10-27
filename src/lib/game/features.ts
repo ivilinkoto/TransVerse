@@ -17,6 +17,10 @@ export const FEATURES = {
   weekly_report: '1.1.2',
   favorite_truck: '1.1.2',
   friends_invite: '1.1.2',
+  // v1.1.3: rent or buy, questions in Help, filters for notifications.
+  rent_vs_buy: '1.1.3',
+  help_faq: '1.1.3',
+  notification_filter: '1.1.3',
   transfers: '1.2',
   search: '1.2',
   map_circle: '1.2',

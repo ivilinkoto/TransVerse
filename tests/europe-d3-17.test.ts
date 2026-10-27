@@ -28,7 +28,8 @@ async function tripsOf(userId: string) {
   const d = await acceptContract(db(), userId, first.id, (await truckOf(userId)).id);
   const [row] = await db().select().from(deliveries).where(eq(deliveries.id, d.id));
   return async (to: string, completedAt: Date, weightTons = 1) => {
-    const c = await makeContract('Sofia', to, { weightTons });
+    // A trip to Sofia starts elsewhere (never a load from a city to itself, which other tests check).
+    const c = await makeContract(to === 'Sofia' ? 'Plovdiv' : 'Sofia', to, { weightTons });
     const { id: _id, ...rest } = row!;
     await db().insert(deliveries).values({ ...rest, contractId: c.id, status: 'completed', completedAt, late: false });
   };
