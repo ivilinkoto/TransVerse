@@ -14,7 +14,7 @@ import { notifyArrivingSoon, weeklyNumbers } from '@/server/game/heads-up';
 import { playerCard, setFavoriteTruck } from '@/server/game/social';
 import { testsUnreleased } from '@/server/auth/roles';
 import { closeDb } from '@/server/db/client';
-import { companies, companyChronicle, contracts, deliveries, drivers, notifications, organizations, users, vehicles } from '@/server/db/schema';
+import { companies, companyChronicle, contracts, deliveries, depots, drivers, notifications, organizations, users, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { GameError } from '@/server/game/errors';
 import { joinCompany, membershipOf, renameCompany, requirePermission, transferOwnership } from '@/server/game/membership';
@@ -22,6 +22,7 @@ import { acceptTerms, setUiPrefs } from '@/server/game/ui-prefs';
 import { cityByName, db, makeContract, newPlayer, playerWithCompany } from './helpers';
 import { truckBlock } from '@/lib/game/truck-ready';
 import { LOCAL_JOBS } from '@/lib/game/local-jobs';
+import { buyDepot } from '@/server/game/fleet';
 import { autoDispatchTick, setAutoDispatch } from '@/server/game/dispatch';
 import { ensureLocalJobsForFleet } from '@/server/game/contracts';
 import { approximateProvider } from '@/server/geo/routing';
@@ -283,5 +284,23 @@ describe('v1.1.2 loads wait where the trucks are', () => {
     expect(await ensureLocalJobsForFleet(db(), now, account!.id, approximateProvider)).toBeGreaterThanOrEqual(LOCAL_JOBS.perTruck);
     const waiting = await db().select().from(contracts).where(and(eq(contracts.originCityId, town.id), eq(contracts.status, 'open')));
     expect(waiting.length).toBeGreaterThanOrEqual(LOCAL_JOBS.perTruck);
+  });
+});
+
+describe('v1.1.2 the first depot is free', () => {
+  it('a new player has a depot in the start city; one without depots opens the first for free, the next one costs', async () => {
+    const p = await newPlayer('Varna');
+    const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
+    const mine = await db().select().from(depots).where(eq(depots.companyId, account!.id));
+    expect(mine.map((d) => d.cityId)).toEqual([p.hq.id]);
+
+    // A player from before: no depot at all.
+    await db().delete(depots).where(eq(depots.companyId, account!.id));
+    const plovdiv = await cityByName('Plovdiv');
+    const before = (await db().select().from(companies).where(eq(companies.id, account!.id)))[0]!.balanceCents;
+    await buyDepot(db(), p.userId, plovdiv.id);
+    expect((await db().select().from(companies).where(eq(companies.id, account!.id)))[0]!.balanceCents).toBe(before);
+    // The second one is paid (and needs the money).
+    expect(await code(buyDepot(db(), p.userId, p.hq.id))).toBe('insufficient_funds');
   });
 });

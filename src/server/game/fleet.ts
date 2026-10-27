@@ -267,8 +267,10 @@ export async function buyDepot(db: Database, userId: string, cityId: number) {
     if (!hub) fail('not_hub', tr('Депо може да се открие само в град, участващ в товарния пазар.'));
     const [existing] = await tx.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, cityId)));
     if (existing) fail('depot_exists', tr('Вече имате депо в този град.'));
+    // 1.1.2: the first depot is free (players from before it came with the account open it themselves).
+    const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(depots).where(eq(depots.companyId, company.id));
     const [depot] = await tx.insert(depots).values({ companyId: company.id, cityId, slots: ECONOMY.depotSlotsDefault }).returning();
-    await post(tx, company.id, [{ category: 'depots', amountCents: -ECONOMY.depotPriceCents, description: tr('Ново депо'), idempotencyKey: `depot:${depot!.id}` }], { requireFunds: true });
+    if (n > 0) await post(tx, company.id, [{ category: 'depots', amountCents: -ECONOMY.depotPriceCents, description: tr('Ново депо'), idempotencyKey: `depot:${depot!.id}` }], { requireFunds: true });
     await notify(tx, userId, 'success', () => tr('Ново депо'), () => tr('Можете да купувате и паркирате техника там.'), '/game/logistics');
     await checkAchievements(tx, userId, company.id);
     return depot!;

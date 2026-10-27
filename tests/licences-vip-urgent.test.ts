@@ -10,7 +10,7 @@ import { cities, companies, contracts, drivers, notifications, userLicences, use
 import { ensureLocalJob } from '@/server/game/contracts';
 import { acceptContract } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
-import { buyDepot, buyVehicle } from '@/server/game/fleet';
+import { buyVehicle } from '@/server/game/fleet';
 import { buyLicence } from '@/server/game/licences';
 import { approximateProvider } from '@/server/geo/routing';
 import { createUrgentContract } from '@/server/urgent';
@@ -82,11 +82,11 @@ describe('licences in the game', () => {
 });
 
 describe('buying without a company', () => {
-  it('an independent driver opens a depot and buys a truck', async () => {
+  it('an independent driver has a depot from the start and buys a truck', async () => {
     const p = await newPlayer();
     const account = await accountOf(p.userId);
     await fund(account.id, 100_000_00);
-    await buyDepot(db(), p.userId, p.hq.id);
+    // 1.1.2: the start city's depot comes with the account.
     const truck = await buyVehicle(db(), p.userId, 'sokol-courier', p.hq.id);
     expect(truck.companyId).toBe(account.id);
     expect((await accountOf(p.userId)).kind).toBe('independent');

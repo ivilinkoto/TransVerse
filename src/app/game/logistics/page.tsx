@@ -56,7 +56,11 @@ export default async function LogisticsPage() {
       </Card>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title={t('Открий ново депо')}>
-          <p className="mb-3 text-sm text-mist-400">{t('Ново депо струва {0} и идва с {1} места. Възможно е в {2} града, участващи в товарния пазар.', money(ECONOMY.depotPriceCents), ECONOMY.depotSlotsDefault, int(hubs.length))}</p>
+          {myDepots.length === 0 ? (
+            <p className="mb-3 rounded-xl border border-profit/40 bg-profit/10 px-3 py-2 text-sm text-profit">{t('Първото ти депо е безплатно: избери град и го открий. Идва с {0} места — там купуваш и паркираш собствените си камиони.', ECONOMY.depotSlotsDefault)}</p>
+          ) : (
+            <p className="mb-3 text-sm text-mist-400">{t('Ново депо струва {0} и идва с {1} места. Възможно е в {2} града, участващи в товарния пазар.', money(ECONOMY.depotPriceCents), ECONOMY.depotSlotsDefault, int(hubs.length))}</p>
+          )}
           <SelectAction
             label={t('Открий')}
             ariaLabel={t('Град за ново депо')}

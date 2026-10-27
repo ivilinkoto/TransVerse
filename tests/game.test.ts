@@ -216,7 +216,9 @@ describe('freight market and deliveries', () => {
 describe('fleet, finance and staff', () => {
   it('anyone may buy (a depot is needed first), then funds and depot capacity are enforced', async () => {
     const solo = await newPlayer();
-    await expectGameError(buyVehicle(db(), solo.userId, 'sokol-courier', solo.hq.id), 'no_depot');
+    // 1.1.2: the start city comes with a free depot; elsewhere one is needed first.
+    const elsewhere = await cityByName(solo.hq.name === 'Plovdiv' ? 'Varna' : 'Plovdiv');
+    await expectGameError(buyVehicle(db(), solo.userId, 'sokol-courier', elsewhere.id), 'no_depot');
 
     const { userId, hq } = await playerWithCompany('Sofia', 34_000_00);
     const before = (await companyOf(userId)).balanceCents;

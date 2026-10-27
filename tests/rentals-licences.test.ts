@@ -10,7 +10,7 @@ import { autoUrgentTick, publishAutoUrgent } from '@/server/game/auto-urgent';
 import { clearCompanyChat, companyChat, sendChatMessage } from '@/server/game/chat';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
-import { buyDepot, buyVehicle } from '@/server/game/fleet';
+import { buyVehicle } from '@/server/game/fleet';
 import { post } from '@/server/game/finance';
 import { buyCompanyLicence, heldLicences } from '@/server/game/licences';
 import { depositToTreasury, joinCompany, setMemberRank, updateSettings } from '@/server/game/membership';
@@ -75,7 +75,7 @@ describe('starter rental', () => {
     const account = await accountOf(p.userId);
     const [rented] = await activeTrucks(account.id);
     await fund(account.id, 300_000_00, `test:fleet:${account.id}`);
-    await buyDepot(db(), p.userId, p.hq.id);
+    // 1.1.2: the start city's depot comes with the account.
 
     // On a trip: marked, and returned when it arrives; the player then drives the new truck.
     const contract = await makeContract('Sofia', 'Plovdiv');
@@ -94,7 +94,7 @@ describe('starter rental', () => {
     const qa = await accountOf(q.userId);
     const [qRented] = await activeTrucks(qa.id);
     await fund(qa.id, 300_000_00, `test:fleet:${qa.id}`);
-    await buyDepot(db(), q.userId, q.hq.id);
+    // (the start city's depot comes with the account)
     const qOwn = await buyVehicle(db(), q.userId, 'sokol-courier', q.hq.id);
     const left = await activeTrucks(qa.id);
     expect(left.map((v) => v.id)).toEqual([qOwn.id]);
