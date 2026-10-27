@@ -93,7 +93,8 @@ test.describe('core loop', () => {
     await register(page);
     await page.goto('/game/market');
     await expect(page.getByRole('heading', { name: 'Пазар на техника' })).toBeVisible();
-    await expect(page.getByText('Първо открий депо')).toBeVisible();
+    // 1.1.2: new players start with a free depot (3 places) — the rented truck takes one.
+    await expect(page.getByText(/Места в депата: 1 \/ 3/)).toBeVisible();
     await page.goto('/game/missions');
     await expect(page.getByRole('heading', { name: 'Мисии', exact: true })).toBeVisible();
     await expect(page.getByText('Дневни мисии')).toBeVisible();
