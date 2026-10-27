@@ -1,13 +1,14 @@
 'use client';
 
 import { ShoppingCart } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { t, tx } from '@/i18n/t';
 
 /** Purchase with depot selection (vehicles are delivered to one of your depots). */
-export function BuyButton({ type, modelId, depots, disabledReason, label }: { type: 'buyVehicle' | 'leaseVehicle' | 'buyTrailer'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string }) {
+export function BuyButton({ type, modelId, depots, disabledReason, label, fix }: { type: 'buyVehicle' | 'leaseVehicle' | 'buyTrailer'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string; /** 1.1.3: where to fix the reason (e.g. expand the depot). */ fix?: { href: string; label: string } | null }) {
   const router = useRouter();
   const [cityId, setCityId] = useState(depots[0]?.cityId ?? 0);
   const [busy, setBusy] = useState(false);
@@ -39,7 +40,7 @@ export function BuyButton({ type, modelId, depots, disabledReason, label }: { ty
           <ShoppingCart className="h-4 w-4" />{busy ? '…' : label}
         </button>
       </div>
-      {disabledReason && <p className="text-xs text-mist-400">{disabledReason}</p>}
+      {disabledReason && <p className="text-xs text-mist-400">{disabledReason}{fix && <>{' '}<Link href={fix.href} className="font-semibold text-cyan-glow hover:underline">{fix.label}</Link></>}</p>}
       {message && <p role="status" className={`text-xs ${message.ok ? 'text-profit' : 'text-loss'}`}>{tx(message.text)}</p>}
     </div>
   );

@@ -30,6 +30,9 @@ import { isEaster } from '@/lib/game/easter';
 import { isStaff, testsUnreleased } from '@/server/auth/roles';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { TermsPrompt } from '@/components/game/TermsPrompt';
+import { BroadcastBanner } from '@/components/game/BroadcastBanner';
+import { activeBroadcast } from '@/server/broadcast';
+import { EMAIL_REWARD_COINS } from '@/server/auth/email-reward';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
 import { claimableCount } from '@/server/game/missions';
@@ -54,7 +57,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   const fresh = unseenRelease(user.seenVersion, now, testing);
   const holiday = [isHalloween(now) && 'halloween', isChristmas(now) && 'christmas', isMarta(now) && 'marta', isSpring(now) && 'spring', isEaster(now) && 'easter'].filter(Boolean).join(',') || null;
   // Everything the frame needs, at once (it renders on every page).
-  const [attention, tutorial, membership, missions, [{ unread = 0 } = {}], [live]] = await Promise.all([
+  const [attention, tutorial, membership, missions, [{ unread = 0 } = {}], [live], broadcast] = await Promise.all([
     // Staff see a badge on the admin button while support questions or reports wait.
     staff ? staffAttention(db).then((a) => a.total) : 0,
     tutorialState(db, user.id),
@@ -62,6 +65,8 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     claimableCount(db, user.id),
     db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt))),
     db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1),
+    // 1.1.3: the team's message for everyone.
+    activeBroadcast(db, now),
   ]);
   // v1.9: pages the player's level just unlocked in the menu ("Ново за теб").
   const features = liveFeatures(now, testing);
@@ -80,6 +85,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
           <InstallAppBanner />
+          {broadcast && <BroadcastBanner text={broadcast.text} tone={broadcast.tone} setAt={broadcast.setAt} />}
           {staff && !testing && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2 text-sm sm:px-6">
               <Eye className="h-4 w-4 text-cyan-glow" />
@@ -90,7 +96,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
           {!user.emailVerifiedAt && mailConfig().enabled && (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
               <MailWarning className="h-4 w-4 text-amber-sig" />
-              <span>{tr('Потвърди имейла си')}{' '}<span className="font-semibold">{tx(user.email)}</span>{' '}{tr('— така ще можеш да си върнеш профила и да пазаруваш.')}</span>
+              <span>{tr('Потвърди имейла си')}{' '}<span className="font-semibold">{tx(user.email)}</span>{' '}{tr('— така ще можеш да си върнеш профила и да пазаруваш.')}{features.email_reward ? <>{' '}<span className="font-semibold text-gold-400">{tr('+{0} ТрансКоин за потвърждението.', EMAIL_REWARD_COINS)}</span></> : null}</span>
               <ResendVerification />
               <span className="basis-full text-xs text-mist-400 sm:basis-auto">{tr('Не виждаш писмото? Провери „Спам“ / „Нежелана поща“.')}</span>
             </div>

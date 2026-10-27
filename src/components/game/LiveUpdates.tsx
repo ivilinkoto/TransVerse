@@ -2,19 +2,26 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { playChime, soundEnabled, unlockSound } from '@/lib/client/sound';
+import { playArrival, playChime, soundEnabled, unlockSound } from '@/lib/client/sound';
+import { useFeature } from '@/components/game/Features';
 
 /** Listens to server events and refreshes server-rendered data (debounced). */
 export function LiveUpdates() {
   const router = useRouter();
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // 1.1.3: an arrival has its own sound (and a buzz on phones).
+  const arrivalSound = useFeature('arrival_sound');
+  const arrival = useRef(arrivalSound);
+  useEffect(() => {
+    arrival.current = arrivalSound;
+  }, [arrivalSound]);
   useEffect(() => {
     // Sound needs one user gesture before the browser allows it.
     window.addEventListener('pointerdown', unlockSound, { once: true });
     window.addEventListener('keydown', unlockSound, { once: true });
     const source = new EventSource('/api/events');
     source.onmessage = (event) => {
-      const data = JSON.parse(event.data) as { type: string; channel?: string; with?: string };
+      const data = JSON.parse(event.data) as { type: string; channel?: string; with?: string; sound?: string };
       if (data.type === 'hello') return;
       // Other players' trucks only matter to the map, which reloads them itself.
       if (data.type === 'world') {
@@ -36,7 +43,10 @@ export function LiveUpdates() {
         return;
       }
       // A new notification for this player: a short chime while the game is in view.
-      if (data.type === 'notification' && soundEnabled() && document.visibilityState === 'visible') playChime();
+      if (data.type === 'notification' && soundEnabled() && document.visibilityState === 'visible') {
+        if (data.sound === 'arrival' && arrival.current) playArrival();
+        else playChime();
+      }
       clearTimeout(timer.current);
       timer.current = setTimeout(() => router.refresh(), 600);
     };

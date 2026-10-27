@@ -15,6 +15,8 @@ export interface WorldEvent {
   channel?: string;
   /** Company chat: only that company's members are told. */
   companyId?: string;
+  /** Notification: which sound an open game plays (1.1.3). */
+  sound?: 'arrival';
 }
 
 const g = globalThis as unknown as { tvBus?: EventEmitter; tvListen?: Promise<void>; tvOnline?: Map<string, number> };

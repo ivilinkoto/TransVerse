@@ -13,6 +13,7 @@ import { logActivity } from '@/server/game/notify';
 import { layoutMail, mailConfig, sendMail } from '@/server/mail';
 import { hashPassword } from './password';
 import { rateLimit } from './rate-limit';
+import { rewardVerifiedEmail } from './email-reward';
 import { t } from '@/i18n/t';
 
 export type LinkKind = 'verify' | 'reset';
@@ -71,10 +72,14 @@ export async function sendVerification(db: Database, userId: string, base: strin
 }
 
 export async function verifyEmail(db: Database, token: string) {
-  const userId = await consumeToken(db, token, 'verify');
-  await db.update(users).set({ emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` }).where(eq(users.id, userId));
-  await logActivity(db, userId, 'email_verified');
-  return userId;
+  return db.transaction(async (tx) => {
+    const userId = await consumeToken(tx, token, 'verify');
+    await tx.update(users).set({ emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` }).where(eq(users.id, userId));
+    await logActivity(tx, userId, 'email_verified');
+    // 1.1.3: +10 ТрансКоин, once per account.
+    await rewardVerifiedEmail(tx, userId);
+    return userId;
+  });
 }
 
 // ── Forgotten password ────────────────────────────────────────────────────
@@ -118,6 +123,7 @@ export async function resetPassword(db: Database, raw: z.input<typeof resetSchem
     await tx.update(users).set({ passwordHash, emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` }).where(eq(users.id, userId));
     await tx.delete(sessions).where(eq(sessions.userId, userId));
     await logActivity(tx, userId, 'password_reset');
+    await rewardVerifiedEmail(tx, userId);
     return userId;
   });
 }

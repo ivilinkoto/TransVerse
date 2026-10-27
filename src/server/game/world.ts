@@ -33,6 +33,7 @@ import { settleDivisions } from './competition';
 import { settlePredictions } from './predictions';
 import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent, HALLOWEEN_DEF } from './halloween';
+import { rewardEarlierVerified } from '@/server/auth/email-reward';
 import { remindUnclaimedHoliday } from './holiday';
 import { ensureChristmasEvent } from './christmas';
 import { ensureMartaEvent } from './marta';
@@ -220,6 +221,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       const end = HALLOWEEN_DEF.eventWindow().endsAt.getTime();
       if (now.getTime() >= end && now.getTime() <= end + 7 * 86_400_000) await every(db, `claim-reminder:${HALLOWEEN_DEF.key}`, 30 * 86_400_000, now, () => remindUnclaimedHoliday(db, HALLOWEEN_DEF, now));
     }
+    // 1.1.3: the reward for a confirmed e-mail also goes to those who confirmed it earlier (once, after the release).
+    if (featureLive('email_reward', now)) await every(db, 'email-reward-earlier', 365 * 86_400_000, now, () => rewardEarlierVerified(db, now));
     await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));
     if (featureLive('easter', now)) await every(db, 'easter-event', 10 * 60_000, now, () => ensureEasterEvent(db, now));
     if (featureLive('marta', now)) await every(db, 'marta-event', 10 * 60_000, now, () => ensureMartaEvent(db, now));

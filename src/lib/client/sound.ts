@@ -56,3 +56,32 @@ export function playChime() {
     osc.stop(t + 0.4);
   }
 }
+
+/**
+ * 1.1.3: a truck arrived — two short low "horn" notes (different from the chime)
+ * and a short buzz on phones that allow it.
+ */
+export function playArrival() {
+  try {
+    navigator.vibrate?.([120, 80, 120]);
+  } catch {
+    /* not allowed — sound only */
+  }
+  const c = context();
+  if (!c || c.state !== 'running') return;
+  const start = c.currentTime;
+  for (const [i, freq] of [311.1, 311.1].entries()) {
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const t = start + i * 0.22;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+    gain.gain.setValueAtTime(0.22, t + 0.13);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    osc.connect(gain).connect(c.destination);
+    osc.start(t);
+    osc.stop(t + 0.2);
+  }
+}

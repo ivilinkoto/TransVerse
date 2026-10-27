@@ -1,5 +1,5 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { CalendarHeart, ChevronRight, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { CalendarHeart, ChevronRight, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
@@ -30,6 +30,8 @@ import { gameContext } from '@/server/game/context';
 import { nextSteps } from '@/server/game/next-steps';
 import { HALLOWEEN_DEF } from '@/server/game/halloween';
 import { unclaimedHolidayQuests } from '@/server/game/holiday';
+import { firstOwnTruck, recentTrips } from '@/server/game/overview';
+import { upcomingRelease } from '@/lib/game/releases';
 import { runningEvents } from '@/server/game/events';
 import { missionBoard } from '@/server/game/missions';
 import { missionById } from '@/lib/game/missions';
@@ -55,6 +57,10 @@ export default async function OverviewPage() {
   // 1.1.3: finished Halloween quests with rewards not taken, from the end of the event for a week.
   const hwEnd = HALLOWEEN_DEF.eventWindow().endsAt.getTime();
   const halloweenLeft = now.getTime() >= hwEnd && now.getTime() <= hwEnd + 7 * 86_400_000 ? ((await unclaimedHolidayQuests(db, HALLOWEEN_DEF, user.id)).get(user.id) ?? 0) : 0;
+  // 1.1.3: the next update's countdown, the first own truck, the last trips.
+  const upcoming = features.next_update ? upcomingRelease(now) : null;
+  const ownTruck = features.first_own_truck ? await firstOwnTruck(db, company.id, company.deliveries) : null;
+  const trips = features.recent_trips ? await recentTrips(db, company.id, user.id, now) : [];
   const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
@@ -145,6 +151,41 @@ export default async function OverviewPage() {
         </dl>
       </section>
 
+      {upcoming && (() => {
+        const ms = new Date(upcoming.publishedAt).getTime() - now.getTime();
+        const days = Math.floor(ms / 86_400_000);
+        const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+        return (
+          <section className="panel flex flex-wrap items-center gap-3 border-cyan-glow/40 p-3.5" aria-label={t('Следващото обновление')}>
+            <Rocket className="h-7 w-7 shrink-0 text-cyan-glow" />
+            <span className="min-w-0 flex-1 text-sm">
+              <span className="block font-semibold">{t('Обновление {0} „{1}“ идва след {2}', upcoming.version, tx(upcoming.name), days > 0 ? t('{0} дни и {1} ч', days, hours) : t('{0} ч', Math.max(1, hours)))}</span>
+              <span className="text-mist-300">{upcoming.highlights.slice(0, 3).map((h) => tx(h.title)).join(' · ')}</span>
+            </span>
+            <span className="num shrink-0 rounded-lg bg-cyan-glow/10 px-2.5 py-1 font-display text-lg font-bold text-cyan-glow">{days > 0 ? t('{0} д', days) : t('{0} ч', Math.max(1, hours))}</span>
+          </section>
+        );
+      })()}
+      {ownTruck && (
+        <section className="panel border-gold-400/40 p-4" aria-label={t('Първият ти собствен камион')}>
+          <div className="flex flex-wrap items-start gap-3">
+            <Truck className="mt-0.5 h-6 w-6 shrink-0 text-gold-400" />
+            <div className="min-w-0 flex-1 space-y-1.5 text-sm">
+              <h2 className="font-display text-base font-bold">{t('Първият ти собствен камион')}</h2>
+              <p className="text-mist-300">{t('След {0} доставки е време за собствен камион (най-евтиният е за {1}): без наем на всеки курс, а печалбата остава за теб.', company.deliveries, money(ownTruck.cheapestCents))}</p>
+              <ul className="list-disc space-y-0.5 pl-5 text-mist-300">
+                <li>{ownTruck.depots.length ? t('Паркира се в депото: {0} — свободни места {1} от {2}.', ownTruck.depots.map((d) => tx(d)).join(', '), Math.max(0, ownTruck.free), ownTruck.slots) : t('Първо ти трябва депо — първото е безплатно.')}</li>
+                <li>{ownTruck.rental.onTrip ? t('Наетият {0} е на курс: завършва го, взимаш парите и тогава се връща.', ownTruck.rental.plate) : t('Наетият {0} се връща веднага, а ти сядаш в новия.', ownTruck.rental.plate)}</li>
+                <li>{t('Или го откупи наполовина от цената на нов — в Автопарк.')}</li>
+              </ul>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Link href={ownTruck.depots.length ? '/game/market' : '/game/logistics'} className="btn-gold px-3 py-1.5 text-xs">{ownTruck.depots.length ? t('Към пазара') : t('Открий депо')}</Link>
+              <Link href="/game/fleet" className="btn-ghost px-3 py-1.5 text-xs">{t('Автопарк')}</Link>
+            </div>
+          </div>
+        </section>
+      )}
       {halloweenLeft > 0 && (
         <Link href="/game/halloween" className="panel flex items-center gap-3 border-orange-500/50 p-3.5 transition hover:border-orange-500/80">
           <PumpkinIcon className="h-8 w-8 shrink-0" />
@@ -267,6 +308,26 @@ export default async function OverviewPage() {
               </ul>
             )}
           </Card>
+          {trips.length > 0 && (
+            <Card title={t('Последни курсове')} actions={<History className="h-4 w-4 text-mist-400" />}>
+              <ul className="divide-y divide-asphalt-800">
+                {trips.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 text-sm first:pt-0 last:pb-0">
+                    <div className="min-w-0 flex-1">
+                      <span className="font-semibold">{tx(r.origin)} → {tx(r.dest)}</span>{' '}<span className="text-mist-400">· {tx(r.goods)}</span>
+                      <div className="text-[11px] text-mist-400">{r.completedAt ? dateTime(r.completedAt) : ''}{r.late ? t(' · със закъснение') : ''}</div>
+                    </div>
+                    <span className={`num shrink-0 text-sm ${(r.payoutCents ?? 0) < 0 ? 'text-loss' : 'text-profit'}`}>{money(r.payoutCents ?? 0)}</span>
+                    {r.againId ? (
+                      <Link href={`/game/contracts?load=${r.againId}`} className="btn-ghost shrink-0 px-2.5 py-1 text-xs"><RotateCcw className="h-3.5 w-3.5" />{t('Същия курс отново')}</Link>
+                    ) : (
+                      <span className="shrink-0 text-[11px] text-mist-500">{t('няма товар по линията сега')}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
         </div>
 

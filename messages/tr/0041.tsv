@@ -44,3 +44,72 @@ b90ccd962f	Frequently asked questions	Часто задаваемые вопро
 75a1caf34f	on a trip until {0}	в рейсе до {0}
 0d9a8dda0f	cannot drive	не может ездить
 2939e03311	free	свободен
+# v1.1.3: second batch
+bf013cb434	 · late	 · с опозданием
+1d9fabf6f5	+{0} TransCoin for confirming it.	+{0} ТрансКоин за подтверждение.
+56c0ee652e	+{0} TransCoin — thank you! You can now recover your profile and shop.	+{0} ТрансКоин — спасибо! Теперь ты сможешь восстановить профиль и делать покупки.
+d6f4175eac	{0} d	{0} д
+634146a997	{0} days and {1} h	{0} дн. и {1} ч
+fb42b3cf68	In Settings → Security: "Sign out of all other devices" and "Delete profile". A confirmed e-mail brings +10 TransCoin.	В Настройках → Безопасность: «Выйти на всех других устройствах» и «Удалить профиль». За подтверждённый e-mail — +10 ТрансКоин.
+9509f107a4	Signed in on someone else's computer or lost your phone? This device stays signed in, all others are signed out.	Входил с чужого компьютера или потерял телефон? Это устройство остаётся в профиле, все остальные выходят.
+3c0b958c79	Warning (yellow)	Внимание (жёлтый)
+6f1cd2f83e	All {0} places are taken.	Все {0} мест заняты.
+9e12882da8	Enter your password.	Введите пароль.
+c20dedcd74	Up to 240 characters.	До 240 символов.
+63b18381ec	Notifications can be filtered by type: trips, company, messages, events and missions.	Уведомления фильтруются по типу: рейсы, компания, сообщения, ивенты и миссии.
+9fea110fb2	Sign out of all other devices	Выйти на всех других устройствах
+be660f66c9	Signed out of {0} other devices.	Выполнен выход на {0} других устройствах.
+96f4a0f370	Deleting the profile	Удаление профиля
+5937676c77	Deleting is final: your e-mail, name, password, Discord link, picture and friendships are removed and you cannot sign in again. Money, trucks and TransCoin are lost. If you are the only member of a company, it is closed; if it has other members, hand over the ownership first.	Удаление окончательно: e-mail, имя, пароль, связь с Discord, фото и дружба удаляются, и войти снова будет нельзя. Деньги, грузовики и ТрансКоин теряются. Если ты единственный член компании, она закрывается; если есть другие члены — сначала передай владение.
+fcc9f4f45f	Delete for good	Удалить навсегда
+d6d8a66c89	Delete profile	Удалить профиль
+aa7267648b	Or buy it out at half the price of a new one — in Fleet.	Или выкупи его за полцены нового — в Автопарке.
+a2b1bd75ed	E-mail confirmed	E-mail подтверждён
+8491e830fe	When a truck arrives while the game is open, a separate sound plays (and the phone vibrates, if it allows it). The sound is switched off in Settings → Notifications.	Когда грузовик прибывает, пока игра открыта, звучит отдельный сигнал (и телефон вибрирует, если позволяет). Звук отключается в Настройках → Уведомления.
+6d2b23b708	How long	Как долго
+d3cd2b53b5	Your company has members — hand over the ownership to one of them first.	В твоей компании есть члены — сначала передай владение одному из них.
+34f0a76182	A strip at the top of every game page — for maintenance, an event or a known problem. Players can hide it; a new message shows again. The text is shown as written (it is not translated).	Полоса вверху каждой страницы игры — для обслуживания, ивента или известной проблемы. Игрок может её скрыть; новое сообщение показывается снова. Текст показывается как написан (не переводится).
+e0662d81c9	Took down the team's message	Убрал сообщение команды
+12c97120ed	On the dashboard: how long until update 1.2 and what it brings.	На панели: сколько осталось до обновления 1.2 и что оно принесёт.
+0e3e98c86d	Rented or own: when you can buy out the rented truck, Fleet shows what the rent costs you per trip on average and after how many trips the buy-out pays off.	Арендованный или свой: когда можно выкупить арендованный грузовик, Автопарк показывает, сколько в среднем стоит аренда за рейс и за сколько рейсов окупается выкуп.
+a679adf076	The rented {0} is on a trip: it finishes it, you get paid and then it goes back.	Арендованный {0} в рейсе: он завершает его, ты получаешь деньги, и затем он возвращается.
+27226ceb19	The rented {0} goes back at once and you take the wheel of the new one.	Арендованный {0} возвращается сразу, а ты садишься в новый.
+622a009d49	The rented truck {0} is on a trip: it goes back when it arrives, and its place is freed.	Арендованный грузовик {0} в рейсе: он вернётся, когда прибудет, и его место освободится.
+dc0fa17432	The rented truck {0} goes back as soon as you buy your own — its place is freed.	Арендованный грузовик {0} вернётся, как только купишь свой, — его место освободится.
+79b4299101	Type your username exactly to confirm.	Введи своё имя пользователя точно, чтобы подтвердить.
+3fa3da15fa	Type "{0}" to confirm	Введи «{0}» для подтверждения
+608bf423a8	E.g. "Today from 22:00 to 22:15 the game will be updated — trips continue."	Напр. «Сегодня с 22:00 до 22:15 игра обновится — рейсы продолжаются.»
+6c9fe53313	Settings → Security → "Sign out of all other devices": the device you are on stays signed in.	Настройки → Безопасность → «Выйти на всех других устройствах»: устройство, с которого ты зашёл, остаётся в профиле.
+a5818cbb52	Settings → Security → "Delete profile": with your password and username. Your e-mail, name, password, Discord link, picture and friendships are removed for good. If you are the only member of a company, it is closed; if there are others, you hand over the ownership first.	Настройки → Безопасность → «Удалить профиль»: с паролем и именем пользователя. E-mail, имя, пароль, связь с Discord, фото и дружба удаляются навсегда. Если ты единственный член компании, она закрывается; если есть другие — сначала передаёшь владение.
+a5cabf0d55	New vehicles park in a depot: {0}.	Новая техника паркуется в депо: {0}.
+6f85f0b987	News (blue)	Новость (синий)
+468181a059	No other devices are signed in.	Других устройств в профиле нет.
+80148770a1	You have no depot to park in.	У тебя нет депо для парковки.
+30f2a18c69	Update {0} "{1}" comes in {2}	Обновление {0} «{1}» выйдет через {2}
+be2f8f7abc	Answers to the most common questions, the depot in plain sight, your first own truck, the last trips on the dashboard and more control over your profile.	Ответы на самые частые вопросы, депо на виду, первый собственный грузовик, последние рейсы на панели и больше контроля над профилем.
+07152ca615	Market: the depot and the free places are at the top; when the places run out, the "Buy" button says why and leads to "Expand the depot".	Рынок: депо и свободные места вверху; когда места заканчиваются, кнопка «Купить» объясняет почему и ведёт к «Расширить депо».
+f7951d0bc9	It parks in the depot: {0} — free places {1} of {2}.	Паркуется в депо: {0} — свободных мест {1} из {2}.
+b855a99aad	The password is wrong.	Неверный пароль.
+4b4a1694e1	Show to everyone	Показать всем
+d7eb84f6e1	Confirmed e-mail	Подтверждённый e-mail
+fc52d7ebd9	A confirmed e-mail brings +10 TransCoin — also to everyone who has already confirmed it.	Подтверждённый e-mail приносит +10 ТрансКоин — и всем, кто уже подтвердил его.
+5b5b3efcb3	A team profile is not deleted here — first ask for your role to be removed.	Профиль команды отсюда не удаляется — сначала попроси снять с тебя должность.
+efdbaa3583	The profile was deleted at the player's request.	Профиль удалён по желанию игрока.
+3445bed822	Your profile is yours	Твой профиль — твой
+6978390459	Posted a team message: "{0}"	Опубликовал сообщение команды: «{0}»
+98baeabf5d	Your first own truck	Твой первый собственный грузовик
+35e3427030	First you need a depot — the first one is free.	Сначала нужно депо — первое бесплатно.
+881094326e	Expand the depot	Расширить депо
+09e938a3ea	Expand the depot by one more place (from {0}) or open a depot in another city.	Расширь депо ещё на одно место (от {0}) или открой депо в другом городе.
+d5d57e0c3b	Free places: {0} of {1}.	Свободных мест: {0} из {1}.
+6b17f121bf	After 5 deliveries with a rented truck the dashboard tells you what owning one means: where it parks, how many places you have and what happens to the rented one. On the market you see the depot and the free places before you buy.	После 5 доставок на арендованном грузовике панель расскажет, что значит свой: где он будет стоять, сколько у тебя мест и что будет с арендованным. На рынке депо и свободные места видны ещё до покупки.
+08ba1a8b0e	The next update	Следующее обновление
+83fc0caa9d	A message to all players: an administrator posts a strip at the top of the game (news or warning) for a chosen time and takes it down when they want. Players can hide it.	Сообщение всем игрокам: администратор размещает полосу вверху игры (новость или внимание) на выбранный срок и убирает её, когда захочет. Игрок может её скрыть.
+266685c948	Message from the team:	Сообщение от команды:
+5fc90b7891	Same trip again	Тот же рейс снова
+1d76db1638	The dashboard shows your last 5 trips with their result and a "Same trip again" button when the lane has a load.	Панель показывает последние 5 рейсов с их результатом и кнопкой «Тот же рейс снова», когда на линии есть груз.
+7ab03d602e	Devices	Устройства
+6965201d12	no load on the lane now	сейчас нет груза на линии
+0e7a16ed10	shown until {0}	показывается до {0}
+935d68a136	After {0} deliveries it is time for a truck of your own (the cheapest costs {1}): no rent on every trip, and the profit stays with you.	После {0} доставок пора обзавестись своим грузовиком (самый дешёвый стоит {1}): без аренды за каждый рейс, а прибыль остаётся тебе.
+4480b7afa7	1 day	1 день

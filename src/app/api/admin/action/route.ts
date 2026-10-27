@@ -19,6 +19,7 @@ import { createUrgentContract, urgentSchema } from '@/server/urgent';
 import { applyPayFactor } from '@/server/admin-economy';
 import { requireFeature } from '@/server/features';
 import { adminCancelPlateAuction, adminEndTrailerHire, adminRemoveCupEntrant } from '@/server/staff-tools';
+import { broadcastSchema, setBroadcast } from '@/server/broadcast';
 import { t } from '@/i18n/t';
 
 const id = z.string().uuid('Невалиден идентификатор.');
@@ -58,6 +59,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cancelPlateAuction'), weekKey: z.string().max(12) }),
   z.object({ type: z.literal('endTrailerHire'), hireId: id }),
   z.object({ type: z.literal('removeCupEntrant'), userId: id }),
+  z.object({ type: z.literal('broadcast'), banner: broadcastSchema }),
 ]);
 
 export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input, request }) => {
@@ -77,6 +79,8 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       await recordAudit(db, user.id, 'season_mode', null, { value: input.value });
       return { ok: true };
     }
+    case 'broadcast':
+      return { ok: true, banner: await setBroadcast(db, user, input.banner, new Date()) };
     case 'verifyUserEmail':
       await adminVerifyEmail(db, user, input.userId);
       return { ok: true };

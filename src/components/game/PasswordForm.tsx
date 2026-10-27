@@ -1,6 +1,6 @@
 'use client';
 
-import { AtSign, KeyRound } from 'lucide-react';
+import { AtSign, KeyRound, LogOut, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { PasswordInput } from '@/components/auth/Field';
 import { useState } from 'react';
@@ -68,6 +68,66 @@ export function EmailForm({ current }: { current: string }) {
       <PasswordInput id="emailPassword" name="password" placeholder={t('Текуща парола')} autoComplete="current-password" required aria-label={t('Текуща парола')} />
       <button className="btn-primary" disabled={busy}><AtSign className="h-4 w-4" />{busy ? '…' : t('Смени имейла')}</button>
       {message && <p role="status" className={`text-sm ${message.ok ? 'text-profit' : 'text-loss'}`}>{tx(message.text)}</p>}
+    </form>
+  );
+}
+
+/** 1.1.3: sign out every other device; this one stays signed in. */
+export function SignOutOthers() {
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const r = await api<{ signedOut: number }>('/api/account/sessions', {});
+      setMessage({ ok: true, text: r.signedOut ? t('Излязохме от {0} други устройства.', r.signedOut) : t('Няма други влезли устройства.') });
+    } catch (e) {
+      setMessage({ ok: false, text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-mist-400">{t('Влязъл си на чужд компютър или си загубил телефона? Това устройство остава в профила, всички други излизат.')}</p>
+      <button type="button" className="btn-ghost" disabled={busy} onClick={run}><LogOut className="h-4 w-4" />{busy ? '…' : t('Излез от всички други устройства')}</button>
+      {message && <p role="status" className={`text-sm ${message.ok ? 'text-profit' : 'text-loss'}`}>{tx(message.text)}</p>}
+    </div>
+  );
+}
+
+/** 1.1.3: delete the profile — the password and the username typed again. */
+export function DeleteAccount({ username }: { username: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/api/account/delete', { password: form.get('password'), confirm: form.get('confirm') });
+      router.replace('/');
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
+  };
+  if (!open) return <button type="button" className="btn-ghost text-loss" onClick={() => setOpen(true)}><Trash2 className="h-4 w-4" />{t('Изтрий профила')}</button>;
+  return (
+    <form onSubmit={submit} className="space-y-3 rounded-xl border border-loss/40 bg-loss/5 p-3">
+      <p className="text-sm text-mist-200">{t('Изтриването е окончателно: имейлът, името, паролата, Discord връзката, снимката и приятелствата се премахват и не можеш да влезеш отново. Парите, камионите и ТрансКоин се губят. Ако си единственият член на компания, тя се закрива; ако има други членове — първо предай собствеността.')}</p>
+      <PasswordInput id="deletePassword" name="password" placeholder={t('Парола')} autoComplete="current-password" required aria-label={t('Парола')} />
+      <input id="deleteConfirm" name="confirm" className="input" placeholder={t('Напиши „{0}“ за потвърждение', username)} autoComplete="off" required aria-label={t('Потребителско име')} />
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-primary bg-loss hover:bg-loss/90" disabled={busy}><Trash2 className="h-4 w-4" />{busy ? '…' : t('Изтрий окончателно')}</button>
+        <button type="button" className="btn-ghost" disabled={busy} onClick={() => setOpen(false)}>{t('Отказ')}</button>
+      </div>
+      {error && <p role="alert" className="text-sm text-loss">{tx(error)}</p>}
     </form>
   );
 }
