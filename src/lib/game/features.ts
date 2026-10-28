@@ -35,6 +35,13 @@ export const FEATURES = {
   username_change: '1.1.3',
   truck_compare: '1.1.3',
   sound_settings: '1.1.3',
+  // v1.1.4: countdowns, ideas with votes, Ден на будителите, my day, compare, roadmap.
+  countdowns: '1.1.4',
+  ideas: '1.1.4',
+  buditeli: '1.1.4',
+  daily_summary: '1.1.4',
+  compare_players: '1.1.4',
+  roadmap: '1.1.4',
   transfers: '1.2',
   search: '1.2',
   map_circle: '1.2',

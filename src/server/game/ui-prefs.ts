@@ -5,12 +5,14 @@ import { users } from '@/server/db/schema';
 type UiPrefs = (typeof users.$inferSelect)['uiPrefs'];
 
 /** v1.9: how the game is shown to the player (merged into what is stored). */
-export async function setUiPrefs(db: Database, userId: string, input: { showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPage?: string; asPlayer?: boolean }) {
+export async function setUiPrefs(db: Database, userId: string, input: { showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPage?: string; asPlayer?: boolean; dailySummary?: boolean }) {
   const [u] = await db.select({ prefs: users.uiPrefs }).from(users).where(eq(users.id, userId));
   const prefs: UiPrefs = { ...(u?.prefs ?? {}) };
   if (input.showAll !== undefined) prefs.showAll = input.showAll;
   if (input.boardView) prefs.boardView = input.boardView;
   if (input.asPlayer !== undefined) prefs.asPlayer = input.asPlayer;
+  // 1.1.4: "Моят ден" — a short summary in the evening.
+  if (input.dailySummary !== undefined) prefs.dailySummary = input.dailySummary;
   if (input.seenUnlocks) prefs.seenUnlocks = [...new Set([...(prefs.seenUnlocks ?? []), ...input.seenUnlocks])].slice(-100);
   if (input.seenPage) prefs.seenPages = [...new Set([...(prefs.seenPages ?? []), input.seenPage])].slice(-100);
   await db.update(users).set({ uiPrefs: prefs }).where(eq(users.id, userId));

@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { Logo } from '@/components/brand/Logo';
 import { ReleaseFold } from '@/components/game/ReleaseFold';
 import { visibleReleases } from '@/lib/game/releases';
+import { featureLive } from '@/lib/game/features';
 import { currentUser } from '@/server/http';
+import { testsUnreleased } from '@/server/auth/roles';
 import { requestNow } from '@/server/site';
 import { t } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -33,6 +35,7 @@ export default async function PublicUpdatesPage() {
         <div>
           <h1 className="font-display text-3xl font-bold sm:text-4xl">{t('Обновления')}</h1>
           <p className="mt-2 text-mist-300">{t('Какво ново във всяка версия на TransVerse.')}</p>
+          {(featureLive('roadmap', now) || (user && testsUnreleased(user))) && <Link href="/roadmap" className="mt-2 inline-block text-sm text-cyan-glow hover:underline">{t('Какво предстои →')}</Link>}
         </div>
         {releases.length === 0 ? (
           <div className="panel flex items-center gap-3 p-6 text-mist-300"><ScrollText className="h-5 w-5" />{' '}{t('Описанията ще се появяват тук.')}</div>

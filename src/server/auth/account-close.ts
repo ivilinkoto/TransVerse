@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { and, eq, like, ne, or } from 'drizzle-orm';
+import { and, eq, gt, like, ne, or } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { friendships, jobState, pushSubscriptions, sessions, userAvatars, users } from '@/server/db/schema';
@@ -24,8 +24,9 @@ export async function signOutOthers(db: Database, userId: string, sessionId: str
 const KEY_LENGTH = 16;
 
 /** 1.1.3: the devices signed in to the profile, this one first. */
-export async function listSessions(db: DbOrTx, userId: string, sessionId: string | null) {
-  const rows = await db.select().from(sessions).where(eq(sessions.userId, userId));
+export async function listSessions(db: DbOrTx, userId: string, sessionId: string | null, now = new Date()) {
+  // 1.1.4: only the sessions still valid (expired ones are trimmed at night).
+  const rows = await db.select().from(sessions).where(and(eq(sessions.userId, userId), gt(sessions.expiresAt, now)));
   return rows
     .map((s) => ({ key: s.id.slice(0, KEY_LENGTH), device: deviceLabel(s.userAgent), createdAt: s.createdAt, current: s.id === sessionId }))
     .sort((a, b) => Number(b.current) - Number(a.current) || b.createdAt.getTime() - a.createdAt.getTime());

@@ -15,6 +15,7 @@ import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import { BroadcastForm } from '@/components/admin/BroadcastForm';
 import { storedBroadcast } from '@/server/broadcast';
+import { ideaBoard } from '@/server/game/ideas';
 
 export default async function AdminDashboard() {
   await initLocale();
@@ -22,6 +23,8 @@ export default async function AdminDashboard() {
   const mode = await seasonMode(db);
   const season = activeSeason(new Date(), mode);
   const [stats, tickets, audit, funnel, broadcast] = await Promise.all([adminStats(db), staffTicketList(db, 'open'), isAdmin(user.role) ? auditLog(db, 8) : Promise.resolve([]), newPlayerFunnel(db), storedBroadcast(db)]);
+  // 1.1.4: what players want most (open ideas by votes).
+  const topIdeas = (await ideaBoard(db, user.id, 'top', false, 20)).filter((i) => i.status === 'open').slice(0, 6);
   const live = broadcast && new Date(broadcast.until) > now ? broadcast : null;
   const pct = (n: number) => (funnel.week ? Math.round((n / funnel.week) * 100) : 0);
   return (
@@ -71,6 +74,13 @@ export default async function AdminDashboard() {
               field="value"
             />
           </div>
+        </Card>
+      )}
+      {topIdeas.length > 0 && (
+        <Card title={t('Идеи на играчите — най-харесвани')} actions={<Link href="/game/ideas" className="text-sm text-cyan-glow hover:underline">{t('Всички →')}</Link>}>
+          <ul className="divide-y divide-asphalt-800 text-sm">
+            {topIdeas.map((i) => <li key={i.id} className="flex justify-between gap-3 py-2"><span className="min-w-0">{tx(i.title)} <span className="text-mist-400">· {tx(i.author)}</span></span><span className="num shrink-0 text-cyan-glow">👍 {i.votes}</span></li>)}
+          </ul>
         </Card>
       )}
       <div className="grid gap-6 xl:grid-cols-2">

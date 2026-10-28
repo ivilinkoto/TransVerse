@@ -172,6 +172,15 @@ describe('announcements', () => {
     expect((await outbox('release:1.3')).map((r) => r.target).sort()).toEqual(['channel:updates', 'channel:updates@en', 'channel:updates@ru']);
   });
 
+  it('1.1.4: the newest release is announced a few days late too, once; an older one never', async () => {
+    const r = releaseByVersion('1.5')!;
+    const late = new Date(new Date(r.publishedAt).getTime() + 5 * 86_400_000);
+    await announceFromGame(db(), late);
+    await announceFromGame(db(), late);
+    expect((await outbox('release:1.5')).map((x) => x.target).sort()).toEqual(['channel:updates', 'channel:updates@en', 'channel:updates@ru']);
+    expect(await outbox('release:1.4')).toHaveLength(0);
+  });
+
   it('the release message carries the whole notes within Discord limits, in the channel language', () => {
     for (const r of RELEASES) {
       for (const lang of ['bg', 'en', 'ru'] as const) {

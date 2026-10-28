@@ -69,6 +69,7 @@ import { recordHalloweenDelivery } from './halloween';
 import { recordChristmasDelivery } from './christmas';
 import { isChristmas } from '@/lib/game/christmas';
 import { isMarta } from '@/lib/game/marta';
+import { recordBuditeliDelivery } from './buditeli';
 import { recordMartaDelivery } from './marta';
 import { isEaster } from '@/lib/game/easter';
 import { recordEasterDelivery } from './easter';
@@ -762,6 +763,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     backhaul ? `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}` : (await featureFor(tx, company!.ownerId, 'trip_log', completedAt)) ? `/game/trips/${d.id}` : '/game/finance',
     { sound: 'arrival' },
   );
+  // 1.1.4, Ден на будителите: the third load of books brings the badge of the year.
+  if (contract.holiday === 'buditeli') await recordBuditeliDelivery(tx, company!.ownerId, completedAt);
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // Christmas quests: Christmas loads, arrivals on Christmas Eve and Day.
