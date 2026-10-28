@@ -26,6 +26,7 @@ import { listSessions } from '@/server/auth/account-close';
 import { lastUsernameChange, USERNAME_CHANGE_DAYS } from '@/server/auth/account-data';
 import { SESSION_COOKIE, sessionDigest } from '@/server/auth/session';
 import { cookies } from 'next/headers';
+import { MY_DAY_HOUR } from '@/server/game/my-day';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
@@ -44,7 +45,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(sessions).where(and(eq(sessions.userId, user.id), gt(sessions.expiresAt, new Date())));
   // 1.1.3: the signed-in devices and when the name can change again.
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const mySessions = features.session_list ? await listSessions(db, user.id, token ? sessionDigest(token) : null) : null;
+  const mySessions = features.session_list ? await listSessions(db, user.id, token ? sessionDigest(token) : null, now) : null;
   const lastRename = features.username_change ? await lastUsernameChange(db, user.id) : null;
   const nextRename = lastRename && lastRename.getTime() + USERNAME_CHANGE_DAYS * 86_400_000 > now.getTime() ? new Date(lastRename.getTime() + USERNAME_CHANGE_DAYS * 86_400_000) : null;
   return (
@@ -115,6 +116,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="max-w-2xl text-sm text-mist-300">{user.uiPrefs?.asPlayer ? t('Сега виждаш играта като обикновен играч: без функциите от неиздадени обновления и без значките на екипа. Админ панелът остава достъпен.') : t('Като член на екипа виждаш функциите от следващите обновления преди играчите. Включи изгледа на играч, за да видиш играта точно като тях (напр. при сигнал за грешка).')}</p>
               <ActionButton action={{ type: 'uiPrefs', asPlayer: !user.uiPrefs?.asPlayer }} className="btn-ghost">{user.uiPrefs?.asPlayer ? t('Върни изгледа на екипа') : t('Виж като играч')}</ActionButton>
+            </div>
+          </Card>
+        )}
+        {features.daily_summary && (
+          <Card title={t('Моят ден')} className="lg:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <p className="max-w-xl text-mist-300">{t('Всяка вечер в {0}:00 — кратко известие колко курса, километри и пари направи днес (само в дните, в които си карал).', MY_DAY_HOUR)}</p>
+              <ActionButton action={{ type: 'uiPrefs', dailySummary: !user.uiPrefs?.dailySummary }} className="btn-ghost">{user.uiPrefs?.dailySummary ? t('Изключи') : t('Включи')}</ActionButton>
             </div>
           </Card>
         )}

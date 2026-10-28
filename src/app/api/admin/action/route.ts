@@ -20,6 +20,7 @@ import { applyPayFactor } from '@/server/admin-economy';
 import { requireFeature } from '@/server/features';
 import { adminCancelPlateAuction, adminEndTrailerHire, adminRemoveCupEntrant } from '@/server/staff-tools';
 import { broadcastSchema, setBroadcast } from '@/server/broadcast';
+import { IDEA_STATUSES, setIdeaStatus } from '@/server/game/ideas';
 import { t } from '@/i18n/t';
 
 const id = z.string().uuid('Невалиден идентификатор.');
@@ -60,6 +61,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('endTrailerHire'), hireId: id }),
   z.object({ type: z.literal('removeCupEntrant'), userId: id }),
   z.object({ type: z.literal('broadcast'), banner: broadcastSchema }),
+  z.object({ type: z.literal('ideaStatus'), ideaId: id, status: z.enum(IDEA_STATUSES), note: z.string().max(300).default('') }),
 ]);
 
 export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ user, input, request }) => {
@@ -79,6 +81,9 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       await recordAudit(db, user.id, 'season_mode', null, { value: input.value });
       return { ok: true };
     }
+    case 'ideaStatus':
+      await setIdeaStatus(db, user, input.ideaId, input.status, input.note);
+      return { ok: true };
     case 'broadcast':
       return { ok: true, banner: await setBroadcast(db, user, input.banner, new Date()) };
     case 'verifyUserEmail':

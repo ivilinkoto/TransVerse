@@ -25,6 +25,8 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return t('{0} получи длъжност {1} (при публикуване)', actor ?? who, ROLE_LABELS.founder);
     case 'create_global_event':
       return t('Създаде ивент „{0}“{1}', String(d.name ?? ''), d.startsAt ? t(' (от {0})', new Date(String(d.startsAt)).toLocaleString(intlLocale())) : '');
+    case 'idea_status':
+      return t('Промени идея „{0}“: {1}', String(d.title ?? ''), String(d.status ?? ''));
     case 'broadcast_banner':
       return d.cleared ? t('Махна съобщението на екипа') : t('Пусна съобщение на екипа: „{0}“', String(d.text ?? ''));
     case 'season_mode':

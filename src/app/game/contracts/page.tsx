@@ -222,6 +222,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       reservedByMe: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId === company.id,
       reservedByOther: !!c.reservedUntil && c.reservedUntil > now && c.reservedByCompanyId !== company.id,
       reservedUntil: c.reservedUntil && c.reservedUntil > now ? hhmm(c.reservedUntil) : null,
+      reservedUntilAt: c.reservedUntil && c.reservedUntil > now ? c.reservedUntil.toISOString() : null,
       // Urgent shipments open for non-VIP players a few minutes later.
       opensAt: c.urgent && !vip && now.getTime() < c.createdAt.getTime() + VIP_PERKS.urgentEarlyMs ? hhmm(new Date(c.createdAt.getTime() + VIP_PERKS.urgentEarlyMs)) : null,
       speedFactor: c.speedFactor,

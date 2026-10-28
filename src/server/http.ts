@@ -5,6 +5,7 @@ import { rateLimit } from '@/server/auth/rate-limit';
 import { SESSION_COOKIE, validateSession, type SessionUser } from '@/server/auth/session';
 import { getDb } from '@/server/db/client';
 import { GameError } from '@/server/game/errors';
+import { recordServerError } from '@/server/error-log';
 import { localeOfRequest, withLocale } from '@/i18n/server';
 import { t, tx } from '@/i18n/t';
 
@@ -34,11 +35,13 @@ async function assertSameOrigin(request: Request) {
   if (!origin || !host || new URL(origin).host !== host) throw new GameError('bad_origin', t('Невалиден произход на заявката.'), 403);
 }
 
-export function errorResponse(error: unknown) {
+export function errorResponse(error: unknown, where = 'api') {
   // Messages are Bulgarian text keys: shown in the player's language (fixed schema messages too).
   if (error instanceof GameError) return NextResponse.json({ error: error.code, message: tx(error.message) }, { status: error.status });
   if (error instanceof ZodError) return NextResponse.json({ error: 'invalid_input', message: tx(error.issues[0]?.message ?? 'Невалидни данни.') }, { status: 400 });
   console.error('[api] unexpected error', error);
+  // 1.1.4: the admin panel shows the last ones (Система).
+  void recordServerError(where, error);
   return NextResponse.json({ error: 'internal', message: t('Възникна неочаквана грешка. Опитайте отново.') }, { status: 500 });
 }
 
@@ -66,7 +69,7 @@ export function handler<T = undefined>(options: HandlerOptions<T>, fn: (ctx: { u
       const result = await fn({ user, input, request });
       return result instanceof Response ? result : NextResponse.json(result ?? { ok: true });
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, `${request.method} ${new URL(request.url).pathname}`);
     }
   });
 }

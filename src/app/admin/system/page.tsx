@@ -9,6 +9,8 @@ import { dateTime } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
 import { jobHealth } from '@/server/game/world';
 import { pushDevices } from '@/server/push';
+import { recentServerErrors } from '@/server/error-log';
+import { BACKUP, backupDir, lastBackup } from '@/server/backup';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
@@ -25,11 +27,14 @@ const at = (t: number | Date | null | undefined) => (t ? dateTime(t) : '—');
 export default async function AdminSystem() {
   await initLocale();
   const { db, now } = await adminContext();
-  const [jobs, devices, cursor] = await Promise.all([
+  const [jobs, devices, cursor, errors, backup] = await Promise.all([
     jobHealth(db),
     pushDevices(db),
     db.execute<{ cursor: number | null; newest: number | null }>(sql`select (select (value->>'id')::bigint from job_state where key = 'push-cursor') as cursor, (select max(id) from notifications) as newest`),
+    recentServerErrors(db),
+    lastBackup(db),
   ]);
+  const backupFolder = backupDir();
   const { cursor: pushed, newest } = cursor.rows[0] ?? { cursor: null, newest: null };
   const lag = pushed != null && newest != null ? Number(newest) - Number(pushed) : null;
   const stale = jobs.filter((j) => j.failures > 0);
@@ -38,6 +43,33 @@ export default async function AdminSystem() {
     <div className="space-y-6">
       <PageHeader title={tr('Система и известия')} subtitle={tr('Задачите на фоновия процес (worker) и устройствата с включени известия.')} />
       <div className="grid gap-6 xl:grid-cols-2">
+        {/* 1.1.4: the nightly copy of the database and the last unexpected errors. */}
+        <Card title={tr('Резервно копие на базата')} actions={backup ? <Badge tone={backup.ok ? 'green' : 'red'}>{backup.ok ? tr('наред') : tr('грешка')}</Badge> : undefined}>
+          {!backupFolder ? (
+            <p className="text-sm text-mist-400">{tr('Не се прави тук: няма папка за копия (BACKUP_DIR или /var/www/transverse/shared). На сървъра от deploy се прави само.')}</p>
+          ) : !backup ? (
+            <p className="text-sm text-mist-400">{tr('Още няма копие — прави се всяка нощ около 03:00 в {0}.', backupFolder)}</p>
+          ) : (
+            <div className="space-y-1 text-sm">
+              <p>{tr('Последно: {0}', at(new Date(backup.at)))}{backup.bytes ? tr(' · {0} MB', (backup.bytes / 1_048_576).toFixed(1)) : ''}</p>
+              {backup.file && <p className="break-all font-mono text-xs text-mist-400">{tx(backup.file)}</p>}
+              {backup.error && <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg bg-asphalt-950 p-2 text-[11px] text-loss">{tx(backup.error)}</pre>}
+              <p className="text-xs text-mist-400">{tr('Пазят се последните {0} копия. Копие извън сървъра: виж docs/DEPLOYMENT.md → „Архивиране“.', BACKUP.keep)}</p>
+            </div>
+          )}
+        </Card>
+        <Card title={tr('Грешки на сървъра ({0})', errors.length)}>
+          {errors.length === 0 ? <p className="text-sm text-mist-400">{tr('Няма неочаквани грешки.')}</p> : (
+            <ul className="max-h-80 space-y-1.5 overflow-auto text-sm">
+              {errors.map((e, i) => (
+                <li key={i}>
+                  <div className="flex justify-between gap-3"><span className="font-mono text-xs">{tx(e.where)}</span><span className="shrink-0 text-xs text-mist-400">{at(new Date(e.at))}</span></div>
+                  <div className="break-words text-xs text-loss">{tx(e.message)}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
         <Card title={tr('Фонов процес')}>
           <p className="mb-3 text-sm text-mist-400">{tr('Всяка задача се изпълнява отделно: ако една гърми, останалите продължават. Тук се вижда последната грешка.')}</p>
           {jobs.length === 0 ? <p className="text-sm text-mist-400">{tr('Още няма данни — фоновият процес не е стартирал с тази версия.')}</p> : (

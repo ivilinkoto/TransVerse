@@ -45,6 +45,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
   const [paying, setPaying] = useState(false);
   const transfers = useFeature('transfers');
   const career = useFeature('career');
+  const compare = useFeature('compare_players');
   const duels = useFeature('duels');
   const act = async (action: Record<string, unknown>) => {
     setBusy(true);
@@ -100,6 +101,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
       )}
       {card.hauler && <p className="mt-2 text-sm text-mist-300">{t('Превозвач на борсата:')}{' '}<span className="text-gold-400">★ {card.hauler.stars.toLocaleString(intlLocale())}</span>{' '}{t('от {0} {1}', card.hauler.count, card.hauler.count === 1 ? t('оценка') : t('оценки'))}</p>}
 
+      {compare && card.relation !== 'self' && <Link href={`/game/players/${encodeURIComponent(card.username)}/compare`} onClick={onClose} className="mt-3 mr-4 inline-flex items-center gap-1.5 text-sm text-cyan-glow hover:underline">{t('Сравни се с {0} →', card.username)}</Link>}
       {careerLink && career && <Link href={`/game/players/${encodeURIComponent(card.username)}`} onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan-glow hover:underline"><Truck className="h-4 w-4" />{t('Кариера: курсове, рекорди, любими линии →')}</Link>}
 
       <div className="mt-3 flex items-center gap-2 rounded-xl border border-asphalt-700 px-3 py-2 text-sm">

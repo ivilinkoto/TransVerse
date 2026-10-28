@@ -1,0 +1,103 @@
+# v1.1.4: your ideas
+bfcd14622b	 · your idea	 · твоя идея
+3c9dce2f96	 All on time.	 Всё вовремя.
+d5ab3b0e76	 Late: {0}.	 С опозданием: {0}.
+8531814940	(expired)	(истекло)
+178e7089b8	{0} leads in {1} of {2} measures — you have some catching up to do.	{0} лидирует в {1} из {2} показателей — есть что наверстать.
+53d824d66a	{0} loads of books and school supplies on the Day of the Enlighteners — +{1} TransCoin. Happy holiday!	{0} груза книг и учебных пособий в День народных будителей — +{1} ТрансКоин. С праздником!
+2d94022a6d	Admin → System: the latest server errors (time, page, message) and the state of the nightly database backup.	Админ → Система: последние ошибки сервера (время, страница, сообщение) и состояние ночной резервной копии базы.
+3665e552d9	Thank you! The idea is published — other players can vote now.	Спасибо! Идея опубликована — другие игроки уже могут голосовать.
+833cd82c3a	Everything driven with your trucks and drivers counts. No money — that is a private matter.	Считается всё, что проехали твои грузовики и водители. Без денег — это личное дело.
+69f4289272	Enlightener 2026	Будитель 2026
+a52d0924a9	Enlightener 2027	Будитель 2027
+80f2a8afd7	Your ideas	Ваши идеи
+373430c9fb	Version {0} — "{1}"	Версия {0} — «{1}»
+352ae2fc8c	Switch it on in Settings and every evening at 20:00 you get a short notice: how many trips, kilometres and how much money you made today.	Включи в Настройках, и каждый вечер в 20:00 получаешь короткое уведомление: сколько рейсов, километров и денег за сегодня.
+7b1f0790fa	You lead in {0} of {1} measures. Keep it up!	Ты лидируешь в {0} из {1} показателей. Так держать!
+d28b553382	Every evening at {0}:00 — a short notice of how many trips, kilometres and how much money you made today (only on days you drove).	Каждый вечер в {0}:00 — короткое уведомление, сколько рейсов, километров и денег за сегодня (только в дни, когда ты ездил).
+7834d1dbbb	Every night around 03:00 the server makes a copy of the database (the last 14 are kept).	Каждую ночь около 03:00 сервер делает копию базы (хранятся последние 14).
+6efc9349c3	What we are working on for the next updates. The details come on release day. Have an idea? Suggest it in the game, under "Ideas".	Над чем мы работаем для следующих обновлений. Подробности — в день выхода. Есть идея? Предложи её в игре, в «Идеях».
+1bb01ae235	Voting on this idea is over.	Голосование за эту идею закончено.
+ca854f21d0	Server errors ({0})	Ошибки сервера ({0})
+4476b10d29	Day of the National Enlighteners	День народных будителей
+46584f976c	Today and tomorrow: loads of books and school supplies at +{0}%. Deliver {1} and get the "Enlightener" badge and {2} TransCoin.	Сегодня и завтра: грузы книг и учебных пособий с +{0}%. Доставь {1} и получи значок «Будитель» и {2} ТрансКоин.
+ebd04d9f7c	Up to {0} ideas a day — vote for others' ideas meanwhile.	До {0} идей в день — а пока голосуй за чужие.
+a1d56d37d0	Up to {0} ideas a day. One idea — one thing. A problem or a bug? Help → Support is faster.	До {0} идей в день. Одна идея — одна вещь. Проблема или ошибка? Быстрее через «Помощь → Поддержка».
+49cc36ad48	Deliver 3 loads of books and school supplies on the Day of the National Enlighteners 2026.	Доставь 3 груза книг и учебных пособий в День народных будителей 2026.
+f054c3aee6	Deliver 3 loads of books and school supplies on the Day of the National Enlighteners 2027.	Доставь 3 груза книг и учебных пособий в День народных будителей 2027.
+b2403eeefb	The team:	Команда:
+eb8edca2fe	Encyclopedias and dictionaries	Энциклопедии и словари
+d835afe5e0	Title	Заголовок
+03bb4c1252	The title is up to 80 characters.	Заголовок — до 80 символов.
+f34c9f8396	The title is at least 5 characters.	Заголовок — не менее 5 символов.
+8e31582e63	Why and how (optional)	Зачем и как (по желанию)
+b551984473	"Enlightener {0}" badge	Значок «Будитель {0}»
+193d2903d5	Ideas	Идеи
+e0fbcb4577	Ideas for the game	Идеи для игры
+e421c1dadc	Players' ideas — most liked	Идеи игроков — самые популярные
+b3cdeb7a71	Ideas can be suggested from level {0}.	Идеи можно предлагать с уровня {0}.
+7fcfd8b948	Ideas can be suggested from level {0}. Until then you can vote.	Идеи можно предлагать с уровня {0}. А пока можно голосовать.
+c1719dbf77	The idea was not found.	Идея не найдена.
+1924d5072c	What is coming	Что впереди
+bfc6b20068	What is coming →	Что впереди →
+96a853e74e	{0}'s career	Карьера {0}
+d59560e5b9	Books for community libraries	Книги для читален
+c9dba3d1dd	Books and textbooks	Книги и учебники
+c9e0e118f1	To the loads	К грузам
+3b6700b050	My day	Мой день
+f6131ce9b3	My day: {0} trips, {1} km	Мой день: {0} рейсов, {1} км
+a431fe8d79	On 1 and 2 November some loads are books and school supplies at +20%. Deliver 3 and get the "Enlightener 2026" badge and 15 TransCoin.	1 и 2 ноября часть грузов — книги и учебные пособия с +20 %. Доставь 3 и получи значок «Будитель 2026» и 15 ТрансКоин.
+23362e5668	Most liked	Самые популярные
+bac472e935	In short: what should we add or change?	Коротко: что добавить или изменить?
+a96776bb09	Done	Сделана
+ab9eacf5c7	Start of the admin panel: the players' most liked ideas; on the "Ideas" page the team changes the status and answers.	Начало админ-панели: самые популярные идеи игроков; на странице «Идеи» команда меняет статус и отвечает.
+8b00d28720	You cannot vote for your own idea.	Нельзя голосовать за свою идею.
+729e4d77bf	Not made here: no folder for copies (BACKUP_DIR or /var/www/transverse/shared). On the deployed server it runs by itself.	Здесь не делается: нет папки для копий (BACKUP_DIR или /var/www/transverse/shared). На сервере после деплоя делается само.
+7755426497	Net result today: {0} lv.{1} Have a good rest!	Чистый результат за сегодня: {0} лв.{1} Хорошего отдыха!
+99a3512aef	New idea	Новая идея
+5c823b6320	A new public page "What is coming" (from "Updates") — the next updates in short, without dates.	Новая публичная страница «Что впереди» (из «Обновлений») — следующие обновления коротко, без дат.
+e614eafdcc	New	Новые
+49336a1674	Nightly clean-up: expired sessions, activity older than 6 months and read notifications older than 90 days.	Ночная очистка: истёкшие сессии, активность старше 6 месяцев и прочитанные уведомления старше 90 дней.
+b36b718a0a	No unexpected errors.	Неожиданных ошибок нет.
+5837526000	The announcement of a new update in Discord goes out even if the bot was down for a few days (up to two weeks after the release), and only once.	Объявление о новом обновлении в Discord выходит, даже если бот был выключен несколько дней (до двух недель после выхода), и только один раз.
+a6a42494a3	The description is up to 600 characters.	Описание — до 600 символов.
+afffab6c08	From a player's card → "Compare": you against them in trips, kilometres, tonnes, on time, countries and achievements.	Из карточки игрока → «Сравнить»: ты против него по рейсам, километрам, тоннам, вовремя, странам и достижениям.
+755c81e652	Team's answer	Ответ команды
+ef1ba6cbcb	Team's answer (shown under the idea)	Ответ команды (виден под идеей)
+ed3a842447	Declined	Отклонена
+76f072a4b6	No ideas here yet — be the first!	Здесь пока нет идей — будь первым!
+5f027e2879	No copy yet — it is made every night around 03:00 in {0}.	Копии пока нет — делается каждую ночь около 03:00 в {0}.
+f2eae67274	Haggling and reserved loads show how much time is left (a countdown), not only the hour.	Торг и забронированные грузы показывают, сколько времени осталось (обратный отсчёт), а не только час.
+77294befec	The last {0} copies are kept. A copy off the server: see docs/DEPLOYMENT.md → "Архивиране".	Хранятся последние {0} копий. Копия вне сервера: см. docs/DEPLOYMENT.md → «Архивиране».
+19a93bc827	Planned	Запланирована
+675023eebb	Planned and done	Запланированные и сделанные
+a0c65272c2	Suggest ideas and vote, the Day of the Enlighteners, compare with a friend, "My day" and many fixes behind the scenes.	Предлагай идеи и голосуй, День будителей, сравнение с другом, «Мой день» и много исправлений за кулисами.
+8711e7eae9	Suggest what to add or change and vote for others' ideas. The most liked ideas are the first the team sees.	Предложи, что добавить или изменить, и голосуй за идеи других. Самые популярные идеи команда видит первыми.
+7be54b8f91	Changed idea "{0}": {1}	Изменил идею «{0}»: {1}
+5246295f51	You are even — the next trip decides.	Вы на равных — решит следующий рейс.
+98a9bd45c6	Database backup	Резервная копия базы
+ba3755748c	Only the team changes the status of ideas.	Только команда меняет статус идей.
+19739f5819	Hidden	Скрыта
+2dbd415791	After that	Затем
+484050179d	The next TransVerse updates — in short, without dates.	Следующие обновления TransVerse — коротко, без дат.
+9e1ece700c	Next	Следующее
+7878a14f2c	The next update is being prepared.	Следующее обновление готовится.
+ff8c51e3f8	The "Signed-in devices" list no longer shows expired sessions.	Список «Устройства, на которых выполнен вход» больше не показывает истёкшие сессии.
+189d15bc7e	Comparison	Сравнение
+671bf8a8a2	Compare yourself with {0} →	Сравни себя с {0} →
+71efd4a4fc	Compare yourself with a friend	Сравни себя с другом
+4c6f2d876c	Compete → Community → "Ideas": suggest what to add or change and vote for others' ideas. The team marks which are planned and which are done, and answers you.	Соревнование → Сообщество → «Идеи»: предложи, что добавить или изменить, и голосуй за идеи других. Команда отмечает, какие запланированы и какие сделаны, и отвечает тебе.
+e52fb6c329	The dashboard loads faster: the newspaper and the road weather are read once a minute for everyone.	Панель загружается быстрее: газета и погода на дорогах читаются раз в минуту для всех.
+c1beff1d5c	Your idea is {0}	Твоя идея {0}
+15f39aad52	Notebooks and study aids	Тетради и учебные пособия
+f266efa31c	You against {0}	Ты против {0}
+c4f369b674	School supplies	Школьные принадлежности
+4426792610	The hour until which a haggle holds is now always in Bulgarian time.	Время, до которого действует торг, теперь всегда по болгарскому времени.
+de5367a00f	done	сделана
+453d802904	fine	в порядке
+4f5aa7a03a	declined	отклонена
+0b4f76d4cc	{0} h {1} min left	осталось {0} ч {1} мин
+80fedb8d74	{0}:{1} left	осталось {0}:{1}
+d10cd16fd4	planned	запланирована
+5fe8f401d2	hidden	скрыта
+50ce05d6ea	📚 Enlighteners	📚 Будители

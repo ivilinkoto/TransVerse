@@ -56,10 +56,25 @@ journalctl -u transverse-web -n 100                  # последни лого
 При растеж: собствен Valhalla сървър (нужен е по-голям VPS, ~8 GB RAM за Европа) или платен доставчик — сменя се само `VALHALLA_URL` / модулът `src/server/geo/routing.ts`.
 
 ## Архивиране
+От 1.1.4 фоновият процес (worker) прави копие на базата всяка нощ около 03:00 (Sofia) с `pg_dump` в `/var/www/transverse/shared/backups/transverse-ГГГГ-ММ-ДД.sql.gz` (или в `BACKUP_DIR`, ако е зададена). Пазят се последните 14. Състоянието (последно копие, размер, грешка) се вижда в „Админ панел → Система“. Ако там пише грешка за `pg_dump`, провери, че пакетът `postgresql-client` е инсталиран и е същата главна версия като сървъра.
+
+Ръчно копие:
 ```bash
 sudo -u postgres pg_dump transverse | gzip > /root/transverse-$(date +%F).sql.gz
 ```
-Препоръка: ежедневен cron и копие извън сървъра.
+
+Копие извън сървъра (от твоя компютър):
+```bash
+scp deploy@СЪРВЪРА:/var/www/transverse/shared/backups/transverse-$(date +%F).sql.gz .
+```
+
+Връщане от копие (спира играта за минута — направи го в тих час):
+```bash
+sudo systemctl stop transverse-web transverse-worker
+sudo -u postgres dropdb transverse && sudo -u postgres createdb -O transverse transverse
+gunzip -c transverse-ГГГГ-ММ-ДД.sql.gz | sudo -u postgres psql transverse
+sudo systemctl start transverse-web transverse-worker
+```
 
 
 ## Плащания

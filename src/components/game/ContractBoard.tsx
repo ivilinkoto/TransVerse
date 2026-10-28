@@ -25,6 +25,7 @@ import { HAGGLE, SEALED } from '@/lib/game/deals';
 import { RELIEF } from '@/lib/game/relief';
 import { CARGO_INSURANCE } from '@/lib/game/roads';
 import { useFeature } from './Features';
+import { Countdown } from '@/components/ui/Countdown';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
 import { HARVEST } from '@/lib/game/city-growth';
 import { SECURE_PARKING } from '@/lib/game/traffic';
@@ -130,6 +131,8 @@ export interface BoardContract {
   reservedByMe: boolean;
   reservedByOther: boolean;
   reservedUntil: string | null;
+  /** 1.1.4: the same moment, for the countdown. */
+  reservedUntilAt?: string | null;
   /** Urgent shipment not yet open for this (non-VIP) player — opens at HH:MM. */
   opensAt: string | null;
   /** Short names of licences the player still needs for this contract. */
@@ -155,7 +158,7 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'buditeli' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
@@ -165,6 +168,7 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
   { id: 'christmas', label: 'Коледа', test: (c) => c.holiday === 'christmas' },
   { id: 'marta', label: 'Баба Марта', test: (c) => c.holiday === 'marta' },
+  { id: 'buditeli', label: '📚 Будители', test: (c) => c.holiday === 'buditeli' },
   { id: 'sowing', label: '🌱 Сеитба', test: (c) => c.holiday === 'sowing' },
   { id: 'harvest', label: '🍇 Гроздобер', test: (c) => c.holiday === 'harvest' },
   { id: 'national', label: '🎉 Национален празник', test: (c) => c.holiday === 'national' },
@@ -184,6 +188,7 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['halloween', (c) => c.holiday === 'halloween'],
   ['christmas', (c) => c.holiday === 'christmas'],
   ['marta', (c) => c.holiday === 'marta'],
+  ['buditeli', (c) => c.holiday === 'buditeli'],
   ['sowing', (c) => c.holiday === 'sowing'],
   ['harvest', (c) => c.holiday === 'harvest'],
   ['national', (c) => c.holiday === 'national'],
@@ -375,12 +380,13 @@ function Bonuses({ simple, children }: { simple: boolean; children: React.ReactN
 /** v1.8: ask the shipper for more (once); a "no" gives the load to someone else. */
 function HaggleBox({ contractId, rewardCents, haggle }: { contractId: string; rewardCents: number; haggle: NonNullable<BoardContract['haggle']> }) {
   const router = useRouter();
+  const countdown = useFeature('countdowns');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
   if (haggle !== 'open') {
     return haggle.valid ? (
-      <p className="rounded-xl border border-profit/40 bg-profit/10 p-3 text-sm">{t('🤝 Клиентът прие +{0}% (+{1}) — важи, ако приемеш поръчката до {2}.', haggle.percent, money(Math.round((rewardCents * haggle.percent) / 100)), new Date(haggle.holdUntil).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' }))}</p>
+      <p className="rounded-xl border border-profit/40 bg-profit/10 p-3 text-sm">{t('🤝 Клиентът прие +{0}% (+{1}) — важи, ако приемеш поръчката до {2}.', haggle.percent, money(Math.round((rewardCents * haggle.percent) / 100)), new Date(haggle.holdUntil).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Sofia' }))}{countdown && <> <Countdown until={haggle.holdUntil} className="font-semibold" /></>}</p>
     ) : (
       <p className="rounded-xl border border-asphalt-600 p-3 text-sm text-mist-400">{t('🤝 Договореното +{0}% изтече — поръчката е на обичайната цена.', haggle.percent)}</p>
     );
@@ -435,6 +441,7 @@ function whyNot(c: BoardContract): string | null {
 function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
+  const countdown = useFeature('countdowns');
   const usable = c.options.filter((o) => !o.error);
   const blocked = c.options.filter((o) => o.error);
   // The reasons, each once, with the vehicles it stops (the plate is the label's first part).
@@ -539,7 +546,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{tx(c.weather.label)} ({tx(c.weather.country)})</Badge>}
               {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />{t('ПРЕМИУМ · репутация {0}', c.minReputation)}</Badge>}
               {c.alreadyTaken && <Badge tone="green">{t('Вече я поехте')}</Badge>}
-              {c.reservedByMe && <Badge tone="gold">{t('Запазена за теб до {0}', c.reservedUntil)}</Badge>}
+              {c.reservedByMe && <Badge tone="gold">{t('Запазена за теб до {0}', c.reservedUntil)}{countdown && c.reservedUntilAt ? <> <Countdown until={c.reservedUntilAt} /></> : null}</Badge>}
               {c.reservedByOther && <Badge tone="neutral">{t('Запазена до {0}', c.reservedUntil)}</Badge>}
               {c.opensAt && <Badge tone="violet">{t('VIP · за всички от {0}', c.opensAt)}</Badge>}
               {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{c.options.some((o) => !o.error && o.emptyKm === 0) ? t('За камиона ти тук') : t('Във вашия град')}</Badge>}

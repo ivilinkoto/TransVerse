@@ -35,6 +35,10 @@ import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent, HALLOWEEN_DEF } from './halloween';
 import { rewardEarlierVerified } from '@/server/auth/email-reward';
 import { runDueDeletions } from '@/server/auth/account-close';
+import { housekeeping } from '@/server/housekeeping';
+import { runBackup } from '@/server/backup';
+import { MY_DAY_HOUR, sendMyDay } from './my-day';
+import { sofiaHour } from '@/lib/game/halloween';
 import { postBroadcastToDiscord } from '@/server/broadcast';
 import { remindUnclaimedHoliday } from './holiday';
 import { ensureChristmasEvent } from './christmas';
@@ -227,6 +231,12 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     if (featureLive('email_reward', now)) await every(db, 'email-reward-earlier', 365 * 86_400_000, now, () => rewardEarlierVerified(db, now));
     // 1.1.3: profiles whose deletion grace period ended.
     await every(db, 'account-deletions', 60 * 60_000, now, () => runDueDeletions(db, now));
+    // 1.1.4: trim the tables that only grow (expired sessions, old activity and read notifications).
+    await every(db, 'housekeeping', 24 * 60 * 60_000, now, () => housekeeping(db, now));
+    // 1.1.4: a nightly copy of the database on the server (a deploy only), around 03:00 Sofia.
+    if (sofiaHour(now) === 3) await every(db, 'backup', 20 * 60 * 60_000, now, () => runBackup(db, now));
+    // 1.1.4 „Моят ден“: the evening summary for players who asked for it.
+    if (sofiaHour(now) === MY_DAY_HOUR) await every(db, 'my-day', 20 * 60 * 60_000, now, () => sendMyDay(db, now));
     // 1.1.3: the team's message in Discord when it starts.
     await every(db, 'broadcast-discord', 60_000, now, () => postBroadcastToDiscord(db, now));
     await every(db, 'christmas-event', 10 * 60_000, now, () => ensureChristmasEvent(db, now));

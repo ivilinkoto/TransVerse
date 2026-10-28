@@ -160,7 +160,7 @@ export const users = pgTable(
     /** v2.0 legacy stars (New Game+), 0…5. */
     legacyStars: integer('legacy_stars').notNull().default(0),
     /** asPlayer (1.1.2): a staff member looks at the game as a player (no unreleased features, no staff badges). */
-    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean }>().notNull().default({}),
+    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean; dailySummary?: boolean }>().notNull().default({}),
     /** 1.1.2: when the player agreed to the terms and the privacy policy (null for accounts made before). */
     termsAcceptedAt: ts('terms_accepted_at'),
     /** 1.1.2: the truck the player shows on their player card (one of their own). */
@@ -3164,4 +3164,32 @@ export const communityCupEntries = pgTable(
     joinedAt: ts('joined_at').notNull(),
   },
   (t) => [primaryKey({ columns: [t.tournamentId, t.userId] }), index('community_cup_entries_user_idx').on(t.userId)],
+);
+
+/** 1.1.4: players' ideas for the game, with votes; the team marks what it plans and what is done. */
+export const ideas = pgTable(
+  'ideas',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    body: text('body').notNull().default(''),
+    /** open | planned | done | declined | hidden */
+    status: text('status').notNull().default('open'),
+    /** The team's answer, shown under the idea. */
+    staffNote: text('staff_note'),
+    votes: integer('votes').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [index('ideas_status_votes_idx').on(t.status, t.votes)],
+);
+
+export const ideaVotes = pgTable(
+  'idea_votes',
+  {
+    ideaId: uuid('idea_id').notNull().references(() => ideas.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.ideaId, t.userId] })],
 );

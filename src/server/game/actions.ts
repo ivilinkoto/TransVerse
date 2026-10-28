@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ideaSchema, submitIdea, voteIdea } from '@/server/game/ideas';
 import { companyNameSchema } from '@/server/auth/accounts';
 import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental, startTestDrive } from '@/server/game/rentals';
@@ -209,6 +210,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('depositTreasury'), amountEur: z.coerce.number() }),
   z.object({ type: z.literal('transferOwnership'), userId: id, leave: z.boolean(), confirmName: z.string().max(40) }),
   z.object({ type: z.literal('renameCompany'), name: companyNameSchema }),
+  z.object({ type: z.literal('submitIdea'), idea: ideaSchema }),
+  z.object({ type: z.literal('voteIdea'), ideaId: id }),
   z.object({ type: z.literal('acceptTerms') }),
   z.object({ type: z.literal('favoriteTruck'), vehicleId: id.nullable() }),
   z.object({ type: z.literal('dissolveCompany') }),
@@ -257,7 +260,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reportShady'), contractId: id }),
   z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
   z.object({ type: z.literal('blackRepair'), vehicleId: id }),
-  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional() }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
@@ -388,6 +391,8 @@ export const Action = z.discriminatedUnion('type', [
 const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   nameVehicle: 'truck_names',
   renameCompany: 'company_rename',
+  submitIdea: 'ideas',
+  voteIdea: 'ideas',
   favoriteTruck: 'favorite_truck',
   sendMoney: 'transfers',
   offerJob: 'hire',
@@ -764,6 +769,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'acceptTerms':
       await acceptTerms(db, user.id);
       return { ok: true };
+    case 'submitIdea':
+      return { ok: true, id: (await submitIdea(db, user.id, input.idea)).id };
+    case 'voteIdea':
+      return { ok: true, ...(await voteIdea(db, user.id, input.ideaId)) };
     case 'renameCompany':
       return { ok: true, ...(await renameCompany(db, user.id, input.name)) };
     case 'rerollMission':

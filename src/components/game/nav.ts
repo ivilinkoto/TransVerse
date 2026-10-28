@@ -113,6 +113,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/events', label: 'Ивенти', group: 'Днес' },
       { href: '/game/leaderboards', label: 'Класации', group: 'Класации' },
       { href: '/game/news', label: 'Седмичник', group: 'Общност' },
+      { href: '/game/ideas', label: 'Идеи', feature: 'ideas', group: 'Общност' },
       { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2 },
       { href: '/game/progress', label: 'Постижения', group: 'Колекции' },
       { href: '/game/collection', label: 'Албум', feature: 'city_album', group: 'Колекции', minLevel: 2 },

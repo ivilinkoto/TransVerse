@@ -1,10 +1,11 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { CalendarHeart, ChevronRight, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { BookOpen, CalendarHeart, ChevronRight, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
 import { headline } from '@/lib/game/news';
 import { latestIssues } from '@/server/game/news';
+import { cached } from '@/server/cache';
 import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
@@ -32,6 +33,7 @@ import { HALLOWEEN_DEF } from '@/server/game/halloween';
 import { unclaimedHolidayQuests } from '@/server/game/holiday';
 import { firstOwnTruck, recentTrips } from '@/server/game/overview';
 import { upcomingRelease } from '@/lib/game/releases';
+import { BUDITELI, isBuditeli } from '@/lib/game/buditeli';
 import { runningEvents } from '@/server/game/events';
 import { missionBoard } from '@/server/game/missions';
 import { missionById } from '@/lib/game/missions';
@@ -48,8 +50,9 @@ export default async function OverviewPage() {
   const { db, user, company, hq, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
   const marta = features.marta && isMarta(now);
-  const real = features.real_weather ? await realConditions(db, now, true) : null;
-  const [paper] = await latestIssues(db, 1);
+  // 1.1.4: the same for everyone — kept for a minute instead of read on every visit.
+  const real = features.real_weather ? await cached('dash:weather', 60_000, () => realConditions(db, now, true), now.getTime()) : null;
+  const [paper] = await cached('dash:paper', 60_000, () => latestIssues(db, 1), now.getTime());
   const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
   const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
   // v1.9: three concrete things to do now.
@@ -185,6 +188,13 @@ export default async function OverviewPage() {
             </div>
           </div>
         </section>
+      )}
+      {features.buditeli && isBuditeli(now) && (
+        <Link href="/game/contracts" className="panel flex items-center gap-3 border-gold-400/50 p-3.5 transition hover:border-gold-400/80">
+          <BookOpen className="h-8 w-8 shrink-0 text-gold-400" />
+          <span className="min-w-0 flex-1 text-sm"><span className="block font-semibold">{t('Ден на народните будители')}</span><span className="text-mist-300">{t('Днес и утре: товари с книги и учебни пособия с +{0}%. Достави {1} и вземи значка „Будител“ и {2} ТрансКоин.', Math.round((BUDITELI.rewardMultiplier - 1) * 100), BUDITELI.forBadge, BUDITELI.coins)}</span></span>
+          <span className="btn-primary px-3 py-1.5 text-xs">{t('Към товарите')}</span>
+        </Link>
       )}
       {halloweenLeft > 0 && (
         <Link href="/game/halloween" className="panel flex items-center gap-3 border-orange-500/50 p-3.5 transition hover:border-orange-500/80">
