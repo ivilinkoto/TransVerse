@@ -124,7 +124,8 @@ describe('server layout', () => {
 
     // Statistics channels show numbers from the game.
     forgetGuild();
-    expect(await updateStats(db())).toBe(4);
+    // 1.1.3.4: also the countdown to the next update.
+    expect(await updateStats(db())).toBe(5);
     expect(fake.state.channels.find((c) => c.id === state.channels['stat-players'])!.name).toMatch(/^👥 Шофьори: \d/);
   });
 });
