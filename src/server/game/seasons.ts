@@ -3,6 +3,7 @@ import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { companies, companyMembers, organizationSeasonScores, organizations, seasonScores, seasons } from '@/server/db/schema';
 import { post, postTreasury } from './finance';
 import { notify } from './notify';
+import { awardSeasonMedals } from './medals';
 import { t, intlLocale } from '@/i18n/t';
 
 export interface SeasonRules {
@@ -129,6 +130,7 @@ export async function rotateSeasons(db: Database, now = new Date()): Promise<num
         if (company) await notify(tx, company.ownerId, 'achievement', () => t('{0} приключи', season.name), () => t('Класирахте се на {0}. място с {1} точки.', i + 1, row.points), '/game/seasons');
       }
       await closeOrganizationSeason(tx, season);
+      await awardSeasonMedals(tx, season, now);
       await tx.update(seasons).set({ status: 'finished' }).where(eq(seasons.id, season.id));
     }
     if (ended.length) await activeSeason(tx, now);

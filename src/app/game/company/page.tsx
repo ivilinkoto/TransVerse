@@ -2,6 +2,8 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { Building2, Bus, Cake, CalendarDays, CheckCircle2, Circle, Coins, Gift, Landmark, MapPin, Route, ScrollText, Star, Truck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { CompanySeason } from '@/components/company/CompanySeason';
+import { CompanyMedals } from '@/components/company/CompanyMedals';
+import { companyAchievementsOf, organizationMedals } from '@/server/game/medals';
 import { getDb } from '@/server/db/client';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { companyXpForLevel, COMPANY_UNLOCKS, memberBonuses, memberCapacity, type UpgradeLevels } from '@/lib/game/company';
@@ -42,7 +44,7 @@ export default async function CompanyPage() {
     return (
       <>
         <TutorialVisit step="company_goal" pending={visitPending} />
-        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month }} />
+        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month, medals: features.season_medals ? await organizationMedals(db, hub.company.id) : null, companyAchievements: features.company_achievements ? await companyAchievementsOf(db, hub.company.id) : null }} />
       </>
     );
   }
@@ -151,7 +153,7 @@ async function staffBusView(db: ReturnType<typeof getDb>, userId: string, accoun
   return { ...state, trucks: trucks.filter((t) => t.cityId !== state.hqCityId) };
 }
 
-type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null; chronicle: Awaited<ReturnType<typeof chronicleOf>> | null; driverOfMonth: boolean };
+type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null; chronicle: Awaited<ReturnType<typeof chronicleOf>> | null; driverOfMonth: boolean; medals: Awaited<ReturnType<typeof organizationMedals>> | null; companyAchievements: Awaited<ReturnType<typeof companyAchievementsOf>> | null };
 
 const CHRONICLE_ICON: Record<string, string> = { driver: '🚚', founded: '🏁', level: '⭐', build: '🏗️', battle: '⚔️', project: '📦', division: '🏆', anniversary: '🎂', alliance: '🛡', specialization: '🎯', museum: '🏛️', owner: '🔑', name: '✏️' };
 
@@ -219,6 +221,7 @@ function CompanyOverview({ hub, history, licences, extras }: { hub: Hub; history
         )}
         {extras.chronicle && <Chronicle items={extras.chronicle} />}
         <CompanyProgress hub={hub} />
+        {(extras.medals || extras.companyAchievements) && <CompanyMedals medals={extras.medals} achievements={extras.companyAchievements} />}
         <CompanySeason db={getDb()} organizationId={c.id} />
         <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} />
         <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-mist-400" />{tr('Моето членство')}</span>}>

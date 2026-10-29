@@ -15,6 +15,7 @@ import { PlayerName } from './PlayerName';
 import { openReport } from './ReportDialog';
 import { SendMoneyForm } from './SendMoneyForm';
 import { t, tx, intlLocale } from '@/i18n/t';
+import { MEDAL_INFO, MEDALS } from '@/lib/game/medals';
 
 /** The ring around the picture: the Halloween badge, then the Discord level frames (gold 25, cyan 10). */
 const frameOf = (badges: { id: string }[]) =>
@@ -89,6 +90,21 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
         <Stat label={t('Доставки')} value={card.deliveries.toLocaleString(intlLocale())} sub={card.kind === 'company' ? t('собствен автопарк') : t('шофьор')} />
         <Stat label={t('Приятели')} value={card.friends} />
       </div>
+      {card.medals && (card.medals.counts.gold + card.medals.counts.silver + card.medals.counts.bronze > 0) && (
+        <div className="mt-3 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="text-[11px] text-mist-400">{t('Сезонни медали')}</span>
+            {MEDALS.filter((m) => card.medals!.counts[m] > 0).map((m) => (
+              <span key={m} className="num font-semibold" title={tx(MEDAL_INFO[m].label)}>{MEDAL_INFO[m].icon} × {card.medals!.counts[m]}</span>
+            ))}
+          </div>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {card.medals.recent.map((r) => (
+              <span key={r.season} className="rounded-full bg-asphalt-850 px-2 py-0.5 text-[11px] text-mist-300">{MEDAL_INFO[r.medal].icon} {tx(r.season)} · {t('{0}. място', r.rank)}</span>
+            ))}
+          </div>
+        </div>
+      )}
       {card.favorite && (
         <div className="mt-3 flex items-center gap-3 rounded-xl border border-asphalt-700 bg-asphalt-850/60 px-3 py-2">
           <VehicleIllustration modelId={card.favorite.modelId} color={card.favorite.color} className="h-12 w-auto max-w-[160px] shrink-0" />

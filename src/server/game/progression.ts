@@ -7,6 +7,8 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { achievements, companies, deliveries, depots, drivers, cities, ledgerEntries, userBadges, users, vehicles, xpEntries } from '@/server/db/schema';
 import { post } from './finance';
 import { notify } from './notify';
+import { featureFor } from '@/server/features';
+import { announceAchievement } from '@/server/discord/announce';
 import { t } from '@/i18n/t';
 
 export async function companyStats(db: DbOrTx, companyId: string): Promise<CompanyStats> {
@@ -97,6 +99,8 @@ export async function checkAchievements(tx: Tx, userId: string, companyId: strin
   const unlocked: string[] = [];
   for (const a of ACHIEVEMENTS) {
     if (!a.check(stats)) continue;
+    // 1.1.3.1: achievements of a later release count from its date (staff earlier).
+    if (a.since && !(await featureFor(tx, userId, a.since))) continue;
     const inserted = await tx.insert(achievements).values({ userId, key: a.key }).onConflictDoNothing().returning({ key: achievements.key });
     if (!inserted.length) continue;
     unlocked.push(a.key);
@@ -105,6 +109,8 @@ export async function checkAchievements(tx: Tx, userId: string, companyId: strin
     if (a.badge) await tx.insert(userBadges).values({ userId, badge: a.badge }).onConflictDoNothing();
     await notify(tx, userId, 'achievement', () => t('Постижение: {0}', a.title), a.description, '/game/progress');
     await addFeed(tx, { userId, kind: 'achievement', text: t('спечели постижението „{0}“', a.title) });
+    // 1.1.3.1: a gold or prestige achievement is told in Discord (#класации).
+    if (a.tier === 'gold' || a.tier === 'prestige') await announceAchievement(tx, userId, a.key, a.title, a.tier);
   }
   return unlocked;
 }

@@ -90,7 +90,7 @@ export default async function OverviewPage() {
   const avgCondition = fleet.vehicles.length ? fleet.vehicles.reduce((s, v) => s + v.condition, 0) / fleet.vehicles.length : 0;
   const lp = levelProgress(user.xp);
   const done = new Set(unlocked.map((a) => a.key));
-  const goals = ACHIEVEMENTS.filter((a) => !done.has(a.key)).sort((a, b) => b.progress(stats) - a.progress(stats)).slice(0, 3);
+  const goals = ACHIEVEMENTS.filter((a) => !done.has(a.key) && (!a.since || features[a.since])).sort((a, b) => b.progress(stats) - a.progress(stats)).slice(0, 3);
 
   const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Sofia' }).format(now));
   const greeting = hour < 11 ? t('Добро утро') : hour < 18 ? t('Добър ден') : t('Добър вечер');

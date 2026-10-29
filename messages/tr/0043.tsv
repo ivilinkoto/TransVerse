@@ -1,0 +1,111 @@
+# 1.1.3.1 «Медали»: medals, achievements by tier, company achievements, new vehicles
+1e4c644e0c	1,000,000 BGN in the company treasury.	1 000 000 лв. в кассе компании.
+5a978a5d34	1,000 trips by the members together.	1 000 рейсов участников вместе.
+52f102043e	10 members in the company.	10 участников в компании.
+5a9d83e308	100 on-time deliveries with no risk at all.	100 доставок вовремя совсем без риска.
+2d73b3e6f2	100 on-time deliveries.	100 доставок вовремя.
+5823bcfd3a	100 deliveries arriving at night (22:00–06:00).	100 доставок, прибывших ночью (22:00–06:00).
+8c34fd0e3d	100 trips by the members together.	100 рейсов участников вместе.
+b555a1eb52	15 new achievements. All of them are now sorted into bronze, silver, gold and prestige, with a counter for each tier and how rare each one is — “3% of players have it”. A new “Collectors” board for the most achievements.	15 новых достижений. Все они теперь разделены на бронзовые, серебряные, золотые и престижные, со счётчиком для каждого уровня и редкостью каждого — «есть у 3% игроков». Новый рейтинг «Коллекционеры» — у кого больше всего достижений.
+cff66a8cb3	3 seasons in the company top 10.	3 сезона в топ-10 компаний.
+f18e6c756f	5 on-time deliveries.	5 доставок вовремя.
+848cbb51c5	5 members in the company.	5 участников в компании.
+796c520c6f	50,000 kilometres	50 000 километров
+eaebce67dc	Danubia T380 Classic — an affordable classic tractor with a day cab, from level 2.	Danubia T380 Classic — недорогой классический тягач с дневной кабиной, с уровня 2.
+4c12be0928	Hemus R18 Tipper	Hemus R18 Самосвал
+209de8f78e	Hemus R18 Tipper — 9 t of bulk cargo, from level 3.	Hemus R18 Самосвал — 9 т сыпучих грузов, с уровня 3.
+ebef9f5b0b	Hemus R18 Tanker	Hemus R18 Цистерна
+8998c30b2c	Hemus R18 Tanker — 8 t of liquid cargo, from level 4.	Hemus R18 Цистерна — 8 т жидких грузов, с уровня 4.
+97fe2b7539	Sokol Cargo 7.2 (a box van), Hemus R18 Tipper, Hemus R18 Tanker and the classic Danubia T380 Classic tractor. For two weeks they carry a “NEW” label on the market, and anyone can try them for free on a test drive.	Sokol Cargo 7.2 (фургон), Hemus R18 Самосвал, Hemus R18 Цистерна и классический тягач Danubia T380 Classic. Две недели на рынке у них метка «НОВИНКА», и любой может бесплатно опробовать их на тест-драйве.
+e2d7a61e5d	Sokol Cargo 7.2 — a box van, 2.6 t, from level 2.	Sokol Cargo 7.2 — фургон, 2,6 т, с уровня 2.
+7eca7c6c53	{0} of {1} achievements	{0} из {1} достижений
+32724a7b54	{0} achievements	{0} достижений
+b87e805884	{0}: place {1} in the player standings. The medal is on your profile.	{0}: {1}-е место в рейтинге игроков. Медаль — в твоём профиле.
+ecf38ec50b	{0}: “{1}” finished {2} among the companies. The medal is on the company profile.	{0}: «{1}» на {2}-м месте среди компаний. Медаль — в профиле компании.
+795cc1439c	Balkan route	Балканский маршрут
+13895a5eac	Bronze medal	Бронзовая медаль
+b2d46d8cc9	Bronze medal!	Бронзовая медаль!
+f46622d128	Bronze	Бронзовые
+d958f45506	At the end of every season players in places 1–3 win a gold medal, 4–10 silver and 11–25 bronze. The top three companies get gold, silver and bronze as badges on their profile — and so does every member. Medals show on your profile and can go in your showcase.	В конце каждого сезона игроки на местах 1–3 получают золотую медаль, 4–10 — серебряную, 11–25 — бронзовую. Три лучшие компании получают золото, серебро и бронзу как значки в профиле — и каждый их участник тоже. Медали видны в профиле, их можно выставить в витрину.
+650aa822c0	Earn over 20,000 BGN on a single trip.	Получи больше 20 000 лв. за один рейс.
+f63ec26d8a	Big haul	Крупный куш
+db3d107877	Big family	Большая семья
+2eef2cf062	Deliver to 15 different countries.	Доставляй в 15 разных стран.
+1ce5a3ecb7	Deliver to 5 different countries.	Доставляй в 5 разных стран.
+8e1f66cf84	Reach a balance of 10,000,000 BGN.	Достигни баланса 10 000 000 лв.
+7c6a8d01b6	Reach level 5.	Достигни уровня 5.
+6fbcc30395	European	Европеец
+0e79b5c878	A “NEW” label on the market until 12 November and a free test drive of the new models.	Метка «НОВИНКА» на рынке до 12 ноября и бесплатный тест-драйв новых моделей.
+41a6fa3afb	Complete 1,000 deliveries.	Выполни 1 000 доставок.
+38dee994a1	Complete 100 deliveries.	Выполни 100 доставок.
+67678fa098	Finish a season in the top {0} of the standings to win your first medal. Medals show on your profile and can go in your showcase.	Закончи сезон в топ-{0} рейтинга, чтобы получить первую медаль. Медали видны в профиле, их можно выставить в витрину.
+17c3f99d87	Gold medal	Золотая медаль
+031ce2d7b0	A gold medal for a player or a company is announced on Discord.	Золотая медаль игрока или компании объявляется в Discord.
+7ae07c6372	Gold medal!	Золотая медаль!
+b2995970c1	Gold	Золотые
+213b584229	Gold, silver and bronze medals for the seasons, 15 new achievements by tier, achievements for companies and four new vehicles.	Золотые, серебряные и бронзовые медали за сезоны, 15 новых достижений по уровням, достижения компаний и четыре новых машины.
+e22036979b	A gold or prestige achievement is announced on Discord.	Золотое или престижное достижение объявляется в Discord.
+4c4cb1f052	Drive 1,000 km in total.	Проедь всего 1 000 км.
+a62176afa8	Drive 250,000 km in total.	Проедь всего 250 000 км.
+c07a002a46	Drive 50,000 km in total.	Проедь всего 50 000 км.
+3ecb4b3703	{0}% of players have it	Есть у {0}% игроков
+4734a89a3e	The player card and the Progress page show a player's medals by season.	Карточка игрока и страница «Прогресс» показывают его медали по сезонам.
+1ac3248610	“Collectors” board: the players with the most achievements.	Рейтинг «Коллекционеры»: игроки с наибольшим числом достижений.
+3991eddb25	Collectors	Коллекционеры
+78a5aee044	A company earns achievements of its own: 100 and 1,000 trips together, 5 and 10 members, 1,000,000 BGN in the treasury, level 10, 3 seasons in the top 10 and first place in a season. They show as badges on the company profile.	Компания получает свои достижения: 100 и 1 000 рейсов вместе, 5 и 10 участников, 1 000 000 лв. в кассе, уровень 10, 3 сезона в топ-10 и первое место в сезоне. Они видны как значки в профиле компании.
+db6f92c74e	The company reaches level 10.	Компания достигает уровня 10.
+26663f7c12	To the season →	К сезону →
+8fbf8edfb8	Medals	Медали
+10f7e732d8	Medals for players: 🥇 places 1–{0}, 🥈 places {1}–{2}, 🥉 places {3}–{4} — on your profile and in your showcase.	Медали игрокам: 🥇 места 1–{0}, 🥈 места {1}–{2}, 🥉 места {3}–{4} — в профиле и витрине.
+b36573de8a	Medals for companies: 🥇 place {0}, 🥈 place {1}, 🥉 place {2} — as badges on the company profile and for every member.	Медали компаниям: 🥇 {0}-е место, 🥈 {1}-е место, 🥉 {2}-е место — значками в профиле компании и каждому участнику.
+7ac46dacb6	Medals and achievements	Медали и достижения
+b6c392896c	Medals for seasons that have already ended are given right away.	Медали за уже закончившиеся сезоны выдаются сразу.
+3685dbf56f	Multimillionaire	Мультимиллионер
+6748a7ce05	Place 11–25 in a season's player standings, or third place with your company.	11–25-е место в рейтинге игроков сезона или третье место с компанией.
+d7efb50ac3	Place 1–3 in a season's player standings, or first place with your company.	1–3-е место в рейтинге игроков сезона или первое место с компанией.
+adf098e44f	Place 4–10 in a season's player standings, or second place with your company.	4–10-е место в рейтинге игроков сезона или второе место с компанией.
+39f5524ea4	NEW	НОВИНКА
+87443aa02c	On the right track	На верном пути
+54f2a92a7a	Level 5	Уровень 5
+2d1104afe5	New bronze: 1,000 km, 5 on-time deliveries, level 5.	Новые бронзовые: 1 000 км, 5 доставок вовремя, уровень 5.
+d8ab193784	New gold: 100 night deliveries, 100 on-time deliveries with no risk, 1,000 deliveries, deliveries to 15 countries, 25 vehicles.	Новые золотые: 100 ночных доставок, 100 доставок вовремя без риска, 1 000 доставок, доставки в 15 стран, 25 машин.
+9ca44a37d6	New prestige: 250,000 km and 10,000,000 BGN.	Новые престижные: 250 000 км и 10 000 000 лв.
+160f9aab5c	New silver: 100 deliveries, 50,000 km, 100 on-time deliveries, deliveries to 5 countries, over 20,000 BGN for a single trip.	Новые серебряные: 100 доставок, 50 000 км, 100 доставок вовремя, доставки в 5 стран, больше 20 000 лв. за один рейс.
+45e399d33d	Night owl	Ночная птица
+610f55130f	Nobody has it yet — be the first!	Пока ни у кого нет — будь первым!
+e32c7c8b83	No medals yet. The top three companies of a season win gold, silver and bronze.	Медалей пока нет. Три лучшие компании сезона получают золото, серебро и бронзу.
+67ec5b484c	Five on the road	Пятеро в пути
+5c16e47607	Achievements for companies	Достижения компаний
+e02b55b0bf	Achievements by tier	Достижения по уровням
+c0eec75fd0	Consistency	Постоянство
+3680bb1ebf	Vehicles	Машины
+7292487a5a	Prestige	Престижные
+e8d10e820c	Own 25 vehicles.	Владей 25 машинами.
+40302c1d0b	The company profile shows its medals and company achievements as badges.	Профиль компании показывает её медали и достижения компании как значки.
+b107513376	Full treasury	Полная касса
+33cbf0b8aa	The first 1,000 km	Первые 1 000 км
+04655afe6d	First place in a company season.	Первое место в сезоне компаний.
+f1911173d2	Rare: {0}% of players have it	Редкое: есть у {0}% игроков
+52636313e2	The season standings show next to each place which medal it would win if the season ended now.	Рейтинг сезона показывает рядом с местом, какую медаль оно получило бы, если бы сезон закончился сейчас.
+b716fce63f	Season medals	Сезонные медали
+310661c79f	Well-oiled team	Слаженная команда
+a11e369ce6	Silver medal	Серебряная медаль
+e533ad5edd	Silver medal!	Серебряная медаль!
+74c242ecc1	Silver	Серебряные
+2e02268d14	A hundred trips	Сто рейсов
+c5814b7235	The Progress page sorts achievements by tier with a counter for each tier and shows how many players have each one.	Страница «Прогресс» группирует достижения по уровням со счётчиком для каждого и показывает, у скольких игроков есть каждое.
+e94b9a1481	Established firm	Солидная фирма
+0a100631aa	Company achievement: {0} {1}	Достижение компании: {0} {1}
+fd322224c6	Fleet	Флотилия
+e7ef2d1fc0	A thousand trips	Тысяча рейсов
+0138cacb56	A quarter million	Четверть миллиона
+e53fa455bd	Four new vehicles	Четыре новые машины
+25ba831278	Champions	Чемпионы
+55be814629	places 1–{0}	места 1–{0}
+3174107ac0	places {0}–{1}	места {0}–{1}
+5da8d157ef	💎 {0} earned the prestige achievement “{1}”	💎 {0} получил престижное достижение «{1}»
+65b2aeb431	💎 “{0}” earned the prestige company achievement “{1}”	💎 «{0}» получила престижное достижение компании «{1}»
+4c868cce1c	🥇 {0} earned the gold achievement “{1}”	🥇 {0} получил золотое достижение «{1}»
+eb2f81f06c	🥇 {0} won a gold medal — place {1}	🥇 {0} получил золотую медаль — {1}-е место
+1d99fe008b	🥇 “{0}” earned the gold company achievement “{1}”	🥇 «{0}» получила золотое достижение компании «{1}»
+233e4ca936	🥇 “{0}” won the gold medal for companies	🥇 «{0}» получила золотую медаль среди компаний

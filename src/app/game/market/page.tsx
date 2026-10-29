@@ -9,7 +9,7 @@ import { Badge, Card, PageHeader, Segmented } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
-import { POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
+import { modelAvailable, POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
 import { cities, depots, vehicles } from '@/server/db/schema';
 import { Warehouse } from 'lucide-react';
 import { BODY_LABELS } from '@/server/game/deliveries';
@@ -62,14 +62,15 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
   await initLocale();
   const { db, user, company, now, features } = await gameContext();
   // v1.5: the models this player already test-drove (once each).
-  const testDriven = new Set(features.test_drive ? (await db.select({ key: jobState.key }).from(jobState).where(like(jobState.key, `test-drive:${user.id}:%`))).map((r) => r.key.split(':')[2]!) : []);
+  const testDriven = new Set(features.test_drive || features.new_vehicles_1131 ? (await db.select({ key: jobState.key }).from(jobState).where(like(jobState.key, `test-drive:${user.id}:%`))).map((r) => r.key.split(':')[2]!) : []);
   const params = await searchParams;
   const show: Show = SHOW.some((x) => x.id === params.show) ? (params.show as Show) : 'all';
   const sort: SortId = SORT.some((x) => x.id === params.sort) ? (params.sort as SortId) : 'price_asc';
   const order = <T extends { priceCents: number; minLevel: number }>(list: readonly T[]) =>
     [...list].sort((a, b) => (sort === 'price_desc' ? b.priceCents - a.priceCents : sort === 'level' ? a.minLevel - b.minLevel || a.priceCents - b.priceCents : a.priceCents - b.priceCents));
   // Electric models come with v1.4 (staff see them earlier).
-  const units = order(POWER_UNITS.filter((m) => (show === 'all' || m.kind === show) && (!m.electric || features.electric)));
+  // Electric (v1.4) and newer (1.1.3.1) models wait for their release; staff see them earlier.
+  const units = order(POWER_UNITS.filter((m) => (show === 'all' || m.kind === show) && modelAvailable(m, (f) => features[f])));
   const showUnits = show === 'all' || show === 'van' || show === 'rigid' || show === 'tractor';
   const href = (next: Partial<{ show: Show; sort: SortId }>) => `/game/market?show=${next.show ?? show}&sort=${next.sort ?? sort}`;
   const held = await heldLicences(db, user.id);
@@ -149,6 +150,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                   <div className="text-right">
                     <div className="num font-display text-lg font-bold text-gold-400">{money(m.priceCents)}</div>
                     <Badge tone={user.level >= m.minLevel ? 'green' : 'violet'}>{tr('ниво {0}', m.minLevel)}</Badge>
+                    {m.newUntil && now < new Date(`${m.newUntil}T00:00:00+02:00`) && <div className="mt-1"><Badge tone="cyan">{tr('НОВО')}</Badge></div>}
                   </div>
                 </div>
                 <div className="my-3 flex h-28 items-end rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
@@ -176,7 +178,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                 <LicenceHint body={m.body} held={held} />
                 <div className="mt-auto space-y-3">
                   <BuyButton type="buyVehicle" modelId={m.id} depots={depotOptions} disabledReason={reason} label={tr('Купи')} fix={reason === noRoomReason ? fullFix : null} />
-                  {features.test_drive && !testDriven.has(m.id) && user.level >= m.minLevel && (
+                  {(features.test_drive || (m.since && features[m.since])) && !testDriven.has(m.id) && user.level >= m.minLevel && (
                     <ActionButton action={{ type: 'testDrive', modelId: m.id }} className="btn-ghost w-full justify-center text-sm" confirm={tr('Тест-драйв на {0} {1}: ти сядаш в него там, където е камионът ти, и караш един курс без наем. После се връща в салона.', m.brand, m.name)}>{tr('Тест-драйв')}</ActionButton>
                   )}
                   {features.leasing && m.priceCents >= LEASE.minPriceCents && (() => {

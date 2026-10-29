@@ -599,6 +599,17 @@ export const achievements = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.key] })],
 );
 
+/** Achievements a player company earned as a whole (v1.1.3.1), shown as badges on its profile. */
+export const organizationAchievements = pgTable(
+  'organization_achievements',
+  {
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    unlockedAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.key] })],
+);
+
 export const seasons = pgTable('seasons', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),

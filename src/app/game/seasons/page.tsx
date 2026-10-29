@@ -8,6 +8,7 @@ import { gameContext } from '@/server/game/context';
 import { leaderboard } from '@/server/game/queries';
 import { companyPrizes, organizationSeasonResults, organizationSeasonTable, type SeasonRules } from '@/server/game/seasons';
 import { membershipOf } from '@/server/game/membership';
+import { COMPANY_MEDAL_PLACES, MEDAL_INFO, PLAYER_MEDAL_PLACES, companyMedal, playerMedal } from '@/lib/game/medals';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
@@ -19,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function SeasonsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await initLocale();
-  const { db, user, company, now } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
   const tab = (await searchParams).tab === 'companies' ? 'companies' : 'players';
   const { season, rows } = await leaderboard(db, 'season', 200);
   const rules = season!.rules as SeasonRules;
@@ -35,6 +36,11 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
   const orgPast = membership && past.length ? await organizationSeasonResults(db, membership.company.id) : [];
   const companies = tab === 'companies';
   const prizes = companies ? companyPrizes(rules) : rules.prizesCents;
+  // 1.1.3.1: the medal the place would win if the season ended now.
+  const medalIcon = (place: number) => {
+    const m = features.season_medals ? (companies ? companyMedal(place) : playerMedal(place)) : null;
+    return m ? <span className="ml-1" title={tx(MEDAL_INFO[m].label)}>{MEDAL_INFO[m].icon}</span> : null;
+  };
 
   return (
     <div className="space-y-6">
@@ -57,7 +63,7 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
             {companies
               ? orgRows.slice(0, 50).map((r, i) => (
                   <li key={r.organizationId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.organizationId === membership?.company.id ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
-                    <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{i + 1}</span>
+                    <span className="num w-12 shrink-0 text-center font-display font-bold text-mist-300">{i + 1}{medalIcon(i + 1)}</span>
                     <div className="min-w-0 flex-1">
                       <Link href={`/game/companies/${r.organizationId}`} className="block truncate font-semibold hover:underline">{r.tag && <span style={{ color: r.color ?? undefined }}>[{tx(r.tag)}] </span>}{tx(r.name)}</Link>
                       <div className="text-xs text-mist-400">{t('ниво {0} · {1} членове · {2} доставки', r.level, int(r.members), int(r.deliveries))}</div>
@@ -67,7 +73,7 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
                 ))
               : rows.slice(0, 50).map((r, i) => (
                   <li key={r.companyId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.companyId === company.id ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
-                    <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{i + 1}</span>
+                    <span className="num w-12 shrink-0 text-center font-display font-bold text-mist-300">{i + 1}{medalIcon(i + 1)}</span>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-semibold">{tx(r.owner)}</div>
                       <div className="truncate text-xs text-mist-400">{t('{0} · ниво {1} · {2} доставки', r.company, r.level, int(r.deliveries))}</div>
@@ -83,6 +89,13 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
             <ol className="space-y-2 text-sm">
               {prizes.map((p, i) => <li key={i} className="flex justify-between rounded-lg bg-asphalt-850 px-3 py-2"><span>{t('{0}. място', i + 1)}</span><span className="num text-gold-400">{money(p)}</span></li>)}
             </ol>
+            {features.season_medals && (
+              <p className="mt-3 rounded-lg border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-300">
+                {companies
+                  ? t('Медали за компаниите: 🥇 {0}. място, 🥈 {1}. място, 🥉 {2}. място — като значки на профила на компанията и за всеки член.', COMPANY_MEDAL_PLACES.gold, COMPANY_MEDAL_PLACES.silver, COMPANY_MEDAL_PLACES.bronze)
+                  : t('Медали за играчите: 🥇 места 1–{0}, 🥈 места {1}–{2}, 🥉 места {3}–{4} — в профила и витрината ти.', PLAYER_MEDAL_PLACES.gold, PLAYER_MEDAL_PLACES.gold + 1, PLAYER_MEDAL_PLACES.silver, PLAYER_MEDAL_PLACES.silver + 1, PLAYER_MEDAL_PLACES.bronze)}
+              </p>
+            )}
             {companies && <p className="mt-3 text-xs text-mist-400">{t('Наградите отиват в касата на компанията. Точките на компанията са сборът от сезонните точки на членовете ѝ, спечелени докато са членове.')}</p>}
           </Card>
           <Card title={t('Минали сезони')}>

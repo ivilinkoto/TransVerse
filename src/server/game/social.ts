@@ -7,6 +7,8 @@ import type { Database, DbOrTx } from '@/server/db/client';
 import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, userBlocks, users, haulerRatings, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { badgesOf } from './halloween';
+import { playerMedals } from './medals';
+import { medalCounts } from '@/lib/game/medals';
 import { assertNotBlocked } from './moderation';
 import { fail } from './errors';
 import { queueRoles } from '@/server/discord/outbox';
@@ -49,13 +51,16 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
   const [favorite] = u.favoriteVehicleId && account && (await featureFor(db, viewerId, 'favorite_truck', now))
     ? await db.select({ modelId: vehicles.modelId, color: vehicles.color, plate: vehicles.plate, nickname: vehicles.nickname }).from(vehicles).where(and(eq(vehicles.id, u.favoriteVehicleId), eq(vehicles.companyId, account.id)))
     : [];
+  // 1.1.3.1: season medals (the medal badges then show only here, not twice).
+  const medals = (await featureFor(db, viewerId, 'season_medals', now)) ? await playerMedals(db, u.id) : null;
   return {
     id: u.id,
     username: u.username,
     role: u.role,
     avatarVersion: u.avatarVersion,
     leagueTier: u.leagueTier,
-    badges: (await badgesOf(db, u.id)).map((b) => ({ id: b.id, label: b.label, description: b.description })),
+    badges: (await badgesOf(db, u.id)).filter((b) => !medals || !b.id.startsWith('season-')).map((b) => ({ id: b.id, label: b.label, description: b.description })),
+    medals: medals ? { counts: medalCounts(medals.map((m) => m.medal)), recent: medals.slice(0, 6).map((m) => ({ season: m.name, rank: m.rank!, medal: m.medal })) } : null,
     vip: isVip(u.vipUntil, now),
     level: u.level,
     levelShare: levelProgress(u.xp).share,

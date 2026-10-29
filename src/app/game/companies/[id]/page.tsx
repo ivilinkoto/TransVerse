@@ -29,6 +29,8 @@ import { CompanyHighlights } from '@/components/company/CompanyHighlights';
 import { companyHighlights } from '@/server/game/company-profile';
 import { isOnline } from '@/lib/game/social';
 import { CompanySeason } from '@/components/company/CompanySeason';
+import { CompanyMedals } from '@/components/company/CompanyMedals';
+import { companyAchievementsOf, organizationMedals } from '@/server/game/medals';
 import { companyLicenceSet } from '@/server/game/licences';
 import { assetKinds, companyMembersView, membershipOf, myApplications, publicCompany } from '@/server/game/membership';
 import { t, tx } from '@/i18n/t';
@@ -52,6 +54,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
   const [base, exhibits] = await Promise.all([features.plot_guests ? publicPlot(db, c.id, user.id) : null, features.museum ? museumOf(db, c.id) : []]);
   const showcase = base && features.company_trophies ? await companyShowcase(db, c.id) : null;
   const history = features.company_history ? await companyHistory(db, c.id) : null;
+  const [medals, companyAchievements] = await Promise.all([features.season_medals ? organizationMedals(db, c.id) : null, features.company_achievements ? companyAchievementsOf(db, c.id) : null]);
   const shade = features.smuggling ? await companyShadeOf(db, c.id) : null;
   const own = mine?.company.id === c.id;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
@@ -72,6 +75,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
         <div className="min-w-0 space-y-6">
           {features.specializations && c.specialization && c.specialization in SPECIALIZATIONS && <div><Badge tone="violet">{t('🎯 Специализация: {0}', SPECIALIZATIONS[c.specialization as Specialization].label)}</Badge></div>}
           {shade && <div><Badge tone={shade === 'grey' ? 'neutral' : 'green'}>{shade === 'grey' ? t('🌫️ Сива компания — членовете ѝ карат и сенчести пратки') : t('✨ Чиста компания')}</Badge></div>}
+          {(medals || companyAchievements) && <CompanyMedals medals={medals} achievements={companyAchievements} />}
           {features.company_profile && highlights && <CompanyHighlights h={highlights} />}
           {exhibits.length > 0 && (
             <Card title={<span className="inline-flex items-center gap-2"><Landmark className="h-4 w-4 text-mist-400" />{t('Музеят · {0} камиона', exhibits.length)}</span>}>
