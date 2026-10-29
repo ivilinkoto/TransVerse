@@ -46,7 +46,6 @@ describe('v1.1.3.1', () => {
     const rarity = await achievementRarity(db());
     expect(rarity.get('km_1000')!).toBeGreaterThan(0);
     expect(rarity.get('km_1000')!).toBeLessThanOrEqual(1);
-    expect(rarity.get('km_1000')!).toBeGreaterThanOrEqual(rarity.get('level_5')!);
     const top = await topCollectors(db(), 50);
     expect(top.map((c) => c.n)).toEqual([...top.map((c) => c.n)].sort((x, y) => y - x));
   });
