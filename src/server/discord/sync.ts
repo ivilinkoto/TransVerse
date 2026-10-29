@@ -143,7 +143,7 @@ export async function ensureAllianceChannel(db: Database, allianceId: string) {
   }
   const roleId = a.discordRoleId ?? (await ensureRole(t('Съюз · {0}', a.name).slice(0, 100), 0xa78bfa));
   const g = await guild(true);
-  let categoryId = await layoutCategory(db, t('компании'), COMPANY_CATEGORY);
+  let categoryId = await layoutCategory(db, 'компании', COMPANY_CATEGORY);
   if (!categoryId) categoryId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: COMPANY_CATEGORY, type: 4 })).id;
   const overwrites = [
     { id: guildId, type: 0, deny: allow(VIEW) },
@@ -189,7 +189,7 @@ export async function ensureCompanyChannel(db: Database, organizationId: string)
   const color = org.liveryColor ? parseInt(org.liveryColor.slice(1), 16) : 0x2f7bff;
   const roleId = org.discordRoleId ?? (await ensureRole(t('Компания · {0}', org.name).slice(0, 100), color));
   const g = await guild(true);
-  let categoryId = await layoutCategory(db, t('компании'), COMPANY_CATEGORY);
+  let categoryId = await layoutCategory(db, 'компании', COMPANY_CATEGORY);
   if (!categoryId) categoryId = (await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, { name: COMPANY_CATEGORY, type: 4 })).id;
   let channelId = org.discordChannelId && g.channels.some((c) => c.id === org.discordChannelId) ? org.discordChannelId : null;
   const overwrites = [

@@ -11,7 +11,7 @@ import { companyBattles, globalEvents, jobState, newspapers, organizations, user
 import { LIVERY_CONTEST } from '@/lib/game/together';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
-import { button, rows, STYLE } from './ui';
+import { button, linkButton, rows, STYLE } from './ui';
 import { t, tx } from '@/i18n/t';
 
 const HOUR = 3_600_000;
@@ -66,6 +66,30 @@ export async function announceCompanyAchievement(db: DbOrTx, organizationId: str
   if (!featureLive('discord_bot', now) || !featureLive('company_achievements', now)) return;
   await announce(db, `company-achievement:${organizationId}:${key}`, 'rankings', () => ({
     embeds: [{ title: tier === 'prestige' ? t('💎 „{0}“ взе престижното фирмено постижение „{1}“', name, tx(title)) : t('🥇 „{0}“ взе златното фирмено постижение „{1}“', name, tx(title)), url: `${appUrl()}/game/companies/${organizationId}`, color: tier === 'prestige' ? 0xa855f7 : 0xf6c343, footer }],
+  }), now);
+}
+
+/** 1.1.3.2: the Discord side of the ideas (the ideas themselves come with 1.1.4). */
+export const ideasOn = (now: Date) => featureLive('discord_bot', now) && featureLive('discord_ideas', now) && featureLive('ideas', now);
+
+/** A new idea from the game, with a vote button (from runAction). */
+export async function announceIdea(db: DbOrTx, idea: { id: string; title: string; body: string }, author: string, now = new Date()) {
+  if (!ideasOn(now)) return;
+  await announce(db, `idea:${idea.id}`, 'ideas', () => ({
+    ping: false,
+    embeds: [{ title: `💡 ${idea.title}`, description: idea.body || undefined, color: BRAND, footer: { text: t('Идея от {0} · гласувай с бутона (свързан акаунт)', author) } }],
+    components: rows(button(t('Гласувай'), `idea:vote:${idea.id}`, STYLE.success, '👍'), linkButton(t('Всички идеи'), `${appUrl()}/game/ideas`)),
+  }), now);
+}
+
+const STATUS_LINE: Record<string, string> = { planned: '🗓️ Планирана', done: '✅ Направена', declined: '❌ Отхвърлена' };
+
+/** The team marked an idea planned, done or declined (from setIdeaStatus). */
+export async function announceIdeaStatus(db: DbOrTx, idea: { id: string; title: string }, status: string, note: string, now = new Date()) {
+  if (!ideasOn(now) || !(status in STATUS_LINE)) return;
+  await announce(db, `idea-status:${idea.id}:${status}`, 'ideas', () => ({
+    ping: false,
+    embeds: [{ title: `${tx(STATUS_LINE[status]!)}: ${idea.title}`, description: note ? t('Екипът: {0}', note) : undefined, color: status === 'declined' ? 0x9aa3b2 : 0x2fd27a, url: `${appUrl()}/game/ideas` }],
   }), now);
 }
 

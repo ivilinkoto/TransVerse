@@ -49,7 +49,7 @@ export function ticketForm(ctx: Ctx, category: string): Answer {
 const slug = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40) || tr('тикет');
 
 async function ticketCategory(ctx: Ctx, staffRole: string, botId: string) {
-  const found = await layoutCategory(ctx.db, tr('отворени-тикети'), TICKET_CATEGORY);
+  const found = await layoutCategory(ctx.db, 'отворени-тикети', TICKET_CATEGORY);
   if (found) return found;
   const { guildId } = discordConfig();
   const cat = await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, {

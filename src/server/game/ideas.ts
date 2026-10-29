@@ -8,6 +8,7 @@ import { logActivity, notify } from './notify';
 import { isStaff } from '@/server/auth/roles';
 import { recordAudit } from '@/server/admin';
 import { t } from '@/i18n/t';
+import { announceIdea, announceIdeaStatus } from '@/server/discord/announce';
 
 /**
  * 1.1.4 „Идеи“: players suggest things for the game and vote for each other's
@@ -26,12 +27,13 @@ export const ideaSchema = z.object({
 export async function submitIdea(db: Database, userId: string, raw: z.input<typeof ideaSchema>, now = new Date()) {
   const input = ideaSchema.parse(raw);
   await assertNotMuted(db, userId, now);
-  const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
+  const [u] = await db.select({ level: users.level, username: users.username }).from(users).where(eq(users.id, userId));
   if (!u || u.level < IDEAS.minLevel) fail('level', t('Идеи се предлагат от ниво {0}.', IDEAS.minLevel));
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(ideas).where(and(eq(ideas.userId, userId), gte(ideas.createdAt, new Date(now.getTime() - 86_400_000))));
   if (n >= IDEAS.perDay) fail('too_many', t('До {0} идеи на ден — гласувай за чуждите междувременно.', IDEAS.perDay));
   const [row] = await db.insert(ideas).values({ userId, title: input.title, body: input.body, createdAt: now }).returning();
   await logActivity(db, userId, 'idea_submitted', { ideaId: row!.id });
+  await announceIdea(db, row!, u!.username, now);
   return row!;
 }
 
@@ -72,6 +74,7 @@ export async function setIdeaStatus(db: Database, actor: { id: string; role: str
   if (!idea) fail('idea_not_found', t('Идеята не е намерена.'), 404);
   await recordAudit(db, actor.id, 'idea_status', idea!.userId, { ideaId, status, title: idea!.title });
   if (status === 'planned' || status === 'done' || status === 'declined') {
+    await announceIdeaStatus(db, idea!, status, note.trim());
     await notify(db, idea!.userId, status === 'declined' ? 'info' : 'success', () => t('Твоята идея е {0}', t(STATUS_TEXT[status])), () => (note.trim() ? t('„{0}“ — {1}', idea!.title, note.trim()) : t('„{0}“', idea!.title)), '/game/ideas');
   }
   return idea!;

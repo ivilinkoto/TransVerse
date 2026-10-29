@@ -22,7 +22,7 @@ const MAX_TIMEOUT_MIN = 28 * 24 * 60;
 const when = (d: Date) => `<t:${Math.floor(d.getTime() / 1000)}:f>`;
 
 function target(ctx: Ctx) {
-  const id = opt(ctx.i, tr('потребител'));
+  const id = opt(ctx.i, 'потребител');
   if (!id) stop(tr('Избери потребител.'));
   const u = ctx.i.data?.resolved?.users?.[id!];
   if (u?.bot) stop(tr('Ботовете не се наказват.'));
@@ -61,7 +61,7 @@ const discordFail = (e: unknown): never => {
 export async function warn(ctx: Ctx): Promise<Answer> {
   if (!hasPerm(ctx, PERM.moderate)) stop(tr('Нямаш право да предупреждаваш.'));
   const t = target(ctx);
-  const reason = (opt(ctx.i, tr('причина')) ?? '').trim().slice(0, 500) || tr('Без причина');
+  const reason = (opt(ctx.i, 'причина') ?? '').trim().slice(0, 500) || tr('Без причина');
   await record(ctx, t, 'warn', reason, null);
   const [{ n = 0 } = {}] = await ctx.db.select({ n: count() }).from(discordSanctions).where(and(eq(discordSanctions.discordUserId, t.id), eq(discordSanctions.kind, 'warn')));
   await dm(ctx, t.id, tr('⚠️ Предупреждение'), tr('Получаваш предупреждение в сървъра на TransVerse.\n**Причина:** {0}\n\nМоля, спазвай #правила — при повторно нарушение следва заглушаване или бан.', reason), 0xf6c343);
@@ -72,10 +72,10 @@ export async function warn(ctx: Ctx): Promise<Answer> {
 export async function timeout(ctx: Ctx): Promise<Answer> {
   if (!hasPerm(ctx, PERM.moderate)) stop(tr('Нямаш право да заглушаваш.'));
   const t = target(ctx);
-  const minutes = Math.max(1, Math.min(MAX_TIMEOUT_MIN, Math.round(Number(opt(ctx.i, tr('минути')) ?? 60))));
-  const reason = (opt(ctx.i, tr('причина')) ?? '').trim().slice(0, 500) || tr('Без причина');
+  const minutes = Math.max(1, Math.min(MAX_TIMEOUT_MIN, Math.round(Number(opt(ctx.i, 'минути') ?? 60))));
+  const reason = (opt(ctx.i, 'причина') ?? '').trim().slice(0, 500) || tr('Без причина');
   const until = new Date(ctx.now.getTime() + minutes * 60_000);
-  const alsoGame = opt(ctx.i, tr('и-в-играта')) === 'true';
+  const alsoGame = opt(ctx.i, 'и-в-играта') === 'true';
   if (alsoGame && !(ctx.me && isStaff(ctx.me.role))) stop(tr('Чатът в играта се заглушава само от екипа на играта (свързан акаунт).'));
   await discord('PATCH', `/guilds/${discordConfig().guildId}/members/${t.id}`, { communication_disabled_until: until.toISOString() }).catch(discordFail);
   const { user: u, sanctionId } = await record(ctx, t, 'timeout', reason, until, alsoGame);
@@ -93,8 +93,8 @@ export async function timeout(ctx: Ctx): Promise<Answer> {
 export async function ban(ctx: Ctx): Promise<Answer> {
   if (!hasPerm(ctx, PERM.ban)) stop(tr('Нямаш право да баниш.'));
   const t = target(ctx);
-  const reason = (opt(ctx.i, tr('причина')) ?? '').trim().slice(0, 500) || tr('Без причина');
-  const purge = opt(ctx.i, tr('изтрий-съобщенията')) === 'true';
+  const reason = (opt(ctx.i, 'причина') ?? '').trim().slice(0, 500) || tr('Без причина');
+  const purge = opt(ctx.i, 'изтрий-съобщенията') === 'true';
   const { sanctionId } = await record(ctx, t, 'ban', reason, null);
   // The message first: after the ban the bot can no longer reach them (the appeal button still works in the DM).
   await discord<{ id: string }>('POST', '/users/@me/channels', { recipient_id: t.id })
@@ -112,7 +112,7 @@ export async function unban(ctx: Ctx): Promise<Answer> {
   if (!hasPerm(ctx, PERM.ban)) stop(tr('Нямаш право да сваляш бан.'));
   const t = target(ctx);
   await discord('DELETE', `/guilds/${discordConfig().guildId}/bans/${t.id}`).catch(discordFail);
-  await record(ctx, t, 'unban', (opt(ctx.i, tr('причина')) ?? '').trim().slice(0, 500) || '—', null);
+  await record(ctx, t, 'unban', (opt(ctx.i, 'причина') ?? '').trim().slice(0, 500) || '—', null);
   await log(ctx, 'bans', tr('✅ Свален бан'), [{ name: tr('Член'), value: `<@${t.id}> (${t.name})`, inline: true }, { name: tr('Модератор'), value: `<@${ctx.discordId}>`, inline: true }], 0x2fd27a);
   return answer(reply({ content: tr('✅ Банът на <@{0}> е свален.', t.id) }, true));
 }

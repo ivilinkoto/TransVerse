@@ -111,6 +111,25 @@ export const COMMANDS = [
       { type: 4, name: 'победители', description: 'Брой победители (1 по подразбиране)', required: false, min_value: 1, max_value: 20 },
     ],
   },
+  {
+    name: 'новина',
+    description: 'Новина от екипа в #новини',
+    default_member_permissions: MANAGE_GUILD,
+    options: [
+      { type: 3, name: 'заглавие', description: 'Заглавие', required: true, max_length: 200 },
+      { type: 3, name: 'текст', description: 'Текстът (нов ред: \\n)', required: true, max_length: 3800 },
+    ],
+  },
+  {
+    name: 'анкета',
+    description: 'Анкета от екипа в #анкети',
+    default_member_permissions: MANAGE_GUILD,
+    options: [
+      { type: 3, name: 'въпрос', description: 'Въпросът', required: true, max_length: 200 },
+      { type: 3, name: 'отговори', description: 'От 2 до 5 отговора, разделени с „;“', required: true, max_length: 400 },
+      { type: 4, name: 'часове', description: 'Колко часа (24 по подразбиране)', required: false, min_value: 1, max_value: 168 },
+    ],
+  },
 ] as const;
 
 export interface CommandInput {
@@ -497,7 +516,7 @@ async function alliance(db: DbOrTx, name: string | null, viewerId: string | null
 
 /** /камион — a card of the player's truck (v1.5). */
 async function truckCard(db: DbOrTx, userId: string, plate: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('discord_truck', now)) return { ephemeral: true, content: tr('Командата идва с обновление 1.5.') };
+  if (!featureLive('discord_truck', now)) return { ephemeral: true, content: tr('Командата идва със следващото обновление.') };
   const [account] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
   const fleet = account ? (await fleetView(db, account.id)).vehicles : [];
   const norm = (s: string) => s.replace(/\s+/g, '').toUpperCase();

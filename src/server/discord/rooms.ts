@@ -33,7 +33,7 @@ export async function voiceChanged(db: Database, d: { user_id: string; channel_i
 
 async function createRoom(db: Database, discordId: string, name: string, now: Date) {
   const { guildId } = discordConfig();
-  const parent = await layoutCategory(db, t('гласови'), t('Гласови канали'));
+  const parent = await layoutCategory(db, 'гласови', 'Гласови канали');
   const room = await discord<{ id: string }>('POST', `/guilds/${guildId}/channels`, {
     name: t('🔊 Стаята на {0}', name).slice(0, 100),
     type: 2,

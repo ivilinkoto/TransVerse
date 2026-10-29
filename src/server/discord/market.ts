@@ -163,7 +163,7 @@ export async function cheerBase(ctx: Ctx, organizationId: string): Promise<Answe
 
 /** /покани @член: an invite to the player's company (the invited answers with buttons). */
 export async function inviteMember(ctx: Ctx): Promise<Answer> {
-  const target = opt(ctx.i, t('потребител'));
+  const target = opt(ctx.i, 'потребител');
   if (!target) stop(t('Избери кого каниш.'));
   const [u] = await ctx.db.select({ id: users.id, username: users.username }).from(users).where(eq(users.discordId, target!));
   if (!u) stop(t('Този член няма свързан акаунт в играта — нека първо го свърже.'));

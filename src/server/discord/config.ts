@@ -45,6 +45,12 @@ export const DISCORD_CHANNELS = {
   livery: 'ливреи',
   rally: 'рали',
   staffAlerts: 'сигнали',
+  // 1.1.3.2
+  ideas: 'идеи',
+  bugs: 'докладвай-бъг',
+  status: 'статус',
+  teamNews: 'новини',
+  polls: 'анкети',
 } as const;
 export type DiscordChannel = keyof typeof DISCORD_CHANNELS;
 
@@ -109,6 +115,8 @@ export const PING_ROLES = {
   quiz: { name: '🔔 Викторина', label: 'Викторина', emoji: '🧠', channel: 'quiz' },
   dailyLoad: { name: '🔔 Товар на деня', label: 'Товар на деня', emoji: '⭐', channel: 'dailyLoad' },
   convoys: { name: '🔔 Конвои', label: 'Конвои', emoji: '🚚', channel: 'convoys' },
+  teamNews: { name: '🔔 Новини', label: 'Новини', emoji: '📣', channel: 'teamNews' },
+  polls: { name: '🔔 Анкети', label: 'Анкети', emoji: '📊', channel: 'polls' },
 } as const;
 export type PingRole = keyof typeof PING_ROLES;
 

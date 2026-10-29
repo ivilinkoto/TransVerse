@@ -53,7 +53,7 @@ export async function liveRally(db: Database, now = new Date()) {
     await discord('PATCH', `/channels/${saved.channelId}/messages/${saved.messageId}`, message).catch(() => undefined);
     return 1;
   }
-  const channelId = await layoutChannel(db, t('рали'));
+  const channelId = await layoutChannel(db, 'рали');
   if (!channelId) return 0;
   const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, message);
   await db.insert(jobState).values({ key, value: { channelId, messageId: msg.id } }).onConflictDoNothing();

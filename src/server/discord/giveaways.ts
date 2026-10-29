@@ -41,14 +41,14 @@ function view(g: Giveaway, entries: number, winners?: { discordId: string | null
 /** /раздаване (team): starts a giveaway in #раздавания. */
 export async function startGiveaway(ctx: Ctx): Promise<Answer> {
   if (!hasPerm(ctx, PERM.manageGuild)) stop(t('Само екипът прави раздавания.'));
-  const prize = Math.round(Number(opt(ctx.i, t('награда')) ?? 0));
-  const hours = Math.round(Number(opt(ctx.i, t('часове')) ?? 24));
-  const winners = Math.round(Number(opt(ctx.i, t('победители')) ?? 1));
-  const title = (opt(ctx.i, t('заглавие')) ?? t('Раздаване')).trim().slice(0, 100) || t('Раздаване');
+  const prize = Math.round(Number(opt(ctx.i, 'награда') ?? 0));
+  const hours = Math.round(Number(opt(ctx.i, 'часове') ?? 24));
+  const winners = Math.round(Number(opt(ctx.i, 'победители') ?? 1));
+  const title = (opt(ctx.i, 'заглавие') ?? t('Раздаване')).trim().slice(0, 100) || t('Раздаване');
   if (!(prize >= 1 && prize <= 100_000)) stop(t('Наградата е между 1 и 100 000 ТрансКоин.'));
   if (!(hours >= 1 && hours <= 24 * 14)) stop(t('Продължителността е от 1 час до 14 дни.'));
   if (!(winners >= 1 && winners <= 20)) stop(t('Победителите са от 1 до 20.'));
-  const channelId = await layoutChannel(ctx.db, t('раздавания'));
+  const channelId = await layoutChannel(ctx.db, 'раздавания');
   if (!channelId) stop(t('Няма канал #раздавания — подреди сървъра от админ панела.'));
   const [g] = await ctx.db.insert(discordGiveaways).values({ title, prizeCoins: prize, winners, endsAt: new Date(ctx.now.getTime() + hours * 3_600_000), channelId, createdByDiscordId: ctx.discordId, createdByUserId: ctx.me?.id ?? null }).returning();
   return answer(deferred(), async () => {

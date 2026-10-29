@@ -32,7 +32,7 @@ const picture = (m: Pick<Msg, 'attachments'>) => m.attachments?.find((a) => a.co
 /** The gateway: a ⭐ under every picture posted in #снимки. */
 export async function starPhoto(db: Database, m: { id: string; channel_id: string; author: { bot?: boolean }; attachments?: { url: string; content_type?: string }[] }) {
   if (m.author.bot || !picture(m)) return false;
-  if (m.channel_id !== (await layoutChannel(db, t('снимки')))) return false;
+  if (m.channel_id !== (await layoutChannel(db, 'снимки'))) return false;
   await discord('PUT', `/channels/${m.channel_id}/messages/${m.id}/reactions/${encodeURIComponent(STAR)}/@me`);
   return true;
 }
@@ -42,7 +42,7 @@ export async function photoContest(db: Database, now = new Date()) {
   if (!discordConfig().bot || periodWindow('weekly', now).endsAt.getTime() - now.getTime() < 6 * 86_400_000 || sofiaHour(now) < 11) return null;
   const week = periodWindow('weekly', new Date(now.getTime() - 7 * 86_400_000));
   const from = new Date(week.endsAt.getTime() - 7 * 86_400_000);
-  const channelId = await layoutChannel(db, t('снимки'));
+  const channelId = await layoutChannel(db, 'снимки');
   if (!channelId) return null;
   // Read back through the channel until the start of last week.
   const pictures: { m: Msg; votes: number }[] = [];
