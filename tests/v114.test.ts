@@ -148,7 +148,7 @@ describe('v1.1.4', () => {
     const now = new Date('2026-10-29T20:00:00+02:00');
     const coming = comingReleases(now);
     expect(coming[0]?.version).toBe('1.1.4');
-    expect(comingReleases(new Date('2026-10-28T12:00:00+02:00')).map((r) => r.version).slice(0, 3)).toEqual(['1.1.3.1', '1.1.3.2', '1.1.4']);
+    expect(comingReleases(new Date('2026-10-28T12:00:00+02:00')).map((r) => r.version).slice(0, 3)).toEqual(['1.1.3.1', '1.1.3.2', '1.1.3.3']);
     expect(coming.every((r) => new Date(r.publishedAt) > now)).toBe(true);
     expect(coming.length).toBeLessThanOrEqual(3);
     expect(RELEASES.length).toBeGreaterThan(coming.length);

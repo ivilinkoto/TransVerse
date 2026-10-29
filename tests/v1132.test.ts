@@ -7,7 +7,7 @@ vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('
 
 /** A small fake Discord server: its channels and every call the bot makes. */
 const fake = vi.hoisted(() => {
-  const state = { channels: [] as { id: string; name: string; type: number }[], calls: [] as { method: string; path: string; body?: unknown }[], next: 1000 };
+  const state = { channels: [] as { id: string; name: string; type: number }[], calls: [] as { method: string; path: string; body?: unknown }[], next: 1000, threads: new Map<string, { parent: string; name: string }>(), failPatch: 0 };
   const call = async (method: string, path: string, body?: unknown) => {
     state.calls.push({ method, path, body });
     if (method === 'GET' && path === '/users/@me') return { id: 'bot', username: 'TransVerse' };
@@ -15,6 +15,15 @@ const fake = vi.hoisted(() => {
     if (method === 'GET' && /^\/guilds\/\w+\/roles$/.test(path)) return [];
     if (method === 'POST' && /^\/guilds\/\w+\/roles$/.test(path)) return { id: `r${state.next++}`, name: 'x', permissions: '0', position: 1 };
     if (method === 'POST' && /\/messages$/.test(path)) return { id: `m${state.next++}` };
+    if (method === 'POST' && /^\/channels\/[\w-]+\/threads$/.test(path)) return { id: `t${state.next++}` };
+    if (method === 'GET' && /^\/channels\/[\w-]+$/.test(path)) {
+      const th = state.threads.get(path.split('/')[2]!);
+      return th ? { type: 11, parent_id: th.parent, name: th.name } : { type: 0 };
+    }
+    if (method === 'PATCH' && /\/messages\//.test(path) && state.failPatch) {
+      const { DiscordError } = await import('@/server/discord/api');
+      throw new DiscordError(state.failPatch, 'cannot edit');
+    }
     return {};
   };
   return { state, call };
@@ -47,6 +56,7 @@ beforeEach(async () => {
   gate.off.clear();
   fake.state.calls.length = 0;
   fake.state.channels = CHANNELS.map((name, i) => ({ id: `ch${i}`, name, type: 0 }));
+  fake.state.failPatch = 0;
   forgetGuild();
   await db().delete(jobState).where(eq(jobState.key, 'discord-layout'));
 });
@@ -173,6 +183,46 @@ describe('v1.1.3.2', () => {
     expect(await postBroadcastToDiscord(db(), new Date())).toBe(true);
     const rows = (await outbox('broadcast:')).filter((r) => r.createdAt.getTime() > Date.now() - 60_000);
     expect(rows.map((r) => r.target).sort()).toEqual(['channel:status', 'channel:teamNews']);
+  });
+
+  it('a forum #докладвай-бъг: a new post becomes a ticket with the post’s title; replies in it do not', async () => {
+    const forum = fake.state.channels.find((c) => c.name.endsWith('докладвай-бъг'))!;
+    forum.type = 15;
+    forgetGuild();
+    const p = await linkedPlayer();
+    const thread = `th${Date.now()}`;
+    fake.state.threads.set(thread, { parent: forum.id, name: 'Не мога да купя камион' });
+    const starter = { id: thread, channel_id: thread, content: 'Натискам „Купи“ и излиза грешка.', author: { id: p.discordId } };
+    expect(await bugFromDiscord(db(), starter)).toBe(true);
+    const [ticket] = await db().select().from(supportTickets).where(eq(supportTickets.userId, p.userId));
+    expect(ticket).toMatchObject({ subject: 'Не мога да купя камион', category: 'bug' });
+    expect(await bugFromDiscord(db(), { id: `${thread}x`, channel_id: thread, content: 'Още нещо по темата.', author: { id: p.discordId } })).toBe(false);
+  });
+
+  it('announcements and notes in a forum channel open a post of their own', async () => {
+    const battles = fake.state.channels.find((c) => c.name.endsWith('⚔️┃битки'))!;
+    battles.type = 15;
+    forgetGuild();
+    await db().delete(jobState).where(like(jobState.key, 'coming-soon:%'));
+    gate.off.add('battles');
+    await syncComingSoon(db());
+    expect(calls('POST', new RegExp(`/channels/${battles.id}/threads$`))).toHaveLength(1);
+    const [row] = await db().select().from(jobState).where(eq(jobState.key, 'coming-soon:битки'));
+    expect(row!.value).toMatchObject({ forum: true });
+    gate.off.clear();
+    await syncComingSoon(db());
+    // The whole post goes.
+    expect(calls('DELETE', new RegExp(`^/channels/${(row!.value as { channelId: string }).channelId}$`))).toHaveLength(1);
+  });
+
+  it('#статус: a card that cannot be edited is replaced instead of failing every tick', async () => {
+    await db().delete(jobState).where(eq(jobState.key, 'discord-status'));
+    const t0 = new Date();
+    expect(await updateStatus(db(), t0)).toBe('posted');
+    fake.state.failPatch = 403;
+    expect(await updateStatus(db(), new Date(t0.getTime() + 5 * 60_000))).toBe('posted');
+    fake.state.failPatch = 503;
+    await expect(updateStatus(db(), new Date(t0.getTime() + 10 * 60_000))).rejects.toThrow();
   });
 
   it('command options are read by their real name for players who play in English', async () => {

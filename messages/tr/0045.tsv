@@ -1,0 +1,12 @@
+# 1.1.3.3 «Поправки на бота»: forum channels, the status card
+748b5c9419	#{0} (forum — every message is a post of its own)	#{0} (форум — каждое сообщение отдельная публикация)
+7df83d44d7	#докладвай-бъг as a forum: a new post becomes a request in the game with the post’s title; replies in it stay a conversation.	#докладвай-бъг как форум: новая публикация становится обращением в игре с заголовком публикации; ответы в ней остаются разговором.
+cfd9df732e	#идеи as a forum: a new post becomes an idea, and the vote button comes under it.	#идеи как форум: новая публикация становится идеей, а кнопка голосования появляется под ней.
+02e593c2da	The Discord bot now works with forum channels too, and the card in #статус keeps refreshing.	Discord-бот теперь работает и с форум-каналами, а карточка в #статус не перестаёт обновляться.
+d1caea6cce	If a channel is a forum (for example #докладвай-бъг or #идеи), the bot now recognises it: every new post there becomes a request to the team or an idea in the game, and the bot’s announcements appear as posts of their own.	Если канал — форум (например #докладвай-бъг или #идеи), бот теперь его распознаёт: каждая новая публикация там становится обращением к команде или идеей в игре, а объявления бота выходят отдельными публикациями.
+ec8b7d5bee	The card in #статус: if it cannot be edited, the bot posts a new one instead of stopping.	Карточка в #статус: если её нельзя отредактировать, бот публикует новую, а не останавливается.
+108d646118	Announcements, the “Coming soon” notes, the card in #статус and polls appear in forum channels too — as a post of their own.	Объявления, заметки «Скоро», карточка в #статус и опросы выходят и в форум-каналах — отдельной публикацией.
+82fafe6b61	Bot fixes	Исправления бота
+25108f8f17	The bot check in the admin panel accepts forum channels too.	Проверка бота в админ-панели принимает и форум-каналы.
+eed2363259	Forum channels	Форум-каналы
+f0f6e3a3fd	✅ The idea is saved in the game — vote with the button.	✅ Идея сохранена в игре — голосуйте кнопкой.

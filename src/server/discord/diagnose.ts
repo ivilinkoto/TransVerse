@@ -5,7 +5,7 @@ import { discord } from './api';
 import { COMMANDS } from './commands';
 import { appUrl, DISCORD_CHANNELS, DISCORD_ROLES, discordConfig } from './config';
 import { GATEWAY_STALE_MS, GATEWAY_STATE, type GatewayState } from './gateway';
-import { channelKey, forgetGuild } from './guild';
+import { channelKey, forgetGuild, isForumType } from './guild';
 import { discordRedirectUri } from './link';
 import { enqueue } from './outbox';
 import { registerCommands } from './register';
@@ -144,14 +144,15 @@ export async function diagnoseDiscord(db: Database): Promise<DiscordCheck[]> {
   }
 
   for (const name of Object.values(DISCORD_CHANNELS)) {
-    const ch = channels.find((c) => (c.type === 0 || c.type === 5) && channelKey(c.name) === channelKey(name));
+    // Text, announcement and (1.1.3.2) forum channels: the bot posts in all of them.
+    const ch = channels.find((c) => (c.type === 0 || c.type === 5 || isForumType(c.type)) && channelKey(c.name) === channelKey(name));
     if (!ch) {
       const near = channels.filter((c) => c.name.toLowerCase().includes(name)).map((c) => `#${c.name} [${[...c.name].map((ch) => ch.codePointAt(0)!.toString(16)).join(' ')}]`);
       add(t('Канал #{0}', name), false, near.length ? t('Не разпознах: {0}.', near.join(', ')) : t('Няма такъв канал (обявленията за него се пропускат).'));
       continue;
     }
     const need = missing(channelPermissions(base, ch, cfg.guildId, member.roles, botId), CHANNEL_NEEDS);
-    add(t('Канал #{0}', name), need.length === 0, need.length ? t('Ботът няма {0} в #{1}. Edit Channel → Permissions → добави ролята на бота.', need.join(', '), ch.name) : `#${ch.name}`);
+    add(t('Канал #{0}', name), need.length === 0, need.length ? t('Ботът няма {0} в #{1}. Edit Channel → Permissions → добави ролята на бота.', need.join(', '), ch.name) : isForumType(ch.type) ? t('#{0} (форум — всяко съобщение е отделна публикация)', ch.name) : `#${ch.name}`);
   }
 
   const [gw] = await db.select().from(jobState).where(eq(jobState.key, GATEWAY_STATE));
