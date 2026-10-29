@@ -324,10 +324,15 @@ export function BoxVan({ ids, color }: { ids: Ids; color: string }) {
       <rect x={398} y={-115} width={12} height={5} fill="#2563eb" />
       <rect x={200} y={-76} width={410} height={6} rx={2} fill="#9ca3af" />
       <rect x={200} y={-58} width={410} height={6} rx={2} fill="#9ca3af" />
-      <rect x={82} y={-80} width={8} height={64} rx={2} fill="#111827" />
       <rect x={556} y={-94} width={30} height={6} rx={3} fill="#6b7280" />
-      <Fender x={140} r={42} />
+      {/* rear mudguard on brackets under the box (behind the wheel), with its mudflap */}
+      <rect x={96} y={-106} width={8} height={16} fill="#374151" />
+      <rect x={176} y={-106} width={8} height={16} fill="#374151" />
       <Wheel x={140} r={42} ids={ids} twin />
+      <path d="M 78 -38 L 78 -48 A 62 62 0 0 1 202 -48 L 202 -38 L 192 -38 L 192 -46 A 52 52 0 0 0 88 -46 L 88 -38 Z" fill="#1f2937" stroke="#64748b" strokeWidth="2" />
+      <path d="M 92 -84 A 54 54 0 0 1 188 -84" fill="none" stroke="#fff" strokeOpacity="0.18" strokeWidth="3" />
+      <rect x={72} y={-40} width={14} height={34} rx={2} fill="#111827" stroke="#475569" />
+      <rect x={75} y={-30} width={8} height={4} fill="#94a3b8" />
       <Fender x={660} r={42} />
       <Wheel x={660} r={42} ids={ids} />
     </g>
