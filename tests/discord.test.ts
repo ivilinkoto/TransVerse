@@ -1,5 +1,5 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // As released (before the date these are staff-only; see tests/release-gating.test.ts).
@@ -7,7 +7,7 @@ vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('
 import { RELEASES, releaseByVersion } from '@/lib/game/releases';
 import { withLocale } from '@/i18n/als';
 import { closeDb } from '@/server/db/client';
-import { companyMessages, discordOutbox, notifications, organizations, userBadges, users } from '@/server/db/schema';
+import { companyMessages, discordOutbox, jobState, notifications, organizations, userBadges, users } from '@/server/db/schema';
 import { announceFromGame, releaseAnnouncement } from '@/server/discord/announce';
 import { runCommand } from '@/server/discord/commands';
 import { answerInteraction } from '@/server/discord/interaction';
@@ -174,6 +174,11 @@ describe('announcements', () => {
 
   it('1.1.3.2: every release of the last two weeks is announced once, oldest first — also two on the same day', async () => {
     const at = new Date('2026-10-29T20:00:00+02:00');
+    // Other test files share the database and may have marked these releases already.
+    for (const v of ['1.1.3.1', '1.1.3.2']) {
+      await db().delete(jobState).where(eq(jobState.key, `announced:release:${v}`));
+      await db().delete(discordOutbox).where(like(discordOutbox.dedupeKey, `release:${v}%`));
+    }
     await announceFromGame(db(), at);
     await announceFromGame(db(), at);
     const a = await outbox('release:1.1.3.1');
