@@ -172,7 +172,18 @@ describe('announcements', () => {
     expect((await outbox('release:1.3')).map((r) => r.target).sort()).toEqual(['channel:updates', 'channel:updates@en', 'channel:updates@ru']);
   });
 
-  it('1.1.4: the newest release is announced a few days late too, once; an older one never', async () => {
+  it('1.1.3.2: every release of the last two weeks is announced once, oldest first — also two on the same day', async () => {
+    const at = new Date('2026-10-29T20:00:00+02:00');
+    await announceFromGame(db(), at);
+    await announceFromGame(db(), at);
+    const a = await outbox('release:1.1.3.1');
+    const b = await outbox('release:1.1.3.2');
+    expect(a.map((x) => x.target).sort()).toEqual(['channel:updates', 'channel:updates@en', 'channel:updates@ru']);
+    expect(b).toHaveLength(3);
+    expect(Math.max(...a.map((x) => x.id))).toBeLessThan(Math.min(...b.map((x) => x.id)));
+  });
+
+  it('1.1.4: a release is announced a few days late too, once; one older than two weeks never', async () => {
     const r = releaseByVersion('1.5')!;
     const late = new Date(new Date(r.publishedAt).getTime() + 5 * 86_400_000);
     await announceFromGame(db(), late);

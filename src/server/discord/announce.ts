@@ -1,10 +1,10 @@
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte, like, lte } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { featureLive } from '@/lib/game/features';
 import { dec, int, km, money } from '@/lib/format';
 import { weekKey } from '@/lib/game/leagues';
 import { headline, type NewsIssue } from '@/lib/game/news';
-import { RELEASES, type Release } from '@/lib/game/releases';
+import { compareVersions, RELEASES, type Release } from '@/lib/game/releases';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyBattles, globalEvents, jobState, newspapers, organizations, users } from '@/server/db/schema';
@@ -17,6 +17,8 @@ import { t, tx } from '@/i18n/t';
 const HOUR = 3_600_000;
 /** A release is announced while it is the newest one and at most this many days old. */
 export const RELEASE_ANNOUNCE_DAYS = 14;
+/** The first time the bot announces releases, only the ones from the last two days are posted. */
+export const FIRST_RUN_HOURS = 48;
 const footer = { text: 'TransVerse · игрови данни' };
 
 /** A building finished (from finishConstructions). */
@@ -169,13 +171,20 @@ export function releaseAnnouncement(r: Release) {
 export async function announceFromGame(db: Database, now = new Date()) {
   if (!discordConfig().bot || !featureLive('discord_bot', now)) return;
 
-  // 1.1.4: the newest release that is live for everyone, if it is not older than two weeks —
-  // also when the bot was down for days (it was three days before). Older ones are never posted late.
-  const live = RELEASES.filter((r) => new Date(r.publishedAt) <= now).sort((x, y) => new Date(y.publishedAt).getTime() - new Date(x.publishedAt).getTime())[0];
-  if (live && now.getTime() - new Date(live.publishedAt).getTime() <= RELEASE_ANNOUNCE_DAYS * 24 * HOUR) {
-    // Remembered for good (the outbox forgets sent rows after two weeks).
-    const [first] = await db.insert(jobState).values({ key: `announced:release:${live.version}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning({ key: jobState.key });
-    if (first) await announce(db, `release:${live.version}`, 'updates', () => releaseAnnouncement(live), now);
+  // 1.1.3.2: every release that is live for everyone and not older than two weeks, once, oldest
+  // first — the planned ones (1.2, 2.0…) and the small unplanned ones (1.1.3.1…) alike, as soon
+  // as they are merged into releases.ts and deployed. The very first time (nothing announced yet)
+  // only the last two days are posted; older ones are marked quietly instead of a flood.
+  const recent = RELEASES.filter((r) => new Date(r.publishedAt) <= now && now.getTime() - new Date(r.publishedAt).getTime() <= RELEASE_ANNOUNCE_DAYS * 24 * HOUR)
+    .sort((x, y) => new Date(x.publishedAt).getTime() - new Date(y.publishedAt).getTime() || compareVersions(x.version, y.version));
+  if (recent.length) {
+    const [before] = await db.select({ key: jobState.key }).from(jobState).where(like(jobState.key, 'announced:release:%')).limit(1);
+    for (const r of recent) {
+      // Remembered for good (the outbox forgets sent rows after two weeks).
+      const [first] = await db.insert(jobState).values({ key: `announced:release:${r.version}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning({ key: jobState.key });
+      if (!first) continue;
+      if (before || now.getTime() - new Date(r.publishedAt).getTime() <= FIRST_RUN_HOURS * HOUR) await announce(db, `release:${r.version}`, 'updates', () => releaseAnnouncement(r), now);
+    }
   }
 
   // Community events: started in the last two hours, settled in the last six.
