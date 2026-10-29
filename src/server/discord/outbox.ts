@@ -4,7 +4,7 @@ import { discordOutbox, organizations } from '@/server/db/schema';
 import { discord, noPings, type DiscordMessage } from './api';
 import { withLocale } from '@/i18n/als';
 import { DISCORD_CHANNELS, discordConfig, LOCALE_CHANNELS, type DiscordChannel } from './config';
-import { giveVerified, pingRoleFor } from './guild';
+import { giveVerified, pingRoleFor, postIn } from './guild';
 import { layoutChannel } from './layout';
 import { ensureAllianceChannel, ensureCompanyChannel, removeAllianceChannel, stripRoles, syncUserRoles } from './sync';
 
@@ -41,7 +41,8 @@ async function send(db: Database, target: string, payload: Record<string, unknow
     // Announcements mention the role of those who picked them in #роли (unless `ping: false`).
     const { ping, ...message } = payload as Record<string, unknown> & { ping?: boolean; content?: string };
     const role = ping === false ? null : await pingRoleFor(key);
-    await discord('POST', `/channels/${channelId}/messages`, role ? { ...message, content: `<@&${role}> ${message.content ?? ''}`.trim(), allowed_mentions: { parse: [], roles: [role] } } : { ...noPings, ...message });
+    // 1.1.3.2: a forum channel gets a new post instead of a message.
+    await postIn(channelId, role ? { ...message, content: `<@&${role}> ${message.content ?? ''}`.trim(), allowed_mentions: { parse: [], roles: [role] } } : { ...noPings, ...message });
   } else if (kind === 'msg') {
     // A message to a channel by id (tickets, polls): may allow its own mentions.
     await discord('POST', `/channels/${id}/messages`, { ...noPings, ...payload });

@@ -44,6 +44,7 @@ describe('v2.0 Discord in three languages', () => {
       }
     };
     all.forEach(walk);
-    for (const c of all) for (const v of Object.values(c.name_localizations ?? {})) expect(v).toMatch(name);
+    // Slash commands need lower-case names; message commands (right click → Apps, type 3) may have capitals and spaces.
+    for (const c of all as { type?: number; name_localizations?: Record<string, string> }[]) for (const v of Object.values(c.name_localizations ?? {})) expect(v).toMatch(c.type === 3 ? /^.{1,32}$/u : name);
   });
 });

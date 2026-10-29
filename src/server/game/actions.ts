@@ -772,7 +772,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'submitIdea':
       return { ok: true, id: (await submitIdea(db, user.id, input.idea)).id };
     case 'voteIdea':
-      return { ok: true, ...(await voteIdea(db, user.id, input.ideaId)) };
+      return { ok: true, ...(await voteIdea(db, user.id, input.ideaId, (await ip()).startsWith('discord:') ? 'discord' : 'game')) };
     case 'renameCompany':
       return { ok: true, ...(await renameCompany(db, user.id, input.name)) };
     case 'rerollMission':

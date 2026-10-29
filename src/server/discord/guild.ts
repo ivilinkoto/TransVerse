@@ -81,3 +81,61 @@ export async function giveVerified(discordId: string) {
     if (!(e instanceof DiscordError && e.status === 404)) throw e;
   });
 }
+
+// ── Forum channels (1.1.3.2) ─────────────────────────────────────────────
+// A channel the server owner made a forum (or media) channel takes no plain
+// messages: every message is a post of its own (a thread), so the bot posts,
+// pins and removes there differently.
+
+/** Discord's forum and media channel types. */
+export const FORUM_TYPES = new Set([15, 16]);
+export const isForumType = (type: number | undefined) => FORUM_TYPES.has(type ?? -1);
+
+/** Where something the bot posted lives: a message in a channel, or a whole forum post (thread). */
+export interface Posted {
+  channelId: string;
+  messageId: string;
+  forum?: boolean;
+}
+
+/** The title of a forum post made from a message: its first embed's title, else its text. */
+export function postTitle(message: { content?: unknown; embeds?: { title?: string }[] }) {
+  const raw = message.embeds?.[0]?.title ?? (typeof message.content === 'string' ? message.content : '') ?? '';
+  return raw.replace(/<[@#&!]*\d+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 100) || 'TransVerse';
+}
+
+/** Posts in a channel — or opens a post in a forum channel. */
+export async function postIn(channelId: string, message: Record<string, unknown>): Promise<Posted> {
+  const ch = (await guild()).channels.find((c) => c.id === channelId);
+  if (isForumType(ch?.type)) {
+    const thread = await discord<{ id: string }>('POST', `/channels/${channelId}/threads`, { name: postTitle(message as never), message });
+    // A forum post's first message has the id of the post itself.
+    return { channelId: thread.id, messageId: thread.id, forum: true };
+  }
+  const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, message);
+  return { channelId, messageId: msg.id };
+}
+
+/** Pins a message, or a forum post on top of its forum (best effort: needs Manage Messages / Threads). */
+export async function pinPosted(p: Posted) {
+  if (p.forum) await discord('PATCH', `/channels/${p.channelId}`, { flags: 2 }).catch(() => undefined);
+  else await discord('PUT', `/channels/${p.channelId}/pins/${p.messageId}`).catch(() => undefined);
+}
+
+/** Removes a message, or a whole forum post; already gone is fine. */
+export async function removePosted(p: Posted) {
+  await discord('DELETE', p.forum ? `/channels/${p.channelId}` : `/channels/${p.channelId}/messages/${p.messageId}`).catch((e) => {
+    if (!(e instanceof DiscordError && e.status === 404)) throw e;
+  });
+}
+
+const threadParents = new Map<string, string | null>();
+/** The forum (or channel) a thread belongs to — null for a channel that is not a thread. Kept in memory. */
+export async function threadParent(channelId: string): Promise<string | null> {
+  if (threadParents.has(channelId)) return threadParents.get(channelId)!;
+  const c = await discord<{ type: number; parent_id?: string | null }>('GET', `/channels/${channelId}`).catch(() => null);
+  const parent = c && (c.type === 10 || c.type === 11 || c.type === 12) ? c.parent_id ?? null : null;
+  if (threadParents.size > 5000) threadParents.clear();
+  threadParents.set(channelId, parent);
+  return parent;
+}

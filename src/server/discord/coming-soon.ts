@@ -5,9 +5,10 @@ import { featureDate, featureLive, FEATURES, type FeatureId } from '@/lib/game/f
 import { releaseByVersion } from '@/lib/game/releases';
 import { withLocale } from '@/i18n/als';
 import { intlLocale, t, tx } from '@/i18n/t';
-import { discord, DiscordError, noPings } from './api';
+import { noPings } from './api';
 import { appUrl, BRAND, discordConfig } from './config';
 import { layoutChannel } from './layout';
+import { pinPosted, postIn, removePosted, type Posted } from './guild';
 
 /**
  * 1.1.3.2: channels of game features that are not out yet get one pinned
@@ -34,7 +35,6 @@ export const COMING_SOON: { channel: string; lang: 'bg' | 'en' | 'ru'; feature: 
 ];
 
 const stateKey = (channel: string) => `coming-soon:${channel}`;
-type Pinned = { channelId: string; messageId: string };
 
 /** The pinned message for one channel, written in its language. */
 export function comingSoonMessage(entry: (typeof COMING_SOON)[number]) {
@@ -60,16 +60,14 @@ export function comingSoonMessage(entry: (typeof COMING_SOON)[number]) {
 export async function syncComingSoon(db: Database, now = new Date()): Promise<number> {
   if (!discordConfig().bot || !featureLive('discord_coming_soon', now)) return 0;
   const rows = await db.select().from(jobState).where(like(jobState.key, 'coming-soon:%'));
-  const pinned = new Map(rows.map((r) => [r.key, r.value as Pinned]));
+  const pinned = new Map(rows.map((r) => [r.key, r.value as Posted]));
   let changed = 0;
   for (const entry of COMING_SOON) {
     const key = stateKey(entry.channel);
     const have = pinned.get(key);
     if (featureLive(entry.feature, now)) {
       if (!have) continue;
-      await discord('DELETE', `/channels/${have.channelId}/messages/${have.messageId}`).catch((e) => {
-        if (!(e instanceof DiscordError && e.status === 404)) throw e;
-      });
+      await removePosted(have);
       await db.delete(jobState).where(eq(jobState.key, key));
       changed++;
       continue;
@@ -78,9 +76,10 @@ export async function syncComingSoon(db: Database, now = new Date()): Promise<nu
     const channelId = await layoutChannel(db, entry.channel);
     // The channel is not in the server (not set up yet): nothing to pin.
     if (!channelId) continue;
-    const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, comingSoonMessage(entry));
-    await discord('PUT', `/channels/${channelId}/pins/${msg.id}`).catch(() => undefined);
-    await db.insert(jobState).values({ key, value: { channelId, messageId: msg.id } satisfies Pinned }).onConflictDoUpdate({ target: jobState.key, set: { value: { channelId, messageId: msg.id }, updatedAt: now } });
+    // In a forum channel the note is a post of its own, pinned on top.
+    const posted = await postIn(channelId, comingSoonMessage(entry));
+    await pinPosted(posted);
+    await db.insert(jobState).values({ key, value: posted }).onConflictDoUpdate({ target: jobState.key, set: { value: posted, updatedAt: now } });
     changed++;
   }
   return changed;

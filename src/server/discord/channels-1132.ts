@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, gt, isNull, sql } from 'drizzle-orm';
+import { and, eq, gt, isNull, like, sql } from 'drizzle-orm';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { jobState, users, vehicles } from '@/server/db/schema';
+import { discordOutbox, jobState, users, vehicles } from '@/server/db/schema';
 import { featureLive } from '@/lib/game/features';
 import { visibleReleases } from '@/lib/game/releases';
 import { ONLINE_MS } from '@/lib/game/social';
@@ -15,6 +15,7 @@ import { appUrl, BRAND, discordConfig } from './config';
 import { ideasOn } from './announce';
 import { answer, hasPerm, linkHint, opt, PERM, stop, act, type Answer, type Ctx } from './context';
 import { layoutChannel } from './layout';
+import { pinPosted, postIn, removePosted, threadParent, type Posted } from './guild';
 import { announce } from './outbox';
 import { button, rows, say, STYLE, update } from './ui';
 
@@ -48,6 +49,21 @@ async function replyTo(m: ChannelMessage, content: string) {
 const asGame = (u: typeof users.$inferSelect) => ({ id: u.id, role: u.role, username: u.username });
 const errorText = (e: unknown) => (e instanceof GameError ? e.message : null);
 
+/**
+ * Whether a message counts for one of these channels: written in it (a text
+ * channel), or opening a post in it when the channel is a forum — then the
+ * post's title comes along. Replies inside a post are just conversation.
+ */
+async function placeOf(db: Database, m: ChannelMessage, key: string): Promise<{ forum: boolean; title: string | null } | null> {
+  const target = await layoutChannel(db, key);
+  if (!target) return null;
+  if (m.channel_id === target) return { forum: false, title: null };
+  // A forum post's first message has the id of the post itself.
+  if (m.id !== m.channel_id || (await threadParent(m.channel_id)) !== target) return null;
+  const post = await discord<{ name?: string }>('GET', `/channels/${m.channel_id}`).catch(() => null);
+  return { forum: true, title: post?.name?.trim() || null };
+}
+
 // ── #идеи ────────────────────────────────────────────────────────────────
 
 /** "Гласувай" under an idea. */
@@ -59,27 +75,37 @@ export async function ideaVote(ctx: Ctx, ideaId: string): Promise<Answer> {
 /** The gateway: a message in #идеи from a linked player becomes an idea in the game. */
 export async function ideaFromDiscord(db: Database, m: ChannelMessage, now = new Date()) {
   if (m.author.bot || m.webhook_id || !ideasOn(now)) return false;
-  if (m.channel_id !== (await layoutChannel(db, 'идеи'))) return false;
+  const place = await placeOf(db, m, 'идеи');
+  if (!place) return false;
   const text = (m.content ?? '').trim();
-  if (!text) return false;
+  if (!text && !place.title) return false;
   const me = await linkedUser(db, m.author.id);
   if (!me) {
     await replyTo(m, t('За да стане идея в играта, свържи акаунта си. {0}', linkHint()));
     return true;
   }
+  // In a forum the post's title is the idea's title and the message its description.
   const [first, ...rest] = text.split('\n');
-  const title = first!.trim().slice(0, IDEAS.titleMax);
-  const body = rest.join('\n').trim().slice(0, IDEAS.bodyMax);
+  const title = (place.title ?? first!).trim().slice(0, IDEAS.titleMax);
+  const body = (place.title ? text : rest.join('\n')).trim().slice(0, IDEAS.bodyMax);
   if (title.length < 5) {
     await replyTo(m, t('Първият ред е заглавието на идеята — поне 5 знака. Описанието пиши на следващите редове.'));
     return true;
   }
+  let ideaId: string;
   try {
-    await runAction(db, asGame(me), { type: 'submitIdea', idea: { title, body } }, async () => `discord:${m.author.id}`);
+    ideaId = ((await runAction(db, asGame(me), { type: 'submitIdea', idea: { title, body } }, async () => `discord:${m.author.id}`)) as { id: string }).id;
   } catch (e) {
     const why = errorText(e);
     if (!why) throw e;
     await replyTo(m, `⚠️ ${why}`);
+    return true;
+  }
+  if (place.forum) {
+    // A forum post stays (deleting its first message would empty it): the vote button goes
+    // under it, instead of a second post with the same idea.
+    await db.delete(discordOutbox).where(and(like(discordOutbox.dedupeKey, `idea:${ideaId}%`), isNull(discordOutbox.sentAt)));
+    await discord('POST', `/channels/${m.channel_id}/messages`, { ...noPings, content: t('✅ Идеята е записана в играта — гласувайте с бутона.'), components: rows(button(t('Гласувай'), `idea:vote:${ideaId}`, STYLE.success, '👍')) });
     return true;
   }
   // The idea comes back as the bot's card with the vote button; the member's message goes.
@@ -92,7 +118,8 @@ export async function ideaFromDiscord(db: Database, m: ChannelMessage, now = new
 /** The gateway: a message in #докладвай-бъг becomes a ticket (linked) or goes to the team (not linked). */
 export async function bugFromDiscord(db: Database, m: ChannelMessage, now = new Date()) {
   if (m.author.bot || m.webhook_id || !featureLive('discord_bot', now) || !featureLive('discord_bug_reports', now)) return false;
-  if (m.channel_id !== (await layoutChannel(db, 'докладвай-бъг'))) return false;
+  const place = await placeOf(db, m, 'докладвай-бъг');
+  if (!place) return false;
   const text = (m.content ?? '').trim();
   const files = (m.attachments ?? []).map((a) => a.url);
   if (text.length < 10 && !files.length) {
@@ -100,11 +127,14 @@ export async function bugFromDiscord(db: Database, m: ChannelMessage, now = new 
     return true;
   }
   const body = `${text}${files.length ? `\n\n${files.join('\n')}` : ''}`.slice(0, 4000).padEnd(10, '.');
-  const subject = (text.split('\n')[0] ?? '').trim().slice(0, 120);
+  // In a forum the post's title is the subject.
+  const subject = (place.title ?? text.split('\n')[0] ?? '').trim().slice(0, 120);
   const me = await linkedUser(db, m.author.id);
   if (me) {
     try {
-      await runAction(db, asGame(me), { type: 'createTicket', ticket: { subject: subject.length >= 4 ? subject : t('Бъг от Discord'), category: 'bug', body } }, async () => `discord:${m.author.id}`);
+      const created = (await runAction(db, asGame(me), { type: 'createTicket', ticket: { subject: subject.length >= 4 ? subject : t('Бъг от Discord'), category: 'bug', body } }, async () => `discord:${m.author.id}`)) as { id: string };
+      // 1.1.3.4: ✅ from the team under this message closes the ticket (plus.ts).
+      await db.insert(jobState).values({ key: `bug-ticket:${m.id}`, value: { ticketId: created.id, channelId: m.channel_id } }).onConflictDoNothing();
     } catch (e) {
       const why = errorText(e);
       if (!why) throw e;
@@ -128,7 +158,7 @@ export async function bugFromDiscord(db: Database, m: ChannelMessage, now = new 
 const STATUS_KEY = 'discord-status';
 /** A gap longer than this between two refreshes means the game was not answering. */
 export const STATUS_GAP_MS = 12 * 60_000;
-type StatusState = { channelId: string; messageId: string; at: number };
+type StatusState = Posted & { at: number };
 
 /** The live status card (also used by the tests). */
 export async function statusMessage(db: DbOrTx, now: Date) {
@@ -176,15 +206,23 @@ export async function updateStatus(db: Database, now = new Date()): Promise<'pos
       await save({ ...state, at: now.getTime() });
       return 'updated';
     } catch (e) {
-      // Deleted by hand: a new card below.
-      if (!(e instanceof DiscordError && e.status === 404)) throw e;
+      // The card cannot be edited (deleted by hand, no access, the channel changed type…): a new
+      // card replaces it instead of failing every tick. Discord being down still fails (and retries).
+      if (!(e instanceof DiscordError) || e.status === 429 || e.status >= 500) throw e;
+      console.warn('[discord] status card not editable, posting a new one:', e.message);
+      await removePosted({ channelId: state.channelId, messageId: state.messageId, forum: state.forum }).catch(() => undefined);
     }
   }
   const channelId = await layoutChannel(db, 'статус');
   if (!channelId) return 'off';
-  const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, message);
-  await discord('PUT', `/channels/${channelId}/pins/${msg.id}`).catch(() => undefined);
-  await save({ channelId, messageId: msg.id, at: now.getTime() });
+  let posted: Posted;
+  try {
+    posted = await postIn(channelId, message);
+  } catch (e) {
+    throw new Error(`#статус: ${(e as Error).message}`);
+  }
+  await pinPosted(posted);
+  await save({ ...posted, at: now.getTime() });
   return 'posted';
 }
 
@@ -237,8 +275,9 @@ export async function pollCommand(ctx: Ctx): Promise<Answer> {
   if (!channelId) stop(t('Няма канал #анкети — подреди сървъра от админ панела.'));
   const id = randomUUID().slice(0, 8);
   const poll: TeamPoll = { question, options, votes: {}, endsAt: ctx.now.getTime() + hours * 3_600_000, channelId: channelId!, messageId: null };
-  const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, pollView(id, poll, ctx.now));
-  await ctx.db.insert(jobState).values({ key: POLL_PREFIX + id, value: { ...poll, messageId: msg.id } });
+  // In a forum channel the poll is a post of its own.
+  const posted = await postIn(channelId!, pollView(id, poll, ctx.now));
+  await ctx.db.insert(jobState).values({ key: POLL_PREFIX + id, value: { ...poll, channelId: posted.channelId, messageId: posted.messageId } });
   return answer(say(t('✅ Анкетата е в <#{0}>.', channelId!)));
 }
 

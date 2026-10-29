@@ -20,6 +20,7 @@ import { quizAnswer } from './quiz';
 import { convoyCommand, convoyGo, convoyJoin, duelAnswer, duelCommand, financeView, liveryVote, mapCommand, passClaim, passCommand, roadCall, roadHelp, roadPay, takeGo, takeStart, usedBuy } from './together';
 import { reply, say } from './ui';
 import { ideaVote, newsCommand, pollCommand, pollVote } from './channels-1132';
+import { translateMessage } from './translate';
 import { t } from '@/i18n/t';
 
 export type { Interaction };
@@ -53,6 +54,7 @@ const COMMAND_HANDLERS: Record<string, (ctx: Ctx) => Answer | Promise<Answer>> =
   пропуск: passCommand,
   новина: newsCommand,
   анкета: pollCommand,
+  Преведи: translateMessage,
 };
 
 /** Buttons and select menus, by the start of their custom_id. */

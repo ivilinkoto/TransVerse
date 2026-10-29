@@ -52,7 +52,7 @@ export interface CategorySpec {
 }
 
 /** Voice channels whose names show live numbers from the game (renamed by the worker). */
-export const STAT_CHANNELS = ['stat-online', 'stat-road', 'stat-players', 'stat-companies'] as const;
+export const STAT_CHANNELS = ['stat-online', 'stat-road', 'stat-players', 'stat-companies', 'stat-next'] as const;
 export type StatChannel = (typeof STAT_CHANNELS)[number];
 
 export const LAYOUT: CategorySpec[] = [
@@ -159,6 +159,7 @@ export const LAYOUT: CategorySpec[] = [
       { key: 'stat-road', name: '🚚 На пътя: …', type: 'voice', access: 'stats' },
       { key: 'stat-players', name: '👥 Шофьори: …', type: 'voice', access: 'stats' },
       { key: 'stat-companies', name: '🏢 Компании: …', type: 'voice', access: 'stats' },
+      { key: 'stat-next', name: '🆕 Следва: …', type: 'voice', access: 'stats' },
     ],
   },
   {

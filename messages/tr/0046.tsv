@@ -1,0 +1,58 @@
+# 1.1.3.4 «Discord+»
+10f9d2be39	 (from Discord: {0})	 (из Discord: {0})
+a8251c28b7	 Link your account to get ТрансКоин for levels.	 Привяжи аккаунт, чтобы получать ТрансКоины за уровни.
+033047f031	/статистика and /сравни	/статистика и /сравни
+e5319cb6de	/статистика shows a company’s card — trips, kilometres, tonnes, place in the season, medals and achievements. /сравни <player> puts you and another driver side by side.	/статистика показывает карточку компании — рейсы, километры, тонны, место в сезоне, медали и достижения. /сравни <игрок> ставит тебя и другого водителя рядом.
+83f4961703	{0} · the oldest: “{1}” from <t:{2}:R>	{0} · самое старое: «{1}» <t:{2}:R>
+53fef1b811	{0} leads in {1} of {2} categories.	{0} лидирует в {1} из {2} показателей.
+bd840ee13c	{0} from Discord	{0} из Discord
+efd8632d9a	Thank you for the report — it is fixed. (closed by the team in Discord)	Спасибо за сообщение — исправлено. (закрыто командой в Discord)
+dbb16d17d7	On Sunday evening the driver with the most trips of the week gets the “🏅 Шофьор на седмицата” role in Discord for 7 days, and their card appears in #класации.	В воскресенье вечером водитель с наибольшим числом рейсов за неделю получает роль «🏅 Шофьор на седмицата» в Discord на 7 дней, а его карточка выходит в #класации.
+99d1d624a2	There is no text to translate in this message.	В этом сообщении нет текста для перевода.
+3fdcc59be1	Every morning in #сигнали: new and active players, trips, open requests, server errors and failing jobs for the last 24 hours.	Каждое утро в #сигнали: новые и активные игроки, рейсы, открытые обращения, ошибки сервера и задачи с ошибкой за последние 24 часа.
+c89806c918	Votes from the button in Discord	Голоса с кнопки в Discord
+466cf75fc9	Vote for {0}	Голосовать за {0}
+4316744392	Server errors	Ошибки сервера
+3f3ebc0ede	Right click on a message → Apps → “Преведи” — the message in your language, only for you. Discord levels bring ТрансКоин on every fifth level, and on every tenth also 60 ТрансКоин for a new truck part.	Правый клик по сообщению → Apps → «Преведи» — сообщение на твоём языке, только для тебя. Уровни в Discord приносят ТрансКоины на каждом пятом уровне, а на каждом десятом — ещё 60 ТрансКоинов на новую деталь грузовика.
+2f0ca9301f	The team puts ✅ under a bug in #докладвай-бъг — the request in the game is closed and its author gets an answer.	Команда ставит ✅ под багом в #докладвай-бъг — обращение в игре закрывается, а автор получает ответ.
+d9ba60efaf	Failing jobs	Задачи с ошибкой
+1679980b63	Played	Играли
+67cc58bfb4	Ideas: votes from the Discord button count in the game too, and “Идеи” shows how many came from Discord. Every Monday — the top 3 ideas in #идеи with vote buttons.	Идеи: голоса с кнопки в Discord учитываются и в игре, а в «Идеи» видно, сколько из них из Discord. Каждый понедельник — топ-3 идей в #идеи с кнопками голосования.
+bfc8712d21	Pick another player — against yourself it is always a draw. 🙂	Выбери другого игрока — с самим собой всегда ничья. 🙂
+80204e34ad	A “🆕 Следва” channel in СТАТИСТИКА shows how long until the next update.	Канал «🆕 Следва» в СТАТИСТИКА показывает, сколько осталось до следующего обновления.
+64f48fbb4b	A company’s card: trips, season, medals, achievements (no name — yours)	Карточка компании: рейсы, сезон, медали, достижения (без имени — твоя)
+ac21b7fb0a	The most trips this week — the “🏅 Шофьор на седмицата” role is theirs for 7 days.	Больше всего рейсов на этой неделе — роль «🏅 Шофьор на седмицата» у него на 7 дней.
+3a9c235c34	The most trips this week. In Discord you have the “Шофьор на седмицата” role for 7 days.	Больше всего рейсов на этой неделе. В Discord у тебя роль «Шофьор на седмицата» на 7 дней.
+473713fbbf	The most liked open ideas — the team looks at them first	Самые популярные открытые идеи — команда смотрит их первыми
+a53c64ba21	Idle truck reminder	Напоминание о простаивающем грузовике
+2a629f7c9d	Failed to Discord	Неудачно в Discord
+5f4fdf6dcb	Level {0} · {1} · {2} members	Уровень {0} · {1} · участников: {2}
+cdbe322003	New players	Новые игроки
+6a752d5da2	No data to compare.	Нет данных для сравнения.
+de7715504e	Open requests	Открытые обращения
+ba9d5b3013	More of TransVerse in Discord: a company card, comparing with another player, Driver of the week, an idle truck reminder, translating messages and more ТрансКоин for levels.	Больше TransVerse в Discord: карточка компании, сравнение с другим игроком, Водитель недели, напоминание о простаивающем грузовике, перевод сообщений и больше ТрансКоинов за уровни.
+d1d1e8703a	Optional (Settings → Discord): a private message when a truck has been without a trip for more than 2 hours, with a “Нов курс” button. Only once, and not while you are in the game.	По желанию (Настройки → Discord): личное сообщение, когда грузовик стоит без рейса больше 2 часов, с кнопкой «Нов курс». Только один раз и не пока ты в игре.
+810e710423	You get {0} ТрансКоин — {1} of them for a new truck part (Shop).	Ты получаешь {0} ТрансКоинов — {1} из них на новую деталь грузовика (Магазин).
+b1e55728f0	The last 24 hours · details in the admin panel	Последние 24 часа · подробности в админ-панели
+6935ae4d04	Company achievements	Достижения компании
+b44e3db56d	Translate	Перевести
+9d4c100311	Translate and level rewards	Перевод и награды за уровни
+85a59c8362	The translation did not work — try again in a moment.	Перевод не получился — попробуй чуть позже.
+426b1c62d4	Translation is not turned on in this server yet.	Перевод на этом сервере пока не включён.
+272c9ce772	The season now	Сезон сейчас
+7a173bccd0	You against another player: trips, km, tonnes, on time, countries, achievements	Ты против другого игрока: рейсы, км, тонны, вовремя, страны, достижения
+4c0ee2c0ca	a private message when a truck has been without a trip for more than 2 hours (once, with a “Нов курс” button; not while you are in the game).	личное сообщение, когда грузовик стоит без рейса больше 2 часов (один раз, с кнопкой «Нов курс»; не пока ты в игре).
+85f25d6476	сравни	сравни
+18a1266577	статистика	статистика
+fa93eda628	⚖️ {0} vs {1}	⚖️ {0} против {1}
+d9d9c2a3db	✅ Fixed — thank you for the report!	✅ Исправлено — спасибо за сообщение!
+fc12479dda	🅿️ **{0}** has been idle in {1} for {2} h. Loads are waiting!	🅿️ **{0}** стоит пустой в {1} уже {2} ч. Грузы ждут!
+168df37fb8	🆕 {0} in {1} days	🆕 {0} через {1} дн.
+c5d53eaa77	🆕 {0} in {1} h	🆕 {0} через {1} ч
+c5abd3fcb0	🆕 Next: soon	🆕 Далее: скоро
+ad32db542f	🌐 Translation (from {0}):\n{1}	🌐 Перевод (с {0}):\n{1}
+024f88fa26	🏅 Driver of the week!	🏅 Водитель недели!
+6040d61441	🏅 Driver of the week: {0}	🏅 Водитель недели: {0}
+0a8ea17436	💡 Top 3 ideas of the week	💡 Топ-3 идеи недели
+2eaf3b58b3	📋 The team’s day	📋 День для команды
+54341fceb3	`/статистика [компания]` — a company card · `/сравни играч` — you against another driver · right click on a message → Apps → “Translate”	`/статистика [компания]` — карточка компании · `/сравни играч` — ты против другого водителя · правый клик по сообщению → Apps → «Перевести»

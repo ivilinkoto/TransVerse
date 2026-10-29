@@ -31,7 +31,9 @@ export function levelOf(xp: number) {
   return { level, into: left, next: xpToNext(level) };
 }
 /** ТрансКоин for reaching a level (every tenth). */
-export const levelReward = (level: number) => (level > 0 && level % 10 === 0 ? level : 0);
+/** ТрансКоин for a level: every tenth level its number; 1.1.3.4 (`plus`) also every fifth, and +60 on the tenth — a truck part (Магазин → козметика). */
+export const COSMETIC_BONUS = 60;
+export const levelReward = (level: number, plus = false) => (level <= 0 ? 0 : level % 10 === 0 ? level + (plus ? COSMETIC_BONUS : 0) : plus && level % 5 === 0 ? level : 0);
 
 const MESSAGE_COOLDOWN_MS = 60_000;
 const VOICE_XP = 10;
@@ -69,7 +71,7 @@ async function addXp(db: Database, who: Author, xp: number, extra: { messages?: 
 }
 
 async function levelUp(db: Database, discordId: string, level: number, now: Date) {
-  const coins = levelReward(level);
+  const coins = levelReward(level, featureLive('discord_plus', now));
   const [u] = await db.select({ id: users.id, role: users.role, uiPrefs: users.uiPrefs }).from(users).where(and(eq(users.discordId, discordId), isNull(users.bannedAt)));
   // Frames around the profile picture in the game for levels 10 and 25 (v1.3).
   const frame = DISCORD_FRAMES.find((f) => level >= f.level);
@@ -79,13 +81,13 @@ async function levelUp(db: Database, discordId: string, level: number, now: Date
   if (u && coins) {
     await db.transaction(async (tx) => {
       if (await postCoins(tx, u.id, { amount: coins, reason: 'discord_level', description: t('Ниво {0} в Discord', level), idempotencyKey: `discord-level:${discordId}:${level}` })) {
-        await notify(tx, u.id, 'success', () => t('Ниво {0} в Discord! 🎉', level), () => t('Получаваш {0} ТрансКоин.', coins), '/game/shop');
+        await notify(tx, u.id, 'success', () => t('Ниво {0} в Discord! 🎉', level), () => (level % 10 === 0 && coins > level ? t('Получаваш {0} ТрансКоин — {1} от тях за нова част на камиона (Магазин).', coins, coins - level) : t('Получаваш {0} ТрансКоин.', coins)), '/game/shop');
       }
     });
   }
   await enqueue(db, `level-up:${discordId}:${level}`, 'channel:botCommands', {
     ping: false,
-    content: t('🎉 <@{0}> стигна **ниво {1}**!{2}', discordId, level, coins ? (u ? t(' +{0} ТрансКоин в играта.', coins) : t(' Свържи акаунта си, за да получаваш ТрансКоин на всяко десето ниво.')) : ''),
+    content: t('🎉 <@{0}> стигна **ниво {1}**!{2}', discordId, level, coins ? (u ? t(' +{0} ТрансКоин в играта.', coins) : t(' Свържи акаунта си, за да получаваш ТрансКоин за нивата.')) : ''),
     allowed_mentions: { parse: [], users: [discordId] },
   }, now);
 }

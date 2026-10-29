@@ -471,3 +471,64 @@ export async function tripCardImage(db: Database, deliveryId: string) {
     { width: W, height: H, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=3600' } },
   );
 }
+
+/** 1.1.3.4: the public card of a company for /статистика — no money, only what its profile shows. Game data. */
+export async function companyCardImage(db: Database, organizationId: string, now = new Date()) {
+  const { companyHighlights } = await import('@/server/game/company-profile');
+  const { companyAchievementsOf, organizationMedals } = await import('@/server/game/medals');
+  const { activeSeason, organizationSeasonTable } = await import('@/server/game/seasons');
+  const { organizations, companyMembers } = await import('@/server/db/schema');
+  const { COMPANY_ACHIEVEMENTS, MEDAL_INFO, MEDALS, medalCounts } = await import('@/lib/game/medals');
+  const [org] = await db.select({ name: organizations.name, tag: organizations.tag, color: organizations.color }).from(organizations).where(eq(organizations.id, organizationId));
+  if (!org) return null;
+  const [h, members, season] = await Promise.all([companyHighlights(db, organizationId, now), db.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, organizationId)), activeSeason(db, now)]);
+  if (!h) return null;
+  const table = await organizationSeasonTable(db, season.id, 500);
+  const place = table.findIndex((r) => r.organizationId === organizationId) + 1;
+  const medals = featureLive('season_medals', now) ? medalCounts((await organizationMedals(db, organizationId)).map((m) => m.medal)) : null;
+  const feats = featureLive('company_achievements', now) ? await companyAchievementsOf(db, organizationId) : null;
+  const tile = (label: string, value: string, color = 'white') => (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: PANEL, borderRadius: 18, padding: '18px 22px' }}>
+      <span style={{ fontSize: 20, color: MIST }}>{label}</span>
+      <span style={{ fontFamily: 'Exo 2', fontSize: 40, color }}>{value}</span>
+    </div>
+  );
+  return new ImageResponse(
+    (
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: `radial-gradient(circle at 20% 0%, #1b2a40 0%, ${BG} 70%)`, fontFamily: 'Onest', color: 'white', padding: 36, gap: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 50, color: org.color ?? 'white' }}>{`${org.name}${org.tag ? ` [${org.tag}]` : ''}`}</span>
+            <span style={{ fontSize: 22, color: MIST }}>{tr('Ниво {0} · {1} · {2} членове', h.level, tx(h.hq), members.length)}</span>
+          </div>
+          <Brand />
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {tile(tr('Курсове'), int(h.trips))}
+          {tile(tr('Километри'), int(h.km))}
+          {tile(tr('Тонове'), tr('{0} т', int(h.tons)))}
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {tile(tr('Сезонът сега'), place ? tr('#{0}', place) : '—', '#f6c343')}
+          {tile(tr('На пътя'), int(h.onRoad), CYAN)}
+          {tile(tr('Трофеи от битки'), int(h.trophies), ORANGE)}
+        </div>
+        <div style={{ display: 'flex', gap: 16, flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: PANEL, borderRadius: 18, padding: '18px 22px', gap: 10 }}>
+            <span style={{ fontSize: 20, color: MIST }}>{tr('Сезонни медали')}</span>
+            <div style={{ display: 'flex', gap: 22, fontSize: 36 }}>
+              {medals ? MEDALS.map((m) => <span key={m}>{`${MEDAL_INFO[m].icon} ${medals[m]}`}</span>) : <span style={{ color: MIST, fontSize: 26 }}>—</span>}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: PANEL, borderRadius: 18, padding: '18px 22px', gap: 10 }}>
+            <span style={{ fontSize: 20, color: MIST }}>{tr('Постижения на компанията')}</span>
+            <span style={{ fontFamily: 'Exo 2', fontSize: 36 }}>{feats ? `${feats.length} / ${COMPANY_ACHIEVEMENTS.length}` : '—'}</span>
+            <span style={{ fontSize: 26 }}>{feats?.map((a) => a.icon).join(' ') ?? ''}</span>
+          </div>
+        </div>
+        <span style={{ fontSize: 16, color: MIST }}>{tr('Игрови данни · TransVerse')}</span>
+      </div>
+    ),
+    { width: 1200, height: 760, fonts: await cardFonts(), headers: { 'cache-control': 'public, max-age=600' } },
+  );
+}

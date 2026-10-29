@@ -38,15 +38,17 @@ export async function submitIdea(db: Database, userId: string, raw: z.input<type
 }
 
 /** One vote per player and idea; the second click takes it back. */
-export async function voteIdea(db: Database, userId: string, ideaId: string) {
+export async function voteIdea(db: Database, userId: string, ideaId: string, source: 'game' | 'discord' = 'game') {
   return db.transaction(async (tx) => {
     const [idea] = await tx.select().from(ideas).where(eq(ideas.id, ideaId)).for('update');
     if (!idea || idea.status === 'hidden') fail('idea_not_found', t('Идеята не е намерена.'), 404);
     if (idea!.userId === userId) fail('own_idea', t('Не можеш да гласуваш за своя идея.'));
     if (idea!.status === 'done' || idea!.status === 'declined') fail('idea_closed', t('Гласуването за тази идея е приключило.'));
-    const removed = await tx.delete(ideaVotes).where(and(eq(ideaVotes.ideaId, ideaId), eq(ideaVotes.userId, userId))).returning({ ideaId: ideaVotes.ideaId });
-    if (!removed.length) await tx.insert(ideaVotes).values({ ideaId, userId });
-    const [after] = await tx.update(ideas).set({ votes: sql`${ideas.votes} + ${removed.length ? -1 : 1}` }).where(eq(ideas.id, ideaId)).returning({ votes: ideas.votes });
+    const removed = await tx.delete(ideaVotes).where(and(eq(ideaVotes.ideaId, ideaId), eq(ideaVotes.userId, userId))).returning({ ideaId: ideaVotes.ideaId, source: ideaVotes.source });
+    if (!removed.length) await tx.insert(ideaVotes).values({ ideaId, userId, source });
+    // 1.1.3.4: the Discord votes are counted apart too (shown next to the total).
+    const fromDiscord = removed.length ? (removed[0]!.source === 'discord' ? -1 : 0) : source === 'discord' ? 1 : 0;
+    const [after] = await tx.update(ideas).set({ votes: sql`${ideas.votes} + ${removed.length ? -1 : 1}`, discordVotes: sql`${ideas.discordVotes} + ${fromDiscord}` }).where(eq(ideas.id, ideaId)).returning({ votes: ideas.votes });
     return { voted: !removed.length, votes: after!.votes };
   });
 }

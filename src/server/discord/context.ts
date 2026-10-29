@@ -23,7 +23,9 @@ export interface Interaction {
     component_type?: number;
     values?: string[];
     components?: { components: { custom_id: string; value: string }[] }[];
-    resolved?: { users?: Record<string, { id: string; username: string; global_name?: string | null; bot?: boolean }> };
+    resolved?: { users?: Record<string, { id: string; username: string; global_name?: string | null; bot?: boolean }>; messages?: Record<string, { id: string; content?: string }> };
+    /** The message of a message command (right click → Apps). */
+    target_id?: string;
   };
   member?: { user?: { id: string; username?: string; global_name?: string | null }; roles?: string[]; permissions?: string };
   user?: { id: string; username?: string; global_name?: string | null };

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { api } from '@/lib/client/api';
 import { t, tx } from '@/i18n/t';
+import { useFeature } from './Features';
 
 const STATUS: Record<string, { text: string; good: boolean }> = {
   ok: { text: 'Discord е свързан.', good: true },
@@ -17,6 +18,7 @@ const STATUS: Record<string, { text: string; good: boolean }> = {
 /** Settings → Discord: link the account, which notifications come as Discord messages, unlink. */
 export function DiscordSettings({ ready, linked, categories, prefs, status, coins }: { ready: boolean; linked: string | null; categories: Record<string, string>; prefs: Record<string, boolean | undefined>; status: string | null; coins: number }) {
   const router = useRouter();
+  const plus = useFeature('discord_plus');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const toggle = async (key: string, on: boolean) => {
@@ -57,6 +59,12 @@ export function DiscordSettings({ ready, linked, categories, prefs, status, coin
               ))}
             </ul>
             <p className="mt-1.5 text-[11px] text-mist-400">{t('Тихите часове важат и тук.')}</p>
+            {plus && (
+              <label className="mt-2 flex cursor-pointer items-start gap-2 rounded-lg border border-cyan-glow/30 bg-cyan-glow/5 px-2.5 py-2 text-xs">
+                <input type="checkbox" className="mt-0.5" checked={prefs.idle === true} disabled={busy} onChange={(e) => void toggle('idle', e.target.checked)} />
+                <span><b>{t('Напомняне за празен камион')}</b> — {t('лично съобщение, когато камион стои без курс повече от 2 часа (веднъж, с бутон „Нов курс“; не и докато си в играта).')}</span>
+              </label>
+            )}
           </div>
         </>
       ) : (

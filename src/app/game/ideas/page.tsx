@@ -64,6 +64,7 @@ export default async function IdeasPage({ searchParams }: { searchParams: Promis
                       <ActionButton action={{ type: 'voteIdea', ideaId: idea.id }} className={`flex h-10 w-12 items-center justify-center rounded-xl border ${idea.votedByMe ? 'border-cyan-glow/60 bg-cyan-glow/15 text-cyan-glow' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}><ThumbsUp className="h-4 w-4" /></ActionButton>
                     )}
                     <span className="num text-sm font-semibold">{idea.votes}</span>
+                    {features.discord_plus && idea.discordVotes > 0 && <span className="text-[10px] text-indigo-300" title={t('Гласове от бутона в Discord')}>{t('{0} от Discord', idea.discordVotes)}</span>}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">

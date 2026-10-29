@@ -12,6 +12,9 @@ import { layoutCategory, layoutState } from './layout';
 import { enqueue } from './outbox';
 import { t } from '@/i18n/t';
 
+/** 1.1.3.4: who is the driver of the week and until when (`{ userId, username, week, until }`). */
+export const DRIVER_OF_WEEK_KEY = 'discord-driver-of-week';
+
 const VIEW = 1n << 10n;
 const SEND = 1n << 11n;
 const HISTORY = 1n << 16n;
@@ -55,6 +58,12 @@ async function desiredRoles(db: Database, userId: string, now: Date) {
   // v1.5: the company's division and a live perfect streak.
   if (m && featureLive('divisions', now)) want.push(await gameRole(m.org.division === 'gold' ? 'divisionGold' : m.org.division === 'silver' ? 'divisionSilver' : 'divisionBronze'));
   if (u.perfectStreak >= PERFECT_ROLE_STREAK && featureLive('perfect_run', now)) want.push(await gameRole('perfect10'));
+  // 1.1.3.4: the driver of the week, for seven days.
+  if (featureLive('discord_plus', now)) {
+    const [dow] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, DRIVER_OF_WEEK_KEY));
+    const w = dow?.value as { userId?: string; until?: number } | undefined;
+    if (w?.userId === userId && (w.until ?? 0) > now.getTime()) want.push(await gameRole('weekDriver'));
+  }
   // Special badges from the game are roles too (v1.3).
   const badges = await db.select({ badge: userBadges.badge }).from(userBadges).where(eq(userBadges.userId, userId));
   for (const { badge } of badges) {

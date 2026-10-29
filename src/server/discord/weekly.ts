@@ -2,8 +2,13 @@ import { sql } from 'drizzle-orm';
 import { dec, int, km } from '@/lib/format';
 import { periodWindow } from '@/lib/game/missions';
 import type { Database } from '@/server/db/client';
+import { eq } from 'drizzle-orm';
+import { featureLive } from '@/lib/game/features';
+import { jobState, users } from '@/server/db/schema';
+import { notify } from '@/server/game/notify';
 import { appUrl, BRAND, discordConfig } from './config';
-import { announce } from './outbox';
+import { announce, queueRoles } from './outbox';
+import { DRIVER_OF_WEEK_KEY } from './sync';
 import { t } from '@/i18n/t';
 
 /**
@@ -46,6 +51,7 @@ export async function announceWeeklyRanking(db: Database, now = new Date()) {
   if (!discordConfig().bot || sofiaWeekday(now) !== 'Sun' || sofiaHour(now) < 20) return false;
   const w = await weeklyRanking(db, now);
   if (!w.totals.n) return false;
+  const star = featureLive('discord_plus', now) ? await crownDriverOfWeek(db, w.key, w.drivers[0]?.username ?? null, now) : null;
   await announce(db, `weekly-ranking:${w.key}`, 'rankings', () => ({
     embeds: [{
       title: t('🏆 Най-добрите на седмицата'),
@@ -58,7 +64,29 @@ export async function announceWeeklyRanking(db: Database, now = new Date()) {
         ...(w.longest ? [{ name: t('🛣️ Най-дълъг курс'), value: `**${w.longest.username}**: ${w.longest.from} → ${w.longest.to}, ${km(w.longest.km)}` }] : []),
       ],
       footer: { text: t('От понеделник до неделя вечер · игрови данни') },
-    }],
+    }, ...(star ? [{
+      title: t('🏅 Шофьор на седмицата: {0}', star),
+      description: t('Най-много курсове тази седмица — ролята „🏅 Шофьор на седмицата“ е негова за 7 дни.'),
+      url: `${appUrl()}/game/players/${encodeURIComponent(star)}`,
+      color: 0xf6c343,
+      image: { url: `${appUrl()}/api/discord/card/player/${encodeURIComponent(star)}?v=${w.key}` },
+    }] : [])],
   }), now);
   return true;
+}
+
+/** 1.1.3.4: the week's best driver gets the role for seven days (the last one loses it) and a note in the game. */
+async function crownDriverOfWeek(db: Database, week: string, username: string | null, now: Date) {
+  if (!username) return null;
+  const [u] = await db.select({ id: users.id }).from(users).where(eq(users.username, username));
+  if (!u) return null;
+  const [prev] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, DRIVER_OF_WEEK_KEY));
+  const before = prev?.value as { userId?: string; week?: string } | undefined;
+  if (before?.week === week) return username;
+  const value = { userId: u.id, username, week, until: now.getTime() + 7 * 86_400_000 };
+  await db.insert(jobState).values({ key: DRIVER_OF_WEEK_KEY, value }).onConflictDoUpdate({ target: jobState.key, set: { value, updatedAt: now } });
+  if (before?.userId && before.userId !== u.id) await queueRoles(db, before.userId, now);
+  await queueRoles(db, u.id, now);
+  await notify(db, u.id, 'achievement', () => t('🏅 Шофьор на седмицата!'), () => t('Най-много курсове тази седмица. В Discord имаш ролята „Шофьор на седмицата“ за 7 дни.'), '/game/leaderboards');
+  return username;
 }
