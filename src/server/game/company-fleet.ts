@@ -45,7 +45,7 @@ export async function orgFleetView(db: DbOrTx, organizationId: string) {
 /** Buys a truck for the company from the treasury (places: 2 per parking level). */
 export async function buyOrgVehicle(db: Database, actorId: string, modelId: string, now = new Date()) {
   const model = POWER_UNITS.find((m) => m.id === modelId);
-  if (!model || !COMPANY_FLEET.kinds.includes(model.kind)) fail('unknown_model', t('Компанията купува бусове и камиони без ремарке.'));
+  if (!model || model.since || !COMPANY_FLEET.kinds.includes(model.kind)) fail('unknown_model', t('Компанията купува бусове и камиони без ремарке.'));
   return db.transaction(async (tx) => {
     const actor = await requirePermission(tx, actorId, 'manage_upgrades');
     const [org] = await tx.select().from(organizations).where(eq(organizations.id, actor.company.id)).for('update');

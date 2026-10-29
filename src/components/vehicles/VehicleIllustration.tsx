@@ -3,7 +3,7 @@ import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
 import { Defs, GroundShadow, type Ids } from './parts';
 import { DrawbarTrailer, Trailer, TrailerExtras, type TrailerBody } from './trailers';
-import { Rigid, Tractor, Van } from './units';
+import { BoxVan, Rigid, Tractor, Van } from './units';
 import { RETRO, type RetroStyle } from '@/lib/game/shop';
 import { tx } from '@/i18n/t';
 
@@ -52,7 +52,17 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
   // Where the livery decals go (centre x, centre y, size) in this drawing.
   let decals: [number, number, number][] = [];
   let height = 440;
-  if (unit.kind === 'van') {
+  if (unit.kind === 'van' && unit.look === 'box-van') {
+    width = 800;
+    height = 360;
+    decals = [[280, -300, 60]];
+    content = (
+      <>
+        <GroundShadow from={0} to={790} />
+        <BoxVan ids={ids} color={color} />
+      </>
+    );
+  } else if (unit.kind === 'van') {
     width = 620;
     height = 300;
     decals = [[370, -236, 60]];
@@ -64,13 +74,14 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
     );
   } else if (unit.kind === 'rigid') {
     const rigidX = drawbar ? 910 : 0;
-    const body = unit.body === 'reefer' ? 'reefer' : 'box';
+    const body = unit.body === 'reefer' ? 'reefer' : unit.body === 'tipper' ? 'tipper' : unit.body === 'tanker' ? 'tanker' : 'box';
+    const trailerBody = body === 'reefer' ? 'reefer' : 'box';
     width = rigidX + 920;
     decals = [[rigidX + 600, -175, 80], ...(drawbar ? ([[690, -175, 80]] as [number, number, number][]) : [])];
     content = (
       <>
         <GroundShadow from={0} to={rigidX + 900} />
-        {drawbar && <DrawbarTrailer body={body} ids={ids} color={trailerCosmetics?.paint ?? trailerColor ?? color} />}
+        {drawbar && <DrawbarTrailer body={trailerBody} ids={ids} color={trailerCosmetics?.paint ?? trailerColor ?? color} />}
         {drawbar && <TrailerExtras kind="drawbar" upgrades={trailerUpgrades ?? []} logo={trailerLogo} cosmetics={trailerCosmetics} />}
         <g transform={`translate(${rigidX} 0)`}>
           <Rigid ids={ids} color={color} body={body} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
@@ -88,7 +99,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
         {trailer && <Trailer body={trailer.body as TrailerBody} ids={ids} color={trailerCosmetics?.paint ?? trailerColor ?? (trailer.body === 'container' ? '#b45309' : trailer.body === 'tipper' ? '#ca8a04' : color)} />}
         {trailer && <TrailerExtras kind="semi" body={trailer.body} upgrades={trailerUpgrades ?? []} logo={trailerLogo} cosmetics={trailerCosmetics} />}
         <g transform={`translate(${tractorX} 0)`}>
-          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
+          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} classic={unit.look === 'classic'} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
         </g>
       </>
     );

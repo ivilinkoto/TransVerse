@@ -1,5 +1,6 @@
 import type { BodyType } from './cargo';
 import { t as tr } from '@/i18n/t';
+import type { FeatureId } from './features';
 
 /**
  * Vehicle catalogue. Manufacturers are fictional on purpose (no trademarks);
@@ -34,6 +35,12 @@ export interface PowerUnitModel {
   cab: CabStyle;
   /** Electric (v1.4): range on a full battery, energy use (kWh / 100 km empty and full) and how long a fast charge takes. */
   electric?: { rangeKm: number; kwhEmpty: number; kwhFull: number; chargeMin: number };
+  /** 1.1.3.1: a model of a later release is sold from its date (staff earlier). */
+  since?: FeatureId;
+  /** 1.1.3.1: the market marks the model „НОВО“ until this day (ISO). */
+  newUntil?: string;
+  /** 1.1.3.1: drawing variants — a box van with a separate cargo box; an older tractor with round lights. */
+  look?: 'box-van' | 'classic';
 }
 
 export interface TrailerModel {
@@ -95,7 +102,37 @@ export const POWER_UNITS: PowerUnitModel[] = [
     maintenanceCentsPerKm: 6, tolled: true, powerHp: 600, axles: 2, minLevel: 5, cab: 'sleeper',
     electric: { rangeKm: 400, kwhEmpty: 115, kwhFull: 165, chargeMin: 60 },
   },
+  // ── 1.1.3.1: the gaps between the classes ──
+  {
+    id: 'sokol-cargo-72', kind: 'van', brand: 'Balkan Motors', name: 'Sokol Cargo 7.2', priceCents: 52_000_00,
+    payloadTons: 2.6, body: 'box', heavyHaul: false, maxSpeedKmh: 100, fuelEmpty: 12, fuelFull: 15.5,
+    maintenanceCentsPerKm: 5, tolled: true, powerHp: 210, axles: 2, minLevel: 2, cab: 'van', look: 'box-van',
+    since: 'new_vehicles_1131', newUntil: '2026-11-12',
+  },
+  {
+    id: 'hemus-r18-tipper', kind: 'rigid', brand: 'Hemus Trucks', name: 'Hemus R18 Самосвал', priceCents: 102_000_00,
+    payloadTons: 9, body: 'tipper', heavyHaul: false, maxSpeedKmh: 85, fuelEmpty: 21, fuelFull: 29,
+    maintenanceCentsPerKm: 10, tolled: true, powerHp: 320, axles: 2, minLevel: 3, cab: 'day',
+    since: 'new_vehicles_1131', newUntil: '2026-11-12',
+  },
+  {
+    id: 'hemus-r18-tanker', kind: 'rigid', brand: 'Hemus Trucks', name: 'Hemus R18 Цистерна', priceCents: 112_000_00,
+    payloadTons: 8, body: 'tanker', heavyHaul: false, maxSpeedKmh: 85, fuelEmpty: 21, fuelFull: 28,
+    maintenanceCentsPerKm: 11, tolled: true, powerHp: 320, axles: 2, minLevel: 4, cab: 'day',
+    since: 'new_vehicles_1131', newUntil: '2026-11-12',
+  },
+  {
+    id: 'danubia-t380-classic', kind: 'tractor', brand: 'Danubia', name: 'Danubia T380 Classic', priceCents: 76_000_00,
+    payloadTons: 0, body: null, heavyHaul: false, maxSpeedKmh: 85, fuelEmpty: 25, fuelFull: 35,
+    maintenanceCentsPerKm: 12, tolled: true, powerHp: 380, axles: 2, minLevel: 2, cab: 'day', look: 'classic',
+    since: 'new_vehicles_1131', newUntil: '2026-11-12',
+  },
 ];
+
+/** 1.1.3.1: may this player see and buy the model now (electric and later models wait for their release). */
+export function modelAvailable(m: PowerUnitModel, has: (f: FeatureId) => boolean): boolean {
+  return (!m.electric || has('electric')) && (!m.since || has(m.since));
+}
 
 /** Electric models come with v1.4 (staff see them earlier). */
 export const isElectric = (m: Pick<PowerUnitModel, 'electric'>) => !!m.electric;

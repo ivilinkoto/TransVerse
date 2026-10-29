@@ -48,7 +48,7 @@ export async function firstOwnTruck(db: DbOrTx, companyId: string, deliveriesDon
   const [rental] = fleet;
   const myDepots = await db.select({ name: cities.nameBg }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, companyId)).orderBy(asc(depots.createdAt));
   const cap = await fleetCapacity(db, companyId);
-  const cheapest = Math.min(...POWER_UNITS.filter((m) => m.minLevel <= 1 && !m.electric).map((m) => m.priceCents));
+  const cheapest = Math.min(...POWER_UNITS.filter((m) => m.minLevel <= 1 && !m.electric && !m.since).map((m) => m.priceCents));
   return { rental: { plate: rental!.plate, onTrip: rental!.status !== 'idle' }, depots: myDepots.map((d) => d.name), free: cap.slots - cap.used, slots: cap.slots, cheapestCents: cheapest };
 }
 

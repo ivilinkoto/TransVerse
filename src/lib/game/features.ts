@@ -35,6 +35,11 @@ export const FEATURES = {
   username_change: '1.1.3',
   truck_compare: '1.1.3',
   sound_settings: '1.1.3',
+  // v1.1.3.1: more achievements, achievements by tier, season medals, new vehicles.
+  more_achievements: '1.1.3.1',
+  season_medals: '1.1.3.1',
+  company_achievements: '1.1.3.1',
+  new_vehicles_1131: '1.1.3.1',
   // v1.1.4: countdowns, ideas with votes, Ден на будителите, my day, compare, roadmap.
   countdowns: '1.1.4',
   ideas: '1.1.4',

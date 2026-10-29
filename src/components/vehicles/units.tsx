@@ -101,7 +101,7 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
 }
 
 /** Tractor unit, rear at x = 0, front at ≈ 602. Fifth wheel centre at x = 120 (kingpin sits 1.6 m behind the trailer nose). */
-export function Tractor({ ids, color, cab, heavy = false, coupled = false, extras }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; extras?: Cosmetics }) {
+export function Tractor({ ids, color, cab, heavy = false, coupled = false, classic = false, extras }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; classic?: boolean; extras?: Cosmetics }) {
   const cabX = 362;
   const rear = heavy ? [72, 198] : [100];
   return (
@@ -121,6 +121,15 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, extra
       {/* side skirt */}
       {!heavy && <rect x={160} y={-102} width={196} height={18} rx={4} fill={color} opacity="0.85" />}
       <Cab x={cabX} style={cab} ids={ids} color={color} aero={coupled && !heavy} extras={extras} />
+      {classic && (
+        // Old-school look: twin cream stripes along the cab, a round lamp and a chrome bumper
+        <g>
+          <rect x={cabX + 4} y={-232} width={cab === 'day' ? 192 : 232} height={9} fill="#fef3c7" opacity="0.9" />
+          <rect x={cabX + 4} y={-218} width={cab === 'day' ? 192 : 232} height={5} fill="#fef3c7" opacity="0.9" />
+          <circle cx={cabX + (cab === 'day' ? 194 : 234)} cy={-140} r={11} fill="#fef9c3" stroke="#78716c" strokeWidth="2" />
+          <rect x={cabX + (cab === 'day' ? 176 : 216)} y={-116} width={30} height={12} rx={4} fill={`url(#${ids.chrome})`} stroke="#475569" />
+        </g>
+      )}
       {rear.map((wx) => (
         <g key={wx}>
           <Fender x={wx} />
@@ -134,12 +143,49 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, extra
 }
 
 /** Rigid truck with its own body. Rear at 0, front at ≈ 902. */
-export function Rigid({ ids, color, body, extras }: { ids: Ids; color: string; body: 'box' | 'reefer'; extras?: Cosmetics }) {
+export function Rigid({ ids, color, body, extras }: { ids: Ids; color: string; body: 'box' | 'reefer' | 'tipper' | 'tanker'; extras?: Cosmetics }) {
   const bodyEnd = 680;
   return (
     <g>
       <rect x={20} y={-124} width={860} height={22} rx={3} fill="#1f2937" />
-      {body === 'reefer' ? (
+      {body === 'tipper' ? (
+        // 1.1.3.1: a dump body (sand, gravel) with its tipping ram behind the cab.
+        <g>
+          <path d="M 10 -330 L 660 -330 L 640 -150 L 40 -150 Z" fill="#ca8a04" stroke="#0b1220" strokeWidth="2" />
+          {Array.from({ length: 6 }, (_, i) => {
+            const x = 110 + i * 100;
+            return <path key={i} d={`M ${x} -330 L ${x + 4} -150`} stroke="#000" strokeOpacity="0.28" strokeWidth="8" />;
+          })}
+          <rect x={10} y={-338} width={650} height={12} rx={3} fill="#1f2937" />
+          <path d="M 10 -330 L 40 -150" stroke="#0b1220" strokeWidth="9" />
+          <rect x={662} y={-300} width={20} height={150} rx={6} fill={`url(#${ids.metal})`} stroke="#475569" />
+          <rect x={666} y={-250} width={12} height={110} fill="#94a3b8" />
+          <text x={340} y={-230} textAnchor="middle" fontSize="40" fontWeight="800" fill="#1f2937" fillOpacity="0.55" fontFamily="system-ui, sans-serif" letterSpacing="6">TRANSVERSE</text>
+        </g>
+      ) : body === 'tanker' ? (
+        // 1.1.3.1: a small tank for liquids, with the orange ADR plate.
+        <g>
+          <rect x={10} y={-340} width={650} height={196} rx={98} fill={`url(#${ids.metal})`} stroke="#475569" strokeWidth="2" />
+          {[180, 340, 500].map((x) => (
+            <rect key={x} x={x} y={-340} width={9} height={196} fill="#64748b" opacity="0.65" />
+          ))}
+          <rect x={40} y={-262} width={590} height={20} fill={color} opacity="0.85" />
+          <rect x={160} y={-352} width={380} height={9} rx={3} fill="#9ca3af" />
+          {Array.from({ length: 5 }, (_, i) => (
+            <rect key={i} x={20} y={-330 + i * 34} width={26} height={5} rx={2} fill="#6b7280" />
+          ))}
+          <rect x={18} y={-338} width={5} height={186} fill="#6b7280" />
+          <rect x={44} y={-338} width={5} height={186} fill="#6b7280" />
+          {[260, 460].map((x) => (
+            <g key={x}>
+              <rect x={x} y={-146} width={12} height={18} fill="#475569" />
+              <circle cx={x + 6} cy={-124} r={8} fill="#ef4444" />
+            </g>
+          ))}
+          <rect x={590} y={-226} width={50} height={50} fill="#f97316" stroke="#fff" strokeWidth="3" />
+          <text x={615} y={-194} textAnchor="middle" fontSize="19" fontWeight="800" fill="#111" fontFamily="system-ui, sans-serif">33</text>
+        </g>
+      ) : body === 'reefer' ? (
         <g>
           <rect x={0} y={-372} width={bodyEnd} height={244} rx={6} fill={`url(#${ids.white})`} stroke="#94a3b8" strokeWidth="2" />
           {Array.from({ length: 10 }, (_, i) => (
@@ -202,6 +248,36 @@ export function Van({ ids, color }: { ids: Ids; color: string }) {
       <Wheel x={112} r={38} ids={ids} />
       <Fender x={478} r={38} />
       <Wheel x={478} r={38} ids={ids} />
+    </g>
+  );
+}
+
+/** 1.1.3.1: a box van (7.2 t class): the van's cab and a separate, taller cargo box. Rear at 0, front at ≈ 760. */
+export function BoxVan({ ids, color }: { ids: Ids; color: string }) {
+  return (
+    <g>
+      <rect x={10} y={-88} width={600} height={16} rx={3} fill="#1f2937" />
+      <rect x={0} y={-340} width={560} height={248} rx={6} fill={`url(#${ids.white})`} stroke="#64748b" strokeWidth="2" />
+      <rect x={0} y={-340} width={560} height={12} fill="#94a3b8" />
+      <rect x={20} y={-262} width={520} height={62} rx={8} fill={color} />
+      <text x={280} y={-218} textAnchor="middle" fontSize="40" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif" letterSpacing="5">TRANSVERSE</text>
+      <path
+        d="M 572 -88 L 572 -262 Q 572 -276 586 -276 L 650 -276 Q 676 -276 690 -254 L 734 -176 Q 742 -164 760 -160 L 772 -156 Q 782 -152 782 -138 L 782 -96 Q 782 -84 768 -84 Z"
+        fill={color}
+        stroke="#0b1220"
+        strokeWidth="2"
+      />
+      <path d="M 646 -264 Q 664 -264 674 -250 L 720 -180 L 646 -180 Z" fill={`url(#${ids.glass})`} stroke="#0b1220" strokeWidth="2" />
+      <rect x={656} y={-166} width={22} height={6} rx={3} fill="#111827" />
+      <rect x={766} y={-150} width={14} height={18} rx={4} fill="#fffbe6" stroke="#9ca3af" />
+      <ellipse cx={786} cy={-141} rx={14} ry={7} fill="#fff7c2" opacity="0.35" />
+      <rect x={744} y={-104} width={40} height={22} rx={6} fill="#1f2937" />
+      <rect x={0} y={-118} width={10} height={36} rx={2} fill="#dc2626" />
+      <rect x={250} y={-118} width={110} height={30} rx={8} fill={`url(#${ids.metal})`} stroke="#475569" />
+      <Fender x={140} r={42} />
+      <Wheel x={140} r={42} ids={ids} twin />
+      <Fender x={660} r={42} />
+      <Wheel x={660} r={42} ids={ids} />
     </g>
   );
 }

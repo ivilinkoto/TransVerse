@@ -461,7 +461,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   buyShares: 'share_market',
   sellShares: 'share_market',
   staffBus: 'staff_bus',
-  testDrive: 'test_drive',
+  // testDrive: startTestDrive checks the release itself (1.1.3.1: the new models can be tried earlier).
   parking: 'parking_game',
   lane: 'cabin',
   cupCreate: 'community_cups',

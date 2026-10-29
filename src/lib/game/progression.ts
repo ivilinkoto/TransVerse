@@ -1,3 +1,4 @@
+import type { FeatureId } from './features';
 /** Levels, experience, reputation and achievements. Pure rules. */
 
 /**
@@ -111,6 +112,8 @@ export interface AchievementDefinition {
   progress: (s: CompanyStats) => number;
   /** A badge for the profile that comes with it. */
   badge?: string;
+  /** 1.1.3.1: an achievement of a later release counts from that release (staff earlier). */
+  since?: FeatureId;
 }
 
 const ratio = (v: number, target: number) => Math.min(1, v / target);
@@ -170,4 +173,38 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     check: (s) => s.totalKm >= 100_000, progress: (s) => ratio(s.totalKm, 100_000) },
   { key: 'level_20', title: 'Легенда на пътя', description: 'Достигни ниво 20.', tier: 'prestige', rewardCents: 100_000_00, rewardXp: 0, badge: 'legend',
     check: (s) => s.level >= 20, progress: (s) => ratio(s.level, 20) },
+
+  // ── 1.1.3.1: more steps on every path (smaller rewards than the older ones of the same tier) ──
+  { key: 'km_1000', title: 'Първите 1 000 км', description: 'Измини общо 1 000 км.', tier: 'bronze', rewardCents: 1_000_00, rewardXp: 150, since: 'more_achievements',
+    check: (s) => s.totalKm >= 1_000, progress: (s) => ratio(s.totalKm, 1_000) },
+  { key: 'punctual_5', title: 'На прав път', description: '5 доставки навреме.', tier: 'bronze', rewardCents: 1_000_00, rewardXp: 150, since: 'more_achievements',
+    check: (s) => s.onTimeDeliveries >= 5, progress: (s) => ratio(s.onTimeDeliveries, 5) },
+  { key: 'level_5', title: 'Ниво 5', description: 'Достигни ниво 5.', tier: 'bronze', rewardCents: 3_000_00, rewardXp: 0, since: 'more_achievements',
+    check: (s) => s.level >= 5, progress: (s) => ratio(s.level, 5) },
+  { key: 'deliveries_100', title: 'Сто курса', description: 'Завърши 100 доставки.', tier: 'silver', rewardCents: 8_000_00, rewardXp: 1_000, since: 'more_achievements',
+    check: (s) => s.deliveries >= 100, progress: (s) => ratio(s.deliveries, 100) },
+  { key: 'km_50000', title: '50 000 километра', description: 'Измини общо 50 000 км.', tier: 'silver', rewardCents: 10_000_00, rewardXp: 1_500, since: 'more_achievements',
+    check: (s) => s.totalKm >= 50_000, progress: (s) => ratio(s.totalKm, 50_000) },
+  { key: 'punctual_100', title: 'Точен като часовник', description: '100 доставки навреме.', tier: 'silver', rewardCents: 10_000_00, rewardXp: 1_500, since: 'more_achievements',
+    check: (s) => s.onTimeDeliveries >= 100, progress: (s) => ratio(s.onTimeDeliveries, 100) },
+  { key: 'countries_5', title: 'Балкански маршрут', description: 'Доставяй до 5 различни държави.', tier: 'silver', rewardCents: 6_000_00, rewardXp: 800, since: 'more_achievements',
+    check: (s) => s.countriesServed >= 5, progress: (s) => ratio(s.countriesServed, 5) },
+  { key: 'big_haul', title: 'Голям удар', description: 'Вземи над 20 000 лв. за един курс.', tier: 'silver', rewardCents: 5_000_00, rewardXp: 1_000, since: 'more_achievements',
+    check: (s) => s.maxSingleRewardCents >= 20_000_00, progress: (s) => ratio(s.maxSingleRewardCents, 20_000_00) },
+  { key: 'night_100', title: 'Нощна птица', description: '100 доставки, пристигнали нощем (22:00–06:00).', tier: 'gold', rewardCents: 15_000_00, rewardXp: 2_500, since: 'more_achievements',
+    check: (s) => s.nightTrips >= 100, progress: (s) => ratio(s.nightTrips, 100) },
+  { key: 'clean_100', title: 'Безупречен', description: '100 доставки навреме без никакъв риск.', tier: 'gold', rewardCents: 15_000_00, rewardXp: 2_500, since: 'more_achievements',
+    check: (s) => s.cleanTrips >= 100, progress: (s) => ratio(s.cleanTrips, 100) },
+  { key: 'deliveries_1000', title: 'Хиляда курса', description: 'Завърши 1 000 доставки.', tier: 'gold', rewardCents: 40_000_00, rewardXp: 6_000, since: 'more_achievements',
+    check: (s) => s.deliveries >= 1_000, progress: (s) => ratio(s.deliveries, 1_000) },
+  { key: 'countries_15', title: 'Европеец', description: 'Доставяй до 15 различни държави.', tier: 'gold', rewardCents: 20_000_00, rewardXp: 3_000, since: 'more_achievements',
+    check: (s) => s.countriesServed >= 15, progress: (s) => ratio(s.countriesServed, 15) },
+  { key: 'fleet_25', title: 'Флотилия', description: 'Притежавай 25 превозни средства.', tier: 'gold', rewardCents: 40_000_00, rewardXp: 4_000, since: 'more_achievements',
+    check: (s) => s.vehicles >= 25, progress: (s) => ratio(s.vehicles, 25) },
+  { key: 'km_250000', title: 'Четвърт милион', description: 'Измини общо 250 000 км.', tier: 'prestige', rewardCents: 50_000_00, rewardXp: 8_000, since: 'more_achievements',
+    check: (s) => s.totalKm >= 250_000, progress: (s) => ratio(s.totalKm, 250_000) },
+  { key: 'multimillionaire', title: 'Мултимилионер', description: 'Достигни баланс от 10 000 000 лв.', tier: 'prestige', rewardCents: 0, rewardXp: 10_000, since: 'more_achievements',
+    check: (s) => s.balanceCents >= 10_000_000_00, progress: (s) => ratio(s.balanceCents, 10_000_000_00) },
 ];
+
+export const ACHIEVEMENT_TIERS = ['bronze', 'silver', 'gold', 'prestige'] as const;

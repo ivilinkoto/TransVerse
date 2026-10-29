@@ -37,6 +37,38 @@ export async function announceBuilderOfWeek(db: DbOrTx, key: string, company: st
   }), now);
 }
 
+/** 1.1.3.1: a player earned a gold or prestige achievement (from checkAchievements). */
+export async function announceAchievement(db: DbOrTx, userId: string, key: string, title: string, tier: 'gold' | 'prestige', now = new Date()) {
+  if (!featureLive('discord_bot', now) || !featureLive('more_achievements', now)) return;
+  const [u] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId));
+  if (!u) return;
+  await announce(db, `achievement:${userId}:${key}`, 'rankings', () => ({
+    embeds: [{ title: tier === 'prestige' ? t('💎 {0} взе престижното постижение „{1}“', u.username, tx(title)) : t('🥇 {0} взе златното постижение „{1}“', u.username, tx(title)), url: `${appUrl()}/game/progress`, color: tier === 'prestige' ? 0xa855f7 : 0xf6c343, footer }],
+  }), now);
+}
+
+/** 1.1.3.1: a gold season medal for a player (places 1–3) or a company (first place). */
+export async function announceGoldMedal(db: DbOrTx, who: { kind: 'player' | 'company'; id: string; name: string }, season: { id: number; name: string }, rank: number, now = new Date()) {
+  if (!featureLive('discord_bot', now) || !featureLive('season_medals', now)) return;
+  await announce(db, `medal:${season.id}:${who.kind}:${who.id}`, 'rankings', () => ({
+    embeds: [{
+      title: who.kind === 'player' ? t('🥇 {0} спечели златен медал — {1}. място', who.name, rank) : t('🥇 „{0}“ спечели златен медал за компании', who.name),
+      description: tx(season.name),
+      url: `${appUrl()}/game/seasons${who.kind === 'company' ? '?tab=companies' : ''}`,
+      color: 0xf6c343,
+      footer,
+    }],
+  }), now);
+}
+
+/** 1.1.3.1: a company earned a gold or prestige company achievement. */
+export async function announceCompanyAchievement(db: DbOrTx, organizationId: string, name: string, key: string, title: string, tier: 'gold' | 'prestige', now = new Date()) {
+  if (!featureLive('discord_bot', now) || !featureLive('company_achievements', now)) return;
+  await announce(db, `company-achievement:${organizationId}:${key}`, 'rankings', () => ({
+    embeds: [{ title: tier === 'prestige' ? t('💎 „{0}“ взе престижното фирмено постижение „{1}“', name, tx(title)) : t('🥇 „{0}“ взе златното фирмено постижение „{1}“', name, tx(title)), url: `${appUrl()}/game/companies/${organizationId}`, color: tier === 'prestige' ? 0xa855f7 : 0xf6c343, footer }],
+  }), now);
+}
+
 /** A used truck or trailer on the market (from createListing): "Купи" buys it from Discord. */
 export async function announceListing(db: DbOrTx, listing: { id: string; kind: string; modelId: string; priceCents: number; expiresAt: Date }, details: { city: string; condition: number; seller: string }, now: Date) {
   if (!featureLive('discord_bot', now)) return;

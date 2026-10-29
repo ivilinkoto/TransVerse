@@ -103,6 +103,7 @@ import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 import { expireAllianceListings } from './alliance-market';
 import { awardDriversOfMonth, celebrateAnniversaries } from './community';
+import { backfillMedalBadges, checkCompanyAchievements } from './medals';
 import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
 
@@ -312,6 +313,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     if (featureLive('owner_report', now) && new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'owner-reports', 7 * 24 * 3_600_000, now, () => ownerReports(db, now));
     await every(db, 'interns', 60 * 60_000, now, () => endInternships(db, now));
+    if (featureLive('season_medals', now)) await every(db, 'medal-badges-backfill', 3650 * 86_400_000, now, () => backfillMedalBadges(db, now));
+    if (featureLive('company_achievements', now)) await every(db, 'company-achievements', 60 * 60_000, now, () => checkCompanyAchievements(db, now));
     // v1.10: the city of the week (Monday).
     if (featureLive('city_growth', now) && new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'city-week', 7 * 24 * 3_600_000, now, () => announceCityOfWeek(db, now));
     // v1.10: decisions on the way.

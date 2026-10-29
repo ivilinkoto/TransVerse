@@ -68,6 +68,7 @@ export async function buyVehicle(db: Database, userId: string, modelId: string, 
   if (!model) fail('unknown_model', tr('Непознат модел.'));
   const now = options.now ?? new Date();
   if (model!.electric && !(await featureFor(db, userId, 'electric', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  if (model!.since && !(await featureFor(db, userId, model!.since, now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   if (options.lease && model!.priceCents < LEASE.minPriceCents) fail('lease_unavailable', tr('Лизинг има за камиони от ') + money(LEASE.minPriceCents) + tr(' нагоре.'));
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
