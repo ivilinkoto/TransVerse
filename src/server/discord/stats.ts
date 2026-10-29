@@ -7,6 +7,17 @@ import { discordConfig } from './config';
 import { guild } from './guild';
 import { layoutState, type StatChannel } from './layout';
 import { t } from '@/i18n/t';
+import { featureLive } from '@/lib/game/features';
+import { comingReleases } from '@/lib/game/releases';
+
+/** 1.1.3.4: how long until the next update (days, or hours on the last day). */
+export function nextUpdateName(now: Date) {
+  const next = featureLive('discord_plus', now) ? comingReleases(now)[0] : undefined;
+  if (!next) return t('🆕 Следва: скоро');
+  const ms = new Date(next.publishedAt).getTime() - now.getTime();
+  const hours = Math.max(1, Math.ceil(ms / 3_600_000));
+  return hours < 24 ? t('🆕 {0} след {1} ч', next.version, hours) : t('🆕 {0} след {1} дни', next.version, Math.ceil(ms / 86_400_000));
+}
 
 /**
  * The voice channels of "📊 СТАТИСТИКА": their names show live numbers from
@@ -26,6 +37,7 @@ export async function statNames(db: Database, now = new Date()): Promise<Record<
     'stat-road': t('🚚 На пътя: {0}', int(Number(r.road))),
     'stat-players': t('👥 Шофьори: {0}', int(Number(r.players))),
     'stat-companies': t('🏢 Компании: {0}', int(Number(r.companies))),
+    'stat-next': nextUpdateName(now),
   };
 }
 

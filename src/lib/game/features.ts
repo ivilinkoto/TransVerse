@@ -51,6 +51,9 @@ export const FEATURES = {
   discord_status: '1.1.3.2',
   discord_news: '1.1.3.2',
   discord_coming_soon: '1.1.3.2',
+  // v1.1.3.4 „Discord+“: company card and compare in Discord, driver of the week, countdown channel,
+  // idle truck reminder, ✅ closes a bug, the team's daily report, Discord votes on ideas, translate, level rewards.
+  discord_plus: '1.1.3.4',
   // v1.1.4: countdowns, ideas with votes, Ден на будителите, my day, compare, roadmap.
   countdowns: '1.1.4',
   ideas: '1.1.4',

@@ -12,15 +12,16 @@ import { starPhoto } from './photos';
 import { voiceChanged } from './rooms';
 import { ticketMessageFromDiscord } from './tickets';
 import { bugFromDiscord, ideaFromDiscord } from './channels-1132';
+import { bugReaction } from './plus';
 import { t } from '@/i18n/t';
 
 /**
  * GUILDS | GUILD_MEMBERS | GUILD_MODERATION | GUILD_MESSAGES | MESSAGE_CONTENT
  * (members and message content are privileged: turned on in the Developer Portal).
  */
-const INTENTS = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 7) | (1 << 9) | (1 << 15);
+const INTENTS = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 7) | (1 << 9) | (1 << 10) | (1 << 15);
 /** Without the privileged intents: commands still work; no welcome, no message text for the bridge and the log. */
-const BASIC_INTENTS = (1 << 0) | (1 << 2) | (1 << 7) | (1 << 9);
+const BASIC_INTENTS = (1 << 0) | (1 << 2) | (1 << 7) | (1 << 9) | (1 << 10);
 /** How often a connection without Message Content tries the full intents again. */
 const RETRY_FULL_MS = 30 * 60_000;
 const HELLO_TIMEOUT_MS = 30_000;
@@ -114,6 +115,10 @@ function onEvent(db: Database, type: string, d: unknown) {
       })());
       break;
     }
+    case 'MESSAGE_REACTION_ADD':
+      // 1.1.3.4: ✅ from the team under a bug report closes its ticket (GUILD_MESSAGE_REACTIONS, not privileged).
+      if (inGuild) run('reaction', bugReaction(db, d as Parameters<typeof bugReaction>[1]));
+      break;
     case 'GUILD_CREATE':
       // After (re)connecting Discord sends the server with who is in which voice channel.
       if ((d as { id?: string }).id === guildId) run('voice', resetVoice(db, (d as { voice_states?: { user_id: string; channel_id: string | null }[] }).voice_states ?? []));

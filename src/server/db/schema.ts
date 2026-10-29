@@ -3190,6 +3190,8 @@ export const ideas = pgTable(
     /** The team's answer, shown under the idea. */
     staffNote: text('staff_note'),
     votes: integer('votes').notNull().default(0),
+    /** 1.1.3.4: how many of the votes came from the Discord button. */
+    discordVotes: integer('discord_votes').notNull().default(0),
     createdAt: createdAt(),
   },
   (t) => [index('ideas_status_votes_idx').on(t.status, t.votes)],
@@ -3200,6 +3202,8 @@ export const ideaVotes = pgTable(
   {
     ideaId: uuid('idea_id').notNull().references(() => ideas.id, { onDelete: 'cascade' }),
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** 1.1.3.4: where the vote was given: game | discord. */
+    source: text('source').notNull().default('game'),
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.ideaId, t.userId] })],

@@ -132,7 +132,9 @@ export async function bugFromDiscord(db: Database, m: ChannelMessage, now = new 
   const me = await linkedUser(db, m.author.id);
   if (me) {
     try {
-      await runAction(db, asGame(me), { type: 'createTicket', ticket: { subject: subject.length >= 4 ? subject : t('Бъг от Discord'), category: 'bug', body } }, async () => `discord:${m.author.id}`);
+      const created = (await runAction(db, asGame(me), { type: 'createTicket', ticket: { subject: subject.length >= 4 ? subject : t('Бъг от Discord'), category: 'bug', body } }, async () => `discord:${m.author.id}`)) as { id: string };
+      // 1.1.3.4: ✅ from the team under this message closes the ticket (plus.ts).
+      await db.insert(jobState).values({ key: `bug-ticket:${m.id}`, value: { ticketId: created.id, channelId: m.channel_id } }).onConflictDoNothing();
     } catch (e) {
       const why = errorText(e);
       if (!why) throw e;

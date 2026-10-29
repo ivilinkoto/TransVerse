@@ -701,6 +701,13 @@
       "when": 1793284587517,
       "tag": "0099_flaky_katie_power",
       "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1793300349636,
+      "tag": "0100_chilly_silver_centurion",
+      "breakpoints": true
     }
   ]
 }

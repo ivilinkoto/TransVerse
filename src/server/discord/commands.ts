@@ -11,6 +11,7 @@ import { membershipOf } from '@/server/game/membership';
 import { topBases } from '@/server/game/plot';
 import { companyLeaderboard, fleetView, leaderboard } from '@/server/game/queries';
 import { playerCard } from '@/server/game/social';
+import { playerCareer } from '@/server/game/career';
 import { laneRecordsView } from '@/server/game/community';
 import { albumOf } from '@/server/game/competition';
 import { openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
@@ -35,6 +36,8 @@ const reason = (required: boolean) => ({ type: 3, name: tr('причина'), de
 export const COMMANDS = [
   { name: 'профил', description: 'Профилът на играч в TransVerse (без име — твоят)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'компания', description: 'Компания в TransVerse (без име — твоята)', options: [{ type: 3, name: 'име', description: 'Име или таг на компанията', required: false }] },
+  { name: 'статистика', description: 'Картичка на компания: курсове, сезон, медали, постижения (без име — твоята)', options: [{ type: 3, name: 'компания', description: 'Име или таг на компанията', required: false }] },
+  { name: 'сравни', description: 'Ти срещу друг играч: курсове, км, тонове, навреме, държави, постижения', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: true }] },
   { name: 'участък', description: 'Снимка на базата на компания (без име — твоята)', options: [{ type: 3, name: 'компания', description: 'Име или таг на компанията', required: false }] },
   {
     name: 'класация',
@@ -111,6 +114,8 @@ export const COMMANDS = [
       { type: 4, name: 'победители', description: 'Брой победители (1 по подразбиране)', required: false, min_value: 1, max_value: 20 },
     ],
   },
+  // 1.1.3.4: a message command (right click on a message → Apps → Преведи).
+  { name: 'Преведи', type: 3 },
   {
     name: 'новина',
     description: 'Новина от екипа в #новини',
@@ -166,6 +171,12 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return profile(db, input.options['играч'] ?? me?.username ?? null, me?.id ?? null, now);
     case 'компания':
       return company(db, input.options['име'] ?? null, me?.id ?? null);
+    case 'статистика':
+      if (!featureLive('discord_plus', now)) return { ephemeral: true, content: tr('Командата идва със следващото обновление.') };
+      return companyCard(db, input.options['компания'] ?? null, me?.id ?? null);
+    case 'сравни':
+      if (!featureLive('discord_plus', now)) return { ephemeral: true, content: tr('Командата идва със следващото обновление.') };
+      return compare(db, me?.id ?? null, me?.username ?? null, input.options['играч'] ?? '', now);
     case 'класация':
       return ranking(db, (input.options['вид'] ?? 'season') as RankingKind, now);
     case 'камиони':
@@ -238,6 +249,53 @@ async function findCompany(db: DbOrTx, name: string | null, viewerId: string | n
 
 /** Changes every ten minutes, so Discord fetches a fresh picture now and then. */
 const pictureVersion = () => Math.floor(Date.now() / 600_000);
+
+/** 1.1.3.4: /статистика — the public card of a company as a picture. */
+async function companyCard(db: DbOrTx, name: string | null, viewerId: string | null): Promise<CommandReply> {
+  const org = await findCompany(db, name, viewerId);
+  if (!org) return { ephemeral: true, content: name ? tr('Няма компания „{0}“.', name) : tr('Напиши име на компания или свържи акаунта си. {0}', linkHint()) };
+  return {
+    embeds: [{
+      title: `📊 ${org.name}${org.tag ? ` [${org.tag}]` : ''}`,
+      url: `${appUrl()}/game/companies/${org.id}`,
+      color: org.liveryColor ? parseInt(org.liveryColor.slice(1), 16) : BRAND,
+      image: { url: `${appUrl()}/api/discord/card/company/${org.id}?v=${pictureVersion()}` },
+      footer,
+    }],
+  };
+}
+
+/** 1.1.3.4: /сравни — you against another player (no money), like "Сравни се" in the game. */
+async function compare(db: DbOrTx, meId: string | null, meName: string | null, other: string, now: Date): Promise<CommandReply> {
+  if (!meId || !meName) return { ephemeral: true, content: tr('Не знам кой си в играта. {0}', linkHint()) };
+  const card = await playerCard(db, meId, other.trim(), now);
+  if (!card) return { ephemeral: true, content: tr('Няма играч „{0}“.', other) };
+  if (card.id === meId) return { ephemeral: true, content: tr('Избери друг играч — със себе си винаги е равно. 🙂') };
+  const [a, b] = await Promise.all([playerCareer(db, meId), playerCareer(db, card.id)]);
+  if (!a || !b) return { ephemeral: true, content: tr('Няма данни за сравнение.') };
+  const pct = (v: number | null) => (v === null ? '—' : `${Math.round(v * 100)}%`);
+  const rows: [string, number, number, (v: number) => string][] = [
+    [tr('Курсове'), a.trips, b.trips, (v) => int(v)],
+    [tr('Километри'), a.km, b.km, (v) => km(v)],
+    [tr('Тонове'), a.tons, b.tons, (v) => tr('{0} т', int(v))],
+    [tr('Навреме'), a.onTimeShare ?? -1, b.onTimeShare ?? -1, (v) => pct(v < 0 ? null : v)],
+    [tr('Държави'), a.countries, b.countries, (v) => int(v)],
+    [tr('Постижения'), a.achievements, b.achievements, (v) => int(v)],
+  ];
+  const wins = rows.filter(([, x, y]) => x > y).length;
+  const losses = rows.filter(([, x, y]) => y > x).length;
+  const mark = (x: number, y: number) => (x > y ? '**' : '');
+  return {
+    embeds: [{
+      title: tr('⚖️ {0} срещу {1}', meName, card.username),
+      url: `${appUrl()}/game/players/${encodeURIComponent(card.username)}/compare`,
+      color: BRAND,
+      description: wins > losses ? tr('{0} води в {1} от {2} показателя.', meName, wins, rows.length) : wins < losses ? tr('{0} води в {1} от {2} показателя.', card.username, losses, rows.length) : tr('Равни сте — следващият курс решава.'),
+      fields: rows.map(([label, x, y, show]) => ({ name: label, value: `${mark(x, y)}${show(x)}${mark(x, y)} · ${mark(y, x)}${show(y)}${mark(y, x)}`, inline: true })),
+      footer,
+    }],
+  };
+}
 
 async function plot(db: DbOrTx, name: string | null, viewerId: string | null): Promise<CommandReply> {
   const org = await findCompany(db, name, viewerId);

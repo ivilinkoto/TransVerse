@@ -205,3 +205,5 @@
 - Нови категории в регистрите: `territory_bonus`, `holding_bonus`, `legacy_bonus`, `legacy_reset` (лична сметка), `holding` (каса).
 - 0092: `intermodal_shipments` (линия, посока, градове, стока, двата курса, статус, първи шофьор, кога пристига линията) и `city_markets.supply`; категория `intermodal_bonus`. `job_state`: `territories`, `holding-fees`, `intermodal`, `intermodal-release`.
 - 0093: `community_tournaments` (организатор, мярка, филтри, дати, награден фонд, такса, лимит, съобщение, статус) и `community_cup_entries` (точки). Категории `era_bonus`, `tournament`; опит `lane`. `job_state`: `community-cups`, `lane:<курс>`.
+- 0099: `organization_achievements` (компания, ключ, кога) — постиженията на компаниите (1.1.3.1).
+- 0100: `ideas.discord_votes` и `idea_votes.source` (`game` | `discord`) — колко от гласовете за идея са от бутона в Discord (1.1.3.4).

@@ -82,6 +82,8 @@ export const DISCORD_ROLES = {
   perfect10: { name: '💎 Перфектна серия 10+', color: 0x34d399 },
   /** Support, admins and the founder of the game: sees the staff channels and the tickets. */
   staff: { name: 'Екип TransVerse', color: 0xe04545 },
+  /** 1.1.3.4: the week's best driver (most trips), for seven days. */
+  weekDriver: { name: '🏅 Шофьор на седмицата', color: 0xf6c343 },
 } as const;
 export type DiscordRole = keyof typeof DISCORD_ROLES;
 
