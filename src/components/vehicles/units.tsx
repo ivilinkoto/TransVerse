@@ -290,7 +290,7 @@ export function BoxVan({ ids, color }: { ids: Ids; color: string }) {
       <path d="M 566 -282 L 566 -334 Q 566 -344 578 -342 L 592 -340 Q 632 -324 662 -284 Z" fill={color} stroke="#0b1220" strokeWidth="2" />
       {/* cab */}
       <path
-        d="M 572 -86 L 572 -270 Q 572 -284 588 -284 L 652 -284 Q 680 -284 694 -262 L 738 -184 Q 746 -170 764 -166 L 776 -162 Q 790 -158 790 -142 L 790 -100 Q 790 -86 776 -86 Z"
+        d="M 572 -62 L 572 -270 Q 572 -284 588 -284 L 652 -284 Q 680 -284 694 -262 L 738 -184 Q 746 -170 764 -166 L 776 -162 Q 790 -158 790 -142 L 790 -76 Q 790 -62 776 -62 L 711 -62 A 54 54 0 0 0 609 -62 Z"
         fill={color}
         stroke="#0b1220"
         strokeWidth="2"
@@ -300,10 +300,10 @@ export function BoxVan({ ids, color }: { ids: Ids; color: string }) {
       <path d="M 642 -266 L 642 -188" stroke="#0b1220" strokeWidth="3" />
       <path d="M 684 -248 L 734 -178 L 746 -172 L 694 -246 Z" fill={`url(#${ids.glass})`} />
       {/* door, handle and step */}
-      <path d="M 600 -276 L 600 -96 M 730 -184 L 730 -96" stroke="#000" strokeOpacity="0.35" strokeWidth="2" />
+      <path d="M 600 -276 L 600 -70 M 730 -184 L 730 -104" stroke="#000" strokeOpacity="0.35" strokeWidth="2" />
       <rect x={600} y={-190} width={130} height={5} fill="#000" opacity="0.18" />
       <rect x={612} y={-170} width={26} height={7} rx={3} fill="#111827" />
-      <rect x={606} y={-96} width={70} height={9} rx={2} fill="#374151" />
+      <rect x={574} y={-78} width={26} height={8} rx={2} fill="#374151" />
       {/* mirror */}
       <path d="M 718 -214 L 746 -224" stroke="#111827" strokeWidth="5" strokeLinecap="round" />
       <rect x={742} y={-254} width={12} height={50} rx={4} fill="#111827" />
@@ -314,17 +314,19 @@ export function BoxVan({ ids, color }: { ids: Ids; color: string }) {
       <path d="M 762 -164 L 784 -158 Q 790 -156 790 -150 L 790 -146 L 762 -150 Z" fill="#fffbe6" stroke="#9ca3af" />
       <rect x={754} y={-150} width={10} height={8} rx={2} fill="#f59e0b" />
       <ellipse cx={796} cy={-152} rx={14} ry={7} fill="#fff7c2" opacity="0.35" />
-      <rect x={744} y={-102} width={48} height={22} rx={6} fill="#1f2937" />
-      <circle cx={782} cy={-91} r={5} fill="#fde68a" />
+      <rect x={718} y={-100} width={76} height={36} rx={8} fill="#1f2937" />
+      <rect x={722} y={-96} width={68} height={5} rx={2} fill="#4b5563" />
+      <rect x={768} y={-86} width={18} height={10} rx={3} fill="#fde68a" stroke="#78716c" />
+      <rect x={716} y={-66} width={78} height={6} rx={3} fill="#111827" />
       {/* fuel tank with straps, AdBlue, side guard, mudflap, exhaust */}
       <rect x={420} y={-124} width={110} height={34} rx={10} fill={`url(#${ids.metal})`} stroke="#475569" />
       <rect x={440} y={-124} width={5} height={34} fill="#475569" />
       <rect x={505} y={-124} width={5} height={34} fill="#475569" />
       <rect x={394} y={-120} width={20} height={28} rx={5} fill="#e5e7eb" stroke="#64748b" />
       <rect x={398} y={-115} width={12} height={5} fill="#2563eb" />
-      <rect x={200} y={-76} width={410} height={6} rx={2} fill="#9ca3af" />
-      <rect x={200} y={-58} width={410} height={6} rx={2} fill="#9ca3af" />
-      <rect x={556} y={-94} width={30} height={6} rx={3} fill="#6b7280" />
+      <rect x={200} y={-76} width={350} height={6} rx={2} fill="#9ca3af" />
+      <rect x={200} y={-58} width={350} height={6} rx={2} fill="#9ca3af" />
+      <rect x={536} y={-94} width={26} height={6} rx={3} fill="#6b7280" />
       {/* rear mudguard on brackets under the box (behind the wheel), with its mudflap */}
       <rect x={96} y={-106} width={8} height={16} fill="#374151" />
       <rect x={176} y={-106} width={8} height={16} fill="#374151" />
@@ -333,8 +335,11 @@ export function BoxVan({ ids, color }: { ids: Ids; color: string }) {
       <path d="M 92 -84 A 54 54 0 0 1 188 -84" fill="none" stroke="#fff" strokeOpacity="0.18" strokeWidth="3" />
       <rect x={72} y={-40} width={14} height={34} rx={2} fill="#111827" stroke="#475569" />
       <rect x={75} y={-30} width={8} height={4} fill="#94a3b8" />
-      <Fender x={660} r={42} />
       <Wheel x={660} r={42} ids={ids} />
+      {/* front wheel arch liner and the mudflap behind the front wheel */}
+      <path d="M 606 -62 A 57 57 0 0 1 714 -62" fill="none" stroke="#111827" strokeWidth="7" />
+      <path d="M 612 -66 A 50 50 0 0 1 708 -66" fill="none" stroke="#fff" strokeOpacity="0.12" strokeWidth="2" />
+      <rect x={590} y={-64} width={10} height={48} rx={2} fill="#111827" stroke="#475569" />
     </g>
   );
 }
