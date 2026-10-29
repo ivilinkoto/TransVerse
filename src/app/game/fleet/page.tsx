@@ -17,6 +17,7 @@ import { fleetView } from '@/server/game/queries';
 import { ghostsFor } from '@/server/game/deals';
 import { RENTAL_BUYOUT_DELIVERIES, UPGRADES, combinationCapability, type UpgradeId } from '@/lib/game/catalog';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { SelectAction } from '@/components/ui/SelectAction';
 import { ECONOMY } from '@/lib/game/economy';
 import { isVip } from '@/lib/game/vip';
 import { AUTO_DISPATCH_PER_DAY } from '@/server/game/dispatch';
@@ -50,7 +51,7 @@ export default async function FleetPage() {
   const selfBusy = !!self?.vehicleId && fleet.vehicles.some((x) => x.id === self.vehicleId && x.status !== 'idle');
   // 1.1.3: the depots at a glance (where own trucks are bought and parked).
   const [myDepots, capacity] = await Promise.all([
-    db.select({ name: cities.nameBg, slots: depots.slots }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)),
+    db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg, slots: depots.slots }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)),
     fleetCapacity(db, company.id),
   ]);
   // 1.1.3: what the rent costs on average per trip (last 10 trips), to compare with buying out.
@@ -120,6 +121,26 @@ export default async function FleetPage() {
               <div><dt className="label">{tr('Надстройка')}</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? tx(BODY_LABELS[v.trailer.model.body]) : <span className="text-amber-sig">{tr('без ремарке')}</span>) : `${tx(BODY_LABELS[v.model.body!])}${v.trailer ? tr(' + прикачно') : ''}`}</dd></div>
               <div><dt className="label">{tr('Шофьор')}</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{tx(v.driver.name)}{v.coDriver ? ` + ${v.coDriver.name}` : ''}</span></> : <span className="text-amber-sig">{tr('няма')}</span>}</dd></div>
             </dl>
+            {(() => {
+              // 1.1.3.2: an idle truck away from every depot goes home in a minute, for free, from any country.
+              if (v.delivery || v.status !== 'idle') return null;
+              if (v.movingUntil && v.movingUntil > now) return <p className="mt-3 text-xs text-cyan-glow">{tr('🏠 Пътува към депото — пристига до минута.')}</p>;
+              if (myDepots.some((d) => d.cityId === v.cityId)) return null;
+              const targets = myDepots.filter((d) => d.cityId !== v.cityId);
+              if (!targets.length) return null;
+              return (
+                <div className="mt-3 rounded-xl border border-asphalt-700 px-3 py-2">
+                  {targets.length === 1 ? (
+                    <ActionButton action={{ type: 'moveToDepot', vehicleId: v.id, depotId: targets[0]!.id }} className="btn-ghost px-3 py-1.5 text-sm">
+                      <Warehouse className="h-4 w-4" />{tr('Към депото в {0}', tx(targets[0]!.name))}
+                    </ActionButton>
+                  ) : (
+                    <SelectAction label={tr('Към депото')} ariaLabel={tr('Депо за {0}', v.plate)} value="" options={[{ value: '', label: tr('— избери депо —') }, ...targets.map((d) => ({ value: d.id, label: tx(d.name) }))]} action={{ type: 'moveToDepot', vehicleId: v.id }} field="depotId" />
+                  )}
+                  <p className="mt-1 text-xs text-mist-400">{tr('Празен камион се връща в депото за 1 минута — безплатно, от всяка държава. Прикаченото ремарке идва с него.')}</p>
+                </div>
+              );
+            })()}
             {!v.driver && !v.delivery && self && !selfBusy && (
               <div className="mt-3">
                 <ActionButton action={{ type: 'assignDriver', driverId: self.id, vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">

@@ -62,7 +62,12 @@ export async function activeBroadcast(db: DbOrTx, now: Date): Promise<Broadcast 
 export async function postBroadcastToDiscord(db: DbOrTx, now: Date) {
   const b = await activeBroadcast(db, now);
   if (!b || !b.discord || b.posted || !featureLive('discord_bot', now)) return false;
-  await announce(db, `broadcast:${b.setAt}`, 'updates', { embeds: [{ title: b.tone === 'warning' ? '⚠️ TransVerse' : '📣 TransVerse', description: b.text, color: b.tone === 'warning' ? 0xf6c343 : 0x22d3ee }] }, now);
+  const message = { embeds: [{ title: b.tone === 'warning' ? '⚠️ TransVerse' : '📣 TransVerse', description: b.text, color: b.tone === 'warning' ? 0xf6c343 : 0x22d3ee }] };
+  // 1.1.3.2: the team's messages go to #новини, warnings (maintenance, problems) also to #статус.
+  if (featureLive('discord_news', now)) {
+    await announce(db, `broadcast:${b.setAt}`, 'teamNews', message, now);
+    if (b.tone === 'warning') await announce(db, `broadcast:${b.setAt}:status`, 'status', { ...message, ping: false }, now);
+  } else await announce(db, `broadcast:${b.setAt}`, 'updates', message, now);
   await db.update(jobState).set({ value: { ...b, posted: true }, updatedAt: now }).where(eq(jobState.key, KEY));
   return true;
 }

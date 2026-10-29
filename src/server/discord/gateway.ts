@@ -11,6 +11,7 @@ import { messageXp, resetVoice } from './levels';
 import { starPhoto } from './photos';
 import { voiceChanged } from './rooms';
 import { ticketMessageFromDiscord } from './tickets';
+import { bugFromDiscord, ideaFromDiscord } from './channels-1132';
 import { t } from '@/i18n/t';
 
 /**
@@ -104,6 +105,9 @@ function onEvent(db: Database, type: string, d: unknown) {
         if (await automod(db, m as AutomodMessage)) return;
         await messageFromDiscord(db, m);
         await ticketMessageFromDiscord(db, m);
+        // 1.1.3.2: #идеи and #докладвай-бъг.
+        if (await ideaFromDiscord(db, m)) return;
+        if (await bugFromDiscord(db, m)) return;
         await messageXp(db, m);
         await countCompanyMessage(db, m.channel_id);
         await starPhoto(db, m);

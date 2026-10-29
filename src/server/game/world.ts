@@ -106,6 +106,8 @@ import { awardDriversOfMonth, celebrateAnniversaries } from './community';
 import { backfillMedalBadges, checkCompanyAchievements } from './medals';
 import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
+import { syncComingSoon } from '@/server/discord/coming-soon';
+import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
 
 /**
  * Background simulation of the persistent world. Every job is idempotent and
@@ -436,6 +438,11 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await photoContest(db, now);
     });
     await every(db, 'discord-announce', 5 * 60_000, now, () => announceFromGame(db, now));
+    // 1.1.3.2: the pinned "Очаквайте" notes in the channels of features that are not out yet.
+    await every(db, 'discord-coming-soon', 30 * 60_000, now, () => syncComingSoon(db, now));
+    // 1.1.3.2: the live card in #статус and the team's polls in #анкети.
+    await every(db, 'discord-status', 5 * 60_000, now, () => updateStatus(db, now));
+    await every(db, 'discord-team-polls', 60_000, now, () => closeTeamPolls(db, now));
     await every(db, 'discord-roles', 10 * 60_000, now, () => syncAllRoles(db, now));
     // Again now and then: the bot may have been added to the server after the worker started.
     await every(db, 'discord-commands', 30 * 60_000, now, () => registerCommands());

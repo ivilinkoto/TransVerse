@@ -1,0 +1,95 @@
+# 1.1.3.2 «Discord»: the bot for everyone, its channels, the free trip to the depot
+13af65694e	#статус shows live whether the game is up, which version is out and how many drivers are on the road. The team posts news in #новини and polls with buttons in #анкети.	#статус показывает в реальном времени, работает ли игра, какая версия и сколько водителей в пути. Команда публикует новости в #новини и опросы с кнопками в #анкети.
+eb6c44df9e	The Discord bot is for everyone	Discord-бот теперь для всех
+8ec7739076	Discord commands (/ранг, /покани, /дуел, moderation, /раздаване, /ивент-старт) now see their options for players who play in English or Russian too.	Команды Discord (/ранг, /покани, /дуел, модерация, /раздаване, /ивент-старт) теперь видят свои параметры и у игроков, играющих на английском или русском.
+704e1d8f24	TransVerse · updates	TransVerse · обновления
+18cdb5267a	`/анкета въпрос отговори [часове]` — a poll in #анкети (answers separated by “;”)	`/анкета въпрос отговори [часове]` — опрос в #анкети (ответы через «;»)
+9669b37e83	`/новина заглавие текст` — news in #новини	`/новина заглавие текст` — новость в #новини
+fe149adbd7	ru-битвы	ru-битвы
+30587a588a	ru-груз-дня	ru-груз-дня
+21bd0fceb8	ru-колонны	ru-колонны
+ea922ff571	ru-ралли	ru-ралли
+20c282e405	If the game has not been answering for more than 12 minutes, #статус says from when to when and that everything works again.	Если игра не отвечала больше 12 минут, #статус сообщает, с какого по какое время, и что всё снова работает.
+e90f84610e	A poll from the team in #анкети	Опрос от команды в #анкети
+7ea8a6cdb4	The poll has already ended.	Опрос уже завершён.
+a1aef60ad0	The poll has ended · {0} votes.	Опрос завершён · голосов: {0}.
+a47e386df0	A poll lasts from 1 to 168 hours.	Опрос длится от 1 до 168 часов.
+306bff273a	The companies’ bases and buildings	Базы и стройки компаний
+9b6a279732	Free, from any country — no fuel, tolls or wear. The coupled trailer comes along.	Бесплатно, из любой страны — без топлива, сборов и износа. Прицеп едет вместе с ним.
+075061c58b	The company battles	Битвы компаний
+9e6c71c7f2	The bot now finds its channels (#снимки, #викторина, #раздавания and others) when a command is given in English or Russian too.	Бот теперь находит свои каналы (#снимки, #викторина, #раздавания и другие) и когда команда дана на английском или русском.
+06ac322450	The TransVerse bot in Discord goes live for everyone, every channel of the server comes alive, and an empty truck returns to its depot in a minute — for free.	Бот TransVerse в Discord запускается для всех, все каналы сервера оживают, а пустой грузовик возвращается в депо за минуту — бесплатно.
+6556abe9bc	Bug from Discord	Баг из Discord
+d78494e3a9	In #роли you can also subscribe to News and Polls.	В #роли можно подписаться и на Новости и Опросы.
+97c248cbe0	Version	Версия
+54257c10c1	All ideas	Все идеи
+6d0032a655	The question	Вопрос
+28f04649e9	Vote with the buttons (you can change your vote). Ends <t:{0}:R>.	Голосуй кнопками (голос можно изменить). Конец <t:{0}:R>.
+3660a491f3	The TransVerse team · {0}	Команда TransVerse · {0}
+89acaad5d4	The team: {0}	Команда: {0}
+cbf7efba46	To turn it into an idea in the game, link your account. {0}	Чтобы это стало идеей в игре, привяжи аккаунт. {0}
+ccd93f5c2d	The title and the text are too short.	Заголовок и текст слишком короткие.
+75ee839af4	Comes with update {0}{1}{2}. Its announcements will appear here then — until then the channel is quiet.	Появится в обновлении {0}{1}{2}. Тогда здесь начнут выходить объявления — до тех пор канал молчит.
+8eca3ad914	Ideas and bugs straight from Discord	Идеи и баги прямо из Discord
+0b6eae5dfc	Idea by {0} · vote with the button (linked account)	Идея от {0} · голосуй кнопкой (привязанный аккаунт)
+5b658921ef	The channels of features still to come (battles, convoys, buildings, load of the day, liveries, port, rally) have a pinned “Coming soon” message with the update and the date — removed by themselves once the feature is out.	В каналах будущих функций (битвы, колонны, стройки, груз дня, ливреи, порт, ралли) закреплено сообщение «Скоро» с обновлением и датой — оно исчезает само, когда функция выходит.
+044a883ebe	The card refreshes every 5 minutes. If the time below stops changing, the game is not answering — we will post here once it is fixed.	Карточка обновляется каждые 5 минут. Если время внизу перестало меняться, игра не отвечает — напишем здесь, когда всё исправим.
+234cb96cc6	How many hours (24 by default)	Сколько часов (по умолчанию 24)
+41099b076b	The command comes with the next update.	Команда появится в следующем обновлении.
+e37469685e	The convoys	Колонны
+c8debf41d9	The livery of the month contest	Конкурс ливреи месяца
+91e25c3e1c	The ships at the ports	Корабли в портах
+1931a17ea2	To the depot	В депо
+564cbab096	To the depot in {0}	В депо в {0}
+a24fc82ffa	To the depot in 1 minute — free	В депо за 1 минуту — бесплатно
+1a74604453	Your vote is removed — the idea has {0} votes.	Твой голос снят — у идеи голосов: {0}.
+7d06f363ac	On the road	В пути
+c063905c22	Write an idea in #идеи — it goes into the game and everyone votes with a button. Describe a bug in #докладвай-бъг — it becomes a request to the team and the answer comes in the game.	Напиши идею в #идеи — она попадёт в игру, и все голосуют кнопкой. Опиши ошибку в #докладвай-бъг — это станет обращением к команде, а ответ придёт в игре.
+92074ded37	News from the team in #новини	Новость от команды в #новини
+f012772f59	There is no #анкети channel — arrange the server from the admin panel.	Нет канала #анкети — упорядочь сервер в админ-панели.
+0cc1f911dc	Describe a bit more (at least 10 characters): what you did, what you expected and what happened.	Опиши подробнее (минимум 10 символов): что ты сделал, чего ожидал и что произошло.
+050455b955	2 to 5 answers, separated by “;”	От 2 до 5 ответов через «;»
+574990c861	There are 2 to 5 answers, separated by “;”.	Ответов от 2 до 5, через «;».
+4938200195	Last check	Последняя проверка
+c739fccd7d	An empty truck returns to the depot in 1 minute — free, from any country. The coupled trailer comes along.	Пустой грузовик возвращается в депо за 1 минуту — бесплатно, из любой страны. Прицеп едет вместе с ним.
+d930a3a1bb	Moving to a depot no longer depends on a route — it works from countries the route could not be calculated to as well.	Перемещение в депо больше не зависит от маршрута — работает и из стран, до которых маршрут не удавалось рассчитать.
+099d36eb1b	The first line is the idea’s title — at least 5 characters. Write the description on the next lines.	Первая строка — заголовок идеи, минимум 5 символов. Описание пиши на следующих строках.
+1170480f66	Only the team posts news.	Новости публикует только команда.
+9bfe67c893	Only the team starts polls.	Опросы запускает только команда.
+344c86e417	A free truck away from a depot returns to a chosen depot in a minute, with no fuel, tolls or wear, from any country. The button is in Fleet and in Service; the coupled trailer comes along.	Свободный грузовик вне депо возвращается в выбранное депо за минуту, без топлива, сборов и износа, из любой страны. Кнопка есть в Автопарке и в Сервисе; прицеп едет вместе с ним.
+4bb6cb857d	Link your account in Settings → Discord: roles, your company’s channel, notifications in Discord and the bot’s commands (/профил, /курс, /ивент, /камион and more). Announcements about updates, rankings, events and the weekly paper now appear in the server.	Привяжи аккаунт в Настройки → Discord: роли, канал компании, уведомления в Discord и команды бота (/профил, /курс, /ивент, /камион и другие). Объявления об обновлениях, рейтингах, ивентах и еженедельнике теперь выходят на сервере.
+158ba9eafe	The weekly overview, the team’s alerts, Discord events for the game events and the /камион command start with the bot.	Еженедельный обзор, сигналы для команды, события Discord для ивентов и команда /камион запускаются вместе с ботом.
+581eb3405a	The weekly rally	Еженедельное ралли
+27491dccb4	Status, news and polls	Статус, новости и опросы
+f9ab9544fd	The team’s messages to everyone appear in #новини, and warnings (outages, maintenance) in #статус too.	Сообщения команды для всех выходят в #новини, а предупреждения (сбои, обслуживание) — ещё и в #статус.
+f2fcdc6d28	The server was not answering from {0} to {1} (about {2} min). It works normally again — deliveries started before that arrive on schedule.	Сервер не отвечал с {0} до {1} (около {2} мин). Сейчас всё работает нормально — начатые до этого доставки прибывают по графику.
+8c3c193757	The text (new line: \n)	Текст (новая строка: \n)
+a1a0634735	The load of the day	Груз дня
+a5cd9734ee	анкета	анкета
+10d53a24d6	анкети	анкети
+bf6e6fac72	въпрос	въпрос
+cf446c6424	докладвай-бъг	докладвай-бъг
+0f99cd3463	идеи	идеи
+91a8d1cc90	конвои	конвои
+3a04967d1f	новина	новина
+e519abb6fc	отговори	отговори
+c455133dbb	статус	статус
+9516c18559	строежи	строежи
+4b9709cf0d	текст	текст
+a68bf4597f	товар-на-деня	товар-на-деня
+a5f45182f3	✅ The poll is in <#{0}>.	✅ Опрос в <#{0}>.
+482836c4b0	✅ Thank you! We recorded it as a request in the game (Support) — the answer will come there and as a notification.	✅ Спасибо! Мы записали это как обращение в игре (Поддержка) — ответ придёт туда и уведомлением.
+36619d79a9	✅ Thank you! We passed it on to the team. Link your account to get an answer in the game: {0}/game/settings#discord	✅ Спасибо! Мы передали это команде. Привяжи аккаунт, чтобы получить ответ в игре: {0}/game/settings#discord
+4f708e5928	✅ The idea is saved in the game.	✅ Идея сохранена в игре.
+b02233f3a4	✅ Done	✅ Сделано
+35772ec771	✅ The news is queued for #новини (within a minute).	✅ Новость в очереди для #новини (в течение минуты).
+28bd04f9e9	❌ Declined	❌ Отклонена
+3a71b371ea	🏠 On its way to the depot — arrives within a minute.	🏠 Едет в депо — прибудет в течение минуты.
+af093e08df	🐞 Bug from Discord (no linked account)	🐞 Баг из Discord (без привязанного аккаунта)
+ee9ebab3b1	👍 Your vote is in — the idea has {0} votes.	👍 Твой голос учтён — у идеи голосов: {0}.
+15324ceb23	💡 #идеи — write an idea and it goes into the game (title on the first line) · 🐞 #докладвай-бъг — becomes a request to the team · 🛠️ #статус — is the game up	💡 #идеи — напиши идею, и она попадёт в игру (заголовок в первой строке) · 🐞 #докладвай-бъг — станет обращением к команде · 🛠️ #статус — работает ли игра
+a2b0a33934	🔜 Coming soon: {0}	🔜 Скоро: {0}
+407c220114	🗓️ Planned	🗓️ Запланирована
+56cf3bd68f	🟠 The game was unavailable	🟠 Игра была недоступна
+11427ab83f	🟢 TransVerse is up	🟢 TransVerse работает
+9ee80ea4da	Every update — planned or small and unplanned — appears by itself in #обновления as soon as it is available in the game; if several come out at once, all of them are posted, in order.	Каждое обновление — запланированное или небольшое внеплановое — само появляется в #обновления, как только становится доступным в игре; если выходят сразу несколько, публикуются все, по порядку.

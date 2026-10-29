@@ -157,7 +157,7 @@ export async function financeView(ctx: Ctx): Promise<Answer> {
 
 export async function duelCommand(ctx: Ctx): Promise<Answer> {
   const me = released(ctx);
-  const target = opt(ctx.i, t('потребител'));
+  const target = opt(ctx.i, 'потребител');
   if (target) {
     const [rival] = await ctx.db.select({ id: users.id, username: users.username }).from(users).where(eq(users.discordId, target));
     if (!rival) stop(t('Този член не е свързал акаунта си с играта.'));
@@ -233,7 +233,7 @@ export async function liveryVote(ctx: Ctx, entryId: string): Promise<Answer> {
 /** Worker: new entries of the livery contest go to #ливреи with their picture and a 👍 button. */
 export async function postLiveryEntries(db: Database, now = new Date()) {
   if (!discordConfig().bot || !featureLive('livery_contest', now)) return 0;
-  const channelId = await layoutChannel(db, t('ливреи'));
+  const channelId = await layoutChannel(db, 'ливреи');
   if (!channelId) return 0;
   const fresh = await db.select({ e: liveryEntries, username: users.username }).from(liveryEntries).innerJoin(users, eq(users.id, liveryEntries.userId)).where(and(isNull(liveryEntries.messageId), gt(liveryEntries.createdAt, new Date(now.getTime() - 3 * 86_400_000)))).limit(20);
   let n = 0;
@@ -285,7 +285,7 @@ export async function liveBattles(db: Database, now = new Date()) {
     const ok = await discord('PATCH', `/channels/${saved.channelId}/messages/${saved.messageId}`, message).then(() => true, () => false);
     if (ok) return saved.messageId;
   }
-  const channelId = await layoutChannel(db, t('битки'));
+  const channelId = await layoutChannel(db, 'битки');
   if (!channelId) return null;
   const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, message);
   await db.insert(jobState).values({ key, value: { channelId, messageId: msg.id } }).onConflictDoUpdate({ target: jobState.key, set: { value: { channelId, messageId: msg.id }, updatedAt: now } });

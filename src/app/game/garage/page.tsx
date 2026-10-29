@@ -100,7 +100,7 @@ export default async function GaragePage() {
                         action={{ type: 'moveToDepot', vehicleId: v.id }}
                         field="depotId"
                       />
-                      <p className="mt-1 text-xs text-mist-400">{tr('Плащаш горивото, таксите и износването за пътя (по истинския маршрут). Прикаченото ремарке идва с него.')}</p>
+                      <p className="mt-1 text-xs text-mist-400">{tr('Безплатно, от всяка държава — без гориво, такси и износване. Прикаченото ремарке идва с него.')}</p>
                     </div>
                   )}
                   {features.maintenance && v.ownership !== 'rented' && (

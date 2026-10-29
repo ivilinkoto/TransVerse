@@ -301,41 +301,25 @@ export { fleetCapacity };
 export const DEPOT_MOVE_MS = 60_000;
 
 /**
- * Sends a free truck (with its trailer) to one of the company's depots in a
- * minute — so it can pick up a trailer that waits there. The running costs
- * of the drive (fuel or energy, tolls, maintenance and wear) are paid as for
- * an empty run; the route is the real one.
+ * Sends a free truck (with its trailer) back to one of the company's depots
+ * in a minute, from anywhere — so it can pick up a trailer that waits there
+ * or start again from home. 1.1.3.2: the drive is free (no fuel, tolls or
+ * wear) and needs no route, so it works from every country.
  */
-export async function moveToDepot(db: Database, userId: string, vehicleId: string, depotId: string, now = new Date(), provider?: RoutingProvider) {
-  const company = await companyForUser(db, userId);
-  const [depot] = await db.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id)));
-  if (!depot) fail('depot_not_found', tr('Депото не е намерено.'), 404);
-  const [pre] = await db.select({ cityId: vehicles.cityId }).from(vehicles).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, company.id), isNull(vehicles.soldAt)));
-  if (!pre) fail('vehicle_not_found', tr('Превозното средство не е намерено.'), 404);
-  if (pre!.cityId === depot!.cityId) fail('same_city', tr('Камионът вече е в този град.'));
-  // The route is fetched (and cached) before the money moves.
-  const route = await getRoute(db, pre!.cityId, depot!.cityId, 'truck', provider);
+export async function moveToDepot(db: Database, userId: string, vehicleId: string, depotId: string, now = new Date()) {
   return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [depot] = await tx.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id)));
+    if (!depot) fail('depot_not_found', tr('Депото не е намерено.'), 404);
     const v = await ownedVehicle(tx, company.id, vehicleId);
+    if (v.cityId === depot!.cityId) fail('same_city', tr('Камионът вече е в този град.'));
     if (v.status !== 'idle') fail('vehicle_busy', tr('Камионът е на курс.'));
     if (v.movingUntil && v.movingUntil > now) fail('moving', tr('Камионът вече пътува.'));
-    if (v.cityId !== pre!.cityId) fail('moved', tr('Камионът вече е другаде — опитай пак.'), 409);
-    const [t] = await tx.select().from(trailers).where(eq(trailers.vehicleId, v.id));
-    const unit = powerUnitModel(v.modelId);
-    const [from] = await tx.select({ countryCode: cities.countryCode }).from(cities).where(eq(cities.id, v.cityId));
-    const costs = tripCosts({ unit, trailer: t ? trailerModel(t.modelId) : null, upgrades: [...v.upgrades, ...(t?.upgrades ?? [])], condition: v.condition, driverSkill: 1, emptyKm: route.distanceKm, loadedKm: 0, tons: 0, payloadTons: 1, tolledRoute: { empty: route.hasToll, loaded: false }, fuelPrice: { empty: fuelPriceCents(from!.countryCode, now), loaded: fuelPriceCents(from!.countryCode, now) } });
-    const rented = v.ownership === 'rented';
-    const key = `move:${v.id}:${now.getTime()}`;
-    // A rented truck's running costs are the lessor's (as on its trips): only the tolls are paid.
-    const postings = [
-      { category: 'fuel' as const, amountCents: rented ? 0 : -costs.fuelCents, description: tr('Преместване на {0} до депото ({1} км)', v.plate, Math.round(route.distanceKm)), idempotencyKey: `${key}:fuel` },
-      { category: 'tolls' as const, amountCents: -costs.tollCents, description: tr('Пътни такси: {0} до депото', v.plate), idempotencyKey: `${key}:tolls` },
-      { category: 'maintenance' as const, amountCents: rented ? 0 : -costs.maintenanceCents, description: tr('Поддръжка: {0} до депото', v.plate), idempotencyKey: `${key}:maintenance` },
-    ].filter((p) => p.amountCents !== 0);
-    if (postings.length) await post(tx, company.id, postings, { requireFunds: true });
-    await tx.update(vehicles).set({ cityId: depot!.cityId, movingUntil: new Date(now.getTime() + DEPOT_MOVE_MS), odometerKm: sql`${vehicles.odometerKm} + ${route.distanceKm}`, condition: sql`greatest(0, ${vehicles.condition} - ${costs.wear})` }).where(eq(vehicles.id, v.id));
+    const [t] = await tx.select({ id: trailers.id }).from(trailers).where(eq(trailers.vehicleId, v.id));
+    const arrivesAt = new Date(now.getTime() + DEPOT_MOVE_MS);
+    await tx.update(vehicles).set({ cityId: depot!.cityId, movingUntil: arrivesAt }).where(eq(vehicles.id, v.id));
     if (t) await tx.update(trailers).set({ cityId: depot!.cityId }).where(eq(trailers.id, t.id));
-    return { km: Math.round(route.distanceKm), costCents: -postings.reduce((s, p) => s + p.amountCents, 0), arrivesAt: new Date(now.getTime() + DEPOT_MOVE_MS) };
+    return { km: 0, costCents: 0, arrivesAt };
   });
 }
 

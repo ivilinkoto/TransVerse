@@ -19,6 +19,7 @@ import { auctionForm, auctionOffer, auctionView, cheerBase, inviteAnswer, invite
 import { quizAnswer } from './quiz';
 import { convoyCommand, convoyGo, convoyJoin, duelAnswer, duelCommand, financeView, liveryVote, mapCommand, passClaim, passCommand, roadCall, roadHelp, roadPay, takeGo, takeStart, usedBuy } from './together';
 import { reply, say } from './ui';
+import { ideaVote, newsCommand, pollCommand, pollVote } from './channels-1132';
 import { t } from '@/i18n/t';
 
 export type { Interaction };
@@ -50,6 +51,8 @@ const COMMAND_HANDLERS: Record<string, (ctx: Ctx) => Answer | Promise<Answer>> =
   финанси: financeView,
   дуел: duelCommand,
   пропуск: passCommand,
+  новина: newsCommand,
+  анкета: pollCommand,
 };
 
 /** Buttons and select menus, by the start of their custom_id. */
@@ -114,6 +117,11 @@ async function component(ctx: Ctx, id: string, values: string[]): Promise<Answer
       break;
     case 'livery':
       return liveryVote(ctx, b);
+    case 'idea':
+      if (a === 'vote') return ideaVote(ctx, b);
+      break;
+    case 'tpoll':
+      return pollVote(ctx, a, Number(b));
   }
   return answer(say(t('Този бутон вече не работи.')));
 }

@@ -145,7 +145,7 @@ async function rankOf(db: Database, discordId: string) {
 
 /** /ранг [потребител]: level, experience and place, with a picture card. */
 export async function rankView(ctx: Ctx): Promise<Answer> {
-  const id = opt(ctx.i, t('потребител')) ?? ctx.discordId;
+  const id = opt(ctx.i, 'потребител') ?? ctx.discordId;
   const r = await rankOf(ctx.db, id);
   if (!r) return answer(reply({ content: id === ctx.discordId ? t('Още нямаш опит — пиши в сървъра или влез в гласов канал.') : t('Този член още няма опит.') }, true));
   const l = levelOf(r.xp);

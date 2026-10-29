@@ -56,7 +56,7 @@ export async function liveShipCalls(db: Database, now = new Date()) {
     if (call.discordChannelId && call.discordMessageId) {
       await discord('PATCH', `/channels/${call.discordChannelId}/messages/${call.discordMessageId}`, message).catch(() => undefined);
     } else if (!done) {
-      const channelId = await layoutChannel(db, t('пристанище'));
+      const channelId = await layoutChannel(db, 'пристанище');
       if (!channelId) continue;
       const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, message);
       await db.update(shipCalls).set({ discordChannelId: channelId, discordMessageId: msg.id }).where(eq(shipCalls.id, call.id));

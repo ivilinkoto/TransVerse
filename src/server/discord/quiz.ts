@@ -96,7 +96,7 @@ export async function runQuiz(db: Database, now = new Date()) {
   if (hour < QUIZ.fromHour || hour >= QUIZ.toHour) return null;
   const [last] = await db.select({ at: discordQuizzes.createdAt }).from(discordQuizzes).orderBy(desc(discordQuizzes.createdAt)).limit(1);
   if (last && now.getTime() - last.at.getTime() < QUIZ.everyMs) return null;
-  const channelId = await layoutChannel(db, t('викторина'));
+  const channelId = await layoutChannel(db, 'викторина');
   if (!channelId) return null;
   const q = await makeQuestion(db);
   if (!q) return null;

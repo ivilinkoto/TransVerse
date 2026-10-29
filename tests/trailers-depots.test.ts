@@ -12,7 +12,6 @@ import { borrowOrgTrailer, buyOrgTrailer, companyTrailerBonus, returnOrgTrailer,
 import { acceptContract } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, installTrailerUpgrade, moveToDepot } from '@/server/game/fleet';
-import { approximateProvider } from '@/server/geo/routing';
 import { cityByName, db, makeContract, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
@@ -29,7 +28,7 @@ async function rich(start = 'Sofia') {
 }
 
 describe('moving to a depot', () => {
-  it('a truck goes to a depot in a minute, pays the road and picks up the trailer there', async () => {
+  it('a truck goes to a depot in a minute for free, from anywhere, and picks up the trailer there', async () => {
     const p = await rich('Sofia');
     const tractor = await buyVehicle(db(), p.userId, 'danubia-t440', p.hq.id);
     const plovdiv = await cityByName('Plovdiv');
@@ -38,12 +37,13 @@ describe('moving to a depot', () => {
     expect(await code(coupleTrailer(db(), p.userId, tractor.id, trailer.id))).toBe('different_city');
     const before = (await account(p.userId)).balanceCents;
     const now = new Date();
-    const move = await moveToDepot(db(), p.userId, tractor.id, depot.id, now, approximateProvider);
-    expect(move.km).toBeGreaterThan(100);
-    expect((await account(p.userId)).balanceCents).toBe(before - move.costCents);
+    const move = await moveToDepot(db(), p.userId, tractor.id, depot.id, now);
+    expect(move.costCents).toBe(0);
+    expect(move.arrivesAt.getTime() - now.getTime()).toBe(60_000);
+    expect((await account(p.userId)).balanceCents).toBe(before);
     const [v] = await db().select().from(vehicles).where(eq(vehicles.id, tractor.id));
     expect(v!.cityId).toBe(plovdiv.id);
-    expect(await code(moveToDepot(db(), p.userId, tractor.id, depot.id, now, approximateProvider))).toBe('same_city');
+    expect(await code(moveToDepot(db(), p.userId, tractor.id, depot.id, now))).toBe('same_city');
     // Still on the road for a minute: no coupling, no loads.
     expect(await code(coupleTrailer(db(), p.userId, tractor.id, trailer.id))).toBe('moving');
     const c = await makeContract('Plovdiv', 'Sofia');
@@ -53,7 +53,7 @@ describe('moving to a depot', () => {
     expect((await db().select().from(trailers).where(eq(trailers.id, trailer.id)))[0]!.vehicleId).toBe(tractor.id);
     const [other] = await db().select().from(depots).where(and(eq(depots.companyId, p.acc.id), eq(depots.cityId, p.hq.id)));
     if (other) {
-      await moveToDepot(db(), p.userId, tractor.id, other.id, new Date(), approximateProvider);
+      await moveToDepot(db(), p.userId, tractor.id, other.id, new Date());
       expect((await db().select().from(trailers).where(eq(trailers.id, trailer.id)))[0]!.cityId).toBe(p.hq.id);
     }
   });

@@ -1,22 +1,24 @@
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte, like, lte } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { featureLive } from '@/lib/game/features';
 import { dec, int, km, money } from '@/lib/format';
 import { weekKey } from '@/lib/game/leagues';
 import { headline, type NewsIssue } from '@/lib/game/news';
-import { RELEASES, type Release } from '@/lib/game/releases';
+import { compareVersions, RELEASES, type Release } from '@/lib/game/releases';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyBattles, globalEvents, jobState, newspapers, organizations, users } from '@/server/db/schema';
 import { LIVERY_CONTEST } from '@/lib/game/together';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
-import { button, rows, STYLE } from './ui';
+import { button, linkButton, rows, STYLE } from './ui';
 import { t, tx } from '@/i18n/t';
 
 const HOUR = 3_600_000;
 /** A release is announced while it is the newest one and at most this many days old. */
 export const RELEASE_ANNOUNCE_DAYS = 14;
+/** The first time the bot announces releases, only the ones from the last two days are posted. */
+export const FIRST_RUN_HOURS = 48;
 const footer = { text: 'TransVerse · игрови данни' };
 
 /** A building finished (from finishConstructions). */
@@ -66,6 +68,30 @@ export async function announceCompanyAchievement(db: DbOrTx, organizationId: str
   if (!featureLive('discord_bot', now) || !featureLive('company_achievements', now)) return;
   await announce(db, `company-achievement:${organizationId}:${key}`, 'rankings', () => ({
     embeds: [{ title: tier === 'prestige' ? t('💎 „{0}“ взе престижното фирмено постижение „{1}“', name, tx(title)) : t('🥇 „{0}“ взе златното фирмено постижение „{1}“', name, tx(title)), url: `${appUrl()}/game/companies/${organizationId}`, color: tier === 'prestige' ? 0xa855f7 : 0xf6c343, footer }],
+  }), now);
+}
+
+/** 1.1.3.2: the Discord side of the ideas (the ideas themselves come with 1.1.4). */
+export const ideasOn = (now: Date) => featureLive('discord_bot', now) && featureLive('discord_ideas', now) && featureLive('ideas', now);
+
+/** A new idea from the game, with a vote button (from runAction). */
+export async function announceIdea(db: DbOrTx, idea: { id: string; title: string; body: string }, author: string, now = new Date()) {
+  if (!ideasOn(now)) return;
+  await announce(db, `idea:${idea.id}`, 'ideas', () => ({
+    ping: false,
+    embeds: [{ title: `💡 ${idea.title}`, description: idea.body || undefined, color: BRAND, footer: { text: t('Идея от {0} · гласувай с бутона (свързан акаунт)', author) } }],
+    components: rows(button(t('Гласувай'), `idea:vote:${idea.id}`, STYLE.success, '👍'), linkButton(t('Всички идеи'), `${appUrl()}/game/ideas`)),
+  }), now);
+}
+
+const STATUS_LINE: Record<string, string> = { planned: '🗓️ Планирана', done: '✅ Направена', declined: '❌ Отхвърлена' };
+
+/** The team marked an idea planned, done or declined (from setIdeaStatus). */
+export async function announceIdeaStatus(db: DbOrTx, idea: { id: string; title: string }, status: string, note: string, now = new Date()) {
+  if (!ideasOn(now) || !(status in STATUS_LINE)) return;
+  await announce(db, `idea-status:${idea.id}:${status}`, 'ideas', () => ({
+    ping: false,
+    embeds: [{ title: `${tx(STATUS_LINE[status]!)}: ${idea.title}`, description: note ? t('Екипът: {0}', note) : undefined, color: status === 'declined' ? 0x9aa3b2 : 0x2fd27a, url: `${appUrl()}/game/ideas` }],
   }), now);
 }
 
@@ -145,13 +171,20 @@ export function releaseAnnouncement(r: Release) {
 export async function announceFromGame(db: Database, now = new Date()) {
   if (!discordConfig().bot || !featureLive('discord_bot', now)) return;
 
-  // 1.1.4: the newest release that is live for everyone, if it is not older than two weeks —
-  // also when the bot was down for days (it was three days before). Older ones are never posted late.
-  const live = RELEASES.filter((r) => new Date(r.publishedAt) <= now).sort((x, y) => new Date(y.publishedAt).getTime() - new Date(x.publishedAt).getTime())[0];
-  if (live && now.getTime() - new Date(live.publishedAt).getTime() <= RELEASE_ANNOUNCE_DAYS * 24 * HOUR) {
-    // Remembered for good (the outbox forgets sent rows after two weeks).
-    const [first] = await db.insert(jobState).values({ key: `announced:release:${live.version}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning({ key: jobState.key });
-    if (first) await announce(db, `release:${live.version}`, 'updates', () => releaseAnnouncement(live), now);
+  // 1.1.3.2: every release that is live for everyone and not older than two weeks, once, oldest
+  // first — the planned ones (1.2, 2.0…) and the small unplanned ones (1.1.3.1…) alike, as soon
+  // as they are merged into releases.ts and deployed. The very first time (nothing announced yet)
+  // only the last two days are posted; older ones are marked quietly instead of a flood.
+  const recent = RELEASES.filter((r) => new Date(r.publishedAt) <= now && now.getTime() - new Date(r.publishedAt).getTime() <= RELEASE_ANNOUNCE_DAYS * 24 * HOUR)
+    .sort((x, y) => new Date(x.publishedAt).getTime() - new Date(y.publishedAt).getTime() || compareVersions(x.version, y.version));
+  if (recent.length) {
+    const [before] = await db.select({ key: jobState.key }).from(jobState).where(like(jobState.key, 'announced:release:%')).limit(1);
+    for (const r of recent) {
+      // Remembered for good (the outbox forgets sent rows after two weeks).
+      const [first] = await db.insert(jobState).values({ key: `announced:release:${r.version}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning({ key: jobState.key });
+      if (!first) continue;
+      if (before || now.getTime() - new Date(r.publishedAt).getTime() <= FIRST_RUN_HOURS * HOUR) await announce(db, `release:${r.version}`, 'updates', () => releaseAnnouncement(r), now);
+    }
   }
 
   // Community events: started in the last two hours, settled in the last six.

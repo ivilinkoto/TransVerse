@@ -89,7 +89,7 @@ async function giveEveryoneVerified(db: Database) {
 }
 
 async function postVerifyPanel(db: Database) {
-  const channelId = await layoutChannel(db, t('добре-дошли'));
+  const channelId = await layoutChannel(db, 'добре-дошли');
   if (!channelId) return;
   const state = await layoutState(db);
   if (state.panels.verify) return;
