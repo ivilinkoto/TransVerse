@@ -58,11 +58,11 @@ export async function firstOwnTruck(db: DbOrTx, companyId: string, deliveriesDon
  */
 export async function sameLaneAgain(db: DbOrTx, companyId: string, userId: string, deliveryId: string, now: Date) {
   const [trip] = await db
-    .select({ originId: contracts.originCityId, destId: contracts.destCityId })
+    .select({ originId: contracts.originCityId, destId: contracts.destCityId, vehicleId: deliveries.vehicleId })
     .from(deliveries)
     .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
     .where(and(eq(deliveries.id, deliveryId), eq(deliveries.companyId, companyId)));
   if (!trip) return null;
   const load = (await openContracts(db, { originCityId: trip.originId, limit: 100, viewerUserId: userId }, now)).find((c) => c.destCityId === trip.destId && !c.urgent);
-  return { originCityId: trip.originId, loadId: load?.id ?? null };
+  return { originCityId: trip.originId, destCityId: trip.destId, vehicleId: trip.vehicleId, loadId: load?.id ?? null };
 }

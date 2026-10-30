@@ -328,7 +328,9 @@ export default async function OverviewPage() {
                       <div className="text-[11px] text-mist-400">{r.completedAt ? dateTime(r.completedAt) : ''}{r.late ? t(' · със закъснение') : ''}</div>
                     </div>
                     <span className={`num shrink-0 text-sm ${(r.payoutCents ?? 0) < 0 ? 'text-loss' : 'text-profit'}`}>{money(r.payoutCents ?? 0)}</span>
-                    {r.againId ? (
+                    {features.repeat_trip ? (
+                      <Link href={`/game/again/${r.id}`} className="btn-ghost shrink-0 px-2.5 py-1 text-xs" title={r.againId ? undefined : t('няма товар по линията сега')}><RotateCcw className="h-3.5 w-3.5" />{r.againId ? t('Същия курс отново') : t('Виж линията')}</Link>
+                    ) : r.againId ? (
                       <Link href={`/game/contracts?load=${r.againId}`} className="btn-ghost shrink-0 px-2.5 py-1 text-xs"><RotateCcw className="h-3.5 w-3.5" />{t('Същия курс отново')}</Link>
                     ) : (
                       <span className="shrink-0 text-[11px] text-mist-500">{t('няма товар по линията сега')}</span>

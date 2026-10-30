@@ -17,6 +17,7 @@ import { fleetView } from '@/server/game/queries';
 import { ghostsFor } from '@/server/game/deals';
 import { RENTAL_BUYOUT_DELIVERIES, UPGRADES, combinationCapability, type UpgradeId } from '@/lib/game/catalog';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { CopyText } from '@/components/ui/CopyText';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { ECONOMY } from '@/lib/game/economy';
 import { isVip } from '@/lib/game/vip';
@@ -54,6 +55,9 @@ export default async function FleetPage() {
     db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg, slots: depots.slots }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)),
     fleetCapacity(db, company.id),
   ]);
+  // 1.1.3.5: free trucks away from every depot ("Всички свободни в депото").
+  const depotCities = new Set(myDepots.map((d) => d.cityId));
+  const awayIdle = myDepots.length ? fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && !depotCities.has(v.cityId) && !(v.movingUntil && v.movingUntil > now)).length : 0;
   // 1.1.3: what the rent costs on average per trip (last 10 trips), to compare with buying out.
   const rentRows = features.rent_vs_buy && fleet.vehicles.some((v) => v.rental) ? await db.select({ cents: ledgerEntries.amountCents }).from(ledgerEntries).where(and(eq(ledgerEntries.companyId, company.id), eq(ledgerEntries.category, 'rental'))).orderBy(desc(ledgerEntries.createdAt)).limit(10) : [];
   const avgRentCents = rentRows.length ? Math.round(rentRows.reduce((s, r) => s - Number(r.cents), 0) / rentRows.length) : 0;
@@ -71,7 +75,14 @@ export default async function FleetPage() {
             ? <span>{tr('Депа: {0}', myDepots.map((d) => tx(d.name)).join(', '))}{' · '}<span className="num font-semibold">{tr('{0} / {1} места', capacity.used, capacity.slots)}</span></span>
             : <span>{tr('Нямаш депо — първото е безплатно, там купуваш и паркираш собствени камиони.')}</span>}
         </span>
-        <Link href="/game/logistics" className="btn-ghost px-3 py-1.5 text-xs">{myDepots.length ? tr('Депа') : tr('Открий депо')}</Link>
+        <span className="flex flex-wrap items-center gap-2">
+          {features.depot_all && awayIdle > 1 && (
+            <ActionButton action={{ type: 'moveAllToDepot' }} className="btn-ghost px-3 py-1.5 text-xs" confirm={tr('{0} празни камиона тръгват към най-близкото депо — пристигат до минута, безплатно. Продължаваш ли?', awayIdle)}>
+              <Warehouse className="h-3.5 w-3.5" />{tr('Всички свободни в депото ({0})', awayIdle)}
+            </ActionButton>
+          )}
+          <Link href="/game/logistics" className="btn-ghost px-3 py-1.5 text-xs">{myDepots.length ? tr('Депа') : tr('Открий депо')}</Link>
+        </span>
       </div>
       {fleet.vehicles.length === 0 && <Empty icon={Truck} title={tr('Нямате превозни средства')}>{tr('Купете първото си превозно средство от пазара.')}</Empty>}
       <div className="grid gap-4 xl:grid-cols-2">
@@ -88,7 +99,7 @@ export default async function FleetPage() {
                   {leased.has(v.id) && <a href="/game/finance#leases"><Badge tone="violet">{tr('Лизинг {0}/{1}', leased.get(v.id)!.paid, leased.get(v.id)!.payments)}</Badge></a>}
                   {v.delivery ? <Badge tone="cyan">{tr('На курс')}</Badge> : v.status === 'listed' ? <Badge tone="gold">{tr('Обявен за продажба')}</Badge> : <Badge tone="green">{tr('Свободен')}</Badge>}
                 </div>
-                <div className="mt-0.5 font-mono text-xs text-mist-400">{v.nickname && <span className="font-sans font-semibold text-mist-200">„{v.nickname}“ · </span>}{tx(v.plate)} · {tx(v.model.brand)}</div>
+                <div className="mt-0.5 font-mono text-xs text-mist-400">{v.nickname && <span className="font-sans font-semibold text-mist-200">„{v.nickname}“ · </span>}{tx(v.plate)} <CopyText text={v.plate} /> · {tx(v.model.brand)}</div>
               </div>
               <div className="text-right text-xs text-mist-400">
                 <div className="flex items-center justify-end gap-1"><MapPin className="h-3.5 w-3.5" />{v.delivery ? `${tx(v.delivery.origin.nameBg)} → ${tx(v.delivery.destination.nameBg)}` : `${tx(v.city.nameBg)}, ${v.city.countryCode}`}</div>

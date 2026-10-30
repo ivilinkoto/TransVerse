@@ -56,7 +56,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: tr('Поръчки') };
 }
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; from?: string; truck?: string; load?: string }> }) {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; repeat?: string; from?: string; truck?: string; load?: string }> }) {
   await initLocale();
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
@@ -97,8 +97,11 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const project = memberOfCompanyId && features.projects ? await activeProject(db, memberOfCompanyId) : null;
   const [general, ...locals] = await Promise.all([openContracts(db, { limit: 250, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe, withOpenWorld: features.open_world }), ...localCities.map((cityId) => openContracts(db, { originCityId: cityId, limit: 50, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe, withOpenWorld: features.open_world }))]);
   // "Drive in convoy" from the map: only the loads on that lane (from its origin city, all of them).
-  const laneMatch = features.convoy ? /^(\d+)-(\d+)$/.exec(params.lane ?? '') : null;
+  // 1.1.3.5 "Повтори курса": the same lane again, with that truck first.
+  const repeat = features.repeat_trip && !params.lane && /^\d+-\d+$/.test(params.repeat ?? '');
+  const laneMatch = features.convoy || repeat ? /^(\d+)-(\d+)$/.exec((repeat ? params.repeat : params.lane) ?? '') : null;
   const lane = laneMatch ? { from: Number(laneMatch[1]), to: Number(laneMatch[2]) } : null;
+  const repeatTruck = repeat ? fleet.vehicles.find((v) => v.id === params.truck && !v.delivery) ?? null : null;
   const laneLoads = lane ? await openContracts(db, { originCityId: lane.from, limit: 100, memberOfCompanyId, withStops: features.multistop, withSea: features.ferries, withExchange: features.freight_exchange, withOversize: features.oversize, withContracts: features.company_contracts, viewerUserId: user.id, withEurope: features.europe, withOpenWorld: features.open_world }) : [];
   // "Return load" after a delivery: the loads from where the truck now stands, that truck first.
   const fromCity = features.backhaul && /^\d+$/.test(params.from ?? '') ? Number(params.from) : null;
@@ -125,7 +128,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
     // A ferry on the way (islands): no fuel on board, a ticket instead.
     const sea = c.route.crossing ? crossingLine(c.route.crossing.lineId) : null;
     const seaKm = c.route.crossing ? c.route.crossing.toKm - c.route.crossing.fromKm : 0;
-    const options = (backTruck ? [backTruck, ...fleet.vehicles.filter((v) => v.id !== backTruck.id)] : fleet.vehicles).map((v) => {
+    const first = backTruck ?? repeatTruck;
+    const options = (first ? [first, ...fleet.vehicles.filter((v) => v.id !== first.id)] : fleet.vehicles).map((v) => {
       const bundle = { modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, condition: v.condition, hasDriver: !!v.driver, status: v.status, trailerCondition: v.trailer?.condition ?? null };
       const strict = compatibilityError(bundle, c, user.level);
       // Up to 10 % over the payload is possible as a risk the player chooses.
@@ -263,7 +267,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-prestige/40 bg-prestige/10 px-4 py-3 text-sm">
           <span>
             {laneBoard.length
-              ? <>{tr('Поръчки по линията')}{' '}<b>{tx(laneBoard[0]!.origin.name)} → {tx(laneBoard[0]!.destination.name)}</b>{' '}{tr('— поеми една до {0} мин след приятеля си и карате в конвой.', Math.round(CONVOY_RULES.windowMs / 60_000))}</>
+              ? repeat
+                ? <>{tr('Отново по линията')}{' '}<b>{tx(laneBoard[0]!.origin.name)} → {tx(laneBoard[0]!.destination.name)}</b>{repeatTruck ? <>{' '}{tr('за')}{' '}<b>{tx(repeatTruck.plate)}</b></> : ''}{' '}{tr('— избери товар; празният път до началото на линията се смята сам.')}</>
+                : <>{tr('Поръчки по линията')}{' '}<b>{tx(laneBoard[0]!.origin.name)} → {tx(laneBoard[0]!.destination.name)}</b>{' '}{tr('— поеми една до {0} мин след приятеля си и карате в конвой.', Math.round(CONVOY_RULES.windowMs / 60_000))}</>
               : tr('В момента няма свободна поръчка по тази линия. Опитай след малко — нови поръчки излизат постоянно.')}
           </span>
           <Link href="/game/contracts" className="btn-ghost px-3 py-1.5 text-xs">{tr('Всички поръчки')}</Link>

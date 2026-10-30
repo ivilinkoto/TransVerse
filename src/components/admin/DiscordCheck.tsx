@@ -11,7 +11,7 @@ interface Check {
   detail: string;
 }
 
-/** Checks the Discord bot live (secrets, portal settings, server, permissions, channels) and can repair commands and roles. */
+/** Checks the Discord bot live (secrets, portal settings, server, permissions, channels) and repairs commands, roles and missing channels (1.1.3.5). */
 export function DiscordCheck() {
   const [busy, setBusy] = useState<'check' | 'repair' | null>(null);
   const [checks, setChecks] = useState<Check[] | null>(null);
@@ -31,8 +31,12 @@ export function DiscordCheck() {
     setBusy('repair');
     setMessage(null);
     try {
-      const r = await api<{ commands: number; players: number }>('/api/admin/action', { type: 'repairDiscord' });
-      setMessage({ ok: true, text: t('Командите са записани ({0}); ролите на {1} свързани играчи се обновяват до минута.', r.commands, r.players) });
+      const r = await api<{ commands: number; players: number; created?: string[]; errors?: string[] }>('/api/admin/action', { type: 'repairDiscord' });
+      const made = r.created?.length ? t(' Създадени: {0}.', r.created.join(', ')) : '';
+      const failed = r.errors?.length ? t(' Не стана: {0}', r.errors.join('; ')) : '';
+      setMessage({ ok: !r.errors?.length, text: t('Командите са записани ({0}); ролите на {1} свързани играчи се обновяват до минута.', r.commands, r.players) + made + failed });
+      // What is still missing after the repair.
+      setChecks((await api<{ checks: Check[] }>('/api/admin/action', { type: 'checkDiscord' })).checks);
     } catch (e) {
       setMessage({ ok: false, text: (e as Error).message });
     } finally {
@@ -46,7 +50,7 @@ export function DiscordCheck() {
           {busy === 'check' ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlugZap className="h-4 w-4" />}{t('Провери Discord')}
         </button>
         <button type="button" className="btn-ghost px-3 py-1.5 text-sm" onClick={repair} disabled={!!busy}>
-          {busy === 'repair' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />}{t('Поправи команди и роли')}
+          {busy === 'repair' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />}{t('Поправи всичко')}
         </button>
       </div>
       {message && <p role="status" className={`mt-2 text-sm ${message.ok ? 'text-profit' : 'text-loss'}`}>{tx(message.text)}</p>}

@@ -9,7 +9,9 @@ import { dateTime } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
 import { jobHealth } from '@/server/game/world';
 import { pushDevices } from '@/server/push';
-import { recentServerErrors } from '@/server/error-log';
+import { groupServerErrors, recentServerErrors } from '@/server/error-log';
+import { failedOutbox, MAX_ATTEMPTS } from '@/server/discord/outbox';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { BACKUP, backupDir, lastBackup } from '@/server/backup';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -24,16 +26,21 @@ export const dynamic = 'force-dynamic';
 const at = (t: number | Date | null | undefined) => (t ? dateTime(t) : '—');
 
 /** Worker health (every job's last success and error) and the phones that get notifications. */
-export default async function AdminSystem() {
+export default async function AdminSystem({ searchParams }: { searchParams: Promise<{ errors?: string }> }) {
   await initLocale();
   const { db, now } = await adminContext();
-  const [jobs, devices, cursor, errors, backup] = await Promise.all([
+  const filter = ((await searchParams).errors ?? '').trim().slice(0, 80).toLowerCase();
+  const [jobs, devices, cursor, errors, backup, undelivered] = await Promise.all([
     jobHealth(db),
     pushDevices(db),
     db.execute<{ cursor: number | null; newest: number | null }>(sql`select (select (value->>'id')::bigint from job_state where key = 'push-cursor') as cursor, (select max(id) from notifications) as newest`),
     recentServerErrors(db),
     lastBackup(db),
+    failedOutbox(db),
   ]);
+  // 1.1.3.5: the same error on the same page once, with how many times; a filter by page or text.
+  const grouped = groupServerErrors(errors).filter((e) => !filter || e.where.toLowerCase().includes(filter) || e.message.toLowerCase().includes(filter) || e.digests.some((d) => d.toLowerCase().includes(filter)));
+  const lastHour = errors.filter((e) => now.getTime() - new Date(e.at).getTime() < 3_600_000).length;
   const backupFolder = backupDir();
   const { cursor: pushed, newest } = cursor.rows[0] ?? { cursor: null, newest: null };
   const lag = pushed != null && newest != null ? Number(newest) - Number(pushed) : null;
@@ -58,13 +65,37 @@ export default async function AdminSystem() {
             </div>
           )}
         </Card>
-        <Card title={tr('Грешки на сървъра ({0})', errors.length)}>
+        <Card title={tr('Грешки на сървъра ({0})', errors.length)} actions={errors.length ? <ActionButton action={{ type: 'clearServerErrors' }} endpoint="/api/admin/action" className="btn-ghost px-2.5 py-1 text-xs" confirm={tr('Списъкът с грешки се изчиства. Продължаваш ли?')}>{tr('Изчисти')}</ActionButton> : undefined}>
           {errors.length === 0 ? <p className="text-sm text-mist-400">{tr('Няма неочаквани грешки.')}</p> : (
-            <ul className="max-h-80 space-y-1.5 overflow-auto text-sm">
-              {errors.map((e, i) => (
-                <li key={i}>
-                  <div className="flex justify-between gap-3"><span className="font-mono text-xs">{tx(e.where)}</span><span className="shrink-0 text-xs text-mist-400">{at(new Date(e.at))}</span></div>
-                  <div className="break-words text-xs text-loss">{tx(e.message)}</div>
+            <>
+              <form className="mb-2 flex gap-2" action="/admin/system">
+                <input name="errors" defaultValue={filter} className="input py-1.5 text-sm" placeholder={tr('Филтър: страница, текст или код')} aria-label={tr('Филтър на грешките')} />
+                <button className="btn-ghost px-3 py-1 text-xs">{tr('Филтрирай')}</button>
+              </form>
+              <p className="mb-2 text-xs text-mist-400">{tr('{0} различни · {1} за последния час', grouped.length, lastHour)}</p>
+              <ul className="max-h-80 space-y-1.5 overflow-auto text-sm">
+                {grouped.map((e, i) => (
+                  <li key={i}>
+                    <div className="flex justify-between gap-3"><span className="font-mono text-xs">{tx(e.where)}{e.count > 1 && <>{" "}<Badge tone="red">×{e.count}</Badge></>}</span><span className="shrink-0 text-xs text-mist-400">{at(new Date(e.at))}</span></div>
+                    <div className="break-words text-xs text-loss">{tx(e.message)}</div>
+                    {(e.count > 1 || e.digests.length > 0) && <div className="text-[11px] text-mist-500">{e.count > 1 ? tr('първа: {0}', at(new Date(e.firstAt))) : ''}{e.digests.length ? `${e.count > 1 ? ' · ' : ''}${tr('код: {0}', e.digests.join(', '))}` : ''}</div>}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </Card>
+        <Card title={tr('Неуспешни към Discord ({0})', undelivered.length)}>
+          {undelivered.length === 0 ? <p className="text-sm text-mist-400">{tr('Всичко стигна до Discord.')}</p> : (
+            <ul className="max-h-80 space-y-2 overflow-auto text-sm">
+              {undelivered.map((r) => (
+                <li key={r.id} className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs">{tx(r.target)}</span>{r.gaveUp ? <Badge tone="red">{tr('отказано')}</Badge> : <Badge tone="gold">{tr('опит {0}/{1}', r.attempts, MAX_ATTEMPTS)}</Badge>}<span className="text-xs text-mist-400">{at(r.createdAt)}</span></div>
+                    <div className="truncate font-mono text-[11px] text-mist-500">{tx(r.dedupeKey)}</div>
+                    <div className="break-words text-xs text-loss">{tx(r.lastError ?? '')}</div>
+                  </div>
+                  <ActionButton action={{ type: 'discordRetry', id: r.id }} endpoint="/api/admin/action" className="btn-ghost px-2.5 py-1 text-xs">{tr('Прати пак')}</ActionButton>
                 </li>
               ))}
             </ul>

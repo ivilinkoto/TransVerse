@@ -161,9 +161,12 @@ export function releaseAnnouncement(r: Release) {
     used += name.length + value.length;
     fields.push({ name, value });
   }
+  const notes = `${appUrl()}/updates#v${r.version}`;
   return {
     content: t('🚚 **Ново обновление в TransVerse — вече е в играта за всички!**'),
-    embeds: [{ title, url: `${appUrl()}/updates`, description: `${description}\n\n${more}`, fields, color: BRAND, footer }],
+    embeds: [{ title, url: notes, description: `${description}\n\n${more}`, fields, color: BRAND, footer }],
+    // 1.1.3.5: straight to this release's notes, and into the game.
+    components: rows(linkButton(t('Пълни бележки'), notes, '📄'), linkButton(t('Към играта'), `${appUrl()}/game`, '🚚')),
   };
 }
 

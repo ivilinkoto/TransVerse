@@ -23,7 +23,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
     <div className="space-y-6">
       <PageHeader title={t('Потребители')} subtitle={t('Търсене по потребителско име, имейл или име на компания.')} />
       <form className="flex gap-2" role="search">
-        <input name="q" defaultValue={q} className="input max-w-md" placeholder={t('Търсене…')} aria-label={t('Търсене на потребител')} />
+        <input name="q" defaultValue={q} className="input max-w-md" placeholder={t('Име, имейл, компания, Discord…')} aria-label={t('Търсене на потребител')} />
         <button className="btn-primary">{t('Търси')}</button>
       </form>
       <Card>

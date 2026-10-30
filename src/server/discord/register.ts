@@ -14,6 +14,7 @@ const NAMES: Record<string, [en: string, ru: string]> = {
   участък: ['base', 'база'],
   класация: ['ranking', 'рейтинг'],
   камиони: ['trucks', 'грузовики'],
+  напомни: ['remind', 'напомнить'],
   курс: ['trip', 'рейс'],
   пазар: ['market', 'рынок'],
   търг: ['auction', 'торги'],

@@ -1,0 +1,71 @@
+# 1.1.3.5 «Поправки и удобства»
+fc0ce9b4f8	 Failed: {0}	 Не удалось: {0}
+e18066ecf4	 Created: {0}.	 Создано: {0}.
+09d96709da	/remind in Discord	/напомнить в Discord
+2d9db160d9	/help also shows the new commands and features (/stats, /compare, "Translate", /remind, Driver of the week) and is now in the reader's language.	/помощь показывает и новые команды и функции (/статистика, /сравнить, «Перевести», /напомнить, Водитель недели) и теперь на языке читателя.
+763b77c05b	`/напомни [камион]` — a private message when your truck arrives	`/напомни [камион]` — личное сообщение, когда твой грузовик прибудет
+a2ab351e30	{0} empty trucks head to the nearest depot — they arrive within a minute, free of charge. Continue?	{0} пустых грузовиков едут в ближайшее депо — прибудут в течение минуты, бесплатно. Продолжить?
+3756e88b8b	{0} distinct · {1} in the last hour	{0} разных · {1} за последний час
+b692dd3a0b	Fleet: one button sends every empty truck outside the depots to your nearest depot — within a minute, free, with its trailer.	Автопарк: одна кнопка отправляет каждый пустой грузовик вне депо в ближайшее депо — за минуту, бесплатно, с прицепом.
+a4f382801d	If a page fails to load, you see what to do: "Try again", and without internet — a message and a new attempt as soon as the connection is back. "Report" fills in the page and the error code for you.	Если страница не загрузилась, ты видишь, что делать: «Попробовать снова», а без интернета — сообщение и новая попытка, как только связь вернётся. «Сообщить» сам заполняет страницу и код ошибки.
+c0e567a765	Team note	Заметка команды
+5cb66bb2cf	The number of unread notifications shows in the tab title, e.g. "(3) Fleet".	Число непрочитанных уведомлений видно в заголовке вкладки, например «(3) Автопарк».
+47dd50cf77	See the lane	Смотреть линию
+d228febea1	All free trucks to the depot	Все свободные в депо
+5602ece798	All free trucks to the depot ({0})	Все свободные в депо ({0})
+c6efcc8e4e	Everything reached Discord.	Всё дошло до Discord.
+695a750e74	Server errors: identical ones are grouped (×12), with a filter by page, text or error code and a "Clear" button. Loads cut off by the browser ("The destination stream closed early") are not errors and are not kept.	Ошибки сервера: одинаковые собраны в одну (×12), с фильтром по странице, тексту или коду ошибки и кнопкой «Очистить». Загрузки, прерванные браузером («The destination stream closed early»), не ошибки и не сохраняются.
+bb42c29a0c	While a page loads, a skeleton shows at once — instead of an empty screen.	Пока страница загружается, сразу видна заготовка — вместо пустого экрана.
+0cccbc9466	For players	Для игроков
+19c1c652d6	Save	Сохранить
+a6fadfe1cd	Delete the note	Удалить заметку
+72cdd825c4	Clear	Очистить
+4708f63761	Name, email, company, Discord…	Имя, email, компания, Discord…
+9c7b348dd3	Error code: {0}	Код ошибки: {0}
+ca99561f88	Copy {0}	Копировать {0}
+9e0b0b931c	Private message · respects your quiet hours	Личное сообщение · учитывает твои тихие часы
+734aa9c672	A private message when your truck arrives (linked account)	Личное сообщение, когда твой грузовик прибудет (привязанный аккаунт)
+cf79891bbe	A small update before 1.1.4: clearer pages when something fails, all empty trucks to the depot with one button, the same trip again with the same truck, the notification count in the tab, /remind in Discord and more tools for the team.	Небольшое обновление перед 1.1.4: понятнее страницы при ошибке, все пустые грузовики в депо одной кнопкой, тот же рейс снова тем же грузовиком, число уведомлений во вкладке, /напомнить в Discord и больше инструментов для команды.
+86e9bf3e7f	Type /remind (or /remind truck) and the bot sends you a private message when the truck arrives — with a button for a new trip. The bot's private messages now wait for your quiet hours.	Напиши /напомнить (или /напомнить грузовик), и бот пришлёт личное сообщение, когда грузовик прибудет — с кнопкой нового рейса. Личные сообщения бота теперь ждут окончания твоих тихих часов.
+64e9663f5b	Failed to Discord ({0})	Не дошло до Discord ({0})
+16bde30096	Messages that did not reach Discord are shown in Admin → System — why and how many attempts — with a "Send again" button.	Сообщения, не дошедшие до Discord, видны в Админ → Система — почему и сколько попыток — с кнопкой «Отправить снова».
+e42ad31fdb	Something went wrong on our side. Try again in a moment; if it keeps happening, tell us — we will fix it.	Что-то пошло не так с нашей стороны. Попробуй снова чуть позже; если повторяется, сообщи нам — исправим.
+73dab24c45	Plate or name (none — all on a trip)	Номер или имя (без — все в рейсе)
+2827974352	The truck's plate in the fleet is copied with one tap.	Номер грузовика в автопарке копируется одним нажатием.
+8daa9d3bda	No note. Only the team sees it.	Заметки нет. Её видит только команда.
+28112741c6	No connection	Нет связи
+8a2841aba8	You have no depot.	У тебя нет депо.
+c24ac0a330	You have no truck on a trip with "{0}" in its plate or name.	У тебя нет грузовика в рейсе с «{0}» в номере или имени.
+1bef7d8172	You have no truck on a trip — send one with `/курс` and then `/напомни` again.	У тебя нет грузовика в рейсе — отправь один через `/курс`, а потом снова `/напомни`.
+a8f5f22f34	The update announcement has "Full notes" (straight to this update's notes) and "To the game" buttons; in the English and Russian channels it comes out translated.	В объявлении об обновлении есть кнопки «Полные заметки» (сразу к заметкам этого обновления) и «В игру»; в английском и русском каналах оно выходит в переводе.
+87b6d05132	Try again	Попробовать снова
+757358b03a	From the dashboard or the logbook: opens the loads on the same lane, with the truck that drove it first. If there is no load right now, you see the lane and wait for the next one.	С панели или из журнала: открывает грузы по той же линии, а грузовик, который её ездил, — первым. Если сейчас груза нет, ты видишь линию и ждёшь следующий.
+188cc1d82b	Again on the lane	Снова по линии
+02c5a30698	Clearer when something goes wrong	Понятнее, когда что-то не так
+6c4b559b33	Repair everything	Исправить всё
+3dcb31bc4d	Fixes and conveniences	Исправления и удобства
+6b1a5b85dd	Last action	Последнее действие
+ea2807ba22	Send again	Отправить снова
+571c2d86e4	Check your internet — the page will try again as soon as the connection is back.	Проверь интернет — страница попробует снова, как только связь вернётся.
+793e40cefa	The bot check: "Repair everything" also creates the missing channels and roles, then checks again.	Проверка бота: «Исправить всё» создаёт и недостающие каналы и роли, затем проверяет заново.
+b05923fda6	Full notes	Полные заметки
+9fc834d01c	The error list will be cleared. Continue?	Список ошибок будет очищен. Продолжить?
+e69f44b7e5	The page did not load	Страница не загрузилась
+b394ba5e70	Search for a player also by Discord name or ID; on the profile — the last action, the linked Discord and a team note that only the team sees.	Поиск игрока и по имени или ID в Discord; в профиле — последнее действие, привязанный Discord и заметка команды, которую видит только команда.
+2b13381428	Filter	Фильтровать
+7aea7cef7c	Error filter	Фильтр ошибок
+f91a3d6de1	Filter: page, text or code	Фильтр: страница, текст или код
+72879edb9c	I'll message you when they arrive	Напишу тебе, когда они прибудут
+caeaaf47ec	code: {0}	код: {0}
+e93e1593e3	remind	напомнить
+407e0f7b12	e.g. warned for spam in the chat	напр. предупреждён за спам в чате
+4ab91524c1	not linked	не привязан
+3170a935db	attempt {0}/{1}	попытка {0}/{1}
+db212cbae4	given up	отказано
+7612f2b38c	first: {0}	первая: {0}
+ec5bc1f163	— pick a load; the empty drive to the start of the lane is calculated for you.	— выбери груз; пустой пробег до начала линии считается сам.
+1d48d63b84	⚙️ Settings → Discord in the game: reminder about an idle truck; the bot's private messages wait for your quiet hours	⚙️ Настройки → Discord в игре: напоминание о простаивающем грузовике; личные сообщения бота ждут твоих тихих часов
+bfcb192445	✅ under a bug in #докладвай-бъг (a linked team member) — the ticket in the game is closed	✅ под багом в #докладвай-бъг (привязанный член команды) — запрос в игре закрывается
+eb5419499d	🏁 **{0}** arrived in {1}. Ready for a new trip!	🏁 **{0}** прибыл в {1}. Готов к новому рейсу!
+866b7fb540	🏅 Driver of the week — the role goes to the most trips (Sunday evening, for 7 days)	🏅 Водитель недели — роль за наибольшее число рейсов (вечер воскресенья, на 7 дней)
+decb2dad7b	📋 Every morning in #сигнали — the team's day: players, trips, tickets, errors	📋 Каждое утро в #сигнали — день команды: игроки, рейсы, запросы, ошибки

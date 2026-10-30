@@ -6,6 +6,10 @@ import { VipForm } from '@/components/admin/VipForm';
 import { CoinsForm } from '@/components/admin/CoinsForm';
 import { ResetLinkButton } from '@/components/admin/ResetLinkButton';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { TextAction } from '@/components/ui/TextAction';
+import { desc, eq } from 'drizzle-orm';
+import { activity } from '@/server/db/schema';
+import { staffNote } from '@/server/staff-notes';
 import { isVip } from '@/lib/game/vip';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { SelectAction } from '@/components/ui/SelectAction';
@@ -39,16 +43,32 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const { user, company, org } = detail;
-  const [xp, cash, fleet, logins, deletingAt] = await Promise.all([xpBySource(db, user.id, 7, now), company ? moneyBySource(db, company.id, 7, now) : Promise.resolve([]), company ? fleetView(db, company.id) : Promise.resolve(null), loginHistory(db, user.id, now), pendingDeletion(db, user.id)]);
+  const [xp, cash, fleet, logins, deletingAt, note, [last]] = await Promise.all([
+    xpBySource(db, user.id, 7, now),
+    company ? moneyBySource(db, company.id, 7, now) : Promise.resolve([]),
+    company ? fleetView(db, company.id) : Promise.resolve(null),
+    loginHistory(db, user.id, now),
+    pendingDeletion(db, user.id),
+    // 1.1.3.5: the team's note and the player's last action.
+    staffNote(db, user.id),
+    db.select({ action: activity.action, at: activity.createdAt }).from(activity).where(eq(activity.userId, user.id)).orderBy(desc(activity.id)).limit(1),
+  ]);
   const roleOptions = (['player', 'support', 'admin'] as const).filter((r) => r === user.role || canChangeRole(actor.role, actor.id, user.role, user.id, r));
   return (
     <div className="space-y-6">
       <PageHeader title={tx(user.username)} subtitle={<span className="inline-flex flex-wrap items-center gap-2">{tx(user.email)}<Badge tone={user.role === 'player' ? 'neutral' : 'violet'}>{tx(ROLE_LABELS[user.role as Role])}</Badge>{isVip(user.vipUntil, now) && <Badge tone="gold">{t('VIP до {0}', date(user.vipUntil!))}</Badge>}{user.bannedAt && <Badge tone="red">{t('блокиран от {0}', date(user.bannedAt))}</Badge>}</span>} />
       <div className="grid gap-6 lg:grid-cols-2">
+        <Card title={t('Бележка на екипа')} className="lg:col-span-2">
+          {note ? <p className="whitespace-pre-wrap text-sm">{tx(note.note)} <span className="text-xs text-mist-400">— {tx(note.by)}, {dateTime(new Date(note.at))}</span></p> : <p className="text-sm text-mist-400">{t('Няма бележка. Вижда я само екипът.')}</p>}
+          <div className="mt-2"><TextAction label={note ? t('Смени') : t('Запиши')} ariaLabel={t('Бележка на екипа')} placeholder={t('напр. предупреден за спам в чата')} action={{ type: 'staffNote', userId: user.id }} field="note" maxLength={500} endpoint="/api/admin/action" /></div>
+          {note && <div className="mt-2"><ActionButton action={{ type: 'staffNote', userId: user.id, note: '' }} endpoint="/api/admin/action" className="btn-ghost px-3 py-1 text-xs">{t('Изтрий бележката')}</ActionButton></div>}
+        </Card>
         <Card title={t('Профил и игра')}>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div><dt className="label">{t('Регистрация')}</dt><dd className="mt-1">{dateTime(user.createdAt)}</dd></div>
             <div><dt className="label">{t('Последен вход')}</dt><dd className="mt-1">{user.lastSeenAt ? dateTime(user.lastSeenAt) : '—'}</dd></div>
+            <div><dt className="label">{t('Последно действие')}</dt><dd className="mt-1">{last ? <><span className="font-mono text-xs">{tx(last.action)}</span>{' · '}{dateTime(last.at)}</> : '—'}</dd></div>
+            <div><dt className="label">{t('Discord')}</dt><dd className="mt-1 break-all">{user.discordId ? <>{tx(user.discordName ?? '—')}{' '}<span className="font-mono text-xs text-mist-400">{tx(user.discordId)}</span></> : t('не е свързан')}</dd></div>
             <div><dt className="label">{t('Ниво / опит')}</dt><dd className="num mt-1">{tx(user.level)} / {int(user.xp)}</dd></div>
             <div><dt className="label">{t('Статус')}</dt><dd className="mt-1">{org ? t('{0} на „{1}“ (каса {2})', org.ownerId === user.id ? t('Собственик') : t('Член'), org.name, money(org.treasuryCents)) : company?.kind === 'company' ? t('Лицензиран превозвач без компания') : t('Самостоятелен шофьор')}</dd></div>
             <div><dt className="label">{t('Баланс')}</dt><dd className="num mt-1">{company ? money(company.balanceCents) : '—'}</dd></div>
