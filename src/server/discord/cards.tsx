@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { featureLive } from '@/lib/game/features';
 import { LEGEND, legendTier } from '@/lib/game/heritage';
 import { and, desc, eq, gte, isNull, lte } from 'drizzle-orm';
@@ -24,23 +26,21 @@ import { t as tr, tx, intlLocale } from '@/i18n/t';
 /**
  * Pictures for Discord embeds (PNG, made with next/og): the player card of
  * /профил and the company base of /участък. Game data. The fonts of the
- * site (Exo 2, Onest) are loaded once from Google Fonts; without them the
+ * site (Exo 2, Onest) are read once from public/fonts; without them the
  * picture is not made and the embed simply has none.
  */
 
 type Font = { name: string; data: ArrayBuffer; weight: 400 | 600 | 700; style: 'normal' };
 let fonts: Promise<Font[]> | null = null;
 
-async function loadFont(family: string, weight: number): Promise<ArrayBuffer> {
-  // A plain user agent gets TrueType files, which next/og can read.
-  const css = await fetch(`https://fonts.googleapis.com/css2?family=${family.replace(/ /g, '+')}:wght@${weight}`, { headers: { 'user-agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(8000) }).then((r) => r.text());
-  const url = /url\((https:[^)]+\.ttf)\)/.exec(css)?.[1];
-  if (!url) throw new Error(`no font file for ${family}`);
-  return fetch(url, { signal: AbortSignal.timeout(8000) }).then((r) => r.arrayBuffer());
+/** The card fonts are static TrueType files in public/fonts (next/og cannot read woff2). */
+async function loadFont(file: string): Promise<ArrayBuffer> {
+  const data = await readFile(join(process.cwd(), 'public', 'fonts', file));
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
 }
 
 function cardFonts() {
-  fonts ??= Promise.all([loadFont('Exo 2', 700), loadFont('Onest', 400), loadFont('Onest', 600)])
+  fonts ??= Promise.all([loadFont('Exo2-Bold.ttf'), loadFont('Onest-Regular.ttf'), loadFont('Onest-SemiBold.ttf')])
     .then(([exo, onest, onestBold]) => [
       { name: 'Exo 2', data: exo, weight: 700 as const, style: 'normal' as const },
       { name: 'Onest', data: onest, weight: 400 as const, style: 'normal' as const },
