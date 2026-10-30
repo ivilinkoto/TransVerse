@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { SEALED } from '@/lib/game/deals';
 import { CARGO, CARGO_TYPES, type BodyType, type CargoType } from '@/lib/game/cargo';
+import { goodsFor, goodsMultiplier } from '@/lib/game/goods';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { rewardCents } from '@/lib/game/economy';
 import { PREMIUM_LEVELS } from '@/lib/game/progression';
@@ -339,14 +340,15 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   const national = !extra.featured && featureLive('national_days', now) ? nationalDayToday(now, destination.countryCode) : null;
   const holiday = theme?.id ?? (national ? 'national' : null);
   const market = (destination.consumes.get(cargo) ?? 1) * seasonalFactor(cargo, now) * (await eventMultiplier(db, now, destination.countryCode, cargo)) * (theme?.multiplier ?? 1) * (national ? NATIONAL_DAY.rewardMultiplier : 1);
-  const goods = extra.goods ?? (theme ? pick(theme.goods!) : pick(CARGO[cargo].goods));
+  // 1.1.4: more goods on every cargo; fragile, valuable and dangerous ones pay more.
+  const goods = extra.goods ?? (theme ? pick(theme.goods!) : pick(goodsFor(cargo, featureLive('more_goods', now))));
   // v1.8: now and then the shipper does not say what is inside.
   const sealed = !extra.featured && !extra.oversize && !extra.transEurope && !extra.humanitarian && !extra.portCallId && !theme && !via.length && featureLive('sealed_cargo', now) && rand() < SEALED.share;
   // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
   // v1.10: loads from a city that has grown pay a little more.
   // v2.0: the economic cycle of the destination country.
   const cycle = featureLive('living_economy', now) ? cycleIndex(now, destination.countryCode) : 1;
-  const reward = rewardCents(cargo, tons, route.distanceKm, market * cycle * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)));
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * cycle * goodsMultiplier(goods) * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)));
   const [row] = await db.insert(contracts).values({
     shipper: shipperName(),
     goods,

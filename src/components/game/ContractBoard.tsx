@@ -1,5 +1,6 @@
 'use client';
 
+import { GOODS_TRAITS, goodsTrait } from '@/lib/game/goods';
 import { AlertTriangle, ArrowRight, BadgeCheck, Boxes, Clock, Lock, MapPinned, Route, Search, Ship, ShieldCheck, Hammer, House, Siren, Snowflake, Star, TrainFront, Truck } from 'lucide-react';
 import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { HALLOWEEN } from '@/lib/game/halloween';
@@ -158,13 +159,14 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'halloween' | 'christmas' | 'marta' | 'buditeli' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'goods' | 'halloween' | 'christmas' | 'marta' | 'buditeli' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
   { id: 'home', label: 'Към базата', test: (c) => c.toHome },
   { id: 'hired', label: 'Възложени на мен', test: (c) => !!c.hiredBy },
   { id: 'stops', label: 'Сборни товари', test: (c) => c.stops.length > 0 },
+  { id: 'goods', label: '💎 Специални стоки', test: (c) => !!goodsTrait(c.goods) },
   { id: 'halloween', label: 'Хелуин', test: (c) => c.holiday === 'halloween' },
   { id: 'christmas', label: 'Коледа', test: (c) => c.holiday === 'christmas' },
   { id: 'marta', label: 'Баба Марта', test: (c) => c.holiday === 'marta' },
@@ -185,6 +187,7 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['home', (c) => c.toHome],
   ['hired', (c) => !!c.hiredBy],
   ['stops', (c) => c.stops.length > 0],
+  ['goods', (c) => !!goodsTrait(c.goods)],
   ['halloween', (c) => c.holiday === 'halloween'],
   ['christmas', (c) => c.holiday === 'christmas'],
   ['marta', (c) => c.holiday === 'marta'],
@@ -524,6 +527,11 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.temp && <Badge tone="blue">🌡️ {tx(c.temp)}</Badge>}
               {c.relayLeg && <Badge tone="cyan">{t('🏃 {0} · +{1} % ако и двамата сте навреме', relayLabel(c.relayLeg), Math.round(RELAY.bonusShare * 100))}</Badge>}
               {c.humanitarian && <Badge tone="red">{t('🆘 ХУМАНИТАРНА ПОМОЩ · +{0} TC навреме', RELIEF.coins)}</Badge>}
+              {(() => {
+                // 1.1.4: fragile, valuable and dangerous goods pay more.
+                const trait = goodsTrait(c.goods);
+                return trait ? <Badge tone={trait === 'adr' ? 'orange' : trait === 'valuable' ? 'gold' : 'cyan'}>{t('{0} {1} · +{2}%', GOODS_TRAITS[trait].emoji, tx(GOODS_TRAITS[trait].label).toUpperCase(), Math.round((GOODS_TRAITS[trait].multiplier - 1) * 100))}</Badge> : null;
+              })()}
               {c.sealed && <Badge tone="violet">{t('📦 ЗАПЕЧАТАН · до +{0}% при отваряне', Math.round(SEALED.tiers.at(-1)!.bonus * 100))}</Badge>}
               {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">{t('🤝 ДОГОВОРЕНО +{0}%', c.haggle.percent)}</Badge>}
               {!!c.lez?.length && <Badge tone="green">{t('🌿 ЗОНА · {0}', c.lez.join(', '))}</Badge>}
