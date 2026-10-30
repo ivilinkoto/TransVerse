@@ -68,6 +68,8 @@ export const FEATURES = {
   daily_summary: '1.1.4',
   compare_players: '1.1.4',
   roadmap: '1.1.4',
+  // More goods on every cargo, some fragile, valuable or dangerous (the players asked for them).
+  more_goods: '1.1.4',
   transfers: '1.2',
   search: '1.2',
   map_circle: '1.2',
