@@ -47,6 +47,10 @@ journalctl -u transverse-web -n 100                  # последни лого
 2. На сървъра: в `/etc/caddy/Caddyfile` замени `:80 {` с `transverse.bg, www.transverse.bg {` и изпълни `systemctl reload caddy`. Caddy сам взима HTTPS сертификат (Let's Encrypt).
 3. В `/etc/transverse/transverse.env` смени `COOKIE_SECURE=false` на `true` и изпълни `systemctl restart transverse-web`.
 
+## Шрифтове
+
+Шрифтовете на сайта (Exo 2, Onest, JetBrains Mono — SIL Open Font License, лицензите са до файловете) са в проекта: `src/app/fonts/*.woff2` (сайтът, през `next/font/local`) и `public/fonts/*.ttf` (картинките за Discord). Компилацията и сайтът не теглят нищо от Google Fonts, така че прекъсване там не спира CI и деплоя. Файловете са изрязани до латиница и кирилица и до използваните тегла (fontTools: `pyftsubset` + `varLib.instancer`).
+
 ## Маршрутизация в продукция
 По подразбиране се използва публичният Valhalla сървър на FOSSGIS (`valhalla1.openstreetmap.de`). Той е подходящ за начало и тестове, но има правила за умерена употреба. Играта:
 - кешира всеки маршрут в базата (една заявка на двойка градове завинаги);

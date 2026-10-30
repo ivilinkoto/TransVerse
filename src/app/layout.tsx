@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Exo_2, JetBrains_Mono, Onest } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 import { SeasonalDecor } from '@/components/seasonal/SeasonalDecor';
 import { requestSeason } from '@/server/seasonal';
@@ -9,9 +9,11 @@ import { OG_LOCALE } from '@/i18n/config';
 import { initLocale, MESSAGES } from '@/i18n/server';
 import { t } from '@/i18n/t';
 
-const display = Exo_2({ subsets: ['latin', 'cyrillic'], variable: '--font-display-face', weight: ['600', '700', '800'] });
-const sans = Onest({ subsets: ['latin', 'cyrillic'], variable: '--font-onest' });
-const mono = JetBrains_Mono({ subsets: ['latin', 'cyrillic'], variable: '--font-jetbrains' });
+// The fonts live in the project (src/app/fonts, SIL Open Font License): the build and the site do not
+// depend on Google Fonts. Variable files, cut to Latin and Cyrillic and to the weights the game uses.
+const display = localFont({ src: './fonts/Exo2.woff2', variable: '--font-display-face', weight: '600 800', display: 'swap' });
+const sans = localFont({ src: './fonts/Onest.woff2', variable: '--font-onest', weight: '400 800', display: 'swap' });
+const mono = localFont({ src: './fonts/JetBrainsMono.woff2', variable: '--font-jetbrains', weight: '400 700', display: 'swap' });
 
 const TITLE_BG = 'TransVerse — транспортна стратегия върху реалната карта';
 const DESCRIPTION_BG = 'Браузърна мултиплейър игра: изгради транспортна компания, изпълнявай поръчки по реални пътища между реални градове и се състезавай в общ постоянен свят.';
