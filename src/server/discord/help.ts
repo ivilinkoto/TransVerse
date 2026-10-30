@@ -5,7 +5,7 @@ import { startTemplateEvent } from '@/server/game/events';
 import { answer, hasPerm, linked, opt, PERM, stop, type Answer, type Ctx } from './context';
 import { appUrl, BRAND } from './config';
 import { reply } from './ui';
-import { t as tr } from '@/i18n/t';
+import { t as tr, tx } from '@/i18n/t';
 
 /**
  * /помощ in two parts: the players' commands for everyone, and — only for
@@ -15,6 +15,7 @@ import { t as tr } from '@/i18n/t';
 
 const footer = { text: 'TransVerse · transverse-bg.com' };
 
+/** 1.1.3.5: line by line, so that each is shown in the reader's language. */
 export const PLAYER_HELP = [
   '**Играта**',
   '`/профил [играч]` — картичка на играч',
@@ -26,6 +27,7 @@ export const PLAYER_HELP = [
   '',
   '**Със свързан акаунт**',
   '`/камиони` — къде са камионите ти · `/курс` — пусни камион на курс',
+  '`/напомни [камион]` — лично съобщение, когато камионът ти пристигне',
   '`/пазар` — продай стока от склада · `/търг` — оферта за специален товар',
   '`/мисии` — мисиите и наградите · `/дневна` — дневната награда',
   '`/ивент` · `/битка` — ивентът и битката на компанията ти',
@@ -45,7 +47,9 @@ export const PLAYER_HELP = [
   '➕ „Създай стая“ — твой гласов канал · 🚚 „Конвой“ — бонус за конвой в играта',
   '⭐ #товар-на-деня (12:00) · 🏷️ #пазар-камиони · 🎨 #ливреи — конкурс всеки месец',
   '💡 #идеи — напиши идея и тя влиза в играта (заглавие на първия ред) · 🐞 #докладвай-бъг — става запитване към екипа · 🛠️ #статус — работи ли играта',
-].join('\n');
+  '🏅 Шофьор на седмицата — ролята е за най-много курсове (неделя вечер, за 7 дни)',
+  '⚙️ Настройки → Discord в играта: напомняне за празен камион; личните съобщения от бота чакат тихите ти часове',
+];
 
 export const STAFF_HELP = [
   '**Модерация** (право Moderate Members)',
@@ -64,15 +68,19 @@ export const STAFF_HELP = [
   '**Автоматично**',
   '🛡️ Автомодерация: покани, масово споменаване, линкове от нови, спам',
   '📝 Обжалванията идват в #банове и #предупреждения с бутони',
+  '✅ под бъг в #докладвай-бъг (свързан член на екипа) — запитването в играта се затваря',
+  '📋 Всяка сутрин в #сигнали — денят за екипа: играчи, курсове, запитвания, грешки',
   `⚙️ Подреждане, проверка на новите и автомодерация: ${appUrl()}/admin/system`,
-].join('\n');
+];
+
+const lines = (help: string[]) => help.map((l) => tx(l)).join('\n');
 
 export function helpView(ctx: Ctx): Answer {
   const staff = hasPerm(ctx, PERM.moderate) || hasPerm(ctx, PERM.ban) || hasPerm(ctx, PERM.manageGuild);
   return answer(reply({
     embeds: [
-      { title: tr('🚚 Команди за играчите'), color: BRAND, description: PLAYER_HELP, footer },
-      ...(staff ? [{ title: tr('🛡️ Команди за екипа'), color: 0xe04545, description: STAFF_HELP, footer: { text: tr('Виждаш това, защото имаш права в сървъра') } }] : []),
+      { title: tr('🚚 Команди за играчите'), color: BRAND, description: lines(PLAYER_HELP), footer },
+      ...(staff ? [{ title: tr('🛡️ Команди за екипа'), color: 0xe04545, description: lines(STAFF_HELP), footer: { text: tr('Виждаш това, защото имаш права в сървъра') } }] : []),
     ],
   }, true));
 }

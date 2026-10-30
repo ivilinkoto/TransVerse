@@ -1,6 +1,8 @@
-import { and, asc, eq, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { discordOutbox, organizations } from '@/server/db/schema';
+import { discordOutbox, organizations, users } from '@/server/db/schema';
+import { featureLive } from '@/lib/game/features';
+import { inQuietHours } from '@/server/push';
 import { discord, noPings, type DiscordMessage } from './api';
 import { withLocale } from '@/i18n/als';
 import { DISCORD_CHANNELS, discordConfig, LOCALE_CHANNELS, type DiscordChannel } from './config';
@@ -28,7 +30,16 @@ export async function announce(db: DbOrTx, dedupeKey: string, channel: DiscordCh
   }
 }
 
-const MAX_ATTEMPTS = 6;
+export const MAX_ATTEMPTS = 6;
+
+/** 1.1.3.5: private messages wait while the player's quiet hours (Settings → Известия) last. */
+const QUIET_RETRY_MS = 30 * 60_000;
+async function quietDms(db: Database, rows: { target: string }[], now: Date) {
+  const ids = [...new Set(rows.filter((r) => r.target.startsWith('dm:')).map((r) => r.target.slice(3)))];
+  if (!ids.length || !featureLive('discord_quiet', now)) return new Set<string>();
+  const people = await db.select({ discordId: users.discordId, quiet: users.quietHours }).from(users).where(inArray(users.discordId, ids));
+  return new Set(people.filter((p) => p.discordId && inQuietHours(p.quiet, now)).map((p) => `dm:${p.discordId}`));
+}
 
 async function send(db: Database, target: string, payload: Record<string, unknown>) {
   const [kind, id] = [target.slice(0, target.indexOf(':')), target.slice(target.indexOf(':') + 1)];
@@ -73,8 +84,13 @@ async function send(db: Database, target: string, payload: Record<string, unknow
 export async function processOutbox(db: Database, now = new Date(), limit = 25) {
   if (!discordConfig().bot) return 0;
   const due = await db.select().from(discordOutbox).where(and(isNull(discordOutbox.sentAt), lte(discordOutbox.nextAttemptAt, now))).orderBy(asc(discordOutbox.id)).limit(limit);
+  const quiet = await quietDms(db, due, now);
   let sent = 0;
   for (const row of due) {
+    if (quiet.has(row.target)) {
+      await db.update(discordOutbox).set({ nextAttemptAt: new Date(now.getTime() + QUIET_RETRY_MS) }).where(eq(discordOutbox.id, row.id));
+      continue;
+    }
     try {
       await send(db, row.target, row.payload);
       await db.update(discordOutbox).set({ sentAt: new Date(), lastError: null }).where(eq(discordOutbox.id, row.id));
@@ -92,6 +108,23 @@ export async function processOutbox(db: Database, now = new Date(), limit = 25) 
   // Keep the table small: sent rows go after two weeks.
   await db.delete(discordOutbox).where(sql`${discordOutbox.sentAt} < ${new Date(now.getTime() - 14 * 86_400_000)}`);
   return sent;
+}
+
+/** 1.1.3.5, for the admin panel: what did not reach Discord (still retrying or given up), newest first. */
+export async function failedOutbox(db: DbOrTx, limit = 30) {
+  const rows = await db
+    .select({ id: discordOutbox.id, target: discordOutbox.target, dedupeKey: discordOutbox.dedupeKey, attempts: discordOutbox.attempts, lastError: discordOutbox.lastError, createdAt: discordOutbox.createdAt, sentAt: discordOutbox.sentAt, nextAttemptAt: discordOutbox.nextAttemptAt })
+    .from(discordOutbox)
+    .where(isNotNull(discordOutbox.lastError))
+    .orderBy(desc(discordOutbox.id))
+    .limit(limit);
+  return rows.map((r) => ({ ...r, gaveUp: !!r.sentAt }));
+}
+
+/** "Прати пак": the message goes again on the worker's next round, with fresh attempts. */
+export async function retryOutbox(db: DbOrTx, id: number, now = new Date()) {
+  const [row] = await db.update(discordOutbox).set({ attempts: 0, sentAt: null, lastError: null, nextAttemptAt: now }).where(and(eq(discordOutbox.id, id), isNotNull(discordOutbox.lastError))).returning({ id: discordOutbox.id });
+  return !!row;
 }
 
 /** The bot gives or takes this player's roles soon (when the bot is set up). */

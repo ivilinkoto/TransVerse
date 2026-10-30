@@ -54,6 +54,13 @@ export const FEATURES = {
   // v1.1.3.4 „Discord+“: company card and compare in Discord, driver of the week, countdown channel,
   // idle truck reminder, ✅ closes a bug, the team's daily report, Discord votes on ideas, translate, level rewards.
   discord_plus: '1.1.3.4',
+  // v1.1.3.5 „Чист дневник“: every idle truck to the depot at once, the same trip again with that truck,
+  // the unread count in the tab, /напомни and the Discord quiet hours.
+  repeat_trip: '1.1.3.5',
+  depot_all: '1.1.3.5',
+  tab_badge: '1.1.3.5',
+  discord_remind: '1.1.3.5',
+  discord_quiet: '1.1.3.5',
   // v1.1.4: countdowns, ideas with votes, Ден на будителите, my day, compare, roadmap.
   countdowns: '1.1.4',
   ideas: '1.1.4',

@@ -21,6 +21,9 @@ import { requireFeature } from '@/server/features';
 import { adminCancelPlateAuction, adminEndTrailerHire, adminRemoveCupEntrant } from '@/server/staff-tools';
 import { broadcastSchema, setBroadcast } from '@/server/broadcast';
 import { IDEA_STATUSES, setIdeaStatus } from '@/server/game/ideas';
+import { clearServerErrors } from '@/server/error-log';
+import { retryOutbox } from '@/server/discord/outbox';
+import { setStaffNote } from '@/server/staff-notes';
 import { t } from '@/i18n/t';
 
 const id = z.string().uuid('Невалиден идентификатор.');
@@ -47,6 +50,9 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('checkPaypal') }),
   z.object({ type: z.literal('checkDiscord') }),
   z.object({ type: z.literal('repairDiscord') }),
+  z.object({ type: z.literal('clearServerErrors') }),
+  z.object({ type: z.literal('discordRetry'), id: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('staffNote'), userId: id, note: z.string().trim().max(500) }),
   z.object({ type: z.literal('discordLayoutPlan') }),
   z.object({ type: z.literal('discordLayoutApply'), permissions: z.boolean().default(false) }),
   z.object({ type: z.literal('discordPanels') }),
@@ -181,9 +187,27 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'repairDiscord': {
       requireAdminRole(user);
       const done = await repairDiscord(db);
-      await recordAudit(db, user.id, 'discord_repair', null, done);
-      return { ok: true, ...done };
+      // 1.1.3.5: the missing channels and roles of the layout too (existing channels keep their permissions).
+      let created: string[] = [];
+      let errors: string[] = [];
+      if (discordConfig().bot && (await layoutState(db)).appliedAt) {
+        ({ created, errors } = await applyLayout(db, { permissions: false }));
+        if (created.length) await postPanels(db, created).catch((e: Error) => errors.push(t('Съобщенията на бота: {0}', e.message.slice(0, 300))));
+      }
+      await recordAudit(db, user.id, 'discord_repair', null, { ...done, created, errors: errors.length });
+      return { ok: true, ...done, created, errors };
     }
+    case 'clearServerErrors':
+      requireAdminRole(user);
+      await clearServerErrors(db);
+      await recordAudit(db, user.id, 'clear_server_errors', null, {});
+      return { ok: true };
+    case 'discordRetry':
+      requireAdminRole(user);
+      return { ok: await retryOutbox(db, input.id) };
+    case 'staffNote':
+      await setStaffNote(db, user, input.userId, input.note);
+      return { ok: true };
     case 'resetLink':
       return { ok: true, url: await adminResetLink(db, user, input.userId, siteUrl(request.headers.get('origin'))) };
   }

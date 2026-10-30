@@ -7,7 +7,7 @@ import { api } from '@/lib/client/api';
 import { t, tx } from '@/i18n/t';
 
 /** `report` (1.1.2): the page a player reported a problem from — the form starts as a bug report about it. */
-export function NewTicketForm({ categories, report }: { categories: Record<string, string>; report?: string | null }) {
+export function NewTicketForm({ categories, report, errorCode }: { categories: Record<string, string>; report?: string | null; errorCode?: string | null }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -31,7 +31,7 @@ export function NewTicketForm({ categories, report }: { categories: Record<strin
       <select id="category" name="category" className="input" defaultValue={report ? 'bug' : 'gameplay'} aria-label={t('Категория')}>
         {Object.entries(categories).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}
       </select>
-      <textarea id="body" name="body" className="input min-h-32" placeholder={t('Опишете проблема или въпроса си. Ако е грешка — какво направихте и какво се случи.')} required minLength={10} maxLength={4000} defaultValue={report ? `${t('Страница: {0}', report)}\n\n` : undefined} autoFocus={!!report} />
+      <textarea id="body" name="body" className="input min-h-32" placeholder={t('Опишете проблема или въпроса си. Ако е грешка — какво направихте и какво се случи.')} required minLength={10} maxLength={4000} defaultValue={report ? `${t('Страница: {0}', report)}${errorCode ? `\n${t('Код на грешката: {0}', errorCode)}` : ''}\n\n` : undefined} autoFocus={!!report} />
       {error && <p role="alert" className="text-sm text-loss">{error}</p>}
       <button className="btn-primary" disabled={busy}><Send className="h-4 w-4" />{busy ? t('Изпращане…') : t('Изпрати запитване')}</button>
     </form>

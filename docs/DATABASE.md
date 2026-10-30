@@ -207,3 +207,4 @@
 - 0093: `community_tournaments` (организатор, мярка, филтри, дати, награден фонд, такса, лимит, съобщение, статус) и `community_cup_entries` (точки). Категории `era_bonus`, `tournament`; опит `lane`. `job_state`: `community-cups`, `lane:<курс>`.
 - 0099: `organization_achievements` (компания, ключ, кога) — постиженията на компаниите (1.1.3.1).
 - 0100: `ideas.discord_votes` и `idea_votes.source` (`game` | `discord`) — колко от гласовете за идея са от бутона в Discord (1.1.3.4).
+- 1.1.3.5 (без миграция): в `job_state` — `staff-note:<играч>` (бележка на екипа: текст, кой, кога) и `discord-remind:<доставка>` (/напомни); записите в `errors:recent` имат и `digest` (кодът от страницата за грешка).

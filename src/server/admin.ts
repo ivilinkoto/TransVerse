@@ -55,12 +55,14 @@ export async function adminStats(db: DbOrTx) {
 }
 
 export async function searchUsers(db: DbOrTx, q: string) {
-  const term = `%${q.trim().replace(/[%_]/g, '')}%`;
+  // 1.1.3.5: "_" and "%" are searched for as they are (names like player_1 were not found).
+  const term = `%${q.trim().replace(/[\\%_]/g, '\\$&')}%`;
   return db
     .select({ id: users.id, username: users.username, email: users.email, role: users.role, level: users.level, bannedAt: users.bannedAt, vipUntil: users.vipUntil, createdAt: users.createdAt, kind: companies.kind, company: sql<string | null>`(select o.name from company_members m join organizations o on o.id = m.company_id where m.user_id = ${users.id})`, balance: companies.balanceCents })
     .from(users)
     .leftJoin(companies, eq(companies.ownerId, users.id))
-    .where(q.trim() ? or(ilike(users.username, term), ilike(users.email, term), sql`exists (select 1 from company_members m join organizations o on o.id = m.company_id where m.user_id = ${users.id} and o.name ilike ${term})`) : undefined)
+    // 1.1.3.5: also by Discord name or id.
+    .where(q.trim() ? or(ilike(users.username, term), ilike(users.email, term), ilike(users.discordName, term), eq(users.discordId, q.trim()), sql`exists (select 1 from company_members m join organizations o on o.id = m.company_id where m.user_id = ${users.id} and o.name ilike ${term})`) : undefined)
     .orderBy(desc(users.createdAt))
     .limit(100);
 }

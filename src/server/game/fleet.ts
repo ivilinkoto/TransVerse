@@ -6,6 +6,7 @@ import { cleanTruckName } from '@/lib/game/truck-names';
 import { springDiscount } from '@/lib/game/marta';
 import { fuelPriceCents } from '@/lib/game/fuel';
 import { getRoute } from '@/server/geo/route-service';
+import { haversineKm } from '@/lib/geo/geometry';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { ECONOMY, repairCostCents, resaleValueCents, tripCosts } from '@/lib/game/economy';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -320,6 +321,33 @@ export async function moveToDepot(db: Database, userId: string, vehicleId: strin
     await tx.update(vehicles).set({ cityId: depot!.cityId, movingUntil: arrivesAt }).where(eq(vehicles.id, v.id));
     if (t) await tx.update(trailers).set({ cityId: depot!.cityId }).where(eq(trailers.id, t.id));
     return { km: 0, costCents: 0, arrivesAt };
+  });
+}
+
+/**
+ * 1.1.3.5: every free truck that is away from the depots goes to the nearest
+ * one at once (same rules as moveToDepot: a minute, free, trailer included).
+ */
+export async function moveAllToDepot(db: Database, userId: string, now = new Date()) {
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const homes = await tx.select({ cityId: depots.cityId, lat: cities.lat, lon: cities.lon }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id));
+    if (!homes.length) fail('no_depot', tr('Нямаш депо.'));
+    const homeCities = new Set(homes.map((h) => h.cityId));
+    const idle = await tx
+      .select({ id: vehicles.id, cityId: vehicles.cityId, movingUntil: vehicles.movingUntil, lat: cities.lat, lon: cities.lon })
+      .from(vehicles)
+      .innerJoin(cities, eq(cities.id, vehicles.cityId))
+      .where(and(eq(vehicles.companyId, company.id), eq(vehicles.status, 'idle'), isNull(vehicles.soldAt), isNull(vehicles.testDriveFrom)));
+    const away = idle.filter((v) => !homeCities.has(v.cityId) && !(v.movingUntil && v.movingUntil > now));
+    const arrivesAt = new Date(now.getTime() + DEPOT_MOVE_MS);
+    for (const v of away) {
+      const far = (h: (typeof homes)[number]) => haversineKm([v.lat, v.lon], [h.lat, h.lon]);
+      const home = homes.reduce((best, h) => (far(h) < far(best) ? h : best));
+      await tx.update(vehicles).set({ cityId: home.cityId, movingUntil: arrivesAt }).where(eq(vehicles.id, v.id));
+      await tx.update(trailers).set({ cityId: home.cityId }).where(eq(trailers.vehicleId, v.id));
+    }
+    return { moved: away.length, arrivesAt };
   });
 }
 

@@ -57,7 +57,7 @@ import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispat
 import { toggleFavoriteLane } from '@/server/game/favorites';
 import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
-import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveToDepot, nameVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
+import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
@@ -378,6 +378,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('repayLoan') }),
   z.object({ type: z.literal('joinRally') }),
   z.object({ type: z.literal('moveToDepot'), vehicleId: id, depotId: id }),
+  z.object({ type: z.literal('moveAllToDepot') }),
   z.object({ type: z.literal('trailerUpgrade'), trailerId: id, upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('buyOrgTrailer'), modelId: z.string().max(40) }),
   z.object({ type: z.literal('sellOrgTrailer'), orgTrailerId: id }),
@@ -543,6 +544,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   setLivery: 'livery',
   companyLivery: 'livery',
   serviceVehicle: 'maintenance',
+  moveAllToDepot: 'depot_all',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -815,6 +817,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, id: await postFreight(db, user.id, { depotId: input.depotId, cargo: input.cargo, tons: input.tons, destCityId: input.destCityId, mode: input.mode, priceCents: input.priceEur * 100 }) };
     case 'moveToDepot':
       return { ok: true, ...(await moveToDepot(db, user.id, input.vehicleId, input.depotId)) };
+    case 'moveAllToDepot':
+      return { ok: true, ...(await moveAllToDepot(db, user.id)) };
     case 'trailerUpgrade':
       return { ok: true, costCents: await installTrailerUpgrade(db, user.id, input.trailerId, input.upgradeId) };
     case 'buyOrgTrailer':
