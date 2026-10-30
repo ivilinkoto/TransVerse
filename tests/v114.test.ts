@@ -11,8 +11,8 @@ import { createSession, sessionDigest } from '@/server/auth/session';
 import { backupDir, runBackup } from '@/server/backup';
 import { cached } from '@/server/cache';
 import { closeDb } from '@/server/db/client';
-import { activity, companies, deliveries, ideas, notifications, sessions, userBadges, users, vehicles } from '@/server/db/schema';
-import { ERROR_LOG_SIZE, recentServerErrors, recordServerError } from '@/server/error-log';
+import { activity, companies, deliveries, ideas, jobState, notifications, sessions, userBadges, users, vehicles } from '@/server/db/schema';
+import { ERROR_LOG_SIZE, isClientAbort, recentServerErrors, recordServerError } from '@/server/error-log';
 import { recordBuditeliDelivery } from '@/server/game/buditeli';
 import { acceptContract } from '@/server/game/deliveries';
 import { ideaBoard, setIdeaStatus, submitIdea, voteIdea } from '@/server/game/ideas';
@@ -77,6 +77,20 @@ describe('v1.1.4', () => {
     const list = await recentServerErrors(db());
     expect(list).toHaveLength(ERROR_LOG_SIZE);
     expect(list[0]).toMatchObject({ where: `GET /x/${ERROR_LOG_SIZE + 2}`, message: `Error: boom ${ERROR_LOG_SIZE + 2}` });
+  });
+
+  it('a request the browser left mid-stream is not a server error', async () => {
+    const reset = Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' });
+    const abort = Object.assign(new Error('This operation was aborted'), { name: 'AbortError' });
+    for (const e of [new Error('The destination stream closed early.'), reset, abort, new Error('aborted')]) {
+      expect(isClientAbort(e)).toBe(true);
+      await recordServerError('GET /game?_rsc=1', e, db());
+    }
+    expect(isClientAbort(new Error('relation "x" does not exist'))).toBe(false);
+    expect((await recentServerErrors(db()))[0]?.where).not.toBe('GET /game?_rsc=1');
+    // Old entries of this kind are hidden as well.
+    await db().update(jobState).set({ value: { items: [{ at: new Date().toISOString(), where: 'GET /game/market?_rsc=2', message: 'Error: The destination stream closed early.' }] } }).where(eq(jobState.key, 'errors:recent'));
+    expect(await recentServerErrors(db())).toEqual([]);
   });
 
   it('no backup without a folder (development, tests); the cache keeps a value for its time', async () => {
@@ -145,7 +159,7 @@ describe('v1.1.4', () => {
   });
 
   it('what is coming: future releases, nearest first, never a published one', () => {
-    const now = new Date('2026-10-29T21:30:00+02:00');
+    const now = new Date('2026-10-30T10:00:00+02:00');
     const coming = comingReleases(now);
     expect(coming[0]?.version).toBe('1.1.4');
     expect(comingReleases(new Date('2026-10-28T12:00:00+02:00')).map((r) => r.version).slice(0, 3)).toEqual(['1.1.3.1', '1.1.3.2', '1.1.3.3']);

@@ -11,6 +11,7 @@ export async function onRequestError(error: unknown, request: { path: string; me
   // A redirect or "not found" is not an error.
   const digest = (error as { digest?: string } | null)?.digest ?? '';
   if (digest.startsWith('NEXT_REDIRECT') || digest.startsWith('NEXT_HTTP_ERROR_FALLBACK') || digest === 'NEXT_NOT_FOUND') return;
+  // The browser leaving mid-stream (recordServerError skips it) is not one either.
   const { recordServerError } = await import('@/server/error-log');
   await recordServerError(`${request.method} ${request.path}`, error);
 }

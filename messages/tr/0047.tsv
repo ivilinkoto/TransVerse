@@ -1,0 +1,6 @@
+# 1.1.3.5 «Чист дневник»
+2895bd4cb4	Admin → System and the morning report in #сигнали no longer show loads the browser cut off ("The destination stream closed early") — old entries of that kind disappear too.	Админ → Система и утренний отчёт в #сигнали больше не показывают загрузки, прерванные браузером («The destination stream closed early») — старые такие записи тоже исчезают.
+822e33f4b0	The server error log no longer fills up with pages the player closed before they loaded.	Журнал ошибок сервера больше не заполняется страницами, которые игрок закрыл до их загрузки.
+5e1fb1c528	When a player switches page, closes the app or loses connection while a page is still loading, it no longer counts as a server error.	Когда игрок переходит на другую страницу, закрывает приложение или теряет связь, пока страница ещё загружается, это больше не считается ошибкой сервера.
+9ccc37ef80	Only real errors	Только настоящие ошибки
+11985fddbc	Clean log	Чистый журнал
