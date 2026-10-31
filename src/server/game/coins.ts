@@ -4,7 +4,7 @@ import { coinEntries, users } from '@/server/db/schema';
 import { fail } from './errors';
 import { t } from '@/i18n/t';
 
-export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction' | 'postcards' | 'truck_contest' | 'humanitarian' | 'harvest' | 'story' | 'email_verified';
+export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction' | 'postcards' | 'truck_contest' | 'humanitarian' | 'harvest' | 'story' | 'email_verified' | 'big_run';
 
 export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   postcards: 'Картички от пътя',
@@ -43,6 +43,7 @@ export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   referral_reward: 'Награда за поканен приятел',
   league_reward: 'Награда от лигата',
   season_pass: 'Сезонен пропуск',
+  big_run: 'Голям рейс',
 };
 
 /**

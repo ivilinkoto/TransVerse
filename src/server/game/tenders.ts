@@ -5,6 +5,8 @@
  * its driver; when all arrive in time the treasury gets the bonus and the
  * deposit back, otherwise the deposit is lost.
  */
+import { featureLive } from '@/lib/game/features';
+import { plainGoodsFor } from '@/lib/game/goods';
 import { and, desc, eq, inArray, lte, sql } from 'drizzle-orm';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { rewardCents } from '@/lib/game/economy';
@@ -54,7 +56,7 @@ async function makeOffer(db: Database, org: { id: string; hqCityId: number; comp
     .values({
       companyId: org.id,
       title: `${kind.label}: ${origin.nameBg} → ${dest.nameBg}`,
-      goods: pick(CARGO[cargo].goods),
+      goods: pick(plainGoodsFor(cargo, featureLive('more_goods', now))),
       cargoType: cargo,
       originCityId: origin.id,
       destCityId: dest.id,

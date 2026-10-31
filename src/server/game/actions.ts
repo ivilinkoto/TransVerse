@@ -87,6 +87,11 @@ import { startNewCareer } from '@/server/game/legacy';
 import { cheer } from '@/server/game/feed';
 import type { FeatureId } from '@/lib/game/features';
 import { requireFeature } from '@/server/features';
+import { disabledFeatures } from '@/server/feature-switches';
+import { testsUnreleased } from '@/server/auth/roles';
+import { fail } from '@/server/game/errors';
+import { t as tr } from '@/i18n/t';
+import { queueTrip, unqueueTrip } from '@/server/game/trip-queue';
 import { chooseWeeklyGoal, claimWeeklyGoal } from '@/server/game/weekly-goal';
 import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
@@ -379,6 +384,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('joinRally') }),
   z.object({ type: z.literal('moveToDepot'), vehicleId: id, depotId: id }),
   z.object({ type: z.literal('moveAllToDepot') }),
+  z.object({ type: z.literal('queueTrip'), vehicleId: id, contractId: id }),
+  z.object({ type: z.literal('unqueueTrip'), id }),
   z.object({ type: z.literal('trailerUpgrade'), trailerId: id, upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('buyOrgTrailer'), modelId: z.string().max(40) }),
   z.object({ type: z.literal('sellOrgTrailer'), orgTrailerId: id }),
@@ -545,6 +552,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   companyLivery: 'livery',
   serviceVehicle: 'maintenance',
   moveAllToDepot: 'depot_all',
+  queueTrip: 'trip_queue',
+  unqueueTrip: 'trip_queue',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -558,6 +567,8 @@ export type GameAction = z.infer<typeof Action>;
 export async function runAction(db: Database, user: { id: string; role: string; username: string; asPlayer?: boolean }, input: GameAction, ip: () => Promise<string>) {
   const feature = ACTION_FEATURE[input.type];
   if (feature) requireFeature(feature, user);
+  // 1.1.4.1: switched off by the administrators (not for the team).
+  if (feature && !testsUnreleased(user) && (await disabledFeatures(db)).has(feature)) fail('feature_off', tr('Тази функция е временно спряна — опитай пак по-късно.'), 503);
   switch (input.type) {
     case 'acceptContract': {
       const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail, insure: input.insure, route: input.route, parking: input.parking, refuel: input.refuel });
@@ -819,6 +830,11 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await moveToDepot(db, user.id, input.vehicleId, input.depotId)) };
     case 'moveAllToDepot':
       return { ok: true, ...(await moveAllToDepot(db, user.id)) };
+    case 'queueTrip':
+      return { ok: true, ...(await queueTrip(db, user.id, input.vehicleId, input.contractId)) };
+    case 'unqueueTrip':
+      await unqueueTrip(db, user.id, input.id);
+      return { ok: true };
     case 'trailerUpgrade':
       return { ok: true, costCents: await installTrailerUpgrade(db, user.id, input.trailerId, input.upgradeId) };
     case 'buyOrgTrailer':

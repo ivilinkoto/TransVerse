@@ -84,6 +84,8 @@ export const COMMANDS = [
   { name: 'битка', description: 'Битката на компанията ти тази седмица' },
   { name: 'тикет', description: 'Отвори тикет към екипа на TransVerse' },
   { name: 'свързване', description: 'Свържи Discord с акаунта си в играта' },
+  { name: 'игра', description: 'Играта с бутони: нов курс, камиони, мисии, дневна награда' },
+  { name: 'старт', description: 'Първи стъпки: свържи акаунта, избери роли, първи курс' },
   { name: 'помощ', description: 'Какво може ботът на TransVerse' },
   { name: 'предупреждение', description: 'Предупреди член на сървъра', default_member_permissions: MODERATE, options: [user, reason(true)] },
   {

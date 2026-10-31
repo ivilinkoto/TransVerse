@@ -153,6 +153,8 @@ export interface BoardContract {
     overloadPercent: number;
     /** The load is bigger than the truck: the part it can take and its pay (null when it fits or may not be split). */
     part: { tons: number; rewardCents: number } | null;
+    /** 1.1.4.1: the truck is on a trip — the load can be lined up after it. */
+    onTrip?: boolean;
   }[];
 }
 
@@ -364,7 +366,19 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
 /** v1.9: in the simple board the extra tags of a load fold into one "⭐ N бонуса" chip. */
 function Bonuses({ simple, children }: { simple: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const lean = useFeature('simple_ui');
   const items = Children.toArray(children);
+  // 1.1.4.1: at most two labels, the rest behind "+N".
+  if (lean && !open && items.length > 2) {
+    return (
+      <>
+        {items.slice(0, 2)}
+        <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setOpen(true); }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setOpen(true); } }} className="rounded-full border border-asphalt-600 px-2 py-0.5 text-[11px] font-semibold text-mist-300" title={t('Покажи етикетите')}>
+          +{tx(items.length - 2)}
+        </span>
+      </>
+    );
+  }
   if (!simple || items.length <= 1 || open) return <>{items}</>;
   return (
     <span
@@ -445,7 +459,11 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
   const countdown = useFeature('countdowns');
+  const lean = useFeature('simple_ui');
+  const queueLive = useFeature('trip_queue');
+  const [queued, setQueued] = useState<string | null>(null);
   const usable = c.options.filter((o) => !o.error);
+  const trucksOnTrip = c.options.filter((o) => o.onTrip);
   const blocked = c.options.filter((o) => o.error);
   // The reasons, each once, with the vehicles it stops (the plate is the label's first part).
   const canSplitHint = c.options.some((o) => o.part);
@@ -482,6 +500,20 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
       setError((e as Error).message);
     } finally {
       setFavBusy(false);
+    }
+  };
+
+  const queueAfter = async (truck: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api<{ position: number }>('/api/game/action', { type: 'queueTrip', vehicleId: truck, contractId: c.id });
+      setQueued(t('✓ {0}-и в опашката', r.position));
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -585,6 +617,29 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
           <div className="num text-[11px] text-mist-400">{t('{0} лв./км', dec(c.rewardCents / 100 / c.distanceKm))}</div>
         </div>
       </button>
+      {/* 1.1.4.1: no free truck — line it up after a trip ("Планирай следващия курс"). */}
+      {queueLive && !open && !usable.length && !c.locked && !c.urgent && trucksOnTrip.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-asphalt-800 px-4 py-2 text-xs">
+          <span className="min-w-0 truncate text-mist-400">{t('Свободен камион няма — сложи товара след курса')}</span>
+          <span className="flex flex-wrap items-center gap-2">
+            {queued && <span className="text-profit">{queued}</span>}
+            {error && <span role="alert" className="text-loss">{error}</span>}
+            {trucksOnTrip.slice(0, 2).map((o) => (
+              <button key={o.vehicleId} type="button" className="btn-ghost px-2.5 py-1 text-xs" disabled={busy} onClick={() => queueAfter(o.vehicleId)}>➕ {tx(o.label.split(' · ')[0] ?? o.label)}</button>
+            ))}
+          </span>
+        </div>
+      )}
+      {/* 1.1.4.1: take it at once with the best free truck; the details stay one tap away. */}
+      {lean && !open && !reason && usable[0] && usable[0].overloadPercent === 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-asphalt-800 px-4 py-2 text-xs">
+          <span className="min-w-0 truncate text-mist-400">{t('{0} · печалба {1} · {2}', tx(usable[0].label), money(usable[0].profitCents), duration(usable[0].minutes))}</span>
+          <span className="flex items-center gap-2">
+            {error && <span role="alert" className="text-loss">{error}</span>}
+            <button type="button" data-tour="take" className="btn-primary px-3 py-1 text-xs" disabled={busy} onClick={accept}><Truck className="h-3.5 w-3.5" />{busy ? '…' : t('Вземи')}</button>
+          </span>
+        </div>
+      )}
 
       {open && (
         <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">
@@ -630,13 +685,13 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
           )}
           {c.shared && (
             <p className="mt-3 rounded-lg border border-cyan-glow/40 bg-cyan-glow/5 px-3 py-2 text-sm text-mist-200">
-              {t('Общ товар на компанията: вземете го на части с камионите си. Ако всички части стигнат навреме, всеки получава +{0}% от своята част и значка „Отборен товар“.', Math.round(SHARED_LOAD.bonusShare * 100))}
+              {t('Общ товар: вземете го на части. Ако всички стигнат навреме — по +{0}% и значка „Отборен товар“.', Math.round(SHARED_LOAD.bonusShare * 100))}
             </p>
           )}
           {c.canShare && <ShareButton contractId={c.id} tons={c.tons} />}
           {c.urgent && (
             <p className="mt-3 rounded-lg border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-mist-200">
-              {t('Спешна поръчка: камионът стига до {0} за 1 минута, където и да е, а курсът върви ×{1} по-бързо. Може да я поеме всеки играч със свободен камион (по веднъж), докато не изтече от борсата.', c.origin.name, dec(c.speedFactor))}
+              {t('Спешна: камионът е в {0} за 1 минута, курсът върви ×{1} по-бързо. Всеки може да я вземе веднъж.', c.origin.name, dec(c.speedFactor))}
             </p>
           )}
           {c.alreadyTaken ? (
@@ -658,7 +713,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
             <div className="mt-4 space-y-3">
               {c.sealed && (
                 <p className="rounded-xl border border-prestige/40 bg-prestige/10 p-3 text-sm">
-                  {t('📦 Клиентът не казва какво има вътре. Наградата е поне {0}; при пристигане навреме пратката може да се окаже ценна (+{1}%) или изключителна (+{2}%). Само игрови пари.', money(c.rewardCents), Math.round(SEALED.tiers[1].bonus * 100), Math.round(SEALED.tiers[2].bonus * 100))}
+                  {t('📦 Не се знае какво има вътре. Поне {0}; навреме може да е ценно (+{1}%) или изключително (+{2}%).', money(c.rewardCents), Math.round(SEALED.tiers[1].bonus * 100), Math.round(SEALED.tiers[2].bonus * 100))}
                 </p>
               )}
               {c.haggle && <HaggleBox contractId={c.id} rewardCents={c.rewardCents} haggle={c.haggle} />}

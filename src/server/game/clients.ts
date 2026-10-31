@@ -1,3 +1,5 @@
+import { featureLive } from '@/lib/game/features';
+import { plainGoodsFor } from '@/lib/game/goods';
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { CARGO, CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
@@ -89,7 +91,7 @@ export async function clientOffers(db: Database, userId: string, now = new Date(
         companyId: company.id,
         client: shipperName(),
         cargoType: cargo,
-        goods: pick(CARGO[cargo].goods),
+        goods: pick(plainGoodsFor(cargo, featureLive('more_goods', now))),
         originCityId: origin.id,
         destCityId: destination.id,
         routeId: route.id,

@@ -24,6 +24,8 @@ import { IDEA_STATUSES, setIdeaStatus } from '@/server/game/ideas';
 import { clearServerErrors } from '@/server/error-log';
 import { retryOutbox } from '@/server/discord/outbox';
 import { setStaffNote } from '@/server/staff-notes';
+import { winBack } from '@/server/admin-retention';
+import { setFeatureOff } from '@/server/feature-switches';
 import { t } from '@/i18n/t';
 
 const id = z.string().uuid('Невалиден идентификатор.');
@@ -53,6 +55,8 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearServerErrors') }),
   z.object({ type: z.literal('discordRetry'), id: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('staffNote'), userId: id, note: z.string().trim().max(500) }),
+  z.object({ type: z.literal('winBack'), userId: id }),
+  z.object({ type: z.literal('featureSwitch'), feature: z.string().max(60), off: z.boolean() }),
   z.object({ type: z.literal('discordLayoutPlan') }),
   z.object({ type: z.literal('discordLayoutApply'), permissions: z.boolean().default(false) }),
   z.object({ type: z.literal('discordPanels') }),
@@ -207,6 +211,11 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: await retryOutbox(db, input.id) };
     case 'staffNote':
       await setStaffNote(db, user, input.userId, input.note);
+      return { ok: true };
+    case 'winBack':
+      return { ok: true, ...(await winBack(db, user, input.userId)) };
+    case 'featureSwitch':
+      await setFeatureOff(db, user, input.feature, input.off);
       return { ok: true };
     case 'resetLink':
       return { ok: true, url: await adminResetLink(db, user, input.userId, siteUrl(request.headers.get('origin'))) };

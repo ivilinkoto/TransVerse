@@ -24,7 +24,8 @@ export function format(messages: Messages | null, key: string, values: readonly 
   if (!values.length) return text;
   return text.replace(/\{(\d+)\}/g, (m, i: string) => {
     const v = values[Number(i)];
-    if (v === undefined || v === null) return '';
+    // A condition that came out false (`x > 0 && t(…)`) shows nothing, never "false".
+    if (v === undefined || v === null || v === false) return '';
     if (typeof v === 'string') return messages?.[v] ?? v;
     return String(v);
   });

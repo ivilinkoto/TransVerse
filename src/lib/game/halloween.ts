@@ -128,6 +128,7 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   'buditeli-2026': { label: 'Будител 2026', description: 'Доставка на 3 товара книги и учебни пособия в Деня на народните будители 2026.' },
   'buditeli-2027': { label: 'Будител 2027', description: 'Доставка на 3 товара книги и учебни пособия в Деня на народните будители 2027.' },
   'marta-2027': { label: 'Пролетен шофьор 2027', description: 'Изпълни всички мисии на Баба Марта 2027.' },
+  'big-run': { label: 'Голям рейс', description: 'Измина всички етапи на седмичния Голям рейс.' },
   partner: { label: 'Верен партньор', description: 'Изпълни 5 договора с клиенти.' },
   'ghost-hunter': { label: 'Ловец на призраци', description: 'Срещна призрачния камион 3 пъти.' },
   'news-star': { label: 'Звезда на седмичника', description: 'Попадна в класациите на Седмичника.' },

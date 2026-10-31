@@ -169,10 +169,18 @@ test('opening notifications marks them as read', async ({ page }) => {
   await expect(page.locator('header').getByRole('link', { name: /Известия/ })).not.toContainText(/\d/);
 });
 
-test('navigation: six sections in the sidebar, account pages in the avatar menu', async ({ page }) => {
+test('navigation: four sections and „Още“ in the sidebar, account pages in the avatar menu', async ({ page }) => {
   await register(page);
   const aside = page.locator('aside');
-  for (const name of ['Табло', 'Карта', 'Поръчки', 'Автопарк', 'Компания', 'Състезание']) await expect(aside.getByRole('link', { name })).toBeVisible();
+  for (const name of ['Табло', 'Карта', 'Поръчки', 'Автопарк']) await expect(aside.getByRole('link', { name })).toBeVisible();
+  // 1.1.4.1: Компания and Състезание are in „Още“.
+  await expect(aside.getByRole('link', { name: 'Компания' })).toHaveCount(0);
+  await aside.getByRole('button', { name: 'Още' }).click();
+  const more = page.getByRole('dialog', { name: 'Още раздели' });
+  await expect(more.getByRole('heading', { name: 'Компания' })).toBeVisible();
+  await expect(more.getByRole('heading', { name: 'Състезание' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(more).toHaveCount(0);
   await expect(aside.getByRole('link', { name: /Магазин и VIP/ })).toBeVisible();
   await expect(aside.getByRole('link', { name: 'Финанси' })).toHaveCount(0);
   const header = page.locator('header');
@@ -195,7 +203,9 @@ test('section tabs: Автопарк and Състезание group their pages'
   await fleetTabs.getByRole('link', { name: 'Сервиз' }).click();
   await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
   await expect(page.locator('aside').getByRole('link', { name: 'Автопарк' })).toHaveAttribute('aria-current', 'page');
-  await page.locator('aside').getByRole('link', { name: 'Състезание' }).click();
+  // 1.1.4.1: Състезание is reached through „Още“.
+  await page.locator('aside').getByRole('button', { name: 'Още' }).click();
+  await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: /^Мисии/ }).click();
   await page.getByRole('navigation', { name: 'Състезание' }).getByRole('link', { name: 'Ивенти' }).click();
   await expect(page.getByRole('heading', { name: 'Ивенти', exact: true })).toBeVisible();
   // Either a running/announced event with its goal or the empty state.

@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { liveFeatures } from '@/lib/game/features';
 import { testsUnreleased } from '@/server/auth/roles';
 import { getDb } from '@/server/db/client';
+import { disabledFeatures, withSwitches } from '@/server/feature-switches';
 import { currentUser } from '@/server/http';
 import { userWithCompany } from './company';
 import { settleDueDeliveries } from './deliveries';
@@ -22,5 +23,8 @@ export const gameContext = cache(async () => {
   // One timestamp per request keeps every page render consistent (and pure).
   const now = new Date();
   // Features of an update that is not out yet are on only for staff (to test them).
-  return { db, user: fresh.user, company: fresh.company, hq: fresh.hq, now, features: liveFeatures(now, testsUnreleased(fresh.user)) };
+  // 1.1.4.1: a feature the administrators switched off is off for the players.
+  const testing = testsUnreleased(fresh.user);
+  const features = withSwitches(liveFeatures(now, testing), await disabledFeatures(db), testing);
+  return { db, user: fresh.user, company: fresh.company, hq: fresh.hq, now, features };
 });

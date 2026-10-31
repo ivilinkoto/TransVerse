@@ -11,6 +11,9 @@ export async function localeOf(db: DbOrTx, userId: string) {
   return u?.locale ?? 'bg';
 }
 
+/** Tests on a database without LISTEN/NOTIFY (PGlite) set TEST_NO_NOTIFY; there the wake-up is skipped. */
+const noNotify = () => !!process.env.TEST_NO_NOTIFY;
+
 /**
  * Stores a notification and wakes up connected clients (delivered after commit by Postgres).
  * Title and body may be functions: they are written in the recipient's language.
@@ -19,11 +22,13 @@ export async function localeOf(db: DbOrTx, userId: string) {
 export async function notify(db: DbOrTx, userId: string, kind: NotificationKind, title: LocalText, body: LocalText, href?: string, opts?: { sound?: 'arrival' }) {
   const locale = typeof title === 'function' || typeof body === 'function' ? await localeOf(db, userId) : null;
   await db.insert(notifications).values({ userId, kind, title: resolveText(title, locale), body: resolveText(body, locale), href });
+  if (noNotify()) return;
   await db.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ userId, type: 'notification', ...(opts?.sound ? { sound: opts.sound } : {}) })})`);
 }
 
 /** Broadcast that shared world data changed (e.g. the freight market). */
 export async function broadcast(db: DbOrTx, type: 'market' | 'leaderboard' | 'world') {
+  if (noNotify()) return;
   await db.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type })})`);
 }
 

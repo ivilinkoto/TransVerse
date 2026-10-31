@@ -1,0 +1,143 @@
+# 1.1.4.1 «По-просто»
+cea6360550	#роли	#роли
+7c4a8b65e0	+{0} ТрансКоин every week and the „Голям рейс“ badge the first time. Loads on the legs pay +{1}%.	+{0} ТрансКоинов каждую неделю и значок «Большой рейс» в первый раз. Грузы на этапах платят +{1}%.
+0e852b6159	/game — everything with buttons: new trip, trucks, missions, daily reward. /start — the first steps for newcomers.	/игра — всё кнопками: новый рейс, грузовики, миссии, ежедневная награда. /старт — первые шаги для новичков.
+c76b61e859	`/игра` — everything with buttons: new trip, trucks, missions, reward · `/старт` — first steps	`/игра` — всё кнопками: новый рейс, грузовики, миссии, награда · `/старт` — первые шаги
+763f4580a6	{0} · profit {1} · {2}	{0} · прибыль {1} · {2}
+5ada13cfa7	{0} days later	{0} дней спустя
+a4dfad89b3	{0} notifications	{0} уведомлений
+5dd80c9e65	{0} trucks wait for a trip	{0} грузовиков ждут рейс
+17275ee388	{0} trips against {1} — keep the pace.	{0} рейсов против {1} — держи темп.
+7c4b6870ba	{0} t · {1} · {2}	{0} т · {1} · {2}
+629442c878	{0} overtook you	{0} обогнал тебя
+bd1b31dbcd	{0} waits for a new trip	{0} ждёт новый рейс
+dee07b7ca8	{0} hours later	{0} часов спустя
+76b59ace58	{0}: {1} in the game, {2} new, {3} trips	{0}: {1} в игре, {2} новых, {3} рейсов
+9c5a5f3922	You lead against {0}!	Ты впереди {0}!
+ab44bb7266	Do players come back. Players only, not the team.	Возвращаются ли игроки. Только игроки, без команды.
+e207478f40	All {0} legs of the week — +{1} ТрансКоин.	Все {0} этапа недели — +{1} ТрансКоинов.
+1fdf62b967	All in System →	Все в Системе →
+bab34b3249	Every week three legs across Europe. Drive them and get ТрансКоин and the „Голям рейс“ badge.	Каждую неделю три этапа по Европе. Пройди их и получи ТрансКоины и значок «Большой рейс».
+fad68393f6	Came back after 1 day	Вернулись через 1 день
+057f2945f2	Big run	Большой рейс
+2c66a08179	Big run {0}	Большой рейс {0}
+77829fc606	Your day in a private message	Твой день в личном сообщении
+79fae4f6d9	While you were away	Пока тебя не было
+ad890a0e3e	Leg {0}	Этап {0}
+e4d0fbd843	Retention	Удержание
+2722b910b9	Tickets	Запросы
+707328017e	You start with a rented truck (up to 7.5 t). The rent is taken from each trip — fuel and service are not your worry.	Ты начинаешь с арендованным грузовиком (до 7,5 т). Аренда берётся с каждого рейса — топливо и сервис не твоя забота.
+55a2a02590	The game is easier to read and play: a short menu, a calm dashboard, one-tap loads — and new reasons to come back: a trip queue, the Big run, a rival for the week.	Игра проще для чтения и игры: короткое меню, спокойная панель, груз одним нажатием — и новые поводы вернуться: очередь рейсов, Большой рейс, соперник недели.
+39843020b3	The game with buttons: new trip, trucks, missions, daily reward	Игра кнопками: новый рейс, грузовики, миссии, ежедневная награда
+38b0943777	The game picks a driver of a similar level for you. See who leads and get a notification if they overtake you.	Игра подбирает тебе водителя близкого уровня. Смотри, кто впереди, и получай уведомление, если тебя обгонят.
+dcc8abfc92	Players with an action in the game per day. Hover for new players and trips.	Игроки с действием в игре за день. Наведи мышь для новых и рейсов.
+9a6fd98831	Players, companies, tickets and errors — in one place.	Игроки, компании, запросы и ошибки — в одном месте.
+fa1aae0285	Pick your notifications in {0}.	Выбери свои уведомления в {0}.
+2e8d0793a9	Pick the next load	Выбери следующий груз
+b690b3fd61	Earned	Заработано
+354a73325a	Drove all legs of the weekly Big run.	Прошёл все этапы еженедельного Большого рейса.
+ced613db13	Gone quiet ({0})	Пропавшие ({0})
+bbff9b3da2	Name, email, Discord, company, subject, error code…	Имя, email, Discord, компания, тема, код ошибки…
+5ed71cadf2	What shall we do?	Что будем делать?
+b1a22f8608	Truck on the road? Line up to 3 loads after it — when it arrives, it starts the next one by itself. If a load was taken, it moves on to the next.	Грузовик в пути? Поставь до 3 грузов после него — как прибудет, сам поедет на следующий. Если груз уже взят, переходит к следующему.
+273c522e86	Your trucks now	Грузовики сейчас
+26a56313a4	The trucks are waiting for you, {0}	Грузовики ждут тебя, {0}
+15354d2918	The truck is free — take the load directly.	Грузовик свободен — бери груз сразу.
+d2a9565eb6	The truck drives real roads — even while you are away.	Грузовик едет по настоящим дорогам — даже пока тебя нет в игре.
+35ac2c010c	The truck is not on a trip — send it right away with „Нов курс“.	Грузовик не в рейсе — отправь его сразу через «Нов курс».
+6050cbaf69	The truck waits for a trip	Грузовик ждёт рейс
+5401467d7f	The ranking in #класации is one message updated every 10 minutes.	Рейтинг в #класации — одно сообщение, обновляемое каждые 10 минут.
+97119cb86d	Which truck, driver and lane earn the most — after the trip's costs.	Какой грузовик, водитель и линия приносят больше всего — после расходов рейса.
+748f687a1d	The queued trip started by itself.	Рейс из очереди начался сам.
+5a61540f8e	Your trip of the week	Твой рейс недели
+ad7ab6ed36	We miss you in TransVerse	Мы скучаем по тебе в TransVerse
+63ba2196fa	We miss you on the road! 🚚	Скучаем по тебе на дороге! 🚚
+7f7617c2f8	The menu is Dashboard, Loads, Fleet, Map and „Още“. The dashboard shows your trucks and what to do now; the rest folds away. A load is taken with one tap, with the free truck.	Меню: Панель, Грузы, Автопарк, Карта и «Ещё». Панель показывает твои грузовики и что делать сейчас, остальное сворачивается. Груз берётся одним нажатием, свободным грузовиком.
+423018e5ee	Reward	Награда
+2335f11147	Rent costs you ~{0} per trip — buying out pays back in ~{1} trips. After that you pay fuel and service yourself.	Аренда стоит ~{0} за рейс — выкуп окупается за ~{1} рейсов. Потом топливо и сервис платишь сам.
+cff02f1d8b	At most {0} trips ahead per truck.	Не больше {0} рейсов вперёд на грузовик.
+60a24f7ddc	At most two labels per load, the rest behind „+N“. Sub-pages show the main ones, the others behind „Още ▾“.	Не больше двух меток на груз, остальные за «+N». Подстраницы показывают основные, остальные за «Ещё ▾».
+601355084f	Make a card	Сделать карточку
+9f110e08e9	Not seen for 3 to 30 days. „Покани обратно“: a notification, an email (if confirmed) and {0} ТрансКоин — once a month.	Не заходили от 3 до 30 дней. «Позвать обратно»: уведомление, письмо (если подтверждён) и {0} ТрансКоинов — раз в месяц.
+8dceb61f29	Unknown feature.	Неизвестная функция.
+cc2d4015a8	Net	Чистыми
+540b5bd798	Nothing found	Ничего не найдено
+7acfd1da3f	The new goods also come in tenders, urgent loads, client contracts and relays.	Новые товары появляются и в тендерах, срочных грузах, договорах с клиентами и эстафетах.
+b9aa1f86b5	New „Задържане“: how many new players come back after 1, 7 and 30 days, activity by day and a list of those gone quiet with „Покани обратно“ (notification, email and a small gift).	Новое «Удержание»: сколько новых игроков возвращаются через 1, 7 и 30 дней, активность по дням и список пропавших с «Позвать обратно» (уведомление, письмо и небольшой подарок).
+90fc94a875	New „Търсене“ in the admin panel: players, companies, tickets and errors in one place.	Новый «Поиск» в админке: игроки, компании, запросы и ошибки в одном месте.
+ca4b768a9a	Several loads on one lane by a deadline: better pay and a bonus at the end. Be late — and lose reputation.	Несколько грузов по одной линии к сроку: лучше оплата и бонус в конце. Опоздаешь — теряешь репутацию.
+df24ef0926	None.	Нет таких.
+91b30a214b	No loads from {0} right now — try again later.	Сейчас нет грузов из {0} — попробуй позже.
+f3e3aec373	Updated every 10 minutes · game data	Обновляется каждые 10 минут · игровые данные
+c1b078c7b3	The tutorial lights up the button to press, and its texts are shorter.	Обучение подсвечивает нужную кнопку, а его тексты короче.
+1ef937920d	One market for everyone: a taken load disappears. Fuel is at the prices of the countries on the way. A jam, roadworks or a border slow the trip. Distances are on real roads.	Общий рынок для всех: взятый груз исчезает. Топливо — по ценам стран на пути. Пробка, ремонт или граница замедляют рейс. Расстояния — по настоящим дорогам.
+c9e8fbad1f	Shared load: take it in parts. If all arrive on time — +{0}% each and the „Отборен товар“ badge.	Общий груз: берите его частями. Если все прибудут вовремя — по +{0}% и значок «Командный груз».
+be91ea1953	Open „Поръчки“, pick a load and send the truck.	Открой «Заказы», выбери груз и отправь грузовик.
+1ef1be87a0	More ({0})	Ещё ({0})
+a75841f6f9	More on the dashboard	Ещё на панели
+268684985c	Plan the next trip	Запланируй следующий рейс
+9b89ccb38f	Plan: {0}	Запланировать: {0}
+0a564bbdf0	Optional — your day in a private message in the evening (Settings → Discord).	По желанию — твой день в личном сообщении вечером (Настройки → Discord).
+e36839d68d	By sign-up week	По неделе регистрации
+bd93df7811	Shorter texts in many places; faint text now reads better.	Тексты короче во многих местах; бледный текст теперь читается лучше.
+56b9a728ed	Simpler	Проще
+4ca6bc8fe9	Simpler everywhere	Проще везде
+2452b26a67	We gave you {0} ТрансКоин — come in and take them.	Мы подарили тебе {0} ТрансКоинов — заходи и забери.
+5f6a188f56	A gift: {0} ТрансКоин. The trucks are waiting.	Подарок: {0} ТрансКоинов. Грузовики ждут.
+17c93200e0	Invite back	Позвать обратно
+f693d4dc3a	You get this email because you have a TransVerse account.	Ты получаешь это письмо, потому что у тебя есть профиль в TransVerse.
+da93a0aee3	The last 14 days	Последние 14 дней
+27e776aaf8	Continue	Продолжить
+2a39281aa5	Send a truck on a trip — from the game or with the button here.	Отправь грузовик в рейс — из игры или кнопкой здесь.
+6bf6c0435a	First steps: link the account, pick roles, first trip	Первые шаги: привяжи аккаунт, выбери роли, первый рейс
+68f46ec8dd	The run for the week is still being prepared.	Рейс на неделю ещё готовится.
+824d01c447	With a company you buy more trucks and hire drivers.	С компанией ты покупаешь больше грузовиков и нанимаешь водителей.
+13cbde2e15	No free truck — put the load after a trip	Свободного грузовика нет — поставь груз после рейса
+2aac542341	Link Discord with the game — the bot will tell you when the truck arrives.	Привяжи Discord к игре — бот скажет, когда прибудет грузовик.
+f582b1c57d	System → Features: any new feature can be stopped for players when there is a problem, without a new deploy.	Система → Функции: любую новую функцию можно остановить для игроков при проблеме, без нового деплоя.
+4032d57bab	Urgent: the truck is in {0} in 1 minute, the trip runs ×{1} faster. Anyone may take it once.	Срочный: грузовик в {0} за 1 минуту, рейс идёт в ×{1} быстрее. Каждый может взять его раз.
+863ae6643e	Stops a feature for players (menu, pages, commands) without a new deploy. The team sees it, to test the fix. Background jobs are not stopped.	Останавливает функцию для игроков (меню, страницы, команды) без нового деплоя. Команда её видит, чтобы проверить исправление. Фоновые задачи не останавливаются.
+a6bbfbb626	Stop	Стоп
+82bee688ff	Rival of the week	Соперник недели
+5cbe15f636	Your rival of the week: {0} trips against your {1}.	Твой соперник недели: {0} рейсов против твоих {1}.
+4435eb505e	This feature is paused for now — try again later.	Эта функция временно остановлена — попробуй позже.
+c1cd1ce7e7	The loads of the queue are gone — pick a new one.	Грузов из очереди больше нет — выбери новый.
+2ca0aadc4e	Already invited this month.	В этом месяце уже приглашён.
+7a799fc232	This load is already in the truck's queue.	Этот груз уже в очереди грузовика.
+63ca599fbb	Three legs across Europe this week — in any order. Game data.	Три этапа по Европе на этой неделе — в любом порядке. Игровые данные.
+2bd35d87b6	Here you see how much each trip brought you.	Здесь видно, сколько тебе принёс каждый рейс.
+cdf6cd223d	Features — switch off on a problem ({0} stopped)	Функции — отключение при проблеме ({0} остановлено)
+790b771117	The feature stops for all players. Continue?	Функция остановится для всех игроков. Продолжить?
+5288a3fb00	Goals and events	Цели и события
+93d2f431be	The driver gets tired from trip to trip. A second driver drives up to 18 h without rest. Each level gives a skill point.	Водитель устаёт от рейса к рейсу. Второй водитель едет до 18 ч без отдыха. Каждый уровень даёт очко умения.
+c71cd50968	As soon as the truck arrives, the money comes by itself and you get a notification.	Как только грузовик прибудет, деньги приходят сами, и ты получаешь уведомление.
+fb06ce4a18	once in the evening: trips, money and which trucks wait.	раз вечером: рейсы, деньги и какие грузовики ждут.
+79eff71ed7	leads by {0}	впереди на {0}
+7e06c8e90b	you lead	ты впереди
+823a670b2e	game	игра
+8a333c8215	tied	ничья
+d16c64ba8e	last {0}	последний раз {0}
+d30407cd12	free in {0}	свободен в {0}
+352f8a49d6	after 30 days	через 30 дней
+528d0e6fdc	after 7 days	через 7 дней
+4296253f16	start	старт
+acd5039322	„Докато те нямаше“: after more than 6 hours — how many trips and how much money your trucks made.	«Пока тебя не было»: после больше чем 6 часов — сколько рейсов и денег сделали твои грузовики.
+52093c265e	„Your trip of the week“ on the dashboard — make a card and share it on Facebook.	«Твой рейс недели» на панели — сделай карточку и поделись в Facebook.
+1a065a035f	„Планирай следващ“ from the bot: pick a load for a truck on the road.	«Запланировать следующий» в боте: выбери груз для грузовика в пути.
+278fa9d3f6	„Предложи курсове“ picks a trip for every free truck. ★ saves the lane. A tired driver or an overload — a risk of a fine.	«Предложить рейсы» подбирает рейс каждому свободному грузовику. ★ сохраняет линию. Уставший водитель или перегруз — риск штрафа.
+9f49173172	„Продай“ sells at once to a dealer. A listing on the market is for players (5% fee, up to 7 days) — until then the truck does not drive.	«Продать» — сразу торговцу. Объявление на рынке — для игроков (комиссия 5%, до 7 дней) — до того грузовик не ездит.
+d4b7f6880d	„—“: the week is still too new for that day.	«—»: неделя ещё слишком новая для этого дня.
+2e42138301	▶ {0} started its next trip	▶ {0} отправился в следующий рейс
+51beb09e0c	✅ In the queue ({0}). When the truck arrives, it goes by itself.	✅ В очереди ({0}). Как грузовик прибудет, поедет сам.
+ad6d95df38	✅ All trucks are on the road	✅ Все грузовики в пути
+57c197891a	✓ #{0} in the queue	✓ {0}-й в очереди
+d590b49409	🅿️ **{0}** in {1}	🅿️ **{0}** в {1}
+f874c387ed	🅿️ Waiting for a trip: **{0}**	🅿️ Ждут рейс: **{0}**
+1f13c3e417	🌙 Your day in TransVerse	🌙 Твой день в TransVerse
+f907ada203	🏁 The Big run is yours!	🏁 Большой рейс твой!
+476f6d7afe	🏆 Live ranking{0}	🏆 Рейтинг в реальном времени{0}
+e9e1ee0c71	👋 Welcome to TransVerse	👋 Добро пожаловать в TransVerse
+48c2318767	💰 Earned: **{0}** · net {1}	💰 Заработано: **{0}** · чистыми {1}
+458af2b2ca	📍 **{0}** arrives in {1}. What should it take next?	📍 **{0}** прибывает в {1}. Что взять дальше?
+f74092ba35	📦 Nobody knows what is inside. At least {0}; on time it may be valuable (+{1}%) or exceptional (+{2}%).	📦 Неизвестно, что внутри. Минимум {0}; вовремя может оказаться ценным (+{1}%) или исключительным (+{2}%).
+65e9bd30c5	🚚 Trips: **{0}**	🚚 Рейсы: **{0}**

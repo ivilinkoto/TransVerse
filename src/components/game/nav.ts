@@ -12,6 +12,8 @@ export interface NavTab {
   group?: string;
   /** v1.9: shown in the menu from this player level (the page itself stays open to everyone). */
   minLevel?: number;
+  /** 1.1.4.1: one of the few pages always in the row; the rest wait behind "Още ▾". */
+  core?: boolean;
 }
 
 export interface NavSection {
@@ -35,8 +37,8 @@ export const SECTIONS: NavSection[] = [
     label: 'Карта',
     icon: Map,
     tabs: [
-      { href: '/game/map', label: 'Карта' },
-      { href: '/game/road', label: 'Пътят · CB', feature: 'cb_radio', minLevel: 2 },
+      { href: '/game/map', label: 'Карта', core: true },
+      { href: '/game/road', label: 'Пътят · CB', feature: 'cb_radio', minLevel: 2, core: true },
     ],
   },
   {
@@ -45,11 +47,11 @@ export const SECTIONS: NavSection[] = [
     label: 'Поръчки',
     icon: ClipboardList,
     tabs: [
-      { href: '/game/contracts', label: 'Поръчки' },
-      { href: '/game/clients', label: 'Клиенти', minLevel: 3 },
+      { href: '/game/contracts', label: 'Поръчки', core: true },
+      { href: '/game/clients', label: 'Клиенти', minLevel: 3, core: true },
       { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
       { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
-      { href: '/game/convoys', label: 'Конвои', feature: 'convoy_lobby', minLevel: 2 },
+      { href: '/game/convoys', label: 'Конвои', feature: 'convoy_lobby', minLevel: 2, core: true },
       { href: '/game/economy', label: 'Икономика и контейнери', feature: 'living_economy', minLevel: 2 },
       { href: '/game/underground', label: 'Сенки', feature: 'smuggling', minLevel: 10 },
     ],
@@ -60,16 +62,16 @@ export const SECTIONS: NavSection[] = [
     label: 'Автопарк',
     icon: Truck,
     tabs: [
-      { href: '/game/fleet', label: 'Моите превозни средства', group: 'Камиони' },
+      { href: '/game/fleet', label: 'Моите превозни средства', group: 'Камиони', core: true },
       { href: '/game/trips', label: 'Бордови дневник', feature: 'trip_log', group: 'Камиони' },
       { href: '/game/cabin', label: 'Кабина', feature: 'cabin', group: 'Камиони' },
       { href: '/game/analytics', label: 'Анализ', group: 'Камиони', minLevel: 3 },
-      { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа' },
-      { href: '/game/market', label: 'Пазар', group: 'Камиони' },
+      { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа', core: true },
+      { href: '/game/market', label: 'Пазар', group: 'Камиони', core: true },
       { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire', group: 'Камиони', minLevel: 6 },
       { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction', group: 'Камиони', minLevel: 6 },
-      { href: '/game/staff', label: 'Шофьори', group: 'Хора' },
-      { href: '/game/logistics', label: 'Депа', group: 'Сервиз и депа' },
+      { href: '/game/staff', label: 'Шофьори', group: 'Хора', core: true },
+      { href: '/game/logistics', label: 'Депа', group: 'Сервиз и депа', core: true },
       { href: '/game/licences', label: 'Лицензи', group: 'Хора', minLevel: 2 },
     ],
   },
@@ -79,8 +81,8 @@ export const SECTIONS: NavSection[] = [
     label: 'Компания',
     icon: Building2,
     tabs: [
-      { href: '/game/company', label: 'Моята компания' },
-      { href: '/game/companies', label: 'Всички компании' },
+      { href: '/game/company', label: 'Моята компания', core: true },
+      { href: '/game/companies', label: 'Всички компании', core: true },
       { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board', minLevel: 3 },
       { href: '/game/shares', label: 'Борса за акции', feature: 'share_market', minLevel: 6 },
     ],
@@ -96,7 +98,8 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/marta', label: 'Баба Марта', holiday: 'marta', feature: 'marta', group: 'Сезонни' },
       { href: '/game/spring', label: 'Първа пролет', holiday: 'spring', feature: 'spring', group: 'Сезонни' },
       { href: '/game/easter', label: 'Великден', holiday: 'easter', feature: 'easter', group: 'Сезонни' },
-      { href: '/game/missions', label: 'Мисии', group: 'Днес' },
+      { href: '/game/missions', label: 'Мисии', group: 'Днес', core: true },
+      { href: '/game/big-run', label: 'Голям рейс', feature: 'big_run', group: 'Днес', core: true },
       { href: '/game/story', label: 'Историята', feature: 'story', group: 'Днес' },
       { href: '/game/parking', label: 'Паркирай', feature: 'parking_game', group: 'Днес' },
       { href: '/game/league', label: 'Лига', group: 'Класации', minLevel: 2 },
@@ -109,13 +112,13 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/predictions', label: 'Прогнози', feature: 'predictions', group: 'Общност', minLevel: 5 },
       { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest', group: 'Общност', minLevel: 5 },
       { href: '/game/truck-contest', label: 'Камион на месеца', feature: 'truck_contest', group: 'Общност', minLevel: 5 },
-      { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2 },
-      { href: '/game/events', label: 'Ивенти', group: 'Днес' },
-      { href: '/game/leaderboards', label: 'Класации', group: 'Класации' },
+      { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2, core: true },
+      { href: '/game/events', label: 'Ивенти', group: 'Днес', core: true },
+      { href: '/game/leaderboards', label: 'Класации', group: 'Класации', core: true },
       { href: '/game/news', label: 'Седмичник', group: 'Общност' },
       { href: '/game/ideas', label: 'Идеи', feature: 'ideas', group: 'Общност' },
       { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2 },
-      { href: '/game/progress', label: 'Постижения', group: 'Колекции' },
+      { href: '/game/progress', label: 'Постижения', group: 'Колекции', core: true },
       { href: '/game/collection', label: 'Албум', feature: 'city_album', group: 'Колекции', minLevel: 2 },
       { href: '/game/postcards', label: 'Картички', feature: 'postcards', group: 'Колекции', minLevel: 2 },
       { href: '/game/my-map', label: 'Картата ми', feature: 'my_map', group: 'Колекции', minLevel: 3 },
@@ -154,6 +157,11 @@ export function visibleTabs(section: NavSection, holiday: string | null, pathnam
 export interface NavPlayer {
   level: number;
   showAll: boolean;
+}
+
+/** 1.1.4.1: the pages always in the row — the core ones, the open one and a running holiday's. */
+export function coreTabs(tabs: readonly NavTab[], pathname: string): NavTab[] {
+  return tabs.filter((t) => t.core || t.holiday || within(pathname, t.href));
 }
 
 /** v1.9: the groups of a section's visible tabs, in order (empty when the section has none). */

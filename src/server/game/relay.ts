@@ -1,3 +1,4 @@
+import { plainGoodsFor } from '@/lib/game/goods';
 import { and, eq, gt, inArray, lte, sql } from 'drizzle-orm';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { featureLive } from '@/lib/game/features';
@@ -40,7 +41,7 @@ export async function topUpRelays(db: Database, now = new Date(), provider?: Rou
     const cargo: CargoType = ([...a.produces].find((c) => c === 'pallets' || c === 'container') as CargoType | undefined) ?? 'pallets';
     const [minT, maxT] = CARGO[cargo].tons;
     const tons = Math.round(Math.max(minT, Math.min(maxT, 8 + Math.random() * 12)) * 10) / 10;
-    const goods = pick(CARGO[cargo].goods);
+    const goods = pick(plainGoodsFor(cargo, featureLive('more_goods', now)));
     const leg1 = await addLoad(db, a.id, relay.id, cargo, tons, now, RELAY.ttlHours * HOUR, RELAY.multiplier, { goods }, provider);
     const leg2 = leg1 ? await addLoad(db, relay.id, b.id, cargo, tons, now, 365 * 24 * HOUR, RELAY.multiplier, { goods }, provider) : null;
     if (!leg1 || !leg2) continue;

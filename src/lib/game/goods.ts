@@ -94,6 +94,11 @@ export function goodsFor(cargo: CargoType, more: boolean): string[] {
   return more ? [...CARGO[cargo].goods, ...NEW_GOODS[cargo].map((g) => g.name)] : CARGO[cargo].goods;
 }
 
+/** 1.1.4.1: the goods for loads whose pay is set elsewhere (tenders, urgent, clients…) — the new ones without a trait. */
+export function plainGoodsFor(cargo: CargoType, more: boolean): string[] {
+  return more ? [...CARGO[cargo].goods, ...NEW_GOODS[cargo].filter((g) => !g.trait).map((g) => g.name)] : CARGO[cargo].goods;
+}
+
 /** The trait of these goods, if any (by their Bulgarian name, as stored on the contract). */
 export function goodsTrait(goods: string | null | undefined): GoodsTrait | null {
   return (goods && TRAIT_OF.get(goods)) || null;

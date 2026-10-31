@@ -1891,6 +1891,24 @@ export const companyBuilderWeeks = pgTable(
  * announcements to a channel, direct messages, company channel jobs.
  * `dedupeKey` makes every announcement happen once.
  */
+/**
+ * 1.1.4.1: the next trips of a truck (up to 3). When the truck is free the
+ * worker takes the first load that is still open — no load is held for it.
+ */
+export const tripQueue = pgTable(
+  'trip_queue',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').notNull().references(() => vehicles.id, { onDelete: 'cascade' }),
+    contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
+    /** Who queued it: the trip starts in their name. */
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('trip_queue_vehicle_idx').on(t.vehicleId, t.createdAt), uniqueIndex('trip_queue_contract_idx').on(t.vehicleId, t.contractId)],
+);
+
 export const discordOutbox = pgTable(
   'discord_outbox',
   {
