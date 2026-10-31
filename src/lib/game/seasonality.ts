@@ -10,6 +10,7 @@ export const SEASONALITY: Record<CargoType, number[]> = {
   special: [0.7, 0.75, 0.95, 1.1, 1.2, 1.2, 1.15, 1.1, 1.1, 1, 0.85, 0.7],
   steel: [0.8, 0.85, 1, 1.1, 1.15, 1.15, 1.05, 1, 1.1, 1.05, 0.9, 0.8],
   vehicles: [0.85, 0.95, 1.2, 1.15, 1.05, 1, 0.9, 0.85, 1.1, 1.05, 1, 0.9],
+  livestock: [0.9, 0.9, 1, 1.05, 1.05, 1, 0.95, 0.95, 1.05, 1.1, 1.1, 1.15],
 };
 
 export function seasonalFactor(cargo: CargoType, date: Date): number {

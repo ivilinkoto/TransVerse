@@ -85,6 +85,7 @@ export const NEW_GOODS: Record<CargoType, { name: string; trait?: GoodsTrait }[]
     { name: 'Кемпери' },
     { name: 'Таксита за автопарк' },
   ],
+  livestock: [],
 };
 
 const TRAIT_OF = new Map(Object.values(NEW_GOODS).flatMap((list) => list.flatMap((g) => (g.trait ? [[g.name, g.trait] as const] : []))));

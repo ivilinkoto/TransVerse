@@ -34,6 +34,7 @@ async function fleetReach(db: DbOrTx, companyId: string) {
     const t = ts.find((x) => x.vehicleId === v.id);
     const cap = combinationCapability({ unit: powerUnitModel(v.modelId), trailer: t ? trailerModel(t.modelId) : null });
     for (const c of CARGO_TYPES) {
+      if (c === 'livestock') continue; // 1.1.4.2: only special loads
       if (CARGO[c].bodies.some((b) => cap.bodies.includes(b))) payload.set(c, Math.max(payload.get(c) ?? 0, cap.payloadTons));
     }
   }

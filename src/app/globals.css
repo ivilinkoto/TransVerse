@@ -289,3 +289,13 @@ html[data-season='christmas'] .brand-mark::after {
 @media (prefers-reduced-motion: reduce) {
   .tour-spot { animation: none; }
 }
+
+/* 1.1.4.2 accessibility: bigger text and colours told apart without red and green (chosen in Settings). */
+html[data-text='large'] {
+  font-size: 112.5%;
+}
+html[data-colors='cb'],
+html[data-colors='cb'][data-season] {
+  --color-profit: #3b82f6;
+  --color-loss: #f59e0b;
+}

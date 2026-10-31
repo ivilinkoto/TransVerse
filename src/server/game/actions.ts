@@ -91,7 +91,21 @@ import { disabledFeatures } from '@/server/feature-switches';
 import { testsUnreleased } from '@/server/auth/roles';
 import { fail } from '@/server/game/errors';
 import { t as tr } from '@/i18n/t';
-import { queueTrip, unqueueTrip } from '@/server/game/trip-queue';
+import { moveQueued, queueTrip, unqueueTrip } from '@/server/game/trip-queue';
+import { buyCo2, cancelCo2Listing, listCo2, sellCo2ToMarket } from '@/server/game/co2';
+import { takeAd } from '@/server/game/ads';
+import { lockFuel } from '@/server/game/fuel-hedge';
+import { giftLoad } from '@/server/game/gifts';
+import { buyPolicy, setInsurancePlan } from '@/server/game/insurers';
+import { answerInterview } from '@/server/game/interviews';
+import { setLaneRepeat } from '@/server/game/lane-repeat';
+import { accuse, lookClue } from '@/server/game/lost-cargo';
+import { fireOffice, hireOffice, trainOffice } from '@/server/game/office';
+import { createChallenge, joinChallenge } from '@/server/game/player-challenges';
+import { startResearch } from '@/server/game/research';
+import { trackLink } from '@/server/game/tracking';
+import { setPromise, submitPuzzle } from '@/server/game/trip-extras';
+import { setVacation } from '@/server/game/vacation';
 import { chooseWeeklyGoal, claimWeeklyGoal } from '@/server/game/weekly-goal';
 import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
@@ -132,7 +146,7 @@ const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]])
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 /** Every player command (the web game and the Discord bot alike). */
 export const Action = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional(), insure: z.boolean().default(false), route: z.enum(['fast', 'cheap']).default('fast'), parking: z.enum(['secure', 'free']).default('free'), refuel: z.boolean().default(false) }),
+  z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional(), insure: z.boolean().default(false), route: z.enum(['fast', 'cheap']).default('fast'), parking: z.enum(['secure', 'free']).default('free'), refuel: z.boolean().default(false) , promise: z.enum(['fast', 'normal', 'easy']).optional()}),
   z.object({ type: z.literal('payFine'), fineId: id }),
   z.object({ type: z.literal('dispatchPlan') }),
   z.object({ type: z.literal('auctionBid'), auctionId: id, amountEur: z.coerce.number().positive().max(10_000_000) }),
@@ -386,6 +400,30 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('moveAllToDepot') }),
   z.object({ type: z.literal('queueTrip'), vehicleId: id, contractId: id }),
   z.object({ type: z.literal('unqueueTrip'), id }),
+  // 1.1.4.2
+  z.object({ type: z.literal('moveQueued'), id, dir: z.enum(['up', 'down']) }),
+  z.object({ type: z.literal('laneRepeat'), vehicleId: id, a: cityId.optional(), b: cityId.optional() }),
+  z.object({ type: z.literal('loadPuzzle'), deliveryId: id, placements: z.array(z.object({ id: z.number().int().min(0).max(60), x: z.number().int().min(0).max(20), y: z.number().int().min(0).max(20), r: z.boolean().optional() })).max(60) }),
+  z.object({ type: z.literal('giftLoad'), contractId: id, friendId: id }),
+  z.object({ type: z.literal('vacation'), days: z.coerce.number().int().min(0).max(14) }),
+  z.object({ type: z.literal('startResearch'), tech: z.enum(['aero', 'telematics', 'smart_loading', 'predictive']) }),
+  z.object({ type: z.literal('takeAd'), key: z.string().max(40) }),
+  z.object({ type: z.literal('lockFuel'), litres: z.coerce.number().int().min(1).max(100_000) }),
+  z.object({ type: z.literal('co2Sell'), tonnes: z.coerce.number().positive().max(10_000) }),
+  z.object({ type: z.literal('co2List'), tonnes: z.coerce.number().positive().max(10_000), priceLev: z.coerce.number().positive().max(10_000) }),
+  z.object({ type: z.literal('co2Cancel'), id }),
+  z.object({ type: z.literal('co2Buy'), id }),
+  z.object({ type: z.literal('officeHire'), role: z.enum(['dispatcher', 'accountant', 'sales', 'inspector']) }),
+  z.object({ type: z.literal('officeTrain'), role: z.enum(['dispatcher', 'accountant', 'sales', 'inspector']) }),
+  z.object({ type: z.literal('officeFire'), role: z.enum(['dispatcher', 'accountant', 'sales', 'inspector']) }),
+  z.object({ type: z.literal('createPlayerChallenge'), title: z.string().max(60), originCityId: cityId, destCityId: cityId, days: z.coerce.number().int().min(1).max(7), prizeLev: z.coerce.number().int().min(1).max(1_000_000), soloOnly: z.boolean().default(false) }),
+  z.object({ type: z.literal('joinPlayerChallenge'), id }),
+  z.object({ type: z.literal('trackLink'), deliveryId: id }),
+  z.object({ type: z.literal('insurancePlan'), premiumLev: z.coerce.number().positive().max(100_000), coverPct: z.coerce.number().int().min(1).max(100), maxPayoutLev: z.coerce.number().positive().max(1_000_000), active: z.boolean().default(true) }),
+  z.object({ type: z.literal('buyPolicy'), orgId: id }),
+  z.object({ type: z.literal('answerInterview'), id, answer: z.enum(['modest', 'bold', 'team']) }),
+  z.object({ type: z.literal('lookClue'), id, clue: z.enum(['warehouse', 'driver', 'camera']) }),
+  z.object({ type: z.literal('accuse'), id, suspect: z.coerce.number().int().min(0).max(2) }),
   z.object({ type: z.literal('trailerUpgrade'), trailerId: id, upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('buyOrgTrailer'), modelId: z.string().max(40) }),
   z.object({ type: z.literal('sellOrgTrailer'), orgTrailerId: id }),
@@ -554,6 +592,29 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   moveAllToDepot: 'depot_all',
   queueTrip: 'trip_queue',
   unqueueTrip: 'trip_queue',
+  moveQueued: 'lane_repeat',
+  laneRepeat: 'lane_repeat',
+  loadPuzzle: 'loading_puzzle',
+  giftLoad: 'gift_load',
+  vacation: 'vacation',
+  startResearch: 'research',
+  takeAd: 'trailer_ads',
+  lockFuel: 'fuel_hedge',
+  co2Sell: 'co2',
+  co2List: 'co2',
+  co2Cancel: 'co2',
+  co2Buy: 'co2',
+  officeHire: 'office',
+  officeTrain: 'office',
+  officeFire: 'office',
+  createPlayerChallenge: 'player_challenges',
+  joinPlayerChallenge: 'player_challenges',
+  trackLink: 'live_tracking',
+  insurancePlan: 'insurers',
+  buyPolicy: 'insurers',
+  answerInterview: 'interviews',
+  lookClue: 'lost_cargo',
+  accuse: 'lost_cargo',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -571,7 +632,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
   if (feature && !testsUnreleased(user) && (await disabledFeatures(db)).has(feature)) fail('feature_off', tr('Тази функция е временно спряна — опитай пак по-късно.'), 503);
   switch (input.type) {
     case 'acceptContract': {
+      if (input.promise && input.promise !== 'normal') requireFeature('load_promise', user);
       const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail, insure: input.insure, route: input.route, parking: input.parking, refuel: input.refuel });
+      // 1.1.4.2: the deadline promised to the client.
+      if (input.promise && input.promise !== 'normal') await setPromise(db, user.id, d.id, input.promise);
       return { ok: true, deliveryId: d.id, etaAt: d.etaAt };
     }
     case 'favoriteLane':
@@ -832,6 +896,57 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await moveAllToDepot(db, user.id)) };
     case 'queueTrip':
       return { ok: true, ...(await queueTrip(db, user.id, input.vehicleId, input.contractId)) };
+    case 'moveQueued':
+      return { ok: true, ...(await moveQueued(db, user.id, input.id, input.dir)) };
+    case 'laneRepeat':
+      return { ok: true, lane: await setLaneRepeat(db, user.id, input.vehicleId, input.a && input.b ? { a: input.a, b: input.b } : null) };
+    case 'loadPuzzle':
+      return { ok: true, ...(await submitPuzzle(db, user.id, input.deliveryId, input.placements)) };
+    case 'giftLoad':
+      return await giftLoad(db, user.id, input.contractId, input.friendId);
+    case 'vacation':
+      return { ok: true, until: await setVacation(db, user.id, input.days) };
+    case 'startResearch':
+      return { ok: true, ...(await startResearch(db, user.id, input.tech)) };
+    case 'takeAd':
+      return { ok: true, id: (await takeAd(db, user.id, input.key)).id };
+    case 'lockFuel':
+      return { ok: true, id: (await lockFuel(db, user.id, input.litres)).id };
+    case 'co2Sell':
+      await sellCo2ToMarket(db, user.id, input.tonnes);
+      return { ok: true };
+    case 'co2List':
+      return { ok: true, id: (await listCo2(db, user.id, input.tonnes, Math.round(input.priceLev * 100))).id };
+    case 'co2Cancel':
+      await cancelCo2Listing(db, user.id, input.id);
+      return { ok: true };
+    case 'co2Buy':
+      return { ok: true, ...(await buyCo2(db, user.id, input.id)) };
+    case 'officeHire':
+      return { ok: true, name: (await hireOffice(db, user.id, input.role)).name };
+    case 'officeTrain':
+      return { ok: true, ...(await trainOffice(db, user.id, input.role)) };
+    case 'officeFire':
+      await fireOffice(db, user.id, input.role);
+      return { ok: true };
+    case 'createPlayerChallenge':
+      return { ok: true, id: (await createChallenge(db, user.id, { title: input.title, originCityId: input.originCityId, destCityId: input.destCityId, days: input.days, prizeCents: input.prizeLev * 100, soloOnly: input.soloOnly })).id };
+    case 'joinPlayerChallenge':
+      await joinChallenge(db, user.id, input.id);
+      return { ok: true };
+    case 'trackLink':
+      return { ok: true, token: await trackLink(db, user.id, input.deliveryId) };
+    case 'insurancePlan':
+      await setInsurancePlan(db, user.id, { premiumCents: Math.round(input.premiumLev * 100), coverPct: input.coverPct, maxPayoutCents: Math.round(input.maxPayoutLev * 100), active: input.active });
+      return { ok: true };
+    case 'buyPolicy':
+      return { ok: true, id: (await buyPolicy(db, user.id, input.orgId)).id };
+    case 'answerInterview':
+      return { ok: true, ...(await answerInterview(db, user.id, input.id, input.answer)) };
+    case 'lookClue':
+      return { ok: true, ...(await lookClue(db, user.id, input.id, input.clue)) };
+    case 'accuse':
+      return { ok: true, ...(await accuse(db, user.id, input.id, input.suspect)) };
     case 'unqueueTrip':
       await unqueueTrip(db, user.id, input.id);
       return { ok: true };

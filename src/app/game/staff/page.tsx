@@ -8,6 +8,7 @@ import { int, money } from '@/lib/format';
 import { CompanyRequired } from '@/components/game/CompanyRequired';
 import { CREW_RULES, TRAIT_IDS, TRAIT_MAX, TRAITS, dutyAt, restLeftMin, traitLevel, traitPointsLeft } from '@/lib/game/crew';
 import { gameContext } from '@/server/game/context';
+import { wishesOf } from '@/server/game/wishes';
 import { loyaltyLabel, marketSalaryCents, MOODS, REQUEST_TEXT, type DriverRequest } from '@/lib/game/moods';
 import { fleetView } from '@/server/game/queries';
 import { candidates } from '@/server/game/staff';
@@ -32,6 +33,8 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
   if (!(await canHireStaff(db, user.id, company))) return <CompanyRequired what={tr('Наемането на шофьори')} />;
   const [fleet, pool] = await Promise.all([fleetView(db, company.id), candidates(db, company.id)]);
   // The tachograph (v1.5): driving and rest by day for each driver.
+  // 1.1.4.2: what the drivers ask for (a trip to a city by a date).
+  const wishes = features.driver_wishes ? await wishesOf(db, company.id) : [];
   const tacho = features.tachograph ? new Map(await Promise.all(fleet.drivers.map(async (d) => [d.id, await tachograph(db, d.id, now)] as const))) : null;
   const payroll = fleet.drivers.reduce((s, d) => s + d.salaryCentsPerDay, 0);
   const label = (v: (typeof fleet.vehicles)[number]) => `${v.plate} · ${v.model.name}`;
@@ -98,6 +101,15 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                       <p className="mt-1 text-[11px] text-mist-400">{tr('Игрово време. ⚠ — курс без задължителната почивка (риск от глоба при проверка).')}</p>
                     </details>
                   )}
+                  {(() => {
+                    const w = wishes.find((x) => x.driverId === d.id && x.status === 'open');
+                    return w ? (
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs">
+                        <span>{tr('🙏 Иска курс до {0} за {1} — до {2}.', tx(w.city), tx(w.reason), w.until.toLocaleString(intlLocale(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }))}</span>
+                        <a href={`/game/contracts?q=${encodeURIComponent(w.city)}`} className="btn-ghost px-2 py-0.5 text-[11px]">{tr('Товари натам')}</a>
+                      </div>
+                    ) : null;
+                  })()}
                   {features.driver_moods && !d.isOwner && (
                     <div className="mt-3 rounded-xl bg-asphalt-900/60 p-3 text-sm">
                       <div className="flex items-center justify-between gap-2">

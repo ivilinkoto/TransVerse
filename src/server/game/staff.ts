@@ -2,7 +2,7 @@ import { and, eq, gt, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { powerUnitModel } from '@/lib/game/catalog';
 import { TRAIT_MAX, TRAITS, traitLevel, traitPointsLeft, type TraitId } from '@/lib/game/crew';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { driverCandidates, drivers, vehicles } from '@/server/db/schema';
+import { companies, driverCandidates, drivers, users, vehicles } from '@/server/db/schema';
 import { canHireStaff, companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
@@ -105,6 +105,8 @@ export async function runPayroll(db: Database, day: string) {
   const rows = await db
     .select({ companyId: drivers.companyId, total: sql<number>`sum(${drivers.salaryCentsPerDay})::int`, n: sql<number>`count(*)::int` })
     .from(drivers)
+    // 1.1.4.2: no salaries for a day the owner spent on vacation.
+    .where(sql`not exists (select 1 from ${companies} c join ${users} u on u.id = c.owner_id where c.id = ${drivers.companyId} and u.vacation_until > ${`${day}T00:00:00Z`}::timestamptz)`)
     .groupBy(drivers.companyId);
   let charged = 0;
   for (const r of rows) {

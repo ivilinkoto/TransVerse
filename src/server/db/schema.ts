@@ -133,6 +133,8 @@ export const users = pgTable(
     username: text('username').notNull(),
     passwordHash: text('password_hash').notNull(),
     xp: integer('xp').notNull().default(0),
+    /** 1.1.4.2 „Отпуска“: until then the trucks stay parked and the daily costs and streaks wait. */
+    vacationUntil: ts('vacation_until'),
     level: integer('level').notNull().default(1),
     /** player | support | admin | founder */
     role: text('role').notNull().default('player'),
@@ -490,6 +492,8 @@ export const contracts = pgTable(
     /** v1.10: a leg (1 or 2) of a relay load. */
     relayId: uuid('relay_id'),
     relayLeg: integer('relay_leg'),
+    /** 1.1.4.2: a kind of load with its own rules — 'night_courier' | 'last_mile' | 'livestock'. */
+    tag: text('tag'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -1904,6 +1908,8 @@ export const tripQueue = pgTable(
     contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
     /** Who queued it: the trip starts in their name. */
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    /** 1.1.4.2: the order the player set (drag and drop); ties by createdAt. */
+    position: integer('position').notNull().default(0),
     createdAt: createdAt(),
   },
   (t) => [index('trip_queue_vehicle_idx').on(t.vehicleId, t.createdAt), uniqueIndex('trip_queue_contract_idx').on(t.vehicleId, t.contractId)],
@@ -3226,3 +3232,218 @@ export const ideaVotes = pgTable(
   },
   (t) => [primaryKey({ columns: [t.ideaId, t.userId] })],
 );
+
+// ── 1.1.4.2 ─────────────────────────────────────────────────────────────
+
+/** What a trip carries besides the delivery itself: the promise, the loading puzzle, the client's stars… */
+export const deliveryExtras = pgTable('delivery_extras', {
+  deliveryId: uuid('delivery_id').primaryKey().references(() => deliveries.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** 'fast' | 'normal' | 'easy' — the deadline promised to the client. */
+  promise: text('promise'),
+  /** The loading puzzle: how full the trailer was packed and the bonus it earned. */
+  puzzle: jsonb('puzzle').$type<{ fill: number; share: number }>(),
+  /** The client's review, 1–5 stars, set on arrival. */
+  stars: integer('stars'),
+  /** A mystery client checked this trip (known only on arrival). */
+  mystery: boolean('mystery').notNull().default(false),
+  /** Fog on the way (November). */
+  fog: boolean('fog').notNull().default(false),
+  /** CO₂ of the trip in kg. */
+  co2Kg: real('co2_kg'),
+  createdAt: createdAt(),
+}, (t) => [index('delivery_extras_user_idx').on(t.userId, t.createdAt)]);
+
+/** A load a player gave to a friend. */
+export const contractGifts = pgTable('contract_gifts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
+  fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('contract_gifts_contract_idx').on(t.contractId), index('contract_gifts_from_idx').on(t.fromUserId)]);
+
+/** „Повтаряй линията“: a truck drives between two cities until stopped. */
+export const laneRepeats = pgTable('lane_repeats', {
+  vehicleId: uuid('vehicle_id').primaryKey().references(() => vehicles.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  aCityId: integer('a_city_id').notNull().references(() => cities.id),
+  bCityId: integer('b_city_id').notNull().references(() => cities.id),
+  trips: integer('trips').notNull().default(0),
+  createdAt: createdAt(),
+});
+
+/** Развойна дейност: a technology of a player's company. */
+export const research = pgTable('research', {
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  tech: text('tech').notNull(),
+  level: integer('level').notNull().default(0),
+  /** The next level is being researched until then. */
+  busyUntil: ts('busy_until'),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.companyId, t.tech] })]);
+
+/** Реклама по ремаркето: a fictional brand's advert on the company's trailers. */
+export const adContracts = pgTable('ad_contracts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  offerKey: text('offer_key').notNull(),
+  brand: text('brand').notNull(),
+  country: text('country').notNull(),
+  targetKm: integer('target_km').notNull(),
+  progressKm: real('progress_km').notNull().default(0),
+  payCents: money('pay_cents').notNull(),
+  /** 'any' | 'on_time' — which trips count. */
+  rule: text('rule').notNull(),
+  status: text('status').notNull().default('active'), // active | done | failed
+  endsAt: ts('ends_at').notNull(),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('ad_contracts_offer_idx').on(t.companyId, t.offerKey), index('ad_contracts_active_idx').on(t.status, t.endsAt)]);
+
+/** Пазар на горивото: litres bought ahead at a fixed price. */
+export const fuelLocks = pgTable('fuel_locks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  litres: real('litres').notNull(),
+  litresLeft: real('litres_left').notNull(),
+  priceCents: integer('price_cents').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  createdAt: createdAt(),
+}, (t) => [index('fuel_locks_company_idx').on(t.companyId, t.endsAt)]);
+
+/** CO₂: the week's emissions of a company and its credits. */
+export const co2Weeks = pgTable('co2_weeks', {
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  week: text('week').notNull(),
+  kg: real('kg').notNull().default(0),
+  quotaKg: real('quota_kg'),
+  settledAt: ts('settled_at'),
+}, (t) => [primaryKey({ columns: [t.companyId, t.week] })]);
+
+export const co2Credits = pgTable('co2_credits', {
+  companyId: uuid('company_id').primaryKey().references(() => companies.id, { onDelete: 'cascade' }),
+  tonnes: real('tonnes').notNull().default(0),
+});
+
+export const co2Listings = pgTable('co2_listings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  tonnes: real('tonnes').notNull(),
+  priceCents: integer('price_cents').notNull(),
+  createdAt: createdAt(),
+}, (t) => [index('co2_listings_price_idx').on(t.priceCents)]);
+
+/** Офис персонал: one person per role. */
+export const officeStaff = pgTable('office_staff', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  role: text('role').notNull(),
+  name: text('name').notNull(),
+  level: integer('level').notNull().default(1),
+  trait: text('trait').notNull(),
+  salaryCentsPerDay: integer('salary_cents_per_day').notNull(),
+  hiredAt: createdAt(),
+}, (t) => [uniqueIndex('office_staff_role_idx').on(t.companyId, t.role)]);
+
+/** A driver's wish: a trip to a city by a date. */
+export const driverWishes = pgTable('driver_wishes', {
+  driverId: uuid('driver_id').primaryKey().references(() => drivers.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  cityId: integer('city_id').notNull().references(() => cities.id),
+  reason: text('reason').notNull(),
+  until: ts('until').notNull(),
+  status: text('status').notNull().default('open'), // open | done | missed
+  missed: integer('missed').notNull().default(0),
+  createdAt: createdAt(),
+});
+
+/** A challenge one player set for the others: the fastest run on a lane. */
+export const playerChallenges = pgTable('player_challenges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  creatorId: uuid('creator_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+  destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+  soloOnly: boolean('solo_only').notNull().default(false),
+  prizeCents: money('prize_cents').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  status: text('status').notNull().default('open'), // open | settled
+  winnerId: uuid('winner_id'),
+  createdAt: createdAt(),
+}, (t) => [index('player_challenges_lane_idx').on(t.originCityId, t.destCityId, t.status)]);
+
+export const challengeEntries = pgTable('challenge_entries', {
+  challengeId: uuid('challenge_id').notNull().references(() => playerChallenges.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  deliveryId: uuid('delivery_id'),
+  minutes: real('minutes'),
+  joinedAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.challengeId, t.userId] })]);
+
+/** A public link to follow a trip live. */
+export const trackLinks = pgTable('track_links', {
+  token: text('token').primaryKey(),
+  deliveryId: uuid('delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  views: integer('views').notNull().default(0),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('track_links_delivery_idx').on(t.deliveryId)]);
+
+/** A company's insurance department: the plan it sells to other players. */
+export const insurancePlans = pgTable('insurance_plans', {
+  orgId: uuid('org_id').primaryKey().references(() => organizations.id, { onDelete: 'cascade' }),
+  premiumCents: money('premium_cents').notNull(),
+  coverPct: integer('cover_pct').notNull(),
+  maxPayoutCents: money('max_payout_cents').notNull(),
+  active: boolean('active').notNull().default(true),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});
+
+export const insurancePolicies = pgTable('insurance_policies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  orgId: uuid('org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  coverPct: integer('cover_pct').notNull(),
+  maxPayoutCents: money('max_payout_cents').notNull(),
+  paidOutCents: money('paid_out_cents').notNull().default(0),
+  premiumCents: money('premium_cents').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  createdAt: createdAt(),
+}, (t) => [index('insurance_policies_company_idx').on(t.companyId, t.endsAt), index('insurance_policies_org_idx').on(t.orgId)]);
+
+/** Интервю: the press asks after a big success. */
+export const interviews = pgTable('interviews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  occasion: text('occasion').notNull(),
+  answer: text('answer'),
+  effectUntil: ts('effect_until'),
+  createdAt: createdAt(),
+  answeredAt: ts('answered_at'),
+}, (t) => [index('interviews_user_idx').on(t.userId, t.createdAt)]);
+
+/** Изгубена пратка: a small detective case after a trip. */
+export const lostCases = pgTable('lost_cases', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  deliveryId: uuid('delivery_id').references(() => deliveries.id, { onDelete: 'set null' }),
+  goods: text('goods').notNull(),
+  seed: integer('seed').notNull(),
+  /** Clues looked at: 'warehouse' | 'driver' | 'camera'. */
+  clues: text('clues').array().notNull().default(sql`'{}'::text[]`),
+  accused: text('accused'),
+  solved: boolean('solved'),
+  createdAt: createdAt(),
+  closedAt: ts('closed_at'),
+}, (t) => [index('lost_cases_user_idx').on(t.userId, t.createdAt)]);
+
+/** Шаблони за отговор на запитвания (екипът). */
+export const supportTemplates = pgTable('support_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+});

@@ -216,6 +216,23 @@ export function Trailer({ body, ids, color }: { body: TrailerBody; ids: Ids; col
           <Running ids={ids} />
         </g>
       );
+    case 'livestock':
+      // 1.1.4.2: a two-deck livestock trailer with ventilation slots along the sides.
+      return (
+        <g>
+          <Chassis />
+          <rect x={0} y={-404} width={1360} height={266} rx={6} fill={color} stroke="#334155" strokeWidth="2" />
+          <rect x={0} y={-276} width={1360} height={10} fill="#334155" />
+          {[0, 1].map((deck) =>
+            Array.from({ length: 22 }, (_, i) => (
+              <rect key={`${deck}-${i}`} x={30 + i * 60} y={deck ? -258 : -390} width={34} height={deck ? 92 : 98} rx={5} fill="#0f172a" opacity="0.55" />
+            )),
+          )}
+          <rect x={0} y={-404} width={1360} height={8} fill="#cbd5e1" opacity="0.7" />
+          <rect x={980} y={-126} width={110} height={44} rx={8} fill={`url(#${ids.metal})`} stroke="#475569" />
+          <Running ids={ids} />
+        </g>
+      );
     case 'lowbed':
       return (
         <g>

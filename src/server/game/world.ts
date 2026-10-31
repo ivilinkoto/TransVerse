@@ -1,3 +1,11 @@
+import { expireAds } from './ads';
+import { settleCo2Weeks } from './co2';
+import { closeFuelLocks } from './fuel-hedge';
+import { runLaneRepeats } from './lane-repeat';
+import { runOfficePayroll } from './office';
+import { settlePlayerChallenges } from './player-challenges';
+import { ensureLastMile, ensureLivestockLoads, ensureNightCouriers } from './special-loads';
+import { expireWishes, spawnWishes } from './wishes';
 import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
 import { expireRelays, topUpRelays } from './relay';
@@ -219,6 +227,17 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // 1.1.4.1: a truck that just got free starts its next lined-up trip.
     if (featureLive('trip_queue', now)) await job(db, 'trip-queue', now, () => runTripQueues(db, now));
+    // 1.1.4.2: trucks on a repeated lane (rows exist only for players who may use it).
+    await job(db, 'lane-repeat', now, () => runLaneRepeats(db, now));
+    await every(db, 'ads-expire', 10 * 60_000, now, () => expireAds(db, now));
+    await every(db, 'fuel-locks', 10 * 60_000, now, () => closeFuelLocks(db, now));
+    await every(db, 'co2-week', 60 * 60_000, now, () => settleCo2Weeks(db, now));
+    await every(db, 'driver-wishes', 24 * 60 * 60_000, now, () => spawnWishes(db, now));
+    await every(db, 'driver-wishes-expire', 10 * 60_000, now, () => expireWishes(db, now));
+    await every(db, 'player-challenges', 5 * 60_000, now, () => settlePlayerChallenges(db, now));
+    await every(db, 'night-courier', 10 * 60_000, now, () => ensureNightCouriers(db, now, provider));
+    await every(db, 'last-mile', 15 * 60_000, now, () => ensureLastMile(db, now, provider));
+    await every(db, 'livestock', 30 * 60_000, now, () => ensureLivestockLoads(db, now, provider));
     // Global events: settle finished ones (after the deliveries above), keep the automatic ones going.
     await job(db, 'events-settle', now, () => settleDueEvents(db, now));
     await job(db, 'tenders', now, () => settleTenders(db, now));
@@ -278,6 +297,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       const [payroll] = await db.select().from(jobState).where(eq(jobState.key, 'payroll'));
       if ((payroll?.value as { day?: string } | undefined)?.day === yesterday) return;
       await runPayroll(db, yesterday);
+      await runOfficePayroll(db, yesterday, now);
       await db.insert(jobState).values({ key: 'payroll', value: { day: yesterday } }).onConflictDoUpdate({ target: jobState.key, set: { value: { day: yesterday }, updatedAt: now } });
     });
     await every(db, 'daily-reminders', 10 * 60_000, now, () => dailyReminders(db, now));

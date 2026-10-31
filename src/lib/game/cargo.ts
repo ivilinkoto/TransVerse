@@ -3,10 +3,10 @@
  * Pure game data — shared by server and UI.
  */
 
-export const BODY_TYPES = ['box', 'curtain', 'reefer', 'tipper', 'tanker', 'container', 'lowbed', 'flatbed', 'car_carrier'] as const;
+export const BODY_TYPES = ['box', 'curtain', 'reefer', 'tipper', 'tanker', 'container', 'lowbed', 'flatbed', 'car_carrier', 'livestock'] as const;
 export type BodyType = (typeof BODY_TYPES)[number];
 
-export const CARGO_TYPES = ['pallets', 'refrigerated', 'bulk', 'container', 'liquid', 'special', 'steel', 'vehicles'] as const;
+export const CARGO_TYPES = ['pallets', 'refrigerated', 'bulk', 'container', 'liquid', 'special', 'steel', 'vehicles', 'livestock'] as const;
 export type CargoType = (typeof CARGO_TYPES)[number];
 
 export interface CargoDefinition {
@@ -105,6 +105,17 @@ export const CARGO: Record<CargoType, CargoDefinition> = {
     minLevel: 4,
     goods: ['Нови леки автомобили', 'Микробуси', 'Употребявани автомобили за търговец', 'Електромобили'],
     tons: [6, 16],
+  },
+  // 1.1.4.2: livestock — only on the board as special loads (see special-loads.ts), never from the markets.
+  livestock: {
+    id: 'livestock',
+    label: 'Живи животни',
+    bodies: ['livestock'],
+    baseCentsPerKm: 80,
+    centsPerTonKm: 5.6,
+    minLevel: 3,
+    goods: ['Говеда', 'Овце', 'Свине', 'Агнета', 'Коне', 'Живи пилета'],
+    tons: [8, 20],
   },
 };
 

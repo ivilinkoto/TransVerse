@@ -1,8 +1,12 @@
 import { LEGEND, legendTier } from '@/lib/game/heritage';
 import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Warehouse, Wrench } from 'lucide-react';
 import { leasesOf } from '@/server/game/leasing';
-import { and, desc, eq, sql } from 'drizzle-orm';
-import { cities, depots, ledgerEntries } from '@/server/db/schema';
+import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { cities, deliveryExtras, depots, ledgerEntries } from '@/server/db/schema';
+import { laneRepeatsOf, lastLanesOf } from '@/server/game/lane-repeat';
+import { PUZZLE } from '@/lib/game/loading-puzzle';
+import { LoadingPuzzle } from '@/components/game/LoadingPuzzle';
+import { TrackLink } from '@/components/game/TrackLink';
 import { fleetCapacity } from '@/server/game/fleet';
 import Link from 'next/link';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
@@ -58,6 +62,12 @@ export default async function FleetPage() {
   ]);
   // 1.1.4.1: the trips lined up after the current one.
   const queue = features.trip_queue ? await queuedTrips(db, company.id) : [];
+  // 1.1.4.2: the loading puzzle of fresh trips, repeated lanes and each free truck's last lane.
+  const tripIds = fleet.vehicles.flatMap((v) => (v.delivery ? [v.delivery.id] : []));
+  const loaded = features.loading_puzzle && tripIds.length ? new Set((await db.select({ id: deliveryExtras.deliveryId }).from(deliveryExtras).where(and(inArray(deliveryExtras.deliveryId, tripIds), isNotNull(deliveryExtras.puzzle)))).map((r) => r.id)) : new Set<string>();
+  const repeats = features.lane_repeat ? await laneRepeatsOf(db, company.id) : [];
+  const lastLanes = features.lane_repeat ? await lastLanesOf(db, company.id) : new Map<string, { a: number; b: number; from: string; to: string }>();
+  const cityName = new Map((repeats.length ? await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, repeats.flatMap((r) => [r.aCityId, r.bCityId]))) : []).map((c) => [c.id, c.nameBg]));
   // 1.1.3.5: free trucks away from every depot ("Всички свободни в депото").
   const depotCities = new Set(myDepots.map((d) => d.cityId));
   const awayIdle = myDepots.length ? fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && !depotCities.has(v.cityId) && !(v.movingUntil && v.movingUntil > now)).length : 0;
@@ -127,6 +137,8 @@ export default async function FleetPage() {
                   return stop ? <RoadsideChoice deliveryId={v.delivery.id} note={stop.note ?? tr('Спрял по пътя')} /> : null;
                 })()}
                 <div className="mt-2 text-xs text-mist-400">{tr('{0}{1} с товар', v.delivery.emptyKm > 0 ? tr('{0} празен курс + ', km(v.delivery.emptyKm)) : '', km(v.delivery.loadedKm))}</div>
+                {features.loading_puzzle && !loaded.has(v.delivery.id) && now.getTime() < v.delivery.startedAt.getTime() + PUZZLE.minutes * 60_000 && <LoadingPuzzle deliveryId={v.delivery.id} endsAt={new Date(v.delivery.startedAt.getTime() + PUZZLE.minutes * 60_000).toISOString()} />}
+                {features.live_tracking && <TrackLink deliveryId={v.delivery.id} />}
               </div>
             )}
             {queue.some((q) => q.vehicleId === v.id) && (
@@ -136,7 +148,11 @@ export default async function FleetPage() {
                   {queue.filter((q) => q.vehicleId === v.id).map((q, i) => (
                     <li key={q.id} className="flex items-center justify-between gap-2">
                       <span className={`min-w-0 truncate ${q.open ? '' : 'text-mist-500 line-through'}`}>{i + 1}. {tx(q.from)} → {tx(q.to)} · {tx(q.goods)} · <span className="num text-profit">{money(q.rewardCents)}</span></span>
-                      <ActionButton action={{ type: 'unqueueTrip', id: q.id }} className="btn-ghost px-1.5 py-0.5 text-[11px]">✕</ActionButton>
+                      <span className="flex shrink-0 items-center gap-1">
+                        {features.lane_repeat && i > 0 && <ActionButton action={{ type: 'moveQueued', id: q.id, dir: 'up' }} className="btn-ghost px-1.5 py-0.5 text-[11px]">▲</ActionButton>}
+                        {features.lane_repeat && i < queue.filter((x) => x.vehicleId === v.id).length - 1 && <ActionButton action={{ type: 'moveQueued', id: q.id, dir: 'down' }} className="btn-ghost px-1.5 py-0.5 text-[11px]">▼</ActionButton>}
+                        <ActionButton action={{ type: 'unqueueTrip', id: q.id }} className="btn-ghost px-1.5 py-0.5 text-[11px]">✕</ActionButton>
+                      </span>
                     </li>
                   ))}
                 </ol>
@@ -148,6 +164,23 @@ export default async function FleetPage() {
               <div><dt className="label">{tr('Надстройка')}</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? tx(BODY_LABELS[v.trailer.model.body]) : <span className="text-amber-sig">{tr('без ремарке')}</span>) : `${tx(BODY_LABELS[v.model.body!])}${v.trailer ? tr(' + прикачно') : ''}`}</dd></div>
               <div><dt className="label">{tr('Шофьор')}</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{tx(v.driver.name)}{v.coDriver ? ` + ${v.coDriver.name}` : ''}</span></> : <span className="text-amber-sig">{tr('няма')}</span>}</dd></div>
             </dl>
+            {features.lane_repeat && (() => {
+              // 1.1.4.2 „Повтаряй линията“.
+              const r = repeats.find((x) => x.vehicleId === v.id);
+              if (r)
+                return (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-glow/30 bg-cyan-glow/5 px-3 py-2 text-xs">
+                    <span>{tr('🔁 Повтаря {0} ↔ {1} · {2} курса', tx(cityName.get(r.aCityId) ?? ''), tx(cityName.get(r.bCityId) ?? ''), r.trips)}</span>
+                    <ActionButton action={{ type: 'laneRepeat', vehicleId: v.id }} className="btn-ghost px-2 py-0.5 text-[11px]">{tr('Спри')}</ActionButton>
+                  </div>
+                );
+              const last = lastLanes.get(v.id);
+              return last ? (
+                <div className="mt-3">
+                  <ActionButton action={{ type: 'laneRepeat', vehicleId: v.id, a: last.a, b: last.b }} className="btn-ghost px-3 py-1 text-xs">{tr('🔁 Повтаряй {0} ↔ {1}', tx(last.from), tx(last.to))}</ActionButton>
+                </div>
+              ) : null;
+            })()}
             {(() => {
               // 1.1.3.2: an idle truck away from every depot goes home in a minute, for free, from any country.
               if (v.delivery || v.status !== 'idle') return null;
