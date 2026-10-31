@@ -17,6 +17,7 @@ import { answer, hasPerm, linkHint, opt, PERM, stop, act, type Answer, type Ctx 
 import { layoutChannel } from './layout';
 import { pinPosted, postIn, removePosted, threadParent, type Posted } from './guild';
 import { announce } from './outbox';
+import { upsertLiveCard } from './live-card';
 import { button, rows, say, STYLE, update } from './ui';
 
 /**
@@ -160,23 +161,25 @@ const STATUS_KEY = 'discord-status';
 export const STATUS_GAP_MS = 12 * 60_000;
 type StatusState = Posted & { at: number };
 
-/** The live status card (also used by the tests). */
-export async function statusMessage(db: DbOrTx, now: Date) {
+/** The live status card (also used by the tests); the last outage, when there was one in the last day. */
+export async function statusMessage(db: DbOrTx, now: Date, outage?: { from: number; to: number } | null) {
   const [[{ online = 0 } = {}], [{ road = 0 } = {}]] = await Promise.all([
     db.select({ online: sql<number>`count(*)::int` }).from(users).where(gt(users.lastSeenAt, new Date(now.getTime() - ONLINE_MS))),
     db.select({ road: sql<number>`count(*)::int` }).from(vehicles).where(eq(vehicles.status, 'on_delivery')),
   ]);
   const release = visibleReleases(now)[0];
+  const recent = outage && now.getTime() - outage.to < 24 * 3_600_000 ? outage : null;
   return {
     ...noPings,
     embeds: [{
       title: t('🟢 TransVerse работи'),
-      description: t('Картата се обновява на всеки 5 минути. Ако часът долу спре да се мени, играта не отговаря — пишем тук, щом се оправи.'),
+      description: t('Картата се обновява на всеки 5 минути. Ако часът долу спре да се мени, играта не отговаря.'),
       color: 0x2fd27a,
       fields: [
         { name: t('Версия'), value: release ? `${release.version} „${tx(release.name)}“` : '—', inline: true },
         { name: t('В играта сега'), value: int(online), inline: true },
         { name: t('На пътя'), value: t('{0} камиона', int(road)), inline: true },
+        ...(recent ? [{ name: t('Последно прекъсване'), value: t('<t:{0}:t> – <t:{1}:t> (около {2} мин) · вече работи', Math.floor(recent.from / 1000), Math.floor(recent.to / 1000), Math.round((recent.to - recent.from) / 60_000)), inline: false }] : []),
         { name: t('Последна проверка'), value: `<t:${Math.floor(now.getTime() / 1000)}:R>`, inline: false },
       ],
       url: appUrl(),
@@ -185,45 +188,21 @@ export async function statusMessage(db: DbOrTx, now: Date) {
   };
 }
 
-/** Worker: refreshes the pinned status card; after a pause it says the game is back. */
+/**
+ * Worker: edits the one pinned status card (1.1.4.2: never posts a copy; a
+ * pause no longer posts a separate message — the card shows the last outage).
+ */
 export async function updateStatus(db: Database, now = new Date()): Promise<'posted' | 'updated' | 'off'> {
   if (!discordConfig().bot || !featureLive('discord_bot', now) || !featureLive('discord_status', now)) return 'off';
   const [row] = await db.select().from(jobState).where(eq(jobState.key, STATUS_KEY));
-  const state = (row?.value ?? null) as StatusState | null;
-  if (state && now.getTime() - state.at > STATUS_GAP_MS) {
-    const fmt = (d: Date) => d.toLocaleString('bg-BG', { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
-    const minutes = Math.round((now.getTime() - state.at) / 60_000);
-    await announce(db, `status-back:${state.at}`, 'status', () => ({
-      ping: false,
-      embeds: [{ title: t('🟠 Играта беше недостъпна'), description: t('Сървърът не отговаряше от {0} до {1} (около {2} мин). Вече работи нормално — доставките, започнати преди това, пристигат по график.', fmt(new Date(state.at)), fmt(now), minutes), color: 0xf6c343 }],
-    }), now);
-  }
-  const message = await statusMessage(db, now);
-  const save = (v: StatusState) => db.insert(jobState).values({ key: STATUS_KEY, value: v }).onConflictDoUpdate({ target: jobState.key, set: { value: v, updatedAt: now } });
-  if (state) {
-    try {
-      await discord('PATCH', `/channels/${state.channelId}/messages/${state.messageId}`, message);
-      await save({ ...state, at: now.getTime() });
-      return 'updated';
-    } catch (e) {
-      // The card cannot be edited (deleted by hand, no access, the channel changed type…): a new
-      // card replaces it instead of failing every tick. Discord being down still fails (and retries).
-      if (!(e instanceof DiscordError) || e.status === 429 || e.status >= 500) throw e;
-      console.warn('[discord] status card not editable, posting a new one:', e.message);
-      await removePosted({ channelId: state.channelId, messageId: state.messageId, forum: state.forum }).catch(() => undefined);
-    }
-  }
-  const channelId = await layoutChannel(db, 'статус');
-  if (!channelId) return 'off';
-  let posted: Posted;
+  const state = (row?.value ?? null) as (StatusState & { outage?: { from: number; to: number } | null }) | null;
+  const outage = state && now.getTime() - state.at > STATUS_GAP_MS ? { from: state.at, to: now.getTime() } : (state?.outage ?? null);
+  const message = await statusMessage(db, now, outage);
   try {
-    posted = await postIn(channelId, message);
+    return await upsertLiveCard(db, STATUS_KEY, 'статус', message, now, { at: now.getTime(), outage });
   } catch (e) {
     throw new Error(`#статус: ${(e as Error).message}`);
   }
-  await pinPosted(posted);
-  await save({ ...posted, at: now.getTime() });
-  return 'posted';
 }
 
 // ── #новини ──────────────────────────────────────────────────────────────

@@ -473,3 +473,7 @@ d343faf82f	Where you earn the most — by delivery city.	Где ты зараб�
 65ce22edb9	Challenges players set for each other.	Испытания, которые игроки задают друг другу.
 1af97653cc	Compare the offers.	Сравни предложения.
 8327db893a	Compare with last month.	Сравни с прошлым месяцем.
+accf06d960	<t:{0}:t> – <t:{1}:t> (about {2} min) · working again	<t:{0}:t> – <t:{1}:t> (около {2} мин) · снова работает
+804efe499d	#статус and #класации each have one card that updates in place. No more new messages every few minutes, and an outage shows on the card itself.	В #статус и #класации по одной карточке, которая обновляется на месте. Новых сообщений каждые несколько минут больше нет, а перерыв показывается на самой карточке.
+35f199496c	The card updates every 5 minutes. If the time below stops changing, the game is not answering.	Карточка обновляется каждые 5 минут. Если время внизу перестало меняться, игра не отвечает.
+98c883c5f4	Last outage	Последний перерыв
