@@ -33,6 +33,9 @@ describe('v1.1.4.1 „По-просто“', () => {
     expect(r.name).toBe('По-просто');
     expect(new Date(r.publishedAt) < new Date(releaseByVersion('1.2')!.publishedAt)).toBe(true);
     expect(compareVersions('1.1.4.1', '1.1.4')).toBe(1);
+    // Out today, after 1.1.4.
+    expect(new Date(r.publishedAt) > new Date(releaseByVersion('1.1.4')!.publishedAt)).toBe(true);
+    expect(r.publishedAt.startsWith('2026-10-31')).toBe(true);
     for (const f of ['simple_ui', 'welcome_back', 'trip_queue', 'big_run', 'rival', 'weekly_card', 'discord_game_menu'] as const) expect(FEATURES[f]).toBe('1.1.4.1');
   });
 
