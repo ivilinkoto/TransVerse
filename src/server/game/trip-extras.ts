@@ -26,6 +26,7 @@ import { recordChallengeRun } from './player-challenges';
 import { researchOf } from './research';
 import { notify } from './notify';
 import { recordWishDelivery } from './wishes';
+import { announceMystery } from '@/server/discord/v1142';
 
 /**
  * 1.1.4.2: what a trip brings besides the usual pay — the promise to the
@@ -196,6 +197,7 @@ export async function afterExtras(tx: Tx, f: TripFacts) {
       await tx.insert(userBadges).values({ userId: f.userId, badge: MYSTERY.badge, awardedAt: at }).onConflictDoNothing();
       await notify(tx, f.userId, 'achievement', () => t('🕵 Това беше тайният клиент!'), () => t('Пет звезди — +{0} ТрансКоин и значка.', MYSTERY.coins), '/game/reviews');
       await offerInterview(tx, f.userId, 'mystery', at);
+      await announceMystery(tx, f.userId, f.deliveryId, at);
     } else if (mystery) {
       await notify(tx, f.userId, 'info', () => t('🕵 Тайният клиент провери курса'), () => t('Оценка {0} — следващата седмица ще има нов шанс.', starLine(stars!)), '/game/reviews');
     }

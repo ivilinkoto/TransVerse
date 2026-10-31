@@ -131,7 +131,7 @@ export default async function GrowthPage() {
 
       {features.fuel_hedge && (
         <Card title={t('⛽ Гориво напред')}>
-          <p className="text-sm text-mist-300">{t('Днешна средна цена: {0} / л. Купи литри сега — следващите курсове за 7 дни горят първо тях. Каквото остане, се продава обратно по цената на деня.', money(diesel))}</p>
+          <p className="text-sm text-mist-300">{t('Днес: {0} / л. Курсовете за 7 дни горят първо купеното, остатъкът се връща по цената на деня.', money(diesel))}</p>
           {locks.length > 0 && (
             <ul className="mt-3 space-y-1 text-sm">
               {locks.map((l) => <li key={l.id} className="num">{t('{0} от {1} л по {2} · до {3}', int(l.litresLeft), int(l.litres), money(l.priceCents), dateTime(l.endsAt))}</li>)}
@@ -145,7 +145,7 @@ export default async function GrowthPage() {
         <Card title={t('🌱 CO₂ квоти')}>
           <p className="num text-sm">{t('Тази седмица: {0} от {1} т', dec(co2.kg / 1000), dec(co2.quotaKg / 1000))}</p>
           <Meter value={Math.min(100, (co2.kg / co2.quotaKg) * 100)} className="mt-1" />
-          <p className="mt-2 text-xs text-mist-400">{t('2,64 кг CO₂ на литър дизел; електрическите камиони не отделят по пътя. В понеделник неизползваното става кредити, а надвишението се покрива с кредити или се плаща по {0}/т.', money(CO2.marketSellCents))}</p>
+          <p className="mt-2 text-xs text-mist-400">{t('Дизел: 2,64 кг CO₂ на литър, електрическите: 0. В понеделник неизползваното става кредити, надвишението струва {0}/т.', money(CO2.marketSellCents))}</p>
           <p className="num mt-3 text-sm">{t('Твоите кредити: {0} т', dec(co2.credits))}</p>
           {co2.credits > 0 && (
             <div className="mt-2 grid gap-3 sm:grid-cols-2">

@@ -1,5 +1,5 @@
 {
-  "id": "d8243706-f434-4c1d-a4fe-576ed3a90315",
+  "id": "47ae5d35-8003-4578-9c81-d03ca263cc43",
   "prevId": "a8eafca0-c5b3-45f7-906c-fe8cffbe082c",
   "version": "7",
   "dialect": "postgresql",
@@ -6518,6 +6518,28 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "contracts_tag_idx": {
+          "name": "contracts_tag_idx",
+          "columns": [
+            {
+              "expression": "tag",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "tag is not null",
           "concurrently": false,
           "method": "btree",
           "with": {}

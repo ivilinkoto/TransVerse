@@ -241,4 +241,5 @@ CREATE INDEX "interviews_user_idx" ON "interviews" USING btree ("user_id","creat
 CREATE INDEX "lost_cases_user_idx" ON "lost_cases" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "office_staff_role_idx" ON "office_staff" USING btree ("company_id","role");--> statement-breakpoint
 CREATE INDEX "player_challenges_lane_idx" ON "player_challenges" USING btree ("origin_city_id","dest_city_id","status");--> statement-breakpoint
-CREATE UNIQUE INDEX "track_links_delivery_idx" ON "track_links" USING btree ("delivery_id");
+CREATE UNIQUE INDEX "track_links_delivery_idx" ON "track_links" USING btree ("delivery_id");--> statement-breakpoint
+CREATE INDEX "contracts_tag_idx" ON "contracts" USING btree ("tag","status") WHERE tag is not null;

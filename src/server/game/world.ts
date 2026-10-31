@@ -122,6 +122,7 @@ import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
 import { ideasWeeklyTop, idleTruckReminders, staffDailyReport } from '@/server/discord/plus';
 import { sendArrivalReminders } from '@/server/discord/remind';
 import { dailyDigest, liveRanking } from '@/server/discord/menu';
+import { fogMorning, happiestClients } from '@/server/discord/v1142';
 
 /**
  * Background simulation of the persistent world. Every job is idempotent and
@@ -479,6 +480,9 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // 1.1.4.1: the evening digest in private messages (opt-in).
     await every(db, 'discord-digest', 30 * 60_000, now, () => dailyDigest(db, now));
     await every(db, 'discord-live-ranking', 10 * 60_000, now, () => liveRanking(db, now));
+    // 1.1.4.2: the fog in the morning, the happiest clients on Monday.
+    await every(db, 'discord-fog', 60 * 60_000, now, () => fogMorning(db, now));
+    if (new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'discord-happiest', 6 * 24 * 3_600_000, now, () => happiestClients(db, now));
     // 1.1.3.5: /напомни — a private message when the truck arrives.
     await every(db, 'discord-remind', 60_000, now, () => sendArrivalReminders(db, now));
     await every(db, 'discord-plus-daily', 30 * 60_000, now, async () => {

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { PUZZLE, puzzleFill, puzzlePieces, type Placement } from '@/lib/game/loading-puzzle';
-import { t } from '@/i18n/t';
+import { intlLocale, t } from '@/i18n/t';
 
 /**
  * 1.1.4.2 „Подреди ремаркето“: pick a piece, then tap a cell of the trailer
@@ -73,7 +73,7 @@ export function LoadingPuzzle({ deliveryId, endsAt }: { deliveryId: string; ends
   if (!open)
     return (
       <button type="button" className="btn-ghost mt-2 px-3 py-1 text-xs" onClick={() => setOpen(true)}>
-        {t('📦 Подреди ремаркето (до {0})', new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}
+        {t('📦 Подреди ремаркето (до {0})', new Date(endsAt).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' }))}
       </button>
     );
   const colors = ['#38bdf8', '#f59e0b', '#a3e635', '#f472b6', '#c084fc', '#fb7185', '#2dd4bf', '#facc15'];

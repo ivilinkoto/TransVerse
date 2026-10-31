@@ -1,3 +1,5 @@
+import { TextAction } from '@/components/ui/TextAction';
+import { switchHistory } from '@/server/admin-1142';
 import { sql } from 'drizzle-orm';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { DiscordCheck } from '@/components/admin/DiscordCheck';
@@ -43,6 +45,7 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
   ]);
   // 1.1.4.1: the newest features, and every switched-off one, can be turned off for the players.
   const off = await disabledFeatures(db, true);
+  const history = await switchHistory(db);
   const switchable = (Object.keys(FEATURES) as FeatureId[]).filter((id) => off.has(id) || (compareVersions(FEATURES[id], '1.1.3') >= 0 && featureLive(id, now))).sort((a, b) => compareVersions(FEATURES[b], FEATURES[a]));
   // 1.1.3.5: the same error on the same page once, with how many times; a filter by page or text.
   const grouped = groupServerErrors(errors).filter((e) => !filter || e.where.toLowerCase().includes(filter) || e.message.toLowerCase().includes(filter) || e.digests.some((d) => d.toLowerCase().includes(filter)));
@@ -147,10 +150,24 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
           {switchable.map((id) => (
             <li key={id} className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 ${off.has(id) ? 'border-loss/50 bg-loss/10' : 'border-asphalt-700'}`}>
               <span className="min-w-0 truncate font-mono text-xs">{id} <span className="text-mist-500">· {FEATURES[id]}</span></span>
-              <ActionButton action={{ type: 'featureSwitch', feature: id, off: !off.has(id) }} endpoint="/api/admin/action" className="btn-ghost px-2 py-0.5 text-[11px]" confirm={off.has(id) ? undefined : tr('Функцията спира за всички играчи. Продължаваш ли?')}>{off.has(id) ? tr('Включи') : tr('Спри')}</ActionButton>
+              {off.has(id) ? (
+                <ActionButton action={{ type: 'featureSwitch', feature: id, off: false }} endpoint="/api/admin/action" className="btn-ghost px-2 py-0.5 text-[11px]">{tr('Включи')}</ActionButton>
+              ) : (
+                <TextAction label={tr('Спри')} action={{ type: 'featureSwitch', feature: id, off: true }} field="reason" placeholder={tr('Причина')} ariaLabel={tr('Причина за спиране на {0}', id)} maxLength={200} endpoint="/api/admin/action" />
+              )}
             </li>
           ))}
         </ul>
+      </Card>
+      <Card title={tr('История на функциите')}>
+        {!history.length ? <p className="text-sm text-mist-400">{tr('Още никой не е спирал функция.')}</p> : (
+          <ul className="space-y-1 text-sm">
+            {history.map((h) => {
+              const d = h.details as { feature?: string; reason?: string };
+              return <li key={h.id}><span className="num text-xs text-mist-400">{dateTime(h.at)}</span> · {h.actor} · {h.action === 'feature_off' ? tr('спря') : tr('пусна')} <span className="font-mono text-xs">{d.feature}</span>{d.reason ? ` — ${d.reason}` : ''}</li>;
+            })}
+          </ul>
+        )}
       </Card>
       <Card title={tr('Discord бот')}>
         <p className="mb-3 text-sm text-mist-400">{tr('Проверява на живо всичко, което ботът трябва да има: тайните, настройките в Developer Portal, правата в сървъра, каналите и връзката на фоновия процес.')}</p>

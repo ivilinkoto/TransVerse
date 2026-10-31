@@ -498,7 +498,7 @@ export const contracts = pgTable(
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
   },
-  (t) => [index('contracts_status_idx').on(t.status, t.expiresAt), index('contracts_origin_idx').on(t.originCityId), index('contracts_tender_idx').on(t.tenderId), index('contracts_shared_idx').on(t.sharedLoadId), uniqueIndex('contracts_featured_idx').on(t.featured)],
+  (t) => [index('contracts_status_idx').on(t.status, t.expiresAt), index('contracts_tag_idx').on(t.tag, t.status).where(sql`tag is not null`), index('contracts_origin_idx').on(t.originCityId), index('contracts_tender_idx').on(t.tenderId), index('contracts_shared_idx').on(t.sharedLoadId), uniqueIndex('contracts_featured_idx').on(t.featured)],
 );
 
 export const deliveries = pgTable(

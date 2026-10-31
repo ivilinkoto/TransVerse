@@ -26,6 +26,7 @@ import type { Row } from './ui';
 import { appUrl, BRAND } from './config';
 import { t as tr, intlLocale } from '@/i18n/t';
 import { remindCommand } from './remind';
+import { queueCommand } from './v1142';
 
 const MODERATE = String(1n << 40n);
 const BAN = String(1n << 2n);
@@ -52,6 +53,7 @@ export const COMMANDS = [
     ] }],
   },
   { name: 'камиони', description: 'Твоите камиони: къде са и кога пристигат (нужен е свързан акаунт)' },
+  { name: 'опашка', description: 'Опашката от курсове и повтаряните линии на камионите ти (свързан акаунт)' },
   { name: 'напомни', description: 'Лично съобщение, когато камионът ти пристигне (свързан акаунт)', options: [{ type: 3, name: 'камион', description: 'Номер или име (без — всички на курс)', required: false, max_length: 30 }] },
   { name: 'курс', description: 'Пусни камион на курс: избираш камион и товар (свързан акаунт)' },
   { name: 'пазар', description: 'Стоката в складовете ти и къде да я продадеш (свързан акаунт)' },
@@ -185,6 +187,8 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return ranking(db, (input.options['вид'] ?? 'season') as RankingKind, now);
     case 'камиони':
       return me ? trucks(db, me.id) : { ephemeral: true, content: tr('Не знам кой си в играта. {0}', linkHint()) };
+    case 'опашка':
+      return me ? queueCommand(db, me.id, now) : { ephemeral: true, content: tr('Не знам кой си в играта. {0}', linkHint()) };
     case 'напомни':
       return me ? remindCommand(db, me.id, input.discordUserId, input.options['камион'] ?? null, now) : { ephemeral: true, content: tr('Не знам кой си в играта. {0}', linkHint()) };
     case 'борса':
