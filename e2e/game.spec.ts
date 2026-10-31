@@ -179,6 +179,12 @@ test('navigation: four sections and „Още“ in the sidebar, account pages i
   const more = page.getByRole('dialog', { name: 'Още раздели' });
   await expect(more.getByRole('heading', { name: 'Компания' })).toBeVisible();
   await expect(more.getByRole('heading', { name: 'Състезание' })).toBeVisible();
+  // 1.1.4.2: the sheet is on top of the page, not under it (it was hidden behind the dashboard on tablets).
+  const onTop = await more.getByRole('heading', { name: 'Компания' }).evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return el.closest('[role=dialog]')!.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+  });
+  expect(onTop).toBe(true);
   await page.keyboard.press('Escape');
   await expect(more).toHaveCount(0);
   await expect(aside.getByRole('link', { name: /Магазин и VIP/ })).toBeVisible();
