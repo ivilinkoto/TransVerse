@@ -1,8 +1,13 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { BookOpen, CalendarHeart, ChevronRight, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { BookOpen, CalendarHeart, ChevronRight, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Swords, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
+import { MoreOnDashboard } from '@/components/game/MoreOnDashboard';
+import { rivalStanding } from '@/server/game/rival';
+import { bestTripOfWeek } from '@/server/game/weekly-card';
+import { appUrl } from '@/server/discord/config';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { headline } from '@/lib/game/news';
 import { latestIssues } from '@/server/game/news';
 import { cached } from '@/server/cache';
@@ -86,6 +91,12 @@ export default async function OverviewPage() {
   const income = Number(flows[0]?.income ?? 0);
   const expense = Number(flows[0]?.expense ?? 0);
   const active = fleet.vehicles.filter((v) => v.delivery);
+  // 1.1.4.1: a calmer dashboard — the free trucks first with one button, the rest folded away.
+  const lean = features.simple_ui;
+  // 1.1.4.1: the rival of the week.
+  const rival = features.rival ? await rivalStanding(db, user.id, now) : null;
+  const weekBest = features.weekly_card && features.trip_log ? await bestTripOfWeek(db, user.id, now) : null;
+  const freeTrucks = fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && !(v.movingUntil && v.movingUntil > now)).slice(0, 6);
   const idle = fleet.vehicles.filter((v) => !v.delivery);
   const avgCondition = fleet.vehicles.length ? fleet.vehicles.reduce((s, v) => s + v.condition, 0) / fleet.vehicles.length : 0;
   const lp = levelProgress(user.xp);
@@ -233,6 +244,7 @@ export default async function OverviewPage() {
           <span className="btn-primary max-sm:hidden">{t('Към празника')}</span>
         </Link>
       )}
+      <MoreOnDashboard lean={lean}>
       {goal && !goal.goal && (
         <Link href="/game/missions" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
           <Flag className="h-6 w-6 shrink-0 text-gold-400" />
@@ -273,12 +285,38 @@ export default async function OverviewPage() {
           <ChevronRight className="h-4 w-4 shrink-0 text-mist-400 transition group-hover:translate-x-0.5" />
         </Link>
       )}
+      </MoreOnDashboard>
       {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
+      {rival && (
+        <section className="panel flex flex-wrap items-center gap-3 p-3.5" aria-label={t('Съперник за седмицата')}>
+          <Swords className="h-6 w-6 shrink-0 text-prestige" />
+          <span className="min-w-0 flex-1 text-sm">
+            <span className="label block">{t('Съперник за седмицата')}</span>
+            <span className="font-semibold">{tx(rival.rival.username)}</span>
+            <span className="text-mist-400"> · {rival.mine > rival.theirs ? t('водиш') : rival.mine < rival.theirs ? t('води с {0}', rival.theirs - rival.mine) : t('наравно')}</span>
+          </span>
+          <span className="num font-display text-lg font-bold"><span className={rival.mine >= rival.theirs ? 'text-profit' : ''}>{rival.mine}</span> <span className="text-mist-500">:</span> <span className={rival.theirs > rival.mine ? 'text-loss' : ''}>{rival.theirs}</span></span>
+        </section>
+      )}
+      {weekBest && (
+        <section className="panel flex flex-wrap items-center gap-3 border-gold-400/40 p-3.5" aria-label={t('Курсът ти на седмицата')}>
+          <Star className="h-6 w-6 shrink-0 text-gold-400" />
+          <span className="min-w-0 flex-1 text-sm">
+            <span className="label block">{t('Курсът ти на седмицата')}</span>
+            <span className="font-semibold">{tx(weekBest.from)} → {tx(weekBest.to)}</span>
+            <span className="text-mist-400"> · {km(weekBest.km)} · <span className="num text-profit">{money(weekBest.payoutCents ?? 0)}</span></span>
+          </span>
+          {weekBest.sharedAt
+            ? <a className="btn-primary px-3 py-1.5 text-xs" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${appUrl()}/trip/${weekBest.id}`)}`} target="_blank" rel="noopener noreferrer">{t('Сподели във Facebook')}</a>
+            : <ActionButton action={{ type: 'shareTrip', deliveryId: weekBest.id, on: true }} className="btn-gold px-3 py-1.5 text-xs">{t('Направи картичка')}</ActionButton>}
+          <Link href={`/game/trips/${weekBest.id}`} className="btn-ghost px-3 py-1.5 text-xs">{t('Виж')}</Link>
+        </section>
+      )}
       {steps.length > 0 && (
         <section className="panel p-4" aria-label={t('Какво да правя сега')}>
           <h2 className="label mb-2">{t('Какво да правя сега?')}</h2>
           <ul className="space-y-2">
-            {steps.map((st) => (
+            {(lean ? steps.slice(0, 3) : steps).map((st) => (
               <li key={st.text} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span><span className="mr-2">{tx(st.emoji)}</span>{tx(st.text)}</span>
                 <Link href={st.href} className="btn-ghost px-3 py-1 text-xs">{tx(st.action)} →</Link>
@@ -293,7 +331,18 @@ export default async function OverviewPage() {
 
       <div className="grid gap-5 sm:gap-6 xl:grid-cols-[1.6fr_1fr]">
         <div className="space-y-5 sm:space-y-6">
-          <Card title={t('На път сега')} actions={active.length > 0 && <Link href="/game/map" className="text-sm text-cyan-glow hover:underline">{t('На картата →')}</Link>}>
+          <Card title={lean ? t('Камионите сега') : t('На път сега')} actions={active.length > 0 && <Link href="/game/map" className="text-sm text-cyan-glow hover:underline">{t('На картата →')}</Link>}>
+            {lean && freeTrucks.length > 0 && (
+              <ul className="mb-3 space-y-2">
+                {freeTrucks.map((v) => (
+                  <li key={v.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-gold-400/30 bg-gold-400/5 p-3">
+                    <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} trailerCosmetics={v.trailer?.cosmetics} martenitsa={marta} className="h-9 w-auto max-w-[140px] shrink-0" />
+                    <span className="min-w-0 flex-1 text-sm"><span className="font-semibold">{v.nickname ? `„${tx(v.nickname)}“` : tx(v.plate)}</span><span className="text-mist-400"> · {t('свободен в {0}', tx(v.city.nameBg))}</span></span>
+                    <Link href={`/game/contracts?from=${v.cityId}&truck=${v.id}`} className="btn-primary px-3 py-1.5 text-xs"><ClipboardList className="h-3.5 w-3.5" />{t('Нов курс')}</Link>
+                  </li>
+                ))}
+              </ul>
+            )}
             {active.length === 0 ? (
               <Empty icon={Truck} title={t('Няма камиони на път')}>
                 {t('Избери поръчка и изпрати свободно превозно средство.')}{' '}<Link href="/game/contracts" className="text-cyan-glow underline">{t('Към поръчките')}</Link>
@@ -365,6 +414,7 @@ export default async function OverviewPage() {
               })}
             </ul>
           </Card>
+          <MoreOnDashboard lean={lean} title={t('Цели и събития')}>
           <Card title={t('Следващи цели')} actions={<Link href="/game/progress" className="text-sm text-cyan-glow hover:underline">{t('Постижения →')}</Link>}>
             <ul className="space-y-3">
               {goals.map((g) => (
@@ -399,6 +449,7 @@ export default async function OverviewPage() {
               </ul>
             )}
           </Card>
+          </MoreOnDashboard>
         </div>
       </div>
     </div>

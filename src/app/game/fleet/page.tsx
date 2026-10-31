@@ -18,6 +18,7 @@ import { ghostsFor } from '@/server/game/deals';
 import { RENTAL_BUYOUT_DELIVERIES, UPGRADES, combinationCapability, type UpgradeId } from '@/lib/game/catalog';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { CopyText } from '@/components/ui/CopyText';
+import { queuedTrips } from '@/server/game/trip-queue';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { ECONOMY } from '@/lib/game/economy';
 import { isVip } from '@/lib/game/vip';
@@ -55,6 +56,8 @@ export default async function FleetPage() {
     db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg, slots: depots.slots }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)),
     fleetCapacity(db, company.id),
   ]);
+  // 1.1.4.1: the trips lined up after the current one.
+  const queue = features.trip_queue ? await queuedTrips(db, company.id) : [];
   // 1.1.3.5: free trucks away from every depot ("Всички свободни в депото").
   const depotCities = new Set(myDepots.map((d) => d.cityId));
   const awayIdle = myDepots.length ? fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && !depotCities.has(v.cityId) && !(v.movingUntil && v.movingUntil > now)).length : 0;
@@ -126,6 +129,19 @@ export default async function FleetPage() {
                 <div className="mt-2 text-xs text-mist-400">{tr('{0}{1} с товар', v.delivery.emptyKm > 0 && tr('{0} празен курс + ', km(v.delivery.emptyKm)), km(v.delivery.loadedKm))}</div>
               </div>
             )}
+            {queue.some((q) => q.vehicleId === v.id) && (
+              <div className="mb-3 rounded-xl border border-cyan-glow/30 bg-cyan-glow/5 px-3 py-2 text-xs">
+                <p className="mb-1 font-semibold text-cyan-glow">{tr('След това')}</p>
+                <ol className="space-y-1">
+                  {queue.filter((q) => q.vehicleId === v.id).map((q, i) => (
+                    <li key={q.id} className="flex items-center justify-between gap-2">
+                      <span className={`min-w-0 truncate ${q.open ? '' : 'text-mist-500 line-through'}`}>{i + 1}. {tx(q.from)} → {tx(q.to)} · {tx(q.goods)} · <span className="num text-profit">{money(q.rewardCents)}</span></span>
+                      <ActionButton action={{ type: 'unqueueTrip', id: q.id }} className="btn-ghost px-1.5 py-0.5 text-[11px]">✕</ActionButton>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
             <dl className="mt-auto grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <div><dt className="label">{tr('Състояние')}</dt><dd className="num mt-1">{Math.round(v.condition)}%<Meter value={v.condition} className="mt-1" /></dd></div>
               <div><dt className="label">{tr('Капацитет')}</dt><dd className="num mt-1">{v.model.kind === 'tractor' && !v.trailer ? '—' : tr('{0} т', combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null }).payloadTons)}</dd></div>
@@ -177,7 +193,7 @@ export default async function FleetPage() {
                     {v.rental.trips >= RENTAL_BUYOUT_DELIVERIES ? (
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span>{tr('Наемодателят ти предлага да го откупиш за')}{' '}<span className="num font-bold text-gold-400">{money(v.rental.buyoutCents)}</span> <span className="text-mist-400">{tr('(нов: {0})', money(v.model.priceCents))}</span>.</span>
-                        {features.rent_vs_buy && avgRentCents > 0 && <span className="basis-full text-mist-300">{tr('Наемът ти струва средно {0} на курс — откупуването се изплаща за около {1} курса. После печелиш целия курс, но плащаш гориво, такси и сервиз.', money(avgRentCents), Math.ceil(v.rental.buyoutCents / avgRentCents))}</span>}
+                        {features.rent_vs_buy && avgRentCents > 0 && <span className="basis-full text-mist-300">{tr('Наемът ти струва ~{0} на курс — откупуването се връща за ~{1} курса. После плащаш гориво и сервиз сам.', money(avgRentCents), Math.ceil(v.rental.buyoutCents / avgRentCents))}</span>}
                         {features.rent_vs_buy && Number(rentTotal) > 0 && <span className="basis-full text-mist-400">{tr('Досега си платил за наем общо {0}.', money(Number(rentTotal)))}</span>}
                         <ActionButton action={{ type: 'buyoutRental', vehicleId: v.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={company.balanceCents < v.rental.buyoutCents} confirm={tr('Да откупим ли {0} ({1}) за {2}?', v.model.name, v.plate, money(v.rental.buyoutCents))}>
                           <BadgeEuro className="h-3.5 w-3.5" />{tr('Откупи')}

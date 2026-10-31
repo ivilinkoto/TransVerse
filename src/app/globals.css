@@ -272,3 +272,18 @@ html[data-season='christmas'] .brand-mark::after {
   box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 18px 40px -20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(34, 211, 238, 0.04);
 }
 [data-look='2'] .panel:hover { border-color: rgba(79, 147, 255, 0.28); }
+
+/* 1.1.4.1: the tutorial points at what to press. */
+.tour-spot {
+  outline: 2px solid var(--color-cyan-glow);
+  outline-offset: 3px;
+  border-radius: 12px;
+  animation: tour-pulse 1.4s ease-in-out infinite;
+}
+@keyframes tour-pulse {
+  0%, 100% { outline-color: color-mix(in srgb, var(--color-cyan-glow) 100%, transparent); box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-cyan-glow) 45%, transparent); }
+  50% { outline-color: color-mix(in srgb, var(--color-cyan-glow) 55%, transparent); box-shadow: 0 0 0 8px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot { animation: none; }
+}

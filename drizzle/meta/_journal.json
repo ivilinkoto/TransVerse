@@ -708,6 +708,13 @@
       "when": 1793300349636,
       "tag": "0100_chilly_silver_centurion",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1793447614696,
+      "tag": "0101_smiling_wendigo",
+      "breakpoints": true
     }
   ]
 }

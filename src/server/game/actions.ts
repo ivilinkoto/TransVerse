@@ -87,6 +87,7 @@ import { startNewCareer } from '@/server/game/legacy';
 import { cheer } from '@/server/game/feed';
 import type { FeatureId } from '@/lib/game/features';
 import { requireFeature } from '@/server/features';
+import { queueTrip, unqueueTrip } from '@/server/game/trip-queue';
 import { chooseWeeklyGoal, claimWeeklyGoal } from '@/server/game/weekly-goal';
 import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
@@ -379,6 +380,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('joinRally') }),
   z.object({ type: z.literal('moveToDepot'), vehicleId: id, depotId: id }),
   z.object({ type: z.literal('moveAllToDepot') }),
+  z.object({ type: z.literal('queueTrip'), vehicleId: id, contractId: id }),
+  z.object({ type: z.literal('unqueueTrip'), id }),
   z.object({ type: z.literal('trailerUpgrade'), trailerId: id, upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('buyOrgTrailer'), modelId: z.string().max(40) }),
   z.object({ type: z.literal('sellOrgTrailer'), orgTrailerId: id }),
@@ -545,6 +548,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   companyLivery: 'livery',
   serviceVehicle: 'maintenance',
   moveAllToDepot: 'depot_all',
+  queueTrip: 'trip_queue',
+  unqueueTrip: 'trip_queue',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -819,6 +824,11 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await moveToDepot(db, user.id, input.vehicleId, input.depotId)) };
     case 'moveAllToDepot':
       return { ok: true, ...(await moveAllToDepot(db, user.id)) };
+    case 'queueTrip':
+      return { ok: true, ...(await queueTrip(db, user.id, input.vehicleId, input.contractId)) };
+    case 'unqueueTrip':
+      await unqueueTrip(db, user.id, input.id);
+      return { ok: true };
     case 'trailerUpgrade':
       return { ok: true, costCents: await installTrailerUpgrade(db, user.id, input.trailerId, input.upgradeId) };
     case 'buyOrgTrailer':

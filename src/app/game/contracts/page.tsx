@@ -155,7 +155,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const rented = v.ownership === 'rented';
       const pay = part ? part.rewardCents : c.rewardCents;
       const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents) + (sea?.ticketCents ?? 0) + (c.oversize ? oversizeCostCents(c.distanceKm - seaKm) : 0);
-      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? tr(' (нает)') : ''}${v.coDriver ? tr(' · екипаж') : ''} · ${tx(v.city.nameBg)} · ${Math.round(v.condition)}%${restMin ? tr(' · почива още {0} мин', restMin) : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part };
+      return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? tr(' (нает)') : ''}${v.coDriver ? tr(' · екипаж') : ''} · ${tx(v.city.nameBg)} · ${Math.round(v.condition)}%${restMin ? tr(' · почива още {0} мин', restMin) : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part, onTrip: !!v.delivery };
     });
     return {
       id: c.id,
@@ -246,7 +246,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       <PageHeader
         title={tr('Поръчки')}
         subtitle={tr('Избери товар, камион и тръгвай. Поръчките са общи за всички играчи.')}
-        help={tr('Горивото се плаща по цените на държавите по маршрута (виж Финанси → Дизел днес). По пътя може да се случи задръстване, ремонт, повреда или опашка на границата — това забавя курса, а повредата струва пари за пътна помощ (при наетия камион плаща наемодателят). Общ пазар за всички играчи: поръчка, поета от друга компания, изчезва от борсата. Разстоянията са по реалната пътна мрежа (Valhalla / OpenStreetMap), освен ако не е отбелязано „приблизително“.')}
+        help={tr('Общ пазар за всички: поета поръчка изчезва. Горивото е по цените на държавите по пътя. Задръстване, ремонт или граница забавят курса. Разстоянията са по истинските пътища.')}
       />
       {features.night_shift && isNightShift(now) && (
         <div className="mb-4 rounded-2xl border border-indigo-400/40 bg-indigo-500/10 px-4 py-3 text-sm">

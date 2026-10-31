@@ -4,6 +4,8 @@ import { Eye, MailWarning } from 'lucide-react';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { LiveUpdates } from '@/components/game/LiveUpdates';
 import { TabBadge } from '@/components/game/TabBadge';
+import { WelcomeBack } from '@/components/game/WelcomeBack';
+import { welcomeBack } from '@/server/game/welcome-back';
 import { ChatDock } from '@/components/game/ChatDock';
 import { PlayerCardHost } from '@/components/game/PlayerCard';
 import { ReportHost } from '@/components/game/ReportDialog';
@@ -72,6 +74,8 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   // v1.9: pages the player's level just unlocked in the menu ("Ново за теб").
   const features = liveFeatures(now, testing);
   const unlockable = unlockTabs().filter((t) => !t.feature || features[t.feature]).map((t) => ({ ...t, minLevel: t.minLevel! }));
+  // 1.1.4.1 „Докато те нямаше“ — not on top of the release notes or the tutorial.
+  const back = features.welcome_back && !fresh && !(tutorial.active && tutorial.step) ? await welcomeBack(db, company.id, user.id, user.lastSeenAt, now) : null;
   const pending = features.progressive_unlock && !user.uiPrefs?.showAll && !(tutorial.active && tutorial.step) && !fresh ? await pendingUnlocks(db, user, unlockable) : [];
   const unlocks = pending.flatMap((href) => {
     const t = unlockable.find((x) => x.href === href);
@@ -82,7 +86,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     <FeaturesProvider value={features}>
       <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll, staff: testing }}>
       <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
-        <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, testing)} />
+        <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, testing)} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
           <InstallAppBanner />
@@ -117,6 +121,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         <RegisterServiceWorker />
         {!user.termsAcceptedAt && <TermsPrompt />}
         {unlocks.length > 0 && <UnlockNotice items={unlocks} />}
+        {back && !unlocks.length && <WelcomeBack summary={back} />}
         {fresh && !(tutorial.active && tutorial.step) && (
           <WhatsNew version={fresh.version}>
             <ReleaseTitle release={fresh} />

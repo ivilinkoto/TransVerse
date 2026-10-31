@@ -61,6 +61,15 @@ export const FEATURES = {
   tab_badge: '1.1.3.5',
   discord_remind: '1.1.3.5',
   discord_quiet: '1.1.3.5',
+  // v1.1.4.1 „По-просто“: the menu in five, a calmer dashboard, one-tap loads, short texts, and what
+  // brings players back — "Докато те нямаше", queued trips, the big run, a rival, the week's card.
+  simple_ui: '1.1.4.1',
+  welcome_back: '1.1.4.1',
+  trip_queue: '1.1.4.1',
+  big_run: '1.1.4.1',
+  rival: '1.1.4.1',
+  weekly_card: '1.1.4.1',
+  discord_game_menu: '1.1.4.1',
   // v1.1.4: countdowns, ideas with votes, Ден на будителите, my day, compare, roadmap.
   countdowns: '1.1.4',
   ideas: '1.1.4',

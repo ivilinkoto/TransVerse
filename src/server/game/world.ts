@@ -47,6 +47,9 @@ import { ensureEasterEvent } from './easter';
 import { collectOverdueFines } from './fines';
 import { publishWeeklyNews } from './news';
 import { autoDispatchTick } from './dispatch';
+import { runTripQueues } from './trip-queue';
+import { ensureBigRunLoads } from './big-run';
+import { rivalAlerts } from './rival';
 import { ensureAuction, settleAuctions } from './auctions';
 import { ensureDailyLoad, ensureLocalJobsForFleet, replenishMarket } from './contracts';
 import { dropDrivingBanWaits, migrateToGameTime, recoverDemand, settleDueDeliveries } from './deliveries';
@@ -213,6 +216,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await job(db, 'deliveries', now, async () => {
       settled = await settleDueDeliveries(db, now);
     });
+    // 1.1.4.1: a truck that just got free starts its next lined-up trip.
+    if (featureLive('trip_queue', now)) await job(db, 'trip-queue', now, () => runTripQueues(db, now));
     // Global events: settle finished ones (after the deliveries above), keep the automatic ones going.
     await job(db, 'events-settle', now, () => settleDueEvents(db, now));
     await job(db, 'tenders', now, () => settleTenders(db, now));
@@ -220,6 +225,9 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'fines', 5 * 60_000, now, () => collectOverdueFines(db, now));
     await every(db, 'newspaper', 10 * 60_000, now, () => publishWeeklyNews(db, now));
     await every(db, 'auto-dispatch', 60_000, now, () => autoDispatchTick(db, now));
+    // 1.1.4.1: the week's big run always has loads on each leg.
+    await every(db, 'big-run', 30 * 60_000, now, () => ensureBigRunLoads(db, now));
+    await every(db, 'rival', 60 * 60_000, now, () => rivalAlerts(db, now));
     await every(db, 'auctions', 30_000, now, async () => {
       await ensureAuction(db, now, provider);
       await settleAuctions(db, now);

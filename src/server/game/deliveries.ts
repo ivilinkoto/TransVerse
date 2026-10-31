@@ -70,6 +70,7 @@ import { recordChristmasDelivery } from './christmas';
 import { isChristmas } from '@/lib/game/christmas';
 import { isMarta } from '@/lib/game/marta';
 import { recordBuditeliDelivery } from './buditeli';
+import { recordBigRunDelivery } from './big-run';
 import { recordMartaDelivery } from './marta';
 import { isEaster } from '@/lib/game/easter';
 import { recordEasterDelivery } from './easter';
@@ -765,6 +766,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   );
   // 1.1.4, Ден на будителите: the third load of books brings the badge of the year.
   if (contract.holiday === 'buditeli') await recordBuditeliDelivery(tx, company!.ownerId, completedAt);
+  // 1.1.4.1 „Голям рейс“: a leg of the week's run.
+  await recordBigRunDelivery(tx, company!.ownerId, contract.originCityId, contract.destCityId, completedAt);
   // Halloween quests: holiday loads, night arrivals.
   if (isHalloween(completedAt)) await recordHalloweenDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'halloween', loadedKm: d.loadedKm, arrivedAt: completedAt });
   // Christmas quests: Christmas loads, arrivals on Christmas Eve and Day.

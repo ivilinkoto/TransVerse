@@ -2,8 +2,8 @@
 
 import { GraduationCap, X } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import type { TutorialStep } from '@/lib/game/tutorial';
 import { t, tx } from '@/i18n/t';
@@ -11,7 +11,29 @@ import { t, tx } from '@/i18n/t';
 /** Onboarding coach shown under the top bar until every step is done or the player skips it. */
 export function TutorialCoach({ step, index, total }: { step: TutorialStep; index: number; total: number }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [busy, setBusy] = useState(false);
+  // 1.1.4.1: the button to press glows (the first visible one of the step's targets).
+  useEffect(() => {
+    if (!step.spot?.length) return;
+    let lit: Element | null = null;
+    const light = () => {
+      const target = step.spot!.flatMap((q) => [...document.querySelectorAll(q)]).find((el) => (el as HTMLElement).offsetParent !== null) ?? null;
+      if (target === lit) return;
+      lit?.classList.remove('tour-spot');
+      lit = target;
+      target?.classList.add('tour-spot');
+    };
+    light();
+    // The page may still be loading its list: look again for a few seconds.
+    const timer = setInterval(light, 700);
+    const stop = setTimeout(() => clearInterval(timer), 8000);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(stop);
+      lit?.classList.remove('tour-spot');
+    };
+  }, [step.spot, pathname]);
   const send = async (action: Record<string, unknown>) => {
     setBusy(true);
     try {
