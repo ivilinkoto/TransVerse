@@ -4,6 +4,8 @@
  * mostly inside Bulgaria and light enough for a starter truck, so everyone has
  * a chance at it. Administrators can still publish their own.
  */
+import { featureLive } from '@/lib/game/features';
+import { plainGoodsFor } from '@/lib/game/goods';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { rewardCents } from '@/lib/game/economy';
@@ -65,7 +67,7 @@ export async function publishAutoUrgent(db: Database, now = new Date(), provider
     insertUrgent(
       tx,
       {
-        goods: pick(CARGO[mix.cargo].goods),
+        goods: pick(plainGoodsFor(mix.cargo, featureLive('more_goods', now))),
         cargoType: mix.cargo,
         weightTons: tons,
         originCityId: origin.id,

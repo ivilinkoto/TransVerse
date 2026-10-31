@@ -94,8 +94,11 @@ export default async function OverviewPage() {
   // 1.1.4.1: a calmer dashboard — the free trucks first with one button, the rest folded away.
   const lean = features.simple_ui;
   // 1.1.4.1: the rival of the week.
-  const rival = features.rival ? await rivalStanding(db, user.id, now) : null;
-  const weekBest = features.weekly_card && features.trip_log ? await bestTripOfWeek(db, user.id, now) : null;
+  // In parallel: the dashboard waits for the slowest, not for the sum.
+  const [rival, weekBest] = await Promise.all([
+    features.rival ? rivalStanding(db, user.id, now) : null,
+    features.weekly_card && features.trip_log ? bestTripOfWeek(db, user.id, now) : null,
+  ]);
   const freeTrucks = fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && !(v.movingUntil && v.movingUntil > now)).slice(0, 6);
   const idle = fleet.vehicles.filter((v) => !v.delivery);
   const avgCondition = fleet.vehicles.length ? fleet.vehicles.reduce((s, v) => s + v.condition, 0) / fleet.vehicles.length : 0;

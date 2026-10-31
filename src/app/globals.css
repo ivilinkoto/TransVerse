@@ -12,6 +12,7 @@
   --color-asphalt-700: #1a2433;
   --color-asphalt-600: #263347;
   --color-asphalt-500: #3a4a63;
+  --color-mist-500: #7f8ca3;
   --color-mist-400: #8d9bb3;
   --color-mist-300: #b4c0d3;
   --color-mist-100: #e8eef7;
@@ -110,6 +111,7 @@ html[data-season='halloween'] {
   --color-asphalt-700: #2a1938;
   --color-asphalt-600: #3b2550;
   --color-asphalt-500: #56396f;
+  --color-mist-500: #93859f;
   --color-mist-400: #a495b8;
   --color-mist-300: #c8bcd8;
   --color-mist-100: #f3ecfa;

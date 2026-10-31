@@ -113,6 +113,7 @@ import { syncComingSoon } from '@/server/discord/coming-soon';
 import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
 import { ideasWeeklyTop, idleTruckReminders, staffDailyReport } from '@/server/discord/plus';
 import { sendArrivalReminders } from '@/server/discord/remind';
+import { dailyDigest, liveRanking } from '@/server/discord/menu';
 
 /**
  * Background simulation of the persistent world. Every job is idempotent and
@@ -455,6 +456,9 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'discord-team-polls', 60_000, now, () => closeTeamPolls(db, now));
     // 1.1.3.4: the idle-truck reminder, the team's daily report, the ideas' weekly top 3.
     await every(db, 'discord-idle-trucks', 60 * 60_000, now, () => idleTruckReminders(db, now));
+    // 1.1.4.1: the evening digest in private messages (opt-in).
+    await every(db, 'discord-digest', 30 * 60_000, now, () => dailyDigest(db, now));
+    await every(db, 'discord-live-ranking', 10 * 60_000, now, () => liveRanking(db, now));
     // 1.1.3.5: /напомни — a private message when the truck arrives.
     await every(db, 'discord-remind', 60_000, now, () => sendArrivalReminders(db, now));
     await every(db, 'discord-plus-daily', 30 * 60_000, now, async () => {

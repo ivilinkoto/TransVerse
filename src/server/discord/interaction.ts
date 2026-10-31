@@ -21,6 +21,7 @@ import { convoyCommand, convoyGo, convoyJoin, duelAnswer, duelCommand, financeVi
 import { reply, say } from './ui';
 import { ideaVote, newsCommand, pollCommand, pollVote } from './channels-1132';
 import { translateMessage } from './translate';
+import { gameMenu, menuButton, planNext, planPick, startView } from './menu';
 import { t } from '@/i18n/t';
 
 export type { Interaction };
@@ -55,6 +56,8 @@ const COMMAND_HANDLERS: Record<string, (ctx: Ctx) => Answer | Promise<Answer>> =
   новина: newsCommand,
   анкета: pollCommand,
   Преведи: translateMessage,
+  игра: gameMenu,
+  старт: startView,
 };
 
 /** Buttons and select menus, by the start of their custom_id. */
@@ -75,6 +78,15 @@ async function component(ctx: Ctx, id: string, values: string[]): Promise<Answer
       break;
     case 'daily':
       return dailyClaim(ctx);
+    // 1.1.4.1: /игра and „Планирай следващ“.
+    case 'menu':
+      if (a === 'course') return courseStart(ctx);
+      if (a === 'missions') return missionsView(ctx);
+      return (await menuButton(ctx, a)) ?? answer(say(t('Непозната команда.')));
+    case 'plan':
+      if (a === 'truck') return planNext(ctx, b);
+      if (a === 'pick') return planPick(ctx, b, values[0] ?? '');
+      break;
     case 'give':
       return joinGiveaway(ctx, b);
     case 'poll':

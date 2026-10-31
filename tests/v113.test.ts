@@ -57,7 +57,8 @@ describe('v1.1.3', () => {
   });
 
   it('the countdown shows the next release within two weeks', () => {
-    expect(upcomingRelease(new Date('2026-11-01T10:00:00+02:00'))?.version).toBe('1.2');
+    expect(upcomingRelease(new Date('2026-11-01T10:00:00+02:00'))?.version).toBe('1.1.4.1');
+    expect(upcomingRelease(new Date('2026-11-02T20:00:00+02:00'))?.version).toBe('1.2');
     expect(upcomingRelease(new Date('2026-10-28T10:00:00+02:00'))?.version).toBe('1.1.3.1');
     expect(upcomingRelease(new Date('2026-10-30T10:00:00+02:00'))?.version).toBe('1.1.4');
     expect(upcomingRelease(new Date('2026-10-26T18:00:00+02:00'))?.version).toBe('1.1.3');

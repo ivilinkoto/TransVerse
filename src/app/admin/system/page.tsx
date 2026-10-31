@@ -12,6 +12,9 @@ import { pushDevices } from '@/server/push';
 import { groupServerErrors, recentServerErrors } from '@/server/error-log';
 import { failedOutbox, MAX_ATTEMPTS } from '@/server/discord/outbox';
 import { ActionButton } from '@/components/ui/ActionButton';
+import { disabledFeatures } from '@/server/feature-switches';
+import { FEATURES, featureLive, type FeatureId } from '@/lib/game/features';
+import { compareVersions } from '@/lib/game/releases';
 import { BACKUP, backupDir, lastBackup } from '@/server/backup';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -38,6 +41,9 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
     lastBackup(db),
     failedOutbox(db),
   ]);
+  // 1.1.4.1: the newest features, and every switched-off one, can be turned off for the players.
+  const off = await disabledFeatures(db, true);
+  const switchable = (Object.keys(FEATURES) as FeatureId[]).filter((id) => off.has(id) || (compareVersions(FEATURES[id], '1.1.3') >= 0 && featureLive(id, now))).sort((a, b) => compareVersions(FEATURES[b], FEATURES[a]));
   // 1.1.3.5: the same error on the same page once, with how many times; a filter by page or text.
   const grouped = groupServerErrors(errors).filter((e) => !filter || e.where.toLowerCase().includes(filter) || e.message.toLowerCase().includes(filter) || e.digests.some((d) => d.toLowerCase().includes(filter)));
   const lastHour = errors.filter((e) => now.getTime() - new Date(e.at).getTime() < 3_600_000).length;
@@ -135,6 +141,17 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
           <p className="mt-3 text-sm text-mist-400">{tr('Ако „изостават“ расте, фоновият процес не стига до изпращането — виж грешките вляво.')}</p>
         </Card>
       </div>
+      <Card title={tr('Функции — изключване при проблем ({0} спрени)', off.size)}>
+        <p className="mb-3 text-sm text-mist-400">{tr('Спира функция за играчите (меню, страници, команди) без нов деплой. Екипът я вижда, за да тества поправката. Фоновите задачи не се спират.')}</p>
+        <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
+          {switchable.map((id) => (
+            <li key={id} className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 ${off.has(id) ? 'border-loss/50 bg-loss/10' : 'border-asphalt-700'}`}>
+              <span className="min-w-0 truncate font-mono text-xs">{id} <span className="text-mist-500">· {FEATURES[id]}</span></span>
+              <ActionButton action={{ type: 'featureSwitch', feature: id, off: !off.has(id) }} endpoint="/api/admin/action" className="btn-ghost px-2 py-0.5 text-[11px]" confirm={off.has(id) ? undefined : tr('Функцията спира за всички играчи. Продължаваш ли?')}>{off.has(id) ? tr('Включи') : tr('Спри')}</ActionButton>
+            </li>
+          ))}
+        </ul>
+      </Card>
       <Card title={tr('Discord бот')}>
         <p className="mb-3 text-sm text-mist-400">{tr('Проверява на живо всичко, което ботът трябва да има: тайните, настройките в Developer Portal, правата в сървъра, каналите и връзката на фоновия процес.')}</p>
         <DiscordCheck />

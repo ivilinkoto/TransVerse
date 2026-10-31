@@ -1,3 +1,4 @@
+import { plainGoodsFor } from '@/lib/game/goods';
 import { and, asc, eq, inArray, lte, or, sql } from 'drizzle-orm';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { CROSSING_LINES, type CrossingLine } from '@/lib/game/crossings';
@@ -56,7 +57,7 @@ export async function ensureIntermodal(db: Database, now = new Date(), provider?
     if (!dest) continue;
     const [minT, maxT] = CARGO[cargo].tons;
     const tons = Math.round((Math.max(minT, 8) + rand() * (Math.max(maxT, 9) - Math.max(minT, 8))) * 10) / 10;
-    const goods = pick(CARGO[cargo].goods);
+    const goods = pick(plainGoodsFor(cargo, featureLive('more_goods', now)));
     const leg1 = await insertLoad(db, origin, terminalHub, cargo, tons, now, INTERMODAL.ttlHours * 3_600_000, provider, INTERMODAL.multiplier, { goods });
     if (!leg1) continue;
     await db.insert(intermodalShipments).values({ lineId: line.id, reversed, originCityId: origin.id, destCityId: dest.id, cargoType: cargo, goods, tons, leg1ContractId: leg1, createdAt: now });

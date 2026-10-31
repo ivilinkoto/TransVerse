@@ -53,7 +53,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function GameLayout({ children }: { children: React.ReactNode }) {
   await initLocale();
-  const { db, user, company, hq, now } = await gameContext();
+  const { db, user, company, hq, now, features } = await gameContext();
   const staff = isStaff(user.role);
   // 1.1.2: staff who look at the game as a player see what players see (no unreleased features, no staff badges).
   const testing = testsUnreleased(user);
@@ -72,7 +72,6 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     activeBroadcast(db, now),
   ]);
   // v1.9: pages the player's level just unlocked in the menu ("Ново за теб").
-  const features = liveFeatures(now, testing);
   const unlockable = unlockTabs().filter((t) => !t.feature || features[t.feature]).map((t) => ({ ...t, minLevel: t.minLevel! }));
   // 1.1.4.1 „Докато те нямаше“ — not on top of the release notes or the tutorial.
   const back = features.welcome_back && !fresh && !(tutorial.active && tutorial.step) ? await welcomeBack(db, company.id, user.id, user.lastSeenAt, now) : null;
