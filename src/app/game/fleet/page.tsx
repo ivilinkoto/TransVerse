@@ -126,7 +126,7 @@ export default async function FleetPage() {
                   const stop = helpableStop(v.delivery.schedule, now.getTime());
                   return stop ? <RoadsideChoice deliveryId={v.delivery.id} note={stop.note ?? tr('Спрял по пътя')} /> : null;
                 })()}
-                <div className="mt-2 text-xs text-mist-400">{tr('{0}{1} с товар', v.delivery.emptyKm > 0 && tr('{0} празен курс + ', km(v.delivery.emptyKm)), km(v.delivery.loadedKm))}</div>
+                <div className="mt-2 text-xs text-mist-400">{tr('{0}{1} с товар', v.delivery.emptyKm > 0 ? tr('{0} празен курс + ', km(v.delivery.emptyKm)) : '', km(v.delivery.loadedKm))}</div>
               </div>
             )}
             {queue.some((q) => q.vehicleId === v.id) && (
