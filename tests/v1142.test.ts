@@ -9,7 +9,7 @@ import { co2Week, quotaKg } from '@/lib/game/co2';
 import { FEATURES } from '@/lib/game/features';
 import { FOG_AREAS, fogAt, foggyAreas, isFogSeason } from '@/lib/game/fog';
 import { PUZZLE, puzzleFill, puzzlePieces, puzzleShare } from '@/lib/game/loading-puzzle';
-import { CLUES, clueText, culpritOf } from '@/lib/game/lost-cargo';
+import { CLUES, caseSeed, clueText, culpritOf } from '@/lib/game/lost-cargo';
 import { promiseOutcome } from '@/lib/game/promise';
 import { compareVersions, releaseByVersion } from '@/lib/game/releases';
 import { starsFor } from '@/lib/game/reviews';
@@ -109,6 +109,8 @@ describe('v1.1.4.2 „Мъгла и марки“ — rules', () => {
     expect(adOffers('W2026-11-02', 'c1')).toHaveLength(3);
     expect(techCost(1).cents).toBeLessThan(techCost(3).cents);
     // Exactly one clue points at the culprit.
+    // The seed fits the integer column for any trip (a raw hash went over 2^31 and failed the insert).
+    for (let i = 0; i < 2000; i++) expect(caseSeed(`00000000-0000-4000-8000-${String(i).padStart(12, '0')}`)).toBeLessThan(2 ** 31);
     for (const seed of [1, 2, 3, 99]) expect(CLUES.filter((c) => clueText(seed, c).odd).map((c) => clueText(seed, c).suspect)).toEqual([culpritOf(seed)]);
   });
 

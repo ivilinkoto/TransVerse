@@ -1,3 +1,4 @@
+import { hash } from './missions';
 import { seededRandom } from './road-events';
 
 /**
@@ -28,6 +29,9 @@ const ODD: Record<Clue, string[]> = {
   driver: ['Тахографът показва 20 минути спиране без причина.', 'Обяснява се объркано и сменя версията си.'],
   camera: ['Записът показва силует с палетна количка в 3:12 ч.', 'Камерата е изключена точно за 15 минути.'],
 };
+
+/** The case's seed — small enough for an integer column (a raw 32-bit hash is not). */
+export const caseSeed = (deliveryId: string) => hash(`seed:${deliveryId}`) % 1_000_000;
 
 /** The culprit of a case (an index into SUSPECTS). */
 export const culpritOf = (seed: number) => Math.abs(seed) % SUSPECTS.length;

@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { companies, lostCases, userBadges } from '@/server/db/schema';
-import { CLUES, LOST, SUSPECTS, clueText, culpritOf, type Clue } from '@/lib/game/lost-cargo';
+import { CLUES, LOST, SUSPECTS, caseSeed, clueText, culpritOf, type Clue } from '@/lib/game/lost-cargo';
 import { hash } from '@/lib/game/missions';
 import { t } from '@/i18n/t';
 import { featureFor } from '@/server/features';
@@ -17,7 +17,7 @@ export async function maybeLostCase(tx: Tx, userId: string, deliveryId: string, 
   if (!(await featureFor(tx, userId, 'lost_cargo', now))) return false;
   const [open] = await tx.select({ id: lostCases.id }).from(lostCases).where(and(eq(lostCases.userId, userId), isNull(lostCases.closedAt))).limit(1);
   if (open) return false;
-  await tx.insert(lostCases).values({ userId, deliveryId, goods, seed: hash(`seed:${deliveryId}`), createdAt: now });
+  await tx.insert(lostCases).values({ userId, deliveryId, goods, seed: caseSeed(deliveryId), createdAt: now });
   await notify(tx, userId, 'warning', () => t('🔍 Липсва палет: {0}', goods), () => t('Клиентът не получи един палет. Разгледай уликите и посочи виновника.'), '/game/case');
   return true;
 }
