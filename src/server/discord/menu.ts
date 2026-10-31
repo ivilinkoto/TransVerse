@@ -12,6 +12,7 @@ import { discord, DiscordError, noPings } from './api';
 import { appUrl, BRAND, DISCORD_CHANNELS, discordConfig } from './config';
 import { pinPosted, postIn, removePosted, type Posted } from './guild';
 import { layoutChannel } from './layout';
+import { upsertLiveCard } from './live-card';
 import { enqueue } from './outbox';
 import { button, linkButton, reply, rows, select, STYLE, update } from './ui';
 
@@ -138,22 +139,6 @@ export async function liveRanking(db: Database, now = new Date()): Promise<'post
       timestamp: now.toISOString(),
     }],
   };
-  const [row] = await db.select().from(jobState).where(eq(jobState.key, LIVE_KEY));
-  const state = (row?.value ?? null) as Posted | null;
-  const save = (v: Posted) => db.insert(jobState).values({ key: LIVE_KEY, value: v }).onConflictDoUpdate({ target: jobState.key, set: { value: v, updatedAt: now } });
-  if (state) {
-    try {
-      await discord('PATCH', `/channels/${state.channelId}/messages/${state.messageId}`, message);
-      return 'updated';
-    } catch (e) {
-      if (!(e instanceof DiscordError) || e.status === 429 || e.status >= 500) throw e;
-      await removePosted(state).catch(() => undefined);
-    }
-  }
-  const channelId = await layoutChannel(db, DISCORD_CHANNELS.rankings);
-  if (!channelId) return 'off';
-  const posted = await postIn(channelId, message);
-  await pinPosted(posted);
-  await save(posted);
-  return 'posted';
+  // 1.1.4.2: one card, edited in place — never a copy on an edit error.
+  return upsertLiveCard(db, LIVE_KEY, DISCORD_CHANNELS.rankings, message, now);
 }

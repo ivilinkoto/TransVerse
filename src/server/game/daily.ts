@@ -7,15 +7,18 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
+import { streakKept } from './vacation';
 import { awardXp } from './progression';
 import { t } from '@/i18n/t';
 
 /** Claims today's reward exactly once (row lock + one ledger key per player and day). */
 export async function claimDaily(db: Database, userId: string, now = new Date()) {
   return db.transaction(async (tx) => {
-    const [u] = await tx.select({ streak: users.loginStreak, last: users.dailyClaimKey }).from(users).where(eq(users.id, userId)).for('update');
+    const [u] = await tx.select({ streak: users.loginStreak, last: users.dailyClaimKey, vacationUntil: users.vacationUntil }).from(users).where(eq(users.id, userId)).for('update');
     if (!u) fail('user_not_found', t('Профилът не е намерен.'), 404);
-    const state = dailyState(u!.streak, u!.last, now);
+    // 1.1.4.2: the streak waits during a vacation (and the day after it).
+    const last = u!.last && u!.last !== dayKey(now) && streakKept(u!.vacationUntil, now) ? yesterdayKey(now) : u!.last;
+    const state = dailyState(u!.streak, last, now);
     if (state.claimedToday) fail('already_claimed', t('Днешната награда вече е взета. Ела утре за следващата!'), 409);
     const account = await companyForUser(tx, userId);
     const label = t('Дневна награда — ден {0}', state.cycleDay);

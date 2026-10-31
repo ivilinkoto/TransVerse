@@ -31,7 +31,7 @@ export function withSwitches<T extends Record<FeatureId, boolean>>(features: T, 
   return out;
 }
 
-export async function setFeatureOff(db: DbOrTx, actor: Staff | null, id: string, off: boolean) {
+export async function setFeatureOff(db: DbOrTx, actor: Staff | null, id: string, off: boolean, reason = '') {
   requireStaff(actor);
   requireAdminRole(actor);
   if (!(id in FEATURES)) fail('unknown_feature', t('Непозната функция.'));
@@ -42,5 +42,6 @@ export async function setFeatureOff(db: DbOrTx, actor: Staff | null, id: string,
   const value = { ids: [...next] };
   await db.insert(jobState).values({ key: KEY, value }).onConflictDoUpdate({ target: jobState.key, set: { value, updatedAt: new Date() } });
   cache = null;
-  await recordAudit(db, actor.id, off ? 'feature_off' : 'feature_on', null, { feature: id });
+  // 1.1.4.2: why, for the history in Система.
+  await recordAudit(db, actor.id, off ? 'feature_off' : 'feature_on', null, { feature: id, reason: reason.trim().slice(0, 200) });
 }

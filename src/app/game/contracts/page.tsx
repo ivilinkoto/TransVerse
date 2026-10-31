@@ -45,6 +45,8 @@ import { TRAFFIC } from '@/lib/game/traffic';
 import { specializationCovers } from '@/lib/game/specialization';
 import { LOW_EMISSION_ZONES } from '@/lib/game/europe-roads';
 import { t as tr, tx, intlLocale } from '@/i18n/t';
+import { fogAt } from '@/lib/game/fog';
+import { friendsOf } from '@/server/game/social';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
@@ -56,7 +58,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: tr('Поръчки') };
 }
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; repeat?: string; from?: string; truck?: string; load?: string }> }) {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; repeat?: string; from?: string; truck?: string; load?: string; q?: string }> }) {
   await initLocale();
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
@@ -193,6 +195,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       convoy: c.urgent ? null : (convoys.get(`${c.originCityId}:${c.destCityId}`) ?? null),
       specialization: features.specializations && specializationCovers(membership?.company.specialization, c.cargoType),
       transEurope: features.trans_europe && c.transEurope,
+      // 1.1.4.2: night courier, last mile, livestock; fog at either end in November.
+      tag: c.tag && features[c.tag as 'night_courier' | 'last_mile' | 'livestock'] ? c.tag : null,
+      fog: features.fog ? (fogAt(c.origin.lat, c.origin.lon, now) ?? fogAt(c.destination.lat, c.destination.lon, now))?.label ?? null : null,
       lez: features.low_emission_zones ? [c.originCityId, c.destCityId].map((id) => LOW_EMISSION_ZONES[id]).filter((x): x is string => !!x) : [],
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,
       weather: (() => {
@@ -306,7 +311,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost px-3 py-1 text-xs">{user.uiPrefs?.boardView === 'full' ? tr('Прост изглед') : tr('Разширен изглед (всички етикети)')}</ActionButton>
         </div>
       )}
-      <ContractBoard doableDefault={user.level <= NEW_PLAYER_LEVEL} simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard initialQuery={params.q?.slice(0, 60) ?? ''} friends={features.gift_load ? (await friendsOf(db, user.id, now)).friends.map((f) => ({ id: f.id, username: f.username })) : []} doableDefault={user.level <= NEW_PLAYER_LEVEL} simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
 }

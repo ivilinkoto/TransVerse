@@ -7,6 +7,8 @@ import { companyForUser } from './company';
 import { acceptContract } from './deliveries';
 import { fail, GameError } from './errors';
 import { notify } from './notify';
+import { officeEffects } from './office';
+import { featureFor } from '@/server/features';
 
 /**
  * 1.1.4.1 „Планирай следващия курс“: up to three loads lined up for a truck on
@@ -24,10 +26,28 @@ export async function queueTrip(db: Database, userId: string, vehicleId: string,
     const [c] = await tx.select({ status: contracts.status, expiresAt: contracts.expiresAt }).from(contracts).where(eq(contracts.id, contractId));
     if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', t('Поръчката вече не е налична.'), 409);
     const [{ n = 0 } = {}] = await tx.select({ n: count() }).from(tripQueue).where(eq(tripQueue.vehicleId, vehicleId));
-    if (n >= QUEUE_SIZE) fail('queue_full', t('Най-много {0} курса напред за камион.', QUEUE_SIZE));
-    const [row] = await tx.insert(tripQueue).values({ companyId: company.id, vehicleId, contractId, userId }).onConflictDoNothing().returning({ id: tripQueue.id });
+    // 1.1.4.2: a dispatcher in the office adds a place per level.
+    const size = QUEUE_SIZE + ((await featureFor(tx, userId, 'office', now)) ? (await officeEffects(tx, company.id)).dispatcher : 0);
+    if (n >= size) fail('queue_full', t('Най-много {0} курса напред за камион.', size));
+    const [row] = await tx.insert(tripQueue).values({ companyId: company.id, vehicleId, contractId, userId, position: n }).onConflictDoNothing().returning({ id: tripQueue.id });
     if (!row) fail('already_queued', t('Този товар вече е в опашката на камиона.'));
     return { position: n + 1 };
+  });
+}
+
+/** 1.1.4.2: move a queued trip one place up or down (within its truck's queue). */
+export async function moveQueued(db: Database, userId: string, id: string, dir: 'up' | 'down') {
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [item] = await tx.select({ vehicleId: tripQueue.vehicleId }).from(tripQueue).where(and(eq(tripQueue.id, id), eq(tripQueue.companyId, company.id)));
+    if (!item) fail('not_queued', t('Курсът вече не е в опашката.'), 404);
+    const list = await tx.select({ id: tripQueue.id }).from(tripQueue).where(eq(tripQueue.vehicleId, item!.vehicleId)).orderBy(asc(tripQueue.position), asc(tripQueue.createdAt)).for('update');
+    const i = list.findIndex((x) => x.id === id);
+    const j = dir === 'up' ? i - 1 : i + 1;
+    if (j < 0 || j >= list.length) return { moved: false };
+    [list[i], list[j]] = [list[j]!, list[i]!];
+    for (const [pos, x] of list.entries()) await tx.update(tripQueue).set({ position: pos }).where(eq(tripQueue.id, x.id));
+    return { moved: true };
   });
 }
 
@@ -47,7 +67,7 @@ export async function queuedTrips(db: DbOrTx, companyId: string) {
     .innerJoin(origin, eq(origin.id, contracts.originCityId))
     .innerJoin(dest, eq(dest.id, contracts.destCityId))
     .where(eq(tripQueue.companyId, companyId))
-    .orderBy(asc(tripQueue.createdAt));
+    .orderBy(asc(tripQueue.position), asc(tripQueue.createdAt));
 }
 
 /** Worker (every minute): a free truck with a queue starts its next trip. Returns how many started. */
@@ -57,7 +77,7 @@ export async function runTripQueues(db: Database, now = new Date()) {
     .from(tripQueue)
     .innerJoin(vehicles, eq(vehicles.id, tripQueue.vehicleId))
     .where(and(eq(vehicles.status, 'idle'), or(isNull(vehicles.movingUntil), lte(vehicles.movingUntil, now))))
-    .orderBy(asc(tripQueue.createdAt));
+    .orderBy(asc(tripQueue.position), asc(tripQueue.createdAt));
   const byTruck = new Map<string, typeof waiting>();
   for (const w of waiting) byTruck.set(w.vehicleId, [...(byTruck.get(w.vehicleId) ?? []), w]);
   let started = 0;

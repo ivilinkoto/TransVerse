@@ -5,6 +5,23 @@ import { fail } from './errors';
 import { t } from '@/i18n/t';
 
 export type LedgerCategory =
+  | 'promise'
+  | 'loading_bonus'
+  | 'fog_bonus'
+  | 'research'
+  | 'tech_bonus'
+  | 'office'
+  | 'office_bonus'
+  | 'ad_pay'
+  | 'fuel_hedge'
+  | 'co2'
+  | 'livestock_care'
+  | 'interview'
+  | 'insurance_claim'
+  | 'insurance_premium'
+  | 'player_challenge'
+  | 'lost_cargo'
+  | 'good_clients'
   | 'starting_capital'
   | 'freight'
   | 'bonus'
@@ -165,6 +182,23 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   intermodal_bonus: 'Бонус за интермодален контейнер',
   era_bonus: 'Бонус на ерата',
   tournament: 'Турнири на общността',
+  promise: 'Обещан срок',
+  loading_bonus: 'Бонус за товарене',
+  fog_bonus: 'Добавка за мъгла',
+  research: 'Развойна дейност',
+  tech_bonus: 'Технологии (гориво и телематика)',
+  office: 'Офис (заплати и обучение)',
+  office_bonus: 'Офис (търговец и счетоводител)',
+  ad_pay: 'Реклама по ремаркето',
+  fuel_hedge: 'Гориво, купено напред',
+  co2: 'CO₂ квоти',
+  livestock_care: 'Грижа за животните',
+  interview: 'Интервю',
+  insurance_claim: 'Обезщетение от застраховател',
+  insurance_premium: 'Застраховка от компания',
+  player_challenge: 'Предизвикателства от играчи',
+  lost_cargo: 'Изгубена пратка',
+  good_clients: 'Доволни клиенти',
 };
 
 export interface Posting {
@@ -210,7 +244,7 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary' | 'share_issue' | 'share_dividend' | 'holding';
+export type TreasuryCategory = 'insurance' | 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary' | 'share_issue' | 'share_dividend' | 'holding';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   share_issue: 'Продадени акции',
@@ -245,6 +279,7 @@ export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
   academy: 'Фирмена академия',
   division: 'Награди от дивизията',
   anniversary: 'Годишнина на компанията',
+  insurance: 'Застрахователен отдел',
 };
 
 export interface TreasuryPosting {

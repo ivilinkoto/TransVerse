@@ -715,6 +715,13 @@
       "when": 1793447614696,
       "tag": "0101_smiling_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1793468141838,
+      "tag": "0102_v1142",
+      "breakpoints": true
     }
   ]
 }

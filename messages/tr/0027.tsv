@@ -46,8 +46,8 @@ faf662c47a	This member has no linked game account — let them link it first.	У
 f73d1ed8d0	They registered through it.	Он зарегистрировался по ней.
 cc1064c505	Power · mileage	Энергия · пробег
 ce8f778f77	Bot token	Токен бота
-52ec88c362	Toll	Платная дорога
-3201fa7970	Truck toll	Плата за проезд грузовика
+52ec88c362	Toll	Плата
+3201fa7970	Truck toll	Плата для фуры
 a519bbd5f4	Toll for heavy trucks by the kilometre: about {0}/km. Vans don't pay.	Плата за проезд тяжёлых грузовиков по километрам: около {0}/км. Фургоны не платят.
 7080af5360	Tolls by country (by the kilometre, on motorways or a vignette), weekend bans for heavy trucks in Germany, Austria, France, Italy, Switzerland and more — the truck waits at the border — and low-emission zones in Paris, Milan, Madrid and other big cities.	Плата за дороги по странам (по километрам, на автомагистралях или виньетка), запреты на выходные для тяжёлых грузовиков в Германии, Австрии, Франции, Италии, Швейцарии и других — грузовик ждёт на границе — и зоны с низким уровнем выбросов в Париже, Милане, Мадриде и других крупных городах.
 0d56655236	Tolls by country: a kilometre toll for heavy trucks at each country's level, a vignette in Romania, the Netherlands and Luxembourg (once per trip). Vans don't pay the truck toll.	Плата за дороги по странам: покилометровый сбор для тяжёлых грузовиков по ставке каждой страны, виньетка в Румынии, Нидерландах и Люксембурге (один раз за рейс). Фургоны не платят сбор для грузовиков.

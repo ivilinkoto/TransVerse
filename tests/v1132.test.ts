@@ -7,7 +7,7 @@ vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('
 
 /** A small fake Discord server: its channels and every call the bot makes. */
 const fake = vi.hoisted(() => {
-  const state = { channels: [] as { id: string; name: string; type: number }[], calls: [] as { method: string; path: string; body?: unknown }[], next: 1000, threads: new Map<string, { parent: string; name: string }>(), failPatch: 0 };
+  const state = { channels: [] as { id: string; name: string; type: number }[], calls: [] as { method: string; path: string; body?: unknown }[], next: 1000, threads: new Map<string, { parent: string; name: string }>(), failPatch: 0, messages: [] as { id: string; author: { id: string }; embeds: { title: string }[] }[] };
   const call = async (method: string, path: string, body?: unknown) => {
     state.calls.push({ method, path, body });
     if (method === 'GET' && path === '/users/@me') return { id: 'bot', username: 'TransVerse' };
@@ -16,6 +16,7 @@ const fake = vi.hoisted(() => {
     if (method === 'POST' && /^\/guilds\/\w+\/roles$/.test(path)) return { id: `r${state.next++}`, name: 'x', permissions: '0', position: 1 };
     if (method === 'POST' && /\/messages$/.test(path)) return { id: `m${state.next++}` };
     if (method === 'POST' && /^\/channels\/[\w-]+\/threads$/.test(path)) return { id: `t${state.next++}` };
+    if (method === 'GET' && /^\/channels\/[\w-]+\/messages\?limit=50$/.test(path)) return state.messages;
     if (method === 'GET' && /^\/channels\/[\w-]+$/.test(path)) {
       const th = state.threads.get(path.split('/')[2]!);
       return th ? { type: 11, parent_id: th.parent, name: th.name } : { type: 0 };
@@ -57,6 +58,7 @@ beforeEach(async () => {
   fake.state.calls.length = 0;
   fake.state.channels = CHANNELS.map((name, i) => ({ id: `ch${i}`, name, type: 0 }));
   fake.state.failPatch = 0;
+  fake.state.messages = [];
   forgetGuild();
   await db().delete(jobState).where(eq(jobState.key, 'discord-layout'));
 });
@@ -147,7 +149,7 @@ describe('v1.1.3.2', () => {
     expect(await bugFromDiscord(db(), msg('докладвай-бъг', p.discordId, 'бъг'))).toBe(true);
   });
 
-  it('#статус: one pinned card kept fresh; a long pause is reported once the game is back', async () => {
+  it('#статус: one pinned card kept fresh; a long pause shows on the card, not as a new message', async () => {
     await db().delete(jobState).where(eq(jobState.key, 'discord-status'));
     const t0 = new Date();
     expect(await updateStatus(db(), t0)).toBe('posted');
@@ -155,8 +157,11 @@ describe('v1.1.3.2', () => {
     expect(await updateStatus(db(), new Date(t0.getTime() + 5 * 60_000))).toBe('updated');
     expect(calls('PATCH', /\/messages\//)).toHaveLength(1);
     const later = new Date(t0.getTime() + 5 * 60_000 + STATUS_GAP_MS + 60_000);
-    await updateStatus(db(), later);
-    expect((await outbox('status-back:')).length).toBeGreaterThan(0);
+    expect(await updateStatus(db(), later)).toBe('updated');
+    // 1.1.4.2: no separate "the game was down" message — the card says it.
+    expect(await outbox('status-back:')).toHaveLength(0);
+    expect(JSON.stringify(calls('PATCH', /\/messages\//).at(-1)!.body)).toContain('Последно прекъсване');
+    expect(calls('POST', /\/messages$/)).toHaveLength(1);
   });
 
   it('/анкета and /новина for the team; votes change the numbers; the poll closes', async () => {
@@ -215,14 +220,33 @@ describe('v1.1.3.2', () => {
     expect(calls('DELETE', new RegExp(`^/channels/${(row!.value as { channelId: string }).channelId}$`))).toHaveLength(1);
   });
 
-  it('#статус: a card that cannot be edited is replaced instead of failing every tick', async () => {
+  it('#статус: a card that cannot be edited is never reposted every tick; only a deleted one is replaced', async () => {
     await db().delete(jobState).where(eq(jobState.key, 'discord-status'));
     const t0 = new Date();
     expect(await updateStatus(db(), t0)).toBe('posted');
-    fake.state.failPatch = 403;
-    expect(await updateStatus(db(), new Date(t0.getTime() + 5 * 60_000))).toBe('posted');
-    fake.state.failPatch = 503;
-    await expect(updateStatus(db(), new Date(t0.getTime() + 10 * 60_000))).rejects.toThrow();
+    // 1.1.4.2: no access or Discord down — the same card stays, no copy is posted (this was the spam).
+    for (const [i, code] of [403, 400, 503].entries()) {
+      fake.state.failPatch = code;
+      await expect(updateStatus(db(), new Date(t0.getTime() + (i + 1) * 5 * 60_000))).rejects.toThrow();
+    }
+    expect(calls('POST', /\/messages$/)).toHaveLength(1);
+    // Deleted by hand: a new card.
+    fake.state.failPatch = 404;
+    expect(await updateStatus(db(), new Date(t0.getTime() + 20 * 60_000))).toBe('posted');
+  });
+
+  it('#статус: a lost id finds the bot’s card in the channel and edits it; duplicates go', async () => {
+    await db().delete(jobState).where(eq(jobState.key, 'discord-status'));
+    fake.state.messages = [
+      { id: 'old2', author: { id: 'bot' }, embeds: [{ title: '🟢 TransVerse работи' }] },
+      { id: 'old1', author: { id: 'bot' }, embeds: [{ title: '🟢 TransVerse работи' }] },
+      { id: 'chat', author: { id: 'someone' }, embeds: [{ title: '🟢 TransVerse работи' }] },
+    ];
+    expect(await updateStatus(db(), new Date())).toBe('updated');
+    expect(calls('POST', /\/messages$/)).toHaveLength(0);
+    expect(calls('PATCH', /\/messages\/old2$/)).toHaveLength(1);
+    expect(calls('DELETE', /\/messages\/old1$/)).toHaveLength(1);
+    expect(calls('DELETE', /\/messages\/chat$/)).toHaveLength(0);
   });
 
   it('command options are read by their real name for players who play in English', async () => {

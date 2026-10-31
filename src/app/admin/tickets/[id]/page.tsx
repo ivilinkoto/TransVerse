@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ReplyForm } from '@/components/support/ReplyForm';
+import { CopyText } from '@/components/ui/CopyText';
+import { supportTemplatesList } from '@/server/admin-1142';
 import { Thread } from '@/components/support/Thread';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -21,6 +23,7 @@ export default async function AdminTicket({ params }: { params: Promise<{ id: st
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const { db, user } = await adminContext();
+  const templates = await supportTemplatesList(db);
   const thread = await ticketThread(db, user, id).catch((e) => {
     if (e instanceof GameError) notFound();
     throw e;
@@ -40,6 +43,19 @@ export default async function AdminTicket({ params }: { params: Promise<{ id: st
       />
       <Thread messages={thread.messages} />
       <Card title={tr('Отговор от поддръжката')}><ReplyForm endpoint="/api/admin/action" action={{ type: 'ticketReply', ticketId: id }} /></Card>
+      {/* 1.1.4.2: ready answers — copy one, paste it into the reply. */}
+      <Card title={tr('Шаблони за отговор')}>
+        {!templates.length ? <p className="text-sm text-mist-400">{tr('Още няма шаблони — добави от „Поддръжка“.')}</p> : (
+          <ul className="space-y-2 text-sm">
+            {templates.map((x) => (
+              <li key={x.id} className="rounded-lg border border-asphalt-700 p-2">
+                <div className="flex items-center justify-between gap-2"><span className="font-semibold">{x.title}</span><CopyText text={x.body} label={tr('Копирай')} /></div>
+                <p className="mt-1 whitespace-pre-wrap text-xs text-mist-400">{x.body}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }

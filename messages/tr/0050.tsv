@@ -1,0 +1,479 @@
+# 1.1.4.2 «Мъгла и марки»
+8e92e5420b	 (on time only)	 (только вовремя)
+bdacdb3090	 · on-time trips only	 · только рейсы вовремя
+642f1c63a4	**{0}** passed the secret check with a perfect delivery.	**{0}** прошёл тайную проверку с идеальной доставкой.
+0f14bafa93	+1 queue place per level	+1 место в очереди за уровень
+a2a6e4b2e9	+1% to the loading bonus per level	+1% к бонусу за погрузку за уровень
+ffbb2128a1	+2 reputation	+2 репутации
+96af6e10bb	+2% on time per level	+2% вовремя за уровень
+8f7714acce	+2% to the pay per level	+2% к оплате за уровень
+1fc84685d1	+5 loyalty for every driver	+5 лояльности всем водителям
+88e9dc84fe	+{0} лв. to the account.	+{0} лв. на счёт.
+6d6a084c1e	+{0} лв. — the fastest run.	+{0} лв. — самый быстрый рейс.
+28713f093e	/опашка — the trucks' queue from Discord.	/опашка — очередь грузовиков из Discord.
+08a4b77973	7 days: +5% for an on-time trip, but a double penalty	7 дней: +5% за рейс вовремя, но двойная неустойка
+cb466a22f2	CI (tests, e2e) is shown on the PR in GitHub — not checked here.	CI (тесты, e2e) видно в PR на GitHub — здесь не проверяется.
+3140cc3638	CO₂ quotas	Квоты CO₂
+07f05368f5	CO₂ quotas: a weekly quota per truck. The unused part becomes credits to sell, an overrun is paid on Monday.	Квоты CO₂: недельная квота на грузовик. Неиспользованное становится кредитами на продажу, превышение оплачивается в понедельник.
+c8d7905aea	CO₂ over the quota: {0} t ({1})	CO₂ сверх квоты: {0} т ({1})
+1949e92fcc	{0}\nLoads from and to the foggy areas pay **+{1}%** today. Five trips in November — the „Пилот в мъглата“ badge.	{0}\nГрузы из туманных мест и туда платят сегодня **+{1}%**. Пять рейсов в ноябре — значок «Пилот в тумане».
+f694e003a7	{0} / {1} km in {2}{3} · {4}	{0} / {1} км в {2}{3} · {4}
+01100d6ca7	{0} · {1} events	{0} · {1} событий
+7e5abf7a29	{0} drives {1} with {2} — {3} km.	{0} везёт {1} на {2} — {3} км.
+414c58cd48	{0} km in {1} within 7 days{2}	{0} км в {1} за 7 дней{2}
+b86e9b590c	{0} of {1} l at {2} · until {3}	{0} из {1} л по {2} · до {3}
+f3455dd146	{0} t at {1}	{0} т по {1}
+693b960b78	{0} — kept for you for 2 hours, +5% pay.	{0} — держится для тебя 2 часа, +5% к оплате.
+32d5d162a8	{0} „{1}“ comes out {2} (in {3} h).	{0} «{1}» выходит {2} (через {3} ч).
+fcb1ff0f4c	{0}% cover · limit {1} · treasury {2}	{0}% покрытия · лимит {1} · касса {2}
+934aeab3f0	{0}. **{1}** — {2} ★ ({3} trips)	{0}. **{1}** — {2} ★ ({3} рейсов)
+269d136249	Lambs	Ягнята
+48649ff45b	Aneliya	Анелия
+1b0c418a20	Pharmacy deliveries	Аптечные доставки
+5297e983f3	„Мост“ Bank	Банк «Мост»
+509d9ffde9	Release notes ({0} lines)	Заметки к обновлению ({0} строк)
+0eee8ec1a4	He was on the ramp an hour after his shift ended.	Он был на рампе через час после конца смены.
+d010a2f944	Loading bonus	Бонус за погрузку
+161d892a24	Fast	Быстро
+886b62ad06	You are on vacation — the trucks are resting. End the vacation in Settings.	Ты в отпуске — грузовики отдыхают. Заверши отпуск в Настройках.
+24aa4e3725	His signature is missing from the log — right at the pallet that is gone.	В журнале нет его подписи — как раз у пропавшего паллета.
+017b88a0e3	Once a week one trip is checked by the mystery client. Five stars bring +{0} ТрансКоин and a badge.	Раз в неделю один рейс проверяет тайный клиент. Пять звёзд приносят +{0} ТрансКоинов и значок.
+5ceaeec2f8	Cheerful	Весёлый
+3e2ee5f354	Already at the highest level.	Уже на высшем уровне.
+5667114040	You already have insurance for this week.	У тебя уже есть страховка на эту неделю.
+57f91ee547	„{0}“ is already being researched — one at a time.	«{0}» уже исследуется — по одному.
+45c983193e	The culprit was: {0}.	Виновник: {0}.
+b5e0d10e4a	the Wallachian Plain	Валашская низменность
+350f1959dc	„Планински извор“ Water	Вода «Горный родник»
+45d4888b04	Everything is filed in folders.	Всё разложено по папкам.
+b7699904da	Every delivery gets 1–5 stars. An average of {0}+ over at least {1} trips — better clients (+{2}%).	Каждая доставка получает 1–5 звёзд. В среднем {0}+ минимум за {1} рейсов — клиенты получше (+{2}%).
+b74d4b335f	Every load is a choice: promise a deadline, pack the trailer, collect stars from the client. November brings fog, and your company gets an office, research and adverts on the trailers.	Каждый груз — это решение: пообещай срок, уложи груз, собери звёзды клиента. Ноябрь приносит туман, а компания — офис, исследования и рекламу на прицепах.
+f646c8a4ba	Prize returned: „{0}“	Приз возвращён: «{0}»
+156dc58710	Cattle	Крупный рогатый скот
+a172bc52f6	The week's Big Run	Большой рейс недели
+36d45e16c5	Large text	Крупный текст
+3efa366736	Large text and colour-blind colours (Settings).	Крупный текст и цвета для дальтоников (Настройки).
+25fb1c91a6	Fuel ahead: {0} l at {1} лв.	Топливо заранее: {0} л по {1} лв.
+e9d0f9ab0a	Fuel from what was bought ahead ({0} l)	Топливо из купленного заранее ({0} л)
+0b65b40cae	Fuel bought ahead	Топливо, купленное заранее
+7a9e89235a	the Upper Thracian Plain	Верхнефракийская низменность
+c0b0444899	Release readiness	Готовность к выпуску
+398c7d4f7b	Done	Готово
+1b9aff5cef	Cities: GeoNames	Города: GeoNames
+6794bcfa5e	Wrong call	Неверный вывод
+fe0aebdc83	Animal care	Забота о животных
+8ce93e5e0d	„Пътник“ Tyres	Шины «Путник»
+85aabb4cef	Let {0} go?	Уволить {0}?
+fd27744026	Give a title and a text.	Укажи заголовок и текст.
+d1d24b5951	Name the challenge.	Назови испытание.
+0c47a6e314	Ten livestock trips with good care.	Десять рейсов с животными с хорошим уходом.
+62b764b36a	Ten perfect trips in a row	Десять идеальных рейсов подряд
+a898d4d13a	Road detective	Дорожный детектив
+331f884f56	Dimitrova	Димитрова
+4572c118df	Fog extra	Надбавка за туман
+499706b0ad	Good care of the animals	Хороший уход за животными
+c25964354d	Happy clients	Довольные клиенты
+57574bb0ba	Happy clients · +{0}%	Довольные клиенты · +{0}%
+f2091954fc	Documents and post	Документы и почта
+9c407bee47	Accessibility	Доступность
+9060c8edbd	the Danube Plain	Придунайская равнина
+6183fa1d70	The Danube Plain, Thrace, the Po and Pannonian plains — loads from and to the foggy places pay +12%. Five such trips earn the „Пилот в мъглата“ badge.	Придунайская равнина, Фракия, Паданская и Паннонская низменности — грузы из туманных мест и туда платят +12%. Пять таких рейсов — значок «Пилот в тумане».
+f427d5cf8c	The team	Команда
+aefa4535b9	The team sees them now; the players from the release time.	Команда видит их уже сейчас, игроки — с момента выхода.
+295ad6a133	Express parcels	Экспресс-посылки
+3e1e66ddf3	„Искра“ Energy	Энергия «Искра»
+599e6c311f	Wish granted: +{0} loyalty and experience.	Желание исполнено: +{0} лояльности и опыт.
+c6d6e5c05a	Drivers' wishes: a trip to the city they ask for — loyalty and experience if you grant it.	Желания водителей: рейс в город, о котором просят, — лояльность и опыт, если исполнишь.
+24cd0a6803	Livestock	Живые животные
+4da84d1543	Livestock: a new trailer and loads; good care pays more.	Живые животные: новый прицеп и грузы; хороший уход оплачивается выше.
+52281123d9	Live poultry	Живая птица
+d34821c53b	„{0}“ covers the delay.	Задержку покрывает «{0}».
+5e0bc98436	Rotate	Повернуть
+ce7ba3a5d1	Set a lane and a prize — the fastest loaded run wins. A popular challenge (5+ players) brings its creator {0} ТрансКоин.	Задай линию и приз — побеждает самый быстрый рейс с грузом. Популярное испытание (5+ игроков) приносит автору {0} ТрансКоинов.
+fe6365aed7	The footage shows a figure with a pallet jack at 3:12.	На записи силуэт с паллетной тележкой в 3:12.
+532c8687f6	Salary {0} a day	Зарплата {0} в день
+9b4bf13401	Salaries are paid every day with the drivers' (not during a vacation).	Зарплаты платятся каждый день вместе с водительскими (не во время отпуска).
+c2f9e30a98	Remembered on this device.	Запоминается на этом устройстве.
+3ebb87838a	Start the vacation	Начать отпуск
+c52c6290d3	Insurance department	Страховой отдел
+ccf15b0ca0	Insurers	Страховщики
+d657b3fd69	Insurers: a company can sell insurance to other players.	Страховщики: компания может продавать страховки другим игрокам.
+ef9d4881c3	The company's insurance department	Страховой отдел компании
+e8ead8f905	Insurance for 7 days	Страховка на 7 дней
+f5559b052a	Insurance from a company	Страховка от компании
+63f034d14d	Stars and the mystery client	Звёзды и тайный клиент
+5949c6dfec	Did you know…	Знаешь ли ты…
+2becaa08d0	Game data from TransVerse. The cities and the distance are real.	Игровые данные TransVerse. Города и расстояние реальные.
+484b1d37db	Choose two different cities.	Выберите два разных города.
+2057288ec1	Pick a pallet, then tap a spot in the trailer. Tap a placed pallet to remove it.	Выбери паллет, затем коснись места в прицепе. Коснись поставленного паллета, чтобы убрать его.
+53f6443418	Lost pallet	Пропавший паллет
+9a2703dd66	Lost pallet: a small detective case with three clues.	Пропавший паллет: маленькое расследование с тремя уликами.
+ed1d441351	Tired animals	Уставшие животные
+93e38794dc	Compensation paid	Выплачено возмещение
+ff4e29d30a	Done	Выполнена
+e1533ffd02	Researching until {0}	Исследуется до {0}
+4ce60abf65	Researching — ready {0}	Исследуется — готово {0}
+a6fb385602	Expired	Истекла
+db8fa21532	Ilieva	Илиева
+4ba02e4660	Has an app for everything.	Есть приложение на всё.
+93b5b3764d	Interview	Интервью
+2b2deaffc0	An interview after a big success — the answer counts for a whole week.	Интервью после большого успеха — ответ действует целую неделю.
+07c8ed73d5	Interview: +5% on time	Интервью: +5% вовремя
+3a66e5edfe	Interview: double penalty	Интервью: двойная неустойка
+822386c543	The interview is over.	Интервью уже прошло.
+e3415f96e7	Wants a trip to {0} for {1} — within 3 days.	Хочет рейс в {0} ради {1} — в течение 3 дней.
+543ca8698b	History of the feature switches — who, when and why.	История переключателей функций — кто, когда и почему.
+18d59b2010	Feature history	История функций
+a71a775fd9	Camera	Камера
+7a6c77f63d	The camera shows him getting into his car empty-handed.	Камера показывает, как он садится в машину с пустыми руками.
+282667fb95	The camera is off for exactly 15 minutes.	Камера выключена ровно на 15 минут.
+75e59fba5e	„Къде печеля“ map: the cities that earn you the most.	Карта «Где я зарабатываю»: города, которые приносят больше всего.
+6d9f21b93f	The truck card no longer shows „false“ before the kilometres, and an empty value never shows as „false“ anywhere.	Карточка грузовика больше не показывает «false» перед километрами, а пустое значение нигде не выводится как «false».
+872e680f7d	„Утринна звезда“ Coffee	Кофе «Утренняя звезда»
+884b958671	The client did not get one pallet. Look at the clues and name the culprit.	Клиент не получил один паллет. Изучи улики и укажи виновника.
+e8c8e7e0a5	The client rates each delivery with 1–5 stars. Once a week one trip is a secret check — a perfect one brings ТрансКоин and a badge.	Клиент оценивает каждую доставку в 1–5 звёзд. Раз в неделю один рейс — тайная проверка; идеальный приносит ТрансКоины и значок.
+4edf931a00	When a pallet goes missing, you will get a notification.	Когда пропадёт паллет, ты получишь уведомление.
+37f35f1db2	Who did it?	Кто виноват?
+f3c81c8413	Colleagues saw him having dinner at the roadside diner.	Коллеги видели, как он ужинал в придорожном кафе.
+f3b706ab66	Companies sell 7-day insurance against late penalties. The premium goes into their treasury; claims are paid from it.	Компании продают 7-дневную страховку от неустоек за опоздание. Премия идёт в их кассу, возмещения платятся из неё.
+36807f9a31	A company with the „Настройки“ permission can start.	Начать может компания с правом «Настройки».
+5880285118	The company grows	Компания растёт
+ca668cee93	Horses	Лошади
+27ce4e83e0	CO₂ credits bought: {0} t	Куплено кредитов CO₂: {0} т
+a286462e87	Buy for {0}	Купить за {0}
+c85cf05571	The client's courier	Курьер клиента
+1d54d352b1	Live trip · TransVerse	Рейс в прямом эфире · TransVerse
+1f14e80e29	The trip is no longer in the queue.	Рейса уже нет в очереди.
+6603fd8105	Trip not found.	Рейс не найден.
+918267b990	Where I earn	Где я зарабатываю
+a5a68170bf	To the case	К делу
+c39234ad53	Limit, лв.	Лимит, лв.
+aed4b35ec7	The limit is up to {0} лв.	Лимит — до {0} лв.
+5936ad4780	A pallet is missing: {0}	Пропал паллет: {0}
+80e55349af	Missing: {0}	Пропало: {0}
+4a520651a1	Litres	Литры
+69be225298	Brands pay for adverts on your trailers — see the week's offers.	Бренды платят за рекламу на твоих прицепах — посмотри предложения недели.
+5e152bcda0	The brands are invented. Loaded kilometres on routes through the country count.	Бренды вымышлены. Считаются километры с грузом по маршрутам через страну.
+56ef7a757f	„Дъб и бор“ Furniture	Мебель «Дуб и сосна»
+d3d5e514fc	Medical supplies	Медицинские расходники
+147792b115	Between {0} and {1} litres.	От {0} до {1} литров.
+cf388206c0	Mechanic inspector	Механик-инспектор
+242a926c39	You can give a load only to a friend.	Подарить рейс можно только другу.
+81104bd665	His wish was not granted: {0} loyalty.	Его просьба не выполнена: {0} лояльности.
+efc589b1bb	Fog today: {0}	Туман сегодня: {0}
+51f634c1d6	Fog and brands	Туман и бренды
+0914762431	Fog: {0}	Туман: {0}
+07b61d32b2	Spot {0}, {1}	Место {0}, {1}
+bf478ae91e	Live	В эфире
+8cf61bffc7	On the footage he hands over the papers and leaves.	На записи он передаёт документы и уходит.
+569b3bfbbd	Prize for „{0}“	Приз за «{0}»
+955610f52c	Reward for solving it: {0} and {1} ТрансКоин. A wrong call: −1 reputation.	Награда за раскрытие: {0} и {1} ТрансКоинов. Неверный вывод: −1 репутации.
+9f1302c7da	Prize, лв.	Приз, лв.
+c56be7ff98	The prize is paid now. If nobody drives the lane, it comes back to you.	Приз оплачивается сейчас. Если никто не проедет линию, он вернётся к тебе.
+343a97b4cb	Over the quota: {0} лв. paid	Сверх квоты: оплачено {0} лв.
+20088bcd7e	Hired: {0} ({1})	Назначен: {0} ({1})
+777cd1833c	Hire ({0} a day)	Нанять ({0} в день)
+19c71f78d9	Hire a sales person in the office — +2% to every payment per level.	Найми продавца в офис — +2% к каждой оплате за уровень.
+5bb017ae39	Most awake after midnight.	Бодрее всего после полуночи.
+02bf25d3a6	Fastest to the sea	Быстрее всех к морю
+e8d1391247	The fastest run in a player's challenge.	Самый быстрый рейс в испытании игрока.
+33abeaa3b0	The best-paying cities	Самые доходные города
+7a01cf2420	At most {0} open challenges.	Не больше {0} открытых испытаний.
+97d4a457f6	At most {0} gifts a day.	Не больше {0} подарков в день.
+e0303bf6cd	At most {0} purchases at a time.	Не больше {0} покупок одновременно.
+25ed96231a	At most {0} adverts at a time.	Не больше {0} реклам одновременно.
+571866f112	Pallet found: {0}	Паллет найден: {0}
+96ede5f5ff	You cannot give a load to yourself.	Нельзя подарить рейс самому себе.
+634b251d33	You cannot insure with your own company.	Нельзя застраховаться в собственной компании.
+5bf1dbb420	It does not fit here.	Здесь не помещается.
+83e95ca595	Invalid answer.	Неверный ответ.
+52cf3d0b6f	Invalid deadline.	Неверный срок.
+8f8f9bb136	Invalid amount.	Неверное количество.
+3ffa80ca5b	Unknown suspect.	Неизвестный подозреваемый.
+24fcbfd3d0	Unknown role.	Неизвестная должность.
+46ec0848a7	Unknown technology.	Неизвестная технология.
+8fe9e6f7c4	Unknown clue.	Неизвестная улика.
+001fe0645e	Unspent fuel: {0} l back at {1} лв.	Неизрасходованное топливо: {0} л обратно по {1} лв.
+dc12812f6a	The net result of 30 days of trips by delivery city. A bigger circle — more money.	Чистый результат рейсов за 30 дней по городу доставки. Больше круг — больше денег.
+7e4435dfbe	Deadline „{0}“ not kept	Срок «{0}» не соблюдён
+2254a24ae6	Level {0}: {1} · {2} h	Уровень {0}: {1} · {2} ч
+1308041ef1	Nikolova	Николова
+583ca6b42d	New systems	Новые системы
+6348e77530	A new rule in the code checks keeps this bug from coming back.	Новое правило в проверках кода не даст этой ошибке вернуться.
+84e7f34bec	New challenge	Новое испытание
+c9b7d13448	November fog	Ноябрьский туман
+176a2a7b94	Normal	Обычно
+a6e35fb40e	Brings banitsa every Friday.	По пятницам приносит баницу.
+47848582ed	Night courier	Ночной курьер
+e0a8afeebc	Night courier lines (20:00–06:00) and „Последна миля“ for vans with several drops.	Ночные курьерские линии (20:00–06:00) и «Последняя миля» для фургонов с несколькими остановками.
+e77020973f	Night courier loads are taken from 20:00 to 06:00.	Ночные курьерские грузы берутся с 20:00 до 06:00.
+039e38d5de	The „Настройки“ permission in the company is needed. Claims are paid only while the treasury has money.	Нужно право «Настройки» в компании. Возмещения платятся, только пока в кассе есть деньги.
+78c4168fa3	A pallet does not fit — try again.	Какой-то паллет не помещается — попробуй ещё раз.
+6f3e1e2522	Nobody holds this role.	На эту должность никто не назначен.
+43299502e0	No open challenges	Нет открытых испытаний
+fa547cec40	No update coming up.	Предстоящего обновления нет.
+200bf71d45	No case	Дела нет
+faf3601b5d	You do not have that many CO₂ credits.	У тебя нет столько кредитов CO₂.
+5df8aa7657	Compensation from an insurer	Возмещение от страховщика
+c95829f386	Compensation from „{0}“	Возмещение от «{0}»
+955dccf3ba	I promise the client:	Обещаю клиенту:
+506fddf17b	Promise the client „⚡ Бързо“ — +15% when the deadline is kept.	Пообещай клиенту «⚡ Быстро» — +15%, если уложишься в срок.
+33f01f1e37	Promised deadline	Обещанный срок
+3f95ba2c34	Promised deadline and loading	Обещанный срок и погрузка
+c3f2665429	Training: {0} → level {1}	Обучение: {0} → уровень {1}
+9750a02667	Train ({0})	Обучить ({0})
+5c65001327	Announcements of the mystery client and of the fog in the regions in the morning.	Объявления о тайном клиенте и утреннем тумане в регионах.
+f9f6cb2147	Gets confused and changes his story.	Путается и меняет версию.
+cf445bee0f	Sheep	Овцы
+48ba2606dc	„Злато“ Oil	Масло «Злато»
+428b138aaa	Online orders	Онлайн-заказы
+60f6455046	The queue is empty. Line up a load after a trip from „Поръчки“ in the game: {0}/game/contracts	Очередь пуста. Поставь груз после рейса в разделе «Заказы» в игре: {0}/game/contracts
+ae50919219	The trucks' queue	Очередь грузовиков
+96792e717a	The queue of trips and the repeated lanes of your trucks (linked account)	Очередь рейсов и повторяемые линии твоих грузовиков (связанный аккаунт)
+05fc652679	The queue: reordering and „Повтаряй линията“.	Очередь: сортировка и «Повторять линию».
+e1cd4d11bd	By {0} · until {1} · {2} players	От {0} · до {1} · {2} игроков
+214ba2cbdc	Over the last {0} trips.	По последним {0} рейсам.
+6d623446e5	Reviews	Отзывы
+ca554fb3c9	Client reviews	Отзывы клиентов
+205137d468	A vacation is possible once in {0} days.	Отпуск можно брать раз в {0} дней.
+d06d08eb9f	The offer is gone.	Предложения уже нет.
+a558bd68e5	Players' offers	Предложения игроков
+5ece76884b	This week's offers	Предложения этой недели
+b2f8432dd6	Office (salaries and training)	Офис (зарплаты и обучение)
+664a1ee1ba	Office (sales person and accountant)	Офис (продавец и бухгалтер)
+ce91399802	An office with a dispatcher, accountant, sales person and mechanic; research; adverts on the trailers; CO₂ quotas; fuel ahead; livestock, night couriers and the last mile.	Офис с диспетчером, бухгалтером, продавцом и механиком; исследования; реклама на прицепах; квоты CO₂; топливо заранее; живые животные, ночные курьеры и последняя миля.
+3bd8496ba0	Office: dispatcher (+queue place), accountant (lower costs), sales person (better pay), mechanic inspector (less wear). Each with a character and a salary.	Офис: диспетчер (+место в очереди), бухгалтер (ниже расходы), продавец (выше оплата), механик-инспектор (меньше износ). У каждого характер и зарплата.
+25b74b2930	Office: salaries for {0} ({1} people)	Офис: зарплаты за {0} ({1} чел.)
+9ab863b6f3	Office: accountant and sales person	Офис: бухгалтер и продавец
+8934a228a0	Rated {0} — next week brings a new chance.	Оценка {0} — на следующей неделе будет новый шанс.
+e2508d6299	Nobody has switched a feature off yet.	Ещё никто не отключал функцию.
+8b06f8fece	Nobody offers insurance yet	Страховки пока никто не предлагает
+d5bc0b3777	No deliveries in 30 days yet	Доставок за 30 дней пока нет
+4f32eb64de	No reviews yet	Отзывов пока нет
+cca36b06dd	No templates yet — add one from „Поддръжка“.	Шаблонов пока нет — добавь в разделе «Поддержка».
+11c93a7a31	About {0} min left · {1}%	Ещё около {0} мин · {1}%
+baebc18fcf	the Po Valley	Паданская низменность
+0db9ca1b05	Fuel market: buy litres ahead at today's price for 7 days.	Рынок топлива: купи литры заранее по сегодняшней цене на 7 дней.
+7f7e791ee5	the Pannonian Plain	Паннонская низменность
+b597c07481	Money, trips, ТрансКоин, notifications, tickets and the team's actions — newest first.	Деньги, рейсы, ТрансКоины, уведомления, обращения и действия команды — новые сверху.
+7526439e19	Pedant	Педант
+06814731f9	A perfect delivery, checked in secret.	Идеальная доставка, проверенная тайно.
+daced2fdb9	Five stars from the mystery client	Пять звёзд от тайного клиента
+59006e1e94	Five stars — +{0} ТрансКоин and a badge.	Пять звёзд — +{0} ТрансКоинов и значок.
+5fd99d73e4	Five trips in the fog — +{0} ТрансКоин and a badge.	Пять рейсов в тумане — +{0} ТрансКоинов и значок.
+4ce6117afd	Five trips from or to the foggy places in November.	Пять рейсов из туманных мест или туда в ноябре.
+850b717d99	Petrova	Петрова
+967bdde88a	Fog pilot	Пилот в тумане
+a25a13db1a	Fog pilot {0}	Пилот в тумане {0}
+ef252272c8	A challenge won	Победа в испытании
+d982a16d9f	Win: „{0}“	Победа: «{0}»
+8ab87c5b05	Challenge winner	Победитель испытания
+0167e19e4e	Occasion: {0}. What will you say? The answer counts for a whole week.	Повод: {0}. Что скажешь? Ответ действует всю неделю.
+07f7492fff	Occasion: {0}. Answer from the dashboard.	Повод: {0}. Ответь с панели.
+e8c0faa41b	Under the quota: +{0} t of credits to sell.	Ниже квоты: +{0} т кредитов на продажу.
+d8aca8fc77	Trailer floor	Пол прицепа
+22be62f3f0	Give (+5% for them)	Подарить (+5% ему)
+ce14ad8c16	Give a load to a friend — they get it with a bonus.	Подари рейс другу — он получит его с бонусом.
+c6a8c2ac3c	The loading signature is his and the pallet count matches.	Подпись при погрузке его, и число паллетов совпадает.
+457c635de3	Packed trailer ({0}%)	Уложенный прицеп ({0}%)
+736daa4b22	Pack the trailer in the first 15 minutes of the trip — up to +8% of the pay.	Уложи прицеп в первые 15 минут рейса — до +8% к оплате.
+21724219ac	Covers {0}% of the penalties, up to {1} (paid {2}) · until {3}	Покрывает {0}% неустоек, до {1} (выплачено {2}) · до {3}
+6fec77f49a	Cover, %	Покрытие, %
+4c0900493b	Cover is between {0}% and {1}%.	Покрытие — от {0}% до {1}%.
+47f3c00070	Remembers every turn-off since the 90s.	Помнит каждый съезд с 90-х.
+398a06ea49	Popular challenge: „{0}“	Популярное испытание: «{0}»
+f48ebba4be	Last mile	Последняя миля
+d2b3172734	Named: {0}.	Указано: {0}.
+1d4e45d8eb	Username or id	Имя пользователя или id
+05ec1bd01f	The pallet is returned.	Паллет возвращён.
+f8cb0b0ea3	Parcels from online shops	Посылки из интернет-магазинов
+a73f3419d3	English translations ({0} missing)	Переводы на английский (не хватает {0})
+c4f1954ff1	Russian translations ({0} missing)	Переводы на русский (не хватает {0})
+ee49afebe1	Challenges by players	Испытания от игроков
+5e42914843	Challenges by players: set a lane and a prize, the fastest wins.	Испытания от игроков: задай линию и приз, побеждает самый быстрый.
+fb5a50103b	The challenge is over.	Испытание завершено.
+f37a923882	Offer it	Предлагать
+3f30826cc9	Predictive maintenance	Предиктивное обслуживание
+b86afe7be0	End the vacation	Завершить отпуск
+924f1e3a1c	Premium for 7 days, лв.	Премия за 7 дней, лв.
+878383075d	Premium from an insured player	Премия от застрахованного игрока
+aabf5193ef	The premium is between {0} and {1} лв.	Премия — от {0} до {1} лв.
+934b3b90c7	When taking a load choose „Бързо“, „Нормално“ or „Спокойно“. In the first 15 minutes pack the trailer — a fuller one pays more.	Беря груз, выбери «Быстро», «Обычно» или «Спокойно». В первые 15 минут уложи прицеп — чем полнее, тем выше оплата.
+3eb5d7fc0b	Reason for switching off {0}	Причина отключения {0}
+1442767699	Friend of animals	Друг животных
+48531ce3dd	Your friend has no company yet.	У твоего друга ещё нет компании.
+785675d4f3	Checks	Проверки
+11df0a5c1b	CO₂ credits sold: {0} t	Продано кредитов CO₂: {0} т
+1d78cbb39d	Sell to the market at {0}/t	Продать на рынке по {0}/т
+e672962176	Follow the truck along the real route. Drive too — a free trucking game.	Следи за грузовиком по реальному маршруту. Играй и ты — бесплатная игра о грузовиках.
+3da7cfd1b2	Live tracking: a public link to the trip — for Facebook and Discord.	Отслеживание в реальном времени: публичная ссылка на рейс — для Facebook и Discord.
+31095c4943	Full: {0}%	Заполнено: {0}%
+2ae449e129	The first rating comes with the first delivery.	Первая оценка придёт с первой доставкой.
+68076dc231	Player journey	Путь игрока
+33901bda02	Player journey: a timeline of what they did.	Путь игрока: хронология его действий.
+247a43d1c7	Research	Исследования
+93d797564c	Research: aerodynamics, telematics, smart loading and predictive maintenance — three levels each, every one takes hours.	Исследования: аэродинамика, телематика, умная погрузка и предиктивное обслуживание — по три уровня, каждый занимает часы.
+1740f9eea7	Research: the aerodynamic kit gives back part of the fuel on every trip.	Исследования: аэродинамический пакет возвращает часть топлива с каждого рейса.
+8b681f6efb	Outcome	Развязка
+3fa637ad59	Look	Осмотреть
+392883913f	Look at the clues and name the culprit.	Изучи улики и укажи виновника.
+41688ae676	Found out who took the lost pallet.	Раскрыл, кто взял пропавший паллет.
+5a21dcfaa7	Solved	Раскрыто
+649bd4d6a7	Questioning	Допрос
+255661a779	„Отпуска“ mode: the trucks park, salaries and streaks wait.	Режим «Отпуск»: грузовики на стоянке, зарплаты и серии ждут.
+9fe497cf24	Spare parts — urgent	Запчасти — срочно
+8cd8dbaf51	Adverts on the trailer	Реклама на прицепе
+b0408b15f0	Adverts on the trailer: invented brands pay for kilometres in a country within a week.	Реклама на прицепе: вымышленные бренды платят за километры в стране за неделю.
+d7197c25c5	Advert: {0}	Реклама: {0}
+27487a7ccb	Livestock trailer 13.6 m	Прицеп для животных 13,6 м
+4d88f1158d	The trailer is already packed.	Прицеп уже уложен.
+c1b52382b5	Rarely a pallet goes missing after a delivery. Look at the clues and name the culprit — once.	Иногда после доставки пропадает паллет. Изучи улики и укажи виновника — один раз.
+36a5e1ecc6	One driver only	Только с одним водителем
+ee73bfdddf	Bold	Самоуверенный
+8cb6152b2e	Pigs	Свиньи
+3a6af62044	Weekly „Най-доволни клиенти“ ranking.	Еженедельный рейтинг «Самые довольные клиенты».
+1ae91df239	Are you sure? You name only once.	Уверен? Указать можно только один раз.
+f36324f9cc	Silvia	Сильвия
+6f3c84e623	The warehouse shift confirms he was on the ramp to the end.	Складская смена подтверждает, что он был на рампе до конца.
+4a5235294e	The warehouse worker	Кладовщик
+6d36167bd8	Modest	Скромный
+2eb40b7e80	The case is closed.	Дело закрыто.
+9a64547e2c	Relaxed	Спокойно
+58e27c9a01	Switched off among them	Из них отключено
+687e618ba0	Average rating	Средняя оценка
+516d8fcdda	Old school	Старая школа
+9062ad44cb	Create the first one.	Создай первое.
+24997d5b0f	This role is already taken.	Эта должность уже занята.
+eb88ce806c	This insurance is no longer offered.	Эта страховка больше не предлагается.
+2dffbdf3d7	This offer is no longer available.	Это предложение уже недоступно.
+ccc0cf3b7c	This week: {0} of {1} t	На этой неделе: {0} из {1} т
+79083ba2a1	The mystery client	Тайный клиент
+5dccbcd14f	The mystery client: five stars	Тайный клиент: пять звёзд
+a7cebfded4	The tachograph shows a 20-minute stop for no reason.	Тахограф показывает 20 минут стоянки без причины.
+4b51dd2d9a	The tachograph shows he slept in the cab at the car park.	Тахограф показывает, что он спал в кабине на стоянке.
+9050070d8e	Your credits: {0} t	Твои кредиты: {0} т
+4ab93d02ec	Your insurance	Твоя страховка
+93970437e2	Text	Текст
+958da854e8	Telematics	Телематика
+b0f876bcad	Technologies (fuel and telematics)	Технологии (топливо и телематика)
+76498ffb36	Technologies, office, adverts, fuel and CO₂ — a company grows not only with trucks. Game data.	Технологии, офис, реклама, топливо и CO₂ — компания растёт не только грузовиками. Игровые данные.
+c0f65f6b96	Technologies: fuel and telematics	Технологии: топливо и телематика
+2de6793eee	The technology is at its highest level.	Технология на высшем уровне.
+d8c714bc08	Gadget lover	Технофил
+3ca35d3149	This is your challenge.	Это твоё испытание.
+caef5dcd4d	This is your offer.	Это твоё предложение.
+4b67cc110b	Loading is over — the truck is on the road.	Погрузка закончилась — грузовик в пути.
+3ed9f7f038	Loads there	Грузы туда
+ea76359461	Loads from and to the foggy places: +{0}%. {1} such trips in November — the „Пилот в мъглата“ badge.	Грузы из туманных мест и туда: +{0}%. {1} таких рейсов в ноябре — значок «Пилот в тумане».
+7baa0163bf	Loads on the lane	Грузы по линии
+88c2aabc1b	Todorova	Тодорова
+ebe9a8660f	Tonnes for players	Тонн для игроков
+49d0d59e19	Sales person	Продавец
+715263a326	Deadline „{0}“ kept	Срок «{0}» соблюдён
+166e56669e	Smart loading	Умная погрузка
+a3b17e42bf	You are in — take a load on the lane	Ты участвуешь — возьми груз по линии
+3aba49bc56	Features	Функции
+3e02f5e45c	Features in the update ({0})	Функции в обновлении ({0})
+a015c29492	Grocery deliveries	Доставка продуктов
+e475a11b13	Colour-blind colours (blue and orange instead of green and red)	Цвета для дальтоников (синий и оранжевый вместо зелёного и красного)
+ce09529ba5	Flowers for shops	Цветы для магазинов
+d8031a0cd2	Price лв./t	Цена лв./т
+075ed26a9d	The price is between {0} and {1} лв. a tonne.	Цена — от {0} до {1} лв. за тонну.
+af93fbc554	Reply templates	Шаблоны ответов
+ffd3caf4da	Reply templates ({0})	Шаблоны ответов ({0})
+27c95f0249	Reply templates for tickets.	Шаблоны ответов на обращения.
+94a852a76f	„Лале“ Chocolate	Шоколад «Тюльпан»
+44e0008d65	The night-shift driver	Водитель ночной смены
+1a51388341	his son's prom	выпускного сына
+590c464c43	his wedding anniversary	годовщины свадьбы
+9c4eb76477	ready	готова
+15465696c6	ready	готово
+9637ea5c0e	within 70% of the time: +15%	до 70% срока: +15%
+fdfd1f6272	ticket	обращение
+e1791c6248	notification	уведомление
+f5d71e53ea	copied	скопирована
+148160a258	missing	нет
+01f2f0357b	his favourite team's match	матча любимой команды
+a502213abe	level {0} of {1}	уровень {0} из {1}
+f6479be545	the usual deadline	обычный срок
+c1a037c9cb	queue	очередь
+63a8def5cd	money	деньги
+9039f45164	turned on	включил
+9f66f48d3a	livestock trailer	прицеп для животных
+7e3822e44a	his parents	родителей
+09823a7e69	his daughter's birthday	дня рождения дочери
+5e4c0ede1c	solo only	только соло
+378e88f58c	his brother's wedding	свадьбы брата
+f35d8d656e	now {0}%	сейчас {0}%
+c31ad302d0	turned off	отключил
+630937b24a	switched off	отключена
+51b6d03707	an old army friend	старого армейского друга
+ed2c548f85	“It's all thanks to my drivers.”	«Это всё заслуга моих водителей.»
+4c4ea4514e	„Готовност за пускане“: translations, features and notes of the coming version.	«Готовность к выпуску»: переводы, функции и заметки предстоящей версии.
+984c29509b	„Знаеше ли, че…“ on the dashboard for features you have not tried yet.	«Знаешь ли ты…» на панели — о функциях, которые ты ещё не пробовал.
+676d6ee3bd	“We are the best on the road.”	«Мы лучшие на дороге.»
+b45d3db730	„Последна миля“ is for vans only.	«Последняя миля» — только для фургонов.
+07f7782f6a	“We just do our job.”	«Мы просто делаем свою работу.»
+88ecf7def7	„🔁 Повтаряй линията“ drives the truck back and forth on your favourite lane by itself.	«🔁 Повторять линию» сам гоняет грузовик туда-обратно по любимой линии.
+7604c47909	−10% wear per level	−10% износа за уровень
+01e0100ee3	−2% trip costs per level	−2% расходов на рейс за уровень
+c5678d853a	−3% fuel per level (refunded on delivery)	−3% топлива за уровень (возвращается при доставке)
+66855ca7de	−5%, half the penalty	−5%, половина неустойки
+1845e9a492	⛽ Fuel ahead	⛽ Топливо заранее
+e8f7598f0a	✓ {0}% full — +{1}% of the pay on arrival.	✓ Заполнено на {0}% — +{1}% к оплате по прибытии.
+39328c5601	✓ {0}% full — no bonus under 70%.	✓ Заполнено на {0}% — ниже 70% бонуса нет.
+7b64b9af2e	✓ Highest level	✓ Высший уровень
+3559e07db4	✓ Arrived	✓ Прибыл
+a573ad9796	⭐ Happiest clients — last week	⭐ Самые довольные клиенты — прошлая неделя
+dd210a9c2f	🌙 Special loads	🌙 Особые грузы
+a0498393c3	🌫 FOG · +{0}%	🌫 ТУМАН · +{0}%
+8130582efc	🌫 Fog	🌫 Туман
+13930b6c10	🌫 Fog this morning	🌫 Туман этим утром
+9dc5a39bd7	🌫 Fog pilot	🌫 Пилот в тумане
+af25d75128	🌱 CO₂ for the week	🌱 CO₂ за неделю
+248bc4d4ad	🌱 CO₂ quotas	🌱 Квоты CO₂
+ce2ea88adc	🎁 {0} gave you a load	🎁 {0} подарил тебе рейс
+8c81854acb	🎁 Given — kept for your friend for 2 hours.	🎁 Подарено — держится для друга 2 часа.
+a7422e5269	🎁 Give to a friend:	🎁 Подарить другу:
+7de12e98b0	🎤 The press wants an interview	🎤 Пресса просит интервью
+9accc43584	🏆 Won „{0}“	🏆 Победа в «{0}»
+3dffddb7f0	🏖 On vacation until {0}. The trucks rest; salaries and streaks wait.	🏖 В отпуске до {0}. Грузовики отдыхают, зарплаты и серии ждут.
+515311cc7b	🏖 Vacation	🏖 Отпуск
+cbeecd5dba	🏢 Office	🏢 Офис
+247a3915a0	📣 Adverts on the trailer	📣 Реклама на прицепе
+8feb4eeb4d	📣 The {0} advert is done	📣 Реклама {0} выполнена
+c809d4f3d2	📦 Pack the trailer (until {0})	📦 Уложи прицеп (до {0})
+3fab984b92	🔁 **{0}**: {1} ↔ {2} · {3} trips	🔁 **{0}**: {1} ↔ {2} · {3} рейсов
+14b075d60c	🔁 Repeating {0} ↔ {1} · {2} trips	🔁 Повторяет {0} ↔ {1} · {2} рейсов
+713c067721	🔁 Repeat {0} ↔ {1}	🔁 Повторять {0} ↔ {1}
+7c9edc25a8	🔍 A pallet is missing: {0}	🔍 Пропал паллет: {0}
+70b9c5a4a3	🔗 Share live	🔗 Поделиться вживую
+0ca5562214	🔬 Research	🔬 Исследования
+f744679d6c	🕵 The mystery client	🕵 Тайный клиент
+4427ed51d0	🕵 The mystery client gave five stars	🕵 Тайный клиент поставил пять звёзд
+2378dd1bec	🕵 The mystery client checked the trip	🕵 Тайный клиент проверил рейс
+11acdfaeec	🕵 That was the mystery client!	🕵 Это был тайный клиент!
+683cf37f3e	😊 {0} says thank you	😊 {0} благодарит
+d4cc172ee4	😞 {0} is disappointed	😞 {0} разочарован
+9c865e5ebf	🙏 {0} has a request	🙏 У {0} есть просьба
+b38c38a40f	🙏 Wants a trip to {0} for {1} — until {2}.	🙏 Хочет рейс в {0} ради {1} — до {2}.
+6afa0663db	🛡 The insurer paid {0} лв.	🛡 Страховщик заплатил {0} лв.
+2093b94ff2	Diesel: 2.64 kg of CO₂ a litre, electric: 0. On Monday the unused quota becomes credits; an overrun costs {0}/t.	Дизель: 2,64 кг CO₂ на литр, электро: 0. В понедельник неиспользованное становится кредитами, превышение стоит {0}/т.
+d87a34f693	Today: {0} / l. Trips in the next 7 days burn what you bought first; the rest goes back at that day's price.	Сегодня: {0} / л. Рейсы за 7 дней сначала сжигают купленное, остаток возвращается по цене дня.
+43f2d000e6	Trips on the road finish, no new ones start, no salaries are paid, the streak is kept. Up to 14 days, once in 30.	Рейсы в пути завершаются, новые не стартуют, зарплаты не платятся, серия сохраняется. До 14 дней, раз в 30.
+7b5e1da0f9	Take more loads there.	Бери больше грузов туда.
+0e6f225567	Look at the big circles.	Посмотри на большие круги.
+e7b6e160a7	Join one.	Присоединись к одному.
+cbce44ae42	Drive the lane with a load.	Проедь линию с грузом.
+3f44b1c574	Or set your own with a prize.	Или задай своё с призом.
+12ed0c7d9d	Or sell it from your company.	Или продавай от своей компании.
+473de1c5fa	Companies sell insurance against penalties.	Компании продают страховку от неустоек.
+917f676c03	Buy for 7 days.	Купи на 7 дней.
+d343faf82f	Where you earn the most — by delivery city.	Где ты зарабатываешь больше всего — по городу доставки.
+65ce22edb9	Challenges players set for each other.	Испытания, которые игроки задают друг другу.
+1af97653cc	Compare the offers.	Сравни предложения.
+8327db893a	Compare with last month.	Сравни с прошлым месяцем.
+accf06d960	<t:{0}:t> – <t:{1}:t> (about {2} min) · working again	<t:{0}:t> – <t:{1}:t> (около {2} мин) · снова работает
+804efe499d	#статус and #класации each have one card that updates in place. No more new messages every few minutes, and an outage shows on the card itself.	В #статус и #класации по одной карточке, которая обновляется на месте. Новых сообщений каждые несколько минут больше нет, а перерыв показывается на самой карточке.
+35f199496c	The card updates every 5 minutes. If the time below stops changing, the game is not answering.	Карточка обновляется каждые 5 минут. Если время внизу перестало меняться, игра не отвечает.
+98c883c5f4	Last outage	Последний перерыв

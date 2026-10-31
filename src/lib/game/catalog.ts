@@ -139,6 +139,8 @@ export const isElectric = (m: Pick<PowerUnitModel, 'electric'>) => !!m.electric;
 
 export const TRAILERS: TrailerModel[] = [
   { id: 'curtain-13', kind: 'semi', body: 'curtain', brand: 'Struma Trailers', name: 'Завеса 13.6 м', priceCents: 32_000_00, payloadTons: 24, axles: 3, requiresHeavyHaul: false, minLevel: 2, dragFuel: 0 },
+  // 1.1.4.2: a two-deck ventilated livestock trailer.
+  { id: 'livestock-13', kind: 'semi', body: 'livestock', brand: 'Struma Trailers', name: 'Ремарке за животни 13.6 м', priceCents: 46_000_00, payloadTons: 20, axles: 3, requiresHeavyHaul: false, minLevel: 3, dragFuel: 1 },
   { id: 'reefer-13', kind: 'semi', body: 'reefer', brand: 'Struma Trailers', name: 'Хладилно ремарке 13.6 м', priceCents: 58_000_00, payloadTons: 22, axles: 3, requiresHeavyHaul: false, minLevel: 2, dragFuel: 1.5 },
   { id: 'tipper-26', kind: 'semi', body: 'tipper', brand: 'Iskar Steel', name: 'Самосвал 30 м³', priceCents: 44_000_00, payloadTons: 26, axles: 3, requiresHeavyHaul: false, minLevel: 3, dragFuel: 0.5 },
   { id: 'container-40', kind: 'semi', body: 'container', brand: 'Iskar Steel', name: 'Контейнерно шаси 40′', priceCents: 29_000_00, payloadTons: 26, axles: 3, requiresHeavyHaul: false, minLevel: 4, dragFuel: 0.5 },

@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, ClipboardList, CreditCard, Flag, Gauge, HeartPulse, LifeBuoy, LineChart, LogOut, Mail, PartyPopper, Search, Siren, Users } from 'lucide-react';
+import { Activity, ClipboardList, CreditCard, Flag, Gauge, HeartPulse, LifeBuoy, LineChart, LogOut, Mail, PartyPopper, Rocket, Route, Search, Siren, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { t, tx } from '@/i18n/t';
@@ -10,6 +10,7 @@ const ITEMS = [
   { href: '/admin/search', label: 'Търсене', icon: Search },
   { href: '/admin/users', label: 'Потребители', icon: Users },
   { href: '/admin/retention', label: 'Задържане', icon: HeartPulse },
+  { href: '/admin/journey', label: 'Пътят на играча', icon: Route },
   { href: '/admin/tickets', label: 'Поддръжка', icon: LifeBuoy },
   { href: '/admin/reports', label: 'Доклади', icon: Flag },
   { href: '/admin/urgent', label: 'Спешни доставки', icon: Siren },
@@ -18,6 +19,7 @@ const ITEMS = [
   { href: '/admin/economy', label: 'Икономика', icon: LineChart },
   { href: '/admin/mail', label: 'Имейли', icon: Mail },
   { href: '/admin/system', label: 'Система и известия', icon: Activity },
+  { href: '/admin/readiness', label: 'Готовност за пускане', icon: Rocket },
   { href: '/admin/audit', label: 'Одит дневник', icon: ClipboardList },
 ];
 

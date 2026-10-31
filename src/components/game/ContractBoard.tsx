@@ -33,9 +33,18 @@ import { SECURE_PARKING } from '@/lib/game/traffic';
 import { SPECIALIZATION } from '@/lib/game/specialization';
 import { TRANS_EUROPE } from '@/lib/game/europe';
 import { t, tx, intlLocale } from '@/i18n/t';
+import { FOG } from '@/lib/game/fog';
+import { PROMISES, PROMISE_IDS, type PromiseId } from '@/lib/game/promise';
+import { TAG_LABELS, type LoadTag } from '@/lib/game/special-loads';
+import { usePromise } from './usePromise';
+import { GiftLoad } from './GiftLoad';
 
 export interface BoardContract {
   id: string;
+  /** 1.1.4.2: a load with its own rules (night courier, last mile, livestock). */
+  tag?: string | null;
+  /** 1.1.4.2: the foggy area at either end (November). */
+  fog?: string | null;
   /** Trucks on this lane right now (v1.6; 0 below the traffic threshold). */
   traffic?: number;
   /** The cargo of the company's specialisation (v1.7 on the board). */
@@ -158,13 +167,15 @@ export interface BoardContract {
   }[];
 }
 
-const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green' };
+const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green', livestock: 'orange' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'fav' | 'home' | 'hired' | 'stops' | 'goods' | 'halloween' | 'christmas' | 'marta' | 'buditeli' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'special' | 'fog' | 'fav' | 'home' | 'hired' | 'stops' | 'goods' | 'halloween' | 'christmas' | 'marta' | 'buditeli' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
+  { id: 'special', label: '🌙 Специални товари', test: (c) => !!c.tag },
+  { id: 'fog', label: '🌫 Мъгла', test: (c) => !!c.fog },
   { id: 'home', label: 'Към базата', test: (c) => c.toHome },
   { id: 'hired', label: 'Възложени на мен', test: (c) => !!c.hiredBy },
   { id: 'stops', label: 'Сборни товари', test: (c) => c.stops.length > 0 },
@@ -186,6 +197,8 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
 
 /** Chips that appear only in their season (when some contract matches). */
 const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
+  ['special', (c) => !!c.tag],
+  ['fog', (c) => !!c.fog],
   ['home', (c) => c.toHome],
   ['hired', (c) => !!c.hiredBy],
   ['stops', (c) => c.stops.length > 0],
@@ -203,7 +216,9 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
 ]);
 
 /** `doableDefault` (1.1.3): new players start with "Само изпълними" on. */
-export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false, doableDefault = false }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean; doableDefault?: boolean }) {
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false, doableDefault = false, friends = [], initialQuery = '' }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean; doableDefault?: boolean; friends?: { id: string; username: string }[]; initialQuery?: string }) {
+  const promiseLive = useFeature('load_promise');
+  const [promise, setPromise] = usePromise();
   const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
   const toggleChip = (id: Chip) => setChips((s) => {
     const next = new Set(s);
@@ -212,7 +227,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
     return next;
   });
   const [cargo, setCargo] = useState<string>('');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [doable, setDoable] = useState(doableDefault);
   const [sort, setSort] = useState<Sort>('reward');
   // A link to one load (a notification, Discord) opens it first.
@@ -325,6 +340,17 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
           </button>
         ))}
       </div>
+      {promiseLive && (
+        <div className="flex flex-wrap items-center gap-2 text-sm" role="radiogroup" aria-label={t('Обещан срок')}>
+          <span className="text-mist-400">{t('Обещавам на клиента:')}</span>
+          {PROMISE_IDS.map((id) => (
+            <button key={id} type="button" role="radio" aria-checked={promise === id} onClick={() => setPromise(id)} title={tx(PROMISES[id].hint)} className={`rounded-full border px-3 py-1 text-xs transition ${promise === id ? 'border-volt-500 bg-volt-500/20 text-white' : 'border-asphalt-700 text-mist-300 hover:border-asphalt-500'}`}>
+              {PROMISES[id].emoji} {tx(PROMISES[id].label)}
+            </button>
+          ))}
+          <span className="text-xs text-mist-400">{tx(PROMISES[promise].hint)}</span>
+        </div>
+      )}
       {localCityNames.length > 0 && (
         <p className="flex items-center gap-2 text-sm text-mist-300">
           <MapPinned className="h-4 w-4 text-gold-400" />
@@ -355,7 +381,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       ) : (
         <ul className="space-y-2">
           {list.map((c) => (
-            <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text) => { setSent(text); setOpen(null); }} />
+            <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text) => { setSent(text); setOpen(null); }} />
           ))}
         </ul>
       )}
@@ -455,7 +481,7 @@ function whyNot(c: BoardContract): string | null {
   return [...c.options].sort((a, b) => a.emptyKm - b.emptyKm)[0]!.error;
 }
 
-function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void }) {
+function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void; friends: { id: string; username: string }[]; promise: PromiseId }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
   const countdown = useFeature('countdowns');
@@ -521,7 +547,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
     setBusy(true);
     setError(null);
     try {
-      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure, route: routeChoice && cheap && !rail ? 'cheap' : 'fast', parking: parkingLive && secure ? 'secure' : 'free', refuel: refuelLive && refuel });
+      await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure, route: routeChoice && cheap && !rail ? 'cheap' : 'fast', parking: parkingLive && secure ? 'secure' : 'free', refuel: refuelLive && refuel, ...(promise !== 'normal' ? { promise } : {}) });
       onAccepted(t('Камионът тръгна: {0}{1}, {2} → {3}. Можеш да поемеш следващата поръчка.', part ? t('{0} т ', dec(part.tons)) : '', c.goods, c.origin.name, c.destination.name));
       setBusy(false);
       router.refresh();
@@ -542,6 +568,8 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
             {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />{t('СПЕШНО · ×{0} по-бързо · до товара за 1 мин', dec(c.speedFactor))}</Badge>}
             {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />{t('Лиценз: {0}', c.missingLicences.map((l) => tx(l)).join(', '))}</Badge>}
             {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />{t('ниво {0}', c.minLevel)}</Badge>}
+            {c.tag && TAG_LABELS[c.tag as LoadTag] && <Badge tone={c.tag === 'livestock' ? 'orange' : c.tag === 'night_courier' ? 'violet' : 'cyan'}>{TAG_LABELS[c.tag as LoadTag].emoji} {tx(TAG_LABELS[c.tag as LoadTag].label).toUpperCase()}</Badge>}
+            {c.fog && <Badge tone="neutral">{t('🌫 МЪГЛА · +{0}%', Math.round(FOG.payShare * 100))}</Badge>}
             <Bonuses simple={simple}>
               {c.tender && <Badge tone="violet">{t('ТЪРГ НА КОМПАНИЯТА')}</Badge>}
               {c.exchange && <Badge tone="violet">{t('БОРСА МЕЖДУ ИГРАЧИ')}</Badge>}
@@ -643,6 +671,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
 
       {open && (
         <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">
+          {friends.length > 0 && !c.reservedByOther && !c.tender && !c.alreadyTaken && <GiftLoad contractId={c.id} friends={friends} />}
           <dl className="grid gap-3 text-sm sm:grid-cols-4">
             <div><dt className="label">{t('Възложител')}</dt><dd className="mt-1">{tx(c.shipper)}</dd></div>
             <div><dt className="label">{t('Маршрут')}</dt><dd className="mt-1">{c.countries.join(' → ')} · {c.borders ? t('{0} граница', c.borders) : t('без граница')}{c.hasToll ? t(' · тол') : ''}</dd></div>

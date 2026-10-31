@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
 import { MoreOnDashboard } from '@/components/game/MoreOnDashboard';
+import { Dashboard1142 } from '@/components/game/Dashboard1142';
 import { rivalStanding } from '@/server/game/rival';
 import { bestTripOfWeek } from '@/server/game/weekly-card';
 import { appUrl } from '@/server/discord/config';
@@ -203,6 +204,7 @@ export default async function OverviewPage() {
           </div>
         </section>
       )}
+      <Dashboard1142 db={db} userId={user.id} companyId={company.id} now={now} features={features} />
       {features.buditeli && isBuditeli(now) && (
         <Link href="/game/contracts" className="panel flex items-center gap-3 border-gold-400/50 p-3.5 transition hover:border-gold-400/80">
           <BookOpen className="h-8 w-8 shrink-0 text-gold-400" />

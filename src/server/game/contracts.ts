@@ -211,7 +211,7 @@ export interface LocalNeed {
  */
 export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Date(), provider?: RoutingProvider, want: number = LOCAL_JOBS.perTruck): Promise<number> {
   const compatible = CARGO_TYPES.filter(
-    (c) => CARGO[c].minLevel <= need.level && CARGO[c].bodies.some((b) => need.bodies.includes(b)) && missingLicences(requiredLicences(c, []), need.licences).length === 0,
+    (c) => c !== 'livestock' && CARGO[c].minLevel <= need.level && CARGO[c].bodies.some((b) => need.bodies.includes(b)) && missingLicences(requiredLicences(c, []), need.licences).length === 0,
   );
   if (!compatible.length || need.payloadTons <= 0) return 0;
   const candidates = await db
@@ -315,7 +315,7 @@ async function loadRoute(db: Database, origin: Hub, destination: Hub, provider?:
   return getCrossingRoute(db, origin.id, destination.id, line, !!ia, 'truck', provider);
 }
 
-async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean; oversize?: boolean; goods?: string; transEurope?: boolean; humanitarian?: boolean } = {}): Promise<string | null> {
+async function insertContract(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, provider?: RoutingProvider, premium: { minReputation: number; multiplier: number } | null = null, via: Hub[] = [], extra: { featured?: string; portCallId?: string; port?: boolean; oversize?: boolean; goods?: string; transEurope?: boolean; humanitarian?: boolean; tag?: string } = {}): Promise<string | null> {
   const sea = islandOf(origin)?.id !== islandOf(destination)?.id;
   if (sea) via = [];
   const viaRoute = via.length ? await getRouteVia(db, origin.id, via.map((h) => h.id), destination.id, 'truck', provider) : null;
@@ -335,7 +335,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     { id: 'sowing', goods: isSowing(now) && featureLive('sowing', now) ? SOWING.goods[cargo] : undefined, share: SOWING.contractShare, multiplier: SOWING.rewardMultiplier },
     { id: 'harvest', goods: isHarvest(now) && featureLive('harvest', now) ? HARVEST.goods[cargo] : undefined, share: HARVEST.contractShare, multiplier: HARVEST.rewardMultiplier },
   ];
-  const theme = extra.featured || extra.oversize ? null : (themes.find((t) => t.goods && rand() < t.share) ?? null);
+  const theme = extra.featured || extra.oversize || extra.tag ? null : (themes.find((t) => t.goods && rand() < t.share) ?? null);
   // A national day of the destination country (v1.6): loads there pay more today.
   const national = !extra.featured && featureLive('national_days', now) ? nationalDayToday(now, destination.countryCode) : null;
   const holiday = theme?.id ?? (national ? 'national' : null);
@@ -343,7 +343,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   // 1.1.4: more goods on every cargo; fragile, valuable and dangerous ones pay more.
   const goods = extra.goods ?? (theme ? pick(theme.goods!) : pick(goodsFor(cargo, featureLive('more_goods', now))));
   // v1.8: now and then the shipper does not say what is inside.
-  const sealed = !extra.featured && !extra.oversize && !extra.transEurope && !extra.humanitarian && !extra.portCallId && !theme && !via.length && featureLive('sealed_cargo', now) && rand() < SEALED.share;
+  const sealed = !extra.tag && !extra.featured && !extra.oversize && !extra.transEurope && !extra.humanitarian && !extra.portCallId && !theme && !via.length && featureLive('sealed_cargo', now) && rand() < SEALED.share;
   // The administrators' pay factor (v1.5 balance), 1 unless they changed it.
   // v1.10: loads from a city that has grown pay a little more.
   // v2.0: the economic cycle of the destination country.
@@ -372,12 +372,18 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     transEurope: extra.transEurope ?? false,
     sealed,
     humanitarian: extra.humanitarian ?? false,
+    tag: extra.tag ?? null,
     expiresAt: new Date(now.getTime() + ttlMs),
   }).returning({ id: contracts.id });
   const names = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, [origin.id, destination.id]));
   const name = (id: number) => names.find((c) => c.id === id)?.nameBg ?? '';
   await notifyFavoriteLane(db, { contractId: row!.id, originCityId: origin.id, destCityId: destination.id, originName: name(origin.id), destName: name(destination.id), goods, rewardCents: reward }, now);
   return row!.id;
+}
+
+/** 1.1.4.2: a load with its own rules (night courier, last mile, livestock), with drops on the way when given. */
+export function insertTaggedLoad(db: Database, origin: Hub, destination: Hub, cargo: CargoType, tons: number, now: Date, ttlMs: number, multiplier: number, via: Hub[], extra: { tag: string; goods: string }, provider?: RoutingProvider) {
+  return insertContract(db, origin, destination, cargo, tons, now, ttlMs, provider, { minReputation: 0, multiplier }, via, extra);
 }
 
 /** A load between two given cities (port loads, ship calls); null when there is no way (two different islands). */

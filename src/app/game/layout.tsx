@@ -1,3 +1,4 @@
+import { A11yApply } from '@/components/game/A11y';
 import { and, eq, isNull, lte, sql } from 'drizzle-orm';
 import type { Metadata } from 'next';
 import { Eye, MailWarning } from 'lucide-react';
@@ -113,6 +114,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         </div>
         <MobileNav badges={{ missions, eventLive: !!live }} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <LiveUpdates />
+        {features.accessibility && <A11yApply />}
         {features.tab_badge && <TabBadge unread={unread} />}
         <ChatDock />
         <PlayerCardHost />

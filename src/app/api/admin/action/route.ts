@@ -25,6 +25,7 @@ import { clearServerErrors } from '@/server/error-log';
 import { retryOutbox } from '@/server/discord/outbox';
 import { setStaffNote } from '@/server/staff-notes';
 import { winBack } from '@/server/admin-retention';
+import { deleteSupportTemplate, saveSupportTemplate } from '@/server/admin-1142';
 import { setFeatureOff } from '@/server/feature-switches';
 import { t } from '@/i18n/t';
 
@@ -56,7 +57,9 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('discordRetry'), id: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('staffNote'), userId: id, note: z.string().trim().max(500) }),
   z.object({ type: z.literal('winBack'), userId: id }),
-  z.object({ type: z.literal('featureSwitch'), feature: z.string().max(60), off: z.boolean() }),
+  z.object({ type: z.literal('featureSwitch'), feature: z.string().max(60), off: z.boolean(), reason: z.string().trim().max(200).default('') }),
+  z.object({ type: z.literal('supportTemplate'), title: z.string().trim().max(80), body: z.string().trim().max(4000) }),
+  z.object({ type: z.literal('deleteSupportTemplate'), id }),
   z.object({ type: z.literal('discordLayoutPlan') }),
   z.object({ type: z.literal('discordLayoutApply'), permissions: z.boolean().default(false) }),
   z.object({ type: z.literal('discordPanels') }),
@@ -215,7 +218,12 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'winBack':
       return { ok: true, ...(await winBack(db, user, input.userId)) };
     case 'featureSwitch':
-      await setFeatureOff(db, user, input.feature, input.off);
+      await setFeatureOff(db, user, input.feature, input.off, input.reason);
+      return { ok: true };
+    case 'supportTemplate':
+      return { ok: true, id: (await saveSupportTemplate(db, user, input.title, input.body)).id };
+    case 'deleteSupportTemplate':
+      await deleteSupportTemplate(db, user, input.id);
       return { ok: true };
     case 'resetLink':
       return { ok: true, url: await adminResetLink(db, user, input.userId, siteUrl(request.headers.get('origin'))) };

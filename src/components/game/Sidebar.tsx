@@ -7,6 +7,7 @@ import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Logo, LogoMark } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
 import { ACCOUNT_MENU, SECTIONS, activeTab, coreTabs, sectionFor, tabGroups, visibleTabs, type NavSection, type NavTab } from './nav';
@@ -237,7 +238,10 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
     router.refresh();
   };
   const tile = 'flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-asphalt-700 bg-asphalt-850 px-2 py-3 text-center text-xs font-medium text-mist-100 transition hover:border-asphalt-500 active:scale-95';
-  return (
+  // 1.1.4.2: drawn at the end of <body>. Inside the sidebar (backdrop-blur makes it the containing
+  // block of fixed children) the sheet stayed in the sidebar's box, under the page — on tablets the
+  // tiles showed only between the dashboard's cards.
+  return createPortal(
         <div className={`fixed inset-0 ${desktop ? 'z-50' : 'z-30 lg:hidden'}`} role="dialog" aria-modal="true" aria-label={tr('Още раздели')}>
           <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label={tr('Затвори')} onClick={onClose} />
           <div className={desktop ? 'absolute left-[84px] top-0 h-dvh w-[min(560px,calc(100vw-84px))] overflow-y-auto border-r border-asphalt-700 bg-asphalt-900 px-5 py-5 shadow-2xl xl:left-60' : 'absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-asphalt-700 bg-asphalt-900 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl'}>
@@ -279,6 +283,7 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
               </div>
             </section>
           </div>
-        </div>
+        </div>,
+    document.body,
   );
 }

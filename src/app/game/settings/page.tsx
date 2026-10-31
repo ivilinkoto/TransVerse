@@ -1,3 +1,5 @@
+import { A11ySettings } from '@/components/game/A11y';
+import { VacationForm } from '@/components/game/VacationForm';
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { Ban, Bell, Eye, MessageSquare, Paintbrush, Sparkles, UserRoundCheck, LayoutGrid } from 'lucide-react';
@@ -77,6 +79,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         {features.discord_bot && (
           <Card title={<span id="discord" className="inline-flex scroll-mt-24 items-center gap-2"><MessageSquare className="h-4 w-4 text-mist-400" />Discord</span>} className="lg:col-span-2">
             <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} />
+          </Card>
+        )}
+        {features.vacation && (
+          <Card title={t('🏖 Отпуска')} className="lg:col-span-2">
+            <VacationForm until={user.vacationUntil && user.vacationUntil > now ? user.vacationUntil.toISOString() : null} />
+          </Card>
+        )}
+        {features.accessibility && (
+          <Card title={t('Достъпност')} className="lg:col-span-2">
+            <A11ySettings />
           </Card>
         )}
         <Card title={t('Език')} className="lg:col-span-2">

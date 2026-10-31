@@ -1,3 +1,5 @@
+import { checkTripRules } from './special-loads';
+import { afterExtras, settleExtras, type TripFacts } from './trip-extras';
 import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, hasWinterGrip, powerUnitModel, TRAILER_UPGRADES, trailerModel } from '@/lib/game/catalog';
@@ -142,6 +144,7 @@ export const BODY_LABELS: Record<string, string> = {
   lowbed: 'нискорамно ремарке',
   flatbed: 'платформа',
   car_carrier: 'автовоз',
+  livestock: 'ремарке за животни',
 };
 
 async function vehicleBundle(db: DbOrTx, companyId: string, vehicleId: string, lock = false) {
@@ -176,6 +179,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   const { vehicle } = await vehicleBundle(db, company.id, vehicleId);
   if (vehicle.status !== 'idle') fail('vehicle_busy', t('Превозното средство е заето.'), 409);
   if (vehicle.movingUntil && vehicle.movingUntil > now) fail('moving', t('Камионът още пътува до депото — след минута.'), 409);
+  // 1.1.4.2: night couriers only at night, the last mile only for vans, nothing while on vacation.
+  await checkTripRules(db, userId, contract!, vehicle.modelId, now);
   // Groupage loads come with v1.2 (staff test them before the release).
   if (contract!.stops?.length && !(await featureFor(db, userId, 'multistop', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   // Partial load (v1.3): only part of an ordinary board load, for the same pay per tonne.
@@ -600,7 +605,37 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     ]);
   }
 
-  const payout = -hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents;
+  // 1.1.4.2: the promise, the loading puzzle, fog, technologies, office, livestock, interview, insurer, fuel bought ahead.
+  const tripFacts: TripFacts = {
+    userId: company!.ownerId,
+    companyId: d.companyId,
+    deliveryId: d.id,
+    contractId: contract.id,
+    tag: contract.tag,
+    goods: contract.goods,
+    cargoType: contract.cargoType,
+    originCityId: contract.originCityId,
+    destCityId: contract.destCityId,
+    routeId: d.routeId,
+    vehicleId: d.vehicleId,
+    startedAt: d.startedAt,
+    deadlineAt: d.deadlineAt,
+    completedAt,
+    late: result.late,
+    violations: d.violations.length,
+    rewardCents: result.rewardCents,
+    penaltyCents: result.penaltyCents,
+    fuelCents: costs.fuelCents,
+    fuelLitres: (costs as { fuelLitres?: number }).fuelLitres ?? 0,
+    tollCents: costs.tollCents,
+    wear: costs.wear,
+    loadedKm: d.loadedKm,
+    crew: [d.driverId, d.coDriverId].filter((x): x is string => !!x),
+    condition: vehicle!.condition,
+    perfectStreak: perfect.streak,
+  };
+  const extrasCents = await settleExtras(tx, tripFacts);
+  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -798,6 +833,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await recordDuelDelivery(tx, company!.ownerId, contract.weightTons, completedAt);
   // Starter rental: returned now if the player bought their own truck, or offered for buy-out.
   if (vehicle!.ownership === 'rented') await afterRentedTrip(tx, vehicle!.id, company!.ownerId, now);
+  // 1.1.4.2: stars, the mystery client, wear, adverts, CO₂, wishes, challenges, the lost pallet.
+  await afterExtras(tx, tripFacts);
   await checkAchievements(tx, company!.ownerId, d.companyId);
   return true;
 }

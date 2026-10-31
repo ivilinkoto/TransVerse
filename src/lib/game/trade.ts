@@ -18,6 +18,7 @@ export const TRADE_BASE_CENTS_PER_TON: Record<CargoType, number> = {
   special: 1_200_00,
   steel: 520_00,
   vehicles: 2_400_00,
+  livestock: 1_800_00,
 };
 
 /** Price level of a country (1 = average). */
