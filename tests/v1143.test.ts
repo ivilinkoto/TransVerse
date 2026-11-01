@@ -1,12 +1,15 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
+import { closeDb } from '@/server/db/client';
 import { FEATURES } from '@/lib/game/features';
 import { compareVersions, releaseByVersion } from '@/lib/game/releases';
 import { motionEnabled } from '@/lib/client/motion';
 import { StarsReveal } from '@/components/fx/StarsReveal';
 import { DriverPortrait } from '@/components/game/DriverPortrait';
 import { AnimatedAmount } from '@/components/fx/AnimatedAmount';
+
+afterAll(() => closeDb());
 
 describe('1.1.4.3 „Живи награди“', () => {
   it('ships between 1.1.4.2 and 1.2 with its feature', () => {
@@ -39,5 +42,29 @@ describe('1.1.4.3 „Живи награди“', () => {
   it('the top bar amount renders the real value first', () => {
     expect(renderToStaticMarkup(createElement(AnimatedAmount, { value: 1_234_500, kind: 'money' }))).toContain('лв.');
     expect(renderToStaticMarkup(createElement(AnimatedAmount, { value: 42, kind: 'coins' }))).toContain('42');
+  });
+});
+
+describe('1.1.4.4 hire drivers without a company', () => {
+  it('an independent driver hires up to 3 drivers; a company owner has no such limit', async () => {
+    const { db, newPlayer, playerWithCompany } = await import('./helpers');
+    const { candidates, hireDriver } = await import('@/server/game/staff');
+    const { companyForUser, hireMode, SOLO_HIRE_MAX } = await import('@/server/game/company');
+    const { GameError } = await import('@/server/game/errors');
+    expect(FEATURES.hire_solo).toBe('1.1.4.4');
+    const solo = await newPlayer();
+    const account = await companyForUser(db(), solo.userId);
+    expect(await hireMode(db(), solo.userId, account, new Date('2026-11-02T10:00:00+02:00'))).toBe('solo');
+    expect(await hireMode(db(), solo.userId, account, new Date('2026-10-01T10:00:00+03:00'))).toBe('none');
+    for (let i = 0; i < SOLO_HIRE_MAX; i++) {
+      const [c] = await candidates(db(), account.id);
+      await hireDriver(db(), solo.userId, c!.id);
+    }
+    const [next] = await candidates(db(), account.id);
+    const err = await hireDriver(db(), solo.userId, next!.id).then(() => null, (e: unknown) => e);
+    expect(err instanceof GameError ? err.code : err).toBe('solo_hire_limit');
+    const owner = await playerWithCompany();
+    const firm = await companyForUser(db(), owner.userId);
+    expect(await hireMode(db(), owner.userId, firm)).toBe('company');
   });
 });

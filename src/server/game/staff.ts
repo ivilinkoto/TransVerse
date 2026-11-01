@@ -3,7 +3,7 @@ import { powerUnitModel } from '@/lib/game/catalog';
 import { TRAIT_MAX, TRAITS, traitLevel, traitPointsLeft, type TraitId } from '@/lib/game/crew';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companies, driverCandidates, drivers, users, vehicles } from '@/server/db/schema';
-import { canHireStaff, companyForUser } from './company';
+import { companyForUser, hireMode, SOLO_HIRE_MAX } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { driverName } from './names';
@@ -31,7 +31,12 @@ export async function candidates(db: DbOrTx, companyId: string, now = new Date()
 export async function hireDriver(db: Database, userId: string, candidateId: string) {
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
-    if (!(await canHireStaff(tx, userId, company))) fail('company_required', t('Наемането на шофьори изисква да членуваш в компания (или да имаш своя).'), 403);
+    const mode = await hireMode(tx, userId, company);
+    if (mode === 'none') fail('company_required', t('Наемането на шофьори изисква да членуваш в компания (или да имаш своя).'), 403);
+    if (mode === 'solo') {
+      const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(drivers).where(and(eq(drivers.companyId, company.id), eq(drivers.isOwner, false)));
+      if (n >= SOLO_HIRE_MAX) fail('solo_hire_limit', t('Без компания можеш да имаш до {0} наети шофьора. Основи компания, за да наемаш повече.', SOLO_HIRE_MAX));
+    }
     const [c] = await tx.delete(driverCandidates).where(and(eq(driverCandidates.id, candidateId), eq(driverCandidates.companyId, company.id))).returning();
     if (!c) fail('candidate_not_found', t('Кандидатът вече не е наличен.'), 404);
     const [driver] = await tx.insert(drivers).values({ companyId: company.id, name: c!.name, skill: c!.skill, salaryCentsPerDay: c!.salaryCentsPerDay }).returning();

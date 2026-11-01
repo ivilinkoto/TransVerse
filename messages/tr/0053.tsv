@@ -7,3 +7,10 @@ f075f87aa9	A temporary error while looking for a trip. Trying again in a minute.
 1d5e272049	The Dispatcher Is Back	Диспетчер вернулся
 b89ea40b79	Fix: the VIP dispatcher sends everyone's trucks again.	Исправление: VIP-диспетчер снова отправляет грузовики всех игроков.
 c22c1f1411	The limit of 20 automatic trips in 24 hours (for all trucks) has been reached.	Лимит в 20 автоматических рейсов за 24 часа (для всех грузовиков) исчерпан.
+f03b484059	The VIP dispatcher sends everyone's trucks again, and independent drivers can now hire drivers.	VIP-диспетчер снова отправляет грузовики всех игроков, а самостоятельные водители теперь могут нанимать водителей.
+ab69dfc8c2	Without a company you can have up to {0} hired drivers ({1} now). With a company — as many as you like.	Без компании можно иметь до {0} нанятых водителей (сейчас {1}). С компанией — сколько угодно.
+be94a22921	Without a company you can have up to {0} hired drivers. Found a company to hire more.	Без компании можно иметь до {0} нанятых водителей. Основай компанию, чтобы нанимать больше.
+832dc10123	You don't need to found a company to hire a driver: an independent driver can have up to 3 hired drivers. With a company — as many as you like.	Не нужно основывать компанию, чтобы нанять водителя: самостоятельный водитель может иметь до 3 нанятых водителей. С компанией — сколько угодно.
+ab76084972	Found a company	Основать компанию
+5b73c30ba0	Drivers without a company	Водители и без компании
+43e890039a	Drivers → candidates: an independent driver (without their own company and not a member of another) can hire up to 3 drivers. Salaries and rest work as in a company. For more drivers, found a company.	Водители → кандидаты: самостоятельный водитель (без своей компании и не состоящий в другой) может нанять до 3 водителей. Зарплаты и отдых — как в компании. Для большего числа водителей основай компанию.

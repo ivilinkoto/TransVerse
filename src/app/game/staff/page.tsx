@@ -1,5 +1,5 @@
 import { Hint } from '@/components/game/Hint';
-import { canHireStaff } from '@/server/game/company';
+import { hireMode, SOLO_HIRE_MAX } from '@/server/game/company';
 import { Moon, Plus, UserPlus, UserRound, Users } from 'lucide-react';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -31,7 +31,8 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
   await initLocale();
   const { driver: focus } = await searchParams;
   const { db, user, company, now, features } = await gameContext();
-  if (!(await canHireStaff(db, user.id, company))) return <CompanyRequired what={tr('Наемането на шофьори')} />;
+  const mode = await hireMode(db, user.id, company, now);
+  if (mode === 'none') return <CompanyRequired what={tr('Наемането на шофьори')} />;
   const [fleet, pool] = await Promise.all([fleetView(db, company.id), candidates(db, company.id)]);
   // The tachograph (v1.5): driving and rest by day for each driver.
   // 1.1.4.2: what the drivers ask for (a trip to a city by a date).
@@ -48,6 +49,12 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
         help={tr('Шофьорът може да кара 9 часа преди дневна почивка. Часовете от последния курс се пренасят: ако го пратиш веднага пак, ще спре за почивка по-рано и курсът ще е по-дълъг. След {0} минути престой е отпочинал. Двоен екипаж (втори шофьор в същия камион) кара до 18 часа без почивки — дългите курсове стават много по-бързи. С всяко ниво на умение шофьорът получава точка за Икономичност, Безопасност или Издръжливост.', CREW_RULES.restGameMin)}
       />
       {!user.seenHints.includes('crew') && <Hint id="crew" />}
+      {mode === 'solo' && (
+        <p className="rounded-xl border border-cyan-glow/30 bg-cyan-glow/5 px-4 py-3 text-sm text-mist-300">
+          {tr('Без компания можеш да имаш до {0} наети шофьора ({1} сега). С компания — колкото искаш.', SOLO_HIRE_MAX, fleet.drivers.filter((d) => !d.isOwner).length)}{' '}
+          <a href="/game/company" className="text-cyan-glow underline">{tr('Основи компания')}</a>
+        </p>
+      )}
       <Card title={tr('Шофьори ({0})', fleet.drivers.length)}>
         {fleet.drivers.length === 0 ? (
           <Empty icon={UserRound} title={tr('Нямате шофьори')}>{tr('Без шофьор превозното средство не може да тръгне. Наемете от кандидатите по-долу.')}</Empty>
