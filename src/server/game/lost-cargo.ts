@@ -10,6 +10,7 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
+import { rewardCase } from './inventory';
 
 /** 1.1.4.2 „Изгубена пратка“: a rare case after a trip (one open at a time). */
 export async function maybeLostCase(tx: Tx, userId: string, deliveryId: string, goods: string, now: Date) {
@@ -48,6 +49,7 @@ export async function accuse(db: Database, userId: string, id: string, suspect: 
       await post(tx, company.id, [{ category: 'lost_cargo', amountCents: LOST.rewardCents, description: t('Намерена пратка: {0}', row!.goods), idempotencyKey: `lost:${row!.id}` }]);
       await postCoins(tx, userId, { amount: LOST.coins, reason: 'lost_cargo', description: t('Изгубена пратка'), idempotencyKey: `lost-coins:${row!.id}` });
       await tx.insert(userBadges).values({ userId, badge: 'detective', awardedAt: now }).onConflictDoNothing();
+      await rewardCase(tx, userId, 'case_gold', 'lost_cargo', `lost-case:${row!.id}`, now);
     } else {
       await tx.update(companies).set({ reputation: sql`greatest(0, ${companies.reputation} + ${LOST.wrongReputation})` }).where(eq(companies.id, company.id));
     }

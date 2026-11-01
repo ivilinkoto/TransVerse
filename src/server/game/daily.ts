@@ -8,6 +8,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { notify } from './notify';
 import { streakKept } from './vacation';
+import { dailyCase } from './inventory';
 import { awardXp } from './progression';
 import { t } from '@/i18n/t';
 
@@ -25,6 +26,8 @@ export async function claimDaily(db: Database, userId: string, now = new Date())
     await post(tx, account.id, [{ category: 'daily_reward', amountCents: state.reward.cents, description: t('{0} (серия {1})', label, state.nextStreak), idempotencyKey: `daily:${userId}:${state.today}` }]);
     if (state.reward.xp) await awardXp(tx, userId, state.reward.xp, 'daily');
     if (state.reward.coins) await postCoins(tx, userId, { amount: state.reward.coins, reason: 'daily_reward', description: label, idempotencyKey: `daily-coins:${userId}:${state.today}` });
+    // 1.2: a case — silver on the 7th day, now and then a bronze one.
+    await dailyCase(tx, userId, state.cycleDay, state.today, now);
     await tx.update(users).set({ loginStreak: state.nextStreak, dailyClaimKey: state.today }).where(eq(users.id, userId));
     return { ...state.reward, streak: state.nextStreak, cycleDay: state.cycleDay };
   });

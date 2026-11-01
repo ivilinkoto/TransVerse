@@ -8,6 +8,7 @@ import { t } from '@/i18n/t';
 import { postCoins } from './coins';
 import { addLoad, loadHubs } from './contracts';
 import { notify } from './notify';
+import { rewardCase } from './inventory';
 
 /**
  * 1.1.4.1 „Голям рейс“: the week's three legs are picked once (kept in
@@ -55,6 +56,7 @@ export async function recordBigRunDelivery(tx: Tx, userId: string, originId: num
   const paid = await postCoins(tx, userId, { amount: BIG_RUN.coins, reason: 'big_run', description: t('Голям рейс {0}', run.week.slice(1)), idempotencyKey: `big-run:${run.week}:${userId}` });
   if (!paid) return false;
   await tx.insert(userBadges).values({ userId, badge: BIG_RUN.badge, awardedAt: completedAt }).onConflictDoNothing();
+  await rewardCase(tx, userId, 'case_gold', 'big_run', `big-run-case:${run.week}:${userId}`, completedAt);
   await notify(tx, userId, 'achievement', () => t('🏁 Големият рейс е твой!'), () => t('Всички {0} етапа за седмицата — +{1} ТрансКоин.', BIG_RUN.legs, BIG_RUN.coins), '/game/big-run');
   return true;
 }

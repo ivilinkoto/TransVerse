@@ -46,15 +46,23 @@ export async function publishAutoUrgent(db: Database, now = new Date(), provider
   const hubs = (await db.select({ id: cities.id, nameBg: cities.nameBg, country: cities.countryCode, population: cities.population, lat: cities.lat, lon: cities.lon }).from(cities)).filter((c) => isFreightHub(c));
   // 80 % start in Bulgaria; the destination is 80–450 km away (a short, urgent run).
   const pool = rand() < 0.8 ? hubs.filter((c) => c.country === 'BG') : hubs;
-  const origin = pickWeighted(pool, (c) => Math.sqrt(c.population));
-  if (!origin) return null;
   const domestic = rand() < 0.75;
-  const options = hubs.filter((c) => c.id !== origin.id && (!domestic || c.country === origin.country)).filter((c) => {
-    const d = haversineKm([origin.lat, origin.lon], [c.lat, c.lon]);
+  const near = (o: (typeof hubs)[number]) => hubs.filter((c) => c.id !== o.id).filter((c) => {
+    const d = haversineKm([o.lat, o.lon], [c.lat, c.lon]);
     return d >= 80 && d <= 450;
   });
-  const dest = pickWeighted(options, (c) => Math.sqrt(c.population));
-  if (!dest) return null;
+  // A hub in a small country (or on an island) may have no hub in reach at home:
+  // then the run may cross a border, and a hub with nothing in reach is skipped.
+  let origin: (typeof hubs)[number] | undefined;
+  let dest: (typeof hubs)[number] | undefined;
+  for (let tries = 0; tries < 8 && !dest; tries++) {
+    origin = pickWeighted(pool, (c) => Math.sqrt(c.population));
+    if (!origin) return null;
+    const reach = near(origin);
+    const home = reach.filter((c) => c.country === origin!.country);
+    dest = pickWeighted(domestic && home.length ? home : reach, (c) => Math.sqrt(c.population));
+  }
+  if (!origin || !dest) return null;
   const mix = pickWeighted(CARGO_MIX, (m) => m.weight)!;
   const tons = Math.round(between(mix.tons[0], mix.tons[1]) * 10) / 10;
   const route = await getRoute(db, origin.id, dest.id, 'truck', provider);

@@ -26,6 +26,7 @@ import { recordChallengeRun } from './player-challenges';
 import { researchOf } from './research';
 import { notify } from './notify';
 import { recordWishDelivery } from './wishes';
+import { applyNoRest, coverLate, rewardCase, roadFind } from './inventory';
 import { announceMystery } from '@/server/discord/v1142';
 
 /**
@@ -162,6 +163,11 @@ export async function settleExtras(tx: Tx, f: TripFacts): Promise<number> {
   let total = list.reduce((s, p) => s + p.amountCents, 0);
   if (await featureFor(tx, f.userId, 'fuel_hedge', at)) total += await burnLockedFuel(tx, f.companyId, f.deliveryId, f.fuelLitres, f.fuelCents, at);
   if (f.late && (await featureFor(tx, f.userId, 'insurers', at))) total += await insurerClaim(tx, f.companyId, f.userId, f.deliveryId, f.penaltyCents, at);
+  // 1.2: „Застраховка за един курс“ from the inventory returns the whole late penalty.
+  if (f.late && f.penaltyCents > 0 && (await featureFor(tx, f.userId, 'inventory', at)) && (await coverLate(tx, f.userId))) {
+    await post(tx, f.companyId, [{ category: 'items', amountCents: f.penaltyCents, description: t('Застраховка за един курс (инвентар)'), idempotencyKey: key('item-cover') }]);
+    total += f.penaltyCents;
+  }
   return total;
 }
 
@@ -198,6 +204,7 @@ export async function afterExtras(tx: Tx, f: TripFacts) {
       await notify(tx, f.userId, 'achievement', () => t('🕵 Това беше тайният клиент!'), () => t('Пет звезди — +{0} ТрансКоин и значка.', MYSTERY.coins), '/game/reviews');
       await offerInterview(tx, f.userId, 'mystery', at);
       await announceMystery(tx, f.userId, f.deliveryId, at);
+      await rewardCase(tx, f.userId, 'case_silver', 'mystery', `mystery-case:${f.deliveryId}`, at);
     } else if (mystery) {
       await notify(tx, f.userId, 'info', () => t('🕵 Тайният клиент провери курса'), () => t('Оценка {0} — следващата седмица ще има нов шанс.', starLine(stars!)), '/game/reviews');
     }
@@ -228,6 +235,9 @@ export async function afterExtras(tx: Tx, f: TripFacts) {
   if (await featureFor(tx, f.userId, 'player_challenges', at)) await recordChallengeRun(tx, f.userId, { originCityId: f.originCityId, destCityId: f.destCityId }, { minutes: Math.round((at.getTime() - f.startedAt.getTime()) / 6000) / 10, solo: f.crew.length <= 1, deliveryId: f.deliveryId }, at);
   if (['pallets', 'container'].includes(f.cargoType) && !f.tag) await maybeLostCase(tx, f.userId, f.deliveryId, f.goods, at);
   if (f.perfectStreak === 10) await offerInterview(tx, f.userId, 'perfect', at);
+  // 1.2: drivers under „no rest“ are rested at once; now and then a find on the road.
+  await applyNoRest(tx, f.userId, f.crew, at);
+  await roadFind(tx, f.userId, f.deliveryId, at);
   // Livestock: ten trips with good care make the badge.
   if (f.tag === 'livestock' && livestockCare({ late: f.late, violations: f.violations, loadedKm: f.loadedKm, team: f.crew.length > 1 })) {
     const k = `animal-care:${f.userId}`;

@@ -106,6 +106,7 @@ import { startResearch } from '@/server/game/research';
 import { trackLink } from '@/server/game/tracking';
 import { setPromise, submitPuzzle } from '@/server/game/trip-extras';
 import { setVacation } from '@/server/game/vacation';
+import { applyItem, openCase } from '@/server/game/inventory';
 import { chooseWeeklyGoal, claimWeeklyGoal } from '@/server/game/weekly-goal';
 import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
@@ -424,6 +425,9 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('answerInterview'), id, answer: z.enum(['modest', 'bold', 'team']) }),
   z.object({ type: z.literal('lookClue'), id, clue: z.enum(['warehouse', 'driver', 'camera']) }),
   z.object({ type: z.literal('accuse'), id, suspect: z.coerce.number().int().min(0).max(2) }),
+  // 1.2
+  z.object({ type: z.literal('useItem'), itemId: z.string().max(40), driverId: id.optional(), vehicleId: id.optional() }),
+  z.object({ type: z.literal('openCase'), caseId: z.enum(['case_bronze', 'case_silver', 'case_gold']) }),
   z.object({ type: z.literal('trailerUpgrade'), trailerId: id, upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('buyOrgTrailer'), modelId: z.string().max(40) }),
   z.object({ type: z.literal('sellOrgTrailer'), orgTrailerId: id }),
@@ -615,6 +619,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   answerInterview: 'interviews',
   lookClue: 'lost_cargo',
   accuse: 'lost_cargo',
+  useItem: 'inventory',
+  openCase: 'inventory',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -945,6 +951,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await answerInterview(db, user.id, input.id, input.answer)) };
     case 'lookClue':
       return { ok: true, ...(await lookClue(db, user.id, input.id, input.clue)) };
+    case 'useItem':
+      return { ok: true, ...(await applyItem(db, user.id, input.itemId, { driverId: input.driverId, vehicleId: input.vehicleId })) };
+    case 'openCase':
+      return { ok: true, ...(await openCase(db, user.id, input.caseId)) };
     case 'accuse':
       return { ok: true, ...(await accuse(db, user.id, input.id, input.suspect)) };
     case 'unqueueTrip':

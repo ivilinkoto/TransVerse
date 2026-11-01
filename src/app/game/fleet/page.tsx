@@ -7,6 +7,7 @@ import { laneRepeatsOf, lastLanesOf } from '@/server/game/lane-repeat';
 import { PUZZLE } from '@/lib/game/loading-puzzle';
 import { LoadingPuzzle } from '@/components/game/LoadingPuzzle';
 import { TrackLink } from '@/components/game/TrackLink';
+import { DriverPortrait } from '@/components/game/DriverPortrait';
 import { fleetCapacity } from '@/server/game/fleet';
 import Link from 'next/link';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
@@ -162,7 +163,7 @@ export default async function FleetPage() {
               <div><dt className="label">{tr('Състояние')}</dt><dd className="num mt-1">{Math.round(v.condition)}%<Meter value={v.condition} className="mt-1" /></dd></div>
               <div><dt className="label">{tr('Капацитет')}</dt><dd className="num mt-1">{v.model.kind === 'tractor' && !v.trailer ? '—' : tr('{0} т', combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null }).payloadTons)}</dd></div>
               <div><dt className="label">{tr('Надстройка')}</dt><dd className="mt-1">{v.model.kind === 'tractor' ? (v.trailer ? tx(BODY_LABELS[v.trailer.model.body]) : <span className="text-amber-sig">{tr('без ремарке')}</span>) : `${tx(BODY_LABELS[v.model.body!])}${v.trailer ? tr(' + прикачно') : ''}`}</dd></div>
-              <div><dt className="label">{tr('Шофьор')}</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <><UserRound className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{tx(v.driver.name)}{v.coDriver ? ` + ${v.coDriver.name}` : ''}</span></> : <span className="text-amber-sig">{tr('няма')}</span>}</dd></div>
+              <div><dt className="label">{tr('Шофьор')}</dt><dd className="mt-1 flex items-center gap-1">{v.driver ? <>{features.driver_portraits ? <DriverPortrait id={v.driver.id} name={v.driver.name} look={v.driver.look ?? {}} className="h-7 w-7" /> : <UserRound className="h-3.5 w-3.5 shrink-0" />}<span className="truncate">{tx(v.driver.name)}{v.coDriver ? ` + ${v.coDriver.name}` : ''}</span></> : <span className="text-amber-sig">{tr('няма')}</span>}</dd></div>
             </dl>
             {features.lane_repeat && (() => {
               // 1.1.4.2 „Повтаряй линията“.

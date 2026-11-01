@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { and, desc, eq, ilike, inArray } from 'drizzle-orm';
-import type { DbOrTx } from '@/server/db/client';
+import type { Database, DbOrTx } from '@/server/db/client';
+import { ITEMS, type ItemId } from '@/lib/game/items';
+import { grantItem } from '@/server/game/inventory';
 import { adminAudit, coinEntries, companies, contracts, deliveries, cities, ledgerEntries, notifications, supportTemplates, supportTickets, users } from '@/server/db/schema';
 import { FEATURES, type FeatureId } from '@/lib/game/features';
 import { RELEASES, compareVersions } from '@/lib/game/releases';
@@ -93,4 +95,13 @@ export async function saveSupportTemplate(db: DbOrTx, actor: Staff | null, title
 export async function deleteSupportTemplate(db: DbOrTx, actor: Staff | null, id: string) {
   requireStaff(actor);
   await db.delete(supportTemplates).where(eq(supportTemplates.id, id));
+}
+
+/** 1.2: the team gives an item (support: a lost case, a compensation); in the audit log. */
+export async function adminGrantItem(db: Database, actor: Staff | null, userId: string, itemId: string, qty: number) {
+  requireStaff(actor);
+  if (!(itemId in ITEMS)) fail('unknown_item', t('Непознат предмет.'));
+  await db.transaction((tx) => grantItem(tx, userId, itemId as ItemId, qty, 'admin', `admin-item:${actor!.id}:${userId}:${Date.now()}`));
+  await recordAudit(db, actor!.id, 'grant_item', userId, { itemId, qty });
+  return { itemId, qty };
 }

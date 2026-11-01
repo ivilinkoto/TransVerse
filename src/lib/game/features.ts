@@ -129,6 +129,10 @@ export const FEATURES = {
   leasing: '1.2',
   company_roles: '1.2',
   year_recap: '1.2',
+  // 1.2 additions: the inventory with items and cases, drivers' portraits, Truck Pass on the season page.
+  inventory: '1.2',
+  driver_portraits: '1.2',
+  truck_pass: '1.2',
   company_plot: '1.3',
   plot_guests: '1.3',
   livery: '1.3',
