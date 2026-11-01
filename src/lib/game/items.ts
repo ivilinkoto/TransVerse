@@ -18,7 +18,9 @@ export type ItemTarget = 'none' | 'driver' | 'vehicle';
 export interface ItemDef {
   name: string;
   rarity: Rarity;
-  kind: 'consumable' | 'cosmetic' | 'collectible' | 'case';
+  kind: 'consumable' | 'cosmetic' | 'collectible' | 'case' | 'coins';
+  /** Kind 'coins' (1.2): ТрансКоин credited at once when the case drops it — never kept in the inventory. */
+  coins?: number;
   target: ItemTarget;
   /** What it does, in one short line. */
   effect: string;
@@ -43,6 +45,9 @@ export const ITEMS = {
   truck_keychain: { name: 'Ключодържател камионче', rarity: 'uncommon', kind: 'collectible', target: 'none', effect: 'За колекцията „Спомени от пътя“.' },
   road_atlas: { name: 'Стар пътен атлас', rarity: 'rare', kind: 'collectible', target: 'none', effect: 'За колекцията „Спомени от пътя“.' },
   cb_mic: { name: 'CB микрофон', rarity: 'rare', kind: 'collectible', target: 'none', effect: 'За колекцията „Спомени от пътя“.' },
+  tc_small: { name: 'Шепа ТрансКоин', rarity: 'uncommon', kind: 'coins', target: 'none', coins: 5, effect: '+5 ТрансКоин веднага.' },
+  tc_medium: { name: 'Торба ТрансКоин', rarity: 'epic', kind: 'coins', target: 'none', coins: 25, effect: '+25 ТрансКоин веднага.' },
+  tc_jackpot: { name: 'Джакпот ТрансКоин', rarity: 'legendary', kind: 'coins', target: 'none', coins: 100, effect: '+100 ТрансКоин веднага.' },
   case_bronze: { name: 'Бронзов кейс', rarity: 'common', kind: 'case', target: 'none', effect: 'Отвори го за един предмет.' },
   case_silver: { name: 'Сребърен кейс', rarity: 'rare', kind: 'case', target: 'none', effect: 'Отвори го за един предмет.' },
   case_gold: { name: 'Златен кейс', rarity: 'epic', kind: 'case', target: 'none', effect: 'Отвори го за един предмет.' },
@@ -53,9 +58,9 @@ export type CaseId = 'case_bronze' | 'case_silver' | 'case_gold';
 
 /** The contents of each case, with weights (shown as percent in the game). */
 export const CASE_TABLES: Record<CaseId, [ItemId, number][]> = {
-  case_bronze: [['coffee', 30], ['repair_kit', 24], ['fuel_voucher', 24], ['energy_drink', 10], ['cargo_cover', 7], ['trucker_cap', 3], ['old_tachograph', 2]],
-  case_silver: [['coffee', 12], ['energy_drink', 18], ['repair_kit', 12], ['cargo_cover', 14], ['queue_ticket', 10], ['thermos', 10], ['trucker_cap', 8], ['truck_keychain', 6], ['old_tachograph', 6], ['sunglasses', 4]],
-  case_gold: [['thermos', 18], ['driver_handbook', 18], ['coin_pouch', 15], ['sunglasses', 12], ['power_nap', 10], ['road_atlas', 9], ['cb_mic', 9], ['gold_frame', 5], ['cab_coffee', 4]],
+  case_bronze: [['coffee', 28], ['repair_kit', 22], ['fuel_voucher', 22], ['energy_drink', 10], ['tc_small', 8], ['cargo_cover', 7], ['trucker_cap', 3], ['old_tachograph', 2]],
+  case_silver: [['coffee', 10], ['energy_drink', 16], ['repair_kit', 10], ['cargo_cover', 12], ['queue_ticket', 10], ['thermos', 9], ['tc_small', 10], ['trucker_cap', 7], ['truck_keychain', 6], ['old_tachograph', 6], ['sunglasses', 3], ['tc_medium', 1]],
+  case_gold: [['thermos', 16], ['driver_handbook', 16], ['coin_pouch', 12], ['tc_medium', 10], ['sunglasses', 11], ['power_nap', 9], ['road_atlas', 8], ['cb_mic', 8], ['gold_frame', 5], ['cab_coffee', 3], ['tc_jackpot', 2]],
 };
 
 /** A small find on the road after a delivery. */
@@ -78,6 +83,9 @@ export const ITEM_RULES = {
 };
 
 export const isCase = (id: ItemId): id is CaseId => ITEMS[id].kind === 'case';
+
+/** ТрансКоин a case drop is worth (0 for a normal item). */
+export const coinsOf = (id: ItemId): number => (ITEMS[id] as ItemDef).coins ?? 0;
 
 /** Percent chance of each item in a case. */
 export function caseOdds(id: CaseId): { item: ItemId; percent: number }[] {

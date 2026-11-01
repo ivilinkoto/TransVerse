@@ -105,3 +105,22 @@ dfec412289	Cases drop from the daily reward, new levels, the Big Run and road fi
 33e31729f5	Levels grow with points from deliveries. Unclaimed rewards expire at season end.	Уровни растут от очков за доставки. Невзятые награды сгорают в конце сезона.
 5652a33556	Every driver has a drawn portrait. Give them your own look with a cap, glasses and a gold frame from the inventory.	У каждого водителя есть нарисованный портрет. Кепка, очки и золотая рамка из инвентаря дают ему свой образ.
 1e4dddf448	Driver portraits in “Drivers” and the Fleet: a face based on the name (always the same) and a look from the inventory — cap, sunglasses, gold frame.	Портреты водителей в «Водителях» и Автопарке: лицо по имени (всегда одно и то же) и образ из инвентаря — кепка, солнцезащитные очки, золотая рамка.
+2f706958e1	+100 TransCoin at once.	+100 TransCoin сразу.
+e4cd5483a9	+25 TransCoin at once.	+25 TransCoin сразу.
+84ee973465	+5 TransCoin at once.	+5 TransCoin сразу.
+2c9aa8a62e	{0} See “Inventory”.	{0} Смотри «Инвентарь».
+d1ce4e2856	Quantity	Количество
+29606806f2	Gave {0}: {1} ×{2}{3}	Выдал {0}: {1} ×{2}{3}
+70b1291aea	Given: {0} ×{1}	Выдано: {0} ×{1}
+54e81b21cf	Give {0} ×{1}	Выдать {0} ×{1}
+0a82c3cdd7	TransCoin jackpot	Джекпот TransCoin
+e20fa7913f	For the team: administrators give cases and items to a player from the admin panel — with a reason the player sees in the notification; everything goes to the audit log.	Для команды: администраторы выдают кейсы и предметы игроку из админ-панели — с причиной, которую игрок видит в уведомлении; всё записывается в журнал аудита.
+2ea652c418	Cases and items	Кейсы и предметы
+dc0da0c7fa	The quantity is from 1 to 100.	Количество от 1 до 100.
+5d27dc44b0	Item	Предмет
+f5f3905b72	Items with art and rarity: coffee and an energy drink for shorter rest, a cab coffee machine — the driver goes 24 hours without rest, a repair kit, a fuel voucher, insurance against a late delivery and more. Cases drop from play — the daily reward, a new level, hard trips and road finds — and their odds are shown. They can hold TransCoin too, up to +100 TC.	Предметы с картинкой и редкостью: кофе и энергетик для короткого отдыха, кофемашина для кабины — водитель едет 24 часа без отдыха, ремкомплект, топливный ваучер, страховка от опоздания и другое. Кейсы выпадают за игру — из ежедневной награды, за новый уровень, сложные рейсы и находки в пути — и их шансы показаны. В них бывает и TransCoin, до +100 TC.
+d5121bafd7	Reason (the player sees it; e.g. a tournament prize)	Причина (игрок её видит; напр. приз турнира)
+95aa6b4aa0	Bag of TransCoin	Мешок TransCoin
+e13f69a88e	TransCoin in cases: a handful (+5 TC) in bronze and silver, a bag (+25 TC) in silver and gold and a jackpot (+100 TC, 2%) in gold. They go straight to the wallet.	TransCoin в кейсах: горсть (+5 TC) в бронзовом и серебряном, мешок (+25 TC) в серебряном и золотом и джекпот (+100 TC, 2 %) в золотом. Сразу идут в кошелёк.
+f31b0d75d2	Handful of TransCoin	Горсть TransCoin
+d66b3ea8c3	🎁 A gift from the team: {0} ×{1}	🎁 Подарок от команды: {0} ×{1}

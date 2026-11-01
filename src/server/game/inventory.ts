@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { drivers, inventoryItems, itemEffects, itemLog, userBadges, users, vehicles } from '@/server/db/schema';
-import { CASE_TABLES, COLLECTION, ITEMS, ITEM_RULES, ROAD_FIND, isCase, pickFrom, type CaseId, type ItemId } from '@/lib/game/items';
+import { CASE_TABLES, COLLECTION, ITEMS, ITEM_RULES, ROAD_FIND, coinsOf, isCase, pickFrom, type CaseId, type ItemId } from '@/lib/game/items';
 import { hash } from '@/lib/game/missions';
 import { t } from '@/i18n/t';
 import { featureFor } from '@/server/features';
@@ -20,7 +20,7 @@ import { notify } from './notify';
 const known = (id: string): id is ItemId => id in ITEMS;
 
 export async function grantItem(tx: Tx, userId: string, itemId: ItemId, qty: number, reason: string, key: string) {
-  if (!known(itemId) || qty <= 0) throw new Error(`bad item ${itemId}`);
+  if (!known(itemId) || qty <= 0 || ITEMS[itemId].kind === 'coins') throw new Error(`bad item ${itemId}`);
   const [logged] = await tx.insert(itemLog).values({ userId, itemId, delta: qty, reason, idempotencyKey: key }).onConflictDoNothing({ target: itemLog.idempotencyKey }).returning({ id: itemLog.id });
   if (!logged) return false;
   await tx.insert(inventoryItems).values({ userId, itemId, qty }).onConflictDoUpdate({ target: [inventoryItems.userId, inventoryItems.itemId], set: { qty: sql`${inventoryItems.qty} + ${qty}`, updatedAt: new Date() } });
@@ -66,8 +66,15 @@ export async function openCase(db: Database, userId: string, caseId: CaseId, now
     const nonce = `${now.getTime()}:${randomInt(0, 1e9)}`;
     await takeItem(tx, userId, caseId, 'case_open', `open:${userId}:${caseId}:${nonce}`);
     const item = pickFrom(CASE_TABLES[caseId], rand());
+    const coins = coinsOf(item);
+    if (coins) {
+      // ТрансКоин from a case go straight to the wallet; the log keeps the drop.
+      await postCoins(tx, userId, { amount: coins, reason: 'items', description: t('{0} от {1}', ITEMS[item].name, ITEMS[caseId].name), idempotencyKey: `case-coins:${userId}:${caseId}:${nonce}` });
+      await tx.insert(itemLog).values({ userId, itemId: item, delta: 1, reason: `case:${caseId}`, idempotencyKey: `from-case:${userId}:${caseId}:${nonce}` });
+      return { item, coins };
+    }
     await grantItem(tx, userId, item, 1, `case:${caseId}`, `from-case:${userId}:${caseId}:${nonce}`);
-    return { item };
+    return { item, coins: 0 };
   });
 }
 

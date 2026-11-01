@@ -1,4 +1,5 @@
 import { ROLE_LABELS, type Role } from '@/server/auth/roles';
+import { ITEMS, type ItemId } from '@/lib/game/items';
 import { t, intlLocale } from '@/i18n/t';
 
 const role = (r: unknown) => ROLE_LABELS[r as Role] ?? String(r ?? '—');
@@ -19,6 +20,8 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       const amount = Number(d.amountCents ?? 0);
       return t('Корекция на баланса на {0}: {1}{2}{3}', who, amount > 0 ? '+' : '', eur(amount), d.reason ? ` — ${String(d.reason)}` : '');
     }
+    case 'grant_item':
+      return t('Даде на {0}: {1} ×{2}{3}', who, ITEMS[d.itemId as ItemId] ? t(ITEMS[d.itemId as ItemId].name) : String(d.itemId ?? ''), Number(d.qty ?? 1), d.reason ? ` — ${String(d.reason)}` : '');
     case 'replenish_market':
       return t('Попълни товарния пазар ръчно ({0} нови поръчки)', Number(d.created ?? 0));
     case 'bootstrap_founder':

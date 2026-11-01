@@ -9,7 +9,8 @@ import { CASE_TABLES, ITEMS, ITEM_IDS, caseOdds, isCase, pickFrom } from '@/lib/
 import { faceFor, isFemaleName } from '@/lib/game/portraits';
 import { releaseByVersion } from '@/lib/game/releases';
 import { closeDb } from '@/server/db/client';
-import { companies, drivers, inventoryItems, itemEffects, itemLog, ledgerEntries, userBadges } from '@/server/db/schema';
+import { companies, drivers, inventoryItems, itemEffects, itemLog, ledgerEntries, notifications, userBadges, users } from '@/server/db/schema';
+import { adminGrantItem } from '@/server/admin-1142';
 import { GameError } from '@/server/game/errors';
 import { applyItem, applyNoRest, coverLate, dailyCase, grantItem, openCase, queueExtra } from '@/server/game/inventory';
 import { db, playerWithCompany } from './helpers';
@@ -165,5 +166,44 @@ describe('1.2 inventory — server', () => {
     expect(await qty(p.userId, 'case_silver')).toBe(1);
     expect(await qty(p.userId, 'case_bronze')).toBe(1);
     expect((await db().select().from(itemLog).where(eq(itemLog.userId, p.userId))).length).toBe(2);
+  });
+});
+
+describe('1.2 inventory — ТрансКоин in cases and the team', () => {
+  const weightBefore = (caseId: keyof typeof CASE_TABLES, item: string) => {
+    const table = CASE_TABLES[caseId];
+    const total = table.reduce((s, [, w]) => s + w, 0);
+    let before = 0;
+    for (const [id, w] of table) {
+      if (id === item) return (before + w / 2) / total;
+      before += w;
+    }
+    throw new Error('not in table');
+  };
+
+  it('a coin drop goes to the wallet, not to the inventory', async () => {
+    const p = await playerWithCompany();
+    await give(p.userId, 'case_gold', 'gold-coins');
+    const [before] = await db().select({ coins: users.coins }).from(users).where(eq(users.id, p.userId));
+    const r = await openCase(db(), p.userId, 'case_gold', new Date(), () => weightBefore('case_gold', 'tc_jackpot'));
+    expect(r).toMatchObject({ item: 'tc_jackpot', coins: 100 });
+    const [after] = await db().select({ coins: users.coins }).from(users).where(eq(users.id, p.userId));
+    expect(after!.coins - before!.coins).toBe(100);
+    expect(await qty(p.userId, 'tc_jackpot')).toBe(0);
+    expect((await db().select().from(itemLog).where(and(eq(itemLog.userId, p.userId), eq(itemLog.itemId, 'tc_jackpot')))).length).toBe(1);
+    await expect(db().transaction((tx) => grantItem(tx, p.userId, 'tc_small', 1, 'test', `bad:${p.userId}`))).rejects.toThrow();
+  });
+
+  it('only an administrator gives cases, with a reason; the player is told', async () => {
+    const p = await playerWithCompany();
+    const admin = { id: p.userId, role: 'admin', username: 'a' };
+    const support = { id: p.userId, role: 'support', username: 's' };
+    expect(await code(adminGrantItem(db(), support, p.userId, 'case_gold', 2, 'награда'))).toBe('forbidden');
+    expect(await code(adminGrantItem(db(), admin, p.userId, 'case_gold', 2, ''))).toBe('reason_required');
+    expect(await code(adminGrantItem(db(), admin, p.userId, 'tc_jackpot', 1, 'награда'))).toBe('unknown_item');
+    await adminGrantItem(db(), admin, p.userId, 'case_gold', 2, 'Награда от турнир');
+    expect(await qty(p.userId, 'case_gold')).toBe(2);
+    const notes = await db().select().from(notifications).where(eq(notifications.userId, p.userId));
+    expect(notes.some((n) => n.body.includes('Награда от турнир'))).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { companyMissionTarget, COMPANY_MISSIONS, pickCompanyMissions } from '@/lib/game/company-missions';
 import { autoTarget, DEFAULT_REWARDS, EVENT_METRIC_INFO, eventIncrement, EVENT_TEMPLATES, nextAutoWindow, pickTemplate, rewardFor } from '@/lib/game/events';
@@ -136,8 +136,13 @@ describe('global events', () => {
 
     // Settling again changes nothing.
     await settleDueEvents(db(), later);
+    // Deliveries from other test files may join this global event too: every participant is paid exactly once.
     const paid = await db().select().from(ledgerEntries).where(and(eq(ledgerEntries.category, 'event_reward'), eq(ledgerEntries.refId, event.id)));
-    expect(paid).toHaveLength(2);
+    const payees = paid.map((x) => x.companyId);
+    expect(new Set(payees).size).toBe(payees.length);
+    expect(paid.length).toBe(rows.filter((r) => (r.reward as { cents?: number } | null)?.cents).length);
+    const own = await db().select({ id: companies.id }).from(companies).where(inArray(companies.ownerId, [a.userId, b.userId]));
+    for (const c of own) expect(payees).toContain(c.id);
     const [note] = await db().select().from(notifications).where(and(eq(notifications.userId, b.userId), sql`${notifications.title} like 'Ивентът%успешен%'`));
     expect(note).toBeDefined();
   });

@@ -4,6 +4,7 @@ import { BanForm } from '@/components/admin/BanForm';
 import { ResetBrandingForm } from '@/components/admin/ResetBrandingForm';
 import { VipForm } from '@/components/admin/VipForm';
 import { CoinsForm } from '@/components/admin/CoinsForm';
+import { ItemGrantForm } from '@/components/admin/ItemGrantForm';
 import { ResetLinkButton } from '@/components/admin/ResetLinkButton';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { TextAction } from '@/components/ui/TextAction';
@@ -147,6 +148,12 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="label mb-1.5">{t('ТрансКоин')}</div>
                 <CoinsForm userId={user.id} balance={user.coins} />
+              </div>
+            )}
+            {isAdmin(actor.role) && (
+              <div>
+                <div className="label mb-1.5">{t('Кейсове и предмети')}</div>
+                <ItemGrantForm userId={user.id} />
               </div>
             )}
             {isAdmin(actor.role) && (

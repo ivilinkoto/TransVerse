@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CASE_TABLES, ITEMS, RARITIES, pickFrom, type CaseId, type ItemId, type Rarity } from '@/lib/game/items';
+import { CASE_TABLES, ITEMS, RARITIES, coinsOf, pickFrom, type CaseId, type ItemId, type Rarity } from '@/lib/game/items';
 import { ItemArt } from '@/components/game/ItemArt';
-import { motionEnabled, playReveal, playTick } from '@/lib/client/motion';
-import { burst, shake } from './fx';
+import { motionEnabled, playCoin, playReveal, playTick } from '@/lib/client/motion';
+import { burst, coinsEl, flyTo, shake } from './fx';
 import { t, tx } from '@/i18n/t';
 
 /**
@@ -81,6 +81,12 @@ export function CaseOpening({ caseId, result, error, left, onAgain, onClose }: {
     if (!animate || !card.current) return;
     const color = RARITIES[ITEMS[result].rarity].color;
     if (tier >= 1) burst(card.current, { colors: [color, '#ffffff', '#fde68a'], count: 14 + tier * 10, spread: 120 + tier * 50, shapes: tier >= 3 ? 'confetti' : 'sparks' });
+    if (coinsOf(result)) {
+      setTimeout(() => {
+        playCoin();
+        if (card.current) flyTo(card.current, coinsEl(), '🪙', Math.min(12, 4 + Math.round(coinsOf(result) / 10)));
+      }, 500);
+    }
     if (tier >= 4) {
       setTimeout(() => burst(card.current!, { count: 70, spread: 340 }), 250);
       shake(box.current?.closest('[role="dialog"]') ?? null);

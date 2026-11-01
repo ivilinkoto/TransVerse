@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
-import { ITEMS, RARITIES, caseOdds, isCase, type CaseId, type ItemId } from '@/lib/game/items';
+import { ITEMS, RARITIES, caseOdds, coinsOf, isCase, type CaseId, type ItemId } from '@/lib/game/items';
 import { ItemArt } from './ItemArt';
 import { DriverPortrait } from './DriverPortrait';
 import { useFeature } from './Features';
@@ -61,7 +61,8 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
     const got = opening?.result;
     setOpening(null);
     if (got) {
-      setOpen(got);
+      // ТрансКоин go to the wallet: the case stays selected, with what it gave.
+      if (!coinsOf(got)) setOpen(got);
       setWon(got);
     }
   };
@@ -95,7 +96,7 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
       }
       if (isCase(open)) {
         const r = await api<{ item: ItemId }>('/api/game/action', { type: 'openCase', caseId: open });
-        setOpen(r.item);
+        if (!coinsOf(r.item)) setOpen(r.item);
         setWon(r.item);
       } else {
         const body: Record<string, unknown> = { type: 'useItem', itemId: open };
@@ -135,7 +136,7 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
       {open && def && (
         <aside className="panel h-fit space-y-3 p-4 lg:sticky lg:top-24">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl border-2 bg-asphalt-900 p-2" style={{ borderColor: RARITIES[def.rarity].color }}><ItemArt id={won ?? open} className="h-20 w-20" /></div>
+            <div className="rounded-2xl border-2 bg-asphalt-900 p-2" style={{ borderColor: RARITIES[def.rarity].color }}><ItemArt id={won && !coinsOf(won) ? won : open} className="h-20 w-20" /></div>
             <div className="min-w-0">
               <p className="font-display text-lg font-bold">{tx(def.name)}</p>
               <p className="text-xs font-semibold" style={{ color: RARITIES[def.rarity].color }}>{tx(RARITIES[def.rarity].label)}</p>
