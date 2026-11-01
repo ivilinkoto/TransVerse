@@ -390,6 +390,8 @@ export const drivers = pgTable(
     requestAt: ts('request_at'),
     vacationUntil: ts('vacation_until'),
     lastVacationAt: ts('last_vacation_at'),
+    /** 1.2: what the portrait wears (items from the inventory). */
+    look: jsonb('look').$type<{ cap?: boolean; glasses?: boolean; frame?: 'gold' }>().notNull().default({}),
     hiredAt: createdAt(),
   },
   (t) => [index('drivers_company_idx').on(t.companyId), uniqueIndex('drivers_vehicle_idx').on(t.vehicleId), uniqueIndex('drivers_co_vehicle_idx').on(t.coVehicleId)],
@@ -3447,3 +3449,34 @@ export const supportTemplates = pgTable('support_templates', {
   createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
 });
+
+// ── 1.2 „Инвентар“ ───────────────────────────────────────────────────────
+
+export const inventoryItems = pgTable('inventory_items', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemId: text('item_id').notNull(),
+  qty: integer('qty').notNull().default(0),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.userId, t.itemId] })]);
+
+/** Every item in and out (a unique key per cause, like the ledger). */
+export const itemLog = pgTable('item_log', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemId: text('item_id').notNull(),
+  delta: integer('delta').notNull(),
+  reason: text('reason').notNull(),
+  idempotencyKey: text('idempotency_key').notNull(),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('item_log_key_idx').on(t.idempotencyKey), index('item_log_user_idx').on(t.userId, t.createdAt)]);
+
+/** An item's effect that lasts (a driver without rests, extra queue places, the next late penalty covered). */
+export const itemEffects = pgTable('item_effects', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  driverId: uuid('driver_id').references(() => drivers.id, { onDelete: 'cascade' }),
+  effect: text('effect').notNull(),
+  until: ts('until'),
+  uses: integer('uses'),
+  createdAt: createdAt(),
+}, (t) => [index('item_effects_user_idx').on(t.userId, t.effect)]);

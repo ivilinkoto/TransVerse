@@ -5,6 +5,7 @@ import { Card, Meter, PageHeader, Segmented, Stat } from '@/components/ui';
 import { date, int, money } from '@/lib/format';
 import { seasonScores, seasons } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
+import { TruckPass } from '@/components/game/TruckPass';
 import { leaderboard } from '@/server/game/queries';
 import { companyPrizes, organizationSeasonResults, organizationSeasonTable, type SeasonRules } from '@/server/game/seasons';
 import { membershipOf } from '@/server/game/membership';
@@ -46,6 +47,14 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <PageHeader title={tx(season!.name)} subtitle={t('Сезонно класиране с награди за първите места.')}
         help={t('Сезонните точки идват от доставки (километри × тонаж, повече за навреме). В края на сезона първите играчи получават пари, а първите компании — награда в касата и значка в профила. Парите, техниката и компаниите остават.')} />
+      {/* 1.2: „Truck Pass“ (the season pass) is part of the season page. */}
+      {features.truck_pass && (
+        <section id="pass" className="scroll-mt-24 space-y-4">
+          <h2 className="font-display text-xl font-bold">{t('🚚 Truck Pass')}</h2>
+          <p className="-mt-2 text-sm text-mist-400">{t('Нивата растат с точките от доставките. Невзетите награди изгарят в края на сезона.')}</p>
+          <TruckPass db={db} userId={user.id} coins={user.coins} now={now} />
+        </section>
+      )}
       <Segmented label={t('Класация')} active={tab} items={[{ id: 'players', label: t('Играчи'), href: '/game/seasons' }, { id: 'companies', label: t('Компании'), href: '/game/seasons?tab=companies' }]} />
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         <Stat label={t('Остават')} value={t('{0} дни', daysLeft)} icon={CalendarClock} tone="cyan" hint={`${date(season!.startsAt)} – ${date(season!.endsAt)}`} />

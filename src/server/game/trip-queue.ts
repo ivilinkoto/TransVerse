@@ -8,6 +8,7 @@ import { acceptContract } from './deliveries';
 import { fail, GameError } from './errors';
 import { notify } from './notify';
 import { officeEffects } from './office';
+import { queueExtra } from './inventory';
 import { featureFor } from '@/server/features';
 
 /**
@@ -27,7 +28,7 @@ export async function queueTrip(db: Database, userId: string, vehicleId: string,
     if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', t('Поръчката вече не е налична.'), 409);
     const [{ n = 0 } = {}] = await tx.select({ n: count() }).from(tripQueue).where(eq(tripQueue.vehicleId, vehicleId));
     // 1.1.4.2: a dispatcher in the office adds a place per level.
-    const size = QUEUE_SIZE + ((await featureFor(tx, userId, 'office', now)) ? (await officeEffects(tx, company.id)).dispatcher : 0);
+    const size = QUEUE_SIZE + ((await featureFor(tx, userId, 'office', now)) ? (await officeEffects(tx, company.id)).dispatcher : 0) + ((await featureFor(tx, userId, 'inventory', now)) ? await queueExtra(tx, userId, now) : 0);
     if (n >= size) fail('queue_full', t('Най-много {0} курса напред за камион.', size));
     const [row] = await tx.insert(tripQueue).values({ companyId: company.id, vehicleId, contractId, userId, position: n }).onConflictDoNothing().returning({ id: tripQueue.id });
     if (!row) fail('already_queued', t('Този товар вече е в опашката на камиона.'));

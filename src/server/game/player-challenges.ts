@@ -9,6 +9,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { offerInterview } from './interviews';
 import { notify } from './notify';
+import { rewardCase } from './inventory';
 
 /**
  * 1.1.4.2 „Предизвикателства от играчите“: a player puts up a prize for the
@@ -100,6 +101,7 @@ export async function settlePlayerChallenges(db: Database, now = new Date()) {
         await tx.insert(userBadges).values({ userId: best.userId, badge: 'challenge-winner', awardedAt: now }).onConflictDoNothing();
         await notify(tx, best.userId, 'achievement', () => t('🏆 Спечели „{0}“', c.title), () => t('+{0} лв. — най-бързият курс.', Math.round(c.prizeCents / 100)), '/game/player-challenges');
         await offerInterview(tx, best.userId, 'challenge', now);
+        await rewardCase(tx, best.userId, 'case_gold', 'challenge', `challenge-case:${c.id}`, now);
       }
       if (n >= PLAYER_CHALLENGE.popular) await postCoins(tx, c.creatorId, { amount: PLAYER_CHALLENGE.creatorCoins, reason: 'challenge', description: t('Популярно предизвикателство: „{0}“', c.title), idempotencyKey: `pchallenge-popular:${c.id}` });
       await tx.update(playerChallenges).set({ status: 'settled', winnerId: best?.userId ?? null }).where(eq(playerChallenges.id, c.id));

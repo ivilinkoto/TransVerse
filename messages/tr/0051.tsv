@@ -1,0 +1,107 @@
+# 1.2 «Заедно на пътя» — inventory, portraits, Truck Pass
+a3ae114055	+15 TransCoin.	+15 TransCoin.
+fced4377fe	+150 BGN to your account.	+150 лв. на счёт.
+5a15d89433	+2 queue slots	+2 места в очереди
+7f64d82251	+20% truck condition.	+20% к состоянию грузовика.
+6de51c7f33	+{0} queue slots for 24 hours.	+{0} места в очереди на 24 часа.
+616dea5cfc	1 hour of double XP.	1 час двойного опыта.
+384de5c7f4	+2 queue slots on every truck for 24 hours.	24 часа +2 места в очереди каждого грузовика.
+ca6dcc24bc	For 24 hours the driver doesn't stop to rest after a trip.	24 часа водитель не отдыхает после рейса.
+0c990768fe	For 6 hours the driver doesn't stop to rest after a trip.	6 часов водитель не отдыхает после рейса.
+cd02d80418	CB microphone	CB-микрофон
+7f330b184b	Truck Pass with rewards by level.	Truck Pass с наградами по уровням.
+04f4b4f983	Truck Pass: your level and the rewards waiting for you (linked account)	Truck Pass: уровень и ждущие награды (связанный аккаунт)
+7d0dc4edb6	Truck Pass: the season pass is renamed and shown at the top of the season page; the old page redirects there.	Truck Pass: сезонный пропуск переименован и показан вверху страницы сезона; старая страница ведёт туда.
+8c7f8eecff	{0} is already rested.	{0} уже отдохнул.
+e105fb7729	{0} already has a frame.	У {0} уже есть рамка.
+0cbd4926b4	{0} already wears glasses.	{0} уже в очках.
+75f3074a9e	{0} already wears a cap.	{0} уже в кепке.
+752e302143	{0} is rested.	{0} отдохнул.
+4347c22335	{0} has a new look.	У {0} новый образ.
+2678bb9792	{0} isn't resting now.	{0} сейчас не отдыхает.
+eb983371f0	{0} won't stop to rest for {1} hours.	{0} не отдыхает {1} ч.
+f82c831662	{0} rests half as long.	{0} отдыхает вдвое меньше.
+6a778193a3	{0} drivers rest half as long.	Водители ({0}) отдыхают вдвое меньше.
+d688c99765	{0}: +{1}% condition.	{0}: +{1}% к состоянию.
+fe1e71e910	No rest	Без отдыха
+e897ade658	Queue ticket	Билет в очередь
+3461e24469	Bronze case	Бронзовый кейс
+0fcf673cda	Fuel voucher	Топливный ваучер
+7dbca2b9f7	All four — a badge and {0} TransCoin.	Все четыре — значок и {0} TransCoin.
+9c8bdad6b2	Cab pillow	Подушка для кабины
+9f29ec402d	Double XP for 1 more hour.	Двойной опыт ещё 1 час.
+254fbcdd47	Active now	Действует сейчас
+75f29a8fd0	Energy drink	Энергетик
+ab86cd5296	Epic	Эпический
+f9704be724	For the “Road memories” collection.	Для коллекции «Воспоминания о дороге».
+f579220d8e	Single-trip insurance	Страховка на один рейс
+8e36644ed4	Single-trip insurance (inventory)	Страховка на один рейс (инвентарь)
+e30ef61b82	Gold case	Золотой кейс
+236f2db7c1	Gold frame	Золотая рамка
+105cd60502	A gold frame around the portrait.	Золотая рамка вокруг портрета.
+46f47a9442	Choose a truck.	Выбери грузовик.
+bf17b6759c	Choose a driver.	Выбери водителя.
+8a9883754b	Use	Использовать
+cde1629b54	Inventory	Инвентарь
+faafb84b9f	Inventory (People → Inventory): 18 items in 5 rarities — common, uncommon, rare, epic and legendary. Cup of coffee (−50% of one driver's remaining rest), energy drink (the driver is rested at once), thermos (−50% rest for everyone resting), cab pillow (6 h without rest), cab coffee machine (24 h without rest), repair kit (+20% condition), fuel voucher (150 BGN), single-trip insurance (refunds the penalty for one late delivery), queue ticket (+2 slots for 24 h), handbook (+1 h double XP), pouch with 15 TC.	Инвентарь (Люди → Инвентарь): 18 предметов 5 редкостей — обычный, необычный, редкий, эпический и легендарный. Чашка кофе (−50% оставшегося отдыха одного водителя), энергетик (водитель сразу отдохнул), термос (−50% отдыха всех отдыхающих), подушка для кабины (6 ч без отдыха), кофемашина для кабины (24 ч без отдыха), ремкомплект (+20% состояния), топливный ваучер (150 лв.), страховка на один рейс (возвращает неустойку за одно опоздание), билет в очередь (+2 места на 24 ч), справочник (+1 ч двойного опыта), кошелёк с 15 TC.
+e4bb78d247	Inventory and cases	Инвентарь и кейсы
+37d8e1b308	Your inventory is empty	Инвентарь пуст
+aa7f290e82	What can be inside	Что может быть внутри
+8e73c9e9a9	Cab coffee machine	Кофемашина для кабины
+5f93cf8450	Cases: bronze, silver and gold, with the odds shown for every item. They drop only from play: bronze with a 20% chance from the daily reward, silver on day 7 and on every new level, silver from a perfect mystery check, gold from lost cargo, a won challenge and the Big Run. Every delivery has a 3% chance of a road find.	Кейсы: бронзовый, серебряный и золотой, с шансами для каждого предмета. Выпадают только за игру: бронзовый с шансом 20% из ежедневной награды, серебряный на 7-й день и на каждом новом уровне, серебряный за идеальную тайную проверку, золотой за потерянный груз, выигранный вызов и Большой рейс. У каждой доставки шанс 3% на находку в пути.
+5bb417b091	A case is opened, not used.	Кейс открывают, а не используют.
+4d5f944e3a	TransCoin pouch	Кошелёк с TransCoin
+f18aabf95b	Truck keychain	Брелок-грузовичок
+5bc004d582	“Road memories” collection	Коллекция «Воспоминания о дороге»
+0594a3938d	“Road memories” collection ({0}/{1})	Коллекция «Воспоминания о дороге» ({0}/{1})
+77348b8e0c	“Road memories” collection: an old tachograph disc, a truck keychain, an old road atlas and a CB microphone — collect all four for a badge and 50 TC.	Коллекция «Воспоминания о дороге»: старый диск тахографа, брелок-грузовичок, старый дорожный атлас и CB-микрофон — собери все четыре за значок и 50 TC.
+5e7eed10f7	Legendary	Легендарный
+305c39fa7e	Driver faces	Лица водителей
+5db548f024	Driver's handbook	Справочник водителя
+0fe34df562	Uncommon	Необычный
+eab0d8348f	Unknown item.	Неизвестный предмет.
+08b5ef5054	No driver is resting now.	Сейчас никто из водителей не отдыхает.
+2023e1e700	You don't have this item.	У тебя нет этого предмета.
+4faff88b08	Common	Обычный
+6f7621e81d	Open it for one item.	Открой — получишь один предмет.
+388e24a805	Open it from “Inventory”.	Открой его в «Инвентаре».
+68577ca6a5	Glasses on the driver's portrait.	Очки на портрете водителя.
+e7c6f10181	More play with others: an inventory with items and cases, driver faces, Truck Pass on the season page, notifications that really arrive, and fixes players asked for.	Больше игры с другими: инвентарь с предметами и кейсами, лица водителей, Truck Pass на странице сезона, уведомления, которые правда доходят, и исправления, о которых просили игроки.
+4479e3ade1	Recent	Недавнее
+9c0266f216	The current rest of every driver is halved.	Текущий отдых всех водителей сокращается вдвое.
+d003c374e0	The driver's current rest is halved.	Текущий отдых водителя сокращается вдвое.
+3227860161	Inventory items	Предметы из инвентаря
+f44847721d	Items with art and rarity: coffee and an energy drink for shorter rest, a cab coffee machine — the driver goes 24 hours without rest, a repair kit, a fuel voucher, insurance against a late delivery and more. Cases drop from play — the daily reward, a new level, hard trips and road finds — and their odds are shown.	Предметы с картинкой и редкостью: кофе и энергетик для короткого отдыха, кофемашина для кабины — водитель едет 24 часа без отдыха, ремкомплект, топливный ваучер, страховка от опоздания и другое. Кейсы выпадают за игру — из ежедневной награды, за новый уровень, сложные рейсы и находки в пути — и их шансы показаны.
+6e689f297f	Items, cases and collections. Cases are earned only by playing — every item's odds are shown.	Предметы, кейсы и коллекции. Кейсы зарабатываются только игрой — шанс каждого предмета виден.
+6d3c9e0785	Premium Truck Pass gives more.	Премиум Truck Pass даёт больше.
+0f0119aaac	Repair kit	Ремкомплект
+65fec65b84	Rare	Редкий
+816573fa08	Season & Truck Pass	Сезон и Truck Pass
+092a0ba133	The season pass is now called Truck Pass and lives on the season page — levels and rewards sit next to the standings, no separate page.	Сезонный пропуск теперь называется Truck Pass и находится на странице сезона — уровни и награды рядом с таблицей, без отдельной страницы.
+192e9ad68e	Your next late-delivery penalty is covered.	Следующая неустойка за опоздание покрыта.
+4e13d1660b	Your next late-delivery penalty is refunded in full.	Следующая неустойка за опоздание возвращается полностью.
+3186c0e17a	Sunglasses	Солнцезащитные очки
+c3a9b4daae	Road memories	Воспоминания о дороге
+af2c273644	Silver case	Серебряный кейс
+382226b10b	Old road atlas	Старый дорожный атлас
+9fe5e2bb21	Old tachograph disc	Старый диск тахографа
+fd7a623284	Collected all four items of the inventory collection.	Собрал все четыре предмета коллекции в инвентаре.
+989fa6de9f	Thermos of coffee	Термос с кофе
+0146954a7c	That's not a case.	Это не кейс.
+95fee26374	This item is for the collection.	Этот предмет для коллекции.
+0dae42018a	This item can't be used.	Этот предмет нельзя использовать.
+493de1fc51	Cup of coffee	Чашка кофе
+3509083db2	A cap on the driver's portrait.	Кепка на портрете водителя.
+e97b57068a	Trucker cap	Кепка дальнобойщика
+bd53559ebd	The driver found it at a parking area. See “Inventory”.	Водитель нашёл это на стоянке. Смотри «Инвентарь».
+06e8e31d48	The driver is rested at once.	Водитель сразу отдохнул.
+765269e891	— choose a driver —	— выбери водителя —
+69ddd11a4a	“Road memories” — +{0} TransCoin and a badge.	«Воспоминания о дороге» — +{0} TransCoin и значок.
+e2d43eccb7	🎁 New item: {0}	🎁 Новый предмет: {0}
+31bf6c8238	🎉 You got: {0}!	🎉 Тебе выпало: {0}!
+e087f49035	🧳 Collection complete!	🧳 Коллекция собрана!
+6843e87b6d	🧳 Road find: {0}	🧳 Находка в пути: {0}
+dfec412289	Cases drop from the daily reward, new levels, the Big Run and road finds.	Кейсы выпадают из ежедневной награды, за новые уровни, Большой рейс и находки в пути.
+33e31729f5	Levels grow with points from deliveries. Unclaimed rewards expire at season end.	Уровни растут от очков за доставки. Невзятые награды сгорают в конце сезона.
+5652a33556	Every driver has a drawn portrait. Give them your own look with a cap, glasses and a gold frame from the inventory.	У каждого водителя есть нарисованный портрет. Кепка, очки и золотая рамка из инвентаря дают ему свой образ.
+1e4dddf448	Driver portraits in “Drivers” and the Fleet: a face based on the name (always the same) and a look from the inventory — cap, sunglasses, gold frame.	Портреты водителей в «Водителях» и Автопарке: лицо по имени (всегда одно и то же) и образ из инвентаря — кепка, солнцезащитные очки, золотая рамка.

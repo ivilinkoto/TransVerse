@@ -25,7 +25,7 @@ import { clearServerErrors } from '@/server/error-log';
 import { retryOutbox } from '@/server/discord/outbox';
 import { setStaffNote } from '@/server/staff-notes';
 import { winBack } from '@/server/admin-retention';
-import { deleteSupportTemplate, saveSupportTemplate } from '@/server/admin-1142';
+import { adminGrantItem, deleteSupportTemplate, saveSupportTemplate } from '@/server/admin-1142';
 import { setFeatureOff } from '@/server/feature-switches';
 import { t } from '@/i18n/t';
 
@@ -58,6 +58,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('staffNote'), userId: id, note: z.string().trim().max(500) }),
   z.object({ type: z.literal('winBack'), userId: id }),
   z.object({ type: z.literal('featureSwitch'), feature: z.string().max(60), off: z.boolean(), reason: z.string().trim().max(200).default('') }),
+  z.object({ type: z.literal('grantItem'), userId: id, itemId: z.string().max(40), qty: z.coerce.number().int().min(1).max(100) }),
   z.object({ type: z.literal('supportTemplate'), title: z.string().trim().max(80), body: z.string().trim().max(4000) }),
   z.object({ type: z.literal('deleteSupportTemplate'), id }),
   z.object({ type: z.literal('discordLayoutPlan') }),
@@ -220,6 +221,8 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'featureSwitch':
       await setFeatureOff(db, user, input.feature, input.off, input.reason);
       return { ok: true };
+    case 'grantItem':
+      return { ok: true, ...(await adminGrantItem(db, user, input.userId, input.itemId, input.qty)) };
     case 'supportTemplate':
       return { ok: true, id: (await saveSupportTemplate(db, user, input.title, input.body)).id };
     case 'deleteSupportTemplate':

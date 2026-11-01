@@ -132,6 +132,7 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   'mystery-client': { label: 'Пет звезди от тайния клиент', description: 'Перфектна доставка, проверена тайно.' },
   'fog-pilot': { label: 'Пилот в мъглата', description: 'Пет курса от или до мъгливите места през ноември.' },
   detective: { label: 'Детектив на пътя', description: 'Разкри кой е взел изгубената пратка.' },
+  'road-memories': { label: 'Спомени от пътя', description: 'Събра четирите предмета от колекцията в инвентара.' },
   'animal-friend': { label: 'Приятел на животните', description: 'Десет курса с живи животни с добра грижа.' },
   'challenge-winner': { label: 'Победител в предизвикателство', description: 'Най-бързият курс в предизвикателство на играч.' },
   partner: { label: 'Верен партньор', description: 'Изпълни 5 договора с клиенти.' },

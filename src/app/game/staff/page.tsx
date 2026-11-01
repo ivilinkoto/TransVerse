@@ -8,6 +8,7 @@ import { int, money } from '@/lib/format';
 import { CompanyRequired } from '@/components/game/CompanyRequired';
 import { CREW_RULES, TRAIT_IDS, TRAIT_MAX, TRAITS, dutyAt, restLeftMin, traitLevel, traitPointsLeft } from '@/lib/game/crew';
 import { gameContext } from '@/server/game/context';
+import { DriverPortrait } from '@/components/game/DriverPortrait';
 import { wishesOf } from '@/server/game/wishes';
 import { loyaltyLabel, marketSalaryCents, MOODS, REQUEST_TEXT, type DriverRequest } from '@/lib/game/moods';
 import { fleetView } from '@/server/game/queries';
@@ -64,7 +65,8 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
               return (
                 <li key={d.id} id={`driver-${d.id}`} className={`rounded-2xl border bg-asphalt-850 p-4 ${focus === d.id ? 'border-gold-400' : 'border-asphalt-700'}`}>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    {features.driver_portraits && <DriverPortrait id={d.id} name={d.name} look={d.look ?? {}} className="h-14 w-14" />}
+                    <div className="min-w-0 flex-1">
                       <div className="truncate font-semibold">{tx(d.name)}{d.isOwner && <span className="ml-2 text-xs text-mist-400">{tr('(ти)')}</span>}</div>
                       <div className="mt-0.5 text-sm"><Stars n={d.skill} /> <span className="num ml-1 text-xs text-mist-400">{tr('{0} опит', int(d.xp))}</span></div>
                     </div>
@@ -188,7 +190,10 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {pool.map((c) => (
             <li key={c.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-4">
-              <div className="font-semibold">{tx(c.name)}</div>
+              <div className="flex items-center gap-3">
+                {features.driver_portraits && <DriverPortrait id={c.id} name={c.name} className="h-12 w-12" />}
+                <div className="font-semibold">{tx(c.name)}</div>
+              </div>
               <div className="mt-1 text-sm"><Stars n={c.skill} /></div>
               <div className="mt-1 text-xs text-mist-400">{c.skill > 1 ? tr('{0} {1} за умения', c.skill - 1, c.skill === 2 ? tr('точка') : tr('точки')) : tr('начинаещ')}</div>
               <div className="num mt-2 text-sm text-mist-300">{tr('{0} / ден', money(c.salaryCentsPerDay))}</div>

@@ -14,6 +14,8 @@ export interface NavTab {
   minLevel?: number;
   /** 1.1.4.1: one of the few pages always in the row; the rest wait behind "Още ▾". */
   core?: boolean;
+  /** 1.2: hidden once the viewer has this feature (the page moved elsewhere). */
+  hiddenWith?: FeatureId;
 }
 
 export interface NavSection {
@@ -73,6 +75,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire', group: 'Камиони', minLevel: 6 },
       { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction', group: 'Камиони', minLevel: 6 },
       { href: '/game/staff', label: 'Шофьори', group: 'Хора', core: true },
+      { href: '/game/inventory', label: 'Инвентар', feature: 'inventory', group: 'Хора', core: true },
       { href: '/game/logistics', label: 'Депа', group: 'Сервиз и депа', core: true },
       { href: '/game/licences', label: 'Лицензи', group: 'Хора', minLevel: 2 },
     ],
@@ -118,12 +121,13 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/predictions', label: 'Прогнози', feature: 'predictions', group: 'Общност', minLevel: 5 },
       { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest', group: 'Общност', minLevel: 5 },
       { href: '/game/truck-contest', label: 'Камион на месеца', feature: 'truck_contest', group: 'Общност', minLevel: 5 },
-      { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2, core: true },
+      { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2, core: true, hiddenWith: 'truck_pass' },
       { href: '/game/events', label: 'Ивенти', group: 'Днес', core: true },
       { href: '/game/leaderboards', label: 'Класации', group: 'Класации', core: true },
       { href: '/game/news', label: 'Седмичник', group: 'Общност' },
       { href: '/game/ideas', label: 'Идеи', feature: 'ideas', group: 'Общност' },
-      { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2 },
+      { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2, hiddenWith: 'truck_pass' },
+      { href: '/game/seasons', label: 'Сезон и Truck Pass', feature: 'truck_pass', group: 'Днес', minLevel: 2, core: true },
       { href: '/game/progress', label: 'Постижения', group: 'Колекции', core: true },
       { href: '/game/collection', label: 'Албум', feature: 'city_album', group: 'Колекции', minLevel: 2 },
       { href: '/game/postcards', label: 'Картички', feature: 'postcards', group: 'Колекции', minLevel: 2 },
@@ -154,6 +158,7 @@ export function visibleTabs(section: NavSection, holiday: string | null, pathnam
     (t) =>
       (!t.holiday || (holiday ?? '').split(',').includes(t.holiday) || within(pathname, t.href)) &&
       (!t.feature || has(t.feature)) &&
+      (!t.hiddenWith || !has(t.hiddenWith)) &&
       // v1.9: a newer player's menu grows with the level (the open page always shows).
       (!player || player.showAll || !t.minLevel || player.level >= t.minLevel || within(pathname, t.href)),
   );

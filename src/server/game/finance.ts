@@ -5,6 +5,7 @@ import { fail } from './errors';
 import { t } from '@/i18n/t';
 
 export type LedgerCategory =
+  | 'items'
   | 'promise'
   | 'loading_bonus'
   | 'fog_bonus'
@@ -139,7 +140,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   trade_purchase: 'Покупка на стоки',
   trade_sale: 'Продажба на стоки',
   league_reward: 'Награди от лигата',
-  season_pass: 'Сезонен пропуск',
+  season_pass: 'Truck Pass',
   client_bonus: 'Бонуси от договори с клиенти',
   holiday_reward: 'Празнични награди',
   fines: 'Глоби',
@@ -182,6 +183,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   intermodal_bonus: 'Бонус за интермодален контейнер',
   era_bonus: 'Бонус на ерата',
   tournament: 'Турнири на общността',
+  items: 'Предмети от инвентара',
   promise: 'Обещан срок',
   loading_bonus: 'Бонус за товарене',
   fog_bonus: 'Добавка за мъгла',

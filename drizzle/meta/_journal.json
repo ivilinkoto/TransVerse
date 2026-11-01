@@ -722,6 +722,13 @@
       "when": 1793468141838,
       "tag": "0102_v1142",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1793476709559,
+      "tag": "0103_inventory",
+      "breakpoints": true
     }
   ]
 }
