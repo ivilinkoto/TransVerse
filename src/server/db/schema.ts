@@ -313,6 +313,8 @@ export const vehicles = pgTable(
     autoDispatch: boolean('auto_dispatch').notNull().default(false),
     /** 1.1.2: why the VIP dispatcher last could not send this truck (null when it could). */
     autoDispatchNote: text('auto_dispatch_note'),
+    /** When the auto-dispatcher last looked at this truck (it takes turns, the longest-waiting first). */
+    autoDispatchTriedAt: ts('auto_dispatch_tried_at'),
     /** owned | rented — rented vehicles pay a fee per delivery instead of running costs. */
     ownership: text('ownership').notNull().default('owned'),
     /** Rented truck to be returned as soon as its current trip ends (the player bought their own). */

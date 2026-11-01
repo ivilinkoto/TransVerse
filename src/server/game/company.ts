@@ -1,3 +1,4 @@
+import { featureFor } from '@/server/features';
 import { and, eq, sql } from 'drizzle-orm';
 import { RENTAL_OFFERS, STARTER_RENTAL } from '@/lib/game/catalog';
 import { ECONOMY } from '@/lib/game/economy';
@@ -32,11 +33,23 @@ export async function requireFoundedCompany(db: DbOrTx, userId: string): Promise
 }
 
 /** Hiring drivers: open to licensed operators and to members of any player company. */
-export async function canHireStaff(db: DbOrTx, userId: string, company: Pick<Company, 'kind'>): Promise<boolean> {
-  if (company.kind === 'company') return true;
-  const [member] = await db.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.userId, userId));
-  return !!member;
+export async function canHireStaff(db: DbOrTx, userId: string, company: Pick<Company, 'kind'>, now = new Date()): Promise<boolean> {
+  return (await hireMode(db, userId, company, now)) !== 'none';
 }
+
+/**
+ * 1.1.4.4: who may hire drivers. A company owner or a member of a company — as
+ * many as they like; an independent driver (from 1.1.4.4) — up to SOLO_HIRE_MAX.
+ */
+export async function hireMode(db: DbOrTx, userId: string, company: Pick<Company, 'kind'>, now = new Date()): Promise<'company' | 'solo' | 'none'> {
+  if (company.kind === 'company') return 'company';
+  const [member] = await db.select({ id: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.userId, userId));
+  if (member) return 'company';
+  return (await featureFor(db, userId, 'hire_solo', now)) ? 'solo' : 'none';
+}
+
+/** 1.1.4.4: hired drivers (besides the player) an independent driver may keep. */
+export const SOLO_HIRE_MAX = 3;
 
 /** Real Bulgarian cities taking part in the freight market (start city / headquarters). */
 export async function headquarterOptions(db: DbOrTx) {

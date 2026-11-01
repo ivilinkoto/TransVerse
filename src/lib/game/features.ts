@@ -103,6 +103,8 @@ export const FEATURES = {
   game_fx: '1.1.4.3',
   // 1.1.4.3: promo codes (and a friend's invite code typed in later).
   promo_codes: '1.1.4.3',
+  // 1.1.4.4: an independent driver may hire drivers (up to 3) without a company.
+  hire_solo: '1.1.4.4',
   // v1.1.4: countdowns, ideas with votes, Ден на будителите, my day, compare, roadmap.
   countdowns: '1.1.4',
   ideas: '1.1.4',

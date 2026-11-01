@@ -80,9 +80,11 @@ describe('hiring drivers', () => {
     const solo = await newPlayer();
     const account = await accountOf(solo.userId);
     const pool = await candidates(db(), account.id);
-    expect(await code(hireDriver(db(), solo.userId, pool[0]!.id))).toBe('company_required');
+    // 1.1.4.4: an independent driver may hire too (up to 3); a member of a company has no limit.
+    const first = await hireDriver(db(), solo.userId, pool[0]!.id);
+    expect(first.companyId).toBe(account.id);
     await joinCompany(db(), solo.userId, org.id);
-    const driver = await hireDriver(db(), solo.userId, pool[0]!.id);
+    const driver = await hireDriver(db(), solo.userId, pool[1]!.id);
     expect(driver.companyId).toBe(account.id);
     expect(account.kind).toBe('independent');
   });
