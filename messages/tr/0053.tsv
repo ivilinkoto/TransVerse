@@ -1,0 +1,9 @@
+# 1.1.4.4 «Диспечерът се връща»
+de292d5f4b	VIP dispatcher: trucks take turns — those that waited longest first (up to 60 a minute); an error with one truck no longer stops the check of all the others.	VIP-диспетчер: грузовики проверяются по очереди — сначала те, что ждали дольше всего (до 60 в минуту); ошибка с одним грузовиком больше не останавливает проверку всех остальных.
+74cd633cd9	VIP dispatcher: when the daily limit of 20 automatic trips is reached, the truck's card says so instead of the truck just standing there.	VIP-диспетчер: когда дневной лимит в 20 автоматических рейсов исчерпан, карточка грузовика сообщает об этом, а не просто стоит.
+7c5d4fd5e6	The VIP dispatcher works again	VIP-диспетчер снова работает
+f075f87aa9	A temporary error while looking for a trip. Trying again in a minute.	Временная ошибка при поиске рейса. Повторная попытка через минуту.
+8f815ee2ea	Every minute the dispatcher checked the same trucks and stopped at the first error — it never reached some of the trucks. Now every truck gets its turn, and an error with one doesn't stop the others.	Каждую минуту диспетчер проверял одни и те же грузовики и останавливался на первой ошибке — до части грузовиков он не доходил. Теперь каждый грузовик получает свою очередь, а ошибка с одним не останавливает остальные.
+1d5e272049	The Dispatcher Is Back	Диспетчер вернулся
+b89ea40b79	Fix: the VIP dispatcher sends everyone's trucks again.	Исправление: VIP-диспетчер снова отправляет грузовики всех игроков.
+c22c1f1411	The limit of 20 automatic trips in 24 hours (for all trucks) has been reached.	Лимит в 20 автоматических рейсов за 24 часа (для всех грузовиков) исчерпан.

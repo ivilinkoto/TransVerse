@@ -259,6 +259,8 @@ describe('v1.1.2 VIP dispatcher tells why it waits', () => {
     await autoDispatchTick(db());
     const [v] = await db().select().from(vehicles).where(eq(vehicles.id, truck!.id));
     expect(v!.autoDispatchNote).toBe('Няма назначен шофьор.');
+    // 1.1.4.4: every truck the dispatcher looked at is marked, so the next round starts with the others.
+    expect(v!.autoDispatchTriedAt).not.toBeNull();
     const notes = await db().select().from(notifications).where(and(eq(notifications.userId, p.userId), like(notifications.title, '%VIP%')));
     expect(notes).toHaveLength(1);
 
