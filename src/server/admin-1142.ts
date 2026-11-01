@@ -7,7 +7,8 @@ import { grantItem } from '@/server/game/inventory';
 import { adminAudit, coinEntries, companies, contracts, deliveries, cities, ledgerEntries, notifications, supportTemplates, supportTickets, users } from '@/server/db/schema';
 import { FEATURES, type FeatureId } from '@/lib/game/features';
 import { RELEASES, compareVersions } from '@/lib/game/releases';
-import { recordAudit, requireStaff, type Staff } from '@/server/admin';
+import { recordAudit, requireAdminRole, requireStaff, type Staff } from '@/server/admin';
+import { notify } from '@/server/game/notify';
 import { fail } from '@/server/game/errors';
 import { disabledFeatures } from '@/server/feature-switches';
 import { t } from '@/i18n/t';
@@ -97,11 +98,24 @@ export async function deleteSupportTemplate(db: DbOrTx, actor: Staff | null, id:
   await db.delete(supportTemplates).where(eq(supportTemplates.id, id));
 }
 
-/** 1.2: the team gives an item (support: a lost case, a compensation); in the audit log. */
-export async function adminGrantItem(db: Database, actor: Staff | null, userId: string, itemId: string, qty: number) {
+/**
+ * 1.2: an administrator gives an item or cases (a prize, a compensation). With a
+ * reason; the player is told, and it goes to the audit log. ТрансКоин drops of
+ * cases are not given this way — ТрансКоин have their own form.
+ */
+export async function adminGrantItem(db: Database, actor: Staff | null, userId: string, itemId: string, qty: number, reason = '') {
   requireStaff(actor);
-  if (!(itemId in ITEMS)) fail('unknown_item', t('Непознат предмет.'));
-  await db.transaction((tx) => grantItem(tx, userId, itemId as ItemId, qty, 'admin', `admin-item:${actor!.id}:${userId}:${Date.now()}`));
-  await recordAudit(db, actor!.id, 'grant_item', userId, { itemId, qty });
+  requireAdminRole(actor);
+  if (!(itemId in ITEMS) || ITEMS[itemId as ItemId].kind === 'coins') fail('unknown_item', t('Непознат предмет.'));
+  if (!Number.isInteger(qty) || qty < 1 || qty > 100) fail('invalid_amount', t('Количеството е от 1 до 100.'));
+  if (reason.trim().length < 3) fail('reason_required', t('Посочете причина (поне 3 символа).'));
+  const [target] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
+  if (!target) fail('user_not_found', t('Играчът не е намерен.'), 404);
+  const def = ITEMS[itemId as ItemId];
+  await db.transaction(async (tx) => {
+    await grantItem(tx, userId, itemId as ItemId, qty, 'admin', `admin-item:${actor!.id}:${userId}:${Date.now()}`);
+    await notify(tx, userId, 'success', () => t('🎁 Подарък от екипа: {0} ×{1}', t(def.name), qty), () => t('{0} Виж „Инвентар“.', reason.trim()), '/game/inventory');
+  });
+  await recordAudit(db, actor!.id, 'grant_item', userId, { itemId, qty, reason: reason.trim() });
   return { itemId, qty };
 }

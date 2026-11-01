@@ -27,7 +27,7 @@ export default async function PassPage() {
         subtitle={t('{0} · до {1}', p.season.name, date(p.season.endsAt))}
         help={t('Пропускът се пълни със сезонните точки от доставките ти ({0} точки на ниво, {1} нива). Всяко второ ниво има безплатна награда. Премиум линията ({2} TC за сезона) добавя награда на всяко ниво: пари, ТрансКоин, VIP дни и ×2 опит. Премиумът не дава сезонни точки и не влияе на класациите. Невзетите награди изгарят в края на сезона.', int(PASS_POINTS_PER_LEVEL), PASS_LEVELS, PASS_PRICE_COINS)}
       />
-      <TruckPass db={db} userId={user.id} coins={user.coins} now={now} />
+      <TruckPass db={db} userId={user.id} coins={user.coins} now={now} fx={features.game_fx} />
     </div>
   );
 }

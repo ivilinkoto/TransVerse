@@ -69,6 +69,7 @@ export const COMMANDS = [
   { name: 'пропуск', description: 'Truck Pass: ниво и наградите, които те чакат (свързан акаунт)' },
   { name: 'борса', description: 'Най-добре платените товари от град', options: [{ type: 3, name: 'град', description: 'Град (напр. София)', required: true }] },
   { name: 'дневна', description: 'Вземи дневната награда' },
+  { name: 'код', description: 'Въведи промокод или кода на приятел, който те покани (свързан акаунт)', options: [{ type: 3, name: 'код', description: 'Кодът', required: true }] },
   { name: 'рекорди', description: 'Рекордите на линиите този месец (с име — на играч)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'камион', description: 'Картичка с твой камион — боя, ливрея, части (свързан акаунт)', options: [{ type: 3, name: 'номер', description: 'Регистрационен номер (без него — последно купеният)', required: false }] },
   { name: 'съюз', description: 'Съюзът на компанията ти (или съюз по име): компании, седмица и съюзна база', options: [{ type: 3, name: 'име', description: 'Име на съюза', required: false }] },

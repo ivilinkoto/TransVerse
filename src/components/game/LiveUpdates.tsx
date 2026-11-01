@@ -21,7 +21,7 @@ export function LiveUpdates() {
     window.addEventListener('keydown', unlockSound, { once: true });
     const source = new EventSource('/api/events');
     source.onmessage = (event) => {
-      const data = JSON.parse(event.data) as { type: string; channel?: string; with?: string; sound?: string };
+      const data = JSON.parse(event.data) as { type: string; channel?: string; with?: string; sound?: string; kind?: string; title?: string };
       if (data.type === 'hello') return;
       // Other players' trucks only matter to the map, which reloads them itself.
       if (data.type === 'world') {
@@ -41,6 +41,10 @@ export function LiveUpdates() {
       if (data.type === 'chat') {
         window.dispatchEvent(new Event('tv:chat'));
         return;
+      }
+      // 1.1.4.3: a medal or a delivery gets its effect (FxHost listens).
+      if (data.type === 'notification' && document.visibilityState === 'visible' && (data.kind === 'achievement' || data.sound === 'arrival')) {
+        window.dispatchEvent(new CustomEvent('tv:fx', { detail: { kind: data.kind, title: data.title, arrival: data.sound === 'arrival' } }));
       }
       // A new notification for this player: a short chime while the game is in view.
       if (data.type === 'notification' && soundEnabled() && document.visibilityState === 'visible') {

@@ -32,6 +32,7 @@ const NAMES: Record<string, [en: string, ru: string]> = {
   пропуск: ['pass', 'пропуск'],
   борса: ['board', 'биржа'],
   дневна: ['daily', 'ежедневная'],
+  код: ['code', 'код'],
   рекорди: ['records', 'рекорды'],
   камион: ['truck', 'грузовик'],
   съюз: ['alliance', 'союз'],

@@ -1,0 +1,131 @@
+# 1.1.4.3 «Живи награди» — animations and effects
+afe7ef4b80	{0} of 5 stars	{0} из 5 звёзд
+b2851d8612	If your phone uses “Reduce motion”, the effects are off.	Если на телефоне включено «Уменьшение движения», эффекты отключены.
+830603aad3	Animations	Анимации
+bf8653bfb8	Animations and effects: case roulette, confetti, counters (on this device)	Анимации и эффекты: рулетка кейсов, конфетти, счётчики (на этом устройстве)
+a37220b5e6	Take it all	Забрать всё
+e301b13626	Top bar: money and TransCoin roll to the new amount, with a “+” or “−” above them and a short sound on income (the sound follows the sound setting).	Верхняя панель: деньги и TransCoin прокручиваются до новой суммы, с «+» или «−» над ними и коротким звуком при доходе (звук следует настройке звука).
+974ef70963	Delivered on time	Доставлено вовремя
+bf9016db43	The effects use no outside libraries and leave nothing on the page when they end.	Эффекты без внешних библиотек и ничего не оставляют на странице после окончания.
+4b6d6a630b	Living Rewards	Живые награды
+fd4d40fed5	The game comes alive: money rolls, rewards fly to your wallet and achievements arrive as medals.	Игра оживает: деньги прокручиваются, награды летят в кошелёк, а достижения приходят медалями.
+1d3d37b4d7	Map: your own trucks move smoothly (several times a second) and the halo around them pulses.	Карта: свои грузовики движутся плавно (несколько раз в секунду), а ореол вокруг них пульсирует.
+4defbe7c6f	Cases (with 1.2): the case shakes while the server picks the reward, then the roulette stops exactly on it. The reveal depends on rarity — sparks for uncommon and rare, confetti for epic, a double burst and a shake for legendary. “Open another” and “Open all” (up to 20).	Кейсы (с 1.2): кейс трясётся, пока сервер выбирает награду, затем рулетка останавливается точно на ней. Раскрытие по редкости — искры для необычного и редкого, конфетти для эпического, двойной взрыв и тряска для легендарного. «Открыть ещё один» и «Открыть все» (до 20).
+d4d8a60ab6	The pass bar fills from where you last saw it, a new level lands like a stamp, waiting rewards pulse and fly to your wallet when you take them.	Полоса пропуска заполняется с того места, где ты видел её в последний раз, новый уровень падает как печать, ждущие награды пульсируют, а при получении летят в кошелёк.
+eaceb06afc	Medals and deliveries	Медали и доставки
+c37fc26293	The case reward is decided on the server before the roulette starts — the animation only shows it.	Награда из кейса определяется на сервере до запуска рулетки — анимация лишь показывает её.
+e521b54d3a	Settings → “Animations”: the effects can be switched off on each device. With “Reduce motion” on the phone or computer they are off.	Настройки → «Анимации»: эффекты отключаются на каждом устройстве отдельно. При включённом «Уменьшении движения» на телефоне или компьютере они выключены.
+d722cfc1ed	New achievement	Новое достижение
+f36beb63a6	A new achievement arrives as a spinning medal, an on-time delivery with confetti. Your trucks move smoothly on the map.	Новое достижение приходит вращающейся медалью, доставка вовремя — с конфетти. Твои грузовики на карте движутся плавно.
+19f8191019	New achievement: a medal that spins, with sparks. On-time delivery: “Delivered on time” with confetti while the game is open.	Новое достижение: вращающаяся медаль с искрами. Доставка вовремя: «Доставлено вовремя» с конфетти, пока игра открыта.
+0663e1066c	From 1.2: opening a case spins a strip of items that stops on your reward — with ticking, sparks and confetti by rarity. “Open all” opens up to 20 identical cases at once.	С 1.2: при открытии кейса лента предметов вращается и останавливается на награде — с тиканьем, искрами и конфетти по редкости. «Открыть все» открывает сразу до 20 одинаковых кейсов.
+0adc8fc4c9	Opened cases	Открытые кейсы
+2465668bf3	Cases opened: {0}	Открыто кейсов: {0}
+5b9a4677f2	Open all ({0})	Открыть все ({0})
+16d00a9693	Open another ({0})	Открыть ещё один ({0})
+8252e53df0	Reviews: the stars of the last three deliveries appear one by one.	Отзывы: звёзды трёх последних доставок появляются по одной.
+f53a197f40	Money and TransCoin	Деньги и TransCoin
+46c7143770	The pass comes alive	Пропуск оживает
+e553f9fc6a	Pass: the bar fills from the last value you saw (kept on the device), “+N points”, a new level as a stamp with sparks, a little truck at the end of the bar; unclaimed rewards pulse and fly to your money and TransCoin on “Claim rewards”; the premium line has a golden shine.	Пропуск: полоса заполняется от последнего увиденного значения (хранится на устройстве), «+N очков», новый уровень печатью с искрами, грузовичок в конце полосы; невзятые награды пульсируют и летят к деньгам и TransCoin при «Забрать награды»; премиум-линия с золотым бликом.
+bbdca8e618	Case roulette	Рулетка кейсов
+11b54b8344	The amounts at the top roll to the new value and show “+2,400 BGN” instead of just changing.	Суммы вверху прокручиваются до нового значения и показывают «+2 400 лв.», а не просто меняются.
+9039d81b2b	The cap, glasses and frame drop onto the driver's portrait when you put them on from the inventory (with 1.2).	Кепка, очки и рамка опускаются на портрет водителя, когда надеваешь их из инвентаря (с 1.2).
+e67f6cecd9	 (up to {0} uses)	 (до {0} использований)
+335471ca61	+{0} VIP days	+{0} дней VIP
+3bd6aebc00	+{0} TransCoin	+{0} TransCoin
+2c4cb1fea1	VIP days (up to {0})	Дни VIP (до {0})
+e04dd6f011	VIP: up to {0} days.	VIP: до {0} дней.
+be43b5f1c2	`/missions` — missions and rewards · `/daily` — the daily reward · `/code` — promo code	`/миссии` — миссии и награды · `/ежедневная` — ежедневная награда · `/код` — промокод
+f4a26c2b30	{0} VIP days	{0} дней VIP
+c865970210	Note for the team (e.g. Facebook, Awakeners' Day)	Заметка для команды (напр. Facebook, День будителей)
+c0e32b7c3a	Number of codes (up to {0})	Количество кодов (до {0})
+71b6dd5e58	Valid until	Действует до
+c26db52de7	Valid until (empty — no end)	Действует до (пусто — без конца)
+fa7ff90e3e	You are already recorded as invited by a friend.	Ты уже записан как приглашённый другом.
+886b3346fa	You have already used this code.	Ты уже использовал этот код.
+b52ff04c82	Code type	Тип кода
+bbb7f39aae	Enter a promo code or the code of the friend who invited you (linked account)	Введи промокод или код друга, который тебя пригласил (связанный аккаунт)
+db00d840b3	Codes ready: {0}	Готово кодов: {0}
+4eb7ff5bc1	Up to {0} kinds of items.	До {0} видов предметов.
+222506b9e0	Single-use codes	Одноразовые коды
+4aad7b5a42	For the team: Admin → “Promo codes” — a public code (your own or random, with a limit, end date, level and “existing accounts only”) or a batch of up to 500 single-use codes for a tournament or stream; who used a code; stop with one click. Everything goes to the audit log.	Для команды: Админ → «Промокоды» — общий код (свой или случайный, с лимитом, сроком, уровнем и «только существующие профили») или пакет до 500 одноразовых кодов для турнира или стрима; кто использовал код; остановка одним нажатием. Всё записывается в журнал аудита.
+812752bab8	You are recorded as invited by {0}. You get {1}.	Ты записан как приглашённый игроком {0}. Получаешь {1}.
+fad9a47f38	The game comes alive: money rolls, rewards fly to your wallet and achievements arrive as medals. And promo codes — in the game and on Discord.	Игра оживает: деньги прокручиваются, награды летят в кошелёк, а достижения приходят медалями. И промокоды — в игре и в Discord.
+455d714866	Used	Использован
+48ca9c6a36	Used	Использовано
+25ba55646a	Case or item	Кейс или предмет
+6708837459	Code	Код
+e31b5d96e6	Code (empty — random)	Код (пусто — случайный)
+80b9066b17	A friend's code can be entered up to {0} days after sign-up.	Код друга вводится до {0} дней после регистрации.
+c3be358c72	The code “{0}” already exists.	Код «{0}» уже существует.
+dd2b0f1b2c	Codes	Коды
+9a25f9acc8	Only administrators create codes.	Коды создают только администраторы.
+7c2dfef5b0	Codes in the batch	Коды в пакете
+d7b824adfe	The code	Код
+e8ed43fe57	The code {0} is yours: {1}	Код {0} твой: {1}
+0ce8a2d357	This code has been used up.	Код уже полностью использован.
+fcede7126d	This code was already used by an account on the same network.	Код уже использован профилем из той же сети.
+9b8f34179a	The code is ready:	Код готов:
+5430d4c825	The code is for players from level {0}.	Код для игроков с уровня {0}.
+21055cdeb7	The code is for accounts created before {0}.	Код для профилей, созданных до {0}.
+38e5134ae9	The code has expired.	Срок кода истёк.
+df7adcbdb9	A code has 4 to 32 characters: Latin letters, digits and dashes.	Код от 4 до 32 символов: латинские буквы, цифры и дефис.
+b0fe34a338	A friend's code: up to 7 days after sign-up you can enter the code of a friend who invited you (if you didn't sign up through their link). You are recorded as their invitee, get a bronze case, and the invite rewards come after the first deliveries as before.	Код друга: до 7 дней после регистрации можно ввести код друга, который тебя пригласил (если ты не регистрировался по его ссылке). Ты записан как его приглашённый, получаешь бронзовый кейс, а награды за приглашение приходят, как и раньше, после первых доставок.
+4ed1741e31	Code not found.	Код не найден.
+70a36b7c31	A code can't look like an invite code (8 characters without a dash) — add a dash or a digit.	Код не может быть похож на код приглашения (8 символов без дефиса) — добавь дефис или цифру.
+6360049ed9	The code is not active yet.	Код ещё не активен.
+cfbfe3f828	A code must give at least one reward.	Код должен давать хотя бы одну награду.
+949a806c27	Who used {0}	Кто использовал {0}
+1857609bc5	The end must be after the start.	Конец должен быть после начала.
+cb8bbdfbc5	Shop or Settings → “Got a code?” (or /code on Discord): codes from Facebook, Discord and tournaments give TransCoin, money, VIP days or cases. That is also where you enter the code of a friend who invited you.	Магазин или Настройки → «Есть код?» (или /код в Discord): коды из Facebook, Discord и турниров дают TransCoin, деньги, дни VIP или кейсы. Там же вводишь код друга, который тебя пригласил.
+eff540eb57	Minimum level	Минимальный уровень
+6ff03046ff	Maximum uses (empty — no limit)	Максимум использований (пусто — без лимита)
+8c544a737e	New code	Новый код
+2ecf444e70	A new invited player	Новый приглашённый игрок
+8b98d3403a	Someone entered your code. When they make their first deliveries, you both get a reward.	Кто-то ввёл твой код. Когда он сделает первые доставки, вы оба получите награду.
+b539f25dbe	No such code. Check the letters and digits.	Такого кода нет. Проверь буквы и цифры.
+ce5c1d2289	Public code	Общий код
+fc21bdb631	Public codes	Общие коды
+3daad90167	Public codes for posts and single-use codes for tournaments and streams. Each player uses a code once; accounts on the same network too. Rewards are game data, not real money.	Общие коды для публикаций и одноразовые коды для турниров и стримов. Каждый игрок использует код один раз; профили из одной сети — тоже. Награды — игровые данные, а не настоящие деньги.
+b96be344ee	From 1 to {0} codes at once.	От 1 до {0} кодов за раз.
+4f23fec422	From where	Откуда
+eb966ce3a6	Nobody yet.	Пока никто.
+6927e368ce	No codes yet.	Кодов пока нет.
+bc771a4861	No batches yet.	Пакетов пока нет.
+56c8082579	Batch	Пакет
+6f1c602b28	Game money, BGN	Игровые деньги, лв.
+3664069009	Money: up to {0} BGN.	Деньги: до {0} лв.
+f24b88723c	The invite doesn't count from the same network.	Приглашение не действует из той же сети.
+7126fca43a	Items: from 1 to {0}.	Предметы: от 1 до {0} шт.
+5c77b0ea07	Prefix	Префикс
+b490ffca27	The prefix is up to 12 Latin letters and digits.	Префикс — до 12 латинских букв и цифр.
+01a191694a	Promo code	Промокод
+63132472a7	Promo code {0}	Промокод {0}
+3f853f37ae	A promo code from Facebook, Discord or a tournament — or the code of a friend who invited you (up to 7 days after sign-up).	Промокод из Facebook, Discord или турнира — или код друга, который тебя пригласил (до 7 дней после регистрации).
+98ad99dd5d	Promo codes	Промокоды
+4ebeeb85ad	Promo codes: a “Got a code?” field in the Shop and Settings, and /code on Discord. The reward can be TransCoin, game money, VIP days and cases or items. Each code is used once per player and once per network; some have an end date, a use limit or a minimum level.	Промокоды: поле «Есть код?» в Магазине и Настройках и /код в Discord. Наградой могут быть TransCoin, игровые деньги, дни VIP и кейсы или предметы. Каждый код используется один раз на игрока и один раз на сеть; у некоторых есть срок, лимит использований или минимальный уровень.
+2157a263dd	Turned promo code {0} back on	Снова включил промокод {0}
+9a043d9204	Turn all on	Включить все
+3497ed7b2e	Only for accounts that already exist (a new account made for the code gets nothing)	Только для уже существующих профилей (новый профиль, созданный ради кода, ничего не получит)
+e28a70917c	Stop all	Остановить все
+6a051a9952	Stopped promo code {0}	Остановил промокод {0}
+3d15e8a661	Created {0} single-use codes {1}-…	Создал {0} одноразовых кодов {1}-…
+d9cdc893c9	Created promo code {0}{1}	Создал промокод {0}{1}
+a8ad99d97d	Created	Создан
+f4365e4222	Create {0} codes	Создать {0} кодов
+a8e40c14af	Create the code	Создать код
+ec2f8d5a1c	This is your invite code — give it to a friend.	Это твой код приглашения — дай его другу.
+873540485b	This code is stopped.	Этот код остановлен.
+de10213eb0	TransCoin (up to {0})	TransCoin (до {0})
+622eff0930	TransCoin: from 0 to {0}.	TransCoin: от 0 до {0}.
+84ce6866f3	active	активен
+4b3a4e6fb3	used up	исчерпан
+366f0eb530	code	код
+cddcbbdf5a	e.g. BUDITELI2026	напр. BUDITELI2026
+1163604e15	stopped	остановлен
+f966f1edac	— none —	— нет —
+db1e34b34c	✓ — already used.	✓ — уже использован.
+981bf9b5c8	🎟 Got a code?	🎟 Есть код?
+e4980ed097	🎟 The code **{0}** is yours: {1}	🎟 Код **{0}** твой: {1}
+0ef8e70726	🎟 Promo code	🎟 Промокод
+d6a059cd42	🤝 You are recorded as invited by **{0}**. You get: {1}	🤝 Ты записан как приглашённый **{0}**. Получаешь: {1}

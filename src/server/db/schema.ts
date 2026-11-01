@@ -3480,3 +3480,38 @@ export const itemEffects = pgTable('item_effects', {
   uses: integer('uses'),
   createdAt: createdAt(),
 }, (t) => [index('item_effects_user_idx').on(t.userId, t.effect)]);
+
+/**
+ * 1.1.4.3: promo codes. A public code (one code for everyone, with limits), a
+ * single-use code (made in batches) or a hidden one; the reward is any mix of
+ * ТрансКоин, game money, items/cases and VIP days. Each player redeems a code once.
+ */
+export const promoCodes = pgTable('promo_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  code: text('code').notNull(),
+  kind: text('kind').$type<'public' | 'single'>().notNull().default('public'),
+  reward: jsonb('reward').$type<{ coins?: number; cents?: number; vipDays?: number; items?: { itemId: string; qty: number }[] }>().notNull(),
+  maxUses: integer('max_uses'),
+  uses: integer('uses').notNull().default(0),
+  minLevel: integer('min_level').notNull().default(1),
+  /** Only accounts made before this moment (null — any). Stops new accounts made just for the code. */
+  accountsBefore: ts('accounts_before'),
+  startsAt: ts('starts_at'),
+  endsAt: ts('ends_at'),
+  disabledAt: ts('disabled_at'),
+  batchId: uuid('batch_id'),
+  note: text('note'),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('promo_codes_code_idx').on(t.code), index('promo_codes_batch_idx').on(t.batchId)]);
+
+export const promoRedemptions = pgTable('promo_redemptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  codeId: uuid('code_id').notNull().references(() => promoCodes.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** Where it was redeemed: the game or Discord. */
+  via: text('via').notNull().default('web'),
+  ipHash: text('ip_hash'),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('promo_redemptions_once_idx').on(t.codeId, t.userId), index('promo_redemptions_code_idx').on(t.codeId, t.ipHash)]);
+

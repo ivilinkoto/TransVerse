@@ -25,6 +25,17 @@ const crate = (body: string, edge: string, shine: string) => (
   </g>
 );
 
+
+/** A ТрансКоин coin (1.2: coins straight from a case). */
+const coin = (cx: number, cy: number, r: number) => (
+  <g key={`${cx}-${cy}`}>
+    <ellipse cx={cx} cy={cy + r * 0.18} rx={r} ry={r * 0.92} fill="#0e7490" />
+    <circle cx={cx} cy={cy} r={r} fill="#22d3ee" stroke="#0e7490" strokeWidth="2" />
+    <circle cx={cx} cy={cy} r={r * 0.68} fill="none" stroke="#a5f3fc" strokeWidth="1.5" />
+    <text x={cx} y={cy + r * 0.32} fontSize={r * 0.85} fontWeight="900" textAnchor="middle" fill="#083344" fontFamily="system-ui, sans-serif">TC</text>
+  </g>
+);
+
 const ART: Record<ItemId, ReactNode> = {
   coffee: (
     <g>
@@ -204,6 +215,28 @@ const ART: Record<ItemId, ReactNode> = {
       <path d="M46 24 h10 M46 28 h10" stroke="#1f2937" strokeWidth="1.5" />
       <rect x="64" y="34" width="8" height="12" rx="2" fill="#dc2626" />
       <text x="51" y="50" fontSize="8" fontWeight="900" textAnchor="middle" fill="#cbd5e1" fontFamily="system-ui, sans-serif">CB</text>
+    </g>
+  ),
+  tc_small: <g>{coin(50, 56, 20)}</g>,
+  tc_medium: (
+    <g>
+      <path d="M24 82 q-4 -30 10 -40 h32 q14 10 10 40 z" fill="#78350f" stroke="#451a03" strokeWidth="2" />
+      <path d="M34 42 q16 -10 32 0" fill="none" stroke="#451a03" strokeWidth="3" />
+      {coin(38, 34, 13)}
+      {coin(60, 30, 13)}
+      {coin(50, 62, 14)}
+    </g>
+  ),
+  tc_jackpot: (
+    <g>
+      <circle cx="50" cy="52" r="40" fill="#fde047" opacity="0.25" />
+      {coin(30, 70, 14)}
+      {coin(70, 70, 14)}
+      {coin(50, 74, 14)}
+      {coin(40, 50, 14)}
+      {coin(62, 48, 14)}
+      {coin(50, 28, 16)}
+      <path d="M20 22 l4 6 M80 20 l-4 6 M86 44 l-6 2 M14 46 l6 2" stroke="#fde047" strokeWidth="3" strokeLinecap="round" />
     </g>
   ),
   case_bronze: crate('#b45309', '#78350f', '#fdba74'),

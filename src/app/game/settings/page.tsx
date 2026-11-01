@@ -10,6 +10,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { blockList } from '@/server/game/moderation';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { PushSettings } from '@/components/game/PushSettings';
+import { PromoRedeem } from '@/components/game/PromoRedeem';
 import { DiscordSettings } from '@/components/game/DiscordSettings';
 import { discordConfig } from '@/server/discord/config';
 import { DISCORD_LINK_COINS } from '@/server/discord/link';
@@ -76,6 +77,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           {features.data_export && <div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Твоите данни')}</h3><ExportData /></div>}
           {features.delete_account && <div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Изтриване на профила')}</h3><DeleteAccount username={user.username} /></div>}
         </Card>
+        {features.promo_codes && (
+          <Card title={<span id="code" className="scroll-mt-24">{t('🎟 Промокод')}</span>} className="lg:col-span-2">
+            <PromoRedeem />
+          </Card>
+        )}
         {features.discord_bot && (
           <Card title={<span id="discord" className="inline-flex scroll-mt-24 items-center gap-2"><MessageSquare className="h-4 w-4 text-mist-400" />Discord</span>} className="lg:col-span-2">
             <DiscordSettings ready={discordConfig().oauth} linked={u?.discordId ? (u.discordName ?? 'Discord') : null} categories={PUSH_CATEGORIES} prefs={u?.discordPrefs ?? {}} status={discordStatus ?? null} coins={DISCORD_LINK_COINS} />

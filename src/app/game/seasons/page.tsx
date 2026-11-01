@@ -52,7 +52,7 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
         <section id="pass" className="scroll-mt-24 space-y-4">
           <h2 className="font-display text-xl font-bold">{t('🚚 Truck Pass')}</h2>
           <p className="-mt-2 text-sm text-mist-400">{t('Нивата растат с точките от доставките. Невзетите награди изгарят в края на сезона.')}</p>
-          <TruckPass db={db} userId={user.id} coins={user.coins} now={now} />
+          <TruckPass db={db} userId={user.id} coins={user.coins} now={now} fx={features.game_fx} />
         </section>
       )}
       <Segmented label={t('Класация')} active={tab} items={[{ id: 'players', label: t('Играчи'), href: '/game/seasons' }, { id: 'companies', label: t('Компании'), href: '/game/seasons?tab=companies' }]} />

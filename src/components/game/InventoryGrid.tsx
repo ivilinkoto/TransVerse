@@ -3,14 +3,22 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
-import { ITEMS, RARITIES, caseOdds, isCase, type ItemId } from '@/lib/game/items';
+import { ITEMS, RARITIES, caseOdds, coinsOf, isCase, type CaseId, type ItemId } from '@/lib/game/items';
 import { ItemArt } from './ItemArt';
+import { DriverPortrait } from './DriverPortrait';
+import { useFeature } from './Features';
+import { CaseOpening, CaseResults } from '@/components/fx/CaseOpening';
 import { t, tx } from '@/i18n/t';
 
 interface Target {
   id: string;
   label: string;
+  /** Drivers only: what the portrait wears now. */
+  look?: { cap?: boolean; glasses?: boolean; frame?: 'gold' };
 }
+
+const LOOK_PART: Partial<Record<ItemId, 'cap' | 'glasses' | 'frame'>> = { trucker_cap: 'cap', sunglasses: 'glasses', gold_frame: 'frame' };
+const OPEN_ALL_MAX = 20;
 
 /** 1.2: the inventory — tap an item to see it, use it or open a case. */
 export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: string; qty: number }[]; drivers: Target[]; vehicles: Target[] }) {
@@ -22,7 +30,13 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
   const [note, setNote] = useState<string | null>(null);
   const [won, setWon] = useState<ItemId | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 1.1.4.3: the roulette, „Отвори всички“ and the new look on the portrait.
+  const fx = useFeature('game_fx');
+  const [opening, setOpening] = useState<{ caseId: CaseId; result: ItemId | null; error: string | null } | null>(null);
+  const [results, setResults] = useState<ItemId[] | null>(null);
+  const [dressed, setDressed] = useState<{ driver: Target; part: 'cap' | 'glasses' | 'frame' } | null>(null);
   const def = open ? ITEMS[open] : null;
+  const qtyOf = (id: ItemId) => known.find((i) => i.itemId === id)?.qty ?? 0;
   const targets = def?.target === 'driver' ? drivers : def?.target === 'vehicle' ? vehicles : [];
 
   const select = (id: ItemId) => {
@@ -31,6 +45,43 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
     setNote(null);
     setError(null);
     setWon(null);
+    setDressed(null);
+  };
+  const spin = async (caseId: CaseId) => {
+    setOpening({ caseId, result: null, error: null });
+    try {
+      const r = await api<{ item: ItemId }>('/api/game/action', { type: 'openCase', caseId });
+      setOpening({ caseId, result: r.item, error: null });
+      router.refresh();
+    } catch (e) {
+      setOpening({ caseId, result: null, error: (e as Error).message });
+    }
+  };
+  const closeOpening = () => {
+    const got = opening?.result;
+    setOpening(null);
+    if (got) {
+      // ТрансКоин go to the wallet: the case stays selected, with what it gave.
+      if (!coinsOf(got)) setOpen(got);
+      setWon(got);
+    }
+  };
+  const openAll = async (caseId: CaseId) => {
+    setBusy(true);
+    setError(null);
+    const got: ItemId[] = [];
+    try {
+      for (let i = 0; i < Math.min(qtyOf(caseId), OPEN_ALL_MAX); i++) {
+        const r = await api<{ item: ItemId }>('/api/game/action', { type: 'openCase', caseId });
+        got.push(r.item);
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+      if (got.length) setResults(got);
+      router.refresh();
+    }
   };
   const run = async () => {
     if (!open) return;
@@ -39,9 +90,13 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
     setNote(null);
     setWon(null);
     try {
+      if (isCase(open) && fx) {
+        setBusy(false);
+        return void spin(open);
+      }
       if (isCase(open)) {
         const r = await api<{ item: ItemId }>('/api/game/action', { type: 'openCase', caseId: open });
-        setOpen(r.item);
+        if (!coinsOf(r.item)) setOpen(r.item);
         setWon(r.item);
       } else {
         const body: Record<string, unknown> = { type: 'useItem', itemId: open };
@@ -49,6 +104,9 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
         if (def?.target === 'vehicle') body.vehicleId = target;
         const r = await api<{ result: string }>('/api/game/action', body);
         setNote(r.result);
+        const part = LOOK_PART[open];
+        const driver = drivers.find((d) => d.id === target);
+        if (fx && part && driver) setDressed({ driver: { ...driver, look: { ...driver.look, ...(part === 'frame' ? { frame: 'gold' as const } : { [part]: true }) } }, part });
       }
       router.refresh();
     } catch (e) {
@@ -78,7 +136,7 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
       {open && def && (
         <aside className="panel h-fit space-y-3 p-4 lg:sticky lg:top-24">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl border-2 bg-asphalt-900 p-2" style={{ borderColor: RARITIES[def.rarity].color }}><ItemArt id={won ?? open} className="h-20 w-20" /></div>
+            <div className="rounded-2xl border-2 bg-asphalt-900 p-2" style={{ borderColor: RARITIES[def.rarity].color }}><ItemArt id={won && !coinsOf(won) ? won : open} className="h-20 w-20" /></div>
             <div className="min-w-0">
               <p className="font-display text-lg font-bold">{tx(def.name)}</p>
               <p className="text-xs font-semibold" style={{ color: RARITIES[def.rarity].color }}>{tx(RARITIES[def.rarity].label)}</p>
@@ -109,11 +167,24 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
               {busy ? '…' : isCase(open) ? t('Отвори') : t('Използвай')}
             </button>
           )}
+          {isCase(open) && fx && qtyOf(open) > 1 && (
+            <button type="button" className="btn-ghost w-full" disabled={busy} onClick={() => void openAll(open)}>
+              {t('Отвори всички ({0})', Math.min(qtyOf(open), OPEN_ALL_MAX))}
+            </button>
+          )}
+          {dressed && (
+            <div className="flex items-center gap-3 rounded-xl border border-asphalt-700 bg-asphalt-900/60 p-2">
+              <DriverPortrait id={dressed.driver.id} name={dressed.driver.label} look={dressed.driver.look} fresh={dressed.part} className="h-16 w-16" />
+              <span className="text-sm">{dressed.driver.label}</span>
+            </div>
+          )}
           {won && <p role="status" className="rounded-xl border border-gold-400/40 bg-gold-400/10 p-2 text-sm font-semibold text-gold-400">{t('🎉 Падна ти: {0}!', tx(ITEMS[won].name))}</p>}
           {note && <p role="status" className="text-sm text-profit">{note}</p>}
           {error && <p role="alert" className="text-sm text-loss">{error}</p>}
         </aside>
       )}
+      {opening && <CaseOpening caseId={opening.caseId} result={opening.result} error={opening.error} left={opening.result ? qtyOf(opening.caseId) : 0} onAgain={() => void spin(opening.caseId)} onClose={closeOpening} />}
+      {results && <CaseResults results={results} onClose={() => setResults(null)} />}
     </div>
   );
 }

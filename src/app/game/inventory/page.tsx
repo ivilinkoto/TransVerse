@@ -29,7 +29,7 @@ export default async function InventoryPage() {
     inventoryOf(db, user.id),
     recentItems(db, user.id),
     activeEffects(db, user.id, now),
-    db.select({ id: drivers.id, name: drivers.name }).from(drivers).where(eq(drivers.companyId, company.id)),
+    db.select({ id: drivers.id, name: drivers.name, look: drivers.look }).from(drivers).where(eq(drivers.companyId, company.id)),
     db.select({ id: vehicles.id, plate: vehicles.plate, nickname: vehicles.nickname }).from(vehicles).where(eq(vehicles.companyId, company.id)),
   ]);
   const everFound = new Set(log.filter((l) => l.delta > 0).map((l) => l.itemId));
@@ -40,7 +40,7 @@ export default async function InventoryPage() {
       {!items.length ? (
         <Empty icon={Backpack} title={t('Инвентарът е празен')}>{t('Кейсове падат от дневната награда, новите нива, Голям рейс и находки по пътя.')}</Empty>
       ) : (
-        <InventoryGrid items={items} drivers={crew.map((d) => ({ id: d.id, label: d.name }))} vehicles={fleet.map((v) => ({ id: v.id, label: v.nickname ? `${v.nickname} · ${v.plate}` : v.plate }))} />
+        <InventoryGrid items={items} drivers={crew.map((d) => ({ id: d.id, label: d.name, look: d.look ?? {} }))} vehicles={fleet.map((v) => ({ id: v.id, label: v.nickname ? `${v.nickname} · ${v.plate}` : v.plate }))} />
       )}
       {effects.length > 0 && (
         <Card title={t('Действа сега')}>
