@@ -89,7 +89,7 @@ test.describe('core loop', () => {
     await expect(page.getByRole('region', { name: 'Обучение' })).toContainText('Проследи камиона на картата');
   });
 
-  test('the market is open without a company; hiring drivers still needs one', async ({ page }) => {
+  test('the market is open without a company; an independent driver hires up to 3 drivers', async ({ page }) => {
     await register(page);
     await page.goto('/game/market');
     await expect(page.getByRole('heading', { name: 'Пазар на техника' })).toBeVisible();
@@ -108,9 +108,10 @@ test.describe('core loop', () => {
     await page.goto('/game/clients');
     await expect(page.getByRole('heading', { name: 'Клиенти', exact: true })).toBeVisible();
     await expect(page.getByText('Оферти', { exact: true })).toBeVisible();
+    // 1.1.4.4: the Drivers page opens without a company, with up to 3 hired drivers.
     await page.goto('/game/staff');
-    await expect(page.getByText('изисква транспортна компания')).toBeVisible();
-    await page.getByRole('link', { name: 'Към основаването на компания' }).click();
+    await expect(page.getByText(/Без компания можеш да имаш до 3 наети шофьора/)).toBeVisible();
+    await page.getByRole('link', { name: 'Основи компания' }).click();
     await expect(page.getByText('Изисквания за основаване')).toBeVisible();
     await expect(page.getByRole('button', { name: /Основи компания/ })).toBeDisabled();
   });
