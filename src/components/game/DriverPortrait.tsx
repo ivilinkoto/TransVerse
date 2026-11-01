@@ -5,7 +5,7 @@ import { faceFor } from '@/lib/game/portraits';
  * from the id and name. It is the same face every time (no moods). Cap,
  * glasses and a gold frame come from the inventory.
  */
-export function DriverPortrait({ id, name, look = {}, className = 'h-12 w-12' }: { id: string; name: string; look?: { cap?: boolean; glasses?: boolean; frame?: 'gold' }; className?: string }) {
+export function DriverPortrait({ id, name, look = {}, fresh, className = 'h-12 w-12' }: { id: string; name: string; fresh?: 'cap' | 'glasses' | 'frame'; look?: { cap?: boolean; glasses?: boolean; frame?: 'gold' }; className?: string }) {
   const f = faceFor(id, name);
   const shade = 'rgba(0,0,0,0.12)';
   const eyeY = 50;
@@ -51,7 +51,7 @@ export function DriverPortrait({ id, name, look = {}, className = 'h-12 w-12' }:
         <path d="M45.5 62.6 q4.5 2 9 0" fill="none" stroke="#8b3a2f" strokeWidth="2.1" strokeLinecap="round" />
         {/* items from the inventory */}
         {look.glasses && (
-          <g>
+          <g className={fresh === 'glasses' ? 'fx-drop' : undefined}>
             <path d="M33 49 h34" stroke="#0f172a" strokeWidth="2" />
             <rect x="35" y="45" width="13" height="9" rx="3" fill="#0f172a" />
             <rect x="52" y="45" width="13" height="9" rx="3" fill="#0f172a" />
@@ -59,14 +59,14 @@ export function DriverPortrait({ id, name, look = {}, className = 'h-12 w-12' }:
           </g>
         )}
         {look.cap && (
-          <g>
+          <g className={fresh === 'cap' ? 'fx-drop' : undefined}>
             <path d="M28 38 q0 -20 22 -20 q22 0 22 20 z" fill="#ea580c" />
             <path d="M28 38 h30 v5 h-34 a4 4 0 0 1 4 -5 z" fill="#1f2937" />
             <rect x="44" y="26" width="14" height="7" rx="1.5" fill="#f8fafc" />
           </g>
         )}
       </g>
-      {look.frame === 'gold' && <rect x="2" y="2" width="96" height="96" rx="17" fill="none" stroke="#facc15" strokeWidth="4" />}
+      {look.frame === 'gold' && <rect className={fresh === 'frame' ? 'fx-pop' : undefined} style={{ transformOrigin: '50% 50%', transformBox: 'fill-box' }} x="2" y="2" width="96" height="96" rx="17" fill="none" stroke="#facc15" strokeWidth="4" />}
     </svg>
   );
 }

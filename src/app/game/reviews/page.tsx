@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import { Badge, Card, Empty, PageHeader } from '@/components/ui';
 import { Star } from 'lucide-react';
 import { dateTime } from '@/lib/format';
-import { MYSTERY, REVIEWS, starLine } from '@/lib/game/reviews';
+import { MYSTERY, REVIEWS } from '@/lib/game/reviews';
+import { StarsReveal } from '@/components/fx/StarsReveal';
 import { PROMISES, type PromiseId } from '@/lib/game/promise';
 import { gameContext } from '@/server/game/context';
 import { reviewsOf, starsOf } from '@/server/game/trip-extras';
@@ -32,10 +33,10 @@ export default async function ReviewsPage() {
       <Card title={t('Последни доставки')}>
         {!list.length ? <Empty icon={Star} title={t('Още няма отзиви')}>{t('Първата оценка идва с първата доставка.')}</Empty> : (
           <ul className="divide-y divide-asphalt-800 text-sm">
-            {list.map((r) => (
+            {list.map((r, i) => (
               <li key={r.deliveryId} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className="min-w-0">
-                  <span className="text-gold-400">{starLine(r.stars ?? 0)}</span> <span className="font-medium">{tx(r.goods)} → {tx(r.to)}</span>
+                  <StarsReveal stars={r.stars ?? 0} animate={features.game_fx && i < 3} label={t('{0} от 5 звезди', r.stars ?? 0)} /> <span className="font-medium">{tx(r.goods)} → {tx(r.to)}</span>
                   {r.mystery && <Badge tone="violet">{t('🕵 Тайният клиент')}</Badge>}
                   {r.fog && <Badge tone="neutral">{t('🌫 Мъгла')}</Badge>}
                   {r.promise && r.promise !== 'normal' && <Badge tone="cyan">{PROMISES[r.promise as PromiseId]?.emoji} {tx(PROMISES[r.promise as PromiseId]?.label ?? '')}</Badge>}

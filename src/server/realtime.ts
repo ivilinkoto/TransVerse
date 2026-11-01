@@ -17,6 +17,9 @@ export interface WorldEvent {
   companyId?: string;
   /** Notification: which sound an open game plays (1.1.3). */
   sound?: 'arrival';
+  /** Notification (1.1.4.3): its kind and a short title, for the effects of an open game. */
+  kind?: string;
+  title?: string;
 }
 
 const g = globalThis as unknown as { tvBus?: EventEmitter; tvListen?: Promise<void>; tvOnline?: Map<string, number> };

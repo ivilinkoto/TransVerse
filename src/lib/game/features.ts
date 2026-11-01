@@ -99,6 +99,8 @@ export const FEATURES = {
   night_courier: '1.1.4.2',
   last_mile: '1.1.4.2',
   discord_1142: '1.1.4.2',
+  // 1.1.4.3: animations and effects (cases, Truck Pass, money, rewards).
+  game_fx: '1.1.4.3',
   // v1.1.4: countdowns, ideas with votes, Ден на будителите, my day, compare, roadmap.
   countdowns: '1.1.4',
   ideas: '1.1.4',

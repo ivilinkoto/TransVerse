@@ -2,12 +2,12 @@ import { Coins, Gift, Plus, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { LogoMark } from '@/components/brand/Logo';
 import { levelProgress } from '@/lib/game/progression';
-import { money } from '@/lib/format';
+import { AnimatedAmount } from '@/components/fx/AnimatedAmount';
 import { AccountMenu, NotificationBell } from './HeaderMenu';
 import { PlayerSearch } from './PlayerSearch';
 import { CommandPalette } from './CommandPalette';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
-import { t, intlLocale } from '@/i18n/t';
+import { t } from '@/i18n/t';
 
 const chip = 'flex h-9 items-center gap-1.5 rounded-full border px-2.5 sm:px-3 transition';
 
@@ -24,13 +24,13 @@ export function TopBar({ title, kind, company, user, vip, hqName, unread, staff,
         </div>
         {/* On a phone the row must fit the screen: the language is in "Още" there and the menu search from 400 px. */}
         <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
-          <Link href="/game/finance" className={`${chip} border-asphalt-700 bg-asphalt-900/60 hover:border-gold-400/50`} title={t('Наличност — финанси')}>
+          <Link href="/game/finance" data-fx="wallet" className={`${chip} border-asphalt-700 bg-asphalt-900/60 hover:border-gold-400/50`} title={t('Наличност — финанси')}>
             <Wallet className="h-4 w-4 text-gold-400 max-sm:hidden" />
-            <span className={`num whitespace-nowrap font-display text-sm font-bold sm:text-base ${company.balanceCents < 0 ? 'text-loss' : 'text-gold-400'}`}>{money(company.balanceCents)}</span>
+            <span className={`num whitespace-nowrap font-display text-sm font-bold sm:text-base ${company.balanceCents < 0 ? 'text-loss' : 'text-gold-400'}`}><AnimatedAmount value={company.balanceCents} kind="money" /></span>
           </Link>
-          <Link href="/game/shop" className={`${chip} border-cyan-glow/30 bg-cyan-glow/10 min-[420px]:pr-1.5 hover:bg-cyan-glow/20`} title={t('ТрансКоин — магазин и VIP')}>
+          <Link href="/game/shop" data-fx="coins" className={`${chip} border-cyan-glow/30 bg-cyan-glow/10 min-[420px]:pr-1.5 hover:bg-cyan-glow/20`} title={t('ТрансКоин — магазин и VIP')}>
             <Coins className="h-4 w-4 text-cyan-glow" />
-            <span className="num whitespace-nowrap font-display text-sm font-bold text-cyan-glow">{user.coins.toLocaleString(intlLocale())}<span className="max-sm:hidden"> TC</span></span>
+            <span className="num whitespace-nowrap font-display text-sm font-bold text-cyan-glow"><AnimatedAmount value={user.coins} kind="coins" suffix={<span className="max-sm:hidden"> TC</span>} /></span>
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-glow/20 text-cyan-glow max-[419px]:hidden"><Plus className="h-3.5 w-3.5" /></span>
           </Link>
           {dailyReady && (

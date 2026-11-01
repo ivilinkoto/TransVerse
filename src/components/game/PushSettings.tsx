@@ -3,6 +3,7 @@
 import { Bell, BellOff, Download, Send, Smartphone, Volume2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
+import { motionPreference, setMotionEnabled } from '@/lib/client/motion';
 import { arrivalSoundEnabled, playArrival, playChime, setArrivalSoundEnabled, setSoundEnabled, setSoundVolume, soundEnabled, soundVolume, unlockSound } from '@/lib/client/sound';
 import { useFeature } from '@/components/game/Features';
 import { t, tx } from '@/i18n/t';
@@ -121,6 +122,9 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
   const soundSettings = useFeature('sound_settings');
   const [arrival, setArrival] = useState(true);
   const [volume, setVolume] = useState(1);
+  // 1.1.4.3: animations on this device.
+  const fx = useFeature('game_fx');
+  const [motion, setMotion] = useState(true);
 
   useEffect(() => {
     const onPrompt = () => setInstall(window.__tvInstall ?? null);
@@ -130,6 +134,7 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
       setSound(soundEnabled());
       setArrival(arrivalSoundEnabled());
       setVolume(soundVolume());
+      setMotion(motionPreference());
       const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
       const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
       if (!supported()) return setState(ios && !standalone ? 'ios' : 'unsupported');
@@ -280,6 +285,17 @@ export function PushSettings({ publicKey, categories, prefs: initialPrefs, devic
         </div>
         <p className="text-xs text-mist-400">{t('Когато играта е затворена, известието идва със звука и вибрацията на телефона (настройват се от известията на телефона за TransVerse).')}</p>
       </fieldset>
+
+      {fx && (
+        <fieldset className="space-y-1.5 border-t border-asphalt-800 pt-3">
+          <legend className="label mb-1">{t('Анимации')}</legend>
+          <label className="flex items-start gap-2">
+            <input type="checkbox" className="mt-0.5" checked={motion} onChange={(e) => { setMotion(e.target.checked); setMotionEnabled(e.target.checked); }} />
+            <span>{t('Анимации и ефекти: рулетка на кейсовете, конфети, броячи (на това устройство)')}</span>
+          </label>
+          <p className="text-xs text-mist-400">{t('Ако телефонът е с „Намалено движение“, ефектите са изключени.')}</p>
+        </fieldset>
+      )}
 
       {install && (
         <button type="button" className="btn-ghost" onClick={() => void install.prompt().then(() => { window.__tvInstall = null; setInstall(null); })}><Download className="h-4 w-4" />{t('Инсталирай TransVerse като приложение')}</button>

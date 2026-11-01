@@ -17,6 +17,7 @@ import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { api } from '@/lib/client/api';
 import { useFeature } from './Features';
+import { motionEnabled } from '@/lib/client/motion';
 import { t as tr, tx } from '@/i18n/t';
 
 export interface MapLeg {
@@ -216,6 +217,8 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   const [clock, setClock] = useState(0);
   // v2.0: the day and night at the map's centre, and the 3D view.
   const mapLook = useFeature('map_3d');
+  // 1.1.4.3: own trucks glide (several updates a second) and their halo breathes.
+  const fx = useFeature('game_fx');
   const [shade, setShade] = useState(0);
   const [tilted, setTilted] = useState(false);
   const circleLive = useFeature('map_circle');
@@ -484,11 +487,17 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
           return { type: 'Feature', properties: { plate: v.plate, icon: truckIcon(HEX.test(v.color) ? v.color : '#f8fafc', '#22d3ee', ownVip, west) }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
         }),
       });
+      if (smooth && mapRef.current?.getLayer('vehicles-halo')) {
+        const k = (Math.sin(now / 450) + 1) / 2;
+        mapRef.current.setPaintProperty('vehicles-halo', 'circle-radius', 11 + k * 6);
+        mapRef.current.setPaintProperty('vehicles-halo', 'circle-opacity', 0.32 - k * 0.2);
+      }
     };
+    const smooth = fx && motionEnabled();
     tick();
-    const id = setInterval(tick, 2000);
+    const id = setInterval(tick, smooth ? 200 : 2000);
     return () => clearInterval(id);
-  }, [ready, vehicles, ownVip]);
+  }, [ready, vehicles, ownVip, fx]);
 
   /** Tilts the map and raises the buildings (where the style has them), or back to flat. */
   const toggle3d = () => {

@@ -1,0 +1,32 @@
+# 1.1.4.3 «Живи награди» — animations and effects
+afe7ef4b80	{0} of 5 stars	{0} из 5 звёзд
+b2851d8612	If your phone uses “Reduce motion”, the effects are off.	Если на телефоне включено «Уменьшение движения», эффекты отключены.
+830603aad3	Animations	Анимации
+bf8653bfb8	Animations and effects: case roulette, confetti, counters (on this device)	Анимации и эффекты: рулетка кейсов, конфетти, счётчики (на этом устройстве)
+a37220b5e6	Take it all	Забрать всё
+e301b13626	Top bar: money and TransCoin roll to the new amount, with a “+” or “−” above them and a short sound on income (the sound follows the sound setting).	Верхняя панель: деньги и TransCoin прокручиваются до новой суммы, с «+» или «−» над ними и коротким звуком при доходе (звук следует настройке звука).
+974ef70963	Delivered on time	Доставлено вовремя
+bf9016db43	The effects use no outside libraries and leave nothing on the page when they end.	Эффекты без внешних библиотек и ничего не оставляют на странице после окончания.
+4b6d6a630b	Living Rewards	Живые награды
+fd4d40fed5	The game comes alive: money rolls, rewards fly to your wallet and achievements arrive as medals.	Игра оживает: деньги прокручиваются, награды летят в кошелёк, а достижения приходят медалями.
+1d3d37b4d7	Map: your own trucks move smoothly (several times a second) and the halo around them pulses.	Карта: свои грузовики движутся плавно (несколько раз в секунду), а ореол вокруг них пульсирует.
+4defbe7c6f	Cases (with 1.2): the case shakes while the server picks the reward, then the roulette stops exactly on it. The reveal depends on rarity — sparks for uncommon and rare, confetti for epic, a double burst and a shake for legendary. “Open another” and “Open all” (up to 20).	Кейсы (с 1.2): кейс трясётся, пока сервер выбирает награду, затем рулетка останавливается точно на ней. Раскрытие по редкости — искры для необычного и редкого, конфетти для эпического, двойной взрыв и тряска для легендарного. «Открыть ещё один» и «Открыть все» (до 20).
+d4d8a60ab6	The pass bar fills from where you last saw it, a new level lands like a stamp, waiting rewards pulse and fly to your wallet when you take them.	Полоса пропуска заполняется с того места, где ты видел её в последний раз, новый уровень падает как печать, ждущие награды пульсируют, а при получении летят в кошелёк.
+eaceb06afc	Medals and deliveries	Медали и доставки
+c37fc26293	The case reward is decided on the server before the roulette starts — the animation only shows it.	Награда из кейса определяется на сервере до запуска рулетки — анимация лишь показывает её.
+e521b54d3a	Settings → “Animations”: the effects can be switched off on each device. With “Reduce motion” on the phone or computer they are off.	Настройки → «Анимации»: эффекты отключаются на каждом устройстве отдельно. При включённом «Уменьшении движения» на телефоне или компьютере они выключены.
+d722cfc1ed	New achievement	Новое достижение
+f36beb63a6	A new achievement arrives as a spinning medal, an on-time delivery with confetti. Your trucks move smoothly on the map.	Новое достижение приходит вращающейся медалью, доставка вовремя — с конфетти. Твои грузовики на карте движутся плавно.
+19f8191019	New achievement: a medal that spins, with sparks. On-time delivery: “Delivered on time” with confetti while the game is open.	Новое достижение: вращающаяся медаль с искрами. Доставка вовремя: «Доставлено вовремя» с конфетти, пока игра открыта.
+0663e1066c	From 1.2: opening a case spins a strip of items that stops on your reward — with ticking, sparks and confetti by rarity. “Open all” opens up to 20 identical cases at once.	С 1.2: при открытии кейса лента предметов вращается и останавливается на награде — с тиканьем, искрами и конфетти по редкости. «Открыть все» открывает сразу до 20 одинаковых кейсов.
+0adc8fc4c9	Opened cases	Открытые кейсы
+2465668bf3	Cases opened: {0}	Открыто кейсов: {0}
+5b9a4677f2	Open all ({0})	Открыть все ({0})
+16d00a9693	Open another ({0})	Открыть ещё один ({0})
+8252e53df0	Reviews: the stars of the last three deliveries appear one by one.	Отзывы: звёзды трёх последних доставок появляются по одной.
+f53a197f40	Money and TransCoin	Деньги и TransCoin
+46c7143770	The pass comes alive	Пропуск оживает
+e553f9fc6a	Pass: the bar fills from the last value you saw (kept on the device), “+N points”, a new level as a stamp with sparks, a little truck at the end of the bar; unclaimed rewards pulse and fly to your money and TransCoin on “Claim rewards”; the premium line has a golden shine.	Пропуск: полоса заполняется от последнего увиденного значения (хранится на устройстве), «+N очков», новый уровень печатью с искрами, грузовичок в конце полосы; невзятые награды пульсируют и летят к деньгам и TransCoin при «Забрать награды»; премиум-линия с золотым бликом.
+bbdca8e618	Case roulette	Рулетка кейсов
+11b54b8344	The amounts at the top roll to the new value and show “+2,400 BGN” instead of just changing.	Суммы вверху прокручиваются до нового значения и показывают «+2 400 лв.», а не просто меняются.
+9039d81b2b	The cap, glasses and frame drop onto the driver's portrait when you put them on from the inventory (with 1.2).	Кепка, очки и рамка опускаются на портрет водителя, когда надеваешь их из инвентаря (с 1.2).

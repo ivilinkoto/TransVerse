@@ -48,7 +48,7 @@ export async function GET(request: Request) {
           }).catch(() => {});
           return;
         }
-        send(event.type === 'notification' && event.sound ? { type: event.type, sound: event.sound } : { type: event.type });
+        send(event.type === 'notification' ? { type: event.type, ...(event.sound ? { sound: event.sound } : {}), ...(event.kind ? { kind: event.kind, title: event.title } : {}) } : { type: event.type });
       });
       heartbeat = setInterval(() => {
         controller.enqueue(encoder.encode(': ping\n\n'));

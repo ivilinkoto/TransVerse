@@ -21,9 +21,11 @@ const noNotify = () => !!process.env.TEST_NO_NOTIFY;
  */
 export async function notify(db: DbOrTx, userId: string, kind: NotificationKind, title: LocalText, body: LocalText, href?: string, opts?: { sound?: 'arrival' }) {
   const locale = typeof title === 'function' || typeof body === 'function' ? await localeOf(db, userId) : null;
-  await db.insert(notifications).values({ userId, kind, title: resolveText(title, locale), body: resolveText(body, locale), href });
+  const text = resolveText(title, locale);
+  await db.insert(notifications).values({ userId, kind, title: text, body: resolveText(body, locale), href });
   if (noNotify()) return;
-  await db.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ userId, type: 'notification', ...(opts?.sound ? { sound: opts.sound } : {}) })})`);
+  // 1.1.4.3: the kind and a short title let an open game play an effect (a medal, a delivery).
+  await db.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ userId, type: 'notification', kind, title: text.slice(0, 140), ...(opts?.sound ? { sound: opts.sound } : {}) })})`);
 }
 
 /** Broadcast that shared world data changed (e.g. the freight market). */
