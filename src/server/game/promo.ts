@@ -51,16 +51,16 @@ export async function redeemCode(db: Database, userId: string, raw: string, ipHa
     if (promo.accountsBefore && me!.createdAt > promo.accountsBefore) fail('promo_new_account', t('Кодът е за профили, създадени преди {0}.', date(promo.accountsBefore)));
     const [mine] = await tx.select({ id: promoRedemptions.id }).from(promoRedemptions).where(and(eq(promoRedemptions.codeId, promo.id), eq(promoRedemptions.userId, userId)));
     if (mine) fail('promo_used', t('Вече си използвал този код.'));
-    // One code per network: a second account of the same person gets nothing.
+    // Up to PROMO.perNetwork accounts per network (two people at home may both play); more are most likely extra accounts.
     const nets = [ipHash, me!.signupIp].filter((x): x is string => !!x);
     if (nets.length) {
-      const [twin] = await tx
-        .select({ id: promoRedemptions.id })
+      const same = await tx
+        .selectDistinct({ userId: promoRedemptions.userId })
         .from(promoRedemptions)
         .innerJoin(users, eq(users.id, promoRedemptions.userId))
         .where(and(eq(promoRedemptions.codeId, promo.id), or(...nets.map((n) => or(eq(promoRedemptions.ipHash, n), eq(users.signupIpHash, n))))))
-        .limit(1);
-      if (twin) fail('same_network', t('Кодът вече е използван от профил от същата мрежа.'), 403);
+        .limit(PROMO.perNetwork);
+      if (same.length >= PROMO.perNetwork) fail('same_network', t('Кодът вече е използван от {0} профила от същата мрежа.', PROMO.perNetwork), 403);
     }
     const [counted] = await tx
       .update(promoCodes)

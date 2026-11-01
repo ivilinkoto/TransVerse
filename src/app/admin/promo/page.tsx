@@ -51,7 +51,7 @@ export default async function AdminPromoPage({ searchParams }: { searchParams: P
     p.disabledAt ? <Badge tone="red">{tr('спрян')}</Badge> : p.endsAt && p.endsAt <= now ? <Badge tone="neutral">{tr('изтекъл')}</Badge> : p.maxUses != null && p.uses >= p.maxUses ? <Badge tone="neutral">{tr('изчерпан')}</Badge> : <Badge tone="green">{tr('активен')}</Badge>;
   return (
     <div className="space-y-6">
-      <PageHeader title={tr('Промокодове')} subtitle={tr('Общи кодове за публикации и еднократни кодове за турнири и стриймове. Всеки играч използва код веднъж; профили от една мрежа — също веднъж. Наградите са данни от играта, не истински пари.')} />
+      <PageHeader title={tr('Промокодове')} subtitle={tr('Общи кодове за публикации и еднократни кодове за турнири и стриймове. Всеки играч използва код веднъж; от една мрежа — до 2 профила (двама у дома). Наградите са данни от играта, не истински пари.')} />
       {admin ? <Card title={tr('Нов код')}><PromoForm /></Card> : <p className="text-sm text-mist-400">{tr('Кодове създават само администраторите.')}</p>}
       <Card title={tr('Общи кодове')}>
         <Rows
