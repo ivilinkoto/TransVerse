@@ -6,6 +6,7 @@ import { t } from '@/i18n/t';
 
 export type LedgerCategory =
   | 'items'
+  | 'promo'
   | 'promise'
   | 'loading_bonus'
   | 'fog_bonus'
@@ -184,6 +185,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   era_bonus: 'Бонус на ерата',
   tournament: 'Турнири на общността',
   items: 'Предмети от инвентара',
+  promo: 'Промокод',
   promise: 'Обещан срок',
   loading_bonus: 'Бонус за товарене',
   fog_bonus: 'Добавка за мъгла',

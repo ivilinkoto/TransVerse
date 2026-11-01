@@ -12,7 +12,9 @@ import { compatibilityError } from '@/server/game/deliveries';
 import { runningEvents } from '@/server/game/events';
 import { membershipOf } from '@/server/game/membership';
 import { fleetView } from '@/server/game/queries';
-import { act, answer, released, stop, type Answer, type Ctx } from './context';
+import { act, answer, opt, released, stop, type Answer, type Ctx } from './context';
+import { ITEMS, type ItemId } from '@/lib/game/items';
+import type { PromoReward } from '@/lib/game/promo';
 import { appUrl } from './config';
 import { bar, button, linkButton, reply, rows, select, STYLE, update, type MessageData } from './ui';
 import { t, tx } from '@/i18n/t';
@@ -145,3 +147,18 @@ export async function battleView(ctx: Ctx): Promise<Answer> {
     }],
   }, true));
 }
+
+/** 1.1.4.3 /код: a promo code (or a friend's invite code) from Discord, for the linked account. */
+export async function codeCommand(ctx: Ctx): Promise<Answer> {
+  released(ctx);
+  const raw = (opt(ctx.i, 'код') ?? '').trim();
+  const r = await act<{ kind: 'promo' | 'invite'; code: string; reward: PromoReward; inviter?: string }>(ctx, { type: 'redeemCode', code: raw, via: 'discord' });
+  const parts = [
+    r.reward.coins ? t('+{0} ТрансКоин', r.reward.coins) : '',
+    r.reward.cents ? `+${money(r.reward.cents)}` : '',
+    r.reward.vipDays ? t('+{0} VIP дни', r.reward.vipDays) : '',
+    ...(r.reward.items ?? []).map((i) => `${tx(ITEMS[i.itemId as ItemId]?.name ?? i.itemId)} ×${i.qty}`),
+  ].filter(Boolean).join(' · ');
+  return answer(reply({ content: r.kind === 'invite' ? t('🤝 Записан си като поканен от **{0}**. Получаваш: {1}', r.inviter ?? '', parts) : t('🎟 Кодът **{0}** е твой: {1}', r.code, parts) }, true));
+}
+

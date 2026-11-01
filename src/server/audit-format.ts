@@ -20,6 +20,14 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       const amount = Number(d.amountCents ?? 0);
       return t('Корекция на баланса на {0}: {1}{2}{3}', who, amount > 0 ? '+' : '', eur(amount), d.reason ? ` — ${String(d.reason)}` : '');
     }
+    case 'promo_create':
+      return t('Създаде промокод {0}{1}', String(d.code ?? ''), d.maxUses ? t(' (до {0} използвания)', Number(d.maxUses)) : '');
+    case 'promo_batch':
+      return t('Създаде {0} еднократни кода {1}-…', Number(d.count ?? 0), String(d.prefix ?? ''));
+    case 'promo_disable':
+      return t('Спря промокод {0}', String(d.code ?? ''));
+    case 'promo_enable':
+      return t('Пусна отново промокод {0}', String(d.code ?? ''));
     case 'grant_item':
       return t('Даде на {0}: {1} ×{2}{3}', who, ITEMS[d.itemId as ItemId] ? t(ITEMS[d.itemId as ItemId].name) : String(d.itemId ?? ''), Number(d.qty ?? 1), d.reason ? ` — ${String(d.reason)}` : '');
     case 'replenish_market':

@@ -2,6 +2,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { CheckCircle2, Clock, Coins, Crown, History } from 'lucide-react';
 import { ShopBuy, type VehicleOption } from '@/components/shop/ShopBuy';
 import { Badge, Card, PageHeader } from '@/components/ui';
+import { PromoRedeem } from '@/components/game/PromoRedeem';
 import { dateTime } from '@/lib/format';
 import { isFreightHub } from '@/lib/game/markets';
 import { SHOP_CATEGORIES, SHOP_ITEMS, type ShopCategory } from '@/lib/game/shop';
@@ -57,6 +58,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         help={tr('ТрансКоин (TC) е премиум валутата на TransVerse. С нея се купуват VIP, удобства и козметика — никога игрови пари, за да е честно за всички.')}
         actions={<span className="flex items-center gap-2 rounded-xl border border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2"><Coins className="h-5 w-5 text-cyan-glow" /><span className="num font-display text-xl font-bold text-cyan-glow">{user.coins.toLocaleString(intlLocale())} TC</span></span>}
       />
+
+      {features.promo_codes && (
+        <Card title={tr('🎟 Имаш код?')}>
+          <PromoRedeem compact />
+        </Card>
+      )}
 
       <Card title={<span className="inline-flex items-center gap-2"><Crown className="h-4 w-4 text-gold-400" />VIP</span>} actions={vip ? <Badge tone="gold">{tr('Активен до {0}', user.vipUntil!.toLocaleDateString(intlLocale()))}</Badge> : <Badge>{tr('Нямаш VIP')}</Badge>}>
         <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">

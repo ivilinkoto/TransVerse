@@ -76,6 +76,7 @@ import { setCompanyDiscord } from '@/server/discord/company';
 import { closePoll, createPoll, votePoll } from '@/server/game/polls';
 import { pollInputSchema } from '@/lib/game/polls';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
+import { redeemCode } from '@/server/game/promo';
 import { callForHelp, helpOnRoad, paidRoadHelp } from '@/server/game/roadside';
 import { challengeDuel, respondDuel, shareLoad } from '@/server/game/together';
 import { enterLiveryContest, voteLivery } from '@/server/game/livery-contest';
@@ -426,6 +427,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('lookClue'), id, clue: z.enum(['warehouse', 'driver', 'camera']) }),
   z.object({ type: z.literal('accuse'), id, suspect: z.coerce.number().int().min(0).max(2) }),
   // 1.2
+  z.object({ type: z.literal('redeemCode'), code: z.string().trim().min(1).max(40), via: z.enum(['web', 'discord']).default('web') }),
   z.object({ type: z.literal('useItem'), itemId: z.string().max(40), driverId: id.optional(), vehicleId: id.optional() }),
   z.object({ type: z.literal('openCase'), caseId: z.enum(['case_bronze', 'case_silver', 'case_gold']) }),
   z.object({ type: z.literal('trailerUpgrade'), trailerId: id, upgradeId: z.string().max(40) }),
@@ -445,6 +447,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   voteIdea: 'ideas',
   favoriteTruck: 'favorite_truck',
   sendMoney: 'transfers',
+  redeemCode: 'promo_codes',
   offerJob: 'hire',
   declineJob: 'hire',
   forHire: 'hire',
@@ -1036,6 +1039,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'sendMoney':
       return { ok: true, ...(await sendMoney(db, user.id, input.transfer, await hashIp(db, await ip()))) };
+    case 'redeemCode':
+      return { ok: true, ...(await redeemCode(db, user.id, input.code, await hashIp(db, await ip()), input.via)) };
     case 'unsendDirect':
       await unsendDirectMessage(db, user.id, input.messageId);
       return { ok: true };

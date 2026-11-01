@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createPromo, createPromoBatch, setPromoDisabled } from '@/server/game/promo';
 import { compensateAll, adminResetLink, adminVerifyEmail, sendTestMail, adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
 import { getDb } from '@/server/db/client';
 import { cancelEvent, createEvent, eventSchema } from '@/server/game/events';
@@ -32,6 +33,21 @@ import { t } from '@/i18n/t';
 const id = z.string().uuid('Невалиден идентификатор.');
 
 /** Administrative commands. Every handler re-checks the actor's role on the server. */
+/** 1.1.4.3: a promo code's reward and limits, as the admin page sends them. */
+const promoInput = z.object({
+  reward: z.object({
+    coins: z.coerce.number().int().min(0).max(1000).optional(),
+    cents: z.coerce.number().int().min(0).max(1_000_000_00).optional(),
+    vipDays: z.coerce.number().int().min(0).max(30).optional(),
+    items: z.array(z.object({ itemId: z.string().max(40), qty: z.coerce.number().int().min(1).max(20) })).max(5).optional(),
+  }),
+  minLevel: z.coerce.number().int().min(1).max(200).optional(),
+  accountsBefore: z.coerce.date().nullable().optional(),
+  startsAt: z.coerce.date().nullable().optional(),
+  endsAt: z.coerce.date().nullable().optional(),
+  note: z.string().trim().max(200).optional(),
+});
+
 const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('setRole'), userId: id, role: z.enum(['player', 'support', 'admin']) }),
   z.object({ type: z.literal('ban'), userId: id, reason: z.string().trim().max(300).default('') }),
@@ -58,6 +74,9 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('staffNote'), userId: id, note: z.string().trim().max(500) }),
   z.object({ type: z.literal('winBack'), userId: id }),
   z.object({ type: z.literal('featureSwitch'), feature: z.string().max(60), off: z.boolean(), reason: z.string().trim().max(200).default('') }),
+  z.object({ type: z.literal('promoCreate'), promo: promoInput.extend({ code: z.string().trim().max(32).optional(), maxUses: z.coerce.number().int().min(1).max(1_000_000).nullable().optional() }) }),
+  z.object({ type: z.literal('promoBatch'), promo: promoInput.extend({ count: z.coerce.number().int().min(1).max(500), prefix: z.string().trim().max(12).optional() }) }),
+  z.object({ type: z.literal('promoDisable'), id, disabled: z.boolean() }),
   z.object({ type: z.literal('grantItem'), userId: id, itemId: z.string().max(40), qty: z.coerce.number().int().min(1).max(100), reason: z.string().max(300).default('') }),
   z.object({ type: z.literal('supportTemplate'), title: z.string().trim().max(80), body: z.string().trim().max(4000) }),
   z.object({ type: z.literal('deleteSupportTemplate'), id }),
@@ -220,6 +239,15 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true, ...(await winBack(db, user, input.userId)) };
     case 'featureSwitch':
       await setFeatureOff(db, user, input.feature, input.off, input.reason);
+      return { ok: true };
+    case 'promoCreate': {
+      const row = await createPromo(db, user, input.promo);
+      return { ok: true, code: row.code };
+    }
+    case 'promoBatch':
+      return { ok: true, ...(await createPromoBatch(db, user, input.promo)) };
+    case 'promoDisable':
+      await setPromoDisabled(db, user, input.id, input.disabled);
       return { ok: true };
     case 'grantItem':
       return { ok: true, ...(await adminGrantItem(db, user, input.userId, input.itemId, input.qty, input.reason)) };
