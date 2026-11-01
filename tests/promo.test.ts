@@ -62,9 +62,11 @@ describe('1.1.4.3 promo codes — server', () => {
     const before = await createPromo(db(), admin(boss.userId), { code: `PRE-${tag()}`, reward: { coins: 1 }, accountsBefore: new Date(Date.now() - 86_400_000) });
     expect(await code(redeemCode(db(), p.userId, before.code, null))).toBe('promo_new_account');
     const net = await createPromo(db(), admin(boss.userId), { code: `NET-${tag()}`, reward: { coins: 1 } });
-    const twin = await playerWithCompany();
+    // Two people at home may both take it; a third account from the same network may not.
+    const [second, third] = [await playerWithCompany(), await playerWithCompany()];
     await redeemCode(db(), p.userId, net.code, 'same-net-hash');
-    expect(await code(redeemCode(db(), twin.userId, net.code, 'same-net-hash'))).toBe('same_network');
+    expect(await code(redeemCode(db(), second.userId, net.code, 'same-net-hash'))).toBe('ok');
+    expect(await code(redeemCode(db(), third.userId, net.code, 'same-net-hash'))).toBe('same_network');
   });
 
   it('only administrators make codes; rewards have limits; a batch makes single-use codes', async () => {

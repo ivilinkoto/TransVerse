@@ -13,6 +13,8 @@ export const PROMO = {
   maxVipDays: 30,
   maxItems: 5,
   maxItemQty: 20,
+  /** Accounts from one network (a household, a family) that may take the same code. */
+  perNetwork: 2,
   /** Codes made at once for one batch of single-use codes. */
   maxBatch: 500,
   /** A friend's invite code can be entered within this many days of sign-up. */
