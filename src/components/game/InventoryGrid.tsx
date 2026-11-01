@@ -41,6 +41,7 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
     try {
       if (isCase(open)) {
         const r = await api<{ item: ItemId }>('/api/game/action', { type: 'openCase', caseId: open });
+        setOpen(r.item);
         setWon(r.item);
       } else {
         const body: Record<string, unknown> = { type: 'useItem', itemId: open };
@@ -60,7 +61,7 @@ export function InventoryGrid({ items, drivers, vehicles }: { items: { itemId: s
   if (!known.length) return null;
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-      <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
+      <ul className="grid content-start grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
         {known.map((i) => {
           const d = ITEMS[i.itemId];
           return (
