@@ -1,0 +1,12 @@
+# 1.1.4.5 «Лимит на камион»
+d025497ac6	5 trips per truck	5 рейсов на каждый грузовик
+8ff1297686	VIP dispatcher (Fleet): the truck takes its next trip by itself as soon as it is free — up to {0} trips in 24 hours per truck.	VIP-диспетчер (Автопарк): грузовик сам берёт следующий рейс, как только освободится — до {0} рейсов за 24 часа на грузовик.
+b100711033	VIP dispatcher: {0} is resting	VIP-диспетчер: {0} отдыхает
+996d96fcab	VIP dispatcher: up to 5 automatic trips in 24 hours per truck (previously 20 in total for all of a player's trucks). When a truck reaches the limit, its card says so and a notification comes for that truck.	VIP-диспетчер: до 5 автоматических рейсов за 24 часа на каждый грузовик (раньше 20 всего на все грузовики игрока). Когда грузовик достигает лимита, его карточка сообщает об этом и приходит уведомление по этому грузовику.
+625d7f9962	The VIP dispatcher counts trips for each truck separately.	VIP-диспетчер считает рейсы для каждого грузовика отдельно.
+f508277587	{0} (up to {1} trips in 24 h for this truck)	{0} (до {1} рейсов за 24 ч для этого грузовика)
+59a9ebbecf	Turn it on for a truck in the Fleet. When the truck is free it takes the most profitable job it can deliver on time and at a profit (empty run up to 600 km) — up to {0} trips in 24 hours per truck. If it can't send it, the Fleet page says why.	Включается для грузовика в Автопарке. Когда грузовик свободен, он сам берёт самый выгодный заказ, который успевает доставить вовремя и с прибылью (порожний пробег до 600 км) — до {0} рейсов за 24 часа на каждый грузовик. Если отправить не получается, в Автопарке написано почему.
+6e983361bf	The truck made {0} automatic trips in 24 hours — the limit for one truck has been reached.	Грузовик сделал {0} автоматических рейсов за 24 часа — лимит для одного грузовика достигнут.
+3b4b754196	Per-truck Limit	Лимит на грузовик
+cc400ec8a1	The VIP dispatcher's limit is now per truck: up to 5 automatic trips in 24 hours per truck instead of 20 for the whole fleet. More trucks — more automatic trips.	Лимит VIP-диспетчера теперь для каждого грузовика отдельно: до 5 автоматических рейсов за 24 часа на грузовик вместо 20 на весь автопарк. Больше грузовиков — больше автоматических рейсов.
+990e241347	The limit of 5 automatic trips in 24 hours for this truck has been reached.	Лимит в 5 автоматических рейсов за 24 часа для этого грузовика достигнут.

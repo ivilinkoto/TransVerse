@@ -207,6 +207,8 @@ describe('community', () => {
     await db().delete(discordQuizzes);
     let id: string | null = null;
     for (let i = 0; i < 5 && !id; i++) id = await runQuiz(db(), new Date('2026-11-02T12:00:00Z'));
+    // The quiz is made at a fixed daytime hour; the answers are checked against the real clock, so keep it open for an hour from now.
+    await db().update(discordQuizzes).set({ closesAt: new Date(Date.now() + 3_600_000) }).where(eq(discordQuizzes.id, id!));
     const [q] = await db().select().from(discordQuizzes).where(eq(discordQuizzes.id, id!));
     const wrong = (q!.correct + 1) % q!.options.length;
     const a = await linkedPlayer();
