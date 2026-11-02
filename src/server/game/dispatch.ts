@@ -19,8 +19,8 @@ import { notify } from './notify';
 import { fleetView } from './queries';
 import { t } from '@/i18n/t';
 
-/** VIP auto-dispatch: at most this many automatic trips per player and day. */
-export const AUTO_DISPATCH_PER_DAY = 20;
+/** VIP auto-dispatch: at most this many automatic trips per truck in 24 hours (1.1.4.4; was 20 per player). */
+export const AUTO_DISPATCH_PER_DAY = 5;
 
 export interface DispatchProposal {
   vehicleId: string;
@@ -153,13 +153,13 @@ export async function autoDispatchTick(db: Database, now = new Date()): Promise<
         await noteAutoDispatch(db, r, 'VIP статусът изтече, затова автоматичният диспечер се изключи.');
         continue;
       }
+      // The limit counts this truck's automatic trips only.
       const [{ n = 0 } = {}] = await db
         .select({ n: sql<number>`count(*)::int` })
         .from(deliveries)
-        .innerJoin(companies, eq(companies.id, deliveries.companyId))
-        .where(and(eq(companies.ownerId, r.userId), eq(deliveries.autoDispatched, true), gte(deliveries.startedAt, dayStart)));
+        .where(and(eq(deliveries.vehicleId, r.vehicleId), eq(deliveries.autoDispatched, true), gte(deliveries.startedAt, dayStart)));
       if (n >= AUTO_DISPATCH_PER_DAY) {
-        await noteAutoDispatch(db, r, 'Лимитът от 20 автоматични курса за 24 часа (за всички камиони) е достигнат.');
+        await noteAutoDispatch(db, r, 'Лимитът от 5 автоматични курса за 24 часа за този камион е достигнат.');
         continue;
       }
       let [p] = await planDispatch(db, r.userId, now, r.vehicleId);
@@ -178,7 +178,7 @@ export async function autoDispatchTick(db: Database, now = new Date()): Promise<
       if (res.sent) {
         sent++;
         await noteAutoDispatch(db, r, null);
-        if (n + 1 === AUTO_DISPATCH_PER_DAY) await notify(db, r.userId, 'info', () => t('Автоматичният диспечер почива'), () => t('Днес изпрати {0} курса — лимитът за 24 часа е достигнат.', AUTO_DISPATCH_PER_DAY), '/game/fleet');
+        if (n + 1 === AUTO_DISPATCH_PER_DAY) await notify(db, r.userId, 'info', () => t('VIP диспечер: {0} почива', r.plate), () => t('Камионът направи {0} автоматични курса за 24 часа — лимитът за един камион е достигнат.', AUTO_DISPATCH_PER_DAY), '/game/fleet');
       } else if (res.failed[0]) {
         await noteAutoDispatch(db, r, res.failed[0].reason);
       }
