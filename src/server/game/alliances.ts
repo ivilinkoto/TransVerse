@@ -100,6 +100,12 @@ export async function inviteToAlliance(db: Database, actorId: string, target: st
     if (!org) fail('not_found', tr('Няма компания с такъв таг или име.'), 404);
     if (org!.id === actor.company.id) fail('self', tr('Това е твоята компания.'));
     if (await allianceOf(tx, org!.id)) fail('in_alliance', tr('Тази компания вече е в съюз.'));
+    // 1.2.2: before the release only the team has alliances — a player's company would get an
+    // invite to a page it cannot open yet (404). Somebody in the company must already have them.
+    const people = await tx.select({ userId: companyMembers.userId }).from(companyMembers).where(eq(companyMembers.companyId, org!.id));
+    let open = false;
+    for (const p of people) if (await featureFor(tx, p.userId, 'alliances', now)) { open = true; break; }
+    if (!open) fail('not_released_for_them', tr('Тази компания още няма съюзи — те идват с обновлението.'), 403);
     const [inv] = await tx.insert(allianceInvites).values({ allianceId: a!.id, organizationId: org!.id, expiresAt: new Date(now.getTime() + ALLIANCE.inviteHours * 3_600_000), createdAt: now }).returning();
     await notifyMembers(tx, org!.id, null, () => tr('Покана за съюза „{0}“', a!.name), () => tr('„{0}“ кани компанията ви в съюз. Отговаря длъжност с право „Настройки“.', actor.company.name), '/game/company/alliance');
     return inv!;

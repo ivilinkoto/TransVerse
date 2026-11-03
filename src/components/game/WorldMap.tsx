@@ -48,6 +48,8 @@ export interface MapProps {
   bases?: { name: string; city: string; color: string | null; position: LatLon; own: boolean }[];
   /** v1.8: road reports from the drivers (accident, police, jam…). */
   reports?: { id: number; emoji: string; label: string; near: string; position: LatLon }[];
+  /** 1.2.2: a shorter map on top of „Курсове“ (the full one stays on /game/map). */
+  compact?: boolean;
 }
 
 interface CityDetails {
@@ -204,7 +206,8 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [] }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [], compact = false }: MapProps) {
+  const compactAtStart = useRef(compact);
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -271,6 +274,8 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     };
 
     map.on('load', () => {
+      // 1.2.2: on the compact map the sources stay one tap away (ⓘ) instead of covering it.
+      if (compactAtStart.current) container.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
       const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
       map.addSource('cities', { type: 'geojson', data: empty });
       map.addLayer({ id: 'cities-dot', type: 'circle', source: 'cities', paint: {
@@ -519,7 +524,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   };
 
   return (
-    <div className="relative h-[calc(100dvh-210px)] min-h-[420px] overflow-hidden rounded-2xl border border-asphalt-700">
+    <div className={`relative overflow-hidden rounded-2xl border border-asphalt-700 ${compact ? 'h-[260px] sm:h-[340px]' : 'h-[calc(100dvh-210px)] min-h-[420px]'}`}>
       <div ref={container} className="h-full w-full" />
       {mapLook && shade > 0 && <div aria-hidden className="pointer-events-none absolute inset-0 transition-colors duration-1000" style={{ background: `rgba(4, 8, 28, ${0.45 * shade})` }} />}
       {mapLook && (
@@ -529,7 +534,8 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       )}
       {error && <div className="absolute left-3 top-3 rounded-lg bg-loss/90 px-3 py-2 text-sm text-white">{error}</div>}
       {storkNote && <button type="button" onClick={() => setStorkNote(null)} className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg bg-asphalt-900/95 px-3 py-2 text-sm text-white shadow-lg">{storkNote}</button>}
-      <div className="absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-xl bg-asphalt-950/85 px-3 py-2 text-[11px] text-mist-300 backdrop-blur">
+      {/* 1.2.2: the compact map on top of „Курсове“ stays clean — the legend and the panels are on the big map. */}
+      <div className={`absolute bottom-3 left-3 flex-wrap gap-3 rounded-xl bg-asphalt-950/85 px-3 py-2 text-[11px] text-mist-300 backdrop-blur ${compact ? 'hidden' : 'flex'}`}>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-gold-400" />{tr('Град с товарен пазар (число = поръчки)')}</span>
         <span className="flex items-center gap-1.5"><TruckGlyph ring="#22d3ee" fill="#f8fafc" />{tr('Твоите камиони')}</span>
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-cyan-glow" />{tr('С товар')}</span>
@@ -548,7 +554,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
           <TruckGlyph ring="#d4af37" />VIP
         </span>
       </div>
-      <div className="absolute left-3 top-3 flex max-h-[calc(100%-120px)] w-[min(280px,calc(100%-70px))] flex-col gap-2">
+      <div className={`absolute left-3 top-3 max-h-[calc(100%-120px)] w-[min(280px,calc(100%-70px))] flex-col gap-2 ${compact ? 'hidden' : 'flex'}`}>
         {circleLive && <div role="radiogroup" aria-label={tr('Кои играчи да се виждат')} className="flex rounded-full border border-asphalt-700 bg-asphalt-950/85 p-0.5 text-[11px] backdrop-blur">
           {([['all', tr('Всички')], ['circle', tr('Моите хора')], ['none', tr('Само аз')]] as const).map(([id, label]) => (
             <button key={id} type="button" role="radio" aria-checked={mode === id} title={id === 'circle' ? tr('Приятели и компания') : undefined} onClick={() => setMode(id)} className={`flex-1 whitespace-nowrap rounded-full px-2 py-1 transition ${mode === id ? 'bg-volt-500 text-white' : 'text-mist-300 hover:text-white'}`}>{label}</button>

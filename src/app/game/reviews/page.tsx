@@ -10,6 +10,7 @@ import { gameContext } from '@/server/game/context';
 import { reviewsOf, starsOf } from '@/server/game/trip-extras';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -31,7 +32,7 @@ export default async function ReviewsPage() {
         <p className="mt-3 text-xs text-mist-400">{t('Веднъж седмично един курс е проверка от тайния клиент. Пет звезди носят +{0} ТрансКоин и значка.', MYSTERY.coins)}</p>
       </Card>
       <Card title={t('Последни доставки')}>
-        {!list.length ? <Empty icon={Star} title={t('Още няма отзиви')}>{t('Първата оценка идва с първата доставка.')}</Empty> : (
+        {!list.length ? <Empty icon={Star} title={t('Още няма отзиви')}>{t('Първата оценка идва с първата доставка.')}<EmptyAction href="/game/contracts" label="Намери курс" /></Empty> : (
           <ul className="divide-y divide-asphalt-800 text-sm">
             {list.map((r, i) => (
               <li key={r.deliveryId} className="flex flex-wrap items-center justify-between gap-2 py-2">

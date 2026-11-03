@@ -18,7 +18,7 @@ export interface NextStep {
  * right now — the game says what to do instead of the player having to know
  * every page.
  */
-export async function nextSteps(db: DbOrTx, user: { id: string; loginStreak: number; dailyClaimKey: string | null }, companyId: string, now: Date): Promise<NextStep[]> {
+export async function nextSteps(db: DbOrTx, user: { id: string; loginStreak: number; dailyClaimKey: string | null }, companyId: string, now: Date, limit = 3): Promise<NextStep[]> {
   const out: NextStep[] = [];
   const [fine] = await db.select({ amount: fines.amountCents }).from(fines).where(and(eq(fines.companyId, companyId), eq(fines.status, 'unpaid'))).limit(1);
   if (fine) out.push({ emoji: '👮', text: t('Имаш неплатена глоба ({0}) — плати или обжалвай.', money(fine.amount)), href: '/game/finance', action: t('Към глобите') });
@@ -47,5 +47,5 @@ export async function nextSteps(db: DbOrTx, user: { id: string; loginStreak: num
   const rewards = await claimableCount(db, user.id);
   if (rewards > 0) out.push({ emoji: '🎁', text: t('{0} {1} да ги вземеш от мисиите.', rewards, rewards === 1 ? t('награда чака') : t('награди чакат')), href: '/game/missions', action: t('Вземи') });
   if (!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday) out.push({ emoji: '📅', text: t('Дневната награда не е взета.'), href: '/game#daily', action: t('Вземи') });
-  return out.slice(0, 3);
+  return out.slice(0, limit);
 }

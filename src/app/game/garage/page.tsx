@@ -26,6 +26,7 @@ import { isMarta, springDiscount } from '@/lib/game/marta';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -50,7 +51,7 @@ export default async function GaragePage() {
       <PageHeader title={tr('Сервиз')} subtitle={tr('Ремонти, подобрения, ремаркета и продажба — между курсовете.')}
         help={tr('„Продай“ е веднага на търговец. Обявата на пазара е за играчите (такса 5%, до 7 дни) — дотогава камионът не кара.')} />
       {!user.seenHints.includes('insurance') && <Hint id="insurance" />}
-      {fleet.vehicles.length === 0 && <Empty icon={Wrench} title={tr('Няма техника за сервиз')} />}
+      {fleet.vehicles.length === 0 && <Empty icon={Wrench} title={tr('Няма техника за сервиз')}><EmptyAction href="/game/market" label="Купи или наеми камион" /></Empty>}
       <div className="space-y-4">
         {fleet.vehicles.map((v) => {
           const listing = listingOf(v.id);
@@ -60,7 +61,7 @@ export default async function GaragePage() {
           const upkeepCost = maintenanceCostCents(v.model.priceCents, 1 - discount * (1 - serviceDiscount));
           const trailerOptions = fleet.trailers.filter((t) => t.cityId === v.cityId && canCouple(v.model, t.model));
           return (
-            <Card key={v.id}>
+            <Card key={v.id} id={`v-${v.id}`}>
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">

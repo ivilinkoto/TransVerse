@@ -24,6 +24,10 @@ import { activeShipCall } from '@/server/game/ports';
 import { realConditionsFor } from '@/server/game/weather';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
+import { mapData } from '@/server/game/map-data';
+import { TutorialVisit } from '@/components/game/TutorialVisit';
+import { tutorialPending } from '@/server/game/tutorial-flags';
+import { MapClient } from '../map/MapClient';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
 import { BODY_LABELS, compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
 import { haggleable, hagglesOf } from '@/server/game/deals';
@@ -58,7 +62,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: tr('Поръчки') };
 }
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; repeat?: string; from?: string; truck?: string; load?: string; q?: string }> }) {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; repeat?: string; from?: string; truck?: string; load?: string; q?: string; contract?: string }> }) {
   await initLocale();
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
@@ -246,13 +250,27 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const backBoard = fromCity ? board.filter((c) => c.origin.id === fromCity).sort((a, b) => Number(usableBy(b)) - Number(usableBy(a)) || Number(b.toHome) - Number(a.toHome) || b.rewardCents - a.rewardCents) : [];
   const fromName = fromCity ? (backBoard[0]?.origin.name ?? fleet.vehicles.find((v) => v.cityId === fromCity)?.city.nameBg ?? null) : null;
 
+  // 1.2.2 „Курсове“: the map on top of the orders, on one screen.
+  const map = features.nav_v2 ? await mapData(db, { userId: user.id, companyId: company.id, now, features }, params.contract) : null;
+  // The tutorial's „see it on the map“ step is done here too: the map is on this page now.
+  const trackMap = map ? await tutorialPending(db, user.id, 'track_map') : false;
   return (
     <div>
       <PageHeader
-        title={tr('Поръчки')}
+        title={features.nav_v2 ? tr('Курсове') : tr('Поръчки')}
         subtitle={tr('Избери товар, камион и тръгвай. Поръчките са общи за всички играчи.')}
         help={tr('Общ пазар за всички: поета поръчка изчезва. Горивото е по цените на държавите по пътя. Задръстване, ремонт или граница забавят курса. Разстоянията са по истинските пътища.')}
       />
+      {map && trackMap && <TutorialVisit step="track_map" pending={trackMap} />}
+      {map && (
+        <section className="mb-5" data-testid="jobs-map">
+          <MapClient compact ownVip={vip} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} {...map} />
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-mist-400">
+            <span>{map.preview ? tr('Маршрут: {0}', map.preview.title) : tr('Твоите камиони на картата. „На картата“ при поръчка показва маршрута ѝ тук.')}</span>
+            <Link href={map.preview ? `/game/map?contract=${params.contract}` : '/game/map'} className="font-semibold text-cyan-glow hover:underline">{tr('Голяма карта →')}</Link>
+          </div>
+        </section>
+      )}
       {features.night_shift && isNightShift(now) && (
         <div className="mb-4 rounded-2xl border border-indigo-400/40 bg-indigo-500/10 px-4 py-3 text-sm">
           🌙 <b>{tr('Нощна смяна')}</b>{' '}{tr('— курсовете, тръгнали сега (22:00–05:00), са с {0}% по-бързи по празните пътища и носят +{1}% бонус, ако стигнат навреме. Шофьорът се уморява повече.', Math.round((NIGHT.faster - 1) * 100), Math.round(NIGHT.bonusShare * 100))}

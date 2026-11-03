@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { Eye, MailWarning } from 'lucide-react';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { LiveUpdates } from '@/components/game/LiveUpdates';
+import { MenuTour } from '@/components/game/MenuTour';
 import { MotionInit } from '@/components/fx/MotionInit';
 import { FxHost } from '@/components/fx/FxHost';
 import { TabBadge } from '@/components/game/TabBadge';
@@ -130,6 +131,8 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         <RegisterServiceWorker />
         {!user.termsAcceptedAt && <TermsPrompt />}
         {unlocks.length > 0 && <UnlockNotice items={unlocks} />}
+        {/* 1.2.2: a short tour of the new menu, once (not over the release notes or the tutorial). */}
+        {features.nav_v2 && !fresh && !(tutorial.active && tutorial.step) && !unlocks.length && !user.uiPrefs?.seenPages?.includes('nav-tour-v2') && <MenuTour />}
         {back && !unlocks.length && <WelcomeBack summary={back} />}
         {fresh && !(tutorial.active && tutorial.step) && (
           <WhatsNew version={fresh.version}>

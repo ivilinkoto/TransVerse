@@ -21,6 +21,7 @@ import { and, gt, isNull } from 'drizzle-orm';
 import { itemLog } from '@/server/db/schema';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -134,7 +135,7 @@ export default async function InventoryPage() {
         </div>
       )}
       {!items.length ? (
-        <Empty icon={Backpack} title={t('Инвентарът е празен')}>{t('Кейсове падат от дневната награда, новите нива, Голям рейс и находки по пътя.')}</Empty>
+        <Empty icon={Backpack} title={t('Инвентарът е празен')}>{t('Кейсове падат от дневната награда, новите нива, Голям рейс и находки по пътя.')}<EmptyAction href="/game/missions" label="Към мисиите" /></Empty>
       ) : (
         <InventoryGrid items={items} drivers={crew.map((d) => ({ id: d.id, label: d.name, look: d.look ?? {} }))} vehicles={fleet.map((v) => ({ id: v.id, label: v.nickname ? `${v.nickname} · ${v.plate}` : v.plate }))} extras={extras} />
       )}

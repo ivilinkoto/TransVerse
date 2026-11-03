@@ -1,0 +1,140 @@
+# 1.2.2 «Лесен път»
+e8876c414a	Only Trucks, Drivers and Market are in the row at the top. The other pages are under “More ▾” in the same row.	В верхнем ряду только Грузовики, Водители и Рынок. Остальные страницы — под «Ещё ▾» в том же ряду.
+df1b0fd1a5	In “Fleet” the main pages are Trucks, Drivers and Market; the garage, depots, cabin, logbook, licences and the rest are under “More ▾”.	В «Автопарке» основные страницы — Грузовики, Водители и Рынок; сервис, депо, кабина, бортовой журнал, лицензии и остальное — под «Ещё ▾».
+92cbba2660	The main menu is Home, Trips, Rewards, Fleet and More — on desktop and on phones.	Главное меню — Главная, Рейсы, Награды, Автопарк и Ещё — на компьютере и на телефоне.
+6f86089e07	Easy road	Лёгкий путь
+e33814b63e	The purple-and-gold button gathers the inventory, missions, the season and Truck Pass, events and the Big Run. Its count shows everything waiting for you to take.	Фиолетово-золотая кнопка собирает инвентарь, миссии, сезон и Truck Pass, ивенты и Большой рейс. Число на кнопке показывает всё, что ждёт, чтобы ты это забрал.
+03a719e8f4	The menu	Меню
+351b865796	Home, Trips, Rewards, Fleet and More. Every common action is one or two taps away.	Главная, Рейсы, Награды, Автопарк и Ещё. Любое частое действие — в одно-два нажатия.
+a299dd720e	Five places in the menu	Пять мест в меню
+e7a6050db4	A shorter Fleet	Более короткий Автопарк
+7edbe6c2f9	The simpler menu: five places instead of six sections, and everything you collect in one place.	Более простое меню: пять мест вместо шести разделов и всё, что ты собираешь, в одном месте.
+a64a5dba42	Orders and the map are in one section, side by side.	Заказы и карта — в одном разделе, рядом.
+7c32976aa8	“Trips” gathers Orders, Map, The road · CB, Clients, Convoys and the other pages about loads.	«Рейсы» собирают Заказы, Карту, Дорогу · CB, Клиентов, Конвои и остальные страницы о грузах.
+90e6434b64	“Rewards” (until now “Inventory”) gathers the inventory, missions, the season and Truck Pass, events, the Big Run, the workshop, the album and the Hall of Fame. Its count includes mission rewards too.	«Награды» (раньше «Инвентарь») собирают инвентарь, миссии, сезон и Truck Pass, ивенты, Большой рейс, мастерскую, альбом и Зал славы. Число на кнопке включает и награды за миссии.
+120165769f	“Competition” and “Company” are under “More”.	«Соревнование» и «Компания» — в «Ещё».
+dd0a066e5a	{0} is at {1}% — repair it before the next trip.	{0} на {1}% — отремонтируй его перед следующим рейсом.
+dcc50cf722	{0} things are waiting for you	Тебя ждут дела: {0}
+9d25891f08	Every truck in “Fleet” has a big button for the next step (start a trip, repair or see it on the map) and “Everything for this truck” — garage, cabin, logbook, plate, trailer and selling.	У каждого грузовика в «Автопарке» есть большая кнопка следующего шага (отправить в рейс, отремонтировать или показать на карте) и «Всё об этом грузовике» — сервис, кабина, журнал, номер, прицеп и продажа.
+ca4ddb7644	All good. Start a new trip or see your trucks on the map.	Всё в порядке. Отправь новый рейс или посмотри грузовики на карте.
+b743e6adf9	Everything for this truck	Всё об этом грузовике
+997650e747	Logbook	Журнал
+bc5be8241f	One thing is waiting for you	Тебя ждёт одно дело
+b7d89ba758	You have an unopened case.	У тебя есть неоткрытый кейс.
+eb9e75ef90	Home: what to do now	Главная: что делать сейчас
+d39e6e87e4	Home shows “Now”: up to 6 things to do, in order of importance, with one button each.	Главная показывает «Сейчас»: до 6 дел по важности, по одной кнопке на каждое.
+f15dbba4ec	New things in the inventory: {0}.	Новое в инвентаре: {0}.
+1bb3d154c7	Plate	Номер
+22df14bc91	Repair	Ремонт
+c6d46aeacb	The weekly chest is ready.	Еженедельный сундук готов.
+54949ef625	The dashboard starts with a list of everything waiting for you — a free truck, a reward, a repair, a case, the weekly chest — with one button each.	Главная начинается со списка всего, что тебя ждёт — свободный грузовик, награда, ремонт, кейс, еженедельный сундук — по одной кнопке на каждое.
+be71e82899	🔧 Repair	🔧 Отремонтировать
+789e9f17bb	🗺️ See on the map	🗺️ Показать на карте
+1b017fea98	🚚 Start a trip	🚚 Отправить в рейс
+f54b709596	Big map →	Большая карта →
+32f4d5bf20	The map is above the orders: you see your trucks, and “On the map” on an order shows its route right there, without leaving the list.	Карта над заказами: видны твои грузовики, а «На карте» у заказа показывает его маршрут прямо там, не покидая список.
+06e41b9b74	Trips on one screen	Рейсы на одном экране
+7910f7aee7	Route: {0}	Маршрут: {0}
+b254e41b77	The orders page has a map on top with your trucks and their routes. “On the map” on an order shows the route in it (the filters stay); “Big map →” opens the whole map.	На странице заказов сверху карта с твоими грузовиками и их маршрутами. «На карте» у заказа показывает маршрут на ней (фильтры остаются); «Большая карта →» открывает всю карту.
+93cca762ed	Your trucks on the map. “On the map” on an order shows its route here.	Твои грузовики на карте. «На карте» у заказа показывает его маршрут здесь.
+46babb1780	1 vs 1: who hauls more	1 на 1: кто перевезёт больше
+2bfe4fe052	The album of cities	Альбом городов
+19d0fa9df2	Battle against “{0}”	Битва против «{0}»
+b105f95c0b	Easter missions and the eggs	Пасхальные миссии и яйца
+80b95732da	Instead of 32 tabs: “Running now” on top (events, the Big Run, your company's battle, holidays) and every ranking, community page and collection as a card with an icon and one line.	Вместо 32 разделов: «Идёт сейчас» сверху (ивенты, Большой рейс, битва компании, праздники) и все рейтинги, сообщество и коллекции — карточками со значком и одной строкой.
+c51b1766dc	Vote for the truck of the month	Голосуй за грузовик месяца
+ad96debe53	Cities grow with deliveries	Города растут с доставками
+02d66f3642	The TransVerse story, chapter by chapter	История TransVerse, глава за главой
+68ea40c3a9	The map of places you have been	Карта мест, где ты побывал
+c473c0b1ae	Postcards from landmarks	Открытки от достопримечательностей
+e87d2ee513	Rankings, community and collections — all in one place.	Рейтинги, сообщество и коллекции — всё в одном месте.
+92abcc5019	Christmas orders and missions	Рождественские заказы и миссии
+411a9fa80c	Livery contest	Конкурс ливрей
+44fbf35303	Martenitsas and spring missions	Мартеницы и весенние миссии
+84b5946950	Mini-game: park the truck	Мини-игра: припаркуй грузовик
+bc283dde93	The best players and companies	Лучшие игроки и компании
+ca6ac80f52	Guess the results	Угадай результаты
+36ca770276	Your achievements and badges	Твои достижения и значки
+9d077b558c	Challenges set by players	Испытания от игроков
+30b08b4276	The challenge of the week and the Eurotour	Испытание недели и Евротур
+bc17dbba66	Suggest an idea and vote	Предложи идею и голосуй
+06b588863f	The spring cup	Весенний кубок
+82fed26da4	The spring missions	Весенние миссии
+2b830470ee	Find out who took the parcel	Узнай, кто взял посылку
+27d70798e0	The weekly league: climb up	Еженедельная лига: поднимайся выше
+a12e6b8d8f	The TransVerse weekly	Еженедельник TransVerse
+832cf0f2fc	Competition on one page	Соревнование на одной странице
+2e80ae45f4	Running now	Идёт сейчас
+35861c4aad	Halloween missions and rewards	Миссии и награды Хэллоуина
+161b6ea04e	stage {0} of {1}	этап {0} из {1}
+1d3b75d5f5	“Competition” starts with a page of cards: “Running now” with your numbers (Big Run stage, tonnes in the battle, the end of the event) and the groups Today, Rankings, Community and Collections. The row on top shows only “All”, Rankings, League and the holiday, if one is on.	«Соревнование» начинается со страницы карточек: «Идёт сейчас» с твоими числами (этап Большого рейса, тонны в битве, конец ивента) и группы Сегодня, Рейтинги, Сообщество и Коллекции. В верхнем ряду только «Всё», Рейтинги, Лига и праздник, если он идёт.
+5d237b1c6e	Truck Pass: {0} levels	Truck Pass: уровней — {0}
+1dba7fc7de	{0} to claim	{0} к получению
+1a5488571d	{0} is on now	{0} идёт сейчас
+0dd906cfea	If you miss the old menu, you can bring it back from “Settings” → “Menu” for 14 days after the update.	Если вам не хватает старого меню, его можно вернуть в «Настройки» → «Меню» в течение 14 дней после обновления.
+3d402fe0a7	Battle against “{0}”: {1} : {2} t	Битва против «{0}»: {1} : {2} т
+8f35d464ce	“Help” has “Where is what”: old section → new place.	В «Помощи» есть «Что где»: старый раздел → новое место.
+37cf614bca	Claim now	Забрать сейчас
+74ee0526f3	Everything is claimed. New rewards come with trips, missions and events.	Всё забрано. Новые награды приходят с рейсами, миссиями и ивентами.
+2ecb34bc77	Everything to collect	Всё, что можно собрать
+22861e8638	Everything you collect, in one place.	Всё, что вы собираете, в одном месте.
+5f5fe036a3	In the company chest: {0}	В сундуке компании: {0}
+a701f7fcc3	Bring back the old menu	Вернуть старое меню
+ca63163e4b	The big orders for companies	Крупные заказы для компаний
+a4f213fb6a	The daily reward	Ежедневная награда
+8e42f51696	Daily, weekly and seasonal	Ежедневные, еженедельные и сезонные
+29da0e0cfd	Inventory, missions, Truck Pass and events. The number shows what is waiting to be claimed.	Инвентарь, миссии, Truck Pass и ивенты. Число показывает, что ждёт получения.
+85d78df7fa	Inventory, missions, season and Truck Pass, events, Big Run, workshop and album.	Инвентарь, миссии, сезон и Truck Pass, ивенты, Большой рейс, мастерская и альбом.
+fce113ae82	What is waiting for you now — one button for each.	Что ждёт вас сейчас — по одной кнопке на каждое.
+274d281c68	What is waiting for you now: free trucks, rewards, repairs — one button each.	Что ждёт вас сейчас: свободные грузовики, награды, ремонт — по одной кнопке.
+006ce260e3	Trucks, drivers, market. Every truck has a button for the next step and “Everything about this truck”.	Грузовики, водители, рынок. У каждого грузовика есть кнопка следующего шага и «Всё об этом грузовике».
+42484627a2	The trucks and the drivers. Every truck has its own menu with everything about it.	Грузовики и водители. У каждого грузовика своё меню со всем о нём.
+508a33b0eb	The map is at the top of “Trips” — the truck drives on real roads, even while you are away.	Карта — вверху «Рейсов»: грузовик едет по настоящим дорогам, даже когда вас нет в игре.
+ae7b8cac02	Collections and their rewards	Коллекции и награды за них
+ae162d1375	Company, Competition, finances, settings and the “Where is…?” search.	Компания, Соревнования, финансы, настройки и поиск «Где…?».
+d92aca716d	Company, Competition, finances, profile, settings and the “Where is…?” search.	Компания, Соревнования, финансы, профиль, настройки и поиск «Где…?».
+04b0724717	A short 5-step tour shows the new menu once. The tutorial for new players leads to “Trips” and “Rewards”.	Короткий тур из 5 шагов один раз показывает новое меню. Обучение для новичков ведёт в «Рейсы» и «Награды».
+50e7eeaa66	Buy or rent a truck	Купить или арендовать грузовик
+460bdc2b24	Where is what (the new menu)	Что где (новое меню)
+55b8ed4b97	Where is…? Type “repair”, “depot”…	Где…? Напишите «ремонт», «депо»…
+b60fc2dfcd	To the trips	К рейсам
+239ca23dab	To the missions	К миссиям
+22062bcf6f	Switch to the new menu	Перейти на новое меню
+dd904bebd6	Menu	Меню
+184acfcf56	Missions: {0} rewards	Миссии: наград — {0}
+8088fbf29c	Membership requests: {0}	Заявки на вступление: {0}
+af852afce8	Find a trip	Найти рейс
+04d697c3cd	Can't find something? Tap the magnifier at the top or “Where is…?” in “More” and type a word — for example “repair” or “depot”.	Не можете что-то найти? Нажмите лупу вверху или «Где…?» в «Ещё» и введите слово — например «ремонт» или «депо».
+654de7a16b	Unopened case	Неоткрытый кейс
+3c3e183193	The new menu	Новое меню
+85ab438684	The new menu · {0} of {1}	Новое меню · {0} из {1}
+440676c37b	Several companies together	Несколько компаний вместе
+645e76c3e8	Regions under your control	Области под вашим контролем
+170b08b3a7	Shared goals for all players	Общие цели для всех игроков
+c78ffc86e0	Open “Trips”, pick a load and send the truck.	Откройте «Рейсы», выберите груз и отправьте грузовик.
+453956a9e3	Departments, meetings, traditions	Отделы, собрания, традиции
+23057450d4	Offices in other cities	Офисы в других городах
+a2ea847698	Easier to find	Проще найти
+103b81a614	Upgrades and bonuses for the members	Улучшения и бонусы для участников
+73d643516a	You are using the new menu. If you miss the old one, you can bring it back for {0} days after the update.	Вы пользуетесь новым меню. Если вам не хватает старого, его можно вернуть в течение {0} дн. после обновления.
+b1d076bc19	You are using the old menu. The new one is simpler: Home, Trips, Rewards, Fleet and More.	Вы пользуетесь старым меню. Новое проще: Главная, Рейсы, Награды, Автопарк и Ещё.
+0560e1b6c2	The jobs and the map in one place. This is where the trucks start from.	Рейсы и карта в одном месте. Отсюда выезжают грузовики.
+338b5258eb	The jobs with the map on top. “On the map” shows the route. Clients, Convoys and The Road · CB are here too.	Рейсы с картой сверху. «На карте» показывает маршрут. Здесь же Клиенты, Конвои и Дорога · CB.
+9d4551dbbd	Empty screens (logbook, reviews, inventory, service and more) have a button for the next step.	На пустых экранах (журнал, отзывы, инвентарь, сервис и др.) есть кнопка следующего шага.
+204cd32b00	Production of goods	Производство товаров
+6cb90f6829	Skip	Пропустить
+a98f669564	The first collectors and the golden keys	Первые коллекционеры и золотые ключи
+5441b2d463	Talk with your colleagues	Разговор с коллегами
+4fb0ff290b	With a company you buy more trucks and hire drivers. “Company” is in “More”.	С компанией вы покупаете больше грузовиков и нанимаете водителей. «Компания» — в «Ещё».
+9ad101ccfd	Craft rarer items	Соберите более редкие предметы
+94ece08a4a	Weekly chest: {0}	Еженедельный сундук: {0}
+5b5353047d	The weekly goals, the project and the battle	Еженедельные цели, проект и битва
+e3f4313841	The weekly route	Маршрут недели
+19f1da955e	The season	Сезон
+10ed4a29bc	An alliance with other companies	Союз с другими компаниями
+3e3196c7fd	Here you see how much each trip earned you. Finances are in “More”.	Здесь видно, сколько принёс каждый рейс. Финансы — в «Ещё».
+cb15f40974	The page search opens above everything, not under the “More” sheet.	Поиск страниц открывается поверх всего, а не под панелью «Ещё».
+2377f66f0e	The people in the company and the requests	Люди в компании и заявки
+a0fe3c0344	“Company” starts with “Waiting for you” (requests, the battle, the chest) and cards for every company page.	«Компания» начинается с «Ждёт вас» (заявки, битва, сундук) и карточек для каждой страницы компании.
+b6b42e81fd	“Rewards” is its own page: “Claim now” on top (daily reward, missions, Truck Pass, case, weekly chest) and cards for everything else.	«Награды» — отдельная страница: «Забрать сейчас» сверху (ежедневная награда, миссии, Truck Pass, кейс, еженедельный сундук) и карточки для всего остального.
+d07e012889	“More” has a big “Where is…?” search on top — it works on the phone too. The tiles have icons and are grouped.	В «Ещё» сверху большой поиск «Где…?» — работает и на телефоне. Плитки с иконками и сгруппированы.

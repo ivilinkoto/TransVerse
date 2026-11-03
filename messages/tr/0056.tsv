@@ -1,0 +1,14 @@
+# 1.2.1.1 «Честни колекции»
+60a8fa1df5	The album and collections count only items you found yourself (cases, finds, rewards, workshop). Items given or traded to you stay in the inventory and work as before.	Альбом и коллекции учитывают только предметы, найденные тобой (кейсы, находки, награды, мастерская). Подаренные и обменянные остаются в инвентаре и используются как раньше.
+0bace9ee98	Collections fill only with items you find yourself.	Коллекции пополняются только предметами, которые ты нашёл сам.
+cea811213f	Items given or traded to you no longer fill the album and collections. Otherwise one item passed from friend to friend completed everyone's collection. Give and trade freely — only the collection reward needs your own find.	Подаренные и обменянные предметы больше не пополняют альбом и коллекции. Иначе один предмет, передаваемый от друга к другу, завершал коллекцию каждого. Дари и меняйся спокойно — только награда за коллекцию требует собственной находки.
+7769acd2f2	Fair collections	Честные коллекции
+4046900b8b	To the dashboard	На главную
+cfe989638e	The link may be old or the address may have a typo.	Возможно, ссылка устарела или в адресе ошибка.
+d2ae1e9053	The link may be old, or the page comes with one of the next updates.	Возможно, ссылка устарела или страница появится в одном из следующих обновлений.
+9c9b3abd32	Alliances between companies come with the update on {0}. Until then invites do not count.	Союзы компаний появятся с обновлением {0}. До тех пор приглашения не действуют.
+8db1b58274	Alliances between companies come with a coming update.	Союзы компаний появятся в одном из следующих обновлений.
+a0c163cf36	That company has no alliances yet — they come with the update.	У этой компании ещё нет союзов — они появятся с обновлением.
+2c40815b85	This page does not exist	Такой страницы нет
+68e96d7435	An alliance invite notification led to an empty “404” page because alliances are not released yet. The page now says when they come, and invites are no longer sent to companies without access to alliances.	Уведомление о приглашении в союз вело на пустую страницу «404», потому что союзы ещё не запущены. Теперь страница говорит, когда они появятся, а приглашения компаниям без доступа к союзам не отправляются.
+26c242a13d	A page that does not exist shows a short explanation and a button to the dashboard instead of the empty “404”.	Несуществующая страница показывает короткое пояснение и кнопку на главную вместо пустого «404».

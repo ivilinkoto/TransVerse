@@ -21,6 +21,7 @@ import { DeleteAccount, EmailForm, ExportData, PasswordForm, SignOutOthers, User
 import { date } from '@/lib/format';
 import { sessions, users } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
+import { OLD_MENU_DAYS, oldMenuOffered } from '@/lib/game/nav-choice';
 import { HIRE_RULES } from '@/lib/game/hire';
 import { SMUGGLING } from '@/lib/game/smuggling';
 import { smugglingProfile } from '@/server/game/smuggling';
@@ -70,6 +71,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <div><dt className="label">{t('Език')}</dt><dd className="mt-1">{t('Български (още езици предстоят)')}</dd></div>
           </dl>
         </Card>
+        {/* 1.2.2: the new menu, or the old one for two weeks after it comes out. */}
+        {(features.nav_v2 || user.uiPrefs?.oldMenu) && oldMenuOffered(now) && (
+          <Card title={t('Меню')}>
+            <p className="text-sm text-mist-300">{user.uiPrefs?.oldMenu ? t('Ползваш старото меню. Новото е по-просто: Начало, Курсове, Награди, Автопарк и Още.') : t('Ползваш новото меню. Ако ти липсва старото, можеш да го върнеш за {0} дни след обновлението.', OLD_MENU_DAYS)}</p>
+            <div className="mt-3"><ActionButton action={{ type: 'uiPrefs', oldMenu: !user.uiPrefs?.oldMenu }} className="btn-ghost px-3 py-1.5 text-sm">{user.uiPrefs?.oldMenu ? t('Към новото меню') : t('Върни старото меню')}</ActionButton></div>
+          </Card>
+        )}
         <Card title={t('Сигурност')}>
           <PasswordForm />
           <div className="mt-5 border-t border-white/5 pt-4"><h3 className="mb-2 text-sm font-semibold">{t('Имейл')}</h3><EmailForm current={user.email} /></div>

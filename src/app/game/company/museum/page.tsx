@@ -11,6 +11,7 @@ import { membershipOf } from '@/server/game/membership';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -52,7 +53,7 @@ export default async function MuseumPage() {
           })}
         </div>
       ) : (
-        <Card><Empty icon={Landmark} title={t('Залата е празна')}>{t('Дарете първия камион от витрината му в сервиза.')}</Empty></Card>
+        <Card><Empty icon={Landmark} title={t('Залата е празна')}>{t('Дарете първия камион от витрината му в сервиза.')}<EmptyAction href="/game/garage" label="Към сервиза" /></Empty></Card>
       )}
     </div>
   );

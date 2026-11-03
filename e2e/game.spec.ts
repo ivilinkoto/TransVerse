@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { releaseByVersion } from '../src/lib/game/releases';
 
+// 1.2.2: the new menu (Начало, Курсове, Награди) once the release is out.
+const v2 = () => Date.now() >= Date.parse(releaseByVersion('1.2.2')!.publishedAt);
+
 const unique = () => `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
 
 async function register(page: Page) {
@@ -16,7 +19,7 @@ async function register(page: Page) {
   await expect(page.locator('#captcha')).toHaveAttribute('aria-checked', 'true', { timeout: 30_000 });
   await page.click('button[type=submit]');
   await page.waitForURL('**/game');
-  await expect(page.getByRole('heading', { name: 'Табло' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^(Табло|Начало)$/ })).toBeVisible();
   return tag;
 }
 
@@ -86,7 +89,8 @@ test.describe('core loop', () => {
     await expect(page.getByText('На курс')).toBeVisible();
     await expect(page.getByText('Нает').first()).toBeVisible();
     await expect(page.getByText(/остават/)).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Обучение' })).toContainText('Проследи камиона на картата');
+    // 1.2.2: the map is on top of „Курсове“, so following the truck is done right where it was sent.
+    await expect(page.getByRole('region', { name: 'Обучение' })).toContainText(v2() ? 'Завърши първата доставка' : 'Проследи камиона на картата');
   });
 
   test('the market is open without a company; an independent driver hires up to 3 drivers', async ({ page }) => {
@@ -194,7 +198,7 @@ test('opening notifications marks them as read', async ({ page }) => {
 test('navigation: four sections and „Още“ in the sidebar, account pages in the avatar menu', async ({ page }) => {
   await register(page);
   const aside = page.locator('aside');
-  for (const name of ['Табло', 'Карта', 'Поръчки', 'Автопарк']) await expect(aside.getByRole('link', { name })).toBeVisible();
+  for (const name of v2() ? ['Табло', 'Курсове', 'Автопарк'] : ['Табло', 'Карта', 'Поръчки', 'Автопарк']) await expect(aside.getByRole('link', { name })).toBeVisible();
   // 1.1.4.1: Компания and Състезание are in „Още“.
   await expect(aside.getByRole('link', { name: 'Компания' })).toHaveCount(0);
   await aside.getByRole('button', { name: 'Още' }).click();
@@ -224,17 +228,54 @@ test('navigation: four sections and „Още“ in the sidebar, account pages i
   await expect(page).toHaveURL(/\/$/);
 });
 
+test('1.2.2: the new menu — Курсове with the map, „Къде е…?“, Награди, Състезание and the old menu', async ({ page }) => {
+  test.skip(!v2(), '1.2.2 is not out yet');
+  await register(page);
+  const aside = page.locator('aside');
+  await expect(aside.getByRole('link', { name: 'Карта', exact: true })).toHaveCount(0);
+  await aside.getByRole('link', { name: 'Курсове' }).click();
+  await expect(page.getByRole('heading', { name: 'Курсове', exact: true })).toBeVisible();
+  await expect(page.getByTestId('jobs-map')).toBeVisible();
+  // „Още“: a big search on top, then the sections with icons.
+  await aside.getByRole('button', { name: 'Още' }).click();
+  await page.getByTestId('more-search').click();
+  const search = page.getByRole('dialog', { name: 'Търси страница' });
+  await expect(search).toBeVisible();
+  await search.getByRole('textbox').fill('сервиз');
+  await search.getByRole('button', { name: /Сервиз/ }).first().click();
+  await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
+  await page.goto('/game/rewards');
+  await expect(page.getByRole('heading', { name: 'Награди', exact: true })).toBeVisible();
+  await page.goto('/game/compete');
+  await expect(page.getByRole('heading', { name: 'Състезание', exact: true })).toBeVisible();
+  // The old menu can come back for two weeks.
+  const offered = Date.now() < Date.parse(releaseByVersion('1.2.2')!.publishedAt) + 14 * 86_400_000;
+  if (!offered) return;
+  await page.goto('/game/settings');
+  await page.getByRole('button', { name: 'Върни старото меню' }).click();
+  await expect(aside.getByRole('link', { name: 'Карта', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Към новото меню' }).click();
+  await expect(aside.getByRole('link', { name: 'Карта', exact: true })).toHaveCount(0);
+});
+
 test('section tabs: Автопарк and Състезание group their pages', async ({ page }) => {
   await register(page);
   await page.locator('aside').getByRole('link', { name: 'Автопарк' }).click();
   const fleetTabs = page.getByRole('navigation', { name: 'Автопарк' });
+  // 1.2.2: the row keeps Камиони, Шофьори and Пазар; the rest is under „Още ▾“.
+  if (v2()) await fleetTabs.getByRole('button', { name: /^Още \(\d+\)/ }).click();
   await fleetTabs.getByRole('link', { name: 'Сервиз' }).click();
   await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
   await expect(page.locator('aside').getByRole('link', { name: 'Автопарк' })).toHaveAttribute('aria-current', 'page');
   // 1.1.4.1: Състезание is reached through „Още“.
-  await page.locator('aside').getByRole('button', { name: 'Още' }).click();
-  await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: /^Мисии/ }).click();
-  await page.getByRole('navigation', { name: 'Състезание' }).getByRole('link', { name: 'Ивенти' }).click();
+  // 1.2.2: missions and events moved to the „Награди“ button.
+  if (v2()) {
+    await page.locator('aside').getByRole('link', { name: 'Награди' }).click();
+  } else {
+    await page.locator('aside').getByRole('button', { name: 'Още' }).click();
+    await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: /^Мисии/ }).click();
+  }
+  await page.getByRole('navigation', { name: v2() ? 'Награди' : 'Състезание' }).getByRole('link', { name: 'Ивенти' }).click();
   await expect(page.getByRole('heading', { name: 'Ивенти', exact: true })).toBeVisible();
   // Either a running/announced event with its goal or the empty state.
   await expect(page.getByText(/Награди, ако целта бъде постигната|В момента няма ивент/).first()).toBeVisible();
@@ -302,8 +343,9 @@ test('@mobile dashboard is usable on a phone without horizontal scrolling', asyn
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);
   const bottom = page.getByRole('navigation', { name: 'Основна навигация' });
-  await bottom.getByRole('link', { name: 'Поръчки' }).click();
-  await expect(page.getByRole('heading', { name: 'Поръчки', exact: true })).toBeVisible();
+  // 1.2.2: the new menu calls it „Курсове“.
+  await bottom.getByRole('link', { name: /^(Поръчки|Курсове)$/ }).click();
+  await expect(page.getByRole('heading', { name: v2() ? 'Курсове' : 'Поръчки', exact: true })).toBeVisible();
   await bottom.getByRole('button', { name: 'Още', exact: true }).click();
   await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: 'Класации' }).click();
   await expect(page.getByRole('heading', { name: 'Класации', exact: true })).toBeVisible();

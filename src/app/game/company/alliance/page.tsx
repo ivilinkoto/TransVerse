@@ -1,6 +1,7 @@
 import { and, eq, gt } from 'drizzle-orm';
 import { GraduationCap, Handshake, Shield, Warehouse } from 'lucide-react';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import { featureDate } from '@/lib/game/features';
 import { Badge, Card, Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
@@ -27,7 +28,21 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AlliancePage() {
   await initLocale();
   const { db, user, now, features } = await gameContext();
-  if (!features.alliances && !features.company_contracts && !features.academy) notFound();
+  // 1.2.2: an old notification can still link here before the release — say when it opens instead of a 404.
+  if (!features.alliances && !features.company_contracts && !features.academy) {
+    const at = featureDate('alliances');
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t('Съюз и партньори')} />
+        <Card>
+          <div className="flex items-center gap-3">
+            <Handshake className="h-8 w-8 text-cyan-glow" />
+            <p className="text-sm">{at ? t('Съюзите между компании идват с обновлението на {0}. Дотогава поканите не важат.', date(at)) : t('Съюзите между компании идват със следващо обновление.')}</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
   const m = await membershipOf(db, user.id);
   if (!m) redirect('/game/company');
   const manage = can(m.rank, 'manage_settings');
