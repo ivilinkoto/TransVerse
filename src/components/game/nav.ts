@@ -214,8 +214,51 @@ export function activeTab(section: NavSection, pathname: string): NavTab | undef
 
 /** The section a path belongs to, if any. Without the 1.2.1 menu the inventory stays under „Автопарк“. */
 export function sectionFor(pathname: string, has: (feature: FeatureId) => boolean = () => true): NavSection | undefined {
-  return SECTIONS.filter((s) => s.key !== 'inventory' || has('inventory_menu')).find((s) => (s.tabs ? !!activeTab(s, pathname) : within(pathname, s.href)));
+  return navSections(has).filter((s) => s.key !== 'inventory' || has('inventory_menu')).find((s) => (s.tabs ? !!activeTab(s, pathname) : within(pathname, s.href)));
 }
 
 /** Sections the menus list in the usual way (the inventory is drawn on its own). */
 export const LISTED_SECTIONS = SECTIONS.filter((s) => s.key !== 'inventory');
+
+// ── 1.2.2 „Лесен път“: the simpler menu (feature nav_v2) ────────────────
+
+/** Pages that move to „Награди“ in the new menu (everything the player collects). */
+const REWARD_PAGES = ['/game/missions', '/game/pass', '/game/seasons', '/game/events', '/game/big-run'];
+/** The three pages „Автопарк“ shows in its row; the others wait behind „Още ▾“ (and move into each truck's menu next). */
+const FLEET_CORE = ['/game/fleet', '/game/staff', '/game/market'];
+
+/**
+ * The new menu: five places — Начало, Курсове (orders and the map on one row),
+ * Награди (inventory, missions, the season pass, events), Автопарк (trucks,
+ * drivers, buying) and „Още“ (company, competitions, the rest). Built from
+ * SECTIONS, so a page added there shows up here too.
+ */
+export const SECTIONS_V2: NavSection[] = (() => {
+  const by = (k: NavSection['key']) => SECTIONS.find((s) => s.key === k)!;
+  const map = by('map');
+  const jobs = by('jobs');
+  const inventory = by('inventory');
+  const compete = by('compete');
+  const fleet = by('fleet');
+  const moved = (compete.tabs ?? []).filter((t) => REWARD_PAGES.includes(t.href)).map((t) => ({ ...t, group: undefined, minLevel: undefined, core: true }));
+  return [
+    by('home'),
+    { ...jobs, label: 'Курсове', tabs: [jobs.tabs![0]!, ...(map.tabs ?? []), ...jobs.tabs!.slice(1)] },
+    { ...inventory, label: 'Награди', tabs: [inventory.tabs![0]!, ...moved, ...inventory.tabs!.slice(1).map((t) => ({ ...t, core: false }))] },
+    {
+      ...fleet,
+      tabs: [
+        ...FLEET_CORE.map((href) => ({ ...(fleet.tabs ?? []).find((t) => t.href === href)!, core: true })),
+        ...(fleet.tabs ?? []).filter((t) => !FLEET_CORE.includes(t.href)).map((t) => ({ ...t, core: false })),
+      ],
+    },
+    by('company'),
+    { ...compete, tabs: (compete.tabs ?? []).filter((t) => !REWARD_PAGES.includes(t.href)) },
+  ];
+})();
+
+/** The sections for this viewer: the new menu with nav_v2, the old one otherwise. */
+export const navSections = (has: (feature: FeatureId) => boolean = () => true) => (has('nav_v2') ? SECTIONS_V2 : SECTIONS);
+
+/** The sections the main menu shows itself (the rest are in „Още“); the inventory/„Награди“ is drawn on its own. */
+export const mainKeys = (has: (feature: FeatureId) => boolean = () => true): NavSection['key'][] => (has('nav_v2') ? ['home', 'jobs', 'fleet'] : ['home', 'jobs', 'fleet', 'map']);

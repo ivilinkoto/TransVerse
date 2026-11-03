@@ -106,6 +106,8 @@ export const FEATURES = {
   // 1.2.1 „Инвентар+“: its own place in the main menu, the item card, filters and НОВО;
   // sale, presents and trades; the workshop; the album with new collections, the
   // numbered key, the treasure map and the Hall of Fame; the weekly and company chests.
+  // 1.2.2 „Лесен път“: the simpler menu — five places, Курсове with the map, Награди, a short Автопарк.
+  nav_v2: '1.2.2',
   inventory_menu: '1.2.1',
   item_trade: '1.2.1',
   workshop: '1.2.1',

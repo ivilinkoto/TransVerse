@@ -302,7 +302,8 @@ test('@mobile dashboard is usable on a phone without horizontal scrolling', asyn
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);
   const bottom = page.getByRole('navigation', { name: 'Основна навигация' });
-  await bottom.getByRole('link', { name: 'Поръчки' }).click();
+  // 1.2.2: the new menu calls it „Курсове“.
+  await bottom.getByRole('link', { name: /^(Поръчки|Курсове)$/ }).click();
   await expect(page.getByRole('heading', { name: 'Поръчки', exact: true })).toBeVisible();
   await bottom.getByRole('button', { name: 'Още', exact: true }).click();
   await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: 'Класации' }).click();
