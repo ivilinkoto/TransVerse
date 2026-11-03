@@ -60,7 +60,7 @@ export default async function GaragePage() {
           const upkeepCost = maintenanceCostCents(v.model.priceCents, 1 - discount * (1 - serviceDiscount));
           const trailerOptions = fleet.trailers.filter((t) => t.cityId === v.cityId && canCouple(v.model, t.model));
           return (
-            <Card key={v.id}>
+            <Card key={v.id} id={`v-${v.id}`}>
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">

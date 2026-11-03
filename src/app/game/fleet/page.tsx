@@ -246,6 +246,37 @@ export default async function FleetPage() {
                 )}
               </div>
             )}
+            {features.nav_v2 && (() => {
+              // 1.2.2: everything for this truck in one place — the main action and its pages.
+              const main = v.delivery
+                ? { href: '/game/map', label: tr('🗺️ Виж на картата') }
+                : v.condition < 50
+                  ? { href: `/game/garage#v-${v.id}`, label: tr('🔧 Ремонтирай') }
+                  : { href: `/game/contracts?from=${v.cityId}&truck=${v.id}`, label: tr('🚚 Пусни курс') };
+              const tiles = [
+                { href: `/game/garage#v-${v.id}`, label: tr('Сервиз'), emoji: '🔧', on: true },
+                { href: '/game/cabin', label: tr('Кабина'), emoji: '🛋️', on: features.cabin },
+                { href: '/game/trips', label: tr('Дневник'), emoji: '📓', on: features.trip_log },
+                { href: '/game/plates', label: tr('Номер'), emoji: '🔢', on: features.plate_auction },
+                { href: '/game/trailer-hire', label: tr('Ремарке'), emoji: '🔗', on: features.trailer_hire },
+                { href: `/game/garage#v-${v.id}`, label: tr('Продай'), emoji: '🏷️', on: !v.rental },
+              ].filter((x) => x.on);
+              return (
+                <div className="mt-3 space-y-2" data-testid="truck-actions">
+                  <Link href={main.href} className="btn-primary w-full justify-center">{main.label}</Link>
+                  <details className="group rounded-xl border border-asphalt-700">
+                    <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold text-mist-200 marker:hidden">{tr('Всичко за този камион')} <span className="text-mist-500 group-open:hidden">▾</span><span className="hidden text-mist-500 group-open:inline">▴</span></summary>
+                    <div className="grid grid-cols-3 gap-2 px-3 pb-3 sm:grid-cols-6">
+                      {tiles.map((x) => (
+                        <Link key={x.label} href={x.href} className="flex flex-col items-center gap-1 rounded-xl border border-asphalt-700 bg-asphalt-850 px-2 py-2.5 text-xs font-semibold transition hover:border-cyan-glow/50">
+                          <span className="text-lg" aria-hidden="true">{x.emoji}</span>{x.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+              );
+            })()}
             {(v.upgrades.length > 0 || v.hiddenCompartment) && (
               <div className="mt-3 flex flex-wrap gap-1.5">{v.upgrades.map((u) => <Badge key={u} tone="violet">{tx(UPGRADES[u as UpgradeId]?.label ?? u)}</Badge>)}{v.hiddenCompartment && <Badge tone="violet">{tr('🕳️ Тайно отделение')}</Badge>}</div>
             )}

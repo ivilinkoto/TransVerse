@@ -35,6 +35,7 @@ import { ACHIEVEMENTS, levelProgress } from '@/lib/game/progression';
 import { achievements, ledgerEntries } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { nextSteps } from '@/server/game/next-steps';
+import { nowList } from '@/server/game/now';
 import { HALLOWEEN_DEF } from '@/server/game/halloween';
 import { unclaimedHolidayQuests } from '@/server/game/holiday';
 import { firstOwnTruck, recentTrips } from '@/server/game/overview';
@@ -62,7 +63,9 @@ export default async function OverviewPage() {
   const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
   const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
   // v1.9: three concrete things to do now.
-  const steps = features.next_steps ? await nextSteps(db, user, company.id, now) : [];
+  const steps = features.next_steps && !features.nav_v2 ? await nextSteps(db, user, company.id, now) : [];
+  // 1.2.2 „Сега“: everything to do now, one button each, instead of the welcome card.
+  const now2 = features.nav_v2 ? await nowList(db, user, company.id, now, features) : null;
   // 1.1.3: finished Halloween quests with rewards not taken, from the end of the event for a week.
   const hwEnd = HALLOWEEN_DEF.eventWindow().endsAt.getTime();
   const halloweenLeft = now.getTime() >= hwEnd && now.getTime() <= hwEnd + 7 * 86_400_000 ? ((await unclaimedHolidayQuests(db, HALLOWEEN_DEF, user.id)).get(user.id) ?? 0) : 0;
@@ -123,51 +126,77 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <section className="panel relative overflow-hidden p-5 sm:p-6">
-        <div className="road-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:linear-gradient(to_left,black,transparent_70%)]" aria-hidden="true" />
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt-500/20 blur-3xl" aria-hidden="true" />
-        <div className="relative flex flex-col gap-5 md:flex-row md:items-center">
-          <div className="min-w-0 flex-1">
-            <h1 className="label text-cyan-glow">{t('Табло')}</h1>
+      {now2 ? (
+        <section className="panel relative overflow-hidden p-5 sm:p-6" data-testid="now-panel">
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt-500/20 blur-3xl" aria-hidden="true" />
+          <div className="relative">
+            <h1 className="label text-cyan-glow">{t('Начало')}</h1>
             <p className="mt-1 font-display text-2xl font-bold sm:text-3xl">{greeting}, {tx(user.username)}</p>
-            <p className="mt-2 max-w-xl text-mist-300">{tx(next.text)}</p>
-            {worn.length > 0 && (
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-amber-sig"><TrendingDown className="h-4 w-4" />{t('{0} под 50% състояние.', worn.length === 1 ? t('Едно превозно средство е') : t('{0} превозни средства са', worn.length))}{' '}<Link href="/game/garage" className="underline">{t('Към сервиза')}</Link></p>
-            )}
+            <p className="mt-1 text-sm text-mist-300">{now2.length ? (now2.length === 1 ? t('Едно нещо те чака') : t('{0} неща те чакат', now2.length)) : t('Всичко е наред. Пусни нов курс или виж камионите на картата.')}</p>
+            <ul className="mt-4 space-y-2">
+              {now2.map((it, i) => (
+                <li key={i}>
+                  <Link href={it.href} className={`flex items-center gap-3 rounded-2xl border p-3 transition hover:-translate-y-0.5 ${it.tone === 'hot' ? 'border-cyan-glow/40 bg-cyan-glow/5' : it.tone === 'gold' ? 'border-gold-400/40 bg-gold-400/5' : it.tone === 'warn' ? 'border-amber-sig/40 bg-amber-sig/5' : 'border-asphalt-700 bg-asphalt-900/50'}`}>
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-asphalt-850 text-xl" aria-hidden="true">{it.emoji}</span>
+                    <span className="min-w-0 flex-1 text-sm">{tx(it.text)}</span>
+                    <span className={`shrink-0 text-sm font-bold ${it.tone === 'gold' ? 'text-gold-400' : it.tone === 'warn' ? 'text-amber-sig' : 'text-cyan-glow'}`}>{tx(it.action)} →</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href={next.href} className="btn-primary"><next.icon className="h-4 w-4" />{tx(next.cta)}</Link>
-              {next.href !== '/game/map' && fleet.vehicles.length > 0 && <Link href="/game/map" className="btn-ghost"><MapIcon className="h-4 w-4" />{t('Карта')}</Link>}
+              {fleet.vehicles.length > 0 && <Link href="/game/map" className="btn-ghost"><MapIcon className="h-4 w-4" />{t('Карта')}</Link>}
             </div>
           </div>
-          {hero && (
-            <div className="hidden shrink-0 md:block">
-              <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} cosmetics={hero.cosmetics} trailerUpgrades={hero.trailer?.upgrades} trailerLogo={hero.trailer?.logo} trailerCosmetics={hero.trailer?.cosmetics} martenitsa={marta} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
+        </section>
+      ) : (
+      <section className="panel relative overflow-hidden p-5 sm:p-6">
+          <div className="road-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:linear-gradient(to_left,black,transparent_70%)]" aria-hidden="true" />
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt-500/20 blur-3xl" aria-hidden="true" />
+          <div className="relative flex flex-col gap-5 md:flex-row md:items-center">
+            <div className="min-w-0 flex-1">
+              <h1 className="label text-cyan-glow">{t('Табло')}</h1>
+              <p className="mt-1 font-display text-2xl font-bold sm:text-3xl">{greeting}, {tx(user.username)}</p>
+              <p className="mt-2 max-w-xl text-mist-300">{tx(next.text)}</p>
+              {worn.length > 0 && (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-amber-sig"><TrendingDown className="h-4 w-4" />{t('{0} под 50% състояние.', worn.length === 1 ? t('Едно превозно средство е') : t('{0} превозни средства са', worn.length))}{' '}<Link href="/game/garage" className="underline">{t('Към сервиза')}</Link></p>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={next.href} className="btn-primary"><next.icon className="h-4 w-4" />{tx(next.cta)}</Link>
+                {next.href !== '/game/map' && fleet.vehicles.length > 0 && <Link href="/game/map" className="btn-ghost"><MapIcon className="h-4 w-4" />{t('Карта')}</Link>}
+              </div>
             </div>
-          )}
-        </div>
-        <dl className="relative mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-asphalt-700/80 bg-asphalt-700/60 md:grid-cols-4">
-          <div className="bg-asphalt-900/90 p-3">
-            <dt className="label flex items-center gap-1.5"><Landmark className="h-3.5 w-3.5 text-gold-400" />{t('Наличност')}</dt>
-            <dd className={`num mt-1 font-display text-lg font-bold sm:text-xl ${company.balanceCents < 0 ? 'text-loss' : 'text-gold-400'}`}>{money(company.balanceCents)}</dd>
-            <dd className="text-[11px] text-mist-400">{t('нетна стойност {0}', money(worth))}</dd>
+            {hero && (
+              <div className="hidden shrink-0 md:block">
+                <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} cosmetics={hero.cosmetics} trailerUpgrades={hero.trailer?.upgrades} trailerLogo={hero.trailer?.logo} trailerCosmetics={hero.trailer?.cosmetics} martenitsa={marta} className="h-24 w-auto max-w-[340px] drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)] lg:h-28" />
+              </div>
+            )}
           </div>
-          <div className="bg-asphalt-900/90 p-3">
-            <dt className="label flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5 text-profit" />{t('Нето · 7 дни')}</dt>
-            <dd className={`num mt-1 font-display text-lg font-bold sm:text-xl ${income - expense < 0 ? 'text-loss' : 'text-profit'}`}>{money(income - expense)}</dd>
-            <dd className="text-[11px] text-mist-400">{t('приходи {0}', money(income))}</dd>
-          </div>
-          <div className="bg-asphalt-900/90 p-3">
-            <dt className="label flex items-center gap-1.5"><Route className="h-3.5 w-3.5 text-cyan-glow" />{t('На път')}</dt>
-            <dd className="num mt-1 font-display text-lg font-bold text-cyan-glow sm:text-xl">{tx(active.length)} / {tx(fleet.vehicles.length)}</dd>
-            <dd className="text-[11px] text-mist-400">{t('състояние {0}% · {1}', avgCondition.toFixed(0), km(stats.totalKm))}</dd>
-          </div>
-          <div className="bg-asphalt-900/90 p-3">
-            <dt className="label flex items-center gap-1.5"><Star className="h-3.5 w-3.5 text-prestige" />{t('Ниво {0}', lp.level)}</dt>
-            <dd className="mt-2"><Meter value={lp.share * 100} tone="violet" /></dd>
-            <dd className="num mt-1.5 text-[11px] text-mist-400">{t('{0} / {1} опит · реп. {2}', user.xp, lp.next, company.reputation.toFixed(1))}</dd>
-          </div>
-        </dl>
-      </section>
+          <dl className="relative mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-asphalt-700/80 bg-asphalt-700/60 md:grid-cols-4">
+            <div className="bg-asphalt-900/90 p-3">
+              <dt className="label flex items-center gap-1.5"><Landmark className="h-3.5 w-3.5 text-gold-400" />{t('Наличност')}</dt>
+              <dd className={`num mt-1 font-display text-lg font-bold sm:text-xl ${company.balanceCents < 0 ? 'text-loss' : 'text-gold-400'}`}>{money(company.balanceCents)}</dd>
+              <dd className="text-[11px] text-mist-400">{t('нетна стойност {0}', money(worth))}</dd>
+            </div>
+            <div className="bg-asphalt-900/90 p-3">
+              <dt className="label flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5 text-profit" />{t('Нето · 7 дни')}</dt>
+              <dd className={`num mt-1 font-display text-lg font-bold sm:text-xl ${income - expense < 0 ? 'text-loss' : 'text-profit'}`}>{money(income - expense)}</dd>
+              <dd className="text-[11px] text-mist-400">{t('приходи {0}', money(income))}</dd>
+            </div>
+            <div className="bg-asphalt-900/90 p-3">
+              <dt className="label flex items-center gap-1.5"><Route className="h-3.5 w-3.5 text-cyan-glow" />{t('На път')}</dt>
+              <dd className="num mt-1 font-display text-lg font-bold text-cyan-glow sm:text-xl">{tx(active.length)} / {tx(fleet.vehicles.length)}</dd>
+              <dd className="text-[11px] text-mist-400">{t('състояние {0}% · {1}', avgCondition.toFixed(0), km(stats.totalKm))}</dd>
+            </div>
+            <div className="bg-asphalt-900/90 p-3">
+              <dt className="label flex items-center gap-1.5"><Star className="h-3.5 w-3.5 text-prestige" />{t('Ниво {0}', lp.level)}</dt>
+              <dd className="mt-2"><Meter value={lp.share * 100} tone="violet" /></dd>
+              <dd className="num mt-1.5 text-[11px] text-mist-400">{t('{0} / {1} опит · реп. {2}', user.xp, lp.next, company.reputation.toFixed(1))}</dd>
+            </div>
+          </dl>
+        </section>
+      )}
 
       {upcoming && (() => {
         const ms = new Date(upcoming.publishedAt).getTime() - now.getTime();

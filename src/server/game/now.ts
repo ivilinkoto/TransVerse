@@ -1,0 +1,36 @@
+import { and, eq, isNull, lt } from 'drizzle-orm';
+import type { DbOrTx } from '@/server/db/client';
+import { vehicles } from '@/server/db/schema';
+import { inventoryBadge, weeklyChest } from './item-trade';
+import { nextSteps, type NextStep } from './next-steps';
+import { t } from '@/i18n/t';
+
+export interface NowItem extends NextStep {
+  /** hot = go and earn, gold = take a reward, warn = fix something, info = the rest. */
+  tone: 'hot' | 'gold' | 'warn' | 'info';
+}
+
+const TONE: Record<string, NowItem['tone']> = { '🚛': 'hot', '🎁': 'gold', '📅': 'gold', '👮': 'warn', '👋': 'info' };
+
+/**
+ * 1.2.2 „Сега“: everything the player can do right now, one line and one button
+ * each, in the order that matters — the start of the new Начало. Built on
+ * „Какво да правя сега?“ plus repairs, cases, presents and the weekly chest.
+ */
+export async function nowList(db: DbOrTx, user: { id: string; loginStreak: number; dailyClaimKey: string | null; uiPrefs?: { inventorySeenAt?: string } | null }, companyId: string, now: Date, features: { inventory_menu?: boolean; item_chests?: boolean }): Promise<NowItem[]> {
+  const steps = await nextSteps(db, user, companyId, now, 10);
+  const out: NowItem[] = steps.map((s) => ({ ...s, tone: TONE[s.emoji] ?? 'info' }));
+  const worn = await db.select({ id: vehicles.id, plate: vehicles.plate, condition: vehicles.condition }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'idle'), isNull(vehicles.soldAt), lt(vehicles.condition, 50))).limit(3);
+  for (const v of worn) out.push({ emoji: '🔧', text: t('{0} е на {1}% — ремонтирай го преди следващия курс.', v.plate, Math.round(v.condition)), href: `/game/garage#v-${v.id}`, action: t('Ремонт'), tone: 'warn' });
+  if (features.inventory_menu) {
+    const inv = await inventoryBadge(db, user.id, user.uiPrefs?.inventorySeenAt, now);
+    if (inv.caseReady) out.push({ emoji: '📦', text: t('Имаш неотворен кейс.'), href: '/game/inventory', action: t('Отвори'), tone: 'gold' });
+    else if (inv.fresh > 0) out.push({ emoji: '🎒', text: t('Нови неща в инвентара: {0}.', inv.fresh), href: '/game/inventory', action: t('Виж'), tone: 'gold' });
+  }
+  if (features.item_chests) {
+    const w = await weeklyChest(db, user.id, now);
+    if (w.tier && !w.claimed && !w.next) out.push({ emoji: '🧰', text: t('Седмичният сандък е готов.'), href: '/game/inventory', action: t('Вземи'), tone: 'gold' });
+  }
+  const order: NowItem['tone'][] = ['hot', 'gold', 'warn', 'info'];
+  return out.sort((a, b) => order.indexOf(a.tone) - order.indexOf(b.tone)).slice(0, 6);
+}

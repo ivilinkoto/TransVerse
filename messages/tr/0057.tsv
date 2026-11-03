@@ -13,3 +13,21 @@ a64a5dba42	Orders and the map are in one section, side by side.	Заказы и 
 7c32976aa8	“Trips” gathers Orders, Map, The road · CB, Clients, Convoys and the other pages about loads.	«Рейсы» собирают Заказы, Карту, Дорогу · CB, Клиентов, Конвои и остальные страницы о грузах.
 90e6434b64	“Rewards” (until now “Inventory”) gathers the inventory, missions, the season and Truck Pass, events, the Big Run, the workshop, the album and the Hall of Fame. Its count includes mission rewards too.	«Награды» (раньше «Инвентарь») собирают инвентарь, миссии, сезон и Truck Pass, ивенты, Большой рейс, мастерскую, альбом и Зал славы. Число на кнопке включает и награды за миссии.
 120165769f	“Competition” and “Company” are under “More”.	«Соревнование» и «Компания» — в «Ещё».
+dd0a066e5a	{0} is at {1}% — repair it before the next trip.	{0} на {1}% — отремонтируй его перед следующим рейсом.
+dcc50cf722	{0} things are waiting for you	Тебя ждут дела: {0}
+9d25891f08	Every truck in “Fleet” has a big button for the next step (start a trip, repair or see it on the map) and “Everything for this truck” — garage, cabin, logbook, plate, trailer and selling.	У каждого грузовика в «Автопарке» есть большая кнопка следующего шага (отправить в рейс, отремонтировать или показать на карте) и «Всё об этом грузовике» — сервис, кабина, журнал, номер, прицеп и продажа.
+ca4ddb7644	All good. Start a new trip or see your trucks on the map.	Всё в порядке. Отправь новый рейс или посмотри грузовики на карте.
+b743e6adf9	Everything for this truck	Всё об этом грузовике
+997650e747	Logbook	Журнал
+bc5be8241f	One thing is waiting for you	Тебя ждёт одно дело
+b7d89ba758	You have an unopened case.	У тебя есть неоткрытый кейс.
+eb9e75ef90	Home: what to do now	Главная: что делать сейчас
+d39e6e87e4	Home shows “Now”: up to 6 things to do, in order of importance, with one button each.	Главная показывает «Сейчас»: до 6 дел по важности, по одной кнопке на каждое.
+f15dbba4ec	New things in the inventory: {0}.	Новое в инвентаре: {0}.
+1bb3d154c7	Plate	Номер
+22df14bc91	Repair	Ремонт
+c6d46aeacb	The weekly chest is ready.	Еженедельный сундук готов.
+54949ef625	The dashboard starts with a list of everything waiting for you — a free truck, a reward, a repair, a case, the weekly chest — with one button each.	Главная начинается со списка всего, что тебя ждёт — свободный грузовик, награда, ремонт, кейс, еженедельный сундук — по одной кнопке на каждое.
+be71e82899	🔧 Repair	🔧 Отремонтировать
+789e9f17bb	🗺️ See on the map	🗺️ Показать на карте
+1b017fea98	🚚 Start a trip	🚚 Отправить в рейс
