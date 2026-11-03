@@ -108,6 +108,7 @@ import { trackLink } from '@/server/game/tracking';
 import { setPromise, submitPuzzle } from '@/server/game/trip-extras';
 import { setVacation } from '@/server/game/vacation';
 import { applyItem, openCase } from '@/server/game/inventory';
+import { answerTrade, claimWeeklyChest, craftItems, giftItem, giveFromChest, offerTrade, openGift, sellItem, unequipLook } from '@/server/game/item-trade';
 import { chooseWeeklyGoal, claimWeeklyGoal } from '@/server/game/weekly-goal';
 import { chooseMentor, endMentorship, setMentorOpen } from '@/server/game/mentor';
 import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hire';
@@ -281,7 +282,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reportShady'), contractId: id }),
   z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
   z.object({ type: z.literal('blackRepair'), vehicleId: id }),
-  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional() }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
@@ -430,6 +431,16 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('redeemCode'), code: z.string().trim().min(1).max(40), via: z.enum(['web', 'discord']).default('web') }),
   z.object({ type: z.literal('useItem'), itemId: z.string().max(40), driverId: id.optional(), vehicleId: id.optional() }),
   z.object({ type: z.literal('openCase'), caseId: z.enum(['case_bronze', 'case_silver', 'case_gold']) }),
+  // 1.2.1 „Инвентар+“.
+  z.object({ type: z.literal('sellItem'), itemId: z.string().max(40), qty: z.number().int().min(1).max(99) }),
+  z.object({ type: z.literal('giftItem'), itemId: z.string().max(40), toUserId: id, note: z.string().max(200).optional() }),
+  z.object({ type: z.literal('openGift'), id }),
+  z.object({ type: z.literal('offerTrade'), toUsername: z.string().min(1).max(40), give: z.string().max(40), want: z.string().max(40), note: z.string().max(200).optional() }),
+  z.object({ type: z.literal('answerTrade'), id, answer: z.enum(['accept', 'decline', 'cancel']) }),
+  z.object({ type: z.literal('unequipLook'), driverId: id, part: z.enum(['cap', 'glasses', 'frame']) }),
+  z.object({ type: z.literal('craftItems'), items: z.array(z.string().max(40)).min(2).max(4) }),
+  z.object({ type: z.literal('claimWeeklyChest') }),
+  z.object({ type: z.literal('giveFromChest'), memberId: id, itemId: z.string().max(40) }),
   z.object({ type: z.literal('trailerUpgrade'), trailerId: id, upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('buyOrgTrailer'), modelId: z.string().max(40) }),
   z.object({ type: z.literal('sellOrgTrailer'), orgTrailerId: id }),
@@ -624,6 +635,15 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   accuse: 'lost_cargo',
   useItem: 'inventory',
   openCase: 'inventory',
+  sellItem: 'item_trade',
+  giftItem: 'item_trade',
+  openGift: 'item_trade',
+  offerTrade: 'item_trade',
+  answerTrade: 'item_trade',
+  unequipLook: 'inventory_menu',
+  craftItems: 'workshop',
+  claimWeeklyChest: 'item_chests',
+  giveFromChest: 'item_chests',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -958,6 +978,25 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await applyItem(db, user.id, input.itemId, { driverId: input.driverId, vehicleId: input.vehicleId })) };
     case 'openCase':
       return { ok: true, ...(await openCase(db, user.id, input.caseId)) };
+    case 'sellItem':
+      return { ok: true, ...(await sellItem(db, user.id, input.itemId, input.qty)) };
+    case 'giftItem':
+      return { ok: true, ...(await giftItem(db, user.id, { toUserId: input.toUserId, itemId: input.itemId, note: input.note })) };
+    case 'openGift':
+      return { ok: true, ...(await openGift(db, user.id, input.id)) };
+    case 'offerTrade':
+      return { ok: true, ...(await offerTrade(db, user.id, { toUsername: input.toUsername, give: input.give, want: input.want, note: input.note }, await hashIp(db, await ip()))) };
+    case 'answerTrade':
+      return { ok: true, ...(await answerTrade(db, user.id, input.id, input.answer)) };
+    case 'unequipLook':
+      return { ok: true, ...(await unequipLook(db, user.id, input.driverId, input.part)) };
+    case 'craftItems':
+      return { ok: true, ...(await craftItems(db, user.id, input.items)) };
+    case 'claimWeeklyChest':
+      return { ok: true, ...(await claimWeeklyChest(db, user.id)) };
+    case 'giveFromChest':
+      await giveFromChest(db, user.id, input.memberId, input.itemId);
+      return { ok: true };
     case 'accuse':
       return { ok: true, ...(await accuse(db, user.id, input.id, input.suspect)) };
     case 'unqueueTrip':

@@ -1,7 +1,7 @@
 'use client';
 
 import { useFeature, useFeatures, useNavPlayer } from './Features';
-import { Gem, LogOut, MessagesSquare, MoreHorizontal, ShieldCheck, ThumbsUp, X } from 'lucide-react';
+import { Backpack, Gem, LogOut, MessagesSquare, MoreHorizontal, ShieldCheck, ThumbsUp, X } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Logo, LogoMark } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
-import { ACCOUNT_MENU, SECTIONS, activeTab, coreTabs, sectionFor, tabGroups, visibleTabs, type NavSection, type NavTab } from './nav';
+import { ACCOUNT_MENU, LISTED_SECTIONS, activeTab, coreTabs, sectionFor, tabGroups, visibleTabs, type NavSection, type NavTab } from './nav';
 import { t as tr, tx } from '@/i18n/t';
 
 export interface NavBadges {
@@ -18,6 +18,43 @@ export interface NavBadges {
   missions: number;
   /** A global event is running. */
   eventLive: boolean;
+  /** 1.2.1: items (and presents, trade offers) new since the inventory was last opened. */
+  inventoryNew?: number;
+  /** 1.2.1: a case is waiting to be opened. */
+  caseReady?: boolean;
+}
+
+/**
+ * 1.2.1: the inventory in the main menu — drawn apart from the sections, in purple
+ * and gold, with the count of new items and a pulse while a case waits.
+ */
+function InventoryNavItem({ badges, active, variant }: { badges: NavBadges; active: boolean; variant: 'rail' | 'bar' }) {
+  const fresh = badges.inventoryNew ?? 0;
+  const glow = badges.caseReady ? 'tv-inv-pulse' : '';
+  const count = fresh > 0 && <span className={`num absolute rounded-full bg-gold-400 px-1.5 text-[10px] font-bold leading-4 text-asphalt-950 shadow ${variant === 'bar' ? 'right-[calc(50%-20px)] top-1' : 'right-1 top-1 xl:right-3 xl:top-1/2 xl:-translate-y-1/2'}`} aria-label={tr('{0} нови', fresh)}>{fresh > 99 ? '99+' : fresh}</span>;
+  if (variant === 'bar')
+    return (
+      <Link href="/game/inventory" aria-current={active ? 'page' : undefined} data-testid="nav-inventory" className="relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-gold-300">
+        <span className={`-mt-5 flex h-11 w-11 items-center justify-center rounded-2xl border-2 bg-gradient-to-br from-violet-600 to-fuchsia-700 shadow-lg shadow-violet-900/60 ${active ? 'border-gold-300' : 'border-gold-400/60'} ${glow}`}>
+          <Backpack className="h-5 w-5 text-gold-300" />
+        </span>
+        {tr('Инвентар')}
+        {count}
+      </Link>
+    );
+  return (
+    <Link
+      href="/game/inventory"
+      title={tr('Инвентар')}
+      aria-current={active ? 'page' : undefined}
+      data-testid="nav-inventory"
+      className={`relative mt-2 flex items-center gap-3 rounded-xl border px-3 py-2.5 text-[15px] font-semibold transition max-xl:flex-col max-xl:gap-1 max-xl:px-1 max-xl:text-[10px] ${active ? 'border-gold-400/70 bg-gradient-to-r from-violet-600/60 to-fuchsia-700/30 text-white' : 'border-violet-500/40 bg-gradient-to-r from-violet-700/30 to-fuchsia-800/10 text-gold-300 hover:border-gold-400/60 hover:text-white'} ${glow}`}
+    >
+      <Backpack className="h-5 w-5 shrink-0 text-gold-300" />
+      <span className="flex-1 max-xl:leading-none">{tr('Инвентар')}</span>
+      {count}
+    </Link>
+  );
 }
 
 function SectionBadge({ section, badges, compact = false }: { section: NavSection; badges: NavBadges; compact?: boolean }) {
@@ -32,12 +69,14 @@ function SectionBadge({ section, badges, compact = false }: { section: NavSectio
 /** Desktop navigation: an icon rail on small laptops, a full sidebar from xl up. */
 export function Sidebar({ badges, version, staff = false, holiday = null, attention = 0 }: { badges: NavBadges; version: string; staff?: boolean; holiday?: string | null; attention?: number }) {
   const pathname = usePathname();
-  const current = sectionFor(pathname);
+  const has = useFeatures();
+  const current = sectionFor(pathname, has);
   // 1.1.4.1: four sections in the rail, the rest in "Още".
   const simple = useFeature('simple_ui');
+  const invMenu = useFeature('inventory_menu');
   const [more, setMore] = useState(false);
-  const sections = simple ? SECTIONS.filter((s) => MAIN_KEYS.includes(s.key)) : SECTIONS;
-  const inMore = simple && !!current && !MAIN_KEYS.includes(current.key);
+  const sections = simple ? LISTED_SECTIONS.filter((s) => MAIN_KEYS.includes(s.key)) : LISTED_SECTIONS;
+  const inMore = simple && !!current && !MAIN_KEYS.includes(current.key) && current.key !== 'inventory';
   return (
     <aside className="sticky top-0 hidden h-dvh w-[84px] shrink-0 flex-col border-r border-asphalt-800/80 bg-asphalt-900/60 px-3 py-5 backdrop-blur lg:flex xl:w-60">
       <div className="mb-8 flex justify-center xl:justify-start xl:px-2">
@@ -63,6 +102,7 @@ export function Sidebar({ badges, version, staff = false, holiday = null, attent
             </Link>
           );
         })}
+        {invMenu && <InventoryNavItem badges={badges} active={current?.key === 'inventory' && !more} variant="rail" />}
         {simple && (
           <button type="button" onClick={() => { if (!more) window.dispatchEvent(new Event('tv:chat-close')); setMore((o) => !o); }} aria-expanded={more} title={tr('Още')} className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition max-xl:flex-col max-xl:gap-1 max-xl:px-1 max-xl:text-[10px] ${more || inMore ? 'bg-gradient-to-r from-volt-500/25 to-volt-500/5 text-white' : 'text-mist-300 hover:bg-asphalt-800/80 hover:text-white'}`}>
             {more ? <X className="h-5 w-5 shrink-0 text-cyan-glow" /> : <MoreHorizontal className={`h-5 w-5 shrink-0 ${inMore ? 'text-cyan-glow' : 'text-mist-400'}`} />}
@@ -95,7 +135,7 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
   const lean = useFeature('simple_ui');
   const [all, setAll] = useState(false);
   const box = useRef<HTMLElement>(null);
-  const section = sectionFor(pathname);
+  const section = sectionFor(pathname, has);
   const tab = section ? activeTab(section, pathname) : undefined;
   // Keep the open tab in view when the row scrolls sideways on a phone.
   useEffect(() => {
@@ -179,16 +219,21 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
 /** Phone and tablet navigation: a bottom bar with the four main sections and "Още" for everything else. */
 export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { badges: NavBadges; staff: boolean; holiday?: string | null; attention?: number }) {
   const pathname = usePathname();
+  const has = useFeatures();
+  const invMenu = useFeature('inventory_menu');
   const [open, setOpen] = useState(false);
-  const current = sectionFor(pathname);
-  const main = SECTIONS.filter((s) => MAIN_KEYS.includes(s.key));
-  const inMore = !current || !main.some((s) => s.key === current.key);
+  const current = sectionFor(pathname, has);
+  const main = LISTED_SECTIONS.filter((s) => MAIN_KEYS.includes(s.key));
+  const inMore = !current || (!main.some((s) => s.key === current.key) && current.key !== 'inventory');
+  // 1.2.1: the inventory sits in the middle of the bar, raised and in its own colours.
+  const slots: (NavSection | 'inventory')[] = invMenu ? [...main.slice(0, 2), 'inventory', ...main.slice(2)] : main;
 
   return (
     <>
       <nav aria-label={tr('Основна навигация')} className="fixed inset-x-0 bottom-0 z-40 border-t border-asphalt-800 bg-asphalt-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-5">
-          {main.map((s) => {
+        <div className={`mx-auto grid max-w-xl ${invMenu ? 'grid-cols-6' : 'grid-cols-5'}`}>
+          {slots.map((s) => {
+            if (s === 'inventory') return <InventoryNavItem key="inventory" badges={badges} active={current?.key === 'inventory' && !open} variant="bar" />;
             const active = current?.key === s.key && !open;
             return (
               <Link key={s.key} href={s.href} aria-current={active ? 'page' : undefined} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${active ? 'text-cyan-glow' : 'text-mist-400'}`}>
@@ -246,7 +291,7 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
           <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label={tr('Затвори')} onClick={onClose} />
           <div className={desktop ? 'absolute left-[84px] top-0 h-dvh w-[min(560px,calc(100vw-84px))] overflow-y-auto border-r border-asphalt-700 bg-asphalt-900 px-5 py-5 shadow-2xl xl:left-60' : 'absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-asphalt-700 bg-asphalt-900 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl'}>
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-asphalt-600" aria-hidden="true" />
-            {SECTIONS.filter((s) => !MAIN_KEYS.includes(s.key)).map((s) => (
+            {LISTED_SECTIONS.filter((s) => !MAIN_KEYS.includes(s.key)).map((s) => (
               <section key={s.key} className="mb-5">
                 <h2 className="label mb-2 flex items-center gap-2"><s.icon className="h-3.5 w-3.5" />{tx(s.label)}</h2>
                 {(simple && tabGroups(visibleTabs(s, holiday, pathname, has, player)).length > 1 ? tabGroups(visibleTabs(s, holiday, pathname, has, player)) : [{ name: '', tabs: visibleTabs(s, holiday, pathname, has, player) }]).map((g) => (

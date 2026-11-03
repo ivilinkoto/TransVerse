@@ -36,6 +36,43 @@ const coin = (cx: number, cy: number, r: number) => (
   </g>
 );
 
+/** 1.2.1: a fridge magnet with a flag (vertical or horizontal stripes). */
+const magnet = (stripes: string[], horizontal = false) => (
+  <g>
+    <rect x="18" y="24" width="64" height="48" rx="8" fill="#0f172a" opacity="0.35" transform="translate(3 4)" />
+    <g>
+      <clipPath id={`mag-${stripes.join('')}`}><rect x="18" y="24" width="64" height="48" rx="8" /></clipPath>
+      <g clipPath={`url(#mag-${stripes.join('')})`}>
+        {stripes.map((c, i) => (horizontal ? <rect key={i} x="18" y={24 + (48 / stripes.length) * i} width="64" height={48 / stripes.length + 0.5} fill={c} /> : <rect key={i} x={18 + (64 / stripes.length) * i} y="24" width={64 / stripes.length + 0.5} height="48" fill={c} />))}
+      </g>
+      <rect x="18" y="24" width="64" height="48" rx="8" fill="none" stroke="#e2e8f0" strokeWidth="3" />
+    </g>
+    <path d="M26 30 h14" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" opacity="0.55" />
+    <path d="M38 80 h24" stroke="#64748b" strokeWidth="4" strokeLinecap="round" />
+  </g>
+);
+
+/** 1.2.1: a portrait frame (the reward of a collection). */
+const frame = (outer: string, inner: string, deco: ReactNode) => (
+  <g>
+    <rect x="14" y="14" width="72" height="72" rx="14" fill="#1e293b" />
+    <rect x="14" y="14" width="72" height="72" rx="14" fill="none" stroke={outer} strokeWidth="7" />
+    <rect x="22" y="22" width="56" height="56" rx="9" fill="none" stroke={inner} strokeWidth="2" opacity="0.8" />
+    <circle cx="50" cy="44" r="10" fill="#475569" />
+    <path d="M32 74 q18 -22 36 0" fill="#475569" />
+    {deco}
+  </g>
+);
+
+const star = (cx: number, cy: number, r: number, fill: string) => {
+  const pts = Array.from({ length: 10 }, (_, i) => {
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    const rr = i % 2 ? r * 0.45 : r;
+    return `${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`;
+  }).join(' ');
+  return <polygon key={`${cx}-${cy}`} points={pts} fill={fill} />;
+};
+
 const ART: Record<ItemId, ReactNode> = {
   coffee: (
     <g>
@@ -242,6 +279,111 @@ const ART: Record<ItemId, ReactNode> = {
   case_bronze: crate('#b45309', '#78350f', '#fdba74'),
   case_silver: crate('#94a3b8', '#475569', '#f1f5f9'),
   case_gold: crate('#eab308', '#a16207', '#fef9c3'),
+  treasure_map: (
+    <g>
+      <path d="M14 22 q8 -6 16 0 q10 6 20 0 q10 -6 20 0 q8 6 16 0 v58 q-8 6 -16 0 q-10 -6 -20 0 q-10 6 -20 0 q-8 -6 -16 0 z" fill="#fde68a" stroke="#92400e" strokeWidth="2.5" />
+      <path d="M22 70 q10 -6 14 -16 q6 -14 18 -8 q10 4 14 -10" fill="none" stroke="#b45309" strokeWidth="2.5" strokeDasharray="4 4" />
+      <path d="M64 30 l10 10 M74 30 l-10 10" stroke="#dc2626" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="24" cy="70" r="3" fill="#15803d" />
+      <path d="M80 66 l4 -4 m-4 0 l4 4" stroke="#92400e" strokeWidth="1.5" />
+    </g>
+  ),
+  golden_key: (
+    <g>
+      <circle cx="50" cy="50" r="40" fill="#facc15" opacity="0.18" />
+      <circle cx="34" cy="38" r="16" fill="none" stroke="#ca8a04" strokeWidth="9" />
+      <circle cx="34" cy="38" r="16" fill="none" stroke="#fde047" strokeWidth="4" />
+      <path d="M46 50 l30 30" stroke="#ca8a04" strokeWidth="9" strokeLinecap="round" />
+      <path d="M46 50 l30 30" stroke="#fde047" strokeWidth="4" strokeLinecap="round" />
+      <path d="M64 68 l8 -8 M72 76 l6 -6" stroke="#ca8a04" strokeWidth="6" strokeLinecap="round" />
+      <path d="M78 16 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 l6 -2 z" fill="#fef9c3" />
+    </g>
+  ),
+  snow_chains: (
+    <g fill="none" strokeWidth="5" strokeLinecap="round">
+      {[0, 1, 2, 3].map((i) => <ellipse key={i} cx={26 + i * 16} cy={50 + (i % 2 ? 6 : -6)} rx="10" ry="6" stroke={i % 2 ? '#94a3b8' : '#cbd5e1'} transform={`rotate(${i % 2 ? 30 : -30} ${26 + i * 16} ${50 + (i % 2 ? 6 : -6)})`} />)}
+      <path d="M14 76 q36 10 72 0" stroke="#e0f2fe" strokeWidth="4" />
+      <circle cx="80" cy="22" r="3" fill="#e0f2fe" stroke="none" />
+      <circle cx="20" cy="24" r="2" fill="#e0f2fe" stroke="none" />
+    </g>
+  ),
+  ice_scraper: (
+    <g>
+      <rect x="44" y="40" width="12" height="44" rx="6" fill="#0369a1" />
+      <path d="M24 18 h52 l-8 26 h-36 z" fill="#38bdf8" stroke="#0369a1" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M26 18 h48" stroke="#e0f2fe" strokeWidth="3" />
+      <path d="M18 12 l4 4 M80 10 l-3 5 M86 30 l-5 1" stroke="#bae6fd" strokeWidth="2.5" strokeLinecap="round" />
+    </g>
+  ),
+  wool_gloves: (
+    <g>
+      <path d="M22 80 v-30 q0 -12 8 -14 v-12 q0 -6 6 -6 q6 0 6 6 v10 q4 -2 8 2 v16 q6 -6 10 0 l-6 14 v14 z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="2" strokeLinejoin="round" />
+      <rect x="20" y="76" width="36" height="10" rx="3" fill="#f8fafc" />
+      <path d="M48 82 v-26 q0 -10 8 -12 v-10 q0 -6 6 -6 q6 0 6 6 v8 q4 -2 8 2 v14 q6 -6 10 0 l-6 12 v12 z" fill="#1d4ed8" stroke="#1e3a8a" strokeWidth="2" strokeLinejoin="round" opacity="0.92" />
+      <path d="M28 58 h20 M28 64 h20" stroke="#fecaca" strokeWidth="2" strokeDasharray="3 3" />
+    </g>
+  ),
+  antifreeze: (
+    <g>
+      <path d="M30 30 h30 l10 10 v44 q0 4 -4 4 h-36 q-4 0 -4 -4 v-50 q0 -4 4 -4 z" fill="#22c55e" stroke="#14532d" strokeWidth="2.5" />
+      <rect x="36" y="18" width="14" height="12" rx="2" fill="#facc15" stroke="#854d0e" strokeWidth="2" />
+      <path d="M60 30 q14 0 14 16" fill="none" stroke="#14532d" strokeWidth="4" />
+      <rect x="32" y="50" width="32" height="20" rx="3" fill="#f0fdf4" />
+      <path d="M48 53 v14 M42 56 l12 8 M54 56 l-12 8" stroke="#0284c7" strokeWidth="2" strokeLinecap="round" />
+    </g>
+  ),
+  souvenir_de: magnet(['#111827', '#dc2626', '#facc15'], true),
+  souvenir_fr: magnet(['#1d4ed8', '#f8fafc', '#dc2626']),
+  souvenir_it: magnet(['#16a34a', '#f8fafc', '#dc2626']),
+  souvenir_es: magnet(['#dc2626', '#facc15', '#facc15', '#dc2626'], true),
+  souvenir_gr: magnet(['#2563eb', '#f8fafc', '#2563eb', '#f8fafc', '#2563eb', '#f8fafc', '#2563eb', '#f8fafc', '#2563eb'], true),
+  souvenir_ro: magnet(['#1d4ed8', '#facc15', '#dc2626']),
+  xmas_ornament: (
+    <g>
+      <path d="M50 8 v12" stroke="#a16207" strokeWidth="2" />
+      <rect x="43" y="18" width="14" height="9" rx="2" fill="#eab308" />
+      <circle cx="50" cy="56" r="30" fill="#dc2626" stroke="#7f1d1d" strokeWidth="2" />
+      <path d="M22 50 q28 12 56 0" fill="none" stroke="#fde047" strokeWidth="4" />
+      <path d="M24 64 q26 10 52 0" fill="none" stroke="#f8fafc" strokeWidth="2.5" strokeDasharray="4 4" />
+      <ellipse cx="38" cy="40" rx="6" ry="9" fill="#fca5a5" opacity="0.6" transform="rotate(30 38 40)" />
+    </g>
+  ),
+  gingerbread_truck: (
+    <g>
+      <rect x="14" y="30" width="44" height="34" rx="5" fill="#b45309" stroke="#78350f" strokeWidth="2" />
+      <path d="M58 40 h14 l12 12 v12 h-26 z" fill="#b45309" stroke="#78350f" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M18 36 q4 4 8 0 q4 -4 8 0 q4 4 8 0 q4 -4 8 0 q4 4 8 0" fill="none" stroke="#f8fafc" strokeWidth="2.5" />
+      <path d="M62 44 h8 l7 8 h-15 z" fill="#fde68a" />
+      <circle cx="28" cy="68" r="8" fill="#78350f" stroke="#f8fafc" strokeWidth="2.5" />
+      <circle cx="70" cy="68" r="8" fill="#78350f" stroke="#f8fafc" strokeWidth="2.5" />
+      <circle cx="30" cy="50" r="3" fill="#dc2626" />
+      <circle cx="42" cy="50" r="3" fill="#16a34a" />
+    </g>
+  ),
+  xmas_lights: (
+    <g>
+      <path d="M8 30 q21 18 42 0 q21 -18 42 0" fill="none" stroke="#14532d" strokeWidth="2.5" />
+      <path d="M8 62 q21 18 42 0 q21 -18 42 0" fill="none" stroke="#14532d" strokeWidth="2.5" />
+      {[[16, 37, '#facc15'], [32, 39, '#ef4444'], [50, 30, '#22d3ee'], [68, 22, '#22c55e'], [84, 24, '#f472b6'], [16, 69, '#22c55e'], [32, 71, '#22d3ee'], [50, 62, '#facc15'], [68, 54, '#ef4444'], [84, 56, '#a78bfa']].map(([x, y, c]) => (
+        <g key={`${x}-${y}`}>
+          <circle cx={x as number} cy={(y as number) + 7} r="9" fill={c as string} opacity="0.25" />
+          <ellipse cx={x as number} cy={(y as number) + 7} rx="4" ry="6" fill={c as string} />
+          <rect x={(x as number) - 3} y={(y as number) - 1} width="6" height="4" rx="1" fill="#1f2937" />
+        </g>
+      ))}
+    </g>
+  ),
+  santa_hat: (
+    <g>
+      <path d="M20 70 q8 -46 42 -50 q18 0 22 22 l-10 6 q-4 -14 -12 -12 q-16 8 -14 34 z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="80" cy="50" r="9" fill="#f8fafc" />
+      <rect x="14" y="64" width="62" height="16" rx="8" fill="#f8fafc" />
+      <path d="M22 70 h4 M34 72 h4 M46 70 h4 M58 72 h4" stroke="#e2e8f0" strokeWidth="2" strokeLinecap="round" />
+    </g>
+  ),
+  frost_frame: frame('#7dd3fc', '#e0f2fe', <g fill="#e0f2fe">{star(18, 18, 7, '#e0f2fe')}{star(82, 82, 7, '#e0f2fe')}<path d="M30 14 v6 M70 86 v-6" stroke="#bae6fd" strokeWidth="2" /></g>),
+  euro_frame: frame('#1d4ed8', '#facc15', <g>{[0, 1, 2, 3, 4, 5, 6, 7].map((i) => star(50 + 38 * Math.cos((Math.PI / 4) * i), 50 + 38 * Math.sin((Math.PI / 4) * i), 4.5, '#facc15'))}</g>),
+  xmas_frame: frame('#dc2626', '#16a34a', <g><circle cx="18" cy="18" r="5" fill="#16a34a" /><circle cx="82" cy="18" r="5" fill="#facc15" /><circle cx="18" cy="82" r="5" fill="#facc15" /><circle cx="82" cy="82" r="5" fill="#16a34a" /></g>),
 };
 
 export function ItemArt({ id, className = 'h-16 w-16' }: { id: ItemId; className?: string }) {

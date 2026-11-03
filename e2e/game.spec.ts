@@ -116,6 +116,27 @@ test.describe('core loop', () => {
     await expect(page.getByRole('button', { name: /Основи компания/ })).toBeDisabled();
   });
 
+  test('1.2.1: the inventory has its own menu button and pages once the release is out', async ({ page }) => {
+    await register(page);
+    await page.goto('/game/inventory');
+    await expect(page.getByRole('heading', { name: 'Инвентар', exact: true })).toBeVisible();
+    const live = new Date(releaseByVersion('1.2.1')!.publishedAt) <= new Date();
+    const button = page.getByTestId('nav-inventory');
+    if (!live) {
+      await expect(button).toHaveCount(0);
+      return;
+    }
+    await expect(button.first()).toBeVisible();
+    await page.goto('/game/inventory/workshop');
+    await expect(page.getByRole('heading', { name: 'Работилница', exact: true })).toBeVisible();
+    await expect(page.getByText(/Тетрадка на механика/)).toBeVisible();
+    await page.goto('/game/inventory/album');
+    await expect(page.getByRole('heading', { name: 'Албум с предмети' })).toBeVisible();
+    await expect(page.getByText(/Сувенири от Европа/).first()).toBeVisible();
+    await page.goto('/game/inventory/hall');
+    await expect(page.getByRole('heading', { name: 'Зала на славата' })).toBeVisible();
+  });
+
   test('independent drivers can browse player companies and see how to join', async ({ page }) => {
     await register(page);
     await page.goto('/game/company');

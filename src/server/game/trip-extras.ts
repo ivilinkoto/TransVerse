@@ -27,6 +27,7 @@ import { researchOf } from './research';
 import { notify } from './notify';
 import { recordWishDelivery } from './wishes';
 import { applyNoRest, coverLate, rewardCase, roadFind } from './inventory';
+import { itemFinds } from './item-trade';
 import { announceMystery } from '@/server/discord/v1142';
 
 /**
@@ -238,6 +239,8 @@ export async function afterExtras(tx: Tx, f: TripFacts) {
   // 1.2: drivers under „no rest“ are rested at once; now and then a find on the road.
   await applyNoRest(tx, f.userId, f.crew, at);
   await roadFind(tx, f.userId, f.deliveryId, at);
+  // 1.2.1: seasonal finds, souvenirs, the treasure map.
+  await itemFinds(tx, { userId: f.userId, deliveryId: f.deliveryId, destCityId: f.destCityId }, at);
   // Livestock: ten trips with good care make the badge.
   if (f.tag === 'livestock' && livestockCare({ late: f.late, violations: f.violations, loadedKm: f.loadedKm, team: f.crew.length > 1 })) {
     const k = `animal-care:${f.userId}`;

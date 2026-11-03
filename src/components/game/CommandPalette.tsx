@@ -40,7 +40,7 @@ export function CommandPalette() {
   const profile = tr('Профил');
   const items = useMemo(
     () => [
-      ...SECTIONS.flatMap((s) => (s.tabs?.length ? s.tabs.filter((t) => !t.feature || has(t.feature)).map((t) => ({ href: t.href, label: t.label, where: s.label })) : [{ href: s.href, label: s.label, where: '' }])),
+      ...SECTIONS.flatMap((s) => (s.tabs?.length ? s.tabs.filter((t) => (!t.feature || has(t.feature)) && (!t.hiddenWith || !has(t.hiddenWith))).map((t) => ({ href: t.href, label: t.label, where: s.label })) : [{ href: s.href, label: s.label, where: '' }])),
       ...ACCOUNT_MENU.map((m) => ({ href: m.href, label: m.label, where: profile })),
     ].filter((x, i, all) => all.findIndex((y) => y.href === x.href) === i),
     [has, profile],

@@ -137,6 +137,8 @@ describe('company membership', () => {
   it('ranks: limit by company level, cannot grant missing permissions, cannot delete used ranks', async () => {
     const owner = await playerWithCompany();
     const company = await companyOf(owner.userId);
+    // From 1.2 (company_roles) a company has two more places: fill them, whatever the date.
+    for (let i = 0; i < 5 && (await code(createRank(db(), owner.userId, { name: `Роля ${i}`, priority: 30 + i, permissions: [] }))) === 'ok'; i++);
     expect(await code(createRank(db(), owner.userId, { name: 'Стажант', priority: 40, permissions: [] }))).toBe('rank_limit');
     await db().update(organizations).set({ companyLevel: 2 }).where(eq(organizations.id, company.id));
     const intern = await createRank(db(), owner.userId, { name: 'Стажант', priority: 40, permissions: [] });

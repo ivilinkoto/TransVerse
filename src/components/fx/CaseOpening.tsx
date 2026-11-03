@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CASE_TABLES, ITEMS, RARITIES, coinsOf, pickFrom, type CaseId, type ItemId, type Rarity } from '@/lib/game/items';
+import { CASE_TABLES, GOLDEN_KEY, ITEMS, RARITIES, coinsOf, pickFrom, type CaseId, type ItemId, type Rarity } from '@/lib/game/items';
 import { ItemArt } from '@/components/game/ItemArt';
 import { motionEnabled, playCoin, playReveal, playTick } from '@/lib/client/motion';
 import { burst, coinsEl, flyTo, shake } from './fx';
@@ -19,7 +19,7 @@ const CELL = 112;
 const LENGTH = 44;
 const STOP = 38;
 
-export function CaseOpening({ caseId, result, error, left, onAgain, onClose }: { caseId: CaseId; result: ItemId | null; error: string | null; left: number; onAgain: () => void; onClose: () => void }) {
+export function CaseOpening({ caseId, result, serial = null, error, left, onAgain, onClose, skippable = false }: { caseId: CaseId; result: ItemId | null; serial?: number | null; error: string | null; left: number; onAgain: () => void; onClose: () => void; skippable?: boolean }) {
   const animate = useMemo(() => motionEnabled(), []);
   const [phase, setPhase] = useState<'shake' | 'spin' | 'reveal'>(animate ? 'shake' : 'reveal');
   const strip = useRef<HTMLDivElement>(null);
@@ -145,6 +145,7 @@ export function CaseOpening({ caseId, result, error, left, onAgain, onClose }: {
             <div className="fx-pop" style={{ animationDelay: '120ms' }}>
               <p className="text-sm font-bold uppercase tracking-widest" style={{ color: rarity.color }}>{tx(rarity.label)}</p>
               <p className="font-display text-2xl font-bold">{tx(def.name)}</p>
+              {serial != null && <p className="num mt-1 text-lg font-black text-gold-300">{t('#{0} от {1}', serial, GOLDEN_KEY.total)}</p>}
               <p className="mt-1 text-sm text-mist-300">{tx(def.effect)}</p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
@@ -154,6 +155,10 @@ export function CaseOpening({ caseId, result, error, left, onAgain, onClose }: {
           </div>
         ) : (
           <p className="text-mist-400">…</p>
+        )}
+        {/* 1.2.1: skip the roulette straight to the item. */}
+        {skippable && !error && result && phase !== 'reveal' && (
+          <button type="button" className="btn-ghost px-3 py-1 text-xs" onClick={() => setPhase('reveal')}>{t('Пропусни ⏭')}</button>
         )}
       </div>
     </div>,

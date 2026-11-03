@@ -9,7 +9,7 @@ import { answer, makeCtx, Stop, type Answer, type Ctx, type Interaction } from '
 import { joinGiveaway, startGiveaway } from './giveaways';
 import { ban, history, timeout, unban, warn } from './moderation';
 import { togglePing } from './panels';
-import { battleView, codeCommand, courseGo, courseStart, dailyClaim, dailyView, eventView, truckLoads } from './play';
+import { battleView, codeCommand, inventoryView, courseGo, courseStart, dailyClaim, dailyView, eventView, truckLoads } from './play';
 import { closeTicket, createTicketFromForm, openTicket, ticketForm } from './tickets';
 import { appealDecide, appealForm, appealSend, staffStats } from './appeals';
 import { verifyAnswer, verifyStart } from './check';
@@ -31,6 +31,7 @@ const COMMAND_HANDLERS: Record<string, (ctx: Ctx) => Answer | Promise<Answer>> =
   курс: courseStart,
   дневна: dailyView,
   код: codeCommand,
+  инвентар: inventoryView,
   ивент: eventView,
   битка: battleView,
   тикет: openTicket,

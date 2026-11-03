@@ -61,10 +61,16 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
     }
   };
   const since = new Date(card.memberSince).toLocaleDateString(intlLocale(), { month: 'long', year: 'numeric' });
+  // 1.2.1: up to three badges — the ones picked for the showcase, else the first three; the rest behind „+N“.
+  const [allBadges, setAllBadges] = useState(false);
+  const picked = (card.featuredBadges ?? []).map((id) => card.badges.find((b) => b.id === id)).filter((b): b is (typeof card.badges)[number] => !!b);
+  const top = picked.length ? picked : card.badges.slice(0, 3);
+  const shownBadges = allBadges ? [...top, ...card.badges.filter((b) => !top.includes(b))] : top;
+  const hiddenBadges = card.badges.length - top.length;
   return (
     <div>
       <div className="flex items-center gap-4">
-        <div className="relative">
+        <div className="relative shrink-0">
           <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`h-16 w-16 text-2xl ${frameOf(card.badges)}`} rounded="rounded-2xl" />
           <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-asphalt-900 ${card.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={card.online ? t('Онлайн') : t('Последно: {0}', card.lastSeen)} />
         </div>
@@ -72,12 +78,17 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
           <PlayerName name={card.username} role={card.role} vip={card.vip} card={false} className="font-display text-xl font-bold" />
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <LeagueBadge tier={card.leagueTier} />
-            {card.badges.map((b) => (
+            {shownBadges.map((b) => (
               <span key={b.id} title={tx(b.description)} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${b.id === 'pumpkin-2026' ? 'border-orange-500/50 bg-orange-500/10 text-orange-300' : 'border-prestige/50 bg-prestige/10 text-prestige'}`}>
                 {b.id === 'pumpkin-2026' ? <PumpkinIcon className="h-3.5 w-3.5" /> : b.id === 'ghost-hunter' ? <GhostTruckIcon className="h-3.5 w-3.5" /> : <Award className="h-3.5 w-3.5" />}
                 {tx(b.label)}
               </span>
             ))}
+            {hiddenBadges > 0 && (
+              <button type="button" onClick={() => setAllBadges((v) => !v)} className="rounded-full border border-asphalt-600 px-2 py-0.5 text-[11px] font-semibold text-mist-300 hover:border-prestige/50 hover:text-prestige" aria-expanded={allBadges}>
+                {allBadges ? t('По-малко') : t('+{0} значки', hiddenBadges)}
+              </button>
+            )}
           </div>
           <div className={`text-sm ${card.online ? 'text-profit' : 'text-mist-400'}`}>{card.online ? t('Онлайн сега') : t('Последно онлайн: {0}', card.lastSeen)}</div>
           <div className="mt-0.5 flex items-center gap-1 text-xs text-mist-400"><CalendarDays className="h-3.5 w-3.5" />{t('В играта от {0}', since)}</div>
