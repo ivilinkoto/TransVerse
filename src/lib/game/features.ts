@@ -289,7 +289,8 @@ export const FEATURES = {
   simple_nav: '1.9',
   progressive_unlock: '1.9',
   next_steps: '1.9',
-  command_palette: '1.9',
+  // 1.2.2: released with the new menu („Къде е…?“ in „Още“); planned for 1.9 before.
+  command_palette: '1.2.2',
   glossary: '1.9',
   simple_board: '1.9',
   notification_digest: '1.9',
