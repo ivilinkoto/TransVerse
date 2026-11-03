@@ -207,6 +207,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
 }
 
 export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [], compact = false }: MapProps) {
+  const compactAtStart = useRef(compact);
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -273,6 +274,8 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     };
 
     map.on('load', () => {
+      // 1.2.2: on the compact map the sources stay one tap away (ⓘ) instead of covering it.
+      if (compactAtStart.current) container.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
       const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
       map.addSource('cities', { type: 'geojson', data: empty });
       map.addLayer({ id: 'cities-dot', type: 'circle', source: 'cities', paint: {
