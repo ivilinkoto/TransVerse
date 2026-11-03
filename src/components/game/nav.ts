@@ -253,7 +253,15 @@ export const SECTIONS_V2: NavSection[] = (() => {
       ],
     },
     by('company'),
-    { ...compete, tabs: (compete.tabs ?? []).filter((t) => !REWARD_PAGES.includes(t.href)) },
+    {
+      ...compete,
+      // A start page with every page as a card; the row keeps the start, the rankings and the league.
+      href: '/game/compete',
+      tabs: [
+        { href: '/game/compete', label: 'Всичко', core: true },
+        ...(compete.tabs ?? []).filter((t) => !REWARD_PAGES.includes(t.href)).map((t) => ({ ...t, core: ['/game/leaderboards', '/game/league'].includes(t.href) || !!t.holiday })),
+      ],
+    },
   ];
 })();
 
