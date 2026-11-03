@@ -34,6 +34,9 @@ async function pairRow(db: DbOrTx, a: string, b: string) {
 export type Relation = 'self' | 'friends' | 'sent' | 'received' | 'none';
 
 /** Everything the player card shows, plus what the viewer can do with this player. */
+/** 1.2.1: badges shown on a player's card at most (the rest behind „+N“). */
+const SHOWCASE_BADGES = 3;
+
 export async function playerCard(db: DbOrTx, viewerId: string, username: string, now = new Date()) {
   const u = await userByName(db, username);
   if (!u || u.bannedAt) return null;
@@ -60,6 +63,8 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     avatarVersion: u.avatarVersion,
     leagueTier: u.leagueTier,
     badges: (await badgesOf(db, u.id)).filter((b) => !medals || !b.id.startsWith('season-')).map((b) => ({ id: b.id, label: b.label, description: b.description })),
+    // 1.2.1: the (up to three) badges the player picked for the showcase; the card shows these first.
+    featuredBadges: (u.showcase?.badges ?? []).slice(0, SHOWCASE_BADGES),
     medals: medals ? { counts: medalCounts(medals.map((m) => m.medal)), recent: medals.slice(0, 6).map((m) => ({ season: m.name, rank: m.rank!, medal: m.medal })) } : null,
     vip: isVip(u.vipUntil, now),
     level: u.level,

@@ -1,0 +1,311 @@
+# 1.2.1 «Раницата»
+00d00ce0c2	#{0} of {1}	№{0} из {1}
+96986e253e	(you have {0})	(есть {0})
+72c829a689	+{0} badges	+{0} значков
+15d92ce3e6	/инвентар — your items and cases, the presents and trades waiting for you, and the weekly chest.	/инвентар — твои предметы и кейсы, подарки и обмены, которые тебя ждут, и еженедельный сундук.
+3313f8a5a5	`/мисии` — missions and rewards · `/дневна` — the daily reward · `/код` — promo code · `/инвентар` — your items	`/мисии` — миссии и награды · `/дневна` — ежедневная награда · `/код` — промокод · `/инвентар` — твои предметы
+317be29892	{0} · completed by: {1}	{0} · собрали: {1}
+a423d14bb0	{0} already has a frame. Take it off first — it goes back to the inventory.	У {0} уже есть рамка. Сначала сними её — она вернётся в инвентарь.
+4a24f6163a	{0} gives {1} for your {2}	{0} даёт {1} за твой {2}
+196127c092	{0} now has {1} TC.	У {0} теперь {1} TC.
+6d89d2fbe6	{0} trips — {1} more	{0} рейсов — ещё {1}
+f4a91a1cb8	{0} can't become rarer.	{0} не может стать реже.
+f70a10c8a1	{0} isn't wearing that.	{0} это не носит.
+f9829f84c5	{0} is back in the inventory.	{0} вернулся в инвентарь.
+ad5f0e11a0	{0} for your {1}. See “Inventory”.	{0} за твой {1}. Смотри «Инвентарь».
+5867c3698a	{0} — {1} opened	{0} — открыто {1}
+c7bac88ab9	· from {0} to {1}	· с {0} по {1}
+6215e0cfc4	· dropping now	· выпадает сейчас
+f6a03854e7	Admin panel → “TransCoin movement”: every movement by player, reason and period, totals by reason, who got the most and alerts for large amounts.	Панель администратора → «Движение ТрансКоинов»: каждое движение по игроку, причине и периоду, суммы по причинам, кто получил больше всех, и сигналы о крупных суммах.
+6217d47918	Admin panel → “Items and cases”: how many cases were opened and how often each item drops against the promised chance.	Панель администратора → «Предметы и кейсы»: сколько кейсов открыто и как часто выпадает каждый предмет по сравнению с обещанным шансом.
+5474e59cd4	Item album	Альбом предметов
+ed3012b3b6	Item album — all collections and their rewards	Альбом предметов — все коллекции и награды за них
+d8597cfaf2	Item album: every collection with the items found and missing and the reward. Every item found stays in the album, even if you use or sell it.	Альбом предметов: каждая коллекция с найденными и недостающими предметами и наградой. Каждый найденный предмет остаётся в альбоме, даже если ты его используешь или продашь.
+3a0b0ec28b	Note with the present (optional)	Записка к подарку (необязательно)
+a82c4d44ce	{1} was waiting for you in {0}.	В {0} тебя ждал {1}.
+8db56355e0	To the workshop	В мастерскую
+b62e05bee6	Snow chains	Цепи противоскольжения
+c6a0c60440	You are already following a treasure map.	Ты уже идёшь по одной карте сокровищ.
+22c0bd4c6e	Take {0}	Забрать {0}
+657c5a0074	Taken: {0}. A new chest from Monday.	Получен: {0}. Новый сундук с понедельника.
+fe7ff193e3	Item type	Тип предметов
+7f7f19117d	See them in “Inventory”.	Смотри их в «Инвентаре».
+fe6afc9b48	See it in “Inventory” and in the album.	Смотри его в «Инвентаре» и в альбоме.
+c3c84cf16d	Every item found at least once stays in the album — even if you use, sell or trade it.	Каждый предмет, найденный хотя бы раз, остаётся в альбоме — даже если ты его используешь, продашь или обменяешь.
+f32e1d36ed	Wool gloves	Шерстяные перчатки
+c1ef7a9ad1	Trade returned	Возвращённый обмен
+31da197e3d	Take the offer back	Отозвать предложение
+542237d7d0	Germany	Германия
+bdb974b409	Greece	Греция
+eb8ecbbd23	You give 1 × {0}. The item is held until the player answers.	Ты отдаёшь 1 × {0}. Предмет хранится, пока игрок не ответит.
+61ae5e7b19	Given to	Выдано
+314e1e7bf3	Give	Выдать
+1850c0641c	Give to a member	Выдать участнику
+12f7ef0fa1	Two energy drinks and a coffee — then sleep.	Два энергетика и кофе — а потом сон.
+c168ea9832	TransCoin movement	Движение ТрансКоинов
+35c9b1f972	TransCoin movement for 30 days →	Движение ТрансКоинов за 30 дней →
+709136143c	You have already sent {0} presents today.	Сегодня ты уже отправил {0} подарков.
+64da1b5980	{0} of {1} TC left today.	Сегодня ещё {0} из {1} TC.
+3c5ceca590	You sold for {0} TransCoin today — that is the cap. Come back tomorrow.	Сегодня ты продал на {0} ТрансКоинов — это предел. Завтра снова.
+6277959a9d	Delivery to {0}	Доставка в {0}
+52b3b0f50e	Delivery to the matching country (a chance with each).	Доставка в соответствующую страну (шанс при каждой).
+438af47e09	A single entry of at least {0} TC or over {1} TC in a day from play (not purchases).	Одна запись от {0} TC или больше {1} TC за день из игры (без покупок).
+48a0e70b30	One stays in the album. You sell from the duplicates: {0}.	Один остаётся для альбома. Продаёшь из повторов: {0}.
+85b033a542	For a collection	Для коллекции
+32cd1e86cc	For the “Winter on the road” collection.	Для коллекции «Зима на дороге».
+f6ae93ddd3	For the “Christmas in the cab” collection.	Для коллекции «Рождество в кабине».
+ea241d338c	For the “Souvenirs of Europe” collection.	Для коллекции «Сувениры Европы».
+714f73af89	To check	На проверку
+7fbc9392d3	Hall of Fame	Зал славы
+ca60071a80	Hall of Fame: the first to complete each collection, the golden key holders and rankings for cases opened and the workshop.	Зал славы: первые, кто собрал каждую коллекцию, владельцы золотых ключей и рейтинги по открытым кейсам и мастерской.
+596144b0e6	Entries	Записи
+9dff4d99f5	Entries ({0})	Записи ({0})
+a96c6f4170	Insurance and a bit of fuel — and you are ahead in the queue.	Страховка и немного топлива — и ты впереди в очереди.
+31ada54ee6	Winter find	Зимняя находка
+f3cf307afb	Winter find after a delivery (1 Dec – 15 Mar)	Зимняя находка после доставки (1.12 – 15.03)
+8146dfc916	Golden key	Золотой ключ
+661955603a	Golden key (before the draw, while numbers are left)	Золотой ключ (до розыгрыша, пока есть номера)
+0dd382e6ed	Golden key: only 50 in the whole game, each with a number (“#7 of 50”). A 0.5% chance in a gold case while numbers are left. It stays with whoever finds it.	Золотой ключ: всего 50 на всю игру, каждый с номером («№7 из 50»). Шанс 0,5% в золотом кейсе, пока есть номера. Остаётся у нашедшего.
+d54a275c56	The golden keys ({0}/{1})	Золотые ключи ({0}/{1})
+2cb2615d86	The player is not in the company.	Игрок не состоит в компании.
+f396cae4aa	Choose a truck and press “Use”.	Выбери грузовик и нажми «Использовать».
+6acafe2fd4	Choose a different item for the trade.	Выбери другой предмет для обмена.
+e5f705ec90	Choose a driver and press “Use” — it shows on the portrait. You can take it off and it goes back to the inventory.	Выбери водителя и нажми «Использовать» — это видно на портрете. Можно снять, и предмет вернётся в инвентарь.
+958f514361	Choose a driver and press “Use”.	Выбери водителя и нажми «Использовать».
+1f75828c46	Lost cargo	Потерянный груз
+0f11f4b99a	Use ×{0}	Использовать ×{0}
+4786dd15cc	Used: {0}. {1}	Использовано: {0}. {1}
+4daf80dc84	Clear the bench	Очистить верстак
+005aba78df	You have {0} open offers — wait for an answer or withdraw one.	У тебя {0} открытых предложений — дождись ответа или отзови одно.
+8e860d5f87	You have: {0}	У тебя: {0}
+1b91915284	Player name	Имя игрока
+49cbc1bc8a	The inventory in Discord comes with update 1.2.1. 🎒	Инвентарь в Discord появится с обновлением 1.2.1. 🎒
+9410888826	The inventory in the main menu	Инвентарь в главном меню
+6af172296e	The inventory is now its own button in the main menu (on the phone — in the middle of the bottom bar), with a count of new items, presents and trade offers. It pulses while you have an unopened case.	Инвентарь теперь отдельная кнопка в главном меню (на телефоне — посередине нижней панели), со счётчиком новых предметов, подарков и предложений обмена. Пульсирует, пока у тебя есть неоткрытый кейс.
+4a519e5abd	The inventory gets its own place in the menu and items get a new life: sell, give, trade, craft and collect new collections.	Инвентарь получает своё место в меню, а предметы — новую жизнь: продавай, дари, меняй, собирай в мастерской и новые коллекции.
+c81314129b	What you want in return	Что хочешь взамен
+b411e36e62	Spain	Испания
+f41b4f5362	Italy	Италия
+bf95697f84	How to use:	Как использовать:
+1695ca2175	Item card: what it does, how to use it, where it is found with the chance, the collection progress, when and where the first one came from.	Карточка предмета: что делает, как использовать, где найти и с каким шансом, прогресс коллекции, когда и откуда пришёл первый.
+f56a0324bb	Treasure map	Карта сокровищ
+473df7dd81	Treasure map (a rare find or a recipe): shows a big city; a delivery there within 48 hours gives a silver case, and with a 25% chance a gold one.	Карта сокровищ (редкая находка или рецепт): показывает крупный город; доставка туда за 48 часов даёт серебряный кейс, а с шансом 25% — золотой.
+e574c8b311	Treasure map and chests	Карта сокровищ и сундуки
+157e1250ec	The map shows a city — a delivery there within 48 hours gives a silver or gold case. A weekly chest for the week's trips and a company chest from projects and battles, given out by the owner.	Карта показывает город — доставка туда за 48 часов даёт серебряный или золотой кейс. Еженедельный сундук за рейсы недели и сундук компании из проектов и битв, который раздаёт владелец.
+e8a97b0879	Coffee, lots of coffee… and something to keep it warm.	Кофе, много кофе… и что-то, чтобы он не остыл.
+77aa02a1aa	Case	Кейс
+2b47e1e974	Cases	Кейсы
+dce4c8fbcc	Cases and finds on the road.	Кейсы и находки в пути.
+4f68141aa6	Cosmetics come off the portrait and go back to the inventory. There are now four frames: gold, ice, “Europe” and Christmas.	Косметику можно снять с портрета, и она вернётся в инвентарь. Рамок теперь четыре: золотая, ледяная, «Европа» и рождественская.
+e747e423f3	Christmas in the cab	Рождество в кабине
+e39085b066	Christmas find	Рождественская находка
+f20754874e	Christmas find after a delivery (15 Dec – 6 Jan)	Рождественская находка после доставки (15.12 – 6.01)
+2861ea8de2	Christmas frame	Рождественская рамка
+990371f9c1	Christmas bauble	Ёлочный шар
+34acdc3083	Santa hat	Новогодняя шапка
+c358e3805d	Collection “{0}”	Коллекция «{0}»
+52d44307a7	Collection “{0}”: {1}/{2}	Коллекция «{0}»: {1}/{2}
+1ed963c45c	How many cases were opened, what dropped against the promised chances and where items come from.	Сколько кейсов открыто, что выпало по сравнению с обещанными шансами и откуда берутся предметы.
+42b8252105	How many at once	Сколько за раз
+64e48f076f	Combine	Объединить
+9538aab76e	Consumable	Расходник
+c3b6f177b2	Consumables	Расходники
+698fdc0133	Trips this week: {0}	Рейсов на этой неделе: {0}
+d0a86fe167	To the profile in the admin panel	К профилю в панели администратора
+666501b40e	Cab lights	Гирлянда для кабины
+c79e594120	Ice frame	Ледяная рамка
+01289189f0	An ice frame around the portrait.	Ледяная рамка вокруг портрета.
+e714a5b5bb	Magnet from Germany	Магнит из Германии
+8565204869	Magnet from Greece	Магнит из Греции
+d3cf2dcc8d	Magnet from Spain	Магнит из Испании
+fba7a4651a	Magnet from Italy	Магнит из Италии
+38dbc24ffc	Magnet from Romania	Магнит из Румынии
+339098c370	Magnet from France	Магнит из Франции
+438a007b88	Workshop masters	Мастера мастерской
+f594f97a8b	Gingerbread truck	Пряничный грузовичок
+d542014649	You can sell up to {0}.	Можно продать до {0}.
+87134a81bf	Collection reward	Награда за коллекцию
+a33694c377	Reward for the “{0}” collection	Награда за коллекцию «{0}»
+6bd503e574	Reward: a badge, {0} TransCoin	Награда: значок, {0} ТрансКоинов
+474d16b23d	Most cases opened	Больше всего открытых кейсов
+9b43c60551	Top earners (no purchases)	Больше всех получили (без покупок)
+f761c96870	Press “Use” — it works at once for the whole company.	Нажми «Использовать» — действует сразу на всю компанию.
+463f396bad	Press “Open” — the roulette shows what drops. The chances are below.	Нажми «Открыть» — рулетка покажет, что выпало. Шансы ниже.
+3b1c566f87	Find on the road	Находка в пути
+00951c9ebe	Find after a delivery	Находка после доставки
+f6e68dc22b	Finds after a delivery from 1 December to 15 March.	Находки после доставки с 1 декабря по 15 марта.
+d6752dc286	Finds after a delivery from 15 December to 6 January.	Находки после доставки с 15 декабря по 6 января.
+9ea2612f38	You can't give a present to yourself.	Нельзя дарить самому себе.
+7be35485ed	You can't trade with an account from the same network.	Нельзя меняться с профилем из той же сети.
+5471441d43	You can't trade with yourself.	Нельзя меняться с самим собой.
+afb02e8f99	Not used — keep it for the collection in the album. Duplicates can be sold or traded.	Не используется — храни его для коллекции в альбоме. Повторы можно продать или обменять.
+bb54be4a84	Something is coming together…	Что-то получается…
+8831a8e426	Nothing came of it — this mix is not a recipe.	Ничего не вышло — эта комбинация не рецепт.
+3149f3c4e0	Nothing suspicious for the period.	Ничего подозрительного за период.
+7bfc2182bd	New level	Новый уровень
+380896cdea	Numbered items	Нумерованные предметы
+9ffa1cbf37	Several items arriving one after another are now one notification with their count, not a separate notification for each.	Несколько предметов, пришедших подряд, теперь одно уведомление с их количеством, а не отдельное для каждого.
+9470c3ae6f	No city for the map.	Нет города для карты.
+afe2552112	No movement for the period.	Нет движения за период.
+453465474f	None for the period.	Нет за период.
+f848521865	No entries match these filters.	Нет записей по этим условиям.
+5b7c1eec3d	No player with that name.	Нет игрока с таким именем.
+ac503052b1	No items of this kind.	Нет предметов этого вида.
+f1db706cac	You don't have that many of this item.	У тебя нет столько этого предмета.
+d213064f37	Promised chance	Обещанный шанс
+ca94ae668d	Worn by the drivers	Надето на водителях
+21e83de101	Wrap and send	Упаковать и отправить
+cbdb670d22	Try it — it may be a recipe.	Попробуй — может, это рецепт.
+8fd7c61f4c	Stays with you for good — it can't be sold, given or traded.	Остаётся у тебя навсегда — нельзя продать, подарить или обменять.
+24e9a52af3	From {0}	От {0}
+0bad48a6e4	From the team	От команды
+2e0704a077	Open the inventory	Открыть инвентарь
+3f023a434b	Where TransCoin come from and go: every entry, by reason, the biggest gains and entries worth checking.	Откуда приходят и куда уходят ТрансКоины: каждая запись, по причинам, самые крупные поступления и записи, которые стоит проверить.
+b0985d45ed	Where items come from	Откуда берутся предметы
+5e91335433	Where it is found:	Где найти:
+83f0f3ba47	{0} more trips to {1}.	Ещё {0} рейсов до {1}.
+1ca224449d	{0} more trips this week for the chest.	Ещё {0} рейсов на этой неделе до сундука.
+8d69e8e1ae	Nobody has found a golden key yet. The first will be #1.	Никто ещё не нашёл золотой ключ. Первый будет №1.
+fbe883d1a2	Nobody yet — be the first.	Пока никого — будь первым.
+cff9140f4e	None yet.	Пока нет.
+2545a3bbf1	Dropped	Выпало
+2dde29c7ce	You keep the last one for the album — only duplicates are sold.	Последний остаётся для альбома — продаются только повторы.
+d0ff7c362c	By count	По количеству
+d75452df8c	By name	По названию
+d8c0308938	By reason	По причине
+145e2004d7	By rarity	По редкости
+f7423e8b63	Less	Меньше
+93a01360f6	Battle won	Победа в битве
+cee229d034	Duplicate items sell for TransCoin (2–30 TC by rarity, up to 50 TC a day). A present for a friend arrives wrapped, with a note. A trade is item for item with another player from level 5.	Повторы продаются за ТрансКоины (2–30 TC по редкости, до 50 TC в день). Подарок другу приходит упакованным, с запиской. Обмен — предмет на предмет с другим игроком от 5 уровня.
+696084c44c	Under 50 opened cases the real share can still differ from the chance.	При менее чем 50 открытых кейсах реальная доля ещё может отличаться от шанса.
+cb7caecf25	A present for a friend (from level 3, up to 5 a day): the item leaves at once, the friend unwraps it and reads the note.	Подарок другу (с 3 уровня, до 5 в день): предмет уходит сразу, друг распаковывает его и читает записку.
+9a2e51607b	A present from {0}	Подарок от {0}
+7de9e0c209	Present not found.	Подарок не найден.
+e3dcd2a508	Presents and trades	Подарки и обмены
+78f07f5e55	Presents go to friends. Add friends from your profile.	Подарки отправляются друзьям. Добавь друзей в профиле.
+edb3bf41b0	Presents can be sent from level {0}.	Подарки можно отправлять с {0} уровня.
+8def75690c	Presents go only to friends.	Подарки отправляются только друзьям.
+38e819eb90	Sort	Сортировка
+25c29d83aa	The last 200 entries are shown. Narrow the filter to see older ones.	Показаны последние 200 записей. Сузь фильтр, чтобы увидеть более старые.
+f34d4a2425	Shows a city: a delivery there within 48 hours gives a silver or gold case.	Показывает город: доставка туда за 48 часов даёт серебряный или золотой кейс.
+25e1774337	Invite	Приглашение
+6eb9a1d2d1	You got {0} for {1}.	Ты получил {0} за {1}.
+c0d5f0b3ba	At least (TC)	Не меньше (TC)
+23400f6731	Jobs to {0}	Заказы в {0}
+08efcaf71f	It's empty. It fills from company projects and company battles.	Пусто. Пополняется из проектов компании и битв компаний.
+a2d6ee5681	It's empty. Cases drop from the daily reward, levels and finds on the road.	Пусто. Кейсы выпадают из ежедневной награды, за уровни и как находки в пути.
+53d6954a82	Empty slot	Пустое место
+8b126e1f30	Challenge	Испытание
+74acf9bb66	The offer is no longer open.	Предложение уже не открыто.
+4fbf645535	Offer a trade	Предложить обмен
+54adc3f269	Items and cases	Предметы и кейсы
+db711c54dc	Your items and cases, presents and trades, the weekly chest (linked account)	Твои предметы и кейсы, подарки и обмены, еженедельный сундук (привязанный аккаунт)
+abb943331f	Items sold	Проданные предметы
+7fd0ab2335	Sold: {0} ×{1}	Продано: {0} ×{1}
+7ed0c7fbd2	Sold: {0} — +{1} TransCoin.	Продано: {0} — +{1} ТрансКоинов.
+18bc3f7006	Sell duplicates for TransCoin: common 2, uncommon 4, rare 8, epic 15, legendary 30 TC; up to 50 TC a day. Of collectibles only duplicates sell — one stays for the album. Cases are not sold.	Продажа повторов за ТрансКоины: обычный 2, необычный 4, редкий 8, эпический 15, легендарный 30 TC; до 50 TC в день. Из коллекционных продаются только повторы — один остаётся для альбома. Кейсы не продаются.
+398e19a947	Sell · {0} TC	Продать · {0} TC
+a0464f2b50	Sell for {0} TC	Продать за {0} TC
+ca87f9afde	Sell, give, trade	Продай, подари, обменяй
+7dda3bea33	Project: {0} × {1}. Battle won: {2}. Battle drawn: {3}.	Проект: {0} × {1}. Победа в битве: {2}. Ничья: {3}.
+d39ecef383	Skip ⏭	Пропустить ⏭
+f6999e4c9d	Profile: the player card shows up to 3 badges you choose yourself in the profile showcase (until now all badges pushed the photo aside and it got squashed). The rest open with “+N badges”.	Профиль: на карточке игрока показываются до 3 значков, которые ты сам выбираешь на витрине профиля (раньше все значки сдвигали фото, и оно сжималось). Остальные открываются кнопкой «+N значков».
+e3e94c805b	The first to complete each collection, the golden key holders and the most persistent.	Первые, кто собрал каждую коллекцию, владельцы золотых ключей и самые упорные.
+a513b64210	First found:	Впервые найден:
+36391c8d25	Newest first	Сначала новые
+b2d3c6946c	Workshop	Мастерская
+31b4ddecb9	Workshop (recipe)	Мастерская (рецепт)
+aa88d03ab3	Workshop and new collections	Мастерская и новые коллекции
+eeab752472	Workshop, album and Hall of Fame	Мастерская, альбом и Зал славы
+d58341bcdc	Workshop: three identical items → one random item of the next rarity (three bronze cases → silver, three silver → gold). Six secret recipes — e.g. 2 coffees and a thermos make a cab coffee machine. Found ones are kept in the “Mechanic's notebook”, the rest have a hint.	Мастерская: три одинаковых предмета → один случайный предмет следующей редкости (три бронзовых кейса → серебряный, три серебряных → золотой). Шесть секретных рецептов — например, 2 кофе и термос дают кофемашину для кабины. Открытые хранятся в «Тетради механика», у остальных есть подсказка.
+42275e3471	Battle drawn	Ничья в битве
+010cd1cbe9	Difference	Разница
+d4b8de2abc	Trade	Обменять
+89569b1b6a	Trades are for players from level {0}.	Обмены доступны игрокам с {0} уровня.
+73e3f985b7	Trade	Обмен
+b1ec1f3119	Item-for-item trades with another player (both level 5+, not from the same network, up to 5 open offers). The offered item is held until the other player accepts or declines; you can also take it back.	Обмен предмет на предмет с другим игроком (оба с 5 уровня, не из одной сети, до 5 открытых предложений). Предложенный предмет хранится, пока другой не примет или не откажет; можно и отозвать.
+ea411922f4	Unwrap	Распаковать
+9f51c5e055	“Europe” frame	Рамка «Европа»
+91a814a161	The backpack	Рюкзак
+1d21863bf6	Real share	Реальная доля
+f63b02c9e0	The case roulette has a “Skip” button.	У рулетки кейсов есть кнопка «Пропустить».
+5678ac8253	Only 50 in the whole game — each with a number.	Всего 50 на всю игру — каждый с номером.
+f42816666a	Only {0} in the whole game — a {1}% chance in a gold case while numbers are left.	Всего {0} на всю игру — шанс {1}% в золотом кейсе, пока есть номера.
+1c39bea4b4	Only the owner gives out from the company chest.	Из сундука компании раздаёт только владелец.
+9fb70eb417	The chest is once a week. Take {0} now or keep driving for {1}?	Сундук — раз в неделю. Забрать {0} сейчас или ездить дальше до {1}?
+cf20de1f25	This week's chest has been taken.	Сундук этой недели уже получен.
+a541883839	The chest doesn't have this item.	В сундуке нет этого предмета.
+e3f62f41a7	Chests	Сундуки
+18f85af9dd	Taken off a portrait	Снято с портрета
+95ef92c7d9	Cosmetics taken off go back to the inventory.	Снятая косметика возвращается в инвентарь.
+26f6e0e254	Take off: {0}	Снять: {0}
+d1503e336c	Its own purple-and-gold button with a backpack — it counts new items and pulses when a case is waiting. Filters, sorting, a “NEW” mark and a detailed card for each item: what it does, how to use it, where it drops and with what chance, the collection and when and where you found it.	Своя фиолетово-золотая кнопка с рюкзаком — считает новые предметы и пульсирует, когда ждёт кейс. Фильтры, сортировка, метка «НОВОЕ» и подробная карточка каждого предмета: что делает, как использовать, откуда выпадает и с каким шансом, коллекция и когда и где ты его нашёл.
+bb958bfd41	Build rarer items from duplicates and discover the mechanic's recipes.	Собирай более редкие предметы из повторов и открывай рецепты механика.
+1b91ab3cfc	Weekly chest	Еженедельный сундук
+01564ed164	Weekly chest: 5 trips in a week — a bronze case, 15 — silver, 30 — gold. Taken once a week.	Еженедельный сундук: 5 рейсов за неделю — бронзовый кейс, 15 — серебряный, 30 — золотой. Забирается раз в неделю.
+1727293ad9	Are you sure? Press again	Уверен? Нажми ещё раз
+84c1d7691b	A blue frame with stars around the portrait.	Синяя рамка со звёздами вокруг портрета.
+974cd0dc53	Put 2–4 items in the workshop.	Положи 2–4 предмета в мастерскую.
+4f689b861e	The owner gives them out.	Их раздаёт владелец.
+64d9292ee4	The owner gave you an item. See “Inventory”.	Владелец выдал тебе предмет. Смотри «Инвентарь».
+85a2f91e59	An old atlas and fuel for the road.	Старый атлас и топливо в дорогу.
+8733f2b055	Old records and coffee — lessons for the driver.	Старые записи и кофе — уроки для водителя.
+232c356b5c	Ice scraper	Скребок для льда
+cedf664ff0	Souvenir from a trip	Сувенир из рейса
+a0c87d9499	Souvenirs of Europe	Сувениры Европы
+14d3bfa00c	Completed the winter item collection.	Собрал зимнюю коллекцию предметов.
+ace94dd6e8	Completed the Christmas item collection.	Собрал рождественскую коллекцию предметов.
+2d76516e31	Collected the magnets from the six countries.	Собрал магниты из шести стран.
+3907ea629d	The treasure is in {0}. Deliver a load there within {1} hours.	Сокровище в {0}. Доставь туда груз в течение {1} часов.
+e9fb2b8fba	The treasure is in {0}. Deliver a load there by {1}.	Сокровище в {0}. Доставь туда груз до {1}.
+6bccc5ca57	Secret check	Тайная проверка
+b2e44357f4	Your items — tap to put on the bench	Твои предметы — нажми, чтобы положить на верстак
+665da80b7c	Bench	Верстак
+55024c4077	These items can't be traded.	Эти предметы нельзя обменять.
+6f41eaf31f	Mechanic's notebook ({0}/{1})	Тетрадь механика ({0}/{1})
+e0494f6382	You decide who gets what.	Ты решаешь, кто что получит.
+36bc6ad051	This is a {0} item — it is used once.	Это {0} предмет — используется один раз.
+52fac78934	This item can't be given.	Этот предмет нельзя подарить.
+0ae17ff0f9	This item can't be sold.	Этот предмет нельзя продать.
+74611e6fc5	Three identical items become one rarer item, and secret recipes go into the “Mechanic's notebook”. New collections in the album — “Winter on the road”, “Souvenirs of Europe” and “Christmas in the cab” — with new portrait frames. Only 50 numbered golden keys in the whole game.	Три одинаковых предмета становятся одним более редким, а секретные рецепты записываются в «Тетрадь механика». Новые коллекции в альбоме — «Зима на дороге», «Сувениры Европы» и «Рождество в кабине» — с новыми рамками для портрета. Всего 50 нумерованных золотых ключей на всю игру.
+3d69c52304	Three identical → one rarer (bronze → silver → gold case). Other mixes only work if they are a recipe.	Три одинаковых → один более редкий (бронзовый → серебряный → золотой кейс). Другие смеси работают, только если это рецепт.
+554b30df3b	Antifreeze can	Канистра антифриза
+59cb41158e	Filters by kind (consumables, cosmetics, collections, cases), sorting (by rarity, newest first, by count, by name) and a “NEW” mark on items that arrived since your last visit.	Фильтры по типу (расходники, косметика, коллекции, кейсы), сортировка (по редкости, сначала новые, по количеству, по названию) и метка «НОВОЕ» на предметах, пришедших после твоего последнего визита.
+8e45bb11b6	Company chest	Сундук компании
+e90ec96eac	Company chest: a finished company project — 2 silver cases, a company battle won — gold, a draw — silver. The owner decides which member gets what.	Сундук компании: завершённый проект компании — 2 серебряных кейса, победа в битве компаний — золотой, ничья — серебряный. Владелец решает, кто из участников что получит.
+7a4a97adbc	France	Франция
+7e48c0462b	A wrapped present is waiting for you in “Inventory”.	В «Инвентаре» тебя ждёт упакованный подарок.
+b8bdc037dd	Waiting for you	Тебя ждут
+338b55be6d	Waiting for {0}: {1} for {2}	Ждёшь {0}: {1} за {2}
+692c57beb4	A red-and-green frame around the portrait.	Красно-зелёная рамка вокруг портрета.
+032c489531	A cap, glasses and a bit of gold.	Кепка, очки и немного золота.
+7f7bb49cef	You'll get a random item: {0}	Получишь случайный предмет: {0}
+16c316857e	You'll get: {0}	Получишь: {0}
+f3fbfa42ce	taken: {0}	получен: {0}
+f2c827c3a1	ready: {0} ({1} trips)	готов: {0} ({1} рейсов)
+9e91bce49b	and {0} more — see everything in the game · game data	и ещё {0} — смотри всё в игре · игровые данные
+ce4359b6e0	game data	игровые данные
+d081e14979	inventory	инвентарь
+c12c333911	total +{0}, biggest entry +{1}	всего +{0}, самая крупная запись +{1}
+c6e94e5f48	username	имя пользователя
+9ed48d1bc3	— all —	— все —
+449182dd54	— what you want in return —	— что хочешь взамен —
+af84fc3688	— to whom —	— кому —
+7b4f89f40d	“{0}” — +{1} TransCoin and a badge.	«{0}» — +{1} ТрансКоинов и значок.
+f8be658e1d	“{0}” — +{1} TransCoin, a badge and {2}.	«{0}» — +{1} ТрансКоинов, значок и {2}.
+a73e967757	“Winter on the road” (finds after a delivery from 1 December to 15 March), “Souvenirs of Europe” (a magnet on a delivery to Germany, France, Italy, Spain, Greece or Romania) and “Christmas in the cab” (15 December – 6 January). A full collection gives a badge, TransCoin and a new portrait frame.	«Зима на дороге» (находки после доставки с 1 декабря по 15 марта), «Сувениры Европы» (магнит при доставке в Германию, Францию, Италию, Испанию, Грецию или Румынию) и «Рождество в кабине» (15 декабря – 6 января). Полная коллекция даёт значок, ТрансКоины и новую рамку для портрета.
+52d28f12c0	“Use ×N” for vouchers, TransCoin pouches, the handbook and the insurance. Epic and legendary items need a second tap.	«Использовать ×N» для ваучеров, кошельков с ТрансКоинами, справочника и страховки. Эпические и легендарные предметы требуют второго нажатия.
+fd6082dda4	✓ Received	✓ Получена
+47976dd3c6	🎁 {0} presents · 🔁 {1} trades	🎁 {0} подарков · 🔁 {1} обменов
+eaa05e25c9	🎁 New items in the inventory: {0}	🎁 Новые предметы в инвентаре: {0}
+3f582e7294	🎁 A present from {0}	🎁 Подарок от {0}
+63a97614c4	🎁 The present is wrapped and sent.	🎁 Подарок упакован и отправлен.
+f1817f5dc2	🎒 {0}'s inventory	🎒 Инвентарь {0}
+87b4fefc24	📓 A new recipe in the notebook!	📓 Новый рецепт в тетради!
+a995940a0b	🔁 {0} offers a trade	🔁 {0} предлагает обмен
+5fddb01fdd	🔁 The offer has been sent.	🔁 Предложение отправлено.
+3a6a06be21	🔁 The trade was declined	🔁 Обмен отклонён
+078f0497fa	🔁 The trade was accepted	🔁 Обмен принят
+b509168726	🗺 The treasure has been found!	🗺 Сокровище найдено!
+ef60777ab1	🧰 From the company chest: {0}	🧰 Из сундука компании: {0}
+e8a1b0514d	🧳 Find after the trip: {0}	🧳 Находка после рейса: {0}

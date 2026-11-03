@@ -10,6 +10,7 @@ import { companyXpForLevel, COMPANY_UNLOCKS, memberBonuses, memberCapacity, type
 import { DepositForm } from '@/components/company/forms';
 import { CompanyLicences } from '@/components/company/CompanyLicences';
 import { companyLicenceSet } from '@/server/game/licences';
+import { CompanyChest } from '@/components/game/CompanyChest';
 import { companyHub, myApplications, treasuryHistory } from '@/server/game/membership';
 import { TREASURY_LABELS, type TreasuryCategory } from '@/server/game/finance';
 import { FoundCompanyForm } from '@/components/game/FoundCompanyForm';
@@ -45,6 +46,7 @@ export default async function CompanyPage() {
       <>
         <TutorialVisit step="company_goal" pending={visitPending} />
         <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month, medals: features.season_medals ? await organizationMedals(db, hub.company.id) : null, companyAchievements: features.company_achievements ? await companyAchievementsOf(db, hub.company.id) : null }} />
+        {features.item_chests && <div className="mt-4"><CompanyChest db={db} organizationId={hub.company.id} owner={hub.rank.isOwner} /></div>}
       </>
     );
   }

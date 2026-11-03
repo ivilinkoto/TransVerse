@@ -1,5 +1,6 @@
 import { and, desc, eq, lte } from 'drizzle-orm';
 import { periodWindow } from '@/lib/game/missions';
+import { chestForProject } from './item-trade';
 import { PROJECT_RULES, projectOffers, projectReward, projectTarget, projectTemplate } from '@/lib/game/projects';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companyMembers, companyProjects, organizations } from '@/server/db/schema';
@@ -69,6 +70,8 @@ export async function recordProjectDelivery(tx: Tx, organizationId: string, user
     if (!members.has(helper) || tons < p.targetTons * PROJECT_RULES.helperShare) continue;
     await postCoins(tx, helper, { amount: PROJECT_RULES.helperCoins, reason: 'project_reward', description: tr('Фирмен проект: {0}', p.title), idempotencyKey: `project:${p.id}:coins:${helper}` });
   }
+  // 1.2.1: cases into the company chest, for the owner to give out.
+  await chestForProject(tx, organizationId, p.id, now);
   await notifyMembers(tx, organizationId, null, () => tr('Проектът е завършен: {0}', p.title), () => tr('+{0} лв. в касата, +{1} опит за компанията и {2} TC за всеки, който помогна.', (p.rewardCents / 100).toLocaleString(intlLocale()), p.rewardXp, PROJECT_RULES.helperCoins), '/game/company/missions');
 }
 

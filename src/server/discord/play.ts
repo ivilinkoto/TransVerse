@@ -13,10 +13,12 @@ import { runningEvents } from '@/server/game/events';
 import { membershipOf } from '@/server/game/membership';
 import { fleetView } from '@/server/game/queries';
 import { act, answer, opt, released, stop, type Answer, type Ctx } from './context';
-import { ITEMS, type ItemId } from '@/lib/game/items';
+import { ITEMS, RARITY_ORDER, type ItemId } from '@/lib/game/items';
+import { inventoryOf } from '@/server/game/inventory';
+import { pendingExchanges, weeklyChest } from '@/server/game/item-trade';
 import type { PromoReward } from '@/lib/game/promo';
 import { appUrl } from './config';
-import { bar, button, linkButton, reply, rows, select, STYLE, update, type MessageData } from './ui';
+import { bar, button, linkButton, reply, rows, rows as rowsOf, select, STYLE, update, type MessageData } from './ui';
 import { t, tx } from '@/i18n/t';
 
 /**
@@ -162,3 +164,30 @@ export async function codeCommand(ctx: Ctx): Promise<Answer> {
   return answer(reply({ content: r.kind === 'invite' ? t('🤝 Записан си като поканен от **{0}**. Получаваш: {1}', r.inviter ?? '', parts) : t('🎟 Кодът **{0}** е твой: {1}', r.code, parts) }, true));
 }
 
+
+/** 1.2.1 /инвентар: the linked player's items (rarest first), presents and offers waiting, the weekly chest. */
+export async function inventoryView(ctx: Ctx): Promise<Answer> {
+  const me = released(ctx);
+  if (!(await featureFor(ctx.db, me.id, 'inventory_menu', ctx.now))) stop(t('Инвентарът в Discord тръгва с обновление 1.2.1. 🎒'));
+  const rows = (await inventoryOf(ctx.db, me.id)).filter((r): r is { itemId: ItemId; qty: number } => r.itemId in ITEMS);
+  rows.sort((a, b) => RARITY_ORDER.indexOf(ITEMS[b.itemId].rarity) - RARITY_ORDER.indexOf(ITEMS[a.itemId].rarity));
+  const cases = rows.filter((r) => ITEMS[r.itemId].kind === 'case');
+  const [ex, week] = await Promise.all([pendingExchanges(ctx.db, me.id), (await featureFor(ctx.db, me.id, 'item_chests', ctx.now)) ? weeklyChest(ctx.db, me.id, ctx.now) : null]);
+  const list = rows.slice(0, 15).map((r) => `${r.qty > 1 ? `**×${r.qty}** ` : ''}${tx(ITEMS[r.itemId].name)}`).join('\n');
+  const fields = [
+    { name: t('Кейсове'), value: cases.length ? cases.map((c) => `${tx(ITEMS[c.itemId].name)} ×${c.qty}`).join(' · ') : t('няма'), inline: true },
+    { name: t('Чакат те'), value: t('🎁 {0} подаръка · 🔁 {1} размени', ex.gifts.length, ex.incoming.length), inline: true },
+  ];
+  if (week) fields.push({ name: t('Седмичен сандък'), value: week.claimed ? t('взет: {0}', tx(ITEMS[week.claimed].name)) : week.tier ? t('готов: {0} ({1} курса)', tx(ITEMS[week.tier.item].name), week.trips) : t('{0} курса — още {1}', week.trips, (week.next?.trips ?? 0) - week.trips), inline: false });
+  return answer(reply({
+    embeds: [{
+      title: t('🎒 Инвентарът на {0}', me.username),
+      url: `${appUrl()}/game/inventory`,
+      color: 0x8b5cf6,
+      description: list || t('Празно е. Кейсове падат от дневната награда, нивата и находки по пътя.'),
+      fields,
+      footer: { text: rows.length > 15 ? t('и още {0} — виж всичко в играта · игрови данни', rows.length - 15) : t('игрови данни') },
+    }],
+    components: rowsOf(linkButton(t('Отвори инвентара'), `${appUrl()}/game/inventory`, '🎒')),
+  }, true));
+}

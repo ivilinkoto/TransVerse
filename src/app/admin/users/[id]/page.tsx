@@ -148,6 +148,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="label mb-1.5">{t('ТрансКоин')}</div>
                 <CoinsForm userId={user.id} balance={user.coins} />
+                <a href={`/admin/coins?user=${encodeURIComponent(user.username)}&days=30`} className="mt-2 inline-block text-xs text-cyan-glow hover:underline">{t('Движение на ТрансКоин за 30 дни →')}</a>
               </div>
             )}
             {isAdmin(actor.role) && (

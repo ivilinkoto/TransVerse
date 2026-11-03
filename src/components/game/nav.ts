@@ -1,5 +1,5 @@
 import type { FeatureId } from '@/lib/game/features';
-import { BookOpen, Building2, ClipboardList, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { Backpack, BookOpen, Building2, ClipboardList, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
@@ -19,7 +19,7 @@ export interface NavTab {
 }
 
 export interface NavSection {
-  key: 'home' | 'map' | 'jobs' | 'fleet' | 'company' | 'compete';
+  key: 'home' | 'map' | 'jobs' | 'fleet' | 'company' | 'compete' | 'inventory';
   href: string;
   label: string;
   icon: LucideIcon;
@@ -59,6 +59,20 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/underground', label: 'Сенки', feature: 'smuggling', minLevel: 10 },
     ],
   },
+  // 1.2.1: the inventory has its own place in the main menu (drawn apart, in purple and gold).
+  // Listed before „Автопарк“ so its pages belong here; menus draw it with InventoryNavItem.
+  {
+    key: 'inventory',
+    href: '/game/inventory',
+    label: 'Инвентар',
+    icon: Backpack,
+    tabs: [
+      { href: '/game/inventory', label: 'Инвентар', core: true },
+      { href: '/game/inventory/workshop', label: 'Работилница', feature: 'workshop', core: true },
+      { href: '/game/inventory/album', label: 'Албум с предмети', feature: 'item_album', core: true },
+      { href: '/game/inventory/hall', label: 'Зала на славата', feature: 'item_album', core: true },
+    ],
+  },
   {
     key: 'fleet',
     href: '/game/fleet',
@@ -75,7 +89,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire', group: 'Камиони', minLevel: 6 },
       { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction', group: 'Камиони', minLevel: 6 },
       { href: '/game/staff', label: 'Шофьори', group: 'Хора', core: true },
-      { href: '/game/inventory', label: 'Инвентар', feature: 'inventory', group: 'Хора', core: true },
+      { href: '/game/inventory', label: 'Инвентар', feature: 'inventory', group: 'Хора', core: true, hiddenWith: 'inventory_menu' },
       { href: '/game/logistics', label: 'Депа', group: 'Сервиз и депа', core: true },
       { href: '/game/licences', label: 'Лицензи', group: 'Хора', minLevel: 2 },
     ],
@@ -198,7 +212,10 @@ export function activeTab(section: NavSection, pathname: string): NavTab | undef
   return section.tabs?.filter((t) => within(pathname, t.href)).sort((a, b) => b.href.length - a.href.length)[0];
 }
 
-/** The section a path belongs to, if any. */
-export function sectionFor(pathname: string): NavSection | undefined {
-  return SECTIONS.find((s) => (s.tabs ? !!activeTab(s, pathname) : within(pathname, s.href)));
+/** The section a path belongs to, if any. Without the 1.2.1 menu the inventory stays under „Автопарк“. */
+export function sectionFor(pathname: string, has: (feature: FeatureId) => boolean = () => true): NavSection | undefined {
+  return SECTIONS.filter((s) => s.key !== 'inventory' || has('inventory_menu')).find((s) => (s.tabs ? !!activeTab(s, pathname) : within(pathname, s.href)));
 }
+
+/** Sections the menus list in the usual way (the inventory is drawn on its own). */
+export const LISTED_SECTIONS = SECTIONS.filter((s) => s.key !== 'inventory');

@@ -162,7 +162,7 @@ export const users = pgTable(
     /** v2.0 legacy stars (New Game+), 0…5. */
     legacyStars: integer('legacy_stars').notNull().default(0),
     /** asPlayer (1.1.2): a staff member looks at the game as a player (no unreleased features, no staff badges). */
-    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean; dailySummary?: boolean }>().notNull().default({}),
+    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean; dailySummary?: boolean; inventorySeenAt?: string }>().notNull().default({}),
     /** 1.1.2: when the player agreed to the terms and the privacy policy (null for accounts made before). */
     termsAcceptedAt: ts('terms_accepted_at'),
     /** 1.1.2: the truck the player shows on their player card (one of their own). */
@@ -393,7 +393,7 @@ export const drivers = pgTable(
     vacationUntil: ts('vacation_until'),
     lastVacationAt: ts('last_vacation_at'),
     /** 1.2: what the portrait wears (items from the inventory). */
-    look: jsonb('look').$type<{ cap?: boolean; glasses?: boolean; frame?: 'gold' }>().notNull().default({}),
+    look: jsonb('look').$type<{ cap?: boolean; glasses?: boolean; frame?: 'gold' | 'frost' | 'euro' | 'xmas' }>().notNull().default({}),
     hiredAt: createdAt(),
   },
   (t) => [index('drivers_company_idx').on(t.companyId), uniqueIndex('drivers_vehicle_idx').on(t.vehicleId), uniqueIndex('drivers_co_vehicle_idx').on(t.coVehicleId)],
@@ -3480,8 +3480,63 @@ export const itemEffects = pgTable('item_effects', {
   effect: text('effect').notNull(),
   until: ts('until'),
   uses: integer('uses'),
+  /** 1.2.1: extra state, e.g. the treasure map's city. */
+  data: jsonb('data').$type<{ cityId?: number; cityName?: string }>(),
   createdAt: createdAt(),
 }, (t) => [index('item_effects_user_idx').on(t.userId, t.effect)]);
+
+/** 1.2.1: an item wrapped as a present for a friend (taken from the sender at once, opened by the friend). */
+export const itemGifts = pgTable('item_gifts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemId: text('item_id').notNull(),
+  note: text('note'),
+  createdAt: createdAt(),
+  openedAt: ts('opened_at'),
+}, (t) => [index('item_gifts_to_idx').on(t.toUserId, t.openedAt)]);
+
+/** 1.2.1: one item for another between two players; the offered item is held until the answer. */
+export const itemTrades = pgTable('item_trades', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  giveItem: text('give_item').notNull(),
+  wantItem: text('want_item').notNull(),
+  note: text('note'),
+  /** open | accepted | declined | cancelled */
+  status: text('status').notNull().default('open'),
+  createdAt: createdAt(),
+  respondedAt: ts('responded_at'),
+}, (t) => [index('item_trades_to_idx').on(t.toUserId, t.status), index('item_trades_from_idx').on(t.fromUserId, t.status)]);
+
+/** 1.2.1: numbered legendary items (Златен ключ #7 от 50) — a number is given once, for good. */
+export const itemSerials = pgTable('item_serials', {
+  itemId: text('item_id').notNull(),
+  serial: integer('serial').notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  foundAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.itemId, t.serial] })]);
+
+/** 1.2.1: the company chest — cases won by the company, given out by the owner. */
+export const companyChest = pgTable('company_chest', {
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  itemId: text('item_id').notNull(),
+  qty: integer('qty').notNull().default(0),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.organizationId, t.itemId] })]);
+
+/** 1.2.1: every case into and out of a company chest (a unique key per cause). */
+export const companyChestLog = pgTable('company_chest_log', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  itemId: text('item_id').notNull(),
+  delta: integer('delta').notNull(),
+  reason: text('reason').notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  idempotencyKey: text('idempotency_key').notNull(),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('company_chest_log_key_idx').on(t.idempotencyKey), index('company_chest_log_org_idx').on(t.organizationId, t.createdAt)]);
 
 /**
  * 1.1.4.3: promo codes. A public code (one code for everyone, with limits), a

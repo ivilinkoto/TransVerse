@@ -1,11 +1,12 @@
 import { faceFor } from '@/lib/game/portraits';
+import { FRAME_COLORS, type DriverLook } from '@/lib/game/items';
 
 /**
  * 1.2: a driver's drawn portrait (viewBox 0 0 100 100), made of parts chosen
  * from the id and name. It is the same face every time (no moods). Cap,
  * glasses and a gold frame come from the inventory.
  */
-export function DriverPortrait({ id, name, look = {}, fresh, className = 'h-12 w-12' }: { id: string; name: string; fresh?: 'cap' | 'glasses' | 'frame'; look?: { cap?: boolean; glasses?: boolean; frame?: 'gold' }; className?: string }) {
+export function DriverPortrait({ id, name, look = {}, fresh, className = 'h-12 w-12' }: { id: string; name: string; fresh?: 'cap' | 'glasses' | 'frame'; look?: DriverLook; className?: string }) {
   const f = faceFor(id, name);
   const shade = 'rgba(0,0,0,0.12)';
   const eyeY = 50;
@@ -66,7 +67,12 @@ export function DriverPortrait({ id, name, look = {}, fresh, className = 'h-12 w
           </g>
         )}
       </g>
-      {look.frame === 'gold' && <rect className={fresh === 'frame' ? 'fx-pop' : undefined} style={{ transformOrigin: '50% 50%', transformBox: 'fill-box' }} x="2" y="2" width="96" height="96" rx="17" fill="none" stroke="#facc15" strokeWidth="4" />}
+      {look.frame && FRAME_COLORS[look.frame] && (
+        <g className={fresh === 'frame' ? 'fx-pop' : undefined} style={{ transformOrigin: '50% 50%', transformBox: 'fill-box' }}>
+          <rect x="2" y="2" width="96" height="96" rx="17" fill="none" stroke={FRAME_COLORS[look.frame][0]} strokeWidth="4" />
+          {FRAME_COLORS[look.frame][1] && <rect x="2" y="2" width="96" height="96" rx="17" fill="none" stroke={FRAME_COLORS[look.frame][1]} strokeWidth="4" strokeDasharray="6 10" />}
+        </g>
+      )}
     </svg>
   );
 }

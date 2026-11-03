@@ -42,6 +42,7 @@ import { EMAIL_REWARD_COINS } from '@/server/auth/email-reward';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
 import { claimableCount } from '@/server/game/missions';
+import { inventoryBadge } from '@/server/game/item-trade';
 import { isVip } from '@/lib/game/vip';
 import { tutorialState } from '@/server/game/tutorial';
 import { isSpring } from '@/lib/game/spring';
@@ -74,6 +75,9 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     // 1.1.3: the team's message for everyone.
     activeBroadcast(db, now),
   ]);
+  // 1.2.1: the inventory button's count (new items, presents, trade offers) and its pulse (a case waits).
+  const inv = features.inventory_menu ? await inventoryBadge(db, user.id, user.uiPrefs?.inventorySeenAt, now) : { fresh: 0, caseReady: false };
+  const navBadges = { missions, eventLive: !!live, inventoryNew: inv.fresh, caseReady: inv.caseReady };
   // v1.9: pages the player's level just unlocked in the menu ("Ново за теб").
   const unlockable = unlockTabs().filter((t) => !t.feature || features[t.feature]).map((t) => ({ ...t, minLevel: t.minLevel! }));
   // 1.1.4.1 „Докато те нямаше“ — not on top of the release notes or the tutorial.
@@ -88,7 +92,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     <FeaturesProvider value={features}>
       <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll, staff: testing }}>
       <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
-        <Sidebar badges={{ missions, eventLive: !!live }} version={currentVersion(now, testing)} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
+        <Sidebar badges={navBadges} version={currentVersion(now, testing)} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
           <InstallAppBanner />
@@ -114,7 +118,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
             {children}
           </main>
         </div>
-        <MobileNav badges={{ missions, eventLive: !!live }} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
+        <MobileNav badges={navBadges} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <LiveUpdates />
         {features.game_fx && <MotionInit />}
         {features.game_fx && <FxHost />}

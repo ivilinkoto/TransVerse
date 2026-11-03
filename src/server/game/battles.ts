@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, inArray, lte, or, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
+import { chestForBattle } from './item-trade';
 import { battleOutcome, BATTLE_RULES, pairCompanies } from '@/lib/game/battles';
 import { periodWindow } from '@/lib/game/missions';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -66,8 +67,11 @@ export async function settleBattles(db: Database, now = new Date()) {
       if (outcome === 'draw') {
         await pay(b.aId, 0.5);
         await pay(b.bId, 0.5);
+        await chestForBattle(tx, b.aId, b.id, false, now);
+        await chestForBattle(tx, b.bId, b.id, false, now);
       } else if (winnerId) {
         await pay(winnerId, 1);
+        await chestForBattle(tx, winnerId, b.id, true, now);
         await addFeed(tx, { organizationId: winnerId, kind: 'battle', text: t('компанията спечели битката срещу „{0}“ ({1} : {2} т)', names.get(winnerId === b.aId ? b.bId : b.aId), Math.round(Math.max(b.aTons, b.bTons)), Math.round(Math.min(b.aTons, b.bTons))) }, now);
         await addChronicle(tx, winnerId, 'battle', `Победа в битката срещу „${names.get(winnerId === b.aId ? b.bId : b.aId)}“ (${Math.round(Math.max(b.aTons, b.bTons))} : ${Math.round(Math.min(b.aTons, b.bTons))} т)`, now);
       }
