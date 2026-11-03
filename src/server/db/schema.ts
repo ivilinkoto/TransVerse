@@ -3572,3 +3572,19 @@ export const promoRedemptions = pgTable('promo_redemptions', {
   createdAt: createdAt(),
 }, (t) => [uniqueIndex('promo_redemptions_once_idx').on(t.codeId, t.userId), index('promo_redemptions_code_idx').on(t.codeId, t.ipHash)]);
 
+
+// ── 1.2.1.1: which pages players open (to simplify the game with data) ─────
+
+/** Opens of a game page per Sofia day (paths normalised: ids become [id]). */
+export const pageViews = pgTable('page_views', {
+  day: text('day').notNull(),
+  path: text('path').notNull(),
+  views: integer('views').notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.day, t.path] })]);
+
+/** One row per player, page and day — the number of different players who opened it. Kept 90 days. */
+export const pageVisitors = pgTable('page_visitors', {
+  day: text('day').notNull(),
+  path: text('path').notNull(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+}, (t) => [primaryKey({ columns: [t.day, t.path, t.userId] }), index('page_visitors_path_idx').on(t.path, t.day)]);

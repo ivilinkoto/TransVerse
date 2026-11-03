@@ -193,6 +193,13 @@ export function matchRecipe(items: ItemId[]): Recipe | null {
   }) ?? null;
 }
 
+/**
+ * 1.2.1.1: items received from another player (a present, a trade) are not „found“:
+ * they do not fill the album or a collection — otherwise one item passed from
+ * friend to friend would complete everyone's collection.
+ */
+export const RECEIVED_REASONS = ['gift_in', 'trade_in'];
+
 /** Can the item be sold, given or traded? */
 export const tradable = (id: ItemId) => !BOUND_ITEMS.includes(id) && ITEMS[id].kind !== 'coins';
 

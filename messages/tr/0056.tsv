@@ -1,0 +1,17 @@
+# 1.2.1.1 «Честни колекции»
+4e1f42b33a	Admin panel → “Page visits”: which game pages players open and how many different players — for 1, 7 and 30 days, and which menu pages nobody opened. Only the page path and the day are counted; who opened what is kept for 90 days.	Панель администратора → «Посещения страниц»: какие страницы игры открывают игроки и сколько разных игроков — за 1, 7 и 30 дней, и какие страницы меню никто не открывал. Учитываются только путь страницы и день; кто что открывал, хранится 90 дней.
+fbb91e55d9	Active players in the period: {0}	Активных игроков за период: {0}
+60a8fa1df5	The album and collections count only items you found yourself (cases, finds, rewards, workshop). Items given or traded to you stay in the inventory and work as before.	Альбом и коллекции учитывают только предметы, найденные тобой (кейсы, находки, награды, мастерская). Подаренные и обменянные остаются в инвентаре и используются как раньше.
+eebf6a944e	In the menu, but nobody opened them ({0})	В меню, но их никто не открывал ({0})
+fcc487ff82	In grey — pages opened by under 2% of active players.	Серым — страницы, которые открыли менее 2% активных игроков.
+2b32a5b852	Every menu page has been opened at least once.	Все страницы меню открывались хотя бы раз.
+81fb67d5ef	Share	Доля
+0fbeb38f95	Which game pages players open (staff excluded). The basis for simplifying the menu.	Какие страницы игры открывают игроки (без команды). Основа для упрощения меню.
+060d92d0a1	Collections fill only with items you find yourself, and the team sees which game pages are used — the first step towards a simpler game.	Коллекции пополняются только предметами, которые ты нашёл сам, а команда видит, какие страницы игры используются, — первый шаг к более простой игре.
+1a7cf216ee	Opens	Открытия
+cea811213f	Items given or traded to you no longer fill the album and collections. Otherwise one item passed from friend to friend completed everyone's collection. Give and trade freely — only the collection reward needs your own find.	Подаренные и обменянные предметы больше не пополняют альбом и коллекции. Иначе один предмет, передаваемый от друга к другу, завершал коллекцию каждого. Дари и меняйся спокойно — только награда за коллекцию требует собственной находки.
+9f6e980739	Page visits	Посещения страниц
+99d406eeba	Section	Раздел
+97e20f8391	Page	Страница
+0d5ed8fb68	Pages by number of players ({0})	Страницы по числу игроков ({0})
+7769acd2f2	Fair collections	Честные коллекции

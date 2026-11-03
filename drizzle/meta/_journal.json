@@ -750,6 +750,13 @@
       "when": 1793713032225,
       "tag": "0106_item_trades",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1793732539999,
+      "tag": "0107_page_views",
+      "breakpoints": true
     }
   ]
 }

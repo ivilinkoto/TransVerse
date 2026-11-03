@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import { and, asc, count, desc, eq, gt, gte, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, inArray, isNull, like, lt, notInArray, or, sql } from 'drizzle-orm';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { alias } from 'drizzle-orm/pg-core';
 import { cities, coinEntries, companyChest, companyChestLog, companyMembers, deliveries, drivers, friendships, inventoryItems, itemEffects, itemGifts, itemLog, itemSerials, itemTrades, userBadges, users } from '@/server/db/schema';
@@ -8,6 +8,7 @@ import {
   CRAFT_SAME,
   FRAME_ITEMS,
   ITEMS,
+  RECEIVED_REASONS,
   RECIPES,
   SEASON_FIND,
   SELL_DAY_CAP,
@@ -373,9 +374,9 @@ export async function chestForBattle(tx: Tx, organizationId: string, battleId: s
 
 // ── Album, provenance, Hall of Fame ─────────────────────────────────────
 
-/** Every item the player ever found (for the album) and when it first came. */
+/** Every item the player ever found themselves (for the album) and when it first came — presents and trades do not count (1.2.1.1). */
 export async function foundItems(db: DbOrTx, userId: string) {
-  const rows = await db.select({ itemId: itemLog.itemId, first: sql<Date>`min(${itemLog.createdAt})` }).from(itemLog).where(and(eq(itemLog.userId, userId), gt(itemLog.delta, 0))).groupBy(itemLog.itemId);
+  const rows = await db.select({ itemId: itemLog.itemId, first: sql<Date>`min(${itemLog.createdAt})` }).from(itemLog).where(and(eq(itemLog.userId, userId), gt(itemLog.delta, 0), notInArray(itemLog.reason, RECEIVED_REASONS))).groupBy(itemLog.itemId);
   return new Map(rows.filter((r) => known(r.itemId)).map((r) => [r.itemId as ItemId, new Date(r.first)]));
 }
 

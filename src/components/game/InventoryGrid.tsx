@@ -129,7 +129,8 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
   const workshop = useFeature('workshop');
   const album = useFeature('item_album');
   const fresh = useMemo(() => new Set(extras?.fresh ?? []), [extras?.fresh]);
-  const found = useMemo(() => new Set([...(extras?.found ?? []), ...known.map((k) => k.itemId)]), [extras?.found, known]);
+  // 1.2.1.1: only items the player found themselves count (presents and trades do not).
+  const found = useMemo(() => new Set(extras?.found ?? []), [extras?.found]);
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('rarity');
   const shown = useMemo(() => {

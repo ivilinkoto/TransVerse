@@ -1,8 +1,8 @@
 import { randomInt } from 'node:crypto';
-import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNull, notInArray, or, sql } from 'drizzle-orm';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, drivers, inventoryItems, itemEffects, itemLog, itemSerials, notifications, userBadges, users, vehicles } from '@/server/db/schema';
-import { CASE_TABLES, COLLECTIONS, GOLDEN_KEY, ITEMS, ITEM_RULES, ROAD_FIND, TREASURE, coinsOf, isCase, lookPart, pickFrom, type CaseId, type ItemId } from '@/lib/game/items';
+import { CASE_TABLES, COLLECTIONS, GOLDEN_KEY, RECEIVED_REASONS, ITEMS, ITEM_RULES, ROAD_FIND, TREASURE, coinsOf, isCase, lookPart, pickFrom, type CaseId, type ItemId } from '@/lib/game/items';
 import { hash } from '@/lib/game/missions';
 import { t } from '@/i18n/t';
 import { featureFor } from '@/server/features';
@@ -42,7 +42,7 @@ export async function takeItem(tx: Tx, userId: string, itemId: ItemId, reason: s
 async function checkCollections(tx: Tx, userId: string, itemId: ItemId) {
   let paid = false;
   for (const c of COLLECTIONS.filter((x) => x.items.includes(itemId))) {
-    const found = await tx.selectDistinct({ itemId: itemLog.itemId }).from(itemLog).where(and(eq(itemLog.userId, userId), inArray(itemLog.itemId, c.items), gt(itemLog.delta, 0)));
+    const found = await tx.selectDistinct({ itemId: itemLog.itemId }).from(itemLog).where(and(eq(itemLog.userId, userId), inArray(itemLog.itemId, c.items), gt(itemLog.delta, 0), notInArray(itemLog.reason, RECEIVED_REASONS)));
     if (found.length < c.items.length) continue;
     const key = c.id === 'road' ? `collection:${userId}` : `collection:${c.id}:${userId}`;
     const done = await postCoins(tx, userId, { amount: c.coins, reason: 'items', description: t('Колекция „{0}“', c.name), idempotencyKey: key });
