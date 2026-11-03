@@ -8,6 +8,7 @@ import { eventsBoard } from '@/server/game/events';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -26,7 +27,7 @@ export default async function EventsPage() {
         help={t('Всяка подходяща доставка се брои автоматично. Ако целта бъде постигната навреме, всеки участник получава награда, а най-добрите — и VIP. Ако не — никой не получава, затова се борим заедно. Целите и наградите са игрови данни.')}
       />
       {open.length === 0 ? (
-        <Card><Empty icon={PartyPopper} title={t('В момента няма ивент')}>{t('Следващият ще бъде обявен скоро — ще получиш известие.')}</Empty></Card>
+        <Card><Empty icon={PartyPopper} title={t('В момента няма ивент')}>{t('Следващият ще бъде обявен скоро — ще получиш известие.')}<EmptyAction href="/game/missions" label="Към мисиите" /></Empty></Card>
       ) : (
         open.map((d) => <EventCard key={d.event.id} detail={d} now={now} viewerId={user.id} />)
       )}

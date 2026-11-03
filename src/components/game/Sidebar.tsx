@@ -1,7 +1,8 @@
 'use client';
 
 import { useFeature, useFeatures, useNavPlayer } from './Features';
-import { Backpack, Gem, LogOut, MessagesSquare, MoreHorizontal, ShieldCheck, ThumbsUp, X } from 'lucide-react';
+import { Backpack, Gem, LogOut, MessagesSquare, MoreHorizontal, Search, ShieldCheck, ThumbsUp, X } from 'lucide-react';
+import { navEmoji } from './nav-emoji';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
@@ -41,7 +42,7 @@ function InventoryNavItem({ badges, active, variant }: { badges: NavBadges; acti
   const count = fresh > 0 && <span className={`num absolute rounded-full bg-gold-400 px-1.5 text-[10px] font-bold leading-4 text-asphalt-950 shadow ${variant === 'bar' ? 'right-[calc(50%-20px)] top-1' : 'right-1 top-1 xl:right-3 xl:top-1/2 xl:-translate-y-1/2'}`} aria-label={tr('{0} нови', fresh)}>{fresh > 99 ? '99+' : fresh}</span>;
   if (variant === 'bar')
     return (
-      <Link href="/game/inventory" aria-current={active ? 'page' : undefined} data-testid="nav-inventory" className="relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-gold-300">
+      <Link href={v2 ? '/game/rewards' : '/game/inventory'} aria-current={active ? 'page' : undefined} data-testid="nav-inventory" className="relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-gold-300">
         <span className={`-mt-5 flex h-11 w-11 items-center justify-center rounded-2xl border-2 bg-gradient-to-br from-violet-600 to-fuchsia-700 shadow-lg shadow-violet-900/60 ${active ? 'border-gold-300' : 'border-gold-400/60'} ${glow}`}>
           <Backpack className="h-5 w-5 text-gold-300" />
         </span>
@@ -51,7 +52,7 @@ function InventoryNavItem({ badges, active, variant }: { badges: NavBadges; acti
     );
   return (
     <Link
-      href="/game/inventory"
+      href={v2 ? '/game/rewards' : '/game/inventory'}
       title={label}
       aria-current={active ? 'page' : undefined}
       data-testid="nav-inventory"
@@ -112,7 +113,7 @@ export function Sidebar({ badges, version, staff = false, holiday = null, attent
         })}
         {invMenu && <InventoryNavItem badges={badges} active={current?.key === 'inventory' && !more} variant="rail" />}
         {simple && (
-          <button type="button" onClick={() => { if (!more) window.dispatchEvent(new Event('tv:chat-close')); setMore((o) => !o); }} aria-expanded={more} title={tr('Още')} className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition max-xl:flex-col max-xl:gap-1 max-xl:px-1 max-xl:text-[10px] ${more || inMore ? 'bg-gradient-to-r from-volt-500/25 to-volt-500/5 text-white' : 'text-mist-300 hover:bg-asphalt-800/80 hover:text-white'}`}>
+          <button type="button" onClick={() => { if (!more) window.dispatchEvent(new Event('tv:chat-close')); setMore((o) => !o); }} aria-expanded={more} data-tour="more" title={tr('Още')} className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition max-xl:flex-col max-xl:gap-1 max-xl:px-1 max-xl:text-[10px] ${more || inMore ? 'bg-gradient-to-r from-volt-500/25 to-volt-500/5 text-white' : 'text-mist-300 hover:bg-asphalt-800/80 hover:text-white'}`}>
             {more ? <X className="h-5 w-5 shrink-0 text-cyan-glow" /> : <MoreHorizontal className={`h-5 w-5 shrink-0 ${inMore ? 'text-cyan-glow' : 'text-mist-400'}`} />}
             <span className="flex-1 text-left max-xl:leading-none">{tr('Още')}</span>
             {(badges.missions > 0 || badges.eventLive || (staff && attention > 0)) && !more && <span className={`h-2 w-2 rounded-full ${staff && attention > 0 ? 'bg-loss' : 'bg-gold-400'} max-xl:absolute max-xl:right-1 max-xl:top-1`} aria-hidden="true" />}
@@ -251,7 +252,7 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
               </Link>
             );
           })}
-          <button type="button" onClick={() => { if (!open) window.dispatchEvent(new Event('tv:chat-close')); setOpen((o) => !o); }} aria-expanded={open} aria-label={tr('Още')} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
+          <button type="button" onClick={() => { if (!open) window.dispatchEvent(new Event('tv:chat-close')); setOpen((o) => !o); }} aria-expanded={open} data-tour="more" aria-label={tr('Още')} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
             {(badges.missions > 0 || badges.eventLive) && !open && attention === 0 && <span className="absolute right-[calc(50%-14px)] top-2 h-2 w-2 rounded-full bg-gold-400" aria-hidden="true" />}
             {staff && attention > 0 && !open && <span className="absolute right-[calc(50%-14px)] top-2 h-2.5 w-2.5 rounded-full bg-loss" aria-hidden="true" />}
             {open ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}
@@ -274,6 +275,7 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
   const has = useFeatures();
   const player = useNavPlayer();
   const simple = useFeature('simple_nav');
+  const v2 = useFeature('nav_v2');
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
@@ -297,15 +299,22 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
           <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label={tr('Затвори')} onClick={onClose} />
           <div className={desktop ? 'absolute left-[84px] top-0 h-dvh w-[min(560px,calc(100vw-84px))] overflow-y-auto border-r border-asphalt-700 bg-asphalt-900 px-5 py-5 shadow-2xl xl:left-60' : 'absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-asphalt-700 bg-asphalt-900 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl'}>
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-asphalt-600" aria-hidden="true" />
+            {v2 && (
+              <button type="button" data-testid="more-search" onClick={() => { onClose(); window.dispatchEvent(new Event('tv:search')); }} className="mb-5 flex w-full items-center gap-3 rounded-2xl border border-cyan-glow/40 bg-cyan-glow/5 px-4 py-3 text-left text-sm text-mist-200 transition hover:border-cyan-glow active:scale-[0.99]">
+                <Search className="h-5 w-5 shrink-0 text-cyan-glow" />
+                <span className="min-w-0 flex-1">{tr('Къде е…? Напиши „ремонт“, „депо“…')}</span>
+              </button>
+            )}
             {listed(has).filter((s) => !mainKeys(has).includes(s.key)).map((s) => (
               <section key={s.key} className="mb-5">
                 <h2 className="label mb-2 flex items-center gap-2"><s.icon className="h-3.5 w-3.5" />{tx(s.label)}</h2>
-                {(simple && tabGroups(visibleTabs(s, holiday, pathname, has, player)).length > 1 ? tabGroups(visibleTabs(s, holiday, pathname, has, player)) : [{ name: '', tabs: visibleTabs(s, holiday, pathname, has, player) }]).map((g) => (
+                {((simple || v2) && tabGroups(visibleTabs(s, holiday, pathname, has, player)).length > 1 ? tabGroups(visibleTabs(s, holiday, pathname, has, player)) : [{ name: '', tabs: visibleTabs(s, holiday, pathname, has, player) }]).map((g) => (
                 <div key={g.name} className="mb-2">
                 {g.name && <p className="mb-1 text-[11px] font-semibold text-mist-400">{tx(g.name)}</p>}
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                   {g.tabs.map((t) => (
                     <Link key={t.href} href={t.href} onClick={onClose} className={`${tile} ${activeTab(s, pathname)?.href === t.href ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
+                      {v2 && (navEmoji(t.href) ? <span className="text-xl leading-none" aria-hidden="true">{navEmoji(t.href)}</span> : <s.icon className="h-5 w-5 text-mist-400" />)}
                       {tx(t.label)}
                       {t.href === '/game/missions' && badges.missions > 0 && <span className="num rounded-full bg-gold-400 px-1.5 text-[10px] font-bold text-asphalt-950">{tr('{0} награди', badges.missions)}</span>}
                       {t.href === '/game/events' && badges.eventLive && <span className="rounded-full bg-cyan-glow/20 px-1.5 text-[10px] font-bold text-cyan-glow">{tr('тече сега')}</span>}

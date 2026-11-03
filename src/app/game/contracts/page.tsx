@@ -25,6 +25,8 @@ import { realConditionsFor } from '@/server/game/weather';
 import { haversineKm } from '@/lib/geo/geometry';
 import { gameContext } from '@/server/game/context';
 import { mapData } from '@/server/game/map-data';
+import { TutorialVisit } from '@/components/game/TutorialVisit';
+import { tutorialPending } from '@/server/game/tutorial-flags';
 import { MapClient } from '../map/MapClient';
 import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
 import { BODY_LABELS, compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
@@ -250,6 +252,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
 
   // 1.2.2 „Курсове“: the map on top of the orders, on one screen.
   const map = features.nav_v2 ? await mapData(db, { userId: user.id, companyId: company.id, now, features }, params.contract) : null;
+  // The tutorial's „see it on the map“ step is done here too: the map is on this page now.
+  const trackMap = map ? await tutorialPending(db, user.id, 'track_map') : false;
   return (
     <div>
       <PageHeader
@@ -257,6 +261,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         subtitle={tr('Избери товар, камион и тръгвай. Поръчките са общи за всички играчи.')}
         help={tr('Общ пазар за всички: поета поръчка изчезва. Горивото е по цените на държавите по пътя. Задръстване, ремонт или граница забавят курса. Разстоянията са по истинските пътища.')}
       />
+      {map && trackMap && <TutorialVisit step="track_map" pending={trackMap} />}
       {map && (
         <section className="mb-5" data-testid="jobs-map">
           <MapClient compact ownVip={vip} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} {...map} />

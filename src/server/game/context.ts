@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { liveFeatures } from '@/lib/game/features';
+import { oldMenuOffered } from '@/lib/game/nav-choice';
 import { testsUnreleased } from '@/server/auth/roles';
 import { getDb } from '@/server/db/client';
 import { disabledFeatures, withSwitches } from '@/server/feature-switches';
@@ -26,5 +27,7 @@ export const gameContext = cache(async () => {
   // 1.1.4.1: a feature the administrators switched off is off for the players.
   const testing = testsUnreleased(fresh.user);
   const features = withSwitches(liveFeatures(now, testing), await disabledFeatures(db), testing);
+  // 1.2.2: a player who chose the old menu keeps it for the two weeks it is offered.
+  if (features.nav_v2 && fresh.user.uiPrefs?.oldMenu && oldMenuOffered(now)) features.nav_v2 = false;
   return { db, user: fresh.user, company: fresh.company, hq: fresh.hq, now, features };
 });

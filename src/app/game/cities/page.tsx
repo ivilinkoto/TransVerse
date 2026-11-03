@@ -7,6 +7,7 @@ import { cityRankings, harvestOf } from '@/server/game/city-growth';
 import { t as tr, tx, intlLocale } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -37,7 +38,7 @@ export default async function CitiesPage() {
       )}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={tr('Тази седмица')}>
-          {r.thisWeek.length === 0 ? <Empty icon={Building2} title={tr('Още няма доставки тази седмица')}>{tr('Първият курс ще отвори класацията.')}</Empty> : (
+          {r.thisWeek.length === 0 ? <Empty icon={Building2} title={tr('Още няма доставки тази седмица')}>{tr('Първият курс ще отвори класацията.')}<EmptyAction href="/game/contracts" label="Намери курс" /></Empty> : (
             <ol className="space-y-1.5 text-sm">
               {r.thisWeek.map((c, i) => <li key={c.id} className="flex justify-between gap-2"><span>{i === 0 ? '🏆 ' : `${i + 1}. `}<span className="font-medium">{tx(c.name)}</span> <span className="text-xs text-mist-400">{tx(c.country)}</span></span><span className="num">{t(c.weekTons)}</span></li>)}
             </ol>

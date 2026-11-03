@@ -16,10 +16,10 @@ describe('1.2.2 the simpler menu', () => {
     expect(navSections(v2)).toBe(SECTIONS_V2);
   });
 
-  it('keeps every page of the old menu reachable (and adds only the Състезание start page)', () => {
+  it('keeps every page of the old menu reachable (and adds only the start pages of Състезание and Награди)', () => {
     const v2Pages = new Set(hrefs(SECTIONS_V2));
     for (const h of hrefs(SECTIONS)) expect(v2Pages.has(h), h).toBe(true);
-    expect([...v2Pages].filter((h) => !hrefs(SECTIONS).includes(h))).toEqual(['/game/compete']);
+    expect([...v2Pages].filter((h) => !hrefs(SECTIONS).includes(h)).sort()).toEqual(['/game/compete', '/game/rewards']);
     expect(sectionFor('/game/compete', v2)?.key).toBe('compete');
   });
 

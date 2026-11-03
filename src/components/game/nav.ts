@@ -244,7 +244,7 @@ export const SECTIONS_V2: NavSection[] = (() => {
   return [
     by('home'),
     { ...jobs, label: 'Курсове', tabs: [jobs.tabs![0]!, ...(map.tabs ?? []), ...jobs.tabs!.slice(1)] },
-    { ...inventory, label: 'Награди', tabs: [inventory.tabs![0]!, ...moved, ...inventory.tabs!.slice(1).map((t) => ({ ...t, core: false }))] },
+    { ...inventory, href: '/game/rewards', label: 'Награди', tabs: [{ href: '/game/rewards', label: 'Всичко', core: true }, inventory.tabs![0]!, ...moved, ...inventory.tabs!.slice(1).map((t) => ({ ...t, core: false }))] },
     {
       ...fleet,
       tabs: [

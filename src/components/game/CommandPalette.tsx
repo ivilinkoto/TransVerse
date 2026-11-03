@@ -3,6 +3,7 @@
 import { Compass } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useFeature, useFeatures } from './Features';
 import { ACCOUNT_MENU, SECTIONS } from './nav';
 import { t as tr, tx } from '@/i18n/t';
@@ -61,8 +62,18 @@ export function CommandPalette() {
         setOpen((o) => !o);
       } else if (e.key === 'Escape') setOpen(false);
     };
+    // 1.2.2: „Къде е…?“ in „Още“ opens it too (also on narrow phones, where the compass button is hidden).
+    const onOpen = () => {
+      setQ('');
+      setSel(0);
+      setOpen(true);
+    };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    window.addEventListener('tv:search', onOpen);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('tv:search', onOpen);
+    };
   }, [live]);
   useEffect(() => {
     if (open) setTimeout(() => input.current?.focus(), 0);
@@ -77,8 +88,8 @@ export function CommandPalette() {
       <button type="button" onClick={() => { setQ(''); setSel(0); setOpen(true); }} className="flex h-9 w-9 items-center justify-center rounded-full border border-asphalt-700 text-mist-300 transition hover:text-white" title={tr('Къде искаш да отидеш? (Ctrl+K)')} aria-label={tr('Търси страница')}>
         <Compass className="h-4 w-4" />
       </button>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label={tr('Търси страница')} onClick={() => setOpen(false)}>
+      {open && createPortal(
+        <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 p-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label={tr('Търси страница')} onClick={() => setOpen(false)}>
           <div className="w-full max-w-lg rounded-2xl border border-asphalt-700 bg-asphalt-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <input
               ref={input}
@@ -105,7 +116,8 @@ export function CommandPalette() {
               ))}
             </ul>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

@@ -8,6 +8,7 @@ import { earningsByCity } from '@/server/game/earnings-map';
 import { EarningsClient } from './EarningsClient';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -23,7 +24,7 @@ export default async function EarningsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={t('Къде печеля')} subtitle={t('Нетният резултат от курсовете за 30 дни по град на доставката. По-голям кръг — повече пари.')} />
-      {!rows.length ? <Empty icon={MapPin} title={t('Още няма доставки за 30 дни')} /> : (
+      {!rows.length ? <Empty icon={MapPin} title={t('Още няма доставки за 30 дни')}><EmptyAction href="/game/contracts" label="Намери курс" /></Empty> : (
         <>
           <EarningsClient styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} points={rows.map((r) => ({ name: tx(r.name), lat: r.lat, lon: r.lon, cents: r.cents, trips: r.trips }))} />
           <Card title={t('Най-доходните градове')}>

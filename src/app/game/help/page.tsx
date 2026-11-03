@@ -131,6 +131,22 @@ export default async function HelpPage() {
         <span className="min-w-0 flex-1"><span className="block font-semibold">{tr('TransVerse във Facebook')}</span><span className="block text-sm text-mist-300">{tr('Новините и обновленията на играта.')}</span></span>
         <ExternalLink className="h-4 w-4 shrink-0 text-mist-400" />
       </a>
+      {features.nav_v2 && (
+        <Card id="menu" title={tr('Къде е какво (новото меню)')}>
+          <ul className="grid gap-2 text-sm sm:grid-cols-2">
+            {[
+              ['🏠', tr('Начало'), tr('Какво те чака сега: свободни камиони, награди, ремонти — по един бутон.')],
+              ['🗺️', tr('Курсове'), tr('Поръчките с картата отгоре. „На картата“ показва маршрута. Тук са и Клиенти, Конвои, Пътят · CB.')],
+              ['🎒', tr('Награди'), tr('Инвентар, мисии, сезон и Truck Pass, ивенти, Голям рейс, работилница и албум.')],
+              ['🚚', tr('Автопарк'), tr('Камиони, шофьори, пазар. Всеки камион има бутон за следващата стъпка и „Всичко за този камион“.')],
+              ['☰', tr('Още'), tr('Компания, Състезание, финанси, профил, настройки и търсенето „Къде е…?“.')],
+            ].map(([e, h, d]) => (
+              <li key={h} className="flex gap-3 rounded-xl border border-asphalt-800 p-3"><span className="text-xl" aria-hidden="true">{e}</span><span><span className="block font-semibold">{h}</span><span className="text-mist-300">{d}</span></span></li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-mist-400">{tr('Не намираш нещо? Натисни лупата горе или „Къде е…?“ в „Още“ и напиши дума — например „ремонт“ или „депо“.')}</p>
+        </Card>
+      )}
       <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label={tr('Раздели')}>
         {features.help_faq && <a href="#faq" className="shrink-0 rounded-full border border-gold-400/40 px-3 py-1.5 text-sm text-gold-400 hover:text-white">{tr('Въпроси')}</a>}
         {glossary && <a href="#glossary" className="shrink-0 rounded-full border border-cyan-glow/40 px-3 py-1.5 text-sm text-cyan-glow hover:text-white">{tr('Речник')}</a>}

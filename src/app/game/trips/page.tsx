@@ -8,6 +8,7 @@ import { tripsOf } from '@/server/game/trip-log';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -24,7 +25,7 @@ export default async function TripsPage() {
       <PageHeader title={tr('Бордови дневник')} subtitle={tr('Всеки завършен курс: маршрут, време на волана, почивки, граници и картичка за споделяне.')} />
       <Card>
         {trips.length === 0 ? (
-          <Empty icon={NotebookPen} title={tr('Още няма завършени курсове')}>{tr('Първият курс ще се появи тук, щом пристигне.')}</Empty>
+          <Empty icon={NotebookPen} title={tr('Още няма завършени курсове')}>{tr('Първият курс ще се появи тук, щом пристигне.')}<EmptyAction href="/game/contracts" label="Намери курс" /></Empty>
         ) : (
           <ul className="divide-y divide-asphalt-800 text-sm">
             {trips.map((t) => (

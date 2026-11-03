@@ -10,6 +10,7 @@ import { yearRecap } from '@/server/game/recap';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
+import { EmptyAction } from '@/components/game/EmptyAction';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -45,7 +46,7 @@ export default async function RecapPage() {
     <div className="space-y-6">
       <PageHeader title={t('Моята {0} в TransVerse', r.year)} subtitle={t('{0} · ниво {1}{2}', r.username, r.level, r.company ? ` · „${r.company}“` : '')} help={t('Курсовете на твоя акаунт (твоите и на наетите шофьори), приключени през годината по българско време. Игрови данни.')} />
       {r.trips === 0 ? (
-        <Empty icon={Truck} title={t('Още няма курсове през тази година')}>{t('Поеми поръчка — равносметката се пълни с всеки доставен товар.')}</Empty>
+        <Empty icon={Truck} title={t('Още няма курсове през тази година')}>{t('Поеми поръчка — равносметката се пълни с всеки доставен товар.')}<EmptyAction href="/game/contracts" label="Намери курс" /></Empty>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

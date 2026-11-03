@@ -5,11 +5,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
-import type { TutorialStep } from '@/lib/game/tutorial';
+import { tutorialView, type TutorialStep } from '@/lib/game/tutorial';
+import { useFeature } from './Features';
 import { t, tx } from '@/i18n/t';
 
 /** Onboarding coach shown under the top bar until every step is done or the player skips it. */
-export function TutorialCoach({ step, index, total }: { step: TutorialStep; index: number; total: number }) {
+export function TutorialCoach({ step: raw, index, total }: { step: TutorialStep; index: number; total: number }) {
+  // 1.2.2: with the new menu the steps point at Курсове, Награди and „Още“.
+  const step = tutorialView(raw, useFeature('nav_v2'));
   const router = useRouter();
   const pathname = usePathname();
   const [busy, setBusy] = useState(false);
