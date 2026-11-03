@@ -31,3 +31,9 @@ c6d46aeacb	The weekly chest is ready.	Еженедельный сундук го
 be71e82899	🔧 Repair	🔧 Отремонтировать
 789e9f17bb	🗺️ See on the map	🗺️ Показать на карте
 1b017fea98	🚚 Start a trip	🚚 Отправить в рейс
+f54b709596	Big map →	Большая карта →
+32f4d5bf20	The map is above the orders: you see your trucks, and “On the map” on an order shows its route right there, without leaving the list.	Карта над заказами: видны твои грузовики, а «На карте» у заказа показывает его маршрут прямо там, не покидая список.
+06e41b9b74	Trips on one screen	Рейсы на одном экране
+7910f7aee7	Route: {0}	Маршрут: {0}
+b254e41b77	The orders page has a map on top with your trucks and their routes. “On the map” on an order shows the route in it (the filters stay); “Big map →” opens the whole map.	На странице заказов сверху карта с твоими грузовиками и их маршрутами. «На карте» у заказа показывает маршрут на ней (фильтры остаются); «Большая карта →» открывает всю карту.
+93cca762ed	Your trucks on the map. “On the map” on an order shows its route here.	Твои грузовики на карте. «На карте» у заказа показывает его маршрут здесь.

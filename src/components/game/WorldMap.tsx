@@ -48,6 +48,8 @@ export interface MapProps {
   bases?: { name: string; city: string; color: string | null; position: LatLon; own: boolean }[];
   /** v1.8: road reports from the drivers (accident, police, jam…). */
   reports?: { id: number; emoji: string; label: string; near: string; position: LatLon }[];
+  /** 1.2.2: a shorter map on top of „Курсове“ (the full one stays on /game/map). */
+  compact?: boolean;
 }
 
 interface CityDetails {
@@ -204,7 +206,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [] }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [], compact = false }: MapProps) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -519,7 +521,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   };
 
   return (
-    <div className="relative h-[calc(100dvh-210px)] min-h-[420px] overflow-hidden rounded-2xl border border-asphalt-700">
+    <div className={`relative overflow-hidden rounded-2xl border border-asphalt-700 ${compact ? 'h-[260px] sm:h-[340px]' : 'h-[calc(100dvh-210px)] min-h-[420px]'}`}>
       <div ref={container} className="h-full w-full" />
       {mapLook && shade > 0 && <div aria-hidden className="pointer-events-none absolute inset-0 transition-colors duration-1000" style={{ background: `rgba(4, 8, 28, ${0.45 * shade})` }} />}
       {mapLook && (

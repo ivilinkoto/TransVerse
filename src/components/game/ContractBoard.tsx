@@ -15,7 +15,7 @@ import { HireDialog } from './HireDialog';
 import { fixFor, WhyNot } from './WhyNot';
 import { Term } from './Term';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Children, useEffect, useMemo, useState } from 'react';
 import { Badge, Empty, type BadgeTone } from '@/components/ui';
 import { api } from '@/lib/client/api';
@@ -771,7 +771,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
                 <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload && !part)} onClick={accept}>
                   <ShieldCheck className="h-4 w-4" />{busy ? t('Изпращане…') : part ? t('Вземи {0} т и изпрати', dec(part.tons)) : t('Приеми и изпрати')}
                 </button>
-                <Link href={`/game/map?contract=${c.id}`} className="btn-ghost"><MapPinned className="h-4 w-4" />{t('На картата')}</Link>
+                <MapLink contractId={c.id} />
                 {vip && !c.urgent && !c.reservedByMe && <ReserveButton contractId={c.id} />}
               </div>
               {option && !option.error && (option.rushMinutes != null || needsOverload || insuranceLive || parkingLive || refuelLive || (routeChoice && !c.urgent && !c.stops.length && !c.ferry)) && (
@@ -916,5 +916,22 @@ function ReserveButton({ contractId }: { contractId: string }) {
       </button>
       {error && <span role="alert" className="text-xs text-loss">{error}</span>}
     </span>
+  );
+}
+
+/**
+ * „На картата“ for a load. With the 1.2.2 menu the map is on top of „Курсове“:
+ * the route shows there (the board's filters stay); otherwise on the map page.
+ */
+function MapLink({ contractId }: { contractId: string }) {
+  const v2 = useFeature('nav_v2');
+  const params = useSearchParams();
+  if (!v2) return <Link href={`/game/map?contract=${contractId}`} className="btn-ghost"><MapPinned className="h-4 w-4" />{t('На картата')}</Link>;
+  const next = new URLSearchParams(params?.toString() ?? '');
+  next.set('contract', contractId);
+  return (
+    <Link href={`/game/contracts?${next.toString()}`} scroll className="btn-ghost" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+      <MapPinned className="h-4 w-4" />{t('На картата')}
+    </Link>
   );
 }
