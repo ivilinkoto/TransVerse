@@ -300,7 +300,7 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
           <div className={desktop ? 'absolute left-[84px] top-0 h-dvh w-[min(560px,calc(100vw-84px))] overflow-y-auto border-r border-asphalt-700 bg-asphalt-900 px-5 py-5 shadow-2xl xl:left-60' : 'absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-asphalt-700 bg-asphalt-900 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl'}>
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-asphalt-600" aria-hidden="true" />
             {v2 && (
-              <button type="button" data-testid="more-search" onClick={() => { onClose(); window.dispatchEvent(new Event('tv:search')); }} className="mb-5 flex w-full items-center gap-3 rounded-2xl border border-cyan-glow/40 bg-cyan-glow/5 px-4 py-3 text-left text-sm text-mist-200 transition hover:border-cyan-glow active:scale-[0.99]">
+              <button type="button" data-testid="more-search" onClick={() => { onClose(); window.dispatchEvent(new Event('tv:find-page')); }} className="mb-5 flex w-full items-center gap-3 rounded-2xl border border-cyan-glow/40 bg-cyan-glow/5 px-4 py-3 text-left text-sm text-mist-200 transition hover:border-cyan-glow active:scale-[0.99]">
                 <Search className="h-5 w-5 shrink-0 text-cyan-glow" />
                 <span className="min-w-0 flex-1">{tr('Къде е…? Напиши „ремонт“, „депо“…')}</span>
               </button>

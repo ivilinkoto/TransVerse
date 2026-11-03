@@ -69,10 +69,10 @@ export function CommandPalette() {
       setOpen(true);
     };
     document.addEventListener('keydown', onKey);
-    window.addEventListener('tv:search', onOpen);
+    window.addEventListener('tv:find-page', onOpen);
     return () => {
       document.removeEventListener('keydown', onKey);
-      window.removeEventListener('tv:search', onOpen);
+      window.removeEventListener('tv:find-page', onOpen);
     };
   }, [live]);
   useEffect(() => {
