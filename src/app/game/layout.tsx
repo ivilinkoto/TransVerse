@@ -4,7 +4,6 @@ import type { Metadata } from 'next';
 import { Eye, MailWarning } from 'lucide-react';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { LiveUpdates } from '@/components/game/LiveUpdates';
-import { PageBeacon } from '@/components/game/PageBeacon';
 import { MotionInit } from '@/components/fx/MotionInit';
 import { FxHost } from '@/components/fx/FxHost';
 import { TabBadge } from '@/components/game/TabBadge';
@@ -121,7 +120,6 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         </div>
         <MobileNav badges={navBadges} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <LiveUpdates />
-        {!staff && <PageBeacon />}
         {features.game_fx && <MotionInit />}
         {features.game_fx && <FxHost />}
         {features.accessibility && <A11yApply />}

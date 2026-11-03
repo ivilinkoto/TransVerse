@@ -27,7 +27,6 @@ import { ensureIntermodal, releaseIntermodal } from './intermodal';
 import { settleCups } from './community-cups';
 import { settleTerritories } from './territories';
 import { pruneLiveRoad } from './live-road';
-import { prunePageVisitors } from '@/server/page-views';
 import { payDividends, updateSharePrices } from './shares';
 import { runRelief } from './relief';
 import { settleTruckContest } from './truck-contest';
@@ -379,7 +378,6 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'humanitarian', 30 * 60_000, now, () => runRelief(db, now));
     // v1.8: old CB messages and road reports.
     await every(db, 'live-road-prune', 24 * 3_600_000, now, () => pruneLiveRoad(db, now));
-    await every(db, 'page-visitors-prune', 24 * 3_600_000, now, () => prunePageVisitors(db, now));
     // v1.7: last month's king of every country.
     if (featureLive('country_kings', now)) await every(db, 'country-kings', 60 * 60_000, now, () => settleCountryKings(db, now));
     // v2.0: last week's territories, and the subsidiaries' fees to their holdings.
