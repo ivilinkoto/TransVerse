@@ -119,6 +119,7 @@ import { awardDriversOfMonth, celebrateAnniversaries } from './community';
 import { backfillMedalBadges, checkCompanyAchievements } from './medals';
 import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
+import { starvedCountryAlerts } from './game-health';
 import { syncComingSoon } from '@/server/discord/coming-soon';
 import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
 import { ideasWeeklyTop, idleTruckReminders, staffDailyReport } from '@/server/discord/plus';
@@ -405,6 +406,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'driver-of-month', 60 * 60_000, now, () => awardDriversOfMonth(db, now));
     await every(db, 'test-drives', 15 * 60_000, now, () => expireTestDrives(db, now));
     await every(db, 'staff-alerts', 60 * 60_000, now, () => postStaffAlerts(db, now));
+    await every(db, 'starved-countries', 15 * 60_000, now, () => starvedCountryAlerts(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);
