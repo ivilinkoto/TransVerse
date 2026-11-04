@@ -190,7 +190,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
               <ul className="grid grid-cols-2 gap-3">
                 {products.map((p) => (
                   <li key={p.id} className="rounded-xl border border-asphalt-700 p-3 text-center opacity-80">
-                    <div className="num font-display text-xl font-bold text-cyan-glow">{p.vipDays ? tr('VIP {0} дни', p.vipDays) : `${p.coins.toLocaleString(intlLocale())} TC`}</div>
+                    <div className="num font-display text-xl font-bold text-cyan-glow">{p.v2 ? tx(p.label) : p.vipDays ? tr('VIP {0} дни', p.vipDays) : `${p.coins.toLocaleString(intlLocale())} TC`}</div>
                     {p.bonus > 0 && <div className="text-xs text-profit">{tr('+{0} подарък', p.bonus)}</div>}
                     <div className="num mt-1 text-sm text-mist-300">{euro(p.priceCents)}</div>
                   </li>

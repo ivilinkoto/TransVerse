@@ -50,7 +50,8 @@ export function isoWeek(now: Date): string {
 
 // ---------- weekly offers ----------
 /** Items that may be on offer; three of them each week at −25 %. */
-const OFFER_POOL: ShopItemId[] = ['vip_7', 'xp_boost_24h', 'instant_repair', 'instant_relocate', 'custom_plate', 'case_silver', 'case_gold', 'truck_part', 'trailer_part', 'move_depot'];
+// (Truck and trailer parts are priced per part, so they are never on offer.)
+const OFFER_POOL: ShopItemId[] = ['vip_7', 'xp_boost_24h', 'instant_repair', 'instant_relocate', 'custom_plate', 'case_silver', 'case_gold', 'gift_case', 'move_depot', 'rename'];
 export const OFFER_DISCOUNT = 0.25;
 export function weeklyOffers(now: Date): ShopItemId[] {
   const key = isoWeek(now);
