@@ -110,6 +110,17 @@ export const FEATURES = {
   nav_v2: '1.2.2',
   // 1.2.3 „Отворен път“: the new shop — VIP prices and extras, cases, weekly offers, starter pack, monthly card, patron levels.
   shop_v2: '1.2.3',
+  // 1.2.3: the morning report, the favourite truck, the next trip after a load, the contract of the week,
+  // tips on the lanes, greeting new players nearby, a light look and bigger text, buttons in notifications, the week in the profile.
+  morning_report: '1.2.3',
+  favorite_stats: '1.2.3',
+  next_trip: '1.2.3',
+  weekly_lane: '1.2.3',
+  lane_tips: '1.2.3',
+  welcome_neighbors: '1.2.3',
+  look_settings: '1.2.3',
+  notification_buttons: '1.2.3',
+  week_chart: '1.2.3',
   inventory_menu: '1.2.1',
   item_trade: '1.2.1',
   workshop: '1.2.1',
@@ -179,7 +190,8 @@ export const FEATURES = {
   daily_load: '1.3',
   duels: '1.3',
   livery_contest: '1.3',
-  roadside_paid: '1.3',
+  // 1.2.3: released early (built for a later update).
+  roadside_paid: '1.2.3',
   ferries: '1.4',
   rail: '1.4',
   port_loads: '1.4',
@@ -197,7 +209,8 @@ export const FEATURES = {
   trailer_upgrades: '1.4',
   company_trailers: '1.4',
   marta: '1.5',
-  night_shift: '1.5',
+  // 1.2.3: released early (built for a later update).
+  night_shift: '1.2.3',
   road_works: '1.5',
   oversize: '1.5',
   fuel_station: '1.5',
@@ -257,7 +270,8 @@ export const FEATURES = {
   legendary_trucks: '1.6',
   scrapyard: '1.6',
   museum: '1.6',
-  photo_mode: '1.6',
+  // 1.2.3: released early (built for a later update).
+  photo_mode: '1.2.3',
   plate_auction: '1.6',
   trailer_hire: '1.6',
   // 1.2.3: the countries of „Цяла Европа“ (planned for 1.7) open early.
@@ -280,8 +294,10 @@ export const FEATURES = {
   low_emission_zones: '1.7',
   sea_lines: '1.7',
   // v1.10 "Колони и истории".
-  convoy_lobby: '1.10',
-  weekly_convoy: '1.10',
+  // 1.2.3: released early (built for a later update).
+  convoy_lobby: '1.2.3',
+  // 1.2.3: released early (built for a later update).
+  weekly_convoy: '1.2.3',
   relay: '1.10',
   trip_log: '1.10',
   city_growth: '1.10',
@@ -309,12 +325,18 @@ export const FEATURES = {
   mergers: '1.9',
   smuggling: '1.9',
   // v1.8 "Жив път".
-  cb_radio: '1.8',
-  road_reports: '1.8',
-  postcards: '1.8',
-  hitchhikers: '1.8',
-  sealed_cargo: '1.8',
-  haggling: '1.8',
+  // 1.2.3: released early (built for a later update).
+  cb_radio: '1.2.3',
+  // 1.2.3: released early (built for a later update).
+  road_reports: '1.2.3',
+  // 1.2.3: released early (built for a later update).
+  postcards: '1.2.3',
+  // 1.2.3: released early (built for a later update).
+  hitchhikers: '1.2.3',
+  // 1.2.3: released early (built for a later update).
+  sealed_cargo: '1.2.3',
+  // 1.2.3: released early (built for a later update).
+  haggling: '1.2.3',
   ghost_record: '1.8',
   share_market: '1.8',
   humanitarian: '1.8',

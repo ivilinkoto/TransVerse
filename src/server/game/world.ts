@@ -65,6 +65,7 @@ import { dispatchPush, pruneSubscriptions } from '@/server/push';
 import { autoUrgentTick, raiseUrgentPrices } from './auto-urgent';
 import { settleTenders } from './tenders';
 import { dailyReminders } from './daily';
+import { morningReports } from './morning';
 import { announceStartedEvents, ensureAutoEvent, settleDueEvents } from './events';
 import { expireMentorships } from './mentor';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
@@ -302,6 +303,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await db.insert(jobState).values({ key: 'payroll', value: { day: yesterday } }).onConflictDoUpdate({ target: jobState.key, set: { value: { day: yesterday }, updatedAt: now } });
     });
     await every(db, 'daily-reminders', 10 * 60_000, now, () => dailyReminders(db, now));
+    // 1.2.3: the morning report (staff only before the release).
+    await every(db, 'morning-reports', 10 * 60_000, now, () => morningReports(db, now));
     await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
     await every(db, 'leagues', 10 * 60_000, now, () => settleLeagues(db, now));
     await every(db, 'company-projects', 10 * 60_000, now, () => expireProjects(db, now));
