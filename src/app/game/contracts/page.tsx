@@ -39,6 +39,7 @@ import { LICENCES } from '@/lib/game/licences';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { VIP_V2 } from '@/lib/game/shop-v2';
 import { isWeeklyLaneTag } from '@/lib/game/weekly-lane';
+import { bestTips, lanesDriven } from '@/server/game/lane-tips';
 import { heldLicences, missingFor } from '@/server/game/licences';
 
 import { FleetCondition } from '@/components/game/FleetCondition';
@@ -131,6 +132,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
     const rows = await db.select({ o: contractsTable.originCityId, d: contractsTable.destCityId, n: sql<number>`count(*)::int` }).from(deliveries).innerJoin(contractsTable, eq(contractsTable.id, deliveries.contractId)).where(eq(deliveries.status, 'in_progress')).groupBy(contractsTable.originCityId, contractsTable.destCityId);
     for (const r of rows) laneTraffic.set(`${r.o}:${r.d}`, r.n);
   }
+  // 1.2.3: tips on the lanes, and the lanes this player drove (who may write one).
+  const [tips, driven] = features.lane_tips ? await Promise.all([bestTips(db, contracts.map((c) => ({ o: c.originCityId, d: c.destCityId })), user.id), lanesDriven(db, user.id)]) : [new Map(), new Set<string>()];
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];
     // A ferry on the way (islands): no fuel on board, a ticket instead.
@@ -205,6 +208,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       transEurope: features.trans_europe && c.transEurope,
       // 1.1.4.2: night courier, last mile, livestock; fog at either end in November.
       tag: c.tag && features[c.tag as 'night_courier' | 'last_mile' | 'livestock'] ? c.tag : isWeeklyLaneTag(c.tag) && features.weekly_lane ? 'weekly_lane' : null,
+      tip: tips.get(`${c.originCityId}:${c.destCityId}`) ?? null,
+      canTip: driven.has(`${c.originCityId}:${c.destCityId}`),
       fog: features.fog ? (fogAt(c.origin.lat, c.origin.lon, now) ?? fogAt(c.destination.lat, c.destination.lon, now))?.label ?? null : null,
       lez: features.low_emission_zones ? [c.originCityId, c.destCityId].map((id) => LOW_EMISSION_ZONES[id]).filter((x): x is string => !!x) : [],
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,

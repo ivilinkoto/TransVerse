@@ -38,11 +38,15 @@ import { PROMISES, PROMISE_IDS, type PromiseId } from '@/lib/game/promise';
 import { TAG_LABELS, type LoadTag } from '@/lib/game/special-loads';
 import { usePromise } from './usePromise';
 import { GiftLoad } from './GiftLoad';
+import { LaneTip, type LaneTipView } from './LaneTip';
 
 export interface BoardContract {
   id: string;
   /** 1.1.4.2: a load with its own rules (night courier, last mile, livestock). */
   tag?: string | null;
+  /** 1.2.3: the best tip for the lane and whether the viewer may write one. */
+  tip?: LaneTipView | null;
+  canTip?: boolean;
   /** 1.1.4.2: the foggy area at either end (November). */
   fog?: string | null;
   /** Trucks on this lane right now (v1.6; 0 below the traffic threshold). */
@@ -675,6 +679,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
 
       {open && (
         <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">
+          {(c.tip || c.canTip) && <LaneTip tip={c.tip ?? null} originCityId={c.origin.id} destCityId={c.destination.id} canWrite={!!c.canTip} />}
           {friends.length > 0 && !c.reservedByOther && !c.tender && !c.alreadyTaken && <GiftLoad contractId={c.id} friends={friends} />}
           <dl className="grid gap-3 text-sm sm:grid-cols-4">
             <div><dt className="label">{t('Възложител')}</dt><dd className="mt-1">{tx(c.shipper)}</dd></div>

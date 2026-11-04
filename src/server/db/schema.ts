@@ -1491,6 +1491,32 @@ export const newspapers = pgTable('newspapers', {
 });
 
 /** Lanes a player starred on the job board (first in the list, a notification for new jobs). */
+/** 1.2.3: short tips from players who drove a lane (one per player and lane), voted up or down. */
+export const laneTips = pgTable(
+  'lane_tips',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    originCityId: integer('origin_city_id').notNull().references(() => cities.id),
+    destCityId: integer('dest_city_id').notNull().references(() => cities.id),
+    body: text('body').notNull(),
+    /** Up votes minus down votes. */
+    score: integer('score').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('lane_tips_user_lane_idx').on(t.userId, t.originCityId, t.destCityId), index('lane_tips_lane_idx').on(t.originCityId, t.destCityId)],
+);
+
+export const laneTipVotes = pgTable(
+  'lane_tip_votes',
+  {
+    tipId: uuid('tip_id').notNull().references(() => laneTips.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    value: integer('value').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tipId, t.userId] })],
+);
+
 export const favoriteLanes = pgTable(
   'favorite_lanes',
   {

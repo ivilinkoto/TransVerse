@@ -5,6 +5,7 @@ import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental, startTestDrive } from '@/server/game/rentals';
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
+import { addLaneTip, deleteLaneTip, laneTipSchema, voteLaneTip } from '@/server/game/lane-tips';
 import { buyPassLevel, claimMonthCard, claimVipCase } from '@/server/game/shop-v2';
 import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
 import { HINT_IDS, type HintId } from '@/lib/game/hints';
@@ -157,6 +158,10 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('quietHours'), hours: quietHoursSchema }),
   z.object({ type: z.literal('dismissHint'), hint: z.enum(HINT_IDS as [HintId, ...HintId[]]) }),
   z.object({ type: z.literal('favoriteLane'), originCityId: cityId, destCityId: cityId }),
+  // 1.2.3: tips on a lane.
+  z.object({ type: z.literal('addLaneTip'), originCityId: cityId, destCityId: cityId, body: z.string().max(200) }),
+  z.object({ type: z.literal('voteLaneTip'), tipId: z.string().uuid(), value: z.union([z.literal(1), z.literal(-1)]) }),
+  z.object({ type: z.literal('deleteLaneTip'), tipId: z.string().uuid() }),
   z.object({ type: z.literal('dispatchRun'), plan: z.array(z.object({ vehicleId: id, contractId: id })).min(1).max(50) }),
   z.object({ type: z.literal('autoDispatch'), vehicleId: id, on: z.boolean() }),
   z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
@@ -674,6 +679,13 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     }
     case 'favoriteLane':
       return { ok: true, favorite: await toggleFavoriteLane(db, user.id, input.originCityId, input.destCityId) };
+    case 'addLaneTip':
+      return { ok: true, id: (await addLaneTip(db, user.id, laneTipSchema.parse(input))).id };
+    case 'voteLaneTip':
+      return { ok: true, score: await voteLaneTip(db, user.id, input.tipId, input.value) };
+    case 'deleteLaneTip':
+      await deleteLaneTip(db, user.id, input.tipId);
+      return { ok: true };
     case 'dismissHint':
       await dismissHint(db, user.id, input.hint);
       return { ok: true };
