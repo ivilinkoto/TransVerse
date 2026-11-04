@@ -71,6 +71,19 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <div><dt className="label">{t('Език')}</dt><dd className="mt-1">{t('Български (още езици предстоят)')}</dd></div>
           </dl>
         </Card>
+        {/* 1.2.3: a light look and bigger text. */}
+        {features.look_settings && (
+          <Card title={t('Изглед')}>
+            <div className="label mb-1.5">{t('Тема')}</div>
+            <div className="flex flex-wrap gap-2">
+              {([['dark', t('Тъмна')], ['light', t('Светла')]] as const).map(([v, label]) => <ActionButton key={v} action={{ type: 'uiPrefs', theme: v }} className={(user.uiPrefs?.theme ?? 'dark') === v ? 'btn-primary px-3 py-1.5 text-sm' : 'btn-ghost px-3 py-1.5 text-sm'}>{label}</ActionButton>)}
+            </div>
+            <div className="label mb-1.5 mt-4">{t('Размер на текста')}</div>
+            <div className="flex flex-wrap gap-2">
+              {([['normal', t('Нормален')], ['large', t('По-голям')], ['xl', t('Най-голям')]] as const).map(([v, label]) => <ActionButton key={v} action={{ type: 'uiPrefs', textSize: v }} className={(user.uiPrefs?.textSize ?? 'normal') === v ? 'btn-primary px-3 py-1.5 text-sm' : 'btn-ghost px-3 py-1.5 text-sm'}>{label}</ActionButton>)}
+            </div>
+          </Card>
+        )}
         {/* 1.2.2: the new menu, or the old one for two weeks after it comes out. */}
         {(features.nav_v2 || user.uiPrefs?.oldMenu) && oldMenuOffered(now) && (
           <Card title={t('Меню')}>

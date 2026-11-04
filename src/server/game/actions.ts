@@ -6,6 +6,7 @@ import { buyoutRental, returnRental, startTestDrive } from '@/server/game/rental
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
 import { addLaneTip, deleteLaneTip, laneTipSchema, voteLaneTip } from '@/server/game/lane-tips';
+import { greetNewcomer } from '@/server/game/neighbors';
 import { buyPassLevel, claimMonthCard, claimVipCase } from '@/server/game/shop-v2';
 import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
 import { HINT_IDS, type HintId } from '@/lib/game/hints';
@@ -162,6 +163,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('addLaneTip'), originCityId: cityId, destCityId: cityId, body: z.string().max(200) }),
   z.object({ type: z.literal('voteLaneTip'), tipId: z.string().uuid(), value: z.union([z.literal(1), z.literal(-1)]) }),
   z.object({ type: z.literal('deleteLaneTip'), tipId: z.string().uuid() }),
+  z.object({ type: z.literal('greetNewcomer'), userId: z.string().uuid() }),
   z.object({ type: z.literal('dispatchRun'), plan: z.array(z.object({ vehicleId: id, contractId: id })).min(1).max(50) }),
   z.object({ type: z.literal('autoDispatch'), vehicleId: id, on: z.boolean() }),
   z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
@@ -292,7 +294,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reportShady'), contractId: id }),
   z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
   z.object({ type: z.literal('blackRepair'), vehicleId: id }),
-  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional() }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
@@ -683,6 +685,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, id: (await addLaneTip(db, user.id, laneTipSchema.parse(input))).id };
     case 'voteLaneTip':
       return { ok: true, score: await voteLaneTip(db, user.id, input.tipId, input.value) };
+    case 'greetNewcomer':
+      return { ok: true, ...(await greetNewcomer(db, user.id, input.userId)) };
     case 'deleteLaneTip':
       await deleteLaneTip(db, user.id, input.tipId);
       return { ok: true };

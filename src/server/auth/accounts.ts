@@ -8,6 +8,7 @@ import { fail } from '@/server/game/errors';
 import { logActivity } from '@/server/game/notify';
 import { hashPassword, verifyAgainstDummy, verifyPassword } from './password';
 import { t } from '@/i18n/t';
+import { announceNewcomer } from '@/server/game/neighbors';
 
 export const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email('Невалиден имейл адрес.').max(254),
@@ -49,7 +50,10 @@ export async function register(db: Database, raw: z.infer<typeof registerSchema>
   const input = { ...raw, email: raw.email.trim().toLowerCase(), username: raw.username.trim() };
   const passwordHash = await hashPassword(input.password);
   try {
-    return await registerTx(db, input, passwordHash);
+    const id = await registerTx(db, input, passwordHash);
+    // 1.2.3: players based in the same city hear about the newcomer (never blocks the sign-up).
+    await announceNewcomer(db, id, input.startCityId).catch(() => 0);
+    return id;
   } catch (error) {
     // Two simultaneous sign-ups with the same name: the unique index decides.
     if ((error as { cause?: { code?: string } }).cause?.code === '23505' || (error as { code?: string }).code === '23505') {

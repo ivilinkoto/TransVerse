@@ -1,6 +1,7 @@
 import { A11yApply } from '@/components/game/A11y';
 import { and, eq, isNull, lte, sql } from 'drizzle-orm';
 import type { Metadata } from 'next';
+import { LookApply } from '@/components/game/LookApply';
 import { Eye, MailWarning } from 'lucide-react';
 import { ResendVerification } from '@/components/auth/EmailLinkForms';
 import { LiveUpdates } from '@/components/game/LiveUpdates';
@@ -92,6 +93,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   return (
     <FeaturesProvider value={features}>
       <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll, staff: testing }}>
+      {features.look_settings && <LookApply theme={user.uiPrefs?.theme} textSize={user.uiPrefs?.textSize} />}
       <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
         <Sidebar badges={navBadges} version={currentVersion(now, testing)} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <div className="flex min-w-0 flex-1 flex-col">

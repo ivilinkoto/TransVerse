@@ -12,6 +12,11 @@ import { playerCard } from '@/server/game/social';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
+import { eq } from 'drizzle-orm';
+import { users } from '@/server/db/schema';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { money } from '@/lib/format';
+import { canGreet, NEIGHBORS } from '@/server/game/neighbors';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -38,6 +43,9 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
   const career = await playerCareer(db, card.id);
   if (!career) notFound();
   const showcase = features.profile_showcase ? await showcaseOf(db, card.id) : null;
+  // 1.2.3: greet a new player (once, with a small present).
+  const [target] = features.welcome_neighbors ? await db.select({ id: users.id, createdAt: users.createdAt }).from(users).where(eq(users.id, card.id)) : [];
+  const greet = target ? await canGreet(db, user.id, target, now) : false;
   const [records, kingdoms] = await Promise.all([features.lane_records ? laneRecordsView(db, now, 10, card.id) : [], features.country_kings ? kingdomsOf(db, card.id) : []]);
   return (
     <div className="space-y-6">
@@ -45,6 +53,7 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="min-w-0 space-y-6">
           <Card><PlayerCardLive card={card} /></Card>
+          {greet && <Card><p className="text-sm text-mist-300">{tr('{0} е нов в играта. Поздрави го и му подари {1} за начало.', card.username, money(NEIGHBORS.giftCents))}</p><ActionButton action={{ type: 'greetNewcomer', userId: card.id }} className="btn-primary mt-3 px-3 py-2 text-sm">{tr('Поздрави · {0}', money(NEIGHBORS.giftCents))}</ActionButton></Card>}
           {showcase && (showcase.trucks.length > 0 || showcase.badges.length > 0) && (
             <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" />{tr('Витрина')}</span>}><ProfileShowcase showcase={showcase} /></Card>
           )}
