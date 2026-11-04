@@ -84,6 +84,13 @@ export interface TripCosts {
   wear: number;
 }
 
+/**
+ * 1.2.3: the empty drive to the pickup city costs nothing (no fuel, tolls,
+ * maintenance or wear), so taking a load in another city never turns the
+ * trip into a loss. The kilometres still count for time and statistics.
+ */
+export const chargedEmptyKm = (_emptyKm: number): number => 0;
+
 export function tripCosts(input: TripCostInput): TripCosts {
   const { unit, trailer } = input;
   const loadShare = input.payloadTons > 0 ? Math.min(1, input.tons / input.payloadTons) : 0;

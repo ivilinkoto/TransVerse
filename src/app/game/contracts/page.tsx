@@ -13,7 +13,7 @@ import { canOfferJobs, offersFor } from '@/server/game/hire';
 import { activeProject } from '@/server/game/projects';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
-import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
+import { chargedEmptyKm as freeEmptyKm, rentalFeeCents, tripCosts } from '@/lib/game/economy';
 import { estimateGameMinutes } from '@/lib/game/schedule';
 import { crewEffects, restLeftMin } from '@/lib/game/crew';
 import { overloadPercent } from '@/lib/game/fines';
@@ -147,8 +147,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const error = v.driver?.vacationUntil && v.driver.vacationUntil > now ? tr('Шофьорът е в почивен ден') : overloadable || part ? null : strict;
       // Planning estimates: empty leg by straight-line × 1.25, loaded leg from the real route.
       const emptyKm = v.cityId === c.originCityId ? 0 : haversineKm([v.city.lat, v.city.lon], [c.origin.lat, c.origin.lon]) * 1.25;
-      // The urgent one-minute relocation is free; only the cargo leg costs.
-      const chargedEmptyKm = c.urgent ? 0 : emptyKm;
+      // 1.2.3: the empty leg is free (as the urgent one-minute relocation always was); only the cargo leg costs.
+      const chargedEmptyKm = c.urgent ? 0 : freeEmptyKm(emptyKm);
       const crew = v.driver ? crewEffects(v.driver, v.coDriver, now) : undefined;
       const restMin = v.driver ? Math.max(restLeftMin(v.driver, now), v.coDriver ? restLeftMin(v.coDriver, now) : 0) : 0;
       const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: [...v.upgrades, ...(v.trailer?.upgrades ?? [])], condition: v.condition, driverSkill: Math.max(v.driver?.skill ?? 1, v.coDriver?.skill ?? 0), crewFuel: crew?.fuel, crewWear: crew?.wear, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm - seaKm, tons: part ? part.tons : c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });

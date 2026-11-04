@@ -3,7 +3,7 @@ import { afterExtras, settleExtras, type TripFacts } from './trip-extras';
 import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, hasWinterGrip, powerUnitModel, TRAILER_UPGRADES, trailerModel } from '@/lib/game/catalog';
-import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
+import { chargedEmptyKm as freeEmptyKm, ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
@@ -370,8 +370,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     let theftCents = 0;
     if (risks.parking !== 'secure') for (let i = 0; i < rests; i++) if (Math.random() < SECURE_PARKING.theftChance) theftCents += Math.round(SECURE_PARKING.theftCents[0] + Math.random() * (SECURE_PARKING.theftCents[1] - SECURE_PARKING.theftCents[0]));
     const rented = bundle.vehicle.ownership === 'rented';
-    // The urgent one-minute relocation costs nothing; only the cargo leg is paid for.
-    const chargedEmptyKm = contract!.urgent ? 0 : (emptyRoute?.distanceKm ?? 0);
+    // 1.2.3: the empty leg costs nothing (the urgent one-minute relocation never did); only the cargo leg is paid for.
+    const chargedEmptyKm = contract!.urgent ? 0 : freeEmptyKm(emptyRoute?.distanceKm ?? 0);
     const totalKm = chargedEmptyKm + roadLoadedKm;
     const running = tripCosts({
       unit,

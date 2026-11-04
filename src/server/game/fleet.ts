@@ -1,5 +1,6 @@
 import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
+import { countryOpen } from '@/lib/geo/scope';
 import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
 import { stickerText } from '@/lib/game/cosmetics';
 import { cleanTruckName } from '@/lib/game/truck-names';
@@ -267,6 +268,9 @@ export async function buyDepot(db: Database, userId: string, cityId: number) {
     const company = await companyForUser(tx, userId);
     const [hub] = await tx.select().from(cityMarkets).where(eq(cityMarkets.cityId, cityId)).limit(1);
     if (!hub) fail('not_hub', tr('Депо може да се открие само в град, участващ в товарния пазар.'));
+    // 1.2.3: only in the countries open to this player (a depot elsewhere had no loads).
+    const [where] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, cityId));
+    if (!countryOpen(where?.country, await featureFor(tx, userId, 'europe'), await featureFor(tx, userId, 'open_world'))) fail('not_released', tr('Тази държава идва със следващото обновление.'), 403);
     const [existing] = await tx.select().from(depots).where(and(eq(depots.companyId, company.id), eq(depots.cityId, cityId)));
     if (existing) fail('depot_exists', tr('Вече имате депо в този град.'));
     // 1.1.2: the first depot is free (players from before it came with the account open it themselves).

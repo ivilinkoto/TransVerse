@@ -846,7 +846,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               )}
               {option && !option.error && (
                 <div className="grid gap-2 text-sm sm:grid-cols-4">
-                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{t('Празен курс')}{' '}</span><span className="num">{t('≈ {0} км{1}', int(option.emptyKm), c.urgent && option.emptyKm > 0 ? t(' · 1 мин') : '')}</span></div>
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{t('Празен курс')}{' '}</span><span className="num">{t('≈ {0} км{1}', int(option.emptyKm), c.urgent && option.emptyKm > 0 ? t(' · 1 мин') : '')}</span>{option.emptyKm > 0 && <span className="text-profit">{' · '}{t('без разходи')}</span>}</div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{option.rented ? t('Наем ') : t('Разходи (оценка) ')}</span><span className="num text-loss">{money(option.costCents)}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{t('Печалба (оценка)')}{' '}</span><span className={`num ${shownProfit >= 0 ? 'text-profit' : 'text-loss'}`}>{money(shownProfit)}</span></div>
                   <div className={`rounded-lg px-3 py-2 ${shownMinutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>

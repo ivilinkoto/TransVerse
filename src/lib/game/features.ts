@@ -258,9 +258,11 @@ export const FEATURES = {
   photo_mode: '1.6',
   plate_auction: '1.6',
   trailer_hire: '1.6',
-  europe: '1.7',
+  // 1.2.3: the countries of „Цяла Европа“ (planned for 1.7) open early.
+  europe: '1.2.3',
   // v2.0 "Светът се отваря".
-  open_world: '2.0',
+  // 1.2.3: the countries of the east (planned for 2.0) open early.
+  open_world: '1.2.3',
   national_rankings: '2.0',
   holdings: '2.0',
   territories: '2.0',
