@@ -27,6 +27,7 @@ import { recordCupDelivery } from './community-cups';
 import { SUPPLY } from '@/lib/game/living';
 import { featureLive } from '@/lib/game/features';
 import { checkLegend } from './heritage';
+import { recordWeeklyLane } from './weekly-lane';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -642,6 +643,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     perfectStreak: perfect.streak,
   };
   const extrasCents = await settleExtras(tx, tripFacts);
+  // 1.2.3: the contract of the week.
+  await recordWeeklyLane(tx, tripFacts, completedAt);
   const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.

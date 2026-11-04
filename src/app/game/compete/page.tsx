@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { weeklyLaneView } from '@/server/game/weekly-lane';
+import { WEEKLY_LANE } from '@/lib/game/weekly-lane';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { and, eq, sql } from 'drizzle-orm';
@@ -84,6 +86,9 @@ export default async function CompetePage() {
   for (const e of events.filter((x) => x.event.startsAt <= now && x.event.endsAt > now)) live.push({ href: '/game/events', emoji: '🎯', title: tx(e.event.name), text: t('до {0}', dateTime(e.event.endsAt)) });
   if (run && run.legs.length) live.push({ href: '/game/big-run', emoji: '🏁', title: t('Голям рейс'), text: t('етап {0} от {1}', Math.min(runDone + 1, run.legs.length), run.legs.length) });
   if (battle && battle.status === 'active' && battle.rival) live.push({ href: '/game/company/missions', emoji: '⚔️', title: t('Битка срещу „{0}“', battle.rival.name), text: t('{0} : {1} т', Math.round(battle.ourTons), Math.round(battle.theirTons)) });
+  // 1.2.3: the contract of the week.
+  const lane = features.weekly_lane ? await weeklyLaneView(db, user.id, now) : null;
+  if (lane?.origin && lane.dest) live.push({ href: `/game/contracts?q=${encodeURIComponent(lane.dest.name)}`, emoji: '🏁', title: t('Договор на седмицата: {0} → {1}', tx(lane.origin.name), tx(lane.dest.name)), text: lane.mine ? t('Ти си сред победителите!') : t('+30% · места: {0} от {1}', Math.max(0, WEEKLY_LANE.winners - lane.taken), WEEKLY_LANE.winners) });
   for (const h of tabs.filter((x) => x.holiday)) live.push({ href: h.href, emoji: CARDS[h.href]?.emoji ?? '🎉', title: tx(h.label), text: tx(CARDS[h.href]?.text ?? '') });
 
   const status: Record<string, string> = { '/game/progress': t('{0} от {1}', done, ACHIEVEMENTS.length) };

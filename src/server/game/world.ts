@@ -5,6 +5,7 @@ import { runLaneRepeats } from './lane-repeat';
 import { runOfficePayroll } from './office';
 import { settlePlayerChallenges } from './player-challenges';
 import { ensureLastMile, ensureLivestockLoads, ensureNightCouriers } from './special-loads';
+import { ensureWeeklyLaneLoads } from './weekly-lane';
 import { expireWishes, spawnWishes } from './wishes';
 import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
@@ -240,6 +241,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'night-courier', 10 * 60_000, now, () => ensureNightCouriers(db, now, provider));
     await every(db, 'last-mile', 15 * 60_000, now, () => ensureLastMile(db, now, provider));
     await every(db, 'livestock', 30 * 60_000, now, () => ensureLivestockLoads(db, now, provider));
+    // 1.2.3: the contract of the week.
+    await every(db, 'weekly-lane', 10 * 60_000, now, () => ensureWeeklyLaneLoads(db, now, provider));
     // Global events: settle finished ones (after the deliveries above), keep the automatic ones going.
     await job(db, 'events-settle', now, () => settleDueEvents(db, now));
     await job(db, 'tenders', now, () => settleTenders(db, now));

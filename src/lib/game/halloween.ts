@@ -86,6 +86,7 @@ export function questIncrements(f: QuestFacts): Record<string, number> {
 }
 
 export const BADGES: Record<string, { label: string; description: string }> = {
+  'weekly-lane': { label: 'Договор на седмицата', description: 'Сред първите 20, доставили навреме товар по „Договора на седмицата“.' },
   'pumpkin-2026': { label: 'Тиквен шофьор 2026', description: 'Изпълни всички хелуински мисии в „Нощта на тиквите“ 2026.' },
   'santa-2026': { label: 'Коледен шофьор 2026', description: 'Изпълни всички коледни мисии в „Коледна треска“ 2026.' },
   'album-at': { label: 'Албум: Австрия', description: 'Достави до всичките 20 най-големи града в Австрия (колекция „Градове“).' },
