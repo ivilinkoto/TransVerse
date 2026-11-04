@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { eq } from 'drizzle-orm';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+
+// These tests check the rules from before 1.2.3: the new shop (first pack ×2, bonus weekend, VIP prices)
+// the night shift (faster trips at night) and postcards (extra XP) are left off here and tested in v123-*.test.ts.
+vi.mock('@/lib/game/features', async (load) => {
+  const m = await load<typeof import('@/lib/game/features')>();
+  return { ...m, featureLive: (id: Parameters<typeof m.featureLive>[0], ...rest: unknown[]) => (id === 'shop_v2' || id === 'night_shift' || id === 'postcards' ? false : (m.featureLive as (...a: unknown[]) => boolean)(id, ...rest)) };
+});
 import { deliveryXp, FLEET_XP_SHARE, legacyXpForLevel, levelForXp, xpForLevel } from '@/lib/game/progression';
 import { closeDb, getPool } from '@/server/db/client';
 import { companies, deliveries, driverCandidates, drivers, users, vehicles } from '@/server/db/schema';
