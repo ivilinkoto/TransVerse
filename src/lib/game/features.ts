@@ -108,6 +108,8 @@ export const FEATURES = {
   // numbered key, the treasure map and the Hall of Fame; the weekly and company chests.
   // 1.2.2 „Лесен път“: the simpler menu — five places, Курсове with the map, Награди, a short Автопарк.
   nav_v2: '1.2.2',
+  // 1.2.3 „Отворен път“: the new shop — VIP prices and extras, cases, weekly offers, starter pack, monthly card, patron levels.
+  shop_v2: '1.2.3',
   inventory_menu: '1.2.1',
   item_trade: '1.2.1',
   workshop: '1.2.1',

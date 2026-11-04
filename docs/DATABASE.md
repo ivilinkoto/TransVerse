@@ -208,6 +208,7 @@
 - 0099: `organization_achievements` (компания, ключ, кога) — постиженията на компаниите (1.1.3.1).
 - 0100: `ideas.discord_votes` и `idea_votes.source` (`game` | `discord`) — колко от гласовете за идея са от бутона в Discord (1.1.3.4).
 - 1.1.3.5 (без миграция): в `job_state` — `staff-note:<играч>` (бележка на екипа: текст, кой, кога) и `discord-remind:<доставка>` (/напомни); записите в `errors:recent` имат и `digest` (кодът от страницата за грешка).
+- 1.2.3 (без миграция): ключове в `job_state` — `vip-repair:<играч>:<ден>`, `vip-case:<играч>:<седмица>`, `month-card:<играч>` (`{ until }`); бонусите към плащане са записи в `coin_entries` с ключ `payment-extra:<плащане>:bonus|ref`; продукти в `payments.product_id`: `starter_pack`, `month_card`.
 - 1.2.2 (без миграция): `users.ui_prefs.oldMenu` (старото меню за 14 дни след обновлението); обиколката на новото меню се помни в `ui_prefs.seenPages` („nav-tour-v2“).
 - 0106 (1.2.1): `item_gifts` (подарък: от, до, предмет, бележка, отворен), `item_trades` (размяна: даваш, искаш, бележка, `open`/`accepted`/`declined`/`cancelled`), `item_serials` (номерирани предмети: предмет + номер, кой го е намерил), `company_chest` и `company_chest_log` (фирмен сандък с уникален ключ за всяко движение); колона `item_effects.data` (напр. градът на картата на съкровището). Без миграция: `users.ui_prefs.inventorySeenAt`, причина за ТрансКоин `item_sale`.
 - 0105 (1.1.4.4): колона `vehicles.auto_dispatch_tried_at` — кога VIP диспечерът за последно е проверил камиона (ред на проверка).

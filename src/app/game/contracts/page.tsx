@@ -37,6 +37,7 @@ import { cities as citiesTable, contracts as contractsTable, deliveries } from '
 import { fleetView } from '@/server/game/queries';
 import { LICENCES } from '@/lib/game/licences';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
+import { VIP_V2 } from '@/lib/game/shop-v2';
 import { heldLicences, missingFor } from '@/server/game/licences';
 
 import { FleetCondition } from '@/components/game/FleetCondition';
@@ -160,7 +161,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const rushMinutes = crew && crew.startDutyMin > 0 ? tripMinutes({ ...crew, startDutyMin: 0 }) : null;
       const rented = v.ownership === 'rented';
       const pay = part ? part.rewardCents : c.rewardCents;
-      const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents) + (sea?.ticketCents ?? 0) + (c.oversize ? oversizeCostCents(c.distanceKm - seaKm) : 0);
+      // 1.2.3: VIP pays 3 % less for fuel with the new shop.
+      const vipFuelOff = vip && features.shop_v2 && !rented ? Math.round(costs.fuelCents * VIP_V2.fuelDiscount) : 0;
+      const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents - vipFuelOff) + (sea?.ticketCents ?? 0) + (c.oversize ? oversizeCostCents(c.distanceKm - seaKm) : 0);
       return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? tr(' (нает)') : ''}${v.coDriver ? tr(' · екипаж') : ''} · ${tx(v.city.nameBg)} · ${Math.round(v.condition)}%${restMin ? tr(' · почива още {0} мин', restMin) : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part, onTrip: !!v.delivery };
     });
     return {

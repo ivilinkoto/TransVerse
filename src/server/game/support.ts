@@ -90,10 +90,11 @@ export async function ticketThread(db: DbOrTx, actor: Actor, ticketId: string) {
 export async function staffTicketList(db: DbOrTx, status?: string) {
   const where = status && status in TICKET_STATUS ? eq(supportTickets.status, status) : undefined;
   return db
-    .select({ ticket: supportTickets, username: users.username })
+    .select({ ticket: supportTickets, username: users.username, vip: sql<boolean>`coalesce(${users.vipUntil} > now(), false)` })
     .from(supportTickets)
     .innerJoin(users, eq(users.id, supportTickets.userId))
     .where(where)
-    .orderBy(desc(supportTickets.updatedAt))
+    // 1.2.3: VIP players' open tickets first.
+    .orderBy(sql`case when ${supportTickets.status} = 'open' and ${users.vipUntil} > now() then 0 else 1 end`, desc(supportTickets.updatedAt))
     .limit(200);
 }

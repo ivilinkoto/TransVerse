@@ -25,6 +25,7 @@ export function ShopBuy({
   colors,
   vipColors,
   trailers = [],
+  depots = [],
 }: {
   item: ShopItem;
   balance: number;
@@ -35,6 +36,8 @@ export function ShopBuy({
   vipColors: string[];
   /** Own trailers (for trailer parts). */
   trailers?: { id: string; label: string }[];
+  /** 1.2.3: own depots (for „Преместване на депо“). */
+  depots?: { id: string; label: string }[];
 }) {
   const router = useRouter();
   const usable = vehicles.filter((v) => (item.needs === 'vehicle_city' ? v.idle : v.owned && (item.needs !== 'vehicle' || v.idle)));
@@ -44,6 +47,7 @@ export function ShopBuy({
   const [color, setColor] = useState(colors[0] ?? '');
   const [cosmetic, setCosmetic] = useState(item.needs === 'trailer_cosmetic' ? 'stripe:red' : 'grille:chrome');
   const [trailerId, setTrailerId] = useState(trailers[0]?.id ?? '');
+  const [depotId, setDepotId] = useState(depots[0]?.id ?? '');
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +55,7 @@ export function ShopBuy({
 
   const price = item.id === 'paint' && vip ? 0 : item.needs === 'vehicle_cosmetic' ? COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof COSMETIC_PARTS].price : item.needs === 'trailer_cosmetic' ? TRAILER_COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof TRAILER_COSMETIC_PARTS].price : item.price;
   const needsVehicle = item.needs?.startsWith('vehicle');
-  const missing = (needsVehicle && !vehicleId) || (item.needs === 'vehicle_city' && !cityId) || (item.needs === 'trailer_cosmetic' && !trailerId) || ((item.needs === 'vehicle_plate' || item.needs === 'username' || item.needs === 'recipient') && text.trim().length < 2);
+  const missing = (needsVehicle && !vehicleId) || (item.needs === 'vehicle_city' && !cityId) || (item.needs === 'depot_city' && (!depotId || !cityId)) || (item.needs === 'trailer_cosmetic' && !trailerId) || ((item.needs === 'vehicle_plate' || item.needs === 'username' || item.needs === 'recipient') && text.trim().length < 2);
 
   const buy = async () => {
     setBusy(true);
@@ -63,7 +67,8 @@ export function ShopBuy({
         purchase: {
           item: item.id,
           vehicleId: needsVehicle ? vehicleId : undefined,
-          cityId: item.needs === 'vehicle_city' ? Number(cityId) : undefined,
+          cityId: item.needs === 'vehicle_city' || item.needs === 'depot_city' ? Number(cityId) : undefined,
+          depotId: item.needs === 'depot_city' ? depotId : undefined,
           plate: item.needs === 'vehicle_plate' ? text : undefined,
           color: item.needs === 'vehicle_color' ? color : undefined,
           cosmetic: item.needs === 'vehicle_cosmetic' || item.needs === 'trailer_cosmetic' ? cosmetic : undefined,
@@ -94,6 +99,19 @@ export function ShopBuy({
         ) : (
           <p className="text-xs text-mist-400">{item.needs === 'vehicle_city' ? tr('Нямаш свободен камион.') : tr('Нямаш подходящ собствен камион.')}</p>
         )
+      )}
+      {item.needs === 'depot_city' && (
+        depots.length ? (
+          <>
+            <select className="input py-2 text-sm" value={depotId} onChange={(e) => setDepotId(e.target.value)} aria-label={tr('Депо')}>
+              {depots.map((d) => <option key={d.id} value={d.id}>{tx(d.label)}</option>)}
+            </select>
+            <select className="input py-2 text-sm" value={cityId} onChange={(e) => setCityId(e.target.value)} aria-label={tr('Нов град')}>
+              <option value="">{tr('— нов град —')}</option>
+              {cities.map((c) => <option key={c.id} value={c.id}>{tx(c.name)}</option>)}
+            </select>
+          </>
+        ) : <p className="text-xs text-mist-400">{tr('Нямаш депо.')}</p>
       )}
       {item.needs === 'vehicle_city' && (
         <select className="input py-2 text-sm" value={cityId} onChange={(e) => setCityId(e.target.value)} aria-label={tr('Град')}>

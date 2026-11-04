@@ -4,7 +4,7 @@
  * Game money (лв. in the game) is never sold; real prices are in euro.
  */
 
-export type PaidProductId = 'tc_100' | 'tc_550' | 'tc_1200' | 'tc_3200' | 'vip_30_direct';
+export type PaidProductId = 'tc_100' | 'tc_550' | 'tc_1200' | 'tc_3200' | 'vip_30_direct' | 'starter_pack' | 'month_card';
 
 export interface PaidProduct {
   id: PaidProductId;
@@ -16,6 +16,8 @@ export interface PaidProduct {
   /** Gift coins included in `coins` (shown as a bonus). */
   bonus: number;
   vipDays: number;
+  /** 1.2.3: sold only with the new shop (`shop_v2`). */
+  v2?: boolean;
 }
 
 export const PAID_PRODUCTS: PaidProduct[] = [
@@ -23,6 +25,8 @@ export const PAID_PRODUCTS: PaidProduct[] = [
   { id: 'tc_550', label: '550 ТрансКоин', description: '500 TC + 50 подарък.', priceCents: 999, coins: 550, bonus: 50, vipDays: 0 },
   { id: 'tc_1200', label: '1 200 ТрансКоин', description: '1 000 TC + 200 подарък.', priceCents: 1999, coins: 1200, bonus: 200, vipDays: 0 },
   { id: 'tc_3200', label: '3 200 ТрансКоин', description: '2 500 TC + 700 подарък.', priceCents: 4999, coins: 3200, bonus: 700, vipDays: 0 },
+  { id: 'starter_pack', label: 'Начален пакет', description: '300 TC, 7 дни VIP и сребърен кейс. Веднъж за профил, от ниво 3.', priceCents: 299, coins: 300, bonus: 0, vipDays: 7, v2: true },
+  { id: 'month_card', label: 'Месечна карта', description: '30 дни VIP и по 30 TC всеки ден, в който влезеш (до 900 TC).', priceCents: 499, coins: 0, bonus: 0, vipDays: 30, v2: true },
   { id: 'vip_30_direct', label: 'VIP · 30 дни', description: 'Всички VIP предимства за 30 дни, добавени към текущия ти VIP.', priceCents: 999, coins: 0, bonus: 0, vipDays: 30 },
 ];
 

@@ -5,6 +5,7 @@ import { foundCompany } from '@/server/game/company';
 import { buyoutRental, returnRental, startTestDrive } from '@/server/game/rentals';
 import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
+import { buyPassLevel, claimMonthCard, claimVipCase } from '@/server/game/shop-v2';
 import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
 import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
@@ -247,6 +248,10 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearChat') }),
   z.object({ type: z.literal('acceptTender'), tenderId: id }),
   z.object({ type: z.literal('claimDaily') }),
+  // 1.2.3: the new shop.
+  z.object({ type: z.literal('claimVipCase') }),
+  z.object({ type: z.literal('claimMonthCard') }),
+  z.object({ type: z.literal('buyPassLevel') }),
   z.object({ type: z.literal('seenRelease'), version: z.string().trim().max(20) }),
   z.object({ type: z.literal('seasonalTheme'), on: z.boolean() }),
   z.object({ type: z.literal('claimHalloweenQuest'), questId: z.string().max(30) }),
@@ -1307,6 +1312,13 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'claimDaily':
       return { ok: true, ...(await claimDaily(db, user.id)) };
+    case 'claimVipCase':
+      return { ok: true, ...(await claimVipCase(db, user.id)) };
+    case 'claimMonthCard':
+      return { ok: true, ...(await claimMonthCard(db, user.id)) };
+    case 'buyPassLevel':
+      await buyPassLevel(db, user.id);
+      return { ok: true };
     case 'acceptTender':
       return { ok: true, id: await acceptTender(db, user.id, input.tenderId) };
     case 'clearChat':

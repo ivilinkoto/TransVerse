@@ -3,6 +3,7 @@ import { afterExtras, settleExtras, type TripFacts } from './trip-extras';
 import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, hasWinterGrip, powerUnitModel, TRAILER_UPGRADES, trailerModel } from '@/lib/game/catalog';
+import { VIP_V2 } from '@/lib/game/shop-v2';
 import { chargedEmptyKm as freeEmptyKm, ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
@@ -404,6 +405,12 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const oversizeCents = contract!.oversize ? oversizeCostCents(roadLoadedKm) : 0;
     // A company fuel station in the start city (v1.5): cheaper fuel for its members; the station earns on the others.
     const station = !rented && !contract!.urgent ? await fuelStationAt(tx, contract!.originCityId, userId, now) : null;
+    // 1.2.3: VIP pays 3 % less for fuel with the new shop.
+    if (vip && !rented && (await featureFor(tx, userId, 'shop_v2', now))) {
+      const off = Math.round(running.fuelCents * VIP_V2.fuelDiscount);
+      running.fuelCents -= off;
+      running.totalCents -= off;
+    }
     if (station?.member) {
       const off = Math.round(running.fuelCents * station.discount);
       running.fuelCents -= off;
