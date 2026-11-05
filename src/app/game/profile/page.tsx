@@ -18,6 +18,8 @@ import { showcaseOf } from '@/server/game/community';
 import { badgesOf } from '@/server/game/halloween';
 import { weekChart } from '@/server/game/week-chart';
 import { WeekChart } from '@/components/game/WeekChart';
+import { titlesOf } from '@/server/game/first-snow';
+import { TITLES } from '@/lib/game/first-snow';
 import { fleetView } from '@/server/game/queries';
 import { friendsOf, myCompanyInvites, playerCard } from '@/server/game/social';
 import { t as tr, tx } from '@/i18n/t';
@@ -46,6 +48,9 @@ export default async function ProfilePage() {
   ]) : null;
   const invitable = busy ? friendIds.filter((id) => !busy.has(id)) : [];
   const week = features.week_chart ? await weekChart(db, company.id, now) : null;
+  // 1.2.5: the titles the player owns (from the season pass, „Крал на снега“, clearing the roads).
+  const titles = features.season_v2 ? await titlesOf(db, user.id) : [];
+  const [{ current = null } = {}] = titles.length ? await db.select({ current: users.title }).from(users).where(eq(users.id, user.id)) : [];
   const tier = reputationTier(company.reputation);
   const next = REPUTATION_TIERS.find((t) => t.min > company.reputation);
   return (
@@ -55,6 +60,15 @@ export default async function ProfilePage() {
         <div className="space-y-6">
           <Card><PlayerCardView card={card} /></Card>
           {week && <Card title={tr('Твоята седмица')}><WeekChart days={week} /></Card>}
+          {titles.length > 0 && (
+            <Card title={tr('Титла до името')}>
+              <p className="mb-3 text-sm text-mist-300">{tr('Една от титлите ти се вижда до името в чата и в профила.')}</p>
+              <div className="flex flex-wrap gap-2" data-testid="titles">
+                {titles.map((id) => <ActionButton key={id} action={{ type: 'setTitle', title: id }} className={current === id ? 'btn-primary px-3 py-1.5 text-xs' : 'btn-ghost px-3 py-1.5 text-xs'}>{tx(TITLES[id]!.label)}</ActionButton>)}
+                {current && <ActionButton action={{ type: 'setTitle', title: null }} className="btn-ghost px-3 py-1.5 text-xs">{tr('Без титла')}</ActionButton>}
+              </div>
+            </Card>
+          )}
           {showcase && (
             <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" />{tr('Витрина на профила')}</span>}>
               <p className="mb-3 text-sm text-mist-300">{tr('До 3 камиона и 3 значки, които другите виждат в профила ти.')}</p>

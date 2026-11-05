@@ -42,7 +42,7 @@ async function endTestDrive(tx: Tx, v: Vehicle, now: Date) {
  */
 export async function startTestDrive(db: Database, userId: string, modelId: string, now = new Date()) {
   const model = POWER_UNITS.find((m) => m.id === modelId);
-  if (!model) fail('unknown_model', t('Непознат модел.'));
+  if (!model || model.exclusive) fail('unknown_model', t('Непознат модел.'));
   // 1.1.3.1: the new models can be tried as soon as they are out, also before test drives are open to all.
   const newModel = !!model!.since && (await featureFor(db, userId, model!.since, now));
   if (model!.since && !newModel) fail('not_released', t('Това идва със следващото обновление.'), 403);

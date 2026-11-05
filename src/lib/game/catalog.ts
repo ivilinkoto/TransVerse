@@ -40,7 +40,9 @@ export interface PowerUnitModel {
   /** 1.1.3.1: the market marks the model „НОВО“ until this day (ISO). */
   newUntil?: string;
   /** 1.1.3.1: drawing variants — a box van with a separate cargo box; an older tractor with round lights. */
-  look?: 'box-van' | 'classic';
+  look?: 'box-van' | 'classic' | 'plow';
+  /** 1.2.5: a season reward only — never on the market, for rent or in the company fleet. */
+  exclusive?: string;
 }
 
 export interface TrailerModel {
@@ -127,11 +129,18 @@ export const POWER_UNITS: PowerUnitModel[] = [
     maintenanceCentsPerKm: 12, tolled: true, powerHp: 380, axles: 2, minLevel: 2, cab: 'day', look: 'classic',
     since: 'new_vehicles_1131', newUntil: '2026-11-12',
   },
+  // ── 1.2.5 „Първи сняг“: the reward of the last premium level of the season pass ──
+  {
+    id: 'rila-nordik-plow', kind: 'tractor', brand: 'Rila Heavy', name: 'Rila Nordik 540 Снегорин', priceCents: 182_000_00,
+    payloadTons: 0, body: null, heavyHaul: false, maxSpeedKmh: 85, fuelEmpty: 23, fuelFull: 32,
+    maintenanceCentsPerKm: 11, tolled: true, powerHp: 540, axles: 2, minLevel: 1, cab: 'highline', look: 'plow',
+    exclusive: 'season_first_snow',
+  },
 ];
 
 /** 1.1.3.1: may this player see and buy the model now (electric and later models wait for their release). */
 export function modelAvailable(m: PowerUnitModel, has: (f: FeatureId) => boolean): boolean {
-  return (!m.electric || has('electric')) && (!m.since || has(m.since));
+  return !m.exclusive && (!m.electric || has('electric')) && (!m.since || has(m.since));
 }
 
 /** Electric models come with v1.4 (staff see them earlier). */

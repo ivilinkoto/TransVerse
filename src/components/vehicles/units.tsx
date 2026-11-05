@@ -101,14 +101,26 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
 }
 
 /** Tractor unit, rear at x = 0, front at ≈ 602. Fifth wheel centre at x = 120 (kingpin sits 1.6 m behind the trailer nose). */
-export function Tractor({ ids, color, cab, heavy = false, coupled = false, classic = false, extras }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; classic?: boolean; extras?: Cosmetics }) {
+export function Tractor({ ids, color, cab, heavy = false, coupled = false, classic = false, plow = false, extras }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; classic?: boolean; plow?: boolean; extras?: Cosmetics }) {
   const cabX = 362;
   const rear = heavy ? [72, 198] : [100];
   return (
     <g>
-      {/* frame rails */}
-      <rect x={0} y={-122} width={560} height={24} rx={3} fill="#1f2937" />
+      {/* frame rails: a lighter steel with a top edge, so the chassis reads as one piece on a dark page */}
+      <rect x={0} y={-122} width={560} height={24} rx={3} fill="#374151" stroke="#1f2937" strokeWidth="2" />
+      <rect x={2} y={-121} width={556} height={3} fill="#64748b" opacity="0.8" />
+      {/* rear light bar, mud-flap hanger and the flap behind the last axle */}
+      <rect x={-4} y={-124} width={16} height={34} rx={3} fill="#4b5563" stroke="#1f2937" strokeWidth="1.5" />
       <rect x={2} y={-116} width={8} height={14} fill="#dc2626" />
+      <rect x={14} y={-100} width={10} height={56} rx={2} fill="#111827" />
+      {/* spring hangers that hold each rear axle under the frame */}
+      {rear.map((wx) => (
+        <g key={`h${wx}`}>
+          <rect x={wx - 40} y={-104} width={14} height={30} rx={3} fill="#4b5563" stroke="#1f2937" strokeWidth="1.5" />
+          <rect x={wx + 26} y={-104} width={14} height={30} rx={3} fill="#4b5563" stroke="#1f2937" strokeWidth="1.5" />
+          <path d={`M ${wx - 36} -78 Q ${wx} -66 ${wx + 36} -78`} fill="none" stroke="#6b7280" strokeWidth="7" strokeLinecap="round" />
+        </g>
+      ))}
       {/* fifth wheel */}
       <rect x={70} y={-136} width={104} height={14} rx={5} fill="#111827" />
       <rect x={112} y={-142} width={16} height={8} rx={2} fill="#6b7280" />
@@ -121,6 +133,24 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
       {/* side skirt */}
       {!heavy && <rect x={160} y={-102} width={196} height={18} rx={4} fill={color} opacity="0.85" />}
       <Cab x={cabX} style={cab} ids={ids} color={color} aero={coupled && !heavy} extras={extras} />
+      {plow && (
+        // 1.2.5 „Първи сняг“: a snow plough blade on a push frame in front, and amber beacons on the roof
+        <g>
+          <rect x={590} y={-104} width={34} height={14} rx={3} fill="#1f2937" />
+          <path d="M618 -150 L668 -168 Q686 -96 668 -24 L618 -36 Q630 -92 618 -150 Z" fill="#f59e0b" stroke="#78350f" strokeWidth="3" />
+          <path d="M630 -146 L660 -157 M634 -112 L672 -118 M634 -76 L672 -74 M630 -42 L662 -34" stroke="#111827" strokeWidth="7" opacity="0.85" />
+          <rect x={662} y={-30} width={12} height={10} rx={2} fill="#334155" />
+          {(() => {
+            const roof = cab === 'highline' ? -372 : cab === 'sleeper' ? -330 : -300;
+            return (
+              <>
+                <rect x={cabX + 40} y={roof - 8} width={150} height={8} rx={3} fill="#64748b" />
+                {[cabX + 52, cabX + 166].map((bx) => <rect key={bx} x={bx} y={roof - 24} width={22} height={16} rx={5} fill="#fbbf24" stroke="#b45309" strokeWidth="2" />)}
+              </>
+            );
+          })()}
+        </g>
+      )}
       {classic && (
         // Old-school look: twin cream stripes along the cab, a round lamp and a chrome bumper
         <g>
@@ -132,7 +162,9 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
       )}
       {rear.map((wx) => (
         <g key={wx}>
-          <Fender x={wx} />
+          <Fender x={wx} color="#334155" />
+          {/* the bracket that holds the mudguard to the frame */}
+          <rect x={wx - 6} y={-122} width={12} height={14} rx={2} fill="#334155" />
           <Wheel x={wx} ids={ids} twin />
         </g>
       ))}

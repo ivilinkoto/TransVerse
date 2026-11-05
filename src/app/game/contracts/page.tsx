@@ -1,3 +1,4 @@
+import { clearedCountries, withCleared } from '@/server/game/first-snow';
 import Link from 'next/link';
 import { TriangleAlert } from 'lucide-react';
 import { truckBlock } from '@/lib/game/truck-ready';
@@ -93,6 +94,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   });
   const blocked = new Set(blocks.map((b) => b.vehicleId));
   const real = await realConditionsFor(db, user.id, now);
+  // 1.2.5: roads the players cleared today are one step easier on the board too.
+  const cleared = await clearedCountries(db, now);
   // v1.4: rail terminals (for "С влак") and the ship in port.
   const terminalIds = [...new Set(CROSSING_LINES.filter((l) => l.kind === 'rail' || (l.optional && features.sea_lines)).flatMap((l) => [l.a, l.b]))];
   const terminals = features.rail || features.sea_lines ? new Map((await db.select({ id: citiesTable.id, lat: citiesTable.lat, lon: citiesTable.lon }).from(citiesTable).where(inArray(citiesTable.id, terminalIds))).map((t) => [t.id, t])) : new Map();
@@ -214,7 +217,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       lez: features.low_emission_zones ? [c.originCityId, c.destCityId].map((id) => LOW_EMISSION_ZONES[id]).filter((x): x is string => !!x) : [],
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,
       weather: (() => {
-        const w = routeCondition(c.route.countries, now, real);
+        const w = routeCondition(c.route.countries, now, withCleared(c.route.countries, now, real, cleared));
         return w.condition === 'clear' ? null : { condition: w.condition, label: tx(CONDITION_LABELS[w.condition]), country: w.country! };
       })(),
       favorite: favorites.some((f) => f.originCityId === c.originCityId && f.destCityId === c.destCityId),

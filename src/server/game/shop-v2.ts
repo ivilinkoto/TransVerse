@@ -7,7 +7,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { and, eq, like, ne, sql } from 'drizzle-orm';
-import { PASS_LEVELS, PASS_POINTS_PER_LEVEL } from '@/lib/game/season-pass';
+import { levelStart, passLevelOf, passLevels, passVersion } from '@/lib/game/season-pass';
 import { bonusWeekend, FIRST_PURCHASE_MULTIPLIER, isoWeek, MONTH_CARD, PASS_LEVEL_SALE, patronBonus, patronLevel, REFERRAL_PURCHASE_SHARE, sofiaDay, STARTER_PACK, VIP_V2, WEEKEND_BONUS } from '@/lib/game/shop-v2';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -164,9 +164,14 @@ export async function buyPassLevel(db: Database, userId: string, now = new Date(
     const season = await activeSeason(tx, now);
     if (!passLevelSaleOpen(season.endsAt, now)) fail('not_now', t('Нива се купуват само в последните {0} дни на сезона.', PASS_LEVEL_SALE.lastDays), 409);
     const [row] = await tx.select({ points: seasonPasses.points }).from(seasonPasses).where(and(eq(seasonPasses.seasonId, season.id), eq(seasonPasses.userId, userId))).for('update');
-    if ((row?.points ?? 0) >= PASS_LEVELS * PASS_POINTS_PER_LEVEL) fail('max_level', t('Пропускът вече е на последното ниво.'), 409);
+    // 1.2.5: with the pass of 50 levels, one level is exactly the points to the next one.
+    const v = passVersion(season.rules);
+    const have = row?.points ?? 0;
+    const level = passLevelOf(have, v);
+    if (level >= passLevels(v)) fail('max_level', t('Пропускът вече е на последното ниво.'), 409);
+    const add = v === 2 ? levelStart(level + 1, 2) - have : PASS_LEVEL_SALE.points;
     await postCoins(tx, userId, { amount: -PASS_LEVEL_SALE.coins, reason: 'season_pass', description: t('Ниво от пропуска: {0}', season.name), idempotencyKey: `pass-level:${userId}:${randomUUID()}` }, { requireFunds: true });
-    await tx.insert(seasonPasses).values({ seasonId: season.id, userId, points: PASS_LEVEL_SALE.points }).onConflictDoUpdate({ target: [seasonPasses.seasonId, seasonPasses.userId], set: { points: sql`${seasonPasses.points} + ${PASS_LEVEL_SALE.points}`, updatedAt: now } });
+    await tx.insert(seasonPasses).values({ seasonId: season.id, userId, points: add }).onConflictDoUpdate({ target: [seasonPasses.seasonId, seasonPasses.userId], set: { points: sql`${seasonPasses.points} + ${add}`, updatedAt: now } });
     await logActivity(tx, userId, 'pass_level_bought', { seasonId: season.id });
   });
 }

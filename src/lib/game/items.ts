@@ -71,6 +71,7 @@ export const ITEMS = {
   frost_frame: { name: 'Ледена рамка', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Ледена рамка около портрета.' },
   euro_frame: { name: 'Рамка „Европа“', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Синя рамка със звезди около портрета.' },
   xmas_frame: { name: 'Коледна рамка', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Червено-зелена рамка около портрета.' },
+  paint_firstsnow: { name: 'Боя „Първи сняг“', rarity: 'epic', kind: 'consumable', target: 'vehicle', effect: 'Боядисва собствен камион светлосиньо със снежинки — само от пропуска на сезона „Първи сняг“.' },
 } as const satisfies Record<string, ItemDef>;
 export type ItemId = keyof typeof ITEMS;
 export const ITEM_IDS = Object.keys(ITEMS) as ItemId[];
@@ -141,6 +142,9 @@ export const SELL_DAY_CAP = 50;
 /** 1.2.1: trades between players — from this level, never with an account of the same network. */
 export const TRADE_RULES = { minLevel: 5, openMax: 5, noteMax: 120 };
 
+/** 1.2.5: items that come only from a season pass (never from cases, finds or the workshop). */
+export const PASS_ONLY_ITEMS: ItemId[] = ['paint_firstsnow'];
+
 /** Items that stay with the one who found them (no sale, gift or trade). */
 export const BOUND_ITEMS: ItemId[] = ['golden_key'];
 
@@ -167,7 +171,7 @@ export const RECIPES: Recipe[] = [
 /** What „три еднакви“ can turn into: items of the next rarity (no coins, cases, seasonal or bound ones). */
 export function craftPool(rarity: Rarity): ItemId[] {
   const seasonal = new Set(COLLECTIONS.filter((c) => c.id !== 'road').flatMap((c) => [...c.items, ...(c.frame ? [c.frame] : [])]));
-  return ITEM_IDS.filter((id) => ITEMS[id].rarity === rarity && ['consumable', 'cosmetic', 'collectible'].includes(ITEMS[id].kind) && !seasonal.has(id) && !BOUND_ITEMS.includes(id));
+  return ITEM_IDS.filter((id) => ITEMS[id].rarity === rarity && ['consumable', 'cosmetic', 'collectible'].includes(ITEMS[id].kind) && !seasonal.has(id) && !BOUND_ITEMS.includes(id) && !PASS_ONLY_ITEMS.includes(id));
 }
 
 /** What three of `id` make: the next case up, or a random item of the next rarity (null when there is none). */
@@ -231,6 +235,7 @@ export function sourcesOf(id: ItemId): { source: string; arg?: string; percent: 
   for (const r of RECIPES) if (r.makes === id) out.push({ source: 'Работилница (рецепта)', percent: null });
   const frameOf = COLLECTIONS.find((c) => c.frame === id);
   if (frameOf) out.push({ source: 'Награда за колекцията „{0}“', arg: frameOf.name, percent: null });
+  if (id === 'paint_firstsnow') out.push({ source: 'Пропуск на сезона „Първи сняг“', percent: null });
   return out;
 }
 

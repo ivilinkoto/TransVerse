@@ -16,7 +16,7 @@ export interface VehicleIllustrationProps {
   trailerColor?: string;
   className?: string;
   title?: string;
-  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027, 'easter' — Easter 2027, 'blackfriday' — Black Friday 2026). */
+  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027, 'easter' — Easter 2027, 'blackfriday' — Black Friday 2026, 'firstsnow' — the season „Първи сняг“). */
   livery?: string | null;
   /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
   cosmetics?: Cosmetics | null;
@@ -90,7 +90,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
     );
   } else {
     const tractorX = trailer ? 1080 : 0; // kingpin 160 cm behind the nose → fifth wheel at x = 120
-    width = tractorX + 640;
+    width = tractorX + (unit.look === 'plow' ? 690 : 640);
     decals = trailer ? [[1250, -205, 110]] : [[tractorX + 300, -330, 110]];
     if (trailer?.body === 'tanker') height = 450;
     content = (
@@ -99,7 +99,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
         {trailer && <Trailer body={trailer.body as TrailerBody} ids={ids} color={trailerCosmetics?.paint ?? trailerColor ?? (trailer.body === 'container' ? '#b45309' : trailer.body === 'tipper' ? '#ca8a04' : color)} />}
         {trailer && <TrailerExtras kind="semi" body={trailer.body} upgrades={trailerUpgrades ?? []} logo={trailerLogo} cosmetics={trailerCosmetics} />}
         <g transform={`translate(${tractorX} 0)`}>
-          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} classic={unit.look === 'classic'} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
+          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} classic={unit.look === 'classic'} plow={unit.look === 'plow'} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
         </g>
       </>
     );
@@ -115,6 +115,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       {livery === 'cherry' && decals.map(([x, y, size], i) => <CherryDecal key={`c${i}`} x={x} y={y} size={size} />)}
       {livery && livery in RETRO && decals.map(([x, y, size], i) => <RetroDecal key={`r${i}`} x={x} y={y} size={size} stripes={RETRO[livery as RetroStyle].stripes} />)}
       {livery === 'easter' && decals.map(([x, y, size], i) => <EasterDecal key={`ea${i}`} x={x} y={y} size={size} />)}
+      {livery === 'firstsnow' && decals.map(([x, y, size], i) => <SnowDecal key={`fs${i}`} x={x} y={y} size={size} />)}
       {livery === 'blackfriday' && decals.map(([x, y, size], i) => <BlackFridayDecal key={`bf${i}`} x={x} y={y} size={size} />)}
       {unit.electric && decals.slice(0, 1).map(([x, y, size], i) => <ElectricDecal key={`e${i}`} x={x} y={y + size * 0.9} size={size * 0.55} />)}
     </svg>
@@ -206,6 +207,20 @@ function CherryDecal({ x, y, size }: { x: number; y: number; size: number }) {
       ))}
     </g>
   );
+}
+
+/** „Първи сняг“ (1.2.5 season paint): three snowflakes, centred on (x, y). */
+function SnowDecal({ x, y, size }: { x: number; y: number; size: number }) {
+  const k = size / 32;
+  const flake = (cx: number, cy: number, r: number) => (
+    <g key={`${cx}-${cy}`} stroke="#e0f2fe" strokeWidth={r / 5} strokeLinecap="round">
+      {[0, 60, 120].map((a) => {
+        const dx = r * Math.cos((a * Math.PI) / 180), dy = r * Math.sin((a * Math.PI) / 180);
+        return <line key={a} x1={cx - dx} y1={cy - dy} x2={cx + dx} y2={cy + dy} />;
+      })}
+    </g>
+  );
+  return <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`} opacity="0.95">{flake(10, 12, 7)}{flake(24, 8, 5)}{flake(22, 24, 4)}</g>;
 }
 
 /** Black Friday 2026 (1.2.4): a gold stripe and a price tag with „−%“, centred on (x, y). */

@@ -12,9 +12,16 @@ import { t, tx } from '@/i18n/t';
  * last (kept on this device), a new level lands like a stamp, and rewards fly
  * to the wallet when they are claimed.
  */
-export function PassProgress({ season, points, perLevel, maxLevel, fx }: { season: string; points: number; perLevel: number; maxLevel: number; fx: boolean }) {
-  const levelOf = (p: number) => Math.min(maxLevel, Math.floor(p / perLevel));
-  const intoOf = (p: number) => (levelOf(p) >= maxLevel ? perLevel : p - levelOf(p) * perLevel);
+export function PassProgress({ season, points, perLevel, maxLevel, fx, step = 0 }: { season: string; points: number; perLevel: number; maxLevel: number; fx: boolean; step?: number }) {
+  // 1.2.5: level n costs perLevel + step·(n−1) points (step 0: the same for every level).
+  const startOf = (n: number) => perLevel * n + (step * n * (n - 1)) / 2;
+  const levelOf = (p: number) => {
+    let n = 0;
+    while (n < maxLevel && p >= startOf(n + 1)) n++;
+    return n;
+  };
+  const costOf = (n: number) => perLevel + step * n;
+  const intoOf = (p: number) => (levelOf(p) >= maxLevel ? costOf(maxLevel - 1) : p - startOf(levelOf(p)));
   // While filling: the points on screen; otherwise the real ones.
   const [filling, setFilling] = useState<number | null>(null);
   const shown = filling ?? points;
@@ -69,6 +76,7 @@ export function PassProgress({ season, points, perLevel, maxLevel, fx }: { seaso
 
   const level = levelOf(shown);
   const into = intoOf(shown);
+  const need = costOf(Math.min(level, maxLevel - 1));
   return (
     <>
       <div ref={badge} className="relative flex h-20 w-20 flex-col items-center justify-center rounded-3xl border-2 border-gold-400/60 bg-gold-400/10">
@@ -79,10 +87,10 @@ export function PassProgress({ season, points, perLevel, maxLevel, fx }: { seaso
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between text-sm"><span className="text-mist-300">{level >= maxLevel ? t('Пропускът е завършен!') : t('До ниво {0}', level + 1)}</span><span className="num text-mist-400">{int(into)} / {int(perLevel)}</span></div>
+        <div className="flex items-center justify-between text-sm"><span className="text-mist-300">{level >= maxLevel ? t('Пропускът е завършен!') : t('До ниво {0}', level + 1)}</span><span className="num text-mist-400">{int(into)} / {int(need)}</span></div>
         <div ref={bar} className="relative mt-2 h-3 overflow-hidden rounded-full bg-asphalt-700">
-          <div className="h-full rounded-full bg-gradient-to-r from-gold-500 to-gold-400" style={{ width: `${Math.max(2, (into / perLevel) * 100)}%` }} />
-          {fx && <span className="pointer-events-none absolute -top-0.5 text-[11px] leading-none" style={{ left: `calc(${Math.max(2, (into / perLevel) * 100)}% - 10px)` }} aria-hidden="true">🚚</span>}
+          <div className="h-full rounded-full bg-gradient-to-r from-gold-500 to-gold-400" style={{ width: `${Math.max(2, Math.min(100, (into / need) * 100))}%` }} />
+          {fx && <span className="pointer-events-none absolute -top-0.5 text-[11px] leading-none" style={{ left: `calc(${Math.max(2, Math.min(100, (into / need) * 100))}% - 10px)` }} aria-hidden="true">🚚</span>}
         </div>
         <div className="num mt-1 text-xs text-mist-400">{t('{0} сезонни точки общо', int(shown))}</div>
       </div>

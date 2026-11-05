@@ -126,6 +126,14 @@ const ART: Record<ItemId, ReactNode> = {
       <text x="76" y="16" fontSize="12" fontWeight="900" fill="#e0e7ff" fontFamily="system-ui, sans-serif">z</text>
     </g>
   ),
+  paint_firstsnow: (
+    <g>
+      <rect x="26" y="30" width="48" height="56" rx="6" fill="#93c5fd" stroke="#1e3a8a" strokeWidth="2" />
+      <rect x="22" y="22" width="56" height="12" rx="4" fill="#64748b" />
+      <path d="M50 44 v28 M38 51 l24 14 M38 65 l24 -14" stroke="#e0f2fe" strokeWidth="4" strokeLinecap="round" />
+      <path d="M44 22 q6 -12 12 0" fill="none" stroke="#475569" strokeWidth="3" />
+    </g>
+  ),
   repair_kit: (
     <g>
       <rect x="14" y="36" width="72" height="46" rx="6" fill="#dc2626" stroke="#7f1d1d" strokeWidth="2" />

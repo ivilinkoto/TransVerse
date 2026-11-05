@@ -68,7 +68,7 @@ async function depotInCity(db: DbOrTx, companyId: string, cityId: number) {
 /** Buys a truck outright, or on lease (`lease`: a down payment now, weekly instalments after). */
 export async function buyVehicle(db: Database, userId: string, modelId: string, depotCityId: number, options: { lease?: boolean; now?: Date } = {}) {
   const model = POWER_UNITS.find((m) => m.id === modelId);
-  if (!model) fail('unknown_model', tr('Непознат модел.'));
+  if (!model || model.exclusive) fail('unknown_model', tr('Непознат модел.'));
   const now = options.now ?? new Date();
   if (model!.electric && !(await featureFor(db, userId, 'electric', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
   if (model!.since && !(await featureFor(db, userId, model!.since, now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);

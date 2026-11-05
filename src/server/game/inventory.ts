@@ -1,3 +1,4 @@
+import { FIRST_SNOW } from '@/lib/game/first-snow';
 import { randomInt } from 'node:crypto';
 import { and, desc, eq, gt, inArray, isNull, notInArray, or, sql } from 'drizzle-orm';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -156,6 +157,16 @@ export async function applyItem(db: Database, userId: string, itemId: string, ta
         if (v!.condition >= 100) fail('full_condition', t('Камионът е в отлично състояние.'));
         await tx.update(vehicles).set({ condition: sql`least(100, ${vehicles.condition} + ${ITEM_RULES.repairPoints})` }).where(eq(vehicles.id, target.vehicleId!));
         result = t('{0}: +{1}% състояние.', v!.plate, ITEM_RULES.repairPoints);
+        break;
+      }
+      case 'paint_firstsnow': {
+        // 1.2.5: the season paint from the pass — on an own truck only.
+        if (!target.vehicleId) fail('need_vehicle', t('Избери камион.'));
+        const [v] = await tx.select({ plate: vehicles.plate, ownership: vehicles.ownership }).from(vehicles).where(and(eq(vehicles.id, target.vehicleId!), eq(vehicles.companyId, company.id)));
+        if (!v) fail('vehicle_not_found', t('Превозното средство не е намерено.'), 404);
+        if (v!.ownership !== 'owned') fail('rented', t('Боядисват се само собствени камиони.'));
+        await tx.update(vehicles).set({ color: FIRST_SNOW.paintColor, livery: 'firstsnow' }).where(eq(vehicles.id, target.vehicleId!));
+        result = t('{0} е в цветовете на „Първи сняг“.', v!.plate);
         break;
       }
       case 'fuel_voucher':

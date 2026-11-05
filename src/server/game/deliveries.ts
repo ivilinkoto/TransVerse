@@ -29,6 +29,7 @@ import { featureLive } from '@/lib/game/features';
 import { checkLegend } from './heritage';
 import { recordWeeklyLane } from './weekly-lane';
 import { recordPrewinterDelivery } from './prewinter';
+import { clearedCountries, recordSnowSeason, withCleared } from './first-snow';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -432,7 +433,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const rentalFee = rented && bundle.vehicle.testDriveFrom ? 0 : rented ? rentalFeeCents(load.rewardCents, totalKm, (perks?.bonuses.rentalShareReduction ?? 0) + (vip ? VIP_PERKS.rentalShareReduction : 0)) : null;
 
     // The real weather on the roads now (v1.4), when there is a fresh reading.
-    const real = await realConditionsFor(tx, userId, now);
+    // 1.2.5: countries whose roads the players cleared today are one step easier.
+    const real = withCleared(loadedRoute!.countries, now, await realConditionsFor(tx, userId, now), await clearedCountries(tx, now));
     // Surprises on the way, decided now and revealed when the truck gets there.
     // Maintenance (v1.3): an overdue truck gets into trouble more often, a freshly serviced one less.
     const upkeep = !rented && (await featureFor(tx, userId, 'maintenance', now)) ? maintenanceState(bundle.vehicle.odometerKm, bundle.vehicle.serviceKm).factor : 1;
@@ -794,6 +796,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (org) await addOrganizationSeasonScore(tx, org.id, points, now);
   await addLeaguePoints(tx, company!.ownerId, points, now);
   await addPassPoints(tx, company!.ownerId, points, now);
+  // 1.2.5 „Първи сняг“: weekly pass tasks, clearing the roads, „Крал на снега“.
+  await recordSnowSeason(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, convoy: !!(d.convoyWith || d.convoyLead), destCountry: dest!.countryCode, tons: contract.weightTons, holiday: contract.holiday, goods: contract.goods, roadEvents: d.roadEvents, ownerDrove }, completedAt);
   await rewardReferral(tx, company!.ownerId, now);
   // Return loads come with v1.2 (staff see them before the release).
   // The hauler of someone else's goods gets the usual "Доставено" message.

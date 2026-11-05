@@ -124,6 +124,8 @@ export const FEATURES = {
   // 1.2.4 „Преди зимата“: winter goods and the server goal before 1 December, Black Friday in the shop and on the board.
   winter_prep: '1.2.4',
   black_friday: '1.2.4',
+  // 1.2.5 „Първи сняг“: named seasons, the pass of 50 levels with weekly tasks and titles, clearing the roads, „Крал на снега“.
+  season_v2: '1.2.5',
   inventory_menu: '1.2.1',
   item_trade: '1.2.1',
   workshop: '1.2.1',

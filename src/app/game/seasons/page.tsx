@@ -6,6 +6,8 @@ import { date, int, money } from '@/lib/format';
 import { seasonScores, seasons } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { TruckPass } from '@/components/game/TruckPass';
+import { FIRST_SNOW, PLOW } from '@/lib/game/first-snow';
+import { plowToday, snowKings } from '@/server/game/first-snow';
 import { leaderboard } from '@/server/game/queries';
 import { companyPrizes, organizationSeasonResults, organizationSeasonTable, type SeasonRules } from '@/server/game/seasons';
 import { membershipOf } from '@/server/game/membership';
@@ -36,6 +38,7 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
   const myOrgIndex = membership ? orgRows.findIndex((r) => r.organizationId === membership.company.id) : -1;
   const orgPast = membership && past.length ? await organizationSeasonResults(db, membership.company.id) : [];
   const companies = tab === 'companies';
+  const snow = features.season_v2 && rules.theme === FIRST_SNOW.theme ? { kings: await snowKings(db, season!.id), plow: await plowToday(db, now) } : null;
   const prizes = companies ? companyPrizes(rules) : rules.prizesCents;
   // 1.1.3.1: the medal the place would win if the season ended now.
   const medalIcon = (place: number) => {
@@ -54,6 +57,27 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
           <p className="-mt-2 text-sm text-mist-400">{t('Нивата растат с точките от доставките. Невзетите награди изгарят в края на сезона.')}</p>
           <TruckPass db={db} userId={user.id} coins={user.coins} now={now} fx={features.game_fx} />
         </section>
+      )}
+      {/* 1.2.5 „Първи сняг“: „Крал на снега“ and clearing the roads together. */}
+      {snow && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card title={t('👑 Крал на снега')}>
+            <p className="mb-3 text-sm text-mist-300">{t('Тонове, докарани през сняг, лед и затворени проходи този сезон. Първите трима взимат титли и ТрансКоин.')}</p>
+            {snow.kings.length === 0 ? <p className="text-sm text-mist-400">{t('Още никой не е карал през снега.')}</p> : (
+              <ol className="space-y-1 text-sm" data-testid="snow-kings">
+                {snow.kings.map((k) => <li key={k.userId} className={`flex justify-between gap-2 ${k.userId === user.id ? 'font-semibold text-gold-300' : ''}`}><span>{k.place}. {k.username}</span><span className="num">{int(k.tons)} т</span></li>)}
+              </ol>
+            )}
+          </Card>
+          <Card title={t('🧂 Разчисти пътищата')}>
+            <p className="mb-3 text-sm text-mist-300">{t('Сол и пясък до държава със сняг: при {0} т за деня пътищата там олекват. {1} точки за пропуска на тон.', int(PLOW.tonsPerDay), PLOW.pointsPerTon)}</p>
+            {snow.plow.length === 0 ? <p className="text-sm text-mist-400">{t('Днес още никой не е разчиствал.')}</p> : (
+              <ul className="space-y-1 text-sm" data-testid="plow-today">
+                {snow.plow.map((c) => <li key={c.country} className="flex justify-between gap-2"><span>{c.country}</span><span className="num">{c.cleared ? t('✓ разчистено') : t('{0} / {1} т', int(c.tons), int(PLOW.tonsPerDay))}</span></li>)}
+              </ul>
+            )}
+          </Card>
+        </div>
       )}
       <Segmented label={t('Класация')} active={tab} items={[{ id: 'players', label: t('Играчи'), href: '/game/seasons' }, { id: 'companies', label: t('Компании'), href: '/game/seasons?tab=companies' }]} />
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
