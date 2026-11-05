@@ -101,7 +101,7 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
 }
 
 /** Tractor unit, rear at x = 0, front at ≈ 602. Fifth wheel centre at x = 120 (kingpin sits 1.6 m behind the trailer nose). */
-export function Tractor({ ids, color, cab, heavy = false, coupled = false, classic = false, extras }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; classic?: boolean; extras?: Cosmetics }) {
+export function Tractor({ ids, color, cab, heavy = false, coupled = false, classic = false, plow = false, extras }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; classic?: boolean; plow?: boolean; extras?: Cosmetics }) {
   const cabX = 362;
   const rear = heavy ? [72, 198] : [100];
   return (
@@ -121,6 +121,24 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
       {/* side skirt */}
       {!heavy && <rect x={160} y={-102} width={196} height={18} rx={4} fill={color} opacity="0.85" />}
       <Cab x={cabX} style={cab} ids={ids} color={color} aero={coupled && !heavy} extras={extras} />
+      {plow && (
+        // 1.2.5 „Първи сняг“: a snow plough blade on a push frame in front, and amber beacons on the roof
+        <g>
+          <rect x={590} y={-104} width={34} height={14} rx={3} fill="#1f2937" />
+          <path d="M618 -150 L668 -168 Q686 -96 668 -24 L618 -36 Q630 -92 618 -150 Z" fill="#f59e0b" stroke="#78350f" strokeWidth="3" />
+          <path d="M630 -146 L660 -157 M634 -112 L672 -118 M634 -76 L672 -74 M630 -42 L662 -34" stroke="#111827" strokeWidth="7" opacity="0.85" />
+          <rect x={662} y={-30} width={12} height={10} rx={2} fill="#334155" />
+          {(() => {
+            const roof = cab === 'highline' ? -372 : cab === 'sleeper' ? -330 : -300;
+            return (
+              <>
+                <rect x={cabX + 40} y={roof - 8} width={150} height={8} rx={3} fill="#64748b" />
+                {[cabX + 52, cabX + 166].map((bx) => <rect key={bx} x={bx} y={roof - 24} width={22} height={16} rx={5} fill="#fbbf24" stroke="#b45309" strokeWidth="2" />)}
+              </>
+            );
+          })()}
+        </g>
+      )}
       {classic && (
         // Old-school look: twin cream stripes along the cab, a round lamp and a chrome bumper
         <g>
