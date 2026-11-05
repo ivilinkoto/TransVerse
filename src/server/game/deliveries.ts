@@ -797,7 +797,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await addLeaguePoints(tx, company!.ownerId, points, now);
   await addPassPoints(tx, company!.ownerId, points, now);
   // 1.2.5 „Първи сняг“: weekly pass tasks, clearing the roads, „Крал на снега“.
-  await recordSnowSeason(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, convoy: !!(d.convoyWith || d.convoyLead), destCountry: dest!.countryCode, tons: contract.weightTons, holiday: contract.holiday, goods: contract.goods, roadEvents: d.roadEvents }, completedAt);
+  await recordSnowSeason(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, convoy: !!(d.convoyWith || d.convoyLead), destCountry: dest!.countryCode, tons: contract.weightTons, holiday: contract.holiday, goods: contract.goods, roadEvents: d.roadEvents, ownerDrove }, completedAt);
   await rewardReferral(tx, company!.ownerId, now);
   // Return loads come with v1.2 (staff see them before the release).
   // The hauler of someone else's goods gets the usual "Доставено" message.

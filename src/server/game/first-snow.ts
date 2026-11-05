@@ -42,14 +42,15 @@ export async function passTasksView(db: DbOrTx, userId: string, now: Date) {
   return tasksFor(now).map((task) => ({ ...task, progress: Math.min(task.target, st.p[task.kind] ?? 0), done: st.done.includes(task.id), points: PASS_TASK.points }));
 }
 
-export interface SnowFacts { userId: string; loadedKm: number; late: boolean; cargoType: string; convoy: boolean; destCountry: string; tons: number; holiday: string | null; goods: string; roadEvents: { kind: string }[] }
+export interface SnowFacts { userId: string; loadedKm: number; late: boolean; cargoType: string; convoy: boolean; destCountry: string; tons: number; holiday: string | null; goods: string; roadEvents: { kind: string }[]; /** The player drove this truck themselves (only such trips count for the weekly tasks). */ ownerDrove: boolean }
 
 /** A delivery arrived: the weekly tasks, clearing the roads and „Крал на снега“ (seasons with the new pass only). */
 export async function recordSnowSeason(tx: Tx, f: SnowFacts, at: Date) {
   if (!featureLive('season_v2', at)) return;
   const season = await activeSeason(tx, at);
   if (passVersion(season.rules) !== 2) return;
-  await recordTasks(tx, season.id, f, at);
+  // Weekly tasks count only the trips the player drives themselves: a big fleet with hired drivers does not finish them faster.
+  if (f.ownerDrove) await recordTasks(tx, season.id, f, at);
   await recordPlow(tx, season.id, f, at);
   if (f.roadEvents.some((e) => (SNOW_EVENTS as readonly string[]).includes(e.kind))) await addTons(tx, `snow-king:${season.id}:${f.userId}`, f.tons, at);
 }

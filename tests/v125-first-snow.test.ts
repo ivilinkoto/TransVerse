@@ -113,13 +113,15 @@ describe('1.2.5 „Първи сняг“', () => {
     const at = new Date();
     await withPassV2(async (seasonId) => {
       await db().delete(jobState).where(like(jobState.key, `snow-king:${seasonId}:${p.userId}`));
-      const facts = { userId: p.userId, loadedKm: 900, late: false, cargoType: 'refrigerated', convoy: true, destCountry: 'RO', tons: 24, holiday: null, goods: 'Мебели', roadEvents: [{ kind: 'snow' }] };
+      const facts = { userId: p.userId, loadedKm: 900, late: false, cargoType: 'refrigerated', convoy: true, destCountry: 'RO', tons: 24, holiday: null, goods: 'Мебели', roadEvents: [{ kind: 'snow' }], ownerDrove: true };
       for (let i = 0; i < 3; i++) await db().transaction((tx) => recordSnowSeason(tx, facts, at));
+      // A trip of a hired driver counts for „Крал на снега“, but not for the weekly tasks.
+      await db().transaction((tx) => recordSnowSeason(tx, { ...facts, ownerDrove: false }, at));
       const tasks = await passTasksView(db(), p.userId, at);
       expect(tasks).toHaveLength(3);
       for (const task of tasks!) expect(task.progress).toBeGreaterThanOrEqual(0);
       const kings = await snowKings(db(), seasonId, 1000);
-      expect(kings.find((k) => k.userId === p.userId)?.tons).toBe(72);
+      expect(kings.find((k) => k.userId === p.userId)?.tons).toBe(96);
       const st = await db().select().from(jobState).where(eq(jobState.key, `pass-tasks:${seasonId}:${isoWeek(at)}:${p.userId}`));
       expect((st[0]!.value as { p: { deliveries: number } }).p.deliveries).toBe(3);
     });

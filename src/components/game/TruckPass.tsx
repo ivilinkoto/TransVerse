@@ -58,7 +58,7 @@ export async function TruckPass({ db, userId, coins, now, fx = false }: { db: Db
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-mist-400">{t('Задачите се сменят всеки понеделник.')}</p>
+          <p className="mt-2 text-xs text-mist-400">{t('Броят се само курсовете, които караш сам. Задачите се сменят всеки понеделник.')}</p>
         </Card>
       )}
 
