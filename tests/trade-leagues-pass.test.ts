@@ -4,7 +4,7 @@ import { demoteCount, leaguePrize, outcomeFor, promoteCount, weekEndsAt, weekKey
 import { PASS_POINTS_PER_LEVEL, PASS_PRICE_COINS, PASS_REWARDS, passLevel } from '@/lib/game/season-pass';
 import { buyPriceCents, sellPriceCents, warehouseCapacityTons } from '@/lib/game/trade';
 import { closeDb } from '@/server/db/client';
-import { cityMarkets, companies, contracts, deliveries, depots, ledgerEntries, leagueGroups, leagueMembers, reports, users, vehicles, warehouseStock } from '@/server/db/schema';
+import { cityMarkets, companies, contracts, deliveries, depots, ledgerEntries, leagueGroups, leagueMembers, reports, seasons, users, vehicles, warehouseStock } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
 import { settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
@@ -15,6 +15,7 @@ import { blockUser, reportPlayer, resolveReport, unblockUser } from '@/server/ga
 import { addPassPoints, buyPremiumPass, claimPassRewards, passView } from '@/server/game/season-pass';
 import { sendFriendRequest } from '@/server/game/social';
 import { buyGoods, shipGoods } from '@/server/game/trade';
+import { activeSeason } from '@/server/game/seasons';
 import { cityByName, db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(async () => closeDb());
@@ -91,6 +92,10 @@ describe('weekly leagues', () => {
 
 describe('season pass', () => {
   it('free rewards, premium for ТрансКоин, each claimed once', async () => {
+    // The pass of 30 levels (seasons before „Първи сняг“); the new one is tested in v125-first-snow.
+    const season = await activeSeason(db());
+    const { pass: _pass, ...oldRules } = season.rules as { pass?: number };
+    await db().update(seasons).set({ rules: oldRules }).where(eq(seasons.id, season.id));
     expect(passLevel(PASS_POINTS_PER_LEVEL * 2 + 10)).toBe(2);
     const p = await newPlayer();
     await db().transaction((tx) => addPassPoints(tx, p.userId, PASS_POINTS_PER_LEVEL * 4));

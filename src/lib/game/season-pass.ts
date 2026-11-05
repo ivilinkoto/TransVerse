@@ -94,8 +94,8 @@ const it = (itemId: string, qty = 1): PassRewardV2 => ({ items: [{ itemId, qty }
 const FREE_V2: Record<number, PassRewardV2> = {
   2: { cents: 2_000_00 }, 4: it('coffee', 2), 6: it('repair_kit'), 8: it('fuel_voucher', 2), 10: it('case_bronze'),
   12: { cents: 4_000_00 }, 14: it('energy_drink'), 16: it('cargo_cover'), 18: it('antifreeze'), 20: it('case_silver'),
-  22: it('paint_firstsnow'), 24: it('ice_scraper'), 26: { cents: 8_000_00 }, 28: it('wool_gloves'), 30: { coins: 20 },
-  32: it('queue_ticket'), 34: it('driver_handbook'), 36: it('snow_chains'), 38: { cents: 12_000_00 }, 40: it('case_gold'),
+  22: it('paint_firstsnow'), 24: it('ice_scraper'), 26: { cents: 8_000_00 }, 28: it('coffee', 3), 30: { coins: 20 },
+  32: it('queue_ticket'), 34: it('driver_handbook'), 36: it('repair_kit', 2), 38: { cents: 12_000_00 }, 40: it('case_gold'),
   42: it('thermos'), 44: it('coin_pouch'), 46: it('case_silver'), 48: { cents: 20_000_00 }, 50: { title: 'first-snow-50', items: [{ itemId: 'case_gold', qty: 1 }] },
 };
 const PREMIUM_V2: Record<number, PassRewardV2> = {
@@ -104,7 +104,7 @@ const PREMIUM_V2: Record<number, PassRewardV2> = {
   19: { xpBoostHours: 24 }, 20: it('case_gold'), 21: it('thermos'), 23: it('driver_handbook', 2), 25: { coins: 40 },
   27: it('power_nap'), 29: it('case_silver'), 30: { vipDays: 3 }, 31: it('coin_pouch', 2), 33: it('repair_kit', 3),
   35: { coins: 60 }, 37: it('case_silver'), 39: it('treasure_map'), 40: it('case_gold'), 41: it('cab_coffee'),
-  43: { xpBoostHours: 48 }, 45: it('tc_medium'), 47: it('case_gold'), 49: { coins: 100 }, 50: { truck: 'rila-nordik-plow', vipDays: 7 },
+  43: { xpBoostHours: 48 }, 45: { coins: 25 }, 47: it('case_gold'), 49: { coins: 100 }, 50: { truck: 'rila-nordik-plow', vipDays: 7 },
 };
 
 /** Every level of version 2: the free reward (some levels), and the premium one (most levels, the rest small money). */
