@@ -10,6 +10,7 @@ import { inventoryBadge, weeklyChest } from '@/server/game/item-trade';
 import { runningEvents } from '@/server/game/events';
 import { bigRunOf, bigRunProgress } from '@/server/game/big-run';
 import { t, tx } from '@/i18n/t';
+import { monthCardOf, vipCaseReady } from '@/server/game/shop-v2';
 import { initLocale } from '@/i18n/server';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,6 +44,12 @@ export default async function RewardsPage() {
   if (pass?.claimable) take.push({ href: '/game/seasons', emoji: '🎟️', text: t('Truck Pass: {0} нива', pass.claimable) });
   if (inv?.caseReady) take.push({ href: '/game/inventory', emoji: '📦', text: t('Неотворен кейс') });
   if (week?.tier && !week.claimed) take.push({ href: '/game/inventory', emoji: '🧰', text: t('Седмичен сандък: {0}', week.trips) });
+  // 1.2.3: the weekly VIP case and the ТрансКоин of the monthly card.
+  if (features.shop_v2) {
+    const [vipCase, card] = await Promise.all([vipCaseReady(db, user.id, user.vipUntil, now), monthCardOf(db, user.id, now)]);
+    if (vipCase) take.push({ href: '/game/shop', emoji: '👑', text: t('VIP кейс на седмицата') });
+    if (card.ready) take.push({ href: '/game/shop', emoji: '💳', text: t('Месечна карта: {0} TC за днес', card.coinsPerDay) });
+  }
 
   const live = events.filter((e) => e.event.startsAt <= now && e.event.endsAt > now);
   const cards = [

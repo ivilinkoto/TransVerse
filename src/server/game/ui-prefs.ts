@@ -5,7 +5,7 @@ import { users } from '@/server/db/schema';
 type UiPrefs = (typeof users.$inferSelect)['uiPrefs'];
 
 /** v1.9: how the game is shown to the player (merged into what is stored). */
-export async function setUiPrefs(db: Database, userId: string, input: { showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPage?: string; asPlayer?: boolean; dailySummary?: boolean; inventorySeen?: true; oldMenu?: boolean }, now = new Date()) {
+export async function setUiPrefs(db: Database, userId: string, input: { showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPage?: string; asPlayer?: boolean; dailySummary?: boolean; inventorySeen?: true; oldMenu?: boolean; theme?: 'dark' | 'light'; textSize?: 'normal' | 'large' | 'xl' }, now = new Date()) {
   const [u] = await db.select({ prefs: users.uiPrefs }).from(users).where(eq(users.id, userId));
   const prefs: UiPrefs = { ...(u?.prefs ?? {}) };
   if (input.showAll !== undefined) prefs.showAll = input.showAll;
@@ -17,6 +17,9 @@ export async function setUiPrefs(db: Database, userId: string, input: { showAll?
   if (input.inventorySeen) prefs.inventorySeenAt = now.toISOString();
   // 1.2.2: keep the old menu for a while (only while it is still offered).
   if (input.oldMenu !== undefined) prefs.oldMenu = input.oldMenu;
+  // 1.2.3: a light look and bigger text.
+  if (input.theme) prefs.theme = input.theme;
+  if (input.textSize) prefs.textSize = input.textSize;
   if (input.seenUnlocks) prefs.seenUnlocks = [...new Set([...(prefs.seenUnlocks ?? []), ...input.seenUnlocks])].slice(-100);
   if (input.seenPage) prefs.seenPages = [...new Set([...(prefs.seenPages ?? []), input.seenPage])].slice(-100);
   await db.update(users).set({ uiPrefs: prefs }).where(eq(users.id, userId));

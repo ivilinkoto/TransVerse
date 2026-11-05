@@ -141,7 +141,7 @@ export async function offerTrade(db: Database, userId: string, input: { toUserna
     const note = input.note?.trim().slice(0, TRADE_RULES.noteMax) || null;
     const [trade] = await tx.insert(itemTrades).values({ fromUserId: userId, toUserId: to!.id, giveItem: input.give, wantItem: input.want, note, createdAt: now }).returning({ id: itemTrades.id });
     await takeItem(tx, userId, input.give as ItemId, 'trade_hold', `trade:${trade!.id}:hold`);
-    await notify(tx, to!.id, 'info', () => t('🔁 {0} предлага размяна', me!.username), () => t('{0} срещу твоя {1}. Виж „Инвентар“.', ITEMS[input.give as ItemId].name, ITEMS[input.want as ItemId].name), '/game/inventory');
+    await notify(tx, to!.id, 'info', () => t('🔁 {0} предлага размяна', me!.username), () => t('{0} срещу твоя {1}. Виж „Инвентар“.', ITEMS[input.give as ItemId].name, ITEMS[input.want as ItemId].name), `/game/inventory?trade=${trade!.id}`);
     return { id: trade!.id };
   });
 }

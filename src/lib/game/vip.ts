@@ -25,6 +25,9 @@ export const VIP_PERKS = {
   urgentEarlyMs: 5 * 60_000,
   /** How long a VIP may hold a contract for themselves. */
   reservationMinutes: 10,
+  /** 1.2.3 (shop_v2): the hold is longer and there is one more monthly mission. */
+  reservationMinutesV2: 30,
+  extraMonthlyMissionsV2: 1,
 } as const;
 
 /** Benefits shown on the VIP page (Bulgarian). */

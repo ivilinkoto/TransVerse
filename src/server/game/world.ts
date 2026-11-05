@@ -5,6 +5,7 @@ import { runLaneRepeats } from './lane-repeat';
 import { runOfficePayroll } from './office';
 import { settlePlayerChallenges } from './player-challenges';
 import { ensureLastMile, ensureLivestockLoads, ensureNightCouriers } from './special-loads';
+import { ensureWeeklyLaneLoads } from './weekly-lane';
 import { expireWishes, spawnWishes } from './wishes';
 import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
@@ -65,6 +66,7 @@ import { dispatchPush, pruneSubscriptions } from '@/server/push';
 import { autoUrgentTick, raiseUrgentPrices } from './auto-urgent';
 import { settleTenders } from './tenders';
 import { dailyReminders } from './daily';
+import { morningReports } from './morning';
 import { announceStartedEvents, ensureAutoEvent, settleDueEvents } from './events';
 import { expireMentorships } from './mentor';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
@@ -117,6 +119,7 @@ import { awardDriversOfMonth, celebrateAnniversaries } from './community';
 import { backfillMedalBadges, checkCompanyAchievements } from './medals';
 import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
+import { starvedCountryAlerts } from './game-health';
 import { syncComingSoon } from '@/server/discord/coming-soon';
 import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
 import { ideasWeeklyTop, idleTruckReminders, staffDailyReport } from '@/server/discord/plus';
@@ -239,6 +242,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'night-courier', 10 * 60_000, now, () => ensureNightCouriers(db, now, provider));
     await every(db, 'last-mile', 15 * 60_000, now, () => ensureLastMile(db, now, provider));
     await every(db, 'livestock', 30 * 60_000, now, () => ensureLivestockLoads(db, now, provider));
+    // 1.2.3: the contract of the week.
+    await every(db, 'weekly-lane', 10 * 60_000, now, () => ensureWeeklyLaneLoads(db, now, provider));
     // Global events: settle finished ones (after the deliveries above), keep the automatic ones going.
     await job(db, 'events-settle', now, () => settleDueEvents(db, now));
     await job(db, 'tenders', now, () => settleTenders(db, now));
@@ -302,6 +307,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await db.insert(jobState).values({ key: 'payroll', value: { day: yesterday } }).onConflictDoUpdate({ target: jobState.key, set: { value: { day: yesterday }, updatedAt: now } });
     });
     await every(db, 'daily-reminders', 10 * 60_000, now, () => dailyReminders(db, now));
+    // 1.2.3: the morning report (staff only before the release).
+    await every(db, 'morning-reports', 10 * 60_000, now, () => morningReports(db, now));
     await every(db, 'used-market', 10 * 60_000, now, () => expireListings(db, now));
     await every(db, 'leagues', 10 * 60_000, now, () => settleLeagues(db, now));
     await every(db, 'company-projects', 10 * 60_000, now, () => expireProjects(db, now));
@@ -399,6 +406,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'driver-of-month', 60 * 60_000, now, () => awardDriversOfMonth(db, now));
     await every(db, 'test-drives', 15 * 60_000, now, () => expireTestDrives(db, now));
     await every(db, 'staff-alerts', 60 * 60_000, now, () => postStaffAlerts(db, now));
+    await every(db, 'starved-countries', 15 * 60_000, now, () => starvedCountryAlerts(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);

@@ -7,6 +7,8 @@ import { markNotificationsRead } from '@/server/game/notify';
 import { latestNotifications } from '@/server/game/queries';
 import { categoryOf, type PushCategory } from '@/server/push';
 import { digest } from '@/lib/game/digest';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { notificationButtons } from '@/lib/game/notification-buttons';
 import { t, tx, intlLocale } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
@@ -71,6 +73,11 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                     <span className="text-xs text-mist-400">{dateTime(n.createdAt)}</span>
                   </div>
                   <p className="text-sm text-mist-300">{tx(n.body)}</p>
+                  {features.notification_buttons && notificationButtons(n.href).length > 0 && (
+                    <div className="my-1.5 flex flex-wrap gap-2">
+                      {notificationButtons(n.href).map((b) => <ActionButton key={b.label} action={b.action} className={b.primary ? 'btn-primary px-3 py-1 text-xs' : 'btn-ghost px-3 py-1 text-xs'}>{tx(b.label)}</ActionButton>)}
+                    </div>
+                  )}
                   {n.href && <Link href={n.href} className="text-xs text-cyan-glow hover:underline">{t('Отвори →')}</Link>}
                 </div>
               </li>

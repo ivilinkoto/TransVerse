@@ -1,0 +1,87 @@
+81c4809374	+30% · places: {0} of {1}	+30% · места: {0} из {1}
+7427c347cf	1 truck is waiting for a trip	1 грузовик ждёт рейса
+bd6fb91313	1 trip arrived (+{0})	1 рейс прибыл (+{0})
+0d6c96db7d	CB radio and road reports from other drivers.	CB-радио и дорожные сигналы от других водителей.
+71a49ebdb1	{0} is new to the game. Greet them and give {1} to start.	{0} — новичок в игре. Поприветствуй и подари {1} на старт.
+eeaab1556e	{0} trips · {1} in the last 7 days	Рейсов: {0} · {1} за последние 7 дней
+a8d38e2bb5	{0} trips · longest {1} km	Рейсов: {0} · самый длинный {1} км
+f4d983b4ac	{0} trips arrived (+{1})	Прибыло рейсов: {0} (+{1})
+9b98fb93da	{0} free trucks in {1} and not a single open load for {2} h.	Свободных грузовиков в {1}: {0}, и ни одного открытого груза уже {2} ч.
+eec64c250e	{0} greeted you!	{0} поприветствовал(а) тебя!
+00a5b78cf0	Admin → “Game health”: players and trips in 24 h, open loads and free trucks by country.	Админ → «Здоровье игры»: игроки и рейсы за 24 ч, открытые грузы и свободные грузовики по странам.
+777b88aa79	Buttons in notifications: friend requests, item trades and greetings for new players are answered right from the notifications.	Кнопки в уведомлениях: заявки в друзья, обмен предметами и приветствие новичка принимаются прямо из уведомлений.
+04540d5dc9	Good morning! While you were asleep:	Доброе утро! Пока ты спал(а):
+5356c59473	Contract of the week	Контракт недели
+471938b93b	Contract of the week (Compete → Running now): one lane every week at +30%; the first 20 who drive it on time get a badge and 50 TC.	Контракт недели (Соревнования → Идёт сейчас): одна линия каждую неделю с +30%; первые 20, кто проедет её вовремя, получают значок и 50 TC.
+2a0a8a2459	Contract of the week · place {0}	Контракт недели · место {0}
+7b80fb98e7	Contract of the week: {0} → {1}	Контракт недели: {0} → {1}
+1239f52a8a	Contract of the week: place {0}!	Контракт недели: место {0}!
+5d1751a6f9	Countries without loads	Страны без грузов
+facac57532	Save the picture and post it in #снимки on Discord. Every week the picture with the most ⭐ wins {0} TransCoin (a linked account is needed).	Сохрани снимок и выложи его в #снимки в Discord. Каждую неделю снимок с наибольшим числом ⭐ выигрывает {0} ТрансКоинов (нужен привязанный аккаунт).
+77a708afec	Sealed cargo and haggling over the price of an order.	Запечатанный груз и торг за цену заказа.
+ab8400337f	Game health	Здоровье игры
+7317ebdb31	The “Contract of the week” badge and {0} TC.	Значок «Контракт недели» и {0} TC.
+bc4473eb1c	Players in 24 h	Игроки за 24 ч
+1f89111e1e	Look	Вид
+54062f3768	Look (Settings): a light theme and bigger text.	Вид (Настройки): светлая тема и крупный текст.
+6af40591fe	Paid out in 24 h	Выплачено за 24 ч
+7cc236d2ac	Delete	Удалить
+b99dd84145	What is going on in the game right now. A country with idle trucks and no loads for over 1 h goes to #сигнали.	Что происходит в игре прямо сейчас. Страна со свободными грузовиками и без грузов больше 1 ч попадает в #сигнали.
+260aed1087	Driven here? Leave a tip	Ездил(а) здесь? Оставь совет
+0344500284	Postcards from landmarks and hitchhikers on the road.	Открытки с достопримечательностей и попутчики на дороге.
+a1d3eebc3d	Trips in 24 h	Рейсы за 24 ч
+ba10a8e24e	To #снимки	В #снимки
+d9ed37214c	Favourite truck: it is on top in Fleet with a ★ and shows its trips and its longest run.	Любимый грузовик: он вверху в Автопарке со ★ и показывает свои рейсы и самый длинный рейс.
+be299e7103	You can only delete your own tip.	Удалить можно только свой совет.
+3451e02ca6	You can greet only a new player (up to 7 days), once.	Поприветствовать можно только нового игрока (до 7 дней), один раз.
+a3d4b848fd	Largest	Самый крупный
+d45739a192	E.g. “Go through Kulata — it is faster”	Напр. «Езжай через Кулату — так быстрее»
+2647ea86b7	You cannot vote for your own tip.	Нельзя голосовать за свой совет.
+1880fd9b80	Not helpful	Бесполезный совет
+f9a9e3c3d5	New player in {0}: {1}	Новый игрок в {0}: {1}
+9f94d72e31	New player nearby: when a new player starts in your city, you get a notification and can greet them with 200 lv. to start (up to 5 greetings).	Новый игрок рядом: когда в твоём городе начинает новый игрок, ты получаешь уведомление и можешь поприветствовать его 200 лв. на старт (до 5 приветствий).
+4717414c68	New for every day	Новое на каждый день
+40366d255b	Normal	Обычный
+a986ea1083	Night shift: set off between 22:00 and 05:00 and the trip is faster and pays +5% on time (more fatigue).	Ночная смена: выезжай между 22:00 и 05:00 — рейс быстрее и вовремя приносит +5 % (усталость больше).
+5bf75b281d	No free trucks or loads.	Нет свободных грузовиков и грузов.
+cf96ada7b1	Organised convoys and the weekly convoy.	Организованные конвои и еженедельный конвой.
+7b7b2e2d21	Open loads	Открытые грузы
+b5970daf8e	No tip for this lane yet.	Для этой линии пока нет совета.
+d1019b6c38	By country	По странам
+a1681e3c53	Larger	Крупнее
+a77e796e11	Breakdown on the road: wait for free or call paid roadside help (800 lv., the wait is 35% shorter).	Поломка в пути: жди бесплатно или вызови платную техпомощь (800 лв., ожидание на 35 % короче).
+f120e66c54	Gift for a new player: {0}	Подарок новому игроку: {0}
+bbc8bd69bf	Gift from {0}: welcome!	Подарок от {0}: добро пожаловать!
+d6f1d39257	Greet	Поприветствовать
+e0d2480df5	Greet · {0}	Поприветствовать · {0}
+70e6393427	Greet them and give them {0} to start.	Поприветствуй и подари {0} на старт.
+8374451d8d	Helpful	Полезный совет
+55bbcb05b9	Change your tip	Изменить свой совет
+1840ea04b5	Profile → “Your week”: the trips and the money for each of the last 7 days.	Профиль → «Твоя неделя»: рейсы и деньги за каждый из последних 7 дней.
+3f34036d83	Released early	Выходят раньше
+1002853dc0	Text size	Размер текста
+709db95930	Light	Светлая
+3e59f6ec7a	Free trucks	Свободные грузовики
+393811362b	An alert in #сигнали when a country has free trucks and not a single load for over an hour.	Сигнал в #сигнали, когда в стране есть свободные грузовики и ни одного груза больше часа.
+eef4ebaa1c	Next trip from {0} →	Следующий рейс из {0} →
+3e61a3394a	Next trip: after you accept an order, one button shows the loads from the city where the truck will arrive.	Следующий рейс: после принятия заказа одна кнопка показывает грузы из города, куда прибудет грузовик.
+de4cbe55b9	Account not found.	Аккаунт не найден.
+4f0926eb26	Among the first 20 who delivered a “Contract of the week” load on time.	Среди первых 20, доставивших вовремя груз по «Контракту недели».
+2515eee6fc	Lane tip	Совет по линии
+690ded6b7c	Only those who have driven this lane can write a tip.	Совет может написать только тот, кто ездил по этой линии.
+41968692f2	Lane tips: anyone who has driven a lane can leave a short tip for it (no links); others vote 👍/👎, and a tip at −3 is hidden.	Советы по линии: кто ездил по линии, может оставить короткий совет (без ссылок); другие голосуют 👍/👎, совет с −3 скрывается.
+12a27d76e9	Tips have no links.	Советы без ссылок.
+df1211f36a	Tip not found.	Совет не найден.
+c141e84695	Your week	Твоя неделя
+0e711f73f4	You are among the winners!	Ты среди победителей!
+792ce0deea	Enough people have already greeted this player.	Этого игрока уже поприветствовало достаточно людей.
+aa8b8b0c4e	Dark	Тёмная
+ac7570dc98	Photo mode for the trucks.	Фоторежим для грузовиков.
+e80716772c	Photo mode: the picture can enter the weekly contest in #снимки on Discord (50 TC for the picture with the most ⭐).	Фоторежим: снимок может участвовать в еженедельном конкурсе в #снимки в Discord (50 TC за снимок с наибольшим числом ⭐).
+2c7f7e97e2	the daily reward is waiting	ежедневная награда ждёт
+088955b600	good	хорошо
+cac4a0a702	few loads	мало грузов
+4b6e35c668	no loads	нет грузов
+eba4e07bf4	“Welcome to the road!” — and {0} to start.	«Добро пожаловать в дорогу!» — и {0} на старт.
+ce1cd69441	“While you were asleep”: in the morning (from 7:00) one notification with the trips that arrived overnight, their money, the trucks that are waiting and the daily reward.	«Пока ты спал»: утром (с 7:00) одно уведомление с рейсами, прибывшими за ночь, деньгами за них, ожидающими грузовиками и ежедневной наградой.
+c629564cd3	🚚 Trucks without loads: {0}	🚚 Грузовики без грузов: {0}

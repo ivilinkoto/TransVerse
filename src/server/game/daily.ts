@@ -11,11 +11,14 @@ import { streakKept } from './vacation';
 import { dailyCase } from './inventory';
 import { awardXp } from './progression';
 import { t } from '@/i18n/t';
+import { isVip } from '@/lib/game/vip';
+import { VIP_V2 } from '@/lib/game/shop-v2';
+import { featureFor } from '@/server/features';
 
 /** Claims today's reward exactly once (row lock + one ledger key per player and day). */
 export async function claimDaily(db: Database, userId: string, now = new Date()) {
   return db.transaction(async (tx) => {
-    const [u] = await tx.select({ streak: users.loginStreak, last: users.dailyClaimKey, vacationUntil: users.vacationUntil }).from(users).where(eq(users.id, userId)).for('update');
+    const [u] = await tx.select({ streak: users.loginStreak, last: users.dailyClaimKey, vacationUntil: users.vacationUntil, vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId)).for('update');
     if (!u) fail('user_not_found', t('Профилът не е намерен.'), 404);
     // 1.1.4.2: the streak waits during a vacation (and the day after it).
     const last = u!.last && u!.last !== dayKey(now) && streakKept(u!.vacationUntil, now) ? yesterdayKey(now) : u!.last;
@@ -23,6 +26,9 @@ export async function claimDaily(db: Database, userId: string, now = new Date())
     if (state.claimedToday) fail('already_claimed', t('Днешната награда вече е взета. Ела утре за следващата!'), 409);
     const account = await companyForUser(tx, userId);
     const label = t('Дневна награда — ден {0}', state.cycleDay);
+    // 1.2.3: VIP doubles the daily reward (money and ТрансКоин) with the new shop.
+    const x = isVip(u!.vipUntil, now) && (await featureFor(tx, userId, 'shop_v2', now)) ? VIP_V2.dailyMultiplier : 1;
+    if (x > 1) state.reward = { ...state.reward, cents: state.reward.cents * x, coins: (state.reward.coins ?? 0) * x };
     await post(tx, account.id, [{ category: 'daily_reward', amountCents: state.reward.cents, description: t('{0} (серия {1})', label, state.nextStreak), idempotencyKey: `daily:${userId}:${state.today}` }]);
     if (state.reward.xp) await awardXp(tx, userId, state.reward.xp, 'daily');
     if (state.reward.coins) await postCoins(tx, userId, { amount: state.reward.coins, reason: 'daily_reward', description: label, idempotencyKey: `daily-coins:${userId}:${state.today}` });

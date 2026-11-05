@@ -13,6 +13,8 @@ import { fail } from '@/server/game/errors';
 import { notify } from '@/server/game/notify';
 import { mailConfig } from '@/server/mail';
 import { t } from '@/i18n/t';
+import { featureFor } from '@/server/features';
+import { deliverExtras, refundExtras, starterPackOpen } from '@/server/game/shop-v2';
 
 export type Payment = typeof payments.$inferSelect;
 export type Provider = 'paypal' | 'stripe';
@@ -66,8 +68,11 @@ export function siteUrl(requestOrigin?: string | null): string {
 export async function startPayment(db: Database, userId: string, input: z.output<typeof checkoutSchema>, now: Date) {
   const product = paidProduct(input.productId);
   if (!product) fail('unknown_product', t('Непознат продукт.'));
-  const [user] = await db.select({ email: users.email, bannedAt: users.bannedAt, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId));
+  const [user] = await db.select({ email: users.email, bannedAt: users.bannedAt, verified: users.emailVerifiedAt, level: users.level }).from(users).where(eq(users.id, userId));
   if (!user || user.bannedAt) fail('forbidden', t('Профилът не може да прави покупки.'), 403);
+  // 1.2.3: the starter pack and the monthly card come with the new shop; the starter pack once per account.
+  if (product!.v2 && !(await featureFor(db, userId, 'shop_v2', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
+  if (product!.id === 'starter_pack' && !(await starterPackOpen(db, userId, user!.level))) fail('starter_used', t('Началният пакет е веднъж за профил, от ниво 3.'), 409);
   // With e-mail switched on, purchases need a confirmed address (receipts, account recovery).
   if (mailConfig().enabled && !user!.verified) fail('email_unverified', t('Първо потвърди имейла си — линкът е в пощата ти (или го изпрати отново от „Профил и настройки“).'), 403);
   // At most a few unfinished checkouts at a time (stops spamming the provider).
@@ -116,6 +121,7 @@ export async function deliverPayment(tx: Tx, p: Payment, now: Date) {
     const [u] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, p.userId)).for('update');
     await tx.update(users).set({ vipUntil: new Date(Math.max(now.getTime(), u?.vipUntil?.getTime() ?? 0) + p.vipDays * DAY) }).where(eq(users.id, p.userId));
   }
+  await deliverExtras(tx, p, now);
   await notify(tx, p.userId, 'success', () => t('Плащането е получено'), () => t('{0} — добавено към профила ти. Благодарим за подкрепата!', label), '/game/shop');
 }
 
@@ -140,6 +146,7 @@ export async function refundLocked(tx: Tx, p: Payment, now: Date) {
   if (p.status !== 'paid') return false;
   await tx.update(payments).set({ status: 'refunded', refundedAt: now }).where(eq(payments.id, p.id));
   // The balance may go below zero if the coins were already spent; nothing more can be bought until it is positive.
+  await refundExtras(tx, p, now);
   if (p.coins) await postCoins(tx, p.userId, { amount: -p.coins, reason: 'payment_refund', description: t('Върнато плащане: {0}', paidProduct(p.productId)?.label ?? p.productId), idempotencyKey: `payment-refund:${p.id}` });
   if (p.vipDays) {
     const [u] = await tx.select({ vipUntil: users.vipUntil }).from(users).where(eq(users.id, p.userId)).for('update');

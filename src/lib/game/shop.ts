@@ -13,7 +13,7 @@ export const SHOP_CATEGORIES: Record<ShopCategory, string> = {
   account: 'Профил',
 };
 
-export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_easter' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename';
+export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_easter' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename' | 'case_silver' | 'case_gold' | 'gift_case' | 'move_depot';
 
 /** The retro collection (v1.5): three paints of past decades; all three earn a badge. */
 export const RETRO = {
@@ -31,7 +31,9 @@ export interface ShopItem {
   description: string;
   price: number;
   /** What the buyer has to choose. */
-  needs?: 'vehicle' | 'vehicle_city' | 'vehicle_plate' | 'vehicle_color' | 'vehicle_cosmetic' | 'trailer_cosmetic' | 'username' | 'recipient';
+  needs?: 'vehicle' | 'vehicle_city' | 'vehicle_plate' | 'vehicle_color' | 'vehicle_cosmetic' | 'trailer_cosmetic' | 'username' | 'recipient' | 'depot_city';
+  /** 1.2.3: sold only with the new shop (`shop_v2`). */
+  v2?: boolean;
   /** Sold only during this holiday (what was bought stays). */
   seasonal?: 'halloween' | 'christmas' | 'spring' | 'easter';
 }
@@ -55,6 +57,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'paint_easter', category: 'cosmetic', label: 'Боя „Великден“ · Великден 2027', description: 'Пролетна лилава боя с шарено великденско яйце на кабината и ремаркето. Продава се само около Великден — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'easter' },
   { id: 'truck_part', category: 'cosmetic', label: 'Части за камиона', description: 'Решетка, светлини на покрива, сенник или стикер с името на компанията на вратата. Остават на камиона; нов стил на същата част заменя стария.', price: 50, needs: 'vehicle_cosmetic' },
   { id: 'trailer_part', category: 'cosmetic', label: 'Части за ремаркето', description: 'Боя, лента, калници или светлини на покрива на твое ремарке. Остават на него; нов стил на същата част заменя стария.', price: 30, needs: 'trailer_cosmetic' },
+  { id: 'case_silver', category: 'boost', label: 'Сребърен кейс', description: 'Кейс за инвентара — отвори го за един предмет (шансовете са на кейса).', price: 150, v2: true },
+  { id: 'case_gold', category: 'boost', label: 'Златен кейс', description: 'Златен кейс — по-редки предмети и шанс за номериран златен ключ.', price: 400, v2: true },
+  { id: 'gift_case', category: 'boost', label: 'Подари сребърен кейс', description: 'Сребърен кейс за приятел — пристига като подарък в инвентара му.', price: 150, needs: 'recipient', v2: true },
+  { id: 'move_depot', category: 'service', label: 'Преместване на депо', description: 'Депото и свободните камиони в него се местят в друг град от товарния пазар (в отворена държава).', price: 250, needs: 'depot_city', v2: true },
   { id: 'rename', category: 'account', label: 'Смяна на потребителско име', description: 'Ново име в играта (3–20 знака).', price: 300, needs: 'username' },
 ];
 

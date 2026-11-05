@@ -1,4 +1,5 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { playableCountries } from '@/lib/geo/scope';
 import { Anchor, Warehouse } from 'lucide-react';
 import { Card, PageHeader, Table } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -19,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function LogisticsPage() {
   await initLocale();
-  const { db, company } = await gameContext();
+  const { db, company, features } = await gameContext();
   const myDepots = await db
     .select({ id: depots.id, slots: depots.slots, cityId: depots.cityId, name: cities.nameBg, country: cities.countryCode, createdAt: depots.createdAt })
     .from(depots)
@@ -30,6 +31,8 @@ export default async function LogisticsPage() {
     .selectDistinct({ id: cities.id, name: cities.nameBg, country: cities.countryCode, population: cities.population })
     .from(cityMarkets)
     .innerJoin(cities, eq(cities.id, cityMarkets.cityId))
+    // 1.2.3: only the countries open to this player.
+    .where(inArray(cities.countryCode, [...playableCountries(!!features.europe, !!features.open_world)]))
     .orderBy(sql`${cities.population} desc`)
     .limit(250);
   const portRows = await db.select({ name: ports.name, nameBg: ports.nameBg, city: cities.nameBg, country: cities.countryCode }).from(ports).innerJoin(cities, eq(cities.id, ports.cityId)).orderBy(cities.countryCode).limit(40);

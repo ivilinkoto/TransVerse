@@ -3,7 +3,8 @@ import { afterExtras, settleExtras, type TripFacts } from './trip-extras';
 import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability, hasWinterGrip, powerUnitModel, TRAILER_UPGRADES, trailerModel } from '@/lib/game/catalog';
-import { ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
+import { VIP_V2 } from '@/lib/game/shop-v2';
+import { chargedEmptyKm as freeEmptyKm, ECONOMY, rentalFeeCents, settle, tripCosts, upgradeFactor } from '@/lib/game/economy';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
 import { planRoadEvents } from '@/lib/game/road-events';
 import { CONVOY_RULES } from '@/lib/game/convoy';
@@ -26,6 +27,7 @@ import { recordCupDelivery } from './community-cups';
 import { SUPPLY } from '@/lib/game/living';
 import { featureLive } from '@/lib/game/features';
 import { checkLegend } from './heritage';
+import { recordWeeklyLane } from './weekly-lane';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -370,8 +372,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     let theftCents = 0;
     if (risks.parking !== 'secure') for (let i = 0; i < rests; i++) if (Math.random() < SECURE_PARKING.theftChance) theftCents += Math.round(SECURE_PARKING.theftCents[0] + Math.random() * (SECURE_PARKING.theftCents[1] - SECURE_PARKING.theftCents[0]));
     const rented = bundle.vehicle.ownership === 'rented';
-    // The urgent one-minute relocation costs nothing; only the cargo leg is paid for.
-    const chargedEmptyKm = contract!.urgent ? 0 : (emptyRoute?.distanceKm ?? 0);
+    // 1.2.3: the empty leg costs nothing (the urgent one-minute relocation never did); only the cargo leg is paid for.
+    const chargedEmptyKm = contract!.urgent ? 0 : freeEmptyKm(emptyRoute?.distanceKm ?? 0);
     const totalKm = chargedEmptyKm + roadLoadedKm;
     const running = tripCosts({
       unit,
@@ -404,6 +406,12 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const oversizeCents = contract!.oversize ? oversizeCostCents(roadLoadedKm) : 0;
     // A company fuel station in the start city (v1.5): cheaper fuel for its members; the station earns on the others.
     const station = !rented && !contract!.urgent ? await fuelStationAt(tx, contract!.originCityId, userId, now) : null;
+    // 1.2.3: VIP pays 3 % less for fuel with the new shop.
+    if (vip && !rented && (await featureFor(tx, userId, 'shop_v2', now))) {
+      const off = Math.round(running.fuelCents * VIP_V2.fuelDiscount);
+      running.fuelCents -= off;
+      running.totalCents -= off;
+    }
     if (station?.member) {
       const off = Math.round(running.fuelCents * station.discount);
       running.fuelCents -= off;
@@ -635,6 +643,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     perfectStreak: perfect.streak,
   };
   const extrasCents = await settleExtras(tx, tripFacts);
+  // 1.2.3: the contract of the week.
+  await recordWeeklyLane(tx, tripFacts, completedAt);
   const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.

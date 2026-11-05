@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, inArray, isNotNull, isNull, notInArray, sql } from 'drizzle-orm';
 import { MISSION_PERIODS, MISSION_REROLL_COINS, MISSIONS_PER_PERIOD, metricIncrement, missionById, periodWindow, pickMissions, scaledReward, scaledTarget, type DeliveryFacts, type MissionPeriod } from '@/lib/game/missions';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
+import { featureFor } from '@/server/features';
 import { postCoins } from './coins';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { companyMembers, missionProgress, users } from '@/server/db/schema';
@@ -36,7 +37,9 @@ export async function ensureMissions(db: DbOrTx, userId: string, now: Date): Pro
     .where(and(eq(missionProgress.userId, userId), inArray(missionProgress.periodKey, windows.map((w) => w.key))));
   const [user] = await db.select({ level: users.level, vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
   const vip = isVip(user?.vipUntil, now);
-  const wanted = (period: MissionPeriod) => MISSIONS_PER_PERIOD[period] + (vip ? VIP_PERKS.extraMissions[period] : 0);
+  // 1.2.3: VIP gets one more monthly mission with the new shop.
+  const v2 = vip && (await featureFor(db, userId, 'shop_v2', now));
+  const wanted = (period: MissionPeriod) => MISSIONS_PER_PERIOD[period] + (vip ? VIP_PERKS.extraMissions[period] : 0) + (v2 && period === 'monthly' ? VIP_PERKS.extraMonthlyMissionsV2 : 0);
   const missing = windows.filter((w) => have.filter((h) => h.key === w.key).length < wanted(w.period));
   if (!missing.length) return windows;
 

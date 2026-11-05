@@ -16,6 +16,8 @@ import { SelectAction } from '@/components/ui/SelectAction';
 import { can, membershipOf } from '@/server/game/membership';
 import { showcaseOf } from '@/server/game/community';
 import { badgesOf } from '@/server/game/halloween';
+import { weekChart } from '@/server/game/week-chart';
+import { WeekChart } from '@/components/game/WeekChart';
 import { fleetView } from '@/server/game/queries';
 import { friendsOf, myCompanyInvites, playerCard } from '@/server/game/social';
 import { t as tr, tx } from '@/i18n/t';
@@ -43,6 +45,7 @@ export default async function ProfilePage() {
     ...(await db.select({ id: companyInvites.userId }).from(companyInvites).where(and(eq(companyInvites.companyId, mine.company.id), eq(companyInvites.status, 'pending'), inArray(companyInvites.userId, friendIds)))).map((r) => r.id),
   ]) : null;
   const invitable = busy ? friendIds.filter((id) => !busy.has(id)) : [];
+  const week = features.week_chart ? await weekChart(db, company.id, now) : null;
   const tier = reputationTier(company.reputation);
   const next = REPUTATION_TIERS.find((t) => t.min > company.reputation);
   return (
@@ -51,6 +54,7 @@ export default async function ProfilePage() {
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <div className="space-y-6">
           <Card><PlayerCardView card={card} /></Card>
+          {week && <Card title={tr('Твоята седмица')}><WeekChart days={week} /></Card>}
           {showcase && (
             <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" />{tr('Витрина на профила')}</span>}>
               <p className="mb-3 text-sm text-mist-300">{tr('До 3 камиона и 3 значки, които другите виждат в профила ти.')}</p>

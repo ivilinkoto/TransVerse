@@ -1,7 +1,7 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { combinationCapability } from '@/lib/game/catalog';
 import { crewEffects } from '@/lib/game/crew';
-import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
+import { chargedEmptyKm, rentalFeeCents, tripCosts } from '@/lib/game/economy';
 import { fuelPriceCents, legFuelPriceCents } from '@/lib/game/fuel';
 import { estimateGameMinutes } from '@/lib/game/schedule';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
@@ -66,8 +66,8 @@ export async function planDispatch(db: DbOrTx, userId: string, now = new Date(),
       if (minutes > c.windowMinutes) continue;
       const rented = v.ownership === 'rented';
       const cost = rented
-        ? rentalFeeCents(c.rewardCents, emptyKm + c.distanceKm, vip ? VIP_PERKS.rentalShareReduction : 0)
-        : tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: Math.max(v.driver!.skill, v.coDriver?.skill ?? 0), crewFuel: crew.fuel, crewWear: crew.wear, emptyKm, loadedKm: c.distanceKm, tons: c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: true, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } }).totalCents;
+        ? rentalFeeCents(c.rewardCents, chargedEmptyKm(emptyKm) + c.distanceKm, vip ? VIP_PERKS.rentalShareReduction : 0)
+        : tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: v.upgrades, condition: v.condition, driverSkill: Math.max(v.driver!.skill, v.coDriver?.skill ?? 0), crewFuel: crew.fuel, crewWear: crew.wear, emptyKm: chargedEmptyKm(emptyKm), loadedKm: c.distanceKm, tons: c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: true, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } }).totalCents;
       const profit = c.rewardCents - cost;
       if (profit <= 0) continue;
       pairs.push({ vehicleId: v.id, plate: v.plate, contractId: c.id, goods: c.goods, from: c.origin.nameBg, to: c.destination.nameBg, rewardCents: c.rewardCents, profitCents: Math.round(profit), minutes: Math.round(minutes), score: profit / Math.max(10, minutes) });

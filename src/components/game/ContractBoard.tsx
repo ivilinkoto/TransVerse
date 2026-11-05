@@ -38,11 +38,15 @@ import { PROMISES, PROMISE_IDS, type PromiseId } from '@/lib/game/promise';
 import { TAG_LABELS, type LoadTag } from '@/lib/game/special-loads';
 import { usePromise } from './usePromise';
 import { GiftLoad } from './GiftLoad';
+import { LaneTip, type LaneTipView } from './LaneTip';
 
 export interface BoardContract {
   id: string;
   /** 1.1.4.2: a load with its own rules (night courier, last mile, livestock). */
   tag?: string | null;
+  /** 1.2.3: the best tip for the lane and whether the viewer may write one. */
+  tip?: LaneTipView | null;
+  canTip?: boolean;
   /** 1.1.4.2: the foggy area at either end (November). */
   fog?: string | null;
   /** Trucks on this lane right now (v1.6; 0 below the traffic threshold). */
@@ -234,6 +238,9 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   const [open, setOpen] = useState<string | null>(() => (focus && contracts.some((c) => c.id === focus) ? focus : null));
   // After accepting, the player stays on the board; a short note says where the truck went.
   const [sent, setSent] = useState<string | null>(null);
+  // 1.2.3: after a load is taken — the next trip from where the truck arrives.
+  const [next, setNext] = useState<{ cityId: number; name: string; vehicleId: string } | null>(null);
+  const nextTrip = useFeature('next_trip');
   const [savedNote, setSavedNote] = useState<string | null>(null);
 
   // VIP: saved board filters (kept in this browser).
@@ -301,6 +308,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         <div role="status" className="sticky top-16 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-profit/40 bg-asphalt-900/95 px-4 py-3 text-sm shadow-lg backdrop-blur lg:top-20">
           <Truck className="h-4 w-4 shrink-0 text-profit" />
           <span className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">{sent}</span>
+          {nextTrip && next && <Link href={`/game/contracts?from=${next.cityId}&truck=${next.vehicleId}`} className="font-semibold text-profit hover:underline" data-testid="next-trip">{t('Следващ курс от {0} →', next.name)}</Link>}
           <Link href="/game/fleet" className="text-cyan-glow hover:underline">{t('Автопарк')}</Link>
           <Link href="/game/map" className="text-cyan-glow hover:underline">{t('Карта')}</Link>
           <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSent(null)} aria-label={t('Скрий')}>✕</button>
@@ -381,7 +389,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
       ) : (
         <ul className="space-y-2">
           {list.map((c) => (
-            <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text) => { setSent(text); setOpen(null); }} />
+            <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
           ))}
         </ul>
       )}
@@ -481,7 +489,7 @@ function whyNot(c: BoardContract): string | null {
   return [...c.options].sort((a, b) => a.emptyKm - b.emptyKm)[0]!.error;
 }
 
-function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string) => void; friends: { id: string; username: string }[]; promise: PromiseId }) {
+function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string, next?: { cityId: number; name: string; vehicleId: string }) => void; friends: { id: string; username: string }[]; promise: PromiseId }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
   const countdown = useFeature('countdowns');
@@ -548,7 +556,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
     setError(null);
     try {
       await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure, route: routeChoice && cheap && !rail ? 'cheap' : 'fast', parking: parkingLive && secure ? 'secure' : 'free', refuel: refuelLive && refuel, ...(promise !== 'normal' ? { promise } : {}) });
-      onAccepted(t('Камионът тръгна: {0}{1}, {2} → {3}. Можеш да поемеш следващата поръчка.', part ? t('{0} т ', dec(part.tons)) : '', c.goods, c.origin.name, c.destination.name));
+      onAccepted(t('Камионът тръгна: {0}{1}, {2} → {3}. Можеш да поемеш следващата поръчка.', part ? t('{0} т ', dec(part.tons)) : '', c.goods, c.origin.name, c.destination.name), { cityId: c.destination.id, name: c.destination.name, vehicleId });
       setBusy(false);
       router.refresh();
     } catch (e) {
@@ -671,6 +679,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
 
       {open && (
         <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">
+          {(c.tip || c.canTip) && <LaneTip tip={c.tip ?? null} originCityId={c.origin.id} destCityId={c.destination.id} canWrite={!!c.canTip} />}
           {friends.length > 0 && !c.reservedByOther && !c.tender && !c.alreadyTaken && <GiftLoad contractId={c.id} friends={friends} />}
           <dl className="grid gap-3 text-sm sm:grid-cols-4">
             <div><dt className="label">{t('Възложител')}</dt><dd className="mt-1">{tx(c.shipper)}</dd></div>
@@ -846,7 +855,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               )}
               {option && !option.error && (
                 <div className="grid gap-2 text-sm sm:grid-cols-4">
-                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{t('Празен курс')}{' '}</span><span className="num">{t('≈ {0} км{1}', int(option.emptyKm), c.urgent && option.emptyKm > 0 ? t(' · 1 мин') : '')}</span></div>
+                  <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{t('Празен курс')}{' '}</span><span className="num">{t('≈ {0} км{1}', int(option.emptyKm), c.urgent && option.emptyKm > 0 ? t(' · 1 мин') : '')}</span>{option.emptyKm > 0 && <span className="text-profit">{' · '}{t('без разходи')}</span>}</div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{option.rented ? t('Наем ') : t('Разходи (оценка) ')}</span><span className="num text-loss">{money(option.costCents)}</span></div>
                   <div className="rounded-lg bg-asphalt-800 px-3 py-2"><span className="text-mist-400">{t('Печалба (оценка)')}{' '}</span><span className={`num ${shownProfit >= 0 ? 'text-profit' : 'text-loss'}`}>{money(shownProfit)}</span></div>
                   <div className={`rounded-lg px-3 py-2 ${shownMinutes > c.windowMinutes ? 'bg-loss/10 text-loss' : 'bg-asphalt-800'}`}>

@@ -584,7 +584,9 @@ export async function reserveContract(db: Database, userId: string, contractId: 
     if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', tr('Поръчката вече е запазена от друг играч.'), 409);
     // Only one reservation at a time: release any other one.
     await tx.update(contracts).set({ reservedByCompanyId: null, reservedUntil: null }).where(and(eq(contracts.reservedByCompanyId, account.id), sql`${contracts.id} <> ${contractId}`));
-    const until = new Date(now.getTime() + VIP_PERKS.reservationMinutes * 60_000);
+    const { featureFor } = await import('@/server/features');
+    const minutes = (await featureFor(tx, userId, 'shop_v2', now)) ? VIP_PERKS.reservationMinutesV2 : VIP_PERKS.reservationMinutes;
+    const until = new Date(now.getTime() + minutes * 60_000);
     await tx.update(contracts).set({ reservedByCompanyId: account.id, reservedUntil: until }).where(eq(contracts.id, contractId));
     await broadcast(tx, 'market');
     return until;

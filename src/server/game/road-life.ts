@@ -81,7 +81,7 @@ export async function maybeHitchhiker(tx: Tx, userId: string, d: { id: string; s
 
 /** The player takes the hitchhiker along (only while they still wait). */
 export async function pickHitchhiker(db: Database, userId: string, id: number, now = new Date()) {
-  if (!(await featureFor(db, userId, 'hitchhikers', now))) fail('not_released', t('Автостопаджиите идват с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'hitchhikers', now))) fail('not_released', t('Това идва със следващото обновление.'));
   const [h] = await db.select().from(hitchhikers).where(and(eq(hitchhikers.id, id), eq(hitchhikers.userId, userId)));
   if (!h) fail('not_found', t('Няма такъв автостопаджия.'), 404);
   if (h!.status !== 'waiting') fail('not_waiting', t('Вече е в камиона или си тръгна.'));

@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { euro, type PaidProduct } from '@/lib/game/payments';
-import { t, intlLocale } from '@/i18n/t';
+import { t, tx, intlLocale } from '@/i18n/t';
 
 /** Real-money products: the player confirms the EU withdrawal notice, then pays on Stripe's page. */
-export function BuyWithMoney({ products, testMode, providers }: { products: PaidProduct[]; testMode: boolean; providers: ('paypal' | 'stripe')[] }) {
+export function BuyWithMoney({ products, testMode, providers, notes = [] }: { products: PaidProduct[]; testMode: boolean; providers: ('paypal' | 'stripe')[]; notes?: string[] }) {
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +28,13 @@ export function BuyWithMoney({ products, testMode, providers }: { products: Paid
   return (
     <div>
       {testMode && <p className="mb-3 rounded-lg border border-amber-sig/40 bg-amber-sig/10 px-3 py-2 text-xs text-amber-sig">{t('Тестов режим — плащанията са с тестови (sandbox) сметки, не се теглят истински пари.')}</p>}
+      {notes.map((n) => <p key={n} className="mb-3 rounded-lg border border-profit/40 bg-profit/10 px-3 py-2 text-xs font-semibold text-profit">{n}</p>)}
       <ul className="grid grid-cols-2 gap-3">
         {products.map((p) => (
           <li key={p.id} className={`flex flex-col rounded-xl border p-3 text-center ${p.vipDays ? 'border-gold-400/40 bg-gold-400/5' : 'border-asphalt-700'}`}>
-            <div className={`num font-display text-xl font-bold ${p.vipDays ? 'text-gold-400' : 'text-cyan-glow'}`}>{p.vipDays ? <span className="inline-flex items-center gap-1"><Crown className="h-4 w-4" />{t('VIP {0} дни', p.vipDays)}</span> : `${p.coins.toLocaleString(intlLocale())} TC`}</div>
+            <div className={`num font-display text-xl font-bold ${p.vipDays ? 'text-gold-400' : 'text-cyan-glow'}`}>{p.v2 ? <span className="inline-flex items-center gap-1"><Crown className="h-4 w-4" />{tx(p.label)}</span> : p.vipDays ? <span className="inline-flex items-center gap-1"><Crown className="h-4 w-4" />{t('VIP {0} дни', p.vipDays)}</span> : `${p.coins.toLocaleString(intlLocale())} TC`}</div>
             {p.bonus > 0 && <div className="text-xs text-profit">{t('+{0} подарък', p.bonus)}</div>}
+            {p.v2 && <div className="mt-1 text-[11px] text-mist-300">{tx(p.description)}</div>}
             <div className="num mt-1 text-sm text-mist-300">{euro(p.priceCents)}</div>
             <div className="mt-2 flex flex-col gap-1.5">
               {providers.includes('paypal') && (

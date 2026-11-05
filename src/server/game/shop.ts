@@ -4,6 +4,10 @@ import { and, eq, isNull, like, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { PLATE_PATTERN, RETRO, RETRO_BADGE, shopItem, VIP_DAYS, type RetroStyle, type ShopItemId } from '@/lib/game/shop';
 import { isVip, STANDARD_COLORS, VIP_COLORS } from '@/lib/game/vip';
+import { offerPrice, sofiaDay, VIP_PRICES_V2, vipMonthColor, weeklyOffers } from '@/lib/game/shop-v2';
+import { countryOpen } from '@/lib/geo/scope';
+import { grantItem } from './inventory';
+import { cities, depots } from '@/server/db/schema';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { isSpring, SPRING } from '@/lib/game/spring';
@@ -30,6 +34,7 @@ export const shopPurchaseSchema = z.object({
   recipient: z.string().trim().max(20).optional(),
   cosmetic: z.string().max(20).optional(),
   trailerId: z.string().uuid().optional(),
+  depotId: z.string().uuid().optional(),
 });
 export type ShopPurchase = z.infer<typeof shopPurchaseSchema>;
 
@@ -46,6 +51,13 @@ async function ownVehicle(tx: Tx, companyId: string, vehicleId: string | undefin
   return v!;
 }
 
+/** The price of a shop item for this viewer: the new VIP prices and the weekly offers (1.2.3). */
+export function shopPrice(id: ShopItemId, base: number, v2: boolean, now: Date): number {
+  if (!v2) return base;
+  const p = VIP_PRICES_V2[id] ?? base;
+  return weeklyOffers(now).includes(id) ? offerPrice(p) : p;
+}
+
 /** Buys a shop item with ТрансКоин: coins and the effect in one transaction. */
 export async function buyShopItem(db: Database, userId: string, input: ShopPurchase, now = new Date()) {
   const item = shopItem(input.item);
@@ -54,7 +66,10 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
     const [user] = await tx.select().from(users).where(eq(users.id, userId)).for('update');
     const vip = isVip(user!.vipUntil, now);
     const account = await companyForUser(tx, userId);
-    let price = item!.price;
+    // 1.2.3: the new shop — its own VIP prices, items and the weekly offers (−25 %).
+    const v2 = await featureFor(tx, userId, 'shop_v2', now);
+    if (item!.v2 && !v2) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+    let price = shopPrice(item!.id as ShopItemId, item!.price, v2, now);
     let summary = item!.label;
 
     switch (item!.id as ShopItemId) {
@@ -90,6 +105,11 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         await tx.update(vehicles).set({ condition: 100 }).where(eq(vehicles.id, v.id));
         if (t) await tx.update(trailers).set({ condition: 100 }).where(eq(trailers.id, t.id));
         summary = tr('Моментален ремонт {0}', v.plate);
+        // 1.2.3: VIP — one free instant repair a day.
+        if (v2 && vip) {
+          const [free] = await tx.insert(jobState).values({ key: `vip-repair:${userId}:${sofiaDay(now)}`, value: { vehicleId: v.id } }).onConflictDoNothing().returning();
+          if (free) { price = 0; summary = tr('{0} (безплатен VIP ремонт за днес)', summary); }
+        }
         break;
       }
       case 'instant_relocate': {
@@ -121,7 +141,8 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         const v = await ownVehicle(tx, account.id, input.vehicleId);
         const color = (input.color ?? '').toLowerCase();
         const standard = STANDARD_COLORS.includes(color);
-        if (!standard && !VIP_COLORS.includes(color)) fail('invalid_color', tr('Изберете цвят от палитрата.'));
+        const monthColor = v2 && color === vipMonthColor(now);
+        if (!standard && !VIP_COLORS.includes(color) && !monthColor) fail('invalid_color', tr('Изберете цвят от палитрата.'));
         if (!standard && !vip) fail('vip_only', tr('Този цвят е ексклузивен за VIP играчите.'), 403);
         if (vip) price = 0;
         await tx.update(vehicles).set({ color, livery: null }).where(eq(vehicles.id, v.id));
@@ -210,6 +231,41 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         await tx.update(trailers).set({ cosmetics: { ...t!.cosmetics, [part]: style } }).where(eq(trailers.id, t!.id));
         price = TRAILER_COSMETIC_PARTS[part].price;
         summary = tr('{0} ({1}) за ремарке {2}', TRAILER_COSMETIC_PARTS[part].label, TRAILER_COSMETIC_PARTS[part].styles.find((s) => s.id === style)!.label, t!.plate);
+        break;
+      }
+      case 'case_silver':
+      case 'case_gold': {
+        await grantItem(tx, userId, item!.id as 'case_silver' | 'case_gold', 1, 'shop', `shop-item:${userId}:${randomUUID()}`);
+        summary = tr('{0} — в инвентара ти', item!.label);
+        break;
+      }
+      case 'gift_case': {
+        if (!input.recipient) fail('recipient_required', tr('Въведете потребителското име на играча.'));
+        const [to] = await tx.select().from(users).where(sql`lower(${users.username}) = lower(${input.recipient})`);
+        if (!to || to.bannedAt) fail('recipient_not_found', tr('Няма активен играч с такова име.'), 404);
+        if (to!.id === userId) fail('gift_self', tr('Подаръкът е за друг играч — за себе си изберете „Сребърен кейс“.'));
+        await grantItem(tx, to!.id, 'case_silver', 1, 'gift_in', `shop-gift-case:${userId}:${randomUUID()}`);
+        await notify(tx, to!.id, 'achievement', () => tr('{0} ти подари сребърен кейс!', user!.username), () => tr('Отвори го от инвентара.'), '/game/inventory');
+        summary = tr('Подарък сребърен кейс за {0}', to!.username);
+        break;
+      }
+      case 'move_depot': {
+        if (!input.depotId) fail('depot_required', tr('Изберете депо.'));
+        if (!input.cityId) fail('city_required', tr('Изберете град.'));
+        const [depot] = await tx.select().from(depots).where(and(eq(depots.id, input.depotId!), eq(depots.companyId, account.id))).for('update');
+        if (!depot) fail('depot_not_found', tr('Депото не е намерено.'), 404);
+        if (depot!.cityId === input.cityId) fail('same_city', tr('Депото вече е в този град.'));
+        const [hub] = await tx.select({ id: cityMarkets.cityId }).from(cityMarkets).where(eq(cityMarkets.cityId, input.cityId!)).limit(1);
+        if (!hub) fail('not_hub', tr('Изберете град от товарния пазар.'));
+        const [dest] = await tx.select({ country: cities.countryCode, name: cities.nameBg }).from(cities).where(eq(cities.id, input.cityId!));
+        if (!countryOpen(dest?.country, await featureFor(tx, userId, 'europe', now), await featureFor(tx, userId, 'open_world', now))) fail('not_released', tr('Тази държава идва със следващото обновление.'), 403);
+        const [clash] = await tx.select({ id: depots.id }).from(depots).where(and(eq(depots.companyId, account.id), eq(depots.cityId, input.cityId!)));
+        if (clash) fail('depot_exists', tr('Вече имате депо в този град.'));
+        // The free trucks parked there (and their trailers) move with the depot.
+        const parked = await tx.select({ id: vehicles.id }).from(vehicles).where(and(eq(vehicles.companyId, account.id), eq(vehicles.cityId, depot!.cityId), eq(vehicles.status, 'idle'), isNull(vehicles.soldAt)));
+        for (const p of parked) { await tx.update(vehicles).set({ cityId: input.cityId! }).where(eq(vehicles.id, p.id)); await tx.update(trailers).set({ cityId: input.cityId! }).where(eq(trailers.vehicleId, p.id)); }
+        await tx.update(depots).set({ cityId: input.cityId! }).where(eq(depots.id, depot!.id));
+        summary = tr('Депото е преместено в {0} ({1} камиона)', dest!.name, parked.length);
         break;
       }
       case 'rename': {

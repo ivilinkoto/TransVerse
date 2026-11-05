@@ -107,8 +107,9 @@ export async function sendFriendRequest(db: Database, userId: string, targetId: 
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(friendships).where(or(eq(friendships.requesterId, userId), eq(friendships.addresseeId, userId)));
     if (n >= MAX_FRIENDS) fail('too_many_friends', t('Можеш да имаш до {0} приятели и покани.', MAX_FRIENDS));
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-    await tx.insert(friendships).values({ requesterId: userId, addresseeId: targetId });
-    await notify(tx, targetId, 'info', () => t('Покана за приятелство'), () => t('{0} иска да сте приятели.', me!.username), '/game/profile#friends');
+    const [row] = await tx.insert(friendships).values({ requesterId: userId, addresseeId: targetId }).returning({ id: friendships.id });
+    // 1.2.3: the id in the link gives the notification its „Приеми“ / „Откажи“ buttons.
+    await notify(tx, targetId, 'info', () => t('Покана за приятелство'), () => t('{0} иска да сте приятели.', me!.username), `/game/profile?friend=${row!.id}#friends`);
     return 'sent' as const;
   });
 }

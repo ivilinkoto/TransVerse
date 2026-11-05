@@ -13,7 +13,7 @@ import { canOfferJobs, offersFor } from '@/server/game/hire';
 import { activeProject } from '@/server/game/projects';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { combinationCapability } from '@/lib/game/catalog';
-import { rentalFeeCents, tripCosts } from '@/lib/game/economy';
+import { chargedEmptyKm as freeEmptyKm, rentalFeeCents, tripCosts } from '@/lib/game/economy';
 import { estimateGameMinutes } from '@/lib/game/schedule';
 import { crewEffects, restLeftMin } from '@/lib/game/crew';
 import { overloadPercent } from '@/lib/game/fines';
@@ -37,6 +37,9 @@ import { cities as citiesTable, contracts as contractsTable, deliveries } from '
 import { fleetView } from '@/server/game/queries';
 import { LICENCES } from '@/lib/game/licences';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
+import { VIP_V2 } from '@/lib/game/shop-v2';
+import { isWeeklyLaneTag } from '@/lib/game/weekly-lane';
+import { bestTips, lanesDriven } from '@/server/game/lane-tips';
 import { heldLicences, missingFor } from '@/server/game/licences';
 
 import { FleetCondition } from '@/components/game/FleetCondition';
@@ -129,6 +132,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
     const rows = await db.select({ o: contractsTable.originCityId, d: contractsTable.destCityId, n: sql<number>`count(*)::int` }).from(deliveries).innerJoin(contractsTable, eq(contractsTable.id, deliveries.contractId)).where(eq(deliveries.status, 'in_progress')).groupBy(contractsTable.originCityId, contractsTable.destCityId);
     for (const r of rows) laneTraffic.set(`${r.o}:${r.d}`, r.n);
   }
+  // 1.2.3: tips on the lanes, and the lanes this player drove (who may write one).
+  const [tips, driven] = features.lane_tips ? await Promise.all([bestTips(db, contracts.map((c) => ({ o: c.originCityId, d: c.destCityId })), user.id), lanesDriven(db, user.id)]) : [new Map(), new Set<string>()];
   const board: BoardContract[] = contracts.map((c) => {
     const cargo = CARGO[c.cargoType as CargoType];
     // A ferry on the way (islands): no fuel on board, a ticket instead.
@@ -147,8 +152,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const error = v.driver?.vacationUntil && v.driver.vacationUntil > now ? tr('Шофьорът е в почивен ден') : overloadable || part ? null : strict;
       // Planning estimates: empty leg by straight-line × 1.25, loaded leg from the real route.
       const emptyKm = v.cityId === c.originCityId ? 0 : haversineKm([v.city.lat, v.city.lon], [c.origin.lat, c.origin.lon]) * 1.25;
-      // The urgent one-minute relocation is free; only the cargo leg costs.
-      const chargedEmptyKm = c.urgent ? 0 : emptyKm;
+      // 1.2.3: the empty leg is free (as the urgent one-minute relocation always was); only the cargo leg costs.
+      const chargedEmptyKm = c.urgent ? 0 : freeEmptyKm(emptyKm);
       const crew = v.driver ? crewEffects(v.driver, v.coDriver, now) : undefined;
       const restMin = v.driver ? Math.max(restLeftMin(v.driver, now), v.coDriver ? restLeftMin(v.coDriver, now) : 0) : 0;
       const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: [...v.upgrades, ...(v.trailer?.upgrades ?? [])], condition: v.condition, driverSkill: Math.max(v.driver?.skill ?? 1, v.coDriver?.skill ?? 0), crewFuel: crew?.fuel, crewWear: crew?.wear, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm - seaKm, tons: part ? part.tons : c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });
@@ -160,7 +165,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       const rushMinutes = crew && crew.startDutyMin > 0 ? tripMinutes({ ...crew, startDutyMin: 0 }) : null;
       const rented = v.ownership === 'rented';
       const pay = part ? part.rewardCents : c.rewardCents;
-      const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents) + (sea?.ticketCents ?? 0) + (c.oversize ? oversizeCostCents(c.distanceKm - seaKm) : 0);
+      // 1.2.3: VIP pays 3 % less for fuel with the new shop.
+      const vipFuelOff = vip && features.shop_v2 && !rented ? Math.round(costs.fuelCents * VIP_V2.fuelDiscount) : 0;
+      const cost = (rented ? rentalFeeCents(pay, chargedEmptyKm + c.distanceKm) : costs.totalCents - vipFuelOff) + (sea?.ticketCents ?? 0) + (c.oversize ? oversizeCostCents(c.distanceKm - seaKm) : 0);
       return { vehicleId: v.id, label: `${v.plate} · ${v.model.name}${v.trailer ? ` + ${v.trailer.model.name}` : ''}${rented ? tr(' (нает)') : ''}${v.coDriver ? tr(' · екипаж') : ''} · ${tx(v.city.nameBg)} · ${Math.round(v.condition)}%${restMin ? tr(' · почива още {0} мин', restMin) : ''}`, error, emptyKm: Math.round(emptyKm), costCents: cost, rented, profitCents: pay - cost, minutes, rushMinutes, overloadPercent: overloadable ? Math.ceil(overloadPercent(c.weightTons, cap.payloadTons)) : 0, part, onTrip: !!v.delivery };
     });
     return {
@@ -200,7 +207,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       specialization: features.specializations && specializationCovers(membership?.company.specialization, c.cargoType),
       transEurope: features.trans_europe && c.transEurope,
       // 1.1.4.2: night courier, last mile, livestock; fog at either end in November.
-      tag: c.tag && features[c.tag as 'night_courier' | 'last_mile' | 'livestock'] ? c.tag : null,
+      tag: c.tag && features[c.tag as 'night_courier' | 'last_mile' | 'livestock'] ? c.tag : isWeeklyLaneTag(c.tag) && features.weekly_lane ? 'weekly_lane' : null,
+      tip: tips.get(`${c.originCityId}:${c.destCityId}`) ?? null,
+      canTip: driven.has(`${c.originCityId}:${c.destCityId}`),
       fog: features.fog ? (fogAt(c.origin.lat, c.origin.lon, now) ?? fogAt(c.destination.lat, c.destination.lon, now))?.label ?? null : null,
       lez: features.low_emission_zones ? [c.originCityId, c.destCityId].map((id) => LOW_EMISSION_ZONES[id]).filter((x): x is string => !!x) : [],
       traffic: (laneTraffic.get(`${c.originCityId}:${c.destCityId}`) ?? 0) >= TRAFFIC.from - 1 ? laneTraffic.get(`${c.originCityId}:${c.destCityId}`)! : 0,

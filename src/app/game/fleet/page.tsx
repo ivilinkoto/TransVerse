@@ -2,7 +2,7 @@ import { LEGEND, legendTier } from '@/lib/game/heritage';
 import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Warehouse, Wrench } from 'lucide-react';
 import { leasesOf } from '@/server/game/leasing';
 import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import { cities, deliveryExtras, depots, ledgerEntries } from '@/server/db/schema';
+import { cities, deliveries, deliveryExtras, depots, ledgerEntries, users } from '@/server/db/schema';
 import { laneRepeatsOf, lastLanesOf } from '@/server/game/lane-repeat';
 import { PUZZLE } from '@/lib/game/loading-puzzle';
 import { LoadingPuzzle } from '@/components/game/LoadingPuzzle';
@@ -49,6 +49,10 @@ export default async function FleetPage() {
   const marta = features.marta && isMarta(now);
   const vip = isVip(user.vipUntil, now);
   const fleet = await fleetView(db, company.id);
+  // 1.2.3: the favourite truck first, with its record trip and its trips.
+  const [{ fav = null } = {}] = features.favorite_truck ? await db.select({ fav: users.favoriteVehicleId }).from(users).where(eq(users.id, user.id)) : [];
+  if (fav) fleet.vehicles.sort((a, b) => (a.id === fav ? -1 : b.id === fav ? 1 : 0));
+  const [favStats] = fav && features.favorite_stats ? await db.select({ trips: sql<number>`count(*)::int`, longest: sql<number>`coalesce(max(${deliveries.loadedKm}), 0)::float` }).from(deliveries).where(and(eq(deliveries.vehicleId, fav), eq(deliveries.status, 'completed'))) : [];
   // v1.8: the ghost of this month's record on each lane being driven.
   const ghosts = features.ghost_record ? await ghostsFor(db, fleet.vehicles.flatMap((v) => (v.delivery ? [{ originCityId: v.delivery.contract.originCityId, destCityId: v.delivery.contract.destCityId }] : [])), now) : new Map();
   const leased = new Map((features.leasing ? await leasesOf(db, company.id) : []).filter((l) => l.status === 'active').map((l) => [l.vehicleId, l]));
@@ -105,6 +109,7 @@ export default async function FleetPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
+                  {v.id === fav && <span className="text-gold-400" title={tr('Любим камион')} aria-label={tr('Любим камион')}>★</span>}
                   <span className="font-display text-lg font-bold">{tx(v.model.name)}</span>
                   <Badge>{tx(KIND[v.model.kind])}</Badge>
                   {v.ownership === 'rented' && <Badge tone="gold">{tr('Нает')}</Badge>}
@@ -118,6 +123,7 @@ export default async function FleetPage() {
               <div className="text-right text-xs text-mist-400">
                 <div className="flex items-center justify-end gap-1"><MapPin className="h-3.5 w-3.5" />{v.delivery ? `${tx(v.delivery.origin.nameBg)} → ${tx(v.delivery.destination.nameBg)}` : `${tx(v.city.nameBg)}, ${v.city.countryCode}`}</div>
                 <div className="num mt-0.5">{tr('{0} км пробег', int(v.odometerKm))}</div>
+                {v.id === fav && favStats && <div className="num mt-0.5 text-gold-400">{tr('{0} курса · най-дълъг {1} км', favStats.trips, int(favStats.longest))}</div>}
               </div>
             </div>
             <div className="my-3 flex h-28 items-end justify-center rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
