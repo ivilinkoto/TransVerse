@@ -70,7 +70,7 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
             )}
           </Card>
           <Card title={t('🧂 Разчисти пътищата')}>
-            <p className="mb-3 text-sm text-mist-300">{t('Сол, пясък и луга до държава със сняг или лед: при {0} т за деня пътищата там стават с една степен по-леки до края на деня. Всеки тон носи {1} точки за пропуска.', int(PLOW.tonsPerDay), PLOW.pointsPerTon)}</p>
+            <p className="mb-3 text-sm text-mist-300">{t('Сол и пясък до държава със сняг: при {0} т за деня пътищата там олекват. {1} точки за пропуска на тон.', int(PLOW.tonsPerDay), PLOW.pointsPerTon)}</p>
             {snow.plow.length === 0 ? <p className="text-sm text-mist-400">{t('Днес още никой не е разчиствал.')}</p> : (
               <ul className="space-y-1 text-sm" data-testid="plow-today">
                 {snow.plow.map((c) => <li key={c.country} className="flex justify-between gap-2"><span>{c.country}</span><span className="num">{c.cleared ? t('✓ разчистено') : t('{0} / {1} т', int(c.tons), int(PLOW.tonsPerDay))}</span></li>)}
