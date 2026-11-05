@@ -106,9 +106,21 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
   const rear = heavy ? [72, 198] : [100];
   return (
     <g>
-      {/* frame rails */}
-      <rect x={0} y={-122} width={560} height={24} rx={3} fill="#1f2937" />
+      {/* frame rails: a lighter steel with a top edge, so the chassis reads as one piece on a dark page */}
+      <rect x={0} y={-122} width={560} height={24} rx={3} fill="#374151" stroke="#1f2937" strokeWidth="2" />
+      <rect x={2} y={-121} width={556} height={3} fill="#64748b" opacity="0.8" />
+      {/* rear light bar, mud-flap hanger and the flap behind the last axle */}
+      <rect x={-4} y={-124} width={16} height={34} rx={3} fill="#4b5563" stroke="#1f2937" strokeWidth="1.5" />
       <rect x={2} y={-116} width={8} height={14} fill="#dc2626" />
+      <rect x={14} y={-100} width={10} height={56} rx={2} fill="#111827" />
+      {/* spring hangers that hold each rear axle under the frame */}
+      {rear.map((wx) => (
+        <g key={`h${wx}`}>
+          <rect x={wx - 40} y={-104} width={14} height={30} rx={3} fill="#4b5563" stroke="#1f2937" strokeWidth="1.5" />
+          <rect x={wx + 26} y={-104} width={14} height={30} rx={3} fill="#4b5563" stroke="#1f2937" strokeWidth="1.5" />
+          <path d={`M ${wx - 36} -78 Q ${wx} -66 ${wx + 36} -78`} fill="none" stroke="#6b7280" strokeWidth="7" strokeLinecap="round" />
+        </g>
+      ))}
       {/* fifth wheel */}
       <rect x={70} y={-136} width={104} height={14} rx={5} fill="#111827" />
       <rect x={112} y={-142} width={16} height={8} rx={2} fill="#6b7280" />
@@ -150,7 +162,9 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
       )}
       {rear.map((wx) => (
         <g key={wx}>
-          <Fender x={wx} />
+          <Fender x={wx} color="#334155" />
+          {/* the bracket that holds the mudguard to the frame */}
+          <rect x={wx - 6} y={-122} width={12} height={14} rx={2} fill="#334155" />
           <Wheel x={wx} ids={ids} twin />
         </g>
       ))}
