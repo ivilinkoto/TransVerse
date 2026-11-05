@@ -39,11 +39,11 @@ export const PASS_TASKS: PassTask[] = [
 ];
 export const PASS_TASK = { perWeek: 3, points: 3_000 } as const;
 
-/** The three tasks of an ISO week, chosen the same way for everybody. */
-export function weekTasks(week: string): PassTask[] {
+/** The three tasks of an ISO week, chosen the same way for everybody (winter loads only in weeks that reach their dates). */
+export function weekTasks(week: string, winterOk = true): PassTask[] {
   let h = 0;
   for (const ch of week) h = (h * 33 + ch.charCodeAt(0)) >>> 0;
-  const pool = [...PASS_TASKS];
+  const pool = PASS_TASKS.filter((x) => winterOk || x.kind !== 'winter');
   const out: PassTask[] = [];
   while (out.length < PASS_TASK.perWeek && pool.length) {
     h = (h * 1103515245 + 12345) >>> 0;

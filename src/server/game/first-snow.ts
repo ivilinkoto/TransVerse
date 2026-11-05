@@ -10,7 +10,8 @@ import { featureLive } from '@/lib/game/features';
 import { FIRST_SNOW, PASS_TASK, PLOW, SNOW_EVENTS, SNOW_KING, taskIncrements, TITLES, weekTasks, type PassTaskKind } from '@/lib/game/first-snow';
 import { passVersion } from '@/lib/game/season-pass';
 import { isoWeek, sofiaDay } from '@/lib/game/shop-v2';
-import { roadCondition, type RealConditions, type RoadCondition } from '@/lib/game/winter';
+import { isWinter, roadCondition, type RealConditions, type RoadCondition } from '@/lib/game/winter';
+import { isPrewinter } from '@/lib/game/prewinter';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { jobState, seasons, userBadges, users } from '@/server/db/schema';
 import { postCoins } from './coins';
@@ -19,6 +20,13 @@ import { notify } from './notify';
 import { addPassPoints } from './season-pass';
 import { activeSeason } from './seasons';
 import { t } from '@/i18n/t';
+
+/** This week's tasks: the winter-loads task only when the week's Sunday is in the pre-winter or winter dates. */
+function tasksFor(now: Date) {
+  const dow = (new Date(`${sofiaDay(now)}T12:00:00Z`).getUTCDay() + 6) % 7;
+  const sunday = new Date(now.getTime() + (6 - dow) * 86_400_000);
+  return weekTasks(isoWeek(now), isPrewinter(sunday) || isWinter(sunday));
+}
 
 interface TaskState { p: Partial<Record<PassTaskKind, number>>; done: string[]; countries: string[] }
 
@@ -31,7 +39,7 @@ export async function passTasksView(db: DbOrTx, userId: string, now: Date) {
   const week = isoWeek(now);
   const [row] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, taskKey(season.id, week, userId)));
   const st = (row?.value as TaskState | undefined) ?? { p: {}, done: [], countries: [] };
-  return weekTasks(week).map((task) => ({ ...task, progress: Math.min(task.target, st.p[task.kind] ?? 0), done: st.done.includes(task.id), points: PASS_TASK.points }));
+  return tasksFor(now).map((task) => ({ ...task, progress: Math.min(task.target, st.p[task.kind] ?? 0), done: st.done.includes(task.id), points: PASS_TASK.points }));
 }
 
 export interface SnowFacts { userId: string; loadedKm: number; late: boolean; cargoType: string; convoy: boolean; destCountry: string; tons: number; holiday: string | null; goods: string; roadEvents: { kind: string }[] }
@@ -57,7 +65,7 @@ async function recordTasks(tx: Tx, seasonId: number, f: SnowFacts, at: Date) {
   for (const k of Object.keys(inc) as PassTaskKind[]) p[k] = (p[k] ?? 0) + inc[k];
   const countries = st.countries.includes(f.destCountry) ? st.countries : [...st.countries, f.destCountry];
   const done = [...st.done];
-  for (const task of weekTasks(week)) {
+  for (const task of tasksFor(at)) {
     if (done.includes(task.id) || (p[task.kind] ?? 0) < task.target) continue;
     done.push(task.id);
     await addPassPoints(tx, f.userId, PASS_TASK.points, at);

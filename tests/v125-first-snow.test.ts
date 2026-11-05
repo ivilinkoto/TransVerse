@@ -63,6 +63,7 @@ describe('1.2.5 „Първи сняг“', () => {
     expect(new Set(tasks.map((x) => x.id)).size).toBe(PASS_TASK.perWeek);
     expect(weekTasks('2026-W47')).toEqual(tasks);
     expect(tasks.every((x) => PASS_TASKS.includes(x))).toBe(true);
+    for (let w = 1; w <= 52; w++) expect(weekTasks(`2026-W${String(w).padStart(2, '0')}`, false).some((x) => x.kind === 'winter')).toBe(false);
     const inc = taskIncrements({ loadedKm: 900, late: false, cargoType: 'refrigerated', convoy: true, destCountry: 'RO', tons: 20, holiday: 'prewinter' }, ['BG']);
     expect(inc).toMatchObject({ deliveries: 1, km: 900, ontime: 1, reefer: 1, convoy: 1, countries: 1, long: 1, winter: 1, heavy: 20 });
     expect(taskIncrements({ loadedKm: 100, late: true, cargoType: 'pallets', convoy: false, destCountry: 'RO', tons: 5, holiday: null }, ['RO'])).toMatchObject({ ontime: 0, countries: 0, long: 0 });
