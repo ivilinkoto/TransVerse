@@ -12,6 +12,7 @@ import { ensureStarterJobs } from '@/server/game/contracts';
 import { attachReferral, hashIp } from '@/server/game/referrals';
 import { clientIp, handler } from '@/server/http';
 import { siteUrl } from '@/server/payments/common';
+import { sourceFromCookie } from '@/lib/game/signup-source';
 
 export const POST = handler({ auth: false, schema: signupSchema, perMinute: 20 }, async ({ input, request }) => {
   const db = getDb();
@@ -22,7 +23,8 @@ export const POST = handler({ auth: false, schema: signupSchema, perMinute: 20 }
   });
   const userId = await register(db, input);
   // v2.0: the language the player chose before signing up (or their browser's); 1.1.2: when they agreed to the terms.
-  await db.update(users).set({ locale: localeOfRequest(request), termsAcceptedAt: new Date() }).where(eq(users.id, userId));
+  // 1.2.4: where the player came from (the `?src=` of their first visit), for the admin page.
+  await db.update(users).set({ locale: localeOfRequest(request), termsAcceptedAt: new Date(), signupSource: sourceFromCookie(request.headers.get('cookie')) }).where(eq(users.id, userId));
   // Invite link: remember who invited the player (the reward comes after their first deliveries).
   await attachReferral(db, userId, input.ref, await hashIp(db, await clientIp())).catch((e) => console.warn('[register] referral failed', e));
   const { token, expiresAt } = await createSession(db, userId, request.headers.get('user-agent'));

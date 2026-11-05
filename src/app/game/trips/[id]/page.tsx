@@ -65,7 +65,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   if (!features.trip_log) notFound();
   const t = await tripLog(db, id, { userId: user.id });
   if (!t) notFound();
-  const link = `${appUrl()}/trip/${id}`;
+  // 1.2.4: visitors from a shared trip count as „trip-share“ on the admin page of sources.
+  const link = `${appUrl()}/trip/${id}?src=trip-share`;
   const st = t.stats;
   return (
     <div className="space-y-6">

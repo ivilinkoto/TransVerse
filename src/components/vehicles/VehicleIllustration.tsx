@@ -16,7 +16,7 @@ export interface VehicleIllustrationProps {
   trailerColor?: string;
   className?: string;
   title?: string;
-  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027, 'easter' — Easter 2027). */
+  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027, 'easter' — Easter 2027, 'blackfriday' — Black Friday 2026). */
   livery?: string | null;
   /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
   cosmetics?: Cosmetics | null;
@@ -115,6 +115,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       {livery === 'cherry' && decals.map(([x, y, size], i) => <CherryDecal key={`c${i}`} x={x} y={y} size={size} />)}
       {livery && livery in RETRO && decals.map(([x, y, size], i) => <RetroDecal key={`r${i}`} x={x} y={y} size={size} stripes={RETRO[livery as RetroStyle].stripes} />)}
       {livery === 'easter' && decals.map(([x, y, size], i) => <EasterDecal key={`ea${i}`} x={x} y={y} size={size} />)}
+      {livery === 'blackfriday' && decals.map(([x, y, size], i) => <BlackFridayDecal key={`bf${i}`} x={x} y={y} size={size} />)}
       {unit.electric && decals.slice(0, 1).map(([x, y, size], i) => <ElectricDecal key={`e${i}`} x={x} y={y + size * 0.9} size={size * 0.55} />)}
     </svg>
   );
@@ -203,6 +204,19 @@ function CherryDecal({ x, y, size }: { x: number; y: number; size: number }) {
           <circle cx={cx} cy={cy} r="0.9" fill="#facc15" />
         </g>
       ))}
+    </g>
+  );
+}
+
+/** Black Friday 2026 (1.2.4): a gold stripe and a price tag with „−%“, centred on (x, y). */
+function BlackFridayDecal({ x, y, size }: { x: number; y: number; size: number }) {
+  const k = size / 32;
+  return (
+    <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`} opacity="0.95">
+      <rect x="-14" y="22" width="60" height="3" fill="#d4a017" />
+      <path d="M6 6 h16 l6 7 l-6 7 h-16 z" fill="#d4a017" />
+      <circle cx="9.5" cy="13" r="1.6" fill="#111114" />
+      <text x="17" y="16" textAnchor="middle" fontSize="8" fontWeight="800" fill="#111114" fontFamily="sans-serif">−%</text>
     </g>
   );
 }

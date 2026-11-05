@@ -28,6 +28,7 @@ import { SUPPLY } from '@/lib/game/living';
 import { featureLive } from '@/lib/game/features';
 import { checkLegend } from './heritage';
 import { recordWeeklyLane } from './weekly-lane';
+import { recordPrewinterDelivery } from './prewinter';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -821,6 +822,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // Баба Марта (v1.5): spring loads.
   if (isMarta(completedAt)) await recordMartaDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'marta', loadedKm: d.loadedKm });
   if (isChristmas(completedAt)) await recordChristmasDelivery(tx, company!.ownerId, { holiday: contract.holiday === 'christmas', loadedKm: d.loadedKm, arrivedAt: completedAt });
+  // 1.2.4 „Преди зимата“: winter goods count for the server goal and the badge.
+  await recordPrewinterDelivery(tx, company!.ownerId, { holiday: contract.holiday, tons: contract.weightTons, late: result.late }, completedAt);
   // A special load won on auction.
   if (contract.auctionId) await deliverAuctionLoad(tx, contract.auctionId, company!.ownerId);
   // A load of a long-term client contract.

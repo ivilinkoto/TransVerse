@@ -1,3 +1,4 @@
+import { winterTyreDiscount } from './prewinter';
 import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { countryOpen } from '@/lib/geo/scope';
@@ -232,7 +233,9 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
     if ((upgrade!.id === 'summer_tyres' || upgrade!.id === 'all_season_tyres') && !(await featureFor(tx, userId, 'seasonal_tyres'))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
     // One tyre set at a time (v1.5): the new set replaces the old one.
     const kept = TYRE_SETS.includes(upgrade!.id) ? v.upgrades.filter((u) => !TYRE_SETS.includes(u as UpgradeId)) : v.upgrades;
-    const price = Math.round(upgrade!.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
+    // 1.2.4: winter and all-season tyres cost less until the end of November.
+    const before = winterTyreDiscount(upgrade!.id, new Date(), await featureFor(tx, userId, 'winter_prep'));
+    const price = Math.round(upgrade!.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - before));
     await post(tx, company.id, [{ category: 'upgrades', amountCents: -price, description: `${upgrade!.label} — ${v.plate}`, idempotencyKey: `upgrade:${v.id}:${upgrade!.id}` }], { requireFunds: true });
     await tx.update(vehicles).set({ upgrades: [...kept, upgrade!.id] }).where(eq(vehicles.id, v.id));
   });

@@ -121,6 +121,9 @@ export const FEATURES = {
   look_settings: '1.2.3',
   notification_buttons: '1.2.3',
   week_chart: '1.2.3',
+  // 1.2.4 „Преди зимата“: winter goods and the server goal before 1 December, Black Friday in the shop and on the board.
+  winter_prep: '1.2.4',
+  black_friday: '1.2.4',
   inventory_menu: '1.2.1',
   item_trade: '1.2.1',
   workshop: '1.2.1',
@@ -298,13 +301,13 @@ export const FEATURES = {
   convoy_lobby: '1.2.3',
   // 1.2.3: released early (built for a later update).
   weekly_convoy: '1.2.3',
-  relay: '1.10',
-  trip_log: '1.10',
-  city_growth: '1.10',
+  relay: '1.2.4', // released early with 1.2.4 (planned for 1.10)
+  trip_log: '1.2.4', // released early with 1.2.4 (planned for 1.10)
+  city_growth: '1.2.4', // released early with 1.2.4 (planned for 1.10)
   harvest: '1.10',
   story: '1.10',
   road_choices: '1.10',
-  reefer: '1.10',
+  reefer: '1.2.4', // released early with 1.2.4 (planned for 1.10)
   // v1.9 "Светлини и сенки".
   simple_nav: '1.9',
   progressive_unlock: '1.9',
@@ -337,10 +340,10 @@ export const FEATURES = {
   sealed_cargo: '1.2.3',
   // 1.2.3: released early (built for a later update).
   haggling: '1.2.3',
-  ghost_record: '1.8',
+  ghost_record: '1.2.4', // released early with 1.2.4 (planned for 1.8)
   share_market: '1.8',
-  humanitarian: '1.8',
-  truck_contest: '1.8',
+  humanitarian: '1.2.4', // released early with 1.2.4 (planned for 1.8)
+  truck_contest: '1.2.4', // released early with 1.2.4 (planned for 1.8)
   trans_europe: '1.7',
   grand_eurotour: '1.7',
   country_kings: '1.7',

@@ -34,7 +34,7 @@ export default async function PublicTripPage({ params }: Props) {
         <h1 className="font-display text-3xl font-bold">{tx(t.from)} → {tx(t.to)}</h1>
         <p className="text-mist-300">{tr('{0} закара {1} ({2} т) — {3} км по реален маршрут.', t.username, t.goods, t.tons, Math.round(t.km))}</p>
         <p className="text-xs text-mist-500">{tr('Игрови данни от TransVerse.')}</p>
-        <Link href="/register" className="btn-primary mt-4 inline-flex">{tr('Карай и ти — безплатно')}</Link>
+        <Link href="/register?src=trip-share" className="btn-primary mt-4 inline-flex">{tr('Карай и ти — безплатно')}</Link>
       </div>
     </main>
   );

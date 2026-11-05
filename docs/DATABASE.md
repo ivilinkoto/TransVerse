@@ -208,6 +208,7 @@
 - 0099: `organization_achievements` (компания, ключ, кога) — постиженията на компаниите (1.1.3.1).
 - 0100: `ideas.discord_votes` и `idea_votes.source` (`game` | `discord`) — колко от гласовете за идея са от бутона в Discord (1.1.3.4).
 - 1.1.3.5 (без миграция): в `job_state` — `staff-note:<играч>` (бележка на екипа: текст, кой, кога) и `discord-remind:<доставка>` (/напомни); записите в `errors:recent` имат и `digest` (кодът от страницата за грешка).
+- 1.2.4 (миграция `0108_signup_source`): `users.signup_source` — източникът от `?src=` на първото посещение; ключове в `job_state` — `prewinter:<година>` (`{ tons, reachedAt }`) и `prewinter:<година>:<играч>` (`{ loads }`); ливрея `blackfriday` във `vehicles.livery`.
 - 1.2.3 (миграция `0107_lane_tips`): таблици `lane_tips` (съвет на играч за линия, уникален по играч+линия, `score`) и `lane_tip_votes` (глас ±1 на играч за съвет); `users.ui_prefs` получава `theme` и `textSize`; ключове в `job_state` — `morning:<играч>:<ден>`, `weekly-lane:<седмица>`, `weekly-lane-win:<седмица>:<играч>`, `starved:<държава>`.
 - 1.2.3 (без миграция): ключове в `job_state` — `vip-repair:<играч>:<ден>`, `vip-case:<играч>:<седмица>`, `month-card:<играч>` (`{ until }`); бонусите към плащане са записи в `coin_entries` с ключ `payment-extra:<плащане>:bonus|ref`; продукти в `payments.product_id`: `starter_pack`, `month_card`.
 - 1.2.2 (без миграция): `users.ui_prefs.oldMenu` (старото меню за 14 дни след обновлението); обиколката на новото меню се помни в `ui_prefs.seenPages` („nav-tour-v2“).

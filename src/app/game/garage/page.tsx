@@ -15,7 +15,9 @@ import { dateTime, int, money } from '@/lib/format';
 import { USED_MARKET } from '@/lib/game/used-market';
 import { ListForSale } from '@/components/game/ListForSale';
 import { boundsFor, myListings } from '@/server/game/used-market';
-import { TRAILERS, TRAILER_UPGRADES, UPGRADES, canCouple } from '@/lib/game/catalog';
+import { TRAILERS, TRAILER_UPGRADES, UPGRADES, canCouple, hasWinterGrip } from '@/lib/game/catalog';
+import { isPrewinter, PREWINTER } from '@/lib/game/prewinter';
+import { winterTyreDiscount } from '@/server/game/prewinter';
 import { eq } from 'drizzle-orm';
 import { cities, depots } from '@/server/db/schema';
 import { repairCostCents } from '@/lib/game/economy';
@@ -51,6 +53,16 @@ export default async function GaragePage() {
       <PageHeader title={tr('Сервиз')} subtitle={tr('Ремонти, подобрения, ремаркета и продажба — между курсовете.')}
         help={tr('„Продай“ е веднага на търговец. Обявата на пазара е за играчите (такса 5%, до 7 дни) — дотогава камионът не кара.')} />
       {!user.seenHints.includes('insurance') && <Hint id="insurance" />}
+      {features.winter_prep && isPrewinter(now) && (() => {
+        // 1.2.4: before 1 December, the trucks still on summer tyres (winter starts with snow and ice).
+        const bare = fleet.vehicles.filter((v) => v.ownership === 'owned' && !hasWinterGrip(v.upgrades));
+        return bare.length > 0 ? (
+          <div className="rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 p-4 text-sm" data-testid="winter-tyres">
+            <div className="font-semibold">{tr('❄ Зимата идва на 1 декември')}</div>
+            <p className="mt-1 text-mist-300">{tr('{0} камиона са още без зимни гуми: {1}. До 30 ноември зимните и всесезонните гуми са с −{2}%.', bare.length, bare.map((v) => v.plate).join(', '), Math.round(PREWINTER.tyreDiscount * 100))}</p>
+          </div>
+        ) : null;
+      })()}
       {fleet.vehicles.length === 0 && <Empty icon={Wrench} title={tr('Няма техника за сервиз')}><EmptyAction href="/game/market" label="Купи или наеми камион" /></Empty>}
       <div className="space-y-4">
         {fleet.vehicles.map((v) => {
@@ -176,14 +188,16 @@ export default async function GaragePage() {
                         .filter((u) => u.appliesTo.includes(v.model.kind) && (features.seasonal_tyres || (u.id !== 'summer_tyres' && u.id !== 'all_season_tyres')))
                         .map((u) => {
                           const has = v.upgrades.includes(u.id);
+                          const off = winterTyreDiscount(u.id, now, features.winter_prep);
+                          const price = Math.round(u.priceCents * discount * (1 - off));
                           return (
                             <li key={u.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-3 text-sm">
                               <div className="font-semibold">{tx(u.label)}</div>
                               <div className="text-xs text-mist-400">{tx(u.description)}</div>
                               <div className="mt-2">
                                 {has ? <Badge tone="violet">{tr('монтирано')}</Badge> : (
-                                  <ActionButton action={{ type: 'installUpgrade', vehicleId: v.id, upgradeId: u.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={busy || company.balanceCents < Math.round(u.priceCents * discount)}>
-                                    {tr('Монтирай · {0}', money(Math.round(u.priceCents * discount)))}
+                                  <ActionButton action={{ type: 'installUpgrade', vehicleId: v.id, upgradeId: u.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={busy || company.balanceCents < price}>
+                                    {tr('Монтирай · {0}', money(price))}{off > 0 && ` · −${Math.round(off * 100)}%`}
                                   </ActionButton>
                                 )}
                               </div>
