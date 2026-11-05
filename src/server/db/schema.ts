@@ -170,6 +170,8 @@ export const users = pgTable(
     lastSeenAt: ts('last_seen_at'),
     /** 1.2.4: where the player came from (the `?src=` of the first visit, e.g. a Facebook post), null when unknown. */
     signupSource: text('signup_source'),
+    /** 1.2.5: the title shown next to the name (one of the player's title badges), null for none. */
+    title: text('title'),
     /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
     seenVersion: text('seen_version'),
     /** Seasonal decorations (Halloween…) on or off for this player. */

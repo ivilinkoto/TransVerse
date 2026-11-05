@@ -71,6 +71,7 @@ export const ITEMS = {
   frost_frame: { name: 'Ледена рамка', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Ледена рамка около портрета.' },
   euro_frame: { name: 'Рамка „Европа“', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Синя рамка със звезди около портрета.' },
   xmas_frame: { name: 'Коледна рамка', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Червено-зелена рамка около портрета.' },
+  paint_firstsnow: { name: 'Боя „Първи сняг“', rarity: 'epic', kind: 'consumable', target: 'vehicle', effect: 'Боядисва собствен камион светлосиньо със снежинки — само от пропуска на сезона „Първи сняг“.' },
 } as const satisfies Record<string, ItemDef>;
 export type ItemId = keyof typeof ITEMS;
 export const ITEM_IDS = Object.keys(ITEMS) as ItemId[];

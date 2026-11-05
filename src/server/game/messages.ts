@@ -23,6 +23,8 @@ export interface FeedMessage {
   username: string;
   role: string;
   vip: boolean;
+  /** 1.2.5: the title the author shows (an id from TITLES), if any. */
+  title?: string | null;
   body: string | null;
   deleted: boolean;
   createdAt: string;
@@ -87,14 +89,14 @@ export async function notifyReply(tx: Tx, authorId: string, target: { userId: st
 
 export async function channelFeed(db: DbOrTx, channel: Channel, afterId = 0, limit = 60, now = new Date()): Promise<FeedMessage[]> {
   const rows = await db
-    .select({ m: chatMessages, username: users.username, role: users.role, vipUntil: users.vipUntil })
+    .select({ m: chatMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, title: users.title })
     .from(chatMessages)
     .innerJoin(users, eq(users.id, chatMessages.userId))
     .where(and(eq(chatMessages.channel, channel), afterId ? gt(chatMessages.id, afterId) : undefined))
     .orderBy(desc(chatMessages.id))
     .limit(Math.min(limit, 200));
   const replies = await replyRefs(db, 'channel', rows.map((r) => r.m.replyToId));
-  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null }));
+  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), title: r.title, body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null }));
 }
 
 export async function postToChannel(db: Database, userId: string, channel: Channel, raw: string, replyToId?: number | null) {

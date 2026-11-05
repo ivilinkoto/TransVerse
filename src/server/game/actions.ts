@@ -7,6 +7,7 @@ import { acceptTender } from '@/server/game/tenders';
 import { claimDaily } from '@/server/game/daily';
 import { addLaneTip, deleteLaneTip, laneTipSchema, voteLaneTip } from '@/server/game/lane-tips';
 import { greetNewcomer } from '@/server/game/neighbors';
+import { setTitle } from '@/server/game/first-snow';
 import { buyPassLevel, claimMonthCard, claimVipCase } from '@/server/game/shop-v2';
 import { dismissHint, markReleaseSeen, setSeasonalTheme } from '@/server/game/releases';
 import { HINT_IDS, type HintId } from '@/lib/game/hints';
@@ -164,6 +165,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('voteLaneTip'), tipId: z.string().uuid(), value: z.union([z.literal(1), z.literal(-1)]) }),
   z.object({ type: z.literal('deleteLaneTip'), tipId: z.string().uuid() }),
   z.object({ type: z.literal('greetNewcomer'), userId: z.string().uuid() }),
+  z.object({ type: z.literal('setTitle'), title: z.string().max(40).nullable() }),
   z.object({ type: z.literal('dispatchRun'), plan: z.array(z.object({ vehicleId: id, contractId: id })).min(1).max(50) }),
   z.object({ type: z.literal('autoDispatch'), vehicleId: id, on: z.boolean() }),
   z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
@@ -652,6 +654,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   openGift: 'item_trade',
   offerTrade: 'item_trade',
   answerTrade: 'item_trade',
+  setTitle: 'season_v2',
   unequipLook: 'inventory_menu',
   craftItems: 'workshop',
   claimWeeklyChest: 'item_chests',
@@ -685,6 +688,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, id: (await addLaneTip(db, user.id, laneTipSchema.parse(input))).id };
     case 'voteLaneTip':
       return { ok: true, score: await voteLaneTip(db, user.id, input.tipId, input.value) };
+    case 'setTitle':
+      return { ok: true, ...(await setTitle(db, user.id, input.title)) };
     case 'greetNewcomer':
       return { ok: true, ...(await greetNewcomer(db, user.id, input.userId)) };
     case 'deleteLaneTip':

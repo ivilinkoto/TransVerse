@@ -5,6 +5,8 @@ import { post, postTreasury } from './finance';
 import { notify } from './notify';
 import { awardSeasonMedals } from './medals';
 import { t, intlLocale } from '@/i18n/t';
+import { featureLive } from '@/lib/game/features';
+import { FIRST_SNOW } from '@/lib/game/first-snow';
 
 export interface SeasonRules {
   /** Season length in days. */
@@ -13,6 +15,18 @@ export interface SeasonRules {
   prizesCents: number[];
   /** Prizes for the best player companies, paid into their treasury (older seasons: the default). */
   companyPrizesCents?: number[];
+  /** 1.2.5: the pass of this season (2 = 50 levels, tasks, elite levels; older seasons: 1). */
+  pass?: number;
+  /** 1.2.5: a named season's theme (e.g. 'first_snow'). */
+  theme?: string;
+}
+
+/** 1.2.5: the name, theme and pass of a season that starts now. */
+export function newSeasonSetup(now: Date, live: boolean): { name: string; rules: SeasonRules } {
+  const plain = { name: `Сезон ${MONTHS_BG[now.getUTCMonth()]} ${now.getUTCFullYear()}`, rules: DEFAULT_SEASON_RULES };
+  if (!live) return plain;
+  const snow = now >= new Date(FIRST_SNOW.from) && now < new Date(FIRST_SNOW.to);
+  return snow ? { name: `Сезон „${FIRST_SNOW.name}“`, rules: { ...DEFAULT_SEASON_RULES, pass: 2, theme: FIRST_SNOW.theme } } : { ...plain, rules: { ...DEFAULT_SEASON_RULES, pass: 2 } };
 }
 
 export const DEFAULT_COMPANY_PRIZES_CENTS = [150_000_00, 90_000_00, 60_000_00, 40_000_00, 25_000_00];
@@ -25,14 +39,15 @@ const MONTHS_BG = ['януари', 'февруари', 'март', 'април',
 export async function activeSeason(db: DbOrTx, now = new Date()) {
   const [season] = await db.select().from(seasons).where(eq(seasons.status, 'active')).orderBy(desc(seasons.id)).limit(1);
   if (season) return season;
+  const setup = newSeasonSetup(now, featureLive('season_v2', now));
   const [created] = await db
     .insert(seasons)
     .values({
-      name: `Сезон ${MONTHS_BG[now.getUTCMonth()]} ${now.getUTCFullYear()}`,
+      name: setup.name,
       startsAt: now,
-      endsAt: new Date(now.getTime() + DEFAULT_SEASON_RULES.lengthDays * 86_400_000),
+      endsAt: new Date(now.getTime() + setup.rules.lengthDays * 86_400_000),
       status: 'active',
-      rules: DEFAULT_SEASON_RULES,
+      rules: setup.rules,
     })
     .returning();
   return created!;

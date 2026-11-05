@@ -3,7 +3,7 @@ import { dec, int, km, money } from '@/lib/format';
 import { combinationCapability } from '@/lib/game/catalog';
 import { featureLive } from '@/lib/game/features';
 import { canSplit, partRewardCents, partTons } from '@/lib/game/partial';
-import { PASS_POINTS_PER_LEVEL, PASS_LEVELS } from '@/lib/game/season-pass';
+import { levelStart } from '@/lib/game/season-pass';
 import { DUEL } from '@/lib/game/together';
 import { ROADSIDE } from '@/lib/game/roadside';
 import type { Database } from '@/server/db/client';
@@ -188,13 +188,15 @@ export async function duelAnswer(ctx: Ctx, duelId: string, accept: boolean): Pro
 export async function passCommand(ctx: Ctx): Promise<Answer> {
   const me = released(ctx);
   const p = await passView(ctx.db, me.id, ctx.now);
-  const into = p.points - p.level * PASS_POINTS_PER_LEVEL;
+  // 1.2.5: levels get dearer with the pass of 50 levels.
+  const into = p.points - levelStart(p.level, p.version);
+  const need = levelStart(Math.min(p.level + 1, p.max), p.version) - levelStart(p.level, p.version);
   return answer(reply({
     embeds: [{
       title: t('🎟️ Truck Pass · {0}', p.season.name),
       url: `${appUrl()}/game/pass`,
       color: p.premium ? 0xf6c343 : BRAND,
-      description: t('Ниво **{0}** от {1}{2}\n{3}\n\n{4}', p.level, PASS_LEVELS, p.premium ? t(' · премиум') : '', p.level >= PASS_LEVELS ? t('Максимално ниво! 🏆') : t('{0} {1} / {2} точки до ниво {3}', bar(into / PASS_POINTS_PER_LEVEL), int(into), int(PASS_POINTS_PER_LEVEL), p.level + 1), p.claimable ? `🎁 **${p.claimable}** ${p.claimable === 1 ? t('награда те чака') : t('награди те чакат')}.` : t('Няма невзети награди.')),
+      description: t('Ниво **{0}** от {1}{2}\n{3}\n\n{4}', p.level, p.max, p.premium ? t(' · премиум') : '', p.level >= p.max ? t('Максимално ниво! 🏆') : t('{0} {1} / {2} точки до ниво {3}', bar(into / need), int(into), int(need), p.level + 1), p.claimable ? `🎁 **${p.claimable}** ${p.claimable === 1 ? t('награда те чака') : t('награди те чакат')}.` : t('Няма невзети награди.')),
       footer,
     }],
     components: p.claimable ? rows(button(t('Вземи наградите'), 'pass:claim', STYLE.success, '🎁')) : [],

@@ -1,5 +1,7 @@
 'use client';
 
+import { TITLES } from '@/lib/game/first-snow';
+import { TitleChip } from '@/components/game/TitleChip';
 import { AtSign, Building2, CornerUpLeft, Flag, Globe2, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
@@ -390,7 +392,7 @@ export function ChatDock() {
                   <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 ${mine ? 'bg-volt-500/25' : 'bg-asphalt-800'}`}>
                     <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                       {tab === 'company' && presence && <span className={`h-1.5 w-1.5 rounded-full ${m.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={m.online ? tr('В играта') : tr('Не е в играта')} />}
-                      {!dm && <PlayerName name={m.username} role={m.role} vip={m.vip} className="font-semibold" />}
+                      {!dm && <PlayerName name={m.username} role={m.role} vip={m.vip} className="font-semibold" />}{!dm && m.title && TITLES[m.title] && <TitleChip id={m.title} />}
                       <span className="text-mist-400">{time(m.createdAt)}</span>
                       {mine && dm && m.read && !m.deleted && <span className="text-cyan-glow">{tr('· видяно')}</span>}
                       {replies && !m.deleted && (
