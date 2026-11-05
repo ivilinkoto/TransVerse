@@ -10,6 +10,8 @@ import { TrackLink } from '@/components/game/TrackLink';
 import { DriverPortrait } from '@/components/game/DriverPortrait';
 import { fleetCapacity } from '@/server/game/fleet';
 import Link from 'next/link';
+import { hasWinterGrip } from '@/lib/game/catalog';
+import { isPrewinter, PREWINTER } from '@/lib/game/prewinter';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
 import { RoadsideChoice } from '@/components/game/RoadsideChoice';
 import { helpableStop } from '@/lib/game/roadside';
@@ -85,6 +87,11 @@ export default async function FleetPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={tr('Автопарк')} subtitle={tr('Твоите превозни средства, къде са и какво правят.')} actions={<Link href="/game/market" className="btn-primary"><Truck className="h-4 w-4" />{tr('Купи техника')}</Link>} />
+      {features.winter_prep && isPrewinter(now) && fleet.vehicles.some((v) => v.ownership === 'owned' && !hasWinterGrip(v.upgrades)) && (
+        <Link href="/game/garage" className="block rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 p-3 text-sm" data-testid="fleet-winter-tyres">
+          {tr('❄ Зимата идва на 1 декември — {0} камиона са още без зимни гуми. В Сервиза до 30 ноември са с −{1}% →', fleet.vehicles.filter((v) => v.ownership === 'owned' && !hasWinterGrip(v.upgrades)).length, Math.round(PREWINTER.tyreDiscount * 100))}
+        </Link>
+      )}
       {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
       <div className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
         <span className="flex items-center gap-2">

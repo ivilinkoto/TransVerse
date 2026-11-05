@@ -13,7 +13,7 @@ export const SHOP_CATEGORIES: Record<ShopCategory, string> = {
   account: 'Профил',
 };
 
-export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_easter' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename' | 'case_silver' | 'case_gold' | 'gift_case' | 'move_depot';
+export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_easter' | 'paint_blackfriday' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename' | 'case_silver' | 'case_gold' | 'gift_case' | 'move_depot';
 
 /** The retro collection (v1.5): three paints of past decades; all three earn a badge. */
 export const RETRO = {
@@ -35,7 +35,7 @@ export interface ShopItem {
   /** 1.2.3: sold only with the new shop (`shop_v2`). */
   v2?: boolean;
   /** Sold only during this holiday (what was bought stays). */
-  seasonal?: 'halloween' | 'christmas' | 'spring' | 'easter';
+  seasonal?: 'halloween' | 'christmas' | 'spring' | 'easter' | 'black_friday';
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
@@ -55,6 +55,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'paint_retro80', category: 'cosmetic', label: 'Ретро боя „80-те“', description: 'Тъмносиня боя с неоново розово и синьо от 80-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
   { id: 'paint_retro90', category: 'cosmetic', label: 'Ретро боя „90-те“', description: 'Тюркоазено-лилава боя с ивици от 90-те. Част от ретро колекцията — събери трите за значка.', price: 60, needs: 'vehicle' },
   { id: 'paint_easter', category: 'cosmetic', label: 'Боя „Великден“ · Великден 2027', description: 'Пролетна лилава боя с шарено великденско яйце на кабината и ремаркето. Продава се само около Великден — остава на камиона завинаги (до пребоядисване).', price: 80, needs: 'vehicle', seasonal: 'easter' },
+  { id: 'paint_blackfriday', category: 'cosmetic', label: 'Боя „Черен петък“ · 2026', description: 'Матово черна боя със златна ивица и етикет „−%“ на кабината и ремаркето. Продава се само от 27 до 30 ноември — остава на камиона завинаги (до пребоядисване).', price: 90, needs: 'vehicle', seasonal: 'black_friday' },
   { id: 'truck_part', category: 'cosmetic', label: 'Части за камиона', description: 'Решетка, светлини на покрива, сенник или стикер с името на компанията на вратата. Остават на камиона; нов стил на същата част заменя стария.', price: 50, needs: 'vehicle_cosmetic' },
   { id: 'trailer_part', category: 'cosmetic', label: 'Части за ремаркето', description: 'Боя, лента, калници или светлини на покрива на твое ремарке. Остават на него; нов стил на същата част заменя стария.', price: 30, needs: 'trailer_cosmetic' },
   { id: 'case_silver', category: 'boost', label: 'Сребърен кейс', description: 'Кейс за инвентара — отвори го за един предмет (шансовете са на кейса).', price: 150, v2: true },

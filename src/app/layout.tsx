@@ -1,3 +1,4 @@
+import { SourceCapture } from '@/components/SourceCapture';
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
@@ -47,6 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <I18nProvider locale={locale} messages={MESSAGES[locale]}>{children}</I18nProvider>
         {season && <SeasonalDecor season={season} />}
+        <SourceCapture />
       </body>
     </html>
   );

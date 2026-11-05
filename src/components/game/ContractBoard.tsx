@@ -29,6 +29,7 @@ import { useFeature } from './Features';
 import { Countdown } from '@/components/ui/Countdown';
 import { NATIONAL_DAY, SOWING } from '@/lib/game/spring';
 import { HARVEST } from '@/lib/game/city-growth';
+import { BLACK_FRIDAY, PREWINTER } from '@/lib/game/prewinter';
 import { SECURE_PARKING } from '@/lib/game/traffic';
 import { SPECIALIZATION } from '@/lib/game/specialization';
 import { TRANS_EUROPE } from '@/lib/game/europe';
@@ -174,7 +175,7 @@ export interface BoardContract {
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green', livestock: 'orange' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
-type Chip = 'special' | 'fog' | 'fav' | 'home' | 'hired' | 'stops' | 'goods' | 'halloween' | 'christmas' | 'marta' | 'buditeli' | 'sowing' | 'harvest' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
+type Chip = 'special' | 'fog' | 'fav' | 'home' | 'hired' | 'stops' | 'goods' | 'halloween' | 'christmas' | 'marta' | 'buditeli' | 'sowing' | 'harvest' | 'prewinter' | 'black_friday' | 'national' | 'oversize' | 'winter' | 'clear' | 'licence' | 'fast' | 'perKm';
 
 const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] = [
   { id: 'fav', label: '★ Любими линии', test: (c) => c.favorite },
@@ -190,6 +191,8 @@ const CHIPS: { id: Chip; label: string; test: (c: BoardContract) => boolean }[] 
   { id: 'buditeli', label: '📚 Будители', test: (c) => c.holiday === 'buditeli' },
   { id: 'sowing', label: '🌱 Сеитба', test: (c) => c.holiday === 'sowing' },
   { id: 'harvest', label: '🍇 Гроздобер', test: (c) => c.holiday === 'harvest' },
+  { id: 'prewinter', label: '🧂 За зимата', test: (c) => c.holiday === 'prewinter' },
+  { id: 'black_friday', label: '🛍 Черен петък', test: (c) => c.holiday === 'black_friday' },
   { id: 'national', label: '🎉 Национален празник', test: (c) => c.holiday === 'national' },
   { id: 'oversize', label: 'Извънгабаритни', test: (c) => !!c.oversizeCents },
   { id: 'winter', label: '❄ Зимни товари', test: (c) => c.holiday === 'winter' },
@@ -213,6 +216,8 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
   ['buditeli', (c) => c.holiday === 'buditeli'],
   ['sowing', (c) => c.holiday === 'sowing'],
   ['harvest', (c) => c.holiday === 'harvest'],
+  ['prewinter', (c) => c.holiday === 'prewinter'],
+  ['black_friday', (c) => c.holiday === 'black_friday'],
   ['national', (c) => c.holiday === 'national'],
   ['oversize', (c) => !!c.oversizeCents],
   ['winter', (c) => c.holiday === 'winter'],
@@ -606,6 +611,8 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.specialization && <Badge tone="violet">{t('🎯 СПЕЦИАЛИЗАЦИЯ · +{0}%', Math.round(SPECIALIZATION.bonusShare * 100))}</Badge>}
               {!!c.traffic && <Badge tone="orange">{t('🚦 НАТОВАРЕНО · {0} камиона', c.traffic)}</Badge>}
               {c.holiday === 'harvest' && <Badge tone="orange">{t('🍇 ГРОЗДОБЕР · +{0}%', Math.round((HARVEST.rewardMultiplier - 1) * 100))}</Badge>}
+              {c.holiday === 'prewinter' && <Badge tone="cyan">{t('🧂 ЗА ЗИМАТА · +{0}%', Math.round((PREWINTER.rewardMultiplier - 1) * 100))}</Badge>}
+              {c.holiday === 'black_friday' && <Badge tone="gold">{t('🛍 ЧЕРЕН ПЕТЪК · +{0}%', Math.round((BLACK_FRIDAY.rewardMultiplier - 1) * 100))}</Badge>}
               {c.holiday === 'sowing' && <Badge tone="green">{t('🌱 СЕИТБА · +{0}%', Math.round((SOWING.rewardMultiplier - 1) * 100))}</Badge>}
               {c.holiday === 'national' && <Badge tone="gold">{t('🎉 НАЦИОНАЛЕН ПРАЗНИК · +{0}%', Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100))}</Badge>}
               {!!c.oversizeCents && <Badge tone="orange">{t('⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {0}', money(c.oversizeCents))}</Badge>}

@@ -1,3 +1,4 @@
+import { BLACK_FRIDAY, isBlackFriday } from '@/lib/game/prewinter';
 import { isRarePlate } from '@/lib/game/plates';
 import { randomUUID } from 'node:crypto';
 import { and, eq, isNull, like, sql } from 'drizzle-orm';
@@ -52,11 +53,16 @@ async function ownVehicle(tx: Tx, companyId: string, vehicleId: string | undefin
 }
 
 /** The price of a shop item for this viewer: the new VIP prices and the weekly offers (1.2.3). */
-export function shopPrice(id: ShopItemId, base: number, v2: boolean, now: Date): number {
-  if (!v2) return base;
-  const p = VIP_PRICES_V2[id] ?? base;
-  return weeklyOffers(now).includes(id) ? offerPrice(p) : p;
+export function shopPrice(id: ShopItemId, base: number, v2: boolean, now: Date, blackFriday = false): number {
+  const p = v2 ? (VIP_PRICES_V2[id] ?? base) : base;
+  const offer = v2 && weeklyOffers(now).includes(id) ? offerPrice(p) : p;
+  // 1.2.4 Black Friday: −30% on everything but VIP, the parts and its own paint; the better of it and the weekly offer.
+  const friday = blackFriday && blackFridayItem(id) ? Math.max(1, Math.round(p * (1 - BLACK_FRIDAY.discount))) : p;
+  return Math.min(offer, friday);
 }
+
+/** Items that are cheaper on Black Friday. */
+export const blackFridayItem = (id: ShopItemId) => !id.startsWith('vip_') && id !== 'gift_vip_30' && id !== 'truck_part' && id !== 'trailer_part' && id !== 'paint_blackfriday';
 
 /** Buys a shop item with ТрансКоин: coins and the effect in one transaction. */
 export async function buyShopItem(db: Database, userId: string, input: ShopPurchase, now = new Date()) {
@@ -69,7 +75,8 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
     // 1.2.3: the new shop — its own VIP prices, items and the weekly offers (−25 %).
     const v2 = await featureFor(tx, userId, 'shop_v2', now);
     if (item!.v2 && !v2) fail('not_released', tr('Това идва със следващото обновление.'), 403);
-    let price = shopPrice(item!.id as ShopItemId, item!.price, v2, now);
+    const friday = isBlackFriday(now) && (await featureFor(tx, userId, 'black_friday', now));
+    let price = shopPrice(item!.id as ShopItemId, item!.price, v2, now, friday);
     let summary = item!.label;
 
     switch (item!.id as ShopItemId) {
@@ -163,6 +170,14 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         if (v.livery === 'christmas') fail('already_painted', tr('Камионът вече е с боя „Коледа“.'));
         await tx.update(vehicles).set({ color: CHRISTMAS.paintColor, livery: 'christmas' }).where(eq(vehicles.id, v.id));
         summary = tr('Боя „Коледа“ за {0}', v.plate);
+        break;
+      }
+      case 'paint_blackfriday': {
+        if (!isBlackFriday(now) || !(await featureFor(tx, userId, 'black_friday', now))) fail('not_in_season', tr('Боята „Черен петък“ се продава само от 27 до 30 ноември.'));
+        const v = await ownVehicle(tx, account.id, input.vehicleId);
+        if (v.livery === 'blackfriday') fail('already_painted', tr('Камионът вече е с тази боя.'));
+        await tx.update(vehicles).set({ color: BLACK_FRIDAY.paintColor, livery: 'blackfriday' }).where(eq(vehicles.id, v.id));
+        summary = tr('Боя „Черен петък“ за {0}', v.plate);
         break;
       }
       case 'paint_cherry': {

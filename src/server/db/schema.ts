@@ -168,6 +168,8 @@ export const users = pgTable(
     /** 1.1.2: the truck the player shows on their player card (one of their own). */
     favoriteVehicleId: uuid('favorite_vehicle_id').references((): AnyPgColumn => vehicles.id, { onDelete: 'set null' }),
     lastSeenAt: ts('last_seen_at'),
+    /** 1.2.4: where the player came from (the `?src=` of the first visit, e.g. a Facebook post), null when unknown. */
+    signupSource: text('signup_source'),
     /** Last game version whose "Какво ново" window the player has closed (null = none yet). */
     seenVersion: text('seen_version'),
     /** Seasonal decorations (Halloween…) on or off for this player. */

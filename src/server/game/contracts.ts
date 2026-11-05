@@ -17,6 +17,8 @@ import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { isMarta, MARTA } from '@/lib/game/marta';
 import { BUDITELI, isBuditeli } from '@/lib/game/buditeli';
 import { EASTER, isEaster } from '@/lib/game/easter';
+import { BLACK_FRIDAY, isBlackFriday, isPrewinter, PREWINTER } from '@/lib/game/prewinter';
+import { winterWeekPay } from './prewinter';
 import { OVERSIZE } from '@/lib/game/roads';
 import { payFactor } from '@/server/admin-economy';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -334,6 +336,9 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     { id: 'winter', goods: isWinter(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
     { id: 'sowing', goods: isSowing(now) && featureLive('sowing', now) ? SOWING.goods[cargo] : undefined, share: SOWING.contractShare, multiplier: SOWING.rewardMultiplier },
     { id: 'harvest', goods: isHarvest(now) && featureLive('harvest', now) ? HARVEST.goods[cargo] : undefined, share: HARVEST.contractShare, multiplier: HARVEST.rewardMultiplier },
+    // 1.2.4: winter goods before 1 December, and Black Friday goods for the big shopping cities.
+    { id: 'prewinter', goods: isPrewinter(now) && featureLive('winter_prep', now) ? PREWINTER.goods[cargo] : undefined, share: PREWINTER.contractShare, multiplier: PREWINTER.rewardMultiplier },
+    { id: 'black_friday', goods: isBlackFriday(now) && featureLive('black_friday', now) && destination.population >= BLACK_FRIDAY.minPopulation ? BLACK_FRIDAY.goods[cargo] : undefined, share: BLACK_FRIDAY.contractShare, multiplier: BLACK_FRIDAY.rewardMultiplier },
   ];
   const theme = extra.featured || extra.oversize || extra.tag ? null : (themes.find((t) => t.goods && rand() < t.share) ?? null);
   // A national day of the destination country (v1.6): loads there pay more today.
@@ -348,7 +353,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
   // v1.10: loads from a city that has grown pay a little more.
   // v2.0: the economic cycle of the destination country.
   const cycle = featureLive('living_economy', now) ? cycleIndex(now, destination.countryCode) : 1;
-  const reward = rewardCents(cargo, tons, route.distanceKm, market * cycle * goodsMultiplier(goods) * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)));
+  const reward = rewardCents(cargo, tons, route.distanceKm, market * cycle * goodsMultiplier(goods) * (premium?.multiplier ?? 1) * stopMultiplier(via.length) * (await payFactor(db)) * (await cityPay(db, origin.id, now)) * (await winterWeekPay(db, now)));
   const [row] = await db.insert(contracts).values({
     shipper: shipperName(),
     goods,

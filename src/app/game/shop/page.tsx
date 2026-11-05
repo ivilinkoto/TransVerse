@@ -2,6 +2,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { CheckCircle2, Clock, Coins, Crown, History } from 'lucide-react';
 import { ShopBuy, type VehicleOption } from '@/components/shop/ShopBuy';
 import { Badge, Card, PageHeader } from '@/components/ui';
+import { BLACK_FRIDAY, isBlackFriday } from '@/lib/game/prewinter';
 import { PromoRedeem } from '@/components/game/PromoRedeem';
 import { dateTime } from '@/lib/format';
 import { isFreightHub } from '@/lib/game/markets';
@@ -57,7 +58,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const categories = (Object.keys(SHOP_CATEGORIES) as ShopCategory[]).filter((c) => c !== 'vip');
   // 1.2.3: the new shop — prices, weekly offers, VIP extras, packs and patron levels.
   const v2 = !!features.shop_v2;
-  const priced = <T extends { id: string; price: number }>(i: T) => ({ ...i, price: shopPrice(i.id as Parameters<typeof shopPrice>[0], i.price, v2, now) });
+  // 1.2.4 Black Friday (27–30 November): −30% on most items and a paint sold only then.
+  const friday = !!features.black_friday && isBlackFriday(now);
+  const priced = <T extends { id: string; price: number }>(i: T) => ({ ...i, price: shopPrice(i.id as Parameters<typeof shopPrice>[0], i.price, v2, now, friday) });
   const visible = SHOP_ITEMS.filter((i) => !i.v2 || v2);
   const offers = v2 ? weeklyOffers(now) : [];
   const vipColorsNow = v2 ? [...VIP_COLORS, vipMonthColor(now)] : VIP_COLORS;
@@ -78,6 +81,13 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         help={tr('ТрансКоин (TC) е премиум валутата на TransVerse. С нея се купуват VIP, удобства и козметика — никога игрови пари, за да е честно за всички.')}
         actions={<span className="flex items-center gap-2 rounded-xl border border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2"><Coins className="h-5 w-5 text-cyan-glow" /><span className="num font-display text-xl font-bold text-cyan-glow">{user.coins.toLocaleString(intlLocale())} TC</span></span>}
       />
+
+      {friday && (
+        <div className="rounded-2xl border border-gold-400/50 bg-gradient-to-r from-black/60 to-gold-400/10 p-4" data-testid="black-friday">
+          <div className="font-display text-lg font-bold text-gold-300">{tr('🛍 Черен петък · −{0}%', Math.round(BLACK_FRIDAY.discount * 100))}</div>
+          <p className="mt-1 text-sm text-mist-300">{tr('До 30 ноември почти всичко в магазина е с −{0}% (без VIP и частите), а боята „Черен петък“ се продава само сега.', Math.round(BLACK_FRIDAY.discount * 100))}</p>
+        </div>
+      )}
 
       {features.promo_codes && (
         <Card title={tr('🎟 Имаш код?')}>
@@ -155,7 +165,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <section key={cat}>
           <h2 className="mb-3 font-display text-lg font-bold">{tx(SHOP_CATEGORIES[cat])}</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {visible.map(priced).filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics)).map((i) => (
+            {visible.map(priced).filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics)).map((i) => (
               <Card key={i.id} className="flex flex-col">
                 {i.id === 'paint_christmas' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={CHRISTMAS.paintColor} livery="christmas" className="mb-3 h-16 w-full" />}
                 {i.id === 'trailer_part' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color="#111827" trailerCosmetics={{ paint: '#111827', stripe: 'gold', flaps: 'chrome', toplights: 'amber' }} className="mb-3 h-16 w-full" />}
