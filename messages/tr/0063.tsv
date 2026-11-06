@@ -1,0 +1,121 @@
+280c34b96c	 and {0} ahead of #{1}	 и {0} впереди #{1}
+81b4b82dd9	 — {0} points ahead of #2	 — на {0} очков впереди #2
+f6fdeb737c	{0} in {1}: place #{2}	{0} в {1}: место #{2}
+6cee072a4d	{0} deliveries and {1} km with a load. Drive too — a free truck game on real roads.	{0} доставок и {1} км с грузом. Покатайся и ты — бесплатная игра о грузовиках на реальных дорогах.
+12de640b5e	{0} ends in less than a day!	{0} заканчивается меньше чем через день!
+f5e4841633	At the end of the season — a card with your place, deliveries, kilometres, longest trip and pass level. One button sends it to Facebook.	В конце сезона — карточка с местом, доставками, километрами, самым длинным рейсом и уровнем пропуска. Одна кнопка — и она в Facebook.
+402c86c6cb	A day before the season ends a notification shows your place and how many points separate you from your neighbours. In the last 3 days the season page counts the hours.	За день до конца сезона приходит уведомление с твоим местом и тем, сколько очков отделяет тебя от соседей. В последние 3 дня страница сезона считает часы.
+b090f5ef58	Countries with free trucks and no loads	Страны со свободными грузовиками и без грузов
+1361a8ae55	A notification a day before the season ends: your place, the points to the place above and your lead over the one below. In Discord #класации — the top three.	Уведомление за день до конца сезона: твоё место, очки до места выше и отрыв от места ниже. В Discord #класации — первая тройка.
+c65e35fbb7	To the season	К сезону
+27a7c8e539	The menu is arranged in groups that fold: Waiting, Players, Game, Money, System.	Меню разложено по группам, которые сворачиваются: Ждёт действий, Игроки, Игра, Деньги, Система.
+5645752ea5	Moderators and support see only their own pages.	Модераторы и поддержка видят только свои страницы.
+b9578bf5e7	Make a delivery to get into the ranking before the end.	Сделай доставку, чтобы попасть в рейтинг до конца.
+2a2842242c	Open reports	Нерешённые жалобы
+b80086d176	Failed payments (7 days)	Неудачные платежи (7 дней)
+91e69f38e2	Update {0} comes out in {1} h — things not ready	Обновление {0} выходит через {1} ч — не всё готово
+1a1d290934	Go to…	Перейти к…
+5f5163f5e7	Money	Деньги
+f48a1198d6	Last chance for a place in the ranking. Leading now:	Последний шанс на место в рейтинге. Сейчас лидируют:
+227bc768bb	The last day	Последний день
+c6e658b921	The last day of the season with a reminder and a countdown, and your season on one card to share.	Последний день сезона с напоминанием и отсчётом, и твой сезон на одной карточке, чтобы поделиться.
+5fb5070c4d	The public page	Публичная страница
+9c0478cc85	To do now	Сделать сейчас
+166e1502cb	Season → a countdown in the last 3 days: the hours to the end and the gap to the places around you.	Сезон → отсчёт в последние 3 дня: часы до конца и разница с местами вокруг тебя.
+378c60a473	{0}'s season	Сезон {0}
+3ac98f278c	System	Система
+abd6546d10	The dashboard starts with “To do now”: tickets, reports, failed payments, countries without loads and an update coming out soon.	Панель начинается с «Сделать сейчас»: обращения, жалобы, неудачные платежи, страны без грузов и скорое обновление.
+d3451c3429	Your season	Твой сезон
+839d29009b	Your season (Season → “Your last season”): place, points, deliveries, kilometres, longest trip and pass level, with a page to share.	Твой сезон (Сезон → «Твой прошлый сезон»): место, очки, доставки, километры, самый длинный рейс и уровень пропуска, со страницей, чтобы поделиться.
+6d27f38f9e	You are #1 — {0} points ahead of #2. Keep the place!	Ты #1 — на {0} очков впереди #2. Держи место!
+f6655e9a98	You are #1{0}. Keep the place!	Ты #1{0}. Держи место!
+f5d4387b4b	You are #{0} — {1} points behind #{2}{3}.	Ты #{0} — на {1} очков позади #{2}{3}.
+dd8c599593	Points	Очки
+60e02ed1d5	Final Sprint	Финальный спринт
+78819c58b9	Waiting for action	Ждёт действий
+93bbcca746	longest trip: {0} km	самый длинный рейс: {0} км
+bcd498fbfb	of {0} players	из {0} игроков
+d19aec88c3	“Go to…” — a search in the menu.	«Перейти к…» — поиск в меню.
+4f4150cc4f	⏳ {0} ends in less than a day!	⏳ {0} заканчивается меньше чем через день!
+292e34ee72	⏳ Until the end of the season: {0} h	⏳ До конца сезона: {0} ч
+fc9743eb07	☰ Menu	☰ Меню
+54737eac08	✓ Nothing is waiting — all is well.	✓ Ничего не ждёт — всё в порядке.
+bf931734d9	🏁 Your last season — see and share →	🏁 Твой прошлый сезон — посмотри и поделись →
+319ba57a27	In the garage you choose what to repair — the truck, the trailer or both — and how much of the damage. When the money is short, „As much as I have“ repairs as much as you can pay for.	В сервисе ты выбираешь, что ремонтировать — грузовик, прицеп или оба — и какую часть повреждений. Когда денег не хватает, «На сколько хватит» чинит столько, сколько ты можешь оплатить.
+0d04ddd261	As much as I have · {0}	На сколько хватит · {0}
+f71a32aea8	Fully	Полностью
+01b149159e	Not enough money — pick a smaller repair or „As much as I have“.	Не хватает денег — выбери ремонт поменьше или «На сколько хватит».
+7c352d8cfc	No trailer coupled.	Прицеп не прицеплен.
+a32b8ac266	There's not enough money even for a small repair.	Денег не хватает даже на небольшой ремонт.
+5c497edcab	Repair	Ремонтировать
+8271251b8b	Garage → partial repair: pick the truck, the trailer or both and how much of the damage (25, 50, 75% or fully). „As much as I have“ repairs as much as the money allows.	Сервис → частичный ремонт: выбери грузовик, прицеп или оба и какую часть повреждений (25, 50, 75% или полностью). «На сколько хватит» чинит столько, сколько позволяют деньги.
+34d2a12cf4	Partial repair	Частичный ремонт
+e8823423fe	Partial repair {0}	Частичный ремонт {0}
+13ccd7c0a4	truck {0} → {1}	грузовик {0} → {1}
+27d9dd2101	trailer {0} → {1}	прицеп {0} → {1}
+139ee9b81f	TransVerse · for partners	TransVerse · для партнёров
+3789b3997a	Archive	Архив
+0e395a4a6d	Archive	В архив
+c1bc6342ab	A banner on the site and in Discord	Баннер на сайте и в Discord
+c3e990e8e1	Business and investment	Бизнес и инвестиции
+882f7b039a	A branded company or depot in the game	Брендированная компания или депо в игре
+0909fc69d9	Back to new	Вернуть в новые
+e4cce7a9ed	Let's go the distance together	Пройдём этот путь вместе
+31bd3fe735	Game data as of today.	Данные игры на сегодня.
+bfa7772f57	What are you writing about	О чём ты пишешь
+4731990141	For partners	Для партнёров
+b999db2026	Messages from the „For partners“ page — sponsors, creators, press and business.	Запросы со страницы «Для партнёров» — спонсоры, авторы, пресса и бизнес.
+6e9296d248	Do you stream or make videos? Drive with us.	Стримишь или снимаешь видео? Катайся с нами.
+e8b4c4d156	Choose what you are writing about.	Выбери, о чём ты пишешь.
+d7291c0f7c	Investment and long-term partnership	Инвестиции и долгосрочное партнёрство
+7524e2a06d	An interview with the team	Интервью с командой
+6ac4d0361c	What you offer, for what audience, on what timeline…	Что ты предлагаешь, для какой аудитории, в какие сроки…
+ba1a808af4	Link (optional)	Ссылка (необязательно)
+432c7cfd4d	The link must start with http:// or https://.	Ссылка должна начинаться с http:// или https://.
+e1e49666a8	A personal promo code with a reward for your viewers	Личный промокод с наградой для твоих зрителей
+cc4f8e1a79	A logistics, transport or tech company? Let's talk.	Логистическая, транспортная или технологическая компания? Давай поговорим.
+26b7c0ee27	Write your name.	Напиши своё имя.
+983815ee76	New „For partners“ page (link at the bottom of the site): sponsorship, streamers and creators, press and business — with a form that goes straight to the team.	Новая страница «Для партнёров» (ссылка внизу сайта): спонсорство, стримеры и авторы, пресса и бизнес — с формой, которая попадает прямо к команде.
+8b7bbaf405	New partner inquiries	Новые запросы от партнёров
+f1ac79ddce	The news before everyone else	Новости раньше всех
+36892c0f19	A few sentences: who you are and what you have in mind.	Пара предложений: кто ты и что задумал.
+3bd8f3e3c8	No inquiries here	Здесь нет запросов
+2f6ded29db	Usually within 2 working days, from a person on the team.	Обычно в течение 2 рабочих дней, от человека из команды.
+8f07cf8b41	Training scenarios for drivers and dispatchers	Учебные сценарии для водителей и диспетчеров
+a602f51c30	We reply	Мы отвечаем
+419039f0b4	We usually reply to {0} within 2 working days.	Обычно мы отвечаем на {0} в течение 2 рабочих дней.
+f0a134b5d4	Answered	Отвечено
+a756fcf337	Partners	Партнёры
+8ef42993ae	Partners: the inquiries from the „For partners“ page, with an alert in Discord and a line in „To do now“.	Партнёры: запросы со страницы «Для партнёров», с сигналом в Discord и строкой в «Сделать сейчас».
+9f244c00eb	Do you write about games, tech or transport?	Пишешь об играх, технологиях или транспорте?
+ba9c2c258c	You write to us	Ты пишешь нам
+650a141f51	Write to us	Напиши нам
+28a6304fd0	Write to us →	Напиши нам →
+6e09341c68	We got your message.	Мы получили твоё сообщение.
+4d8f8cc739	Press and media	Пресса и медиа
+58ec86c31a	The public page →	Публичная страница →
+fee36d0efe	Tell us a bit more (at least 20 characters).	Расскажи чуть подробнее (не меньше 20 символов).
+3df766c8b1	Early access to updates	Ранний доступ к обновлениям
+6bc7a01128	A role and channel in Discord, a VIP gift	Роль и канал в Discord, VIP в подарок
+6ff3c537d0	Special cargo and missions with your product	Особые грузы и миссии с твоим продуктом
+5f96693c6d	A sponsored event or season with your name and prizes	Спонсорский ивент или сезон с твоим именем и призами
+0def81c8a7	Sponsorship and advertising	Спонсорство и реклама
+5cfe847a15	Sponsorship, streamers, press and business — let's go the distance together with TransVerse.	Спонсорство, стримеры, пресса и бизнес — пройдём этот путь вместе с TransVerse.
+9203fd982d	Streamers and creators	Стримеры и авторы
+136c9c9a3d	The message goes straight to the team. For help with your game account, use „Support“.	Сообщение попадает прямо к команде. За помощью с игровым профилем обращайся в «Поддержку».
+4a5d5340d0	Your brand where players spend their evenings — on the road.	Твой бренд там, где игроки проводят вечера, — в дороге.
+e5148f73e6	We hit the road	Мы в пути
+142550c1f6	We settle the details and bring it into the game.	Уточняем детали и запускаем это в игре.
+a9277403b7	Facts and screenshots from the game	Факты и скриншоты из игры
+5d8400a3ec	Company, channel or outlet (optional)	Компания, канал или СМИ (необязательно)
+3185e07b98	completed trips	завершённых рейсов
+dd83599918	players	игроков
+4a6a8ce593	real cities	реальных городов
+f0b65f2efb	🤝 New inquiry: {0}	🤝 Новый запрос: {0}
+a41b70e946	A browser trucking game on the real map of Europe, made in Bulgaria.	Браузерная транспортная игра на настоящей карте Европы, сделанная в Болгарии.
+46893c6d74	We are looking for brands, creators and media to grow with.	Мы ищем бренды, авторов и СМИ, чтобы расти вместе.
+e6f3bdca3c	Company: the bar at the top no longer repeats the tiles — it shows „Overview“ and the page you are on.	Компания: полоса сверху больше не повторяет плитки — в ней «Обзор» и страница, на которой ты находишься.
+66a7ff8aac	Your own carrier: technology, office, adverts, fuel and CO₂. Game data.	Твой перевозчик: технологии, офис, реклама, топливо и CO₂. Игровые данные.
+0cf9acbd7c	Technology and office	Технологии и офис
+0714968086	The company chat is in the floating chat (channel „Company“). Polls are in „Overview“.	Чат компании — в плавающем чате (канал «Компания»). Опросы — в «Обзоре».
+9835928779	„Development“ from „More“ → „Company“ is now „Technology and office“ under Fleet: it is how your own carrier grows. „Development“ inside the company stays the company's development.	«Развитие» из «Ещё» → «Компания» теперь называется «Технологии и офис» и находится в Автопарке: это развитие твоего перевозчика. «Развитие» внутри компании остаётся развитием компании.

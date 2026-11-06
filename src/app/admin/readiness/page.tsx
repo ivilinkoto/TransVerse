@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 /** 1.1.4.2: is the next update ready to go out — features, translations, notes. */
 export default async function AdminReadiness() {
   await initLocale();
-  const { db, now } = await adminContext();
+  const { db, now } = await adminContext({ admin: true });
   const r = await readiness(db, now);
   if (!r) return <PageHeader title={t('Готовност за пускане')} subtitle={t('Няма предстоящо обновление.')} />;
   const ok = (v: boolean) => (v ? <Badge tone="green">{t('готово')}</Badge> : <Badge tone="red">{t('липсва')}</Badge>);

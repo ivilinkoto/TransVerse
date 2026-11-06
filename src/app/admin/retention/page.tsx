@@ -19,7 +19,7 @@ const pct = (part: number | null, size: number) => (part == null ? '—' : size 
 /** 1.1.4.1: do players come back? Cohorts, the last two weeks, and who stopped coming. */
 export default async function AdminRetention() {
   await initLocale();
-  const { db, now } = await adminContext();
+  const { db, now } = await adminContext({ admin: true });
   const [cohorts, days, missing] = await Promise.all([retentionCohorts(db, now), dailyActivity(db, now), missingPlayers(db, now)]);
   const peak = Math.max(1, ...days.map((d) => d.active));
   return (

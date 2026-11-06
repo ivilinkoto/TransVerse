@@ -406,7 +406,7 @@ test('1.1.4.2: the promise on the board, the new pages and the public tracking p
   await expect(page.getByRole('radiogroup', { name: 'Обещан срок' })).toBeVisible();
   await page.getByRole('radio', { name: /Бързо/ }).click();
   await expect(page.getByRole('radio', { name: /Бързо/ })).toHaveAttribute('aria-checked', 'true');
-  for (const [path, heading] of [['/game/growth', 'Развитие'], ['/game/reviews', 'Отзиви от клиентите'], ['/game/player-challenges', 'Предизвикателства от играчи'], ['/game/case', 'Изгубена пратка']] as const) {
+  for (const [path, heading] of [['/game/growth', 'Технологии и офис'], ['/game/reviews', 'Отзиви от клиентите'], ['/game/player-challenges', 'Предизвикателства от играчи'], ['/game/case', 'Изгубена пратка']] as const) {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
   }

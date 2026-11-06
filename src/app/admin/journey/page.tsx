@@ -18,7 +18,7 @@ const LABEL = { money: 'пари', trip: 'курс', coins: 'TC', notice: 'из�
 /** 1.1.4.2: a player's last steps in one timeline (for tickets like „изчезнаха ми парите“). */
 export default async function AdminJourney({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await initLocale();
-  const { db } = await adminContext();
+  const { db } = await adminContext({ admin: true });
   const { q = '' } = await searchParams;
   const j = q ? await playerJourney(db, q.slice(0, 60)) : null;
   return (

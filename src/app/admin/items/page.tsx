@@ -19,7 +19,7 @@ const sourceLabel = (r: string) => (r.startsWith('case:') ? tr('От {0}', tx(IT
 /** 1.2.1: cases opened, what came out against the promised odds, and where items come from. */
 export default async function AdminItemsPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   await initLocale();
-  const { db, now } = await adminContext();
+  const { db, now } = await adminContext({ admin: true });
   const days = [1, 7, 30].includes(Number((await searchParams).days)) ? Number((await searchParams).days) : 7;
   const s = await itemStats(db, days, now);
   return (

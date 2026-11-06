@@ -1,3 +1,4 @@
+import { adminTodo, type TodoItem } from '@/server/admin-todo';
 import { Activity, LifeBuoy, Route, Truck, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Badge, Card, PageHeader, Stat } from '@/components/ui';
@@ -27,9 +28,32 @@ export default async function AdminDashboard() {
   const topIdeas = (await ideaBoard(db, user.id, 'top', false, 20)).filter((i) => i.status === 'open').slice(0, 6);
   const live = broadcast && new Date(broadcast.until) > now ? broadcast : null;
   const pct = (n: number) => (funnel.week ? Math.round((n / funnel.week) * 100) : 0);
+  // 1.2.3.1 „Сега за правене“: what waits for the staff, first.
+  const todo = await adminTodo(db, now, isAdmin(user.role));
+  const todoLabel = (i: TodoItem) =>
+    i.id === 'tickets' ? t('Отворени запитвания')
+    : i.id === 'reports' ? t('Нерешени доклади')
+    : i.id === 'payments' ? t('Неуспешни плащания (7 дни)')
+    : i.id === 'starved' ? t('Държави със свободни камиони и без товари')
+    : i.id === 'partners' ? t('Нови запитвания от партньори')
+    : t('Обновление {0} излиза след {1} ч — неготови неща', i.version ?? '', i.hours ?? 0);
   return (
     <div className="space-y-6">
       <PageHeader title={t('Админ панел')} subtitle={t('Състояние на света и на общността.')} actions={isAdmin(user.role) ? <ActionButton endpoint="/api/admin/action" action={{ type: 'replenishMarket' }}>{t('Попълни пазара сега')}</ActionButton> : undefined} />
+      <Card title={t('Сега за правене')}>
+        {todo.length === 0 ? <p className="text-sm text-profit" data-testid="todo-clear">{t('✓ Нищо не чака — всичко е наред.')}</p> : (
+          <ul className="divide-y divide-asphalt-800" data-testid="admin-todo">
+            {todo.map((i) => (
+              <li key={i.id}>
+                <Link href={i.href} className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-white">
+                  <span>{todoLabel(i)}</span>
+                  <Badge tone={i.tone === 'red' ? 'red' : i.tone === 'orange' ? 'orange' : 'cyan'}>{i.count}</Badge>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={t('Потребители')} value={int(stats.users)} icon={Users} tone="cyan" hint={t('+{0} за 24 ч · {1} влизания', stats.newUsers, stats.online)} />
         <Stat label={t('Компании / шофьори')} value={`${stats.companies} / ${stats.independents}`} icon={UserPlus} tone="prestige" hint={t('основани компании / самостоятелни')} />

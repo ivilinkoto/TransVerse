@@ -20,7 +20,7 @@ export async function createPoll(db: Database, actorId: string, input: PollInput
     const [open] = await tx.select({ id: companyPolls.id }).from(companyPolls).where(openWhere(actor.company.id, now));
     if (open) fail('poll_open', t('Вече има отворена анкета — изчакайте я или я затворете.'));
     const [poll] = await tx.insert(companyPolls).values({ organizationId: actor.company.id, question: data.question, options: data.options, createdBy: actorId, closesAt: new Date(now.getTime() + data.hours * 3_600_000), createdAt: now }).returning();
-    await notifyMembers(tx, actor.company.id, null, () => t('Нова анкета в компанията'), data.question, '/game/company/chat');
+    await notifyMembers(tx, actor.company.id, null, () => t('Нова анкета в компанията'), data.question, '/game/company#polls');
     await logActivity(tx, actorId, 'company_poll', { pollId: poll!.id });
     return poll!;
   });

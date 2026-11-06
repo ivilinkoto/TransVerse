@@ -40,7 +40,7 @@ const rewardText = (r: PromoReward) =>
 /** 1.1.4.3: the team's promo codes — make, follow and stop them. */
 export default async function AdminPromoPage({ searchParams }: { searchParams: Promise<{ code?: string; batch?: string }> }) {
   await initLocale();
-  const { db, user, now } = await adminContext();
+  const { db, user, now } = await adminContext({ admin: true });
   const sp = await searchParams;
   const { publics, batches } = await promoOverview(db);
   const picked = sp.code ? publics.find((p) => p.id === sp.code) : null;

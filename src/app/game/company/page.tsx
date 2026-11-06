@@ -12,6 +12,9 @@ import { CompanyLicences } from '@/components/company/CompanyLicences';
 import { companyLicenceSet } from '@/server/game/licences';
 import { CompanyChest } from '@/components/game/CompanyChest';
 import { CompanyCards } from '@/components/company/CompanyCards';
+import { CompanyPolls } from '@/components/company/CompanyPolls';
+import { companyPollsView } from '@/server/game/polls';
+import { can } from '@/server/game/membership';
 import { companyHub, myApplications, treasuryHistory } from '@/server/game/membership';
 import { TREASURY_LABELS, type TreasuryCategory } from '@/server/game/finance';
 import { FoundCompanyForm } from '@/components/game/FoundCompanyForm';
@@ -49,6 +52,14 @@ export default async function CompanyPage() {
         {features.nav_v2 && <div className="mb-4"><CompanyCards db={db} organizationId={hub.company.id} pending={hub.pending.length} now={now} has={(f) => !!features[f]} /></div>}
         <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month, medals: features.season_medals ? await organizationMedals(db, hub.company.id) : null, companyAchievements: features.company_achievements ? await companyAchievementsOf(db, hub.company.id) : null }} />
         {features.item_chests && <div className="mt-4"><CompanyChest db={db} organizationId={hub.company.id} owner={hub.rank.isOwner} /></div>}
+        {/* 1.2.3.1: the polls moved here from the company chat page (the chat is in the floating chat). */}
+        {features.company_polls && (
+          <div id="polls" className="mt-4 scroll-mt-20">
+            <Card title={tr('Анкети')}>
+              <CompanyPolls polls={(await companyPollsView(db, hub.company.id, user.id, now)).map((p) => ({ ...p, closesAt: p.closesAt.toISOString() }))} canCreate={can(hub.rank, 'manage_chat')} now={now.getTime()} />
+            </Card>
+          </div>
+        )}
       </>
     );
   }
