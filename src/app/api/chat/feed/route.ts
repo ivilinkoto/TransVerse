@@ -11,12 +11,13 @@ import { membershipOf } from '@/server/game/membership';
 import { allianceFeed, playerAlliance } from '@/server/game/alliances';
 import { CHAT_LIFE } from '@/lib/game/chat-life';
 import { featureFor } from '@/server/features';
+import { cafeCity, cafeHere } from '@/server/game/meet';
 
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({
   /** global | trade | company | alliance | dm:<userId> */
-  tab: z.string().regex(/^(global|trade|projects|company|alliance|dm:[0-9a-f-]{36})$/, 'Непознат раздел.'),
+  tab: z.string().regex(/^(global|trade|projects|cafe|company|alliance|dm:[0-9a-f-]{36})$/, 'Непознат раздел.'),
   after: z.coerce.number().int().min(0).optional(),
 });
 
@@ -40,6 +41,14 @@ export const GET = handler({ perMinute: 120, schema }, async ({ user, input }) =
     const other = input.tab.slice(3);
     await markConversationRead(db, user.id, other);
     return { messages: await withReactions(db, 'dm', await conversation(db, user.id, other, input.after ?? 0), user.id), canModerate: false };
+  }
+  if (input.tab === 'cafe') {
+    // 1.2.7: the café of the city where the player's truck stands, with who is there.
+    const city = (await featureFor(db, user.id, 'city_cafe')) ? await cafeCity(db, user.id) : null;
+    if (!city) return { messages: [], canModerate: false };
+    const feed = await channelFeed(db, `city:${city.id}`, input.after ?? 0);
+    const here = await cafeHere(db, city.id);
+    return visible({ messages: await withReactions(db, 'channel', feed, user.id), canModerate: isStaff(user.role), cafe: { city: city.nameBg, here: here.filter((h) => h.id !== user.id).map((h) => h.username) } });
   }
   const messages = await channelFeed(db, input.tab as 'global' | 'trade' | 'projects', input.after ?? 0);
   await markChannelRead(db, user.id, input.tab, messages.at(-1)?.id ?? 0);

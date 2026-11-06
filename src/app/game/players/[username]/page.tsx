@@ -2,6 +2,7 @@ import { Briefcase, CalendarDays, CheckCircle2, Clock, Container, Crown, Flag, G
 import Link from 'next/link';
 import { POWER_UNITS } from '@/lib/game/catalog';
 import { businessCard } from '@/server/game/business-card';
+import { reliability } from '@/server/game/on-the-road';
 import { notFound } from 'next/navigation';
 import { PlayerCardLive } from '@/components/game/PlayerCardLive';
 import { Card, Empty, PageHeader } from '@/components/ui';
@@ -54,6 +55,8 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
   const self = card.id === user.id;
   const [biz, mine] = features.business_profile ? await Promise.all([businessCard(db, card.id, now), self ? null : businessCard(db, user.id, now)]) : [null, null];
   const showBiz = biz && (!biz.hidden || self);
+  // 1.2.7: how reliable the player is as a partner (👍 / 👎 after partner loads and escorts).
+  const trust = features.partner_ratings ? await reliability(db, card.id) : null;
   const topTruck = biz?.topModel ? POWER_UNITS.find((p) => p.id === biz.topModel)?.name : null;
   const vs = (cents: number) => (mine ? <span className="block text-[11px] font-normal text-mist-400">{tr('ти: {0}', money(cents))}</span> : null);
   return (
@@ -62,6 +65,7 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="min-w-0 space-y-6">
           <Card><PlayerCardLive card={card} /></Card>
+          {trust && trust.good + trust.bad > 0 && <Card><p className="text-sm" data-testid="reliability">{tr('Надеждност като партньор: 👍 {0} · 👎 {1}', trust.good, trust.bad)}</p></Card>}
           {greet && <Card><p className="text-sm text-mist-300">{tr('{0} е нов в играта. Поздрави го и му подари {1} за начало.', card.username, money(NEIGHBORS.giftCents))}</p><ActionButton action={{ type: 'greetNewcomer', userId: card.id }} className="btn-primary mt-3 px-3 py-2 text-sm">{tr('Поздрави · {0}', money(NEIGHBORS.giftCents))}</ActionButton></Card>}
           {showcase && (showcase.trucks.length > 0 || showcase.badges.length > 0) && (
             <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" />{tr('Витрина')}</span>}><ProfileShowcase showcase={showcase} /></Card>

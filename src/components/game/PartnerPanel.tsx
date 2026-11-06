@@ -34,7 +34,9 @@ export type PartnerCardView = {
 const routeText = (r: [string, string, string]) => r.map((c) => tx(c)).join(' → ');
 
 /** 1.2.6: partner loads on the „Курсове“ page — the card from a link and the player's own. */
-export function PartnerPanel({ card, mine, bonus, points }: { card: PartnerCardView | null; mine: PartnerLoadView[]; bonus: number; points: number }) {
+export type EscortView = { id: string; lead: boolean; status: string; route: [string, string]; other: string | null; runId: string | null };
+
+export function PartnerPanel({ card, mine, escorts = [], bonus, points }: { card: PartnerCardView | null; mine: PartnerLoadView[]; escorts?: EscortView[]; bonus: number; points: number }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -54,10 +56,10 @@ export function PartnerPanel({ card, mine, bonus, points }: { card: PartnerCardV
       setBusy(null);
     }
   };
-  if (!card && !mine.length) return null;
+  if (!card && !mine.length && !escorts.length) return null;
   return (
     <section className="mb-4 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-4 text-sm" data-testid="partner-panel">
-      <p className="font-semibold">{t('🤝 Партньорски товари')}</p>
+      <p className="font-semibold">{t('🤝 Партньорски товари и ескорт')}</p>
       <p className="mt-1 text-xs text-mist-300">{t('Ти караш до средата, партньорът — до края. Навреме и двамата: +{0} % и +{1} точки за пропуска.', bonus, points)}</p>
       {card && !card.lead && !card.mine && (
         <div className="mt-3 rounded-xl border border-asphalt-700 bg-asphalt-900/60 p-3" data-testid="partner-card">
@@ -98,6 +100,29 @@ export function PartnerPanel({ card, mine, bonus, points }: { card: PartnerCardV
                   {' · '}
                   {m.leg2Open ? <Link href={`/game/contracts?from=${m.relayCityId}`} className="font-semibold text-cyan-glow hover:underline">{t('Твоят ред — поеми втората част')}</Link> : <span className="text-mist-400">{t('Чакаш първата част в {0}', tx(m.route[1]))}</span>}
                 </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {escorts.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {escorts.map((e) => (
+            <li key={e.id} className="rounded-xl border border-orange-400/40 bg-asphalt-900/60 p-3" data-testid="escort-item">
+              <p>🚓 {e.route.map((c) => tx(c)).join(' → ')}</p>
+              {e.lead ? (
+                e.other ? (
+                  <p className="mt-1 text-xs text-profit">{t('Ескорт: {0}', e.other)}</p>
+                ) : (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <input className="input w-40 py-1 text-sm" placeholder={t('Име на играч')} aria-label={t('Име на играч')} value={names[e.id] ?? ''} onChange={(ev) => setNames({ ...names, [e.id]: ev.target.value })} />
+                    <button type="button" className="btn-ghost px-3 py-1 text-xs" disabled={!!busy || !(names[e.id] ?? '').trim()} data-testid="escort-invite" onClick={() => run(`esc:${e.id}`, { type: 'inviteEscort', escortId: e.id, username: names[e.id] }, t('Поканата е изпратена в личните съобщения.'))}>
+                      {busy === `esc:${e.id}` ? '…' : t('Покани за ескорт')}
+                    </button>
+                  </div>
+                )
+              ) : (
+                <p className="mt-1 text-xs">{t('Ти си ескорт на {0}', e.other ?? '—')}</p>
               )}
             </li>
           ))}

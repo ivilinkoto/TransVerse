@@ -14,6 +14,9 @@ import { companyPrizes, organizationSeasonResults, organizationSeasonTable, type
 import { membershipOf } from '@/server/game/membership';
 import { COMPANY_MEDAL_PLACES, MEDAL_INFO, PLAYER_MEDAL_PLACES, companyMedal, playerMedal } from '@/lib/game/medals';
 import { t, tx } from '@/i18n/t';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { duoView } from '@/server/game/meet';
+import { DUO } from '@/lib/game/on-the-road';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
@@ -51,10 +54,32 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
     return m ? <span className="ml-1" title={tx(MEDAL_INFO[m].label)}>{MEDAL_INFO[m].icon}</span> : null;
   };
 
+  // 1.2.7: the duo of the week.
+  const duo = features.duo_week ? await duoView(db, user.id, now) : null;
   return (
     <div className="space-y-6">
       <PageHeader title={tx(season!.name)} subtitle={t('Сезонно класиране с награди за първите места.')}
         help={t('Сезонните точки идват от доставки (километри × тонаж, повече за навреме). В края на сезона първите играчи получават пари, а първите компании — награда в касата и значка в профила. Парите, техниката и компаниите остават.')} />
+      {duo && (
+        <Card title={t('🤝 Двойка на седмицата')}>
+          <div data-testid="duo-card" className="text-sm">
+            {duo.state === 'paired' ? (
+              <>
+                <p>{t('Твоят партньор тази седмица: {0}', duo.partner ?? '')}{' · '}<Link href={`/game?chat=dm:${duo.partnerId}`} className="font-semibold text-cyan-glow hover:underline">{t('Пиши му')}</Link></p>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-asphalt-800"><div className="h-full rounded-full bg-cyan-glow" style={{ width: `${Math.min(100, ((duo.progress ?? 0) / duo.target) * 100)}%` }} /></div>
+                <p className="mt-1 text-xs text-mist-400">{duo.done ? t('Целта е изпълнена — наградите са при вас.') : t('{0} / {1} доставки заедно · награда: {2} точки и сребърен кейс за всеки', duo.progress ?? 0, duo.target, DUO.passPoints)}</p>
+              </>
+            ) : duo.state === 'waiting' ? (
+              <p className="text-mist-300">{t('Записан си. В понеделник на обяд играта ще те събере с играч от друга компания.')}</p>
+            ) : (
+              <>
+                <p className="text-mist-300">{t('Запиши се и играта ще те събере с играч от друга компания: {0} доставки заедно за седмицата — точки и кейс за двамата.', duo.target)}</p>
+                <ActionButton action={{ type: 'signUpDuo' }} className="btn-primary mt-2 px-3 py-1.5 text-xs">{t('Запиши ме')}</ActionButton>
+              </>
+            )}
+          </div>
+        </Card>
+      )}
       {/* 1.2: „Truck Pass“ (the season pass) is part of the season page. */}
       {features.truck_pass && (
         <section id="pass" className="scroll-mt-24 space-y-4">

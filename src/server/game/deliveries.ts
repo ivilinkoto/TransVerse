@@ -104,6 +104,8 @@ import { companyConvoyOf, settleConvoyTruck } from './convoys';
 import { relayDelivered } from './relay';
 import { checkPartnerLeg } from './partner-loads';
 import { recordRegionDelivery } from './region-projects';
+import { checkEscortRun, convoyHourPoints, roadAccepted, roadDelivered } from './on-the-road';
+import { meetDelivered } from './meet';
 import { growCity, harvestDelivered } from './city-growth';
 import { choiceMoney, choiceXp, planChoice } from './road-choices';
 import { storyDelivered } from './story';
@@ -196,6 +198,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   if (contract!.featured && !(await featureFor(db, userId, 'daily_load', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   // 1.2.6: the second leg of a partner load is kept for the partner the first driver agreed with.
   if (contract!.relayId && contract!.relayLeg === 2) await checkPartnerLeg(db, userId, contract!.relayId);
+  // 1.2.7: the escort run of an oversize load (not for its own driver).
+  if (contract!.escortFor) await checkEscortRun(db, userId, contract!.escortFor);
   // v1.8: a haggle — a "no" bars the player, a fresh "yes" adds the agreed percent.
   const hagglePercent = await agreedHaggle(db, userId, contractId, now);
 
@@ -482,6 +486,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     await acceptJobOffer(tx, userId, contractId, delivery!.id, now);
     // v1.8: someone may wave at the edge of town.
     await maybeHitchhiker(tx, userId, delivery!, { originCityId: contract!.originCityId, destCityId: contract!.destCityId, urgent: contract!.urgent }, now);
+    // 1.2.7: the escort (open or taken) and „👋 Махни“ with a truck coming the other way.
+    await roadAccepted(tx, userId, contract!, delivery!, now);
     await logActivity(tx, userId, 'contract_accepted', { contractId: loadId, ...(partial ? { partOf: contractId } : {}), vehicleId, deliveryId: delivery!.id });
     await broadcast(tx, 'market');
     await broadcast(tx, 'world');
@@ -653,7 +659,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const extrasCents = await settleExtras(tx, tripFacts);
   // 1.2.3: the contract of the week.
   await recordWeeklyLane(tx, tripFacts, completedAt);
-  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents;
+  // 1.2.7: the escort's bonuses when both trucks are in, a true market rumour, the duo of the week.
+  const roadBonus = (await roadDelivered(tx, company!.ownerId, d, contract, result.late, completedAt)) + (await meetDelivered(tx, company!.ownerId, d.companyId, d, contract, dest!.countryCode, result.late, completedAt));
+  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -803,6 +811,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (org) await addOrganizationSeasonScore(tx, org.id, points, now);
   await addLeaguePoints(tx, company!.ownerId, points, now);
   await addPassPoints(tx, company!.ownerId, points, now);
+  // 1.2.7: a convoy with another company in the convoy hour — pass points ×2.
+  await convoyHourPoints(tx, company!.ownerId, d, points, completedAt);
   // 1.2.5 „Първи сняг“: weekly pass tasks, clearing the roads, „Крал на снега“.
   await recordSnowSeason(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, convoy: !!(d.convoyWith || d.convoyLead), destCountry: dest!.countryCode, tons: contract.weightTons, holiday: contract.holiday, goods: contract.goods, roadEvents: d.roadEvents, ownerDrove }, completedAt);
   await rewardReferral(tx, company!.ownerId, now);

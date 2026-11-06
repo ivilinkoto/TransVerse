@@ -2,7 +2,7 @@
 
 import { TITLES } from '@/lib/game/first-snow';
 import { TitleChip } from '@/components/game/TitleChip';
-import { AtSign, Building2, CornerUpLeft, Flag, Globe2, Hammer, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
+import { AtSign, Building2, Coffee, CornerUpLeft, Flag, Globe2, Hammer, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
@@ -37,6 +37,8 @@ interface Inbox {
   unread?: { global: number; trade: number; company: number; projects?: number };
   /** 1.2.6: the „Проекти“ channel is open for this player. */
   projects?: boolean;
+  /** 1.2.7: the café of the city where the player's truck stands. */
+  cafe?: { name: string } | null;
 }
 interface Tab {
   id: string;
@@ -86,6 +88,7 @@ export function ChatDock() {
   const input = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
+  const [cafe, setCafe] = useState<{ city: string; here: string[] } | null>(null);
   const tabRef = useRef(tab);
   const openRef = useRef(open);
   useEffect(() => {
@@ -113,10 +116,11 @@ export function ChatDock() {
 
   const loadFeed = useCallback(async (which: string) => {
     try {
-      const data = await api<{ messages: FeedMessage[]; canModerate: boolean; canPin?: boolean; pinned?: { id: number; username: string; body: string } | null; online?: { count: number; names: string[] } }>(`/api/chat/feed?tab=${encodeURIComponent(which)}`);
+      const data = await api<{ messages: FeedMessage[]; canModerate: boolean; canPin?: boolean; pinned?: { id: number; username: string; body: string } | null; online?: { count: number; names: string[] }; cafe?: { city: string; here: string[] } }>(`/api/chat/feed?tab=${encodeURIComponent(which)}`);
       if (tabRef.current !== which) return;
       setMessages(data.messages);
       setCanModerate(data.canModerate);
+      setCafe(which === 'cafe' ? (data.cafe ?? null) : null);
       setCompany(which === 'company' ? { canPin: !!data.canPin, pinned: data.pinned ?? null, online: data.online ?? { count: 0, names: [] } } : null);
       setError(null);
       // Opening a tab marks it read — refresh the unread badges.
@@ -136,7 +140,7 @@ export function ChatDock() {
       } catch {
         /* ignore */
       }
-      if (fromUrl && /^(global|trade|projects|company|dm:[0-9a-f-]{36})$/.test(fromUrl)) {
+      if (fromUrl && /^(global|trade|projects|cafe|company|dm:[0-9a-f-]{36})$/.test(fromUrl)) {
         setTab(fromUrl);
         setOpen(true);
       } else {
@@ -162,7 +166,7 @@ export function ChatDock() {
   useEffect(() => {
     const onChannel = (e: Event) => {
       const ch = (e as CustomEvent<{ channel?: string }>).detail?.channel;
-      if (openRef.current && ch === tabRef.current) void loadFeed(tabRef.current);
+      if (openRef.current && (ch === tabRef.current || (tabRef.current === 'cafe' && ch?.startsWith('city:')))) void loadFeed(tabRef.current);
       else soonInbox();
     };
     const onCompany = () => {
@@ -215,6 +219,7 @@ export function ChatDock() {
     if (inbox?.alliance) out.push({ id: 'alliance', label: names.alliance, icon: Shield });
     out.push({ id: 'trade', label: names.trade, icon: Store, unread: u?.trade });
     if (inbox?.projects) out.push({ id: 'projects', label: names.projects, icon: Hammer, unread: u?.projects });
+    if (inbox?.cafe) out.push({ id: 'cafe', label: tx(inbox.cafe.name), icon: Coffee });
     for (const c of inbox?.conversations ?? []) out.push({ id: `dm:${c.userId}`, label: c.username, unread: c.unread, online: c.online });
     if (extra && !out.some((t) => t.id === extra.id)) out.push({ id: extra.id, label: extra.title });
     return out;
@@ -387,6 +392,11 @@ export function ChatDock() {
             </p>
           )}
           {tab === 'company' && company?.pinned && pins && <PinnedBar pinned={company.pinned} canPin={company.canPin} onUnpin={() => void pin(null)} onJump={(id) => jumpToMessage(list.current, id)} />}
+          {tab === 'cafe' && cafe && (
+            <p className="border-b border-asphalt-800 px-3 py-1.5 text-[11px] text-mist-400" data-testid="cafe-here">
+              ☕ {cafe.here.length ? tr('Кафене {0} · тук са: {1}', tx(cafe.city), cafe.here.slice(0, 6).join(', ')) : tr('Кафене {0} · само ти си тук. Камионите в града виждат този чат.', tx(cafe.city))}
+            </p>
+          )}
           {tab === 'trade' && <p className="border-b border-asphalt-800 px-3 py-2 text-[11px] text-mist-400">{tr('Само обяви: купувам / продавам. Самата сделка с техника става през Автопарк → Пазар → Употребявани.')}</p>}
 
           <div

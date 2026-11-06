@@ -558,6 +558,14 @@ export const RELEASES: Release[] = [
     ],
   },
   {
+    version: '1.2.7',
+    name: 'Заедно на пътя',
+    publishedAt: '2026-12-03T10:00:00+02:00',
+    tagline: 'TODO',
+    highlights: [],
+    sections: [],
+  },
+  {
     version: '1.2.6',
     name: 'На една вълна',
     publishedAt: '2026-11-26T10:00:00+02:00',

@@ -11,6 +11,8 @@ import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
 import { expireRelays, topUpRelays, topUpPartnerLoads } from './relay';
 import { ensureRegionProject } from './region-projects';
+import { announceConvoyHour, topUpEscortLoads } from './on-the-road';
+import { confirmRumor, pairDuos, spreadRumors } from './meet';
 import { announceCityOfWeek } from './city-growth';
 import { tickChoices } from './road-choices';
 import { playableCountries } from '@/lib/geo/scope';
@@ -418,6 +420,12 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // 1.2.6: the question of the day in the global chat.
     await every(db, 'chat-question', 10 * 60_000, now, () => postDailyQuestion(db, now));
     await every(db, 'region-project', 10 * 60_000, now, () => ensureRegionProject(db, now));
+    // 1.2.7: escorts for oversize loads, the convoy hour, rumours, the duo of the week.
+    await every(db, 'escort-loads', 30 * 60_000, now, () => topUpEscortLoads(db, now));
+    await every(db, 'convoy-hour', 5 * 60_000, now, () => announceConvoyHour(db, now));
+    await every(db, 'rumors', 15 * 60_000, now, () => spreadRumors(db, now));
+    await every(db, 'rumor-told', 15 * 60_000, now, () => confirmRumor(db, now));
+    await every(db, 'duos', 30 * 60_000, now, () => pairDuos(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);

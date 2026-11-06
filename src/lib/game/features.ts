@@ -130,6 +130,15 @@ export const FEATURES = {
   chat_life: '1.2.6',
   partner_loads: '1.2.6',
   region_projects: '1.2.6',
+  // 1.2.7 „Заедно на пътя“
+  escorts: '1.2.7',
+  partner_ratings: '1.2.7',
+  city_cafe: '1.2.7',
+  road_wave: '1.2.7',
+  convoy_hour: '1.2.7',
+  item_wants: '1.2.7',
+  rumors: '1.2.7',
+  duo_week: '1.2.7',
   // 1.2.4 „Преди зимата“: winter goods and the server goal before 1 December, Black Friday in the shop and on the board.
   winter_prep: '1.2.4',
   black_friday: '1.2.4',

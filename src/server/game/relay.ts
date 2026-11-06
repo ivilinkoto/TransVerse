@@ -13,6 +13,7 @@ import { addLoad, loadHubs } from './contracts';
 import { post } from './finance';
 import { notify } from './notify';
 import { partnerHandover, partnersArrived } from './partner-loads';
+import { askToRate } from './on-the-road';
 import { t } from '@/i18n/t';
 
 const HOUR = 3_600_000;
@@ -104,6 +105,7 @@ export async function relayDelivered(tx: Tx, userId: string, d: { id: string; co
   if (together) {
     const n = await partnersArrived(tx, r.leg1UserId, userId, at);
     for (const u of [userId, r.leg1UserId]) await notify(tx, u, 'success', () => t('Партньорският товар стигна навреме 🤝'), () => t('+{0} % и +{1} точки за пропуска за всеки. Заедно: {2}.', Math.round(PARTNER.bonusShare * 100), PARTNER.passPoints, n), '/game/finance');
+    await askToRate(tx, r.id, r.leg1UserId, userId);
     return mine;
   }
   for (const u of [userId, r.leg1UserId]) {

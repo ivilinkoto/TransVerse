@@ -12,6 +12,7 @@ import { fail } from './errors';
 import { assertNotBlocked, assertNotMuted } from './moderation';
 import { notify } from './notify';
 import { t as tr } from '@/i18n/t';
+import { CAFE } from '@/lib/game/on-the-road';
 import { rewardQuestionAnswer } from './chat-life';
 
 export const messageBodySchema = z.string().trim().min(1, 'Напиши съобщение.').max(MESSAGE_MAX, `Най-много ${MESSAGE_MAX} символа.`);
@@ -93,7 +94,7 @@ export async function notifyReply(tx: Tx, authorId: string, target: { userId: st
 
 // ── World chat (global, trade) ───────────────────────────────────────────
 
-export async function channelFeed(db: DbOrTx, channel: Channel, afterId = 0, limit = 60, now = new Date()): Promise<FeedMessage[]> {
+export async function channelFeed(db: DbOrTx, channel: Channel | CafeChannel, afterId = 0, limit = 60, now = new Date()): Promise<FeedMessage[]> {
   const rows = await db
     .select({ m: chatMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, title: users.title })
     .from(chatMessages)
@@ -105,17 +106,22 @@ export async function channelFeed(db: DbOrTx, channel: Channel, afterId = 0, lim
   return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), title: r.title, body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null, kind: r.m.kind, meta: r.m.meta }));
 }
 
-export async function postToChannel(db: Database, userId: string, channel: Channel, raw: string, replyToId?: number | null) {
+/** 1.2.7: the café of a city — a chat for the players whose trucks are there. */
+export type CafeChannel = `city:${number}`;
+const channelConf = (channel: Channel | CafeChannel) => (channel.startsWith('city:') ? { perMinute: CAFE.perMinute, label: 'Кафене', tab: 'cafe' } : { ...CHANNELS[channel as Channel], tab: channel });
+
+export async function postToChannel(db: Database, userId: string, channel: Channel | CafeChannel, raw: string, replyToId?: number | null) {
   const body = messageBodySchema.parse(raw);
+  const conf = channelConf(channel);
   await assertNotMuted(db, userId);
-  await rateLimit(db, `channel:${channel}:${userId}`, CHANNELS[channel].perMinute, 60);
+  await rateLimit(db, `channel:${channel}:${userId}`, conf.perMinute, 60);
   return db.transaction(async (tx) => {
     const target = replyToId && (await featureFor(tx, userId, 'chat_replies')) ? await replyTarget(tx, 'channel', replyToId, eq(chatMessages.channel, channel)) : null;
     const [row] = await tx.insert(chatMessages).values({ channel, userId, body, replyToId: target?.id ?? null }).returning({ id: chatMessages.id });
     // 1.2.6: an answer to the question of the day brings pass points to the first ones.
     if (target && (await featureFor(tx, userId, 'chat_life'))) await rewardQuestionAnswer(tx, userId, target.id, new Date());
-    const mentioned = await notifyMentions(tx, userId, body, { tab: channel, where: CHANNELS[channel].label });
-    await notifyReply(tx, userId, target, body, { tab: channel, where: CHANNELS[channel].label, mentioned });
+    const mentioned = await notifyMentions(tx, userId, body, { tab: conf.tab, where: conf.label });
+    await notifyReply(tx, userId, target, body, { tab: conf.tab, where: conf.label, mentioned });
     await ping(tx, { type: 'channel', channel });
     return row!.id;
   });

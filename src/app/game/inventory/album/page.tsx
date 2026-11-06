@@ -8,6 +8,10 @@ import { date as dateOnly } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
 import { foundItems, provenance } from '@/server/game/item-trade';
 import { t, tx } from '@/i18n/t';
+import Link from 'next/link';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { wantsView } from '@/server/game/meet';
+import { ITEM_WANTS } from '@/lib/game/on-the-road';
 import { initLocale } from '@/i18n/server';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,9 +27,38 @@ export default async function AlbumPage() {
   const found = await foundItems(db, user.id);
   const keys = found.has('golden_key') ? (await provenance(db, user.id, ['golden_key'])).golden_key?.serials ?? [] : [];
   const today = sofiaMonthDay(now);
+  // 1.2.7 „Търся / Давам“: what the player looks for, who has a spare, and who looks for the player's spares.
+  const trade = features.item_wants ? await wantsView(db, user.id) : null;
+  const wanted = new Set(trade?.wants.map((w) => w.itemId) ?? []);
   return (
     <div className="space-y-6">
       <PageHeader title={t('Албум с предмети')} subtitle={t('Всеки предмет, намерен поне веднъж, остава в албума — дори да го използваш, продадеш или размениш.')} />
+      {trade && (
+        <Card title={t('🔎 Търся / Давам')}>
+          <p className="text-sm text-mist-400">{t('Отбележи до {0} липсващи предмета с „Търся“. Играчите с резервен ги виждат и получават известие — разберете се в личните съобщения.', ITEM_WANTS.max)}</p>
+          {trade.wants.length > 0 && (
+            <ul className="mt-3 space-y-2 text-sm" data-testid="item-wants">
+              {trade.wants.map((w) => (
+                <li key={w.itemId} className="flex flex-wrap items-center gap-2">
+                  <ItemArt id={w.itemId as keyof typeof ITEMS} className="h-8 w-8" />
+                  <span className="font-semibold">{tx(w.name)}</span>
+                  <span className="text-mist-400">{w.owners.length ? t('Имат резервен:') : t('Още никой няма резервен.')}</span>
+                  {w.owners.map((o) => <Link key={o.id} href={`/game?chat=dm:${o.id}`} className="text-cyan-glow hover:underline">{o.username}</Link>)}
+                  <ActionButton action={{ type: 'wantItem', itemId: w.itemId, want: false }} className="btn-ghost px-2 py-0.5 text-xs">{t('Махни')}</ActionButton>
+                </li>
+              ))}
+            </ul>
+          )}
+          {trade.canGive.length > 0 && (
+            <div className="mt-3 text-sm" data-testid="item-give">
+              <p className="font-semibold">{t('Търсят твоите резервни:')}</p>
+              <ul className="mt-1 flex flex-wrap gap-2">
+                {trade.canGive.map((g) => <li key={`${g.userId}:${g.itemId}`}><Link href={`/game?chat=dm:${g.userId}`} className="rounded-full bg-asphalt-800 px-2.5 py-1 text-xs hover:bg-asphalt-700">{g.username} · {tx(g.name)}</Link></li>)}
+              </ul>
+            </div>
+          )}
+        </Card>
+      )}
       <div className="grid gap-4 lg:grid-cols-2">
         {COLLECTIONS.map((c) => {
           const got = c.items.filter((i) => found.has(i)).length;
@@ -42,6 +75,7 @@ export default async function AlbumPage() {
                       <ItemArt id={id} className="h-14 w-14" />
                       <span className="leading-tight">{at ? tx(ITEMS[id].name) : '?'}</span>
                       {at && <span className="text-[10px] text-mist-500">{dateOnly(at)}</span>}
+                      {!at && trade && (wanted.has(id) ? <span className="text-[10px] text-cyan-glow">{t('🔎 търсиш')}</span> : <ActionButton action={{ type: 'wantItem', itemId: id, want: true }} className="text-[10px] text-mist-300 underline opacity-100">{t('Търся')}</ActionButton>)}
                     </li>
                   );
                 })}

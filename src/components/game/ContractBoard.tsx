@@ -9,6 +9,7 @@ import { WINTER } from '@/lib/game/winter';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { RELAY, relayLabel } from '@/lib/game/relay';
 import { PARTNER } from '@/lib/game/partner-loads';
+import { ESCORT } from '@/lib/game/on-the-road';
 import { PLOT } from '@/lib/game/plot';
 import { MULTISTOP } from '@/lib/game/multistop';
 import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
@@ -73,6 +74,9 @@ export interface BoardContract {
   partner?: boolean;
   /** 1.2.6: counts for the common project of the region. */
   regionProject?: boolean;
+  /** 1.2.7: an oversize load that pays more with an escort / the escort run of one. */
+  escort?: boolean;
+  escortRun?: boolean;
   /** v1.10: the temperature range of a refrigerated load. */
   temp?: string | null;
   /** v1.8: haggling: 'open' (may ask), the player's ask, or null (not for this load). */
@@ -620,6 +624,8 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {c.transEurope && <Badge tone="gold">{t('🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{0}%', Math.round((TRANS_EUROPE.multiplier - 1) * 100))}</Badge>}
               {c.temp && <Badge tone="blue">🌡️ {tx(c.temp)}</Badge>}
               {c.relayLeg && (c.partner ? <Badge tone="green">{t('🤝 ПАРТНЬОРСКИ {0}/2 · +{1} % с партньор', c.relayLeg, Math.round(PARTNER.bonusShare * 100))}</Badge> : <Badge tone="cyan">{t('🏃 {0} · +{1} % ако и двамата сте навреме', relayLabel(c.relayLeg), Math.round(RELAY.bonusShare * 100))}</Badge>)}
+              {c.escort && <Badge tone="orange">{t('🚓 С ЕСКОРТ: +{0} % за двамата', Math.round(ESCORT.mainBonus * 100))}</Badge>}
+              {c.escortRun && <Badge tone="orange">{t('🚓 ЕСКОРТ · тръгни веднага, бонус {0} % от товара', Math.round(ESCORT.escortShare * 100))}</Badge>}
               {c.regionProject && <Badge tone="green">{t('🏗️ ПРОЕКТ НА РЕГИОНА')}</Badge>}
               {c.humanitarian && <Badge tone="red">{t('🆘 ХУМАНИТАРНА ПОМОЩ · +{0} TC навреме', RELIEF.coins)}</Badge>}
               {(() => {
