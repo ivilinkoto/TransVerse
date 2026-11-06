@@ -3603,3 +3603,24 @@ export const promoRedemptions = pgTable('promo_redemptions', {
 }, (t) => [uniqueIndex('promo_redemptions_once_idx').on(t.codeId, t.userId), index('promo_redemptions_code_idx').on(t.codeId, t.ipHash)]);
 
 
+
+/** 1.2.3.1: messages from the „За партньори“ page (sponsors, creators, press, business). */
+export const partnerInquiries = pgTable('partner_inquiries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** sponsor | creator | press | business */
+  kind: text('kind').notNull(),
+  name: text('name').notNull(),
+  email: text('email').notNull(),
+  organization: text('organization'),
+  /** A link to the channel, site or publication. */
+  link: text('link'),
+  message: text('message').notNull(),
+  /** new | answered | archived */
+  status: text('status').notNull().default('new'),
+  staffNote: text('staff_note'),
+  /** A signed-in player who sent it (optional). */
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  ipHash: text('ip_hash'),
+  createdAt: createdAt(),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+}, (t) => [index('partner_inquiries_status_idx').on(t.status, t.createdAt)]);

@@ -2,7 +2,7 @@
  * 1.2.3.1: the admin menu in groups. `admin: true` pages are for administrators
  * only (support staff do not see them and are sent back to the dashboard).
  */
-export type AdminIcon = 'gauge' | 'search' | 'users' | 'health' | 'sources' | 'retention' | 'journey' | 'tickets' | 'reports' | 'urgent' | 'events' | 'payments' | 'promo' | 'coins' | 'items' | 'economy' | 'mail' | 'system' | 'readiness' | 'audit';
+export type AdminIcon = 'gauge' | 'search' | 'users' | 'health' | 'sources' | 'retention' | 'journey' | 'tickets' | 'reports' | 'urgent' | 'events' | 'payments' | 'promo' | 'coins' | 'items' | 'economy' | 'mail' | 'system' | 'readiness' | 'audit' | 'partners';
 
 export interface AdminPage { href: string; label: string; icon: AdminIcon; admin?: boolean }
 export interface AdminGroup { id: string; label: string; pages: AdminPage[] }
@@ -37,6 +37,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { href: '/admin/payments', label: 'Плащания', icon: 'payments' },
       { href: '/admin/coins', label: 'Движение на ТрансКоин', icon: 'coins', admin: true },
       { href: '/admin/promo', label: 'Промокодове', icon: 'promo', admin: true },
+      { href: '/admin/partners', label: 'Партньори', icon: 'partners', admin: true },
     ],
   },
   {

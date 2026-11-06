@@ -35,6 +35,7 @@ export default async function AdminDashboard() {
     : i.id === 'reports' ? t('Нерешени доклади')
     : i.id === 'payments' ? t('Неуспешни плащания (7 дни)')
     : i.id === 'starved' ? t('Държави със свободни камиони и без товари')
+    : i.id === 'partners' ? t('Нови запитвания от партньори')
     : t('Обновление {0} излиза след {1} ч — неготови неща', i.version ?? '', i.hours ?? 0);
   return (
     <div className="space-y-6">

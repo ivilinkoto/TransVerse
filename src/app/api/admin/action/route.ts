@@ -28,6 +28,7 @@ import { setStaffNote } from '@/server/staff-notes';
 import { winBack } from '@/server/admin-retention';
 import { adminGrantItem, deleteSupportTemplate, saveSupportTemplate } from '@/server/admin-1142';
 import { setFeatureOff } from '@/server/feature-switches';
+import { INQUIRY_STATUSES, setPartnerInquiry } from '@/server/partners';
 import { t } from '@/i18n/t';
 
 const id = z.string().uuid('Невалиден идентификатор.');
@@ -94,6 +95,7 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('endTrailerHire'), hireId: id }),
   z.object({ type: z.literal('removeCupEntrant'), userId: id }),
   z.object({ type: z.literal('broadcast'), banner: broadcastSchema }),
+  z.object({ type: z.literal('partnerInquiry'), id, status: z.enum(INQUIRY_STATUSES), note: z.string().trim().max(500).optional() }),
   z.object({ type: z.literal('ideaStatus'), ideaId: id, status: z.enum(IDEA_STATUSES), note: z.string().max(300).default('') }),
 ]);
 
@@ -232,6 +234,11 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'discordRetry':
       requireAdminRole(user);
       return { ok: await retryOutbox(db, input.id) };
+    case 'partnerInquiry':
+      requireAdminRole(user);
+      await setPartnerInquiry(db, input.id, input.status, input.note);
+      await recordAudit(db, user.id, 'partner_inquiry', null, { id: input.id, status: input.status });
+      return { ok: true };
     case 'staffNote':
       await setStaffNote(db, user, input.userId, input.note);
       return { ok: true };

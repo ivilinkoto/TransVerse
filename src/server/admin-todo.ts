@@ -9,8 +9,9 @@ import { payments, supportTickets } from '@/server/db/schema';
 import { readiness } from '@/server/admin-1142';
 import { countryHealth } from '@/server/game/game-health';
 import { openReportCount } from '@/server/game/moderation';
+import { newPartnerInquiries } from '@/server/partners';
 
-export interface TodoItem { id: 'tickets' | 'reports' | 'payments' | 'starved' | 'release'; count: number; href: string; tone: 'red' | 'orange' | 'cyan'; version?: string; hours?: number }
+export interface TodoItem { id: 'tickets' | 'reports' | 'payments' | 'starved' | 'release' | 'partners'; count: number; href: string; tone: 'red' | 'orange' | 'cyan'; version?: string; hours?: number }
 
 export async function adminTodo(db: DbOrTx, now: Date, admin: boolean): Promise<TodoItem[]> {
   const week = new Date(now.getTime() - 7 * 86_400_000);
@@ -23,11 +24,13 @@ export async function adminTodo(db: DbOrTx, now: Date, admin: boolean): Promise<
     { id: 'reports', count: reports, href: '/admin/reports', tone: 'red' },
   ];
   if (admin) {
-    const [[failed], countries, ready] = await Promise.all([
+    const [[failed], countries, ready, partners] = await Promise.all([
       db.select({ n: sql<number>`count(*)::int` }).from(payments).where(and(eq(payments.status, 'failed'), gte(payments.createdAt, week))),
       countryHealth(db, now),
       readiness(db, now).catch(() => null),
+      newPartnerInquiries(db),
     ]);
+    items.push({ id: 'partners', count: partners, href: '/admin/partners', tone: 'cyan' });
     items.push({ id: 'payments', count: failed?.n ?? 0, href: '/admin/payments', tone: 'red' });
     items.push({ id: 'starved', count: countries.filter((c) => c.starved).length, href: '/admin/health', tone: 'orange' });
     // An update that comes out within 3 days with something missing.

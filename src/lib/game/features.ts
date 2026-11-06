@@ -124,6 +124,7 @@ export const FEATURES = {
   // 1.2.3.1 „Финален спринт“: the last day of a season (reminder, countdown, Discord) and the season recap to share.
   final_sprint: '1.2.3.1',
   partial_repair: '1.2.3.1',
+  partners: '1.2.3.1',
   // 1.2.4 „Преди зимата“: winter goods and the server goal before 1 December, Black Friday in the shop and on the board.
   winter_prep: '1.2.4',
   black_friday: '1.2.4',

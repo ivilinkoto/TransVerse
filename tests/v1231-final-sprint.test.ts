@@ -13,6 +13,8 @@ import { buyTrailer, buyVehicle, coupleTrailer, repairVehicle } from '@/server/g
 import { repairPlan } from '@/lib/game/repair';
 import { trailers, vehicles } from '@/server/db/schema';
 import { users } from '@/server/db/schema';
+import { partnerInquiries } from '@/server/db/schema';
+import { newPartnerInquiries, partnerFacts, partnerInquirySchema, sendPartnerInquiry, setPartnerInquiry } from '@/server/partners';
 import { db, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
@@ -112,5 +114,25 @@ describe('1.2.3.1 „Финален спринт“', () => {
     expect(trailerAfter).toBeGreaterThan(75);
     expect(trailerAfter).toBeLessThan(100);
     expect((await accountOf(userId)).balanceCents).toBeGreaterThanOrEqual(0);
+  });
+
+  it('„За партньори“: an inquiry is stored for the admins; a bot gets nothing stored', async () => {
+    const before = await newPartnerInquiries(db());
+    const input = partnerInquirySchema.parse({ kind: 'creator', name: 'Иван', email: 'IVAN@example.com', organization: 'Канал', link: 'https://example.com/live', message: 'Стриймвам игри с камиони всяка вечер.' });
+    expect(input.email).toBe('ivan@example.com');
+    const id = (await sendPartnerInquiry(db(), input, { userId: null, ipHash: null }))!;
+    expect(await newPartnerInquiries(db())).toBe(before + 1);
+    expect(await sendPartnerInquiry(db(), { ...input, website: 'spam' }, { userId: null, ipHash: null })).toBeNull();
+    expect(await newPartnerInquiries(db())).toBe(before + 1);
+    await expect(sendPartnerInquiry(db(), { ...input, link: 'javascript:alert(1)' }, { userId: null, ipHash: null })).rejects.toMatchObject({ code: 'bad_link' });
+    expect(() => partnerInquirySchema.parse({ ...input, message: 'кратко' })).toThrow();
+    await setPartnerInquiry(db(), id, 'answered', 'писах му');
+    const [row] = await db().select().from(partnerInquiries).where(eq(partnerInquiries.id, id));
+    expect(row!.status).toBe('answered');
+    expect(row!.staffNote).toBe('писах му');
+    expect(await newPartnerInquiries(db())).toBe(before);
+    const facts = await partnerFacts(db());
+    expect(facts.cities).toBeGreaterThan(0);
+    expect(adminOnlyPath('/admin/partners')).toBe(true);
   });
 });

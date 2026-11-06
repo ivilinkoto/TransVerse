@@ -330,6 +330,7 @@ export default async function HomePage() {
               <li><a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white"><ThumbsUp className="mr-1 inline h-3.5 w-3.5" />{tr('Facebook страница')}</a></li>
               <li><a href="#map" className="hover:text-white"><MapPinned className="mr-1 inline h-3.5 w-3.5" />{tr('Картата')}</a></li>
               <li><a href="#faq" className="hover:text-white">{tr('Въпроси и отговори')}</a></li>
+              {featureLive('partners', now) && <li><Link href="/partners" className="hover:text-white">{tr('За партньори')}</Link></li>}
               <li><Link href="/terms" className="hover:text-white">{tr('Общи условия')}</Link></li>
               <li><Link href="/privacy" className="hover:text-white">{tr('Поверителност')}</Link></li>
             </ul>
