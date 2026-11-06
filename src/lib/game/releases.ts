@@ -1629,11 +1629,24 @@ export function currentVersion(now: Date, staff = false): string {
   return visibleReleases(now, staff)[0]?.version ?? BASE_VERSION;
 }
 
+/**
+ * The release that came out last — what „Какво ново“ shows. Not always the highest number:
+ * 1.2.5 comes out on 12 November and 1.2.4 on the 20th.
+ */
+export function latestPublished(now: Date, staff = false): Release | null {
+  return RELEASES.filter((r) => staff || new Date(r.publishedAt) <= now).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime() || compareVersions(b.version, a.version))[0] ?? null;
+}
+
 /** The release to show in the "Какво ново" window, if the player has not seen it yet. */
 export function unseenRelease(seenVersion: string | null, now: Date, staff = false): Release | null {
-  const latest = visibleReleases(now, staff)[0];
+  const latest = latestPublished(now, staff);
   if (!latest) return null;
-  return seenVersion && compareVersions(seenVersion, latest.version) >= 0 ? null : latest;
+  if (!seenVersion) return latest;
+  if (seenVersion === latest.version) return null;
+  // 1.2.5: compare by when the seen release came out (a lower number can come out later).
+  const seen = releaseByVersion(seenVersion);
+  if (!seen) return compareVersions(seenVersion, latest.version) >= 0 ? null : latest;
+  return new Date(seen.publishedAt) >= new Date(latest.publishedAt) ? null : latest;
 }
 
 export function releaseByVersion(version: string): Release | undefined {
