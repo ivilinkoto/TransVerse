@@ -2,7 +2,8 @@
 
 import { TITLES } from '@/lib/game/first-snow';
 import { TitleChip } from '@/components/game/TitleChip';
-import { AtSign, Building2, CornerUpLeft, Flag, Globe2, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
+import { AtSign, Building2, CornerUpLeft, Flag, Globe2, Hammer, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { CHAT_EMOJI, splitMentions, typingMention } from '@/lib/game/mentions';
@@ -33,7 +34,9 @@ interface Inbox {
   me: string;
   meName: string;
   /** New messages in the channels (counted up to 100). */
-  unread?: { global: number; trade: number; company: number };
+  unread?: { global: number; trade: number; company: number; projects?: number };
+  /** 1.2.6: the „Проекти“ channel is open for this player. */
+  projects?: boolean;
 }
 interface Tab {
   id: string;
@@ -133,7 +136,7 @@ export function ChatDock() {
       } catch {
         /* ignore */
       }
-      if (fromUrl && /^(global|trade|company|dm:[0-9a-f-]{36})$/.test(fromUrl)) {
+      if (fromUrl && /^(global|trade|projects|company|dm:[0-9a-f-]{36})$/.test(fromUrl)) {
         setTab(fromUrl);
         setOpen(true);
       } else {
@@ -204,17 +207,18 @@ export function ChatDock() {
   }, [messages]);
 
   // Labels outside the memo: t() reads the language while rendering.
-  const names = { global: tr('Глобален'), company: tr('Компания'), alliance: tr('Съюз'), trade: tr('Търговия') };
+  const names = { global: tr('Глобален'), company: tr('Компания'), alliance: tr('Съюз'), trade: tr('Търговия'), projects: tr('Проекти') };
   const tabs: Tab[] = useMemo(() => {
     const u = inbox?.unread;
     const out: Tab[] = [{ id: 'global', label: names.global, icon: Globe2, unread: u?.global }];
     if (inbox?.company) out.push({ id: 'company', label: names.company, icon: Building2, unread: u?.company });
     if (inbox?.alliance) out.push({ id: 'alliance', label: names.alliance, icon: Shield });
     out.push({ id: 'trade', label: names.trade, icon: Store, unread: u?.trade });
+    if (inbox?.projects) out.push({ id: 'projects', label: names.projects, icon: Hammer, unread: u?.projects });
     for (const c of inbox?.conversations ?? []) out.push({ id: `dm:${c.userId}`, label: c.username, unread: c.unread, online: c.online });
     if (extra && !out.some((t) => t.id === extra.id)) out.push({ id: extra.id, label: extra.title });
     return out;
-  }, [inbox, extra, names.global, names.company, names.alliance, names.trade]);
+  }, [inbox, extra, names.global, names.company, names.alliance, names.trade, names.projects]);
 
   // Everything new: private messages and the channels.
   const unread = tabs.reduce((s, t) => s + (t.unread ?? 0), 0);
@@ -292,6 +296,16 @@ export function ChatDock() {
   const react = async (m: FeedMessage, emoji: string) => {
     try {
       await api('/api/game/action', { type: 'reactChat', tab, messageId: m.id, emoji });
+      await loadFeed(tab);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
+  // 1.2.6: a new player thanks whoever answered them.
+  const thank = async (messageId: number) => {
+    try {
+      await api('/api/game/action', { type: 'thankHelper', messageId });
       await loadFeed(tab);
     } catch (e) {
       setError((e as Error).message);
@@ -387,6 +401,24 @@ export function ChatDock() {
             {messages.length === 0 && <p className="py-10 text-center text-sm text-mist-400">{dm ? tr('Напиши първото съобщение.') : tab === 'trade' ? tr('Още няма обяви. Предложи нещо!') : tr('Още няма съобщения. Поздрави всички!')}</p>}
             {messages.map((m) => {
               const mine = m.userId === me;
+              // 1.2.6: a line from the game — a card with its button, reactions and replies (no report or delete).
+              if (m.kind && !m.deleted) {
+                return (
+                  <div key={m.id} data-message={m.id} className="group rounded-2xl border border-cyan-glow/30 bg-cyan-glow/5 px-3 py-2" data-testid={`chat-line-${m.kind}`}>
+                    <div className="flex items-center gap-1.5 text-[11px] text-cyan-glow">
+                      <span className="font-semibold">TransVerse</span>
+                      <span className="text-mist-400">{time(m.createdAt)}</span>
+                      {replies && (
+                        <button type="button" className="text-mist-400 opacity-60 transition hover:text-cyan-glow group-hover:opacity-100" onClick={() => { setReplyTo({ id: m.id, username: 'TransVerse', body: (m.body ?? '').slice(0, 90), tab }); input.current?.focus(); }} aria-label={tr('Отговори')} title={tr('Отговори')}><CornerUpLeft className="h-3 w-3" /></button>
+                      )}
+                      {reactions && <ReactionPicker mine={(m.reactions ?? []).filter((r) => r.mine).map((r) => r.emoji)} onPick={(e) => void react(m, e)} />}
+                    </div>
+                    <p className="whitespace-pre-wrap break-words text-sm">{tx(m.body ?? '')}</p>
+                    {m.meta?.href && <Link href={m.meta.href} className="mt-1.5 inline-block rounded-lg bg-cyan-glow/15 px-2.5 py-1 text-xs font-semibold text-cyan-glow hover:bg-cyan-glow/25">{tx(m.meta.button ?? tr('Виж'))} →</Link>}
+                    <Reactions items={m.reactions ?? []} canReact={reactions} onToggle={(e) => void react(m, e)} />
+                  </div>
+                );
+              }
               return (
                 <div key={m.id} data-message={m.id} className={`group flex rounded-2xl ${mine ? 'justify-end' : ''}`}>
                   <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 ${mine ? 'bg-volt-500/25' : 'bg-asphalt-800'}`}>
@@ -424,6 +456,9 @@ export function ChatDock() {
                           )}
                     </p>
                     {!m.deleted && <Reactions items={m.reactions ?? []} canReact={reactions} onToggle={(e) => void react(m, e)} />}
+                    {m.thankable && !m.deleted && (
+                      <button type="button" className="mt-1 rounded-lg border border-gold-400/40 px-2 py-0.5 text-[11px] font-semibold text-gold-400 hover:bg-gold-400/10" onClick={() => void thank(m.id)} data-testid="chat-thank">{tr('🙏 Благодаря')}</button>
+                    )}
                   </div>
                 </div>
               );

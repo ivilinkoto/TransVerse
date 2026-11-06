@@ -121,6 +121,7 @@ import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
 import { starvedCountryAlerts } from './game-health';
 import { awardSnowKings } from './first-snow';
+import { postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
 import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
@@ -411,6 +412,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'starved-countries', 15 * 60_000, now, () => starvedCountryAlerts(db, now));
     await every(db, 'snow-kings', 60 * 60_000, now, () => awardSnowKings(db, now));
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
+    // 1.2.6: the question of the day in the global chat.
+    await every(db, 'chat-question', 10 * 60_000, now, () => postDailyQuestion(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);

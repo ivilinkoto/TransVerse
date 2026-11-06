@@ -1273,6 +1273,10 @@ export const chatMessages = pgTable(
     body: text('body').notNull(),
     /** The message this one answers (same channel). */
     replyToId: bigint('reply_to_id', { mode: 'number' }),
+    /** 1.2.6: a line from the game (moment | question | partner | project); null for players' messages. */
+    kind: text('kind'),
+    /** 1.2.6: a button under a line from the game. */
+    meta: jsonb('meta').$type<{ href?: string; button?: string }>(),
     createdAt: createdAt(),
     deletedAt: ts('deleted_at'),
     deletedBy: uuid('deleted_by').references(() => users.id, { onDelete: 'set null' }),

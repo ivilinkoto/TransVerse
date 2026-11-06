@@ -22,6 +22,7 @@ import { joinCup } from '@/server/game/tournament';
 import { bidForPlate, fitRarePlate } from '@/server/game/plates';
 import { hireTrailer, offerTrailer, returnHiredTrailer, withdrawTrailer } from '@/server/game/trailer-hire';
 import { donateToMuseum, scrapVehicle, repairWithPart } from '@/server/game/heritage';
+import { thankHelper } from '@/server/game/chat-life';
 import { setSpecialization } from '@/server/game/specialization';
 import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
@@ -193,7 +194,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('createPoll'), poll: pollInputSchema }),
   z.object({ type: z.literal('votePoll'), pollId: id, option: z.number().int().min(0).max(9) }),
   z.object({ type: z.literal('closePoll'), pollId: id }),
-  z.object({ type: z.literal('reactChat'), tab: z.string().regex(/^(global|trade|company|dm:[0-9a-f-]{36})$/), messageId: z.coerce.number().int().positive(), emoji: z.string().max(8) }),
+  z.object({ type: z.literal('reactChat'), tab: z.string().regex(/^(global|trade|projects|company|dm:[0-9a-f-]{36})$/), messageId: z.coerce.number().int().positive(), emoji: z.string().max(8) }),
   z.object({ type: z.literal('discordUnlink') }),
   z.object({ type: z.literal('discordPrefs'), prefs: z.record(z.string().max(20), z.boolean()) }),
   z.object({ type: z.literal('companyDiscord'), on: z.boolean() }),
@@ -389,7 +390,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('startProject'), templateId: z.string().max(40) }),
   z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('deleteConversation'), userId: id }),
-  z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema, replyTo: z.coerce.number().int().positive().nullish() }),
+  z.object({ type: z.literal('thankHelper'), messageId: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade', 'projects']), body: messageBodySchema, replyTo: z.coerce.number().int().positive().nullish() }),
   z.object({ type: z.literal('deleteChannel'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели лева.').positive().max(10_000_000) }),
   z.object({ type: z.literal('cancelListing'), listingId: id }),
@@ -1113,7 +1115,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       await deleteConversation(db, user.id, input.userId);
       return { ok: true };
     case 'sendChannel':
+      if (input.channel === 'projects') requireFeature('region_projects', user);
       return { ok: true, id: await postToChannel(db, user.id, input.channel, input.body, input.replyTo) };
+    case 'thankHelper':
+      return { ok: true, ...(await thankHelper(db, { id: user.id, username: user.username }, input.messageId)) };
     case 'deleteChannel':
       await deleteChannelMessage(db, user.id, user.role, input.messageId);
       return { ok: true };

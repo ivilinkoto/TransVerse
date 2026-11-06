@@ -18,6 +18,7 @@ import { notify } from './notify';
 import { fleetView } from './queries';
 import { addChronicle } from './chronicle';
 import { t as tr } from '@/i18n/t';
+import { postMoment } from './chat-life';
 
 const cityNames = async (db: DbOrTx, ids: number[]) => {
   const rows = await db.select({ id: cities.id, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, ids));
@@ -76,10 +77,12 @@ export async function recordLaneRun(tx: Tx, userId: string, d: { id: string; sch
   // A first run on a lane is a record too, but only a beaten one is news.
   if (prev) {
     await notify(tx, userId, 'achievement', () => tr('Рекорд на линията {0}', route), () => tr('{0} с товар — най-бързият курс по нея този месец.', time), '/game/leaderboards');
+    const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
     if (prev.userId !== userId) {
-      const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
       await notify(tx, prev.userId, 'info', () => tr('Рекордът ти на {0} е подобрен', route), () => tr('{0} я взе за {1}. Върни си го!', me!.username, time), '/game/leaderboards');
     }
+    // 1.2.6: a beaten record is a moment for the global chat.
+    await postMoment(tx, `lane:${month}:${lane.originCityId}:${lane.destCityId}:${minutes}`, tr('🏆 {0} подобри рекорда на {1}: {2} с товар.', me!.username, route, time), { href: '/game/leaderboards?tab=records', button: tr('Рекордите') }, at);
   }
   return { minutes, beaten: !!prev };
 }
