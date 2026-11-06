@@ -24,7 +24,6 @@ const TABS: Tab[] = [
   { href: '/game/company/holding', label: 'Холдинг', feature: 'holdings' },
   { href: '/game/company/territories', label: 'Територии', feature: 'territories' },
   { href: '/game/company/community', label: 'Общност', feature: 'departments' },
-  { href: '/game/company/chat', label: 'Чат' },
   { href: '/game/company/missions', label: 'Мисии' },
   { href: '/game/company/tenders', label: 'Търгове' },
   { href: '/game/company/members', label: 'Членове' },
@@ -41,10 +40,11 @@ const MANAGE: Tab[] = [
 export function CompanyTabs({ pending, allowed }: { pending: number; allowed: string[] }) {
   const pathname = usePathname();
   const has = useFeatures();
-  const tabs = TABS.filter((t) => !t.feature || has(t.feature));
+  const isActive = (href: string) => (href === '/game/company' ? pathname === href : pathname.startsWith(href));
+  // 1.2.3.1: the cards on „Обзор“ lead to every page, so the row keeps only „Обзор“ and the page you are on.
+  const tabs = TABS.filter((t) => (!t.feature || has(t.feature)) && (!has('nav_v2') || t.href === '/game/company' || isActive(t.href)));
   const manage = MANAGE.filter((t) => !t.needs || allowed.includes(t.needs));
   const inManage = manage.some((t) => pathname.startsWith(t.href));
-  const isActive = (href: string) => (href === '/game/company' ? pathname === href : pathname.startsWith(href));
   const tab = (active: boolean) => `relative flex shrink-0 items-center gap-1.5 px-3 py-3 text-sm font-medium transition ${active ? 'text-white' : 'text-mist-400 hover:text-white'}`;
   return (
     <div>

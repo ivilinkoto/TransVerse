@@ -9,7 +9,6 @@ import { t, tx } from '@/i18n/t';
 const CARDS: { href: string; emoji: string; label: string; text: string; feature?: FeatureId }[] = [
   { href: '/game/company/missions', emoji: '🎯', label: 'Мисии', text: 'Седмичните цели, проектът и битката' },
   { href: '/game/company/members', emoji: '👥', label: 'Членове', text: 'Хората в компанията и молбите' },
-  { href: '/game/company/chat', emoji: '💬', label: 'Чат', text: 'Разговор с колегите' },
   { href: '/game/company/development', emoji: '📈', label: 'Развитие', text: 'Подобрения и бонуси за членовете' },
   { href: '/game/company/tenders', emoji: '📑', label: 'Търгове', text: 'Големите поръчки за компании' },
   { href: '/game/company/plot', emoji: '🏗️', label: 'Участък', text: 'Базата на компанията', feature: 'company_plot' },

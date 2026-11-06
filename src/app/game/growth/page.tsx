@@ -19,7 +19,7 @@ import { initLocale } from '@/i18n/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
-  return { title: t('Развитие') };
+  return { title: t('Технологии и офис') };
 }
 
 /** 1.1.4.2: how the company grows besides more trucks — research, the office, adverts, fuel and CO₂. Game data. */
@@ -38,7 +38,7 @@ export default async function GrowthPage() {
   const diesel = averageDieselCents(now);
   return (
     <div className="space-y-6">
-      <PageHeader title={t('Развитие')} subtitle={t('Технологии, офис, реклама, гориво и CO₂ — компанията расте не само с камиони. Игрови данни.')} />
+      <PageHeader title={t('Технологии и офис')} subtitle={t('Твоят превозвач: технологии, офис, реклама, гориво и CO₂. Игрови данни.')} />
 
       {features.research && (
         <Card title={t('🔬 Развойна дейност')} actions={busy ? <Badge tone="cyan">{t('Изследва се до {0}', dateTime(busy.busyUntil!))}</Badge> : null}>

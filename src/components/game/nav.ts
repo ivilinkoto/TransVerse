@@ -85,6 +85,8 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/analytics', label: 'Анализ', group: 'Камиони', minLevel: 3 },
       { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map', group: 'Камиони', minLevel: 2 },
       { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа', core: true },
+      // 1.2.3.1: the player's own business (research, office, adverts, fuel, CO₂) — not the company's „Развитие“.
+      { href: '/game/growth', label: 'Технологии и офис', feature: 'research', group: 'Сервиз и депа' },
       { href: '/game/market', label: 'Пазар', group: 'Камиони', core: true },
       { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire', group: 'Камиони', minLevel: 6 },
       { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction', group: 'Камиони', minLevel: 6 },
@@ -101,7 +103,6 @@ export const SECTIONS: NavSection[] = [
     icon: Building2,
     tabs: [
       { href: '/game/company', label: 'Моята компания', core: true },
-      { href: '/game/growth', label: 'Развитие', feature: 'research', core: true },
       { href: '/game/insurance', label: 'Застрахователи', feature: 'insurers', minLevel: 3 },
       { href: '/game/companies', label: 'Всички компании', core: true },
       { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board', minLevel: 3 },

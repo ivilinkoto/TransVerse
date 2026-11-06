@@ -276,8 +276,8 @@ export async function dispatchPush(db: Database, now = new Date(), sender: PushS
       const last = mine.at(-1)!;
       const message: PushMessage =
         mine.length === 1
-          ? { title: `${last.author} · ${last.company}`, body: last.body, url: '/game/company/chat', tag: 'chat' }
-          : { title: t('{0} нови съобщения · {1}', mine.length, last.company), body: `${last.author}: ${last.body}`, url: '/game/company/chat', tag: 'chat' };
+          ? { title: `${last.author} · ${last.company}`, body: last.body, url: '/game/company?chat=company', tag: 'chat' }
+          : { title: t('{0} нови съобщения · {1}', mine.length, last.company), body: `${last.author}: ${last.body}`, url: '/game/company?chat=company', tag: 'chat' };
       pushed += await pushToUser(db, m.userId, message, sender);
     }
     await saveCursor(db, 'push-chat-cursor', messages.at(-1)!.id);
