@@ -1,4 +1,7 @@
-import { CheckCircle2, Clock, Crown, Flag, Globe2, Medal, Route, Sparkles, Trophy, Truck, Weight } from 'lucide-react';
+import { Briefcase, CalendarDays, CheckCircle2, Clock, Container, Crown, Flag, Globe2, Medal, Route, Sparkles, Trophy, Truck, Wallet, Weight } from 'lucide-react';
+import Link from 'next/link';
+import { POWER_UNITS } from '@/lib/game/catalog';
+import { businessCard } from '@/server/game/business-card';
 import { notFound } from 'next/navigation';
 import { PlayerCardLive } from '@/components/game/PlayerCardLive';
 import { Card, Empty, PageHeader } from '@/components/ui';
@@ -47,9 +50,15 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
   const [target] = features.welcome_neighbors ? await db.select({ id: users.id, createdAt: users.createdAt }).from(users).where(eq(users.id, card.id)) : [];
   const greet = target ? await canGreet(db, user.id, target, now) : false;
   const [records, kingdoms] = await Promise.all([features.lane_records ? laneRecordsView(db, now, 10, card.id) : [], features.country_kings ? kingdomsOf(db, card.id) : []]);
+  // 1.2.3.2: trip income and the fleet (hidden when the player chose so — they still see their own).
+  const self = card.id === user.id;
+  const [biz, mine] = features.business_profile ? await Promise.all([businessCard(db, card.id, now), self ? null : businessCard(db, user.id, now)]) : [null, null];
+  const showBiz = biz && (!biz.hidden || self);
+  const topTruck = biz?.topModel ? POWER_UNITS.find((p) => p.id === biz.topModel)?.name : null;
+  const vs = (cents: number) => (mine ? <span className="block text-[11px] font-normal text-mist-400">{tr('ти: {0}', money(cents))}</span> : null);
   return (
     <div className="space-y-6">
-      <PageHeader title={tr('Кариера · {0}', card.username)} subtitle={tr('Курсове, рекорди и любими линии. Игрови данни, без пари.')} />
+      <PageHeader title={tr('Кариера · {0}', card.username)} subtitle={features.business_profile ? tr('Курсове, рекорди, приходи и автопарк. Игрови данни.') : tr('Курсове, рекорди и любими линии. Игрови данни, без пари.')} />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="min-w-0 space-y-6">
           <Card><PlayerCardLive card={card} /></Card>
@@ -61,6 +70,24 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
             <Card title={<span className="inline-flex items-center gap-2"><Crown className="h-4 w-4 text-gold-400" />{tr('Крал на държавата')}</span>}>
               <p className="text-sm text-mist-300">{tr('Най-много тонове до {0} миналия месец:', kingdoms.length === 1 ? tr('тази държава') : tr('тези държави'))}</p>
               <div className="mt-2 flex flex-wrap gap-2">{kingdoms.map((k) => <span key={k.countryCode} className="rounded-full bg-gold-400/10 px-2.5 py-1 text-xs text-gold-400">👑 {tx(k.country)} · <span className="num">{dec(k.tons)}</span>{' '}{tr('т')}</span>)}</div>
+            </Card>
+          )}
+          {biz && (
+            <Card title={<span className="inline-flex items-center gap-2"><Briefcase className="h-4 w-4 text-gold-400" />{tr('Бизнес')}</span>} actions={self ? <Link href="/game/settings#privacy" className="text-xs text-cyan-glow hover:underline">{biz.hidden ? tr('Скрито за другите') : tr('Скрий')}</Link> : null}>
+              {showBiz ? (
+                <div data-testid="business-card">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <Fact label={tr('Тази седмица')} value={<>{money(biz.week.cents)}{vs(mine?.week.cents ?? 0)}</>} icon={CalendarDays} />
+                    <Fact label={tr('Този сезон')} value={<>{money(biz.season.cents)}{vs(mine?.season.cents ?? 0)}</>} icon={Trophy} />
+                    <Fact label={tr('Общо от курсове')} value={money(biz.total.cents)} icon={Wallet} />
+                    <Fact label={tr('Камиони')} value={int(biz.trucks)} icon={Truck} />
+                    <Fact label={tr('Ремаркета')} value={int(biz.trailers)} icon={Container} />
+                    <Fact label={tr('Курсове тази седмица')} value={int(biz.week.trips)} icon={Route} />
+                  </div>
+                  {topTruck && <p className="mt-3 text-sm text-mist-300">{tr('Най-скъпият камион:')}{' '}<span className="font-semibold text-white">{tx(topTruck)}</span></p>}
+                  <p className="mt-2 text-xs text-mist-400">{self && biz.hidden ? tr('Само ти виждаш тези числа.') : tr('Приходи от курсове — не парите по сметката. Игрови данни.')}</p>
+                </div>
+              ) : <p className="text-sm text-mist-400">{tr('{0} е скрил бизнес данните си.', card.username)}</p>}
             </Card>
           )}
           <Card title={<span className="inline-flex items-center gap-2"><Trophy className="h-4 w-4 text-gold-400" />{tr('В числа')}</span>}>

@@ -162,7 +162,7 @@ export const users = pgTable(
     /** v2.0 legacy stars (New Game+), 0…5. */
     legacyStars: integer('legacy_stars').notNull().default(0),
     /** asPlayer (1.1.2): a staff member looks at the game as a player (no unreleased features, no staff badges). */
-    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean; dailySummary?: boolean; inventorySeenAt?: string; oldMenu?: boolean; theme?: 'dark' | 'light'; textSize?: 'normal' | 'large' | 'xl' }>().notNull().default({}),
+    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean; dailySummary?: boolean; inventorySeenAt?: string; oldMenu?: boolean; theme?: 'dark' | 'light'; textSize?: 'normal' | 'large' | 'xl'; hideBusiness?: boolean }>().notNull().default({}),
     /** 1.1.2: when the player agreed to the terms and the privacy policy (null for accounts made before). */
     termsAcceptedAt: ts('terms_accepted_at'),
     /** 1.1.2: the truck the player shows on their player card (one of their own). */

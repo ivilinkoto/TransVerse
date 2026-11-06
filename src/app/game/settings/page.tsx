@@ -158,6 +158,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </div>
           </Card>
         )}
+        {features.business_profile && (
+          <Card title={<span id="privacy" className="scroll-mt-24">{t('🔒 Поверителност')}</span>} className="lg:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <p className="max-w-xl text-mist-300">{user.uiPrefs?.hideBusiness ? t('Другите не виждат приходите и автопарка ти, и не си в класацията „Изкараха тази седмица“.') : t('Другите виждат в профила ти колко си изкарал от курсове и колко камиона имаш.')}</p>
+              <ActionButton action={{ type: 'uiPrefs', hideBusiness: !user.uiPrefs?.hideBusiness }} className="btn-ghost">{user.uiPrefs?.hideBusiness ? t('Покажи') : t('Скрий')}</ActionButton>
+            </div>
+          </Card>
+        )}
         {features.daily_summary && (
           <Card title={t('Моят ден')} className="lg:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm">

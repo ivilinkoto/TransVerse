@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { topBases } from '@/server/game/plot';
 import { Card, PageHeader, Segmented } from '@/components/ui';
+import { weeklyEarners } from '@/server/game/business-card';
 import { hasUnlock } from '@/lib/game/company';
 import { isVip } from '@/lib/game/vip';
 import { PlayerName } from '@/components/game/PlayerName';
@@ -24,8 +25,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: tr('Класации') };
 }
 
-const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions' | 'records' | 'nations'; label: string; unit: string }[] = [
+const TABS: { id: LeaderboardKind | 'eco' | 'bases' | 'divisions' | 'records' | 'nations' | 'earners'; label: string; unit: string }[] = [
   { id: 'season', label: 'Сезон', unit: 'точки' },
+  { id: 'earners', label: 'Изкараха тази седмица', unit: 'от курсове' },
   { id: 'wealth', label: 'Богатство', unit: 'стойност' },
   { id: 'deliveries', label: 'Доставки', unit: 'доставки' },
   { id: 'companies', label: 'Компании', unit: 'опит' },
@@ -44,7 +46,7 @@ const medal = (i: number) => (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1);
 export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ tab?: string; country?: string }> }) {
   await initLocale();
   const { db, user, company, features } = await gameContext();
-  const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions) && (t.id !== 'records' || features.lane_records) && (t.id !== 'nations' || features.national_rankings));
+  const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'earners' || features.business_profile) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions) && (t.id !== 'records' || features.lane_records) && (t.id !== 'nations' || features.national_rankings));
   const params = await searchParams;
   const requested = params.tab;
   const tab = tabs.find((t) => t.id === requested) ?? tabs[0]!;
@@ -52,7 +54,7 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
     <div className="space-y-5">
       <PageHeader title={tr('Класации')} subtitle={tr('Само реални играчи и техните компании. Няма измислени конкуренти.')} />
       <Segmented label={tr('Вид класация')} active={tab.id} items={tabs.map((t) => ({ id: t.id, label: t.label, href: `/game/leaderboards?tab=${t.id}` }))} />
-      {tab.id === 'nations' ? <NationsBoard country={params.country?.toUpperCase().slice(0, 2)} companyId={company.id} /> : tab.id === 'records' ? <RecordsBoard /> : tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tx(tab.unit)} companyId={company.id} />}
+      {tab.id === 'earners' ? <EarnersBoard userId={user.id} unit={tx(tab.unit)} /> : tab.id === 'nations' ? <NationsBoard country={params.country?.toUpperCase().slice(0, 2)} companyId={company.id} /> : tab.id === 'records' ? <RecordsBoard /> : tab.id === 'divisions' ? <DivisionsBoard userId={user.id} /> : tab.id === 'bases' ? <BasesBoard userId={user.id} /> : tab.id === 'eco' ? <EcoBoardView userId={user.id} /> : tab.id === 'companies' ? <CompanyBoard userId={user.id} /> : <PlayerBoard kind={tab.id} unit={tx(tab.unit)} companyId={company.id} />}
     </div>
   );
 }
@@ -78,6 +80,33 @@ async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<Leaderboar
         ))}
       </ol>
       {rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Все още няма данни.')}</p>}
+    </Card>
+  );
+}
+
+/** 1.2.3.2: who earned the most from trips this week (players who hide their numbers are left out). */
+async function EarnersBoard({ userId, unit }: { userId: string; unit: string }) {
+  const { db, now } = await gameContext();
+  const rows = await weeklyEarners(db, now, 100);
+  return (
+    <Card className="p-2 sm:p-3">
+      <ol className="divide-y divide-asphalt-800" data-testid="earners-board">
+        {rows.map((r, i) => (
+          <li key={r.userId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.userId === userId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
+            <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
+            <div className="min-w-0 flex-1">
+              <Link href={`/game/players/${encodeURIComponent(r.username)}`} className="block truncate font-semibold hover:underline"><PlayerName name={r.username} role={r.role} vip={isVip(r.vipUntil, now)} /></Link>
+              <div className="text-xs text-mist-400">{tr('{0} курса · ниво {1}', r.trips, r.level)}</div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="num font-display font-bold text-gold-400">{money(r.cents)}</div>
+              <div className="text-[11px] text-mist-400">{unit}</div>
+            </div>
+          </li>
+        ))}
+      </ol>
+      {rows.length === 0 && <p className="p-3 text-sm text-mist-400">{tr('Все още няма данни.')}</p>}
+      <p className="p-3 text-xs text-mist-400">{tr('От понеделник 00:00. Не искаш да си тук? Настройки → Поверителност.')}</p>
     </Card>
   );
 }
