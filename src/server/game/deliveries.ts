@@ -41,7 +41,7 @@ import { BOOM } from '@/lib/game/plot';
 import { recordWeeklyGoal } from './weekly-goal';
 import { addFeed, FEED_LONG_TRIP_KM } from './feed';
 import { recordProjectDelivery } from './projects';
-import { isWinter, routeCondition, WINTER } from '@/lib/game/winter';
+import { isWinter, routeCondition, WINTER, isSnowTime } from '@/lib/game/winter';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
 import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/game/fines';
 import { COMPANY_XP_SHARE, deliveryXp, FLEET_XP_SHARE, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
@@ -438,7 +438,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     // Surprises on the way, decided now and revealed when the truck gets there.
     // Maintenance (v1.3): an overdue truck gets into trouble more often, a freshly serviced one less.
     const upkeep = !rented && (await featureFor(tx, userId, 'maintenance', now)) ? maintenanceState(bundle.vehicle.odometerKm, bundle.vehicle.serviceKm).factor : 1;
-    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + roadLoadedKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep * (bundle.trailer?.upgrades.includes('led_markers') ? (TRAILER_UPGRADES.led_markers.incidents ?? 1) : 1), ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isWinter(now) || real ? { condition: routeCondition(loadedRoute!.countries, now, real).condition, tyres: rented || hasWinterGrip(bundle.vehicle.upgrades) } : undefined });
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + roadLoadedKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep * (bundle.trailer?.upgrades.includes('led_markers') ? (TRAILER_UPGRADES.led_markers.incidents ?? 1) : 1), ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isSnowTime(now) || real ? { condition: routeCondition(loadedRoute!.countries, now, real).condition, tyres: rented || hasWinterGrip(bundle.vehicle.upgrades) } : undefined });
     const [delivery] = await tx
       .insert(deliveries)
       .values({

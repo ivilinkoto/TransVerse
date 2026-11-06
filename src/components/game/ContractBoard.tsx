@@ -225,6 +225,9 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
 ]);
 
 /** `doableDefault` (1.1.3): new players start with "Само изпълними" on. */
+/** 1.2.5: loads drawn at first (and added by „Покажи още“): the whole board weighed over 1 MB on a phone. */
+const BOARD_PAGE = 40;
+
 export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false, doableDefault = false, friends = [], initialQuery = '' }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean; doableDefault?: boolean; friends?: { id: string; username: string }[]; initialQuery?: string }) {
   const promiseLive = useFeature('load_promise');
   const [promise, setPromise] = usePromise();
@@ -295,6 +298,12 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
     const rank = (c: BoardContract) => (c.id === focus ? -1 : c.local && takeable(c) ? 0 : c.featured ? 1 : c.urgent ? 2 : (c.shared || c.favorite || c.tender) && takeable(c) ? 3 : takeable(c) ? 4 : c.local ? 5 : 6);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
   }, [contracts, cargo, query, doable, sort, chips, focus]);
+
+  // 1.2.5: the first loads only (the best ones come first); „Покажи още“ adds the next. The count starts
+  // over when the filters change, so a new search does not open the whole board.
+  const filterKey = `${cargo}|${query}|${doable}|${sort}|${[...chips].join(',')}`;
+  const [more, setMore] = useState({ key: filterKey, n: BOARD_PAGE });
+  const shown = more.key === filterKey ? more.n : BOARD_PAGE;
 
   // 1.1.2: with "Само изпълними" and nothing left, the most common reasons why.
   const blockers = useMemo(() => {
@@ -392,11 +401,18 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
           )}
         </>
       ) : (
-        <ul className="space-y-2">
-          {list.map((c) => (
-            <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-2">
+            {list.slice(0, shown).map((c) => (
+              <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
+            ))}
+          </ul>
+          {list.length > shown && (
+            <button type="button" className="btn-ghost mt-3 w-full justify-center" onClick={() => setMore({ key: filterKey, n: shown + BOARD_PAGE })} data-testid="board-more">
+              {t('Покажи още ({0})', list.length - shown)}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

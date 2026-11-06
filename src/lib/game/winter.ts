@@ -1,5 +1,6 @@
 import { seededRandom } from './road-events';
 import { sofiaMonthDay } from './seasonal';
+import { featureLive } from './features';
 
 /**
  * Winter on the roads (game data, inspired by real conditions): from December
@@ -44,6 +45,21 @@ export function isWinter(now: Date): boolean {
   return md >= WINTER.from || md <= WINTER.to;
 }
 
+/**
+ * 1.2.5 „Първи сняг“: from 13 November until winter, light snow in the mountains and the north
+ * (no ice or blizzards — those come with winter on 1 December). Salt and sand loads come too.
+ */
+export const EARLY_SNOW = { from: '11-13', to: '11-30', above: 0.6, scale: 0.75 } as const;
+
+export function isEarlySnow(now: Date): boolean {
+  if (isWinter(now) || !featureLive('season_v2', now)) return false;
+  const md = sofiaMonthDay(now);
+  return md >= EARLY_SNOW.from && md <= EARLY_SNOW.to;
+}
+
+/** Winter or the first snow: snow on the roads, winter loads, road conditions on the dashboard. */
+export const isSnowTime = (now: Date) => isWinter(now) || isEarlySnow(now);
+
 const sofiaDate = (t: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia', year: 'numeric', month: '2-digit', day: '2-digit' }).format(t);
 
 /** Road conditions from the real weather now (v1.4), by country; missing countries use the game's model. */
@@ -53,7 +69,12 @@ export type RealConditions = Partial<Record<string, RoadCondition>>;
 export function roadCondition(country: string, now: Date, real?: RealConditions | null): RoadCondition {
   const measured = real?.[country];
   if (measured) return measured;
-  if (!isWinter(now)) return 'clear';
+  if (!isWinter(now)) {
+    if (!isEarlySnow(now)) return 'clear';
+    // The first snow: only where winter is hard (Alps, Carpathians, the north) and only light snow.
+    const weight = Math.max(0, (WINTER_SEVERITY[country] ?? 0.5) - EARLY_SNOW.above) * EARLY_SNOW.scale;
+    return seededRandom(`winter:${country}:${sofiaDate(now)}`)() < weight ? 'snow' : 'clear';
+  }
   const day = sofiaDate(now);
   const sev = (WINTER_SEVERITY[country] ?? 0.5) * (MONTH_FACTOR[Number(day.slice(5, 7))] ?? 0);
   const r = seededRandom(`winter:${country}:${day}`)();
