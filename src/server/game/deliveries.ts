@@ -103,6 +103,7 @@ import { equinoxBonus, recordPassOpening } from './spring';
 import { companyConvoyOf, settleConvoyTruck } from './convoys';
 import { relayDelivered } from './relay';
 import { checkPartnerLeg } from './partner-loads';
+import { recordRegionDelivery } from './region-projects';
 import { growCity, harvestDelivered } from './city-growth';
 import { choiceMoney, choiceXp, planChoice } from './road-choices';
 import { storyDelivered } from './story';
@@ -662,6 +663,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
   await checkEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
+  // 1.2.6: the common project of the region counts the stage's cargo to its country.
+  await recordRegionDelivery(tx, company!.ownerId, { cargoType: contract.cargoType, destCountry: dest!.countryCode, tons: contract.weightTons }, completedAt);
   // v1.10: the destination city grows; Гроздобер counts its harvest loads.
   await growCity(tx, contract.destCityId, contract.weightTons, completedAt);
   await harvestDelivered(tx, company!.ownerId, contract.holiday, result.late, completedAt);

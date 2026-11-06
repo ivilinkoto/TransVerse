@@ -3635,3 +3635,30 @@ export const partnerInquiries = pgTable('partner_inquiries', {
   createdAt: createdAt(),
   updatedAt: ts('updated_at').notNull().defaultNow(),
 }, (t) => [index('partner_inquiries_status_idx').on(t.status, t.createdAt)]);
+
+/** 1.2.6: the common project of the region (one a week, in stages). */
+export const regionProjects = pgTable('region_projects', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  templateId: text('template_id').notNull(),
+  /** The Monday it started (Sofia day, YYYY-MM-DD): one project a week. */
+  week: text('week').notNull(),
+  country: text('country').notNull(),
+  /** The current stage (0-based) and its tons so far. */
+  stage: integer('stage').notNull().default(0),
+  progress: real('progress').notNull().default(0),
+  /** active | done | failed */
+  status: text('status').notNull().default('active'),
+  startsAt: ts('starts_at').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  finishedAt: ts('finished_at'),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('region_projects_week_idx').on(t.week), index('region_projects_status_idx').on(t.status)]);
+
+/** 1.2.6: who brought how much to each stage of a region project. */
+export const regionProjectShares = pgTable('region_project_shares', {
+  projectId: uuid('project_id').notNull().references(() => regionProjects.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  stage: integer('stage').notNull(),
+  tons: real('tons').notNull().default(0),
+  loads: integer('loads').notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.projectId, t.userId, t.stage] }), index('region_project_shares_user_idx').on(t.userId)]);

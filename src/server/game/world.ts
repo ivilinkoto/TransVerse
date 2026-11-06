@@ -10,6 +10,7 @@ import { expireWishes, spawnWishes } from './wishes';
 import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
 import { expireRelays, topUpRelays, topUpPartnerLoads } from './relay';
+import { ensureRegionProject } from './region-projects';
 import { announceCityOfWeek } from './city-growth';
 import { tickChoices } from './road-choices';
 import { playableCountries } from '@/lib/geo/scope';
@@ -416,6 +417,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
     // 1.2.6: the question of the day in the global chat.
     await every(db, 'chat-question', 10 * 60_000, now, () => postDailyQuestion(db, now));
+    await every(db, 'region-project', 10 * 60_000, now, () => ensureRegionProject(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);

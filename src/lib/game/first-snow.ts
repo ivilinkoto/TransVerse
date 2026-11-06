@@ -20,6 +20,7 @@ export const TITLES: Record<string, { label: string; color: string }> = {
   'snow-king': { label: 'Крал на снега', color: '#fde68a' },
   'snow-prince': { label: 'Принц на снега', color: '#cbd5e1' },
   'road-clearer': { label: 'Разчиствач на пътища', color: '#fbbf24' },
+  'region-builder': { label: 'Строител на региона', color: '#86efac' },
 };
 export const isTitle = (id: string) => id in TITLES;
 
