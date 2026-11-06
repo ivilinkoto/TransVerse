@@ -2,7 +2,7 @@
 
 import { Activity, ChevronDown, ClipboardList, Coins, CreditCard, Flag, Gauge, HeartPulse, LifeBuoy, LineChart, LogOut, Mail, Megaphone, Package, PartyPopper, Rocket, Route, Search, Siren, Stethoscope, Ticket, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { adminGroupsFor, adminPageOf, type AdminIcon } from '@/lib/admin-nav';
 import { t, tx } from '@/i18n/t';
@@ -15,6 +15,7 @@ const ICONS: Record<AdminIcon, LucideIcon> = {
 /** 1.2.3.1: the admin menu in groups that fold, with „Отиди на…“ and the counters on the pages and their groups. */
 export function AdminNav({ openTickets, openReports = 0, admin = true }: { openTickets: number; openReports?: number; admin?: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
   const groups = adminGroupsFor(admin);
   const current = adminPageOf(pathname);
   const [q, setQ] = useState('');
@@ -22,6 +23,7 @@ export function AdminNav({ openTickets, openReports = 0, admin = true }: { openT
   const [mobile, setMobile] = useState(false);
   const badge = (href: string) => (href === '/admin/reports' ? openReports : href === '/admin/tickets' ? openTickets : 0);
   const query = q.trim().toLowerCase();
+  const found = query ? groups.flatMap((g) => g.pages).filter((p) => tx(p.label).toLowerCase().includes(query) || p.label.toLowerCase().includes(query)) : [];
 
   const link = (p: (typeof groups)[number]['pages'][number]) => {
     const Icon = ICONS[p.icon];
@@ -43,9 +45,9 @@ export function AdminNav({ openTickets, openReports = 0, admin = true }: { openT
       <ChevronDown className={`h-4 w-4 transition ${mobile ? 'rotate-180' : ''}`} />
     </button>
     <nav className={`${mobile ? 'flex' : 'hidden'} mt-2 flex-col gap-1 lg:mt-0 lg:flex`} aria-label={t('Админ навигация')}>
-      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Отиди на…')} aria-label={t('Отиди на…')} className="mb-2 w-full rounded-xl border border-asphalt-700 bg-asphalt-900 px-3 py-2 text-sm" data-testid="admin-goto" />
+      <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && found[0]) { router.push(found[0].href); setQ(''); setMobile(false); } }} placeholder={t('Отиди на…')} aria-label={t('Отиди на…')} className="mb-2 w-full rounded-xl border border-asphalt-700 bg-asphalt-900 px-3 py-2 text-sm" data-testid="admin-goto" />
       {query ? (
-        groups.flatMap((g) => g.pages).filter((p) => tx(p.label).toLowerCase().includes(query) || p.label.toLowerCase().includes(query)).map(link)
+        found.map(link)
       ) : (
         groups.map((g) => {
           const here = g.pages.some((p) => p.href === current?.href);
