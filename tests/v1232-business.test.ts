@@ -8,6 +8,9 @@ import { companies, deliveries, users, vehicles } from '@/server/db/schema';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { businessCard, weekStartOf, weeklyEarners } from '@/server/game/business-card';
 import { setUiPrefs } from '@/server/game/ui-prefs';
+import { adminFullProfile } from '@/server/admin-profile';
+import { RELEASES, sectionsFor } from '@/lib/game/releases';
+import { releaseAnnouncement } from '@/server/discord/announce';
 import { db, makeContract, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
@@ -53,5 +56,24 @@ describe('1.2.3.2 „Бизнес профил“', () => {
     expect((await weeklyEarners(db(), later, 100)).some((r) => r.userId === p.userId)).toBe(false);
     const [u] = await db().select({ prefs: users.uiPrefs }).from(users).where(eq(users.id, p.userId));
     expect(u!.prefs.hideBusiness).toBe(true);
+  });
+
+  it('the full profile for the team ignores „Скрий“; payments only for administrators', async () => {
+    const p = await newPlayer();
+    await setUiPrefs(db(), p.userId, { hideBusiness: true });
+    const forSupport = (await adminFullProfile(db(), p.userId, new Date(), false))!;
+    expect(forSupport.business?.hidden).toBe(true);
+    expect(forSupport.business?.week.cents).toBe(0);
+    expect(forSupport.payments).toBeNull();
+    expect((await adminFullProfile(db(), p.userId, new Date(), true))!.payments).toEqual({ cents: 0, count: 0 });
+  });
+
+  it('release notes for the team are for the staff only', () => {
+    const r = RELEASES.find((x) => x.version === '1.2.3.2')!;
+    expect(sectionsFor(r, true).some((s) => s.title === 'За екипа')).toBe(true);
+    expect(sectionsFor(r, false).some((s) => s.title === 'За екипа')).toBe(false);
+    const old = RELEASES.find((x) => x.version === '1.2.3.1')!;
+    expect(sectionsFor(old, false).some((s) => s.title === 'Админ панел')).toBe(false);
+    expect(JSON.stringify(releaseAnnouncement(r))).not.toContain('Пълна информация');
   });
 });

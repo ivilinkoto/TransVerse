@@ -6,7 +6,7 @@ import { ReleaseFold } from '@/components/game/ReleaseFold';
 import { visibleReleases } from '@/lib/game/releases';
 import { featureLive } from '@/lib/game/features';
 import { currentUser } from '@/server/http';
-import { testsUnreleased } from '@/server/auth/roles';
+import { isStaff, testsUnreleased } from '@/server/auth/roles';
 import { requestNow } from '@/server/site';
 import { t } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -41,7 +41,7 @@ export default async function PublicUpdatesPage() {
           <div className="panel flex items-center gap-3 p-6 text-mist-300"><ScrollText className="h-5 w-5" />{' '}{t('Описанията ще се появяват тук.')}</div>
         ) : (
           releases.map((r, i) => (
-            <ReleaseFold key={r.version} release={r} heading={i === 0 ? 'h2' : 'h3'} className="panel p-5 sm:p-7" />
+            <ReleaseFold key={r.version} release={r} heading={i === 0 ? 'h2' : 'h3'} className="panel p-5 sm:p-7" staff={!!user && isStaff(user.role)} />
           ))
         )}
       </main>

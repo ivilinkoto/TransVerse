@@ -16,6 +16,16 @@ export interface ReleaseHighlight {
 export interface ReleaseSection {
   title: string;
   items: string[];
+  /** 1.2.3.2: shown only to the staff (the admin panel and the team's tools). */
+  staff?: boolean;
+}
+
+/** 1.2.3.2: titles of the sections about the admin panel and the team's tools — staff only, like `staff: true`. */
+export const STAFF_SECTION_TITLES = ['За екипа', 'Админ панел'];
+
+/** The sections a viewer may read: the team's sections only for the staff. */
+export function sectionsFor(r: Release, staff: boolean): ReleaseSection[] {
+  return staff ? r.sections : r.sections.filter((s) => !s.staff && !STAFF_SECTION_TITLES.includes(s.title));
 }
 
 export interface Release {
@@ -650,6 +660,13 @@ export const RELEASES: Release[] = [
       {
         title: 'Поправки',
         items: ['На телефон някои страници бяха по-широки от екрана и играта се „отдалечаваше“. Вече всичко се побира.'],
+      },
+      {
+        title: 'За екипа',
+        items: [
+          'Админ → Потребители → играч → „Пълна информация“: изкарано за седмицата, сезона и общо, ТрансКоин, автопарк, километри и тонове, навреме, място в сезона, лига, предмети, покани и (за администраторите) платеното с истински пари. Вижда се и когато играчът е скрил бизнеса си.',
+          'Бележките за админ панела („За екипа“) вече се виждат само от екипа — не и от играчите, нито в Discord.',
+        ],
       },
     ],
   },

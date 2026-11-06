@@ -139,7 +139,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         {fresh && !(tutorial.active && tutorial.step) && (
           <WhatsNew version={fresh.version}>
             <ReleaseTitle release={fresh} />
-            <div className="mt-5"><ReleaseBody release={fresh} /></div>
+            <div className="mt-5"><ReleaseBody release={fresh} staff={testing} /></div>
           </WhatsNew>
         )}
       </div>
