@@ -63,6 +63,17 @@ export default async function AdminCoinsPage({ searchParams }: { searchParams: P
         <Stat label={tr('Разлика')} value={`${m.totalIn - m.totalOut >= 0 ? '+' : '−'}${int(Math.abs(m.totalIn - m.totalOut))} TC`} />
       </div>
 
+      {/* 1.2.6: is play giving too many ТрансКоин for the shop to matter? */}
+      <Card title={tr('Баланс на наградите')} id="coin-balance">
+        <div className="grid gap-3 sm:grid-cols-4">
+          <Stat label={tr('От награди')} value={`+${int(m.balance.rewards)} TC`} hint={tr('{0} TC на активен играч ({1} активни)', int(m.balance.perPlayer), int(m.balance.active))} />
+          <Stat label={tr('Купени')} value={`+${int(m.balance.bought)} TC`} />
+          <Stat label={tr('Изхарчени')} value={`−${int(m.balance.spent)} TC`} hint={tr('магазин, пропуск, номера')} />
+          <Stat label={tr('Награди сега')} value={`${Math.round(m.balance.factor * 100)}%`} hint={m.balance.next ? tr('{0}% от {1}', Math.round(m.balance.next.factor * 100), dateTime(new Date(m.balance.next.from))) : tr('последна стъпка')} />
+        </div>
+        <p className="mt-3 text-xs text-mist-400">{m.balance.rewards > m.balance.spent ? tr('Наградите дават повече, отколкото играчите харчат — ТрансКоин се трупат.') : tr('Играчите харчат колкото печелят — балансът е добър.')}{' '}{tr('Стъпките са в src/lib/game/coin-taper.ts.')}</p>
+      </Card>
+
       <Card title={tr('По причина')}>
         {!m.byReason.length ? <p className="text-sm text-mist-400">{tr('Няма движение за периода.')}</p> : (
           <Table head={[tr('Причина'), tr('Влезли'), tr('Излезли'), tr('Записи')]}>

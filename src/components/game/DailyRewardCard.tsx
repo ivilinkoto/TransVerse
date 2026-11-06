@@ -2,6 +2,7 @@ import { CheckCircle2, Flame, Gift } from 'lucide-react';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { money } from '@/lib/format';
 import { DAILY_REWARDS, dailyState } from '@/lib/game/daily';
+import { taperCoins } from '@/lib/game/coin-taper';
 import { t, tx } from '@/i18n/t';
 
 /** The 7-day reward cycle: a compact strip while today's reward waits; hidden once it is taken. */
@@ -16,7 +17,7 @@ export function DailyRewardCard({ streak, lastKey, now }: { streak: number; last
           <div className="min-w-0">
             <h2 className="font-display font-bold">{t('Дневна награда · ден {0}', s.cycleDay)}</h2>
             <p className="text-sm text-mist-300">
-              <span className="num font-semibold text-gold-400">{money(s.reward.cents)}</span>{t(', +{0} опит', s.reward.xp)}{s.reward.coins ? <>, <span className="text-cyan-glow">+{tx(s.reward.coins)} TC</span></> : ''}
+              <span className="num font-semibold text-gold-400">{money(s.reward.cents)}</span>{t(', +{0} опит', s.reward.xp)}{s.reward.coins ? <>, <span className="text-cyan-glow">+{tx(taperCoins(s.reward.coins, now))} TC</span></> : ''}
               {s.streak > 0 && <span className="ml-2 inline-flex items-center gap-0.5 text-amber-sig"><Flame className="h-3.5 w-3.5" />{t('{0} {1} подред', s.streak, s.streak === 1 ? t('ден') : t('дни'))}</span>}
             </p>
           </div>
@@ -27,7 +28,7 @@ export function DailyRewardCard({ streak, lastKey, now }: { streak: number; last
             const done = day < s.cycleDay;
             const today = day === s.cycleDay;
             return (
-              <li key={day} title={t('Ден {0}: {1}{2}', day, money(r.cents), r.coins ? ` + ${r.coins} TC` : '')} className={`flex flex-col items-center rounded-lg border py-1.5 text-[10px] font-semibold ${today ? 'border-gold-400 bg-gold-400/15 text-gold-400' : done ? 'border-profit/40 bg-profit/5 text-profit' : 'border-asphalt-700 text-mist-400'}`}>
+              <li key={day} title={t('Ден {0}: {1}{2}', day, money(r.cents), r.coins ? ` + ${taperCoins(r.coins, now)} TC` : '')} className={`flex flex-col items-center rounded-lg border py-1.5 text-[10px] font-semibold ${today ? 'border-gold-400 bg-gold-400/15 text-gold-400' : done ? 'border-profit/40 bg-profit/5 text-profit' : 'border-asphalt-700 text-mist-400'}`}>
                 {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Gift className={`h-3.5 w-3.5 ${day === 7 && !today ? 'text-cyan-glow' : ''}`} />}
                 <span className="mt-0.5">{day}</span>
               </li>
