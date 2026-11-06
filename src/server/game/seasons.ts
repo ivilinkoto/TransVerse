@@ -142,7 +142,7 @@ export async function rotateSeasons(db: Database, now = new Date()): Promise<num
         const prize = rules.prizesCents[i];
         const [company] = await tx.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, row.companyId));
         if (prize && row.points > 0) await post(tx, row.companyId, [{ category: 'achievement_reward', amountCents: prize, description: t('{0}: {1}. място', season.name, i + 1), idempotencyKey: `season:${season.id}:prize:${row.companyId}` }]);
-        if (company) await notify(tx, company.ownerId, 'achievement', () => t('{0} приключи', season.name), () => t('Класирахте се на {0}. място с {1} точки.', i + 1, row.points), '/game/seasons');
+        if (company) await notify(tx, company.ownerId, 'achievement', () => t('{0} приключи', season.name), () => t('Класирахте се на {0}. място с {1} точки.', i + 1, row.points), featureLive('final_sprint', now) && row.points > 0 ? `/game/seasons/recap/${season.id}` : '/game/seasons');
       }
       await closeOrganizationSeason(tx, season);
       await awardSeasonMedals(tx, season, now);

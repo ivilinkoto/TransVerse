@@ -6,6 +6,7 @@ import { date, int, money } from '@/lib/format';
 import { seasonScores, seasons } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { TruckPass } from '@/components/game/TruckPass';
+import { FINAL_SPRINT, lastRecapSeason } from '@/server/game/final-sprint';
 import { FIRST_SNOW, PLOW } from '@/lib/game/first-snow';
 import { plowToday, snowKings } from '@/server/game/first-snow';
 import { leaderboard } from '@/server/game/queries';
@@ -38,6 +39,10 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
   const myOrgIndex = membership ? orgRows.findIndex((r) => r.organizationId === membership.company.id) : -1;
   const orgPast = membership && past.length ? await organizationSeasonResults(db, membership.company.id) : [];
   const companies = tab === 'companies';
+  // 1.2.3.1 „Финален спринт“: the last three days count the hours; the last finished season has a recap.
+  const hoursLeft = Math.max(0, Math.ceil((season!.endsAt.getTime() - now.getTime()) / 3_600_000));
+  const sprint = features.final_sprint && hoursLeft <= FINAL_SPRINT.countdownDays * 24 && hoursLeft > 0;
+  const recapId = features.final_sprint ? await lastRecapSeason(db, user.id) : null;
   const snow = features.season_v2 && rules.theme === FIRST_SNOW.theme ? { kings: await snowKings(db, season!.id), plow: await plowToday(db, now) } : null;
   const prizes = companies ? companyPrizes(rules) : rules.prizesCents;
   // 1.1.3.1: the medal the place would win if the season ended now.
@@ -79,6 +84,15 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
           </Card>
         </div>
       )}
+      {sprint && (
+        <div className="rounded-2xl border border-gold-400/50 bg-gold-400/10 p-4" data-testid="season-countdown">
+          <div className="font-display text-lg font-bold text-gold-300">{t('⏳ До края на сезона: {0} ч', hoursLeft)}</div>
+          <p className="mt-1 text-sm text-mist-300">
+            {myIndex < 0 ? t('Направи доставка, за да влезеш в класацията преди края.') : myIndex === 0 ? t('Ти си #1{0}. Пази мястото!', rows[1] ? t(' — {0} точки пред #2', int(rows[0]!.value - rows[1]!.value)) : '') : t('Ти си #{0} — на {1} точки от #{2}{3}.', myIndex + 1, int(rows[myIndex - 1]!.value - rows[myIndex]!.value), myIndex, rows[myIndex + 1] ? t(' и {0} пред #{1}', int(rows[myIndex]!.value - rows[myIndex + 1]!.value), myIndex + 2) : '')}
+          </p>
+        </div>
+      )}
+      {recapId && <Link href={`/game/seasons/recap/${recapId}`} className="block rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 p-3 text-sm font-semibold" data-testid="recap-link">{t('🏁 Твоят минал сезон — виж и сподели →')}</Link>}
       <Segmented label={t('Класация')} active={tab} items={[{ id: 'players', label: t('Играчи'), href: '/game/seasons' }, { id: 'companies', label: t('Компании'), href: '/game/seasons?tab=companies' }]} />
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         <Stat label={t('Остават')} value={t('{0} дни', daysLeft)} icon={CalendarClock} tone="cyan" hint={`${date(season!.startsAt)} – ${date(season!.endsAt)}`} />
