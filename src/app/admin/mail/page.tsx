@@ -29,7 +29,7 @@ function Row({ ok, label, value }: { ok: boolean | null; label: string; value: R
 
 export default async function AdminMail() {
   await initLocale();
-  const { db } = await adminContext();
+  const { db } = await adminContext({ admin: true });
   const [check, log] = await Promise.all([checkMailSetup(), recentMail(db, 100)]);
   return (
     <div className="space-y-6">

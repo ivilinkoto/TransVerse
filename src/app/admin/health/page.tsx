@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 /** 1.2.3: is the game running well right now — players, trips, loads and idle trucks per country. */
 export default async function AdminHealth() {
   await initLocale();
-  const { db, now } = await adminContext();
+  const { db, now } = await adminContext({ admin: true });
   const h = await gameHealth(db, now);
   return (
     <div className="space-y-6">

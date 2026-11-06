@@ -23,7 +23,7 @@ const pct = (x: number) => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1).replace('
 /** The game economy and the anti-fraud signals (v1.4). Signals only — the staff decide. */
 export default async function AdminEconomy() {
   await initLocale();
-  const { db, now, user } = await adminContext();
+  const { db, now, user } = await adminContext({ admin: true });
   const [eco, fraud, factor, security] = await Promise.all([economyOverview(db, now), fraudSignals(db, now), payFactor(db), securitySignals(db, now)]);
   const suggestion = balanceSuggestion(eco.inflation, factor);
   const payChange = eco.avgPay != null && eco.avgPayLastWeek ? eco.avgPay / eco.avgPayLastWeek - 1 : null;

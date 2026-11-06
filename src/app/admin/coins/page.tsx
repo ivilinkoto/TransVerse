@@ -19,7 +19,7 @@ const PERIODS = [1, 7, 30] as const;
 /** 1.2.1: where ТрансКоин come from and go — for the team. */
 export default async function AdminCoinsPage({ searchParams }: { searchParams: Promise<{ user?: string; reason?: string; days?: string; min?: string }> }) {
   await initLocale();
-  const { db, now } = await adminContext();
+  const { db, now } = await adminContext({ admin: true });
   const sp = await searchParams;
   const days = PERIODS.includes(Number(sp.days) as (typeof PERIODS)[number]) ? Number(sp.days) : 7;
   const min = Math.max(0, Math.round(Number(sp.min) || 0));

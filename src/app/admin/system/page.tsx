@@ -33,7 +33,7 @@ const at = (t: number | Date | null | undefined) => (t ? dateTime(t) : '—');
 /** Worker health (every job's last success and error) and the phones that get notifications. */
 export default async function AdminSystem({ searchParams }: { searchParams: Promise<{ errors?: string }> }) {
   await initLocale();
-  const { db, now } = await adminContext();
+  const { db, now } = await adminContext({ admin: true });
   const filter = ((await searchParams).errors ?? '').trim().slice(0, 80).toLowerCase();
   const [jobs, devices, cursor, errors, backup, undelivered] = await Promise.all([
     jobHealth(db),

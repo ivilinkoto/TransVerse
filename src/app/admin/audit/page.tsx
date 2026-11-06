@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AdminAudit() {
   await initLocale();
-  const { db, user } = await adminContext();
+  const { db, user } = await adminContext({ admin: true });
   if (!isAdmin(user.role)) redirect('/admin');
   const rows = await auditLog(db, 200);
   return (

@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 /** 1.2.4: sign-ups per `?src=` link (a Facebook post, a video…) and how many of them stayed. */
 export default async function AdminSources() {
   await initLocale();
-  const { db, now } = await adminContext();
+  const { db, now } = await adminContext({ admin: true });
   const rows = await signupSources(db, now);
   const pct = (n: number, of: number) => (of ? `${Math.round((n / of) * 100)}%` : '—');
   return (
