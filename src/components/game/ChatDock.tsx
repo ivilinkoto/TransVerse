@@ -520,7 +520,7 @@ export function ChatDock() {
                   } else void send();
                 }
               }}
-              placeholder={dm ? tr('Съобщение до {0}…', current.label) : tab === 'trade' ? tr('Продавам / купувам…') : tab === 'company' ? (extras ? tr('До компанията… (@име споменава)') : tr('До компанията…')) : tab === 'alliance' ? tr('До целия съюз…') : (extras ? tr('До всички играчи… (@име споменава)') : tr('До всички играчи…'))}
+              placeholder={dm ? tr('Съобщение до {0}…', current.label) : tab === 'trade' ? tr('Продавам / купувам…') : tab === 'company' ? (extras ? tr('До компанията… (@име споменава)') : tr('До компанията…')) : tab === 'alliance' ? tr('До целия съюз…') : tab === 'cafe' ? tr('До всички в кафенето…') : (extras ? tr('До всички играчи… (@име споменава)') : tr('До всички играчи…'))}
               aria-label={tr('Съобщение')}
             />
             <button className="btn-primary px-3" disabled={busy || !text.trim()} aria-label={tr('Изпрати')}><Send className="h-4 w-4" /></button>
