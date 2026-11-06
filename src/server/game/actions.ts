@@ -205,7 +205,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyTrailer'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('sellVehicle'), vehicleId: id }),
   z.object({ type: z.literal('sellTrailer'), trailerId: id }),
-  z.object({ type: z.literal('repairVehicle'), vehicleId: id }),
+  z.object({ type: z.literal('repairVehicle'), vehicleId: id, part: z.enum(['all', 'truck', 'trailer']).optional(), share: z.coerce.number().int().min(1).max(100).optional(), afford: z.boolean().optional() }),
   z.object({ type: z.literal('installUpgrade'), vehicleId: id, upgradeId: z.string().max(40) }),
   z.object({ type: z.literal('coupleTrailer'), vehicleId: id, trailerId: id.nullable() }),
   z.object({ type: z.literal('hireDriver'), candidateId: id }),
@@ -801,7 +801,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'sellTrailer':
       return { ok: true, valueCents: await sellTrailer(db, user.id, input.trailerId) };
     case 'repairVehicle':
-      return { ok: true, costCents: await repairVehicle(db, user.id, input.vehicleId) };
+      return { ok: true, costCents: await repairVehicle(db, user.id, input.vehicleId, { part: input.part, share: input.share, afford: input.afford }) };
     case 'installUpgrade':
       await installUpgrade(db, user.id, input.vehicleId, input.upgradeId);
       return { ok: true };

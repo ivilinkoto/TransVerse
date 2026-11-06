@@ -10,7 +10,8 @@ import { fuelPriceCents } from '@/lib/game/fuel';
 import { getRoute } from '@/server/geo/route-service';
 import { haversineKm } from '@/lib/geo/geometry';
 import type { RoutingProvider } from '@/server/geo/routing';
-import { ECONOMY, repairCostCents, resaleValueCents, tripCosts } from '@/lib/game/economy';
+import { ECONOMY, resaleValueCents, tripCosts } from '@/lib/game/economy';
+import { repairPlan, type RepairPart } from '@/lib/game/repair';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';
 import { money } from '@/lib/format';
@@ -182,23 +183,34 @@ async function springOff(db: DbOrTx, userId: string, now = new Date()) {
   return (await featureFor(db, userId, 'marta', now)) ? springDiscount(now) : 0;
 }
 
-export async function repairVehicle(db: Database, userId: string, vehicleId: string) {
+/**
+ * Repairs an idle truck and its trailer. 1.2.3.1 (`partial_repair`): `part` picks the truck,
+ * the trailer or both, `share` the percent of the damage, `afford` repairs as much as the balance pays for.
+ */
+export async function repairVehicle(db: Database, userId: string, vehicleId: string, opts: { part?: RepairPart; share?: number; afford?: boolean } = {}) {
+  const part = opts.part ?? 'all';
+  const share = opts.share ?? 100;
   return db.transaction(async (tx) => {
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
     if (v.ownership === 'rented') fail('rented', tr('Поддръжката на наетите превозни средства е за сметка на наемодателя.'));
     if (v.status !== 'idle') fail('vehicle_busy', tr('Ремонт е възможен само между курсовете.'));
+    if ((part !== 'all' || share !== 100 || opts.afford) && !(await featureFor(tx, userId, 'partial_repair'))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
     const [trailer] = await tx.select().from(trailers).where(eq(trailers.vehicleId, v.id));
-    const full = repairCostCents(powerUnitModel(v.modelId).priceCents, v.condition) + (trailer ? repairCostCents(trailerModel(trailer.modelId).priceCents, trailer.condition) : 0);
-    if (full <= 0) fail('nothing_to_repair', tr('Няма нужда от ремонт.'));
+    if (part === 'trailer' && !trailer) fail('no_trailer', tr('Няма прикачено ремарке.'));
+    const truckUnit = { priceCents: powerUnitModel(v.modelId).priceCents, condition: v.condition };
+    const trailerUnit = trailer ? { priceCents: trailerModel(trailer.modelId).priceCents, condition: trailer.condition } : null;
+    if (repairPlan(truckUnit, trailerUnit, part, 100, 1).costCents <= 0) fail('nothing_to_repair', tr('Няма нужда от ремонт.'));
     // VIP and the company's service on the plot make it cheaper.
     const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
     const spring = await springOff(tx, userId);
-    const cost = Math.round(full * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service) * (1 - spring));
-    await post(tx, company.id, [{ category: 'repairs', amountCents: -cost, description: tr('Ремонт {0}', v.plate), idempotencyKey: `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}` }], { requireFunds: true });
-    await tx.update(vehicles).set({ condition: 100 }).where(eq(vehicles.id, v.id));
-    if (trailer) await tx.update(trailers).set({ condition: 100 }).where(eq(trailers.id, trailer.id));
-    return cost;
+    const factor = (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service) * (1 - spring);
+    const plan = repairPlan(truckUnit, trailerUnit, part, share, factor, opts.afford ? company.balanceCents : undefined);
+    if (plan.truckPoints + plan.trailerPoints <= 0 || plan.costCents <= 0) fail('too_little', opts.afford ? tr('Парите не стигат дори за малък ремонт.') : tr('Няма нужда от ремонт.'));
+    await post(tx, company.id, [{ category: 'repairs', amountCents: -plan.costCents, description: part === 'all' && share === 100 && !opts.afford ? tr('Ремонт {0}', v.plate) : tr('Частичен ремонт {0}', v.plate), idempotencyKey: `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}:${trailer ? trailer.condition.toFixed(3) : '-'}` }], { requireFunds: true });
+    if (plan.truckPoints > 0) await tx.update(vehicles).set({ condition: plan.truckTo }).where(eq(vehicles.id, v.id));
+    if (trailer && plan.trailerPoints > 0) await tx.update(trailers).set({ condition: plan.trailerTo! }).where(eq(trailers.id, trailer.id));
+    return plan.costCents;
   });
 }
 

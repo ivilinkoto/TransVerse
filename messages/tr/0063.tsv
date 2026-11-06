@@ -41,3 +41,15 @@ d19aec88c3	“Go to…” — a search in the menu.	«Перейти к…» —
 fc9743eb07	☰ Menu	☰ Меню
 54737eac08	✓ Nothing is waiting — all is well.	✓ Ничего не ждёт — всё в порядке.
 bf931734d9	🏁 Your last season — see and share →	🏁 Твой прошлый сезон — посмотри и поделись →
+319ba57a27	In the garage you choose what to repair — the truck, the trailer or both — and how much of the damage. When the money is short, „As much as I have“ repairs as much as you can pay for.	В сервисе ты выбираешь, что ремонтировать — грузовик, прицеп или оба — и какую часть повреждений. Когда денег не хватает, «На сколько хватит» чинит столько, сколько ты можешь оплатить.
+0d04ddd261	As much as I have · {0}	На сколько хватит · {0}
+f71a32aea8	Fully	Полностью
+01b149159e	Not enough money — pick a smaller repair or „As much as I have“.	Не хватает денег — выбери ремонт поменьше или «На сколько хватит».
+7c352d8cfc	No trailer coupled.	Прицеп не прицеплен.
+a32b8ac266	There's not enough money even for a small repair.	Денег не хватает даже на небольшой ремонт.
+5c497edcab	Repair	Ремонтировать
+8271251b8b	Garage → partial repair: pick the truck, the trailer or both and how much of the damage (25, 50, 75% or fully). „As much as I have“ repairs as much as the money allows.	Сервис → частичный ремонт: выбери грузовик, прицеп или оба и какую часть повреждений (25, 50, 75% или полностью). «На сколько хватит» чинит столько, сколько позволяют деньги.
+34d2a12cf4	Partial repair	Частичный ремонт
+e8823423fe	Partial repair {0}	Частичный ремонт {0}
+13ccd7c0a4	truck {0} → {1}	грузовик {0} → {1}
+27d9dd2101	trailer {0} → {1}	прицеп {0} → {1}

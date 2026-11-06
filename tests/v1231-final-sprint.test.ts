@@ -9,7 +9,11 @@ import { companies, jobState, notifications, seasonScores, seasons } from '@/ser
 import { adminTodo } from '@/server/admin-todo';
 import { lastDayReminders, seasonRecap, seasonStanding } from '@/server/game/final-sprint';
 import { activeSeason } from '@/server/game/seasons';
-import { db, newPlayer } from './helpers';
+import { buyTrailer, buyVehicle, coupleTrailer, repairVehicle } from '@/server/game/fleet';
+import { repairPlan } from '@/lib/game/repair';
+import { trailers, vehicles } from '@/server/db/schema';
+import { users } from '@/server/db/schema';
+import { db, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
 
@@ -64,5 +68,49 @@ describe('1.2.3.1 „Финален спринт“', () => {
     const forSupport = await adminTodo(db(), new Date(), false);
     expect(forAdmin.every((i) => i.count > 0)).toBe(true);
     expect(forSupport.every((i) => i.id === 'tickets' || i.id === 'reports')).toBe(true);
+  });
+
+  it('partial repair: the truck or the trailer, a share of the damage, or what the money pays for', async () => {
+    // Pure rules: a full share is the old price; a share repairs that part of the damage.
+    const truck = { priceCents: 100_000_00, condition: 40 };
+    const trailer = { priceCents: 40_000_00, condition: 60 };
+    const full = repairPlan(truck, trailer, 'all', 100, 1);
+    expect(full.truckTo).toBe(100);
+    expect(full.trailerTo).toBe(100);
+    const half = repairPlan(truck, trailer, 'truck', 50, 1);
+    expect(half.truckTo).toBe(70);
+    expect(half.trailerTo).toBe(60);
+    expect(half.costCents).toBe(Math.round(repairPlan(truck, null, 'all', 100, 1).costCents / 2));
+    const capped = repairPlan(truck, trailer, 'all', 100, 0.9, 1_000_00);
+    expect(capped.costCents).toBeLessThanOrEqual(1_000_00);
+    expect(capped.truckTo).toBeGreaterThan(40);
+    expect(capped.truckTo).toBeLessThan(100);
+
+    const { userId, hq } = await playerWithCompany();
+    const account = await accountOf(userId);
+    await db().update(companies).set({ balanceCents: 1_000_000_00 }).where(eq(companies.id, account.id));
+    await db().update(users).set({ level: 3, xp: 99_999 }).where(eq(users.id, userId));
+    const tractor = await buyVehicle(db(), userId, 'danubia-t440', hq.id);
+    const tr = await buyTrailer(db(), userId, 'tipper-26', hq.id);
+    await coupleTrailer(db(), userId, tractor.id, tr.id);
+    await db().update(vehicles).set({ condition: 50 }).where(eq(vehicles.id, tractor.id));
+    await db().update(trailers).set({ condition: 50 }).where(eq(trailers.id, tr.id));
+    const cond = async () => [(await db().select().from(vehicles).where(eq(vehicles.id, tractor.id)))[0]!.condition, (await db().select().from(trailers).where(eq(trailers.id, tr.id)))[0]!.condition];
+
+    // Only the trailer, half of the damage.
+    expect(await repairVehicle(db(), userId, tractor.id, { part: 'trailer', share: 50 })).toBeGreaterThan(0);
+    expect(await cond()).toEqual([50, 75]);
+    // Only the truck, all of it.
+    await repairVehicle(db(), userId, tractor.id, { part: 'truck' });
+    expect(await cond()).toEqual([100, 75]);
+    await expect(repairVehicle(db(), userId, tractor.id, { part: 'truck' })).rejects.toMatchObject({ code: 'nothing_to_repair' });
+    // As much as the money allows: the balance is spent down to (nearly) zero, never below.
+    await db().update(companies).set({ balanceCents: 50_00 }).where(eq(companies.id, account.id));
+    const spent = await repairVehicle(db(), userId, tractor.id, { afford: true });
+    expect(spent).toBeLessThanOrEqual(50_00);
+    const [, trailerAfter] = await cond();
+    expect(trailerAfter).toBeGreaterThan(75);
+    expect(trailerAfter).toBeLessThan(100);
+    expect((await accountOf(userId)).balanceCents).toBeGreaterThanOrEqual(0);
   });
 });

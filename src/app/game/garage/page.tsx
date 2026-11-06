@@ -29,6 +29,7 @@ import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 import { EmptyAction } from '@/components/game/EmptyAction';
+import { RepairPanel } from '@/components/game/RepairPanel';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -70,6 +71,8 @@ export default async function GaragePage() {
           const busy = !!v.delivery || !!listing;
           const repair = Math.round((repairCostCents(v.model.priceCents, v.condition) + (v.trailer ? repairCostCents(v.trailer.model.priceCents, v.trailer.condition) : 0)) * discount * (1 - serviceDiscount));
           const upkeep = maintenanceState(v.odometerKm, v.serviceKm);
+          // 1.2.3.1: partial repair — the truck, the trailer or both, and how much of the damage.
+          const repairPanel = features.partial_repair ? <RepairPanel vehicleId={v.id} truck={{ priceCents: v.model.priceCents, condition: v.condition }} trailer={v.trailer ? { priceCents: v.trailer.model.priceCents, condition: v.trailer.condition } : null} factor={discount * (1 - serviceDiscount)} balanceCents={company.balanceCents} disabled={busy} /> : null;
           const upkeepCost = maintenanceCostCents(v.model.priceCents, 1 - discount * (1 - serviceDiscount));
           const trailerOptions = fleet.trailers.filter((t) => t.cityId === v.cityId && canCouple(v.model, t.model));
           return (
@@ -137,16 +140,19 @@ export default async function GaragePage() {
                     <Badge tone="cyan">{tr('Фирмен')}</Badge>
                     <p>{tr('Камион на компанията. Горивото и ремонтите са твои, докато го караш; не се модифицира и не се продава.')}</p>
                     <div className="flex flex-wrap gap-2">
-                      <ActionButton action={{ type: 'repairVehicle', vehicleId: v.id }} className="btn-primary" disabled={busy || repair <= 0}><Wrench className="h-4 w-4" />{tr('Ремонт · {0}', money(repair))}</ActionButton>
+                      {repairPanel ?? <ActionButton action={{ type: 'repairVehicle', vehicleId: v.id }} className="btn-primary" disabled={busy || repair <= 0}><Wrench className="h-4 w-4" />{tr('Ремонт · {0}', money(repair))}</ActionButton>}
                       {!busy && <ActionButton action={{ type: 'returnOrgVehicle', vehicleId: v.id }} className="btn-ghost" confirm={tr('Да върнем ли камиона на компанията?')}>{tr('Върни на компанията')}</ActionButton>}
                     </div>
                   </div>
                 ) : (
                 <div className="space-y-4">
+                  {repairPanel}
                   <div className="flex flex-wrap items-center gap-2">
-                    <ActionButton action={{ type: 'repairVehicle', vehicleId: v.id }} className="btn-primary" disabled={busy || repair <= 0}>
-                      <Wrench className="h-4 w-4" />{tr('Ремонт · {0}', money(repair))}
-                    </ActionButton>
+                    {!repairPanel && (
+                      <ActionButton action={{ type: 'repairVehicle', vehicleId: v.id }} className="btn-primary" disabled={busy || repair <= 0}>
+                        <Wrench className="h-4 w-4" />{tr('Ремонт · {0}', money(repair))}
+                      </ActionButton>
+                    )}
                     {listing ? (
                       <ActionButton action={{ type: 'cancelListing', listingId: listing.id }} className="btn-ghost">{tr('Свали обявата')}</ActionButton>
                     ) : (
