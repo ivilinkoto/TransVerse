@@ -121,6 +121,7 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   story: { label: 'Свой път', description: 'Довърши историята на Бай Стоян.' },
   harvest: { label: 'Гроздобер', description: 'Десет есенни товара навреме в един сезон.' },
   relay: { label: 'Щафета', description: 'Довърши щафета навреме заедно с друг шофьор.' },
+  'trusted-partners': { label: 'Доверени партньори', description: 'Три партньорски товара навреме с един и същи партньор.' },
   'legend-leader': { label: 'Легендарен водач', description: 'Поведе 50 конвоя.' },
   'truck-of-month': { label: 'Камион на месеца', description: 'Твой камион спечели гласуването „Камион на месеца“.' },
   'postcards-10': { label: 'Колекционер на картички', description: '10 картички от забележителности по пътя.' },

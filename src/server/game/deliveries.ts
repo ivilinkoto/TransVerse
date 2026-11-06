@@ -47,7 +47,7 @@ import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/
 import { COMPANY_XP_SHARE, deliveryXp, FLEET_XP_SHARE, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
 import { buildGameTrip, compressSchedule, contractWindowMinutes, gameDurationMinutes, scheduleEnd, SCHEDULE_VERSION, type Segment } from '@/lib/game/schedule';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, cityMarkets, companies, companyBuilds, companyMembers, contracts, deliveries, drivers, routes, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, companyBuilds, companyMembers, contracts, deliveries, drivers, relays, routes, trailers, users, vehicles } from '@/server/db/schema';
 import { getCrossingRoute, getRoute } from '@/server/geo/route-service';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -102,6 +102,7 @@ import { onVacation } from './moods';
 import { equinoxBonus, recordPassOpening } from './spring';
 import { companyConvoyOf, settleConvoyTruck } from './convoys';
 import { relayDelivered } from './relay';
+import { checkPartnerLeg } from './partner-loads';
 import { growCity, harvestDelivered } from './city-growth';
 import { choiceMoney, choiceXp, planChoice } from './road-choices';
 import { storyDelivered } from './story';
@@ -192,6 +193,8 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   if (partial && !(await featureFor(db, userId, 'partial_loads', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   if (partial && !canSplit(contract!)) fail('no_partial', t('Тази поръчка се взима само цяла.'));
   if (contract!.featured && !(await featureFor(db, userId, 'daily_load', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
+  // 1.2.6: the second leg of a partner load is kept for the partner the first driver agreed with.
+  if (contract!.relayId && contract!.relayLeg === 2) await checkPartnerLeg(db, userId, contract!.relayId);
   // v1.8: a haggle — a "no" bars the player, a fresh "yes" adds the agreed percent.
   const hagglePercent = await agreedHaggle(db, userId, contractId, now);
 
@@ -305,6 +308,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
         .returning({ id: contracts.id });
       if (!claimed.length) fail('contract_unavailable', t('Друга компания току-що пое тази поръчка.'), 409);
     }
+    if (contract!.relayId && contract!.relayLeg === 1) await tx.update(relays).set({ leaderId: userId }).where(and(eq(relays.id, contract!.relayId), eq(relays.partner, true)));
 
     const unit = powerUnitModel(bundle.vehicle.modelId);
     const trailer = bundle.trailer ? trailerModel(bundle.trailer.modelId) : null;

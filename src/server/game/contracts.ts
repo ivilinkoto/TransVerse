@@ -553,6 +553,8 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
       ? sql`(${contracts.constructionId} is null or ${contracts.constructionId} in (select id from company_builds where organization_id = ${filter.memberOfCompanyId}))`
       : isNull(contracts.constructionId),
   );
+  // 1.2.6: the second leg of a partner load is only for the partner the first driver agreed with.
+  conditions.push(sql`(${contracts.relayLeg} is distinct from 2 or ${contracts.relayId} not in (select id from relays where partner and (partner_id is null${filter.viewerUserId ? sql` or partner_id <> ${filter.viewerUserId}` : sql` or true`})))`);
   const rows = await db.query.contracts.findMany({
     where: and(...conditions),
     orderBy: [desc(sql`${contracts.featured} is not null`), desc(contracts.urgent), desc(contracts.rewardCents), asc(contracts.expiresAt)],

@@ -3069,6 +3069,13 @@ export const relays = pgTable(
     leg1Late: boolean('leg1_late'),
     leg2UserId: uuid('leg2_user_id'),
     handoverAt: ts('handover_at'),
+    /** 1.2.6: a partner load — the second leg is kept for the partner the first driver agreed with. */
+    partner: boolean('partner').notNull().default(false),
+    /** 1.2.6: who took the first leg (on accepting it) and the agreed partner for the second. */
+    leaderId: uuid('leader_id'),
+    partnerId: uuid('partner_id'),
+    /** 1.2.6: when the first driver asked for a partner in the global chat. */
+    askedAt: ts('asked_at'),
     createdAt: createdAt(),
   },
   (t) => [index('relays_status_idx').on(t.status)],

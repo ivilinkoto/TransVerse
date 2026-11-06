@@ -23,6 +23,7 @@ import { bidForPlate, fitRarePlate } from '@/server/game/plates';
 import { hireTrailer, offerTrailer, returnHiredTrailer, withdrawTrailer } from '@/server/game/trailer-hire';
 import { donateToMuseum, scrapVehicle, repairWithPart } from '@/server/game/heritage';
 import { thankHelper } from '@/server/game/chat-life';
+import { acceptPartner, askPartner, invitePartner } from '@/server/game/partner-loads';
 import { setSpecialization } from '@/server/game/specialization';
 import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
@@ -391,6 +392,9 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('deleteConversation'), userId: id }),
   z.object({ type: z.literal('thankHelper'), messageId: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('invitePartner'), relayId: z.string().uuid(), username: z.string().trim().min(1).max(40) }),
+  z.object({ type: z.literal('askPartner'), relayId: z.string().uuid() }),
+  z.object({ type: z.literal('acceptPartner'), relayId: z.string().uuid() }),
   z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade', 'projects']), body: messageBodySchema, replyTo: z.coerce.number().int().positive().nullish() }),
   z.object({ type: z.literal('deleteChannel'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели лева.').positive().max(10_000_000) }),
@@ -661,6 +665,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   craftItems: 'workshop',
   claimWeeklyChest: 'item_chests',
   giveFromChest: 'item_chests',
+  invitePartner: 'partner_loads',
+  askPartner: 'partner_loads',
+  acceptPartner: 'partner_loads',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -1117,6 +1124,12 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'sendChannel':
       if (input.channel === 'projects') requireFeature('region_projects', user);
       return { ok: true, id: await postToChannel(db, user.id, input.channel, input.body, input.replyTo) };
+    case 'invitePartner':
+      return { ok: true, ...(await invitePartner(db, user.id, input.relayId, input.username)) };
+    case 'askPartner':
+      return { ok: true, ...(await askPartner(db, user, input.relayId)) };
+    case 'acceptPartner':
+      return { ok: true, ...(await acceptPartner(db, user, input.relayId)) };
     case 'thankHelper':
       return { ok: true, ...(await thankHelper(db, { id: user.id, username: user.username }, input.messageId)) };
     case 'deleteChannel':

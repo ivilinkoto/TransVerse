@@ -9,7 +9,7 @@ import { ensureWeeklyLaneLoads } from './weekly-lane';
 import { expireWishes, spawnWishes } from './wishes';
 import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
-import { expireRelays, topUpRelays } from './relay';
+import { expireRelays, topUpRelays, topUpPartnerLoads } from './relay';
 import { announceCityOfWeek } from './city-growth';
 import { tickChoices } from './road-choices';
 import { playableCountries } from '@/lib/geo/scope';
@@ -368,6 +368,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await every(db, 'relays', 30 * 60_000, now, () => topUpRelays(db, now));
       await every(db, 'relays-expire', 10 * 60_000, now, () => expireRelays(db, now));
     }
+    // 1.2.6: partner loads (relays whose second leg is kept for an agreed partner).
+    if (featureLive('partner_loads', now)) await every(db, 'partner-loads', 30 * 60_000, now, () => topUpPartnerLoads(db, now));
     // 1.1.2: "пристига след ~5 мин" in the game, and the player's weekly report on Monday morning (Sofia).
     await every(db, 'arriving-soon', 60_000, now, () => notifyArrivingSoon(db, now));
     {
