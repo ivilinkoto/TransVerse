@@ -119,3 +119,53 @@ e6f3bdca3c	Company: the bar at the top no longer repeats the tiles — it shows 
 0cf9acbd7c	Technology and office	Технологии и офис
 0714968086	The company chat is in the floating chat (channel „Company“). Polls are in „Overview“.	Чат компании — в плавающем чате (канал «Компания»). Опросы — в «Обзоре».
 9835928779	„Development“ from „More“ → „Company“ is now „Technology and office“ under Fleet: it is how your own carrier grows. „Development“ inside the company stays the company's development.	«Развитие» из «Ещё» → «Компания» теперь называется «Технологии и офис» и находится в Автопарке: это развитие твоего перевозчика. «Развитие» внутри компании остаётся развитием компании.
+0be4b66cdd	{0} has hidden their business numbers.	{0} скрыл свои бизнес-данные.
+6bf0b02b6d	{0} trips · level {1}	{0} рейсов · уровень {1}
+964b2df03b	Business	Бизнес
+8bc7650cb8	Business on the profile	Бизнес в профиле
+e8963d6e86	Business profile	Бизнес-профиль
+ce26f3f00d	On every player's profile: earned from trips this week, this season and in total, trucks, trailers and the most expensive truck — next to your numbers to compare.	В профиле каждого игрока: заработано рейсами за неделю, сезон и всего, грузовики, прицепы и самый дорогой грузовик — рядом с твоими цифрами для сравнения.
+6ec441228a	See how much other drivers earn and how many trucks they run — and compare yourself.	Смотри, сколько зарабатывают другие водители и сколько у них грузовиков, — и сравнивай себя.
+abe69be02b	Others see on your profile how much you earned from trips and how many trucks you have.	Другие видят в твоём профиле, сколько ты заработал рейсами и сколько у тебя грузовиков.
+9792d46444	Others don't see your income and fleet, and you are not in the „Earned this week“ ranking.	Другие не видят твои доходы и автопарк, и тебя нет в рейтинге «Заработали за неделю».
+cec775f83a	Earned this week	Заработали за неделю
+17871bffaf	Rankings → „Earned this week“.	Рейтинги → «Заработали за неделю».
+0d1d6d72de	Trips this week	Рейсы за неделю
+af57eb12f4	Trips, records, income and fleet. Game data.	Рейсы, рекорды, доходы и автопарк. Игровые данные.
+6025790133	On phones some pages were wider than the screen and the game „zoomed out“. Everything fits now.	На телефоне некоторые страницы были шире экрана, и игра «отдалялась». Теперь всё помещается.
+91af3dcf9a	Most expensive truck:	Самый дорогой грузовик:
+4bd673c92c	Don't want to be seen? Settings → Privacy → „Hide“. Then you are not in the ranking either.	Не хочешь, чтобы тебя видели? Настройки → Конфиденциальность → «Скрыть». Тогда тебя нет и в рейтинге.
+8b2dea848a	A new ranking in „Rankings“: who earned the most from trips since Monday.	Новый рейтинг в «Рейтингах»: кто больше всех заработал рейсами с понедельника.
+ae6ae85950	Total from trips	Всего рейсами
+d3a15b7251	Since Monday 00:00. Don't want to be here? Settings → Privacy.	С понедельника 00:00. Не хочешь быть здесь? Настройки → Конфиденциальность.
+2d8e725483	Income from trips — not the money in the account. Game data.	Доходы от рейсов — не деньги на счёте. Игровые данные.
+daf9556e71	Player profile → „Business“: trip income for the week, the season and in total, number of trucks and trailers, the most expensive truck. Next to their numbers — yours.	Профиль игрока → «Бизнес»: доходы от рейсов за неделю, сезон и всего, число грузовиков и прицепов, самый дорогой грузовик. Рядом с его цифрами — твои.
+38647b6683	Only you see these numbers.	Эти цифры видишь только ты.
+8298b80c0b	Hidden from others	Скрыто от других
+1afa12ed65	This season	Этот сезон
+76c58c442c	from trips	рейсами
+e61266a30e	you: {0}	ты: {0}
+ca4d522781	🔒 Privacy	🔒 Конфиденциальность
+a3bbff0ad4	{0} kinds · {1} pcs	{0} видов · {1} шт.
+e911c10de6	{0} invited	{0} приглашено
+51a7971540	{0} invited · invited by {1}	{0} приглашено · пригласил {1}
+87f37872db	{0} € · {1} payments	{0} € · {1} платежей
+a2d0cfdffc	place {0} · {1} pts	{0}-е место · {1} очк.
+c7ace26d1e	Admin → Users → player → „Full information“: earned this week, this season and in total, TransCoin, fleet, kilometres and tonnes, on time, place in the season, league, items, invites and (for administrators) what was paid with real money. Shown even when the player hid their business numbers.	Админ → Пользователи → игрок → «Полная информация»: заработано за неделю, сезон и всего, ТрансКоин, автопарк, километры и тонны, вовремя, место в сезоне, лига, предметы, приглашения и (для администраторов) оплачено реальными деньгами. Видно, даже если игрок скрыл свой бизнес.
+cdf78ab256	Notes about the admin panel („For the team“) are now shown to the team only — not to players or in Discord.	Заметки об админ-панели («Для команды») теперь видит только команда — не игроки и не Discord.
+d2c058ff9e	Countries / achievements	Страны / достижения
+7d40f38994	The player hid their business numbers from other players — the team sees them.	Игрок скрыл бизнес-данные от других игроков — команда их видит.
+7012a7a8fd	Earned from trips in total	Заработано рейсами всего
+2e42774d3b	Earned this week	Заработано за неделю
+ce8d49130e	Earned this season	Заработано за сезон
+8c50dd53ce	Trucks / trailers	Грузовики / прицепы
+6ea3b4dd6d	Kilometres / tonnes	Километры / тонны
+c9daf94f6b	League / login streak	Лига / серия входов
+cf080a7309	Most expensive truck	Самый дорогой грузовик
+e452563ded	Paid with real money	Оплачено реальными деньгами
+ca72c27565	Items	Предметы
+b6a42b29c1	Profile in the game →	Профиль в игре →
+7ac485b2f0	Full information	Полная информация
+b4b6b7420d	Season „{0}“	Сезон «{0}»
+cdc51157cd	no points	без очков
+4fd002be7e	league {0} · {1} days	лига {0} · {1} дн.

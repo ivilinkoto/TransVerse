@@ -296,7 +296,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reportShady'), contractId: id }),
   z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
   z.object({ type: z.literal('blackRepair'), vehicleId: id }),
-  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional() }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional(), hideBusiness: z.boolean().optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),

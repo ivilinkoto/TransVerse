@@ -16,6 +16,9 @@ import { Badge, Card, PageHeader } from '@/components/ui';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { date, dateTime, int, km, money } from '@/lib/format';
 import { userDetail } from '@/server/admin';
+import { adminFullProfile } from '@/server/admin-profile';
+import { POWER_UNITS } from '@/lib/game/catalog';
+import Link from 'next/link';
 import { truckBlock } from '@/lib/game/truck-ready';
 import { fleetView } from '@/server/game/queries';
 import { loginHistory } from '@/server/auth/login-events';
@@ -44,7 +47,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const { user, company, org } = detail;
-  const [xp, cash, fleet, logins, deletingAt, note, [last]] = await Promise.all([
+  const [xp, cash, fleet, logins, deletingAt, note, [last], full] = await Promise.all([
     xpBySource(db, user.id, 7, now),
     company ? moneyBySource(db, company.id, 7, now) : Promise.resolve([]),
     company ? fleetView(db, company.id) : Promise.resolve(null),
@@ -53,7 +56,11 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
     // 1.1.3.5: the team's note and the player's last action.
     staffNote(db, user.id),
     db.select({ action: activity.action, at: activity.createdAt }).from(activity).where(eq(activity.userId, user.id)).orderBy(desc(activity.id)).limit(1),
+    // 1.2.3.2: the full picture (ignores the player's „Скрий“; real-money payments only for administrators).
+    adminFullProfile(db, user.id, now, isAdmin(actor.role)),
   ]);
+  const topTruck = full?.business?.topModel ? POWER_UNITS.find((p) => p.id === full.business!.topModel)?.name : null;
+  const row = (label: string, value: React.ReactNode) => <div><dt className="label">{label}</dt><dd className="num mt-1">{value}</dd></div>;
   const roleOptions = (['player', 'support', 'admin'] as const).filter((r) => r === user.role || canChangeRole(actor.role, actor.id, user.role, user.id, r));
   return (
     <div className="space-y-6">
@@ -77,6 +84,27 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
             {user.banReason && <div className="col-span-2"><dt className="label">{t('Причина за блокиране')}</dt><dd className="mt-1">{tx(user.banReason)}</dd></div>}
           </dl>
         </Card>
+        {full && (
+          <Card title={t('Пълна информация')} className="lg:col-span-2" actions={<Link href={`/game/players/${encodeURIComponent(user.username)}`} className="text-xs text-cyan-glow hover:underline">{t('Профилът в играта →')}</Link>}>
+            <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4" data-testid="admin-full-profile">
+              {full.business && row(t('Изкарано тази седмица'), t('{0} · {1} курса', money(full.business.week.cents), full.business.week.trips))}
+              {full.business && row(t('Изкарано този сезон'), money(full.business.season.cents))}
+              {full.business && row(t('Изкарано общо от курсове'), t('{0} · {1} курса', money(full.business.total.cents), full.business.total.trips))}
+              {row(t('ТрансКоин'), int(full.coins))}
+              {full.business && row(t('Камиони / ремаркета'), `${int(full.business.trucks)} / ${int(full.business.trailers)}`)}
+              {row(t('Най-скъп камион'), topTruck ? tx(topTruck) : '—')}
+              {full.career && row(t('Километри / тонове'), `${km(full.career.km)} · ${int(full.career.tons)} т`)}
+              {full.career && row(t('Навреме'), full.career.onTimeShare == null ? '—' : `${Math.round(full.career.onTimeShare * 100)} %`)}
+              {full.career && row(t('Държави / постижения'), `${full.career.countries} / ${full.career.achievements}`)}
+              {row(t('Сезон „{0}“', tx(full.season.name)), full.season.rank ? t('{0}. място · {1} т.', full.season.rank, int(full.season.points)) : t('без точки'))}
+              {row(t('Лига / серия влизания'), t('лига {0} · {1} дни', full.leagueTier, full.loginStreak))}
+              {row(t('Предмети'), t('{0} вида · {1} бр.', full.items.kinds, int(full.items.qty)))}
+              {row(t('Покани'), full.invitedBy ? t('{0} поканени · поканен от {1}', full.invited, tx(full.invitedBy)) : t('{0} поканени', full.invited))}
+              {full.payments && row(t('Платено с истински пари'), full.payments.count ? t('{0} € · {1} плащания', (full.payments.cents / 100).toFixed(2), full.payments.count) : '—')}
+              {full.business?.hidden && <div className="col-span-2 sm:col-span-4 text-xs text-amber-sig">{t('Играчът е скрил бизнес данните си от другите играчи — екипът ги вижда.')}</div>}
+            </dl>
+          </Card>
+        )}
         {/* 1.1.3: what each truck is doing and why it may stand — the usual support question. */}
         <Card title={t('Камиони')}>
           {!fleet || fleet.vehicles.length === 0 ? <p className="text-sm text-mist-400">{t('Няма превозни средства.')}</p> : (

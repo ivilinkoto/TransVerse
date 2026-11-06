@@ -4,7 +4,7 @@ import { featureLive } from '@/lib/game/features';
 import { dec, int, km, money } from '@/lib/format';
 import { weekKey } from '@/lib/game/leagues';
 import { headline, type NewsIssue } from '@/lib/game/news';
-import { compareVersions, RELEASES, type Release } from '@/lib/game/releases';
+import { sectionsFor, compareVersions, RELEASES, type Release } from '@/lib/game/releases';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyBattles, globalEvents, jobState, newspapers, organizations, users } from '@/server/db/schema';
@@ -154,7 +154,8 @@ export function releaseAnnouncement(r: Release) {
   description = cut(description, Math.min(LIMIT.description - more.length - 2, 3200));
   const fields: { name: string; value: string }[] = [];
   let used = title.length + description.length + more.length + 200;
-  for (const section of r.sections.slice(0, LIMIT.fields)) {
+  // 1.2.3.2: the team's sections stay out of the public announcement.
+  for (const section of sectionsFor(r, false).slice(0, LIMIT.fields)) {
     const name = cut(tx(section.title), 256);
     const value = cut(section.items.map((i) => `• ${tx(i)}`).join('\n'), LIMIT.fieldValue);
     if (used + name.length + value.length > LIMIT.total) break;

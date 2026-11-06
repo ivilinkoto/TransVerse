@@ -33,6 +33,11 @@
 }
 
 @layer base {
+  /* 1.2.3.1: a grid with columns only from sm:/md: up is one column on a phone — one that never grows past
+     the screen (the default "auto" column grows to its longest line and pushes the whole page wider). */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   html {
     color-scheme: dark;
     background: var(--color-asphalt-950);

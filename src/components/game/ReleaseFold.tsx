@@ -10,7 +10,7 @@ import { t } from '@/i18n/t';
  * 1.1.2: one release on the updates pages, folded: the title and the tagline,
  * and the full notes open on a tap. A link to `#v<version>` opens that one.
  */
-export function ReleaseFold({ release, heading, className, children }: { release: Release; heading: 'h2' | 'h3'; className: string; children?: ReactNode }) {
+export function ReleaseFold({ release, heading, className, children, staff = false }: { release: Release; heading: 'h2' | 'h3'; className: string; children?: ReactNode; staff?: boolean }) {
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const open = () => {
@@ -36,7 +36,7 @@ export function ReleaseFold({ release, heading, className, children }: { release
           <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
         </span>
       </summary>
-      <div className="mt-5"><ReleaseBody release={release} /></div>
+      <div className="mt-5"><ReleaseBody release={release} staff={staff} /></div>
     </details>
   );
 }

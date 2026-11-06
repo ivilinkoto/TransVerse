@@ -1,5 +1,5 @@
 import { BarChart3, Bell, Gavel, Map, Newspaper, Paintbrush, ScrollText, Shield, Sparkles, Trophy, Truck } from 'lucide-react';
-import type { Release, ReleaseIcon } from '@/lib/game/releases';
+import { sectionsFor, type Release, type ReleaseIcon } from '@/lib/game/releases';
 import { GhostTruckIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { t, tx, intlLocale } from '@/i18n/t';
 
@@ -36,7 +36,8 @@ export function ReleaseTitle({ release, as: H = 'h2' }: { release: Release; as?:
 }
 
 /** The full notes of a release: highlights, then every section. */
-export function ReleaseBody({ release }: { release: Release }) {
+export function ReleaseBody({ release, staff = false }: { release: Release; staff?: boolean }) {
+  const sections = sectionsFor(release, staff);
   return (
     <div className="space-y-5">
       {release.highlights.length > 0 && (
@@ -55,7 +56,7 @@ export function ReleaseBody({ release }: { release: Release }) {
           })}
         </ul>
       )}
-      {release.sections.map((s) => (
+      {sections.map((s) => (
         <section key={s.title}>
           <h3 className="label mb-2">{tx(s.title)}</h3>
           <ul className="space-y-1.5 text-sm text-mist-200">

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // As released (before the date these are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true, featureDate: () => new Date('2026-01-01T00:00:00Z') }));
-import { RELEASES, releaseByVersion } from '@/lib/game/releases';
+import { RELEASES, releaseByVersion, sectionsFor } from '@/lib/game/releases';
 import { withLocale } from '@/i18n/als';
 import { closeDb } from '@/server/db/client';
 import { companyMessages, discordOutbox, jobState, notifications, organizations, userBadges, users } from '@/server/db/schema';
@@ -210,7 +210,9 @@ describe('announcements', () => {
     }
     const small = releaseByVersion('1.1.3')!;
     const bg = releaseAnnouncement(small);
-    expect(bg.embeds[0]!.fields.map((f) => f.name)).toEqual(small.sections.map((s) => s.title));
+    // 1.2.3.2: the team's section („За екипа“) stays out of the public announcement.
+    expect(bg.embeds[0]!.fields.map((f) => f.name)).toEqual(sectionsFor(small, false).map((s) => s.title));
+    expect(bg.embeds[0]!.fields.map((f) => f.name)).not.toContain('За екипа');
     const en = withLocale('en', () => releaseAnnouncement(small));
     expect(en.embeds[0]!.description).not.toContain(small.tagline);
   });

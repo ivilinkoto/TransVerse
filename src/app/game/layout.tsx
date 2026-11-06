@@ -96,7 +96,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
       {features.look_settings && <LookApply theme={user.uiPrefs?.theme} textSize={user.uiPrefs?.textSize} />}
       <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
         <Sidebar badges={navBadges} version={currentVersion(now, testing)} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
           <InstallAppBanner />
           {broadcast && <BroadcastBanner text={broadcast.text} tone={broadcast.tone} setAt={broadcast.setAt} />}
@@ -139,7 +139,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
         {fresh && !(tutorial.active && tutorial.step) && (
           <WhatsNew version={fresh.version}>
             <ReleaseTitle release={fresh} />
-            <div className="mt-5"><ReleaseBody release={fresh} /></div>
+            <div className="mt-5"><ReleaseBody release={fresh} staff={testing} /></div>
           </WhatsNew>
         )}
       </div>
