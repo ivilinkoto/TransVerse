@@ -11,7 +11,7 @@ import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { LOCAL_JOBS } from '@/lib/game/local-jobs';
 import { seasonalFactor } from '@/lib/game/seasonality';
-import { isWinter, WINTER } from '@/lib/game/winter';
+import { isWinter, WINTER, isSnowTime } from '@/lib/game/winter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { isMarta, MARTA } from '@/lib/game/marta';
@@ -333,7 +333,7 @@ async function insertContract(db: Database, origin: Hub, destination: Hub, cargo
     { id: 'easter', goods: isEaster(now) && featureLive('easter', now) ? EASTER.goods[cargo] : undefined, share: EASTER.contractShare, multiplier: EASTER.rewardMultiplier },
     { id: 'buditeli', goods: isBuditeli(now) && featureLive('buditeli', now) ? BUDITELI.goods[cargo] : undefined, share: BUDITELI.contractShare, multiplier: BUDITELI.rewardMultiplier },
     { id: 'marta', goods: isMarta(now) && featureLive('marta', now) ? MARTA.goods[cargo] : undefined, share: MARTA.contractShare, multiplier: MARTA.rewardMultiplier },
-    { id: 'winter', goods: isWinter(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
+    { id: 'winter', goods: isSnowTime(now) ? WINTER.goods[cargo] : undefined, share: WINTER.contractShare, multiplier: WINTER.rewardMultiplier },
     { id: 'sowing', goods: isSowing(now) && featureLive('sowing', now) ? SOWING.goods[cargo] : undefined, share: SOWING.contractShare, multiplier: SOWING.rewardMultiplier },
     { id: 'harvest', goods: isHarvest(now) && featureLive('harvest', now) ? HARVEST.goods[cargo] : undefined, share: HARVEST.contractShare, multiplier: HARVEST.rewardMultiplier },
     // 1.2.4: winter goods before 1 December, and Black Friday goods for the big shopping cities.

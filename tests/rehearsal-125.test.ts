@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
  * and 1.2.4 „Преди зимата“ comes out on the 20th (a lower number, later).
  */
 import { featureLive } from '@/lib/game/features';
+import { isEarlySnow, isSnowTime, roadCondition } from '@/lib/game/winter';
 import { PASS_V2 } from '@/lib/game/season-pass';
 import { DEFAULT_SEASON_RULES } from '@/server/game/seasons';
 import { latestPublished, unseenRelease } from '@/lib/game/releases';
@@ -101,5 +102,18 @@ describe('rehearsal: 12–20 November 2026', () => {
     expect(recap?.place).toBeGreaterThan(0);
     const told = await db().select().from(notifications).where(and(eq(notifications.userId, owner[0]!.ownerId), like(notifications.href, `/game/seasons/recap/${original.id}%`)));
     expect(told.length).toBe(1);
+  });
+
+  it('the first snow: light snow in the mountains from the 13th, no ice before December', () => {
+    const days = Array.from({ length: 18 }, (_, i) => new Date(Date.UTC(2026, 10, 13 + i, 10)));
+    expect(isEarlySnow(at('2026-11-12T12:00:00+02:00'))).toBe(false);
+    expect(days.every((d) => isEarlySnow(d) && isSnowTime(d))).toBe(true);
+    const snowy = (c: string) => days.filter((d) => roadCondition(c, d) === 'snow').length;
+    expect(days.every((d) => ['clear', 'snow'].includes(roadCondition('AT', d)))).toBe(true);
+    expect(snowy('AT') + snowy('CH') + snowy('RU')).toBeGreaterThan(0);
+    expect(snowy('GR')).toBe(0);
+    expect(snowy('ES')).toBe(0);
+    expect(isEarlySnow(at('2026-12-02T12:00:00+02:00'))).toBe(false); // winter itself
+    expect(isSnowTime(at('2026-12-02T12:00:00+02:00'))).toBe(true);
   });
 });
