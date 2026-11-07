@@ -1,0 +1,20 @@
+406cfdcec9	{0}: empty run to {1} ({2} km)	{0}: порожний рейс в {1} ({2} км)
+ef116eaa6e	Fleet → „🚚 Move to another city“: find the city, see the price and the time, and the truck sets off empty. It arrives after the drive.	Автопарк → „🚚 Переместить в другой город“: найди город, посмотри цену и время — и грузовик выезжает порожним. Он прибывает после дороги.
+eb70724e19	In a convoy for which you have no truck in the start city there is a „🚚 Move a truck here“ button — it opens the Fleet with the city already chosen.	В конвое, для которого у тебя нет грузовика в городе старта, есть кнопка „🚚 Переместить грузовик сюда“ — она открывает Автопарк с уже выбранным городом.
+10a294fc38	City, e.g. Plovdiv	Город, напр. Пловдив
+01e855a5c9	To {0}: {1} km · {2} · arrives in {3}	До {0}: {1} км · {2} · прибудет через {3}
+5f4d738b66	While the truck is on the way it cannot take a load. Going back to a depot stays free and takes a minute.	Пока грузовик в пути, он не может взять груз. Возврат в депо остаётся бесплатным и занимает минуту.
+b8272eb237	A truck to any city	Грузовик в любой город
+69f612a2c3	The truck to any city	Грузовик в любой город
+7b3b1ea0e2	The truck is still on the way — wait until it arrives.	Грузовик ещё в пути — подожди, пока он прибудет.
+23e5a4f77b	An empty run to any city: you pay by the distance, the truck arrives after the drive. The coupled trailer comes with it.	Порожний рейс в любой город: платишь по расстоянию, грузовик прибывает после дороги. Прицепленный прицеп едет с ним.
+545930ab2e	Moving a truck	Перемещение грузовика
+cd8babe595	Move to another city	Переместить в другой город
+8a01258701	Move an empty truck to any city — for a convoy, a better market or to be closer to the loads.	Перемести порожний грузовик в любой город — для конвоя, лучшего рынка или поближе к грузам.
+88766dcef6	A free truck drives empty to any city of the open countries. The price is 80 lv. plus 0.85 lv. per road km, and the drive takes as long as the distance needs (72 km/h on average, up to 14 hours). The coupled trailer comes with the truck.	Свободный грузовик едет порожним в любой город открытых стран. Цена — 80 лв. плюс 0,85 лв. за км пути, а дорога длится по расстоянию (в среднем 72 км/ч, до 14 часов). Прицепленный прицеп едет с грузовиком.
+ca39552c2a	This country is not open yet.	Эта страна ещё не открыта.
+f2a8c02a8a	Go · {0}	Поехали · {0}
+def4fe5bba	🏠 On the way to {0} — arrives within a minute.	🏠 Едет в {0} — прибудет в течение минуты.
+2bd16859c3	🚚 Move to another city	🚚 Переместить в другой город
+bfc002f242	🚚 Move a truck here →	🚚 Переместить грузовик сюда →
+98db3dc751	🚚 Driving empty to {0} — arrives at {1}.	🚚 Едет порожним в {0} — прибудет в {1}.

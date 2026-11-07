@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
@@ -93,12 +94,12 @@ export function NewConvoy({ origins, destinations, maxSeats, company, cargo }: {
   );
 }
 
-export function JoinConvoy({ convoyId, vehicles, loads, shared, roles }: { convoyId: string; vehicles: { id: string; label: string }[]; loads: { id: string; label: string }[]; shared: string | null; roles: ('tail' | 'scout')[] }) {
+export function JoinConvoy({ convoyId, vehicles, loads, shared, roles, relocateTo = null }: { convoyId: string; vehicles: { id: string; label: string }[]; loads: { id: string; label: string }[]; shared: string | null; roles: ('tail' | 'scout')[]; relocateTo?: number | null }) {
   const { busy, error, send } = useSend();
   const [vehicleId, setVehicle] = useState(vehicles[0]?.id ?? '');
   const [load, setLoad] = useState(shared ? '' : (loads[0]?.id ?? ''));
   const [role, setRole] = useState<'member' | 'tail' | 'scout'>('member');
-  if (!vehicles.length) return <p className="text-sm text-mist-400">{t('Нужен е свободен камион в града на тръгване.')}</p>;
+  if (!vehicles.length) return <p className="text-sm text-mist-400">{t('Нужен е свободен камион в града на тръгване.')}{relocateTo ? <>{' '}<Link href={`/game/fleet?to=${relocateTo}`} className="font-semibold text-cyan-glow hover:underline" data-testid="convoy-relocate">{t('🚚 Премести камион тук →')}</Link></> : null}</p>;
   if (!shared && !loads.length) return <p className="text-sm text-mist-400">{t('По линията няма свободен товар сега — погледни пак след малко или избери конвой с общ товар.')}</p>;
   return (
     <form className="grid gap-2 text-sm sm:grid-cols-3" onSubmit={async (e) => { e.preventDefault(); await send({ type: 'joinConvoy', convoyId, vehicleId, contractId: load || null, role }); }}>

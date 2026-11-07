@@ -126,6 +126,8 @@ export const FEATURES = {
   partial_repair: '1.2.3.1',
   partners: '1.2.3.1',
   business_profile: '1.2.3.2',
+  // 1.2.3.3: a truck to any city (live at once)
+  truck_relocate: '1.2.3.3',
   // 1.2.6 „На една вълна“
   chat_life: '1.2.6',
   partner_loads: '1.2.6',

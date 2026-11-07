@@ -186,7 +186,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
   if (contract!.exchange && !(await featureFor(db, userId, 'freight_exchange', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   const { vehicle } = await vehicleBundle(db, company.id, vehicleId);
   if (vehicle.status !== 'idle') fail('vehicle_busy', t('Превозното средство е заето.'), 409);
-  if (vehicle.movingUntil && vehicle.movingUntil > now) fail('moving', t('Камионът още пътува до депото — след минута.'), 409);
+  if (vehicle.movingUntil && vehicle.movingUntil > now) fail('moving', t('Камионът още пътува — изчакай да пристигне.'), 409);
   // 1.1.4.2: night couriers only at night, the last mile only for vans, nothing while on vacation.
   await checkTripRules(db, userId, contract!, vehicle.modelId, now);
   // Groupage loads come with v1.2 (staff test them before the release).

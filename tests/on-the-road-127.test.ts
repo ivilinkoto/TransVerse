@@ -1,11 +1,11 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // The features as released (before the date they are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
 import { CONVOY_HOUR, DUO, ESCORT, WAVE, isConvoyHour } from '@/lib/game/on-the-road';
 import { closeDb } from '@/server/db/client';
-import { chatMessages, cities, companies, contracts, deliveries, duos, escorts, inventoryItems, jobState, ledgerEntries, marketRumors, notifications, roadWaves, vehicles } from '@/server/db/schema';
+import { chatMessages, cities, companies, contracts, deliveries, duos, escorts, inventoryItems, jobState, ledgerEntries, marketRumors, notifications, roadWaves, users, vehicles } from '@/server/db/schema';
 import { acceptContract, settleDelivery } from '@/server/game/deliveries';
 import { cafeCity, cafeHere, meetDelivered, pairDuos, signUpDuo, spreadRumors, wantItem, wantsView } from '@/server/game/meet';
 import { channelFeed, postToChannel } from '@/server/game/messages';
@@ -92,6 +92,8 @@ describe('1.2.7 on the road', () => {
   it('the café: the city of a standing truck, who is there, a chat of its own', async () => {
     const a = await newPlayer('Varna');
     const b = await newPlayer('Varna');
+    // The latest seen are shown first (12 at most): the two of them were just in the game.
+    await db().update(users).set({ lastSeenAt: new Date() }).where(inArray(users.id, [a.userId, b.userId]));
     const city = await cafeCity(db(), a.userId);
     const [varna] = await db().select().from(cities).where(eq(cities.id, city!.id));
     expect(varna!.name).toBe('Varna');
