@@ -3,6 +3,7 @@ import { Badge, Card, Meter } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { duration, money } from '@/lib/format';
 import { t, tx, intlLocale } from '@/i18n/t';
+import { taperCoins } from '@/lib/game/coin-taper';
 
 interface Goal {
   weekKey: string;
@@ -32,14 +33,14 @@ export function WeeklyGoalCard({ state, now }: { state: { endsAt: Date; goal: Go
       {state.previous && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-profit/40 bg-profit/5 p-3 text-sm">
           <span>{t('Миналата седмица:')}{' '}<b>{tx(state.previous.title)}</b>{' '}{t('— изпълнена!')}</span>
-          <ActionButton action={{ type: 'claimWeeklyGoal', week: state.previous.weekKey }} className="btn-gold px-3 py-1.5 text-xs">{t('Вземи {0} + {1} TC', money(state.previous.rewardCents), state.previous.rewardCoins)}</ActionButton>
+          <ActionButton action={{ type: 'claimWeeklyGoal', week: state.previous.weekKey }} className="btn-gold px-3 py-1.5 text-xs">{t('Вземи {0} + {1} TC', money(state.previous.rewardCents), taperCoins(state.previous.rewardCoins, now))}</ActionButton>
         </div>
       )}
       {state.goal ? (
         <div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-semibold">{tx(state.goal.title)}</span>
-            <Badge tone="gold">{tx(state.goal.level)} · {money(state.goal.rewardCents)} + {tx(state.goal.rewardCoins)} TC</Badge>
+            <Badge tone="gold">{tx(state.goal.level)} · {money(state.goal.rewardCents)} + {tx(taperCoins(state.goal.rewardCoins, now))} TC</Badge>
           </div>
           <Meter value={(state.goal.progress / state.goal.target) * 100} tone="gold" className="mt-3" />
           <div className="mt-2 flex items-center justify-between text-xs text-mist-400">
@@ -59,7 +60,7 @@ export function WeeklyGoalCard({ state, now }: { state: { endsAt: Date; goal: Go
               <li key={c.difficulty} className="flex flex-col rounded-xl border border-asphalt-700 p-3">
                 <Badge tone={TONE[c.difficulty] ?? 'neutral'}>{tx(c.level)}</Badge>
                 <div className="mt-2 font-semibold">{tx(c.title)}</div>
-                <div className="mb-3 mt-1 text-xs text-gold-400">{money(c.rewardCents)} + {tx(c.rewardCoins)} TC</div>
+                <div className="mb-3 mt-1 text-xs text-gold-400">{money(c.rewardCents)} + {tx(taperCoins(c.rewardCoins, now))} TC</div>
                 <ActionButton action={{ type: 'chooseWeeklyGoal', difficulty: c.difficulty }} className="btn-primary mt-auto justify-center px-3 py-1.5 text-sm">{t('Избери')}</ActionButton>
               </li>
             ))}

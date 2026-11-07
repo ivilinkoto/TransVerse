@@ -22,6 +22,10 @@ import { joinCup } from '@/server/game/tournament';
 import { bidForPlate, fitRarePlate } from '@/server/game/plates';
 import { hireTrailer, offerTrailer, returnHiredTrailer, withdrawTrailer } from '@/server/game/trailer-hire';
 import { donateToMuseum, scrapVehicle, repairWithPart } from '@/server/game/heritage';
+import { thankHelper } from '@/server/game/chat-life';
+import { acceptPartner, askPartner, invitePartner } from '@/server/game/partner-loads';
+import { inviteEscort, ratePartner, wave } from '@/server/game/on-the-road';
+import { cafeCity, signUpDuo, wantItem } from '@/server/game/meet';
 import { setSpecialization } from '@/server/game/specialization';
 import { postRecruitment, removeRecruitment } from '@/server/game/recruitment';
 import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization';
@@ -193,7 +197,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('createPoll'), poll: pollInputSchema }),
   z.object({ type: z.literal('votePoll'), pollId: id, option: z.number().int().min(0).max(9) }),
   z.object({ type: z.literal('closePoll'), pollId: id }),
-  z.object({ type: z.literal('reactChat'), tab: z.string().regex(/^(global|trade|company|dm:[0-9a-f-]{36})$/), messageId: z.coerce.number().int().positive(), emoji: z.string().max(8) }),
+  z.object({ type: z.literal('reactChat'), tab: z.string().regex(/^(global|trade|projects|cafe|company|dm:[0-9a-f-]{36})$/), messageId: z.coerce.number().int().positive(), emoji: z.string().max(8) }),
   z.object({ type: z.literal('discordUnlink') }),
   z.object({ type: z.literal('discordPrefs'), prefs: z.record(z.string().max(20), z.boolean()) }),
   z.object({ type: z.literal('companyDiscord'), on: z.boolean() }),
@@ -389,7 +393,16 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('startProject'), templateId: z.string().max(40) }),
   z.object({ type: z.literal('unsendDirect'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('deleteConversation'), userId: id }),
-  z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade']), body: messageBodySchema, replyTo: z.coerce.number().int().positive().nullish() }),
+  z.object({ type: z.literal('thankHelper'), messageId: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('invitePartner'), relayId: z.string().uuid(), username: z.string().trim().min(1).max(40) }),
+  z.object({ type: z.literal('askPartner'), relayId: z.string().uuid() }),
+  z.object({ type: z.literal('acceptPartner'), relayId: z.string().uuid() }),
+  z.object({ type: z.literal('inviteEscort'), escortId: z.string().uuid(), username: z.string().trim().min(1).max(40) }),
+  z.object({ type: z.literal('ratePartner'), refId: z.string().uuid(), good: z.boolean() }),
+  z.object({ type: z.literal('roadWave'), waveId: z.string().uuid() }),
+  z.object({ type: z.literal('wantItem'), itemId: z.string().max(60), want: z.boolean() }),
+  z.object({ type: z.literal('signUpDuo') }),
+  z.object({ type: z.literal('sendChannel'), channel: z.enum(['global', 'trade', 'projects', 'cafe']), body: messageBodySchema, replyTo: z.coerce.number().int().positive().nullish() }),
   z.object({ type: z.literal('deleteChannel'), messageId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('listUsed'), kind: z.enum(['vehicle', 'trailer']), itemId: id, priceEur: z.coerce.number().int('Цената е в цели лева.').positive().max(10_000_000) }),
   z.object({ type: z.literal('cancelListing'), listingId: id }),
@@ -659,6 +672,14 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   craftItems: 'workshop',
   claimWeeklyChest: 'item_chests',
   giveFromChest: 'item_chests',
+  invitePartner: 'partner_loads',
+  askPartner: 'partner_loads',
+  acceptPartner: 'partner_loads',
+  inviteEscort: 'escorts',
+  ratePartner: 'partner_ratings',
+  roadWave: 'road_wave',
+  wantItem: 'item_wants',
+  signUpDuo: 'duo_week',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -1113,7 +1134,33 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       await deleteConversation(db, user.id, input.userId);
       return { ok: true };
     case 'sendChannel':
+      if (input.channel === 'projects') requireFeature('region_projects', user);
+      if (input.channel === 'cafe') {
+        // 1.2.7: the café of the city where the player's truck stands.
+        requireFeature('city_cafe', user);
+        const city = await cafeCity(db, user.id);
+        if (!city) fail('no_cafe', tr('Нямаш камион в град.'));
+        return { ok: true, id: await postToChannel(db, user.id, `city:${city!.id}`, input.body, input.replyTo) };
+      }
       return { ok: true, id: await postToChannel(db, user.id, input.channel, input.body, input.replyTo) };
+    case 'invitePartner':
+      return { ok: true, ...(await invitePartner(db, user.id, input.relayId, input.username)) };
+    case 'askPartner':
+      return { ok: true, ...(await askPartner(db, user, input.relayId)) };
+    case 'acceptPartner':
+      return { ok: true, ...(await acceptPartner(db, user, input.relayId)) };
+    case 'inviteEscort':
+      return inviteEscort(db, user.id, input.escortId, input.username);
+    case 'ratePartner':
+      return ratePartner(db, user.id, input.refId, input.good);
+    case 'roadWave':
+      return { ok: true, ...(await wave(db, user.id, input.waveId)) };
+    case 'wantItem':
+      return wantItem(db, user.id, input.itemId, input.want);
+    case 'signUpDuo':
+      return signUpDuo(db, user.id);
+    case 'thankHelper':
+      return { ok: true, ...(await thankHelper(db, { id: user.id, username: user.username }, input.messageId)) };
     case 'deleteChannel':
       await deleteChannelMessage(db, user.id, user.role, input.messageId);
       return { ok: true };

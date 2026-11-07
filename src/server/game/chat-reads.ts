@@ -22,8 +22,8 @@ export async function markChannelRead(db: DbOrTx, userId: string, channel: strin
  * not deleted, not from players they blocked), counted up to UNREAD_CAP.
  * Never opened: the last 24 hours (in the company: since joining).
  */
-export async function chatUnread(db: DbOrTx, userId: string, now = new Date()): Promise<{ global: number; trade: number; company: number }> {
-  const none = { global: 0, trade: 0, company: 0 };
+export async function chatUnread(db: DbOrTx, userId: string, now = new Date()): Promise<{ global: number; trade: number; company: number; projects: number }> {
+  const none = { global: 0, trade: 0, company: 0, projects: 0 };
   if (!(await featureFor(db, userId, 'chat_unread', now))) return none;
   const reads = await db.select().from(chatReads).where(sql`${chatReads.userId} = ${userId}`);
   const last = (key: string) => reads.find((r) => r.channel === key)?.lastReadId ?? null;
@@ -37,11 +37,11 @@ export async function chatUnread(db: DbOrTx, userId: string, now = new Date()): 
     const id = last(key);
     return id !== null ? sql`id > ${id}` : sql`created_at > ${from}`;
   };
-  const channel = (c: 'global' | 'trade') => count(sql`select 1 from chat_messages where channel = ${c} and ${since(c, dayAgo)} and user_id <> ${userId} and deleted_at is null and ${notBlocked}`);
+  const channel = (c: 'global' | 'trade' | 'projects') => count(sql`select 1 from chat_messages where channel = ${c} and ${since(c, dayAgo)} and user_id <> ${userId} and deleted_at is null and ${notBlocked}`);
   const m = await membershipOf(db, userId);
   const company = m
     ? count(sql`select 1 from company_messages where company_id = ${m.company.id} and ${since(companyKey(m.company.id), m.member.joinedAt > dayAgo ? m.member.joinedAt : dayAgo)} and user_id <> ${userId} and deleted_at is null and ${notBlocked}`)
     : Promise.resolve(0);
-  const [g, t, c] = await Promise.all([channel('global'), channel('trade'), company]);
-  return { global: g, trade: t, company: c };
+  const [g, t, c, p] = await Promise.all([channel('global'), channel('trade'), company, channel('projects')]);
+  return { global: g, trade: t, company: c, projects: p };
 }

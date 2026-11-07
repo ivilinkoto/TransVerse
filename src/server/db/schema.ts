@@ -502,6 +502,10 @@ export const contracts = pgTable(
     relayLeg: integer('relay_leg'),
     /** 1.1.4.2: a kind of load with its own rules — 'night_courier' | 'last_mile' | 'livestock'. */
     tag: text('tag'),
+    /** 1.2.7: an oversize load that pays more with an escort (another player's truck in front). */
+    escort: boolean('escort').notNull().default(false),
+    /** 1.2.7: the escort run of this main load (the pilot truck's own little load on the same road). */
+    escortFor: uuid('escort_for'),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     expiresAt: ts('expires_at').notNull(),
@@ -1273,6 +1277,10 @@ export const chatMessages = pgTable(
     body: text('body').notNull(),
     /** The message this one answers (same channel). */
     replyToId: bigint('reply_to_id', { mode: 'number' }),
+    /** 1.2.6: a line from the game (moment | question | partner | project); null for players' messages. */
+    kind: text('kind'),
+    /** 1.2.6: a button under a line from the game. */
+    meta: jsonb('meta').$type<{ href?: string; button?: string }>(),
     createdAt: createdAt(),
     deletedAt: ts('deleted_at'),
     deletedBy: uuid('deleted_by').references(() => users.id, { onDelete: 'set null' }),
@@ -3065,6 +3073,13 @@ export const relays = pgTable(
     leg1Late: boolean('leg1_late'),
     leg2UserId: uuid('leg2_user_id'),
     handoverAt: ts('handover_at'),
+    /** 1.2.6: a partner load — the second leg is kept for the partner the first driver agreed with. */
+    partner: boolean('partner').notNull().default(false),
+    /** 1.2.6: who took the first leg (on accepting it) and the agreed partner for the second. */
+    leaderId: uuid('leader_id'),
+    partnerId: uuid('partner_id'),
+    /** 1.2.6: when the first driver asked for a partner in the global chat. */
+    askedAt: ts('asked_at'),
     createdAt: createdAt(),
   },
   (t) => [index('relays_status_idx').on(t.status)],
@@ -3624,3 +3639,108 @@ export const partnerInquiries = pgTable('partner_inquiries', {
   createdAt: createdAt(),
   updatedAt: ts('updated_at').notNull().defaultNow(),
 }, (t) => [index('partner_inquiries_status_idx').on(t.status, t.createdAt)]);
+
+/** 1.2.6: the common project of the region (one a week, in stages). */
+export const regionProjects = pgTable('region_projects', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  templateId: text('template_id').notNull(),
+  /** The Monday it started (Sofia day, YYYY-MM-DD): one project a week. */
+  week: text('week').notNull(),
+  country: text('country').notNull(),
+  /** The current stage (0-based) and its tons so far. */
+  stage: integer('stage').notNull().default(0),
+  progress: real('progress').notNull().default(0),
+  /** active | done | failed */
+  status: text('status').notNull().default('active'),
+  startsAt: ts('starts_at').notNull(),
+  endsAt: ts('ends_at').notNull(),
+  finishedAt: ts('finished_at'),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('region_projects_week_idx').on(t.week), index('region_projects_status_idx').on(t.status)]);
+
+/** 1.2.6: who brought how much to each stage of a region project. */
+export const regionProjectShares = pgTable('region_project_shares', {
+  projectId: uuid('project_id').notNull().references(() => regionProjects.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  stage: integer('stage').notNull(),
+  tons: real('tons').notNull().default(0),
+  loads: integer('loads').notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.projectId, t.userId, t.stage] }), index('region_project_shares_user_idx').on(t.userId)]);
+
+
+/** 1.2.7: an escort — a pilot truck of another player in front of an oversize load. */
+export const escorts = pgTable('escorts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  mainContractId: uuid('main_contract_id').notNull(),
+  mainDeliveryId: uuid('main_delivery_id'),
+  leaderId: uuid('leader_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  escortContractId: uuid('escort_contract_id'),
+  escortUserId: uuid('escort_user_id'),
+  escortDeliveryId: uuid('escort_delivery_id'),
+  mainDone: boolean('main_done').notNull().default(false),
+  mainLate: boolean('main_late'),
+  escortDone: boolean('escort_done').notNull().default(false),
+  escortLate: boolean('escort_late'),
+  /** open (waiting for a pilot) | taken | done | failed */
+  status: text('status').notNull().default('open'),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('escorts_main_idx').on(t.mainContractId), index('escorts_status_idx').on(t.status)]);
+
+/** 1.2.7: 👍 / 👎 for a partner after a partner load or an escort (once per load). */
+export const partnerRatings = pgTable('partner_ratings', {
+  raterId: uuid('rater_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  rateeId: uuid('ratee_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** relay:<id> | escort:<id> */
+  ref: text('ref').notNull(),
+  good: boolean('good').notNull(),
+  createdAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.raterId, t.ref] }), index('partner_ratings_ratee_idx').on(t.rateeId)]);
+
+/** 1.2.7: two trucks passing each other on the same lane — „👋 Махни“. */
+export const roadWaves = pgTable('road_waves', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  aId: uuid('a_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  bId: uuid('b_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  aDeliveryId: uuid('a_delivery_id').notNull(),
+  bDeliveryId: uuid('b_delivery_id').notNull(),
+  aWaved: boolean('a_waved').notNull().default(false),
+  bWaved: boolean('b_waved').notNull().default(false),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('road_waves_pair_idx').on(t.aDeliveryId, t.bDeliveryId), index('road_waves_b_idx').on(t.bId)]);
+
+/** 1.2.7: „Търся“ — items a player is looking for (others with spares see it). */
+export const itemWants = pgTable('item_wants', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemId: text('item_id').notNull(),
+  createdAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.userId, t.itemId] }), index('item_wants_item_idx').on(t.itemId)]);
+
+/** 1.2.7: the market rumours of a day — one is true (a bonus that day), the others are not. */
+export const marketRumors = pgTable('market_rumors', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** The Sofia day the rumour is about (YYYY-MM-DD). */
+  day: text('day').notNull(),
+  country: text('country').notNull(),
+  cargo: text('cargo').notNull(),
+  real: boolean('real').notNull(),
+  createdAt: createdAt(),
+}, (t) => [index('market_rumors_day_idx').on(t.day)]);
+
+/** 1.2.7: „Двойка на седмицата“ — who signed up for the week. */
+export const duoSignups = pgTable('duo_signups', {
+  week: text('week').notNull(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.week, t.userId] })]);
+
+/** 1.2.7: a pair of the week from two different companies with a common goal. */
+export const duos = pgTable('duos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  week: text('week').notNull(),
+  aId: uuid('a_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  bId: uuid('b_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  progress: integer('progress').notNull().default(0),
+  target: integer('target').notNull(),
+  doneAt: ts('done_at'),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('duos_a_idx').on(t.week, t.aId), uniqueIndex('duos_b_idx').on(t.week, t.bId)]);

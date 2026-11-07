@@ -22,6 +22,8 @@ export function lastSeenLabel(lastSeenAt: Date | string | null | undefined, now:
 export const CHANNELS = {
   global: { label: 'Глобален', perMinute: 6 },
   trade: { label: 'Търговия', perMinute: 3 },
+  /** 1.2.6: the regional projects — who hauls what. */
+  projects: { label: 'Проекти', perMinute: 4 },
 } as const;
 export type Channel = keyof typeof CHANNELS;
 export const CHANNEL_IDS = Object.keys(CHANNELS) as Channel[];
@@ -35,7 +37,7 @@ export const unreadLabel = (n: number) => (n > 99 ? '99+' : String(n));
 export const REPLY_SNIPPET = 90;
 
 /** Reactions under chat messages. */
-export const REACTIONS = ['👍', '❤️', '😂', '🚚'] as const;
+export const REACTIONS = ['👍', '❤️', '😂', '🚚', '👏'] as const;
 export type Reaction = (typeof REACTIONS)[number];
 export interface ReactionSummary {
   emoji: Reaction;

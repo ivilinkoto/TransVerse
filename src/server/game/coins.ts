@@ -3,6 +3,7 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { coinEntries, users } from '@/server/db/schema';
 import { fail } from './errors';
 import { t } from '@/i18n/t';
+import { taperCoins } from '@/lib/game/coin-taper';
 
 export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction' | 'postcards' | 'truck_contest' | 'humanitarian' | 'harvest' | 'story' | 'email_verified' | 'big_run' | 'mystery_client' | 'fog_pilot' | 'lost_cargo' | 'items' | 'promo' | 'item_sale';
 
@@ -60,10 +61,13 @@ export const COIN_REASON_LABELS: Record<CoinReason, string> = {
 export async function postCoins(
   tx: Tx,
   userId: string,
-  entry: { amount: number; reason: CoinReason; description: string; idempotencyKey: string; actorUserId?: string | null },
+  entry: { amount: number; reason: CoinReason; description: string; idempotencyKey: string; actorUserId?: string | null; at?: Date },
   options: { requireFunds?: boolean } = {},
 ): Promise<boolean> {
   if (!Number.isSafeInteger(entry.amount) || entry.amount === 0) throw new Error(`Invalid coin amount ${entry.amount}`);
+  // 1.2.6: rewards pay a little less step by step (src/lib/game/coin-taper.ts). Tests see the full amounts
+  // unless they pass `at`, so their expectations do not change with the calendar.
+  if (entry.amount > 0 && (entry.at || process.env.NODE_ENV !== 'test')) entry = { ...entry, amount: taperCoins(entry.amount, entry.at ?? new Date(), entry.reason) };
   const [user] = await tx.select({ coins: users.coins }).from(users).where(eq(users.id, userId)).for('update');
   if (!user) fail('user_not_found', t('Потребителят не е намерен.'), 404);
   const next = user!.coins + entry.amount;

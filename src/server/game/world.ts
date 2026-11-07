@@ -9,7 +9,10 @@ import { ensureWeeklyLaneLoads } from './weekly-lane';
 import { expireWishes, spawnWishes } from './wishes';
 import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
-import { expireRelays, topUpRelays } from './relay';
+import { expireRelays, topUpRelays, topUpPartnerLoads } from './relay';
+import { ensureRegionProject } from './region-projects';
+import { announceConvoyHour, topUpEscortLoads } from './on-the-road';
+import { confirmRumor, pairDuos, spreadRumors } from './meet';
 import { announceCityOfWeek } from './city-growth';
 import { tickChoices } from './road-choices';
 import { playableCountries } from '@/lib/geo/scope';
@@ -121,6 +124,7 @@ import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
 import { starvedCountryAlerts } from './game-health';
 import { awardSnowKings } from './first-snow';
+import { postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
 import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
@@ -367,6 +371,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await every(db, 'relays', 30 * 60_000, now, () => topUpRelays(db, now));
       await every(db, 'relays-expire', 10 * 60_000, now, () => expireRelays(db, now));
     }
+    // 1.2.6: partner loads (relays whose second leg is kept for an agreed partner).
+    if (featureLive('partner_loads', now)) await every(db, 'partner-loads', 30 * 60_000, now, () => topUpPartnerLoads(db, now));
     // 1.1.2: "пристига след ~5 мин" in the game, and the player's weekly report on Monday morning (Sofia).
     await every(db, 'arriving-soon', 60_000, now, () => notifyArrivingSoon(db, now));
     {
@@ -411,6 +417,15 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'starved-countries', 15 * 60_000, now, () => starvedCountryAlerts(db, now));
     await every(db, 'snow-kings', 60 * 60_000, now, () => awardSnowKings(db, now));
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
+    // 1.2.6: the question of the day in the global chat.
+    await every(db, 'chat-question', 10 * 60_000, now, () => postDailyQuestion(db, now));
+    await every(db, 'region-project', 10 * 60_000, now, () => ensureRegionProject(db, now));
+    // 1.2.7: escorts for oversize loads, the convoy hour, rumours, the duo of the week.
+    await every(db, 'escort-loads', 30 * 60_000, now, () => topUpEscortLoads(db, now));
+    await every(db, 'convoy-hour', 5 * 60_000, now, () => announceConvoyHour(db, now));
+    await every(db, 'rumors', 15 * 60_000, now, () => spreadRumors(db, now));
+    await every(db, 'rumor-told', 15 * 60_000, now, () => confirmRumor(db, now));
+    await every(db, 'duos', 30 * 60_000, now, () => pairDuos(db, now));
     await every(db, 'roads', 30 * 60_000, now, async () => {
       // Made before the release too (staff test them); players see them from the release.
       await ensureRoadWorks(db, now);

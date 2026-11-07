@@ -1,0 +1,136 @@
+e5be12fad1	+{0} % and +{1} pass points each. Together: {2}.	+{0} % и +{1} очков пропуска каждому. Вместе: {2}.
+fd4cc7815c	+{0} pass points for the answer.	+{0} очков пропуска за ответ.
+5c5686f5bf	{0} / {1} t · you: {2} t	{0} / {1} т · ты: {2} т
+f79f62a93c	{0} TC per active player ({1} active)	{0} TC на активного игрока ({1} активных)
+cca0051b7b	{0} to {1}: the second leg is kept for you.	{0} до {1}: вторая часть забронирована для тебя.
+940a8b5e7c	{0}% from {1}	{0}% с {1}
+1616b5e208	Admin → TransCoin: „Reward balance“ — how many TC come from rewards and how many are bought and spent in the week, per active player, and which taper step applies now and which is next.	Админ → ТрансКоин: „Баланс наград“ — сколько TC приходит из наград и сколько покупается и тратится за неделю, на активного игрока, и какой шаг снижения действует сейчас и какой следующий.
+af83b89cc5	If you both arrive on time: +25 % of your own leg and 600 pass points each. After three loads together with the same partner — the „Trusted partners“ badge.	Если вы оба успеете вовремя: +25 % от своей части и по 600 очков пропуска. После трёх общих грузов с одним партнёром — значок „Надёжные партнёры“.
+4b7449549e	Reward balance	Баланс наград
+f2b6c131b1	Concrete and stone	Бетон и камень
+56464e2664	Thank you: +{0} pass points and a silver case.	Спасибо: +{0} очков пропуска и серебряный кейс.
+36a6890526	You already thanked for this answer.	Ты уже поблагодарил за этот ответ.
+fe0c1d3e3e	It already has a partner: {0}.	Партнёр уже есть: {0}.
+6b91d7dde9	You already have a partner for this load.	У тебя уже есть партнёр для этого груза.
+b3735c0c1c	You already looked for a partner in the chat for this load.	Ты уже искал партнёра в чате для этого груза.
+753a0f4553	See the loads	Смотреть грузы
+44374ddd31	Each finished stage: 300 pass points for everyone who helped with it. Finished project: 800 points and a silver case for everyone, and whoever brought the most gets the title „Region builder“.	Каждый готовый этап: 300 очков пропуска всем, кто помог. Готовый проект: 800 очков и серебряный кейс всем, а кто привёз больше всех — титул „Строитель региона“.
+f8f5e92bfe	Every Monday a new project starts (a Danube bridge, a winter reserve, a port, a hospital, a market) in one country, in three stages — each stage needs its own kind of cargo.	Каждый понедельник начинается новый проект (мост через Дунай, зимний резерв, порт, больница, рынок) в одной стране, в три этапа — каждому этапу нужен свой вид груза.
+9061b7a6dd	Every delivery of the current stage cargo to the project country counts, whoever drives it. The loads that count are marked „🏗️ REGION PROJECT“ on the board.	Каждая доставка груза текущего этапа в страну проекта засчитывается, кто бы её ни вёз. Грузы, которые засчитываются, отмечены „🏗️ ПРОЕКТ РЕГИОНА“ на бирже.
+dbf6e1c759	Every week one big build in three stages. Every delivery of the needed cargo to the country counts, and everyone who helps gets points and a case.	Каждую неделю одна большая стройка в три этапа. Каждая доставка нужного груза в страну засчитывается, а все, кто помогает, получают очки и кейс.
+c729781b9a	The second leg is for your partner — invite someone from „My partner loads“.	Вторая часть для твоего партнёра — пригласи кого-нибудь в „Мои партнёрские грузы“.
+107c9dc817	The second leg is kept only for the partner and the others do not see it. When the first one arrives, the partner gets a notification and has 8 hours to take it.	Вторая часть забронирована только для партнёра, другие её не видят. Когда первая прибывает, партнёр получает уведомление и у него 8 часов, чтобы её взять.
+e3063b7bd3	The second leg from {0} is kept for them.	Вторая часть из {0} забронирована для него.
+d18a23ebeb	Question of the day	Вопрос дня
+aaecac5d6b	Question of the day: every evening at 19:00 the game asks a question in the global chat. The first 10 who answer with „Reply“ within 4 hours get 250 pass points each.	Вопрос дня: каждый вечер в 19:00 игра задаёт вопрос в глобальном чате. Первые 10, кто ответит через „Ответить“ в течение 4 часов, получают по 250 очков пропуска.
+240bca8e12	A big market in Turkey	Большой рынок в Турции
+91bd2a6316	Heating fuel	Топливо для отопления
+e5e10f863f	Done — the second leg from {0} is kept for you.	Готово — вторая часть из {0} забронирована для тебя.
+bbac244cce	Trusted partners	Надёжные партнёры
+6d61909399	Stage {0}/{1}: {2} — {3} to {4}	Этап {0}/{1}: {2} — {3} в {4}
+317114a91d	Life in the chat	Жизнь в чате
+e5229468da	For the help in the chat.	За помощь в чате.
+d3b57a5825	For the help in the chat: +{0} pass points.	За помощь в чате: +{0} очков пропуска.
+25d8ede6f7	Bulgaria's winter reserve	Зимний резерв Болгарии
+66519ffc6f	Winter tyres or a risk — what do you choose?	Зимние шины или риск — что выбираете?
+30009b0f2a	The game speaks in the chat, partner loads for two and a common region project every week.	Игра говорит в чате, партнёрские грузы на двоих и общий проект региона каждую неделю.
+046a1a7d42	Players spend as much as they earn — the balance is good.	Игроки тратят столько же, сколько получают — баланс хороший.
+193b788594	Spent	Потрачено
+10dc37f13a	Do you have a favourite lane you drive again and again?	Есть ли у вас любимая линия, по которой вы ездите снова и снова?
+dd75b81165	Player's name	Имя игрока
+473c61a558	Which order would you take at once if you saw it on the board?	Какой заказ вы бы взяли сразу, если бы увидели его на бирже?
+c0546abb9e	What would you add to the game if it were up to you?	Что бы вы добавили в игру, если бы это зависело от вас?
+1b556c18e2	„Projects“ channel →	Канал „Проекты“ →
+ba95778c1a	Quay structures	Причальные конструкции
+950b5a5427	Which city is the best for a depot?	Какой город лучше всего для депо?
+4e143835e8	What is your longest trip so far?	Какой ваш самый длинный рейс?
+57ce59b56e	What is the hardest road you have driven in the game?	Какая самая трудная дорога, по которой вы ездили в игре?
+1f9979f274	Which truck is your favourite and why?	Какой грузовик ваш любимый и почему?
+abcd77c3b0	Which item from the cases do you want most?	Какой предмет из кейсов вы хотите больше всего?
+1de3d9c800	What advice would you give a new driver?	Какой совет вы бы дали новому водителю?
+77e3325070	Whoever takes the first leg chooses a partner in „Trips“: an invitation by name (it arrives in private messages) or „Look in the chat“ — a post in the global chat with a „Become a partner“ button.	Кто взял первую часть, выбирает партнёра в „Рейсах“: приглашение по имени (оно приходит в личные сообщения) или „Найти в чате“ — объявление в глобальном чате с кнопкой „Стать партнёром“.
+f24c442d2f	Structure	Конструкция
+ec321dadb2	Containers with equipment	Контейнеры с оборудованием
+627d9374f9	Which country pays best for loads?	Какая страна самая выгодная для грузов?
+3a27cfc5d1	Cranes and machines	Краны и машины
+fed586d8a0	Bought	Куплено
+bd63d493d9	You can only thank for an answer to your own message while you are up to level {0}.	Благодарить можно только за ответ на твоё сообщение, пока ты до уровня {0}.
+5e307dab6d	Game moments in the global chat: an improved lane record, a legendary item from a case, cleared roads — with a button to the place and a 👏 reaction. At most one moment every 10 minutes.	Моменты игры в глобальном чате: улучшенный рекорд линии, легендарный предмет из кейса, расчищенные дороги — с кнопкой к месту и реакцией 👏. Не больше одного момента в 10 минут.
+3d8f18179d	There are three partner loads on the board (700–1,600 km) labelled „🤝 PARTNER 1/2“ and paying 35 % more than ordinary ones.	На бирже три партнёрских груза (700–1 600 км) с меткой „🤝 ПАРТНЁРСКИЙ 1/2“ и на 35 % дороже обычных.
+37e2854329	On the same wave	На одной волне
+cfc7de1f24	Rewards now	Награды сейчас
+96b102478b	Rewards give more than players spend — TransCoin pile up.	Награды дают больше, чем игроки тратят — ТрансКоины копятся.
+bdf562e85e	The best-paid long loads come in two legs. You drive to the middle and find a partner in private messages or the chat — both on time: +25 %.	Самые выгодные дальние грузы идут в две части. Ты едешь до середины и находишь партнёра в личных сообщениях или в чате — оба вовремя: +25 %.
+f49e203d93	The most tonnes for a common region project.	Больше всех тонн для общего проекта региона.
+1cbc210b2e	Most: {0}	Больше всех: {0}
+ade9380fac	Fill and gravel	Насыпь и щебень
+73adb48226	You cannot be your own partner.	Нельзя быть партнёром самому себе.
+8cd125d388	A new „Projects“ channel in the chat: the game says there when a project starts, when it is half-way and when a stage is done.	Новый канал „Проекты“ в чате: там игра сообщает, когда начинается проект, когда он наполовину готов и когда готов этап.
+12ea701118	A new bridge on the Danube	Новый мост через Дунай
+bc8bd80220	A new hospital in Serbia	Новая больница в Сербии
+5b42470c11	Do you drive more at night or by day?	Вы больше ездите ночью или днём?
+e0abd1d175	Someone already became the partner for this load.	Кто-то уже стал партнёром для этого груза.
+ecb98595a0	Furnishings	Обстановка
+1b161f57ec	The post is in the global chat.	Объявление в глобальном чате.
+1746491bfa	From rewards	Из наград
+0066fbefdf	You have no partner yet — invite someone before {0} h run out.	У тебя ещё нет партнёра — пригласи кого-нибудь, пока не прошли {0} ч.
+f7be8d1299	Partner: {0}	Партнёр: {0}
+24dc55f738	Partner loads	Партнёрские грузы
+040da0d5e4	The partner load is in {0} 🤝	Партнёрский груз в {0} 🤝
+3d9a62da5a	The partner load arrived on time 🤝	Партнёрский груз прибыл вовремя 🤝
+ce97d78d94	Your partner takes it to {0}. If you are both on time — +{1} % each.	Партнёр везёт до {0}. Если вы оба вовремя — по +{1} %.
+450b63fe28	Take the second leg within {0} h — a bonus for both of you.	Возьми вторую часть в течение {0} ч — бонус для обоих.
+372ed296b2	The invitation was sent in private messages.	Приглашение отправлено в личные сообщения.
+6332a6e449	You helped with {0} t: +{1} pass points.	Ты помог с {0} т: +{1} очков пропуска.
+b2c1f13b7e	Look in the chat	Найти в чате
+44773d3d3c	Region project	Проект региона
+1c3317b1c9	First become the driver's partner — the button is in the chat or in the invitation.	Сначала стань партнёром водителя — кнопка в чате или в приглашении.
+ac5a64396f	Sand and salt	Песок и соль
+6f5ee2e184	A port extension in Greece	Расширение порта в Греции
+3110061971	Records and legendary finds in the global chat, a question of the day with points for the first answers and „Thank you“ from new players.	Рекорды и легендарные находки в глобальном чате, вопрос дня с очками за первые ответы и „Спасибо“ от новых игроков.
+f2cb6676f9	The steps	Шаги
+20a5aa5766	With {0}	С {0}
+df70817806	Alone or in a company — which is more fun for you?	В одиночку или в компании — как вам интереснее?
+6a7750ef1b	The chat's system author cannot be created.	Системного автора чата не удаётся создать.
+346194a67e	Salt, sand or brine — what do you clear the roads with?	Соль, песок или рассол — чем вы расчищаете дороги?
+5b4a721266	Become a partner	Стать партнёром
+01343a41c4	Goods for the stalls	Товары для прилавков
+d1f93ee5c8	Region builder	Строитель региона
+77e6736861	The steps are in src/lib/game/coin-taper.ts.	Шаги — в src/lib/game/coin-taper.ts.
+72e5ee4dd1	This leg is kept for the driver's partner.	Эта часть забронирована для партнёра водителя.
+da573e921d	Your turn — take the second leg	Твоя очередь — возьми вторую часть
+1091ab0029	You drive to the middle, the partner to the end. Both on time: +{0} % and +{1} pass points.	Ты едешь до середины, партнёр — до конца. Оба вовремя: +{0} % и +{1} очков пропуска.
+68f443f837	This is not your partner load.	Это не твой партнёрский груз.
+f9e95a87bc	The loads that count are marked 🏗️ on the board. Each stage and the end bring pass points.	Грузы, которые засчитываются, отмечены 🏗️ на бирже. Каждый этап и финал приносят очки пропуска.
+91cfceda01	The load is no longer looking for a partner.	Груз больше не ищет партнёра.
+4c38c1f912	This partner load is already over.	Этот партнёрский груз уже завершён.
+5d27db43b3	TransCoin from rewards get fewer step by step, so the shop keeps its meaning: from 20 November — 85 %, from 1 December — 70 %, from 1 January — 60 %. What is bought, gifts and promo codes do not change.	ТрансКоины из наград постепенно уменьшаются, чтобы магазин сохранял смысл: с 20 ноября — 85 %, с 1 декабря — 70 %, с 1 января — 60 %. Купленное, подарки и промокоды не меняются.
+0b66089ce8	Three partner loads on time with the same partner.	Три партнёрских груза вовремя с одним партнёром.
+4deecdf238	Turkey	Турция
+e3bb0e010e	Halls	Павильоны
+044dd48d88	Food and water	Еда и вода
+6107db9147	Waiting for the first leg in {0}	Ждёшь первую часть в {0}
+861b37e3ff	The chat	Чат
+1fac9fed67	shop, pass, plates	магазин, пропуск, номера
+cd7199a6fc	last step	последний шаг
+f26036caf6	„🙏 Thank you“: a new player (up to level 5) can thank whoever answered them. The helper gets 200 pass points (up to three thanks a day).	„🙏 Спасибо“: новый игрок (до 5 уровня) может поблагодарить того, кто ему ответил. Помощник получает 200 очков пропуска (до трёх благодарностей в день).
+a089b1cbad	✅ {0}: stage {1} is done! Stage {2}/{3}: {4} — {5} t of {6} to {7}.	✅ {0}: этап {1} готов! Этап {2}/{3}: {4} — {5} т ({6}) в {7}.
+98a6c0643e	❄️ The roads in {0} are cleared for today — thanks to everyone who brought salt and sand.	❄️ Дороги в {0} расчищены на сегодня — спасибо всем, кто привёз соль и песок.
+0c3822693c	❓ Question of the day: {0} Answer with „Reply“ — the first {1} get {2} pass points.	❓ Вопрос дня: {0} Ответь через „Ответить“ — первые {1} получат {2} очков пропуска.
+fbd403e27e	🎁 {0} opened a legendary item: {1}!	🎁 {0} открыл легендарный предмет: {1}!
+f9d6bc0b07	🎉 {0} is built with {1} drivers! {2} brought the most ({3} t) — „Region builder“.	🎉 {0} построен с {1} водителями! Больше всех привёз {2} ({3} т) — „Строитель региона“.
+08db48908f	🎉 {0} is built!	🎉 {0} построен!
+9f94fa97ce	🏆 {0} improved the record of {1}: {2} loaded.	🏆 {0} улучшил рекорд {1}: {2} с грузом.
+abf674a483	🏗️ {0}: stage {1}/{2} is at {3} % ({4} / {5} t).	🏗️ {0}: этап {1}/{2} на {3} % ({4} / {5} т).
+a7165c7c6b	🏗️ The stage is done: {0}	🏗️ Этап готов: {0}
+9a7d7c4c25	🏗️ New region project: {0} ({1}). Stage 1/{2}: {3} — {4} t of {5} to {1}. Every delivery counts!	🏗️ Новый проект региона: {0} ({1}). Этап 1/{2}: {3} — {4} т ({5}) в {1}. Каждая доставка засчитывается!
+2cd0791b17	🏗️ REGION PROJECT	🏗️ ПРОЕКТ РЕГИОНА
+12b09e206c	🙏 {0} thanked you	🙏 {0} благодарит тебя
+c58065c487	🙏 Thank you	🙏 Спасибо
+f3b2870182	🤝 {0} is your partner	🤝 {0} — твой партнёр
+031e035c7c	🤝 {0} is looking for a partner: {1} → {2} → {3}. The second leg is from {2} — a bonus for both.	🤝 {0} ищет партнёра: {1} → {2} → {3}. Вторая часть из {2} — бонус для обоих.
+bd340e61d9	🤝 PARTNER {0}/2 · +{1} % with a partner	🤝 ПАРТНЁРСКИЙ {0}/2 · +{1} % с партнёром
+5752b42ded	🤝 Partner loads	🤝 Партнёрские грузы
+2b2eed5417	🤝 An invitation to a partner load	🤝 Приглашение на партнёрский груз
+b2616f227b	🤝 Your turn: „{0}“ waits in {1}	🤝 Твоя очередь: „{0}“ ждёт в {1}
+7f87d2dc94	🤝 Will you drive with me? I drive to {0}, you take it to {1} — and we both get a bonus. {2}	🤝 Поедешь со мной? Я везу до {0}, ты — до {1}, и мы оба получаем бонус. {2}

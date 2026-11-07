@@ -14,6 +14,9 @@ export function notificationButtons(href: string | null | undefined): Notificati
   const friend = id('friend'), trade = id('trade'), greet = id('greet');
   if (friend) return [{ label: 'Приеми', action: { type: 'friendRespond', friendshipId: friend, accept: true }, primary: true }, { label: 'Откажи', action: { type: 'friendRespond', friendshipId: friend, accept: false } }];
   if (trade) return [{ label: 'Приеми', action: { type: 'answerTrade', id: trade, answer: 'accept' }, primary: true }, { label: 'Откажи', action: { type: 'answerTrade', id: trade, answer: 'decline' } }];
+  const waveId = id('wave'), rate = id('rate');
+  if (waveId) return [{ label: '👋 Махни', action: { type: 'roadWave', waveId }, primary: true }];
+  if (rate) return [{ label: '👍', action: { type: 'ratePartner', refId: rate, good: true }, primary: true }, { label: '👎', action: { type: 'ratePartner', refId: rate, good: false } }];
   if (greet) return [{ label: 'Поздрави', action: { type: 'greetNewcomer', userId: greet }, primary: true }];
   return [];
 }

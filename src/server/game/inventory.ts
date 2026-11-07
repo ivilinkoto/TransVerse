@@ -6,6 +6,7 @@ import { cities, drivers, inventoryItems, itemEffects, itemLog, itemSerials, not
 import { CASE_TABLES, COLLECTIONS, GOLDEN_KEY, RECEIVED_REASONS, ITEMS, ITEM_RULES, ROAD_FIND, TREASURE, coinsOf, isCase, lookPart, pickFrom, type CaseId, type ItemId } from '@/lib/game/items';
 import { hash } from '@/lib/game/missions';
 import { t } from '@/i18n/t';
+import { postMoment } from './chat-life';
 import { featureFor } from '@/server/features';
 import { postCoins } from './coins';
 import { companyForUser } from './company';
@@ -99,6 +100,11 @@ export async function openCase(db: Database, userId: string, caseId: CaseId, now
       return { item, coins, serial: null as number | null };
     }
     await grantItem(tx, userId, item, 1, `case:${caseId}`, `from-case:${userId}:${caseId}:${nonce}`);
+    // 1.2.6: a legendary find is a moment for the global chat.
+    if (ITEMS[item].rarity === 'legendary') {
+      const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
+      await postMoment(tx, `legendary:${userId}:${nonce}`, t('🎁 {0} отвори легендарен предмет: {1}!', me?.username ?? '—', ITEMS[item].name), { href: '/game/inventory/hall', button: t('Зала на славата') }, now);
+    }
     return { item, coins: 0, serial: null as number | null };
   });
 }

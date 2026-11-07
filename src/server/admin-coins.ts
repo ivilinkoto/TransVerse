@@ -2,6 +2,7 @@ import { and, desc, eq, gte, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { DbOrTx } from '@/server/db/client';
 import { coinEntries, users } from '@/server/db/schema';
+import { COIN_TAPER_STEPS, coinTaperFactor, UNTAPERED_REASONS } from '@/lib/game/coin-taper';
 
 /**
  * 1.2.1 for the team: where ТрансКоин come from and where they go — every entry
@@ -71,5 +72,12 @@ export async function coinMovement(db: DbOrTx, f: CoinFilter, now = new Date()) 
   ]);
   const totalIn = byReason.reduce((s, r) => s + r.in, 0);
   const totalOut = byReason.reduce((s, r) => s + r.out, 0);
-  return { player: player ?? null, entries, byReason, gainers, flagged: flagged.rows, totalIn, totalOut, since };
+  // 1.2.6: the balance of rewards — what play gives against what is bought and spent, per active player.
+  const [active] = await db.select({ n: sql<number>`count(*)::int` }).from(users).where(gte(users.lastSeenAt, since));
+  const rewards = byReason.filter((r) => !UNTAPERED_REASONS.includes(r.reason)).reduce((s, r) => s + r.in, 0);
+  const bought = byReason.find((r) => r.reason === 'purchase')?.in ?? 0;
+  const spent = byReason.filter((r) => ['shop', 'season_pass', 'plate_auction'].includes(r.reason)).reduce((s, r) => s + r.out, 0);
+  const next = COIN_TAPER_STEPS.find((x) => new Date(x.from) > now) ?? null;
+  const balance = { rewards, bought, spent, active: active?.n ?? 0, perPlayer: active?.n ? Math.round(rewards / active.n) : 0, factor: coinTaperFactor(now), next };
+  return { player: player ?? null, entries, byReason, gainers, flagged: flagged.rows, totalIn, totalOut, since, balance };
 }

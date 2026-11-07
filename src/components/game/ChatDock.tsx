@@ -2,7 +2,8 @@
 
 import { TITLES } from '@/lib/game/first-snow';
 import { TitleChip } from '@/components/game/TitleChip';
-import { AtSign, Building2, CornerUpLeft, Flag, Globe2, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
+import { AtSign, Building2, Coffee, CornerUpLeft, Flag, Globe2, Hammer, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { CHAT_EMOJI, splitMentions, typingMention } from '@/lib/game/mentions';
@@ -33,7 +34,11 @@ interface Inbox {
   me: string;
   meName: string;
   /** New messages in the channels (counted up to 100). */
-  unread?: { global: number; trade: number; company: number };
+  unread?: { global: number; trade: number; company: number; projects?: number };
+  /** 1.2.6: the „Проекти“ channel is open for this player. */
+  projects?: boolean;
+  /** 1.2.7: the café of the city where the player's truck stands. */
+  cafe?: { name: string } | null;
 }
 interface Tab {
   id: string;
@@ -83,6 +88,7 @@ export function ChatDock() {
   const input = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
+  const [cafe, setCafe] = useState<{ city: string; here: string[] } | null>(null);
   const tabRef = useRef(tab);
   const openRef = useRef(open);
   useEffect(() => {
@@ -110,10 +116,11 @@ export function ChatDock() {
 
   const loadFeed = useCallback(async (which: string) => {
     try {
-      const data = await api<{ messages: FeedMessage[]; canModerate: boolean; canPin?: boolean; pinned?: { id: number; username: string; body: string } | null; online?: { count: number; names: string[] } }>(`/api/chat/feed?tab=${encodeURIComponent(which)}`);
+      const data = await api<{ messages: FeedMessage[]; canModerate: boolean; canPin?: boolean; pinned?: { id: number; username: string; body: string } | null; online?: { count: number; names: string[] }; cafe?: { city: string; here: string[] } }>(`/api/chat/feed?tab=${encodeURIComponent(which)}`);
       if (tabRef.current !== which) return;
       setMessages(data.messages);
       setCanModerate(data.canModerate);
+      setCafe(which === 'cafe' ? (data.cafe ?? null) : null);
       setCompany(which === 'company' ? { canPin: !!data.canPin, pinned: data.pinned ?? null, online: data.online ?? { count: 0, names: [] } } : null);
       setError(null);
       // Opening a tab marks it read — refresh the unread badges.
@@ -133,7 +140,7 @@ export function ChatDock() {
       } catch {
         /* ignore */
       }
-      if (fromUrl && /^(global|trade|company|dm:[0-9a-f-]{36})$/.test(fromUrl)) {
+      if (fromUrl && /^(global|trade|projects|cafe|company|dm:[0-9a-f-]{36})$/.test(fromUrl)) {
         setTab(fromUrl);
         setOpen(true);
       } else {
@@ -159,7 +166,7 @@ export function ChatDock() {
   useEffect(() => {
     const onChannel = (e: Event) => {
       const ch = (e as CustomEvent<{ channel?: string }>).detail?.channel;
-      if (openRef.current && ch === tabRef.current) void loadFeed(tabRef.current);
+      if (openRef.current && (ch === tabRef.current || (tabRef.current === 'cafe' && ch?.startsWith('city:')))) void loadFeed(tabRef.current);
       else soonInbox();
     };
     const onCompany = () => {
@@ -204,17 +211,19 @@ export function ChatDock() {
   }, [messages]);
 
   // Labels outside the memo: t() reads the language while rendering.
-  const names = { global: tr('Глобален'), company: tr('Компания'), alliance: tr('Съюз'), trade: tr('Търговия') };
+  const names = { global: tr('Глобален'), company: tr('Компания'), alliance: tr('Съюз'), trade: tr('Търговия'), projects: tr('Проекти') };
   const tabs: Tab[] = useMemo(() => {
     const u = inbox?.unread;
     const out: Tab[] = [{ id: 'global', label: names.global, icon: Globe2, unread: u?.global }];
     if (inbox?.company) out.push({ id: 'company', label: names.company, icon: Building2, unread: u?.company });
     if (inbox?.alliance) out.push({ id: 'alliance', label: names.alliance, icon: Shield });
     out.push({ id: 'trade', label: names.trade, icon: Store, unread: u?.trade });
+    if (inbox?.projects) out.push({ id: 'projects', label: names.projects, icon: Hammer, unread: u?.projects });
+    if (inbox?.cafe) out.push({ id: 'cafe', label: tx(inbox.cafe.name), icon: Coffee });
     for (const c of inbox?.conversations ?? []) out.push({ id: `dm:${c.userId}`, label: c.username, unread: c.unread, online: c.online });
     if (extra && !out.some((t) => t.id === extra.id)) out.push({ id: extra.id, label: extra.title });
     return out;
-  }, [inbox, extra, names.global, names.company, names.alliance, names.trade]);
+  }, [inbox, extra, names.global, names.company, names.alliance, names.trade, names.projects]);
 
   // Everything new: private messages and the channels.
   const unread = tabs.reduce((s, t) => s + (t.unread ?? 0), 0);
@@ -298,6 +307,16 @@ export function ChatDock() {
     }
   };
 
+  // 1.2.6: a new player thanks whoever answered them.
+  const thank = async (messageId: number) => {
+    try {
+      await api('/api/game/action', { type: 'thankHelper', messageId });
+      await loadFeed(tab);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   const pin = async (messageId: number | null) => {
     try {
       await api('/api/game/action', { type: 'pinChat', messageId });
@@ -373,6 +392,11 @@ export function ChatDock() {
             </p>
           )}
           {tab === 'company' && company?.pinned && pins && <PinnedBar pinned={company.pinned} canPin={company.canPin} onUnpin={() => void pin(null)} onJump={(id) => jumpToMessage(list.current, id)} />}
+          {tab === 'cafe' && cafe && (
+            <p className="border-b border-asphalt-800 px-3 py-1.5 text-[11px] text-mist-400" data-testid="cafe-here">
+              ☕ {cafe.here.length ? tr('Кафене {0} · тук са: {1}', tx(cafe.city), cafe.here.slice(0, 6).join(', ')) : tr('Кафене {0} · само ти си тук. Камионите в града виждат този чат.', tx(cafe.city))}
+            </p>
+          )}
           {tab === 'trade' && <p className="border-b border-asphalt-800 px-3 py-2 text-[11px] text-mist-400">{tr('Само обяви: купувам / продавам. Самата сделка с техника става през Автопарк → Пазар → Употребявани.')}</p>}
 
           <div
@@ -387,6 +411,24 @@ export function ChatDock() {
             {messages.length === 0 && <p className="py-10 text-center text-sm text-mist-400">{dm ? tr('Напиши първото съобщение.') : tab === 'trade' ? tr('Още няма обяви. Предложи нещо!') : tr('Още няма съобщения. Поздрави всички!')}</p>}
             {messages.map((m) => {
               const mine = m.userId === me;
+              // 1.2.6: a line from the game — a card with its button, reactions and replies (no report or delete).
+              if (m.kind && !m.deleted) {
+                return (
+                  <div key={m.id} data-message={m.id} className="group rounded-2xl border border-cyan-glow/30 bg-cyan-glow/5 px-3 py-2" data-testid={`chat-line-${m.kind}`}>
+                    <div className="flex items-center gap-1.5 text-[11px] text-cyan-glow">
+                      <span className="font-semibold">TransVerse</span>
+                      <span className="text-mist-400">{time(m.createdAt)}</span>
+                      {replies && (
+                        <button type="button" className="text-mist-400 opacity-60 transition hover:text-cyan-glow group-hover:opacity-100" onClick={() => { setReplyTo({ id: m.id, username: 'TransVerse', body: (m.body ?? '').slice(0, 90), tab }); input.current?.focus(); }} aria-label={tr('Отговори')} title={tr('Отговори')}><CornerUpLeft className="h-3 w-3" /></button>
+                      )}
+                      {reactions && <ReactionPicker mine={(m.reactions ?? []).filter((r) => r.mine).map((r) => r.emoji)} onPick={(e) => void react(m, e)} />}
+                    </div>
+                    <p className="whitespace-pre-wrap break-words text-sm">{tx(m.body ?? '')}</p>
+                    {m.meta?.href && <Link href={m.meta.href} className="mt-1.5 inline-block rounded-lg bg-cyan-glow/15 px-2.5 py-1 text-xs font-semibold text-cyan-glow hover:bg-cyan-glow/25">{tx(m.meta.button ?? tr('Виж'))} →</Link>}
+                    <Reactions items={m.reactions ?? []} canReact={reactions} onToggle={(e) => void react(m, e)} />
+                  </div>
+                );
+              }
               return (
                 <div key={m.id} data-message={m.id} className={`group flex rounded-2xl ${mine ? 'justify-end' : ''}`}>
                   <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 ${mine ? 'bg-volt-500/25' : 'bg-asphalt-800'}`}>
@@ -424,6 +466,9 @@ export function ChatDock() {
                           )}
                     </p>
                     {!m.deleted && <Reactions items={m.reactions ?? []} canReact={reactions} onToggle={(e) => void react(m, e)} />}
+                    {m.thankable && !m.deleted && (
+                      <button type="button" className="mt-1 rounded-lg border border-gold-400/40 px-2 py-0.5 text-[11px] font-semibold text-gold-400 hover:bg-gold-400/10" onClick={() => void thank(m.id)} data-testid="chat-thank">{tr('🙏 Благодаря')}</button>
+                    )}
                   </div>
                 </div>
               );
@@ -475,7 +520,7 @@ export function ChatDock() {
                   } else void send();
                 }
               }}
-              placeholder={dm ? tr('Съобщение до {0}…', current.label) : tab === 'trade' ? tr('Продавам / купувам…') : tab === 'company' ? (extras ? tr('До компанията… (@име споменава)') : tr('До компанията…')) : tab === 'alliance' ? tr('До целия съюз…') : (extras ? tr('До всички играчи… (@име споменава)') : tr('До всички играчи…'))}
+              placeholder={dm ? tr('Съобщение до {0}…', current.label) : tab === 'trade' ? tr('Продавам / купувам…') : tab === 'company' ? (extras ? tr('До компанията… (@име споменава)') : tr('До компанията…')) : tab === 'alliance' ? tr('До целия съюз…') : tab === 'cafe' ? tr('До всички в кафенето…') : (extras ? tr('До всички играчи… (@име споменава)') : tr('До всички играчи…'))}
               aria-label={tr('Съобщение')}
             />
             <button className="btn-primary px-3" disabled={busy || !text.trim()} aria-label={tr('Изпрати')}><Send className="h-4 w-4" /></button>

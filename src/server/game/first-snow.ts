@@ -7,13 +7,14 @@
  */
 import { desc, eq, inArray, like, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
+import { postMoment } from './chat-life';
 import { FIRST_SNOW, PASS_TASK, PLOW, SNOW_EVENTS, SNOW_KING, taskIncrements, TITLES, weekTasks, type PassTaskKind } from '@/lib/game/first-snow';
 import { passVersion } from '@/lib/game/season-pass';
 import { isoWeek, sofiaDay } from '@/lib/game/shop-v2';
 import { isWinter, roadCondition, type RealConditions, type RoadCondition } from '@/lib/game/winter';
 import { isPrewinter } from '@/lib/game/prewinter';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { jobState, seasons, userBadges, users } from '@/server/db/schema';
+import { jobState, seasons, userBadges, users, countries } from '@/server/db/schema';
 import { postCoins } from './coins';
 import { fail } from './errors';
 import { notify } from './notify';
@@ -93,6 +94,9 @@ async function recordPlow(tx: Tx, seasonId: number, f: SnowFacts, at: Date) {
   await addPassPoints(tx, f.userId, Math.round(f.tons * PLOW.pointsPerTon), at);
   if (before < PLOW.tonsPerDay && total >= PLOW.tonsPerDay) {
     await tx.update(jobState).set({ value: sql`jsonb_set(${jobState.value}, '{clearedAt}', to_jsonb(${at.toISOString()}::text))` }).where(eq(jobState.key, dayKey));
+    // 1.2.6: cleared roads are a moment for the global chat.
+    const [country] = await tx.select({ name: countries.nameBg }).from(countries).where(eq(countries.code, f.destCountry));
+    await postMoment(tx, `plow:${f.destCountry}:${sofiaDay(at)}`, t('❄️ Пътищата в {0} са разчистени за днес — благодарение на всички, които докараха сол и пясък.', country?.name ?? f.destCountry), { href: '/game/seasons', button: t('Сезонът') }, at);
   }
   const mine = await addTons(tx, `plow-tons:${seasonId}:${f.userId}`, f.tons, at);
   if (mine >= PLOW.titleTons && mine - f.tons < PLOW.titleTons) {

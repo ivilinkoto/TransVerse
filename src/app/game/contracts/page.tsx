@@ -34,7 +34,13 @@ import { BODY_LABELS, compatibilityError, URGENT_RELOCATION_MS } from '@/server/
 import { haggleable, hagglesOf } from '@/server/game/deals';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { and, eq, inArray, sql } from 'drizzle-orm';
-import { cities as citiesTable, contracts as contractsTable, deliveries } from '@/server/db/schema';
+import { cities as citiesTable, contracts as contractsTable, deliveries, relays as relaysTable } from '@/server/db/schema';
+import { myPartnerLoads, partnerLoadCard } from '@/server/game/partner-loads';
+import { myEscorts } from '@/server/game/on-the-road';
+import { PartnerPanel } from '@/components/game/PartnerPanel';
+import { RegionProjectCard } from '@/components/game/RegionProjectCard';
+import { regionProjectView } from '@/server/game/region-projects';
+import { PARTNER } from '@/lib/game/partner-loads';
 import { fleetView } from '@/server/game/queries';
 import { LICENCES } from '@/lib/game/licences';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
@@ -66,7 +72,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: tr('Поръчки') };
 }
 
-export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; repeat?: string; from?: string; truck?: string; load?: string; q?: string; contract?: string }> }) {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ fav?: string; hired?: string; lane?: string; repeat?: string; from?: string; truck?: string; load?: string; q?: string; contract?: string; partner?: string }> }) {
   await initLocale();
   const params = await searchParams;
   const onlyFavorites = params.fav === '1';
@@ -128,6 +134,13 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   // v1.8: a refused haggle took the load away from this player.
   const haggles = features.haggling ? await hagglesOf(db, user.id, all.map((c) => c.id), now) : new Map();
   const contracts = all.filter((c) => haggles.get(c.id)?.accepted !== false);
+  // 1.2.6: partner loads — which relays are partner ones, the card from a link and the player's own.
+  const relayIds = [...new Set(contracts.map((c) => c.relayId).filter(Boolean) as string[])];
+  const partnerRelays = features.partner_loads && relayIds.length ? new Set((await db.select({ id: relaysTable.id }).from(relaysTable).where(and(inArray(relaysTable.id, relayIds), eq(relaysTable.partner, true)))).map((r) => r.id)) : new Set<string>();
+  const partnerCard = features.partner_loads && /^[0-9a-f-]{36}$/.test(params.partner ?? '') ? await partnerLoadCard(db, user.id, params.partner!) : null;
+  const myPartners = features.partner_loads ? await myPartnerLoads(db, user.id) : [];
+  const myEscortList = features.escorts ? await myEscorts(db, user.id, now) : [];
+  const regionProject = features.region_projects ? await regionProjectView(db, user.id, now) : null;
 
   // Traffic from the players (v1.6): trucks on each lane right now.
   const laneTraffic = new Map<string, number>();
@@ -179,7 +192,11 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       goods: features.sealed_cargo && c.sealed ? tr('Запечатан товар') : c.goods,
       sealed: features.sealed_cargo && c.sealed,
       humanitarian: features.humanitarian && c.humanitarian,
-      relayLeg: features.relay ? c.relayLeg : null,
+      relayLeg: features.relay || (c.relayId && partnerRelays.has(c.relayId)) ? c.relayLeg : null,
+      partner: !!c.relayId && partnerRelays.has(c.relayId),
+      escort: features.escorts && c.escort,
+      escortRun: features.escorts && !!c.escortFor,
+      regionProject: !!regionProject && c.cargoType === regionProject.cargo && c.destination.countryCode === regionProject.country,
       temp: features.reefer && c.cargoType === 'refrigerated' && !c.sealed ? (({ min, max }) => `${min}…${max} °C`)(rangeFor(c.goods)) : null,
       haggle: features.haggling && haggleable(c) && !c.reservedByCompanyId ? (haggles.get(c.id) ?? 'open') : null,
       cargoType: c.cargoType as CargoType,
@@ -341,6 +358,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost px-3 py-1 text-xs">{user.uiPrefs?.boardView === 'full' ? tr('Прост изглед') : tr('Разширен изглед (всички етикети)')}</ActionButton>
         </div>
       )}
+      {regionProject && <RegionProjectCard p={regionProject} />}
+      {(features.partner_loads || features.escorts) && <PartnerPanel card={partnerCard} mine={myPartners} escorts={myEscortList} bonus={Math.round(PARTNER.bonusShare * 100)} points={PARTNER.passPoints} />}
       <ContractBoard initialQuery={params.q?.slice(0, 60) ?? ''} friends={features.gift_load ? (await friendsOf(db, user.id, now)).friends.map((f) => ({ id: f.id, username: f.username })) : []} doableDefault={user.level <= NEW_PLAYER_LEVEL} simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
     </div>
   );
