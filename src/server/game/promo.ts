@@ -130,6 +130,7 @@ function checkReward(r: PromoReward) {
   if ((r.vipDays ?? 0) < 0 || (r.vipDays ?? 0) > PROMO.maxVipDays) fail('promo_reward', t('VIP: до {0} дни.', PROMO.maxVipDays));
   const items = r.items ?? [];
   if (items.length > PROMO.maxItems) fail('promo_reward', t('До {0} вида предмети.', PROMO.maxItems));
+  if (new Set(items.map((it) => it.itemId)).size !== items.length) fail('promo_reward', t('Всеки предмет само веднъж — с по-голям брой.'));
   for (const it of items) {
     if (!(it.itemId in ITEMS) || ITEMS[it.itemId as ItemId].kind === 'coins') fail('unknown_item', t('Непознат предмет.'));
     if (!Number.isInteger(it.qty) || it.qty < 1 || it.qty > PROMO.maxItemQty) fail('promo_reward', t('Предмети: от 1 до {0} броя.', PROMO.maxItemQty));
