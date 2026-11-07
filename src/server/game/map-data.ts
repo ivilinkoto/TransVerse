@@ -10,6 +10,9 @@ import { allianceBases } from './alliances';
 import { activeReports } from './live-road';
 import { REPORT_KINDS } from '@/lib/game/live-road';
 import { tx } from '@/i18n/t';
+import { GAME_COUNTRIES } from '@/lib/geo/scope';
+import { isSnowTime, roadCondition } from '@/lib/game/winter';
+import { realConditions } from './weather';
 
 /**
  * What the map shows for a player: own trucks with their routes, depots, a
@@ -58,5 +61,14 @@ export async function mapData(db: DbOrTx, ctx: { userId: string; companyId: stri
       preview = { title: `${tx(c.goods)}: ${tx(o!.nameBg)} → ${tx(dd!.nameBg)} · ${km(c.distanceKm)}`, approximate: g?.provider !== 'valhalla', leg: { geometry: g?.geometry ?? null, from: [o!.lat, o!.lon], to: [dd!.lat, dd!.lon], km: c.distanceKm } };
     }
   }
-  return { vehicles, depots: depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] as [number, number] })), preview, stork: storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null, bases, reports };
+  // 1.2.8: snow and ice by country for the live map (the same conditions the roads have today).
+  let weather: MapProps['weather'] = {};
+  if (features.map_live && isSnowTime(now)) {
+    const real = features.real_weather ? await realConditions(db, now) : null;
+    for (const cc of GAME_COUNTRIES) {
+      const c = roadCondition(cc, now, real);
+      if (c !== 'clear') weather[cc] = c;
+    }
+  } else weather = undefined;
+  return { vehicles, depots: depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] as [number, number] })), preview, stork: storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null, bases, reports, weather };
 }

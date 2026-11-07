@@ -50,6 +50,8 @@ export interface MapProps {
   reports?: { id: number; emoji: string; label: string; near: string; position: LatLon }[];
   /** 1.2.2: a shorter map on top of „Курсове“ (the full one stays on /game/map). */
   compact?: boolean;
+  /** 1.2.8: snow, ice and blizzards by country today (only the countries that have them). */
+  weather?: Partial<Record<string, 'snow' | 'ice' | 'blizzard'>>;
 }
 
 interface CityDetails {
@@ -71,6 +73,8 @@ maplibregl.setWorkerUrl('/vendor/maplibre-gl-worker.mjs');
 
 const legLine = (leg: MapLeg): LatLon[] => (leg.geometry ? (polyline.decode(leg.geometry, 6) as LatLon[]) : greatCircle(leg.from, leg.to));
 const toLngLat = (p: LatLon): [number, number] => [p[1], p[0]];
+/** 1.2.8: open elevation tiles (Mapzen terrarium encoding on AWS Open Data). */
+const TERRAIN_TILES = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
 
 function vehiclePoint(v: MapVehicle, now: number): { point: LatLon; west: boolean } {
   if (!v.delivery) return { point: v.position, west: false };
@@ -206,7 +210,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [], compact = false }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [], compact = false, weather }: MapProps) {
   const compactAtStart = useRef(compact);
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
@@ -224,6 +228,10 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   const fx = useFeature('game_fx');
   const [shade, setShade] = useState(0);
   const [tilted, setTilted] = useState(false);
+  // 1.2.8 „Жива картина“: relief, sky and weather in 3D, and a camera that follows a truck.
+  const live = useFeature('map_live');
+  const [followId, setFollowId] = useState<string | null>(null);
+  const snowy = Object.keys(weather ?? {});
   const circleLive = useFeature('map_circle');
   const roadsideLive = useFeature('roadside');
   // The picked truck by id, so its card follows fresh data (e.g. after help on the road).
@@ -278,6 +286,13 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       if (compactAtStart.current) container.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
       const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
       map.addSource('cities', { type: 'geojson', data: empty });
+      // 1.2.8: snow and ice around the cities of the countries that have them today (soft white patches).
+      map.addLayer({ id: 'weather-snow', type: 'circle', source: 'cities', filter: ['in', ['get', 'country'], ['literal', []]], paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 16, 7, 40, 10, 90],
+        'circle-color': '#e8f2ff',
+        'circle-blur': 1,
+        'circle-opacity': 0.22,
+      } });
       map.addLayer({ id: 'cities-dot', type: 'circle', source: 'cities', paint: {
         'circle-radius': ['interpolate', ['linear'], ['get', 'population'], 15000, 3, 500000, 6, 3000000, 9],
         'circle-color': ['case', ['get', 'hub'], '#f6c343', '#8d9bb3'],
@@ -504,6 +519,39 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     return () => clearInterval(id);
   }, [ready, vehicles, ownVip, fx]);
 
+  // 1.2.8: the snowy countries of today on the map.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map?.getLayer('weather-snow')) return;
+    map.setFilter('weather-snow', ['in', ['get', 'country'], ['literal', live ? snowy : []]]);
+  }, [ready, live, snowy.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 1.2.8: the camera follows one of the player's moving trucks until the map is dragged.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !followId) return;
+    const v = vehicles.find((x) => x.id === followId);
+    if (!v) return;
+    const stop = () => setFollowId(null);
+    map.on('dragstart', stop);
+    const step = () => map.easeTo({ center: toLngLat(vehiclePoint(v, Date.now()).point), duration: 900, easing: (k) => k });
+    map.flyTo({ center: toLngLat(vehiclePoint(v, Date.now()).point), zoom: Math.max(map.getZoom(), 8.5), pitch: tilted ? 60 : map.getPitch(), duration: 1500 });
+    // The steps start once the flight has landed (an ease would cut the zoom short).
+    let id: ReturnType<typeof setInterval> | undefined;
+    const start = setTimeout(() => (id = setInterval(step, 1000)), 1600);
+    return () => {
+      clearTimeout(start);
+      clearInterval(id);
+      map.off('dragstart', stop);
+    };
+  }, [ready, followId, vehicles, tilted]);
+  const moving = vehicles.filter((v) => v.delivery && clock < scheduleEnd(v.delivery.schedule));
+  const followNext = () => {
+    if (!moving.length) return;
+    const i = moving.findIndex((v) => v.id === followId);
+    setFollowId(i >= 0 && i === moving.length - 1 ? null : moving[(i + 1) % moving.length]!.id);
+  };
+
   /** Tilts the map and raises the buildings (where the style has them), or back to flat. */
   const toggle3d = () => {
     const map = mapRef.current;
@@ -511,6 +559,25 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     const next = !tilted;
     setTilted(next);
     map.easeTo({ pitch: next ? 55 : 0, bearing: next ? -15 : 0, duration: 800 });
+    // 1.2.8: real relief (the mountains rise), shaded slopes and a sky by the time of day.
+    if (live) {
+      try {
+        if (next) {
+          if (!map.getSource('dem')) map.addSource('dem', { type: 'raster-dem', tiles: [TERRAIN_TILES], encoding: 'terrarium', tileSize: 256, maxzoom: 12, attribution: tr('Релеф: AWS Terrain Tiles') });
+          if (!map.getSource('dem-shade')) map.addSource('dem-shade', { type: 'raster-dem', tiles: [TERRAIN_TILES], encoding: 'terrarium', tileSize: 256, maxzoom: 12 });
+          if (!map.getLayer('hillshade')) map.addLayer({ id: 'hillshade', type: 'hillshade', source: 'dem-shade', paint: { 'hillshade-shadow-color': '#0b1220', 'hillshade-highlight-color': '#cfe3ff', 'hillshade-exaggeration': 0.45 } }, map.getLayer('weather-snow') ? 'weather-snow' : 'cities-dot');
+          map.setTerrain({ source: 'dem', exaggeration: 1.6 });
+          map.setSky(shade > 0.5
+            ? { 'sky-color': '#0a1530', 'horizon-color': '#1d2c52', 'fog-color': '#0b1220', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.7 }
+            : { 'sky-color': '#5d9de6', 'horizon-color': '#cfe3ff', 'fog-color': '#dbe8f7', 'sky-horizon-blend': 0.5, 'horizon-fog-blend': 0.5, 'fog-ground-blend': 0.6 });
+        } else {
+          map.setTerrain(null);
+          if (map.getLayer('hillshade')) map.removeLayer('hillshade');
+        }
+      } catch {
+        // No WebGL2 / terrain: the tilt alone.
+      }
+    }
     try {
       const source = Object.entries(map.getStyle().sources ?? {}).find(([, src]) => src.type === 'vector')?.[0];
       if (next && source && !map.getLayer('buildings-3d')) {
@@ -530,6 +597,12 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       {mapLook && (
         <button type="button" onClick={() => toggle3d()} className="absolute right-12 top-2.5 rounded-lg bg-asphalt-950/85 px-2.5 py-1.5 text-xs font-semibold text-mist-100 backdrop-blur hover:bg-asphalt-900" aria-pressed={tilted}>
           {tilted ? '2D' : '3D'} {shade > 0.5 ? '🌙' : '☀️'}
+        </button>
+      )}
+      {live && tilted && snowy.length > 0 && <SnowFall />}
+      {live && moving.length > 0 && (
+        <button type="button" onClick={followNext} className={`absolute right-12 top-11 rounded-lg px-2.5 py-1.5 text-xs font-semibold backdrop-blur ${followId ? 'bg-cyan-glow text-asphalt-950' : 'bg-asphalt-950/85 text-mist-100 hover:bg-asphalt-900'}`} aria-pressed={!!followId} data-testid="map-follow">
+          🎥 {followId ? tr('Следиш {0}', vehicles.find((v) => v.id === followId)?.plate ?? '') : tr('Следи камион')}
         </button>
       )}
       {error && <div className="absolute left-3 top-3 rounded-lg bg-loss/90 px-3 py-2 text-sm text-white">{error}</div>}
@@ -685,4 +758,36 @@ function TruckGlyph({ ring, fill = '#e8eef7' }: { ring: string; fill?: string })
       </g>
     </svg>
   );
+}
+
+
+/** 1.2.8: light snow over the 3D map when some countries have snow today (off with reduced motion). */
+function SnowFall() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas || !motionEnabled()) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let frame = 0;
+    const flakes = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random(), r: 0.8 + Math.random() * 2.2, v: 0.0008 + Math.random() * 0.0016, d: Math.random() * Math.PI * 2 }));
+    const draw = () => {
+      const w = (canvas.width = canvas.clientWidth);
+      const h = (canvas.height = canvas.clientHeight);
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      for (const f of flakes) {
+        f.y += f.v;
+        f.d += 0.01;
+        if (f.y > 1) Object.assign(f, { y: -0.02, x: Math.random() });
+        ctx.beginPath();
+        ctx.arc((f.x + Math.sin(f.d) * 0.01) * w, f.y * h, f.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  return <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 h-full w-full" />;
 }
