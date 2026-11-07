@@ -40,17 +40,21 @@ export async function generateMetadata(): Promise<Metadata> {
 const KIND = { van: 'Ван', rigid: 'Соло камион', tractor: 'Влекач' } as const;
 
 import { RoadChoices } from '@/components/game/RoadChoices';
-import { t as tr, tx } from '@/i18n/t';
+import { intlLocale, t as tr, tx } from '@/i18n/t';
+import { RelocateTruck } from '@/components/game/RelocateTruck';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
-export default async function FleetPage() {
+export default async function FleetPage({ searchParams }: { searchParams: Promise<{ to?: string; truck?: string }> }) {
   await initLocale();
   const { db, user, company, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
   const marta = features.marta && isMarta(now);
   const vip = isVip(user.vipUntil, now);
   const fleet = await fleetView(db, company.id);
+  // 1.2.3.3: „Премести камион до…“ from a convoy: the city comes in the link.
+  const params = await searchParams;
+  const [relocateTo] = features.truck_relocate && /^\d+$/.test(params.to ?? '') ? await db.select({ id: cities.id, name: cities.nameBg, country: cities.countryCode, lat: cities.lat, lon: cities.lon }).from(cities).where(eq(cities.id, Number(params.to))) : [];
   // 1.2.3: the favourite truck first, with its record trip and its trips.
   const [{ fav = null } = {}] = features.favorite_truck ? await db.select({ fav: users.favoriteVehicleId }).from(users).where(eq(users.id, user.id)) : [];
   if (fav) fleet.vehicles.sort((a, b) => (a.id === fav ? -1 : b.id === fav ? 1 : 0));
@@ -198,10 +202,11 @@ export default async function FleetPage() {
             {(() => {
               // 1.1.3.2: an idle truck away from every depot goes home in a minute, for free, from any country.
               if (v.delivery || v.status !== 'idle') return null;
-              if (v.movingUntil && v.movingUntil > now) return <p className="mt-3 text-xs text-cyan-glow">{tr('🏠 Пътува към депото — пристига до минута.')}</p>;
-              if (myDepots.some((d) => d.cityId === v.cityId)) return null;
+              if (v.movingUntil && v.movingUntil > now) return <p className="mt-3 text-xs text-cyan-glow">{v.movingUntil.getTime() - now.getTime() <= 90_000 ? tr('🏠 Пътува към {0} — пристига до минута.', tx(v.city.nameBg)) : tr('🚚 Пътува празен към {0} — пристига в {1}.', tx(v.city.nameBg), v.movingUntil.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', timeZone: 'Europe/Sofia' }))}</p>;
+              // 1.2.3.3: an empty run to any city, for money and time.
+              const relocate = features.truck_relocate ? <div className="mt-2"><RelocateTruck vehicleId={v.id} from={{ lat: v.city.lat, lon: v.city.lon }} preset={relocateTo && (params.truck === v.id || !params.truck) && relocateTo.id !== v.cityId ? relocateTo : null} /></div> : null;
               const targets = myDepots.filter((d) => d.cityId !== v.cityId);
-              if (!targets.length) return null;
+              if (myDepots.some((d) => d.cityId === v.cityId) || !targets.length) return relocate ? <div className="mt-3 rounded-xl border border-asphalt-700 px-3 py-2">{relocate}</div> : null;
               return (
                 <div className="mt-3 rounded-xl border border-asphalt-700 px-3 py-2">
                   {targets.length === 1 ? (
@@ -212,6 +217,7 @@ export default async function FleetPage() {
                     <SelectAction label={tr('Към депото')} ariaLabel={tr('Депо за {0}', v.plate)} value="" options={[{ value: '', label: tr('— избери депо —') }, ...targets.map((d) => ({ value: d.id, label: tx(d.name) }))]} action={{ type: 'moveToDepot', vehicleId: v.id }} field="depotId" />
                   )}
                   <p className="mt-1 text-xs text-mist-400">{tr('Празен камион се връща в депото за 1 минута — безплатно, от всяка държава. Прикаченото ремарке идва с него.')}</p>
+                  {relocate}
                 </div>
               );
             })()}

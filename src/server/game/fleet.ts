@@ -1,5 +1,5 @@
 import { winterTyreDiscount } from './prewinter';
-import { and, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { countryOpen } from '@/lib/geo/scope';
 import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
@@ -9,6 +9,7 @@ import { springDiscount } from '@/lib/game/marta';
 import { fuelPriceCents } from '@/lib/game/fuel';
 import { getRoute } from '@/server/geo/route-service';
 import { haversineKm } from '@/lib/geo/geometry';
+import { relocateQuote } from '@/lib/game/relocate';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { ECONOMY, resaleValueCents, tripCosts } from '@/lib/game/economy';
 import { repairPlan, type RepairPart } from '@/lib/game/repair';
@@ -259,7 +260,7 @@ export async function coupleTrailer(db: Database, userId: string, vehicleId: str
     const company = await companyForUser(tx, userId);
     const v = await ownedVehicle(tx, company.id, vehicleId);
     if (v.status !== 'idle') fail('vehicle_busy', tr('Камионът е на курс.'));
-    if (v.movingUntil && v.movingUntil > new Date()) fail('moving', tr('Камионът още пътува до депото — след минута.'));
+    if (v.movingUntil && v.movingUntil > new Date()) fail('moving', tr('Камионът още пътува — изчакай да пристигне.'));
     const unit = powerUnitModel(v.modelId);
     if (unit.kind === 'van') fail('not_tractor', tr('Ванът не тегли ремарке.'));
     await tx.update(trailers).set({ vehicleId: null }).where(eq(trailers.vehicleId, v.id));
@@ -340,6 +341,34 @@ export async function moveToDepot(db: Database, userId: string, vehicleId: strin
     await tx.update(vehicles).set({ cityId: depot!.cityId, movingUntil: arrivesAt }).where(eq(vehicles.id, v.id));
     if (t) await tx.update(trailers).set({ cityId: depot!.cityId }).where(eq(trailers.id, t.id));
     return { km: 0, costCents: 0, arrivesAt };
+  });
+}
+
+/**
+ * 1.2.3.3: a free truck (with its trailer) drives empty to any city of the game's
+ * open countries. It pays by the distance (relocateQuote) and arrives after the
+ * drive; until then it cannot take a load.
+ */
+export async function relocateVehicle(db: Database, userId: string, vehicleId: string, cityId: number, now = new Date()) {
+  const [europe, openWorld] = [await featureFor(db, userId, 'europe', now), await featureFor(db, userId, 'open_world', now)];
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const v = await ownedVehicle(tx, company.id, vehicleId);
+    if (v.cityId === cityId) fail('same_city', tr('Камионът вече е в този град.'));
+    if (v.status !== 'idle') fail('vehicle_busy', tr('Камионът е на курс.'));
+    if (v.movingUntil && v.movingUntil > now) fail('moving', tr('Камионът вече пътува.'));
+    const ends = await tx.select({ id: cities.id, lat: cities.lat, lon: cities.lon, nameBg: cities.nameBg, country: cities.countryCode }).from(cities).where(inArray(cities.id, [v.cityId, cityId]));
+    const from = ends.find((c) => c.id === v.cityId);
+    const to = ends.find((c) => c.id === cityId);
+    if (!from || !to) fail('city_not_found', tr('Градът не е намерен.'), 404);
+    if (!countryOpen(to!.country, europe, openWorld)) fail('country_closed', tr('Тази държава още не е отворена.'));
+    const q = relocateQuote([from!.lat, from!.lon], [to!.lat, to!.lon]);
+    const arrivesAt = new Date(now.getTime() + q.minutes * 60_000);
+    await post(tx, company.id, [{ category: 'relocation', amountCents: -q.costCents, description: tr('{0}: празен курс до {1} ({2} км)', v.plate, to!.nameBg, q.km), idempotencyKey: `relocate:${v.id}:${now.getTime()}`, refType: 'vehicle', refId: v.id }], { requireFunds: true });
+    const [t] = await tx.select({ id: trailers.id }).from(trailers).where(eq(trailers.vehicleId, v.id));
+    await tx.update(vehicles).set({ cityId: to!.id, movingUntil: arrivesAt }).where(eq(vehicles.id, v.id));
+    if (t) await tx.update(trailers).set({ cityId: to!.id }).where(eq(trailers.id, t.id));
+    return { km: q.km, costCents: q.costCents, arrivesAt };
   });
 }
 

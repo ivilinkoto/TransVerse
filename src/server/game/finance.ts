@@ -38,6 +38,7 @@ export type LedgerCategory =
   | 'vehicle_sale'
   | 'upgrades'
   | 'depots'
+  | 'relocation'
   | 'achievement_reward'
   | 'rental'
   | 'company_founding'
@@ -105,6 +106,7 @@ export type LedgerCategory =
   | 'tournament';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
+  relocation: 'Преместване на камион',
   starting_capital: 'Начален капитал',
   freight: 'Възнаграждения за курсове',
   bonus: 'Бонус за точност',

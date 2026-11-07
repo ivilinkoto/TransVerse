@@ -67,7 +67,7 @@ export default async function ConvoyPage({ params }: { params: Promise<{ id: str
           </Card>
           {open && !c.mine && (
             <Card title={t('Включи се')}>
-              <JoinConvoy convoyId={c.id} vehicles={vehicles} loads={loads.map((l) => ({ id: l.id, label: t('{0} · {1} т · {2}', l.goods, l.weightTons, money(l.rewardCents)) }))} shared={c.sharedCargo ? t('{0} {1} т', CARGO[c.sharedCargo as CargoType]?.label, c.sharedTons) : null} roles={[...freeRoles]} />
+              <JoinConvoy convoyId={c.id} vehicles={vehicles} loads={loads.map((l) => ({ id: l.id, label: t('{0} · {1} т · {2}', l.goods, l.weightTons, money(l.rewardCents)) }))} shared={c.sharedCargo ? t('{0} {1} т', CARGO[c.sharedCargo as CargoType]?.label, c.sharedTons) : null} roles={[...freeRoles]} relocateTo={features.truck_relocate ? c.originCityId : null} />
               <p className="mt-2 text-xs text-mist-400">{t('Камионът трябва да е в {0} и свободен в часа на тръгване. Неготовите остават.', c.from)}</p>
             </Card>
           )}

@@ -45,7 +45,7 @@ export async function cafeHere(db: DbOrTx, cityId: number) {
     .innerJoin(companies, eq(companies.id, vehicles.companyId))
     .innerJoin(users, eq(users.id, companies.ownerId))
     .where(and(eq(vehicles.cityId, cityId), eq(vehicles.status, 'idle'), isNull(users.bannedAt)))
-    .orderBy(desc(users.lastSeenAt))
+    .orderBy(sql`${users.lastSeenAt} desc nulls last`)
     .limit(12);
 }
 
