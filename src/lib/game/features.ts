@@ -139,6 +139,9 @@ export const FEATURES = {
   item_wants: '1.2.7',
   rumors: '1.2.7',
   duo_week: '1.2.7',
+  // 1.2.8 „Жива картина“
+  map_live: '1.2.8',
+  showroom_3d: '1.2.8',
   // 1.2.4 „Преди зимата“: winter goods and the server goal before 1 December, Black Friday in the shop and on the board.
   winter_prep: '1.2.4',
   black_friday: '1.2.4',

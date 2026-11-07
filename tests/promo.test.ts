@@ -100,4 +100,16 @@ describe('1.1.4.3 promo codes — server', () => {
     await db().update(users).set({ createdAt: new Date(Date.now() - 9 * 86_400_000) }).where(eq(users.id, late.userId));
     expect(await code(redeemCode(db(), late.userId, invite, null))).toBe('promo_invite_late');
   });
+
+  it('one code gives several items at once; the same item twice is refused', async () => {
+    const boss = await newPlayer();
+    const name = `MULTI-${tag()}`;
+    await createPromo(db(), admin(boss.userId), { code: name, reward: { items: [{ itemId: 'case_bronze', qty: 1 }, { itemId: 'coffee', qty: 2 }, { itemId: 'repair_kit', qty: 1 }] } });
+    const p = await newPlayer();
+    await redeemCode(db(), p.userId, name, null);
+    const got = await db().select().from(inventoryItems).where(eq(inventoryItems.userId, p.userId));
+    const qty = (id: string) => got.find((g) => g.itemId === id)?.qty ?? 0;
+    expect([qty('case_bronze'), qty('coffee'), qty('repair_kit')]).toEqual([1, 2, 1]);
+    expect(await code(createPromo(db(), admin(boss.userId), { code: `${name}X`, reward: { items: [{ itemId: 'coffee', qty: 1 }, { itemId: 'coffee', qty: 2 }] } }))).toBe('promo_reward');
+  });
 });
