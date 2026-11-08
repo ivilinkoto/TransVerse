@@ -144,7 +144,7 @@ export function GarageClient({ view, initialTruck, isVip }: { view: GarageView; 
       {/* Camera and scenes. */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <button type="button" className={chip(mode === 'orbit')} onClick={() => setMode('orbit')}>{t('🔄 Около камиона')}</button>
-        <button type="button" className={chip(mode === 'cab')} onClick={() => setMode('cab')} data-testid="garage-cab">{t('🪑 В кабината')}</button>
+        {(truck.kind !== 'van' || truck.modelId === 'sokol-cargo-72') && <button type="button" className={chip(mode === 'cab')} onClick={() => setMode('cab')} data-testid="garage-cab">{t('🪑 В кабината')}</button>}
         <button type="button" className={chip(mode === 'drive')} onClick={() => setMode('drive')} data-testid="garage-drive">{t('🛞 Пробно каране')}</button>
         <span className="mx-1 h-4 w-px bg-asphalt-700" />
         {SCENES.map((s) => <button key={s.id} type="button" className={chip(scenery === s.id && mode !== 'drive')} onClick={() => { setScenery(s.id); if (mode === 'drive') setMode('orbit'); }}>{t(s.label)}</button>)}

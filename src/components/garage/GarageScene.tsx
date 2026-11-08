@@ -59,148 +59,44 @@ interface Ctx {
   mode: GarageMode;
 }
 
-/**
- * The inside of the cab, to a real cab-over's measures: floor at 1.45 m, the dashboard
- * top just under the windscreen (2.05 m), the wheel 0.5 m in front of the driver's
- * eyes (2.55 m), seats, the bunk and the walls behind the door windows.
- */
+/** The player's keepsakes from the inventory, placed in the cab (the cab itself is part of the truck). */
 function buildInterior(t: BuiltTruck, charms: string[]) {
   const g = new THREE.Group();
-  const { frontX, length: cabL, height: cabH, width } = t.cab;
+  const { frontX, width } = t.cab;
   const floorY = t.cab.floorY;
-  const trim = mat('#2a2f37', { roughness: 0.85, side: THREE.DoubleSide });
-  const soft = mat('#3b4250', { roughness: 0.95, side: THREE.DoubleSide });
-  const dashM = mat('#16191f', { roughness: 0.7 });
-  const driverZ = -0.55;
-  const floor = box(cabL - 0.15, 0.04, width - 0.2, mat('#111317', { roughness: 0.95 }), 0.01);
-  floor.position.set(frontX - cabL / 2, floorY, 0);
-  g.add(floor);
-  // Dashboard: a wide top under the windscreen, the driver's binnacle and the centre stack.
-  const dashTop = 2.04;
-  const top = box(0.55, 0.08, width - 0.25, dashM, 0.04);
-  top.position.set(frontX - 0.35, dashTop - 0.04, 0);
-  g.add(top);
-  const lower = box(0.35, dashTop - floorY - 0.08, width - 0.3, dashM, 0.05);
-  lower.position.set(frontX - 0.22, floorY + (dashTop - floorY - 0.08) / 2, 0);
-  g.add(lower);
-  const binnacle = box(0.25, 0.2, 0.62, dashM, 0.06);
-  binnacle.position.set(frontX - 0.66, dashTop - 0.06, driverZ);
-  g.add(binnacle);
-  const cluster = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.15), new THREE.MeshBasicMaterial({ color: '#0b3a52' }));
-  cluster.rotation.y = -Math.PI / 2;
-  cluster.position.set(frontX - 0.785, dashTop - 0.07, driverZ);
-  g.add(cluster);
-  for (const dz of [-0.14, 0.14]) {
-    const dial = new THREE.Mesh(new THREE.RingGeometry(0.045, 0.055, 32), new THREE.MeshBasicMaterial({ color: '#7dd3fc' }));
-    dial.rotation.y = -Math.PI / 2;
-    dial.position.set(frontX - 0.787, dashTop - 0.07, driverZ + dz);
-    g.add(dial);
-  }
-  const stack = box(0.4, 0.5, 0.42, dashM, 0.05);
-  stack.position.set(frontX - 0.5, dashTop - 0.3, 0.05);
-  stack.rotation.z = 0.25;
-  g.add(stack);
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.16), new THREE.MeshBasicMaterial({ color: '#1e3a5f' }));
-  screen.rotation.y = -Math.PI / 2 + 0.0;
-  screen.rotation.z = 0.25;
-  screen.position.set(frontX - 0.71, dashTop - 0.2, 0.05);
-  g.add(screen);
-  // Steering wheel on its column, tilted toward the driver.
-  const wheelG = new THREE.Group();
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.022, 12, 40), mat('#0b0d11', { roughness: 0.55 }));
-  wheelG.add(rim);
-  for (const a of [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3]) {
-    const spoke = box(0.22, 0.035, 0.02, mat('#20242b', { roughness: 0.5 }), 0.01);
-    spoke.position.set(Math.cos(a - Math.PI / 2) * 0.11, Math.sin(a - Math.PI / 2) * 0.11, 0);
-    spoke.rotation.z = a - Math.PI / 2;
-    wheelG.add(spoke);
-  }
-  wheelG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 20).rotateX(Math.PI / 2), mat('#20242b')));
-  wheelG.rotation.y = -Math.PI / 2;
-  wheelG.rotation.x = 0;
-  const holderW = new THREE.Group();
-  holderW.add(wheelG);
-  holderW.rotation.z = -0.55;
-  holderW.position.set(frontX - 0.98, dashTop + 0.0, driverZ);
-  g.add(holderW);
-  const column = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.45, 12), dashM);
-  column.rotation.z = Math.PI / 2 - 0.55;
-  column.position.set(frontX - 0.8, dashTop - 0.12, driverZ);
-  g.add(column);
-  // Seats: cushion, backrest and headrest.
-  for (const z of [driverZ, -driverZ]) {
-    const cushion = box(0.5, 0.14, 0.52, soft, 0.06);
-    cushion.position.set(frontX - 1.42, floorY + 0.48, z);
-    const back = box(0.14, 0.72, 0.52, soft, 0.07);
-    back.position.set(frontX - 1.7, floorY + 0.9, z);
-    back.rotation.z = 0.12;
-    const head = box(0.1, 0.22, 0.3, soft, 0.05);
-    head.position.set(frontX - 1.78, floorY + 1.38, z);
-    g.add(cushion, back, head);
-    const base = box(0.35, 0.36, 0.35, mat('#14161a'), 0.03);
-    base.position.set(frontX - 1.45, floorY + 0.2, z);
-    g.add(base);
-  }
-  // Rear wall, bunk and roof lining.
-  const rear = box(0.04, cabH - floorY - 0.1, width - 0.15, trim, 0.01);
-  rear.position.set(frontX - cabL + 0.07, floorY + (cabH - floorY) / 2, 0);
-  g.add(rear);
-  if (cabL > 2.1) {
-    const bunk = box(0.62, 0.16, width - 0.25, mat('#4b5563', { roughness: 1 }), 0.06);
-    bunk.position.set(frontX - cabL + 0.4, floorY + 0.62, 0);
-    g.add(bunk);
-    const pillow = box(0.35, 0.1, 0.45, mat('#e5e7eb', { roughness: 1 }), 0.05);
-    pillow.position.set(frontX - cabL + 0.4, floorY + 0.76, width / 2 - 0.45);
-    g.add(pillow);
-  }
-  const roof = box(cabL - 0.2, 0.03, width - 0.25, mat('#9ca3af', { roughness: 0.95, side: THREE.DoubleSide }), 0.01);
-  roof.position.set(frontX - cabL / 2 - 0.1, cabH - 0.12, 0);
-  g.add(roof);
-  for (const side of [-1, 1]) {
-    // Door trim up to the window line; the wall behind the door window up to the roof.
-    const door = box(1.0, 0.6, 0.03, soft, 0.02);
-    door.position.set(frontX - 1.1, floorY + 0.32, side * (width / 2 - 0.09));
-    g.add(door);
-    const wallL = cabL - 1.7;
-    if (wallL > 0.2) {
-      const wall = box(wallL, cabH - floorY - 0.15, 0.03, trim, 0.01);
-      wall.position.set(frontX - 1.65 - wallL / 2, floorY + (cabH - floorY) / 2, side * (width / 2 - 0.09));
-      g.add(wall);
-    }
-  }
   // Keepsakes from the inventory.
   const has = (id: string) => charms.includes(id);
   if (has('truck_keychain')) {
     const string = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.25, 4), mat('#e5e7eb'));
-    string.position.set(frontX - 0.45, 2.85, -0.1);
+    string.position.set(frontX - 0.42, 2.78, -0.05);
     const toy = box(0.12, 0.07, 0.06, mat('#dc2626'), 0.01);
-    toy.position.set(frontX - 0.45, 2.7, -0.1);
+    toy.position.set(frontX - 0.42, 2.64, -0.05);
     g.add(string, toy);
   }
   if (has('road_atlas')) {
     const atlas = box(0.3, 0.03, 0.22, mat('#1d4ed8'), 0.01);
-    atlas.position.set(frontX - 0.35, 2.05, width * 0.25);
+    atlas.position.set(frontX - 0.3, 2.1, width * 0.22);
     atlas.rotation.y = 0.3;
     g.add(atlas);
   }
   if (has('cb_mic')) {
     const mic = box(0.06, 0.1, 0.04, mat('#111827'), 0.02);
-    mic.position.set(frontX - 0.55, 2.2, 0.3);
+    mic.position.set(frontX - 0.6, 1.9, 0.25);
     g.add(mic);
   }
   if (has('old_tachograph')) {
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.005, 20), mat('#f8fafc'));
-    disc.position.set(frontX - 0.4, 2.05, 0.05);
+    disc.position.set(frontX - 0.3, 2.09, 0.0);
     g.add(disc);
   }
   if (has('trucker_cap')) {
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat('#b91c1c'));
-    cap.position.set(frontX - 1.42, floorY + 0.56, 0.55);
+    cap.position.set(frontX - 1.48, floorY + 0.45, 0.55);
     g.add(cap);
   }
   if (has('sunglasses')) {
     const glasses = box(0.05, 0.04, 0.16, mat('#0b0f17', { metalness: 0.8 }), 0.01);
-    glasses.position.set(frontX - 0.3, 2.06, -0.25);
+    glasses.position.set(frontX - 0.25, 2.1, -0.2);
     g.add(glasses);
   }
   return g;

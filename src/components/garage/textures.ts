@@ -240,3 +240,150 @@ export function treadTexture() {
   g.fillRect(0, 28, 512, 8);
   return done(key, c, { repeat: [6, 1] });
 }
+
+/** The instrument cluster: speedometer, rev counter and a centre display (original design). */
+export function clusterTexture() {
+  const key = 'cluster';
+  if (cache.has(key)) return cache.get(key)!;
+  const { c, g } = canvas(1024, 340);
+  g.fillStyle = '#05070a';
+  g.fillRect(0, 0, 1024, 340);
+  const dial = (cx: number, max: number, step: number, label: string, red: number) => {
+    const cy = 175;
+    const r = 140;
+    g.strokeStyle = '#1f2937';
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(cx, cy, r, 0, Math.PI * 2);
+    g.stroke();
+    const a0 = Math.PI * 0.75;
+    const a1 = Math.PI * 2.25;
+    for (let v = 0; v <= max; v += step / 2) {
+      const a = a0 + ((a1 - a0) * v) / max;
+      const major = v % step === 0;
+      g.strokeStyle = v >= red ? '#ef4444' : '#e5e7eb';
+      g.lineWidth = major ? 4 : 2;
+      g.beginPath();
+      g.moveTo(cx + Math.cos(a) * (r - 6), cy + Math.sin(a) * (r - 6));
+      g.lineTo(cx + Math.cos(a) * (r - (major ? 26 : 16)), cy + Math.sin(a) * (r - (major ? 26 : 16)));
+      g.stroke();
+      if (major) {
+        g.fillStyle = '#cbd5e1';
+        g.font = '22px system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText(String(max >= 1000 ? v / 100 : v), cx + Math.cos(a) * (r - 48), cy + Math.sin(a) * (r - 48));
+      }
+    }
+    // Needle at rest.
+    const a = a0 + (a1 - a0) * 0.02;
+    g.strokeStyle = '#f97316';
+    g.lineWidth = 5;
+    g.beginPath();
+    g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(a) * (r - 30), cy + Math.sin(a) * (r - 30));
+    g.stroke();
+    g.fillStyle = '#111827';
+    g.beginPath();
+    g.arc(cx, cy, 16, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#94a3b8';
+    g.font = '18px system-ui, sans-serif';
+    g.fillText(label, cx, cy + 60);
+  };
+  dial(170, 125, 20, 'km/h', 200);
+  dial(854, 2500, 500, 'x100 /min', 2000);
+  // Centre display: gear, odometer, fuel and AdBlue bars.
+  g.fillStyle = '#0b1220';
+  g.fillRect(360, 40, 304, 260);
+  g.strokeStyle = '#1e293b';
+  g.strokeRect(360, 40, 304, 260);
+  g.fillStyle = '#e2e8f0';
+  g.font = 'bold 64px system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.fillText('N', 512, 120);
+  g.font = '24px system-ui, sans-serif';
+  g.fillStyle = '#7dd3fc';
+  g.fillText('412 386 km', 512, 175);
+  const bar = (y: number, v: number, col: string, label: string) => {
+    g.fillStyle = '#1f2937';
+    g.fillRect(400, y, 224, 14);
+    g.fillStyle = col;
+    g.fillRect(400, y, 224 * v, 14);
+    g.fillStyle = '#94a3b8';
+    g.font = '16px system-ui, sans-serif';
+    g.textAlign = 'left';
+    g.fillText(label, 400, y - 8);
+  };
+  bar(225, 0.78, '#22c55e', 'FUEL');
+  bar(270, 0.62, '#38bdf8', 'AdBlue');
+  // Warning lights row.
+  ['#22c55e', '#f59e0b', '#38bdf8', '#22c55e'].forEach((col, i) => {
+    g.fillStyle = col;
+    g.globalAlpha = 0.85;
+    g.beginPath();
+    g.arc(420 + i * 60, 22, 7, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+  });
+  return done(key, c);
+}
+
+/** The centre screen: a navigation map with a route (original drawing). */
+export function navTexture() {
+  const key = 'nav';
+  if (cache.has(key)) return cache.get(key)!;
+  const { c, g } = canvas(512, 320);
+  g.fillStyle = '#0f172a';
+  g.fillRect(0, 0, 512, 320);
+  const r = rng(11);
+  g.strokeStyle = '#1e293b';
+  g.lineWidth = 6;
+  for (let i = 0; i < 14; i++) {
+    g.beginPath();
+    g.moveTo(r() * 512, r() * 320);
+    g.lineTo(r() * 512, r() * 320);
+    g.stroke();
+  }
+  g.strokeStyle = '#38bdf8';
+  g.lineWidth = 8;
+  g.beginPath();
+  g.moveTo(40, 290);
+  g.bezierCurveTo(140, 220, 200, 240, 260, 160);
+  g.bezierCurveTo(300, 110, 400, 90, 470, 40);
+  g.stroke();
+  g.fillStyle = '#f97316';
+  g.beginPath();
+  g.moveTo(256, 172);
+  g.lineTo(244, 196);
+  g.lineTo(256, 190);
+  g.lineTo(268, 196);
+  g.closePath();
+  g.fill();
+  g.fillStyle = 'rgba(15,23,42,0.85)';
+  g.fillRect(0, 0, 512, 44);
+  g.fillStyle = '#e2e8f0';
+  g.font = 'bold 22px system-ui, sans-serif';
+  g.fillText('E79  ·  128 km  ·  1:41', 16, 30);
+  return done(key, c);
+}
+
+/** Seat fabric: fine weave with a darker centre panel. */
+export function fabricTexture(base = '#2b313a') {
+  const key = `fabric:${base}`;
+  if (cache.has(key)) return cache.get(key)!;
+  const { c, g } = canvas(256, 256);
+  g.fillStyle = base;
+  g.fillRect(0, 0, 256, 256);
+  const r = rng(5);
+  for (let i = 0; i < 9000; i++) {
+    const v = r() * 30 - 15;
+    g.fillStyle = `rgba(${128 + v},${128 + v},${140 + v},0.08)`;
+    g.fillRect(r() * 256, r() * 256, 1, 2);
+  }
+  g.fillStyle = 'rgba(0,0,0,0.28)';
+  g.fillRect(70, 0, 116, 256);
+  g.fillStyle = 'rgba(255,255,255,0.05)';
+  for (let y = 0; y < 256; y += 16) g.fillRect(70, y, 116, 2);
+  return done(key, c);
+}
