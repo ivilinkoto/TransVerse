@@ -125,6 +125,7 @@ import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
 import { refreshLoads, reserveContract } from '@/server/game/contracts';
 import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
+import { applyTuningPreset, fitTuning, likeGarage, saveTuningPreset, shareGarage } from '@/server/game/showroom';
 import { chatBodySchema, clearCompanyChat, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
 import {
   buyCompanyUpgrade,
@@ -174,6 +175,11 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('autoDispatch'), vehicleId: id, on: z.boolean() }),
   z.object({ type: z.literal('relocateVehicle'), vehicleId: id, cityId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('refreshLoads') }),
+  z.object({ type: z.literal('fitTuning'), vehicleId: id, part: z.string().max(20), style: z.string().max(20).nullable() }),
+  z.object({ type: z.literal('saveTuningPreset'), vehicleId: id, slot: z.coerce.number().int().min(0).max(2), name: z.string().max(40).default('') }),
+  z.object({ type: z.literal('applyTuningPreset'), vehicleId: id, slot: z.coerce.number().int().min(0).max(2) }),
+  z.object({ type: z.literal('likeGarage'), username: z.string().trim().min(1).max(30), note: z.string().max(200).default('') }),
+  z.object({ type: z.literal('shareGarage') }),
   z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
   z.object({ type: z.literal('appealFine'), fineId: id }),
   z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
@@ -680,6 +686,11 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   inviteEscort: 'escorts',
   relocateVehicle: 'truck_relocate',
   refreshLoads: 'board_refresh',
+  fitTuning: 'garage_showroom',
+  saveTuningPreset: 'garage_showroom',
+  applyTuningPreset: 'garage_showroom',
+  likeGarage: 'garage_showroom',
+  shareGarage: 'garage_showroom',
   ratePartner: 'partner_ratings',
   roadWave: 'road_wave',
   wantItem: 'item_wants',
@@ -734,6 +745,17 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await runDispatch(db, user.id, input.plan)) };
     case 'nameVehicle':
       return { ok: true, nickname: await nameVehicle(db, user.id, input.vehicleId, input.name) };
+    case 'fitTuning':
+      return { ok: true, ...(await fitTuning(db, user.id, input.vehicleId, input.part, input.style)) };
+    case 'saveTuningPreset':
+      return { ok: true, ...(await saveTuningPreset(db, user.id, input.vehicleId, input.slot, input.name)) };
+    case 'applyTuningPreset':
+      return { ok: true, ...(await applyTuningPreset(db, user.id, input.vehicleId, input.slot)) };
+    case 'likeGarage':
+      return { ok: true, ...(await likeGarage(db, user.id, input.username, input.note)) };
+    case 'shareGarage':
+      await shareGarage(db, user.id);
+      return { ok: true };
     case 'refreshLoads':
       return { ok: true, ...(await refreshLoads(db, user.id)) };
     case 'relocateVehicle': {

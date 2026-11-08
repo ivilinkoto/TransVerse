@@ -130,6 +130,7 @@ export const FEATURES = {
   truck_relocate: '1.2.3.3',
   // 1.2.3.4: new loads around the trucks (live at once)
   board_refresh: '1.2.3.4',
+  garage_showroom: '1.2.3.5',
   // 1.2.6 „На една вълна“
   chat_life: '1.2.6',
   partner_loads: '1.2.6',
@@ -145,7 +146,7 @@ export const FEATURES = {
   duo_week: '1.2.7',
   // 1.2.8 „Жива картина“
   map_live: '1.2.8',
-  showroom_3d: '1.2.8',
+  showroom_3d: '1.2.3.5', // moved up from 1.2.8: the garage opens now
   // 1.2.4 „Преди зимата“: winter goods and the server goal before 1 December, Black Friday in the shop and on the board.
   winter_prep: '1.2.4',
   black_friday: '1.2.4',

@@ -15,6 +15,12 @@ export interface Cosmetics {
   sticker?: string;
   /** Баба Марта (March): a martenitsa on the mirror — not sold, the season puts it on. */
   martenitsa?: boolean;
+  /** 1.2.3.5: tuning parts on the truck now (looks only), e.g. { spoiler: 'high' }. */
+  tuning?: Partial<Record<'spoiler' | 'skirts' | 'bullbar' | 'exhaust' | 'rims' | 'stance' | 'decal', string>>;
+  /** Tuning styles bought for this truck ("spoiler:high") — put back on for free. */
+  owned?: string[];
+  /** Saved tuning sets. */
+  presets?: { name: string; tuning: Partial<Record<'spoiler' | 'skirts' | 'bullbar' | 'exhaust' | 'rims' | 'stance' | 'decal', string>> }[];
 }
 
 export const COSMETIC_PARTS: Record<CosmeticPart, { label: string; price: number; styles: { id: string; label: string }[] }> = {

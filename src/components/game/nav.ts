@@ -80,6 +80,7 @@ export const SECTIONS: NavSection[] = [
     icon: Truck,
     tabs: [
       { href: '/game/fleet', label: 'Моите превозни средства', group: 'Камиони', core: true },
+      { href: '/game/showroom', label: 'Гараж 3D', feature: 'garage_showroom', group: 'Камиони', core: true },
       { href: '/game/trips', label: 'Бордови дневник', feature: 'trip_log', group: 'Камиони' },
       { href: '/game/cabin', label: 'Кабина', feature: 'cabin', group: 'Камиони' },
       { href: '/game/analytics', label: 'Анализ', group: 'Камиони', minLevel: 3 },

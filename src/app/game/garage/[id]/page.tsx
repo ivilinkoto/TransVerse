@@ -10,7 +10,6 @@ import { Showcase } from '@/components/garage/Showcase';
 import { Badge, Card, PageHeader } from '@/components/ui';
 import { int, money } from '@/lib/format';
 import { COSMETIC_PARTS, type CosmeticPart } from '@/lib/game/cosmetics';
-import { ShowroomPanel } from '@/components/garage/ShowroomPanel';
 import { TRAILER_UPGRADES, UPGRADES, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
 import { isMarta } from '@/lib/game/marta';
 import { gameContext } from '@/server/game/context';
@@ -50,7 +49,7 @@ export default async function ShowcasePage({ params }: { params: Promise<{ id: s
       {tier > 0 && <div><Badge tone={tier === 3 ? 'gold' : tier === 2 ? 'neutral' : 'orange'}>🏆 {tx(LEGEND[tier - 1]!.title)}</Badge></div>}
       <Card>
         <Showcase hasTrailer={!!v.trailer} truck={{ modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, color: v.color, livery: v.livery, cosmetics: v.cosmetics, trailerUpgrades: v.trailer?.upgrades, trailerLogo: v.trailer?.logo, trailerCosmetics: v.trailer?.cosmetics, martenitsa: features.marta && isMarta(now) }} />
-        {features.showroom_3d && <div className="mt-4"><ShowroomPanel modelId={v.modelId} trailerModelId={v.trailer?.modelId ?? null} color={v.color} cosmetics={v.cosmetics} /></div>}
+        {features.garage_showroom && <Link href={`/game/showroom?truck=${v.id}`} className="btn-primary mt-4 w-full justify-center" data-testid="showroom-open">{tr('🏁 Отвори в Гараж 3D: тунинг, кабина, пробно каране')}</Link>}
       </Card>
       <div className="grid gap-4 md:grid-cols-3">
         <Card title={tr('Подобрения на камиона')}>
