@@ -393,9 +393,9 @@ export function buildOutdoor(world: THREE.Group, scene: THREE.Scene, kind: 'trac
   const u = sky.material.uniforms as Record<string, { value: unknown }>;
   const elevation = kind === 'sunset' ? 2.5 : kind === 'snow' ? 18 : 38;
   const azimuth = kind === 'sunset' ? -110 : 140;
-  u.turbidity!.value = kind === 'snow' ? 18 : kind === 'sunset' ? 6 : 4;
+  u.turbidity!.value = kind === 'snow' ? 14 : kind === 'sunset' ? 5 : 2.5;
   u.rayleigh!.value = kind === 'snow' ? 0.6 : kind === 'sunset' ? 2.6 : 1.4;
-  u.mieCoefficient!.value = kind === 'snow' ? 0.03 : 0.005;
+  u.mieCoefficient!.value = kind === 'snow' ? 0.02 : 0.003;
   u.mieDirectionalG!.value = 0.8;
   const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - elevation), THREE.MathUtils.degToRad(azimuth));
   (u.sunPosition!.value as THREE.Vector3).copy(sunDir);
@@ -406,13 +406,13 @@ export function buildOutdoor(world: THREE.Group, scene: THREE.Scene, kind: 'trac
   world.add(sky);
   scene.background = null;
   const fogColor = kind === 'sunset' ? '#e9a27a' : kind === 'snow' ? '#d6dde5' : '#b9d3ea';
-  scene.fog = new THREE.Fog(fogColor, 80, kind === 'snow' ? 220 : 420);
+  scene.fog = new THREE.Fog(fogColor, kind === 'snow' ? 70 : 160, kind === 'snow' ? 260 : 700);
 
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.MeshStandardMaterial({ map: groundTexture(kind === 'snow' ? 'snow' : kind === 'sunset' ? 'dirt' : 'grass'), roughness: 1 }));
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   world.add(ground);
-  world.add(new THREE.HemisphereLight(kind === 'sunset' ? '#ffd2a8' : '#e0ecff', kind === 'snow' ? '#e5e7eb' : '#4b5a3c', kind === 'snow' ? 0.9 : 0.55));
+  world.add(new THREE.HemisphereLight(kind === 'sunset' ? '#ffd2a8' : '#cfe0ff', kind === 'snow' ? '#c9ced6' : '#3d4a30', kind === 'snow' ? 0.6 : 0.35));
   const sun = new THREE.DirectionalLight(kind === 'sunset' ? '#ffb27a' : '#fff6e5', kind === 'sunset' ? 2.6 : kind === 'snow' ? 1.2 : 2.6);
   sun.position.copy(sunDir).multiplyScalar(80);
   sun.castShadow = true;
