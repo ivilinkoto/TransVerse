@@ -77,7 +77,7 @@ export function GarageClient({ view, initialTruck, isVip }: { view: GarageView; 
   };
 
   const others = useMemo(
-    () => view.trucks.filter((_, i) => i !== index).slice(0, view.hall.platforms - 1).map((o) => ({ modelId: o.modelId, color: o.color, cosmetics: o.cosmetics, condition: o.condition, trailerModelId: o.trailerModelId, trailerColor: o.trailerColor })),
+    () => view.trucks.filter((_, i) => i !== index).slice(0, view.hall.platforms - 1).map((o) => ({ modelId: o.modelId, color: o.color, cosmetics: o.cosmetics, condition: o.condition, trailerModelId: o.trailerModelId, trailerColor: o.trailerColor, plate: o.plate })),
     [view.trucks, index, view.hall.platforms],
   );
 
@@ -121,7 +121,7 @@ export function GarageClient({ view, initialTruck, isVip }: { view: GarageView; 
 
       <div className="relative h-[360px] overflow-hidden rounded-2xl border border-asphalt-700 sm:h-[520px]">
         <GarageScene
-          truck={{ modelId: truck.modelId, color: shownColor, cosmetics: shownCosmetics, tuning: shownTuning, condition: truck.condition, trailerModelId: truck.trailerModelId, trailerColor: truck.trailerColor }}
+          truck={{ modelId: truck.modelId, color: shownColor, cosmetics: shownCosmetics, tuning: shownTuning, condition: truck.condition, trailerModelId: truck.trailerModelId, trailerColor: truck.trailerColor, plate: truck.plate }}
           others={others}
           tier={view.hall.tier}
           night={view.night}
