@@ -138,6 +138,14 @@ export const POWER_UNITS: PowerUnitModel[] = [
   },
 ];
 
+/**
+ * 1.2.3.4: trucks, trailers and upgrades cost 25 % more (the freight pays 60 % more —
+ * see ECONOMY.rewardScale). The prices above are the base; the game uses these.
+ */
+export const PRICE_SCALE = 1.25;
+const scaled = (cents: number) => Math.round((cents * PRICE_SCALE) / 100) * 100;
+for (const m of POWER_UNITS) m.priceCents = scaled(m.priceCents);
+
 /** 1.1.3.1: may this player see and buy the model now (electric and later models wait for their release). */
 export function modelAvailable(m: PowerUnitModel, has: (f: FeatureId) => boolean): boolean {
   return !m.exclusive && (!m.electric || has('electric')) && (!m.since || has(m.since));
@@ -160,6 +168,8 @@ export const TRAILERS: TrailerModel[] = [
   { id: 'drawbar-box', kind: 'drawbar', body: 'box', brand: 'Struma Trailers', name: 'Прикачно ремарке фургон 7.7 м', priceCents: 24_000_00, payloadTons: 10, axles: 2, requiresHeavyHaul: false, minLevel: 2, dragFuel: 2 },
   { id: 'drawbar-reefer', kind: 'drawbar', body: 'reefer', brand: 'Struma Trailers', name: 'Прикачно хладилно ремарке 7.7 м', priceCents: 36_000_00, payloadTons: 9, axles: 2, requiresHeavyHaul: false, minLevel: 3, dragFuel: 2.5 },
 ];
+
+for (const t of TRAILERS) t.priceCents = scaled(t.priceCents);
 
 export type UpgradeId = 'eco_tune' | 'aero_kit' | 'premium_tyres' | 'winter_tyres' | 'comfort_cab' | 'summer_tyres' | 'all_season_tyres';
 
@@ -214,6 +224,8 @@ export const TRAILER_UPGRADES: Record<TrailerUpgradeId, TrailerUpgradeDefinition
   led_markers: { id: 'led_markers', label: 'LED контурни светлини', description: '−15 % шанс за пътни инциденти · светят по контура', priceCents: 1_100_00, fuel: 1, wear: 1, xp: 1, incidents: 0.85, visual: true },
   company_logo: { id: 'company_logo', label: 'Фирмено лого', description: 'Името на компанията ти по ремаркето', priceCents: 1_500_00, fuel: 1, wear: 1, xp: 1, visual: true, bodies: ['curtain', 'reefer', 'tipper', 'container', 'tanker', 'box'] },
 };
+
+for (const u of [...Object.values(UPGRADES), ...Object.values(TRAILER_UPGRADES)]) u.priceCents = scaled(u.priceCents);
 
 export const isTrailerUpgrade = (id: string): id is TrailerUpgradeId => id in TRAILER_UPGRADES;
 

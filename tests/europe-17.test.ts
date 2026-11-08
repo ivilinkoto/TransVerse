@@ -49,7 +49,7 @@ describe('before the release', () => {
     live.europe = false;
     expect((await loadHubs(db())).some((h) => isEuropeCountry(h.countryCode))).toBe(false);
     expect((await loadHubs(db(), { europe: true })).some((h) => isEuropeCountry(h.countryCode))).toBe(true);
-    const c = await makeContract('Vienna', 'Milan', { windowMinutes: 3 * 24 * 60 });
+    const c = await makeContract('Vienna', 'Milan', { windowMinutes: 3 * 24 * 60, rewardCents: 100_000_00 }) // tops the board, whatever else the shared test DB holds;
     expect((await openContracts(db(), { limit: 300 })).some((x) => x.id === c.id)).toBe(false);
     expect((await openContracts(db(), { limit: 300, withEurope: true })).some((x) => x.id === c.id)).toBe(true);
     const p = await newPlayer();

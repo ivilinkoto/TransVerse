@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true, featureDate: () => new Date('2026-01-01T00:00:00Z') }));
 import { memberBonuses } from '@/lib/game/company';
 import { MAINTENANCE, maintenanceCostCents, maintenanceState } from '@/lib/game/maintenance';
+import { powerUnitModel } from '@/lib/game/catalog';
 import { closeDb } from '@/server/db/client';
 import { companies, companyBuildings, ledgerEntries, organizations, vehicles } from '@/server/db/schema';
 import { GameError } from '@/server/game/errors';
@@ -37,7 +38,7 @@ describe('maintenance', () => {
     expect(await code(serviceVehicle(db(), p.userId, v.id))).toBe('fresh');
     await db().update(vehicles).set({ odometerKm: 8000 }).where(eq(vehicles.id, v.id));
     const cost = await serviceVehicle(db(), p.userId, v.id);
-    expect(cost).toBe(maintenanceCostCents(98_000_00));
+    expect(cost).toBe(maintenanceCostCents(powerUnitModel('danubia-t440').priceCents));
     const [after] = await db().select().from(vehicles).where(eq(vehicles.id, v.id));
     expect(after!.serviceKm).toBe(8000);
     const paid = await db().select().from(ledgerEntries).where(eq(ledgerEntries.refId, v.id));

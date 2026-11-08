@@ -22,7 +22,9 @@ import { winterWeekPay } from './prewinter';
 import { OVERSIZE } from '@/lib/game/roads';
 import { payFactor } from '@/server/admin-economy';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cities, cityMarkets, companies, contracts, deliveries, drivers, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
+import { cities, cityMarkets, companies, contracts, deliveries, drivers, jobState, marketEvents, routes, trailers, users, vehicles } from '@/server/db/schema';
+import { BOARD_REFRESH, refreshPrice } from '@/lib/game/board-refresh';
+import { fail as failWith } from './errors';
 import { getCrossingRoute, getRoute, getRouteVia } from '@/server/geo/route-service';
 import { crossingLine, islandOf } from '@/lib/game/crossings';
 import { featureLive } from '@/lib/game/features';
@@ -211,7 +213,7 @@ export interface LocalNeed {
  * empty to another city just to find work. Creates the missing ones, each to
  * a different destination. Returns how many were created.
  */
-export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Date(), provider?: RoutingProvider, want: number = LOCAL_JOBS.perTruck): Promise<number> {
+export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Date(), provider?: RoutingProvider, want: number = LOCAL_JOBS.perTruck, fresh = 0): Promise<number> {
   const compatible = CARGO_TYPES.filter(
     (c) => c !== 'livestock' && CARGO[c].minLevel <= need.level && CARGO[c].bodies.some((b) => need.bodies.includes(b)) && missingLicences(requiredLicences(c, []), need.licences).length === 0,
   );
@@ -227,7 +229,8 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
   const [here] = await db.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, need.cityId));
   if (!here) return 0;
   const doable = candidates.filter((c) => missingLicences(requiredLicences(c.cargoType, contractCountries(here.country, c.destCountry, c.routeCountries)), need.licences).length === 0);
-  const missing = want - doable.length;
+  // 1.2.3.4: a refresh asks for `fresh` new loads whatever is already there.
+  const missing = fresh > 0 ? fresh : want - doable.length;
   if (missing <= 0) return 0;
 
   const hubs = await loadHubs(db);
@@ -439,7 +442,7 @@ export async function ensureDailyLoad(db: Database, now = new Date(), provider?:
 }
 
 /** Runs the local-job guarantee for every free, crewed vehicle (optionally of one company). */
-export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit = LOCAL_JOBS.maxTrucks): Promise<number> {
+export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit: number = LOCAL_JOBS.maxTrucks, fresh = 0): Promise<number> {
   // Free crewed trucks where they stand, and (1.1.2) trucks that arrive soon where they will stand.
   const free = await db
     .select({ cityId: vehicles.cityId, modelId: vehicles.modelId, vehicleId: vehicles.id, companyId: vehicles.companyId, level: users.level, userId: users.id })
@@ -474,9 +477,9 @@ export async function ensureLocalJobsForFleet(db: Database, now = new Date(), co
     const key = `${r.companyId}:${r.cityId}:${cap.bodies.join(',')}:${cap.payloadTons}:${r.level}:${[...licences].sort().join(',')}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level, licences, companyId: r.companyId }, now, provider);
+    created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level, licences, companyId: r.companyId }, now, provider, LOCAL_JOBS.perTruck, fresh);
     // A bounded amount of new loads per run; the rest comes on the next one.
-    if (created >= LOCAL_JOBS.maxNewPerRun) break;
+    if (!fresh && created >= LOCAL_JOBS.maxNewPerRun) break;
   }
   return created;
 }
@@ -598,4 +601,38 @@ export async function reserveContract(db: Database, userId: string, contractId: 
     await broadcast(tx, 'market');
     return until;
   });
+}
+
+/**
+ * 1.2.3.4: new loads around the player's free trucks (3 per city). Free once every 24 hours,
+ * then for ТрансКоин that double each time until the free one is back.
+ */
+export async function refreshLoads(db: Database, userId: string, now = new Date(), provider?: RoutingProvider) {
+  const { companyForUser } = await import('./company');
+  const { postCoins } = await import('./coins');
+  const company = await companyForUser(db, userId);
+  const key = `board-refresh:${userId}`;
+  // Nothing to refresh around without a free truck with a driver: no charge either.
+  const [ready] = await db.select({ id: vehicles.id }).from(vehicles).innerJoin(drivers, eq(drivers.vehicleId, vehicles.id)).where(and(eq(vehicles.companyId, company.id), eq(vehicles.status, 'idle'), isNull(vehicles.soldAt))).limit(1);
+  if (!ready) failWith('no_free_trucks', tr('Нужен е свободен камион с шофьор — около него излизат новите товари.'));
+  const price = await db.transaction(async (tx) => {
+    const [row] = await tx.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, key)).for('update');
+    const state = (row?.value as { freeAt: string | null; paid: number } | undefined) ?? null;
+    const cost = refreshPrice(state, now);
+    if (cost > 0) await postCoins(tx, userId, { amount: -cost, reason: 'board_refresh', description: tr('Нови товари около камионите'), idempotencyKey: `board-refresh:${userId}:${now.getTime()}` }, { requireFunds: true });
+    const next = cost > 0 ? { freeAt: state!.freeAt, paid: (state?.paid ?? 0) + 1 } : { freeAt: now.toISOString(), paid: 0 };
+    await tx.insert(jobState).values({ key, value: next, updatedAt: now }).onConflictDoUpdate({ target: jobState.key, set: { value: next, updatedAt: now } });
+    return cost;
+  });
+  const created = await ensureLocalJobsForFleet(db, now, company.id, provider, BOARD_REFRESH.maxCities, BOARD_REFRESH.perCity);
+  return { created, paidCoins: price };
+}
+
+/** What the next refresh costs (0 = free) and when the free one is back. */
+export async function refreshState(db: DbOrTx, userId: string, now = new Date()) {
+  const [row] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, `board-refresh:${userId}`));
+  const state = (row?.value as { freeAt: string | null; paid: number } | undefined) ?? null;
+  const price = refreshPrice(state, now);
+  const freeAgainAt = price > 0 && state?.freeAt ? new Date(new Date(state.freeAt).getTime() + BOARD_REFRESH.freeEveryHours * 3_600_000) : null;
+  return { price, freeAgainAt };
 }

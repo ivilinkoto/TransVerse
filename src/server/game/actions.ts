@@ -123,7 +123,7 @@ import { declineJob, offerJob, offerSchema, setForHire } from '@/server/game/hir
 import { startProject } from '@/server/game/projects';
 import { buyCompanyLicence, buyLicence } from '@/server/game/licences';
 import { claimMission, rerollMission } from '@/server/game/missions';
-import { reserveContract } from '@/server/game/contracts';
+import { refreshLoads, reserveContract } from '@/server/game/contracts';
 import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
 import { chatBodySchema, clearCompanyChat, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
 import {
@@ -173,6 +173,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('dispatchRun'), plan: z.array(z.object({ vehicleId: id, contractId: id })).min(1).max(50) }),
   z.object({ type: z.literal('autoDispatch'), vehicleId: id, on: z.boolean() }),
   z.object({ type: z.literal('relocateVehicle'), vehicleId: id, cityId: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('refreshLoads') }),
   z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
   z.object({ type: z.literal('appealFine'), fineId: id }),
   z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
@@ -678,6 +679,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   acceptPartner: 'partner_loads',
   inviteEscort: 'escorts',
   relocateVehicle: 'truck_relocate',
+  refreshLoads: 'board_refresh',
   ratePartner: 'partner_ratings',
   roadWave: 'road_wave',
   wantItem: 'item_wants',
@@ -732,6 +734,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await runDispatch(db, user.id, input.plan)) };
     case 'nameVehicle':
       return { ok: true, nickname: await nameVehicle(db, user.id, input.vehicleId, input.name) };
+    case 'refreshLoads':
+      return { ok: true, ...(await refreshLoads(db, user.id)) };
     case 'relocateVehicle': {
       const r = await relocateVehicle(db, user.id, input.vehicleId, input.cityId);
       return { ok: true, km: r.km, costCents: r.costCents, arrivesAt: r.arrivesAt.toISOString() };

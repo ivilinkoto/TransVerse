@@ -97,10 +97,11 @@ export function planTrip(input: ScheduleInput): PlannedTrip {
   const segments: Segment[] = [];
   const scale = (minutes: number) => (minutes * MIN) / input.timeScale;
   const crew = input.crew ?? { startDutyMin: 0, team: false, extraDailyMin: 0 };
-  // A team swaps at the wheel instead of taking breaks and rests for less.
+  // A team swaps at the wheel instead of taking breaks or stopping for the daily rest:
+  // one sleeps in the bunk while the other drives, so the truck keeps going.
   const rules = {
     breakAfterMin: crew.team ? Infinity : DRIVING_RULES.breakAfterMin,
-    dailyDrivingMin: dailyLimitMin(crew),
+    dailyDrivingMin: crew.team ? Infinity : dailyLimitMin(crew),
     dailyRestMin: crew.team ? CREW_RULES.teamRestMin : DRIVING_RULES.dailyRestMin,
   };
   let t = input.startAt;

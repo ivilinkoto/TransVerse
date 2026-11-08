@@ -5,7 +5,7 @@ import { fail } from './errors';
 import { t } from '@/i18n/t';
 import { taperCoins } from '@/lib/game/coin-taper';
 
-export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction' | 'postcards' | 'truck_contest' | 'humanitarian' | 'harvest' | 'story' | 'email_verified' | 'big_run' | 'mystery_client' | 'fog_pilot' | 'lost_cargo' | 'items' | 'promo' | 'item_sale';
+export type CoinReason = 'admin_grant' | 'admin_remove' | 'purchase' | 'shop' | 'gift_received' | 'refund' | 'event_reward' | 'payment_refund' | 'daily_reward' | 'referral_reward' | 'league_reward' | 'season_pass' | 'holiday_reward' | 'auction_reward' | 'project_reward' | 'mentor_reward' | 'weekly_goal' | 'discord_link' | 'giveaway' | 'discord_level' | 'photo_contest' | 'quiz' | 'daily_load' | 'duel' | 'livery_contest' | 'rally' | 'challenge' | 'tournament' | 'legend' | 'plate_auction' | 'postcards' | 'truck_contest' | 'humanitarian' | 'harvest' | 'story' | 'email_verified' | 'big_run' | 'mystery_client' | 'fog_pilot' | 'lost_cargo' | 'items' | 'promo' | 'item_sale' | 'board_refresh';
 
 export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   postcards: 'Картички от пътя',
@@ -51,6 +51,7 @@ export const COIN_REASON_LABELS: Record<CoinReason, string> = {
   items: 'Предмети от инвентара',
   promo: 'Промокод',
   item_sale: 'Продадени предмети',
+  board_refresh: 'Нови товари (обновяване)',
 };
 
 /**

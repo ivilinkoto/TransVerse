@@ -1,0 +1,21 @@
+03febee92e	Without a free truck with a driver the button takes no TransCoins.	Без свободного грузовика с водителем кнопка не списывает ТрансКоины.
+0f28c18033	The free refresh is back in {0}. Each next one costs twice as much.	Бесплатное обновление снова через {0}. Каждое следующее вдвое дороже.
+ee5d58ba95	The “still resting” note in “Jobs” now shows only for a truck with one driver.	Пометка «ещё отдыхает» в «Рейсах» теперь видна только у грузовика с одним водителем.
+424f53002a	The “🔄 New loads” button in “Jobs” makes 3 new loads around each city with a free truck with a driver (up to 6 cities).	Кнопка «🔄 Новые грузы» в «Рейсах» создаёт по 3 новых груза у каждого города со свободным грузовиком с водителем (до 6 городов).
+51538a552c	In “Jobs” the “🔄 New loads” button puts new orders around each city with a free truck. Once every 24 hours it is free.	В «Рейсах» кнопка «🔄 Новые грузы» добавляет заказы у каждого города со свободным грузовиком. Раз в 24 часа — бесплатно.
+b07ef4764d	A double crew now swaps at the wheel: while one driver rests, the other drives and the truck does not stop for the daily rest.	Двойной экипаж теперь меняется за рулём: пока один водитель отдыхает, другой ведёт, и грузовик не стоит на суточном отдыхе.
+ecbc544db4	All jobs pay 60% more. Orders already on the board keep the old pay until they expire.	Все рейсы оплачиваются на 60 % больше. Заказы, уже выставленные на бирже, сохраняют старую цену, пока не истекут.
+353fe4c1d2	Trucks, trailers and upgrades cost 25% more. A depot costs 56,000 лв., its expansion 22,500 лв.	Грузовики, прицепы и улучшения дорожают на 25 %. Депо стоит 56 000 лв., его расширение — 22 500 лв.
+3aa26bcc24	Jobs pay 60% more. Trucks, trailers, upgrades and depots cost 25% more.	Рейсы платят на 60 % больше. Грузовики, прицепы, улучшения и депо дорожают на 25 %.
+2d0a26e46a	New loads	Новые грузы
+6bdc5979f6	New loads (refresh)	Новые грузы (обновление)
+0a8d11b23e	New loads around the trucks	Новые грузы у грузовиков
+533b52ed92	New loads: {0}	Новые грузы: {0}
+29ee084ad5	You need a free truck with a driver — the new loads appear around it.	Нужен свободный грузовик с водителем — новые грузы появляются рядом с ним.
+e542ffbe4c	Refresh the loads around your trucks, a double crew drives without stopping, and jobs pay more.	Обновляй грузы у своих грузовиков, двойной экипаж едет без остановок, а рейсы платят больше.
+11b0140a50	There are already enough loads around the trucks.	У грузовиков уже достаточно грузов.
+39f6450edd	{0} new loads around each city with a free truck. Once every 24 hours it is free.	По {0} новых груза у каждого города со свободным грузовиком. Раз в 24 часа — бесплатно.
+2da540770e	More money from jobs	Больше денег за рейсы
+845069cae8	The first refresh in 24 hours is free. Each next one costs TransCoins and twice as much: 5, 10, 20, 40… up to 160 TC. After 24 hours it is free again.	Первое обновление за 24 часа бесплатно. Каждое следующее стоит ТрансКоины и вдвое дороже: 5, 10, 20, 40… до 160 TC. Через 24 часа снова бесплатно.
+72de518aa9	🔄 New loads · {0} TC	🔄 Новые грузы · {0} TC
+8080c42a14	🔄 New loads · free	🔄 Новые грузы · бесплатно

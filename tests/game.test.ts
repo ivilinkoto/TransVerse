@@ -2,6 +2,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { authenticate, loginSchema, registerSchema } from '@/server/auth/accounts';
 import { createSession, validateSession } from '@/server/auth/session';
+import { powerUnitModel } from '@/lib/game/catalog';
 import { closeDb, getDb } from '@/server/db/client';
 import { achievements, companies, contracts, deliveries, drivers, ledgerEntries, seasonScores, seasons, trailers, vehicles } from '@/server/db/schema';
 import { replenishMarket } from '@/server/game/contracts';
@@ -220,11 +221,11 @@ describe('fleet, finance and staff', () => {
     const elsewhere = await cityByName(solo.hq.name === 'Plovdiv' ? 'Varna' : 'Plovdiv');
     await expectGameError(buyVehicle(db(), solo.userId, 'sokol-courier', elsewhere.id), 'no_depot');
 
-    const { userId, hq } = await playerWithCompany('Sofia', 34_000_00);
+    const { userId, hq } = await playerWithCompany('Sofia', powerUnitModel('sokol-courier').priceCents);
     const before = (await companyOf(userId)).balanceCents;
     await buyVehicle(db(), userId, 'sokol-courier', hq.id);
     // The own truck replaces the starter rental, so the fleet is still one vehicle.
-    expect((await companyOf(userId)).balanceCents).toBe(before - 34_000_00);
+    expect((await companyOf(userId)).balanceCents).toBe(before - powerUnitModel('sokol-courier').priceCents);
     await expectGameError(buyVehicle(db(), userId, 'hemus-r12-box', hq.id), 'insufficient_funds');
     const company = await companyOf(userId);
     await db().update(companies).set({ balanceCents: 200_000_00 }).where(eq(companies.id, company.id));
