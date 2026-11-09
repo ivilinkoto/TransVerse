@@ -29,7 +29,8 @@ import { mapData } from '@/server/game/map-data';
 import { TutorialVisit } from '@/components/game/TutorialVisit';
 import { tutorialPending } from '@/server/game/tutorial-flags';
 import { MapClient } from '../map/MapClient';
-import { ensureLocalJobsForFleet, openContracts } from '@/server/game/contracts';
+import { ensureLocalJobsForFleet, openContracts, refreshState } from '@/server/game/contracts';
+import { RefreshLoads } from '@/components/game/RefreshLoads';
 import { BODY_LABELS, compatibilityError, URGENT_RELOCATION_MS } from '@/server/game/deliveries';
 import { haggleable, hagglesOf } from '@/server/game/deals';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -139,6 +140,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const partnerRelays = features.partner_loads && relayIds.length ? new Set((await db.select({ id: relaysTable.id }).from(relaysTable).where(and(inArray(relaysTable.id, relayIds), eq(relaysTable.partner, true)))).map((r) => r.id)) : new Set<string>();
   const partnerCard = features.partner_loads && /^[0-9a-f-]{36}$/.test(params.partner ?? '') ? await partnerLoadCard(db, user.id, params.partner!) : null;
   const myPartners = features.partner_loads ? await myPartnerLoads(db, user.id) : [];
+  // 1.2.3.4: new loads around the trucks — free once a day.
+  const refresh = features.board_refresh ? await refreshState(db, user.id, now) : null;
   const myEscortList = features.escorts ? await myEscorts(db, user.id, now) : [];
   const regionProject = features.region_projects ? await regionProjectView(db, user.id, now) : null;
 
@@ -171,7 +174,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       // 1.2.3: the empty leg is free (as the urgent one-minute relocation always was); only the cargo leg costs.
       const chargedEmptyKm = c.urgent ? 0 : freeEmptyKm(emptyKm);
       const crew = v.driver ? crewEffects(v.driver, v.coDriver, now) : undefined;
-      const restMin = v.driver ? Math.max(restLeftMin(v.driver, now), v.coDriver ? restLeftMin(v.coDriver, now) : 0) : 0;
+      // A team never waits: one of the two drives while the other rests.
+      const restMin = v.driver && !v.coDriver ? restLeftMin(v.driver, now) : 0;
       const costs = tripCosts({ unit: v.model, trailer: v.trailer?.model ?? null, upgrades: [...v.upgrades, ...(v.trailer?.upgrades ?? [])], condition: v.condition, driverSkill: Math.max(v.driver?.skill ?? 1, v.coDriver?.skill ?? 0), crewFuel: crew?.fuel, crewWear: crew?.wear, emptyKm: chargedEmptyKm, loadedKm: c.distanceKm - seaKm, tons: part ? part.tons : c.weightTons, payloadTons: cap.payloadTons || 1, tolledRoute: { empty: !c.urgent, loaded: c.route.hasToll }, fuelPrice: { empty: fuelPriceCents(v.city.countryCode, now), loaded: legFuelPriceCents(c.origin.countryCode, c.distanceKm, c.route.borders, now) } });
       // Urgent: one minute to the pickup city, then the cargo leg at the shipment's speed.
       // The crew changes the trip time: a tired driver rests early, a team drives on.
@@ -351,6 +355,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           </ul>
         </div>
       )}
+      {refresh && <RefreshLoads price={refresh.price} freeAgainAt={refresh.freeAgainAt?.toISOString() ?? null} />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
       {features.simple_board && (

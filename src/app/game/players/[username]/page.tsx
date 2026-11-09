@@ -61,7 +61,7 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
   const vs = (cents: number) => (mine ? <span className="block text-[11px] font-normal text-mist-400">{tr('ти: {0}', money(cents))}</span> : null);
   return (
     <div className="space-y-6">
-      <PageHeader title={tr('Кариера · {0}', card.username)} subtitle={features.business_profile ? tr('Курсове, рекорди, приходи и автопарк. Игрови данни.') : tr('Курсове, рекорди и любими линии. Игрови данни, без пари.')} />
+      <PageHeader title={tr('Кариера · {0}', card.username)} subtitle={features.business_profile ? tr('Курсове, рекорди, приходи и автопарк. Игрови данни.') : tr('Курсове, рекорди и любими линии. Игрови данни, без пари.')} actions={features.garage_showroom ? <Link href={`/game/showroom/u/${encodeURIComponent(card.username)}`} className="btn-ghost" data-testid="visit-garage">{tr('🏁 Гаражът')}</Link> : undefined} />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="min-w-0 space-y-6">
           <Card><PlayerCardLive card={card} /></Card>

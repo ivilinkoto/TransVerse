@@ -36,8 +36,10 @@ export const ECONOMY = {
   demandDropPerTon: 0.012,
   demandRecoveryPerHour: 0.01,
   depotSlotsDefault: 3,
-  depotPriceCents: 45_000_00,
-  depotSlotUpgradeCents: 18_000_00,
+  depotPriceCents: 56_000_00,
+  depotSlotUpgradeCents: 22_500_00,
+  /** 1.2.3.4: the freight pays 60 % more (closer to real rates); trucks and the rest cost 25 % more (PRICE_SCALE). */
+  rewardScale: 1.6,
 } as const;
 
 /** Electric trucks (v1.4, game data): energy price and the lower road tolls. */
@@ -46,7 +48,7 @@ export const ELECTRIC = { centsPerKwh: 42, tollFactor: 0.25 } as const;
 export function rewardCents(cargo: CargoType, tons: number, km: number, marketMultiplier: number): number {
   const def = CARGO[cargo];
   const perKm = def.baseCentsPerKm + def.centsPerTonKm * tons;
-  return Math.round(ECONOMY.handlingFeeCents + km * perKm * marketMultiplier);
+  return Math.round((ECONOMY.handlingFeeCents + km * perKm * marketMultiplier) * ECONOMY.rewardScale);
 }
 
 export function upgradeFactor(upgrades: readonly string[], key: 'fuel' | 'wear' | 'xp'): number {

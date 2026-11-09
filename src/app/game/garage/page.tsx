@@ -83,6 +83,7 @@ export default async function GaragePage() {
                     <span className="font-display text-lg font-bold">{tx(v.model.name)}</span>
                     <span className="font-mono text-xs text-mist-400">{v.nickname && <span className="font-sans font-semibold text-mist-200">„{v.nickname}“ · </span>}{tx(v.plate)}</span>
                     {features.garage_showcase && <Link href={`/game/garage/${v.id}`} className="text-xs text-cyan-glow hover:underline">{tr('Витрина →')}</Link>}
+                    {features.garage_showroom && <Link href={`/game/showroom?truck=${v.id}`} className="text-xs text-cyan-glow hover:underline">{tr('Гараж 3D →')}</Link>}
                     {features.scrapyard && v.ownership === 'owned' && !v.delivery && v.status === 'idle' && (
                       <>
                         {spareParts > 0 && v.condition < 100 && <ActionButton action={{ type: 'repairWithPart', vehicleId: v.id }} className="btn-ghost px-2 py-1 text-xs">{tr('Ремонт с част (+{0} %)', SCRAP.repairPerPart)}</ActionButton>}

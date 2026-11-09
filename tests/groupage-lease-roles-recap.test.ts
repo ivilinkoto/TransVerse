@@ -8,6 +8,7 @@ import { LEASE, leaseTerms, payoffCents } from '@/lib/game/leasing';
 import { MULTISTOP, splitTons, stopMultiplier, stopPenaltyCents } from '@/lib/game/multistop';
 import { isRecapTime, recapYear } from '@/lib/game/recap';
 import { planTrip, type Segment } from '@/lib/game/schedule';
+import { powerUnitModel } from '@/lib/game/catalog';
 import { closeDb } from '@/server/db/client';
 import { companies, companyMembers, companyRanks, ledgerEntries, organizations, treasuryEntries, users, vehicleLeases, vehicles } from '@/server/db/schema';
 import { bonusRoomCents, payBonus } from '@/server/game/bonuses';
@@ -100,10 +101,10 @@ describe('leasing', () => {
 
   it('down payment now, weekly instalments, no selling until paid off', async () => {
     const p = await playerWithCompany('Sofia');
-    await fund(p.userId, 30_000_00);
+    await fund(p.userId, 40_000_00);
     const before = (await accountOf(p.userId)).balanceCents;
     const v = await buyVehicle(db(), p.userId, 'danubia-t440', p.hq.id, { lease: true });
-    const terms = leaseTerms(98_000_00);
+    const terms = leaseTerms(powerUnitModel('danubia-t440').priceCents);
     expect((await accountOf(p.userId)).balanceCents).toBe(before - terms.downCents);
     expect(await code(sellVehicle(db(), p.userId, v.id))).toBe('leased');
     expect(await code(buyVehicle(db(), p.userId, 'sokol-courier', p.hq.id, { lease: true }))).toBe('lease_unavailable');
@@ -128,7 +129,7 @@ describe('leasing', () => {
 
   it('two missed instalments: the truck goes back to the leasing company', async () => {
     const p = await playerWithCompany('Sofia');
-    await fund(p.userId, 30_000_00);
+    await fund(p.userId, 40_000_00);
     const v = await buyVehicle(db(), p.userId, 'danubia-t440', p.hq.id, { lease: true });
     const account = await accountOf(p.userId);
     await db().update(companies).set({ balanceCents: 0 }).where(eq(companies.id, account.id));

@@ -60,7 +60,7 @@ describe('starter rental', () => {
     const [offer] = await db().select().from(notifications).where(and(eq(notifications.userId, p.userId), sql`${notifications.title} like 'Можеш да откупиш%'`));
     expect(offer).toBeDefined();
     const price = rentalBuyoutCents(truck!.modelId);
-    expect(price).toBe(39_500_00);
+    expect(price).toBe(49_400_00);
     expect(await code(buyoutRental(db(), p.userId, truck!.id))).toBe('insufficient_funds');
     await fund(account.id, price, `test:buyout:${account.id}`);
     expect((await buyoutRental(db(), p.userId, truck!.id)).priceCents).toBe(price);

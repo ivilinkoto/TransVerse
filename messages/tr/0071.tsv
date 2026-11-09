@@ -1,0 +1,140 @@
+eabf6748ab	{0} parts	{0} деталей
+ae80d35f62	Fleet → “3D Garage”: all your trucks in a hall with an interior. Each brand has its own shape; a worn truck is dusty and scratched.	Автопарк → «Гараж 3D»: все твои грузовики в зале с интерьером. У каждой марки своя форма, а изношенный грузовик пыльный и поцарапанный.
+0a15b78a99	Alloy	Алюминиевые
+1b3b8f9b08	Exhausts	Выхлопные трубы
+aa5654a64a	A note for {0} (optional)	Записка для {0} (по желанию)
+2b05a09f68	Thank you! {0} will see your 👍.	Спасибо! {0} увидит 👍.
+956592abc4	Paint · {0} TC	Покрасить · {0} TC
+21f061e6a1	Paint · free (VIP)	Покрасить · бесплатно (VIP)
+1061cc711e	Paint and these parts are paid in TransCoins, as in the Shop.	Краска и эти детали оплачиваются ТрансКоинами, как в Магазине.
+60eed6a473	The 3D truck is yours: model, paint, parts, trailer and condition. Below 80% it is dusty, below 55% scratched, below 35% rusty.	В 3D — твой грузовик: модель, краска, детали, прицеп и состояние. Ниже 80 % пыльный, ниже 55 % поцарапанный, ниже 35 % ржавый.
+5d1b5cdbbd	High	Высокий
+d07958b346	Ride height	Высота
+b0dff2bc13	Enter the garage	Войти в гараж
+199750d269	Garage	Гараж
+6494eb3541	3D Garage	Гараж 3D
+b5c7d21c85	3D Garage →	Гараж 3D →
+afade9e95f	Your garage is already in the chat — again in {0} h.	Гараж уже в чате — снова через {0} ч.
+7b752050ab	Your garage is in the global chat.	Гараж в глобальном чате.
+8b45dec9a4	The garage is empty — buy a truck at the Market.	Гараж пуст — купи грузовик на Рынке.
+7f50a0d8f3	The garage is empty.	Гараж пуст.
+fd0448fb19	{0}’s garage	Гараж {0}
+008e5d7c0e	Guests	Гости
+8b8f1d3616	Guests in the garage	Гости в гараже
+7728b5dc67	A guest leaves a 👍 and a note of up to 120 characters, and you get a notification. Like your truck? Enter it in “Truck of the Month”.	Гость оставляет 👍 и записку до 120 знаков, а ты получаешь уведомление. Нравится грузовик? Отправь его на «Грузовик месяца».
+d3004b3830	Twin chrome	Две хромированные
+4875e25741	Day and night by the real hour. Your sold trucks stand as small models on the retro shelf.	День и ночь по настоящему времени. Проданные грузовики стоят моделями на ретро-полке.
+2d06e773a8	Rims	Диски
+a1636ec6da	Single chrome	Одна хромированная
+e7e6cedd5a	Save the current one	Сохранить текущий
+a80f31d1ee	Save the tuning as a set and switch with one click. Only parts the truck already has come back.	Сохрани тюнинг как набор и меняй одним кликом. Возвращаются только детали, которые уже есть у грузовика.
+cf4c7d7aec	Save the current one over it	Записать текущий поверх
+aadd48111b	Stars	Звёзды
+b3ab80e0ce	Winter grip	Зимнее сцепление
+528a50806d	Kilometres driven	Пройдено км
+1b91937c9d	Set name	Название набора
+eff41b3ffc	Set name (optional)	Название набора (по желанию)
+32607c5baa	The truck’s history: jobs, km, the longest job and the favourite city.	История грузовика: рейсы, км, самый длинный рейс и любимый город.
+a5fae0a4f5	The truck	Грузовик
+b83dddea26	The truck is on a job — upgrades are fitted between jobs.	Грузовик в рейсе — улучшения ставятся между рейсами.
+639fd8d261	The truck has been repainted.	Грузовик перекрашен.
+70969332e0	The truck has been repaired.	Грузовик отремонтирован.
+4177132482	The map in 3D with real mountains, sky and snow, and a camera that flies after your truck.	Карта в 3D с настоящими горами, небом и снегом и камера, которая летит за твоим грузовиком.
+bf7ae48ab0	Like new	Как новый
+dadd0061a9	Comfort (XP)	Комфорт (опыт)
+7cb0a95528	Buy {0} · {1}	Купить {0} · {1}
+72d2dd5b7d	A shiny floor, spotlights, tyre shelves, a tool wall, a neon sign with your name and a cabinet with a cup for each badge.	Блестящий пол, прожекторы, полки с шинами, стена с инструментами, неон с твоим именем и витрина с кубком за каждый значок.
+293dca7e5c	Favourite city	Любимый город
+41719bc7f9	Small workshop	Маленькая мастерская
+a52501bb73	Came by your garage and left a 👍.	Заглянул в твой гараж и оставил 👍.
+95fa325c49	Modern hall	Современный зал
+ee4fd9d552	Fitted	Установлено
+7cd390ed44	Fitted: {0}	Установлено: {0}
+9aad51a51e	At level {0} the hall becomes “{1}” ({2} platforms).	На уровне {0} зал станет «{1}» ({2} платформы).
+2b283ba807	Rented and company trucks can’t be changed — pick your own.	Арендованные и фирменные грузовики не меняются — выбери свой.
+5db4782cab	Low	Низкий
+e40dd0ff1d	There is no such slot.	Нет такого места.
+ceb8c3bed4	No notes yet.	Записок пока нет.
+c52c3cfad9	Flames	Языки пламени
+e6442f01a9	Upgrades, paint (TC), shop parts, repairs and service right from the garage. The bars show what an upgrade will change.	Улучшения, краска (TC), детали из магазина, ремонт и ТО — прямо из гаража. Полосы показывают, что изменит улучшение.
+e295ed0c1f	Show your garage in the chat — guests leave 👍 and notes.	Покажи гараж в чате — гости оставляют 👍 и записки.
+1ef9b0b9cb	Show your garage in the chat. Guests look at your trucks, get in the cab and leave a 👍 and a note.	Покажи гараж в чате. Гости смотрят грузовики, садятся в кабину и оставляют 👍 и записку.
+2636888fc6	Empty slot {0}	Пустое место {0}
+cecd5702ff	Previous	Предыдущий
+fc1b06ea51	Bull bar	Кенгурятник
+4f6db5aa1d	Preview	Проба
+5147c27537	Service · up to {0}	ТО · до {0}
+b88ca24bfc	Service in {0} km	ТО через {0} км
+76714bc738	The service is done.	ТО сделано.
+b192d7be90	The service is {0} km overdue	ТО просрочено на {0} км
+ac82338f76	Enter it in “Truck of the Month” →	Отправь его на «Грузовик месяца» →
+f2b133d92e	Look at the trucks, get in the cab and leave a 👍.	Посмотри грузовики, сядь в кабину и оставь 👍.
+c0432651c0	Repair · up to {0}	Ремонт · до {0}
+b7bf6e33bf	Removed: {0}	Снято: {0}
+7ee5924386	Remove {0}	Снять {0}
+ac667febce	Set {0}	Набор {0}
+0dc38866d5	The set is on.	Набор установлен.
+a6fac931dd	Sets: save up to 3 tuning combinations and switch them with one click.	Наборы: сохрани до 3 комбинаций тюнинга и меняй их одним кликом.
+cd2c44bfb2	It is in {0} now.	Сейчас в {0}.
+9d16ab4c35	Done recently	Недавно сделано
+8023b6a177	Next	Следующий
+1e5b3b759d	Fitted: {0}	Установлено: {0}
+258df2bef2	Put on	Поставить
+9304a16559	Put on {0} · yours	Поставить {0} · твоя
+c8e65406e3	Roof spoiler	Спойлер на крыше
+2300282d2b	Spoiler, skirts, bull bar, exhausts, rims, ride height and decals. Try for free, buy with лв. and the part drops into place.	Спойлер, юбки, кенгурятник, трубы, диски, высота и наклейки. Пробуешь бесплатно, покупаешь за лв., и деталь встаёт на место.
+fdd22843ca	Cab decals	Наклейки на кабине
+0eb6903807	Side skirts	Боковые юбки
+a959ccad6e	Racing stripes	Гоночные полосы
+7b542a8b5c	Condition: {0}%	Состояние: {0} %
+9b9d0447f8	This set is empty.	Этот набор пуст.
+feb6b93d0e	This part doesn’t fit this type of vehicle.	Эта деталь не подходит к этому типу машины.
+336c07d717	This is how guests see you.	Так тебя видят гости.
+1d7b60673b	Your real trucks in a 3D hall: tuning, upgrades, paint, repairs, the cab from inside, a test drive and guests.	Твои настоящие грузовики в 3D-зале: тюнинг, улучшения, краска, ремонт, кабина изнутри, тест-драйв и гости.
+09982e43dc	Your trucks in a hall: tuning, upgrades, paint, repairs, the cab from inside and a test drive.	Твои грузовики в зале: тюнинг, улучшения, краска, ремонт, кабина изнутри и тест-драйв.
+4a1b982f2c	This is your garage.	Это твой гараж.
+f5b93d774f	Tuning	Тюнинг
+c98ea96002	Tuning: {0} ({1}) — {2}	Тюнинг: {0} ({1}) — {2}
+dba231c3c5	Tuning is for looks only and is paid in лв. A bought part stays with the truck: take it off and put it back for free.	Тюнинг только для красоты и оплачивается в лв. Купленная деталь остаётся у грузовика: снимаешь и ставишь снова бесплатно.
+a717ab8808	Tuning and paint are for looks. Only upgrades change the numbers.	Тюнинг и краска — для красоты. Цифры меняют только улучшения.
+cac20d761a	Hall	Зал
+dcf0ad8245	The hall	Зал
+683306c7a6	The hall grows with your level: a small workshop (1 platform), a hall from level 5 (2 platforms and a lift), a modern hall from level 10 (3 and LED).	Зал растёт с уровнем: маленькая мастерская (1 платформа), зал с 5 уровня (2 платформы и подъёмник), современный зал с 10 (3 и LED).
+649f6f5219	Like how it looks?	Нравится, как выглядит?
+87423227fd	The whole workshop	Весь сервис
+c95ffd5f5b	The price is before discounts (VIP and the company’s service).	Цена до скидок (VIP и сервис компании).
+e3f9a15235	The part is on.	Деталь установлена.
+6fbe11ee1a	scratches	царапины
+9f8beb4fe9	rust	ржавчина
+d279d60cfe	yours	твоя
+ab7ba91024	“In the cab”: dashboard, wheel, bunk and the items from your inventory (keychain, atlas, CB, cap…).	«В кабине»: панель, руль, спальник и предметы из инвентаря (брелок, атлас, рация, кепка…).
+0758316ade	“Test drive” — a lap of the yard. Photos with a hall, snow, sunset or highway background (📸 saves the picture).	«Тест-драйв» — круг по площадке. Фото на фоне зала, снега, заката или трассы (📸 сохраняет картинку).
+4b61c7aebe	“💬 Show in chat” puts your garage in the global chat (once every 6 hours). Every player’s profile has a “🏁 Garage” button.	«💬 Показать в чате» выкладывает гараж в глобальный чат (раз в 6 часов). В профиле каждого игрока есть кнопка «🏁 Гараж».
+ef8f3254d2	← To my garage	← В мой гараж
+0730d3d7e6	⏸ Stop	⏸ Стоп
+0e77e55c88	⚙️ Upgrades	⚙️ Улучшения
+888f02db7f	❄️ Snow	❄️ Снег
+efd3ec4f1f	🌅 Sunset	🌅 Закат
+7bc76f1127	🎖️ A seasoned truck.	🎖️ Опытный грузовик.
+a8760b3795	🎨 Paint and parts	🎨 Краска и детали
+8205001cbc	🏁 {0} opened their garage to guests. Come in, look at the trucks and leave a 👍!	🏁 {0} открыл гараж для гостей. Заходи, смотри грузовики и оставь 👍!
+2113819c4d	🏁 Garage	🏁 Гараж
+0d93e1f6a4	🏁 Garage	🏁 Гараж
+a6f1339c61	🏁 {0}’s garage	🏁 Гараж {0}
+32012431c1	🏁 Open in 3D Garage: tuning, cab, test drive	🏁 Открыть в Гараже 3D: тюнинг, кабина, тест-драйв
+7a065c304a	🏁 Hall	🏁 Зал
+44953b77f3	🏅 A veteran of the road.	🏅 Ветеран дороги.
+e8f0df09d8	👍 {0} liked your garage	👍 {0} понравился твой гараж
+45e60a9573	👍 {0} likes	👍 {0} лайков
+acdbc63507	👍 Like the garage	👍 Нравится гараж
+262f990cd4	👍 Liked · update the note	👍 Понравилось · обновить записку
+f1577757b2	💬 Show in chat	💬 Показать в чате
+4fdf676e16	💾 Sets	💾 Наборы
+dbaa5e8524	📜 History	📜 История
+364d3f8357	📸 Photo	📸 Фото
+0d949a9544	🔄 Around the truck	🔄 Вокруг грузовика
+8dfc1a190a	🔧 Tuning	🔧 Тюнинг
+1fc5c2791d	🛞 Test drive	🛞 Тест-драйв
+b997191112	🛠️ Service	🛠️ Сервис
+660cbdb7d5	🛣️ Highway	🛣️ Трасса
+43159a7fc4	🪑 In the cab	🪑 В кабине
