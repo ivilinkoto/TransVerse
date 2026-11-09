@@ -30,3 +30,9 @@ c5fcbee67d	Until service	До ТО
 bad70bd0d0	Driver skill	Навык водителя
 f7230670bc	none	без
 113acf981b	overdue	просрочено
+96311b26ec	Done!	Готово!
+2d2ffcf9a9	Shop: a purchase happens in a window with a big icon, the price, how many TC you will have left and an effect when it succeeds.	Магазин: покупка — в окне с большой иконкой, ценой, остатком TC и эффектом при успешной покупке.
+810954894a	Left afterwards	Останется после
+d1ed257711	Pay {0} TC	Оплатить {0} TC
+b307e3a183	Great	Отлично
+f8dced0ff5	{0} TC short	не хватает {0} TC
