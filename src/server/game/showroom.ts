@@ -112,6 +112,20 @@ export async function likeGarage(db: Database, visitorId: string, ownerUsername:
   });
 }
 
+/** 1.2.3.6: the 👍 of a garage for the player's profile — how many, and the latest notes. */
+export async function garageLikes(db: DbOrTx, ownerId: string, notes = 3) {
+  const [{ count = 0 } = {}] = await db.select({ count: sql<number>`count(*)::int` }).from(jobState).where(like(jobState.key, `garage-like:${ownerId}:%`));
+  if (!count) return { count: 0, latest: [] as { username: string; note: string }[] };
+  const rows = await db
+    .select({ username: users.username, value: jobState.value })
+    .from(jobState)
+    .innerJoin(users, sql`${users.id}::text = split_part(${jobState.key}, ':', 3)`)
+    .where(and(like(jobState.key, `garage-like:${ownerId}:%`), sql`coalesce(${jobState.value}->>'note', '') <> ''`))
+    .orderBy(desc(jobState.updatedAt))
+    .limit(notes);
+  return { count, latest: rows.map((r) => ({ username: r.username, note: (r.value as { note?: string }).note ?? '' })) };
+}
+
 /** Shows the garage in the global chat (once in a few hours). */
 export async function shareGarage(db: Database, userId: string, now = new Date()) {
   return db.transaction(async (tx) => {

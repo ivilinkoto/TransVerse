@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { POWER_UNITS } from '@/lib/game/catalog';
 import { businessCard } from '@/server/game/business-card';
 import { reliability } from '@/server/game/on-the-road';
+import { garageLikes } from '@/server/game/showroom';
 import { notFound } from 'next/navigation';
 import { PlayerCardLive } from '@/components/game/PlayerCardLive';
 import { Card, Empty, PageHeader } from '@/components/ui';
@@ -57,15 +58,27 @@ export default async function PlayerCareerPage({ params }: { params: Promise<{ u
   const showBiz = biz && (!biz.hidden || self);
   // 1.2.7: how reliable the player is as a partner (👍 / 👎 after partner loads and escorts).
   const trust = features.partner_ratings ? await reliability(db, card.id) : null;
+  // 1.2.3.6: the 👍 the player's garage got, with the latest notes.
+  const likes = features.garage_showroom ? await garageLikes(db, card.id) : null;
   const topTruck = biz?.topModel ? POWER_UNITS.find((p) => p.id === biz.topModel)?.name : null;
   const vs = (cents: number) => (mine ? <span className="block text-[11px] font-normal text-mist-400">{tr('ти: {0}', money(cents))}</span> : null);
   return (
     <div className="space-y-6">
-      <PageHeader title={tr('Кариера · {0}', card.username)} subtitle={features.business_profile ? tr('Курсове, рекорди, приходи и автопарк. Игрови данни.') : tr('Курсове, рекорди и любими линии. Игрови данни, без пари.')} actions={features.garage_showroom ? <Link href={`/game/showroom/u/${encodeURIComponent(card.username)}`} className="btn-ghost" data-testid="visit-garage">{tr('🏁 Гаражът')}</Link> : undefined} />
+      <PageHeader title={tr('Кариера · {0}', card.username)} subtitle={features.business_profile ? tr('Курсове, рекорди, приходи и автопарк. Игрови данни.') : tr('Курсове, рекорди и любими линии. Игрови данни, без пари.')} actions={features.garage_showroom ? <Link href={`/game/showroom/u/${encodeURIComponent(card.username)}`} className="btn-ghost" data-testid="visit-garage">{likes?.count ? tr('🏁 Гаражът · 👍 {0}', likes.count) : tr('🏁 Гаражът')}</Link> : undefined} />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="min-w-0 space-y-6">
           <Card><PlayerCardLive card={card} /></Card>
           {trust && trust.good + trust.bad > 0 && <Card><p className="text-sm" data-testid="reliability">{tr('Надеждност като партньор: 👍 {0} · 👎 {1}', trust.good, trust.bad)}</p></Card>}
+          {likes && likes.count > 0 && (
+            <Card id="garage-likes">
+              <p className="text-sm" data-testid="garage-likes">{tr('Гаражът е харесан {0} пъти', likes.count)} 👍</p>
+              {likes.latest.length > 0 && (
+                <ul className="mt-2 space-y-1 text-xs text-mist-300">
+                  {likes.latest.map((l) => <li key={l.username}><span className="font-semibold text-mist-100">{l.username}:</span> „{l.note}“</li>)}
+                </ul>
+              )}
+            </Card>
+          )}
           {greet && <Card><p className="text-sm text-mist-300">{tr('{0} е нов в играта. Поздрави го и му подари {1} за начало.', card.username, money(NEIGHBORS.giftCents))}</p><ActionButton action={{ type: 'greetNewcomer', userId: card.id }} className="btn-primary mt-3 px-3 py-2 text-sm">{tr('Поздрави · {0}', money(NEIGHBORS.giftCents))}</ActionButton></Card>}
           {showcase && (showcase.trucks.length > 0 || showcase.badges.length > 0) && (
             <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" />{tr('Витрина')}</span>}><ProfileShowcase showcase={showcase} /></Card>

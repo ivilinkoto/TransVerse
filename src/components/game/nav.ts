@@ -52,6 +52,8 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/contracts', label: 'Поръчки', core: true },
       { href: '/game/clients', label: 'Клиенти', minLevel: 3, core: true },
       { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' },
+      { href: '/game/dock', label: 'Рампата', feature: 'dock_slots', core: true },
+      { href: '/game/letters', label: 'Писма от клиенти', feature: 'client_letters', core: true },
       { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
       { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
       { href: '/game/convoys', label: 'Конвои', feature: 'convoy_lobby', minLevel: 2, core: true },

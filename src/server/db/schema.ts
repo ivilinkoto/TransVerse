@@ -162,7 +162,7 @@ export const users = pgTable(
     /** v2.0 legacy stars (New Game+), 0…5. */
     legacyStars: integer('legacy_stars').notNull().default(0),
     /** asPlayer (1.1.2): a staff member looks at the game as a player (no unreleased features, no staff badges). */
-    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean; dailySummary?: boolean; inventorySeenAt?: string; oldMenu?: boolean; theme?: 'dark' | 'light'; textSize?: 'normal' | 'large' | 'xl'; hideBusiness?: boolean }>().notNull().default({}),
+    uiPrefs: jsonb('ui_prefs').$type<{ showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPages?: string[]; asPlayer?: boolean; dailySummary?: boolean; inventorySeenAt?: string; oldMenu?: boolean; theme?: 'dark' | 'light'; textSize?: 'normal' | 'large' | 'xl'; hideBusiness?: boolean; mapLayers?: Partial<Record<'mine' | 'company' | 'friends' | 'others' | 'movingOnly' | 'plates' | 'depots' | 'routes' | 'weather', boolean>> }>().notNull().default({}),
     /** 1.1.2: when the player agreed to the terms and the privacy policy (null for accounts made before). */
     termsAcceptedAt: ts('terms_accepted_at'),
     /** 1.1.2: the truck the player shows on their player card (one of their own). */
@@ -3744,3 +3744,48 @@ export const duos = pgTable('duos', {
   doneAt: ts('done_at'),
   createdAt: createdAt(),
 }, (t) => [uniqueIndex('duos_a_idx').on(t.week, t.aId), uniqueIndex('duos_b_idx').on(t.week, t.bId)]);
+
+/** 1.2.3.6 „Рампата“: the unloading slot a truck got at a big warehouse (one per delivery). */
+export const dockSlots = pgTable('dock_slots', {
+  deliveryId: uuid('delivery_id').primaryKey().references(() => deliveries.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  cityId: integer('city_id').notNull().references(() => cities.id),
+  /** Start of the slot (the dock is the truck's from then for DOCK.slotMin minutes). */
+  slotAt: ts('slot_at').notNull(),
+  /** When the truck reaches the dock (the start of its unloading). */
+  arriveAt: ts('arrive_at').notNull(),
+  /** Minutes in the queue before the slot (0 = straight to the dock). */
+  waitMin: integer('wait_min').notNull().default(0),
+  createdAt: createdAt(),
+}, (t) => [index('dock_slots_city_slot_idx').on(t.cityId, t.slotAt), index('dock_slots_user_idx').on(t.userId)]);
+
+/** 1.2.3.6: an offer to swap dock slots — the one in the queue sends a gift for the earlier slot. */
+export const dockSwaps = pgTable('dock_swaps', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fromDeliveryId: uuid('from_delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+  toDeliveryId: uuid('to_delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+  fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  giftCents: integer('gift_cents').notNull(),
+  /** open | accepted | declined | expired */
+  status: text('status').notNull().default('open'),
+  decidedAt: ts('decided_at'),
+  createdAt: createdAt(),
+}, (t) => [index('dock_swaps_to_idx').on(t.toUserId, t.status), uniqueIndex('dock_swaps_pair_idx').on(t.fromDeliveryId, t.toDeliveryId)]);
+
+/** 1.2.3.6: a letter from the client after a delivery — thanks (with a bonus), a complaint, or a request for the same run. */
+export const clientLetters = pgTable('client_letters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  deliveryId: uuid('delivery_id').notNull().references(() => deliveries.id, { onDelete: 'cascade' }),
+  /** thanks | complaint | request */
+  kind: text('kind').notNull(),
+  client: text('client').notNull(),
+  goods: text('goods').notNull(),
+  cityId: integer('city_id').notNull().references(() => cities.id),
+  bonusCents: integer('bonus_cents').notNull().default(0),
+  /** The run the client asked for again (reserved for the player). */
+  contractId: uuid('contract_id').references(() => contracts.id, { onDelete: 'set null' }),
+  readAt: ts('read_at'),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('client_letters_delivery_idx').on(t.deliveryId), index('client_letters_user_idx').on(t.userId, t.createdAt)]);

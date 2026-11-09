@@ -103,7 +103,8 @@ export const MISSIONS: MissionDefinition[] = [
   { id: 'd_deliveries', period: 'daily', metric: 'deliveries', base: 3, rewardCents: 400_00, rewardXp: 80, title: (t) => tr('Изпълни {0} доставки', t) },
   { id: 'd_on_time', period: 'daily', metric: 'on_time', base: 2, rewardCents: 450_00, rewardXp: 90, title: (t) => tr('Достави {0} товара навреме', t) },
   { id: 'd_km', period: 'daily', metric: 'km', base: 600, rewardCents: 500_00, rewardXp: 100, title: (t) => tr('Измини {0} км с товар', num(t)) },
-  { id: 'd_earned', period: 'daily', metric: 'earned_cents', base: 1_500_00, rewardCents: 450_00, rewardXp: 90, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
+  // 1.2.3.6: the money targets grow with the freight of 1.2.3.4 (×1.6), so they take as many trips as before.
+  { id: 'd_earned', period: 'daily', metric: 'earned_cents', base: 2_400_00, rewardCents: 450_00, rewardXp: 90, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
   { id: 'd_tons', period: 'daily', metric: 'tons', base: 8, rewardCents: 400_00, rewardXp: 80, title: (t) => tr('Превози общо {0} тона', num(t)) },
   { id: 'd_international', period: 'daily', metric: 'international', base: 1, rewardCents: 600_00, rewardXp: 120, title: (t) => (t === 1 ? tr('Изпълни 1 международна доставка') : tr('Изпълни {0} международни доставки', t)), eligible: international },
   { id: 'd_company', period: 'daily', metric: 'company_deliveries', base: 2, rewardCents: 450_00, rewardXp: 100, title: (t) => tr('Изпълни {0} доставки за компанията си', t), eligible: (p) => p.inCompany },
@@ -112,7 +113,7 @@ export const MISSIONS: MissionDefinition[] = [
   { id: 'w_deliveries', period: 'weekly', metric: 'deliveries', base: 15, rewardCents: 2_500_00, rewardXp: 500, title: (t) => tr('Изпълни {0} доставки', t) },
   { id: 'w_on_time', period: 'weekly', metric: 'on_time', base: 12, rewardCents: 2_800_00, rewardXp: 550, title: (t) => tr('Достави {0} товара навреме', t) },
   { id: 'w_km', period: 'weekly', metric: 'km', base: 4_000, rewardCents: 3_000_00, rewardXp: 600, title: (t) => tr('Измини {0} км с товар', num(t)) },
-  { id: 'w_earned', period: 'weekly', metric: 'earned_cents', base: 10_000_00, rewardCents: 2_800_00, rewardXp: 550, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
+  { id: 'w_earned', period: 'weekly', metric: 'earned_cents', base: 16_000_00, rewardCents: 2_800_00, rewardXp: 550, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
   { id: 'w_international', period: 'weekly', metric: 'international', base: 5, rewardCents: 3_500_00, rewardXp: 700, title: (t) => tr('Изпълни {0} международни доставки', t), eligible: international },
   { id: 'w_countries', period: 'weekly', metric: 'countries', base: 3, rewardCents: 3_500_00, rewardXp: 700, title: (t) => tr('Достави товар в {0} различни държави', t), eligible: international },
   { id: 'w_refrigerated', period: 'weekly', metric: 'refrigerated', base: 5, rewardCents: 3_200_00, rewardXp: 650, title: (t) => tr('Достави {0} хладилни товара', t), eligible: (p) => p.licences.has('reefer') },
@@ -121,7 +122,7 @@ export const MISSIONS: MissionDefinition[] = [
   // ── Monthly ──
   { id: 'm_deliveries', period: 'monthly', metric: 'deliveries', base: 60, rewardCents: 10_000_00, rewardXp: 2_000, title: (t) => tr('Изпълни {0} доставки', t) },
   { id: 'm_km', period: 'monthly', metric: 'km', base: 18_000, rewardCents: 12_000_00, rewardXp: 2_400, title: (t) => tr('Измини {0} км с товар', num(t)) },
-  { id: 'm_earned', period: 'monthly', metric: 'earned_cents', base: 45_000_00, rewardCents: 11_000_00, rewardXp: 2_200, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
+  { id: 'm_earned', period: 'monthly', metric: 'earned_cents', base: 72_000_00, rewardCents: 11_000_00, rewardXp: 2_200, title: (t) => tr('Спечели {0} от възнаграждения', eur(t)) },
   { id: 'm_tons', period: 'monthly', metric: 'tons', base: 250, rewardCents: 10_000_00, rewardXp: 2_000, title: (t) => tr('Превози общо {0} тона', num(t)) },
   { id: 'm_long_haul', period: 'monthly', metric: 'long_haul', base: 8, rewardCents: 13_000_00, rewardXp: 2_600, title: (t) => tr('Изпълни {0} курса над {1} км', t, LONG_HAUL_KM), eligible: international },
   { id: 'm_heavy', period: 'monthly', metric: 'heavy', base: 15, rewardCents: 12_000_00, rewardXp: 2_400, title: (t) => tr('Превози {0} товара над 15 тона', t), eligible: (p) => p.level >= 3 },
@@ -130,7 +131,7 @@ export const MISSIONS: MissionDefinition[] = [
   { id: 's_deliveries', period: 'season', metric: 'deliveries', base: 150, rewardCents: 30_000_00, rewardXp: 6_000, title: (t) => tr('Изпълни {0} доставки този сезон', t) },
   { id: 's_km', period: 'season', metric: 'km', base: 50_000, rewardCents: 35_000_00, rewardXp: 7_000, title: (t) => tr('Измини {0} км с товар този сезон', num(t)) },
   { id: 's_on_time', period: 'season', metric: 'on_time', base: 120, rewardCents: 32_000_00, rewardXp: 6_500, title: (t) => tr('Достави {0} товара навреме този сезон', t) },
-  { id: 's_earned', period: 'season', metric: 'earned_cents', base: 120_000_00, rewardCents: 30_000_00, rewardXp: 6_000, title: (t) => tr('Спечели {0} от възнаграждения този сезон', eur(t)) },
+  { id: 's_earned', period: 'season', metric: 'earned_cents', base: 192_000_00, rewardCents: 30_000_00, rewardXp: 6_000, title: (t) => tr('Спечели {0} от възнаграждения този сезон', eur(t)) },
   { id: 's_countries', period: 'season', metric: 'countries', base: 9, fixed: true, rewardCents: 45_000_00, rewardXp: 9_000, title: () => tr('Достави товар във всички 9 държави на картата'), eligible: international },
 ];
 

@@ -126,6 +126,9 @@ import { claimMission, rerollMission } from '@/server/game/missions';
 import { refreshLoads, reserveContract } from '@/server/game/contracts';
 import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
 import { applyTuningPreset, fitTuning, likeGarage, saveTuningPreset, shareGarage } from '@/server/game/showroom';
+import { answerDockSwap, offerDockSwap } from '@/server/game/dock';
+import { sharePostcard } from '@/server/game/postcards';
+import { markLettersRead } from '@/server/game/letters';
 import { chatBodySchema, clearCompanyChat, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
 import {
   buyCompanyUpgrade,
@@ -178,6 +181,11 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('fitTuning'), vehicleId: id, part: z.string().max(20), style: z.string().max(20).nullable() }),
   z.object({ type: z.literal('saveTuningPreset'), vehicleId: id, slot: z.coerce.number().int().min(0).max(2), name: z.string().max(40).default('') }),
   z.object({ type: z.literal('applyTuningPreset'), vehicleId: id, slot: z.coerce.number().int().min(0).max(2) }),
+  // 1.2.3.6: „Рампата“, the 3D postcard, the letters from the clients.
+  z.object({ type: z.literal('dockSwapOffer'), deliveryId: z.string().uuid(), withDeliveryId: z.string().uuid(), giftCents: z.number().int().min(0).max(100_000_00) }),
+  z.object({ type: z.literal('dockSwapAnswer'), swapId: z.string().uuid(), accept: z.boolean() }),
+  z.object({ type: z.literal('sharePostcard'), deliveryId: z.string().uuid() }),
+  z.object({ type: z.literal('readLetters') }),
   z.object({ type: z.literal('likeGarage'), username: z.string().trim().min(1).max(30), note: z.string().max(200).default('') }),
   z.object({ type: z.literal('shareGarage') }),
   z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
@@ -308,7 +316,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reportShady'), contractId: id }),
   z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
   z.object({ type: z.literal('blackRepair'), vehicleId: id }),
-  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional(), hideBusiness: z.boolean().optional() }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional(), hideBusiness: z.boolean().optional(), mapLayers: z.object({ mine: z.boolean().optional(), company: z.boolean().optional(), friends: z.boolean().optional(), others: z.boolean().optional(), movingOnly: z.boolean().optional(), plates: z.boolean().optional(), depots: z.boolean().optional(), routes: z.boolean().optional(), weather: z.boolean().optional() }).strict().optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
@@ -690,6 +698,10 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   saveTuningPreset: 'garage_showroom',
   applyTuningPreset: 'garage_showroom',
   likeGarage: 'garage_showroom',
+  dockSwapOffer: 'dock_slots',
+  dockSwapAnswer: 'dock_slots',
+  sharePostcard: 'delivery_postcard',
+  readLetters: 'client_letters',
   shareGarage: 'garage_showroom',
   ratePartner: 'partner_ratings',
   roadWave: 'road_wave',
@@ -751,6 +763,14 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await saveTuningPreset(db, user.id, input.vehicleId, input.slot, input.name)) };
     case 'applyTuningPreset':
       return { ok: true, ...(await applyTuningPreset(db, user.id, input.vehicleId, input.slot)) };
+    case 'dockSwapOffer':
+      return await offerDockSwap(db, user.id, input.deliveryId, input.withDeliveryId, input.giftCents);
+    case 'dockSwapAnswer':
+      return { ok: true, ...(await answerDockSwap(db, user.id, input.swapId, input.accept)) };
+    case 'sharePostcard':
+      return await sharePostcard(db, user.id, input.deliveryId);
+    case 'readLetters':
+      return await markLettersRead(db, user.id);
     case 'likeGarage':
       return { ok: true, ...(await likeGarage(db, user.id, input.username, input.note)) };
     case 'shareGarage':

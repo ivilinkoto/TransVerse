@@ -31,7 +31,7 @@ export const COMPANY_MISSIONS: CompanyMissionDefinition[] = [
   { id: 'c_km', metric: 'km', perMember: 3_500, rewardCents: 4_500_00, rewardXp: 450, title: (t) => tr('Изминете заедно {0} км с товар', num(t)) },
   { id: 'c_on_time', metric: 'on_time', perMember: 8, rewardCents: 4_500_00, rewardXp: 450, title: (t) => tr('{0} доставки навреме', num(t)) },
   { id: 'c_international', metric: 'international', perMember: 3, rewardCents: 5_000_00, rewardXp: 500, title: (t) => tr('{0} международни доставки', num(t)) },
-  { id: 'c_earned', metric: 'earned_cents', perMember: 12_000_00, rewardCents: 4_500_00, rewardXp: 450, title: (t) => tr('Спечелете заедно {0} навло', eur(t)) },
+  { id: 'c_earned', metric: 'earned_cents', perMember: 19_200_00, rewardCents: 4_500_00, rewardXp: 450, title: (t) => tr('Спечелете заедно {0} навло', eur(t)) },
   { id: 'c_long_haul', metric: 'long_haul', perMember: 2, rewardCents: 5_000_00, rewardXp: 500, title: (t) => tr('{0} курса над {1} км', num(t), LONG_HAUL_KM) },
   { id: 'c_active', metric: 'active_members', perMember: 0.6, rewardCents: 3_500_00, rewardXp: 600, title: (t) => tr('{0} различни членове да направят доставка', num(t)), minMembers: 3 },
 ];

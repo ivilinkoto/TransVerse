@@ -37,7 +37,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
         title={t('Карта')}
         subtitle={preview ? t('Преглед на маршрут — {0}{1}', preview.title, preview.approximate ? t(' (приблизителна линия, пътният маршрут не е наличен)') : t(' (реален пътен маршрут за камион)')) : t('Твоите камиони и тези на всички играчи — на живо, по реални пътища.')}
       />
-      <MapClient ownVip={isVip(user.vipUntil, now)} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} {...data} />
+      <MapClient layers={user.uiPrefs.mapLayers} ownVip={isVip(user.vipUntil, now)} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} {...data} />
     </div>
   );
 }

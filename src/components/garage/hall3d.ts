@@ -492,9 +492,12 @@ export function buildOutdoor(world: THREE.Group, scene: THREE.Scene, kind: 'trac
     }
     if (kind === 'highway') {
       for (const z of [-8.6, 8.6]) {
-        const rail = box(1200, 0.32, 0.06, new THREE.MeshStandardMaterial({ color: '#d1d5db', metalness: 0.9, roughness: 0.3 }), 0.02);
-        rail.position.set(0, 0.7, z);
-        world.add(rail);
+        // 1.2.3.6: the barrier in 12 m sections (one 1200 m beam showed through the truck as two white lines).
+        const rails = new THREE.InstancedMesh(new THREE.BoxGeometry(12, 0.32, 0.06), new THREE.MeshStandardMaterial({ color: '#d1d5db', metalness: 0.9, roughness: 0.3 }), 50);
+        const m = new THREE.Matrix4();
+        for (let k = 0; k < 50; k++) rails.setMatrixAt(k, m.makeTranslation(-300 + 6 + k * 12, 0.7, z));
+        rails.instanceMatrix.needsUpdate = true;
+        world.add(rails);
         for (let x = -300; x <= 300; x += 4) world.add(place(box(0.12, 0.75, 0.12, new THREE.MeshStandardMaterial({ color: '#6b7280', metalness: 0.7 }), 0.01), x, 0.38, z + Math.sign(z) * 0.1));
         for (let x = -300; x <= 300; x += 40) {
           const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 10, 10), new THREE.MeshStandardMaterial({ color: '#9ca3af', metalness: 0.8, roughness: 0.4 }));

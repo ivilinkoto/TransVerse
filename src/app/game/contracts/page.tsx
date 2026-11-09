@@ -297,7 +297,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       {map && trackMap && <TutorialVisit step="track_map" pending={trackMap} />}
       {map && (
         <section className="mb-5" data-testid="jobs-map">
-          <MapClient compact ownVip={vip} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} {...map} />
+          <MapClient compact layers={user.uiPrefs.mapLayers} ownVip={vip} styleUrl={process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/dark'} center={[hq.lat, hq.lon]} {...map} />
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-mist-400">
             <span>{map.preview ? tr('Маршрут: {0}', map.preview.title) : tr('Твоите камиони на картата. „На картата“ при поръчка показва маршрута ѝ тук.')}</span>
             <Link href={map.preview ? `/game/map?contract=${params.contract}` : '/game/map'} className="font-semibold text-cyan-glow hover:underline">{tr('Голяма карта →')}</Link>

@@ -6,7 +6,7 @@ import * as maplibregl from 'maplibre-gl';
 import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Users } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { duration, int, money } from '@/lib/format';
 import { cumulativeKm, greatCircle, headingWest, pointAlong, type LatLon } from '@/lib/geo/geometry';
 import { isMoving, scheduleEnd, stateAt, type Segment } from '@/lib/game/schedule';
@@ -19,6 +19,7 @@ import { api } from '@/lib/client/api';
 import { useFeature } from './Features';
 import { motionEnabled } from '@/lib/client/motion';
 import { t as tr, tx } from '@/i18n/t';
+import { CROWD_CAP, DEFAULT_MAP_LAYERS, mapLayers as resolveLayers, nearestFirst, type MapLayerKey, type MapLayers } from '@/lib/game/map-layers';
 
 export interface MapLeg {
   geometry: string | null;
@@ -52,6 +53,8 @@ export interface MapProps {
   compact?: boolean;
   /** 1.2.8: snow, ice and blizzards by country today (only the countries that have them). */
   weather?: Partial<Record<string, 'snow' | 'ice' | 'blizzard'>>;
+  /** 1.2.3.6: the map layers the player chose (kept in the profile). */
+  layers?: Partial<MapLayers> | null;
 }
 
 interface CityDetails {
@@ -169,23 +172,43 @@ function truckPoint(t: WorldTruck, routes: WorldSnapshot['routes'], now: number)
   return { point: pointAlong(line, f, cum), moving: !!s.segment && isMoving(s.segment.kind) && s.segment.toKm > s.segment.fromKm, west: headingWest(line, f, cum) };
 }
 
-/** Which other players' trucks are drawn: everyone, only friends and the company, or none. */
+/** Which other players' trucks are drawn with the old switch (before the „Слоеве“ panel of 1.2.3.6). */
 type PlayersMode = 'all' | 'circle' | 'none';
 const RELATION_COLOR = { friend: '#ff6bcb', company: '#a66bff' } as const;
+const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+const collection = (features: GeoJSON.Feature[]): GeoJSON.FeatureCollection => ({ type: 'FeatureCollection', features });
 
-function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number, mode: PlayersMode): GeoJSON.FeatureCollection {
-  if (mode === 'none') return { type: 'FeatureCollection', features: [] };
-  return {
-    type: 'FeatureCollection',
-    features: world.trucks
-      .filter((t) => !ownIds.has(t.id) && (mode === 'all' || t.relation))
-      .map((t) => {
-        const { point, moving, west } = truckPoint(t, world.routes, now);
-        const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
-        const fill = t.color && HEX.test(t.color) ? t.color : '#e8eef7';
-        return { type: 'Feature', properties: { id: t.id, label, rel: t.relation ?? '', icon: truckIcon(fill, t.vip ? '#d4af37' : t.online ? '#34d399' : '#ef4444', t.vip, west), moving }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
-      }),
-  };
+/**
+ * Other players' trucks in two sources: friends and the company (never grouped) and everyone
+ * else, grouped into numbered bubbles from far away and capped to the CROWD_CAP nearest to the
+ * view. The truck in focus is always drawn, with the rest of its current leg.
+ */
+function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number, layers: MapLayers, center: LatLon | null, focus: string | null) {
+  const circle: GeoJSON.Feature[] = [];
+  const crowd: { f: GeoJSON.Feature; p: LatLon; keep: boolean }[] = [];
+  const line: GeoJSON.Feature[] = [];
+  for (const t of world.trucks) {
+    if (ownIds.has(t.id)) continue;
+    const focused = t.id === focus;
+    const shown = t.relation === 'friend' ? layers.friends : t.relation === 'company' ? layers.company : layers.others;
+    if (!shown && !focused) continue;
+    const { point, moving, west } = truckPoint(t, world.routes, now);
+    if (layers.movingOnly && !moving && !focused) continue;
+    const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
+    const fill = t.color && HEX.test(t.color) ? t.color : '#e8eef7';
+    const ring = t.vip ? '#d4af37' : t.online ? '#34d399' : '#ef4444';
+    const f: GeoJSON.Feature = { type: 'Feature', properties: { id: t.id, label, rel: t.relation ?? '', icon: truckIcon(fill, ring, t.vip, west), fill, ring, moving, focus: focused }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+    if (t.relation) circle.push(f);
+    else crowd.push({ f, p: point, keep: focused });
+    if (focused && t.delivery) {
+      const s = stateAt(t.delivery.schedule, now);
+      const leg = s.leg === 'empty' && t.delivery.empty ? t.delivery.empty : t.delivery.loaded;
+      const hit = cachedLine(`${leg.routeId}:${world.routes[leg.routeId]?.length ?? 0}`, world.routes[leg.routeId] ?? null, leg.from, leg.to);
+      line.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: hit.line.map(toLngLat) } });
+    }
+  }
+  const kept = nearestFirst(crowd, center, CROWD_CAP, (c) => c.p, (c) => c.keep);
+  return { circle: collection(circle), crowd: collection(kept.map((c) => c.f)), focusLine: collection(line), hidden: crowd.length - kept.length };
 }
 
 /** "→ Виена · 1 ч 20 мин" or "в София". */
@@ -199,8 +222,8 @@ function routeFeatures(vehicles: MapVehicle[], preview: MapProps['preview']): Ge
   const features: GeoJSON.Feature[] = [];
   for (const v of vehicles) {
     if (!v.delivery) continue;
-    if (v.delivery.empty) features.push({ type: 'Feature', properties: { kind: 'empty' }, geometry: { type: 'LineString', coordinates: legLine(v.delivery.empty).map(toLngLat) } });
-    features.push({ type: 'Feature', properties: { kind: 'loaded' }, geometry: { type: 'LineString', coordinates: legLine(v.delivery.loaded).map(toLngLat) } });
+    if (v.delivery.empty) features.push({ type: 'Feature', properties: { kind: 'empty', vid: v.id }, geometry: { type: 'LineString', coordinates: legLine(v.delivery.empty).map(toLngLat) } });
+    features.push({ type: 'Feature', properties: { kind: 'loaded', vid: v.id }, geometry: { type: 'LineString', coordinates: legLine(v.delivery.loaded).map(toLngLat) } });
   }
   if (preview) features.push({ type: 'Feature', properties: { kind: preview.approximate ? 'approx' : 'preview' }, geometry: { type: 'LineString', coordinates: legLine(preview.leg).map(toLngLat) } });
   return { type: 'FeatureCollection', features };
@@ -210,7 +233,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [], compact = false, weather }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], reports = [], compact = false, weather, layers }: MapProps) {
   const compactAtStart = useRef(compact);
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
@@ -219,6 +242,29 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   const [error, setError] = useState<string | null>(null);
   const [world, setWorld] = useState<WorldSnapshot | null>(null);
   const [mode, setMode] = useState<PlayersMode>('all');
+  // 1.2.3.6 „Чиста карта“: layers kept in the profile, a truck in focus, the panel.
+  const layersLive = useFeature('map_layers');
+  const [chosen, setChosen] = useState<MapLayers>(() => resolveLayers(layers));
+  const shown = useMemo<MapLayers>(() => (layersLive ? chosen : { ...DEFAULT_MAP_LAYERS, others: mode === 'all', friends: mode !== 'none', company: mode !== 'none' }), [layersLive, chosen, mode]);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const [hidden, setHidden] = useState(0);
+  const layerLabels: [MapLayerKey, string][] = [
+    ['mine', tr('Моите камиони')],
+    ['company', tr('Компанията')],
+    ['friends', tr('Приятели')],
+    ['others', tr('Другите играчи')],
+    ['movingOnly', tr('Само камиони в движение')],
+    ['plates', tr('Имена и номера')],
+    ['depots', tr('Депа')],
+    ['routes', tr('Маршрути')],
+    ['weather', tr('Сняг и лед')],
+  ];
+  const toggleLayer = (k: MapLayerKey) => {
+    const next = { ...chosen, [k]: !chosen[k] };
+    setChosen(next);
+    void api('/api/game/action', { type: 'uiPrefs', mapLayers: { [k]: next[k] } }).catch(() => undefined);
+  };
   // The list starts folded on phones, where it would cover the map.
   const [circleOpen, setCircleOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
   const [clock, setClock] = useState(0);
@@ -320,7 +366,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
 
       map.addSource('players', { type: 'geojson', data: empty });
       // Friends and company members: a coloured halo and a name visible from far away.
-      map.addLayer({ id: 'players-circle', type: 'circle', source: 'players', filter: ['!=', ['get', 'rel'], ''], paint: {
+      map.addLayer({ id: 'players-circle', type: 'circle', source: 'players', paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 14, 9, 19],
         'circle-color': ['match', ['get', 'rel'], 'friend', RELATION_COLOR.friend, RELATION_COLOR.company],
         'circle-opacity': 0.35,
@@ -331,11 +377,36 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         'icon-image': ['get', 'icon'],
         'icon-size': ['interpolate', ['linear'], ['zoom'], 4, 0.75, 9, 1.05],
         'icon-allow-overlap': true,
-        // Friends and company members are drawn above everyone else.
-        'symbol-sort-key': ['case', ['==', ['get', 'rel'], ''], 0, 1],
       }, paint: { 'icon-opacity': ['case', ['get', 'moving'], 1, 0.75] } }, 'vehicles-halo');
-      map.addLayer({ id: 'players-label', type: 'symbol', source: 'players', minzoom: 6.5, filter: ['==', ['get', 'rel'], ''], layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.5], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#e8eef7', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'vehicles-halo');
-      map.addLayer({ id: 'players-circle-label', type: 'symbol', source: 'players', filter: ['!=', ['get', 'rel'], ''], layout: { 'text-field': ['get', 'label'], 'text-size': 11, 'text-offset': [0, -1.7], 'text-font': ['Noto Sans Regular'], 'text-allow-overlap': true }, paint: { 'text-color': ['match', ['get', 'rel'], 'friend', RELATION_COLOR.friend, RELATION_COLOR.company], 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } }, 'vehicles-halo');
+      map.addLayer({ id: 'players-circle-label', type: 'symbol', source: 'players', layout: { 'text-field': ['get', 'label'], 'text-size': 11, 'text-offset': [0, -1.7], 'text-font': ['Noto Sans Regular'], 'text-allow-overlap': true }, paint: { 'text-color': ['match', ['get', 'rel'], 'friend', RELATION_COLOR.friend, RELATION_COLOR.company], 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } }, 'vehicles-halo');
+
+      // 1.2.3.6: everyone else — numbered bubbles from far away, small dots, then icons and names up close.
+      map.addSource('crowd', { type: 'geojson', data: empty, cluster: true, clusterRadius: 46, clusterMaxZoom: 7 });
+      const single: maplibregl.FilterSpecification = ['!', ['has', 'point_count']];
+      map.addLayer({ id: 'crowd-cluster', type: 'circle', source: 'crowd', filter: ['has', 'point_count'], paint: {
+        'circle-radius': ['step', ['get', 'point_count'], 12, 10, 15, 30, 19, 100, 24],
+        'circle-color': '#1b2638',
+        'circle-opacity': 0.88,
+        'circle-stroke-color': '#8d9bb3',
+        'circle-stroke-width': 1.5,
+      } }, 'players-circle');
+      map.addLayer({ id: 'crowd-count', type: 'symbol', source: 'crowd', filter: ['has', 'point_count'], layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': 11.5, 'text-font': ['Noto Sans Regular'], 'text-allow-overlap': true }, paint: { 'text-color': '#e8eef7' } }, 'players-circle');
+      map.addLayer({ id: 'crowd-dot', type: 'circle', source: 'crowd', maxzoom: 6.5, filter: single, paint: {
+        'circle-radius': 3.5,
+        'circle-color': ['get', 'fill'],
+        'circle-stroke-color': ['get', 'ring'],
+        'circle-stroke-width': 1.6,
+        'circle-opacity': ['case', ['get', 'moving'], 0.95, 0.6],
+      } }, 'players-circle');
+      map.addLayer({ id: 'crowd-icon', type: 'symbol', source: 'crowd', minzoom: 6.5, filter: single, layout: {
+        'icon-image': ['get', 'icon'],
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 6.5, 0.75, 9, 1.05],
+        'icon-allow-overlap': true,
+      }, paint: { 'icon-opacity': ['case', ['get', 'moving'], 1, 0.75] } }, 'players-circle');
+      map.addLayer({ id: 'crowd-label', type: 'symbol', source: 'crowd', minzoom: 8, filter: single, layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.5], 'text-font': ['Noto Sans Regular'], 'text-optional': true }, paint: { 'text-color': '#e8eef7', 'text-halo-color': '#05070b', 'text-halo-width': 1.4 } }, 'players-circle');
+      // The rest of the current leg of the truck in focus.
+      map.addSource('focus-route', { type: 'geojson', data: empty });
+      map.addLayer({ id: 'focus-route', type: 'line', source: 'focus-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#f6c343', 'line-width': 3.5, 'line-opacity': 0.9, 'line-dasharray': [2, 1.5] } }, 'crowd-cluster');
 
       const p = initial.current.preview;
       if (p) {
@@ -347,15 +418,27 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
       void loadCities();
     });
     map.on('moveend', () => void loadCities());
-    map.on('mouseenter', 'players', () => (map.getCanvas().style.cursor = 'pointer'));
-    map.on('mouseleave', 'players', () => (map.getCanvas().style.cursor = ''));
-    map.on('click', 'players', (e) => {
-      const id = e.features?.[0]?.properties?.id;
-      const truck = worldRef.current?.trucks.find((t) => t.id === id);
-      if (truck) {
-        setCity(null);
-        setPickedId(truck.id);
-      }
+    for (const layer of ['players', 'crowd-icon', 'crowd-dot', 'crowd-cluster']) {
+      map.on('mouseenter', layer, () => (map.getCanvas().style.cursor = 'pointer'));
+      map.on('mouseleave', layer, () => (map.getCanvas().style.cursor = ''));
+    }
+    for (const layer of ['players', 'crowd-icon', 'crowd-dot']) {
+      map.on('click', layer, (e) => {
+        const id = e.features?.[0]?.properties?.id;
+        const truck = worldRef.current?.trucks.find((t) => t.id === id);
+        if (truck) {
+          setCity(null);
+          setPickedId(truck.id);
+        }
+      });
+    }
+    // A numbered bubble opens up: the map zooms in until its trucks come apart.
+    map.on('click', 'crowd-cluster', async (e) => {
+      const f = e.features?.[0];
+      const id = f?.properties?.cluster_id;
+      if (id === undefined || f?.geometry.type !== 'Point') return;
+      const zoom = await (map.getSource('crowd') as GeoJSONSource).getClusterExpansionZoom(id);
+      map.easeTo({ center: f.geometry.coordinates as [number, number], zoom: zoom + 0.3, duration: 600 });
     });
     map.on('mouseenter', 'cities-dot', () => (map.getCanvas().style.cursor = 'pointer'));
     map.on('mouseleave', 'cities-dot', () => (map.getCanvas().style.cursor = ''));
@@ -472,15 +555,63 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     if (!ready) return;
     const ownIds = new Set(vehicles.map((v) => v.id));
     const tick = () => {
-      const src = mapRef.current?.getSource('players') as GeoJSONSource | undefined;
+      const map = mapRef.current;
       const now = Date.now();
-      src?.setData(world ? playerFeatures(world, ownIds, now, mode) : { type: 'FeatureCollection', features: [] });
+      const c = map?.getCenter();
+      const data = world ? playerFeatures(world, ownIds, now, shown, c ? [c.lat, c.lng] : null, focusId) : null;
+      (map?.getSource('players') as GeoJSONSource | undefined)?.setData(data?.circle ?? EMPTY);
+      (map?.getSource('crowd') as GeoJSONSource | undefined)?.setData(data?.crowd ?? EMPTY);
+      (map?.getSource('focus-route') as GeoJSONSource | undefined)?.setData(data?.focusLine ?? EMPTY);
+      setHidden(data?.hidden ?? 0);
       setClock(now);
     };
     tick();
     const id = setInterval(tick, 2000);
     return () => clearInterval(id);
-  }, [ready, world, mode, vehicles]);
+  }, [ready, world, shown, vehicles, focusId]);
+
+  // 1.2.3.6: the chosen layers, and the focus (one truck and its route; the rest fades).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map?.getLayer('crowd-icon')) return;
+    const vis = (ids: string[], on: boolean) => {
+      for (const id of ids) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
+    };
+    const f = focusId;
+    vis(['vehicles-halo', 'vehicles'], shown.mine || !!f);
+    vis(['vehicles-label'], (shown.mine || !!f) && shown.plates);
+    vis(['players-circle-label', 'crowd-label'], shown.plates);
+    vis(['depots'], shown.depots && !f);
+    vis(['routes-glow', 'routes-line'], shown.routes || !!f);
+    vis(['weather-snow'], shown.weather);
+    const own: maplibregl.FilterSpecification | null = shown.movingOnly ? ['get', 'moving'] : null;
+    map.setFilter('vehicles', own);
+    map.setFilter('vehicles-label', own);
+    map.setFilter('vehicles-halo', f ? ['==', ['get', 'id'], f] : own);
+    const mine = (on: number, off: number): maplibregl.DataDrivenPropertyValueSpecification<number> => (f ? ['case', ['==', ['get', 'id'], f], on, off] : on);
+    map.setPaintProperty('vehicles', 'icon-opacity', mine(1, 0.15));
+    map.setPaintProperty('vehicles-label', 'text-opacity', mine(1, 0.15));
+    map.setFilter('routes-glow', f ? ['==', ['get', 'vid'], f] : null);
+    map.setFilter('routes-line', f ? ['==', ['get', 'vid'], f] : null);
+    const fade = (on: number, off: number): maplibregl.DataDrivenPropertyValueSpecification<number> => (f ? ['case', ['get', 'focus'], on, off] : on);
+    map.setPaintProperty('players', 'icon-opacity', f ? fade(1, 0.12) : ['case', ['get', 'moving'], 1, 0.75]);
+    map.setPaintProperty('crowd-icon', 'icon-opacity', f ? fade(1, 0.12) : ['case', ['get', 'moving'], 1, 0.75]);
+    map.setPaintProperty('crowd-dot', 'circle-opacity', f ? fade(1, 0.1) : ['case', ['get', 'moving'], 0.95, 0.6]);
+    map.setPaintProperty('crowd-dot', 'circle-stroke-opacity', fade(1, 0.1));
+    map.setPaintProperty('players-circle', 'circle-opacity', fade(0.35, 0.04));
+    map.setPaintProperty('players-circle', 'circle-stroke-opacity', fade(1, 0.12));
+    map.setPaintProperty('players-circle-label', 'text-opacity', fade(1, 0.15));
+    map.setPaintProperty('crowd-label', 'text-opacity', fade(1, 0.15));
+    map.setPaintProperty('crowd-cluster', 'circle-opacity', f ? 0.12 : 0.88);
+    map.setPaintProperty('crowd-cluster', 'circle-stroke-opacity', f ? 0.15 : 1);
+    map.setPaintProperty('crowd-count', 'text-opacity', f ? 0.15 : 1);
+  }, [ready, shown, focusId]);
+
+  /** Puts one truck (own or another player's) in focus and flies to it; the same truck again ends the focus. */
+  const focusOn = (id: string | null, point?: LatLon) => {
+    setFocusId((cur) => (cur === id ? null : id));
+    if (id && point && focusId !== id) mapRef.current?.flyTo({ center: toLngLat(point), zoom: Math.max(mapRef.current.getZoom(), 7.6), duration: 900 });
+  };
 
   /** Centres the map on a friend's truck and opens its card. */
   const follow = (t: WorldTruck) => {
@@ -504,7 +635,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         type: 'FeatureCollection',
         features: vehicles.map((v) => {
           const { point, west } = vehiclePoint(v, now);
-          return { type: 'Feature', properties: { plate: v.plate, icon: truckIcon(HEX.test(v.color) ? v.color : '#f8fafc', '#22d3ee', ownVip, west) }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+          return { type: 'Feature', properties: { id: v.id, plate: v.plate, moving: !!v.delivery && now < scheduleEnd(v.delivery.schedule), icon: truckIcon(HEX.test(v.color) ? v.color : '#f8fafc', '#22d3ee', ownVip, west) }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
         }),
       });
       if (smooth && mapRef.current?.getLayer('vehicles-halo')) {
@@ -549,7 +680,10 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
   const followNext = () => {
     if (!moving.length) return;
     const i = moving.findIndex((v) => v.id === followId);
-    setFollowId(i >= 0 && i === moving.length - 1 ? null : moving[(i + 1) % moving.length]!.id);
+    const next = i >= 0 && i === moving.length - 1 ? null : moving[(i + 1) % moving.length]!.id;
+    setFollowId(next);
+    // 1.2.3.6: following one of the player's trucks puts it in focus as well.
+    if (layersLive) setFocusId(next);
   };
 
   /** Tilts the map and raises the buildings (where the style has them), or back to flat. */
@@ -599,7 +733,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
           {tilted ? '2D' : '3D'} {shade > 0.5 ? '🌙' : '☀️'}
         </button>
       )}
-      {live && tilted && snowy.length > 0 && <SnowFall />}
+      {live && tilted && snowy.length > 0 && shown.weather && <SnowFall />}
       {live && moving.length > 0 && (
         <button type="button" onClick={followNext} className={`absolute right-12 top-11 rounded-lg px-2.5 py-1.5 text-xs font-semibold backdrop-blur ${followId ? 'bg-cyan-glow text-asphalt-950' : 'bg-asphalt-950/85 text-mist-100 hover:bg-asphalt-900'}`} aria-pressed={!!followId} data-testid="map-follow">
           🎥 {followId ? tr('Следиш {0}', vehicles.find((v) => v.id === followId)?.plate ?? '') : tr('Следи камион')}
@@ -618,6 +752,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
           <TruckGlyph ring="#ef4444" />
           {tr('Други играчи{0}', world ? tr(' ({0}, {1} в играта)', world.players, world.online) : '')}
         </span>
+        <span className="flex items-center gap-1.5"><span className="flex h-4 min-w-4 items-center justify-center rounded-full border border-mist-400 bg-asphalt-800 px-0.5 text-[9px] text-white">12</span>{tr('Група камиони (натисни, за да я разтвориш)')}</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: RELATION_COLOR.friend, background: `${RELATION_COLOR.friend}55` }} />{tr('Приятели')}</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: RELATION_COLOR.company, background: `${RELATION_COLOR.company}55` }} />{tr('Компанията')}</span>
         <span className="flex items-center gap-1.5">
@@ -628,12 +763,38 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         </span>
       </div>
       <div className={`absolute left-3 top-3 max-h-[calc(100%-120px)] w-[min(280px,calc(100%-70px))] flex-col gap-2 ${compact ? 'hidden' : 'flex'}`}>
-        {circleLive && <div role="radiogroup" aria-label={tr('Кои играчи да се виждат')} className="flex rounded-full border border-asphalt-700 bg-asphalt-950/85 p-0.5 text-[11px] backdrop-blur">
+        {layersLive && (
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap gap-1.5">
+              <button type="button" onClick={() => setLayersOpen((v) => !v)} aria-expanded={layersOpen} data-testid="map-layers" className={`rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur ${layersOpen ? 'border-volt-500 bg-volt-500 text-white' : 'border-asphalt-700 bg-asphalt-950/85 text-mist-100 hover:bg-asphalt-900'}`}>
+                🗂️ {tr('Слоеве')}
+              </button>
+              {focusId && (
+                <button type="button" onClick={() => setFocusId(null)} data-testid="map-focus-off" className="rounded-full border border-gold-400 bg-asphalt-950/85 px-3 py-1 text-[11px] font-semibold text-gold-400 backdrop-blur">
+                  🎯 {tr('Фокус')} ✕
+                </button>
+              )}
+            </div>
+            {layersOpen && (
+              <fieldset className="grid max-h-[50vh] gap-0.5 overflow-y-auto rounded-2xl border border-asphalt-700 bg-asphalt-950/95 p-2 text-[12px] backdrop-blur" data-testid="map-layers-panel">
+                <legend className="sr-only">{tr('Слоеве')}</legend>
+                {layerLabels.map(([k, label]) => (
+                  <label key={k} className="flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-asphalt-800">
+                    <input type="checkbox" checked={chosen[k]} onChange={() => toggleLayer(k)} className="h-4 w-4 accent-volt-500" />
+                    {label}
+                  </label>
+                ))}
+                <p className="px-1.5 pt-1 text-[10px] text-mist-400">{hidden > 0 ? tr('Показани са най-близките {0} чужди камиона. Приближи картата, за да видиш другите.', CROWD_CAP) : tr('Изборът се пази в профила ти и важи и на телефона.')}</p>
+              </fieldset>
+            )}
+          </div>
+        )}
+        {circleLive && !layersLive && <div role="radiogroup" aria-label={tr('Кои играчи да се виждат')} className="flex rounded-full border border-asphalt-700 bg-asphalt-950/85 p-0.5 text-[11px] backdrop-blur">
           {([['all', tr('Всички')], ['circle', tr('Моите хора')], ['none', tr('Само аз')]] as const).map(([id, label]) => (
             <button key={id} type="button" role="radio" aria-checked={mode === id} title={id === 'circle' ? tr('Приятели и компания') : undefined} onClick={() => setMode(id)} className={`flex-1 whitespace-nowrap rounded-full px-2 py-1 transition ${mode === id ? 'bg-volt-500 text-white' : 'text-mist-300 hover:text-white'}`}>{label}</button>
           ))}
         </div>}
-        {world && mode !== 'none' && circleLive && (
+        {world && (shown.friends || shown.company) && circleLive && (
           <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-asphalt-700 bg-asphalt-950/90 text-sm backdrop-blur" aria-label={tr('Заедно на пътя')}>
             <button type="button" onClick={() => setCircleOpen((v) => !v)} aria-expanded={circleOpen} className="flex items-center justify-between gap-2 px-3 py-2 font-semibold">
               <span className="flex items-center gap-2"><Users className="h-4 w-4 text-prestige" />{tr('Заедно на пътя')}</span>
@@ -661,7 +822,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
           </section>
         )}
       </div>
-      {picked && <TruckCard truck={picked} now={clock} onClose={() => setPickedId(null)} />}
+      {picked && <TruckCard truck={picked} now={clock} onClose={() => setPickedId(null)} focused={focusId === picked.id} onFocus={layersLive ? () => focusOn(picked.id, truckPoint(picked, world?.routes ?? {}, clock).point) : undefined} />}
       {city && (
         <aside className="absolute right-3 top-14 w-[min(320px,calc(100%-24px))] rounded-2xl border border-asphalt-600 bg-asphalt-950/95 p-4 text-sm shadow-2xl backdrop-blur">
           <div className="flex items-start justify-between gap-2">
@@ -700,7 +861,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
 const SEGMENT_LABEL: Record<string, string> = { drive: 'Кара', break: 'Почивка (45 мин)', rest: 'Дневна почивка', border: 'На границата', loading: 'Товари', unloading: 'Разтоварва', incident: 'Спрял по пътя' };
 
 /** Quick look at another player's truck: lane, load (friends and company), progress, arrival; drive in convoy. */
-function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number; onClose: () => void }) {
+function TruckCard({ truck: t, now, onClose, focused = false, onFocus }: { truck: WorldTruck; now: number; onClose: () => void; focused?: boolean; onFocus?: () => void }) {
   const d = t.delivery;
   const s = d && now ? stateAt(d.schedule, now) : null;
   const left = d && now ? Math.max(0, Math.round((scheduleEnd(d.schedule) - now) / 60_000)) : 0;
@@ -743,6 +904,11 @@ function TruckCard({ truck: t, now, onClose }: { truck: WorldTruck; now: number;
         <p className="mt-3 text-sm">{tr('Паркиран в {0}', t.city)}</p>
       )}
       <p className={`mt-2 text-xs ${t.online ? 'text-profit' : 'text-mist-400'}`}>{t.online ? tr('● В играта сега') : tr('○ Не е в играта в момента')}</p>
+      {onFocus && (
+        <button type="button" onClick={onFocus} aria-pressed={focused} data-testid="map-focus" className={`mt-2 w-full rounded-lg border px-2 py-1.5 text-xs font-semibold ${focused ? 'border-gold-400 bg-gold-400 text-asphalt-950' : 'border-asphalt-600 text-mist-100 hover:bg-asphalt-800'}`}>
+          🎯 {focused ? tr('Покажи всички камиони') : tr('Фокус: само този камион и маршрутът му')}
+        </button>
+      )}
     </aside>
   );
 }
