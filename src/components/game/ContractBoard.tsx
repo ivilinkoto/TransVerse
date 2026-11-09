@@ -42,6 +42,8 @@ import { TAG_LABELS, type LoadTag } from '@/lib/game/special-loads';
 import { usePromise } from './usePromise';
 import { GiftLoad } from './GiftLoad';
 import { LaneTip, type LaneTipView } from './LaneTip';
+import { ContractWindow } from '@/components/gameui/ContractWindow';
+import { playCoin } from '@/lib/client/motion';
 
 export interface BoardContract {
   id: string;
@@ -522,6 +524,9 @@ function whyNot(c: BoardContract): string | null {
 function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string, next?: { cityId: number; name: string; vehicleId: string }) => void; friends: { id: string; username: string }[]; promise: PromiseId }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
+  // 1.2.3.6 „Нов облик“: the details open as a game window; after taking the load it shows the truck leaving.
+  const gameUi = useFeature('game_ui');
+  const [departed, setDeparted] = useState<{ text: string; next: { cityId: number; name: string; vehicleId: string } } | null>(null);
   const countdown = useFeature('countdowns');
   const lean = useFeature('simple_ui');
   const queueLive = useFeature('trip_queue');
@@ -586,7 +591,16 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
     setError(null);
     try {
       await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure, route: routeChoice && cheap && !rail ? 'cheap' : 'fast', parking: parkingLive && secure ? 'secure' : 'free', refuel: refuelLive && refuel, ...(promise !== 'normal' ? { promise } : {}) });
-      onAccepted(t('Камионът тръгна: {0}{1}, {2} → {3}. Можеш да поемеш следващата поръчка.', part ? t('{0} т ', dec(part.tons)) : '', c.goods, c.origin.name, c.destination.name), { cityId: c.destination.id, name: c.destination.name, vehicleId });
+      const text = t('Камионът тръгна: {0}{1}, {2} → {3}. Можеш да поемеш следващата поръчка.', part ? t('{0} т ', dec(part.tons)) : '', c.goods, c.origin.name, c.destination.name);
+      const nx = { cityId: c.destination.id, name: c.destination.name, vehicleId };
+      if (gameUi && open) {
+        playCoin();
+        // The board refreshes after „Супер“: the taken load leaves the list and would close the window.
+        setDeparted({ text, next: nx });
+        setBusy(false);
+        return;
+      }
+      onAccepted(text, nx);
       setBusy(false);
       router.refresh();
     } catch (e) {
@@ -713,7 +727,17 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
       )}
 
       {open && (
-        <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">
+        <ContractFrame
+          gameUi={gameUi}
+          head={c}
+          departed={departed?.text ?? null}
+          onClose={onToggle}
+          onDone={() => {
+            if (!departed) return;
+            onAccepted(departed.text, departed.next);
+            router.refresh();
+          }}
+        >
           {(c.tip || c.canTip) && <LaneTip tip={c.tip ?? null} originCityId={c.origin.id} destCityId={c.destination.id} canWrite={!!c.canTip} />}
           {friends.length > 0 && !c.reservedByOther && !c.tender && !c.alreadyTaken && <GiftLoad contractId={c.id} friends={friends} />}
           <dl className="grid gap-3 text-sm sm:grid-cols-4">
@@ -799,7 +823,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
                 </ul>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <select className="input min-w-0 flex-1" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label={t('Превозно средство')}>
+                <select className="input min-w-0 flex-1 basis-full sm:basis-auto" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label={t('Превозно средство')}>
                   <option value="">{t('— изберете превозно средство —')}</option>
                   {usable.length > 0 && (
                     <optgroup label={t('Могат да поемат')}>
@@ -812,7 +836,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
                     </optgroup>
                   )}
                 </select>
-                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload && !part)} onClick={accept}>
+                <button className={gameUi ? 'game-action game-action-main flex-row px-5 py-2.5 text-sm' : 'btn-primary'} disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload && !part)} onClick={accept}>
                   <ShieldCheck className="h-4 w-4" />{busy ? t('Изпращане…') : part ? t('Вземи {0} т и изпрати', dec(part.tons)) : t('Приеми и изпрати')}
                 </button>
                 <MapLink contractId={c.id} />
@@ -903,10 +927,16 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {error && <p role="alert" className="text-sm text-loss">{error}</p>}
             </div>
           )}
-        </div>
+        </ContractFrame>
       )}
     </li>
   );
+}
+
+/** The open load: inline under the row, or (1.2.3.6 „Нов облик“) as a game window. */
+function ContractFrame({ gameUi, head, departed, onClose, onDone, children }: { gameUi: boolean; head: BoardContract; departed: string | null; onClose: () => void; onDone: () => void; children: React.ReactNode }) {
+  if (gameUi) return <ContractWindow head={head} departed={departed} onClose={onClose} onDone={onDone}>{children}</ContractWindow>;
+  return <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">{children}</div>;
 }
 
 /** Share a big load with the company: from then on only the members see it and take parts of it. */

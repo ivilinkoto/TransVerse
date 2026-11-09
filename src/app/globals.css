@@ -456,3 +456,16 @@ html[data-motion='off'] .shop-tile, html[data-motion='off'] .shop-tile-emoji { t
 .notif-in { animation: gw-in 0.35s ease-out both; }
 html[data-motion='off'] :is(.notif-badge, .notif-in), html[data-motion='off'] .notif-card { animation: none; transition: none; }
 @media (prefers-reduced-motion: reduce) { :is(.notif-badge, .notif-in) { animation: none; } }
+/* 1.2.3.6 „Нов облик“: a load in a game window — the route as a road with a truck on it. */
+.contract-road { background: radial-gradient(120% 140% at 50% 0%, rgba(34, 211, 238, 0.14), transparent 60%), linear-gradient(180deg, #172133, #0e1523); border: 1px solid rgba(34, 211, 238, 0.25); }
+.contract-road-line { height: 4px; border-radius: 9999px; background: repeating-linear-gradient(90deg, #f6c343 0 14px, transparent 14px 24px), #273349; }
+.contract-pin { display: block; width: 18px; height: 18px; border-radius: 9999px; background: #94a3b8; border: 3px solid #0e1523; box-shadow: 0 0 0 2px #94a3b8; }
+.contract-pin-from { background: #34d399; box-shadow: 0 0 0 2px #34d399, 0 0 12px #34d399; }
+.contract-pin-to { background: #f43f5e; box-shadow: 0 0 0 2px #f43f5e, 0 0 12px #f43f5e; }
+@keyframes contract-roll { 0% { left: 1.5rem; } 100% { left: calc(100% - 3.5rem); } }
+.contract-road-truck { left: 1.5rem; animation: contract-roll 6s ease-in-out infinite alternate; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)); }
+@keyframes contract-drive { 0% { left: -15%; transform: translateY(0); } 15% { transform: translateY(-2px); } 100% { left: 110%; transform: translateY(0); } }
+.contract-drive { animation: contract-drive 2.4s cubic-bezier(0.5, 0, 0.6, 1) infinite; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)); }
+html[data-motion='off'] :is(.contract-road-truck, .contract-drive) { animation: none; }
+html[data-motion='off'] .contract-drive { left: 40%; }
+@media (prefers-reduced-motion: reduce) { :is(.contract-road-truck, .contract-drive) { animation: none; } .contract-drive { left: 40%; } }

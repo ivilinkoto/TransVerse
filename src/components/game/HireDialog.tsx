@@ -2,6 +2,7 @@
 
 import { Send, UserRoundCheck, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { money } from '@/lib/format';
@@ -44,8 +45,9 @@ export function HireDialog({ contract, onClose }: { contract: { id: string; good
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={t('Възложи курс на шофьор')}>
+  // On top of the page (and of a game window it may be opened from, 1.2.3.6).
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={t('Възложи курс на шофьор')}>
       <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label={t('Затвори')} onClick={onClose} />
       <div className="relative w-full max-w-lg rounded-t-3xl border border-asphalt-700 bg-asphalt-900 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:rounded-3xl sm:pb-5">
         <button type="button" className="absolute right-3 top-3 rounded-full p-1.5 text-mist-400 hover:bg-asphalt-800 hover:text-white" onClick={onClose} aria-label={t('Затвори')}><X className="h-5 w-5" /></button>
@@ -77,6 +79,7 @@ export function HireDialog({ contract, onClose }: { contract: { id: string; good
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
