@@ -9,14 +9,9 @@ import type { ShopItem } from '@/lib/game/shop';
 import { useFeature } from '@/components/game/Features';
 import { GameWindow } from '@/components/gameui/GameWindow';
 import { playCoin, playSelect } from '@/lib/client/motion';
+import { SHOP_EMOJI as EMOJI } from '@/lib/game/shop-look';
 import { t as tr, tx } from '@/i18n/t';
 
-/** 1.2.3.6 „Нов облик“: a picture for each product in its window. */
-const EMOJI: Partial<Record<string, string>> = {
-  vip_7: '👑', vip_30: '👑', vip_90: '👑', gift_vip_30: '🎁', xp_boost_24h: '⚡', instant_repair: '🔧', instant_relocate: '🚚', custom_plate: '🔢',
-  paint: '🎨', paint_pumpkin: '🎃', paint_christmas: '🎄', paint_cherry: '🍒', paint_retro70: '🕺', paint_retro80: '📼', paint_retro90: '💿', paint_easter: '🥚', paint_blackfriday: '🖤',
-  truck_part: '🛠️', trailer_part: '🔗', case_silver: '🧰', case_gold: '💰', gift_case: '🎁', move_depot: '🏭', rename: '✏️',
-};
 
 export interface VehicleOption {
   id: string;
@@ -36,6 +31,7 @@ export function ShopBuy({
   vipColors,
   trailers = [],
   depots = [],
+  compact = false,
 }: {
   item: ShopItem;
   balance: number;
@@ -48,6 +44,8 @@ export function ShopBuy({
   trailers?: { id: string; label: string }[];
   /** 1.2.3: own depots (for „Преместване на депо“). */
   depots?: { id: string; label: string }[];
+  /** 1.2.3.6: in a store card the price is shown above, so the button just says „Купи“. */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const usable = vehicles.filter((v) => (item.needs === 'vehicle_city' ? v.idle : v.owned && (item.needs !== 'vehicle' || v.idle)));
@@ -188,7 +186,7 @@ export function ShopBuy({
     return (
       <>
         <button className="btn-gold w-full py-2 text-sm" onClick={() => (playSelect(), setDone(null), setError(null), setOpen(true))} data-testid="shop-open">
-          <Coins className="h-4 w-4" />{price ? tr('Купи · {0} TC', price) : tr('Приложи · безплатно (VIP)')}
+          <Coins className="h-4 w-4" />{compact ? (price ? tr('Купи') : tr('Приложи')) : price ? tr('Купи · {0} TC', price) : tr('Приложи · безплатно (VIP)')}
         </button>
         {open && (
           <GameWindow title={tx(item.label)} icon="🛒" accent="#f6c343" size="sm" onClose={() => setOpen(false)} testId="shop-window">
