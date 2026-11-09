@@ -155,7 +155,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                   </div>
                 </div>
                 <div className="relative my-3 flex h-28 items-end rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
-                  {/* 1.2.3.7: look at it in 3D before buying. */}
+                  {/* 1.2.3.6: look at it in 3D before buying. */}
                   <Truck3DButton className="absolute right-1 top-1" title={tx(m.name)} look={{ modelId: m.id, color: '#1d4ed8', condition: 100, plate: null }} />
                   {/* Tractors are drawn alone: the trailer is a separate purchase. */}
                   <VehicleIllustration modelId={m.id} color="#1d4ed8" className="max-h-28 w-full" />

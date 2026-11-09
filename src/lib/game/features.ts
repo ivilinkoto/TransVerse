@@ -131,13 +131,14 @@ export const FEATURES = {
   // 1.2.3.4: new loads around the trucks (live at once)
   board_refresh: '1.2.3.4',
   garage_showroom: '1.2.3.5',
-  // 1.2.3.6 „Чиста карта“: map layers and focus, the delivery postcard, the dock slots, letters from the clients.
+  // 1.2.3.6 „Чиста карта“: map layers and focus, the delivery postcard, the dock slots, letters from the clients and
   map_layers: '1.2.3.6',
   delivery_postcard: '1.2.3.6',
   dock_slots: '1.2.3.6',
   client_letters: '1.2.3.6',
-  // 1.2.3.7 „Камионът в 3D“: every truck in 3D from the fleet and the profile.
-  truck_3d_view: '1.2.3.7',
+  // every truck in 3D (fleet, profile, dealership) and the depot yards in 3D.
+  truck_3d_view: '1.2.3.6',
+  depot_3d: '1.2.3.6',
   // 1.2.6 „На една вълна“
   chat_life: '1.2.6',
   partner_loads: '1.2.6',

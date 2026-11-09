@@ -263,7 +263,7 @@ export async function showcaseOf(db: DbOrTx, userId: string) {
       plate: v.plate,
       name: v.model.name,
       truck: { modelId: v.modelId, trailerModelId: v.trailer?.modelId ?? null, color: v.color, livery: v.livery, cosmetics: v.cosmetics, trailerUpgrades: v.trailer?.upgrades, trailerLogo: v.trailer?.logo, trailerCosmetics: v.trailer?.cosmetics },
-      // 1.2.3.7: what the 3D view needs on top of the drawing.
+      // 1.2.3.6: what the 3D view needs on top of the drawing.
       look: { modelId: v.modelId, color: v.color, cosmetics: v.cosmetics, tuning: v.cosmetics?.tuning ?? null, condition: v.condition, trailerModelId: v.trailer?.modelId ?? null, trailerColor: v.trailer?.cosmetics?.paint ?? null, plate: v.plate },
     })),
     badges: u.showcase.badges.map((id) => owned.find((b) => b.id === id)).filter((b): b is NonNullable<typeof b> => !!b).map((b) => ({ id: b.id, label: b.label, description: b.description })),

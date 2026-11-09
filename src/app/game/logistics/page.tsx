@@ -9,6 +9,8 @@ import { ECONOMY } from '@/lib/game/economy';
 import { cities, cityMarkets, depots, ports, vehicles } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { depotSlotCostCents } from '@/server/game/fleet';
+import { fleetView } from '@/server/game/queries';
+import { Depot3DButton } from '@/components/garage/Depot3DButton';
 import { t, tx, intlLocale } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
@@ -20,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function LogisticsPage() {
   await initLocale();
-  const { db, company, features } = await gameContext();
+  const { db, user, company, features } = await gameContext();
   const myDepots = await db
     .select({ id: depots.id, slots: depots.slots, cityId: depots.cityId, name: cities.nameBg, country: cities.countryCode, createdAt: depots.createdAt })
     .from(depots)
@@ -37,6 +39,14 @@ export default async function LogisticsPage() {
     .limit(250);
   const portRows = await db.select({ name: ports.name, nameBg: ports.nameBg, city: cities.nameBg, country: cities.countryCode }).from(ports).innerJoin(cities, eq(cities.id, ports.cityId)).orderBy(cities.countryCode).limit(40);
   const owned = new Set(myDepots.map((d) => d.cityId));
+  // 1.2.3.6: the free trucks parked in each depot city, for the depot in 3D.
+  const idle = features.depot_3d && myDepots.length ? (await fleetView(db, company.id)).vehicles.filter((v) => v.status === 'idle' && !v.delivery && v.ownership !== 'company') : [];
+  const lookOf = (d: (typeof myDepots)[number]) => ({
+    slots: d.slots,
+    city: tx(d.name),
+    company: user.username,
+    trucks: idle.filter((v) => v.city.id === d.cityId).slice(0, d.slots).map((v) => ({ modelId: v.modelId, color: v.color, cosmetics: v.cosmetics, tuning: v.cosmetics?.tuning ?? null, condition: v.condition, trailerModelId: v.trailer?.modelId ?? null, trailerColor: v.trailer?.cosmetics?.paint ?? null, plate: v.plate })),
+  });
 
   return (
     <div className="space-y-6">
@@ -46,7 +56,7 @@ export default async function LogisticsPage() {
         <Table head={[t('Град'), t('Капацитет'), t('Паркирани сега'), t('Открито'), '']}>
           {myDepots.map((d) => (
             <tr key={d.id}>
-              <td className="px-3 py-3 font-semibold"><Warehouse className="mr-2 inline h-4 w-4 text-prestige" />{tx(d.name)} <span className="text-xs text-mist-400">{tx(d.country)}</span></td>
+              <td className="px-3 py-3 font-semibold"><Warehouse className="mr-2 inline h-4 w-4 text-prestige" />{tx(d.name)} <span className="text-xs text-mist-400">{tx(d.country)}</span>{features.depot_3d && <Depot3DButton className="ml-2 align-middle" title={t('Депо {0}', tx(d.name))} look={lookOf(d)} />}</td>
               <td className="num px-3 py-3">{t('{0} места', d.slots)}</td>
               <td className="num px-3 py-3">{parked.find((p) => p.cityId === d.cityId)?.n ?? 0}</td>
               <td className="px-3 py-3 text-mist-400">{d.createdAt.toLocaleDateString(intlLocale())}</td>

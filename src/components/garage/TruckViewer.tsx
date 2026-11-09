@@ -9,7 +9,7 @@ import { motionEnabled } from '@/lib/client/motion';
 import { t } from '@/i18n/t';
 
 /**
- * 1.2.3.7 „Камионът в 3D“: one truck on a studio floor that the player turns with a
+ * 1.2.3.6: one truck on a studio floor that the player turns with a
  * finger or the mouse (no hall, no post-processing — light enough for a phone).
  */
 export function TruckViewer({ look }: { look: TruckLook }) {

@@ -8,3 +8,11 @@ c35d5dfd27	Truck in 3D	Грузовик в 3D
 e90ed78023	Profile: the trucks in the showcase have “🧊 3D” too, so anyone can look at them.	Профиль: у грузовиков в витрине тоже есть «🧊 3D», так что любой может их рассмотреть.
 4f40c415f2	Dealership: every model can be seen in 3D before buying.	Салон: любую модель можно посмотреть в 3D перед покупкой.
 208d36ca87	Fix: the brand is no longer repeated in the truck name in the profile showcase.	Исправлено: в витрине профиля марка больше не повторяется в названии грузовика.
+6427ea017e	Trucks in 3D	Грузовики в 3D
+63806fc163	A tidy map with layers and focus, trucks in 3D, a 3D trip postcard, the dock and letters from clients.	Аккуратная карта со слоями и фокусом, грузовики в 3D, 3D-открытка с рейса, рампа и письма от клиентов.
+f4af4bd1ac	“🧊 3D” shows any truck in 3D: in the fleet, the profile and the dealership. A new city or a long trip brings a 3D postcard.	«🧊 3D» показывает любой грузовик в 3D: в автопарке, профиле и салоне. После нового города или дальнего рейса — 3D-открытка.
+b2c0dbb294	Depots: “🧊 3D” shows the depot yard — the bays, the office, the hall and your free trucks in the city.	Депо: «🧊 3D» показывает двор депо — парковочные места, офис, ангар и твои свободные грузовики в городе.
+87d2e018fd	Depot {0}	Депо {0}
+fa84cdb607	Trucks and depots in 3D	Грузовики и депо в 3D
+3beaa8d2f2	A tidy map, trucks and depots in 3D, a 3D trip postcard, the dock and letters from clients.	Аккуратная карта, грузовики и депо в 3D, 3D-открытка с рейса, рампа и письма от клиентов.
+3be76fb74b	“🧊 3D” shows the truck in the fleet, the profile and the dealership, and the depot with its yard and parked trucks.	«🧊 3D» показывает грузовик в автопарке, профиле и салоне, а депо — с двором и припаркованными грузовиками.
