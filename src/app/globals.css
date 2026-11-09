@@ -420,3 +420,13 @@ html[data-theme='light'] [data-look='2'] .panel { background: #ffffff; backdrop-
 .item-hero-art { animation: slot-float 3s ease-in-out infinite; filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 22px color-mix(in srgb, var(--slot) 60%, transparent)); }
 html[data-motion='off'] :is(.gw-backdrop, .gw-panel, .gw-head::after, .slot-epic, .slot-legendary, .slot-legendary::after, .slot-art, .item-hero-art) { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { :is(.gw-backdrop, .gw-panel, .slot-epic, .slot-legendary, .slot-art, .item-hero-art) { animation: none !important; } .gw-head::after, .slot-legendary::after { display: none; } }
+/* 1.2.3.6: stat bars, tiles and big action buttons inside game windows. */
+.stat-track { height: 10px; border-radius: 999px; background: rgba(2, 6, 14, 0.7); border: 1px solid rgba(255, 255, 255, 0.07); overflow: hidden; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6); }
+.stat-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--fill) 70%, #000), var(--fill)); box-shadow: 0 0 10px color-mix(in srgb, var(--fill) 60%, transparent); transition: width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; }
+.stat-fill::after { content: ''; position: absolute; inset: 0 0 50% 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent); border-radius: 999px; }
+.stat-tile { background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)); border: 1px solid rgba(255, 255, 255, 0.08); }
+.game-action { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem; border-radius: 1rem; padding: 0.7rem 0.4rem; font-size: 12px; font-weight: 700; color: #e2e8f0; background: linear-gradient(180deg, #1c2638, #121a28); border: 1px solid rgba(255, 255, 255, 0.09); box-shadow: 0 3px 0 #070b13, inset 0 1px 0 rgba(255, 255, 255, 0.08); transition: transform 0.12s, box-shadow 0.12s, border-color 0.15s; }
+.game-action:hover { border-color: color-mix(in srgb, var(--gw-accent, #22d3ee) 70%, transparent); transform: translateY(-2px); box-shadow: 0 5px 0 #070b13, 0 0 16px -4px var(--gw-accent, #22d3ee), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+.game-action:active { transform: translateY(2px); box-shadow: 0 1px 0 #070b13; }
+.game-action-main { background: linear-gradient(180deg, #2f7bff, #1d4ed8); border-color: #60a5fa; color: #fff; box-shadow: 0 3px 0 #1e3a8a, 0 0 18px -6px #3b82f6, inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+html[data-motion='off'] .stat-fill { transition: none; }
