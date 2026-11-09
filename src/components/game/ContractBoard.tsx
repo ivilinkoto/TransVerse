@@ -183,6 +183,9 @@ export interface BoardContract {
   }[];
 }
 
+/** 1.2.3.6 „Нов облик“: the picture and colour of each kind of cargo on the board's cards. */
+const CARGO_EMOJI: Record<CargoType, string> = { pallets: '📦', refrigerated: '🧊', bulk: '⛏️', container: '🚢', liquid: '🛢️', special: '⚙️', steel: '🏗️', vehicles: '🚗', livestock: '🐄' };
+const CARGO_COLOUR: Record<CargoType, string> = { pallets: '#60a5fa', refrigerated: '#22d3ee', bulk: '#f59e0b', container: '#f6c343', liquid: '#f43f5e', special: '#a78bfa', steel: '#94a3b8', vehicles: '#34d399', livestock: '#fb923c' };
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green', livestock: 'orange' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
@@ -255,6 +258,8 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   const [sort, setSort] = useState<Sort>('reward');
   // A link to one load (a notification, Discord) opens it first.
   const [open, setOpen] = useState<string | null>(() => (focus && contracts.some((c) => c.id === focus) ? focus : null));
+  // 1.2.3.6 „Нов облик“: the board as game cards in a grid, the filters as game tabs.
+  const gameUi = useFeature('game_ui');
   // After accepting, the player stays on the board; a short note says where the truck went.
   const [sent, setSent] = useState<string | null>(null);
   // 1.2.3: after a load is taken — the next trip from where the truck arrives.
@@ -339,7 +344,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
           <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSent(null)} aria-label={t('Скрий')}>✕</button>
         </div>
       )}
-      <div className="panel flex flex-wrap items-center gap-3 p-3">
+      <div className={`panel flex flex-wrap items-center gap-3 p-3 ${gameUi ? 'load-toolbar' : ''}`}>
         <label className="relative w-full min-w-[200px] flex-1 sm:w-auto">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
           <input className="input pl-9" placeholder={t('Град или стока…')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('Търсене')} />
@@ -368,7 +373,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label={t('Бързи филтри')}>
         {CHIPS.filter((chip) => !SEASONAL_CHIPS.has(chip.id) || contracts.some(SEASONAL_CHIPS.get(chip.id)!)).map((chip) => (
-          <button key={chip.id} type="button" aria-pressed={chips.has(chip.id)} onClick={() => toggleChip(chip.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${chips.has(chip.id) ? 'border-volt-500 bg-volt-500/20 text-white' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}>
+          <button key={chip.id} type="button" aria-pressed={chips.has(chip.id)} onClick={() => toggleChip(chip.id)} className={gameUi ? `shop-tab shrink-0 rounded-2xl px-3 py-1.5 text-sm font-semibold ${chips.has(chip.id) ? 'shop-tab-on' : ''}` : `shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${chips.has(chip.id) ? 'border-volt-500 bg-volt-500/20 text-white' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}>
             {tx(chip.label)}
           </button>
         ))}
@@ -413,7 +418,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         </>
       ) : (
         <>
-          <ul className="space-y-2">
+          <ul className={gameUi ? 'grid gap-3 min-[1500px]:grid-cols-2' : 'space-y-2'} data-testid="board-list">
             {list.slice(0, shown).map((c) => (
               <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
             ))}
@@ -609,98 +614,139 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
     }
   };
 
+  const flags = (
+    <>
+        {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />{t('СПЕШНО · ×{0} по-бързо · до товара за 1 мин', dec(c.speedFactor))}</Badge>}
+        {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />{t('Лиценз: {0}', c.missingLicences.map((l) => tx(l)).join(', '))}</Badge>}
+        {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />{t('ниво {0}', c.minLevel)}</Badge>}
+        {c.tag && TAG_LABELS[c.tag as LoadTag] && <Badge tone={c.tag === 'livestock' ? 'orange' : c.tag === 'night_courier' ? 'violet' : 'cyan'}>{TAG_LABELS[c.tag as LoadTag].emoji} {tx(TAG_LABELS[c.tag as LoadTag].label).toUpperCase()}</Badge>}
+        {c.fog && <Badge tone="neutral">{t('🌫 МЪГЛА · +{0}%', Math.round(FOG.payShare * 100))}</Badge>}
+        <Bonuses simple={simple}>
+          {c.tender && <Badge tone="violet">{t('ТЪРГ НА КОМПАНИЯТА')}</Badge>}
+          {c.exchange && <Badge tone="violet">{t('БОРСА МЕЖДУ ИГРАЧИ')}</Badge>}
+          {c.rally && <Badge tone="orange">{t('🏁 РАЛИ — мери се времето и горивото')}</Badge>}
+          {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
+          {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{tx(c.port)}</Badge>}
+          {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />{t('ТОВАР НА ДЕНЯ · +{0} TC', DAILY_LOAD.coins)}</Badge>}
+          {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('ОБЩ ТОВАР НА КОМПАНИЯТА · +{0}%', Math.round(SHARED_LOAD.bonusShare * 100))}</Badge>}
+          {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label={t('Любима линия')} />}
+          {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />{t('ХЕЛУИН · +{0}%', Math.round((HALLOWEEN.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />{t('КОЛЕДА · +{0}%', Math.round((CHRISTMAS.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'easter' && <Badge tone="violet">{t('🥚 ВЕЛИКДЕН · +25%')}</Badge>}
+          {c.holiday === 'marta' && <Badge tone="red">{t('🔴⚪ БАБА МАРТА · +{0}%', Math.round((MARTA.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.transEurope && <Badge tone="gold">{t('🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{0}%', Math.round((TRANS_EUROPE.multiplier - 1) * 100))}</Badge>}
+          {c.temp && <Badge tone="blue">🌡️ {tx(c.temp)}</Badge>}
+          {c.relayLeg && (c.partner ? <Badge tone="green">{t('🤝 ПАРТНЬОРСКИ {0}/2 · +{1} % с партньор', c.relayLeg, Math.round(PARTNER.bonusShare * 100))}</Badge> : <Badge tone="cyan">{t('🏃 {0} · +{1} % ако и двамата сте навреме', relayLabel(c.relayLeg), Math.round(RELAY.bonusShare * 100))}</Badge>)}
+          {c.escort && <Badge tone="orange">{t('🚓 С ЕСКОРТ: +{0} % за двамата', Math.round(ESCORT.mainBonus * 100))}</Badge>}
+          {c.escortRun && <Badge tone="orange">{t('🚓 ЕСКОРТ · тръгни веднага, бонус {0} % от товара', Math.round(ESCORT.escortShare * 100))}</Badge>}
+          {c.regionProject && <Badge tone="green">{t('🏗️ ПРОЕКТ НА РЕГИОНА')}</Badge>}
+          {c.humanitarian && <Badge tone="red">{t('🆘 ХУМАНИТАРНА ПОМОЩ · +{0} TC навреме', RELIEF.coins)}</Badge>}
+          {(() => {
+            // 1.1.4: fragile, valuable and dangerous goods pay more.
+            const trait = goodsTrait(c.goods);
+            return trait ? <Badge tone={trait === 'adr' ? 'orange' : trait === 'valuable' ? 'gold' : 'cyan'}>{t('{0} {1} · +{2}%', GOODS_TRAITS[trait].emoji, tx(GOODS_TRAITS[trait].label).toUpperCase(), Math.round((GOODS_TRAITS[trait].multiplier - 1) * 100))}</Badge> : null;
+          })()}
+          {c.sealed && <Badge tone="violet">{t('📦 ЗАПЕЧАТАН · до +{0}% при отваряне', Math.round(SEALED.tiers.at(-1)!.bonus * 100))}</Badge>}
+          {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">{t('🤝 ДОГОВОРЕНО +{0}%', c.haggle.percent)}</Badge>}
+          {!!c.lez?.length && <Badge tone="green">{t('🌿 ЗОНА · {0}', c.lez.join(', '))}</Badge>}
+          {c.specialization && <Badge tone="violet">{t('🎯 СПЕЦИАЛИЗАЦИЯ · +{0}%', Math.round(SPECIALIZATION.bonusShare * 100))}</Badge>}
+          {!!c.traffic && <Badge tone="orange">{t('🚦 НАТОВАРЕНО · {0} камиона', c.traffic)}</Badge>}
+          {c.holiday === 'harvest' && <Badge tone="orange">{t('🍇 ГРОЗДОБЕР · +{0}%', Math.round((HARVEST.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'prewinter' && <Badge tone="cyan">{t('🧂 ЗА ЗИМАТА · +{0}%', Math.round((PREWINTER.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'black_friday' && <Badge tone="gold">{t('🛍 ЧЕРЕН ПЕТЪК · +{0}%', Math.round((BLACK_FRIDAY.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'sowing' && <Badge tone="green">{t('🌱 СЕИТБА · +{0}%', Math.round((SOWING.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'national' && <Badge tone="gold">{t('🎉 НАЦИОНАЛЕН ПРАЗНИК · +{0}%', Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100))}</Badge>}
+          {!!c.oversizeCents && <Badge tone="orange">{t('⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {0}', money(c.oversizeCents))}</Badge>}
+          {c.roadWorks && <Badge tone="orange">🚧 {tx(c.roadWorks)}</Badge>}
+          {!!c.urgentRaises && <Badge tone="red">{t('📈 +{0}% — никой не я е поел', c.urgentRaises * 10)}</Badge>}
+          {c.toHome && <Badge tone="green"><House className="h-3 w-3" />{t('КЪМ БАЗАТА')}</Badge>}
+          {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />{t('ФИРМЕН ПРОЕКТ')}</Badge>}
+          {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />{t('ЗА СТРОЕЖА НА КОМПАНИЯТА')}</Badge>}
+          {c.lastLoad && <Badge tone="red"><Hammer className="h-3 w-3" />{t('ПОСЛЕДЕН ТОВАР · +{0}%', Math.round((PLOT.lastLoadFactor - 1) * 100))}</Badge>}
+          {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('СБОРЕН · {0} {1} · +{2}%', c.stops.length, c.stops.length === 1 ? t('СПИРКА') : t('СПИРКИ'), Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100))}</Badge>}
+          {c.hiredBy && <span className="max-w-full truncate" title={t('Възложена от {0} до {1}', c.hiredBy.company, c.hiredBy.until)}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />{t('ВЪЗЛОЖЕНА · {0}% за {1}', Math.round(c.hiredBy.share * 100), c.hiredBy.company)}</Badge></span>}
+          {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />{t('КОНВОЙ С {0} · +{1}%', c.convoy, Math.round(CONVOY_RULES.bonusShare * 100))}</Badge>}
+          {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />{t('ЗИМЕН ТОВАР · +{0}%', Math.round((WINTER.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{tx(c.weather.label)} ({tx(c.weather.country)})</Badge>}
+          {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />{t('ПРЕМИУМ · репутация {0}', c.minReputation)}</Badge>}
+          {c.alreadyTaken && <Badge tone="green">{t('Вече я поехте')}</Badge>}
+          {c.reservedByMe && <Badge tone="gold">{t('Запазена за теб до {0}', c.reservedUntil)}{countdown && c.reservedUntilAt ? <> <Countdown until={c.reservedUntilAt} /></> : null}</Badge>}
+          {c.reservedByOther && <Badge tone="neutral">{t('Запазена до {0}', c.reservedUntil)}</Badge>}
+          {c.opensAt && <Badge tone="violet">{t('VIP · за всички от {0}', c.opensAt)}</Badge>}
+          {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{c.options.some((o) => !o.error && o.emptyKm === 0) ? t('За камиона ти тук') : t('Във вашия град')}</Badge>}
+        </Bonuses>
+    </>
+  );
+
   return (
-    <li className={`panel overflow-hidden transition ${open ? 'border-volt-500/60' : c.urgent ? 'border-loss/60 hover:border-loss' : c.local ? 'border-gold-400/40 hover:border-gold-400/70' : 'hover:border-asphalt-500'} ${c.locked || c.reputationLocked || c.missingLicences.length ? 'opacity-60' : ''}`}>
-      <button className="grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 text-left sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto]" onClick={onToggle} aria-expanded={open}>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={CARGO_TONE[c.cargoType]}>{tx(c.cargoLabel)}</Badge>
-            <span className="truncate font-semibold">{tx(c.goods)}</span>
-            <span className="num text-sm text-mist-400">{t('{0} т', dec(c.tons))}</span>
-            {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />{t('СПЕШНО · ×{0} по-бързо · до товара за 1 мин', dec(c.speedFactor))}</Badge>}
-            {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />{t('Лиценз: {0}', c.missingLicences.map((l) => tx(l)).join(', '))}</Badge>}
-            {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />{t('ниво {0}', c.minLevel)}</Badge>}
-            {c.tag && TAG_LABELS[c.tag as LoadTag] && <Badge tone={c.tag === 'livestock' ? 'orange' : c.tag === 'night_courier' ? 'violet' : 'cyan'}>{TAG_LABELS[c.tag as LoadTag].emoji} {tx(TAG_LABELS[c.tag as LoadTag].label).toUpperCase()}</Badge>}
-            {c.fog && <Badge tone="neutral">{t('🌫 МЪГЛА · +{0}%', Math.round(FOG.payShare * 100))}</Badge>}
-            <Bonuses simple={simple}>
-              {c.tender && <Badge tone="violet">{t('ТЪРГ НА КОМПАНИЯТА')}</Badge>}
-              {c.exchange && <Badge tone="violet">{t('БОРСА МЕЖДУ ИГРАЧИ')}</Badge>}
-              {c.rally && <Badge tone="orange">{t('🏁 РАЛИ — мери се времето и горивото')}</Badge>}
-              {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
-              {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{tx(c.port)}</Badge>}
-              {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />{t('ТОВАР НА ДЕНЯ · +{0} TC', DAILY_LOAD.coins)}</Badge>}
-              {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('ОБЩ ТОВАР НА КОМПАНИЯТА · +{0}%', Math.round(SHARED_LOAD.bonusShare * 100))}</Badge>}
-              {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label={t('Любима линия')} />}
-              {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />{t('ХЕЛУИН · +{0}%', Math.round((HALLOWEEN.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />{t('КОЛЕДА · +{0}%', Math.round((CHRISTMAS.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'easter' && <Badge tone="violet">{t('🥚 ВЕЛИКДЕН · +25%')}</Badge>}
-              {c.holiday === 'marta' && <Badge tone="red">{t('🔴⚪ БАБА МАРТА · +{0}%', Math.round((MARTA.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.transEurope && <Badge tone="gold">{t('🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{0}%', Math.round((TRANS_EUROPE.multiplier - 1) * 100))}</Badge>}
-              {c.temp && <Badge tone="blue">🌡️ {tx(c.temp)}</Badge>}
-              {c.relayLeg && (c.partner ? <Badge tone="green">{t('🤝 ПАРТНЬОРСКИ {0}/2 · +{1} % с партньор', c.relayLeg, Math.round(PARTNER.bonusShare * 100))}</Badge> : <Badge tone="cyan">{t('🏃 {0} · +{1} % ако и двамата сте навреме', relayLabel(c.relayLeg), Math.round(RELAY.bonusShare * 100))}</Badge>)}
-              {c.escort && <Badge tone="orange">{t('🚓 С ЕСКОРТ: +{0} % за двамата', Math.round(ESCORT.mainBonus * 100))}</Badge>}
-              {c.escortRun && <Badge tone="orange">{t('🚓 ЕСКОРТ · тръгни веднага, бонус {0} % от товара', Math.round(ESCORT.escortShare * 100))}</Badge>}
-              {c.regionProject && <Badge tone="green">{t('🏗️ ПРОЕКТ НА РЕГИОНА')}</Badge>}
-              {c.humanitarian && <Badge tone="red">{t('🆘 ХУМАНИТАРНА ПОМОЩ · +{0} TC навреме', RELIEF.coins)}</Badge>}
-              {(() => {
-                // 1.1.4: fragile, valuable and dangerous goods pay more.
-                const trait = goodsTrait(c.goods);
-                return trait ? <Badge tone={trait === 'adr' ? 'orange' : trait === 'valuable' ? 'gold' : 'cyan'}>{t('{0} {1} · +{2}%', GOODS_TRAITS[trait].emoji, tx(GOODS_TRAITS[trait].label).toUpperCase(), Math.round((GOODS_TRAITS[trait].multiplier - 1) * 100))}</Badge> : null;
-              })()}
-              {c.sealed && <Badge tone="violet">{t('📦 ЗАПЕЧАТАН · до +{0}% при отваряне', Math.round(SEALED.tiers.at(-1)!.bonus * 100))}</Badge>}
-              {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">{t('🤝 ДОГОВОРЕНО +{0}%', c.haggle.percent)}</Badge>}
-              {!!c.lez?.length && <Badge tone="green">{t('🌿 ЗОНА · {0}', c.lez.join(', '))}</Badge>}
-              {c.specialization && <Badge tone="violet">{t('🎯 СПЕЦИАЛИЗАЦИЯ · +{0}%', Math.round(SPECIALIZATION.bonusShare * 100))}</Badge>}
-              {!!c.traffic && <Badge tone="orange">{t('🚦 НАТОВАРЕНО · {0} камиона', c.traffic)}</Badge>}
-              {c.holiday === 'harvest' && <Badge tone="orange">{t('🍇 ГРОЗДОБЕР · +{0}%', Math.round((HARVEST.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'prewinter' && <Badge tone="cyan">{t('🧂 ЗА ЗИМАТА · +{0}%', Math.round((PREWINTER.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'black_friday' && <Badge tone="gold">{t('🛍 ЧЕРЕН ПЕТЪК · +{0}%', Math.round((BLACK_FRIDAY.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'sowing' && <Badge tone="green">{t('🌱 СЕИТБА · +{0}%', Math.round((SOWING.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'national' && <Badge tone="gold">{t('🎉 НАЦИОНАЛЕН ПРАЗНИК · +{0}%', Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100))}</Badge>}
-              {!!c.oversizeCents && <Badge tone="orange">{t('⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {0}', money(c.oversizeCents))}</Badge>}
-              {c.roadWorks && <Badge tone="orange">🚧 {tx(c.roadWorks)}</Badge>}
-              {!!c.urgentRaises && <Badge tone="red">{t('📈 +{0}% — никой не я е поел', c.urgentRaises * 10)}</Badge>}
-              {c.toHome && <Badge tone="green"><House className="h-3 w-3" />{t('КЪМ БАЗАТА')}</Badge>}
-              {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />{t('ФИРМЕН ПРОЕКТ')}</Badge>}
-              {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />{t('ЗА СТРОЕЖА НА КОМПАНИЯТА')}</Badge>}
-              {c.lastLoad && <Badge tone="red"><Hammer className="h-3 w-3" />{t('ПОСЛЕДЕН ТОВАР · +{0}%', Math.round((PLOT.lastLoadFactor - 1) * 100))}</Badge>}
-              {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('СБОРЕН · {0} {1} · +{2}%', c.stops.length, c.stops.length === 1 ? t('СПИРКА') : t('СПИРКИ'), Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100))}</Badge>}
-              {c.hiredBy && <span className="max-w-full truncate" title={t('Възложена от {0} до {1}', c.hiredBy.company, c.hiredBy.until)}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />{t('ВЪЗЛОЖЕНА · {0}% за {1}', Math.round(c.hiredBy.share * 100), c.hiredBy.company)}</Badge></span>}
-              {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />{t('КОНВОЙ С {0} · +{1}%', c.convoy, Math.round(CONVOY_RULES.bonusShare * 100))}</Badge>}
-              {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />{t('ЗИМЕН ТОВАР · +{0}%', Math.round((WINTER.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{tx(c.weather.label)} ({tx(c.weather.country)})</Badge>}
-              {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />{t('ПРЕМИУМ · репутация {0}', c.minReputation)}</Badge>}
-              {c.alreadyTaken && <Badge tone="green">{t('Вече я поехте')}</Badge>}
-              {c.reservedByMe && <Badge tone="gold">{t('Запазена за теб до {0}', c.reservedUntil)}{countdown && c.reservedUntilAt ? <> <Countdown until={c.reservedUntilAt} /></> : null}</Badge>}
-              {c.reservedByOther && <Badge tone="neutral">{t('Запазена до {0}', c.reservedUntil)}</Badge>}
-              {c.opensAt && <Badge tone="violet">{t('VIP · за всички от {0}', c.opensAt)}</Badge>}
-              {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{c.options.some((o) => !o.error && o.emptyKm === 0) ? t('За камиона ти тук') : t('Във вашия град')}</Badge>}
-            </Bonuses>
+    <li className={`panel overflow-hidden transition ${gameUi ? `load-card ${c.urgent ? 'load-card-urgent' : c.local ? 'load-card-local' : ''}` : open ? 'border-volt-500/60' : c.urgent ? 'border-loss/60 hover:border-loss' : c.local ? 'border-gold-400/40 hover:border-gold-400/70' : 'hover:border-asphalt-500'} ${c.locked || c.reputationLocked || c.missingLicences.length ? 'opacity-60' : ''}`} style={gameUi ? ({ '--tile': CARGO_COLOUR[c.cargoType] } as React.CSSProperties) : undefined}>
+      <button className={gameUi ? 'block w-full p-4 text-left' : 'grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 text-left sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto]'} onClick={onToggle} aria-expanded={open}>
+        {gameUi ? (
+          <div className="flex gap-3">
+            <span className="load-art flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl" aria-hidden>{CARGO_EMOJI[c.cargoType]}</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-display text-base font-bold text-white">{tx(c.goods)}</p>
+                  <p className="text-[11px] text-mist-400">{tx(c.cargoLabel)} · {t('{0} т', dec(c.tons))}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="num font-display text-xl font-bold text-profit">{money(c.rewardCents)}</div>
+                  <div className="num text-[11px] text-mist-400">{t('{0} лв./км', dec(c.rewardCents / 100 / c.distanceKm))}</div>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                <span className="contract-pin contract-pin-from shrink-0 scale-75" aria-hidden />
+                <span className="min-w-0 truncate font-semibold text-white">{tx(c.origin.name)}</span>
+                <span className="load-line min-w-6 flex-1" aria-hidden />
+                {c.stops.length > 0 && <span className="load-pill shrink-0">+{c.stops.length}</span>}
+                <span className="min-w-0 truncate font-semibold text-white">{tx(c.destination.name)}</span>
+                <span className="contract-pin contract-pin-to shrink-0 scale-75" aria-hidden />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span className="load-pill">🛣️ <span className="num">{km(c.distanceKm)}</span></span>
+                <span className="load-pill">⏱️ {duration(c.windowMinutes)}</span>
+                {c.expiresInMin < 120 && <span className="load-pill text-amber-sig">⌛ {t('изтича скоро')}</span>}
+                {flags}
+              </div>
+              {reason && <div className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-sig"><AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />{t('Не можеш да я вземеш: {0}', reason)}</div>}
+            </div>
           </div>
-          {reason && <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-sig"><AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />{t('Не можеш да я вземеш: {0}', reason)}</div>}
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
-            <span className="font-medium">{tx(c.origin.name)}</span>
-            <span className="text-[11px] text-mist-400">{tx(c.origin.country)}</span>
-            {c.stops.map((st) => (
-              <span key={st.name} className="contents">
-                <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
-                <span className="text-cyan-glow" title={t('Разтоварване на {0} т · срок {1}', dec(st.tons), duration(st.windowMinutes))}>{tx(st.name)}</span>
-                <span className="text-[11px] text-mist-400">{tx(st.country)}</span>
-              </span>
-            ))}
-            <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
-            <span className="font-medium">{tx(c.destination.name)}</span>
-            <span className="text-[11px] text-mist-400">{tx(c.destination.country)}</span>
+        ) : (
+          <>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={CARGO_TONE[c.cargoType]}>{tx(c.cargoLabel)}</Badge>
+              <span className="truncate font-semibold">{tx(c.goods)}</span>
+              <span className="num text-sm text-mist-400">{t('{0} т', dec(c.tons))}</span>
+              {flags}
+            </div>
+            {reason && <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-sig"><AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />{t('Не можеш да я вземеш: {0}', reason)}</div>}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
+              <span className="font-medium">{tx(c.origin.name)}</span>
+              <span className="text-[11px] text-mist-400">{tx(c.origin.country)}</span>
+              {c.stops.map((st) => (
+                <span key={st.name} className="contents">
+                  <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
+                  <span className="text-cyan-glow" title={t('Разтоварване на {0} т · срок {1}', dec(st.tons), duration(st.windowMinutes))}>{tx(st.name)}</span>
+                  <span className="text-[11px] text-mist-400">{tx(st.country)}</span>
+                </span>
+              ))}
+              <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
+              <span className="font-medium">{tx(c.destination.name)}</span>
+              <span className="text-[11px] text-mist-400">{tx(c.destination.country)}</span>
+            </div>
           </div>
-        </div>
-        <div className="hidden text-xs text-mist-400 sm:block">
-          <div className="flex items-center gap-1.5"><Route className="h-3.5 w-3.5" /><span className="num">{km(c.distanceKm)}</span>{c.provider === 'approximate' && <Badge tone="orange">{t('приблизително')}</Badge>}</div>
-          <div className="mt-1 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />{t('срок {0}', duration(c.windowMinutes))}{c.expiresInMin < 120 && <span className="text-amber-sig">{t('· изтича скоро')}</span>}</div>
-        </div>
-        <div className="text-right">
-          <div className="num font-display text-lg font-bold text-profit">{money(c.rewardCents)}</div>
-          <div className="num text-[11px] text-mist-400">{t('{0} лв./км', dec(c.rewardCents / 100 / c.distanceKm))}</div>
-        </div>
+          <div className="hidden text-xs text-mist-400 sm:block">
+            <div className="flex items-center gap-1.5"><Route className="h-3.5 w-3.5" /><span className="num">{km(c.distanceKm)}</span>{c.provider === 'approximate' && <Badge tone="orange">{t('приблизително')}</Badge>}</div>
+            <div className="mt-1 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />{t('срок {0}', duration(c.windowMinutes))}{c.expiresInMin < 120 && <span className="text-amber-sig">{t('· изтича скоро')}</span>}</div>
+          </div>
+          <div className="text-right">
+            <div className="num font-display text-lg font-bold text-profit">{money(c.rewardCents)}</div>
+            <div className="num text-[11px] text-mist-400">{t('{0} лв./км', dec(c.rewardCents / 100 / c.distanceKm))}</div>
+          </div>
+          </>
+        )}
       </button>
       {/* 1.1.4.1: no free truck — line it up after a trip ("Планирай следващия курс"). */}
       {queueLive && !open && !usable.length && !c.locked && !c.urgent && trucksOnTrip.length > 0 && (
