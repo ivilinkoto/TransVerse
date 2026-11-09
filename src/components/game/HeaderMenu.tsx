@@ -16,7 +16,11 @@ import { t, tx } from '@/i18n/t';
 export function NotificationBell({ unread }: { unread: number }) {
   const pathname = usePathname();
   const active = pathname.startsWith('/game/notifications');
-  const show = unread > 0 && !active;
+  // 1.2.3.6: the window marks everything read but the layout keeps the old count until
+  // the next refresh — remember what was read so the dot does not come back on close.
+  const [read, setRead] = useState<number | null>(null);
+  if (active && read !== unread) setRead(unread);
+  const show = unread > 0 && !active && read !== unread;
   return (
     <Link
       href="/game/notifications"

@@ -447,3 +447,12 @@ html[data-motion='off'] .stat-fill { transition: none; }
 .shop-ribbon { position: absolute; top: 10px; right: -30px; width: 120px; transform: rotate(35deg); background: linear-gradient(90deg, #f43f5e, #f59e0b); color: #fff; font-size: 10px; font-weight: 800; text-align: center; padding: 2px 0; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
 .shop-vip { background: radial-gradient(120% 100% at 0% 0%, rgba(246, 195, 67, 0.16), transparent 60%), linear-gradient(180deg, #161f30, #0e1523); border: 1px solid rgba(246, 195, 67, 0.35); }
 html[data-motion='off'] .shop-tile, html[data-motion='off'] .shop-tile-emoji { transition: none; }
+/* 1.2.3.6 „Нов облик“: notification cards. */
+.notif-card { background: linear-gradient(90deg, color-mix(in srgb, var(--tile) 9%, #141c2c), #0f1625 60%); border: 1px solid color-mix(in srgb, var(--tile) 22%, #232e44); transition: border-color 0.2s, transform 0.15s; }
+.notif-card:hover { border-color: color-mix(in srgb, var(--tile) 55%, transparent); transform: translateX(2px); }
+.notif-new { border-color: color-mix(in srgb, var(--tile) 60%, transparent); box-shadow: inset 3px 0 0 var(--tile), 0 0 18px -10px var(--tile); }
+.notif-icon { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--tile) 38%, transparent), color-mix(in srgb, var(--tile) 10%, #0b1120)); border: 1px solid color-mix(in srgb, var(--tile) 40%, transparent); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tile) 35%, transparent)); }
+.notif-badge { border-radius: 9999px; background: var(--tile); color: #0b0f17; font-size: 10px; font-weight: 800; padding: 1px 7px; animation: fx-glow 1.6s ease-in-out infinite; }
+.notif-in { animation: gw-in 0.35s ease-out both; }
+html[data-motion='off'] :is(.notif-badge, .notif-in), html[data-motion='off'] .notif-card { animation: none; transition: none; }
+@media (prefers-reduced-motion: reduce) { :is(.notif-badge, .notif-in) { animation: none; } }
