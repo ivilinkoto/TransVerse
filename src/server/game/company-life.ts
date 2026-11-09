@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, sql } from 'drizzle-
 import { z } from 'zod';
 import { recordMonth } from '@/lib/game/community';
 import { ASSEMBLY, DEPARTMENTS, INTERNS, KEY_CLIENTS, keyClientName, LOGO, TRADITION } from '@/lib/game/company-life';
-import { featureLive } from '@/lib/game/features';
+import { FEATURES, featureLive } from '@/lib/game/features';
 import { money } from '@/lib/format';
 import { periodWindow, sofiaMidnight } from '@/lib/game/missions';
 import { sofiaMonthDay } from '@/lib/game/seasonal';
@@ -30,7 +30,7 @@ export async function createDepartment(db: Database, userId: string, raw: z.inpu
   const input = departmentSchema.parse(raw);
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'manage_members');
-    if (!(await featureFor(tx, userId, 'departments'))) fail('not_released', tr('Отделите идват с обновление 1.9.'));
+    if (!(await featureFor(tx, userId, 'departments'))) fail('not_released', tr('Отделите идват с обновление {0}.', FEATURES.departments));
     const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(companyDepartments).where(eq(companyDepartments.organizationId, m.company.id));
     if (n >= DEPARTMENTS.max) fail('too_many', tr('Най-много {0} отдела.', DEPARTMENTS.max));
     const [d] = await tx.insert(companyDepartments).values({ organizationId: m.company.id, name: input.name, goalTons: input.goalTons }).returning();
@@ -104,7 +104,7 @@ export async function openAssembly(db: Database, userId: string, raw: z.input<ty
   const input = assemblySchema.parse(raw);
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'manage_settings');
-    if (!(await featureFor(tx, userId, 'general_assembly', now))) fail('not_released', tr('Събранието идва с обновление 1.9.'));
+    if (!(await featureFor(tx, userId, 'general_assembly', now))) fail('not_released', tr('Събранието идва с обновление {0}.', FEATURES.general_assembly));
     const [open] = await tx.select({ id: companyAssemblies.id }).from(companyAssemblies).where(and(eq(companyAssemblies.organizationId, m.company.id), isNull(companyAssemblies.closedAt))).limit(1);
     if (open) fail('already_open', tr('Вече има отворено гласуване.'));
     const options = input.kind === 'rate' ? ASSEMBLY.rateOptions.map((r) => `${Math.round(r * 100)} %`) : input.options;
@@ -271,7 +271,7 @@ export async function setLogoDesign(db: Database, userId: string, raw: z.input<t
   const design = raw ? logoSchema.parse(raw) : null;
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'edit_profile');
-    if (!(await featureFor(tx, userId, 'company_logo'))) fail('not_released', tr('Логото идва с обновление 1.9.'));
+    if (!(await featureFor(tx, userId, 'company_logo'))) fail('not_released', tr('Логото идва с обновление {0}.', FEATURES.company_logo));
     await tx.update(organizations).set({ logoDesign: design, brandingVersion: sql`${organizations.brandingVersion} + 1` }).where(eq(organizations.id, m.company.id));
     return { saved: !!design };
   });
@@ -283,7 +283,7 @@ export async function setTradition(db: Database, userId: string, raw: z.input<ty
   const t = raw ? traditionSchema.parse(raw) : null;
   return db.transaction(async (tx) => {
     const m = await requirePermission(tx, userId, 'manage_settings');
-    if (!(await featureFor(tx, userId, 'company_traditions'))) fail('not_released', tr('Традициите идват с обновление 1.9.'));
+    if (!(await featureFor(tx, userId, 'company_traditions'))) fail('not_released', tr('Традициите идват с обновление {0}.', FEATURES.company_traditions));
     await tx.update(organizations).set({ traditionDay: t?.day ?? null, traditionName: t?.name ?? null }).where(eq(organizations.id, m.company.id));
     if (t) await addChronicle(tx, m.company.id, 'tradition', `Нова традиция: „${t.name}“ всяка година на ${t.day.split('-').reverse().join('.')}.`);
     return { day: t?.day ?? null };
@@ -322,7 +322,7 @@ export async function recordOwnerChange(tx: Tx, orgId: string, previousOwnerId: 
 // ── Interns ──────────────────────────────────────────────────────────────
 
 export async function requestInternship(db: Database, userId: string, hostOrgId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'interns', now))) fail('not_released', tr('Стажовете идват с обновление 1.9.'));
+  if (!(await featureFor(db, userId, 'interns', now))) fail('not_released', tr('Стажовете идват с обновление {0}.', FEATURES.interns));
   const m = await membershipOf(db, userId);
   if (m?.company.id === hostOrgId) fail('own_company', tr('Това е твоята компания.'));
   const [host] = await db.select({ id: organizations.id, ownerId: organizations.ownerId, name: organizations.name }).from(organizations).where(eq(organizations.id, hostOrgId));
@@ -375,7 +375,7 @@ export async function traditionBonus(tx: Tx, userId: string, d: { id: string; co
 // ── Mergers ──────────────────────────────────────────────────────────────
 
 export async function proposeMerger(db: Database, userId: string, toOrgId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'mergers', now))) fail('not_released', tr('Сливанията идват с обновление 1.9.'));
+  if (!(await featureFor(db, userId, 'mergers', now))) fail('not_released', tr('Сливанията идват с обновление {0}.', FEATURES.mergers));
   const m = await membershipOf(db, userId);
   if (!m?.rank.isOwner) fail('forbidden', tr('Само собственикът предлага сливане.'), 403);
   if (m!.company.id === toOrgId) fail('same', tr('Избери друга компания.'));

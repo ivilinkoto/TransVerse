@@ -23,9 +23,9 @@ const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (
 
 describe('1.2.3.6 „Чиста карта“: rules', () => {
   it('is live with its release', () => {
-    const at = new Date(releaseByVersion('1.2.3.6')!.publishedAt);
+    const at = new Date(releaseByVersion('1.3')!.publishedAt);
     for (const f of ['map_layers', 'truck_3d_view', 'depot_3d', 'game_ui', 'delivery_postcard', 'dock_slots', 'client_letters'] as const) {
-      expect(FEATURES[f]).toBe('1.2.3.6');
+      expect(FEATURES[f]).toBe('1.3');
       expect(featureLive(f, at)).toBe(true);
     }
   });
@@ -101,13 +101,14 @@ describe('1.2.3.6 „Чиста карта“: the game', () => {
   it('a full dock means a queue; a swap for a gift moves both unloadings and pays the gift', async () => {
     const sofia = await cityByName('Sofia');
     expect(sofia.population).toBeGreaterThanOrEqual(DOCK.minPopulation);
-    const now = new Date();
+    // The dock comes with 1.3: run after its release (or now, if that is later).
+    const now = new Date(Math.max(Date.now(), new Date(releaseByVersion('1.3')!.publishedAt).getTime() + 3_600_000));
     const players = [];
     for (let i = 0; i < DOCK.perSlot + 1; i++) {
       const p = await newPlayer('Plovdiv');
       const [co] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
       const [truck] = await db().select().from(vehicles).where(eq(vehicles.companyId, co!.id));
-      const c = await makeContract('Plovdiv', 'Sofia');
+      const c = await makeContract('Plovdiv', 'Sofia', { expiresAt: new Date(now.getTime() + 86_400_000) });
       const d = await acceptContract(db(), p.userId, c.id, truck!.id, now);
       players.push({ ...p, company: co!, delivery: d });
     }

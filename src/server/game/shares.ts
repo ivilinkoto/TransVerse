@@ -5,7 +5,7 @@ import { periodWindow } from '@/lib/game/missions';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyMembers, organizations, shareHoldings, sharePrices, treasuryEntries } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
-import { featureLive } from '@/lib/game/features';
+import { FEATURES, featureLive } from '@/lib/game/features';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { post, postTreasury } from './finance';
@@ -31,7 +31,7 @@ const outsideShares = async (db: DbOrTx, orgId: string) => {
 
 /** The owner puts the company on the exchange. */
 export async function listCompany(db: Database, userId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'share_market', now))) fail('not_released', t('Борсата идва с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'share_market', now))) fail('not_released', t('Борсата идва с обновление {0}.', FEATURES.share_market));
   const [org] = await db.select().from(organizations).where(eq(organizations.ownerId, userId));
   if (!org) fail('not_owner', t('Само собственикът на компания може да я листне.'), 403);
   if (org!.listedAt) fail('already_listed', t('Компанията вече е на борсата.'));
@@ -46,7 +46,7 @@ export async function listCompany(db: Database, userId: string, now = new Date()
 
 /** A player outside the company buys shares: the price goes into its treasury. */
 export async function buyShares(db: Database, userId: string, orgId: string, count: number, now = new Date()) {
-  if (!(await featureFor(db, userId, 'share_market', now))) fail('not_released', t('Борсата идва с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'share_market', now))) fail('not_released', t('Борсата идва с обновление {0}.', FEATURES.share_market));
   if (!Number.isInteger(count) || count < 1 || count > SHARES.perPlayerMax) fail('bad_count', t('От 1 до {0} акции.', SHARES.perPlayerMax));
   const account = await companyForUser(db, userId);
   return db.transaction(async (tx) => {
@@ -75,7 +75,7 @@ export async function buyShares(db: Database, userId: string, orgId: string, cou
 
 /** A holder sells shares back to the exchange at 97 % of the price (after the hold). */
 export async function sellShares(db: Database, userId: string, orgId: string, count: number, now = new Date()) {
-  if (!(await featureFor(db, userId, 'share_market', now))) fail('not_released', t('Борсата идва с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'share_market', now))) fail('not_released', t('Борсата идва с обновление {0}.', FEATURES.share_market));
   if (!Number.isInteger(count) || count < 1) fail('bad_count', t('Поне 1 акция.'));
   const account = await companyForUser(db, userId);
   return db.transaction(async (tx) => {
