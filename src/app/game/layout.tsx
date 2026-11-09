@@ -57,7 +57,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 export const dynamic = 'force-dynamic';
 
-export default async function GameLayout({ children }: { children: React.ReactNode }) {
+export default async function GameLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
   await initLocale();
   const { db, user, company, hq, now, features } = await gameContext();
   const staff = isStaff(user.role);
@@ -119,6 +119,8 @@ export default async function GameLayout({ children }: { children: React.ReactNo
           <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-6">
             <SectionTabs holiday={holiday} />
             {children}
+            {/* 1.2.3.6: a game window over the page (e.g. the inventory). */}
+            {modal}
           </main>
         </div>
         <MobileNav badges={navBadges} staff={isStaff(user.role)} holiday={holiday} attention={attention} />

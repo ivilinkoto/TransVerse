@@ -139,6 +139,8 @@ export const FEATURES = {
   // every truck in 3D (fleet, profile, dealership) and the depot yards in 3D.
   truck_3d_view: '1.2.3.6',
   depot_3d: '1.2.3.6',
+  // „Нов облик“: game windows, the inventory as a game bag that opens over any page.
+  game_ui: '1.2.3.6',
   // 1.2.6 „На една вълна“
   chat_life: '1.2.6',
   partner_loads: '1.2.6',

@@ -372,3 +372,51 @@ html[data-theme='light'] .panel { box-shadow: 0 1px 2px rgba(15, 23, 34, 0.06), 
 /* The 2.0 glass look has its own dark gradients: plain light cards and background under the light theme. */
 html[data-theme='light'] [data-look='2'] { background: var(--color-asphalt-950); }
 html[data-theme='light'] [data-look='2'] .panel { background: #ffffff; backdrop-filter: none; border-color: var(--color-asphalt-700); box-shadow: 0 1px 2px rgba(15, 23, 34, 0.06), 0 8px 24px -16px rgba(15, 23, 34, 0.25); }
+
+/* ── 1.2.3.6 „Нов облик“: game windows and inventory slots ── */
+@keyframes gw-in { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes gw-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gw-sheen { 0% { transform: translateX(-130%) skewX(-18deg); } 60%, 100% { transform: translateX(330%) skewX(-18deg); } }
+@keyframes slot-legend { 0%, 100% { box-shadow: 0 0 10px 0 color-mix(in srgb, var(--slot) 55%, transparent), inset 0 0 14px color-mix(in srgb, var(--slot) 30%, transparent); } 50% { box-shadow: 0 0 22px 2px color-mix(in srgb, var(--slot) 75%, transparent), inset 0 0 22px color-mix(in srgb, var(--slot) 45%, transparent); } }
+@keyframes slot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.gw-backdrop { background: radial-gradient(ellipse at center, rgba(8, 12, 22, 0.55), rgba(2, 4, 10, 0.86)); backdrop-filter: blur(6px); animation: gw-fade 0.18s ease-out both; }
+.gw-panel {
+  background:
+    radial-gradient(120% 70% at 50% -10%, color-mix(in srgb, var(--gw-accent) 16%, transparent), transparent 60%),
+    linear-gradient(180deg, #121a2b 0%, #0b111d 100%);
+  border: 1px solid color-mix(in srgb, var(--gw-accent) 45%, #2a3550);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 0 40px -12px color-mix(in srgb, var(--gw-accent) 50%, transparent);
+  animation: gw-in 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.gw-out { animation: gw-fade 0.16s ease-in reverse both; }
+.gw-out .gw-panel { animation: gw-in 0.16s ease-in reverse both; }
+.gw-head { background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent); border-bottom: 1px solid rgba(255, 255, 255, 0.06); position: relative; overflow: hidden; }
+.gw-head::after { content: ''; position: absolute; inset: 0; width: 26%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); animation: gw-sheen 5s ease-in-out 0.3s infinite; pointer-events: none; }
+.gw-icon { background: linear-gradient(145deg, color-mix(in srgb, var(--gw-accent) 40%, #1b2638), #111827); border: 1px solid color-mix(in srgb, var(--gw-accent) 55%, transparent); box-shadow: 0 0 14px -4px var(--gw-accent); }
+.gw-close { color: #cbd5e1; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.15s, color 0.15s, transform 0.15s; }
+.gw-close:hover { background: rgba(239, 68, 68, 0.2); color: #fff; transform: rotate(90deg); }
+.gw-foot { border-top: 1px solid rgba(255, 255, 255, 0.06); background: rgba(0, 0, 0, 0.2); }
+.gw-corner { position: absolute; top: 8px; width: 14px; height: 14px; border-color: var(--gw-accent); opacity: 0.8; pointer-events: none; z-index: 1; }
+.gw-corner-tl { left: 8px; border-top: 2px solid; border-left: 2px solid; border-top-left-radius: 6px; }
+.gw-corner-tr { right: 8px; border-top: 2px solid; border-right: 2px solid; border-top-right-radius: 6px; }
+/* Inventory slots: a square cell lit by the rarity colour (--slot). */
+.slot {
+  position: relative; aspect-ratio: 1; border-radius: 1rem; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--slot) 28%, #1a2333) 0%, #0d1320 72%);
+  border: 2px solid color-mix(in srgb, var(--slot) 65%, #263247);
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--slot) 22%, transparent), 0 4px 10px -4px rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.slot::before { content: ''; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), transparent 40%); pointer-events: none; }
+.slot:hover { transform: translateY(-3px) scale(1.03); box-shadow: inset 0 0 18px color-mix(in srgb, var(--slot) 40%, transparent), 0 0 18px -2px color-mix(in srgb, var(--slot) 70%, transparent); }
+.slot[aria-pressed='true'] { border-color: #fff; box-shadow: 0 0 0 2px var(--slot), 0 0 24px 0 color-mix(in srgb, var(--slot) 80%, transparent); }
+.slot-epic, .slot-legendary { animation: slot-legend 2.6s ease-in-out infinite; }
+.slot-legendary::after { content: ''; position: absolute; inset: 0; width: 35%; background: linear-gradient(90deg, transparent, rgba(255, 236, 170, 0.28), transparent); animation: gw-sheen 3.4s ease-in-out infinite; pointer-events: none; }
+.slot-art { animation: slot-float 3.2s ease-in-out infinite; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55)); }
+.slot-qty { position: absolute; right: 6px; bottom: 5px; min-width: 1.4rem; padding: 0 0.35rem; border-radius: 0.5rem; background: rgba(2, 6, 14, 0.85); border: 1px solid rgba(255, 255, 255, 0.15); font-size: 11px; font-weight: 700; text-align: center; color: #fff; }
+.slot-new { position: absolute; left: -26px; top: 8px; width: 90px; transform: rotate(-38deg); background: linear-gradient(90deg, #f43f5e, #f59e0b); color: #fff; font-size: 9px; font-weight: 800; text-align: center; letter-spacing: 0.08em; padding: 1px 0; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.slot-empty { aspect-ratio: 1; border-radius: 1rem; border: 2px dashed rgba(148, 163, 184, 0.15); background: rgba(13, 19, 32, 0.5); }
+.item-hero { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--slot) 45%, transparent), transparent 65%); }
+.item-hero-art { animation: slot-float 3s ease-in-out infinite; filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 22px color-mix(in srgb, var(--slot) 60%, transparent)); }
+html[data-motion='off'] :is(.gw-backdrop, .gw-panel, .gw-head::after, .slot-epic, .slot-legendary, .slot-legendary::after, .slot-art, .item-hero-art) { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { :is(.gw-backdrop, .gw-panel, .slot-epic, .slot-legendary, .slot-art, .item-hero-art) { animation: none !important; } .gw-head::after, .slot-legendary::after { display: none; } }

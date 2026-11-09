@@ -24,7 +24,7 @@ const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (
 describe('1.2.3.6 „Чиста карта“: rules', () => {
   it('is live with its release', () => {
     const at = new Date(releaseByVersion('1.2.3.6')!.publishedAt);
-    for (const f of ['map_layers', 'truck_3d_view', 'depot_3d', 'delivery_postcard', 'dock_slots', 'client_letters'] as const) {
+    for (const f of ['map_layers', 'truck_3d_view', 'depot_3d', 'game_ui', 'delivery_postcard', 'dock_slots', 'client_letters'] as const) {
       expect(FEATURES[f]).toBe('1.2.3.6');
       expect(featureLive(f, at)).toBe(true);
     }
