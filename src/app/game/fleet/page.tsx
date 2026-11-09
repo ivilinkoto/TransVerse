@@ -17,6 +17,7 @@ import { RoadsideChoice } from '@/components/game/RoadsideChoice';
 import { helpableStop } from '@/lib/game/roadside';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { Truck3DButton } from '@/components/garage/Truck3DButton';
 import { dec, int, km, money } from '@/lib/format';
 import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
@@ -137,7 +138,9 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                 {v.id === fav && favStats && <div className="num mt-0.5 text-gold-400">{tr('{0} курса · най-дълъг {1} км', favStats.trips, int(favStats.longest))}</div>}
               </div>
             </div>
-            <div className="my-3 flex h-28 items-end justify-center rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
+            <div className="relative my-3 flex h-28 items-end justify-center rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
+              {/* 1.2.3.7: the same truck in 3D. */}
+              <Truck3DButton className="absolute right-1 top-1" title={`${tx(v.model.name)} · ${v.plate}`} look={{ modelId: v.modelId, color: v.color, cosmetics: v.cosmetics, tuning: v.cosmetics?.tuning ?? null, condition: v.condition, trailerModelId: v.trailer?.modelId ?? null, trailerColor: v.trailer?.cosmetics?.paint ?? null, plate: v.plate }} />
               <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} trailerCosmetics={v.trailer?.cosmetics} martenitsa={marta} className="max-h-28 w-full" />
             </div>
             {v.delivery && (

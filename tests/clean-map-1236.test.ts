@@ -184,3 +184,12 @@ describe('1.2.3.6 „Чиста карта“: the game', () => {
     expect(left!.readAt).not.toBeNull();
   });
 });
+
+describe('1.2.3.7 „Камионът в 3D“', () => {
+  it('goes live with its release', () => {
+    const release = releaseByVersion('1.2.3.7')!;
+    expect(FEATURES.truck_3d_view).toBe('1.2.3.7');
+    expect(featureLive('truck_3d_view', new Date(release.publishedAt))).toBe(true);
+    expect(featureLive('truck_3d_view', new Date(new Date(release.publishedAt).getTime() - 60_000))).toBe(false);
+  });
+});

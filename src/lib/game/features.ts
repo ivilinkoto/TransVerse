@@ -136,6 +136,8 @@ export const FEATURES = {
   delivery_postcard: '1.2.3.6',
   dock_slots: '1.2.3.6',
   client_letters: '1.2.3.6',
+  // 1.2.3.7 „Камионът в 3D“: every truck in 3D from the fleet and the profile.
+  truck_3d_view: '1.2.3.7',
   // 1.2.6 „На една вълна“
   chat_life: '1.2.6',
   partner_loads: '1.2.6',
