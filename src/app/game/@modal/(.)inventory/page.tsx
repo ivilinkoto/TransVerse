@@ -16,7 +16,7 @@ export default async function InventoryWindow() {
   if (!features.inventory) return null;
   return (
     <RouteWindow title={t('Инвентар')} icon="🎒" live={live} href="/game/inventory" size="xl" testId="inventory-window">
-      <InventoryView />
+      {live && <InventoryView />}
     </RouteWindow>
   );
 }

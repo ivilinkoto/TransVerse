@@ -1,4 +1,5 @@
 import { Bell } from 'lucide-react';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { Badge, Card, Empty, PageHeader } from '@/components/ui';
 import { dateTime } from '@/lib/format';
@@ -40,8 +41,13 @@ export async function NotificationsView({ wanted, inWindow = false }: { wanted?:
   const all = await latestNotifications(db, user.id, 100);
   const filter = features.notification_filter ? FILTERS.find((f) => f.id === wanted) : undefined;
   const list = filter ? all.filter((n) => filter.categories.includes(categoryOf(n.href))) : all;
-  // Opening the page reads everything; this visit still highlights what was new.
-  if (all.some((n) => !n.readAt)) await markNotificationsRead(db, user.id);
+  // Opening the page reads everything; this visit still highlights what was new. A link
+  // prefetch (the bell in the header) renders the page too but is not a visit.
+  const prefetch = (await headers()).get('next-router-prefetch');
+  if (!prefetch && all.some((n) => !n.readAt)) await markNotificationsRead(db, user.id);
+  // A visit can render the page twice (the in-game navigation, then the full page during the
+  // tutorial), so what was read in the last half minute still counts as new on this visit.
+  const isNew = (n: { readAt: Date | null }) => !n.readAt || now.getTime() - n.readAt.getTime() < 30_000;
   if (features.game_ui) {
     const tabOf = (href: string | null) => FILTERS.find((f) => f.categories.includes(categoryOf(href)))?.id ?? 'other';
     const groups = features.notification_digest ? digest(all) : all.map((n) => ({ kind: 'one' as const, items: [n], day: '', count: 1, netLv: 0 }));
@@ -50,7 +56,7 @@ export async function NotificationsView({ wanted, inWindow = false }: { wanted?:
       const n = g.items[0]!;
       const tab = tabOf(n.href);
       const look = LOOK[tab]!;
-      const fresh = g.items.some((x) => !x.readAt);
+      const fresh = g.items.some(isNew);
       const style = { '--tile': n.kind === 'achievement' ? '#f6c343' : look.colour } as React.CSSProperties;
       const icon = KIND_ICON[n.kind] ?? look.icon;
       const node = g.kind === 'group' ? (
@@ -88,7 +94,7 @@ export async function NotificationsView({ wanted, inWindow = false }: { wanted?:
       return { key: String(n.id), tab, fresh, node };
     });
     const tabs = (features.notification_filter ? FILTERS : []).map((f) => ({ id: f.id, label: f.label, icon: LOOK[f.id]!.icon }));
-    const fresh = all.filter((n) => !n.readAt).length;
+    const fresh = all.filter(isNew).length;
     return (
       <div className="space-y-3">
         {!inWindow && <PageHeader title={t('Известия')} subtitle={t('Доставки, постижения, нива и събития в компанията. Пристигат на живо.')} />}
@@ -115,7 +121,7 @@ export async function NotificationsView({ wanted, inWindow = false }: { wanted?:
               <li key={g.items[0]!.id} className="py-3">
                 <details>
                   <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
-                    <span className="flex items-center gap-2 font-semibold"><span className="h-2.5 w-2.5 rounded-full bg-profit" />{t('{0}: {1} курса пристигнаха', g.day === new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia' }).format(now) ? t('Днес') : g.day.split('-').reverse().join('.'), g.count)}{g.items.some((n) => !n.readAt) && <Badge tone="cyan">{t('Ново')}</Badge>}</span>
+                    <span className="flex items-center gap-2 font-semibold"><span className="h-2.5 w-2.5 rounded-full bg-profit" />{t('{0}: {1} курса пристигнаха', g.day === new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia' }).format(now) ? t('Днес') : g.day.split('-').reverse().join('.'), g.count)}{g.items.some(isNew) && <Badge tone="cyan">{t('Ново')}</Badge>}</span>
                     <span className={`num text-sm ${g.netLv >= 0 ? 'text-profit' : 'text-loss'}`}>{t('нетно {0}{1} лв. ▾', g.netLv >= 0 ? '+' : '', g.netLv.toLocaleString(intlLocale()))}</span>
                   </summary>
                   <ul className="mt-2 space-y-1 border-l border-asphalt-700 pl-3 text-sm text-mist-300">
@@ -124,11 +130,11 @@ export async function NotificationsView({ wanted, inWindow = false }: { wanted?:
                 </details>
               </li>
             ) : g.items.map((n) => (
-              <li key={n.id} className={`flex gap-3 py-3 ${n.readAt ? 'opacity-70' : ''}`}>
+              <li key={n.id} className={`flex gap-3 py-3 ${isNew(n) ? '' : 'opacity-70'}`}>
                 <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${DOT[n.kind as keyof typeof DOT] ?? 'bg-volt-400'}`} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="flex items-center gap-2 font-semibold">{tx(n.title)}{!n.readAt && <Badge tone="cyan">{t('Ново')}</Badge>}</span>
+                    <span className="flex items-center gap-2 font-semibold">{tx(n.title)}{isNew(n) && <Badge tone="cyan">{t('Ново')}</Badge>}</span>
                     <span className="text-xs text-mist-400">{dateTime(n.createdAt)}</span>
                   </div>
                   <p className="text-sm text-mist-300">{tx(n.body)}</p>

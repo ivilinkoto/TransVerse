@@ -12,7 +12,7 @@ export default async function NotificationsWindow() {
   const live = await windowsLive(db, user.id, features);
   return (
     <RouteWindow title={t('Известия')} icon="🔔" live={live} href="/game/notifications" size="md" testId="notifications-window">
-      <NotificationsView inWindow />
+      {live && <NotificationsView inWindow />}
     </RouteWindow>
   );
 }

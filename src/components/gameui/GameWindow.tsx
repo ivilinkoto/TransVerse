@@ -11,6 +11,8 @@ import { t } from '@/i18n/t';
  * with a short scale-in, a sound and a dimmed, blurred backdrop. Esc, the ✕ or a
  * click outside closes it (after a short closing animation). Windows can stack:
  * a later one opens above an earlier one, and Esc closes only the top one.
+ * 1.3: on a phone the window is a bottom sheet — dragging its handle or header
+ * down far enough (or flicking it) closes it.
  */
 export function GameWindow({
   title,
@@ -49,6 +51,39 @@ export function GameWindow({
     setClosing(true);
     setTimeout(() => onCloseRef.current(), 160);
   };
+  // Swipe down to close (phones): the handle and the header follow the finger.
+  const drag = useRef<{ y: number; t: number; dy: number } | null>(null);
+  const onDragStart = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'touch' || closingRef.current || window.matchMedia('(min-width: 640px)').matches) return;
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    drag.current = { y: e.clientY, t: e.timeStamp, dy: 0 };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    if (panel.current) panel.current.style.transition = 'none';
+  };
+  const onDragMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || !panel.current) return;
+    d.dy = Math.max(0, e.clientY - d.y);
+    panel.current.style.transform = `translateY(${d.dy}px)`;
+  };
+  const onDragEnd = (e: React.PointerEvent) => {
+    const d = drag.current;
+    drag.current = null;
+    const el = panel.current;
+    if (!d || !el) return;
+    const fast = d.dy > 30 && d.dy / Math.max(1, e.timeStamp - d.t) > 0.6;
+    el.style.transition = 'transform 0.18s ease-out';
+    if (d.dy > Math.min(140, el.offsetHeight * 0.3) || fast) {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      playWindowClose();
+      el.style.transform = 'translateY(100%)';
+      setTimeout(() => onCloseRef.current(), 180);
+    } else {
+      el.style.transform = '';
+    }
+  };
+  const dragProps = { onPointerDown: onDragStart, onPointerMove: onDragMove, onPointerUp: onDragEnd, onPointerCancel: onDragEnd };
   const closeRef = useRef(close);
   useEffect(() => {
     closeRef.current = close;
@@ -86,7 +121,10 @@ export function GameWindow({
       >
         <span aria-hidden className="gw-corner gw-corner-tl" />
         <span aria-hidden className="gw-corner gw-corner-tr" />
-        <header className="gw-head flex items-center gap-3 px-4 py-3 sm:px-5">
+        <div {...dragProps} className="gw-grip flex touch-none justify-center pb-1 pt-2 sm:hidden" aria-hidden>
+          <span className="h-1.5 w-12 rounded-full bg-white/25" />
+        </div>
+        <header {...dragProps} className="gw-head flex touch-none items-center gap-3 px-4 py-3 sm:touch-auto sm:px-5">
           {icon && <span className="gw-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg">{icon}</span>}
           <h2 className="min-w-0 flex-1 truncate font-display text-lg font-bold tracking-wide text-white">{title}</h2>
           <button type="button" onClick={close} className="gw-close flex h-9 w-9 items-center justify-center rounded-xl" aria-label={t('Затвори')} data-testid="game-window-close">

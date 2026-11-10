@@ -12,7 +12,7 @@ export default async function ShopWindow() {
   const live = await windowsLive(db, user.id, features);
   return (
     <RouteWindow title={t('Магазин')} icon="💎" live={live} href="/game/shop" size="xl" testId="shop-store-window">
-      <ShopView />
+      {live && <ShopView />}
     </RouteWindow>
   );
 }
