@@ -1,6 +1,6 @@
 import { and, desc, eq, gt, ilike, isNull, or, sql } from 'drizzle-orm';
 import { ALL_EVENT_TEMPLATES } from '@/lib/game/events';
-import { featureDate, featureLive } from '@/lib/game/features';
+import { FEATURES, featureDate, featureLive } from '@/lib/game/features';
 import { dec, int, km, money, moneyPrecise } from '@/lib/format';
 import { testsUnreleased } from '@/server/auth/roles';
 import type { DbOrTx } from '@/server/db/client';
@@ -404,7 +404,7 @@ async function playerByName(db: DbOrTx, username: string) {
 
 /** /рекорди — the fastest loaded runs on the lanes this month (v1.5). */
 async function records(db: DbOrTx, username: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('lane_records', now)) return { ephemeral: true, content: tr('Рекордите на линиите идват с обновление 1.5.') };
+  if (!featureLive('lane_records', now)) return { ephemeral: true, content: tr('Рекордите на линиите идват с обновление {0}.', FEATURES.lane_records) };
   const who = username ? await playerByName(db, username) : null;
   if (username && !who) return { ephemeral: true, content: tr('Няма играч „{0}“.', username) };
   const rows = await laneRecordsView(db, now, 10, who?.id);
@@ -422,7 +422,7 @@ async function records(db: DbOrTx, username: string | null, now: Date): Promise<
 
 /** /конвой-голям — announced convoys that still have a seat (v1.6). */
 async function bigConvoys(db: DbOrTx, now: Date): Promise<CommandReply> {
-  if (!featureLive('big_convoy', now)) return { ephemeral: true, content: tr('Големият конвой идва с обновление 1.6.') };
+  if (!featureLive('big_convoy', now)) return { ephemeral: true, content: tr('Големият конвой идва с обновление {0}.', FEATURES.big_convoy) };
   if (featureLive('convoy_lobby', now)) {
     const open = await openConvoysList(db, now);
     return {
@@ -451,7 +451,7 @@ async function bigConvoys(db: DbOrTx, now: Date): Promise<CommandReply> {
 
 /** /турнир — the spring cup (v1.6). */
 async function cup(db: DbOrTx, now: Date): Promise<CommandReply> {
-  if (!featureLive('spring_cup', now)) return { ephemeral: true, content: tr('Пролетната купа идва с обновление 1.6.') };
+  if (!featureLive('spring_cup', now)) return { ephemeral: true, content: tr('Пролетната купа идва с обновление {0}.', FEATURES.spring_cup) };
   const c = await cupView(db, now);
   const round = c.rounds.find((r) => r.live) ?? [...c.rounds].reverse().find((r) => r.matches.length);
   const side = (n: string | null, km: number | null) => (n ? `${n}${km != null ? tr(' ({0} км)', int(km)) : ''}` : '—');
@@ -463,7 +463,7 @@ async function cup(db: DbOrTx, now: Date): Promise<CommandReply> {
 
 /** /маршрут — the truck route between two cities (the stored one, else an approximation; v1.6). */
 async function route(db: DbOrTx, fromName: string, toName: string, now: Date): Promise<CommandReply> {
-  if (!featureLive('my_map', now)) return { ephemeral: true, content: tr('Командата идва с обновление 1.6.') };
+  if (!featureLive('my_map', now)) return { ephemeral: true, content: tr('Командата идва с обновление {0}.', FEATURES.my_map) };
   const find = async (q: string) => (q.trim() ? (await db.select().from(cities).where(or(ilike(cities.nameBg, q.trim()), ilike(cities.name, q.trim()))).orderBy(desc(cities.population)).limit(1))[0] : undefined);
   const [a, b] = [await find(fromName), await find(toName)];
   if (!a || !b) return { ephemeral: true, content: tr('Няма град „{0}“ в играта.', !a ? fromName : toName) };
@@ -491,7 +491,7 @@ async function route(db: DbOrTx, fromName: string, toName: string, now: Date): P
 
 /** /държава — one country in short (v1.7). */
 async function country(db: DbOrTx, name: string, now: Date): Promise<CommandReply> {
-  if (!featureLive('discord_country', now)) return { ephemeral: true, content: tr('Командата идва с обновление 1.7.') };
+  if (!featureLive('discord_country', now)) return { ephemeral: true, content: tr('Командата идва с обновление {0}.', FEATURES.discord_country) };
   const code = await findCountry(db, name);
   if (!code || !countryOpen(code, featureLive('europe', now), featureLive('open_world', now)) || !GAME_COUNTRIES.includes(code as GameCountry)) return { ephemeral: true, content: tr('Няма държава „{0}“ в играта.', name) };
   const c = (await countryInfo(db, code, now))!;
@@ -515,7 +515,7 @@ async function country(db: DbOrTx, name: string, now: Date): Promise<CommandRepl
 
 /** /предизвикателство — the challenge of the week (v1.6). */
 async function challenge(db: DbOrTx, userId: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('weekly_challenge', now)) return { ephemeral: true, content: tr('Предизвикателството на седмицата идва с обновление 1.6.') };
+  if (!featureLive('weekly_challenge', now)) return { ephemeral: true, content: tr('Предизвикателството на седмицата идва с обновление {0}.', FEATURES.weekly_challenge) };
   const w = await weeklyChallenge(db, now, userId, 5);
   return {
     embeds: [{
@@ -536,7 +536,7 @@ async function challenge(db: DbOrTx, userId: string | null, now: Date): Promise<
 
 /** /албум — the city album: cards per country (v1.5). */
 async function album(db: DbOrTx, username: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('city_album', now)) return { ephemeral: true, content: tr('Колекцията от градове идва с обновление 1.5.') };
+  if (!featureLive('city_album', now)) return { ephemeral: true, content: tr('Колекцията от градове идва с обновление {0}.', FEATURES.city_album) };
   if (!username) return { ephemeral: true, content: tr('Напиши име на играч или свържи акаунта си. {0}', linkHint()) };
   const who = await playerByName(db, username);
   if (!who) return { ephemeral: true, content: tr('Няма играч „{0}“.', username) };
@@ -559,7 +559,7 @@ async function album(db: DbOrTx, username: string | null, now: Date): Promise<Co
 
 /** /съюз — an alliance: its companies, the week and the hall (v1.5). */
 async function alliance(db: DbOrTx, name: string | null, viewerId: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('alliances', now)) return { ephemeral: true, content: tr('Съюзите идват с обновление 1.5.') };
+  if (!featureLive('alliances', now)) return { ephemeral: true, content: tr('Съюзите идват с обновление {0}.', FEATURES.alliances) };
   let id: string | null = null;
   if (name) id = (await db.select({ id: alliances.id }).from(alliances).where(sql`lower(${alliances.name}) = lower(${name.trim()})`))[0]?.id ?? null;
   else if (viewerId) id = (await playerAlliance(db, viewerId, now))?.id ?? null;

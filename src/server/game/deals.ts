@@ -1,4 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
+import { FEATURES } from '@/lib/game/features';
 import { HAGGLE, haggleAccepted, sealedTier, type HagglePercent } from '@/lib/game/deals';
 import { money } from '@/lib/format';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -12,7 +13,7 @@ import { t } from '@/i18n/t';
 
 /** The player asks the shipper for more on a big load (once). A "no" gives the load to someone else. */
 export async function haggle(db: Database, userId: string, contractId: string, percent: HagglePercent, now = new Date()) {
-  if (!(await featureFor(db, userId, 'haggling', now))) fail('not_released', t('Пазарлъкът идва с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'haggling', now))) fail('not_released', t('Пазарлъкът идва с обновление {0}.', FEATURES.haggling));
   if (!HAGGLE.asks.some((a) => a.percent === percent)) fail('bad_ask', t('Може да поискаш +10, +20 или +30 %.'));
   const [c] = await db.select().from(contracts).where(eq(contracts.id, contractId));
   if (!c || c.status !== 'open' || c.expiresAt <= now) fail('contract_unavailable', t('Поръчката вече не е налична.'), 409);

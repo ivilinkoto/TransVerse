@@ -68,6 +68,13 @@ import { quietHoursSchema, setQuietHours } from '@/server/push';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, relocateVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
+import { guessDailyRoute } from '@/server/game/daily-route';
+import { playNightRun } from '@/server/game/night-run';
+import { learnSkill, resetSkills } from '@/server/game/skills';
+import { openWorkshop, rateWorkshop, setWorkshopPrice, upgradeWorkshop } from '@/server/game/workshops';
+import { voteCrisis } from '@/server/game/crises';
+import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
+import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
 import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
@@ -126,6 +133,9 @@ import { claimMission, rerollMission } from '@/server/game/missions';
 import { refreshLoads, reserveContract } from '@/server/game/contracts';
 import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
 import { applyTuningPreset, fitTuning, likeGarage, saveTuningPreset, shareGarage } from '@/server/game/showroom';
+import { answerDockSwap, offerDockSwap } from '@/server/game/dock';
+import { sharePostcard } from '@/server/game/postcards';
+import { markLettersRead } from '@/server/game/letters';
 import { chatBodySchema, clearCompanyChat, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
 import {
   buyCompanyUpgrade,
@@ -178,6 +188,11 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('fitTuning'), vehicleId: id, part: z.string().max(20), style: z.string().max(20).nullable() }),
   z.object({ type: z.literal('saveTuningPreset'), vehicleId: id, slot: z.coerce.number().int().min(0).max(2), name: z.string().max(40).default('') }),
   z.object({ type: z.literal('applyTuningPreset'), vehicleId: id, slot: z.coerce.number().int().min(0).max(2) }),
+  // 1.2.3.6: „Рампата“, the 3D postcard, the letters from the clients.
+  z.object({ type: z.literal('dockSwapOffer'), deliveryId: z.string().uuid(), withDeliveryId: z.string().uuid(), giftCents: z.number().int().min(0).max(100_000_00) }),
+  z.object({ type: z.literal('dockSwapAnswer'), swapId: z.string().uuid(), accept: z.boolean() }),
+  z.object({ type: z.literal('sharePostcard'), deliveryId: z.string().uuid() }),
+  z.object({ type: z.literal('readLetters') }),
   z.object({ type: z.literal('likeGarage'), username: z.string().trim().min(1).max(30), note: z.string().max(200).default('') }),
   z.object({ type: z.literal('shareGarage') }),
   z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
@@ -230,6 +245,25 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyDepot'), cityId }),
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('markNotificationsRead') }),
+  z.object({ type: z.literal('adoptMascot'), kind: z.enum(['cat', 'dog', 'parrot', 'turtle']), name: z.string().max(60) }),
+  z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
+  z.object({ type: z.literal('petMascot') }),
+  z.object({ type: z.literal('setMascotAccessory'), accessory: z.enum(['scarf', 'cap', 'glasses', 'crown']).nullable() }),
+  z.object({ type: z.literal('buyBusLine'), route: z.string().regex(/^\d+:\d+$/), model: z.enum(['shuttle', 'intercity', 'coach']), departures: z.coerce.number().int().min(1).max(4), price: z.coerce.number().int().min(1).max(100) }),
+  z.object({ type: z.literal('collectBusLine'), lineId: id }),
+  z.object({ type: z.literal('setBusLine'), lineId: id, departures: z.coerce.number().int().min(1).max(4).optional(), price: z.coerce.number().int().min(1).max(100).optional() }),
+  z.object({ type: z.literal('upgradeBusComfort'), lineId: id }),
+  z.object({ type: z.literal('sellBusLine'), lineId: id }),
+  z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
+  z.object({ type: z.literal('openWorkshop'), cityId, name: z.string().max(80) }),
+  z.object({ type: z.literal('setWorkshopPrice'), pricePct: z.coerce.number().int().min(1).max(500) }),
+  z.object({ type: z.literal('upgradeWorkshop') }),
+  z.object({ type: z.literal('repairAtWorkshop'), vehicleId: id, ownerId: id }),
+  z.object({ type: z.literal('rateWorkshop'), ownerId: id, stars: z.coerce.number().int().min(1).max(5) }),
+  z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
+  z.object({ type: z.literal('resetSkills') }),
+  z.object({ type: z.literal('nightRun'), inputs: z.array(z.number().int().min(-1).max(1)).max(2250) }),
+  z.object({ type: z.literal('dailyRouteGuess'), order: z.array(z.number().int().positive()).min(2).max(12) }),
   z.object({ type: z.literal('foundCompany'), name: companyNameSchema, hqCityId: cityId }),
   z.object({ type: z.literal('returnRental'), vehicleId: id }),
   z.object({ type: z.literal('buyoutRental'), vehicleId: id }),
@@ -308,7 +342,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reportShady'), contractId: id }),
   z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
   z.object({ type: z.literal('blackRepair'), vehicleId: id }),
-  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional(), hideBusiness: z.boolean().optional() }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional(), hideBusiness: z.boolean().optional(), mapLayers: z.object({ mine: z.boolean().optional(), company: z.boolean().optional(), friends: z.boolean().optional(), others: z.boolean().optional(), movingOnly: z.boolean().optional(), plates: z.boolean().optional(), depots: z.boolean().optional(), routes: z.boolean().optional(), weather: z.boolean().optional() }).strict().optional() }),
   z.object({ type: z.literal('enterTruck'), vehicleId: id }),
   z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
@@ -690,11 +724,34 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   saveTuningPreset: 'garage_showroom',
   applyTuningPreset: 'garage_showroom',
   likeGarage: 'garage_showroom',
+  dockSwapOffer: 'dock_slots',
+  dockSwapAnswer: 'dock_slots',
+  sharePostcard: 'delivery_postcard',
+  readLetters: 'client_letters',
   shareGarage: 'garage_showroom',
   ratePartner: 'partner_ratings',
   roadWave: 'road_wave',
   wantItem: 'item_wants',
   signUpDuo: 'duo_week',
+  dailyRouteGuess: 'daily_route',
+  nightRun: 'night_run',
+  learnSkill: 'driver_skills',
+  openWorkshop: 'player_workshops',
+  voteCrisis: 'world_crises',
+  buyBusLine: 'bus_lines',
+  collectBusLine: 'bus_lines',
+  setBusLine: 'bus_lines',
+  upgradeBusComfort: 'bus_lines',
+  sellBusLine: 'bus_lines',
+  setWorkshopPrice: 'player_workshops',
+  upgradeWorkshop: 'player_workshops',
+  repairAtWorkshop: 'player_workshops',
+  rateWorkshop: 'player_workshops',
+  resetSkills: 'driver_skills',
+  adoptMascot: 'mascot',
+  renameMascot: 'mascot',
+  petMascot: 'mascot',
+  setMascotAccessory: 'mascot',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -751,6 +808,14 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await saveTuningPreset(db, user.id, input.vehicleId, input.slot, input.name)) };
     case 'applyTuningPreset':
       return { ok: true, ...(await applyTuningPreset(db, user.id, input.vehicleId, input.slot)) };
+    case 'dockSwapOffer':
+      return await offerDockSwap(db, user.id, input.deliveryId, input.withDeliveryId, input.giftCents);
+    case 'dockSwapAnswer':
+      return { ok: true, ...(await answerDockSwap(db, user.id, input.swapId, input.accept)) };
+    case 'sharePostcard':
+      return await sharePostcard(db, user.id, input.deliveryId);
+    case 'readLetters':
+      return await markLettersRead(db, user.id);
     case 'likeGarage':
       return { ok: true, ...(await likeGarage(db, user.id, input.username, input.note)) };
     case 'shareGarage':
@@ -887,6 +952,52 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'markNotificationsRead':
       await markNotificationsRead(db, user.id);
       return { ok: true };
+    case 'adoptMascot':
+      return { ok: true, mascot: await adoptMascot(db, user.id, input.kind, input.name, new Date()) };
+    case 'renameMascot':
+      return { ok: true, name: await renameMascot(db, user.id, input.name, new Date()) };
+    case 'petMascot':
+      return { ok: true, mood: await petMascot(db, user.id, new Date()) };
+    case 'setMascotAccessory':
+      await setMascotAccessory(db, user.id, input.accessory, new Date());
+      return { ok: true };
+    case 'buyBusLine': {
+      const [fromId, toId] = input.route.split(':').map(Number) as [number, number];
+      const line = await buyBusLine(db, user.id, { fromId, toId, model: input.model, departures: input.departures, priceCents: input.price * 100 }, new Date());
+      return { ok: true, lineId: line.id, km: line.km };
+    }
+    case 'collectBusLine':
+      return { ok: true, ...(await collectBusLine(db, user.id, input.lineId, new Date())) };
+    case 'setBusLine':
+      await setBusLine(db, user.id, input.lineId, { departures: input.departures, priceCents: input.price !== undefined ? input.price * 100 : undefined }, new Date());
+      return { ok: true };
+    case 'upgradeBusComfort':
+      return { ok: true, comfort: await upgradeBusComfort(db, user.id, input.lineId, new Date()) };
+    case 'sellBusLine':
+      return { ok: true, backCents: await sellBusLine(db, user.id, input.lineId, new Date()) };
+    case 'voteCrisis':
+      await voteCrisis(db, user.id, input.option, new Date());
+      return { ok: true };
+    case 'openWorkshop':
+      await openWorkshop(db, user.id, input.cityId, input.name, new Date());
+      return { ok: true };
+    case 'setWorkshopPrice':
+      return { ok: true, pricePct: await setWorkshopPrice(db, user.id, input.pricePct, new Date()) };
+    case 'upgradeWorkshop':
+      return { ok: true, level: await upgradeWorkshop(db, user.id, new Date()) };
+    case 'repairAtWorkshop':
+      return { ok: true, costCents: await repairVehicle(db, user.id, input.vehicleId, { workshop: input.ownerId }) };
+    case 'rateWorkshop':
+      await rateWorkshop(db, user.id, input.ownerId, input.stars, new Date());
+      return { ok: true };
+    case 'learnSkill':
+      return { ok: true, rank: await learnSkill(db, user.id, input.skill, new Date()) };
+    case 'resetSkills':
+      return { ok: true, costCents: await resetSkills(db, user.id, new Date()) };
+    case 'nightRun':
+      return { ok: true, ...(await playNightRun(db, user.id, input.inputs, new Date())) };
+    case 'dailyRouteGuess':
+      return { ok: true, ...(await guessDailyRoute(db, user.id, input.order, new Date())) };
     case 'foundCompany':
       await foundCompany(db, user.id, { name: input.name, hqCityId: input.hqCityId });
       return { ok: true };

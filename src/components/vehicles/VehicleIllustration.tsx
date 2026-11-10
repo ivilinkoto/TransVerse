@@ -16,7 +16,7 @@ export interface VehicleIllustrationProps {
   trailerColor?: string;
   className?: string;
   title?: string;
-  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027, 'easter' — Easter 2027, 'blackfriday' — Black Friday 2026, 'firstsnow' — the season „Първи сняг“). */
+  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027, 'easter' — Easter 2027, 'blackfriday' — Black Friday 2026, 'firstsnow' — the season „Първи сняг“, 'frost' — „Зимен поход“ 1.3). */
   livery?: string | null;
   /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
   cosmetics?: Cosmetics | null;
@@ -116,6 +116,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       {livery && livery in RETRO && decals.map(([x, y, size], i) => <RetroDecal key={`r${i}`} x={x} y={y} size={size} stripes={RETRO[livery as RetroStyle].stripes} />)}
       {livery === 'easter' && decals.map(([x, y, size], i) => <EasterDecal key={`ea${i}`} x={x} y={y} size={size} />)}
       {livery === 'firstsnow' && decals.map(([x, y, size], i) => <SnowDecal key={`fs${i}`} x={x} y={y} size={size} />)}
+      {livery === 'frost' && decals.map(([x, y, size], i) => <FrostDecal key={`fr${i}`} x={x} y={y} size={size} />)}
       {livery === 'blackfriday' && decals.map(([x, y, size], i) => <BlackFridayDecal key={`bf${i}`} x={x} y={y} size={size} />)}
       {unit.electric && decals.slice(0, 1).map(([x, y, size], i) => <ElectricDecal key={`e${i}`} x={x} y={y + size * 0.9} size={size * 0.55} />)}
     </svg>
@@ -221,6 +222,22 @@ function SnowDecal({ x, y, size }: { x: number; y: number; size: number }) {
     </g>
   );
   return <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`} opacity="0.95">{flake(10, 12, 7)}{flake(24, 8, 5)}{flake(22, 24, 4)}</g>;
+}
+
+/** „Скреж“ (1.3 „Зимен поход“): a frosted edge with icicles and a snowflake, centred on (x, y). */
+function FrostDecal({ x, y, size }: { x: number; y: number; size: number }) {
+  const k = size / 32;
+  return (
+    <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`} opacity="0.95">
+      <path d="M-6 4 h44 l-3 6 l-3 -3 l-3 7 l-4 -5 l-3 8 l-4 -6 l-3 5 l-4 -7 l-3 6 l-4 -5 l-3 6 l-5 -9 z" fill="#f0f9ff" />
+      <g stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round">
+        {[0, 60, 120].map((a) => {
+          const dx = 6 * Math.cos((a * Math.PI) / 180), dy = 6 * Math.sin((a * Math.PI) / 180);
+          return <line key={a} x1={16 - dx} y1={22 - dy} x2={16 + dx} y2={22 + dy} />;
+        })}
+      </g>
+    </g>
+  );
 }
 
 /** Black Friday 2026 (1.2.4): a gold stripe and a price tag with „−%“, centred on (x, y). */

@@ -1,11 +1,12 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
+import type { MapLayerKey } from '@/lib/game/map-layers';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 
 type UiPrefs = (typeof users.$inferSelect)['uiPrefs'];
 
 /** v1.9: how the game is shown to the player (merged into what is stored). */
-export async function setUiPrefs(db: Database, userId: string, input: { showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPage?: string; asPlayer?: boolean; dailySummary?: boolean; inventorySeen?: true; oldMenu?: boolean; theme?: 'dark' | 'light'; textSize?: 'normal' | 'large' | 'xl'; hideBusiness?: boolean }, now = new Date()) {
+export async function setUiPrefs(db: Database, userId: string, input: { showAll?: boolean; boardView?: 'simple' | 'full'; seenUnlocks?: string[]; seenPage?: string; asPlayer?: boolean; dailySummary?: boolean; inventorySeen?: true; oldMenu?: boolean; theme?: 'dark' | 'light'; textSize?: 'normal' | 'large' | 'xl'; hideBusiness?: boolean; mapLayers?: Partial<Record<MapLayerKey, boolean>> }, now = new Date()) {
   const [u] = await db.select({ prefs: users.uiPrefs }).from(users).where(eq(users.id, userId));
   const prefs: UiPrefs = { ...(u?.prefs ?? {}) };
   if (input.showAll !== undefined) prefs.showAll = input.showAll;
@@ -22,6 +23,8 @@ export async function setUiPrefs(db: Database, userId: string, input: { showAll?
   if (input.textSize) prefs.textSize = input.textSize;
   // 1.2.3.2: hide the „Бизнес“ numbers (trip income, fleet) from other players.
   if (input.hideBusiness !== undefined) prefs.hideBusiness = input.hideBusiness;
+  // 1.2.3.6: the map layers the player shows (merged, so one switch at a time is enough).
+  if (input.mapLayers) prefs.mapLayers = { ...prefs.mapLayers, ...input.mapLayers };
   if (input.seenUnlocks) prefs.seenUnlocks = [...new Set([...(prefs.seenUnlocks ?? []), ...input.seenUnlocks])].slice(-100);
   if (input.seenPage) prefs.seenPages = [...new Set([...(prefs.seenPages ?? []), input.seenPage])].slice(-100);
   await db.update(users).set({ uiPrefs: prefs }).where(eq(users.id, userId));

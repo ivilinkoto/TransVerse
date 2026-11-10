@@ -31,6 +31,8 @@ import { ItemArt } from './ItemArt';
 import { DriverPortrait } from './DriverPortrait';
 import { useFeature } from './Features';
 import { CaseOpening, CaseResults } from '@/components/fx/CaseOpening';
+import { GameWindow } from '@/components/gameui/GameWindow';
+import { playSelect } from '@/lib/client/motion';
 import { t, tx } from '@/i18n/t';
 
 interface Target {
@@ -160,6 +162,9 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
   const [want, setWant] = useState<ItemId | ''>('');
   // 1.1.4.3: the roulette, „Отвори всички“ and the new look on the portrait.
   const fx = useFeature('game_fx');
+  // 1.2.3.6 „Нов облик“: game slots, and the item card in a game window.
+  const gameUi = useFeature('game_ui');
+  const [cardOpen, setCardOpen] = useState(false);
   const [opening, setOpening] = useState<{ caseId: CaseId; result: ItemId | null; serial: number | null; error: string | null } | null>(null);
   const [results, setResults] = useState<ItemId[] | null>(null);
   const [dressed, setDressed] = useState<{ driver: Target; part: 'cap' | 'glasses' | 'frame' } | null>(null);
@@ -169,6 +174,8 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
 
   const select = (id: ItemId) => {
     setOpen(id);
+    setCardOpen(true);
+    if (gameUi) playSelect();
     setTarget('');
     setNote(null);
     setError(null);
@@ -284,44 +291,15 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
   const collection = open ? collectionOf(open) : undefined;
   const origin = open ? extras?.provenance[open] : undefined;
   const sources = open ? sourcesOf(open) : [];
-  return (
-    <div className="space-y-3">
-      {menu && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t('Вид предмети')}>
-            {FILTERS.map((f) => {
-              const n = f.id === 'all' ? known.length : known.filter((i) => ITEMS[i.itemId].kind === f.id).length;
-              return (
-                <button key={f.id} type="button" role="tab" aria-selected={filter === f.id} onClick={() => setFilter(f.id)} className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${filter === f.id ? 'border-gold-400/70 bg-violet-600/30 text-gold-300' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>
-                  {tx(f.label)} <span className="num opacity-70">{n}</span>
-                </button>
-              );
-            })}
-          </div>
-          <select className="input w-auto py-1 text-xs" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label={t('Подреди')}>
-            {SORTS.map((s) => <option key={s.id} value={s.id}>{tx(s.label)}</option>)}
-          </select>
-        </div>
-      )}
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <ul className="grid content-start grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6" data-testid="inventory-grid">
-          {shown.map((i) => {
-            const d = ITEMS[i.itemId];
-            return (
-              <li key={i.itemId}>
-                <button type="button" onClick={() => select(i.itemId)} aria-pressed={open === i.itemId} className={`relative flex w-full flex-col items-center gap-1 rounded-2xl border-2 bg-asphalt-850 p-2 text-center transition hover:-translate-y-0.5 ${open === i.itemId ? 'ring-2 ring-white/40' : ''}`} style={{ borderColor: RARITIES[d.rarity].color }}>
-                  <ItemArt id={i.itemId} className="h-14 w-14 sm:h-16 sm:w-16" />
-                  <span className="line-clamp-2 text-[11px] font-medium leading-tight">{tx(d.name)}</span>
-                  {i.qty > 1 && <span className="num absolute right-1.5 top-1.5 rounded-full bg-asphalt-950/90 px-1.5 text-[11px] font-bold">×{i.qty}</span>}
-                  {menu && fresh.has(i.itemId) && <span className="absolute left-1.5 top-1.5 rounded-full bg-gold-400 px-1.5 text-[9px] font-black uppercase leading-4 text-asphalt-950">{t('НОВО')}</span>}
-                </button>
-              </li>
-            );
-          })}
-          {!shown.length && <li className="col-span-full py-6 text-center text-sm text-mist-400">{t('Няма предмети от този вид.')}</li>}
-        </ul>
-        {open && def && (
-          <aside className="panel h-fit space-y-3 p-4 lg:sticky lg:top-24" data-testid="item-card">
+  const cardBody = open && def ? (
+    <>
+            {gameUi ? (
+              <div className="item-hero -mx-4 -mt-3 flex flex-col items-center px-4 pb-2 pt-4 text-center sm:-mx-5" style={{ '--slot': RARITIES[def.rarity].color } as React.CSSProperties}>
+                <ItemArt id={won && !coinsOf(won) ? won : open} className="item-hero-art h-32 w-32 sm:h-36 sm:w-36" />
+                <p className="mt-1 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: RARITIES[def.rarity].color }}>{tx(RARITIES[def.rarity].label)}{menu && <span className="text-mist-400"> · {tx(KIND_LABELS[def.kind])}</span>}</p>
+                {menu && <p className="num mt-0.5 text-xs text-mist-300">{t('Имаш: {0}', qtyOf(open))}</p>}
+              </div>
+            ) : (
             <div className="flex items-center gap-3">
               <div className="rounded-2xl border-2 bg-asphalt-900 p-2" style={{ borderColor: RARITIES[def.rarity].color }}><ItemArt id={won && !coinsOf(won) ? won : open} className="h-20 w-20" /></div>
               <div className="min-w-0">
@@ -330,6 +308,7 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
                 {menu && <p className="num text-xs text-mist-400">{t('Имаш: {0}', qtyOf(open))}</p>}
               </div>
             </div>
+            )}
             <p className="text-sm text-mist-200">{tx(def.effect)}</p>
             {menu && (
               <div className="space-y-2 rounded-xl border border-asphalt-800 bg-asphalt-900/50 p-3 text-xs">
@@ -465,7 +444,66 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
             {won && <p role="status" className="rounded-xl border border-gold-400/40 bg-gold-400/10 p-2 text-sm font-semibold text-gold-400">{t('🎉 Падна ти: {0}!', tx(ITEMS[won].name))}</p>}
             {note && <p role="status" className="text-sm text-profit">{note}</p>}
             {error && <p role="alert" className="text-sm text-loss">{error}</p>}
+    </>
+  ) : null;
+  return (
+    <div className="space-y-3">
+      {menu && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t('Вид предмети')}>
+            {FILTERS.map((f) => {
+              const n = f.id === 'all' ? known.length : known.filter((i) => ITEMS[i.itemId].kind === f.id).length;
+              return (
+                <button key={f.id} type="button" role="tab" aria-selected={filter === f.id} onClick={() => setFilter(f.id)} className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${filter === f.id ? 'border-gold-400/70 bg-violet-600/30 text-gold-300' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>
+                  {tx(f.label)} <span className="num opacity-70">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+          <select className="input w-auto py-1 text-xs" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label={t('Подреди')}>
+            {SORTS.map((s) => <option key={s.id} value={s.id}>{tx(s.label)}</option>)}
+          </select>
+        </div>
+      )}
+      <div className={gameUi ? '' : 'grid gap-4 lg:grid-cols-[1fr_360px]'}>
+        <ul className={`grid content-start gap-2 ${gameUi ? 'grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 sm:gap-2.5' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6'}`} data-testid="inventory-grid">
+          {shown.map((i) => {
+            const d = ITEMS[i.itemId];
+            if (gameUi)
+              return (
+                <li key={i.itemId}>
+                  <button type="button" onClick={() => select(i.itemId)} aria-pressed={cardOpen && open === i.itemId} title={tx(d.name)} className={`slot slot-${d.rarity} flex w-full flex-col items-center justify-center p-1.5`} style={{ '--slot': RARITIES[d.rarity].color } as React.CSSProperties}>
+                    <ItemArt id={i.itemId} className="slot-art h-[62%] w-[62%]" />
+                    <span className="mt-0.5 line-clamp-1 w-full px-1 text-center text-[10px] font-semibold leading-tight text-mist-100">{tx(d.name)}</span>
+                    {i.qty > 1 && <span className="slot-qty num">×{i.qty}</span>}
+                    {menu && fresh.has(i.itemId) && <span className="slot-new">{t('НОВО')}</span>}
+                  </button>
+                </li>
+              );
+            return (
+              <li key={i.itemId}>
+                <button type="button" onClick={() => select(i.itemId)} aria-pressed={open === i.itemId} className={`relative flex w-full flex-col items-center gap-1 rounded-2xl border-2 bg-asphalt-850 p-2 text-center transition hover:-translate-y-0.5 ${open === i.itemId ? 'ring-2 ring-white/40' : ''}`} style={{ borderColor: RARITIES[d.rarity].color }}>
+                  <ItemArt id={i.itemId} className="h-14 w-14 sm:h-16 sm:w-16" />
+                  <span className="line-clamp-2 text-[11px] font-medium leading-tight">{tx(d.name)}</span>
+                  {i.qty > 1 && <span className="num absolute right-1.5 top-1.5 rounded-full bg-asphalt-950/90 px-1.5 text-[11px] font-bold">×{i.qty}</span>}
+                  {menu && fresh.has(i.itemId) && <span className="absolute left-1.5 top-1.5 rounded-full bg-gold-400 px-1.5 text-[9px] font-black uppercase leading-4 text-asphalt-950">{t('НОВО')}</span>}
+                </button>
+              </li>
+            );
+          })}
+          {!shown.length && <li className="col-span-full py-6 text-center text-sm text-mist-400">{t('Няма предмети от този вид.')}</li>}
+          {/* Empty cells fill the bag up to full rows. */}
+          {gameUi && Array.from({ length: Math.max(0, Math.max(16, Math.ceil(shown.length / 8) * 8) - shown.length) }, (_, k) => <li key={`e${k}`} aria-hidden className="slot-empty" />)}
+        </ul>
+        {open && def && !gameUi && (
+          <aside className="panel h-fit space-y-3 p-4 lg:sticky lg:top-24" data-testid="item-card">
+            {cardBody}
           </aside>
+        )}
+        {open && def && gameUi && cardOpen && (
+          <GameWindow title={tx(def.name)} icon="🎒" accent={RARITIES[def.rarity].color} size="sm" onClose={() => setCardOpen(false)} testId="item-window">
+            <div className="space-y-3" data-testid="item-card">{cardBody}</div>
+          </GameWindow>
         )}
       </div>
       {opening && <CaseOpening caseId={opening.caseId} result={opening.result} serial={opening.serial} error={opening.error} left={opening.result ? qtyOf(opening.caseId) : 0} onAgain={() => void spin(opening.caseId)} onClose={closeOpening} skippable={menu} />}

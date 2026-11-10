@@ -41,7 +41,7 @@ describe('league rules', () => {
     expect(outcomeFor(0, 20, 20)).toBe('stay'); // Bronze cannot go down
     expect(outcomeFor(2, 20, 20)).toBe('down');
     expect(outcomeFor(4, 1, 20)).toBe('stay'); // Diamond is the top
-    expect(leaguePrize(2, 1)).toEqual({ cents: 6_000_00, coins: 40 });
+    expect(leaguePrize(2, 1)).toEqual({ cents: 7_500_00, coins: 40 });
     expect(leaguePrize(0, 4)).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import { and, desc, eq, gt, isNull, sql } from 'drizzle-orm';
+import { FEATURES } from '@/lib/game/features';
 import { z } from 'zod';
 import { CB, extendedExpiry, REPORT_KIND_IDS, REPORT_KINDS, REPORTS, type ReportKind } from '@/lib/game/live-road';
 import { haversineKm, type LatLon } from '@/lib/geo/geometry';
@@ -44,7 +45,7 @@ export const cbBodySchema = z.string().trim().min(1, 'Напиши съобще�
 
 /** Says something on channel 19 from where the player's truck is (the first one on the road, or the one chosen). */
 export async function sendCb(db: Database, userId: string, raw: string, now = new Date(), vehicleId?: string) {
-  if (!(await featureFor(db, userId, 'cb_radio', now))) fail('not_released', tr('CB радиото идва с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'cb_radio', now))) fail('not_released', tr('CB радиото идва с обновление {0}.', FEATURES.cb_radio));
   const body = cbBodySchema.parse(raw);
   await assertNotMuted(db, userId, now);
   const trucks = await trucksOnRoad(db, userId, now);
@@ -79,7 +80,7 @@ export async function cbFeed(db: DbOrTx, userId: string, now = new Date()) {
 
 /** Marks a road report where the player's truck is now. */
 export async function createReport(db: Database, userId: string, kind: ReportKind, now = new Date(), vehicleId?: string) {
-  if (!(await featureFor(db, userId, 'road_reports', now))) fail('not_released', tr('Пътните сигнали идват с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'road_reports', now))) fail('not_released', tr('Пътните сигнали идват с обновление {0}.', FEATURES.road_reports));
   if (!REPORT_KIND_IDS.includes(kind)) fail('bad_kind', tr('Няма такъв сигнал.'));
   const trucks = await trucksOnRoad(db, userId, now);
   const truck = trucks.find((t) => t.vehicleId === vehicleId) ?? trucks[0];
@@ -100,7 +101,7 @@ export async function createReport(db: Database, userId: string, kind: ReportKin
 
 /** A driver nearby confirms (+1) or denies (−1) a report; the reporter gains or loses reputation once it is clear. */
 export async function voteReport(db: Database, userId: string, reportId: number, vote: 1 | -1, now = new Date()) {
-  if (!(await featureFor(db, userId, 'road_reports', now))) fail('not_released', tr('Пътните сигнали идват с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'road_reports', now))) fail('not_released', tr('Пътните сигнали идват с обновление {0}.', FEATURES.road_reports));
   const [r] = await db.select().from(roadReports).where(eq(roadReports.id, reportId));
   if (!r || r.expiresAt <= now) fail('report_gone', tr('Сигналът вече не е активен.'));
   if (r!.userId === userId) fail('own_report', tr('Не можеш да гласуваш за своя сигнал.'));

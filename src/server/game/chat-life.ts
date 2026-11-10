@@ -17,7 +17,7 @@ import { notify } from './notify';
 import { addPassPoints } from './season-pass';
 import { t } from '@/i18n/t';
 
-export type ChatLineKind = 'moment' | 'question' | 'partner' | 'project' | 'escort' | 'rumor' | 'cafe' | 'garage';
+export type ChatLineKind = 'moment' | 'question' | 'partner' | 'project' | 'escort' | 'rumor' | 'cafe' | 'garage' | 'postcard';
 
 const ping = (tx: DbOrTx, channel: string) => tx.execute(sql`select pg_notify('tv_events', ${JSON.stringify({ type: 'channel', channel })})`);
 

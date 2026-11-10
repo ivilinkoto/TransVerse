@@ -6,7 +6,12 @@ import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { COSMETIC_IDS, COSMETIC_PARTS, TRAILER_COSMETIC_IDS, TRAILER_COSMETIC_PARTS } from '@/lib/game/cosmetics';
 import type { ShopItem } from '@/lib/game/shop';
+import { useFeature } from '@/components/game/Features';
+import { GameWindow } from '@/components/gameui/GameWindow';
+import { playCoin, playSelect } from '@/lib/client/motion';
+import { SHOP_EMOJI as EMOJI } from '@/lib/game/shop-look';
 import { t as tr, tx } from '@/i18n/t';
+
 
 export interface VehicleOption {
   id: string;
@@ -26,6 +31,7 @@ export function ShopBuy({
   vipColors,
   trailers = [],
   depots = [],
+  compact = false,
 }: {
   item: ShopItem;
   balance: number;
@@ -38,6 +44,8 @@ export function ShopBuy({
   trailers?: { id: string; label: string }[];
   /** 1.2.3: own depots (for „Преместване на депо“). */
   depots?: { id: string; label: string }[];
+  /** 1.2.3.6: in a store card the price is shown above, so the button just says „Купи“. */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const usable = vehicles.filter((v) => (item.needs === 'vehicle_city' ? v.idle : v.owned && (item.needs !== 'vehicle' || v.idle)));
@@ -52,6 +60,8 @@ export function ShopBuy({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const gameUi = useFeature('game_ui');
+  const [open, setOpen] = useState(false);
 
   const price = item.id === 'paint' && vip ? 0 : item.needs === 'vehicle_cosmetic' ? COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof COSMETIC_PARTS].price : item.needs === 'trailer_cosmetic' ? TRAILER_COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof TRAILER_COSMETIC_PARTS].price : item.price;
   const needsVehicle = item.needs?.startsWith('vehicle');
@@ -78,6 +88,7 @@ export function ShopBuy({
         },
       });
       setDone(res.summary);
+      if (gameUi) playCoin();
       setConfirming(false);
       setText('');
       router.refresh();
@@ -89,8 +100,8 @@ export function ShopBuy({
     }
   };
 
-  return (
-    <div className="space-y-2">
+  const inputs = (
+    <>
       {needsVehicle && (
         usable.length ? (
           <select className="input py-2 text-sm" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label={tr('Камион')}>
@@ -168,6 +179,58 @@ export function ShopBuy({
           })}
         </div>
       )}
+    </>
+  );
+
+  if (gameUi)
+    return (
+      <>
+        <button className="btn-gold w-full py-2 text-sm" onClick={() => (playSelect(), setDone(null), setError(null), setOpen(true))} data-testid="shop-open">
+          <Coins className="h-4 w-4" />{compact ? (price ? tr('Купи') : tr('Приложи')) : price ? tr('Купи · {0} TC', price) : tr('Приложи · безплатно (VIP)')}
+        </button>
+        {open && (
+          <GameWindow title={tx(item.label)} icon="🛒" accent="#f6c343" size="sm" onClose={() => setOpen(false)} testId="shop-window">
+            {done ? (
+              <div className="flex flex-col items-center gap-3 py-4 text-center" data-testid="shop-done">
+                <div className="relative flex h-32 w-32 items-center justify-center">
+                  <span aria-hidden className="fx-rays absolute inset-0 rounded-full" style={{ background: 'repeating-conic-gradient(rgba(246,195,67,0.28) 0 12deg, transparent 12deg 30deg)' }} />
+                  <span className="fx-pop relative text-6xl">{EMOJI[item.id] ?? '✨'}</span>
+                </div>
+                <p className="fx-stamp font-display text-2xl font-bold text-gold-300">{tr('Готово!')}</p>
+                <p className="text-sm text-mist-200">{done}</p>
+                <button className="game-action game-action-main w-full flex-row py-3 text-sm" onClick={() => setOpen(false)}>{tr('Супер')}</button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="item-hero -mx-4 -mt-3 flex flex-col items-center px-4 pb-3 pt-5 sm:-mx-5" style={{ '--slot': '#f6c343' } as React.CSSProperties}>
+                  <span className="item-hero-art text-7xl" aria-hidden>{EMOJI[item.id] ?? '🛍️'}</span>
+                </div>
+                <p className="text-sm text-mist-200">{tx(item.description)}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="stat-tile rounded-2xl px-3 py-2 text-center">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-mist-400">{tr('Цена')}</span>
+                    <span className="num block text-lg font-bold text-gold-300">🪙 {price} TC</span>
+                  </div>
+                  <div className="stat-tile rounded-2xl px-3 py-2 text-center">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-mist-400">{tr('Остават след това')}</span>
+                    <span className={`num block text-lg font-bold ${balance < price ? 'text-loss' : 'text-white'}`}>{balance < price ? tr('липсват {0} TC', price - balance) : `${balance - price} TC`}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">{inputs}</div>
+                <button className="game-action game-action-gold w-full flex-row py-3 text-sm" disabled={busy || missing || balance < price} onClick={buy} data-testid="shop-confirm">
+                  {busy ? '…' : balance < price ? tr('Нужни са {0} TC', price) : price ? tr('Плати {0} TC', price) : tr('Приложи · безплатно (VIP)')}
+                </button>
+                {error && <p role="alert" className="text-xs text-loss">{error}</p>}
+              </div>
+            )}
+          </GameWindow>
+        )}
+      </>
+    );
+
+  return (
+    <div className="space-y-2">
+      {inputs}
       {confirming ? (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span>{price ? tr('Да платиш {0} TC?', price) : tr('Потвърди (безплатно за VIP)')}</span>

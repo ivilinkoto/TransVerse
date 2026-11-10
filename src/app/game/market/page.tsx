@@ -7,6 +7,7 @@ import { fleetCapacity } from '@/server/game/fleet';
 import { ECONOMY } from '@/lib/game/economy';
 import { Badge, Card, PageHeader, Segmented } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { Truck3DButton } from '@/components/garage/Truck3DButton';
 import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
 import { modelAvailable, POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
@@ -153,7 +154,9 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                     {m.newUntil && now < new Date(`${m.newUntil}T00:00:00+02:00`) && <div className="mt-1"><Badge tone="cyan">{tr('НОВО')}</Badge></div>}
                   </div>
                 </div>
-                <div className="my-3 flex h-28 items-end rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
+                <div className="relative my-3 flex h-28 items-end rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
+                  {/* 1.2.3.6: look at it in 3D before buying. */}
+                  <Truck3DButton className="absolute right-1 top-1" title={tx(m.name)} look={{ modelId: m.id, color: '#1d4ed8', condition: 100, plate: null }} />
                   {/* Tractors are drawn alone: the trailer is a separate purchase. */}
                   <VehicleIllustration modelId={m.id} color="#1d4ed8" className="max-h-28 w-full" />
                 </div>

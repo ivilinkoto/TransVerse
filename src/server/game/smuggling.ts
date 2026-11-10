@@ -2,7 +2,7 @@ import { and, desc, eq, gt, gte, inArray, lte, sql } from 'drizzle-orm';
 import { CARGO } from '@/lib/game/cargo';
 import { combinationCapability, powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import { repairCostCents, rewardCents } from '@/lib/game/economy';
-import { featureLive } from '@/lib/game/features';
+import { FEATURES, featureLive } from '@/lib/game/features';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import {
   borderCheckChance, clampHeat, companyShade, contactLevel, fineCents, isEvening, runCatchChance, SHADY_GOODS, SMUGGLING, tierMultiplier, undergroundTier,
@@ -38,7 +38,7 @@ async function ensureProfile(db: DbOrTx, userId: string) {
 }
 
 async function requireSmuggler(db: DbOrTx, userId: string, now: Date) {
-  if (!(await featureFor(db, userId, 'smuggling', now))) fail('not_released', tr('Сенчестите товари идват с обновление 1.9.'), 403);
+  if (!(await featureFor(db, userId, 'smuggling', now))) fail('not_released', tr('Сенчестите товари идват с обновление {0}.', FEATURES.smuggling), 403);
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
   if ((u?.level ?? 1) < SMUGGLING.minLevel) fail('level_required', tr('Сенчестите товари се отключват от ниво {0}.', SMUGGLING.minLevel), 403);
   const p = await smugglingProfile(db, userId);
@@ -49,7 +49,7 @@ async function requireSmuggler(db: DbOrTx, userId: string, now: Date) {
 /** The player's own choice (settings): on from level 10; off at any time. */
 export async function setSmugglingOptIn(db: Database, userId: string, on: boolean, now = new Date()) {
   if (on) {
-    if (!(await featureFor(db, userId, 'smuggling', now))) fail('not_released', tr('Сенчестите товари идват с обновление 1.9.'), 403);
+    if (!(await featureFor(db, userId, 'smuggling', now))) fail('not_released', tr('Сенчестите товари идват с обновление {0}.', FEATURES.smuggling), 403);
     const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
     if ((u?.level ?? 1) < SMUGGLING.minLevel) fail('level_required', tr('Сенчестите товари се отключват от ниво {0}.', SMUGGLING.minLevel), 403);
   }

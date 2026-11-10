@@ -1,4 +1,5 @@
 import { FIRST_SNOW } from '@/lib/game/first-snow';
+import { WINTER_TREK } from '@/lib/game/winter-trek';
 import { randomInt } from 'node:crypto';
 import { and, desc, eq, gt, inArray, isNull, notInArray, or, sql } from 'drizzle-orm';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -173,6 +174,16 @@ export async function applyItem(db: Database, userId: string, itemId: string, ta
         if (v!.ownership !== 'owned') fail('rented', t('Боядисват се само собствени камиони.'));
         await tx.update(vehicles).set({ color: FIRST_SNOW.paintColor, livery: 'firstsnow' }).where(eq(vehicles.id, target.vehicleId!));
         result = t('{0} е в цветовете на „Първи сняг“.', v!.plate);
+        break;
+      }
+      case 'paint_frost': {
+        // 1.3: the reward for the whole „Зимен поход“ — on an own truck only.
+        if (!target.vehicleId) fail('need_vehicle', t('Избери камион.'));
+        const [v] = await tx.select({ plate: vehicles.plate, ownership: vehicles.ownership }).from(vehicles).where(and(eq(vehicles.id, target.vehicleId!), eq(vehicles.companyId, company.id)));
+        if (!v) fail('vehicle_not_found', t('Превозното средство не е намерено.'), 404);
+        if (v!.ownership !== 'owned') fail('rented', t('Боядисват се само собствени камиони.'));
+        await tx.update(vehicles).set({ color: WINTER_TREK.paintColor, livery: 'frost' }).where(eq(vehicles.id, target.vehicleId!));
+        result = t('{0} е покрит със скреж.', v!.plate);
         break;
       }
       case 'fuel_voucher':

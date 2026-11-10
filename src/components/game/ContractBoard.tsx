@@ -42,6 +42,9 @@ import { TAG_LABELS, type LoadTag } from '@/lib/game/special-loads';
 import { usePromise } from './usePromise';
 import { GiftLoad } from './GiftLoad';
 import { LaneTip, type LaneTipView } from './LaneTip';
+import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { ContractWindow } from '@/components/gameui/ContractWindow';
+import { playCoin } from '@/lib/client/motion';
 
 export interface BoardContract {
   id: string;
@@ -181,6 +184,20 @@ export interface BoardContract {
   }[];
 }
 
+/** 1.3 „Нов облик“: a free truck as a slot above the board. */
+export interface TruckSlot {
+  id: string;
+  plate: string;
+  city: string;
+  modelId: string;
+  color: string;
+  trailerModelId: string | null;
+  livery: string | null;
+}
+
+/** 1.2.3.6 „Нов облик“: the picture and colour of each kind of cargo on the board's cards. */
+const CARGO_EMOJI: Record<CargoType, string> = { pallets: '📦', refrigerated: '🧊', bulk: '⛏️', container: '🚢', liquid: '🛢️', special: '⚙️', steel: '🏗️', vehicles: '🚗', livestock: '🐄' };
+const CARGO_COLOUR: Record<CargoType, string> = { pallets: '#60a5fa', refrigerated: '#22d3ee', bulk: '#f59e0b', container: '#f6c343', liquid: '#f43f5e', special: '#a78bfa', steel: '#94a3b8', vehicles: '#34d399', livestock: '#fb923c' };
 const CARGO_TONE: Record<CargoType, BadgeTone> = { pallets: 'blue', refrigerated: 'cyan', bulk: 'orange', container: 'gold', liquid: 'red', special: 'violet', steel: 'neutral', vehicles: 'green', livestock: 'orange' };
 
 type Sort = 'reward' | 'perKm' | 'distance' | 'expires';
@@ -237,7 +254,7 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
 /** 1.2.5: loads drawn at first (and added by „Покажи още“): the whole board weighed over 1 MB on a phone. */
 const BOARD_PAGE = 40;
 
-export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false, doableDefault = false, friends = [], initialQuery = '' }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean; doableDefault?: boolean; friends?: { id: string; username: string }[]; initialQuery?: string }) {
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false, doableDefault = false, friends = [], initialQuery = '', trucks = [], initialTruck }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean; doableDefault?: boolean; friends?: { id: string; username: string }[]; initialQuery?: string; trucks?: TruckSlot[]; initialTruck?: string }) {
   const promiseLive = useFeature('load_promise');
   const [promise, setPromise] = usePromise();
   const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
@@ -253,6 +270,10 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   const [sort, setSort] = useState<Sort>('reward');
   // A link to one load (a notification, Discord) opens it first.
   const [open, setOpen] = useState<string | null>(() => (focus && contracts.some((c) => c.id === focus) ? focus : null));
+  // 1.2.3.6 „Нов облик“: the board as game cards in a grid, the filters as game tabs.
+  const gameUi = useFeature('game_ui');
+  // 1.3 „Нов облик“: the free trucks as slots — picking one shows only the loads it can take.
+  const [truck, setTruck] = useState(() => (initialTruck && trucks.some((v) => v.id === initialTruck) ? initialTruck : ''));
   // After accepting, the player stays on the board; a short note says where the truck went.
   const [sent, setSent] = useState<string | null>(null);
   // 1.2.3: after a load is taken — the next trip from where the truck arrives.
@@ -293,7 +314,8 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         (!cargo || c.cargoType === cargo) &&
         (!q || c.origin.name.toLowerCase().includes(q) || c.destination.name.toLowerCase().includes(q) || c.goods.toLowerCase().includes(q)) &&
         (!doable || (!c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error))) &&
-        CHIPS.every((chip) => !chips.has(chip.id) || chip.test(c)),
+        CHIPS.every((chip) => !chips.has(chip.id) || chip.test(c)) &&
+        (!truck || c.options.some((o) => o.vehicleId === truck && !o.error)),
     );
     const key: Record<Sort, (c: BoardContract) => number> = {
       reward: (c) => -c.rewardCents,
@@ -306,11 +328,22 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
     // then the load of the day, urgent shipments, favourite lanes and the rest.
     const rank = (c: BoardContract) => (c.id === focus ? -1 : c.local && takeable(c) ? 0 : c.featured ? 1 : c.urgent ? 2 : (c.shared || c.favorite || c.tender) && takeable(c) ? 3 : takeable(c) ? 4 : c.local ? 5 : 6);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
-  }, [contracts, cargo, query, doable, sort, chips, focus]);
+  }, [contracts, cargo, query, doable, sort, chips, focus, truck]);
+
+  // 1.3 „Нов облик“: 1–3 stars by pay per km against the board — the top third gets three.
+  const starsOf = useMemo(() => {
+    const rates = contracts.map((c) => c.rewardCents / c.distanceKm).sort((a, b) => a - b);
+    const lo = rates[Math.floor(rates.length / 3)] ?? 0;
+    const hi = rates[Math.floor((rates.length * 2) / 3)] ?? 0;
+    return (c: BoardContract) => {
+      const r = c.rewardCents / c.distanceKm;
+      return r >= hi ? 3 : r >= lo ? 2 : 1;
+    };
+  }, [contracts]);
 
   // 1.2.5: the first loads only (the best ones come first); „Покажи още“ adds the next. The count starts
   // over when the filters change, so a new search does not open the whole board.
-  const filterKey = `${cargo}|${query}|${doable}|${sort}|${[...chips].join(',')}`;
+  const filterKey = `${cargo}|${query}|${doable}|${sort}|${[...chips].join(',')}|${truck}`;
   const [more, setMore] = useState({ key: filterKey, n: BOARD_PAGE });
   const shown = more.key === filterKey ? more.n : BOARD_PAGE;
 
@@ -337,7 +370,31 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
           <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSent(null)} aria-label={t('Скрий')}>✕</button>
         </div>
       )}
-      <div className="panel flex flex-wrap items-center gap-3 p-3">
+      {gameUi && trucks.length > 0 && (
+        <div data-testid="truck-slots">
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.2em] text-mist-400">{t('Свободни камиони')}</p>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0" role="radiogroup" aria-label={t('Свободни камиони')}>
+            <button type="button" role="radio" aria-checked={!truck} onClick={() => setTruck('')} className={`truck-slot flex shrink-0 flex-col items-center justify-center rounded-2xl px-4 py-2 text-xs font-bold ${!truck ? 'truck-slot-on' : ''}`}>
+              <span className="text-2xl" aria-hidden>🚚</span>{t('Всички')}
+            </button>
+            {trucks.map((v) => (
+              <button key={v.id} type="button" role="radio" aria-checked={truck === v.id} onClick={() => setTruck(truck === v.id ? '' : v.id)} className={`truck-slot flex w-36 shrink-0 flex-col items-center rounded-2xl px-2 py-2 text-center ${truck === v.id ? 'truck-slot-on' : ''}`}>
+                <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailerModelId} color={v.color} livery={v.livery} className="h-9 w-auto max-w-full" />
+                <span className="mt-1 w-full truncate text-xs font-bold text-white">{tx(v.plate)}</span>
+                <span className="w-full truncate text-[10px] text-mist-400">📍 {tx(v.city)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {gameUi && (
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" role="tablist" aria-label={t('Подреждане')}>
+          {([['reward', '💰', 'Най-доходни'], ['perKm', '⭐', 'Най-добре на км'], ['distance', '📏', 'Най-къси'], ['expires', '⏱️', 'Изтичат скоро']] as const).map(([id, icon, label]) => (
+            <button key={id} type="button" role="tab" aria-selected={sort === id} onClick={() => setSort(id)} className={`shop-tab flex shrink-0 items-center gap-1.5 rounded-2xl px-3 py-1.5 text-sm font-bold ${sort === id ? 'shop-tab-on' : ''}`}><span aria-hidden>{icon}</span>{tx(label)}</button>
+          ))}
+        </div>
+      )}
+      <div className={`panel flex flex-wrap items-center gap-3 p-3 ${gameUi ? 'load-toolbar' : ''}`}>
         <label className="relative w-full min-w-[200px] flex-1 sm:w-auto">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
           <input className="input pl-9" placeholder={t('Град или стока…')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('Търсене')} />
@@ -346,12 +403,14 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
           <option value="">{t('Всички товари')}</option>
           {cargoTypes.map((c) => <option key={c.id} value={c.id}>{tx(c.label)}</option>)}
         </select>
+        {!gameUi && (
         <select className="input w-[calc(50%-0.375rem)] text-sm sm:w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label={t('Подреждане')}>
           <option value="reward">{t('Най-доходни')}</option>
           <option value="perKm">{t('Най-добре на км')}</option>
           <option value="distance">{t('Най-къси')}</option>
           <option value="expires">{t('Изтичат скоро')}</option>
         </select>
+        )}
         <label className="flex items-center gap-2 text-sm text-mist-300">
           <input type="checkbox" checked={doable} onChange={(e) => setDoable(e.target.checked)} className="h-4 w-4 accent-cyan-500" />
           {t('Само изпълними с моя автопарк')}
@@ -366,7 +425,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label={t('Бързи филтри')}>
         {CHIPS.filter((chip) => !SEASONAL_CHIPS.has(chip.id) || contracts.some(SEASONAL_CHIPS.get(chip.id)!)).map((chip) => (
-          <button key={chip.id} type="button" aria-pressed={chips.has(chip.id)} onClick={() => toggleChip(chip.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${chips.has(chip.id) ? 'border-volt-500 bg-volt-500/20 text-white' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}>
+          <button key={chip.id} type="button" aria-pressed={chips.has(chip.id)} onClick={() => toggleChip(chip.id)} className={gameUi ? `shop-tab shrink-0 rounded-2xl px-3 py-1.5 text-sm font-semibold ${chips.has(chip.id) ? 'shop-tab-on' : ''}` : `shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${chips.has(chip.id) ? 'border-volt-500 bg-volt-500/20 text-white' : 'border-asphalt-700 text-mist-300 hover:text-white'}`}>
             {tx(chip.label)}
           </button>
         ))}
@@ -411,9 +470,9 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         </>
       ) : (
         <>
-          <ul className="space-y-2">
+          <ul className={gameUi ? 'grid gap-3 min-[1500px]:grid-cols-2' : 'space-y-2'} data-testid="board-list">
             {list.slice(0, shown).map((c) => (
-              <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
+              <ContractRow key={`${c.id}-${truck}`} stars={gameUi ? starsOf(c) : 0} prefer={truck} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
             ))}
           </ul>
           {list.length > shown && (
@@ -519,9 +578,12 @@ function whyNot(c: BoardContract): string | null {
   return [...c.options].sort((a, b) => a.emptyKm - b.emptyKm)[0]!.error;
 }
 
-function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string, next?: { cityId: number; name: string; vehicleId: string }) => void; friends: { id: string; username: string }[]; promise: PromiseId }) {
+function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise, stars = 0, prefer = '' }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string, next?: { cityId: number; name: string; vehicleId: string }) => void; friends: { id: string; username: string }[]; promise: PromiseId; stars?: number; prefer?: string }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
+  // 1.2.3.6 „Нов облик“: the details open as a game window; after taking the load it shows the truck leaving.
+  const gameUi = useFeature('game_ui');
+  const [departed, setDeparted] = useState<{ text: string; next: { cityId: number; name: string; vehicleId: string } } | null>(null);
   const countdown = useFeature('countdowns');
   const lean = useFeature('simple_ui');
   const queueLive = useFeature('trip_queue');
@@ -531,7 +593,9 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
   const blocked = c.options.filter((o) => o.error);
   // The reasons, each once, with the vehicles it stops (the plate is the label's first part).
   const canSplitHint = c.options.some((o) => o.part);
-  const [vehicleId, setVehicleId] = useState(usable[0]?.vehicleId ?? '');
+  // 1.3: a truck picked in the slots is the one offered first.
+  const first = usable.find((o) => o.vehicleId === prefer) ?? usable[0];
+  const [vehicleId, setVehicleId] = useState(first?.vehicleId ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const option = c.options.find((o) => o.vehicleId === vehicleId);
@@ -586,7 +650,16 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
     setError(null);
     try {
       await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure, route: routeChoice && cheap && !rail ? 'cheap' : 'fast', parking: parkingLive && secure ? 'secure' : 'free', refuel: refuelLive && refuel, ...(promise !== 'normal' ? { promise } : {}) });
-      onAccepted(t('Камионът тръгна: {0}{1}, {2} → {3}. Можеш да поемеш следващата поръчка.', part ? t('{0} т ', dec(part.tons)) : '', c.goods, c.origin.name, c.destination.name), { cityId: c.destination.id, name: c.destination.name, vehicleId });
+      const text = t('Камионът тръгна: {0}{1}, {2} → {3}. Можеш да поемеш следващата поръчка.', part ? t('{0} т ', dec(part.tons)) : '', c.goods, c.origin.name, c.destination.name);
+      const nx = { cityId: c.destination.id, name: c.destination.name, vehicleId };
+      if (gameUi && open) {
+        playCoin();
+        // The board refreshes after „Супер“: the taken load leaves the list and would close the window.
+        setDeparted({ text, next: nx });
+        setBusy(false);
+        return;
+      }
+      onAccepted(text, nx);
       setBusy(false);
       router.refresh();
     } catch (e) {
@@ -595,98 +668,140 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
     }
   };
 
+  const flags = (
+    <>
+        {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />{t('СПЕШНО · ×{0} по-бързо · до товара за 1 мин', dec(c.speedFactor))}</Badge>}
+        {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />{t('Лиценз: {0}', c.missingLicences.map((l) => tx(l)).join(', '))}</Badge>}
+        {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />{t('ниво {0}', c.minLevel)}</Badge>}
+        {c.tag && TAG_LABELS[c.tag as LoadTag] && <Badge tone={c.tag === 'livestock' ? 'orange' : c.tag === 'night_courier' ? 'violet' : 'cyan'}>{TAG_LABELS[c.tag as LoadTag].emoji} {tx(TAG_LABELS[c.tag as LoadTag].label).toUpperCase()}</Badge>}
+        {c.fog && <Badge tone="neutral">{t('🌫 МЪГЛА · +{0}%', Math.round(FOG.payShare * 100))}</Badge>}
+        <Bonuses simple={simple}>
+          {c.tender && <Badge tone="violet">{t('ТЪРГ НА КОМПАНИЯТА')}</Badge>}
+          {c.exchange && <Badge tone="violet">{t('БОРСА МЕЖДУ ИГРАЧИ')}</Badge>}
+          {c.rally && <Badge tone="orange">{t('🏁 РАЛИ — мери се времето и горивото')}</Badge>}
+          {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
+          {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{tx(c.port)}</Badge>}
+          {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />{t('ТОВАР НА ДЕНЯ · +{0} TC', DAILY_LOAD.coins)}</Badge>}
+          {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('ОБЩ ТОВАР НА КОМПАНИЯТА · +{0}%', Math.round(SHARED_LOAD.bonusShare * 100))}</Badge>}
+          {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label={t('Любима линия')} />}
+          {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />{t('ХЕЛУИН · +{0}%', Math.round((HALLOWEEN.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />{t('КОЛЕДА · +{0}%', Math.round((CHRISTMAS.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'easter' && <Badge tone="violet">{t('🥚 ВЕЛИКДЕН · +25%')}</Badge>}
+          {c.holiday === 'marta' && <Badge tone="red">{t('🔴⚪ БАБА МАРТА · +{0}%', Math.round((MARTA.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.transEurope && <Badge tone="gold">{t('🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{0}%', Math.round((TRANS_EUROPE.multiplier - 1) * 100))}</Badge>}
+          {c.temp && <Badge tone="blue">🌡️ {tx(c.temp)}</Badge>}
+          {c.relayLeg && (c.partner ? <Badge tone="green">{t('🤝 ПАРТНЬОРСКИ {0}/2 · +{1} % с партньор', c.relayLeg, Math.round(PARTNER.bonusShare * 100))}</Badge> : <Badge tone="cyan">{t('🏃 {0} · +{1} % ако и двамата сте навреме', relayLabel(c.relayLeg), Math.round(RELAY.bonusShare * 100))}</Badge>)}
+          {c.escort && <Badge tone="orange">{t('🚓 С ЕСКОРТ: +{0} % за двамата', Math.round(ESCORT.mainBonus * 100))}</Badge>}
+          {c.escortRun && <Badge tone="orange">{t('🚓 ЕСКОРТ · тръгни веднага, бонус {0} % от товара', Math.round(ESCORT.escortShare * 100))}</Badge>}
+          {c.regionProject && <Badge tone="green">{t('🏗️ ПРОЕКТ НА РЕГИОНА')}</Badge>}
+          {c.humanitarian && <Badge tone="red">{t('🆘 ХУМАНИТАРНА ПОМОЩ · +{0} TC навреме', RELIEF.coins)}</Badge>}
+          {(() => {
+            // 1.1.4: fragile, valuable and dangerous goods pay more.
+            const trait = goodsTrait(c.goods);
+            return trait ? <Badge tone={trait === 'adr' ? 'orange' : trait === 'valuable' ? 'gold' : 'cyan'}>{t('{0} {1} · +{2}%', GOODS_TRAITS[trait].emoji, tx(GOODS_TRAITS[trait].label).toUpperCase(), Math.round((GOODS_TRAITS[trait].multiplier - 1) * 100))}</Badge> : null;
+          })()}
+          {c.sealed && <Badge tone="violet">{t('📦 ЗАПЕЧАТАН · до +{0}% при отваряне', Math.round(SEALED.tiers.at(-1)!.bonus * 100))}</Badge>}
+          {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">{t('🤝 ДОГОВОРЕНО +{0}%', c.haggle.percent)}</Badge>}
+          {!!c.lez?.length && <Badge tone="green">{t('🌿 ЗОНА · {0}', c.lez.join(', '))}</Badge>}
+          {c.specialization && <Badge tone="violet">{t('🎯 СПЕЦИАЛИЗАЦИЯ · +{0}%', Math.round(SPECIALIZATION.bonusShare * 100))}</Badge>}
+          {!!c.traffic && <Badge tone="orange">{t('🚦 НАТОВАРЕНО · {0} камиона', c.traffic)}</Badge>}
+          {c.holiday === 'harvest' && <Badge tone="orange">{t('🍇 ГРОЗДОБЕР · +{0}%', Math.round((HARVEST.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'prewinter' && <Badge tone="cyan">{t('🧂 ЗА ЗИМАТА · +{0}%', Math.round((PREWINTER.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'black_friday' && <Badge tone="gold">{t('🛍 ЧЕРЕН ПЕТЪК · +{0}%', Math.round((BLACK_FRIDAY.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'sowing' && <Badge tone="green">{t('🌱 СЕИТБА · +{0}%', Math.round((SOWING.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.holiday === 'national' && <Badge tone="gold">{t('🎉 НАЦИОНАЛЕН ПРАЗНИК · +{0}%', Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100))}</Badge>}
+          {!!c.oversizeCents && <Badge tone="orange">{t('⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {0}', money(c.oversizeCents))}</Badge>}
+          {c.roadWorks && <Badge tone="orange">🚧 {tx(c.roadWorks)}</Badge>}
+          {!!c.urgentRaises && <Badge tone="red">{t('📈 +{0}% — никой не я е поел', c.urgentRaises * 10)}</Badge>}
+          {c.toHome && <Badge tone="green"><House className="h-3 w-3" />{t('КЪМ БАЗАТА')}</Badge>}
+          {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />{t('ФИРМЕН ПРОЕКТ')}</Badge>}
+          {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />{t('ЗА СТРОЕЖА НА КОМПАНИЯТА')}</Badge>}
+          {c.lastLoad && <Badge tone="red"><Hammer className="h-3 w-3" />{t('ПОСЛЕДЕН ТОВАР · +{0}%', Math.round((PLOT.lastLoadFactor - 1) * 100))}</Badge>}
+          {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('СБОРЕН · {0} {1} · +{2}%', c.stops.length, c.stops.length === 1 ? t('СПИРКА') : t('СПИРКИ'), Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100))}</Badge>}
+          {c.hiredBy && <span className="max-w-full truncate" title={t('Възложена от {0} до {1}', c.hiredBy.company, c.hiredBy.until)}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />{t('ВЪЗЛОЖЕНА · {0}% за {1}', Math.round(c.hiredBy.share * 100), c.hiredBy.company)}</Badge></span>}
+          {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />{t('КОНВОЙ С {0} · +{1}%', c.convoy, Math.round(CONVOY_RULES.bonusShare * 100))}</Badge>}
+          {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />{t('ЗИМЕН ТОВАР · +{0}%', Math.round((WINTER.rewardMultiplier - 1) * 100))}</Badge>}
+          {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{tx(c.weather.label)} ({tx(c.weather.country)})</Badge>}
+          {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />{t('ПРЕМИУМ · репутация {0}', c.minReputation)}</Badge>}
+          {c.alreadyTaken && <Badge tone="green">{t('Вече я поехте')}</Badge>}
+          {c.reservedByMe && <Badge tone="gold">{t('Запазена за теб до {0}', c.reservedUntil)}{countdown && c.reservedUntilAt ? <> <Countdown until={c.reservedUntilAt} /></> : null}</Badge>}
+          {c.reservedByOther && <Badge tone="neutral">{t('Запазена до {0}', c.reservedUntil)}</Badge>}
+          {c.opensAt && <Badge tone="violet">{t('VIP · за всички от {0}', c.opensAt)}</Badge>}
+          {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{c.options.some((o) => !o.error && o.emptyKm === 0) ? t('За камиона ти тук') : t('Във вашия град')}</Badge>}
+        </Bonuses>
+    </>
+  );
+
   return (
-    <li className={`panel overflow-hidden transition ${open ? 'border-volt-500/60' : c.urgent ? 'border-loss/60 hover:border-loss' : c.local ? 'border-gold-400/40 hover:border-gold-400/70' : 'hover:border-asphalt-500'} ${c.locked || c.reputationLocked || c.missingLicences.length ? 'opacity-60' : ''}`}>
-      <button className="grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 text-left sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto]" onClick={onToggle} aria-expanded={open}>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={CARGO_TONE[c.cargoType]}>{tx(c.cargoLabel)}</Badge>
-            <span className="truncate font-semibold">{tx(c.goods)}</span>
-            <span className="num text-sm text-mist-400">{t('{0} т', dec(c.tons))}</span>
-            {c.urgent && <Badge tone="red"><Siren className="h-3 w-3" />{t('СПЕШНО · ×{0} по-бързо · до товара за 1 мин', dec(c.speedFactor))}</Badge>}
-            {c.missingLicences.length > 0 && <Badge tone="orange"><BadgeCheck className="h-3 w-3" />{t('Лиценз: {0}', c.missingLicences.map((l) => tx(l)).join(', '))}</Badge>}
-            {c.locked && <Badge tone="violet"><Lock className="h-3 w-3" />{t('ниво {0}', c.minLevel)}</Badge>}
-            {c.tag && TAG_LABELS[c.tag as LoadTag] && <Badge tone={c.tag === 'livestock' ? 'orange' : c.tag === 'night_courier' ? 'violet' : 'cyan'}>{TAG_LABELS[c.tag as LoadTag].emoji} {tx(TAG_LABELS[c.tag as LoadTag].label).toUpperCase()}</Badge>}
-            {c.fog && <Badge tone="neutral">{t('🌫 МЪГЛА · +{0}%', Math.round(FOG.payShare * 100))}</Badge>}
-            <Bonuses simple={simple}>
-              {c.tender && <Badge tone="violet">{t('ТЪРГ НА КОМПАНИЯТА')}</Badge>}
-              {c.exchange && <Badge tone="violet">{t('БОРСА МЕЖДУ ИГРАЧИ')}</Badge>}
-              {c.rally && <Badge tone="orange">{t('🏁 РАЛИ — мери се времето и горивото')}</Badge>}
-              {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
-              {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{tx(c.port)}</Badge>}
-              {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />{t('ТОВАР НА ДЕНЯ · +{0} TC', DAILY_LOAD.coins)}</Badge>}
-              {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('ОБЩ ТОВАР НА КОМПАНИЯТА · +{0}%', Math.round(SHARED_LOAD.bonusShare * 100))}</Badge>}
-              {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label={t('Любима линия')} />}
-              {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />{t('ХЕЛУИН · +{0}%', Math.round((HALLOWEEN.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'christmas' && <Badge tone="red"><ChristmasTreeIcon className="h-3.5 w-3.5" />{t('КОЛЕДА · +{0}%', Math.round((CHRISTMAS.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'easter' && <Badge tone="violet">{t('🥚 ВЕЛИКДЕН · +25%')}</Badge>}
-              {c.holiday === 'marta' && <Badge tone="red">{t('🔴⚪ БАБА МАРТА · +{0}%', Math.round((MARTA.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.transEurope && <Badge tone="gold">{t('🌍 ТРАНСЕВРОПЕЙСКИ · двоен екипаж · +{0}%', Math.round((TRANS_EUROPE.multiplier - 1) * 100))}</Badge>}
-              {c.temp && <Badge tone="blue">🌡️ {tx(c.temp)}</Badge>}
-              {c.relayLeg && (c.partner ? <Badge tone="green">{t('🤝 ПАРТНЬОРСКИ {0}/2 · +{1} % с партньор', c.relayLeg, Math.round(PARTNER.bonusShare * 100))}</Badge> : <Badge tone="cyan">{t('🏃 {0} · +{1} % ако и двамата сте навреме', relayLabel(c.relayLeg), Math.round(RELAY.bonusShare * 100))}</Badge>)}
-              {c.escort && <Badge tone="orange">{t('🚓 С ЕСКОРТ: +{0} % за двамата', Math.round(ESCORT.mainBonus * 100))}</Badge>}
-              {c.escortRun && <Badge tone="orange">{t('🚓 ЕСКОРТ · тръгни веднага, бонус {0} % от товара', Math.round(ESCORT.escortShare * 100))}</Badge>}
-              {c.regionProject && <Badge tone="green">{t('🏗️ ПРОЕКТ НА РЕГИОНА')}</Badge>}
-              {c.humanitarian && <Badge tone="red">{t('🆘 ХУМАНИТАРНА ПОМОЩ · +{0} TC навреме', RELIEF.coins)}</Badge>}
-              {(() => {
-                // 1.1.4: fragile, valuable and dangerous goods pay more.
-                const trait = goodsTrait(c.goods);
-                return trait ? <Badge tone={trait === 'adr' ? 'orange' : trait === 'valuable' ? 'gold' : 'cyan'}>{t('{0} {1} · +{2}%', GOODS_TRAITS[trait].emoji, tx(GOODS_TRAITS[trait].label).toUpperCase(), Math.round((GOODS_TRAITS[trait].multiplier - 1) * 100))}</Badge> : null;
-              })()}
-              {c.sealed && <Badge tone="violet">{t('📦 ЗАПЕЧАТАН · до +{0}% при отваряне', Math.round(SEALED.tiers.at(-1)!.bonus * 100))}</Badge>}
-              {c.haggle && c.haggle !== 'open' && c.haggle.valid && <Badge tone="green">{t('🤝 ДОГОВОРЕНО +{0}%', c.haggle.percent)}</Badge>}
-              {!!c.lez?.length && <Badge tone="green">{t('🌿 ЗОНА · {0}', c.lez.join(', '))}</Badge>}
-              {c.specialization && <Badge tone="violet">{t('🎯 СПЕЦИАЛИЗАЦИЯ · +{0}%', Math.round(SPECIALIZATION.bonusShare * 100))}</Badge>}
-              {!!c.traffic && <Badge tone="orange">{t('🚦 НАТОВАРЕНО · {0} камиона', c.traffic)}</Badge>}
-              {c.holiday === 'harvest' && <Badge tone="orange">{t('🍇 ГРОЗДОБЕР · +{0}%', Math.round((HARVEST.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'prewinter' && <Badge tone="cyan">{t('🧂 ЗА ЗИМАТА · +{0}%', Math.round((PREWINTER.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'black_friday' && <Badge tone="gold">{t('🛍 ЧЕРЕН ПЕТЪК · +{0}%', Math.round((BLACK_FRIDAY.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'sowing' && <Badge tone="green">{t('🌱 СЕИТБА · +{0}%', Math.round((SOWING.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.holiday === 'national' && <Badge tone="gold">{t('🎉 НАЦИОНАЛЕН ПРАЗНИК · +{0}%', Math.round((NATIONAL_DAY.rewardMultiplier - 1) * 100))}</Badge>}
-              {!!c.oversizeCents && <Badge tone="orange">{t('⚠ ИЗВЪНГАБАРИТЕН · разрешително и придружител {0}', money(c.oversizeCents))}</Badge>}
-              {c.roadWorks && <Badge tone="orange">🚧 {tx(c.roadWorks)}</Badge>}
-              {!!c.urgentRaises && <Badge tone="red">{t('📈 +{0}% — никой не я е поел', c.urgentRaises * 10)}</Badge>}
-              {c.toHome && <Badge tone="green"><House className="h-3 w-3" />{t('КЪМ БАЗАТА')}</Badge>}
-              {c.project && <Badge tone="gold"><Hammer className="h-3 w-3" />{t('ФИРМЕН ПРОЕКТ')}</Badge>}
-              {c.construction && <Badge tone="gold"><Hammer className="h-3 w-3" />{t('ЗА СТРОЕЖА НА КОМПАНИЯТА')}</Badge>}
-              {c.lastLoad && <Badge tone="red"><Hammer className="h-3 w-3" />{t('ПОСЛЕДЕН ТОВАР · +{0}%', Math.round((PLOT.lastLoadFactor - 1) * 100))}</Badge>}
-              {c.stops.length > 0 && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('СБОРЕН · {0} {1} · +{2}%', c.stops.length, c.stops.length === 1 ? t('СПИРКА') : t('СПИРКИ'), Math.round(MULTISTOP.stopBonusShare * c.stops.length * 100))}</Badge>}
-              {c.hiredBy && <span className="max-w-full truncate" title={t('Възложена от {0} до {1}', c.hiredBy.company, c.hiredBy.until)}><Badge tone="violet"><BadgeCheck className="h-3 w-3" />{t('ВЪЗЛОЖЕНА · {0}% за {1}', Math.round(c.hiredBy.share * 100), c.hiredBy.company)}</Badge></span>}
-              {c.convoy && <Badge tone="violet"><Truck className="h-3 w-3" />{t('КОНВОЙ С {0} · +{1}%', c.convoy, Math.round(CONVOY_RULES.bonusShare * 100))}</Badge>}
-              {c.holiday === 'winter' && <Badge tone="cyan"><Snowflake className="h-3 w-3" />{t('ЗИМЕН ТОВАР · +{0}%', Math.round((WINTER.rewardMultiplier - 1) * 100))}</Badge>}
-              {c.weather && <Badge tone={c.weather.condition === 'snow' ? 'blue' : 'red'}><Snowflake className="h-3 w-3" />{tx(c.weather.label)} ({tx(c.weather.country)})</Badge>}
-              {c.minReputation > 0 && <Badge tone="gold"><Star className="h-3 w-3" />{t('ПРЕМИУМ · репутация {0}', c.minReputation)}</Badge>}
-              {c.alreadyTaken && <Badge tone="green">{t('Вече я поехте')}</Badge>}
-              {c.reservedByMe && <Badge tone="gold">{t('Запазена за теб до {0}', c.reservedUntil)}{countdown && c.reservedUntilAt ? <> <Countdown until={c.reservedUntilAt} /></> : null}</Badge>}
-              {c.reservedByOther && <Badge tone="neutral">{t('Запазена до {0}', c.reservedUntil)}</Badge>}
-              {c.opensAt && <Badge tone="violet">{t('VIP · за всички от {0}', c.opensAt)}</Badge>}
-              {c.local && <Badge tone="gold"><MapPinned className="h-3 w-3" />{c.options.some((o) => !o.error && o.emptyKm === 0) ? t('За камиона ти тук') : t('Във вашия град')}</Badge>}
-            </Bonuses>
+    <li className={`panel overflow-hidden transition ${gameUi ? `load-card ${c.urgent ? 'load-card-urgent' : c.local ? 'load-card-local' : ''}` : open ? 'border-volt-500/60' : c.urgent ? 'border-loss/60 hover:border-loss' : c.local ? 'border-gold-400/40 hover:border-gold-400/70' : 'hover:border-asphalt-500'} ${c.locked || c.reputationLocked || c.missingLicences.length ? 'opacity-60' : ''}`} style={gameUi ? ({ '--tile': CARGO_COLOUR[c.cargoType] } as React.CSSProperties) : undefined}>
+      <button className={gameUi ? 'block w-full p-4 text-left' : 'grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 text-left sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_auto]'} onClick={onToggle} aria-expanded={open}>
+        {gameUi ? (
+          <div className="flex gap-3">
+            <span className="load-art flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl" aria-hidden>{CARGO_EMOJI[c.cargoType]}</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-display text-base font-bold text-white">{tx(c.goods)}</p>
+                  <p className="text-[11px] text-mist-400">{tx(c.cargoLabel)} · {t('{0} т', dec(c.tons))}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  {stars > 0 && <div className="load-stars text-sm leading-none" aria-label={t('{0} от 3 звезди', stars)}>{'★'.repeat(stars)}<span className="opacity-25">{'★'.repeat(3 - stars)}</span></div>}
+                  <div className="num font-display text-xl font-bold text-profit">{money(c.rewardCents)}</div>
+                  <div className="num text-[11px] text-mist-400">{t('{0} лв./км', dec(c.rewardCents / 100 / c.distanceKm))}</div>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                <span className="contract-pin contract-pin-from shrink-0 scale-75" aria-hidden />
+                <span className="min-w-0 truncate font-semibold text-white">{tx(c.origin.name)}</span>
+                <span className="load-line min-w-6 flex-1" aria-hidden />
+                {c.stops.length > 0 && <span className="load-pill shrink-0">+{c.stops.length}</span>}
+                <span className="min-w-0 truncate font-semibold text-white">{tx(c.destination.name)}</span>
+                <span className="contract-pin contract-pin-to shrink-0 scale-75" aria-hidden />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span className="load-pill">🛣️ <span className="num">{km(c.distanceKm)}</span></span>
+                <span className="load-pill">⏱️ {duration(c.windowMinutes)}</span>
+                {c.expiresInMin < 120 && <span className="load-pill text-amber-sig">⌛ {t('изтича скоро')}</span>}
+                {flags}
+              </div>
+              {reason && <div className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-sig"><AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />{t('Не можеш да я вземеш: {0}', reason)}</div>}
+            </div>
           </div>
-          {reason && <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-sig"><AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />{t('Не можеш да я вземеш: {0}', reason)}</div>}
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
-            <span className="font-medium">{tx(c.origin.name)}</span>
-            <span className="text-[11px] text-mist-400">{tx(c.origin.country)}</span>
-            {c.stops.map((st) => (
-              <span key={st.name} className="contents">
-                <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
-                <span className="text-cyan-glow" title={t('Разтоварване на {0} т · срок {1}', dec(st.tons), duration(st.windowMinutes))}>{tx(st.name)}</span>
-                <span className="text-[11px] text-mist-400">{tx(st.country)}</span>
-              </span>
-            ))}
-            <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
-            <span className="font-medium">{tx(c.destination.name)}</span>
-            <span className="text-[11px] text-mist-400">{tx(c.destination.country)}</span>
+        ) : (
+          <>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={CARGO_TONE[c.cargoType]}>{tx(c.cargoLabel)}</Badge>
+              <span className="truncate font-semibold">{tx(c.goods)}</span>
+              <span className="num text-sm text-mist-400">{t('{0} т', dec(c.tons))}</span>
+              {flags}
+            </div>
+            {reason && <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-sig"><AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />{t('Не можеш да я вземеш: {0}', reason)}</div>}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
+              <span className="font-medium">{tx(c.origin.name)}</span>
+              <span className="text-[11px] text-mist-400">{tx(c.origin.country)}</span>
+              {c.stops.map((st) => (
+                <span key={st.name} className="contents">
+                  <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
+                  <span className="text-cyan-glow" title={t('Разтоварване на {0} т · срок {1}', dec(st.tons), duration(st.windowMinutes))}>{tx(st.name)}</span>
+                  <span className="text-[11px] text-mist-400">{tx(st.country)}</span>
+                </span>
+              ))}
+              <ArrowRight className="h-3.5 w-3.5 text-mist-400" />
+              <span className="font-medium">{tx(c.destination.name)}</span>
+              <span className="text-[11px] text-mist-400">{tx(c.destination.country)}</span>
+            </div>
           </div>
-        </div>
-        <div className="hidden text-xs text-mist-400 sm:block">
-          <div className="flex items-center gap-1.5"><Route className="h-3.5 w-3.5" /><span className="num">{km(c.distanceKm)}</span>{c.provider === 'approximate' && <Badge tone="orange">{t('приблизително')}</Badge>}</div>
-          <div className="mt-1 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />{t('срок {0}', duration(c.windowMinutes))}{c.expiresInMin < 120 && <span className="text-amber-sig">{t('· изтича скоро')}</span>}</div>
-        </div>
-        <div className="text-right">
-          <div className="num font-display text-lg font-bold text-profit">{money(c.rewardCents)}</div>
-          <div className="num text-[11px] text-mist-400">{t('{0} лв./км', dec(c.rewardCents / 100 / c.distanceKm))}</div>
-        </div>
+          <div className="hidden text-xs text-mist-400 sm:block">
+            <div className="flex items-center gap-1.5"><Route className="h-3.5 w-3.5" /><span className="num">{km(c.distanceKm)}</span>{c.provider === 'approximate' && <Badge tone="orange">{t('приблизително')}</Badge>}</div>
+            <div className="mt-1 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />{t('срок {0}', duration(c.windowMinutes))}{c.expiresInMin < 120 && <span className="text-amber-sig">{t('· изтича скоро')}</span>}</div>
+          </div>
+          <div className="text-right">
+            <div className="num font-display text-lg font-bold text-profit">{money(c.rewardCents)}</div>
+            <div className="num text-[11px] text-mist-400">{t('{0} лв./км', dec(c.rewardCents / 100 / c.distanceKm))}</div>
+          </div>
+          </>
+        )}
       </button>
       {/* 1.1.4.1: no free truck — line it up after a trip ("Планирай следващия курс"). */}
       {queueLive && !open && !usable.length && !c.locked && !c.urgent && trucksOnTrip.length > 0 && (
@@ -702,18 +817,28 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
         </div>
       )}
       {/* 1.1.4.1: take it at once with the best free truck; the details stay one tap away. */}
-      {lean && !open && !reason && usable[0] && usable[0].overloadPercent === 0 && (
+      {(lean || gameUi) && !open && !reason && first && first.overloadPercent === 0 && (
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-asphalt-800 px-4 py-2 text-xs">
-          <span className="min-w-0 truncate text-mist-400">{t('{0} · печалба {1} · {2}', tx(usable[0].label), money(usable[0].profitCents), duration(usable[0].minutes))}</span>
+          <span className="min-w-0 truncate text-mist-400">{t('{0} · печалба {1} · {2}', tx(first.label), money(first.profitCents), duration(first.minutes))}</span>
           <span className="flex items-center gap-2">
             {error && <span role="alert" className="text-loss">{error}</span>}
-            <button type="button" data-tour="take" className="btn-primary px-3 py-1 text-xs" disabled={busy} onClick={accept}><Truck className="h-3.5 w-3.5" />{busy ? '…' : t('Вземи')}</button>
+            <button type="button" data-tour="take" className={gameUi ? 'game-action game-action-main flex-row px-4 py-1.5 text-xs' : 'btn-primary px-3 py-1 text-xs'} disabled={busy} onClick={accept}><Truck className="h-3.5 w-3.5" />{busy ? '…' : t('Вземи')}</button>
           </span>
         </div>
       )}
 
       {open && (
-        <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">
+        <ContractFrame
+          gameUi={gameUi}
+          head={c}
+          departed={departed?.text ?? null}
+          onClose={onToggle}
+          onDone={() => {
+            if (!departed) return;
+            onAccepted(departed.text, departed.next);
+            router.refresh();
+          }}
+        >
           {(c.tip || c.canTip) && <LaneTip tip={c.tip ?? null} originCityId={c.origin.id} destCityId={c.destination.id} canWrite={!!c.canTip} />}
           {friends.length > 0 && !c.reservedByOther && !c.tender && !c.alreadyTaken && <GiftLoad contractId={c.id} friends={friends} />}
           <dl className="grid gap-3 text-sm sm:grid-cols-4">
@@ -799,7 +924,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
                 </ul>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <select className="input min-w-0 flex-1" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label={t('Превозно средство')}>
+                <select className="input min-w-0 flex-1 basis-full sm:basis-auto" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} aria-label={t('Превозно средство')}>
                   <option value="">{t('— изберете превозно средство —')}</option>
                   {usable.length > 0 && (
                     <optgroup label={t('Могат да поемат')}>
@@ -812,7 +937,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
                     </optgroup>
                   )}
                 </select>
-                <button className="btn-primary" disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload && !part)} onClick={accept}>
+                <button className={gameUi ? 'game-action game-action-main flex-row px-5 py-2.5 text-sm' : 'btn-primary'} disabled={!vehicleId || !!option?.error || busy || (needsOverload && !overload && !part)} onClick={accept}>
                   <ShieldCheck className="h-4 w-4" />{busy ? t('Изпращане…') : part ? t('Вземи {0} т и изпрати', dec(part.tons)) : t('Приеми и изпрати')}
                 </button>
                 <MapLink contractId={c.id} />
@@ -903,10 +1028,16 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
               {error && <p role="alert" className="text-sm text-loss">{error}</p>}
             </div>
           )}
-        </div>
+        </ContractFrame>
       )}
     </li>
   );
+}
+
+/** The open load: inline under the row, or (1.2.3.6 „Нов облик“) as a game window. */
+function ContractFrame({ gameUi, head, departed, onClose, onDone, children }: { gameUi: boolean; head: BoardContract; departed: string | null; onClose: () => void; onDone: () => void; children: React.ReactNode }) {
+  if (gameUi) return <ContractWindow head={head} departed={departed} onClose={onClose} onDone={onDone}>{children}</ContractWindow>;
+  return <div className="border-t border-asphalt-700 bg-asphalt-850/60 p-4">{children}</div>;
 }
 
 /** Share a big load with the company: from then on only the members see it and take parts of it. */

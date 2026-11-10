@@ -57,7 +57,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 export const dynamic = 'force-dynamic';
 
-export default async function GameLayout({ children }: { children: React.ReactNode }) {
+export default async function GameLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
   await initLocale();
   const { db, user, company, hq, now, features } = await gameContext();
   const staff = isStaff(user.role);
@@ -94,7 +94,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
     <FeaturesProvider value={features}>
       <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll, staff: testing }}>
       {features.look_settings && <LookApply theme={user.uiPrefs?.theme} textSize={user.uiPrefs?.textSize} />}
-      <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined}>
+      <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined} data-skin={features.game_ui ? 'game' : undefined}>
         <Sidebar badges={navBadges} version={currentVersion(now, testing)} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
@@ -119,6 +119,8 @@ export default async function GameLayout({ children }: { children: React.ReactNo
           <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-6">
             <SectionTabs holiday={holiday} />
             {children}
+            {/* 1.2.3.6: a game window over the page (e.g. the inventory). */}
+            {modal}
           </main>
         </div>
         <MobileNav badges={navBadges} staff={isStaff(user.role)} holiday={holiday} attention={attention} />

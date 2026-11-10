@@ -1,0 +1,453 @@
+23fbfca05d	3D loads only when you open it, so the pages do not get slower.	3D загружается только когда ты его открываешь, поэтому страницы не становятся медленнее.
+90074ced73	{0} in 3D	{0} в 3D
+86ab40c374	Fleet: “🧊 3D” on every truck shows your truck with its paint, tuning, condition and trailer.	Автопарк: «🧊 3D» у каждого грузовика показывает твой грузовик с окраской, тюнингом, состоянием и прицепом.
+f22f55b289	The “🧊 3D” button next to a truck drawing opens it in 3D. Turn it with a finger or the mouse and zoom in.	Кнопка «🧊 3D» рядом с рисунком грузовика открывает его в 3D. Вращай пальцем или мышью и приближай.
+baa0ae0404	Every truck in 3D: in the fleet, in the profile showcase and in the dealership before buying.	Каждый грузовик в 3D: в автопарке, в витрине профиля и в салоне перед покупкой.
+729048eae8	Turn with a finger or the mouse, zoom with two fingers or the wheel.	Вращай пальцем или мышью, приближай двумя пальцами или колёсиком.
+c35d5dfd27	Truck in 3D	Грузовик в 3D
+e90ed78023	Profile: the trucks in the showcase have “🧊 3D” too, so anyone can look at them.	Профиль: у грузовиков в витрине тоже есть «🧊 3D», так что любой может их рассмотреть.
+4f40c415f2	Dealership: every model can be seen in 3D before buying.	Салон: любую модель можно посмотреть в 3D перед покупкой.
+208d36ca87	Fix: the brand is no longer repeated in the truck name in the profile showcase.	Исправлено: в витрине профиля марка больше не повторяется в названии грузовика.
+6427ea017e	Trucks in 3D	Грузовики в 3D
+63806fc163	A tidy map with layers and focus, trucks in 3D, a 3D trip postcard, the dock and letters from clients.	Аккуратная карта со слоями и фокусом, грузовики в 3D, 3D-открытка с рейса, рампа и письма от клиентов.
+f4af4bd1ac	“🧊 3D” shows any truck in 3D: in the fleet, the profile and the dealership. A new city or a long trip brings a 3D postcard.	«🧊 3D» показывает любой грузовик в 3D: в автопарке, профиле и салоне. После нового города или дальнего рейса — 3D-открытка.
+b2c0dbb294	Depots: “🧊 3D” shows the depot yard — the bays, the office, the hall and your free trucks in the city.	Депо: «🧊 3D» показывает двор депо — парковочные места, офис, ангар и твои свободные грузовики в городе.
+87d2e018fd	Depot {0}	Депо {0}
+fa84cdb607	Trucks and depots in 3D	Грузовики и депо в 3D
+3beaa8d2f2	A tidy map, trucks and depots in 3D, a 3D trip postcard, the dock and letters from clients.	Аккуратная карта, грузовики и депо в 3D, 3D-открытка с рейса, рампа и письма от клиентов.
+3be76fb74b	“🧊 3D” shows the truck in the fleet, the profile and the dealership, and the depot with its yard and parked trucks.	«🧊 3D» показывает грузовик в автопарке, профиле и салоне, а депо — с двором и припаркованными грузовиками.
+20155410ed	The inventory is a game bag: cells glow in the colour of their rarity, and epic and legendary ones shine.	Инвентарь — как сумка в игре: ячейки светятся цветом редкости, а эпические и легендарные сияют.
+7cf2df82ff	New look: game windows	Новый облик: игровые окна
+c8050d7b99	Anywhere in the game the inventory opens as a window over the page. Close it and you are where you were.	Отовсюду в игре инвентарь открывается окном поверх страницы. Закрой его — и ты там, где был.
+c2c684fcfa	An item opens in a game window: a big picture, everything about it and the action buttons.	Предмет открывается в игровом окне: большая картинка, всё о нём и кнопки действий.
+3eca73e55d	Windows open with an animation and a sound. Switch them off in Settings, like the other effects.	Окна открываются с анимацией и звуком. Отключаются в Настройках, как и другие эффекты.
+70a2bf7eda	Fleet: “Everything about this truck” is a window with the 3D truck, bars for condition and service, the trips and the buttons.	Автопарк: «Всё об этом грузовике» — окно с 3D-грузовиком, шкалами состояния и ТО, рейсами и кнопками.
+c5fcbee67d	Until service	До ТО
+4d30cfe463	Driven loaded and empty: {0}	Пройдено с грузом и порожняком: {0}
+24f93f1f1f	On a trip: {0} → {1}	В рейсе: {0} → {1}
+4cedb42e44	Mileage	Пробег
+179085e1ac	Payload	Грузоподъёмность
+bad70bd0d0	Driver skill	Навык водителя
+f7230670bc	none	без
+113acf981b	overdue	просрочено
+96311b26ec	Done!	Готово!
+2d2ffcf9a9	Shop: a purchase happens in a window with a big icon, the price, how many TC you will have left and an effect when it succeeds.	Магазин: покупка — в окне с большой иконкой, ценой, остатком TC и эффектом при успешной покупке.
+810954894a	Left afterwards	Останется после
+d1ed257711	Pay {0} TC	Оплатить {0} TC
+b307e3a183	Great	Отлично
+f8dced0ff5	{0} TC short	не хватает {0} TC
+3cccae134f	Buy TC	Купить TC
+60356f1709	Buy a pass level · {0} TC	Купить уровень пропуска · {0} TC
+6b1339d753	New shop: opens as a window from anywhere, with the wallet and VIP at the top, tabs by kind and products as game cards.	Новый магазин: открывается окном отовсюду, с кошельком и VIP сверху, вкладками по типам и товарами-игровыми карточками.
+383e65f7b5	Offer −{0}%	Предложение −{0}%
+a2e3c44c7f	Featured	Рекомендуем
+8f13c7f5c4	Seasonal	Сезонное
+f75dcff891	No products here right now.	Здесь пока нет товаров.
+cb1c054b44	Services	Услуги
+cbac27c9ff	{0} new since last time.	{0} новых с прошлого раза.
+28bf4433e6	Nothing new — everything is read.	Ничего нового — всё прочитано.
+31641a0c7f	No notifications here.	Здесь нет уведомлений.
+0256a2be64	Notifications: the bell opens a window with tabs by kind, the count of new ones in each and every notification as a card with buttons.	Уведомления: колокольчик открывает окно с вкладками по типам, числом новых в каждой и каждым уведомлением в виде карточки с кнопками.
+e95ad0636f	Pay	Оплата
+77982d7979	On the road!	В пути!
+3405a03769	Loads: a load opens in a window with the route as a road, the pay and the deadline, and after „Accept“ the truck sets off.	Грузы: заказ открывается в окне с маршрутом в виде дороги, оплатой и сроком, а после «Принять» грузовик отправляется.
+5b2261d14f	The CB radio comes with update {0}.	CB-рация появится в обновлении {0}.
+0978004ebc	The board comes with update {0}.	Биржа появится в обновлении {0}.
+0859c3de8d	The big convoy comes with update {0}.	Большая колонна появится в обновлении {0}.
+de20791317	Winter Road	Зимняя дорога
+cbf9dc1e0b	The city collection comes with update {0}.	Коллекция городов появится в обновлении {0}.
+aca3d1c3c9	The command comes with update {0}.	Команда появится в обновлении {0}.
+d24c751733	Convoys come with update {0}.	Колонны появятся в обновлении {0}.
+05ed00b2d6	The logo comes with update {0}.	Логотип появится в обновлении {0}.
+1b82b9bb30	A new season „First Snow“ with a pass, game windows and 3D trucks, a tidy map, Black Friday, partner loads and a regional project.	Новый сезон «Первый снег» с пропуском, игровые окна и 3D-грузовики, аккуратная карта, Чёрная пятница, партнёрские грузы и проект региона.
+8719e2eaba	Departments come with update {0}.	Отделы появятся в обновлении {0}.
+d60342bef6	Haggling comes with update {0}.	Торг появится в обновлении {0}.
+5021eea5a4	The challenge of the week comes with update {0}.	Испытание недели появится в обновлении {0}.
+cfa695a430	The spring cup comes with update {0}.	Весенний кубок появится в обновлении {0}.
+b114ca7267	Road reports come with update {0}.	Дорожные сигналы появятся в обновлении {0}.
+ef0c71365e	Lane records come with update {0}.	Рекорды линий появятся в обновлении {0}.
+ced5547ad9	A base of its own for every company, escorts and the city café, market rumours and a living 3D map with a camera that follows your truck.	Своя база для каждой компании, сопровождение и кафе в городе, слухи с биржи и живая 3D-карта с камерой за грузовиком.
+db7d894091	Shady loads come with update {0}.	Теневые грузы появятся в обновлении {0}.
+dfc0e6a5bd	Mergers come with update {0}.	Слияния появятся в обновлении {0}.
+584feba336	Internships come with update {0}.	Стажировки появятся в обновлении {0}.
+1d2f83db44	The meeting comes with update {0}.	Собрание появится в обновлении {0}.
+d2c38da81b	Alliances come with update {0}.	Союзы появятся в обновлении {0}.
+dc24dedb26	Traditions come with update {0}.	Традиции появятся в обновлении {0}.
+5e3a509b50	“Truck of the month” comes with update {0}.	«Грузовик месяца» появится в обновлении {0}.
+ba43a356a9	The board: every load is a game card with a picture of the cargo, the route from point to point, the pay and the labels, and the filters are buttons.	Биржа: каждый заказ — игровая карточка с картинкой груза, маршрутом от точки до точки, оплатой и метками, а фильтры — кнопки.
+c8265feaea	expires soon	скоро истекает
+2bff47294b	Quick access	Быстрый доступ
+4f31fadac6	With the map →	С картой →
+204d23adac	Loads: from anywhere in the game they open as a window over the screen you are on; with the map they are on the full page.	Курсы: из любого места игры открываются окном поверх текущего экрана; с картой — на всей странице.
+fa819675b1	New dashboard: a command card with level, money, TransCoin and trucks on the road, „Now“ as cards and big tiles to everything in the game.	Новая панель: командная карточка с уровнем, деньгами, ТрансКоинами и грузовиками в пути, «Сейчас» в виде карточек и большие плитки ко всему в игре.
+805b66e131	A 3D truck from the game — turn it	3D-грузовик из игры — поверни его
+d99429a09b	Every truck and depot in real 3D: turn it, look up close and paint it in the garage.	Каждый грузовик и склад в настоящем 3D: поверни, рассмотри вблизи и покрась в гараже.
+f3f7d252b2	Living map	Живая карта
+7da7c8f583	Start now — be ready	Начни сейчас — будь готов
+ca342897bc	Game windows	Игровые окна
+139cd59d86	It looks and feels like a game	Выглядит и ощущается как игра
+869817cb88	A real 3D model from the game · turn it with a finger or the mouse	Настоящая 3D-модель из игры · вращай пальцем или мышью
+f078f98860	Real roads between thousands of cities, every player's trucks and snow where it falls today.	Настоящие дороги между тысячами городов, грузовики всех игроков и снег там, где он идёт сегодня.
+9756e5bf52	Trucks in 3D	Грузовики в 3D
+2b69a8faa8	Command dashboard	Командная панель
+dfbfeea78d	Loads, shop, inventory and notifications open as windows over the game — with animation and sound.	Грузы, магазин, инвентарь и уведомления открываются окнами поверх игры — с анимацией и звуком.
+0bd7fff1b0	Your level, money and trucks at a glance, and everything in the game one tap away.	Уровень, деньги и грузовики с одного взгляда, а всё в игре — в одно касание.
+ed110fbf08	The new look	Новый облик
+f3c880f3c8	Soon · update {0}	Скоро · обновление {0}
+811ed41643	seconds	секунды
+4e4e5817ea	hours	часа
+b4525229c8	The website: a real 3D truck from the game at the top, a countdown to the next update and a „New look“ section.	Сайт: настоящий 3D-грузовик из игры в начале, обратный отсчёт до следующего обновления и раздел «Новый облик».
+dbbacde4b5	Are you sure?	Ты уверен?
+50bb8fa1c4	More windows: a player's profile, a company, missions, drivers and rewards; confirmations („Are you sure?“) are game windows too.	Ещё окна: профиль игрока, компания, миссии, водители и награды; подтверждения («Ты уверен?») — тоже игровые окна.
+f089368cad	{0} of 3 stars	{0} из 3 звёзд
+a3f71d9b04	All labels	Все метки
+cb130665aa	All trucks are in good shape.	Все грузовики исправны.
+cb18929965	The trucks	Грузовики
+911f747b50	Condition of the trucks	Состояние грузовиков
+2299d446a8	free today	бесплатно сегодня
+de71f78398	for TransCoin	за ТрансКоины
+eb36738762	a trip for every free truck	рейс для каждого свободного грузовика
+b00fa76de8	condition and service	состояние и сервис
+5193b9349a	Loads: new loads, the dispatcher and the trucks' condition are big buttons that open in a window.	Курсы: новые грузы, диспетчер и состояние грузовиков — большие кнопки, открывающиеся в окне.
+a4bb6f44f5	Loads: your free trucks are slots at the top — pick a truck and see only its loads; stars for the best paid, sorting with buttons and „Take“ on every card.	Курсы: свободные грузовики — слоты сверху: выбери грузовик и видишь только его грузы; звёзды для лучше оплачиваемых, сортировка кнопками и «Взять» на каждой карточке.
+91dc9206a6	The whole game in a game style: panels with a metal frame, buttons you press, glowing bars and new-look titles everywhere.	Вся игра в игровом стиле: панели в металлической рамке, нажимаемые кнопки, светящиеся полосы и заголовки в новом облике повсюду.
+b73f2bcc76	Help	Помощь
+c1d8895469	Every section — Loads, Fleet, Finances, Market, Depots, Company, Rankings, Events, Season, Profile, Settings and more — opens as a window over the game (after the tutorial).	Все разделы — Курсы, Автопарк, Финансы, Рынок, Склады, Компания, Рейтинги, Ивенты, Сезон, Профиль, Настройки и другие — открываются окнами поверх игры (после обучения).
+c6ff45e838	{0}% done	{0}% выполнено
+57bd45b52b	TAKEN	ПОЛУЧЕНО
+51da9a70b1	Trips on the road (dashboard and fleet) are a road between the two cities with your truck moving along it live.	Рейсы в пути (панель и автопарк) — дорога между двумя городами, по которой твой грузовик едет вживую.
+c7ad52ef32	Missions as game quests: a progress ring, the rewards as loot, a golden glow when ready and a „TAKEN“ stamp.	Миссии как игровые задания: кольцо прогресса, награды как добыча, золотое свечение, когда готово, и печать «ПОЛУЧЕНО».
+3b6e615f5e	Drivers are cards framed in the colour of their skill, and hiring is a pick from candidates with big portraits.	Водители — карточки в рамке цвета умения, а найм — выбор из кандидатов с большими портретами.
+8ed8b2bb55	Rankings: the top three are gold, silver and bronze with big medals.	Рейтинги: первые трое — золото, серебро и бронза с большими медалями.
+65282895eb	Company: without a logo the company has a crest — its initials on a violet and gold shield.	Компания: без логотипа у компании есть герб — инициалы на фиолетово-золотом щите.
+15a22b2ca9	Profile: a player banner with a big avatar in a glowing frame and the stats as game tiles.	Профиль: баннер игрока с большим аватаром в светящейся рамке и статистикой в виде игровых плиток.
+ea705d6780	On a phone, pull a window down by its handle or title to close it.	На телефоне окно закрывается, если потянуть его вниз за ручку или заголовок.
+52699b7e21	3 on-time deliveries	3 доставки вовремя
+54dc5ba63a	{0} is covered in frost.	{0} покрыт инеем.
+2d0b0f9530	{0} — done. The next step opens tomorrow.	{0} — готово. Следующий шаг откроется завтра.
+57bfdb57da	„Frost“ paint	Краска «Иней»
+e4ac8f278a	The „Frost“ paint is in your inventory. Well done!	Краска «Иней» в твоём инвентаре. Молодец!
+d15f50e7ca	Paints your own truck icy blue with frost along the edges — only for the whole „Winter Trek“.	Красит собственный грузовик в ледяной голубой с инеем по краям — только за весь «Зимний поход».
+8533c6d800	The „Frost“ paint is in your inventory — put it on a truck of your own.	Краска «Иней» в твоём инвентаре — нанеси её на собственный грузовик.
+e7f2118e01	Today's step is done. The next one — „{0}“ — opens on {1}.	Сегодняшний шаг готов. Следующий — «{0}» — откроется {1}.
+a5d59cf3fc	Deliver to 2 different countries	Доставь в 2 разные страны
+fb927c8f44	Deliver a refrigerated load	Доставь рефрижераторный груз
+bc83b6c3f3	Winter Trek	Зимний поход
+7500d652f2	Winter Trek (Missions): seven steps in order — 2 deliveries, 600 km, 3 on time, a refrigerated load, 2 countries, a trip over 800 km and 50 t. From 12 November one more opens each day; the trips you drive yourself count. Rewards of 1,500 to 3,500 lv. a step, 18 TC in all and the „Frost“ paint (icy blue with frost) at the end. Steps count until 10 December.	Зимний поход (Миссии): семь шагов по порядку — 2 доставки, 600 км, 3 вовремя, рефрижераторный груз, 2 страны, рейс более 800 км и 50 т. С 12 ноября каждый день открывается новый; засчитываются рейсы, которые ты ведёшь сам. Награды от 1 500 до 3 500 лв. за шаг, всего 18 TC и краска «Иней» (ледяной голубой с инеем) в конце. Шаги засчитываются до 10 декабря.
+e2d73934c8	Winter Trek, step {0}: {1} ({2}/{3}).	Зимний поход, шаг {0}: {1} ({2}/{3}).
+832d833afd	Winter Trek: walked to the end!	Зимний поход: пройден до конца!
+adae2f7e94	Winter Trek: step {0}	Зимний поход: шаг {0}
+67e4739573	Winter Trek: step {0} of {1}	Зимний поход: шаг {0} из {1}
+b27ae3b3f1	Walked to the end!	Пройден до конца!
+f55b22f501	Drive 600 km with a load	Проедь 600 км с грузом
+c705528946	A trip over 800 km	Рейс более 800 км
+d07460b7a8	Reward: {0}	Награда: {0}
+8fa6d7eacc	Make 2 deliveries	Сделай 2 доставки
+b06142d29d	One new step every day. The trips you drive yourself count. Until {0}	Каждый день — новый шаг. Засчитываются рейсы, которые ты ведёшь сам. До {0}
+cb1adbebd2	The last step of the „Winter Trek“	Последний шаг «Зимнего похода»
+2e8c79720b	Haul 50 tonnes	Перевези 50 тонн
+a8337387cc	Seven winter steps — from 12 November one more each day. Each pays at once, and the last gives the legendary „Frost“ paint.	Семь зимних шагов — с 12 ноября каждый день по новому. Каждый оплачивается сразу, а последний даёт легендарную краску «Иней».
+e067e0e145	Step {0} of {1}	Шаг {0} из {1}
+b46604cf14	Steps	Шаги
+30d66f4e93	at the end	в конце
+b03a094e96	{0} km — {1}% of the shortest	{0} км — {1}% от кратчайшего
+0058c1a89a	Every day at 00:00 a new puzzle, the same for everybody: 6 real cities, the first is the start. Put the others in the order that makes the path shortest (straight-line distances).	Каждый день в 00:00 — новая головоломка, одна для всех: 6 настоящих городов, первый — старт. Расставь остальные так, чтобы путь был самым коротким (расстояния по прямой).
+c8f280b7c6	No puzzle today — try tomorrow.	Сегодня головоломки нет — попробуй завтра.
+66ecd8d70c	Today's best	Лучшие сегодня
+ade3fadfd2	No tries left today — a new route tomorrow.	На сегодня попытки закончились — новый путь завтра.
+1c733bef78	You start at the first city and pass through all the others once (no return). Distances are straight lines between the real cities. You have {0} tries; the best one counts. From 90% — {1} lv., for the shortest path — another {2} lv. (once a day).	Ты начинаешь с первого города и проезжаешь все остальные по одному разу (без возврата). Расстояния — по прямой между настоящими городами. У тебя {0} попытки; засчитывается лучшая. От 90% — {1} лв., за кратчайший путь — ещё {2} лв. (раз в день).
+8e97b9cf7b	Pick {0} more	Выбери ещё {0}
+349f8a07b3	Map of the cities	Карта городов
+5798ad2fe4	Copied ✓	Скопировано ✓
+0872e30077	Measuring…	Измеряем…
+f89846f0fd	The shortest path! {0} km	Кратчайший путь! {0} км
+0d29325dce	Find it in Compete → Today and in „Now“ on the dashboard until you solve today's route.	Находится в Соревнования → Сегодня и в «Сейчас» на панели, пока ты не решил сегодняшний путь.
+83d2a808bd	A new route tomorrow.	Новый путь завтра.
+2a471e7771	A new „Route of the Day“ — put 6 cities in the shortest path.	Новый «Путь дня» — расставь 6 городов в кратчайший путь.
+c260e8783b	A new daily game: put 6 real cities in the shortest path. One puzzle for everybody, 3 tries, a reward and the day's ranking — and a result to share.	Новая ежедневная игра: расставь 6 настоящих городов в кратчайший путь. Одна головоломка для всех, 3 попытки, награда и рейтинг дня — и результат, которым можно поделиться.
+c6913faf2b	Try {0}: {1} km · {2}%	Попытка {0}: {1} км · {2}%
+3a76f7a5cd	Tries: {0}	Попытки: {0}
+ac8c384f58	Nobody has solved today's route yet. Be the first!	Сегодняшний путь ещё никто не решил. Будь первым!
+c27276a29e	Put all the cities in order, starting from the first one.	Расставь все города по порядку, начиная с первого.
+a6102faf94	Put the cities in the shortest path. One puzzle for everybody, a new one every day.	Расставь города в кратчайший путь. Одна головоломка для всех, новая каждый день.
+2fc61ec3e4	Check the route	Проверить путь
+5d7aafd850	Route: {0} km in a straight line	Путь: {0} км по прямой
+d9f3737d8b	Route of the Day	Путь дня
+59e6886517	Route of the Day ({0}%)	Путь дня ({0}%)
+d54af36189	Route of the Day: {0} tries left.	Путь дня: осталось попыток — {0}.
+02064f47e7	A streak of days in a row, a „Today's best“ ranking and a result with squares to share — without giving the answer away.	Серия дней подряд, рейтинг «Лучшие сегодня» и результат с квадратиками, которым можно поделиться, не выдавая решения.
+cefa3804d4	Share the result	Поделиться результатом
+17328fb254	Three tries; the best one counts. From 90% — 500 lv., for the shortest path — another 500 lv. (once a day).	Три попытки; засчитывается лучшая. От 90% — 500 лв., за кратчайший путь — ещё 500 лв. (раз в день).
+56d2cab557	Streak: {0}	Серия: {0}
+e6ca413c34	shortest (green): {0} km	кратчайший (зелёный): {0} км
+e30e3408cb	Days in a row with a solved route	Дней подряд с решённым путём
+fb99b5570b	{0} (favourite trip)	{0} (любимый рейс)
+d503c47c82	{0} (mascot)	{0} (талисман)
+4afdbef0bd	{0} is sad — one trip will cheer it up.	{0} грустит — один рейс его порадует.
+82966c4355	{0} is still enjoying the last pat.	{0} ещё радуется прошлому поглаживанию.
+45e5637a04	{0} reached level {1}!	{0} достиг уровня {1}!
+515a8ef5fa	Fleet → People → Mascot: choose a cat, a dog, a parrot or a turtle and give it a name. The mascot is free, one per player.	Автопарк → Люди → Талисман: выбери кошку, собаку, попугая или черепаху и дай ему имя. Талисман бесплатный, один на игрока.
+b58c136bd0	Accessories	Аксессуары
+ec61d6c656	Accessories: a scarf (level 3), a cap (5), glasses (8), a crown (10). The mascot shows on your profile next to the avatar.	Аксессуары: шарф (уровень 3), кепка (5), очки (8), корона (10). Талисман виден в твоём профиле рядом с аватаром.
+4bf13d7752	Slowpoke	Тихоня
+56533a53a8	The bonus is {0}% of the pay.	Бонус — {0}% от оплаты.
+deca6de108	Chatterbox	Болтунчик
+19c7a9ea14	You already have a mascot.	У тебя уже есть талисман.
+375520c527	Take it into the cab	Взять в кабину
+fa1b243082	Take a mascot into your cab — it grows with your trips and brings a bonus.	Возьми талисман в кабину — он растёт с рейсами и приносит бонус.
+d8de67dc67	Each delivery gives it +1 trip and +{0} mood; each day without a delivery, −{1}. Below {2} mood it is sad and brings no bonus. The bonus is 1% to 3% of the pay by level, doubled on its favourite trip. Petting: +{3} mood once every {4} hours.	Каждая доставка даёт ему +1 рейс и +{0} к настроению; каждый день без доставки — −{1}. Ниже {2} он грустит и не приносит бонуса. Бонус — от 1% до 3% от оплаты по уровню, двойной на любимом рейсе. Поглаживание: +{3} к настроению раз в {4} часа.
+59ee755e8e	Long trips (over 800 km)	Длинные рейсы (более 800 км)
+fa6048214b	Choose a companion for the road	Выбери спутника в дорогу
+de4a253fd0	The name must be 2 to {0} characters.	Имя должно быть от 2 до {0} символов.
+d3d057c00b	Crown	Корона
+bff4226aab	Turtle	Черепаха
+b65e5ecc6d	Cat	Кошка
+002823a4f1	A cat, a dog, a parrot or a turtle rides with you, grows with your trips and brings a 1% to 3% bonus to the pay — double on its favourite trip. It has a mood, accessories and shows on your profile.	Кошка, собака, попугай или черепаха едет с тобой, растёт с рейсами и приносит от 1% до 3% бонуса к оплате — вдвое на любимом рейсе. У него есть настроение, аксессуары, и он виден в твоём профиле.
+3de8cd4800	Trips to another country	Рейсы в другую страну
+7e82e7f000	Dog	Собака
+f3e7c7956e	Favourite trip (×2)	Любимый рейс (×2)
+198b7ead50	Favourite trip — double bonus: the cat loves night deliveries (22:00–06:00), the dog trips over 800 km, the parrot trips to another country, the turtle loads over 20 t.	Любимый рейс — двойной бонус: кошка любит ночные доставки (22:00–06:00), собака — рейсы более 800 км, попугай — в другую страну, черепаха — грузы более 20 т.
+718a883dd4	Favourite trip: {0}	Любимый рейс: {0}
+a301e1099f	Purry	Мурка
+9d0c321fd2	The top level	Высший уровень
+f49f081219	Mood: +8 for a delivery, +5 for a pat (once every 4 hours), −15 for each day without a delivery. Below 30 it is sad and brings no bonus — one trip fixes it.	Настроение: +8 за доставку, +5 за поглаживание (раз в 4 часа), −15 за каждый день без доставки. Ниже 30 он грустит и не приносит бонуса — один рейс это исправит.
+48c5e5ac76	Mood: {0}	Настроение: {0}
+851dcbc209	New name	Новое имя
+389bf748fc	Night deliveries (22:00–06:00)	Ночные доставки (22:00–06:00)
+8dd4b55dde	No such mascot.	Такого талисмана нет.
+945e1d3fde	Unlocks at level {0}.	Открывается на уровне {0}.
+5f2295e81b	Unlocked an accessory: {0}. The bonus is {1}% of the pay.	Открыт аксессуар: {0}. Бонус — {1}% от оплаты.
+60dc196dfa	Glasses	Очки
+6296ae9940	You don't have a mascot yet.	У тебя ещё нет талисмана.
+3447493803	Parrot	Попугай
+5caf22b15b	Pet	Погладить
+86af12368e	It grows with every delivery of your company: 10 levels (5, 15, 30 … 300 trips). The bonus is 1% of the pay, 1.5% from level 4, 2% from level 7 and 3% at level 10.	Он растёт с каждой доставкой твоей компании: 10 уровней (5, 15, 30 … 300 рейсов). Бонус — 1% от оплаты, 1,5% с уровня 4, 2% с уровня 7 и 3% на уровне 10.
+53d747d48c	It grows with your trips, is happy when you drive and brings a small bonus to the pay. Each has a favourite kind of trip — then the bonus is double.	Растёт с рейсами, радуется, когда ты в пути, и приносит небольшой бонус к оплате. У каждого есть любимый вид рейса — тогда бонус двойной.
+e5fcd148d7	Bored	Скучает
+3300622c17	Next pat: {0}	Следующее поглаживание: {0}
+092c07a3ed	The companion in your cab.	Спутник в твоей кабине.
+72283a94af	Mascot	Талисман
+3b1ff8359a	Mascot in the cab	Талисман в кабине
+6c2890f821	Heavy loads (over 20 t)	Тяжёлые грузы (более 20 т)
+724fae565a	Sad	Грустит
+08b5c3deba	Scarf	Шарф
+5b272f1793	Cap	Кепка
+aad67e489e	Rex	Шарик
+ffa6f27be8	Happy	Счастлив
+0768eb809f	none (sad)	нет (грустит)
+f4adf1de3b	A delivery: +{0} mood, a day without one: −{1}. Below {2} it is sad and brings no bonus. Petting: +{3} once every {4} h.	Доставка: +{0} к настроению, день без доставки: −{1}. Ниже {2} грустит и не даёт бонуса. Поглаживание: +{3} раз в {4} ч.
+8d51ea5424	From the first city through all the others once, in a straight line. {0} tries. From 90% — {1} lv., for the shortest path — another {2} lv.	От первого города через все остальные по разу, по прямой. {0} попытки. От 90% — {1} лв., за кратчайший путь — ещё {2} лв.
+0435db9b40	{0} m	{0} м
+181af802f5	{0} runs a day, the longest counts. Stars: {1}, {2} and {3} m — XP for the best run.	{0} заезда в день, засчитывается самый длинный. Звёзды: {1}, {2} и {3} м — опыт за лучший заезд.
+9b46618ac7	Arcade driving on a night road: change lanes, overtake and pick up fuel. One road for everybody each day, 3 runs, stars and a ranking.	Аркадная езда по ночной дороге: меняй полосы, обгоняй и собирай топливо. Одна трасса для всех на день, 3 заезда, звёзды и рейтинг.
+da5d323b8e	No runs left today — a new road tomorrow night.	На сегодня заезды закончились — новая дорога завтра вечером.
+78f16fa89e	The same night road for everybody, a new one every day.	Одна ночная дорога для всех, новая каждый день.
+877a5235d7	Overtake the slower cars and pick up fuel cans — three crashes or an empty tank end the run; otherwise it lasts 75 seconds.	Обгоняй медленные машины и собирай канистры — три удара или пустой бак завершают заезд; иначе он длится 75 секунд.
+e32799d049	Mini-game „Night Run“	Мини-игра «Ночной рейс»
+e453897400	Best: {0} m · {1} of {2} runs	Лучший: {0} м · {1} из {2} заездов
+edcabb2764	Today's longest runs	Самые длинные заезды сегодня
+c4635d6458	A new mini-game (Compete → Today): your truck drives a three-lane night road. Arrows, A/D, the buttons or a swipe change lanes.	Новая мини-игра (Соревнования → Сегодня): твой грузовик едет по ночной трёхполосной дороге. Стрелки, A/D, кнопки или свайп меняют полосу.
+308f7a8f59	Night road	Ночная дорога
+74638c40c5	Night Run	Ночной рейс
+b48316546d	Once more ({0})	Ещё раз ({0})
+8a0af4f03b	You haven't driven today yet.	Ты ещё не ездил сегодня.
+7766c4743c	Nobody has driven tonight yet.	Этой ночью ещё никто не ездил.
+7c348dbfdf	Checking the run…	Проверяем заезд…
+7a82f38220	The road is the same for everybody that day; 3 runs a day, the longest counts. Stars for 900, 1,500 and 2,100 m — up to 150 XP once a day.	Дорога одна для всех на день; 3 заезда в день, засчитывается самый длинный. Звёзды за 900, 1 500 и 2 100 м — до 150 опыта раз в день.
+8a26075170	Out of fuel.	Кончилось топливо.
+34143fa77a	Change lanes, overtake the cars and pick up fuel cans. Three crashes — game over.	Меняй полосы, обгоняй машины и собирай канистры. Три удара — конец.
+38735ab5c9	You made it to the end!	Ты доехал до конца!
+623ae9036c	Arrows ← → or A / D	Стрелки ← → или A / D
+82b9c58684	The server replays the run from your moves — the result is decided there, not in the browser.	Сервер повторяет заезд по твоим движениям — результат решается там, а не в браузере.
+9f132d0887	The run is too long.	Слишком длинный заезд.
+dfc0ee83a8	Three crashes.	Три удара.
+21bd073bb4	Go ({0} left)	Поехали (осталось {0})
+0deecf3c85	Crashes	Удары
+f795d995ae	Tomorrow — a new run	Завтра — новый заезд
+dc75b78f04	+{0}% to the early delivery bonus	+{0}% к бонусу за раннюю доставку
+c4318f1a21	+{0}% to the pay	+{0}% к оплате
+37dc3a2faa	+{0}% on convoy trips	+{0}% на рейсах в колонне
+900f630213	+{0}% on hired drivers' trips	+{0}% на рейсах наёмных водителей
+7ff071d895	+{0}% on trips over 800 km	+{0}% на рейсах более 800 км
+57cda471e0	+{0}% on arrivals 22:00–06:00	+{0}% при прибытии 22:00–06:00
+fe645a2475	{0} free points	Свободных очков: {0}
+f04ef3a8c6	Fleet → People → Skills: a point for each level above the first. Nine skills in three branches, three ranks each.	Автопарк → Люди → Навыки: очко за каждый уровень выше первого. Девять навыков в трёх ветках, по три уровня.
+8e33dbd59e	Gentle driving	Аккуратная езда
+cac7c6e980	Each skill has {0} ranks. The effect is paid on each delivery of your company as a „Driver skills“ line.	У каждого навыка {0} уровня. Эффект выплачивается при каждой доставке твоей компании строкой «Навыки водителя».
+7e6790e1e4	Get all points back for {0}?	Вернуть все очки за {0}?
+bdb7b61d98	Get all points back? The first time is free.	Вернуть все очки? Первый раз бесплатно.
+948c8c24a1	Long haul	Дальние рейсы
+fa0514754c	Good boss	Хороший начальник
+b5d11f1395	The effect is paid on each delivery of your company as a separate „Driver skills“ line. „Start over“ gives the points back — free the first time, then for 5,000 lv.	Эффект выплачивается при каждой доставке твоей компании отдельной строкой «Навыки водителя». «Заново» возвращает очки — первый раз бесплатно, потом за 5 000 лв.
+62f8421d7e	You have {0} free skill points.	У тебя {0} свободных очков навыков.
+d74353c1f8	Road mate	Товарищ в пути
+b2ac15bb60	A personal skill tree: a point for each level in three branches — Road, Trade and People. Small bonuses on every delivery that add up.	Личное дерево навыков: очко за каждый уровень в трёх ветках — Дорога, Торговля и Люди. Небольшие бонусы при каждой доставке, которые складываются.
+e6fd1231c4	Learn	Изучить
+d5f3a4f1c6	Rank {0} → {1}	Уровень {0} → {1}
+7aadede204	New driver skills	Новые навыки водителя
+b60e706605	No such skill.	Такого навыка нет.
+86c9c0ce6c	No free points — they come with every new level.	Нет свободных очков — они приходят с каждым новым уровнем.
+9b51b1dc2a	Start over ({0})	Заново ({0})
+431e9caf08	Start over (free)	Заново (бесплатно)
+02697d51b6	You haven't learned any skills yet.	Ты ещё не изучил навыки.
+696e83e71a	Road expert	Знаток дорог
+bfd7d5e113	{0} of {1} spent · a new point with every level	Потрачено {0} из {1} · новое очко с каждым уровнем
+a1eb4f5db9	Road: −2% fuel, −3% maintenance and −3% tolls a rank. Trade: +1% pay, +10% to the early delivery bonus and +2% on trips over 800 km a rank.	Дорога: −2% топлива, −3% обслуживания и −3% дорожных сборов за уровень. Торговля: +1% к оплате, +10% к бонусу за раннюю доставку и +2% на рейсах более 800 км за уровень.
+e8102238d8	Your experience behind the wheel — a point for every level.	Твой опыт за рулём — очко за каждый уровень.
+b6f9c763d4	Punctuality	Пунктуальность
+f7fb4301b6	The skill is at its top rank.	Навык на высшем уровне.
+e3e64b0fbd	Driver skills	Навыки водителя
+e4057fd271	People: +2% on hired drivers' trips, +3% in convoy and +3% on arrivals between 22:00 and 06:00 a rank.	Люди: +2% на рейсах наёмных водителей, +3% в колонне и +3% при прибытии с 22:00 до 06:00 за уровень.
+beb5e6bbf4	−{0}% tolls	−{0}% дорожных сборов
+7eebe8ebb6	−{0}% fuel cost	−{0}% расход на топливо
+d08051ddd9	−{0}% maintenance cost	−{0}% расход на обслуживание
+547125909d	+{0} lv. from a repair at „{1}“.	+{0} лв. за ремонт в «{1}».
+e58f7b8b45	{0} repairs	{0} ремонтов
+261064d24f	Fleet → Service and depots → Players' workshops. From level 10 open a workshop for 50,000 lv. in a city where you have a depot or a truck (one per player).	Автопарк → Сервис и депо → Мастерские игроков. С 10 уровня открой мастерскую за 50 000 лв. в городе, где у тебя есть депо или грузовик (одна на игрока).
+69d377bc69	Players' workshops do full repairs only.	В мастерских игроков ремонт только полный.
+c70eec8b75	You can't repair in your own workshop — there you work for the others.	В своей мастерской ремонтировать нельзя — там ты работаешь для других.
+96714b589f	No player workshop in this city.	В этом городе нет мастерской игрока.
+2b2ac2dbb6	You already have a workshop.	У тебя уже есть мастерская.
+c1e56c6725	You already rated this repair.	Ты уже оценил этот ремонт.
+bbf6ccfedf	Workshop name	Название мастерской
+3fdd879dd2	The name must be 3 to {0} characters.	Название должно быть от 3 до {0} символов.
+a0c96543dc	A truck standing in the workshop's city can get a full repair there. You don't repair in your own workshop — it's for the others.	Грузовик, стоящий в городе мастерской, может пройти там полный ремонт. В своей мастерской ты не ремонтируешь — она для других.
+814cea1244	The truck must be in {0} to be repaired at this workshop.	Грузовик должен быть в {0}, чтобы ремонтироваться в этой мастерской.
+6195b3cc8c	A customer at the workshop: {0}	Клиент в мастерской: {0}
+65eecc7f82	My workshop	Моя мастерская
+bf39b54836	The busiest workshops	Самые загруженные мастерские
+ca49357d7b	Level {0} ({1}) — share {2}%	Уровень {0} ({1}) — доля {2}%
+2b2ac3c5a2	No truck standing that needs a repair.	Нет стоящего грузовика, которому нужен ремонт.
+5cd45b89a3	From level 10 open a workshop in a city of your choice and set the price. Other players repair with you, and you earn on every repair.	С 10 уровня открой мастерскую в выбранном городе и задай цену. Другие игроки ремонтируются у тебя, а ты зарабатываешь на каждом ремонте.
+35fa306cf0	Open your own workshop or repair at another player's.	Открой свою мастерскую или ремонтируйся у другого игрока.
+f7b115e24a	Open a workshop	Открыть мастерскую
+55efe725b8	Open a workshop for {0} in a city where you have a depot or a truck.	Открой мастерскую за {0} в городе, где у тебя есть депо или грузовик.
+0c928ab328	Rate the repair	Оцени ремонт
+183e4114c3	A rating comes after a repair at the workshop.	Оценка даётся после ремонта в мастерской.
+d96b383968	The rating is 1 to 5 stars.	Оценка — от 1 до 5 звёзд.
+ff1ac4eaae	No player workshops yet — be the first.	Мастерских игроков ещё нет — будь первым.
+8d6db7f71f	You don't have a workshop yet.	У тебя ещё нет мастерской.
+3c1cf8fb69	Repair ({0}% of the price)	Ремонт ({0}% от цены)
+68a8d05cce	Repair {0} at „{1}“	Ремонт {0} в «{1}»
+f57ad85e16	Repair at workshop „{0}“ ({1})	Ремонт в мастерской «{0}» ({1})
+b8a2e79a0b	Repair at a player's	Ремонт у игрока
+4b2e5e1af4	{0}'s workshop	Мастерская {0}
+62e65ef125	A workshop opens in a city where you have a depot or a truck.	Мастерская открывается в городе, где у тебя есть депо или грузовик.
+9ff7fa1a1e	A workshop opens from level {0}.	Мастерская открывается с уровня {0}.
+027a48846c	Workshop „{0}“ in {1}	Мастерская «{0}» в {1}
+cdbe2c985a	Workshop „{0}“: level {1}	Мастерская «{0}»: уровень {1}
+f8d238a41a	Workshops	Мастерские
+e4f25213da	Players' workshops	Мастерские игроков
+3506c92815	The workshop has closed.	Мастерская больше не работает.
+b7be44a853	The workshop is at its top level.	Мастерская на высшем уровне.
+e328f16d03	After the repair the customer rates the workshop with 1–5 stars; the busiest workshops are ranked.	После ремонта клиент оценивает мастерскую от 1 до 5 звёзд; самые загруженные мастерские — в рейтинге.
+b5b579d17f	Own workshop	Своя мастерская
+88ccc5eb20	The owner sets the price ({0}–{1}% of the usual) and gets {2}% of what is paid; up to {3}% with upgrades.	Владелец задаёт цену ({0}–{1}% от обычной) и получает {2}% от оплаченного; с улучшениями — до {3}%.
+5bf87de802	Earned	Заработано
+081716b709	Your share	Твоя доля
+69f25a69c0	You set the price: 60% to 120% of the usual repair. You get 80% of what is paid, 85% at level 2 (30,000 lv.) and 90% at level 3 (60,000 lv.); the rest is for parts.	Ты задаёшь цену: от 60% до 120% от обычного ремонта. Получаешь 80% от оплаченного, 85% на уровне 2 (30 000 лв.) и 90% на уровне 3 (60 000 лв.); остальное — на запчасти.
+54d145948f	Price against the usual	Цена относительно обычной
+4ebb748512	The price is {0}% to {1}% of the usual.	Цена — от {0}% до {1}% от обычной.
+7c02cbfdac	Save the price	Сохранить цену
+4eb9ee4056	+{0}% on trips to {1} until {2}.	+{0}% на рейсы в {1} до {2}.
+a839364887	{0} votes · {1}%	{0} голосов · {1}%
+fe2c68f034	You already voted in this crisis.	Ты уже голосовал в этом кризисе.
+3d269bf435	Each day: a shared goal of {0} t to the affected country. The way out with more votes gives a bonus on trips to its country for {1} days — the full one with at least {2} goals reached.	Каждый день: общая цель {0} т в пострадавшую страну. Выход с большим числом голосов даёт бонус на рейсы в свою страну {1} дней — полный, если выполнено не менее {2} целей.
+4aa5724f24	Second day of the strike. The shops in Bucharest look for goods by road — every truck counts.	Второй день забастовки. Магазины Бухареста ищут товары по суше — важен каждый грузовик.
+c6ab0b25c1	Day {0}	День {0}
+9b5cb6a856	Day {0} of {1}	День {0} из {1}
+bbc17bc6ae	Today's goal: trips to {0}	Цель на сегодня: рейсы в {0}
+051cf48bea	Bring it by road	Доставить по суше
+41fd140a2b	The dockers in Constanța stopped work. Containers pile up and the warehouses in Romania stay empty.	Докеры в Констанце прекратили работу. Контейнеры копятся, а склады в Румынии пустеют.
+2f116a2d20	Deliveries for Hungary	Доставки для Венгрии
+ccd6faf18d	The Danube Bridge at Ruse closes for an urgent repair. The truck queue is kilometres long.	Дунайский мост у Русе закрывается на срочный ремонт. Очередь грузовиков — на километры.
+954638b7d3	Starts on {0} · {1}	Начинается {0} · {1}
+66f397da40	Goals reached: {0} of {1}.	Выполнено целей: {0} из {1}.
+1cd6687c77	Trucks take over the port's cargo: +bonus on trips to Romania.	Грузовики берут на себя грузы порта: +бонус на рейсы в Румынию.
+27325045a6	The ships come to Varna and the goods leave from there: +bonus on trips to Bulgaria.	Корабли идут в Варну, и товары отправляются оттуда: +бонус на рейсы в Болгарию.
+6567369b5a	Crisis: {0}	Кризис: {0}
+3b4de2dea4	Crisis: {0} — vote how to solve it.	Кризис: {0} — проголосуй, как его решить.
+5d6128bb5f	The bridge reopens tomorrow. Today is the last day to supply the towns along the Danube.	Мост открывается завтра. Сегодня последний день снабдить города на Дунае.
+f65546e805	Every two weeks a three-day crisis on the map: a strike, a fuel shortage, a closed bridge. Shared goals, a vote on the way out and a week of bonus.	Раз в две недели — трёхдневный кризис на карте: забастовка, нехватка топлива, закрытый мост. Общие цели, голосование за выход и неделя бонуса.
+3b516d5cce	Diesel shortage in Hungary	Нехватка дизеля в Венгрии
+1ba8c90477	Heavy snow closed the passes in Tyrol. Villages in Austria are cut off from deliveries.	Сильный снег закрыл перевалы в Тироле. Деревни Австрии отрезаны от поставок.
+66b8b49a79	Detour through Germany	Объезд через Германию
+eb225592c5	Detour through Serbia	Объезд через Сербию
+cfe79af897	The community decided	Сообщество решило
+0e0edc3654	Queues on the motorways. Deliveries to Hungary are needed more and more.	Очереди на автомагистралях. Доставки в Венгрию нужны всё больше.
+022eef7bf9	Help for Austria	Помощь Австрии
+d81fe89c9f	The last day of talks. What we bring today will decide how fast the market recovers.	Последний день переговоров. То, что мы привезём сегодня, решит, как быстро восстановится рынок.
+49de9c1853	Effect until {0}	Последствия до {0}
+f604eded0f	Hauliers go through Serbia until the crisis passes: +bonus on trips to Serbia.	Перевозчики едут через Сербию, пока кризис не пройдёт: +бонус на рейсы в Сербию.
+86169293a6	Through Vidin to Romania	Через Видин в Румынию
+29aa21ba0a	Redirect to Varna	Перенаправить в Варну
+80a0a4d068	Full trucks to Hungarian towns: +bonus on trips to Hungary.	Полные грузовики в венгерские города: +бонус на рейсы в Венгрию.
+01e7d94935	The first crisis starts on 13 November, then every 14 days (Compete → Today → World crises). The crises are invented — the game makes them up.	Первый кризис начинается 13 ноября, затем каждые 14 дней (Соревнования → Сегодня → Мировые кризисы). Кризисы вымышленные — их создаёт игра.
+21df744c0d	The roads open one by one — the last day of the crisis.	Дороги открываются одна за другой — последний день кризиса.
+e1c65b965c	A refinery near Budapest stopped for repairs. Petrol stations in Hungary limit sales.	НПЗ под Будапештом остановлен на ремонт. АЗС в Венгрии ограничивают продажи.
+d60729c2bf	The refinery restarts tomorrow — today is the last day to help.	НПЗ запускается завтра — сегодня последний день помочь.
+19960d1f4a	Danube Bridge repair	Ремонт Дунайского моста
+1e08878401	World crises	Мировые кризисы
+c3085bce75	There is no crisis to vote on now.	Сейчас нет кризиса, за который можно голосовать.
+d184e85c80	Then for 7 days the way out with more votes gives a bonus on trips to its country: +10% if the community reached at least 2 of the 3 goals, otherwise +5%.	Затем 7 дней выход с большим числом голосов даёт бонус на рейсы в свою страну: +10%, если сообщество выполнило не менее 2 из 3 целей, иначе +5%.
+da7310518e	The next crisis	Следующий кризис
+1e0578a0fc	Supply northern Bulgaria	Снабдить Северную Болгарию
+f674a2c4c5	The snow ploughs are working, but food and fuel in Austria are running out.	Снегоуборщики работают, но еда и топливо в Австрии заканчиваются.
+fbaee13dda	Snow crisis in the Alps	Снежный кризис в Альпах
+9f2d8ed0a5	Strike at the port of Constanța	Забастовка в порту Констанца
+3c2ad63173	Goods for the towns along the Danube: +bonus on trips to Bulgaria.	Товары для городов на Дунае: +бонус на рейсы в Болгарию.
+21d9200024	Your vote	Твой голос
+a4a14add54	Cargo for Romania goes through Vidin: +bonus on trips to Romania.	Грузы для Румынии идут через Видин: +бонус на рейсы в Румынию.
+fc2b583e33	Cargo goes around the Alps through Germany: +bonus on trips to Germany.	Грузы обходят Альпы через Германию: +бонус на рейсы в Германию.
+9f88e8e1c7	Three days of story: each day a shared goal of 150 t delivered to the affected country, and a vote between two ways out (one vote per player).	Три дня истории: каждый день общая цель — 150 т в пострадавшую страну, и голосование между двумя выходами (один голос на игрока).
+4dc22c4a27	Three days of crisis, a shared vote and a week of effects.	Три дня кризиса, общее голосование и неделя последствий.
+ba9449ae08	The ferries at Vidin and Svishtov work day and night. Northern Bulgaria waits for goods.	Паромы у Видина и Свиштова работают круглосуточно. Северная Болгария ждёт товары.
+efcdd0752f	Food and fuel for the Austrian towns: +bonus on trips to Austria.	Еда и топливо для австрийских городов: +бонус на рейсы в Австрию.
+311bfc42bf	Four crises in turn: a strike at the port of Constanța, a diesel shortage in Hungary, a Danube Bridge repair and a snow crisis in the Alps.	Четыре кризиса по очереди: забастовка в порту Констанца, нехватка дизеля в Венгрии, ремонт Дунайского моста и снежный кризис в Альпах.
+7a4c57993c	Goal: {0} t a day to the country. The way out with more votes gives a bonus for {1} days — the full one with {2} goals reached.	Цель: {0} т в день в страну. Выход с большим числом голосов даёт бонус {1} дней — полный при {2} выполненных целях.
+f4aef5c37e	{0} lv./100 km	{0} лв./100 км
+510564165a	{0} a day	{0} в день
+429b7c5de1	{0} of {1} lines	{0} из {1} линий
+7270525c6d	Bus	Автобус
+2b7695e0cf	Bus {0} for the line {1} – {2}	Автобус {0} для линии {1} – {2}
+bd2ef4d30c	Bus company	Автобусная компания
+70f48dda57	Bus line {0} – {1} ({2} passengers)	Автобусная линия {0} – {1} ({2} пассажиров)
+3cfbbafe70	Bus lines — from level {0}.	Автобусные линии — с уровня {0}.
+bcb03bb7b2	The bus has the highest comfort.	У автобуса высший уровень комфорта.
+b769f2f9ce	Fleet → Trucks → Bus company (from level 8): a line from a city with your depot to a big city 100–700 km away by road. Up to 5 lines, one between two cities.	Автопарк → Грузовики → Автобусная компания (с 8 уровня): линия из города с твоим депо в крупный город в 100–700 км по дороге. До 5 линий, по одной между двумя городами.
+061d894733	Ticket (lv. per 100 km)	Билет (лв. на 100 км)
+764776452d	The ticket is {0} to {1} lv. per 100 km.	Билет — от {0} до {1} лв. на 100 км.
+835159ab4f	In the tills: {0}	В кассах: {0}
+2fd7eeb82e	You already have a line between these cities.	У тебя уже есть линия между этими городами.
+ec98f66e8d	Sell the bus for {0}?	Продать автобус за {0}?
+d90ee487ef	Till: {0} ({1} h)	Касса: {0} ({1} ч)
+a01e21ef66	Comfort {0} ({1})	Комфорт {0} ({1})
+1482720c64	Comfort {0} for the line {1} – {2}	Комфорт {0} для линии {1} – {2}
+0acee68817	Buy a bus and open the line	Купить автобус и открыть линию
+2800334cb0	Departures a day	Рейсов в день
+454995b324	Departures are 1 to 4 a day.	Рейсов — от 1 до 4 в день.
+d5b9a4e038	Line	Линия
+a15b4f10c9	Line not found.	Линия не найдена.
+cb40c0321e	A line starts from a city where you have a depot.	Линия начинается из города, где у тебя есть депо.
+e725db7e65	The line must be {0} to {1} km (this one is {2} km).	Линия должна быть от {0} до {1} км (эта — {2} км).
+abe20111fb	At most {0} lines per player.	Не более {0} линий на игрока.
+38cdc913df	A new business next to freight: buy a bus and open a passenger line to a big city. You set the timetable and the price; the takings pile up in the till.	Новый бизнес рядом с грузами: купи автобус и открой пассажирскую линию в крупный город. Расписание и цену решаешь ты, выручка копится в кассе.
+8ec51711f1	New line	Новая линия
+5762e6b86c	No such bus.	Такого автобуса нет.
+f537f3c69e	Profit/day	Прибыль/день
+151669e8d5	Collect the till	Забрать кассу
+609d9cbe3d	The takings minus fuel and driver pile up in the line's till for up to 48 hours — collect them with a button. Comfort 1–3 draws more passengers; the bus sells for half its price.	Выручка за вычетом топлива и водителя копится в кассе линии до 48 часов — забери её кнопкой. Комфорт 1–3 привлекает больше пассажиров; автобус продаётся за полцены.
+c444a11ca9	Sold the bus of the line {0} – {1}	Продан автобус линии {0} – {1}
+d0b97b521d	Load	Заполненность
+903f76c1ad	Passengers/day	Пассажиров/день
+f3f9faf16a	Passengers depend on the size of the two cities, the distance, the ticket price (3–15 lv. per 100 km), the comfort and the other carriers on the same line.	Пассажиры зависят от размера двух городов, расстояния, цены билета (3–15 лв. на 100 км), комфорта и других перевозчиков на той же линии.
+64fef709f1	Passengers depend on the cities, the distance, the price, the comfort and the other carriers on the line. The till keeps up to {0} hours.	Пассажиры зависят от городов, расстояния, цены, комфорта и других перевозчиков на линии. Касса хранит до {0} часов.
+b862f64f38	Passenger lines to the big cities — the takings pile up in the till.	Пассажирские линии в крупные города — выручка копится в кассе.
+1a1ed7e53f	Three buses: Vitosha Shuttle 20 (20 seats, 60,000 lv.), Rila Intercity 12 (49 seats, 120,000 lv.) and Balkan Tourer 15 (61 seats, 200,000 lv.). The brands are invented.	Три автобуса: Vitosha Shuttle 20 (20 мест, 60 000 лв.), Rila Intercity 12 (49 мест, 120 000 лв.) и Balkan Tourer 15 (61 место, 200 000 лв.). Марки вымышленные.
+2e79d74d0c	Ticket price	Цена билета
+02e06e564c	rivals: {0}	конкуренты: {0}
+2445cba1ec	Buy a bus and pick a line from a city with a depot.	Купи автобус и выбери линию из города с депо.
+dc4cae445f	Set the departures and the ticket.	Настрой рейсы и билет.
+27abcbe54a	Collect the till at least once every two days.	Забирай кассу хотя бы раз в два дня.
+f2471c825b	Passenger bus lines to the big cities.	Пассажирские автобусные линии в крупные города.
+5a7b24bebe	Every bus has a 3D model (the "3D" button on its card): turn it and look at it from every side — doors, mirrors, the route sign.	У каждого автобуса есть 3D-модель (кнопка «3D» в карточке): поверни её и рассмотри со всех сторон — двери, зеркала, табличку с маршрутом.

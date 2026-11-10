@@ -2,6 +2,7 @@
 
 import { useFeature } from './Features';
 import { DuelChallenge } from './TogetherActions';
+import { askConfirm } from '@/components/gameui/confirm';
 import { Award, Ban, Banknote, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
@@ -15,6 +16,7 @@ import { PlayerName } from './PlayerName';
 import { openReport } from './ReportDialog';
 import { SendMoneyForm } from './SendMoneyForm';
 import { t, tx, intlLocale } from '@/i18n/t';
+import { MascotArt } from './MascotArt';
 import { MEDAL_INFO, MEDALS } from '@/lib/game/medals';
 
 /** The ring around the picture: the Halloween badge, then the Discord level frames (gold 25, cyan 10). */
@@ -31,7 +33,7 @@ export function openDirectChat(userId: string, username: string) {
 
 function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-asphalt-850 px-3 py-2">
+    <div className="player-stat rounded-xl bg-asphalt-850 px-3 py-2">
       <div className="text-[11px] text-mist-400">{label}</div>
       <div className="num font-display text-lg font-bold">{value}</div>
       {sub && <div className="text-[11px] text-mist-400">{sub}</div>}
@@ -41,6 +43,7 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
 
 /** A player's profile card: who they are, how they play, and what you can do with them. */
 export function PlayerCardView({ card, onChange, onClose, careerLink = true }: { card: Card; onChange?: () => void; onClose?: () => void; careerLink?: boolean }) {
+  const gameUi = useFeature('game_ui');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
@@ -69,11 +72,17 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
   const hiddenBadges = card.badges.length - top.length;
   return (
     <div>
-      <div className="flex items-center gap-4">
+      <div className={gameUi ? 'player-hero relative flex items-center gap-4 overflow-hidden rounded-2xl p-4' : 'flex items-center gap-4'} data-testid={gameUi ? 'player-hero' : undefined}>
         <div className="relative shrink-0">
-          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`h-16 w-16 text-2xl ${frameOf(card.badges)}`} rounded="rounded-2xl" />
+          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`${gameUi ? 'player-hero-avatar h-20 w-20 text-3xl' : 'h-16 w-16 text-2xl'} ${frameOf(card.badges)}`} rounded="rounded-2xl" />
           <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-asphalt-900 ${card.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={card.online ? t('Онлайн') : t('Последно: {0}', card.lastSeen)} />
         </div>
+        {card.mascot && (
+          <div className="order-last ml-auto flex shrink-0 flex-col items-center" title={t('{0} · ниво {1}', tx(card.mascot.name), card.mascot.level)} data-testid="player-mascot">
+            <MascotArt kind={card.mascot.kind} accessory={card.mascot.accessory} sad={card.mascot.sad} className="h-14 w-14 sm:h-16 sm:w-16" />
+            <span className="max-w-[5rem] truncate text-[10px] font-semibold text-mist-300">{tx(card.mascot.name)}</span>
+          </div>
+        )}
         <div className="min-w-0">
           <PlayerName name={card.username} role={card.role} vip={card.vip} card={false} className="font-display text-xl font-bold" />
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -161,7 +170,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
             </>
           )}
           {card.relation === 'friends' && (
-            <button type="button" className="btn-ghost" disabled={busy} onClick={() => { if (window.confirm(t('Да премахнем ли {0} от приятелите?', card.username))) void act({ type: 'friendRemove', userId: card.id }); }}>
+            <button type="button" className="btn-ghost" disabled={busy} onClick={() => void askConfirm(t('Да премахнем ли {0} от приятелите?', card.username), { gameUi, danger: true }).then((yes) => { if (yes) void act({ type: 'friendRemove', userId: card.id }); })}>
               <UserCheck className="h-4 w-4 text-profit" />{t('Приятели')}<UserMinus className="h-3.5 w-3.5 text-mist-400" />
             </button>
           )}
@@ -176,7 +185,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
           {card.blocked ? (
             <button type="button" className="inline-flex items-center gap-1 text-mist-300 hover:text-white" disabled={busy} onClick={() => void act({ type: 'unblockUser', userId: card.id })}><Ban className="h-3.5 w-3.5" />{t('Отблокирай')}</button>
           ) : (
-            <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" disabled={busy} onClick={() => { if (window.confirm(t('Да блокираме ли {0}? Няма да виждаш съобщенията му и той няма да може да ти пише.', card.username))) void act({ type: 'blockUser', userId: card.id }); }}><Ban className="h-3.5 w-3.5" />{t('Блокирай')}</button>
+            <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" disabled={busy} onClick={() => void askConfirm(t('Да блокираме ли {0}? Няма да виждаш съобщенията му и той няма да може да ти пише.', card.username), { gameUi, danger: true, ok: t('Блокирай') }).then((yes) => { if (yes) void act({ type: 'blockUser', userId: card.id }); })}><Ban className="h-3.5 w-3.5" />{t('Блокирай')}</button>
           )}
           <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" onClick={() => { onClose?.(); openReport({ targetUserId: card.id, username: card.username, kind: 'player' }); }}><Flag className="h-3.5 w-3.5" />{t('Докладвай')}</button>
           {card.blocked && <span className="text-loss">{t('Блокиран от теб')}</span>}

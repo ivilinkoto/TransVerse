@@ -49,6 +49,7 @@ import { fleetView, latestNotifications, netWorthCents } from '@/server/game/que
 import { isMarta, MARTA } from '@/lib/game/marta';
 
 import { RoadChoices } from '@/components/game/RoadChoices';
+import { CommandCenter } from '@/components/gameui/CommandCenter';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 
@@ -124,9 +125,41 @@ export default async function OverviewPage() {
         : { text: t('Всички превозни средства са на път. Проследи ги на картата.'), href: '/game/map', cta: t('Към картата'), icon: MapIcon };
   const hero = fleet.vehicles[0];
 
+  // 1.3 „Нов облик“: the command centre on top instead of the „Сега“ panel.
+  const doneToday = today.filter((m) => m.completedAt).length;
+  const command = features.game_ui && now2 ? (
+    <CommandCenter
+      greeting={greeting}
+      username={user.username}
+      level={lp.level}
+      levelShare={lp.share}
+      xp={user.xp}
+      xpNext={lp.next}
+      reputation={company.reputation}
+      balanceCents={company.balanceCents}
+      netCents={income - expense}
+      coins={user.coins}
+      onRoad={active.length}
+      trucks={fleet.vehicles.length}
+      truck={hero ? <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} cosmetics={hero.cosmetics} trailerUpgrades={hero.trailer?.upgrades} trailerLogo={hero.trailer?.logo} trailerCosmetics={hero.trailer?.cosmetics} martenitsa={marta} className="dash-truck h-24 w-auto max-w-[340px] lg:h-28" /> : null}
+      now={now2.map((it) => ({ emoji: it.emoji, text: it.text, action: it.action, href: it.href, tone: it.tone ?? 'plain' }))}
+      primary={{ href: next.href, label: tx(next.cta) }}
+      tiles={[
+        { href: '/game/contracts', emoji: '📋', label: 'Курсове', badge: idle.length ? String(idle.length) : null, colour: '#22d3ee' },
+        { href: '/game/fleet', emoji: '🚛', label: 'Автопарк', badge: active.length ? String(active.length) : null, colour: '#60a5fa' },
+        { href: '/game/map', emoji: '🗺️', label: 'Карта', colour: '#34d399' },
+        { href: '/game/missions', emoji: '🎯', label: 'Мисии', badge: today.length ? `${doneToday}/${today.length}` : null, colour: '#f6c343' },
+        { href: '/game/inventory', emoji: '🎒', label: 'Инвентар', colour: '#a78bfa' },
+        { href: '/game/shop', emoji: '💎', label: 'Магазин', colour: '#f472b6' },
+        { href: '/game/company', emoji: '🏢', label: 'Компания', colour: '#94a3b8' },
+        { href: '/game/garage', emoji: '🔧', label: 'Гараж', colour: '#fb923c' },
+      ]}
+    />
+  ) : null;
+
   return (
     <div className="space-y-5 sm:space-y-6">
-      {now2 ? (
+      {command ?? (now2 ? (
         <section className="panel relative overflow-hidden p-5 sm:p-6" data-testid="now-panel">
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-volt-500/20 blur-3xl" aria-hidden="true" />
           <div className="relative">
@@ -196,7 +229,7 @@ export default async function OverviewPage() {
             </div>
           </dl>
         </section>
-      )}
+      ))}
 
       {upcoming && (() => {
         const ms = new Date(upcoming.publishedAt).getTime() - now.getTime();
@@ -393,7 +426,7 @@ export default async function OverviewPage() {
                         <span className="text-xs text-mist-400">{v.nickname ? `„${v.nickname}“ · ` : ''}{tx(v.plate)}</span>
                       </div>
                       <div className="mt-2">
-                        <DeliveryProgress schedule={v.delivery!.schedule} etaAt={v.delivery!.etaAt} deadlineAt={v.delivery!.deadlineAt} />
+                        <DeliveryProgress schedule={v.delivery!.schedule} etaAt={v.delivery!.etaAt} deadlineAt={v.delivery!.deadlineAt} lane={features.game_ui ? { from: v.delivery!.origin.nameBg, to: v.delivery!.destination.nameBg } : null} />
                       </div>
                     </div>
                   </li>

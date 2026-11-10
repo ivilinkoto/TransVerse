@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { recordMonth } from '@/lib/game/community';
-import { featureLive } from '@/lib/game/features';
+import { FEATURES, featureLive } from '@/lib/game/features';
 import { BADGES } from '@/lib/game/halloween';
 import { TRUCK_CONTEST, type TruckLook } from '@/lib/game/truck-contest';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -22,7 +22,7 @@ const previousMonth = (at: Date) => {
 
 /** The player enters one of their own trucks for this month (once a month). */
 export async function enterTruck(db: Database, userId: string, vehicleId: string, now = new Date()) {
-  if (!(await featureFor(db, userId, 'truck_contest', now))) fail('not_released', tr('„Камион на месеца“ идва с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'truck_contest', now))) fail('not_released', tr('„Камион на месеца“ идва с обновление {0}.', FEATURES.truck_contest));
   const account = await companyForUser(db, userId);
   const v = (await fleetView(db, account.id)).vehicles.find((x) => x.id === vehicleId);
   if (!v) fail('not_found', tr('Няма такъв камион.'), 404);
@@ -39,7 +39,7 @@ export async function enterTruck(db: Database, userId: string, vehicleId: string
 
 /** A vote for someone else's truck (three a month). */
 export async function voteTruck(db: Database, userId: string, entryId: number, now = new Date()) {
-  if (!(await featureFor(db, userId, 'truck_contest', now))) fail('not_released', tr('„Камион на месеца“ идва с обновление 1.8.'));
+  if (!(await featureFor(db, userId, 'truck_contest', now))) fail('not_released', tr('„Камион на месеца“ идва с обновление {0}.', FEATURES.truck_contest));
   const month = recordMonth(now);
   const [e] = await db.select().from(truckContestEntries).where(eq(truckContestEntries.id, entryId));
   if (!e || e.month !== month) fail('not_found', tr('Няма такъв камион в конкурса този месец.'), 404);

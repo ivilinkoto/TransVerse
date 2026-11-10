@@ -29,6 +29,7 @@ import { retireRentalFor } from './rentals';
 import { logActivity, notify } from './notify';
 import { checkAchievements } from './progression';
 import { pick } from './random';
+import { payWorkshop, workshopForRepair } from './workshops';
 import { t as tr } from '@/i18n/t';
 
 async function level(db: DbOrTx, userId: string) {
@@ -188,7 +189,7 @@ async function springOff(db: DbOrTx, userId: string, now = new Date()) {
  * Repairs an idle truck and its trailer. 1.2.3.1 (`partial_repair`): `part` picks the truck,
  * the trailer or both, `share` the percent of the damage, `afford` repairs as much as the balance pays for.
  */
-export async function repairVehicle(db: Database, userId: string, vehicleId: string, opts: { part?: RepairPart; share?: number; afford?: boolean } = {}) {
+export async function repairVehicle(db: Database, userId: string, vehicleId: string, opts: { part?: RepairPart; share?: number; afford?: boolean; workshop?: string } = {}) {
   const part = opts.part ?? 'all';
   const share = opts.share ?? 100;
   return db.transaction(async (tx) => {
@@ -205,10 +206,15 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
     // VIP and the company's service on the plot make it cheaper.
     const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
     const spring = await springOff(tx, userId);
-    const factor = (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service) * (1 - spring);
+    // 1.3 „Собствен сервиз“: at a player's workshop in the truck's city, at its price (a full repair).
+    const shop = opts.workshop ? await workshopForRepair(tx, opts.workshop, userId, v.cityId) : null;
+    if (shop && (part !== 'all' || share !== 100 || opts.afford)) fail('full_only', tr('В сервизите на играчите ремонтът е пълен.'));
+    const factor = (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service) * (1 - spring) * (shop ? shop.pricePct / 100 : 1);
     const plan = repairPlan(truckUnit, trailerUnit, part, share, factor, opts.afford ? company.balanceCents : undefined);
     if (plan.truckPoints + plan.trailerPoints <= 0 || plan.costCents <= 0) fail('too_little', opts.afford ? tr('Парите не стигат дори за малък ремонт.') : tr('Няма нужда от ремонт.'));
-    await post(tx, company.id, [{ category: 'repairs', amountCents: -plan.costCents, description: part === 'all' && share === 100 && !opts.afford ? tr('Ремонт {0}', v.plate) : tr('Частичен ремонт {0}', v.plate), idempotencyKey: `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}:${trailer ? trailer.condition.toFixed(3) : '-'}` }], { requireFunds: true });
+    const repairKey = `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}:${trailer ? trailer.condition.toFixed(3) : '-'}`;
+    await post(tx, company.id, [{ category: 'repairs', amountCents: -plan.costCents, description: shop ? tr('Ремонт {0} в „{1}“', v.plate, shop.name) : part === 'all' && share === 100 && !opts.afford ? tr('Ремонт {0}', v.plate) : tr('Частичен ремонт {0}', v.plate), idempotencyKey: repairKey }], { requireFunds: true });
+    if (shop) await payWorkshop(tx, shop, userId, plan.costCents, repairKey, v.plate, new Date());
     if (plan.truckPoints > 0) await tx.update(vehicles).set({ condition: plan.truckTo }).where(eq(vehicles.id, v.id));
     if (trailer && plan.trailerPoints > 0) await tx.update(trailers).set({ condition: plan.trailerTo! }).where(eq(trailers.id, trailer.id));
     return plan.costCents;

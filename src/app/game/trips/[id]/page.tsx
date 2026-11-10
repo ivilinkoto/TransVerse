@@ -6,6 +6,7 @@ import { dateTime, duration, km, money } from '@/lib/format';
 import { appUrl } from '@/server/discord/config';
 import { gameContext } from '@/server/game/context';
 import { tripLog } from '@/server/game/trip-log';
+import { postcardView } from '@/server/game/postcards';
 import { OUTCOME_LABELS, type ReeferOutcome } from '@/lib/game/reefer';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
@@ -67,6 +68,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   if (!t) notFound();
   // 1.2.4: visitors from a shared trip count as „trip-share“ on the admin page of sources.
   const link = `${appUrl()}/trip/${id}?src=trip-share`;
+  // 1.2.3.6: a first trip to a city or a long one has a 3D postcard.
+  const card = features.delivery_postcard ? await postcardView(db, id) : null;
   const st = t.stats;
   return (
     <div className="space-y-6">
@@ -97,6 +100,14 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         </Card>
       </div>
       {t.reefer && <TempChart r={t.reefer} />}
+      {card && (
+        <Card title={tr('📸 3D картичка')}>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+            <p className="text-mist-300">{card.reason === 'first_city' ? tr('Първи курс до {0} — камионът ти позира в 3D.', tx(card.city)) : tr('Дълъг курс ({0} км) — камионът ти позира в 3D.', card.km)}</p>
+            <Link href={`/game/postcard/${id}`} className="btn-primary" data-testid="open-postcard">{tr('Виж картичката')}</Link>
+          </div>
+        </Card>
+      )}
       <Card title={tr('Сподели')}>
         {t.sharedAt ? (
           <div className="space-y-3 text-sm">

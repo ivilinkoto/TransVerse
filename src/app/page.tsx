@@ -6,13 +6,17 @@ import { Logo } from '@/components/brand/Logo';
 import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
 import { FeatureTour } from '@/components/landing/FeatureTour';
 import { GameMockup } from '@/components/landing/GameMockup';
+import { HeroTruck } from '@/components/landing/HeroTruck';
+import { ReleaseCountdown } from '@/components/landing/ReleaseCountdown';
+import { currentUser } from '@/server/http';
+import { isStaff } from '@/server/auth/roles';
 import { RouteShowcase } from '@/components/landing/RouteShowcase';
 import { tourTabs } from '@/components/landing/tour';
 import { duration, int, km, money } from '@/lib/format';
 import { ECONOMY } from '@/lib/game/economy';
 import { LEAGUE_GROUP_SIZE, LEAGUE_TIERS } from '@/lib/game/leagues';
 import { REFERRAL } from '@/lib/game/referrals';
-import { visibleReleases } from '@/lib/game/releases';
+import { upcomingRelease, visibleReleases } from '@/lib/game/releases';
 import { gameDurationMinutes } from '@/lib/game/schedule';
 import { VIP_PERKS } from '@/lib/game/vip';
 import { DEFAULT_SEASON_RULES } from '@/server/game/seasons';
@@ -48,6 +52,10 @@ export default async function HomePage() {
   const latest = world ? visibleReleases(now)[0] : undefined;
   const livery = season === 'halloween' ? 'pumpkin' : season === 'christmas' ? 'christmas' : undefined;
   // v1.8: last month's "Камион на месеца".
+  // 1.3 „Зимен път“: the new landing look (the staff see it before the release).
+  const viewer = await currentUser().catch(() => null);
+  const newLook = featureLive('game_ui', now, !!viewer && isStaff(viewer.role));
+  const coming = newLook ? upcomingRelease(now, 21) : null;
   const truckOfMonth = featureLive('truck_contest', now) ? ((await lastWinners(getDb(), now).catch(() => null))?.winners[0] ?? null) : null;
 
   return (
@@ -110,9 +118,53 @@ export default async function HomePage() {
               ))}
             </dl>
           </div>
-          <GameMockup livery={livery} />
+          {newLook ? <HeroTruck color={season === 'christmas' ? '#b91c1c' : season === 'halloween' ? '#ea580c' : '#1d4ed8'} /> : <GameMockup livery={livery} />}
         </div>
       </section>
+
+      {/* ── 1.3: the next update, counting down ───────────────── */}
+      {coming && (
+        <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6" data-testid="landing-countdown">
+          <div className="countdown-card relative overflow-hidden rounded-3xl p-5 sm:p-7">
+            <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-glow">{tr('Скоро · обновление {0}', coming.version)}</p>
+                <h2 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">„{tx(coming.name)}“</h2>
+                <p className="mt-2 max-w-2xl text-mist-300">{tx(coming.tagline)}</p>
+                <ul className="mt-4 flex flex-wrap gap-2">
+                  {coming.highlights.slice(0, 6).map((h) => <li key={h.title} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-mist-100">{tx(h.title)}</li>)}
+                </ul>
+              </div>
+              <div className="flex flex-col items-start gap-3 lg:items-end">
+                <ReleaseCountdown until={coming.publishedAt} />
+                <Link href="/register" className="btn-primary px-5 py-2.5">{tr('Започни сега — бъди готов')}{' '}<ArrowRight className="h-4 w-4" /></Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── 1.3: the new look ─────────────────────────────────── */}
+      {newLook && (
+        <section className="mx-auto max-w-7xl px-4 pt-16 sm:px-6" data-testid="landing-new-look">
+          <p className="label">{tr('Новият облик')}</p>
+          <h2 className="mt-3 max-w-3xl font-display text-3xl font-bold sm:text-4xl">{tr('Изглежда и се усеща като игра')}</h2>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { emoji: '🪟', colour: '#22d3ee', title: tr('Игрови прозорци'), text: tr('Курсове, магазин, инвентар и известия се отварят като прозорци над играта — с анимация и звук.') },
+              { emoji: '🚛', colour: '#60a5fa', title: tr('Камиони в 3D'), text: tr('Всеки камион и депо в истинско 3D: завърти го, виж го отблизо и го боядисай в гаража.') },
+              { emoji: '🗺️', colour: '#34d399', title: tr('Жива карта'), text: tr('Истински пътища между хиляди градове, камионите на всички играчи и сняг там, където вали днес.') },
+              { emoji: '🎛️', colour: '#f6c343', title: tr('Командно табло'), text: tr('Нивото, парите и камионите ти с един поглед, а всичко в играта е на едно докосване.') },
+            ].map((f) => (
+              <li key={f.title} className="dash-tile flex flex-col gap-2 rounded-3xl p-5" style={{ '--tile': f.colour } as React.CSSProperties}>
+                <span className="dash-tile-emoji text-4xl" aria-hidden>{f.emoji}</span>
+                <h3 className="font-display text-lg font-bold text-white">{f.title}</h3>
+                <p className="text-sm leading-relaxed text-mist-300">{f.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* ── How to play ──────────────────────────────────────── */}
       <section id="how" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-20 sm:px-6">

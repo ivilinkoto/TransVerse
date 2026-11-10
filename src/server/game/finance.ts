@@ -6,6 +6,8 @@ import { t } from '@/i18n/t';
 
 export type LedgerCategory =
   | 'items'
+  | 'dock_swap'
+  | 'client_letter'
   | 'promo'
   | 'promise'
   | 'loading_bonus'
@@ -164,6 +166,8 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   oversize: 'Разрешителни и придружаване (извънгабаритни)',
   night_bonus: 'Бонус „Нощна смяна“',
   perfect_bonus: 'Бонус за перфектна серия',
+  dock_swap: 'Размяна на час на рампата',
+  client_letter: 'Благодарност от клиент',
   insurance_payout: 'Обезщетения от застраховки',
   lease: 'Лизинг на камиони',
   member_bonus: 'Премии от компанията',

@@ -6,9 +6,12 @@ import { api } from '@/lib/client/api';
 import { money } from '@/lib/format';
 import { TRANSFER_RULES, transferFeeCents } from '@/lib/game/transfers';
 import { t, tx } from '@/i18n/t';
+import { useFeature } from './Features';
+import { askConfirm } from '@/components/gameui/confirm';
 
 /** Sends game money to another player (amount in whole leva; the fee is shown before sending). */
 export function SendMoneyForm({ userId, username, onDone }: { userId: string; username: string; onDone?: () => void }) {
+  const gameUi = useFeature('game_ui');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -19,7 +22,7 @@ export function SendMoneyForm({ userId, username, onDone }: { userId: string; us
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cents) return;
-    if (!window.confirm(t('Да изпратим ли {0} на {1}? Таксата е {2} — общо {3}', money(cents), username, money(fee), money(cents + fee)))) return;
+    if (!(await askConfirm(t('Да изпратим ли {0} на {1}? Таксата е {2} — общо {3}', money(cents), username, money(fee), money(cents + fee)), { gameUi, ok: t('Изпрати') }))) return;
     setBusy(true);
     setMessage(null);
     try {

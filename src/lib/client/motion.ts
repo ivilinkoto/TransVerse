@@ -85,3 +85,18 @@ export const playStamp = () => {
   tone(196, 0, 0.18, 'square', 0.08);
   tone(392, 0.02, 0.25, 'triangle', 0.1);
 };
+
+/** 1.2.3.6: a game window opens — a soft rising swoosh. */
+export const playWindowOpen = () => {
+  tone(392, 0, 0.09, 'sine', 0.06);
+  tone(587.3, 0.05, 0.14, 'sine', 0.07);
+};
+
+/** 1.2.3.6: a game window closes — the same, falling. */
+export const playWindowClose = () => {
+  tone(587.3, 0, 0.07, 'sine', 0.05);
+  tone(392, 0.04, 0.1, 'sine', 0.05);
+};
+
+/** 1.2.3.6: a slot is picked (inventory, lists) — a light click. */
+export const playSelect = () => tone(1200, 0, 0.04, 'triangle', 0.05);

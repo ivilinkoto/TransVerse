@@ -30,6 +30,10 @@ import { checkLegend } from './heritage';
 import { recordWeeklyLane } from './weekly-lane';
 import { recordPrewinterDelivery } from './prewinter';
 import { clearedCountries, recordSnowSeason, withCleared } from './first-snow';
+import { recordWinterTrek } from './winter-trek';
+import { recordMascotTrip } from './mascot';
+import { recordSkillsTrip } from './skills';
+import { recordCrisisDelivery } from './crises';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -53,6 +57,9 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post, postTreasury, type Posting } from './finance';
 import { broadcast, logActivity, notify } from './notify';
+import { planDock, saveDock } from './dock';
+import { clientLetter } from './letters';
+import { postcardOnArrival } from './postcards';
 import { awardXp, checkAchievements } from './progression';
 import { heldLicences, licenceNames, missingFor } from './licences';
 import { addCompanyXp, bonusesForUser, membershipOf } from './membership';
@@ -375,6 +382,9 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // Border queues by the day and the hour (v1.6).
     if (await featureFor(tx, userId, 'border_queues', now)) schedule = applyBorderQueues(schedule);
+    // 1.2.3.6 „Рампата“: a slot at a big warehouse — or the queue when its docks are full.
+    const dock = await planDock(tx, userId, contract!.destCityId, schedule, now);
+    if (dock) schedule = dock.schedule;
     const countryTolls = await featureFor(tx, userId, 'country_tolls', now);
     // The daily rests on the way (v1.6): a guarded car park for a fee, or a free lay-by with a small risk of fuel theft.
     const parkingLive = await featureFor(tx, userId, 'secure_parking', now);
@@ -480,6 +490,7 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       })
       .returning();
     await tx.update(vehicles).set({ status: 'on_delivery' }).where(eq(vehicles.id, vehicleId));
+    if (dock) await saveDock(tx, delivery!.id, userId, dock.booking);
     // A friend or company member left on the same lane a moment ago: drive together.
     if (!contract!.urgent) await formConvoy(tx, delivery!, userId, { originCityId: contract!.originCityId, destCityId: contract!.destCityId }, now);
     // A load handed over by a company: the agreed commission is paid when it arrives.
@@ -661,7 +672,10 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await recordWeeklyLane(tx, tripFacts, completedAt);
   // 1.2.7: the escort's bonuses when both trucks are in, a true market rumour, the duo of the week.
   const roadBonus = (await roadDelivered(tx, company!.ownerId, d, contract, result.late, completedAt)) + (await meetDelivered(tx, company!.ownerId, d.companyId, d, contract, dest!.countryCode, result.late, completedAt));
-  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus;
+  // 1.2.3.6: sometimes the client writes (thanks with a bonus, a complaint, a request for the same run); a 3D postcard for a new city or a long trip.
+  const letterCents = await clientLetter(tx, company!.ownerId, d, contract, dest!, { late: result.late, rewardCents: result.rewardCents }, completedAt);
+  await postcardOnArrival(tx, company!.ownerId, d, contract.destCityId, dest!.nameBg, completedAt);
+  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus + letterCents;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -815,6 +829,14 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await convoyHourPoints(tx, company!.ownerId, d, points, completedAt);
   // 1.2.5 „Първи сняг“: weekly pass tasks, clearing the roads, „Крал на снега“.
   await recordSnowSeason(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, convoy: !!(d.convoyWith || d.convoyLead), destCountry: dest!.countryCode, tons: contract.weightTons, holiday: contract.holiday, goods: contract.goods, roadEvents: d.roadEvents, ownerDrove }, completedAt);
+  // 1.3 „Зимен поход“: the current step of the seven.
+  await recordWinterTrek(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, destCountry: dest!.countryCode, tons: contract.weightTons, ownerDrove }, completedAt);
+  // 1.3 „Талисман в кабината“: its share of the reward, trips and mood.
+  await recordMascotTrip(tx, { userId: company!.ownerId, companyId: company!.id, deliveryId: d.id, rewardCents: result.rewardCents, loadedKm: d.loadedKm, tons: contract.weightTons, originCountry: origin!.country, destCountry: dest!.countryCode }, completedAt);
+  // 1.3 „Умения на шофьора“: what the owner's skills add to this trip, as one line.
+  await recordSkillsTrip(tx, { userId: company!.ownerId, companyId: company!.id, deliveryId: d.id, rewardCents: result.rewardCents, bonusCents: result.bonusCents, fuelCents: costs.fuelCents, maintenanceCents: costs.maintenanceCents, tollCents: costs.tollCents, loadedKm: d.loadedKm, ownerDrove, convoy: !!(d.convoyWith || d.convoyLead) }, completedAt);
+  // 1.3 „Световни кризи“: tonnes for the crisis day, or the winning way's bonus.
+  await recordCrisisDelivery(tx, { userId: company!.ownerId, companyId: company!.id, deliveryId: d.id, destCountry: dest!.countryCode, tons: contract.weightTons, rewardCents: result.rewardCents }, completedAt);
   await rewardReferral(tx, company!.ownerId, now);
   // Return loads come with v1.2 (staff see them before the release).
   // The hauler of someone else's goods gets the usual "Доставено" message.

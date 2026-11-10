@@ -39,22 +39,20 @@ afterAll(async () => {
 });
 
 describe('rehearsal: 12–20 November 2026', () => {
-  it('the release dates: 1.2.5 on the 12th at 10:00, 1.2.4 on the 20th', () => {
+  it('the release date: 1.3 „Зимен път“ (with the former 1.2.4–1.2.6) on the 12th at 10:00', () => {
     expect(featureLive('season_v2', BEFORE)).toBe(false);
     expect(featureLive('season_v2', LIVE)).toBe(true);
-    expect(featureLive('winter_prep', LIVE)).toBe(false);
-    expect(featureLive('winter_prep', at('2026-11-20T11:00:00+02:00'))).toBe(true);
+    // „Преди зимата“ is part of 1.3 now; its server goal still runs by its own dates (20–30 November).
+    expect(featureLive('winter_prep', BEFORE)).toBe(false);
+    expect(featureLive('winter_prep', LIVE)).toBe(true);
   });
 
-  it('„Какво ново“ follows what came out last, not the highest number', () => {
-    expect(latestPublished(LIVE)?.version).toBe('1.2.5');
-    expect(unseenRelease('1.2.3.2', LIVE)?.version).toBe('1.2.5');
-    expect(unseenRelease('1.2.5', LIVE)).toBeNull();
-    const after124 = at('2026-11-20T11:00:00+02:00');
-    expect(latestPublished(after124)?.version).toBe('1.2.4');
-    // Seen 1.2.5 on the 12th: on the 20th the window shows 1.2.4.
-    expect(unseenRelease('1.2.5', after124)?.version).toBe('1.2.4');
-    expect(unseenRelease('1.2.4', after124)).toBeNull();
+  it('„Какво ново“ shows 1.3 once, from the 12th', () => {
+    expect(latestPublished(LIVE)?.version).toBe('1.3');
+    expect(unseenRelease('1.2.3.2', LIVE)?.version).toBe('1.3');
+    expect(unseenRelease('1.3', LIVE)).toBeNull();
+    // Nothing new on the 20th any more: the November update came out whole on the 12th.
+    expect(latestPublished(at('2026-11-20T11:00:00+02:00'))?.version).toBe('1.3');
   });
 
   it('the season that runs keeps its old pass on the 12th; the last-day reminder goes out', async () => {

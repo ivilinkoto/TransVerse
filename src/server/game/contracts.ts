@@ -442,7 +442,7 @@ export async function ensureDailyLoad(db: Database, now = new Date(), provider?:
 }
 
 /** Runs the local-job guarantee for every free, crewed vehicle (optionally of one company). */
-export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit: number = LOCAL_JOBS.maxTrucks, fresh = 0): Promise<number> {
+export async function ensureLocalJobsForFleet(db: Database, now = new Date(), companyId?: string, provider?: RoutingProvider, limit: number = LOCAL_JOBS.maxTrucks, fresh = 0, byCity?: Map<number, number>): Promise<number> {
   // Free crewed trucks where they stand, and (1.1.2) trucks that arrive soon where they will stand.
   const free = await db
     .select({ cityId: vehicles.cityId, modelId: vehicles.modelId, vehicleId: vehicles.id, companyId: vehicles.companyId, level: users.level, userId: users.id })
@@ -477,7 +477,9 @@ export async function ensureLocalJobsForFleet(db: Database, now = new Date(), co
     const key = `${r.companyId}:${r.cityId}:${cap.bodies.join(',')}:${cap.payloadTons}:${r.level}:${[...licences].sort().join(',')}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    created += await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level, licences, companyId: r.companyId }, now, provider, LOCAL_JOBS.perTruck, fresh);
+    const made = await ensureLocalJob(db, { cityId: r.cityId, bodies: cap.bodies, payloadTons: cap.payloadTons, level: r.level, licences, companyId: r.companyId }, now, provider, LOCAL_JOBS.perTruck, fresh);
+    created += made;
+    if (made && byCity) byCity.set(r.cityId, (byCity.get(r.cityId) ?? 0) + made);
     // A bounded amount of new loads per run; the rest comes on the next one.
     if (!fresh && created >= LOCAL_JOBS.maxNewPerRun) break;
   }
@@ -624,8 +626,12 @@ export async function refreshLoads(db: Database, userId: string, now = new Date(
     await tx.insert(jobState).values({ key, value: next, updatedAt: now }).onConflictDoUpdate({ target: jobState.key, set: { value: next, updatedAt: now } });
     return cost;
   });
-  const created = await ensureLocalJobsForFleet(db, now, company.id, provider, BOARD_REFRESH.maxCities, BOARD_REFRESH.perCity);
-  return { created, paidCoins: price };
+  // 1.2.3.6: how many loads came out in each city (the most first).
+  const byCity = new Map<number, number>();
+  const created = await ensureLocalJobsForFleet(db, now, company.id, provider, BOARD_REFRESH.maxCities, BOARD_REFRESH.perCity, byCity);
+  const names = byCity.size ? await db.select({ id: cities.id, name: cities.nameBg }).from(cities).where(inArray(cities.id, [...byCity.keys()])) : [];
+  const perCity = names.map((c) => ({ city: c.name, count: byCity.get(c.id) ?? 0 })).sort((a, b) => b.count - a.count || a.city.localeCompare(b.city));
+  return { created, paidCoins: price, perCity };
 }
 
 /** What the next refresh costs (0 = free) and when the free one is back. */

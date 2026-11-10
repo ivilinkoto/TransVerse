@@ -32,7 +32,7 @@ export const EVENT_METRIC_INFO: Record<EventMetric, MetricInfo> = {
   international: { label: 'Международни доставки', unit: 'доставки', floor: 10, minContribution: 1 },
   heavy: { label: 'Товари над 15 т', unit: 'товара', floor: 10, minContribution: 1 },
   long_haul: { label: `Курсове над ${LONG_HAUL_KM} км`, unit: 'курса', floor: 8, minContribution: 1 },
-  earned_cents: { label: 'Спечелено навло', unit: 'лв.', floor: 50_000_00, minContribution: 1_000_00 },
+  earned_cents: { label: 'Спечелено навло', unit: 'лв.', floor: 80_000_00, minContribution: 1_600_00 },
   holiday: { label: 'Празнични доставки', unit: 'доставки', floor: 40, minContribution: 1 },
 };
 

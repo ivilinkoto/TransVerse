@@ -3,7 +3,16 @@ import type { DbOrTx } from '@/server/db/client';
 import { vehicles } from '@/server/db/schema';
 import { inventoryBadge, weeklyChest } from './item-trade';
 import { nextSteps, type NextStep } from './next-steps';
-import { t } from '@/i18n/t';
+import { winterTrekView } from './winter-trek';
+import { mascotView } from './mascot';
+import { skillsView } from './skills';
+import { crisisView } from './crises';
+import { CRISES } from '@/lib/game/crises';
+import { featureFor } from '@/server/features';
+import { DAILY_ROUTE } from '@/lib/game/daily-route';
+import { sofiaDay } from '@/lib/game/shop-v2';
+import { jobState } from '@/server/db/schema';
+import { t, tx } from '@/i18n/t';
 
 export interface NowItem extends NextStep {
   /** hot = go and earn, gold = take a reward, warn = fix something, info = the rest. */
@@ -30,6 +39,32 @@ export async function nowList(db: DbOrTx, user: { id: string; loginStreak: numbe
   if (features.item_chests) {
     const w = await weeklyChest(db, user.id, now);
     if (w.tier && !w.claimed && !w.next) out.push({ emoji: '🧰', text: t('Седмичният сандък е готов.'), href: '/game/inventory', action: t('Вземи'), tone: 'gold' });
+  }
+  // 1.3 „Зимен поход“: today's step while it is not done.
+  const trek = await winterTrekView(db, user.id, now);
+  const step = trek?.steps.find((s) => s.state === 'current');
+  if (step) out.push({ emoji: '❄️', text: t('Зимен поход, стъпка {0}: {1} ({2}/{3}).', step.index + 1, tx(step.label), step.progress, step.target), href: '/game/missions', action: t('Виж'), tone: 'info' });
+  // 1.3 „Талисман“: an invitation to take one, or a sad one waiting for a trip.
+  if (await featureFor(db, user.id, 'mascot', now)) {
+    const pet = await mascotView(db, user.id, now);
+    if (!pet) out.push({ emoji: '🐾', text: t('Вземи си талисман за кабината — расте с курсовете и носи бонус.'), href: '/game/mascot', action: t('Избери'), tone: 'info' });
+    else if (pet.sad) out.push({ emoji: '🐾', text: t('{0} е тъжен — един курс ще го зарадва.', tx(pet.name)), href: '/game/mascot', action: t('Виж'), tone: 'warn' });
+  }
+  // 1.3 „Световни кризи“: a crisis without the player's vote yet.
+  if (await featureFor(db, user.id, 'world_crises', now)) {
+    const c = await crisisView(db, user.id, now);
+    if (c.moment?.phase === 'crisis' && !c.myVote) out.push({ emoji: CRISES[c.moment.id]!.emoji, text: t('Криза: {0} — гласувай как да се реши.', tx(CRISES[c.moment.id]!.title)), href: '/game/crisis', action: t('Гласувай'), tone: 'hot' });
+  }
+  // 1.3 „Умения на шофьора“: free points waiting.
+  if (await featureFor(db, user.id, 'driver_skills', now)) {
+    const sk = await skillsView(db, user.id);
+    if (sk.free > 0) out.push({ emoji: '🌳', text: t('Имаш {0} свободни точки за умения.', sk.free), href: '/game/skills', action: t('Научи'), tone: 'gold' });
+  }
+  // 1.3 „Пътят на деня“: today's puzzle while it is not finished.
+  if (await featureFor(db, user.id, 'daily_route', now)) {
+    const [row] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, `daily-route:${sofiaDay(now)}:${user.id}`));
+    const tries = (row?.value as { tries: { pct: number }[] } | undefined)?.tries ?? [];
+    if (tries.length < DAILY_ROUTE.tries && !tries.some((x) => x.pct >= 100)) out.push({ emoji: '🧭', text: tries.length ? t('Пътят на деня: остават {0} опита.', DAILY_ROUTE.tries - tries.length) : t('Нов „Път на деня“ — подреди 6 града в най-краткия път.'), href: '/game/daily-route', action: t('Играй'), tone: 'info' });
   }
   const order: NowItem['tone'][] = ['hot', 'gold', 'warn', 'info'];
   return out.sort((a, b) => order.indexOf(a.tone) - order.indexOf(b.tone)).slice(0, 6);

@@ -17,6 +17,9 @@ import { RoadsideChoice } from '@/components/game/RoadsideChoice';
 import { helpableStop } from '@/lib/game/roadside';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { Truck3DButton } from '@/components/garage/Truck3DButton';
+import { TruckWindowButton } from '@/components/gameui/TruckWindowButton';
+import { MAINTENANCE, maintenanceState } from '@/lib/game/maintenance';
 import { dec, int, km, money } from '@/lib/format';
 import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
@@ -73,6 +76,17 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
   ]);
   // 1.1.4.1: the trips lined up after the current one.
   const queue = features.trip_queue ? await queuedTrips(db, company.id) : [];
+  // 1.2.3.6 „Нов облик“: trips, the longest one and all km per truck, for the truck window.
+  const tripStats = new Map(
+    (features.game_ui && fleet.vehicles.length
+      ? await db
+          .select({ vehicleId: deliveries.vehicleId, trips: sql<number>`count(*)::int`, longest: sql<number>`coalesce(max(${deliveries.loadedKm}), 0)::float`, total: sql<number>`coalesce(sum(${deliveries.loadedKm} + ${deliveries.emptyKm}), 0)::float` })
+          .from(deliveries)
+          .where(and(inArray(deliveries.vehicleId, fleet.vehicles.map((v) => v.id)), eq(deliveries.status, 'completed')))
+          .groupBy(deliveries.vehicleId)
+      : []
+    ).map((r) => [r.vehicleId, r]),
+  );
   // 1.1.4.2: the loading puzzle of fresh trips, repeated lanes and each free truck's last lane.
   const tripIds = fleet.vehicles.flatMap((v) => (v.delivery ? [v.delivery.id] : []));
   const loaded = features.loading_puzzle && tripIds.length ? new Set((await db.select({ id: deliveryExtras.deliveryId }).from(deliveryExtras).where(and(inArray(deliveryExtras.deliveryId, tripIds), isNotNull(deliveryExtras.puzzle)))).map((r) => r.id)) : new Set<string>();
@@ -116,7 +130,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
       {fleet.vehicles.length === 0 && <Empty icon={Truck} title={tr('Нямате превозни средства')}>{tr('Купете първото си превозно средство от пазара.')}</Empty>}
       <div className="grid gap-4 xl:grid-cols-2">
         {fleet.vehicles.map((v) => (
-          <Card key={v.id} className="flex flex-col">
+          <Card key={v.id} className={`flex flex-col ${features.game_ui ? `truck-card ${v.delivery ? 'truck-card-road' : v.status === 'listed' ? 'truck-card-sale' : v.condition < 50 ? 'truck-card-worn' : 'truck-card-free'}` : ''}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -137,7 +151,9 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                 {v.id === fav && favStats && <div className="num mt-0.5 text-gold-400">{tr('{0} курса · най-дълъг {1} км', favStats.trips, int(favStats.longest))}</div>}
               </div>
             </div>
-            <div className="my-3 flex h-28 items-end justify-center rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
+            <div className={`relative my-3 flex h-28 items-end justify-center rounded-xl px-2 ${features.game_ui ? 'truck-stage' : 'bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))]'}`}>
+              {/* 1.2.3.6: the same truck in 3D. */}
+              <Truck3DButton className="absolute right-1 top-1" title={`${tx(v.model.name)} · ${v.plate}`} look={{ modelId: v.modelId, color: v.color, cosmetics: v.cosmetics, tuning: v.cosmetics?.tuning ?? null, condition: v.condition, trailerModelId: v.trailer?.modelId ?? null, trailerColor: v.trailer?.cosmetics?.paint ?? null, plate: v.plate }} />
               <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} trailerCosmetics={v.trailer?.cosmetics} martenitsa={marta} className="max-h-28 w-full" />
             </div>
             {v.delivery && (
@@ -146,7 +162,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                   <span className="font-semibold">{tr('{0} · {1} т', features.sealed_cargo && v.delivery.contract.sealed ? tr('📦 Запечатан товар') : v.delivery.contract.goods, dec(v.delivery.contract.weightTons))}</span>
                   <span className="num text-profit">{money(v.delivery.contract.rewardCents)}</span>
                 </div>
-                <DeliveryProgress schedule={v.delivery.schedule} etaAt={v.delivery.etaAt} deadlineAt={v.delivery.deadlineAt} ghost={(() => {
+                <DeliveryProgress lane={features.game_ui ? { from: v.delivery.origin.nameBg, to: v.delivery.destination.nameBg } : null} schedule={v.delivery.schedule} etaAt={v.delivery.etaAt} deadlineAt={v.delivery.deadlineAt} ghost={(() => {
                   const g = ghosts.get(`${v.delivery.contract.originCityId}:${v.delivery.contract.destCityId}`);
                   return g ? { username: g.username, minutes: g.minutes, mine: g.userId === user.id } : null;
                 })()} />
@@ -286,6 +302,31 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
               return (
                 <div className="mt-3 space-y-2" data-testid="truck-actions">
                   <Link href={main.href} className="btn-primary w-full justify-center">{main.label}</Link>
+                  {features.game_ui ? (
+                    <TruckWindowButton
+                      data={{
+                        title: tx(v.model.name),
+                        plate: v.plate,
+                        status: v.delivery ? tr('На курс: {0} → {1}', tx(v.delivery.origin.nameBg), tx(v.delivery.destination.nameBg)) : v.status === 'listed' ? tr('Обявен за продажба') : tr('Свободен'),
+                        where: `${tx(v.city.nameBg)}, ${v.city.countryCode}`,
+                        look: { modelId: v.modelId, color: v.color, cosmetics: v.cosmetics, tuning: v.cosmetics?.tuning ?? null, condition: v.condition, trailerModelId: v.trailer?.modelId ?? null, trailerColor: v.trailer?.cosmetics?.paint ?? null, plate: v.plate },
+                        condition: v.condition,
+                        serviceInKm: v.ownership === 'owned' ? maintenanceState(v.odometerKm, v.serviceKm).dueInKm : null,
+                        serviceEveryKm: MAINTENANCE.intervalKm,
+                        odometerKm: km(v.odometerKm),
+                        payload: tr('{0} т', dec(combinationCapability({ unit: v.model, trailer: v.trailer?.model ?? null }).payloadTons)),
+                        driver: v.driver?.name ?? null,
+                        driverSkill: v.driver?.skill ?? null,
+                        trailer: v.trailer ? tx(v.trailer.model.name) : null,
+                        trips: tripStats.get(v.id)?.trips ?? 0,
+                        longestKm: km(tripStats.get(v.id)?.longest ?? 0),
+                        totalKm: km(tripStats.get(v.id)?.total ?? 0),
+                        upgrades: [...v.upgrades.map((u) => tx(UPGRADES[u as UpgradeId]?.label ?? u)), ...(v.hiddenCompartment ? [tr('🕳️ Тайно отделение')] : [])],
+                        main,
+                        actions: tiles.map((x) => ({ href: x.href, label: x.label, emoji: x.emoji })),
+                      }}
+                    />
+                  ) : (
                   <details className="group rounded-xl border border-asphalt-700">
                     <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold text-mist-200 marker:hidden">{tr('Всичко за този камион')} <span className="text-mist-500 group-open:hidden">▾</span><span className="hidden text-mist-500 group-open:inline">▴</span></summary>
                     <div className="grid grid-cols-3 gap-2 px-3 pb-3 sm:grid-cols-6">
@@ -296,6 +337,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                       ))}
                     </div>
                   </details>
+                  )}
                 </div>
               );
             })()}

@@ -14,6 +14,7 @@ import { PlayerName, openPlayerCard } from './PlayerName';
 import { openReport } from './ReportDialog';
 import { ScrollStrip } from './ScrollStrip';
 import { useFeature } from './Features';
+import { askConfirm } from '@/components/gameui/confirm';
 import { t as tr, tx, intlLocale } from '@/i18n/t';
 
 interface Conversation {
@@ -64,6 +65,7 @@ function remember(state: { open: boolean; tab: string }) {
  * trade and one tab per private conversation. Live through the events stream.
  */
 export function ChatDock() {
+  const gameUi = useFeature('game_ui');
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('global');
   const [inbox, setInbox] = useState<Inbox | null>(null);
@@ -327,7 +329,7 @@ export function ChatDock() {
   };
 
   const deleteConversation = async () => {
-    if (!dm || !window.confirm(tr('Да изтрием ли целия разговор? Изчезва само при теб.'))) return;
+    if (!dm || !(await askConfirm(tr('Да изтрием ли целия разговор? Изчезва само при теб.'), { gameUi, danger: true, ok: tr('Изтрий') }))) return;
     try {
       await api('/api/game/action', { type: 'deleteConversation', userId: dm });
       if (extra?.id === tab) setExtra(null);

@@ -14,10 +14,11 @@ export const GOAL_METRICS: Record<GoalMetric, { label: (n: number) => string; fl
   tons: { label: (n) => t('Превози {0} т товар', n.toLocaleString(intlLocale())), floor: 60, round: 10 },
 };
 
+/** 1.2.3.6: the cash rewards follow the prices of 1.2.3.4 (×1.25), so a goal buys as much as before. */
 export const GOAL_LEVELS: Record<GoalDifficulty, { label: string; factor: number; cents: number; coins: number }> = {
-  easy: { label: 'Лесна', factor: 0.8, cents: 3_000_00, coins: 5 },
-  normal: { label: 'Нормална', factor: 1.1, cents: 5_000_00, coins: 10 },
-  hard: { label: 'Трудна', factor: 1.5, cents: 8_000_00, coins: 20 },
+  easy: { label: 'Лесна', factor: 0.8, cents: 3_750_00, coins: 5 },
+  normal: { label: 'Нормална', factor: 1.1, cents: 6_250_00, coins: 10 },
+  hard: { label: 'Трудна', factor: 1.5, cents: 10_000_00, coins: 20 },
 };
 
 /** Which metric each difficulty uses this week (varies by player and week). */

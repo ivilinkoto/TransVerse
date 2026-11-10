@@ -134,6 +134,15 @@ const ART: Record<ItemId, ReactNode> = {
       <path d="M44 22 q6 -12 12 0" fill="none" stroke="#475569" strokeWidth="3" />
     </g>
   ),
+  paint_frost: (
+    <g>
+      <rect x="26" y="30" width="48" height="56" rx="6" fill="#bae6fd" stroke="#0c4a6e" strokeWidth="2" />
+      <rect x="22" y="22" width="56" height="12" rx="4" fill="#94a3b8" />
+      <path d="M26 44 l8 6 l6 -8 l8 7 l7 -6 l7 8 l12 -7" fill="none" stroke="#f0f9ff" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M50 54 v24 M40 60 l20 12 M40 72 l20 -12" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M44 22 q6 -12 12 0" fill="none" stroke="#475569" strokeWidth="3" />
+    </g>
+  ),
   repair_kit: (
     <g>
       <rect x="14" y="36" width="72" height="46" rx="6" fill="#dc2626" stroke="#7f1d1d" strokeWidth="2" />

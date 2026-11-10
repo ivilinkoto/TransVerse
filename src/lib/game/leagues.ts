@@ -13,11 +13,11 @@ export const LEAGUE_TIERS = [
 export const TOP_TIER = LEAGUE_TIERS.length - 1;
 export const LEAGUE_GROUP_SIZE = 20;
 
-/** Rewards for places 1–3 in Bronze; higher tiers multiply them. */
+/** Rewards for places 1–3 in Bronze; higher tiers multiply them (1.2.3.6: ×1.25 with the prices of 1.2.3.4). */
 export const LEAGUE_PRIZES = [
-  { cents: 3_000_00, coins: 20 },
-  { cents: 2_000_00, coins: 10 },
-  { cents: 1_000_00, coins: 5 },
+  { cents: 3_750_00, coins: 20 },
+  { cents: 2_500_00, coins: 10 },
+  { cents: 1_250_00, coins: 5 },
 ] as const;
 
 export function leaguePrize(tier: number, rank: number) {

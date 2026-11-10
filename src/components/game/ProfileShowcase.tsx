@@ -1,5 +1,6 @@
 import { Medal } from 'lucide-react';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { Truck3DButton } from '@/components/garage/Truck3DButton';
 import type { showcaseOf } from '@/server/game/community';
 import { tx } from '@/i18n/t';
 
@@ -11,7 +12,8 @@ export function ProfileShowcase({ showcase }: { showcase: Awaited<ReturnType<typ
       {showcase.trucks.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3">
           {showcase.trucks.map((t) => (
-            <figure key={t.id} className="rounded-xl bg-gradient-to-b from-sky-900/30 to-asphalt-900 p-2">
+            <figure key={t.id} className="relative rounded-xl bg-gradient-to-b from-sky-900/30 to-asphalt-900 p-2">
+              <Truck3DButton className="absolute right-1.5 top-1.5" title={`${tx(t.name)} · ${t.plate}`} look={t.look} />
               <VehicleIllustration {...t.truck} className="h-auto w-full" title={tx(t.name)} />
               <figcaption className="mt-1 truncate text-center text-xs text-mist-300">{tx(t.name)} · <span className="num">{tx(t.plate)}</span></figcaption>
             </figure>

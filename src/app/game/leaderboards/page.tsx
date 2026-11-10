@@ -64,7 +64,7 @@ async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<Leaderboar
   const { rows } = await leaderboard(db, kind, 100);
   return (
     <Card className="p-2 sm:p-3">
-      <ol className="divide-y divide-asphalt-800">
+      <ol className="lb-list divide-y divide-asphalt-800">
         {rows.map((r, i) => (
           <li key={r.companyId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.companyId === companyId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
@@ -90,7 +90,7 @@ async function EarnersBoard({ userId, unit }: { userId: string; unit: string }) 
   const rows = await weeklyEarners(db, now, 100);
   return (
     <Card className="p-2 sm:p-3">
-      <ol className="divide-y divide-asphalt-800" data-testid="earners-board">
+      <ol className="lb-list divide-y divide-asphalt-800" data-testid="earners-board">
         {rows.map((r, i) => (
           <li key={r.userId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.userId === userId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
@@ -116,7 +116,7 @@ async function CompanyBoard({ userId }: { userId: string }) {
   const [rows, mine] = await Promise.all([companyLeaderboard(db, 100), membershipOf(db, userId)]);
   return (
     <Card className="p-2 sm:p-3">
-      <ol className="divide-y divide-asphalt-800">
+      <ol className="lb-list divide-y divide-asphalt-800">
         {rows.map((r, i) => (
           <li key={r.companyId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.companyId === mine?.company.id ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
@@ -149,7 +149,7 @@ async function NationsBoard({ country, companyId }: { country?: string; companyI
     <div className="space-y-4">
       <p className="text-sm text-mist-300">{tr('Сезонните точки на компаниите, събрани по държавата на базата им. Избери държава, за да видиш нейната класация.')}</p>
       <Card className="p-2 sm:p-3">
-        <ol className="divide-y divide-asphalt-800">
+        <ol className="lb-list divide-y divide-asphalt-800">
           {rows.map((r, i) => (
             <li key={r.country}>
               <Link href={`/game/leaderboards?tab=nations&country=${r.country}`} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-asphalt-800/60 sm:px-3 ${r.country === country ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
@@ -172,7 +172,7 @@ async function NationsBoard({ country, companyId }: { country?: string; companyI
       {board && country && (
         <Card className="p-2 sm:p-3">
           <h2 className="px-2 pb-2 font-display font-bold sm:px-3">{flag(country)} {name(country)}</h2>
-          <ol className="divide-y divide-asphalt-800">
+          <ol className="lb-list divide-y divide-asphalt-800">
             {board.rows.map((r, i) => (
               <li key={r.companyId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.companyId === companyId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
                 <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
@@ -200,7 +200,7 @@ async function BasesBoard({ userId }: { userId: string }) {
   return (
     <Card className="p-2 sm:p-3">
       <p className="px-2 pb-2 text-xs text-mist-400 sm:px-3">{tr('„Браво“ от други играчи за последните 30 дни (при равенство — повече сгради и нива). Разгледай базата от профила на компанията.')}</p>
-      <ol className="divide-y divide-asphalt-800">
+      <ol className="lb-list divide-y divide-asphalt-800">
         {rows.map((r, i) => (
           <li key={r.id} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.id === mine?.company.id ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
@@ -230,7 +230,7 @@ async function DivisionsBoard({ userId }: { userId: string }) {
       {tables.map(({ d, rows }) => (
         <Card key={d} title={tr('{0} {1} дивизия', d === 'gold' ? '🥇' : d === 'silver' ? '🥈' : '🥉', tx(DIVISION_LABELS[d]))} className="p-2 sm:p-3">
           {rows.length === 0 ? <p className="p-2 text-sm text-mist-400">{tr('Още няма компании.')}</p> : (
-            <ol className="divide-y divide-asphalt-800">
+            <ol className="lb-list divide-y divide-asphalt-800">
               {rows.slice(0, 20).map((r) => (
                 <li key={r.id} className={`flex items-center gap-3 rounded-xl px-2 py-2 ${r.id === mine ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
                   <span className="num w-8 text-center font-display font-bold text-mist-300">{medal(r.rank - 1)}</span>
@@ -258,7 +258,7 @@ async function EcoBoardView({ userId }: { userId: string }) {
       <p className="px-2 pb-2 pt-1 text-sm text-mist-300 sm:px-3">
         {tr('Седмицата до {0}: най-ниски разходи на километър (гориво, пътни такси, поддръжка, пътна помощ) за собствени курсове — наетите камиони не се броят. Нужни са поне {1} км. Първите трима получават', week.to.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' }), int(ECO.minKm))}{' '}{ECO.prizes.map((p) => `${money(p.cents)} + ${p.coins} TC`).join(' / ')}.
       </p>
-      <ol className="divide-y divide-asphalt-800">
+      <ol className="lb-list divide-y divide-asphalt-800">
         {rows.map((r, i) => (
           <li key={r.userId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.userId === userId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>

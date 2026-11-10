@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CARGO, CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
 import { CONVOYS, CONVOY_ROLES, convoyShare, leaderTier, nextWeeklyDeparture, stretchSchedule, type ConvoyRole } from '@/lib/game/convoys';
 import { rewardCents } from '@/lib/game/economy';
-import { featureLive } from '@/lib/game/features';
+import { FEATURES, featureLive } from '@/lib/game/features';
 import { BADGES } from '@/lib/game/halloween';
 import { contractWindowMinutes, type Segment } from '@/lib/game/schedule';
 import { sofiaDate } from '@/lib/game/together';
@@ -48,7 +48,7 @@ async function statsOf(db: DbOrTx, userId: string) {
 
 /** A leader opens a convoy (personal, or for their company). */
 export async function createConvoy(db: Database, userId: string, raw: z.input<typeof convoySchema>, now = new Date(), provider?: RoutingProvider) {
-  if (!(await featureFor(db, userId, 'convoy_lobby', now))) fail('not_released', t('Конвоите идват с обновление 1.10.'), 403);
+  if (!(await featureFor(db, userId, 'convoy_lobby', now))) fail('not_released', t('Конвоите идват с обновление {0}.', FEATURES.convoy_lobby), 403);
   const input = convoySchema.parse(raw);
   if (input.originCityId === input.destCityId) fail('same_city', t('Избери различни градове.'));
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
@@ -120,7 +120,7 @@ async function mayJoin(db: DbOrTx, userId: string, c: typeof convoys.$inferSelec
 
 /** A truck joins: its own load on the lane, or a part of the shared load. */
 export async function joinConvoy(db: Database, userId: string, convoyId: string, pick: { vehicleId: string; contractId?: string | null; role?: ConvoyRole }, now = new Date()) {
-  if (!(await featureFor(db, userId, 'convoy_lobby', now))) fail('not_released', t('Конвоите идват с обновление 1.10.'), 403);
+  if (!(await featureFor(db, userId, 'convoy_lobby', now))) fail('not_released', t('Конвоите идват с обновление {0}.', FEATURES.convoy_lobby), 403);
   return db.transaction(async (tx) => {
     const [c] = await tx.select().from(convoys).where(eq(convoys.id, convoyId)).for('update');
     if (!c) fail('not_found', t('Няма такъв конвой.'), 404);

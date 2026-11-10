@@ -72,6 +72,7 @@ export const ITEMS = {
   euro_frame: { name: 'Рамка „Европа“', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Синя рамка със звезди около портрета.' },
   xmas_frame: { name: 'Коледна рамка', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Червено-зелена рамка около портрета.' },
   paint_firstsnow: { name: 'Боя „Първи сняг“', rarity: 'epic', kind: 'consumable', target: 'vehicle', effect: 'Боядисва собствен камион светлосиньо със снежинки — само от пропуска на сезона „Първи сняг“.' },
+  paint_frost: { name: 'Боя „Скреж“', rarity: 'legendary', kind: 'consumable', target: 'vehicle', effect: 'Боядисва собствен камион в ледено синьо със скреж по ръбовете — само за целия „Зимен поход“.' },
 } as const satisfies Record<string, ItemDef>;
 export type ItemId = keyof typeof ITEMS;
 export const ITEM_IDS = Object.keys(ITEMS) as ItemId[];
@@ -143,7 +144,7 @@ export const SELL_DAY_CAP = 50;
 export const TRADE_RULES = { minLevel: 5, openMax: 5, noteMax: 120 };
 
 /** 1.2.5: items that come only from a season pass (never from cases, finds or the workshop). */
-export const PASS_ONLY_ITEMS: ItemId[] = ['paint_firstsnow'];
+export const PASS_ONLY_ITEMS: ItemId[] = ['paint_firstsnow', 'paint_frost'];
 
 /** Items that stay with the one who found them (no sale, gift or trade). */
 export const BOUND_ITEMS: ItemId[] = ['golden_key'];
@@ -236,6 +237,7 @@ export function sourcesOf(id: ItemId): { source: string; arg?: string; percent: 
   const frameOf = COLLECTIONS.find((c) => c.frame === id);
   if (frameOf) out.push({ source: 'Награда за колекцията „{0}“', arg: frameOf.name, percent: null });
   if (id === 'paint_firstsnow') out.push({ source: 'Пропуск на сезона „Първи сняг“', percent: null });
+  if (id === 'paint_frost') out.push({ source: 'Последната стъпка на „Зимен поход“', percent: null });
   return out;
 }
 

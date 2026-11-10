@@ -372,3 +372,320 @@ html[data-theme='light'] .panel { box-shadow: 0 1px 2px rgba(15, 23, 34, 0.06), 
 /* The 2.0 glass look has its own dark gradients: plain light cards and background under the light theme. */
 html[data-theme='light'] [data-look='2'] { background: var(--color-asphalt-950); }
 html[data-theme='light'] [data-look='2'] .panel { background: #ffffff; backdrop-filter: none; border-color: var(--color-asphalt-700); box-shadow: 0 1px 2px rgba(15, 23, 34, 0.06), 0 8px 24px -16px rgba(15, 23, 34, 0.25); }
+
+/* ── 1.2.3.6 „Нов облик“: game windows and inventory slots ── */
+@keyframes gw-in { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes gw-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gw-sheen { 0% { transform: translateX(-130%) skewX(-18deg); } 60%, 100% { transform: translateX(330%) skewX(-18deg); } }
+@keyframes slot-legend { 0%, 100% { box-shadow: 0 0 10px 0 color-mix(in srgb, var(--slot) 55%, transparent), inset 0 0 14px color-mix(in srgb, var(--slot) 30%, transparent); } 50% { box-shadow: 0 0 22px 2px color-mix(in srgb, var(--slot) 75%, transparent), inset 0 0 22px color-mix(in srgb, var(--slot) 45%, transparent); } }
+@keyframes slot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.gw-backdrop { background: radial-gradient(ellipse at center, rgba(8, 12, 22, 0.55), rgba(2, 4, 10, 0.86)); backdrop-filter: blur(6px); animation: gw-fade 0.18s ease-out both; }
+.gw-panel {
+  background:
+    radial-gradient(120% 70% at 50% -10%, color-mix(in srgb, var(--gw-accent) 16%, transparent), transparent 60%),
+    linear-gradient(180deg, #121a2b 0%, #0b111d 100%);
+  border: 1px solid color-mix(in srgb, var(--gw-accent) 45%, #2a3550);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 0 40px -12px color-mix(in srgb, var(--gw-accent) 50%, transparent);
+  animation: gw-in 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.gw-out { animation: gw-fade 0.16s ease-in reverse both; }
+.gw-out .gw-panel { animation: gw-in 0.16s ease-in reverse both; }
+.gw-head { background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent); border-bottom: 1px solid rgba(255, 255, 255, 0.06); position: relative; overflow: hidden; }
+.gw-head::after { content: ''; position: absolute; inset: 0; width: 26%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); animation: gw-sheen 5s ease-in-out 0.3s infinite; pointer-events: none; }
+.gw-icon { background: linear-gradient(145deg, color-mix(in srgb, var(--gw-accent) 40%, #1b2638), #111827); border: 1px solid color-mix(in srgb, var(--gw-accent) 55%, transparent); box-shadow: 0 0 14px -4px var(--gw-accent); }
+.gw-close { color: #cbd5e1; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.15s, color 0.15s, transform 0.15s; }
+.gw-close:hover { background: rgba(239, 68, 68, 0.2); color: #fff; transform: rotate(90deg); }
+.gw-foot { border-top: 1px solid rgba(255, 255, 255, 0.06); background: rgba(0, 0, 0, 0.2); }
+.gw-corner { position: absolute; top: 8px; width: 14px; height: 14px; border-color: var(--gw-accent); opacity: 0.8; pointer-events: none; z-index: 1; }
+.gw-corner-tl { left: 8px; border-top: 2px solid; border-left: 2px solid; border-top-left-radius: 6px; }
+.gw-corner-tr { right: 8px; border-top: 2px solid; border-right: 2px solid; border-top-right-radius: 6px; }
+/* Inventory slots: a square cell lit by the rarity colour (--slot). */
+.slot {
+  position: relative; aspect-ratio: 1; border-radius: 1rem; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--slot) 28%, #1a2333) 0%, #0d1320 72%);
+  border: 2px solid color-mix(in srgb, var(--slot) 65%, #263247);
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--slot) 22%, transparent), 0 4px 10px -4px rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.slot::before { content: ''; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), transparent 40%); pointer-events: none; }
+.slot:hover { transform: translateY(-3px) scale(1.03); box-shadow: inset 0 0 18px color-mix(in srgb, var(--slot) 40%, transparent), 0 0 18px -2px color-mix(in srgb, var(--slot) 70%, transparent); }
+.slot[aria-pressed='true'] { border-color: #fff; box-shadow: 0 0 0 2px var(--slot), 0 0 24px 0 color-mix(in srgb, var(--slot) 80%, transparent); }
+.slot-epic, .slot-legendary { animation: slot-legend 2.6s ease-in-out infinite; }
+.slot-legendary::after { content: ''; position: absolute; inset: 0; width: 35%; background: linear-gradient(90deg, transparent, rgba(255, 236, 170, 0.28), transparent); animation: gw-sheen 3.4s ease-in-out infinite; pointer-events: none; }
+.slot-art { animation: slot-float 3.2s ease-in-out infinite; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55)); }
+.slot-qty { position: absolute; right: 6px; bottom: 5px; min-width: 1.4rem; padding: 0 0.35rem; border-radius: 0.5rem; background: rgba(2, 6, 14, 0.85); border: 1px solid rgba(255, 255, 255, 0.15); font-size: 11px; font-weight: 700; text-align: center; color: #fff; }
+.slot-new { position: absolute; left: -26px; top: 8px; width: 90px; transform: rotate(-38deg); background: linear-gradient(90deg, #f43f5e, #f59e0b); color: #fff; font-size: 9px; font-weight: 800; text-align: center; letter-spacing: 0.08em; padding: 1px 0; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.slot-empty { aspect-ratio: 1; border-radius: 1rem; border: 2px dashed rgba(148, 163, 184, 0.15); background: rgba(13, 19, 32, 0.5); }
+.item-hero { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--slot) 45%, transparent), transparent 65%); }
+.item-hero-art { animation: slot-float 3s ease-in-out infinite; filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 22px color-mix(in srgb, var(--slot) 60%, transparent)); }
+html[data-motion='off'] :is(.gw-backdrop, .gw-panel, .gw-head::after, .slot-epic, .slot-legendary, .slot-legendary::after, .slot-art, .item-hero-art) { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { :is(.gw-backdrop, .gw-panel, .slot-epic, .slot-legendary, .slot-art, .item-hero-art) { animation: none !important; } .gw-head::after, .slot-legendary::after { display: none; } }
+/* 1.2.3.6: stat bars, tiles and big action buttons inside game windows. */
+.stat-track { height: 10px; border-radius: 999px; background: rgba(2, 6, 14, 0.7); border: 1px solid rgba(255, 255, 255, 0.07); overflow: hidden; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6); }
+.stat-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--fill) 70%, #000), var(--fill)); box-shadow: 0 0 10px color-mix(in srgb, var(--fill) 60%, transparent); transition: width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; }
+.stat-fill::after { content: ''; position: absolute; inset: 0 0 50% 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent); border-radius: 999px; }
+.stat-tile { background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)); border: 1px solid rgba(255, 255, 255, 0.08); }
+/* In the components layer so utilities on a button (flex-row, padding, text size) win. */
+@layer components {
+  .game-action { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem; border-radius: 1rem; padding: 0.7rem 0.4rem; font-size: 12px; font-weight: 700; color: #e2e8f0; background: linear-gradient(180deg, #1c2638, #121a28); border: 1px solid rgba(255, 255, 255, 0.09); box-shadow: 0 3px 0 #070b13, inset 0 1px 0 rgba(255, 255, 255, 0.08); transition: transform 0.12s, box-shadow 0.12s, border-color 0.15s; }
+  .game-action:hover { border-color: color-mix(in srgb, var(--gw-accent, #22d3ee) 70%, transparent); transform: translateY(-2px); box-shadow: 0 5px 0 #070b13, 0 0 16px -4px var(--gw-accent, #22d3ee), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+  .game-action:active { transform: translateY(2px); box-shadow: 0 1px 0 #070b13; }
+  .game-action-main { background: linear-gradient(180deg, #2f7bff, #1d4ed8); border-color: #60a5fa; color: #fff; box-shadow: 0 3px 0 #1e3a8a, 0 0 18px -6px #3b82f6, inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .game-action-danger { background: linear-gradient(180deg, #f43f5e, #be123c); border-color: #fb7185; color: #fff; box-shadow: 0 3px 0 #881337, 0 0 18px -6px #f43f5e, inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .game-action-gold { background: linear-gradient(180deg, #f6c343, #d99a0b); border-color: #fde68a; color: #1a1205; box-shadow: 0 3px 0 #8a5a00, 0 0 18px -6px #f6c343, inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+  .game-action:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+}
+html[data-motion='off'] .stat-fill { transition: none; }
+/* 1.2.3.6: the game store. */
+.shop-hero { background: radial-gradient(120% 140% at 0% 0%, rgba(246, 195, 67, 0.28), transparent 55%), radial-gradient(90% 120% at 100% 100%, rgba(34, 211, 238, 0.22), transparent 60%), linear-gradient(135deg, #171f33, #0c1220); border: 1px solid rgba(246, 195, 67, 0.35); box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+.shop-hero::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 14px); pointer-events: none; }
+.shop-wallet { background: rgba(2, 6, 14, 0.6); border: 1px solid rgba(34, 211, 238, 0.4); box-shadow: 0 0 20px -8px #22d3ee, inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+.shop-tab { color: #cbd5e1; background: linear-gradient(180deg, #1a2336, #111827); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 2px 0 #070b13; transition: color 0.15s, border-color 0.15s, transform 0.12s; }
+.shop-tab:hover { color: #fff; transform: translateY(-1px); }
+.shop-tab-on { color: #1a1205; background: linear-gradient(180deg, #fde68a, #f6c343); border-color: #fde68a; box-shadow: 0 2px 0 #8a5a00, 0 0 16px -6px #f6c343; }
+.shop-tile { background: linear-gradient(180deg, #161f30, #0e1523); border: 1px solid color-mix(in srgb, var(--tile) 40%, #26324a); box-shadow: 0 10px 24px -16px rgba(0, 0, 0, 0.9); transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease; overflow: hidden; }
+.shop-tile:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--tile) 75%, transparent); box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.9), 0 0 24px -8px var(--tile); }
+.shop-tile-art { background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--tile) 40%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--tile) 14%, #10182a), transparent); }
+.shop-tile-emoji { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px color-mix(in srgb, var(--tile) 60%, transparent)); transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+.shop-tile:hover .shop-tile-emoji { transform: scale(1.12) rotate(-4deg); }
+.shop-ribbon { position: absolute; top: 10px; right: -30px; width: 120px; transform: rotate(35deg); background: linear-gradient(90deg, #f43f5e, #f59e0b); color: #fff; font-size: 10px; font-weight: 800; text-align: center; padding: 2px 0; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.shop-vip { background: radial-gradient(120% 100% at 0% 0%, rgba(246, 195, 67, 0.16), transparent 60%), linear-gradient(180deg, #161f30, #0e1523); border: 1px solid rgba(246, 195, 67, 0.35); }
+html[data-motion='off'] .shop-tile, html[data-motion='off'] .shop-tile-emoji { transition: none; }
+/* 1.2.3.6 „Нов облик“: notification cards. */
+.notif-card { background: linear-gradient(90deg, color-mix(in srgb, var(--tile) 9%, #141c2c), #0f1625 60%); border: 1px solid color-mix(in srgb, var(--tile) 22%, #232e44); transition: border-color 0.2s, transform 0.15s; }
+.notif-card:hover { border-color: color-mix(in srgb, var(--tile) 55%, transparent); transform: translateX(2px); }
+.notif-new { border-color: color-mix(in srgb, var(--tile) 60%, transparent); box-shadow: inset 3px 0 0 var(--tile), 0 0 18px -10px var(--tile); }
+.notif-icon { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--tile) 38%, transparent), color-mix(in srgb, var(--tile) 10%, #0b1120)); border: 1px solid color-mix(in srgb, var(--tile) 40%, transparent); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tile) 35%, transparent)); }
+.notif-badge { border-radius: 9999px; background: var(--tile); color: #0b0f17; font-size: 10px; font-weight: 800; padding: 1px 7px; animation: fx-glow 1.6s ease-in-out infinite; }
+.notif-in { animation: gw-in 0.35s ease-out both; }
+html[data-motion='off'] :is(.notif-badge, .notif-in), html[data-motion='off'] .notif-card { animation: none; transition: none; }
+@media (prefers-reduced-motion: reduce) { :is(.notif-badge, .notif-in) { animation: none; } }
+/* 1.2.3.6 „Нов облик“: a load in a game window — the route as a road with a truck on it. */
+.contract-road { background: radial-gradient(120% 140% at 50% 0%, rgba(34, 211, 238, 0.14), transparent 60%), linear-gradient(180deg, #172133, #0e1523); border: 1px solid rgba(34, 211, 238, 0.25); }
+.contract-road-line { height: 4px; border-radius: 9999px; background: repeating-linear-gradient(90deg, #f6c343 0 14px, transparent 14px 24px), #273349; }
+.contract-pin { display: block; width: 18px; height: 18px; border-radius: 9999px; background: #94a3b8; border: 3px solid #0e1523; box-shadow: 0 0 0 2px #94a3b8; }
+.contract-pin-from { background: #34d399; box-shadow: 0 0 0 2px #34d399, 0 0 12px #34d399; }
+.contract-pin-to { background: #f43f5e; box-shadow: 0 0 0 2px #f43f5e, 0 0 12px #f43f5e; }
+@keyframes contract-roll { 0% { left: 1.5rem; } 100% { left: calc(100% - 3.5rem); } }
+.contract-road-truck { left: 1.5rem; animation: contract-roll 6s ease-in-out infinite alternate; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)); }
+@keyframes contract-drive { 0% { left: -15%; transform: translateY(0); } 15% { transform: translateY(-2px); } 100% { left: 110%; transform: translateY(0); } }
+.contract-drive { animation: contract-drive 2.4s cubic-bezier(0.5, 0, 0.6, 1) infinite; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)); }
+html[data-motion='off'] :is(.contract-road-truck, .contract-drive) { animation: none; }
+html[data-motion='off'] .contract-drive { left: 40%; }
+@media (prefers-reduced-motion: reduce) { :is(.contract-road-truck, .contract-drive) { animation: none; } .contract-drive { left: 40%; } }
+/* 1.2.3.6 „Нов облик“: the board's loads as game cards. */
+.load-card { background: linear-gradient(135deg, color-mix(in srgb, var(--tile) 10%, #151d2e), #0e1523 65%); border: 1px solid color-mix(in srgb, var(--tile) 26%, #243049); border-radius: 1.25rem; box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.9); transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+.load-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--tile) 65%, transparent); box-shadow: 0 16px 30px -18px rgba(0, 0, 0, 0.9), 0 0 22px -10px var(--tile); }
+.load-card-local { border-color: rgba(246, 195, 67, 0.55); box-shadow: inset 3px 0 0 #f6c343, 0 10px 24px -18px rgba(0, 0, 0, 0.9); }
+@keyframes load-urgent { 0%, 100% { box-shadow: inset 3px 0 0 #f43f5e, 0 0 0 0 rgba(244, 63, 94, 0.35); } 50% { box-shadow: inset 3px 0 0 #f43f5e, 0 0 18px 2px rgba(244, 63, 94, 0.35); } }
+.load-card-urgent { border-color: rgba(244, 63, 94, 0.7); animation: load-urgent 2.2s ease-in-out infinite; }
+.load-art { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--tile) 40%, transparent), color-mix(in srgb, var(--tile) 8%, #0b1120)); border: 1px solid color-mix(in srgb, var(--tile) 45%, transparent); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tile) 30%, transparent)); transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+.load-card:hover .load-art { transform: scale(1.08) rotate(-4deg); }
+.load-line { height: 3px; border-radius: 9999px; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--tile) 80%, #fff) 0 8px, transparent 8px 14px), #233049; }
+.load-pill { display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.04); padding: 0.125rem 0.5rem; color: #cbd5e1; font-weight: 600; }
+.load-toolbar { background: radial-gradient(120% 140% at 0% 0%, rgba(34, 211, 238, 0.1), transparent 55%), linear-gradient(180deg, #161f30, #0e1523); border-color: rgba(34, 211, 238, 0.25); border-radius: 1.25rem; }
+html[data-motion='off'] :is(.load-card, .load-art) { transition: none; animation: none; }
+@media (prefers-reduced-motion: reduce) { :is(.load-card, .load-art) { transition: none; animation: none; } }
+/* 1.3 „Нов облик“: the dashboard as a command centre. */
+.dash-hero { background: radial-gradient(120% 120% at 100% 0%, rgba(47, 123, 255, 0.28), transparent 55%), radial-gradient(80% 120% at 0% 100%, rgba(34, 211, 238, 0.14), transparent 60%), linear-gradient(180deg, #151e31, #0c1322); border: 1px solid rgba(96, 165, 250, 0.3); box-shadow: 0 20px 40px -28px rgba(0, 0, 0, 0.9); }
+.dash-road { background: linear-gradient(180deg, transparent, rgba(8, 12, 22, 0.75)), repeating-linear-gradient(90deg, rgba(246, 195, 67, 0.55) 0 26px, transparent 26px 52px) center 70% / 100% 3px no-repeat; animation: dash-road 1.6s linear infinite; opacity: 0.7; }
+@keyframes dash-road { from { background-position: 0 70%, 0 70%; } to { background-position: 0 70%, -52px 70%; } }
+@keyframes dash-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.dash-truck { filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.6)); animation: dash-bob 1.8s ease-in-out infinite; }
+.dash-level { background: conic-gradient(#a78bfa var(--ring), rgba(255, 255, 255, 0.08) 0); box-shadow: 0 0 22px -6px #a78bfa; }
+.dash-stat { background: rgba(8, 13, 24, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(4px); }
+.dash-now { background: linear-gradient(135deg, #161f30, #0e1523); border: 1px solid #243049; transition: transform 0.15s ease, border-color 0.2s ease; }
+.dash-now:hover { transform: translateY(-2px); }
+.dash-now-icon { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+.dash-now-hot { border-color: rgba(34, 211, 238, 0.45); box-shadow: inset 3px 0 0 #22d3ee; }
+.dash-now-gold { border-color: rgba(246, 195, 67, 0.45); box-shadow: inset 3px 0 0 #f6c343; }
+.dash-now-warn { border-color: rgba(245, 158, 11, 0.45); box-shadow: inset 3px 0 0 #f59e0b; }
+.dash-tile { background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--tile) 22%, transparent), transparent 70%), linear-gradient(180deg, #161f30, #0e1523); border: 1px solid color-mix(in srgb, var(--tile) 30%, #243049); box-shadow: 0 3px 0 #070b13; transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+.dash-tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--tile) 70%, transparent); box-shadow: 0 3px 0 #070b13, 0 0 22px -8px var(--tile); }
+.dash-tile:active { transform: translateY(1px); box-shadow: 0 1px 0 #070b13; }
+.dash-tile-emoji { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)); transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+.dash-tile:hover .dash-tile-emoji { transform: scale(1.12) rotate(-5deg); }
+.dash-tile-badge { background: var(--tile); color: #0b0f17; }
+html[data-motion='off'] :is(.dash-road, .dash-truck) { animation: none; }
+html[data-motion='off'] :is(.dash-now, .dash-tile, .dash-tile-emoji) { transition: none; }
+@media (prefers-reduced-motion: reduce) { :is(.dash-road, .dash-truck) { animation: none; } }
+/* 1.3: the board's tools as big buttons, the free trucks as slots, stars on a load. */
+.tool-tile { background: radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--tile) 18%, transparent), transparent 60%), linear-gradient(180deg, #161f30, #0e1523); border: 1px solid color-mix(in srgb, var(--tile) 30%, #243049); box-shadow: 0 3px 0 #070b13; transition: transform 0.15s ease, border-color 0.2s ease; }
+.tool-tile:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--tile) 70%, transparent); }
+.tool-tile:active { transform: translateY(1px); box-shadow: 0 1px 0 #070b13; }
+.tool-tile-icon { background: color-mix(in srgb, var(--tile) 14%, #0b1120); border: 1px solid color-mix(in srgb, var(--tile) 40%, transparent); }
+.truck-slot { background: linear-gradient(180deg, #161f30, #0e1523); border: 1px solid #243049; color: #cbd5e1; box-shadow: 0 3px 0 #070b13; transition: transform 0.15s ease, border-color 0.2s ease; }
+.truck-slot:hover { transform: translateY(-2px); border-color: #3b4a66; }
+.truck-slot-on { border-color: #f6c343; box-shadow: 0 3px 0 #8a5a00, 0 0 18px -6px #f6c343; background: linear-gradient(180deg, #2a2412, #141007); }
+.load-stars { color: #f6c343; text-shadow: 0 0 8px rgba(246, 195, 67, 0.5); letter-spacing: 0.05em; }
+html[data-motion='off'] :is(.tool-tile, .truck-slot) { transition: none; }
+/* 1.3: a page in a game window keeps its subtitle and buttons, the title is in the window's header. */
+.gw-route .page-header h1 { display: none; }
+.gw-route .page-header { margin-bottom: 0.75rem; }
+/* 1.3: the landing page — the 3D truck on a lit stage and the update countdown. */
+.hero-stage { border-radius: 2rem; background: radial-gradient(70% 60% at 50% 45%, rgba(47, 123, 255, 0.25), transparent 70%); }
+.hero-glow { background: radial-gradient(42% 16% at 50% 66%, rgba(34, 211, 238, 0.35), transparent 70%); filter: blur(8px); }
+.hero-road { background: repeating-linear-gradient(90deg, rgba(246, 195, 67, 0.7) 0 30px, transparent 30px 60px); animation: dash-road-x 1.4s linear infinite; opacity: 0.6; }
+@keyframes dash-road-x { from { background-position: 0 0; } to { background-position: -60px 0; } }
+.countdown-card { background: radial-gradient(80% 140% at 100% 0%, rgba(34, 211, 238, 0.18), transparent 60%), radial-gradient(60% 120% at 0% 100%, rgba(167, 139, 250, 0.16), transparent 60%), linear-gradient(180deg, #151e31, #0c1322); border: 1px solid rgba(34, 211, 238, 0.3); }
+.countdown-tile { background: rgba(8, 13, 24, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 3px 0 #070b13, inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+html[data-motion='off'] .hero-road { animation: none; }
+@media (prefers-reduced-motion: reduce) { .hero-road { animation: none; } }
+
+/* 1.3 „Зимен път“ — the game skin: with the new look every panel, card, button, bar and
+   label in the game gets the look of the game windows (dark metal, a lit top edge,
+   pressed 3D buttons). The light theme keeps its own look. */
+html:not([data-theme='light']) [data-skin='game'] .panel {
+  background: linear-gradient(180deg, rgba(22, 31, 48, 0.94), rgba(12, 18, 31, 0.94));
+  border-color: rgba(96, 165, 250, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 3px 0 rgba(5, 8, 15, 0.9), 0 18px 36px -24px rgba(0, 0, 0, 0.9);
+}
+html:not([data-theme='light']) [data-skin='game'] .panel:hover { border-color: rgba(96, 165, 250, 0.32); }
+[data-skin='game'] .card-head { margin-left: -0.25rem; margin-right: -0.25rem; padding: 0 0.25rem 0.6rem; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+[data-skin='game'] .card-title { display: flex; align-items: center; gap: 0.5rem; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.8rem; }
+[data-skin='game'] .card-title::before { content: ''; width: 4px; height: 1rem; border-radius: 9999px; background: linear-gradient(180deg, #22d3ee, #2f7bff); box-shadow: 0 0 10px rgba(34, 211, 238, 0.6); }
+[data-skin='game'] .page-header h1 { text-shadow: 0 0 24px rgba(47, 123, 255, 0.35); }
+[data-skin='game'] .btn-primary { background: linear-gradient(180deg, #2f7bff, #1d4ed8); border: 1px solid #60a5fa; box-shadow: 0 3px 0 #1e3a8a, 0 0 18px -8px #3b82f6, inset 0 1px 0 rgba(255, 255, 255, 0.25); font-weight: 700; }
+[data-skin='game'] .btn-primary:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+[data-skin='game'] .btn-primary:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #1e3a8a; }
+[data-skin='game'] .btn-gold { background: linear-gradient(180deg, #fde68a, #f6c343); border: 1px solid #fde68a; box-shadow: 0 3px 0 #8a5a00, 0 0 18px -8px #f6c343, inset 0 1px 0 rgba(255, 255, 255, 0.4); font-weight: 700; }
+[data-skin='game'] .btn-gold:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #8a5a00; }
+html:not([data-theme='light']) [data-skin='game'] .btn-ghost { background: linear-gradient(180deg, #1a2336, #111827); border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 3px 0 #070b13, inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+[data-skin='game'] .btn-ghost:hover:not(:disabled) { border-color: rgba(96, 165, 250, 0.5); transform: translateY(-1px); }
+[data-skin='game'] .btn-ghost:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #070b13; }
+[data-skin='game'] [role='meter'] { height: 0.5rem; background: rgba(5, 9, 18, 0.85); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6); }
+[data-skin='game'] [role='meter'] > div { box-shadow: 0 0 10px -3px rgba(255, 255, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+html:not([data-theme='light']) [data-skin='game'] .input { background: rgba(5, 9, 18, 0.7); border-color: rgba(255, 255, 255, 0.1); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4); }
+[data-skin='game'] .label { color: #7dd3fc; }
+html[data-motion='off'] [data-skin='game'] :is(.btn-primary, .btn-ghost, .btn-gold) { transform: none !important; }
+/* 1.3: the fleet's trucks — an edge in the colour of the truck's state and a lit stage under it. */
+[data-skin='game'] .truck-card { border-top-width: 3px; }
+[data-skin='game'] .truck-card-road { border-top-color: #22d3ee !important; }
+[data-skin='game'] .truck-card-free { border-top-color: #34d399 !important; }
+[data-skin='game'] .truck-card-worn { border-top-color: #f59e0b !important; }
+[data-skin='game'] .truck-card-sale { border-top-color: #f6c343 !important; }
+.truck-stage { background: radial-gradient(55% 35% at 50% 92%, rgba(34, 211, 238, 0.22), transparent 70%), linear-gradient(180deg, rgba(8, 12, 22, 0.2) 50%, rgba(8, 12, 22, 0.75)); border: 1px solid rgba(255, 255, 255, 0.05); }
+.tool-tile:not([style*='--tile']) { --tile: #94a3b8; }
+[data-testid='board-tools'] > span { display: flex; }
+[data-testid='board-tools'] > span > .tool-tile { flex: 1; }
+
+/* 1.3: missions as quest cards — a progress ring, loot chips, a glow when ready, a stamp when taken. */
+.quest-card { background: linear-gradient(160deg, #182238, #0e1523); border: 1px solid #263450; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13; }
+.quest-ring { background: conic-gradient(#22d3ee var(--ring), rgba(255, 255, 255, 0.08) 0); box-shadow: 0 0 16px -6px #22d3ee; }
+.quest-ready { border-color: rgba(246, 195, 67, 0.7); background: radial-gradient(120% 100% at 0% 0%, rgba(246, 195, 67, 0.18), transparent 60%), linear-gradient(160deg, #1d1a10, #0e1523); animation: quest-glow 2s ease-in-out infinite; }
+.quest-ready .quest-ring { background: conic-gradient(#f6c343 360deg, #f6c343 0); box-shadow: 0 0 18px -4px #f6c343; }
+.quest-claimed { opacity: 0.72; }
+.quest-claimed .quest-ring { background: conic-gradient(#34d399 360deg, #34d399 0); box-shadow: none; }
+@keyframes quest-glow { 0%, 100% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13, 0 0 0 0 rgba(246, 195, 67, 0.3); } 50% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13, 0 0 22px 2px rgba(246, 195, 67, 0.35); } }
+.quest-loot { border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); padding: 0.15rem 0.6rem; font-size: 11px; font-weight: 700; color: #fde68a; }
+.quest-stamp { position: absolute; right: -0.5rem; top: 0.9rem; transform: rotate(12deg); border: 2px solid #34d399; border-radius: 0.4rem; padding: 0 0.6rem; font-size: 11px; font-weight: 900; letter-spacing: 0.15em; color: #34d399; opacity: 0.85; }
+html[data-motion='off'] .quest-ready { animation: none; }
+@media (prefers-reduced-motion: reduce) { .quest-ready { animation: none; } }
+.quest-card > span:has(> .game-action), .quest-card > span:has(> .btn-ghost) { display: flex; flex-direction: column; }
+
+/* 1.3: a trip on the dashboard as a road with the truck on it. */
+.trip-road { background: repeating-linear-gradient(90deg, rgba(246, 195, 67, 0.55) 0 14px, transparent 14px 26px) center / 100% 2px no-repeat, linear-gradient(180deg, #1f2937, #111827); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5); overflow: hidden; }
+.trip-done { background: linear-gradient(90deg, rgba(34, 211, 238, 0.05), rgba(34, 211, 238, 0.28)); }
+.trip-truck { transform: translateY(-55%) scaleX(-1); filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.6)); transition: left 1s linear; }
+@keyframes trip-bob { 0%, 100% { transform: translateY(-55%) scaleX(-1); } 50% { transform: translateY(-65%) scaleX(-1); } }
+.trip-truck-moving { animation: trip-bob 0.8s ease-in-out infinite; }
+html[data-motion='off'] .trip-truck-moving { animation: none; }
+@media (prefers-reduced-motion: reduce) { .trip-truck-moving { animation: none; } }
+
+/* 1.3: drivers as hero cards — the frame in the colour of the skill (1 grey … 5 gold). */
+[data-skin='game'] .hero-card { --hero: #94a3b8; background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--hero) 16%, transparent), transparent 60%), linear-gradient(180deg, #172036, #0e1523) !important; border-color: color-mix(in srgb, var(--hero) 45%, #243049) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13; }
+.hero-skill-2 { --hero: #34d399; }
+.hero-skill-3 { --hero: #60a5fa; }
+.hero-skill-4 { --hero: #a78bfa; }
+.hero-skill-5 { --hero: #f6c343; }
+[data-skin='game'] .hero-card .hero-portrait { border-radius: 1rem; box-shadow: 0 0 0 2px var(--hero), 0 0 22px -6px var(--hero); }
+[data-skin='game'] .hero-pick { transition: transform 0.18s ease; }
+[data-skin='game'] .hero-pick:hover { transform: translateY(-4px); }
+html[data-motion='off'] [data-skin='game'] .hero-pick { transition: none; }
+
+/* 1.3: a player's card — a banner with the avatar in a glowing frame, stats as game tiles. */
+.player-hero { background: radial-gradient(90% 140% at 0% 0%, rgba(47, 123, 255, 0.3), transparent 60%), radial-gradient(70% 120% at 100% 100%, rgba(167, 139, 250, 0.2), transparent 60%), linear-gradient(135deg, #18233a, #0d1422); border: 1px solid rgba(96, 165, 250, 0.3); }
+.player-hero-avatar { box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.6), 0 0 26px -6px #3b82f6; }
+html:not([data-theme='light']) [data-skin='game'] .player-stat { background: linear-gradient(180deg, #172036, #0e1523); border: 1px solid rgba(255, 255, 255, 0.07); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 0 #070b13; }
+
+/* 1.3: a company without a logo — its initials on a violet shield with a gold edge (game skin only). */
+[data-skin='game'] .company-logo-empty { clip-path: polygon(50% 100%, 0 80%, 0 0, 100% 0, 100% 80%); border: 0 !important; border-radius: 0 !important; background: linear-gradient(160deg, #a78bfa, #6d28d9 55%, #3b0764) !important; box-shadow: inset 0 0 0 3px rgba(246, 195, 67, 0.9); }
+[data-skin='game'] .company-logo-empty > svg { display: none; }
+[data-skin='game'] .company-logo-empty > .crest-initials { display: inline; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
+/* 1.3: rankings — the top three as gold, silver and bronze rows with big medals, the rest as game rows. */
+[data-skin='game'] .lb-list { border: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+[data-skin='game'] .lb-list > li { border: 1px solid rgba(255, 255, 255, 0.06) !important; border-radius: 0.9rem; background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), transparent); }
+[data-skin='game'] .lb-list > li > span:first-child, [data-skin='game'] .lb-list > li > a > span:first-child { font-size: 1rem; }
+[data-skin='game'] .lb-list > li:nth-child(1) { background: linear-gradient(90deg, rgba(246, 195, 67, 0.22), rgba(246, 195, 67, 0.04)); border-color: rgba(246, 195, 67, 0.55) !important; box-shadow: 0 0 22px -10px #f6c343; }
+[data-skin='game'] .lb-list > li:nth-child(2) { background: linear-gradient(90deg, rgba(203, 213, 225, 0.16), rgba(203, 213, 225, 0.03)); border-color: rgba(203, 213, 225, 0.4) !important; }
+[data-skin='game'] .lb-list > li:nth-child(3) { background: linear-gradient(90deg, rgba(251, 146, 60, 0.16), rgba(251, 146, 60, 0.03)); border-color: rgba(251, 146, 60, 0.4) !important; }
+[data-skin='game'] .lb-list > li:nth-child(-n + 3) > span:first-child, [data-skin='game'] .lb-list > li:nth-child(-n + 3) > a > span:first-child { font-size: 1.6rem; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+
+/* 1.3 „Зимен поход“: an icy card, a trail of pins and a frosty progress bar. */
+.trek-card { background: radial-gradient(120% 120% at 0% 0%, rgba(125, 211, 252, 0.22), transparent 55%), linear-gradient(160deg, #0f2a44, #0b1626); border: 1px solid rgba(186, 230, 253, 0.28); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 3px 0 #06101c; }
+.trek-snow { background-image: radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.5), transparent 60%), radial-gradient(1.5px 1.5px at 70% 20%, rgba(255, 255, 255, 0.45), transparent 60%), radial-gradient(2px 2px at 85% 70%, rgba(255, 255, 255, 0.35), transparent 60%), radial-gradient(1.5px 1.5px at 40% 80%, rgba(255, 255, 255, 0.4), transparent 60%); }
+.trek-line { height: 3px; background: repeating-linear-gradient(90deg, rgba(186, 230, 253, 0.45) 0 8px, transparent 8px 14px); }
+.trek-pin { position: relative; z-index: 1; background: #10233a; border: 2px solid rgba(186, 230, 253, 0.35); color: #e0f2fe; }
+.trek-pin-done { background: linear-gradient(180deg, #38bdf8, #0284c7); border-color: #bae6fd; font-weight: 900; }
+.trek-pin-current { background: linear-gradient(180deg, #f0f9ff, #bae6fd); border-color: #fff; box-shadow: 0 0 0 4px rgba(186, 230, 253, 0.25), 0 0 18px rgba(186, 230, 253, 0.7); animation: trek-pulse 1.8s ease-in-out infinite; }
+.trek-pin-locked { opacity: 0.55; font-size: 0.8rem; }
+.trek-track { background: rgba(2, 6, 14, 0.6); border: 1px solid rgba(186, 230, 253, 0.2); }
+.trek-fill { background: linear-gradient(90deg, #7dd3fc, #f0f9ff); box-shadow: 0 0 10px rgba(186, 230, 253, 0.7); }
+@keyframes trek-pulse { 50% { box-shadow: 0 0 0 7px rgba(186, 230, 253, 0.12), 0 0 22px rgba(186, 230, 253, 0.9); } }
+html[data-motion='off'] .trek-pin-current { animation: none; }
+@media (prefers-reduced-motion: reduce) { .trek-pin-current { animation: none; } }
+
+/* 1.3 „Пътят на деня“: the puzzle card, a small dark map and the city buttons. */
+.route-card { background: radial-gradient(120% 120% at 100% 0%, rgba(34, 211, 238, 0.16), transparent 55%), linear-gradient(160deg, #142036, #0c1322); border: 1px solid rgba(34, 211, 238, 0.25); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13; }
+.route-map { background: radial-gradient(circle at 50% 40%, #13233b, #0a1220); border: 1px solid rgba(148, 163, 184, 0.18); touch-action: manipulation; }
+.route-chip { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); color: #e2e8f0; }
+.route-city { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+.route-city:not(:disabled):hover { border-color: rgba(34, 211, 238, 0.6); }
+.route-city:not(:disabled):active { transform: translateY(1px); }
+.route-num { background: #1e293b; color: #94a3b8; }
+.route-city-on { border-color: rgba(34, 211, 238, 0.55); background: rgba(34, 211, 238, 0.1); }
+.route-city-on .route-num { background: #22d3ee; color: #0b1220; }
+.route-city-start { border-color: rgba(246, 195, 67, 0.55); background: rgba(246, 195, 67, 0.1); }
+.route-city-start .route-num { background: #f6c343; color: #1a1205; }
+.route-share { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.08); white-space: pre-wrap; }
+
+/* 1.3 „Талисман в кабината“: the card, a little stage and a gentle bob. */
+.mascot-card { background: radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--tile, #f59e0b) 22%, transparent), transparent 55%), linear-gradient(160deg, #182238, #0e1523); border: 1px solid color-mix(in srgb, var(--tile, #f59e0b) 35%, #263450); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13; }
+.mascot-stage { background: radial-gradient(ellipse at 50% 85%, color-mix(in srgb, var(--tile, #f59e0b) 30%, transparent), transparent 70%); }
+.mascot-pick { background: rgba(255, 255, 255, 0.04); border: 2px solid rgba(255, 255, 255, 0.08); transition: border-color 0.15s, transform 0.12s; }
+.mascot-pick:hover { transform: translateY(-2px); }
+.mascot-pick-on { border-color: var(--tile); box-shadow: 0 0 18px -6px var(--tile); background: color-mix(in srgb, var(--tile) 12%, transparent); }
+.mascot-acc { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); }
+.mascot-acc-on { border-color: #f6c343; box-shadow: 0 0 14px -6px #f6c343; }
+.mascot-bob { animation: mascot-bob 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes mascot-bob { 50% { transform: translateY(-4px) scale(1.02, 0.98); } }
+html[data-motion='off'] .mascot-bob { animation: none; }
+@media (prefers-reduced-motion: reduce) { .mascot-bob { animation: none; } }
+
+/* 1.3 „Нощен рейс“: a dark card around the night road. */
+.night-run-card { background: radial-gradient(120% 90% at 50% 0%, rgba(99, 102, 241, 0.18), transparent 60%), linear-gradient(180deg, #0b1020, #070a14); border: 1px solid rgba(129, 140, 248, 0.25); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 3px 0 #04060c; }
+.night-run-canvas { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 12px 40px -12px rgba(0, 0, 0, 0.8); touch-action: manipulation; }
+
+/* 1.3 „Умения на шофьора“: branch columns, skill cards and rank pips. */
+.skill-bar { background: linear-gradient(160deg, #182238, #0e1523); border: 1px solid #263450; }
+.skill-branch { background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--tile) 16%, transparent), transparent 60%), linear-gradient(180deg, #141c2e, #0d1320); border: 1px solid color-mix(in srgb, var(--tile) 30%, #263450); }
+.skill-card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.07); }
+.skill-card-on { border-color: color-mix(in srgb, var(--tile) 55%, transparent); box-shadow: 0 0 16px -8px var(--tile); }
+.skill-icon { background: linear-gradient(145deg, color-mix(in srgb, var(--tile) 35%, #1b2638), #111827); border: 1px solid color-mix(in srgb, var(--tile) 45%, transparent); }
+.skill-pip { background: rgba(255, 255, 255, 0.1); }
+.skill-pip-on { background: var(--tile); box-shadow: 0 0 8px var(--tile); }
+
+/* 1.3 „Собствен сервиз“: the player's workshop card. */
+.workshop-card { background: radial-gradient(120% 120% at 100% 0%, rgba(249, 115, 22, 0.18), transparent 55%), linear-gradient(160deg, #1b2030, #0e1320); border: 1px solid rgba(249, 115, 22, 0.3); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13; }
+
+/* 1.3 „Световни кризи“: an amber alert card, the days and the two ways out. */
+.crisis-card { background: radial-gradient(120% 120% at 0% 0%, rgba(245, 158, 11, 0.22), transparent 55%), linear-gradient(160deg, #221a10, #0f1320); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13; }
+.crisis-day { background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); }
+.crisis-day-now { border-color: rgba(245, 158, 11, 0.5); }
+.crisis-option { background: linear-gradient(160deg, #182238, #0e1523); border: 1px solid #263450; }
+.crisis-option-mine { border-color: #34d399; box-shadow: 0 0 16px -8px #34d399; }
+
+/* 1.3 „Автобусна компания“: line cards and the model picker. */
+.bus-bar { background: linear-gradient(160deg, #182238, #0e1523); border: 1px solid #263450; }
+.bus-card { background: radial-gradient(120% 120% at 100% 0%, rgba(34, 211, 238, 0.14), transparent 55%), linear-gradient(160deg, #162033, #0d1320); border: 1px solid rgba(34, 211, 238, 0.25); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 3px 0 #070b13; }
+.bus-model { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); }

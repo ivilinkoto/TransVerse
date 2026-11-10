@@ -14,6 +14,7 @@ import { fail } from './errors';
 import { queueRoles } from '@/server/discord/outbox';
 import { can, entryRank, memberCount, membershipOf, notifyMembers, requirePermission } from './membership';
 import { logActivity, notify } from './notify';
+import { mascotView } from './mascot';
 import { t, tx } from '@/i18n/t';
 
 const MAX_FRIENDS = 200;
@@ -56,7 +57,10 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     : [];
   // 1.1.3.1: season medals (the medal badges then show only here, not twice).
   const medals = (await featureFor(db, viewerId, 'season_medals', now)) ? await playerMedals(db, u.id) : null;
+  // 1.3: the companion in the cab (kind, name, level, accessory, mood).
+  const pet = (await featureFor(db, viewerId, 'mascot', now)) ? await mascotView(db, u.id, now) : null;
   return {
+    mascot: pet ? { kind: pet.kind, name: pet.name, level: pet.level, accessory: pet.accessory, sad: pet.sad } : null,
     id: u.id,
     username: u.username,
     role: u.role,
