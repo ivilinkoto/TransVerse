@@ -68,6 +68,7 @@ import { quietHoursSchema, setQuietHours } from '@/server/push';
 import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, relocateVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
+import { guessDailyRoute } from '@/server/game/daily-route';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
 import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
@@ -238,6 +239,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyDepot'), cityId }),
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('markNotificationsRead') }),
+  z.object({ type: z.literal('dailyRouteGuess'), order: z.array(z.number().int().positive()).min(2).max(12) }),
   z.object({ type: z.literal('foundCompany'), name: companyNameSchema, hqCityId: cityId }),
   z.object({ type: z.literal('returnRental'), vehicleId: id }),
   z.object({ type: z.literal('buyoutRental'), vehicleId: id }),
@@ -707,6 +709,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   roadWave: 'road_wave',
   wantItem: 'item_wants',
   signUpDuo: 'duo_week',
+  dailyRouteGuess: 'daily_route',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -907,6 +910,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'markNotificationsRead':
       await markNotificationsRead(db, user.id);
       return { ok: true };
+    case 'dailyRouteGuess':
+      return { ok: true, ...(await guessDailyRoute(db, user.id, input.order, new Date())) };
     case 'foundCompany':
       await foundCompany(db, user.id, { name: input.name, hqCityId: input.hqCityId });
       return { ok: true };

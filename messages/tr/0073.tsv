@@ -150,3 +150,34 @@ a8337387cc	Seven winter steps — from 12 November one more each day. Each pays 
 e067e0e145	Step {0} of {1}	Шаг {0} из {1}
 b46604cf14	Steps	Шаги
 30d66f4e93	at the end	в конце
+b03a094e96	{0} km — {1}% of the shortest	{0} км — {1}% от кратчайшего
+0058c1a89a	Every day at 00:00 a new puzzle, the same for everybody: 6 real cities, the first is the start. Put the others in the order that makes the path shortest (straight-line distances).	Каждый день в 00:00 — новая головоломка, одна для всех: 6 настоящих городов, первый — старт. Расставь остальные так, чтобы путь был самым коротким (расстояния по прямой).
+c8f280b7c6	No puzzle today — try tomorrow.	Сегодня головоломки нет — попробуй завтра.
+66ecd8d70c	Today's best	Лучшие сегодня
+ade3fadfd2	No tries left today — a new route tomorrow.	На сегодня попытки закончились — новый путь завтра.
+1c733bef78	You start at the first city and pass through all the others once (no return). Distances are straight lines between the real cities. You have {0} tries; the best one counts. From 90% — {1} lv., for the shortest path — another {2} lv. (once a day).	Ты начинаешь с первого города и проезжаешь все остальные по одному разу (без возврата). Расстояния — по прямой между настоящими городами. У тебя {0} попытки; засчитывается лучшая. От 90% — {1} лв., за кратчайший путь — ещё {2} лв. (раз в день).
+8e97b9cf7b	Pick {0} more	Выбери ещё {0}
+349f8a07b3	Map of the cities	Карта городов
+5798ad2fe4	Copied ✓	Скопировано ✓
+0872e30077	Measuring…	Измеряем…
+f89846f0fd	The shortest path! {0} km	Кратчайший путь! {0} км
+0d29325dce	Find it in Compete → Today and in „Now“ on the dashboard until you solve today's route.	Находится в Соревнования → Сегодня и в «Сейчас» на панели, пока ты не решил сегодняшний путь.
+83d2a808bd	A new route tomorrow.	Новый путь завтра.
+2a471e7771	A new „Route of the Day“ — put 6 cities in the shortest path.	Новый «Путь дня» — расставь 6 городов в кратчайший путь.
+c260e8783b	A new daily game: put 6 real cities in the shortest path. One puzzle for everybody, 3 tries, a reward and the day's ranking — and a result to share.	Новая ежедневная игра: расставь 6 настоящих городов в кратчайший путь. Одна головоломка для всех, 3 попытки, награда и рейтинг дня — и результат, которым можно поделиться.
+c6913faf2b	Try {0}: {1} km · {2}%	Попытка {0}: {1} км · {2}%
+3a76f7a5cd	Tries: {0}	Попытки: {0}
+ac8c384f58	Nobody has solved today's route yet. Be the first!	Сегодняшний путь ещё никто не решил. Будь первым!
+c27276a29e	Put all the cities in order, starting from the first one.	Расставь все города по порядку, начиная с первого.
+a6102faf94	Put the cities in the shortest path. One puzzle for everybody, a new one every day.	Расставь города в кратчайший путь. Одна головоломка для всех, новая каждый день.
+2fc61ec3e4	Check the route	Проверить путь
+5d7aafd850	Route: {0} km in a straight line	Путь: {0} км по прямой
+d9f3737d8b	Route of the Day	Путь дня
+59e6886517	Route of the Day ({0}%)	Путь дня ({0}%)
+d54af36189	Route of the Day: {0} tries left.	Путь дня: осталось попыток — {0}.
+02064f47e7	A streak of days in a row, a „Today's best“ ranking and a result with squares to share — without giving the answer away.	Серия дней подряд, рейтинг «Лучшие сегодня» и результат с квадратиками, которым можно поделиться, не выдавая решения.
+cefa3804d4	Share the result	Поделиться результатом
+17328fb254	Three tries; the best one counts. From 90% — 500 lv., for the shortest path — another 500 lv. (once a day).	Три попытки; засчитывается лучшая. От 90% — 500 лв., за кратчайший путь — ещё 500 лв. (раз в день).
+56d2cab557	Streak: {0}	Серия: {0}
+e6ca413c34	shortest (green): {0} km	кратчайший (зелёный): {0} км
+e30e3408cb	Days in a row with a solved route	Дней подряд с решённым путём

@@ -4,6 +4,10 @@ import { vehicles } from '@/server/db/schema';
 import { inventoryBadge, weeklyChest } from './item-trade';
 import { nextSteps, type NextStep } from './next-steps';
 import { winterTrekView } from './winter-trek';
+import { featureFor } from '@/server/features';
+import { DAILY_ROUTE } from '@/lib/game/daily-route';
+import { sofiaDay } from '@/lib/game/shop-v2';
+import { jobState } from '@/server/db/schema';
 import { t, tx } from '@/i18n/t';
 
 export interface NowItem extends NextStep {
@@ -36,6 +40,12 @@ export async function nowList(db: DbOrTx, user: { id: string; loginStreak: numbe
   const trek = await winterTrekView(db, user.id, now);
   const step = trek?.steps.find((s) => s.state === 'current');
   if (step) out.push({ emoji: '❄️', text: t('Зимен поход, стъпка {0}: {1} ({2}/{3}).', step.index + 1, tx(step.label), step.progress, step.target), href: '/game/missions', action: t('Виж'), tone: 'info' });
+  // 1.3 „Пътят на деня“: today's puzzle while it is not finished.
+  if (await featureFor(db, user.id, 'daily_route', now)) {
+    const [row] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, `daily-route:${sofiaDay(now)}:${user.id}`));
+    const tries = (row?.value as { tries: { pct: number }[] } | undefined)?.tries ?? [];
+    if (tries.length < DAILY_ROUTE.tries && !tries.some((x) => x.pct >= 100)) out.push({ emoji: '🧭', text: tries.length ? t('Пътят на деня: остават {0} опита.', DAILY_ROUTE.tries - tries.length) : t('Нов „Път на деня“ — подреди 6 града в най-краткия път.'), href: '/game/daily-route', action: t('Играй'), tone: 'info' });
+  }
   const order: NowItem['tone'][] = ['hot', 'gold', 'warn', 'info'];
   return out.sort((a, b) => order.indexOf(a.tone) - order.indexOf(b.tone)).slice(0, 6);
 }
