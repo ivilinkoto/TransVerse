@@ -71,6 +71,7 @@ import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
 import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
+import { openWorkshop, rateWorkshop, setWorkshopPrice, upgradeWorkshop } from '@/server/game/workshops';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -246,6 +247,11 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
   z.object({ type: z.literal('petMascot') }),
   z.object({ type: z.literal('setMascotAccessory'), accessory: z.enum(['scarf', 'cap', 'glasses', 'crown']).nullable() }),
+  z.object({ type: z.literal('openWorkshop'), cityId, name: z.string().max(80) }),
+  z.object({ type: z.literal('setWorkshopPrice'), pricePct: z.coerce.number().int().min(1).max(500) }),
+  z.object({ type: z.literal('upgradeWorkshop') }),
+  z.object({ type: z.literal('repairAtWorkshop'), vehicleId: id, ownerId: id }),
+  z.object({ type: z.literal('rateWorkshop'), ownerId: id, stars: z.coerce.number().int().min(1).max(5) }),
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
   z.object({ type: z.literal('resetSkills') }),
   z.object({ type: z.literal('nightRun'), inputs: z.array(z.number().int().min(-1).max(1)).max(2250) }),
@@ -722,6 +728,11 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   dailyRouteGuess: 'daily_route',
   nightRun: 'night_run',
   learnSkill: 'driver_skills',
+  openWorkshop: 'player_workshops',
+  setWorkshopPrice: 'player_workshops',
+  upgradeWorkshop: 'player_workshops',
+  repairAtWorkshop: 'player_workshops',
+  rateWorkshop: 'player_workshops',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
   renameMascot: 'mascot',
@@ -935,6 +946,18 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, mood: await petMascot(db, user.id, new Date()) };
     case 'setMascotAccessory':
       await setMascotAccessory(db, user.id, input.accessory, new Date());
+      return { ok: true };
+    case 'openWorkshop':
+      await openWorkshop(db, user.id, input.cityId, input.name, new Date());
+      return { ok: true };
+    case 'setWorkshopPrice':
+      return { ok: true, pricePct: await setWorkshopPrice(db, user.id, input.pricePct, new Date()) };
+    case 'upgradeWorkshop':
+      return { ok: true, level: await upgradeWorkshop(db, user.id, new Date()) };
+    case 'repairAtWorkshop':
+      return { ok: true, costCents: await repairVehicle(db, user.id, input.vehicleId, { workshop: input.ownerId }) };
+    case 'rateWorkshop':
+      await rateWorkshop(db, user.id, input.ownerId, input.stars, new Date());
       return { ok: true };
     case 'learnSkill':
       return { ok: true, rank: await learnSkill(db, user.id, input.skill, new Date()) };

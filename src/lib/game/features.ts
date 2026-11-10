@@ -151,6 +151,8 @@ export const FEATURES = {
   night_run: '1.3',
   // „Умения на шофьора“: the player's own skill tree.
   driver_skills: '1.3',
+  // „Собствен сервиз“: player-run repair workshops.
+  player_workshops: '1.3',
   // 1.2.6 „На една вълна“
   chat_life: '1.3',
   partner_loads: '1.3',

@@ -301,3 +301,51 @@ e4057fd271	People: +2% on hired drivers' trips, +3% in convoy and +3% on arrival
 beb5e6bbf4	−{0}% tolls	−{0}% дорожных сборов
 7eebe8ebb6	−{0}% fuel cost	−{0}% расход на топливо
 d08051ddd9	−{0}% maintenance cost	−{0}% расход на обслуживание
+547125909d	+{0} lv. from a repair at „{1}“.	+{0} лв. за ремонт в «{1}».
+e58f7b8b45	{0} repairs	{0} ремонтов
+261064d24f	Fleet → Service and depots → Players' workshops. From level 10 open a workshop for 50,000 lv. in a city where you have a depot or a truck (one per player).	Автопарк → Сервис и депо → Мастерские игроков. С 10 уровня открой мастерскую за 50 000 лв. в городе, где у тебя есть депо или грузовик (одна на игрока).
+69d377bc69	Players' workshops do full repairs only.	В мастерских игроков ремонт только полный.
+c70eec8b75	You can't repair in your own workshop — there you work for the others.	В своей мастерской ремонтировать нельзя — там ты работаешь для других.
+96714b589f	No player workshop in this city.	В этом городе нет мастерской игрока.
+2b2ac2dbb6	You already have a workshop.	У тебя уже есть мастерская.
+c1e56c6725	You already rated this repair.	Ты уже оценил этот ремонт.
+bbf6ccfedf	Workshop name	Название мастерской
+3fdd879dd2	The name must be 3 to {0} characters.	Название должно быть от 3 до {0} символов.
+a0c96543dc	A truck standing in the workshop's city can get a full repair there. You don't repair in your own workshop — it's for the others.	Грузовик, стоящий в городе мастерской, может пройти там полный ремонт. В своей мастерской ты не ремонтируешь — она для других.
+814cea1244	The truck must be in {0} to be repaired at this workshop.	Грузовик должен быть в {0}, чтобы ремонтироваться в этой мастерской.
+6195b3cc8c	A customer at the workshop: {0}	Клиент в мастерской: {0}
+65eecc7f82	My workshop	Моя мастерская
+bf39b54836	The busiest workshops	Самые загруженные мастерские
+ca49357d7b	Level {0} ({1}) — share {2}%	Уровень {0} ({1}) — доля {2}%
+2b2ac3c5a2	No truck standing that needs a repair.	Нет стоящего грузовика, которому нужен ремонт.
+5cd45b89a3	From level 10 open a workshop in a city of your choice and set the price. Other players repair with you, and you earn on every repair.	С 10 уровня открой мастерскую в выбранном городе и задай цену. Другие игроки ремонтируются у тебя, а ты зарабатываешь на каждом ремонте.
+35fa306cf0	Open your own workshop or repair at another player's.	Открой свою мастерскую или ремонтируйся у другого игрока.
+f7b115e24a	Open a workshop	Открыть мастерскую
+55efe725b8	Open a workshop for {0} in a city where you have a depot or a truck.	Открой мастерскую за {0} в городе, где у тебя есть депо или грузовик.
+0c928ab328	Rate the repair	Оцени ремонт
+183e4114c3	A rating comes after a repair at the workshop.	Оценка даётся после ремонта в мастерской.
+d96b383968	The rating is 1 to 5 stars.	Оценка — от 1 до 5 звёзд.
+ff1ac4eaae	No player workshops yet — be the first.	Мастерских игроков ещё нет — будь первым.
+8d6db7f71f	You don't have a workshop yet.	У тебя ещё нет мастерской.
+3c1cf8fb69	Repair ({0}% of the price)	Ремонт ({0}% от цены)
+68a8d05cce	Repair {0} at „{1}“	Ремонт {0} в «{1}»
+f57ad85e16	Repair at workshop „{0}“ ({1})	Ремонт в мастерской «{0}» ({1})
+b8a2e79a0b	Repair at a player's	Ремонт у игрока
+4b2e5e1af4	{0}'s workshop	Мастерская {0}
+62e65ef125	A workshop opens in a city where you have a depot or a truck.	Мастерская открывается в городе, где у тебя есть депо или грузовик.
+9ff7fa1a1e	A workshop opens from level {0}.	Мастерская открывается с уровня {0}.
+027a48846c	Workshop „{0}“ in {1}	Мастерская «{0}» в {1}
+cdbe2c985a	Workshop „{0}“: level {1}	Мастерская «{0}»: уровень {1}
+f8d238a41a	Workshops	Мастерские
+e4f25213da	Players' workshops	Мастерские игроков
+3506c92815	The workshop has closed.	Мастерская больше не работает.
+b7be44a853	The workshop is at its top level.	Мастерская на высшем уровне.
+e328f16d03	After the repair the customer rates the workshop with 1–5 stars; the busiest workshops are ranked.	После ремонта клиент оценивает мастерскую от 1 до 5 звёзд; самые загруженные мастерские — в рейтинге.
+b5b579d17f	Own workshop	Своя мастерская
+88ccc5eb20	The owner sets the price ({0}–{1}% of the usual) and gets {2}% of what is paid; up to {3}% with upgrades.	Владелец задаёт цену ({0}–{1}% от обычной) и получает {2}% от оплаченного; с улучшениями — до {3}%.
+5bf87de802	Earned	Заработано
+081716b709	Your share	Твоя доля
+69f25a69c0	You set the price: 60% to 120% of the usual repair. You get 80% of what is paid, 85% at level 2 (30,000 lv.) and 90% at level 3 (60,000 lv.); the rest is for parts.	Ты задаёшь цену: от 60% до 120% от обычного ремонта. Получаешь 80% от оплаченного, 85% на уровне 2 (30 000 лв.) и 90% на уровне 3 (60 000 лв.); остальное — на запчасти.
+54d145948f	Price against the usual	Цена относительно обычной
+4ebb748512	The price is {0}% to {1}% of the usual.	Цена — от {0}% до {1}% от обычной.
+7c02cbfdac	Save the price	Сохранить цену
