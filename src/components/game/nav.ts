@@ -130,6 +130,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/case', label: 'Изгубена пратка', feature: 'lost_cargo', group: 'Днес' },
       { href: '/game/parking', label: 'Паркирай', feature: 'parking_game', group: 'Днес' },
       { href: '/game/daily-route', label: 'Пътят на деня', feature: 'daily_route', group: 'Днес', core: true },
+      { href: '/game/night-run', label: 'Нощен рейс', feature: 'night_run', group: 'Днес', core: true },
       { href: '/game/league', label: 'Лига', group: 'Класации', minLevel: 2 },
       { href: '/game/cities', label: 'Градовете растат', feature: 'city_growth', group: 'Класации' },
       { href: '/game/duels', label: 'Дуели', feature: 'duels', group: 'Класации', minLevel: 3 },

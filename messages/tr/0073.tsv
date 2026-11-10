@@ -237,3 +237,30 @@ ffa6f27be8	Happy	Счастлив
 0768eb809f	none (sad)	нет (грустит)
 f4adf1de3b	A delivery: +{0} mood, a day without one: −{1}. Below {2} it is sad and brings no bonus. Petting: +{3} once every {4} h.	Доставка: +{0} к настроению, день без доставки: −{1}. Ниже {2} грустит и не даёт бонуса. Поглаживание: +{3} раз в {4} ч.
 8d51ea5424	From the first city through all the others once, in a straight line. {0} tries. From 90% — {1} lv., for the shortest path — another {2} lv.	От первого города через все остальные по разу, по прямой. {0} попытки. От 90% — {1} лв., за кратчайший путь — ещё {2} лв.
+0435db9b40	{0} m	{0} м
+181af802f5	{0} runs a day, the longest counts. Stars: {1}, {2} and {3} m — XP for the best run.	{0} заезда в день, засчитывается самый длинный. Звёзды: {1}, {2} и {3} м — опыт за лучший заезд.
+9b46618ac7	Arcade driving on a night road: change lanes, overtake and pick up fuel. One road for everybody each day, 3 runs, stars and a ranking.	Аркадная езда по ночной дороге: меняй полосы, обгоняй и собирай топливо. Одна трасса для всех на день, 3 заезда, звёзды и рейтинг.
+da5d323b8e	No runs left today — a new road tomorrow night.	На сегодня заезды закончились — новая дорога завтра вечером.
+78f16fa89e	The same night road for everybody, a new one every day.	Одна ночная дорога для всех, новая каждый день.
+877a5235d7	Overtake the slower cars and pick up fuel cans — three crashes or an empty tank end the run; otherwise it lasts 75 seconds.	Обгоняй медленные машины и собирай канистры — три удара или пустой бак завершают заезд; иначе он длится 75 секунд.
+e32799d049	Mini-game „Night Run“	Мини-игра «Ночной рейс»
+e453897400	Best: {0} m · {1} of {2} runs	Лучший: {0} м · {1} из {2} заездов
+edcabb2764	Today's longest runs	Самые длинные заезды сегодня
+c4635d6458	A new mini-game (Compete → Today): your truck drives a three-lane night road. Arrows, A/D, the buttons or a swipe change lanes.	Новая мини-игра (Соревнования → Сегодня): твой грузовик едет по ночной трёхполосной дороге. Стрелки, A/D, кнопки или свайп меняют полосу.
+308f7a8f59	Night road	Ночная дорога
+74638c40c5	Night Run	Ночной рейс
+b48316546d	Once more ({0})	Ещё раз ({0})
+8a0af4f03b	You haven't driven today yet.	Ты ещё не ездил сегодня.
+7766c4743c	Nobody has driven tonight yet.	Этой ночью ещё никто не ездил.
+7c348dbfdf	Checking the run…	Проверяем заезд…
+7a82f38220	The road is the same for everybody that day; 3 runs a day, the longest counts. Stars for 900, 1,500 and 2,100 m — up to 150 XP once a day.	Дорога одна для всех на день; 3 заезда в день, засчитывается самый длинный. Звёзды за 900, 1 500 и 2 100 м — до 150 опыта раз в день.
+8a26075170	Out of fuel.	Кончилось топливо.
+34143fa77a	Change lanes, overtake the cars and pick up fuel cans. Three crashes — game over.	Меняй полосы, обгоняй машины и собирай канистры. Три удара — конец.
+38735ab5c9	You made it to the end!	Ты доехал до конца!
+623ae9036c	Arrows ← → or A / D	Стрелки ← → или A / D
+82b9c58684	The server replays the run from your moves — the result is decided there, not in the browser.	Сервер повторяет заезд по твоим движениям — результат решается там, а не в браузере.
+9f132d0887	The run is too long.	Слишком длинный заезд.
+dfc0ee83a8	Three crashes.	Три удара.
+21bd073bb4	Go ({0} left)	Поехали (осталось {0})
+0deecf3c85	Crashes	Удары
+f795d995ae	Tomorrow — a new run	Завтра — новый заезд

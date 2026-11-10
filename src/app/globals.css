@@ -661,3 +661,7 @@ html[data-motion='off'] .trek-pin-current { animation: none; }
 @keyframes mascot-bob { 50% { transform: translateY(-4px) scale(1.02, 0.98); } }
 html[data-motion='off'] .mascot-bob { animation: none; }
 @media (prefers-reduced-motion: reduce) { .mascot-bob { animation: none; } }
+
+/* 1.3 „Нощен рейс“: a dark card around the night road. */
+.night-run-card { background: radial-gradient(120% 90% at 50% 0%, rgba(99, 102, 241, 0.18), transparent 60%), linear-gradient(180deg, #0b1020, #070a14); border: 1px solid rgba(129, 140, 248, 0.25); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 3px 0 #04060c; }
+.night-run-canvas { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 12px 40px -12px rgba(0, 0, 0, 0.8); touch-action: manipulation; }

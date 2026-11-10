@@ -147,6 +147,8 @@ export const FEATURES = {
   daily_route: '1.3',
   // „Талисман в кабината“: a companion that grows with the trips.
   mascot: '1.3',
+  // „Нощен рейс“: an arcade run on the day's night road.
+  night_run: '1.3',
   // 1.2.6 „На една вълна“
   chat_life: '1.3',
   partner_loads: '1.3',
