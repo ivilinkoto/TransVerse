@@ -52,8 +52,10 @@ export function CompanyLogo({ company, hasLogo, size = 56 }: { company: BrandInf
   ) : company.logoDesign ? (
     <DesignedLogo design={company.logoDesign} size={size} />
   ) : (
-    <span className="flex shrink-0 items-center justify-center rounded-xl border border-asphalt-700 bg-asphalt-850" style={{ width: size, height: size, color: company.color ?? undefined }}>
+    <span className="company-logo-empty flex shrink-0 items-center justify-center rounded-xl border border-asphalt-700 bg-asphalt-850" style={{ width: size, height: size, color: company.color ?? undefined }}>
       <Building2 className="h-1/2 w-1/2" />
+      {/* 1.3 „Нов облик“: with the game skin a company without a logo shows its initials on a shield. */}
+      <span className="crest-initials hidden font-display font-black text-white" style={{ fontSize: size * 0.36 }} aria-hidden>{(company.name ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('')}</span>
     </span>
   );
 }

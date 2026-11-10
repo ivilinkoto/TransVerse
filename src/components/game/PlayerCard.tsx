@@ -32,7 +32,7 @@ export function openDirectChat(userId: string, username: string) {
 
 function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-asphalt-850 px-3 py-2">
+    <div className="player-stat rounded-xl bg-asphalt-850 px-3 py-2">
       <div className="text-[11px] text-mist-400">{label}</div>
       <div className="num font-display text-lg font-bold">{value}</div>
       {sub && <div className="text-[11px] text-mist-400">{sub}</div>}
@@ -71,9 +71,9 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
   const hiddenBadges = card.badges.length - top.length;
   return (
     <div>
-      <div className="flex items-center gap-4">
+      <div className={gameUi ? 'player-hero relative flex items-center gap-4 overflow-hidden rounded-2xl p-4' : 'flex items-center gap-4'} data-testid={gameUi ? 'player-hero' : undefined}>
         <div className="relative shrink-0">
-          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`h-16 w-16 text-2xl ${frameOf(card.badges)}`} rounded="rounded-2xl" />
+          <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`${gameUi ? 'player-hero-avatar h-20 w-20 text-3xl' : 'h-16 w-16 text-2xl'} ${frameOf(card.badges)}`} rounded="rounded-2xl" />
           <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-asphalt-900 ${card.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={card.online ? t('Онлайн') : t('Последно: {0}', card.lastSeen)} />
         </div>
         <div className="min-w-0">
