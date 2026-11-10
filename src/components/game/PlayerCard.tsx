@@ -2,6 +2,7 @@
 
 import { useFeature } from './Features';
 import { DuelChallenge } from './TogetherActions';
+import { askConfirm } from '@/components/gameui/confirm';
 import { Award, Ban, Banknote, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
@@ -41,6 +42,7 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
 
 /** A player's profile card: who they are, how they play, and what you can do with them. */
 export function PlayerCardView({ card, onChange, onClose, careerLink = true }: { card: Card; onChange?: () => void; onClose?: () => void; careerLink?: boolean }) {
+  const gameUi = useFeature('game_ui');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
@@ -161,7 +163,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
             </>
           )}
           {card.relation === 'friends' && (
-            <button type="button" className="btn-ghost" disabled={busy} onClick={() => { if (window.confirm(t('Да премахнем ли {0} от приятелите?', card.username))) void act({ type: 'friendRemove', userId: card.id }); }}>
+            <button type="button" className="btn-ghost" disabled={busy} onClick={() => void askConfirm(t('Да премахнем ли {0} от приятелите?', card.username), { gameUi, danger: true }).then((yes) => { if (yes) void act({ type: 'friendRemove', userId: card.id }); })}>
               <UserCheck className="h-4 w-4 text-profit" />{t('Приятели')}<UserMinus className="h-3.5 w-3.5 text-mist-400" />
             </button>
           )}
@@ -176,7 +178,7 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
           {card.blocked ? (
             <button type="button" className="inline-flex items-center gap-1 text-mist-300 hover:text-white" disabled={busy} onClick={() => void act({ type: 'unblockUser', userId: card.id })}><Ban className="h-3.5 w-3.5" />{t('Отблокирай')}</button>
           ) : (
-            <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" disabled={busy} onClick={() => { if (window.confirm(t('Да блокираме ли {0}? Няма да виждаш съобщенията му и той няма да може да ти пише.', card.username))) void act({ type: 'blockUser', userId: card.id }); }}><Ban className="h-3.5 w-3.5" />{t('Блокирай')}</button>
+            <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" disabled={busy} onClick={() => void askConfirm(t('Да блокираме ли {0}? Няма да виждаш съобщенията му и той няма да може да ти пише.', card.username), { gameUi, danger: true, ok: t('Блокирай') }).then((yes) => { if (yes) void act({ type: 'blockUser', userId: card.id }); })}><Ban className="h-3.5 w-3.5" />{t('Блокирай')}</button>
           )}
           <button type="button" className="inline-flex items-center gap-1 text-mist-400 hover:text-loss" onClick={() => { onClose?.(); openReport({ targetUserId: card.id, username: card.username, kind: 'player' }); }}><Flag className="h-3.5 w-3.5" />{t('Докладвай')}</button>
           {card.blocked && <span className="text-loss">{t('Блокиран от теб')}</span>}

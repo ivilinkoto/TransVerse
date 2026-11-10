@@ -16,7 +16,8 @@ export function RouteWindow({ title, icon, live, href, size = 'lg', testId, chil
   if (!live) return null;
   return (
     <GameWindow title={title} icon={icon} size={size} testId={testId} onClose={() => router.back()}>
-      {children}
+      {/* The page's own title is in the window's header already (`.gw-route .page-header h1`). */}
+      <div className="gw-route">{children}</div>
     </GameWindow>
   );
 }

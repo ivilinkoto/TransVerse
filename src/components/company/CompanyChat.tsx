@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { PinnedBar, ReactionPicker, Reactions, ReplyBar, ReplyQuote, jumpToMessage, type ReplyQuoteData } from '@/components/game/ChatReply';
 import { PlayerName } from '@/components/game/PlayerName';
 import { api } from '@/lib/client/api';
+import { useFeature } from '@/components/game/Features';
+import { askConfirm } from '@/components/gameui/confirm';
 import type { ChatMessage, CompanyChatView } from '@/server/game/chat';
 import { t, tx, intlLocale } from '@/i18n/t';
 
@@ -12,6 +14,7 @@ const time = (iso: string) => new Date(iso).toLocaleString(intlLocale(), { day: 
 
 /** Company chat: live via the events stream (tv:chat), with a slow safety refresh. */
 export function CompanyChat({ me, view, replies = false, extras = { reactions: false, pins: false, presence: false } }: { me: string; view: CompanyChatView; replies?: boolean; extras?: { reactions: boolean; pins: boolean; presence: boolean } }) {
+  const gameUi = useFeature('game_ui');
   const { canModerate, canClear } = view;
   const [messages, setMessages] = useState(view.messages);
   const [side, setSide] = useState({ pinned: view.pinned, online: view.online, canPin: view.canPin });
@@ -68,7 +71,7 @@ export function CompanyChat({ me, view, replies = false, extras = { reactions: f
   };
 
   const clearAll = async () => {
-    if (!window.confirm(t('Да изтрием ли всички съобщения в чата на компанията? Това не може да се върне.'))) return;
+    if (!(await askConfirm(t('Да изтрием ли всички съобщения в чата на компанията? Това не може да се върне.'), { gameUi, danger: true, ok: t('Изтрий') }))) return;
     setError(null);
     try {
       await api('/api/game/action', { type: 'clearChat' });

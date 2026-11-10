@@ -1,0 +1,17 @@
+import Page from '../../missions/page';
+import { RouteWindow } from '@/components/gameui/RouteWindow';
+import { gameContext } from '@/server/game/context';
+import { t } from '@/i18n/t';
+import { initLocale } from '@/i18n/server';
+
+/** 1.3 „Нов облик“: from inside the game this page opens as a game window over the current one. */
+export default async function MissionsWindow() {
+  await initLocale();
+  const { features } = await gameContext();
+  const live = !!features.game_ui;
+  return (
+    <RouteWindow title={t('Мисии')} icon="🎯" live={live} href="/game/missions" size="lg" testId="missions-window">
+      {live && <Page />}
+    </RouteWindow>
+  );
+}

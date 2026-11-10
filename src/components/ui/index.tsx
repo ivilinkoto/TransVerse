@@ -5,7 +5,7 @@ import { t as tr, tx } from '@/i18n/t';
 
 export function PageHeader({ title, subtitle, help, actions }: { title: ReactNode; subtitle?: ReactNode; help?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-5 sm:mb-6">
+    <div className="page-header mb-5 sm:mb-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-display text-2xl font-bold tracking-tight sm:text-[28px]">{title}</h1>
