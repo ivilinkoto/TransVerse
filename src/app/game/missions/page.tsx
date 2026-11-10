@@ -31,7 +31,48 @@ function format(row: Row, value: number) {
   return def?.metric === 'earned_cents' ? money(value) : int(Math.floor(value));
 }
 
-function MissionCard({ row, reroll }: { row: Row; reroll?: { label: string; disabled: boolean } }) {
+/** 1.3 „Нов облик“: the picture of each kind of mission. */
+const MISSION_EMOJI: Record<string, string> = { deliveries: '📦', on_time: '⏱️', km: '🛣️', tons: '⚖️', earned_cents: '💰', international: '🌍', countries: '🗺️', long_haul: '🚛', refrigerated: '🧊', heavy: '🏋️', company_deliveries: '🏢' };
+
+/** 1.3 „Нов облик“: a mission as a game quest card — a ring for the progress, the rewards as loot. */
+function QuestCard({ row, reroll }: { row: Row; reroll?: { label: string; disabled: boolean } }) {
+  const def = missionById(row.missionId);
+  const share = Math.min(100, row.target ? (row.progress / row.target) * 100 : 0);
+  const state = row.claimedAt ? 'claimed' : row.completedAt ? 'ready' : 'open';
+  return (
+    <li className={`quest-card quest-${state} relative flex flex-col gap-3 overflow-hidden rounded-2xl p-4`} data-testid="quest-card">
+      {state === 'claimed' && <span className="quest-stamp" aria-hidden>{t('ВЗЕТО')}</span>}
+      <div className="flex items-center gap-3">
+        <div className="quest-ring relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full" style={{ '--ring': `${share * 3.6}deg` } as React.CSSProperties} aria-label={t('{0}% изпълнено', Math.floor(share))} role="img">
+          <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-asphalt-950 text-2xl">{state === 'open' ? (def ? MISSION_EMOJI[def.metric] ?? '🎯' : '🎯') : '✅'}</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-sm font-bold leading-snug text-white">{def ? def.title(row.target) : row.missionId}</p>
+          <p className="num mt-0.5 text-xs text-mist-400">{format(row, row.progress)} / {format(row, row.target)} · {Math.floor(share)}%</p>
+          {def?.metric === 'countries' && row.data.countries?.length ? <p className="mt-0.5 text-[11px] text-mist-400">{t('Държави: {0}', row.data.countries.join(', '))}</p> : null}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="quest-loot num">💰 {money(row.rewardCents)}</span>
+        <span className="quest-loot num">⭐ {t('+{0} опит', int(row.rewardXp))}</span>
+      </div>
+      {state === 'ready' && (
+        <ActionButton action={{ type: 'claimMission', periodKey: row.periodKey, missionId: row.missionId }} className="game-action game-action-gold w-full flex-row py-2.5 text-sm">
+          🎁 {t('Вземи наградата')}
+        </ActionButton>
+      )}
+      {state === 'claimed' && <p className="text-[11px] text-mist-400">{t('Наградата е взета · {0}', dateTime(row.claimedAt!))}</p>}
+      {reroll && state === 'open' && (
+        <ActionButton action={{ type: 'rerollMission', periodKey: row.periodKey, missionId: row.missionId }} className="btn-ghost self-start px-3 py-1.5 text-xs" disabled={reroll.disabled} confirm={t('Да сменим ли тази мисия с друга?')}>
+          <Shuffle className="h-3.5 w-3.5" />{tx(reroll.label)}
+        </ActionButton>
+      )}
+    </li>
+  );
+}
+
+function MissionCard({ row, reroll, gameUi = false }: { row: Row; reroll?: { label: string; disabled: boolean }; gameUi?: boolean }) {
+  if (gameUi) return <QuestCard row={row} reroll={reroll} />;
   const def = missionById(row.missionId);
   const share = row.target ? (row.progress / row.target) * 100 : 0;
   return (
@@ -98,7 +139,7 @@ export default async function MissionsPage() {
       </div>
       {unclaimed.length > 0 && (
         <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-gold-400" />{t('Невзети награди от минали периоди')}</span>}>
-          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{unclaimed.map((r) => <MissionCard key={`${r.periodKey}:${r.missionId}`} row={r} />)}</ul>
+          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{unclaimed.map((r) => <MissionCard key={`${r.periodKey}:${r.missionId}`} row={r} gameUi={!!features.game_ui} />)}</ul>
         </Card>
       )}
       <div className="grid gap-6 xl:grid-cols-2">
@@ -113,7 +154,7 @@ export default async function MissionsPage() {
               actions={<Badge tone="cyan">{t('остават {0}', duration(left))}</Badge>}
             >
               <p className="mb-3 text-xs text-mist-400">{tx(PERIOD_HINT[period])}</p>
-              {rows.length ? <ul className="space-y-3">{rows.map((r) => <MissionCard key={r.missionId} row={r} reroll={reroll} />)}</ul> : <p className="text-sm text-mist-400">{t('Няма мисии за този период.')}</p>}
+              {rows.length ? <ul className={features.game_ui ? 'grid gap-3' : 'space-y-3'}>{rows.map((r) => <MissionCard key={r.missionId} row={r} reroll={reroll} gameUi={!!features.game_ui} />)}</ul> : <p className="text-sm text-mist-400">{t('Няма мисии за този период.')}</p>}
             </Card>
           );
         })}

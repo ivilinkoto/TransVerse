@@ -426,7 +426,7 @@ export default async function OverviewPage() {
                         <span className="text-xs text-mist-400">{v.nickname ? `„${v.nickname}“ · ` : ''}{tx(v.plate)}</span>
                       </div>
                       <div className="mt-2">
-                        <DeliveryProgress schedule={v.delivery!.schedule} etaAt={v.delivery!.etaAt} deadlineAt={v.delivery!.deadlineAt} />
+                        <DeliveryProgress schedule={v.delivery!.schedule} etaAt={v.delivery!.etaAt} deadlineAt={v.delivery!.deadlineAt} lane={features.game_ui ? { from: v.delivery!.origin.nameBg, to: v.delivery!.destination.nameBg } : null} />
                       </div>
                     </div>
                   </li>

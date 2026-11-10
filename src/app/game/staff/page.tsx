@@ -70,7 +70,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
               const mainOptions = [{ value: '', label: tr('— без превозно средство —') }, ...fleet.vehicles.map((v) => ({ value: v.id, label: `${label(v)}${v.driver && v.driver.id !== d.id ? tr(' (сега: {0})', v.driver.name) : ''}`, disabled: !!v.delivery }))];
               const coOptions = [{ value: '', label: tr('— не е втори шофьор —') }, ...fleet.vehicles.filter((v) => v.model.kind !== 'van' && v.ownership !== 'rented').map((v) => ({ value: v.id, label: `${label(v)}${v.coDriver && v.coDriver.id !== d.id ? tr(' (сега: {0})', v.coDriver.name) : ''}`, disabled: !!v.delivery }))];
               return (
-                <li key={d.id} id={`driver-${d.id}`} className={`rounded-2xl border bg-asphalt-850 p-4 ${focus === d.id ? 'border-gold-400' : 'border-asphalt-700'}`}>
+                <li key={d.id} id={`driver-${d.id}`} className={`rounded-2xl border bg-asphalt-850 p-4 ${focus === d.id ? 'border-gold-400' : 'border-asphalt-700'} ${features.game_ui ? `hero-card hero-skill-${Math.min(5, Math.max(1, d.skill))}` : ''}`}>
                   <div className="flex items-start justify-between gap-3">
                     {features.driver_portraits && <DriverPortrait id={d.id} name={d.name} look={d.look ?? {}} className="h-14 w-14" />}
                     <div className="min-w-0 flex-1">
@@ -196,16 +196,16 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
       <Card title={tr('Кандидати')} actions={<span className="text-xs text-mist-400">{tr('Обновяват се на всеки 24 часа')}</span>}>
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {pool.map((c) => (
-            <li key={c.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-4">
-              <div className="flex items-center gap-3">
-                {features.driver_portraits && <DriverPortrait id={c.id} name={c.name} className="h-12 w-12" />}
+            <li key={c.id} className={`rounded-xl border border-asphalt-700 bg-asphalt-850 p-4 ${features.game_ui ? `hero-card hero-pick hero-skill-${Math.min(5, Math.max(1, c.skill))} flex flex-col items-center text-center` : ''}`}>
+              <div className={features.game_ui ? 'flex flex-col items-center gap-2' : 'flex items-center gap-3'}>
+                {features.driver_portraits && <DriverPortrait id={c.id} name={c.name} className={features.game_ui ? 'hero-portrait h-20 w-20' : 'h-12 w-12'} />}
                 <div className="font-semibold">{tx(c.name)}</div>
               </div>
               <div className="mt-1 text-sm"><Stars n={c.skill} /></div>
               <div className="mt-1 text-xs text-mist-400">{c.skill > 1 ? tr('{0} {1} за умения', c.skill - 1, c.skill === 2 ? tr('точка') : tr('точки')) : tr('начинаещ')}</div>
               <div className="num mt-2 text-sm text-mist-300">{tr('{0} / ден', money(c.salaryCentsPerDay))}</div>
               <div className="mt-3">
-                <ActionButton action={{ type: 'hireDriver', candidateId: c.id }} className="btn-primary px-3 py-2 text-sm"><UserPlus className="h-4 w-4" />{tr('Наеми')}</ActionButton>
+                <ActionButton action={{ type: 'hireDriver', candidateId: c.id }} className={features.game_ui ? 'game-action game-action-main flex-row px-5 py-2 text-sm' : 'btn-primary px-3 py-2 text-sm'}><UserPlus className="h-4 w-4" />{tr('Наеми')}</ActionButton>
               </div>
             </li>
           ))}

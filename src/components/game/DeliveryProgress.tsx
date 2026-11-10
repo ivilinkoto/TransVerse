@@ -20,7 +20,7 @@ export const PHASE_LABEL: Record<string, string> = {
 };
 
 /** Live progress computed from the server's schedule — no polling needed. */
-export function DeliveryProgress({ schedule, etaAt, deadlineAt, compact = false, ghost = null }: { schedule: Segment[]; etaAt: string | Date; deadlineAt: string | Date; compact?: boolean; ghost?: { username: string; minutes: number; mine: boolean } | null }) {
+export function DeliveryProgress({ schedule, etaAt, deadlineAt, compact = false, ghost = null, lane = null }: { schedule: Segment[]; etaAt: string | Date; deadlineAt: string | Date; compact?: boolean; ghost?: { username: string; minutes: number; mine: boolean } | null; lane?: { from: string; to: string } | null }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 5_000);
@@ -36,9 +36,23 @@ export function DeliveryProgress({ schedule, etaAt, deadlineAt, compact = false,
         <span className={s.segment?.kind === 'drive' ? 'text-cyan-glow' : 'text-amber-sig'}>{phase}</span>
         <span className="num text-mist-400">{s.done ? '' : t('остават {0}', duration((eta - now) / 60_000))}</span>
       </div>
+      {lane ? (
+        // 1.3 „Нов облик“: the trip as a road between the two cities with the truck on it.
+        <div className="trip-lane mt-2" data-testid="trip-lane">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-mist-300">
+            <span className="flex items-center gap-1"><span className="contract-pin contract-pin-from scale-50" aria-hidden />{tx(lane.from)}</span>
+            <span className="flex items-center gap-1">{tx(lane.to)}<span className="contract-pin contract-pin-to scale-50" aria-hidden /></span>
+          </div>
+          <div className="trip-road relative mt-1 h-7 rounded-xl">
+            <div suppressHydrationWarning className="trip-done absolute inset-y-0 left-0 rounded-xl transition-[width] duration-1000" style={{ width: `${Math.max(3, s.progress * 100)}%` }} />
+            <span suppressHydrationWarning className={`trip-truck absolute top-1/2 text-lg ${s.segment?.kind === 'drive' ? 'trip-truck-moving' : ''}`} style={{ left: `calc(${Math.min(100, Math.max(0, s.progress * 100))}% - 0.9rem)` }} aria-hidden>🚚</span>
+          </div>
+        </div>
+      ) : (
       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-asphalt-700">
         <div className="h-full rounded-full bg-gradient-to-r from-cyan-glow to-volt-500 transition-[width] duration-1000" style={{ width: `${Math.max(2, s.progress * 100)}%` }} />
       </div>
+      )}
       {ghost && !s.done && (() => {
         // v1.8: the record run on this lane, started when this trip's loaded leg starts.
         const loaded = schedule.filter((x) => x.leg === 'loaded' && x.kind !== 'loading');

@@ -162,7 +162,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                   <span className="font-semibold">{tr('{0} · {1} т', features.sealed_cargo && v.delivery.contract.sealed ? tr('📦 Запечатан товар') : v.delivery.contract.goods, dec(v.delivery.contract.weightTons))}</span>
                   <span className="num text-profit">{money(v.delivery.contract.rewardCents)}</span>
                 </div>
-                <DeliveryProgress schedule={v.delivery.schedule} etaAt={v.delivery.etaAt} deadlineAt={v.delivery.deadlineAt} ghost={(() => {
+                <DeliveryProgress lane={features.game_ui ? { from: v.delivery.origin.nameBg, to: v.delivery.destination.nameBg } : null} schedule={v.delivery.schedule} etaAt={v.delivery.etaAt} deadlineAt={v.delivery.deadlineAt} ghost={(() => {
                   const g = ghosts.get(`${v.delivery.contract.originCityId}:${v.delivery.contract.destCityId}`);
                   return g ? { username: g.username, minutes: g.minutes, mine: g.userId === user.id } : null;
                 })()} />
