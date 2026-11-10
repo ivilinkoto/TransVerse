@@ -1,7 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
-import { TUTORIAL } from '@/lib/game/tutorial';
 
 /** True while a "visit" step is still pending (and the tutorial not dismissed). */
 export async function tutorialPending(db: DbOrTx, userId: string, step: string): Promise<boolean> {
@@ -10,12 +9,12 @@ export async function tutorialPending(db: DbOrTx, userId: string, step: string):
 }
 
 /**
- * 1.3 „Нов облик“: sections open as game windows once the player is past the tutorial
- * (finished or dismissed) — during it the steps point at the pages themselves.
+ * 1.3 „Нов облик“: sections open as game windows whenever the new look is on, for every
+ * player. They used to wait until the tutorial was finished or dismissed, so a player still
+ * in it (or who had never finished it) got full page loads everywhere; the windows render
+ * the same pages, so the tutorial's visit steps are still marked inside them.
+ * The db and userId are kept so the callers stay as they are.
  */
 export async function windowsLive(db: DbOrTx, userId: string, features: { game_ui?: boolean }): Promise<boolean> {
-  if (!features.game_ui) return false;
-  const [u] = await db.select({ tutorial: users.tutorial }).from(users).where(eq(users.id, userId));
-  if (!u) return false;
-  return !!u.tutorial.dismissed || TUTORIAL.every((s) => u.tutorial.done.includes(s.key));
+  return !!features.game_ui;
 }

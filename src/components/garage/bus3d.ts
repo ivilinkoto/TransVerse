@@ -182,12 +182,16 @@ export function buildBus(model: BusModelId, color?: string | null): { group: THR
 
   // Rear-view mirrors on curved arms („ears“), typical of buses.
   const mirrorY = floor + bodyH * 0.86;
-  for (const z of side(W / 2 - 0.05)) {
-    const arm = cyl(0.025, 0.025, 0.55, M.steel(), 8);
-    arm.rotation.x = Math.PI / 2;
-    arm.rotation.z = 0.5;
-    g.add(at(arm, frontAt(mirrorY) + 0.12, mirrorY, z));
-    g.add(at(box(0.08, 0.38, 0.2, dark, 0.04), frontAt(mirrorY) + 0.34, floor + bodyH * 0.74, z + Math.sign(z) * 0.17));
+  for (const k of [-1, 1]) {
+    // The arm runs from the front corner forward and out; the mirror hangs from its end.
+    const sx = frontAt(mirrorY) - 0.05, sz = k * (W / 2 - 0.05);
+    const ex = sx + 0.42, ez = k * (W / 2 + 0.22);
+    const dx = ex - sx, dz = ez - sz, armLen = Math.hypot(dx, dz);
+    const arm = box(armLen, 0.04, 0.04, M.steel(), 0.015);
+    arm.rotation.y = Math.atan2(-dz, dx);
+    g.add(at(arm, (sx + ex) / 2, mirrorY, (sz + ez) / 2));
+    g.add(at(box(0.03, 0.1, 0.03, M.steel(), 0.01), ex, mirrorY - 0.05, ez));
+    g.add(at(box(0.08, 0.38, 0.2, dark, 0.04), ex, mirrorY - 0.28, ez));
   }
 
   // The back: rear window (not on the coach — the engine is there), engine grille, lights, plate, bumper.
