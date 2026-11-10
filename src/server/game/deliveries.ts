@@ -33,6 +33,7 @@ import { clearedCountries, recordSnowSeason, withCleared } from './first-snow';
 import { recordWinterTrek } from './winter-trek';
 import { recordMascotTrip } from './mascot';
 import { recordSkillsTrip } from './skills';
+import { recordCrisisDelivery } from './crises';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -834,6 +835,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await recordMascotTrip(tx, { userId: company!.ownerId, companyId: company!.id, deliveryId: d.id, rewardCents: result.rewardCents, loadedKm: d.loadedKm, tons: contract.weightTons, originCountry: origin!.country, destCountry: dest!.countryCode }, completedAt);
   // 1.3 „Умения на шофьора“: what the owner's skills add to this trip, as one line.
   await recordSkillsTrip(tx, { userId: company!.ownerId, companyId: company!.id, deliveryId: d.id, rewardCents: result.rewardCents, bonusCents: result.bonusCents, fuelCents: costs.fuelCents, maintenanceCents: costs.maintenanceCents, tollCents: costs.tollCents, loadedKm: d.loadedKm, ownerDrove, convoy: !!(d.convoyWith || d.convoyLead) }, completedAt);
+  // 1.3 „Световни кризи“: tonnes for the crisis day, or the winning way's bonus.
+  await recordCrisisDelivery(tx, { userId: company!.ownerId, companyId: company!.id, deliveryId: d.id, destCountry: dest!.countryCode, tons: contract.weightTons, rewardCents: result.rewardCents }, completedAt);
   await rewardReferral(tx, company!.ownerId, now);
   // Return loads come with v1.2 (staff see them before the release).
   // The hauler of someone else's goods gets the usual "Доставено" message.

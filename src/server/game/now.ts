@@ -6,6 +6,8 @@ import { nextSteps, type NextStep } from './next-steps';
 import { winterTrekView } from './winter-trek';
 import { mascotView } from './mascot';
 import { skillsView } from './skills';
+import { crisisView } from './crises';
+import { CRISES } from '@/lib/game/crises';
 import { featureFor } from '@/server/features';
 import { DAILY_ROUTE } from '@/lib/game/daily-route';
 import { sofiaDay } from '@/lib/game/shop-v2';
@@ -47,6 +49,11 @@ export async function nowList(db: DbOrTx, user: { id: string; loginStreak: numbe
     const pet = await mascotView(db, user.id, now);
     if (!pet) out.push({ emoji: '🐾', text: t('Вземи си талисман за кабината — расте с курсовете и носи бонус.'), href: '/game/mascot', action: t('Избери'), tone: 'info' });
     else if (pet.sad) out.push({ emoji: '🐾', text: t('{0} е тъжен — един курс ще го зарадва.', tx(pet.name)), href: '/game/mascot', action: t('Виж'), tone: 'warn' });
+  }
+  // 1.3 „Световни кризи“: a crisis without the player's vote yet.
+  if (await featureFor(db, user.id, 'world_crises', now)) {
+    const c = await crisisView(db, user.id, now);
+    if (c.moment?.phase === 'crisis' && !c.myVote) out.push({ emoji: CRISES[c.moment.id]!.emoji, text: t('Криза: {0} — гласувай как да се реши.', tx(CRISES[c.moment.id]!.title)), href: '/game/crisis', action: t('Гласувай'), tone: 'hot' });
   }
   // 1.3 „Умения на шофьора“: free points waiting.
   if (await featureFor(db, user.id, 'driver_skills', now)) {

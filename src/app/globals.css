@@ -677,3 +677,10 @@ html[data-motion='off'] .mascot-bob { animation: none; }
 
 /* 1.3 „Собствен сервиз“: the player's workshop card. */
 .workshop-card { background: radial-gradient(120% 120% at 100% 0%, rgba(249, 115, 22, 0.18), transparent 55%), linear-gradient(160deg, #1b2030, #0e1320); border: 1px solid rgba(249, 115, 22, 0.3); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13; }
+
+/* 1.3 „Световни кризи“: an amber alert card, the days and the two ways out. */
+.crisis-card { background: radial-gradient(120% 120% at 0% 0%, rgba(245, 158, 11, 0.22), transparent 55%), linear-gradient(160deg, #221a10, #0f1320); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #070b13; }
+.crisis-day { background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); }
+.crisis-day-now { border-color: rgba(245, 158, 11, 0.5); }
+.crisis-option { background: linear-gradient(160deg, #182238, #0e1523); border: 1px solid #263450; }
+.crisis-option-mine { border-color: #34d399; box-shadow: 0 0 16px -8px #34d399; }

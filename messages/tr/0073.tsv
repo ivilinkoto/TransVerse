@@ -349,3 +349,58 @@ b5b579d17f	Own workshop	Своя мастерская
 54d145948f	Price against the usual	Цена относительно обычной
 4ebb748512	The price is {0}% to {1}% of the usual.	Цена — от {0}% до {1}% от обычной.
 7c02cbfdac	Save the price	Сохранить цену
+4eb9ee4056	+{0}% on trips to {1} until {2}.	+{0}% на рейсы в {1} до {2}.
+a839364887	{0} votes · {1}%	{0} голосов · {1}%
+fe2c68f034	You already voted in this crisis.	Ты уже голосовал в этом кризисе.
+3d269bf435	Each day: a shared goal of {0} t to the affected country. The way out with more votes gives a bonus on trips to its country for {1} days — the full one with at least {2} goals reached.	Каждый день: общая цель {0} т в пострадавшую страну. Выход с большим числом голосов даёт бонус на рейсы в свою страну {1} дней — полный, если выполнено не менее {2} целей.
+4aa5724f24	Second day of the strike. The shops in Bucharest look for goods by road — every truck counts.	Второй день забастовки. Магазины Бухареста ищут товары по суше — важен каждый грузовик.
+c6ab0b25c1	Day {0}	День {0}
+9b5cb6a856	Day {0} of {1}	День {0} из {1}
+bbc17bc6ae	Today's goal: trips to {0}	Цель на сегодня: рейсы в {0}
+051cf48bea	Bring it by road	Доставить по суше
+41fd140a2b	The dockers in Constanța stopped work. Containers pile up and the warehouses in Romania stay empty.	Докеры в Констанце прекратили работу. Контейнеры копятся, а склады в Румынии пустеют.
+2f116a2d20	Deliveries for Hungary	Доставки для Венгрии
+ccd6faf18d	The Danube Bridge at Ruse closes for an urgent repair. The truck queue is kilometres long.	Дунайский мост у Русе закрывается на срочный ремонт. Очередь грузовиков — на километры.
+954638b7d3	Starts on {0} · {1}	Начинается {0} · {1}
+66f397da40	Goals reached: {0} of {1}.	Выполнено целей: {0} из {1}.
+1cd6687c77	Trucks take over the port's cargo: +bonus on trips to Romania.	Грузовики берут на себя грузы порта: +бонус на рейсы в Румынию.
+27325045a6	The ships come to Varna and the goods leave from there: +bonus on trips to Bulgaria.	Корабли идут в Варну, и товары отправляются оттуда: +бонус на рейсы в Болгарию.
+6567369b5a	Crisis: {0}	Кризис: {0}
+3b4de2dea4	Crisis: {0} — vote how to solve it.	Кризис: {0} — проголосуй, как его решить.
+5d6128bb5f	The bridge reopens tomorrow. Today is the last day to supply the towns along the Danube.	Мост открывается завтра. Сегодня последний день снабдить города на Дунае.
+f65546e805	Every two weeks a three-day crisis on the map: a strike, a fuel shortage, a closed bridge. Shared goals, a vote on the way out and a week of bonus.	Раз в две недели — трёхдневный кризис на карте: забастовка, нехватка топлива, закрытый мост. Общие цели, голосование за выход и неделя бонуса.
+3b516d5cce	Diesel shortage in Hungary	Нехватка дизеля в Венгрии
+1ba8c90477	Heavy snow closed the passes in Tyrol. Villages in Austria are cut off from deliveries.	Сильный снег закрыл перевалы в Тироле. Деревни Австрии отрезаны от поставок.
+66b8b49a79	Detour through Germany	Объезд через Германию
+eb225592c5	Detour through Serbia	Объезд через Сербию
+cfe79af897	The community decided	Сообщество решило
+0e0edc3654	Queues on the motorways. Deliveries to Hungary are needed more and more.	Очереди на автомагистралях. Доставки в Венгрию нужны всё больше.
+022eef7bf9	Help for Austria	Помощь Австрии
+d81fe89c9f	The last day of talks. What we bring today will decide how fast the market recovers.	Последний день переговоров. То, что мы привезём сегодня, решит, как быстро восстановится рынок.
+49de9c1853	Effect until {0}	Последствия до {0}
+f604eded0f	Hauliers go through Serbia until the crisis passes: +bonus on trips to Serbia.	Перевозчики едут через Сербию, пока кризис не пройдёт: +бонус на рейсы в Сербию.
+86169293a6	Through Vidin to Romania	Через Видин в Румынию
+29aa21ba0a	Redirect to Varna	Перенаправить в Варну
+80a0a4d068	Full trucks to Hungarian towns: +bonus on trips to Hungary.	Полные грузовики в венгерские города: +бонус на рейсы в Венгрию.
+01e7d94935	The first crisis starts on 13 November, then every 14 days (Compete → Today → World crises). The crises are invented — the game makes them up.	Первый кризис начинается 13 ноября, затем каждые 14 дней (Соревнования → Сегодня → Мировые кризисы). Кризисы вымышленные — их создаёт игра.
+21df744c0d	The roads open one by one — the last day of the crisis.	Дороги открываются одна за другой — последний день кризиса.
+e1c65b965c	A refinery near Budapest stopped for repairs. Petrol stations in Hungary limit sales.	НПЗ под Будапештом остановлен на ремонт. АЗС в Венгрии ограничивают продажи.
+d60729c2bf	The refinery restarts tomorrow — today is the last day to help.	НПЗ запускается завтра — сегодня последний день помочь.
+19960d1f4a	Danube Bridge repair	Ремонт Дунайского моста
+1e08878401	World crises	Мировые кризисы
+c3085bce75	There is no crisis to vote on now.	Сейчас нет кризиса, за который можно голосовать.
+d184e85c80	Then for 7 days the way out with more votes gives a bonus on trips to its country: +10% if the community reached at least 2 of the 3 goals, otherwise +5%.	Затем 7 дней выход с большим числом голосов даёт бонус на рейсы в свою страну: +10%, если сообщество выполнило не менее 2 из 3 целей, иначе +5%.
+da7310518e	The next crisis	Следующий кризис
+1e0578a0fc	Supply northern Bulgaria	Снабдить Северную Болгарию
+f674a2c4c5	The snow ploughs are working, but food and fuel in Austria are running out.	Снегоуборщики работают, но еда и топливо в Австрии заканчиваются.
+fbaee13dda	Snow crisis in the Alps	Снежный кризис в Альпах
+9f2d8ed0a5	Strike at the port of Constanța	Забастовка в порту Констанца
+3c2ad63173	Goods for the towns along the Danube: +bonus on trips to Bulgaria.	Товары для городов на Дунае: +бонус на рейсы в Болгарию.
+21d9200024	Your vote	Твой голос
+a4a14add54	Cargo for Romania goes through Vidin: +bonus on trips to Romania.	Грузы для Румынии идут через Видин: +бонус на рейсы в Румынию.
+fc2b583e33	Cargo goes around the Alps through Germany: +bonus on trips to Germany.	Грузы обходят Альпы через Германию: +бонус на рейсы в Германию.
+9f88e8e1c7	Three days of story: each day a shared goal of 150 t delivered to the affected country, and a vote between two ways out (one vote per player).	Три дня истории: каждый день общая цель — 150 т в пострадавшую страну, и голосование между двумя выходами (один голос на игрока).
+4dc22c4a27	Three days of crisis, a shared vote and a week of effects.	Три дня кризиса, общее голосование и неделя последствий.
+ba9449ae08	The ferries at Vidin and Svishtov work day and night. Northern Bulgaria waits for goods.	Паромы у Видина и Свиштова работают круглосуточно. Северная Болгария ждёт товары.
+efcdd0752f	Food and fuel for the Austrian towns: +bonus on trips to Austria.	Еда и топливо для австрийских городов: +бонус на рейсы в Австрию.
+311bfc42bf	Four crises in turn: a strike at the port of Constanța, a diesel shortage in Hungary, a Danube Bridge repair and a snow crisis in the Alps.	Четыре кризиса по очереди: забастовка в порту Констанца, нехватка дизеля в Венгрии, ремонт Дунайского моста и снежный кризис в Альпах.

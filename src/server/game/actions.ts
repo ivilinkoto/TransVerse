@@ -72,6 +72,7 @@ import { guessDailyRoute } from '@/server/game/daily-route';
 import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
 import { openWorkshop, rateWorkshop, setWorkshopPrice, upgradeWorkshop } from '@/server/game/workshops';
+import { voteCrisis } from '@/server/game/crises';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -247,6 +248,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
   z.object({ type: z.literal('petMascot') }),
   z.object({ type: z.literal('setMascotAccessory'), accessory: z.enum(['scarf', 'cap', 'glasses', 'crown']).nullable() }),
+  z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('openWorkshop'), cityId, name: z.string().max(80) }),
   z.object({ type: z.literal('setWorkshopPrice'), pricePct: z.coerce.number().int().min(1).max(500) }),
   z.object({ type: z.literal('upgradeWorkshop') }),
@@ -729,6 +731,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   nightRun: 'night_run',
   learnSkill: 'driver_skills',
   openWorkshop: 'player_workshops',
+  voteCrisis: 'world_crises',
   setWorkshopPrice: 'player_workshops',
   upgradeWorkshop: 'player_workshops',
   repairAtWorkshop: 'player_workshops',
@@ -946,6 +949,9 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, mood: await petMascot(db, user.id, new Date()) };
     case 'setMascotAccessory':
       await setMascotAccessory(db, user.id, input.accessory, new Date());
+      return { ok: true };
+    case 'voteCrisis':
+      await voteCrisis(db, user.id, input.option, new Date());
       return { ok: true };
     case 'openWorkshop':
       await openWorkshop(db, user.id, input.cityId, input.name, new Date());

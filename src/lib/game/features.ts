@@ -153,6 +153,8 @@ export const FEATURES = {
   driver_skills: '1.3',
   // „Собствен сервиз“: player-run repair workshops.
   player_workshops: '1.3',
+  // „Световни кризи“: three-day crises with a community vote and a week's effect.
+  world_crises: '1.3',
   // 1.2.6 „На една вълна“
   chat_life: '1.3',
   partner_loads: '1.3',
