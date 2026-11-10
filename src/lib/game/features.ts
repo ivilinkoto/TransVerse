@@ -149,6 +149,8 @@ export const FEATURES = {
   mascot: '1.3',
   // „Нощен рейс“: an arcade run on the day's night road.
   night_run: '1.3',
+  // „Умения на шофьора“: the player's own skill tree.
+  driver_skills: '1.3',
   // 1.2.6 „На една вълна“
   chat_life: '1.3',
   partner_loads: '1.3',

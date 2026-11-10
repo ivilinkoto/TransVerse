@@ -264,3 +264,40 @@ dfc0ee83a8	Three crashes.	Три удара.
 21bd073bb4	Go ({0} left)	Поехали (осталось {0})
 0deecf3c85	Crashes	Удары
 f795d995ae	Tomorrow — a new run	Завтра — новый заезд
+dc75b78f04	+{0}% to the early delivery bonus	+{0}% к бонусу за раннюю доставку
+c4318f1a21	+{0}% to the pay	+{0}% к оплате
+37dc3a2faa	+{0}% on convoy trips	+{0}% на рейсах в колонне
+900f630213	+{0}% on hired drivers' trips	+{0}% на рейсах наёмных водителей
+7ff071d895	+{0}% on trips over 800 km	+{0}% на рейсах более 800 км
+57cda471e0	+{0}% on arrivals 22:00–06:00	+{0}% при прибытии 22:00–06:00
+fe645a2475	{0} free points	Свободных очков: {0}
+f04ef3a8c6	Fleet → People → Skills: a point for each level above the first. Nine skills in three branches, three ranks each.	Автопарк → Люди → Навыки: очко за каждый уровень выше первого. Девять навыков в трёх ветках, по три уровня.
+8e33dbd59e	Gentle driving	Аккуратная езда
+cac7c6e980	Each skill has {0} ranks. The effect is paid on each delivery of your company as a „Driver skills“ line.	У каждого навыка {0} уровня. Эффект выплачивается при каждой доставке твоей компании строкой «Навыки водителя».
+7e6790e1e4	Get all points back for {0}?	Вернуть все очки за {0}?
+bdb7b61d98	Get all points back? The first time is free.	Вернуть все очки? Первый раз бесплатно.
+948c8c24a1	Long haul	Дальние рейсы
+fa0514754c	Good boss	Хороший начальник
+b5d11f1395	The effect is paid on each delivery of your company as a separate „Driver skills“ line. „Start over“ gives the points back — free the first time, then for 5,000 lv.	Эффект выплачивается при каждой доставке твоей компании отдельной строкой «Навыки водителя». «Заново» возвращает очки — первый раз бесплатно, потом за 5 000 лв.
+62f8421d7e	You have {0} free skill points.	У тебя {0} свободных очков навыков.
+d74353c1f8	Road mate	Товарищ в пути
+b2ac15bb60	A personal skill tree: a point for each level in three branches — Road, Trade and People. Small bonuses on every delivery that add up.	Личное дерево навыков: очко за каждый уровень в трёх ветках — Дорога, Торговля и Люди. Небольшие бонусы при каждой доставке, которые складываются.
+e6fd1231c4	Learn	Изучить
+d5f3a4f1c6	Rank {0} → {1}	Уровень {0} → {1}
+7aadede204	New driver skills	Новые навыки водителя
+b60e706605	No such skill.	Такого навыка нет.
+86c9c0ce6c	No free points — they come with every new level.	Нет свободных очков — они приходят с каждым новым уровнем.
+9b51b1dc2a	Start over ({0})	Заново ({0})
+431e9caf08	Start over (free)	Заново (бесплатно)
+02697d51b6	You haven't learned any skills yet.	Ты ещё не изучил навыки.
+696e83e71a	Road expert	Знаток дорог
+bfd7d5e113	{0} of {1} spent · a new point with every level	Потрачено {0} из {1} · новое очко с каждым уровнем
+a1eb4f5db9	Road: −2% fuel, −3% maintenance and −3% tolls a rank. Trade: +1% pay, +10% to the early delivery bonus and +2% on trips over 800 km a rank.	Дорога: −2% топлива, −3% обслуживания и −3% дорожных сборов за уровень. Торговля: +1% к оплате, +10% к бонусу за раннюю доставку и +2% на рейсах более 800 км за уровень.
+e8102238d8	Your experience behind the wheel — a point for every level.	Твой опыт за рулём — очко за каждый уровень.
+b6f9c763d4	Punctuality	Пунктуальность
+f7fb4301b6	The skill is at its top rank.	Навык на высшем уровне.
+e3e64b0fbd	Driver skills	Навыки водителя
+e4057fd271	People: +2% on hired drivers' trips, +3% in convoy and +3% on arrivals between 22:00 and 06:00 a rank.	Люди: +2% на рейсах наёмных водителей, +3% в колонне и +3% при прибытии с 22:00 до 06:00 за уровень.
+beb5e6bbf4	−{0}% tolls	−{0}% дорожных сборов
+7eebe8ebb6	−{0}% fuel cost	−{0}% расход на топливо
+d08051ddd9	−{0}% maintenance cost	−{0}% расход на обслуживание

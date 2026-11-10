@@ -665,3 +665,12 @@ html[data-motion='off'] .mascot-bob { animation: none; }
 /* 1.3 „Нощен рейс“: a dark card around the night road. */
 .night-run-card { background: radial-gradient(120% 90% at 50% 0%, rgba(99, 102, 241, 0.18), transparent 60%), linear-gradient(180deg, #0b1020, #070a14); border: 1px solid rgba(129, 140, 248, 0.25); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 3px 0 #04060c; }
 .night-run-canvas { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 12px 40px -12px rgba(0, 0, 0, 0.8); touch-action: manipulation; }
+
+/* 1.3 „Умения на шофьора“: branch columns, skill cards and rank pips. */
+.skill-bar { background: linear-gradient(160deg, #182238, #0e1523); border: 1px solid #263450; }
+.skill-branch { background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--tile) 16%, transparent), transparent 60%), linear-gradient(180deg, #141c2e, #0d1320); border: 1px solid color-mix(in srgb, var(--tile) 30%, #263450); }
+.skill-card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.07); }
+.skill-card-on { border-color: color-mix(in srgb, var(--tile) 55%, transparent); box-shadow: 0 0 16px -8px var(--tile); }
+.skill-icon { background: linear-gradient(145deg, color-mix(in srgb, var(--tile) 35%, #1b2638), #111827); border: 1px solid color-mix(in srgb, var(--tile) 45%, transparent); }
+.skill-pip { background: rgba(255, 255, 255, 0.1); }
+.skill-pip-on { background: var(--tile); box-shadow: 0 0 8px var(--tile); }

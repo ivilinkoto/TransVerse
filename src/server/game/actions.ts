@@ -70,6 +70,7 @@ import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgr
 import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
 import { playNightRun } from '@/server/game/night-run';
+import { learnSkill, resetSkills } from '@/server/game/skills';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -245,6 +246,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
   z.object({ type: z.literal('petMascot') }),
   z.object({ type: z.literal('setMascotAccessory'), accessory: z.enum(['scarf', 'cap', 'glasses', 'crown']).nullable() }),
+  z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
+  z.object({ type: z.literal('resetSkills') }),
   z.object({ type: z.literal('nightRun'), inputs: z.array(z.number().int().min(-1).max(1)).max(2250) }),
   z.object({ type: z.literal('dailyRouteGuess'), order: z.array(z.number().int().positive()).min(2).max(12) }),
   z.object({ type: z.literal('foundCompany'), name: companyNameSchema, hqCityId: cityId }),
@@ -718,6 +721,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   signUpDuo: 'duo_week',
   dailyRouteGuess: 'daily_route',
   nightRun: 'night_run',
+  learnSkill: 'driver_skills',
+  resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
   renameMascot: 'mascot',
   petMascot: 'mascot',
@@ -931,6 +936,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'setMascotAccessory':
       await setMascotAccessory(db, user.id, input.accessory, new Date());
       return { ok: true };
+    case 'learnSkill':
+      return { ok: true, rank: await learnSkill(db, user.id, input.skill, new Date()) };
+    case 'resetSkills':
+      return { ok: true, costCents: await resetSkills(db, user.id, new Date()) };
     case 'nightRun':
       return { ok: true, ...(await playNightRun(db, user.id, input.inputs, new Date())) };
     case 'dailyRouteGuess':

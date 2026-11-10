@@ -5,6 +5,7 @@ import { inventoryBadge, weeklyChest } from './item-trade';
 import { nextSteps, type NextStep } from './next-steps';
 import { winterTrekView } from './winter-trek';
 import { mascotView } from './mascot';
+import { skillsView } from './skills';
 import { featureFor } from '@/server/features';
 import { DAILY_ROUTE } from '@/lib/game/daily-route';
 import { sofiaDay } from '@/lib/game/shop-v2';
@@ -46,6 +47,11 @@ export async function nowList(db: DbOrTx, user: { id: string; loginStreak: numbe
     const pet = await mascotView(db, user.id, now);
     if (!pet) out.push({ emoji: '🐾', text: t('Вземи си талисман за кабината — расте с курсовете и носи бонус.'), href: '/game/mascot', action: t('Избери'), tone: 'info' });
     else if (pet.sad) out.push({ emoji: '🐾', text: t('{0} е тъжен — един курс ще го зарадва.', tx(pet.name)), href: '/game/mascot', action: t('Виж'), tone: 'warn' });
+  }
+  // 1.3 „Умения на шофьора“: free points waiting.
+  if (await featureFor(db, user.id, 'driver_skills', now)) {
+    const sk = await skillsView(db, user.id);
+    if (sk.free > 0) out.push({ emoji: '🌳', text: t('Имаш {0} свободни точки за умения.', sk.free), href: '/game/skills', action: t('Научи'), tone: 'gold' });
   }
   // 1.3 „Пътят на деня“: today's puzzle while it is not finished.
   if (await featureFor(db, user.id, 'daily_route', now)) {
