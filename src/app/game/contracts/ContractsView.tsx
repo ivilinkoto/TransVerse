@@ -52,6 +52,8 @@ import { heldLicences, missingFor } from '@/server/game/licences';
 
 import { FleetCondition } from '@/components/game/FleetCondition';
 import { DispatchPanel } from '@/components/game/DispatchPanel';
+import { ToolWindowButton } from '@/components/gameui/ToolWindowButton';
+import { serviceState } from '@/lib/game/economy';
 import { favoriteLanesOf } from '@/server/game/favorites';
 import { membershipOf } from '@/server/game/membership';
 import { isNightShift, NIGHT, oversizeCostCents } from '@/lib/game/roads';
@@ -280,6 +282,9 @@ export async function ContractsView({ params, inWindow = false }: { params: Cont
   const backBoard = fromCity ? board.filter((c) => c.origin.id === fromCity).sort((a, b) => Number(usableBy(b)) - Number(usableBy(a)) || Number(b.toHome) - Number(a.toHome) || b.rewardCents - a.rewardCents) : [];
   const fromName = fromCity ? (backBoard[0]?.origin.name ?? fleet.vehicles.find((v) => v.cityId === fromCity)?.city.nameBg ?? null) : null;
 
+  // 1.3 „Нов облик“: trucks needing service (for the tools' badge) and the free trucks as slots on the board.
+  const attention = fleet.vehicles.filter((v) => v.ownership !== 'rented' && serviceState(v.condition) !== 'ok').length;
+  const slots = features.game_ui ? fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => ({ id: v.id, plate: v.plate, city: v.city.nameBg, modelId: v.modelId, color: v.color, trailerModelId: v.trailer?.modelId ?? null, livery: v.livery })) : [];
   // 1.2.2 „Курсове“: the map on top of the orders, on one screen.
   const map = features.nav_v2 && !inWindow ? await mapData(db, { userId: user.id, companyId: company.id, now, features }, params.contract) : null;
   // The tutorial's „see it on the map“ step is done here too: the map is on this page now.
@@ -360,6 +365,30 @@ export async function ContractsView({ params, inWindow = false }: { params: Cont
           </ul>
         </div>
       )}
+      {features.game_ui ? (
+        // 1.3 „Нов облик“: the tools as big buttons, each opening its panel in a window.
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="board-tools">
+          {refresh && (
+            <ToolWindowButton icon="🔄" label={tr('Нови товари')} hint={refresh.freeAgainAt ? tr('за ТрансКоин') : tr('безплатно днес')} badge={refresh.freeAgainAt ? null : '1'} title={tr('Нови товари')} testId="tool-refresh">
+              <RefreshLoads price={refresh.price} freeAgainAt={refresh.freeAgainAt?.toISOString() ?? null} />
+            </ToolWindowButton>
+          )}
+          <ToolWindowButton icon="✨" label={tr('Диспечер')} hint={tr('курс за всеки свободен камион')} accent="#f6c343" title={tr('Диспечер')} testId="tool-dispatch">
+            <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
+          </ToolWindowButton>
+          <ToolWindowButton icon="🔧" label={tr('Камионите')} hint={tr('състояние и сервиз')} badge={attention ? String(attention) : null} accent="#fb923c" title={tr('Състояние на камионите')} testId="tool-condition">
+            <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
+            {!attention && <p className="text-sm text-mist-300">{tr('Всички камиони са изправни.')}</p>}
+          </ToolWindowButton>
+          {features.simple_board && (
+            <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="tool-tile flex items-center gap-3 rounded-2xl p-3 text-left">
+              <span className="tool-tile-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl" aria-hidden>🏷️</span>
+              <span className="font-display text-sm font-bold text-white">{user.uiPrefs?.boardView === 'full' ? tr('Прост изглед') : tr('Всички етикети')}</span>
+            </ActionButton>
+          )}
+        </div>
+      ) : (
+        <>
       {refresh && <RefreshLoads price={refresh.price} freeAgainAt={refresh.freeAgainAt?.toISOString() ?? null} />}
       <DispatchPanel freeTrucks={fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && v.driver).length} />
       <FleetCondition rows={fleet.vehicles.map((v) => ({ id: v.id, plate: v.plate, model: v.model.name, city: v.city.nameBg, condition: v.condition, onTrip: !!v.delivery, rented: v.ownership === 'rented' }))} />
@@ -368,9 +397,11 @@ export async function ContractsView({ params, inWindow = false }: { params: Cont
           <ActionButton action={{ type: 'uiPrefs', boardView: user.uiPrefs?.boardView === 'full' ? 'simple' : 'full' }} className="btn-ghost px-3 py-1 text-xs">{user.uiPrefs?.boardView === 'full' ? tr('Прост изглед') : tr('Разширен изглед (всички етикети)')}</ActionButton>
         </div>
       )}
+        </>
+      )}
       {regionProject && <RegionProjectCard p={regionProject} />}
       {(features.partner_loads || features.escorts) && <PartnerPanel card={partnerCard} mine={myPartners} escorts={myEscortList} bonus={Math.round(PARTNER.bonusShare * 100)} points={PARTNER.passPoints} />}
-      <ContractBoard initialQuery={params.q?.slice(0, 60) ?? ''} friends={features.gift_load ? (await friendsOf(db, user.id, now)).friends.map((f) => ({ id: f.id, username: f.username })) : []} doableDefault={user.level <= NEW_PLAYER_LEVEL} simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} />
+      <ContractBoard initialQuery={params.q?.slice(0, 60) ?? ''} friends={features.gift_load ? (await friendsOf(db, user.id, now)).friends.map((f) => ({ id: f.id, username: f.username })) : []} doableDefault={user.level <= NEW_PLAYER_LEVEL} simple={features.simple_board && user.uiPrefs?.boardView !== 'full'} focus={params.load} initialChips={onlyFavorites ? ['fav'] : params.hired === '1' && hiredBy.size ? ['hired'] : []} canAssign={canAssign} vip={vip} localCityNames={[...new Set(fleet.vehicles.filter((v) => !v.delivery && !blocked.has(v.id)).map((v) => v.city.nameBg))]} contracts={lane ? laneBoard : fromCity ? backBoard : board} cargoTypes={Object.values(CARGO).map((c) => ({ id: c.id, label: c.label }))} trucks={slots} initialTruck={params.truck} />
     </div>
   );
 }

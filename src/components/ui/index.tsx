@@ -53,8 +53,8 @@ export function Card({ title, actions, children, className = '', id }: { title?:
   return (
     <section id={id} className={`panel min-w-0 p-4 sm:p-5 ${className}`}>
       {(title || actions) && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          {title && <h2 className="font-display text-base font-bold">{title}</h2>}
+        <div className="card-head mb-4 flex flex-wrap items-center justify-between gap-2">
+          {title && <h2 className="card-title font-display text-base font-bold">{title}</h2>}
           {actions}
         </div>
       )}

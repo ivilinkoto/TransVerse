@@ -42,6 +42,7 @@ import { TAG_LABELS, type LoadTag } from '@/lib/game/special-loads';
 import { usePromise } from './usePromise';
 import { GiftLoad } from './GiftLoad';
 import { LaneTip, type LaneTipView } from './LaneTip';
+import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { ContractWindow } from '@/components/gameui/ContractWindow';
 import { playCoin } from '@/lib/client/motion';
 
@@ -183,6 +184,17 @@ export interface BoardContract {
   }[];
 }
 
+/** 1.3 „Нов облик“: a free truck as a slot above the board. */
+export interface TruckSlot {
+  id: string;
+  plate: string;
+  city: string;
+  modelId: string;
+  color: string;
+  trailerModelId: string | null;
+  livery: string | null;
+}
+
 /** 1.2.3.6 „Нов облик“: the picture and colour of each kind of cargo on the board's cards. */
 const CARGO_EMOJI: Record<CargoType, string> = { pallets: '📦', refrigerated: '🧊', bulk: '⛏️', container: '🚢', liquid: '🛢️', special: '⚙️', steel: '🏗️', vehicles: '🚗', livestock: '🐄' };
 const CARGO_COLOUR: Record<CargoType, string> = { pallets: '#60a5fa', refrigerated: '#22d3ee', bulk: '#f59e0b', container: '#f6c343', liquid: '#f43f5e', special: '#a78bfa', steel: '#94a3b8', vehicles: '#34d399', livestock: '#fb923c' };
@@ -242,7 +254,7 @@ const SEASONAL_CHIPS = new Map<Chip, (c: BoardContract) => boolean>([
 /** 1.2.5: loads drawn at first (and added by „Покажи още“): the whole board weighed over 1 MB on a phone. */
 const BOARD_PAGE = 40;
 
-export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false, doableDefault = false, friends = [], initialQuery = '' }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean; doableDefault?: boolean; friends?: { id: string; username: string }[]; initialQuery?: string }) {
+export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = false, initialChips = [], canAssign = false, focus, simple = false, doableDefault = false, friends = [], initialQuery = '', trucks = [], initialTruck }: { contracts: BoardContract[]; cargoTypes: { id: string; label: string }[]; localCityNames: string[]; vip?: boolean; initialChips?: Chip[]; canAssign?: boolean; focus?: string; simple?: boolean; doableDefault?: boolean; friends?: { id: string; username: string }[]; initialQuery?: string; trucks?: TruckSlot[]; initialTruck?: string }) {
   const promiseLive = useFeature('load_promise');
   const [promise, setPromise] = usePromise();
   const [chips, setChips] = useState<Set<Chip>>(() => new Set(initialChips));
@@ -260,6 +272,8 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   const [open, setOpen] = useState<string | null>(() => (focus && contracts.some((c) => c.id === focus) ? focus : null));
   // 1.2.3.6 „Нов облик“: the board as game cards in a grid, the filters as game tabs.
   const gameUi = useFeature('game_ui');
+  // 1.3 „Нов облик“: the free trucks as slots — picking one shows only the loads it can take.
+  const [truck, setTruck] = useState(() => (initialTruck && trucks.some((v) => v.id === initialTruck) ? initialTruck : ''));
   // After accepting, the player stays on the board; a short note says where the truck went.
   const [sent, setSent] = useState<string | null>(null);
   // 1.2.3: after a load is taken — the next trip from where the truck arrives.
@@ -300,7 +314,8 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         (!cargo || c.cargoType === cargo) &&
         (!q || c.origin.name.toLowerCase().includes(q) || c.destination.name.toLowerCase().includes(q) || c.goods.toLowerCase().includes(q)) &&
         (!doable || (!c.locked && !c.reputationLocked && !c.alreadyTaken && !c.reservedByOther && !c.opensAt && !c.missingLicences.length && c.options.some((o) => !o.error))) &&
-        CHIPS.every((chip) => !chips.has(chip.id) || chip.test(c)),
+        CHIPS.every((chip) => !chips.has(chip.id) || chip.test(c)) &&
+        (!truck || c.options.some((o) => o.vehicleId === truck && !o.error)),
     );
     const key: Record<Sort, (c: BoardContract) => number> = {
       reward: (c) => -c.rewardCents,
@@ -313,11 +328,22 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
     // then the load of the day, urgent shipments, favourite lanes and the rest.
     const rank = (c: BoardContract) => (c.id === focus ? -1 : c.local && takeable(c) ? 0 : c.featured ? 1 : c.urgent ? 2 : (c.shared || c.favorite || c.tender) && takeable(c) ? 3 : takeable(c) ? 4 : c.local ? 5 : 6);
     return filtered.sort((a, b) => rank(a) - rank(b) || key[sort](a) - key[sort](b));
-  }, [contracts, cargo, query, doable, sort, chips, focus]);
+  }, [contracts, cargo, query, doable, sort, chips, focus, truck]);
+
+  // 1.3 „Нов облик“: 1–3 stars by pay per km against the board — the top third gets three.
+  const starsOf = useMemo(() => {
+    const rates = contracts.map((c) => c.rewardCents / c.distanceKm).sort((a, b) => a - b);
+    const lo = rates[Math.floor(rates.length / 3)] ?? 0;
+    const hi = rates[Math.floor((rates.length * 2) / 3)] ?? 0;
+    return (c: BoardContract) => {
+      const r = c.rewardCents / c.distanceKm;
+      return r >= hi ? 3 : r >= lo ? 2 : 1;
+    };
+  }, [contracts]);
 
   // 1.2.5: the first loads only (the best ones come first); „Покажи още“ adds the next. The count starts
   // over when the filters change, so a new search does not open the whole board.
-  const filterKey = `${cargo}|${query}|${doable}|${sort}|${[...chips].join(',')}`;
+  const filterKey = `${cargo}|${query}|${doable}|${sort}|${[...chips].join(',')}|${truck}`;
   const [more, setMore] = useState({ key: filterKey, n: BOARD_PAGE });
   const shown = more.key === filterKey ? more.n : BOARD_PAGE;
 
@@ -344,6 +370,30 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
           <button type="button" className="text-mist-400 hover:text-white" onClick={() => setSent(null)} aria-label={t('Скрий')}>✕</button>
         </div>
       )}
+      {gameUi && trucks.length > 0 && (
+        <div data-testid="truck-slots">
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.2em] text-mist-400">{t('Свободни камиони')}</p>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0" role="radiogroup" aria-label={t('Свободни камиони')}>
+            <button type="button" role="radio" aria-checked={!truck} onClick={() => setTruck('')} className={`truck-slot flex shrink-0 flex-col items-center justify-center rounded-2xl px-4 py-2 text-xs font-bold ${!truck ? 'truck-slot-on' : ''}`}>
+              <span className="text-2xl" aria-hidden>🚚</span>{t('Всички')}
+            </button>
+            {trucks.map((v) => (
+              <button key={v.id} type="button" role="radio" aria-checked={truck === v.id} onClick={() => setTruck(truck === v.id ? '' : v.id)} className={`truck-slot flex w-36 shrink-0 flex-col items-center rounded-2xl px-2 py-2 text-center ${truck === v.id ? 'truck-slot-on' : ''}`}>
+                <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailerModelId} color={v.color} livery={v.livery} className="h-9 w-auto max-w-full" />
+                <span className="mt-1 w-full truncate text-xs font-bold text-white">{tx(v.plate)}</span>
+                <span className="w-full truncate text-[10px] text-mist-400">📍 {tx(v.city)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {gameUi && (
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" role="tablist" aria-label={t('Подреждане')}>
+          {([['reward', '💰', 'Най-доходни'], ['perKm', '⭐', 'Най-добре на км'], ['distance', '📏', 'Най-къси'], ['expires', '⏱️', 'Изтичат скоро']] as const).map(([id, icon, label]) => (
+            <button key={id} type="button" role="tab" aria-selected={sort === id} onClick={() => setSort(id)} className={`shop-tab flex shrink-0 items-center gap-1.5 rounded-2xl px-3 py-1.5 text-sm font-bold ${sort === id ? 'shop-tab-on' : ''}`}><span aria-hidden>{icon}</span>{tx(label)}</button>
+          ))}
+        </div>
+      )}
       <div className={`panel flex flex-wrap items-center gap-3 p-3 ${gameUi ? 'load-toolbar' : ''}`}>
         <label className="relative w-full min-w-[200px] flex-1 sm:w-auto">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist-400" />
@@ -353,12 +403,14 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
           <option value="">{t('Всички товари')}</option>
           {cargoTypes.map((c) => <option key={c.id} value={c.id}>{tx(c.label)}</option>)}
         </select>
+        {!gameUi && (
         <select className="input w-[calc(50%-0.375rem)] text-sm sm:w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label={t('Подреждане')}>
           <option value="reward">{t('Най-доходни')}</option>
           <option value="perKm">{t('Най-добре на км')}</option>
           <option value="distance">{t('Най-къси')}</option>
           <option value="expires">{t('Изтичат скоро')}</option>
         </select>
+        )}
         <label className="flex items-center gap-2 text-sm text-mist-300">
           <input type="checkbox" checked={doable} onChange={(e) => setDoable(e.target.checked)} className="h-4 w-4 accent-cyan-500" />
           {t('Само изпълними с моя автопарк')}
@@ -420,7 +472,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         <>
           <ul className={gameUi ? 'grid gap-3 min-[1500px]:grid-cols-2' : 'space-y-2'} data-testid="board-list">
             {list.slice(0, shown).map((c) => (
-              <ContractRow key={c.id} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
+              <ContractRow key={`${c.id}-${truck}`} stars={gameUi ? starsOf(c) : 0} prefer={truck} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
             ))}
           </ul>
           {list.length > shown && (
@@ -526,7 +578,7 @@ function whyNot(c: BoardContract): string | null {
   return [...c.options].sort((a, b) => a.emptyKm - b.emptyKm)[0]!.error;
 }
 
-function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string, next?: { cityId: number; name: string; vehicleId: string }) => void; friends: { id: string; username: string }[]; promise: PromiseId }) {
+function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise, stars = 0, prefer = '' }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string, next?: { cityId: number; name: string; vehicleId: string }) => void; friends: { id: string; username: string }[]; promise: PromiseId; stars?: number; prefer?: string }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
   // 1.2.3.6 „Нов облик“: the details open as a game window; after taking the load it shows the truck leaving.
@@ -541,7 +593,9 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
   const blocked = c.options.filter((o) => o.error);
   // The reasons, each once, with the vehicles it stops (the plate is the label's first part).
   const canSplitHint = c.options.some((o) => o.part);
-  const [vehicleId, setVehicleId] = useState(usable[0]?.vehicleId ?? '');
+  // 1.3: a truck picked in the slots is the one offered first.
+  const first = usable.find((o) => o.vehicleId === prefer) ?? usable[0];
+  const [vehicleId, setVehicleId] = useState(first?.vehicleId ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const option = c.options.find((o) => o.vehicleId === vehicleId);
@@ -691,6 +745,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
                   <p className="text-[11px] text-mist-400">{tx(c.cargoLabel)} · {t('{0} т', dec(c.tons))}</p>
                 </div>
                 <div className="shrink-0 text-right">
+                  {stars > 0 && <div className="load-stars text-sm leading-none" aria-label={t('{0} от 3 звезди', stars)}>{'★'.repeat(stars)}<span className="opacity-25">{'★'.repeat(3 - stars)}</span></div>}
                   <div className="num font-display text-xl font-bold text-profit">{money(c.rewardCents)}</div>
                   <div className="num text-[11px] text-mist-400">{t('{0} лв./км', dec(c.rewardCents / 100 / c.distanceKm))}</div>
                 </div>
@@ -762,12 +817,12 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
         </div>
       )}
       {/* 1.1.4.1: take it at once with the best free truck; the details stay one tap away. */}
-      {lean && !open && !reason && usable[0] && usable[0].overloadPercent === 0 && (
+      {(lean || gameUi) && !open && !reason && first && first.overloadPercent === 0 && (
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-asphalt-800 px-4 py-2 text-xs">
-          <span className="min-w-0 truncate text-mist-400">{t('{0} · печалба {1} · {2}', tx(usable[0].label), money(usable[0].profitCents), duration(usable[0].minutes))}</span>
+          <span className="min-w-0 truncate text-mist-400">{t('{0} · печалба {1} · {2}', tx(first.label), money(first.profitCents), duration(first.minutes))}</span>
           <span className="flex items-center gap-2">
             {error && <span role="alert" className="text-loss">{error}</span>}
-            <button type="button" data-tour="take" className="btn-primary px-3 py-1 text-xs" disabled={busy} onClick={accept}><Truck className="h-3.5 w-3.5" />{busy ? '…' : t('Вземи')}</button>
+            <button type="button" data-tour="take" className={gameUi ? 'game-action game-action-main flex-row px-4 py-1.5 text-xs' : 'btn-primary px-3 py-1 text-xs'} disabled={busy} onClick={accept}><Truck className="h-3.5 w-3.5" />{busy ? '…' : t('Вземи')}</button>
           </span>
         </div>
       )}

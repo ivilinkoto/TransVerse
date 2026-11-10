@@ -130,7 +130,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
       {fleet.vehicles.length === 0 && <Empty icon={Truck} title={tr('Нямате превозни средства')}>{tr('Купете първото си превозно средство от пазара.')}</Empty>}
       <div className="grid gap-4 xl:grid-cols-2">
         {fleet.vehicles.map((v) => (
-          <Card key={v.id} className="flex flex-col">
+          <Card key={v.id} className={`flex flex-col ${features.game_ui ? `truck-card ${v.delivery ? 'truck-card-road' : v.status === 'listed' ? 'truck-card-sale' : v.condition < 50 ? 'truck-card-worn' : 'truck-card-free'}` : ''}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -151,7 +151,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                 {v.id === fav && favStats && <div className="num mt-0.5 text-gold-400">{tr('{0} курса · най-дълъг {1} км', favStats.trips, int(favStats.longest))}</div>}
               </div>
             </div>
-            <div className="relative my-3 flex h-28 items-end justify-center rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))] px-2">
+            <div className={`relative my-3 flex h-28 items-end justify-center rounded-xl px-2 ${features.game_ui ? 'truck-stage' : 'bg-[linear-gradient(180deg,transparent_60%,rgba(255,255,255,0.04))]'}`}>
               {/* 1.2.3.6: the same truck in 3D. */}
               <Truck3DButton className="absolute right-1 top-1" title={`${tx(v.model.name)} · ${v.plate}`} look={{ modelId: v.modelId, color: v.color, cosmetics: v.cosmetics, tuning: v.cosmetics?.tuning ?? null, condition: v.condition, trailerModelId: v.trailer?.modelId ?? null, trailerColor: v.trailer?.cosmetics?.paint ?? null, plate: v.plate }} />
               <VehicleIllustration modelId={v.modelId} trailerModelId={v.trailer?.modelId} color={v.color} livery={v.livery} cosmetics={v.cosmetics} trailerUpgrades={v.trailer?.upgrades} trailerLogo={v.trailer?.logo} trailerCosmetics={v.trailer?.cosmetics} martenitsa={marta} className="max-h-28 w-full" />
