@@ -405,3 +405,48 @@ ba9449ae08	The ferries at Vidin and Svishtov work day and night. Northern Bulgar
 efcdd0752f	Food and fuel for the Austrian towns: +bonus on trips to Austria.	Еда и топливо для австрийских городов: +бонус на рейсы в Австрию.
 311bfc42bf	Four crises in turn: a strike at the port of Constanța, a diesel shortage in Hungary, a Danube Bridge repair and a snow crisis in the Alps.	Четыре кризиса по очереди: забастовка в порту Констанца, нехватка дизеля в Венгрии, ремонт Дунайского моста и снежный кризис в Альпах.
 7a4c57993c	Goal: {0} t a day to the country. The way out with more votes gives a bonus for {1} days — the full one with {2} goals reached.	Цель: {0} т в день в страну. Выход с большим числом голосов даёт бонус {1} дней — полный при {2} выполненных целях.
+f4aef5c37e	{0} lv./100 km	{0} лв./100 км
+510564165a	{0} a day	{0} в день
+429b7c5de1	{0} of {1} lines	{0} из {1} линий
+7270525c6d	Bus	Автобус
+2b7695e0cf	Bus {0} for the line {1} – {2}	Автобус {0} для линии {1} – {2}
+bd2ef4d30c	Bus company	Автобусная компания
+70f48dda57	Bus line {0} – {1} ({2} passengers)	Автобусная линия {0} – {1} ({2} пассажиров)
+3cfbbafe70	Bus lines — from level {0}.	Автобусные линии — с уровня {0}.
+bcb03bb7b2	The bus has the highest comfort.	У автобуса высший уровень комфорта.
+b769f2f9ce	Fleet → Trucks → Bus company (from level 8): a line from a city with your depot to a big city 100–700 km away by road. Up to 5 lines, one between two cities.	Автопарк → Грузовики → Автобусная компания (с 8 уровня): линия из города с твоим депо в крупный город в 100–700 км по дороге. До 5 линий, по одной между двумя городами.
+061d894733	Ticket (lv. per 100 km)	Билет (лв. на 100 км)
+764776452d	The ticket is {0} to {1} lv. per 100 km.	Билет — от {0} до {1} лв. на 100 км.
+835159ab4f	In the tills: {0}	В кассах: {0}
+2fd7eeb82e	You already have a line between these cities.	У тебя уже есть линия между этими городами.
+ec98f66e8d	Sell the bus for {0}?	Продать автобус за {0}?
+d90ee487ef	Till: {0} ({1} h)	Касса: {0} ({1} ч)
+a01e21ef66	Comfort {0} ({1})	Комфорт {0} ({1})
+1482720c64	Comfort {0} for the line {1} – {2}	Комфорт {0} для линии {1} – {2}
+0acee68817	Buy a bus and open the line	Купить автобус и открыть линию
+2800334cb0	Departures a day	Рейсов в день
+454995b324	Departures are 1 to 4 a day.	Рейсов — от 1 до 4 в день.
+d5b9a4e038	Line	Линия
+a15b4f10c9	Line not found.	Линия не найдена.
+cb40c0321e	A line starts from a city where you have a depot.	Линия начинается из города, где у тебя есть депо.
+e725db7e65	The line must be {0} to {1} km (this one is {2} km).	Линия должна быть от {0} до {1} км (эта — {2} км).
+abe20111fb	At most {0} lines per player.	Не более {0} линий на игрока.
+38cdc913df	A new business next to freight: buy a bus and open a passenger line to a big city. You set the timetable and the price; the takings pile up in the till.	Новый бизнес рядом с грузами: купи автобус и открой пассажирскую линию в крупный город. Расписание и цену решаешь ты, выручка копится в кассе.
+8ec51711f1	New line	Новая линия
+5762e6b86c	No such bus.	Такого автобуса нет.
+f537f3c69e	Profit/day	Прибыль/день
+151669e8d5	Collect the till	Забрать кассу
+609d9cbe3d	The takings minus fuel and driver pile up in the line's till for up to 48 hours — collect them with a button. Comfort 1–3 draws more passengers; the bus sells for half its price.	Выручка за вычетом топлива и водителя копится в кассе линии до 48 часов — забери её кнопкой. Комфорт 1–3 привлекает больше пассажиров; автобус продаётся за полцены.
+c444a11ca9	Sold the bus of the line {0} – {1}	Продан автобус линии {0} – {1}
+d0b97b521d	Load	Заполненность
+903f76c1ad	Passengers/day	Пассажиров/день
+f3f9faf16a	Passengers depend on the size of the two cities, the distance, the ticket price (3–15 lv. per 100 km), the comfort and the other carriers on the same line.	Пассажиры зависят от размера двух городов, расстояния, цены билета (3–15 лв. на 100 км), комфорта и других перевозчиков на той же линии.
+64fef709f1	Passengers depend on the cities, the distance, the price, the comfort and the other carriers on the line. The till keeps up to {0} hours.	Пассажиры зависят от городов, расстояния, цены, комфорта и других перевозчиков на линии. Касса хранит до {0} часов.
+b862f64f38	Passenger lines to the big cities — the takings pile up in the till.	Пассажирские линии в крупные города — выручка копится в кассе.
+1a1ed7e53f	Three buses: Vitosha Shuttle 20 (20 seats, 60,000 lv.), Rila Intercity 12 (49 seats, 120,000 lv.) and Balkan Tourer 15 (61 seats, 200,000 lv.). The brands are invented.	Три автобуса: Vitosha Shuttle 20 (20 мест, 60 000 лв.), Rila Intercity 12 (49 мест, 120 000 лв.) и Balkan Tourer 15 (61 место, 200 000 лв.). Марки вымышленные.
+2e79d74d0c	Ticket price	Цена билета
+02e06e564c	rivals: {0}	конкуренты: {0}
+2445cba1ec	Buy a bus and pick a line from a city with a depot.	Купи автобус и выбери линию из города с депо.
+dc4cae445f	Set the departures and the ticket.	Настрой рейсы и билет.
+27abcbe54a	Collect the till at least once every two days.	Забирай кассу хотя бы раз в два дня.
+f2471c825b	Passenger bus lines to the big cities.	Пассажирские автобусные линии в крупные города.

@@ -73,6 +73,7 @@ import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
 import { openWorkshop, rateWorkshop, setWorkshopPrice, upgradeWorkshop } from '@/server/game/workshops';
 import { voteCrisis } from '@/server/game/crises';
+import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -248,6 +249,11 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
   z.object({ type: z.literal('petMascot') }),
   z.object({ type: z.literal('setMascotAccessory'), accessory: z.enum(['scarf', 'cap', 'glasses', 'crown']).nullable() }),
+  z.object({ type: z.literal('buyBusLine'), route: z.string().regex(/^\d+:\d+$/), model: z.enum(['shuttle', 'intercity', 'coach']), departures: z.coerce.number().int().min(1).max(4), price: z.coerce.number().int().min(1).max(100) }),
+  z.object({ type: z.literal('collectBusLine'), lineId: id }),
+  z.object({ type: z.literal('setBusLine'), lineId: id, departures: z.coerce.number().int().min(1).max(4).optional(), price: z.coerce.number().int().min(1).max(100).optional() }),
+  z.object({ type: z.literal('upgradeBusComfort'), lineId: id }),
+  z.object({ type: z.literal('sellBusLine'), lineId: id }),
   z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('openWorkshop'), cityId, name: z.string().max(80) }),
   z.object({ type: z.literal('setWorkshopPrice'), pricePct: z.coerce.number().int().min(1).max(500) }),
@@ -732,6 +738,11 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   learnSkill: 'driver_skills',
   openWorkshop: 'player_workshops',
   voteCrisis: 'world_crises',
+  buyBusLine: 'bus_lines',
+  collectBusLine: 'bus_lines',
+  setBusLine: 'bus_lines',
+  upgradeBusComfort: 'bus_lines',
+  sellBusLine: 'bus_lines',
   setWorkshopPrice: 'player_workshops',
   upgradeWorkshop: 'player_workshops',
   repairAtWorkshop: 'player_workshops',
@@ -950,6 +961,20 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'setMascotAccessory':
       await setMascotAccessory(db, user.id, input.accessory, new Date());
       return { ok: true };
+    case 'buyBusLine': {
+      const [fromId, toId] = input.route.split(':').map(Number) as [number, number];
+      const line = await buyBusLine(db, user.id, { fromId, toId, model: input.model, departures: input.departures, priceCents: input.price * 100 }, new Date());
+      return { ok: true, lineId: line.id, km: line.km };
+    }
+    case 'collectBusLine':
+      return { ok: true, ...(await collectBusLine(db, user.id, input.lineId, new Date())) };
+    case 'setBusLine':
+      await setBusLine(db, user.id, input.lineId, { departures: input.departures, priceCents: input.price !== undefined ? input.price * 100 : undefined }, new Date());
+      return { ok: true };
+    case 'upgradeBusComfort':
+      return { ok: true, comfort: await upgradeBusComfort(db, user.id, input.lineId, new Date()) };
+    case 'sellBusLine':
+      return { ok: true, backCents: await sellBusLine(db, user.id, input.lineId, new Date()) };
     case 'voteCrisis':
       await voteCrisis(db, user.id, input.option, new Date());
       return { ok: true };

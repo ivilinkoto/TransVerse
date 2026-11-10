@@ -684,3 +684,8 @@ html[data-motion='off'] .mascot-bob { animation: none; }
 .crisis-day-now { border-color: rgba(245, 158, 11, 0.5); }
 .crisis-option { background: linear-gradient(160deg, #182238, #0e1523); border: 1px solid #263450; }
 .crisis-option-mine { border-color: #34d399; box-shadow: 0 0 16px -8px #34d399; }
+
+/* 1.3 „Автобусна компания“: line cards and the model picker. */
+.bus-bar { background: linear-gradient(160deg, #182238, #0e1523); border: 1px solid #263450; }
+.bus-card { background: radial-gradient(120% 120% at 100% 0%, rgba(34, 211, 238, 0.14), transparent 55%), linear-gradient(160deg, #162033, #0d1320); border: 1px solid rgba(34, 211, 238, 0.25); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 3px 0 #070b13; }
+.bus-model { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); }

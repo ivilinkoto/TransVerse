@@ -87,6 +87,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/cabin', label: 'Кабина', feature: 'cabin', group: 'Камиони' },
       { href: '/game/analytics', label: 'Анализ', group: 'Камиони', minLevel: 3 },
       { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map', group: 'Камиони', minLevel: 2 },
+      { href: '/game/buses', label: 'Автобусна компания', feature: 'bus_lines', group: 'Камиони', minLevel: 8 },
       { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа', core: true },
       { href: '/game/workshops', label: 'Сервизи на играчите', feature: 'player_workshops', group: 'Сервиз и депа', core: true },
       // 1.2.3.1: the player's own business (research, office, adverts, fuel, CO₂) — not the company's „Развитие“.
