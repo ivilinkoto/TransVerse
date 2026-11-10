@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { buildTruck, disposeTree, type TruckLook } from './truck3d';
+import { buildBus } from './bus3d';
+import type { BusModelId } from '@/lib/game/buses';
 import { motionEnabled } from '@/lib/client/motion';
 import { t } from '@/i18n/t';
 
@@ -52,12 +54,15 @@ export function TruckViewer({ look, hero = false }: { look: TruckLook; hero?: bo
     sun.shadow.mapSize.set(2048, 2048);
     Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14 });
     scene.add(sun);
-    const built = buildTruck(JSON.parse(key) as TruckLook);
+    const parsed = JSON.parse(key) as TruckLook;
+    // 1.3: a bus („bus:<model>“) is built centred already.
+    const bus = parsed.modelId.startsWith('bus:') ? buildBus(parsed.modelId.slice(4) as BusModelId, parsed.color || null) : null;
+    const built = bus ?? buildTruck(parsed);
     const holder = new THREE.Group();
-    holder.position.y = 0.16;
+    holder.position.y = bus ? 0 : 0.16;
     holder.add(built.group);
     // The whole combination centred on the turntable.
-    holder.position.x = -(built.cab.frontX - built.length / 2);
+    holder.position.x = bus ? 0 : -((built as ReturnType<typeof buildTruck>).cab.frontX - built.length / 2);
     scene.add(holder);
     const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 200);
     // The whole combination fits the view, also on a narrow phone screen.

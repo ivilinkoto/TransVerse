@@ -28,11 +28,11 @@ const BRAND_STYLE: Record<string, { grille: GrilleKind; lights: LightKind; rake:
   'Volta Motors': { grille: 'closed', lights: 'slim', rake: 0.34, nose: 0.1, accent: '#0e7490' },
 };
 const DEFAULT_STYLE = BRAND_STYLE.Danubia!;
-const RIM_COLORS: Record<string, string> = { steel: '#c3c9d1', alloy: '#e2e6eb', chrome: '#f8fafc', black: '#15181d' };
+export const RIM_COLORS: Record<string, string> = { steel: '#c3c9d1', alloy: '#e2e6eb', chrome: '#f8fafc', black: '#15181d' };
 
 // ---------------------------------------------------------------- materials
 
-const M = {
+export const M = {
   rubber: () => new THREE.MeshStandardMaterial({ color: '#17191d', roughness: 0.92, metalness: 0, map: treadTexture() }),
   sidewall: () => new THREE.MeshStandardMaterial({ color: '#1b1d22', roughness: 0.85 }),
   plastic: () => new THREE.MeshStandardMaterial({ color: '#23272e', roughness: 0.75, metalness: 0.05 }),
@@ -61,7 +61,7 @@ function paintMat(color: string, condition: number) {
   });
 }
 
-function emissive(color: string, on: number) {
+export function emissive(color: string, on: number) {
   return new THREE.MeshStandardMaterial({ color, emissive: new THREE.Color(color), emissiveIntensity: on, roughness: 0.2 });
 }
 
@@ -74,7 +74,7 @@ export function box(w: number, h: number, d: number, m: THREE.Material, r = 0.04
   return mesh;
 }
 
-function cyl(rTop: number, rBottom: number, h: number, m: THREE.Material, seg = 24) {
+export function cyl(rTop: number, rBottom: number, h: number, m: THREE.Material, seg = 24) {
   const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBottom, h, seg), m);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
@@ -88,7 +88,7 @@ function decalPlane(w: number, h: number, m: THREE.Material) {
   return p;
 }
 
-const at = <T extends THREE.Object3D>(o: T, x: number, y: number, z: number) => {
+export const at = <T extends THREE.Object3D>(o: T, x: number, y: number, z: number) => {
   o.position.set(x, y, z);
   return o;
 };
@@ -96,7 +96,7 @@ const at = <T extends THREE.Object3D>(o: T, x: number, y: number, z: number) => 
 // ---------------------------------------------------------------- wheels
 
 /** A tyre on a rim, axis along z, outer face toward `side`. */
-function wheel(radius: number, width: number, rimColor: string, side: number, opts: { dual?: boolean; trailer?: boolean } = {}) {
+export function wheel(radius: number, width: number, rimColor: string, side: number, opts: { dual?: boolean; trailer?: boolean } = {}) {
   const g = new THREE.Group();
   const rimR = radius * 0.6;
   const prof: THREE.Vector2[] = [];

@@ -84,53 +84,22 @@ export function NightRunGame({ day, colour, runsLeft }: { day: string; colour: s
       ctx.fillRect(left - 8, yToPx(y), 3, 5);
       ctx.fillRect(left + roadW * k + 5, yToPx(y), 3, 5);
     }
-    const carW = LANE_W * k * 0.55, carL = 4.6 * (H / (AHEAD + BEHIND));
-    // Fuel cans.
+    const mPx = H / (AHEAD + BEHIND);
+    // Fuel cans: a jerrycan with a handle and a cap.
     road.cans.forEach((can, i) => {
       if (s.takenCans.has(i) || can.y < s.y - BEHIND || can.y > s.y + AHEAD) return;
-      const x = laneX(can.lane), y = yToPx(can.y);
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(x - 7, y - 9, 14, 18);
-      ctx.fillStyle = '#fca5a5';
-      ctx.fillRect(x - 3, y - 13, 6, 4);
+      drawCan(ctx, laneX(can.lane), yToPx(can.y));
     });
-    // Traffic: tail lights towards the truck.
+    // Traffic, seen from above, driving the same way (tail lights towards the truck).
     road.cars.forEach((car, i) => {
       const cy = carY(car, s.tick);
       if (cy < s.y - BEHIND || cy > s.y + AHEAD) return;
-      const x = laneX(car.lane), y = yToPx(cy);
       ctx.globalAlpha = s.hitCars.has(i) ? 0.35 : 1;
-      ctx.fillStyle = CAR_COLOURS[car.colour % CAR_COLOURS.length]!;
-      ctx.fillRect(x - carW / 2, y - carL / 2, carW, carL);
-      ctx.fillStyle = 'rgba(15,23,42,0.75)';
-      ctx.fillRect(x - carW / 2 + 3, y - carL / 2 + carL * 0.22, carW - 6, carL * 0.2);
-      ctx.fillStyle = '#f43f5e';
-      ctx.fillRect(x - carW / 2 + 2, y + carL / 2 - 4, 6, 3);
-      ctx.fillRect(x + carW / 2 - 8, y + carL / 2 - 4, 6, 3);
+      drawCar(ctx, laneX(car.lane), yToPx(cy), LANE_W * k * 0.44, Math.max(6 * mPx, LANE_W * k * 0.44 * 1.75), CAR_COLOURS[car.colour % CAR_COLOURS.length]!);
       ctx.globalAlpha = 1;
     });
-    // The truck: headlight beams, trailer, cab.
-    const tx = left + (s.x + 0.5) * LANE_W * k, ty = yToPx(s.y);
-    const tw = LANE_W * k * 0.62, cab = 2.4 * (H / (AHEAD + BEHIND)), trailer = 7 * (H / (AHEAD + BEHIND));
-    const beam = ctx.createLinearGradient(0, ty - cab, 0, ty - cab - 150);
-    beam.addColorStop(0, 'rgba(253,230,138,0.35)');
-    beam.addColorStop(1, 'rgba(253,230,138,0)');
-    ctx.fillStyle = beam;
-    ctx.beginPath();
-    ctx.moveTo(tx - tw / 2, ty - cab);
-    ctx.lineTo(tx - tw * 1.3, ty - cab - 150);
-    ctx.lineTo(tx + tw * 1.3, ty - cab - 150);
-    ctx.lineTo(tx + tw / 2, ty - cab);
-    ctx.fill();
-    ctx.fillStyle = '#9ca3af';
-    ctx.fillRect(tx - tw / 2, ty, tw, trailer);
-    ctx.fillStyle = colour;
-    ctx.fillRect(tx - tw / 2, ty - cab, tw, cab + 2);
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(tx - tw / 2 + 3, ty - cab + 3, tw - 6, cab * 0.32);
-    ctx.fillStyle = '#fde68a';
-    ctx.fillRect(tx - tw / 2 + 2, ty - cab - 2, 6, 3);
-    ctx.fillRect(tx + tw / 2 - 8, ty - cab - 2, 6, 3);
+    // The truck: headlight beams, then the trailer and the cab.
+    drawTruck(ctx, left + (s.x + 0.5) * LANE_W * k, yToPx(s.y), LANE_W * k * 0.6, mPx, colour);
     // A red flash right after a crash.
     if (s.tick < s.slowUntil && s.tick > s.slowUntil - 12) {
       ctx.fillStyle = 'rgba(244,63,94,0.25)';
@@ -279,4 +248,166 @@ export function NightRunGame({ day, colour, runsLeft }: { day: string; colour: s
       <p className="hidden text-xs text-mist-400 sm:block">{t('Стрелки ← → или A / D')}</p>
     </div>
   );
+}
+
+/** A rounded rectangle path (works where ctx.roundRect is missing). */
+function rounded(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const q = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + q, y);
+  ctx.arcTo(x + w, y, x + w, y + h, q);
+  ctx.arcTo(x + w, y + h, x, y + h, q);
+  ctx.arcTo(x, y + h, x, y, q);
+  ctx.arcTo(x, y, x + w, y, q);
+  ctx.closePath();
+}
+
+/** A car from above, nose up: rounded body, windscreen and rear window, roof, mirrors, wheels, glowing tail lights. */
+function drawCar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, l: number, colour: string) {
+  const top = y - l / 2;
+  ctx.fillStyle = '#05070c';
+  for (const [dx, dy] of [[-1, 0.2], [1, 0.2], [-1, 0.75], [1, 0.75]] as const) rounded(ctx, x + dx * (w / 2) - (dx < 0 ? 2 : 1), top + l * dy, 3, l * 0.16, 1.5), ctx.fill();
+  const body = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+  body.addColorStop(0, colour);
+  body.addColorStop(0.5, '#ffffff33');
+  body.addColorStop(0.52, colour);
+  body.addColorStop(1, colour);
+  ctx.fillStyle = colour;
+  rounded(ctx, x - w / 2, top, w, l, w * 0.42);
+  ctx.fill();
+  ctx.fillStyle = body;
+  ctx.globalAlpha *= 0.35;
+  rounded(ctx, x - w / 2, top, w, l, w * 0.42);
+  ctx.fill();
+  ctx.globalAlpha /= 0.35;
+  // Windscreen (front) and rear window, with the roof between them.
+  ctx.fillStyle = 'rgba(15,23,42,0.85)';
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.36, top + l * 0.3);
+  ctx.quadraticCurveTo(x, top + l * 0.2, x + w * 0.36, top + l * 0.3);
+  ctx.lineTo(x + w * 0.3, top + l * 0.42);
+  ctx.lineTo(x - w * 0.3, top + l * 0.42);
+  ctx.closePath();
+  ctx.fill();
+  rounded(ctx, x - w * 0.3, top + l * 0.68, w * 0.6, l * 0.12, 3);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  rounded(ctx, x - w * 0.3, top + l * 0.44, w * 0.6, l * 0.22, 4);
+  ctx.fill();
+  // Mirrors.
+  ctx.fillStyle = colour;
+  rounded(ctx, x - w / 2 - 3, top + l * 0.3, 4, 3, 1.5);
+  ctx.fill();
+  rounded(ctx, x + w / 2 - 1, top + l * 0.3, 4, 3, 1.5);
+  ctx.fill();
+  // Tail lights with a glow.
+  const glow = ctx.createRadialGradient(x, top + l, 1, x, top + l, w * 0.9);
+  glow.addColorStop(0, 'rgba(244,63,94,0.35)');
+  glow.addColorStop(1, 'rgba(244,63,94,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(x - w, top + l - 4, w * 2, w * 0.9);
+  ctx.fillStyle = '#fb7185';
+  rounded(ctx, x - w / 2 + 2, top + l - 4, w * 0.22, 3, 1.5);
+  ctx.fill();
+  rounded(ctx, x + w / 2 - 2 - w * 0.22, top + l - 4, w * 0.22, 3, 1.5);
+  ctx.fill();
+}
+
+/** The player's truck from above, cab up: light beams, a ribbed trailer, the cab with windscreen and mirrors. */
+function drawTruck(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, mPx: number, colour: string) {
+  // The road is squeezed lengthwise, so the truck keeps its own proportions (never shorter than real).
+  const u = Math.max(mPx, w * 0.22);
+  const cabL = 2.5 * u, trailerL = 7.2 * u, gap = 0.35 * u;
+  const cabTop = y - cabL;
+  // Headlight beams.
+  for (const side of [-1, 1]) {
+    const bx = x + side * w * 0.3;
+    const beam = ctx.createLinearGradient(0, cabTop, 0, cabTop - 160);
+    beam.addColorStop(0, 'rgba(253,230,138,0.32)');
+    beam.addColorStop(1, 'rgba(253,230,138,0)');
+    ctx.fillStyle = beam;
+    ctx.beginPath();
+    ctx.moveTo(bx - 3, cabTop);
+    ctx.lineTo(bx - w * 0.7, cabTop - 160);
+    ctx.lineTo(bx + w * 0.7, cabTop - 160);
+    ctx.lineTo(bx + 3, cabTop);
+    ctx.fill();
+  }
+  // Wheels peeking out.
+  ctx.fillStyle = '#05070c';
+  for (const dy of [0.25, 0.8, 0.88]) for (const side of [-1, 1]) rounded(ctx, x + side * (w / 2) - (side < 0 ? 3 : 0), y + gap + trailerL * dy - 4, 3, 8, 1.5), ctx.fill();
+  for (const side of [-1, 1]) rounded(ctx, x + side * (w * 0.46) - (side < 0 ? 3 : 0), cabTop + cabL * 0.15, 3, 7, 1.5), ctx.fill();
+  // Trailer: rounded box with roof ribs and rear lights.
+  const tr = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+  tr.addColorStop(0, '#9ca3af');
+  tr.addColorStop(0.5, '#e5e7eb');
+  tr.addColorStop(1, '#9ca3af');
+  ctx.fillStyle = tr;
+  rounded(ctx, x - w / 2, y + gap, w, trailerL, 4);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(15,23,42,0.18)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 8; i++) {
+    const ry = y + gap + (trailerL * i) / 8;
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2 + 3, ry);
+    ctx.lineTo(x + w / 2 - 3, ry);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#fb7185';
+  rounded(ctx, x - w / 2 + 2, y + gap + trailerL - 4, 6, 3, 1.5);
+  ctx.fill();
+  rounded(ctx, x + w / 2 - 8, y + gap + trailerL - 4, 6, 3, 1.5);
+  ctx.fill();
+  // Cab: rounded nose, windscreen, roof deflector, mirrors.
+  ctx.fillStyle = colour;
+  rounded(ctx, x - w * 0.46, cabTop, w * 0.92, cabL + 2, w * 0.28);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  rounded(ctx, x - w * 0.3, cabTop + cabL * 0.45, w * 0.6, cabL * 0.4, 4);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(15,23,42,0.85)';
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.36, cabTop + cabL * 0.12);
+  ctx.quadraticCurveTo(x, cabTop + 1, x + w * 0.36, cabTop + cabL * 0.12);
+  ctx.lineTo(x + w * 0.32, cabTop + cabL * 0.36);
+  ctx.lineTo(x - w * 0.32, cabTop + cabL * 0.36);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#0f172a';
+  rounded(ctx, x - w * 0.46 - 5, cabTop + cabL * 0.2, 5, 4, 2);
+  ctx.fill();
+  rounded(ctx, x + w * 0.46, cabTop + cabL * 0.2, 5, 4, 2);
+  ctx.fill();
+  ctx.fillStyle = '#fef9c3';
+  rounded(ctx, x - w * 0.4, cabTop - 1, w * 0.18, 3, 1.5);
+  ctx.fill();
+  rounded(ctx, x + w * 0.22, cabTop - 1, w * 0.18, 3, 1.5);
+  ctx.fill();
+}
+
+/** A red jerrycan with a handle and a cap. */
+function drawCan(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  const glow = ctx.createRadialGradient(x, y, 2, x, y, 18);
+  glow.addColorStop(0, 'rgba(248,113,113,0.35)');
+  glow.addColorStop(1, 'rgba(248,113,113,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(x - 18, y - 18, 36, 36);
+  ctx.fillStyle = '#dc2626';
+  rounded(ctx, x - 7, y - 8, 14, 17, 3);
+  ctx.fill();
+  ctx.strokeStyle = '#fecaca';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x - 4, y - 4);
+  ctx.lineTo(x + 4, y + 5);
+  ctx.moveTo(x + 4, y - 4);
+  ctx.lineTo(x - 4, y + 5);
+  ctx.stroke();
+  ctx.fillStyle = '#7f1d1d';
+  rounded(ctx, x - 5, y - 12, 7, 4, 1.5);
+  ctx.fill();
+  ctx.fillStyle = '#facc15';
+  rounded(ctx, x + 3, y - 12, 3, 4, 1);
+  ctx.fill();
 }

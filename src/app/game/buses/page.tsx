@@ -5,6 +5,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { FormAction } from '@/components/ui/FormAction';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { BusArt } from '@/components/game/BusArt';
+import { Bus3DButton } from '@/components/garage/Bus3DButton';
 import { BUS_MODEL_IDS, BUS_MODELS, BUSES } from '@/lib/game/buses';
 import { int, money } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
@@ -43,7 +44,10 @@ export default async function BusesPage() {
                 <p className="font-display text-lg font-bold text-white">{tx(l.from.name)} ⇄ {tx(l.to.name)}</p>
                 <p className="text-xs text-mist-400">{int(l.km)} км · {BUS_MODELS[l.model].name} · {t('{0} места', BUS_MODELS[l.model].seats)}{l.rivals > 0 && ` · ${t('конкуренти: {0}', l.rivals)}`}</p>
               </div>
-              <BusArt model={l.model} className="h-10 w-28 shrink-0" />
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <BusArt model={l.model} className="h-10 w-28" />
+                <Bus3DButton model={l.model} title={`${BUS_MODELS[l.model].name} · ${tx(l.from.name)} ⇄ ${tx(l.to.name)}`} />
+              </div>
             </div>
             <ul className="grid grid-cols-3 gap-2 text-sm">
               <li className="stat-tile rounded-xl px-2 py-1.5"><span className="block text-[10px] text-mist-400">{t('Пътници/ден')}</span><span className="font-bold text-white">{int(l.day.passengers)}</span></li>
@@ -78,6 +82,7 @@ export default async function BusesPage() {
                     <BusArt model={m} className="h-10 w-24" />
                     <span className="text-xs font-semibold text-white">{BUS_MODELS[m].name}</span>
                     <span className="text-[11px] text-mist-400">{t('{0} места', BUS_MODELS[m].seats)} · {money(BUS_MODELS[m].priceCents)}</span>
+                    <Bus3DButton model={m} title={BUS_MODELS[m].name} />
                   </li>
                 ))}
               </ul>
