@@ -404,3 +404,4 @@ fc2b583e33	Cargo goes around the Alps through Germany: +bonus on trips to German
 ba9449ae08	The ferries at Vidin and Svishtov work day and night. Northern Bulgaria waits for goods.	Паромы у Видина и Свиштова работают круглосуточно. Северная Болгария ждёт товары.
 efcdd0752f	Food and fuel for the Austrian towns: +bonus on trips to Austria.	Еда и топливо для австрийских городов: +бонус на рейсы в Австрию.
 311bfc42bf	Four crises in turn: a strike at the port of Constanța, a diesel shortage in Hungary, a Danube Bridge repair and a snow crisis in the Alps.	Четыре кризиса по очереди: забастовка в порту Констанца, нехватка дизеля в Венгрии, ремонт Дунайского моста и снежный кризис в Альпах.
+7a4c57993c	Goal: {0} t a day to the country. The way out with more votes gives a bonus for {1} days — the full one with {2} goals reached.	Цель: {0} т в день в страну. Выход с большим числом голосов даёт бонус {1} дней — полный при {2} выполненных целях.

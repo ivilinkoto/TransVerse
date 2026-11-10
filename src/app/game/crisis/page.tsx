@@ -24,7 +24,7 @@ export default async function CrisisPage() {
   const v = await crisisView(db, user.id, now);
   const codes = Object.values(CRISES).flatMap((c) => [c.country, c.options.a.country, c.options.b.country]);
   const names = new Map((await db.select({ code: countries.code, name: countries.nameBg }).from(countries).where(inArray(countries.code, codes))).map((c) => [c.code, tx(c.name)]));
-  const header = <PageHeader title={t('Световни кризи')} subtitle={t('Три дни криза, общо гласуване и седмица последствия.')} help={t('Всеки ден: обща цел от {0} т до засегнатата държава. Изходът с повече гласове дава бонус за курсовете до своята държава {1} дни — пълен при поне {2} изпълнени цели.', CRISIS_RULES.dailyTons, CRISIS_RULES.effectDays, CRISIS_RULES.bonus.goalsForFull)} />;
+  const header = <PageHeader title={t('Световни кризи')} subtitle={t('Три дни криза, общо гласуване и седмица последствия.')} help={t('Цел: {0} т на ден до държавата. Изходът с повече гласове дава бонус {1} дни — пълен при {2} изпълнени цели.', CRISIS_RULES.dailyTons, CRISIS_RULES.effectDays, CRISIS_RULES.bonus.goalsForFull)} />;
   if (!v.moment) {
     const next = CRISES[v.next.id]!;
     return (
