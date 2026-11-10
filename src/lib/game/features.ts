@@ -141,6 +141,8 @@ export const FEATURES = {
   depot_3d: '1.3',
   // „Нов облик“: game windows, the inventory as a game bag that opens over any page.
   game_ui: '1.3',
+  // „Зимен поход“: seven winter steps, one more each day from the release.
+  winter_trek: '1.3',
   // 1.2.6 „На една вълна“
   chat_life: '1.3',
   partner_loads: '1.3',

@@ -10,6 +10,8 @@ import { weeklyGoalState } from '@/server/game/weekly-goal';
 import { WeeklyGoalCard } from '@/components/game/WeeklyGoalCard';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
+import { winterTrekView } from '@/server/game/winter-trek';
+import { WinterTrek } from '@/components/gameui/WinterTrek';
 import type { Metadata } from 'next';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -119,6 +121,7 @@ export default async function MissionsPage() {
   const { db, user, now, features } = await gameContext();
   const { windows, current, unclaimed } = await missionBoard(db, user.id, now);
   const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
+  const trek = await winterTrekView(db, user.id, now);
   const done = current.filter((r) => r.completedAt).length;
   const waiting = [...current, ...unclaimed].filter((r) => r.completedAt && !r.claimedAt);
   const waitingCents = waiting.reduce((s, r) => s + r.rewardCents, 0);
@@ -131,6 +134,7 @@ export default async function MissionsPage() {
     <div className="space-y-6">
       <PageHeader title={t('Мисии')} subtitle={t('Цели за деня, седмицата, месеца и сезона.')}
         help={t('Прогресът се отчита автоматично при всяка доставка; наградата се взима с бутон (VIP — автоматично). Мисиите се подбират според нивото и лицензите ти; VIP получава +1 дневна и +1 седмична мисия.')} />
+      {trek && <WinterTrek trek={trek} />}
       {goal && <WeeklyGoalCard state={goal} now={now} />}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="panel flex items-center gap-3 p-3 sm:p-4"><Target className="hidden h-5 w-5 shrink-0 sm:block text-cyan-glow" /><div><div className="label">{t('Изпълнени сега')}</div><div className="num font-display text-lg font-bold sm:text-xl">{done} / {tx(current.length)}</div></div></div>

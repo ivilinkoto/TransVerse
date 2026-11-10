@@ -3,7 +3,8 @@ import type { DbOrTx } from '@/server/db/client';
 import { vehicles } from '@/server/db/schema';
 import { inventoryBadge, weeklyChest } from './item-trade';
 import { nextSteps, type NextStep } from './next-steps';
-import { t } from '@/i18n/t';
+import { winterTrekView } from './winter-trek';
+import { t, tx } from '@/i18n/t';
 
 export interface NowItem extends NextStep {
   /** hot = go and earn, gold = take a reward, warn = fix something, info = the rest. */
@@ -31,6 +32,10 @@ export async function nowList(db: DbOrTx, user: { id: string; loginStreak: numbe
     const w = await weeklyChest(db, user.id, now);
     if (w.tier && !w.claimed && !w.next) out.push({ emoji: '🧰', text: t('Седмичният сандък е готов.'), href: '/game/inventory', action: t('Вземи'), tone: 'gold' });
   }
+  // 1.3 „Зимен поход“: today's step while it is not done.
+  const trek = await winterTrekView(db, user.id, now);
+  const step = trek?.steps.find((s) => s.state === 'current');
+  if (step) out.push({ emoji: '❄️', text: t('Зимен поход, стъпка {0}: {1} ({2}/{3}).', step.index + 1, tx(step.label), step.progress, step.target), href: '/game/missions', action: t('Виж'), tone: 'info' });
   const order: NowItem['tone'][] = ['hot', 'gold', 'warn', 'info'];
   return out.sort((a, b) => order.indexOf(a.tone) - order.indexOf(b.tone)).slice(0, 6);
 }

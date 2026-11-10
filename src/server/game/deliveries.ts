@@ -30,6 +30,7 @@ import { checkLegend } from './heritage';
 import { recordWeeklyLane } from './weekly-lane';
 import { recordPrewinterDelivery } from './prewinter';
 import { clearedCountries, recordSnowSeason, withCleared } from './first-snow';
+import { recordWinterTrek } from './winter-trek';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -825,6 +826,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await convoyHourPoints(tx, company!.ownerId, d, points, completedAt);
   // 1.2.5 „Първи сняг“: weekly pass tasks, clearing the roads, „Крал на снега“.
   await recordSnowSeason(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, convoy: !!(d.convoyWith || d.convoyLead), destCountry: dest!.countryCode, tons: contract.weightTons, holiday: contract.holiday, goods: contract.goods, roadEvents: d.roadEvents, ownerDrove }, completedAt);
+  // 1.3 „Зимен поход“: the current step of the seven.
+  await recordWinterTrek(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, destCountry: dest!.countryCode, tons: contract.weightTons, ownerDrove }, completedAt);
   await rewardReferral(tx, company!.ownerId, now);
   // Return loads come with v1.2 (staff see them before the release).
   // The hauler of someone else's goods gets the usual "Доставено" message.
