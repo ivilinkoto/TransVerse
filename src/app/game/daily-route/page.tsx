@@ -26,7 +26,7 @@ export default async function DailyRoutePage() {
       <PageHeader
         title={t('Пътят на деня')}
         subtitle={t('Подреди градовете в най-краткия път. Един пъзел за всички, нов всеки ден.')}
-        help={t('Започваш от първия град и минаваш през всички останали по веднъж (без връщане). Разстоянията са по права линия между истинските градове. Имаш {0} опита; брои се най-добрият. От 90% — {1} лв., за най-краткия път — още {2} лв. (веднъж на ден).', DAILY_ROUTE.tries, DAILY_ROUTE.rewards.good.cents / 100, DAILY_ROUTE.rewards.perfect.cents / 100)}
+        help={t('От първия град през всички останали по веднъж, по права линия. {0} опита. От 90% — {1} лв., за най-краткия път — още {2} лв.', DAILY_ROUTE.tries, DAILY_ROUTE.rewards.good.cents / 100, DAILY_ROUTE.rewards.perfect.cents / 100)}
       />
       <DailyRoutePuzzle view={{ ...view, cities: view.cities.map((c) => ({ ...c, name: tx(c.name) })) }} />
       <section className="panel p-4" data-testid="daily-route-ranking">

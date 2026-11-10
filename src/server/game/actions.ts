@@ -69,6 +69,7 @@ import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTr
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
+import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
 import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
@@ -239,6 +240,10 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyDepot'), cityId }),
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('markNotificationsRead') }),
+  z.object({ type: z.literal('adoptMascot'), kind: z.enum(['cat', 'dog', 'parrot', 'turtle']), name: z.string().max(60) }),
+  z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
+  z.object({ type: z.literal('petMascot') }),
+  z.object({ type: z.literal('setMascotAccessory'), accessory: z.enum(['scarf', 'cap', 'glasses', 'crown']).nullable() }),
   z.object({ type: z.literal('dailyRouteGuess'), order: z.array(z.number().int().positive()).min(2).max(12) }),
   z.object({ type: z.literal('foundCompany'), name: companyNameSchema, hqCityId: cityId }),
   z.object({ type: z.literal('returnRental'), vehicleId: id }),
@@ -710,6 +715,10 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   wantItem: 'item_wants',
   signUpDuo: 'duo_week',
   dailyRouteGuess: 'daily_route',
+  adoptMascot: 'mascot',
+  renameMascot: 'mascot',
+  petMascot: 'mascot',
+  setMascotAccessory: 'mascot',
 };
 
 export type GameAction = z.infer<typeof Action>;
@@ -909,6 +918,15 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, costCents: await expandDepot(db, user.id, input.depotId) };
     case 'markNotificationsRead':
       await markNotificationsRead(db, user.id);
+      return { ok: true };
+    case 'adoptMascot':
+      return { ok: true, mascot: await adoptMascot(db, user.id, input.kind, input.name, new Date()) };
+    case 'renameMascot':
+      return { ok: true, name: await renameMascot(db, user.id, input.name, new Date()) };
+    case 'petMascot':
+      return { ok: true, mood: await petMascot(db, user.id, new Date()) };
+    case 'setMascotAccessory':
+      await setMascotAccessory(db, user.id, input.accessory, new Date());
       return { ok: true };
     case 'dailyRouteGuess':
       return { ok: true, ...(await guessDailyRoute(db, user.id, input.order, new Date())) };

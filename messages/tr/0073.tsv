@@ -181,3 +181,59 @@ cefa3804d4	Share the result	Поделиться результатом
 56d2cab557	Streak: {0}	Серия: {0}
 e6ca413c34	shortest (green): {0} km	кратчайший (зелёный): {0} км
 e30e3408cb	Days in a row with a solved route	Дней подряд с решённым путём
+fb99b5570b	{0} (favourite trip)	{0} (любимый рейс)
+d503c47c82	{0} (mascot)	{0} (талисман)
+4afdbef0bd	{0} is sad — one trip will cheer it up.	{0} грустит — один рейс его порадует.
+82966c4355	{0} is still enjoying the last pat.	{0} ещё радуется прошлому поглаживанию.
+45e5637a04	{0} reached level {1}!	{0} достиг уровня {1}!
+515a8ef5fa	Fleet → People → Mascot: choose a cat, a dog, a parrot or a turtle and give it a name. The mascot is free, one per player.	Автопарк → Люди → Талисман: выбери кошку, собаку, попугая или черепаху и дай ему имя. Талисман бесплатный, один на игрока.
+b58c136bd0	Accessories	Аксессуары
+ec61d6c656	Accessories: a scarf (level 3), a cap (5), glasses (8), a crown (10). The mascot shows on your profile next to the avatar.	Аксессуары: шарф (уровень 3), кепка (5), очки (8), корона (10). Талисман виден в твоём профиле рядом с аватаром.
+4bf13d7752	Slowpoke	Тихоня
+56533a53a8	The bonus is {0}% of the pay.	Бонус — {0}% от оплаты.
+deca6de108	Chatterbox	Болтунчик
+19c7a9ea14	You already have a mascot.	У тебя уже есть талисман.
+375520c527	Take it into the cab	Взять в кабину
+fa1b243082	Take a mascot into your cab — it grows with your trips and brings a bonus.	Возьми талисман в кабину — он растёт с рейсами и приносит бонус.
+d8de67dc67	Each delivery gives it +1 trip and +{0} mood; each day without a delivery, −{1}. Below {2} mood it is sad and brings no bonus. The bonus is 1% to 3% of the pay by level, doubled on its favourite trip. Petting: +{3} mood once every {4} hours.	Каждая доставка даёт ему +1 рейс и +{0} к настроению; каждый день без доставки — −{1}. Ниже {2} он грустит и не приносит бонуса. Бонус — от 1% до 3% от оплаты по уровню, двойной на любимом рейсе. Поглаживание: +{3} к настроению раз в {4} часа.
+59ee755e8e	Long trips (over 800 km)	Длинные рейсы (более 800 км)
+fa6048214b	Choose a companion for the road	Выбери спутника в дорогу
+de4a253fd0	The name must be 2 to {0} characters.	Имя должно быть от 2 до {0} символов.
+d3d057c00b	Crown	Корона
+bff4226aab	Turtle	Черепаха
+b65e5ecc6d	Cat	Кошка
+002823a4f1	A cat, a dog, a parrot or a turtle rides with you, grows with your trips and brings a 1% to 3% bonus to the pay — double on its favourite trip. It has a mood, accessories and shows on your profile.	Кошка, собака, попугай или черепаха едет с тобой, растёт с рейсами и приносит от 1% до 3% бонуса к оплате — вдвое на любимом рейсе. У него есть настроение, аксессуары, и он виден в твоём профиле.
+3de8cd4800	Trips to another country	Рейсы в другую страну
+7e82e7f000	Dog	Собака
+f3e7c7956e	Favourite trip (×2)	Любимый рейс (×2)
+198b7ead50	Favourite trip — double bonus: the cat loves night deliveries (22:00–06:00), the dog trips over 800 km, the parrot trips to another country, the turtle loads over 20 t.	Любимый рейс — двойной бонус: кошка любит ночные доставки (22:00–06:00), собака — рейсы более 800 км, попугай — в другую страну, черепаха — грузы более 20 т.
+718a883dd4	Favourite trip: {0}	Любимый рейс: {0}
+a301e1099f	Purry	Мурка
+9d0c321fd2	The top level	Высший уровень
+f49f081219	Mood: +8 for a delivery, +5 for a pat (once every 4 hours), −15 for each day without a delivery. Below 30 it is sad and brings no bonus — one trip fixes it.	Настроение: +8 за доставку, +5 за поглаживание (раз в 4 часа), −15 за каждый день без доставки. Ниже 30 он грустит и не приносит бонуса — один рейс это исправит.
+48c5e5ac76	Mood: {0}	Настроение: {0}
+851dcbc209	New name	Новое имя
+389bf748fc	Night deliveries (22:00–06:00)	Ночные доставки (22:00–06:00)
+8dd4b55dde	No such mascot.	Такого талисмана нет.
+945e1d3fde	Unlocks at level {0}.	Открывается на уровне {0}.
+5f2295e81b	Unlocked an accessory: {0}. The bonus is {1}% of the pay.	Открыт аксессуар: {0}. Бонус — {1}% от оплаты.
+60dc196dfa	Glasses	Очки
+6296ae9940	You don't have a mascot yet.	У тебя ещё нет талисмана.
+3447493803	Parrot	Попугай
+5caf22b15b	Pet	Погладить
+86af12368e	It grows with every delivery of your company: 10 levels (5, 15, 30 … 300 trips). The bonus is 1% of the pay, 1.5% from level 4, 2% from level 7 and 3% at level 10.	Он растёт с каждой доставкой твоей компании: 10 уровней (5, 15, 30 … 300 рейсов). Бонус — 1% от оплаты, 1,5% с уровня 4, 2% с уровня 7 и 3% на уровне 10.
+53d747d48c	It grows with your trips, is happy when you drive and brings a small bonus to the pay. Each has a favourite kind of trip — then the bonus is double.	Растёт с рейсами, радуется, когда ты в пути, и приносит небольшой бонус к оплате. У каждого есть любимый вид рейса — тогда бонус двойной.
+e5fcd148d7	Bored	Скучает
+3300622c17	Next pat: {0}	Следующее поглаживание: {0}
+092c07a3ed	The companion in your cab.	Спутник в твоей кабине.
+72283a94af	Mascot	Талисман
+3b1ff8359a	Mascot in the cab	Талисман в кабине
+6c2890f821	Heavy loads (over 20 t)	Тяжёлые грузы (более 20 т)
+724fae565a	Sad	Грустит
+08b5c3deba	Scarf	Шарф
+5b272f1793	Cap	Кепка
+aad67e489e	Rex	Шарик
+ffa6f27be8	Happy	Счастлив
+0768eb809f	none (sad)	нет (грустит)
+f4adf1de3b	A delivery: +{0} mood, a day without one: −{1}. Below {2} it is sad and brings no bonus. Petting: +{3} once every {4} h.	Доставка: +{0} к настроению, день без доставки: −{1}. Ниже {2} грустит и не даёт бонуса. Поглаживание: +{3} раз в {4} ч.
+8d51ea5424	From the first city through all the others once, in a straight line. {0} tries. From 90% — {1} lv., for the shortest path — another {2} lv.	От первого города через все остальные по разу, по прямой. {0} попытки. От 90% — {1} лв., за кратчайший путь — ещё {2} лв.

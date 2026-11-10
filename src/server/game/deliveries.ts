@@ -31,6 +31,7 @@ import { recordWeeklyLane } from './weekly-lane';
 import { recordPrewinterDelivery } from './prewinter';
 import { clearedCountries, recordSnowSeason, withCleared } from './first-snow';
 import { recordWinterTrek } from './winter-trek';
+import { recordMascotTrip } from './mascot';
 import { firstTripBonus, recordLaneRun, settlePerfectConvoy } from './community';
 import { featureFor } from '@/server/features';
 import { maintenanceState } from '@/lib/game/maintenance';
@@ -828,6 +829,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await recordSnowSeason(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, convoy: !!(d.convoyWith || d.convoyLead), destCountry: dest!.countryCode, tons: contract.weightTons, holiday: contract.holiday, goods: contract.goods, roadEvents: d.roadEvents, ownerDrove }, completedAt);
   // 1.3 „Зимен поход“: the current step of the seven.
   await recordWinterTrek(tx, { userId: company!.ownerId, loadedKm: d.loadedKm, late: result.late, cargoType: contract.cargoType, destCountry: dest!.countryCode, tons: contract.weightTons, ownerDrove }, completedAt);
+  // 1.3 „Талисман в кабината“: its share of the reward, trips and mood.
+  await recordMascotTrip(tx, { userId: company!.ownerId, companyId: company!.id, deliveryId: d.id, rewardCents: result.rewardCents, loadedKm: d.loadedKm, tons: contract.weightTons, originCountry: origin!.country, destCountry: dest!.countryCode }, completedAt);
   await rewardReferral(tx, company!.ownerId, now);
   // Return loads come with v1.2 (staff see them before the release).
   // The hauler of someone else's goods gets the usual "Доставено" message.

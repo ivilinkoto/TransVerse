@@ -94,6 +94,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire', group: 'Камиони', minLevel: 6 },
       { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction', group: 'Камиони', minLevel: 6 },
       { href: '/game/staff', label: 'Шофьори', group: 'Хора', core: true },
+      { href: '/game/mascot', label: 'Талисман', feature: 'mascot', group: 'Хора', core: true },
       { href: '/game/inventory', label: 'Инвентар', feature: 'inventory', group: 'Хора', core: true, hiddenWith: 'inventory_menu' },
       { href: '/game/logistics', label: 'Депа', group: 'Сервиз и депа', core: true },
       { href: '/game/licences', label: 'Лицензи', group: 'Хора', minLevel: 2 },

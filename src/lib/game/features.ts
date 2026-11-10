@@ -145,6 +145,8 @@ export const FEATURES = {
   winter_trek: '1.3',
   // „Пътят на деня“: a daily route puzzle, the same for everybody.
   daily_route: '1.3',
+  // „Талисман в кабината“: a companion that grows with the trips.
+  mascot: '1.3',
   // 1.2.6 „На една вълна“
   chat_life: '1.3',
   partner_loads: '1.3',

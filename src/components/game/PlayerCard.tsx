@@ -16,6 +16,7 @@ import { PlayerName } from './PlayerName';
 import { openReport } from './ReportDialog';
 import { SendMoneyForm } from './SendMoneyForm';
 import { t, tx, intlLocale } from '@/i18n/t';
+import { MascotArt } from './MascotArt';
 import { MEDAL_INFO, MEDALS } from '@/lib/game/medals';
 
 /** The ring around the picture: the Halloween badge, then the Discord level frames (gold 25, cyan 10). */
@@ -76,6 +77,12 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
           <Avatar userId={card.id} username={card.username} version={card.avatarVersion} vip={card.vip} className={`${gameUi ? 'player-hero-avatar h-20 w-20 text-3xl' : 'h-16 w-16 text-2xl'} ${frameOf(card.badges)}`} rounded="rounded-2xl" />
           <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-asphalt-900 ${card.online ? 'bg-profit' : 'bg-asphalt-500'}`} title={card.online ? t('Онлайн') : t('Последно: {0}', card.lastSeen)} />
         </div>
+        {card.mascot && (
+          <div className="order-last ml-auto flex shrink-0 flex-col items-center" title={t('{0} · ниво {1}', tx(card.mascot.name), card.mascot.level)} data-testid="player-mascot">
+            <MascotArt kind={card.mascot.kind} accessory={card.mascot.accessory} sad={card.mascot.sad} className="h-14 w-14 sm:h-16 sm:w-16" />
+            <span className="max-w-[5rem] truncate text-[10px] font-semibold text-mist-300">{tx(card.mascot.name)}</span>
+          </div>
+        )}
         <div className="min-w-0">
           <PlayerName name={card.username} role={card.role} vip={card.vip} card={false} className="font-display text-xl font-bold" />
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
