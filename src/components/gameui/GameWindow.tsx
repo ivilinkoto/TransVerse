@@ -121,10 +121,10 @@ export function GameWindow({
       >
         <span aria-hidden className="gw-corner gw-corner-tl" />
         <span aria-hidden className="gw-corner gw-corner-tr" />
-        <div {...dragProps} className="gw-grip flex touch-none justify-center pb-1 pt-2 sm:hidden" aria-hidden>
+        <div {...dragProps} className="gw-grip flex shrink-0 touch-none justify-center pb-1 pt-2 sm:hidden" aria-hidden>
           <span className="h-1.5 w-12 rounded-full bg-white/25" />
         </div>
-        <header {...dragProps} className="gw-head flex touch-none items-center gap-3 px-4 py-3 sm:touch-auto sm:px-5">
+        <header {...dragProps} className="gw-head flex shrink-0 touch-none items-center gap-3 px-4 py-3 sm:touch-auto sm:px-5">
           {icon && <span className="gw-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg">{icon}</span>}
           <h2 className="min-w-0 flex-1 truncate font-display text-lg font-bold tracking-wide text-white">{title}</h2>
           <button type="button" onClick={close} className="gw-close flex h-9 w-9 items-center justify-center rounded-xl" aria-label={t('Затвори')} data-testid="game-window-close">
@@ -132,7 +132,7 @@ export function GameWindow({
           </button>
         </header>
         <div className="gw-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3 sm:px-5">{children}</div>
-        {footer && <footer className="gw-foot px-4 py-3 sm:px-5">{footer}</footer>}
+        {footer && <footer className="gw-foot shrink-0 px-4 py-3 sm:px-5">{footer}</footer>}
       </div>
     </div>,
     document.body,
