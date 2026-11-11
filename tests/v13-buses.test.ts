@@ -25,6 +25,18 @@ describe('1.3 „Автобусна компания“ — rules', () => {
     expect(alone.perDeparture).toBeLessThanOrEqual(BUS_MODELS.intercity.seats);
   });
 
+  it('balance: even the best pair at the best ticket pays a bus back in no less than 45 days (a truck is the main income)', () => {
+    // Sofia–Istanbul: the biggest pair in reach, at the ideal distance band.
+    const big = { from: { id: 1, name: 'София', country: 'BG', population: 1_240_000 }, to: { id: 2, name: 'Истанбул', country: 'TR', population: 15_000_000 }, km: 560 };
+    for (const model of ['shuttle', 'intercity', 'coach'] as const) {
+      let best = 0;
+      for (const departures of BUSES.departures) for (let priceCents = BUSES.price.min; priceCents <= BUSES.price.max; priceCents += 100) best = Math.max(best, lineDay(line({ ...big, model, departures, priceCents }), []).profitCents);
+      expect(BUS_MODELS[model].priceCents / best).toBeGreaterThanOrEqual(45);
+    }
+    // A small pair close by does not pay at the default timetable.
+    expect(lineDay(line({ to: { id: 3, name: 'В', country: 'BG', population: 138_000 }, from: { id: 4, name: 'Г', country: 'BG', population: 346_000 }, km: 100, departures: 2 }), []).profitCents).toBeLessThan(0);
+  });
+
   it('the till fills pro rata and stops at 48 hours', () => {
     const day = lineDay(line(), []);
     expect(tillFor(day, 12).cents).toBe(Math.round(day.profitCents / 2));

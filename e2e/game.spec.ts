@@ -348,7 +348,9 @@ test('@mobile dashboard is usable on a phone without horizontal scrolling', asyn
   await expect(page.getByRole('heading', { name: v2() ? 'Курсове' : 'Поръчки', exact: true })).toBeVisible();
   await bottom.getByRole('button', { name: 'Още', exact: true }).click();
   await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: 'Класации' }).click();
-  await expect(page.getByRole('heading', { name: 'Класации', exact: true })).toBeVisible();
+  // Before the new look is out for players this is two loads (the intercepted window, then the full
+  // page); on a busy CI runner that took over the default 5 s on 11.11.
+  await expect(page.getByRole('heading', { name: 'Класации', exact: true })).toBeVisible({ timeout: 20_000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });
 

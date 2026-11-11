@@ -56,7 +56,10 @@ jobs:
       - name: End-to-end tests
         if: github.event_name != 'push' || github.ref == 'refs/heads/main'
         run: |
-          pnpm exec playwright install --with-deps chromium
+          # The runner image already has Chromium's libraries; the apt step only adds extra fonts.
+          # When the Ubuntu mirrors are unreachable (it happened on 11.11), give apt five minutes
+          # and then install just the browser, so a mirror outage does not fail the e2e run.
+          timeout 300 pnpm exec playwright install --with-deps chromium || pnpm exec playwright install chromium
           pnpm start > server.log 2>&1 &
           node dist/worker.js > worker.log 2>&1 &
           for i in $(seq 1 60); do curl -fs http://localhost:3000/login >/dev/null && break; sleep 2; done

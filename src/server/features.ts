@@ -3,15 +3,24 @@ import { featureLive, type FeatureId } from '@/lib/game/features';
 import { testsUnreleased } from '@/server/auth/roles';
 import type { DbOrTx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
+import { disabledFeatures } from '@/server/feature-off';
 import { fail } from '@/server/game/errors';
 import { t } from '@/i18n/t';
 
 // The role per connection or transaction: one settlement asks for many features of the same player.
 const roles = new WeakMap<object, Map<string, boolean>>();
 
-/** Is the feature on for this player (staff test it before the release date)? */
+/**
+ * Is the feature on for this player (staff test it before the release date)? A feature
+ * the admins switched off is off for the players here too — so a delivery stops paying
+ * its bonuses — while the team keeps it to test the fix.
+ */
 export async function featureFor(db: DbOrTx, userId: string, id: FeatureId, now = new Date()): Promise<boolean> {
-  if (featureLive(id, now)) return true;
+  if (featureLive(id, now) && !(await disabledFeatures(db)).has(id)) return true;
+  return tester(db, userId);
+}
+
+async function tester(db: DbOrTx, userId: string): Promise<boolean> {
   let known = roles.get(db);
   if (!known) roles.set(db, (known = new Map()));
   if (!known.has(userId)) {
