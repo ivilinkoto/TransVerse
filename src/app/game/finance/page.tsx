@@ -45,7 +45,7 @@ export default async function FinancePage() {
   const leases = features.leasing ? await leasesOf(db, company.id) : [];
   const transferBlock = me ? senderBlock(me, now) : null;
   const income = summary.byCategory.filter((c) => c.total > 0 && c.category !== 'starting_capital').reduce((s, c) => s + c.total, 0);
-  const expense = -summary.byCategory.filter((c) => c.total < 0).reduce((s, c) => s + c.total, 0);
+  const expense = -summary.byCategory.filter((c) => c.total < 0).reduce((s, c) => s + c.total, 0) || 0; // no expenses: 0, not -0
   const sorted = [...summary.byCategory].filter((c) => c.category !== 'starting_capital').sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
   const maxAbs = Math.max(1, ...sorted.map((c) => Math.abs(c.total)));
 
