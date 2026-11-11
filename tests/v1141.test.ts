@@ -11,6 +11,7 @@ import { dailyActivity, missingPlayers, retentionCohorts, winBack } from '@/serv
 import { closeDb } from '@/server/db/client';
 import { coinEntries, companies, contracts, deliveries, jobState, notifications, tripQueue, userBadges, users, vehicles } from '@/server/db/schema';
 import { disabledFeatures, setFeatureOff, withSwitches } from '@/server/feature-switches';
+import { featureFor } from '@/server/features';
 import { runAction } from '@/server/game/actions';
 import { bigRunOf, bigRunProgress, recordBigRunDelivery } from '@/server/game/big-run';
 import { acceptContract } from '@/server/game/deliveries';
@@ -156,7 +157,11 @@ describe('v1.1.4.1 „По-просто“', () => {
     expect(withSwitches(liveFeatures(new Date()), off, true).depot_all).toBe(true);
     const p = await newPlayer();
     expect(await code(runAction(db(), { id: p.userId, role: 'player', username: p.username }, { type: 'moveAllToDepot' }, async () => 'test'))).toBe('feature_off');
+    // 1.3: the server-side check (a delivery's bonuses ask it) follows the switch too; the team keeps it.
+    expect(await featureFor(db(), p.userId, 'depot_all')).toBe(false);
+    expect(await featureFor(db(), admin.userId, 'depot_all')).toBe(true);
     await setFeatureOff(db(), actor, 'depot_all', false);
+    expect(await featureFor(db(), p.userId, 'depot_all')).toBe(true);
     expect((await disabledFeatures(db(), true)).has('depot_all')).toBe(false);
   });
 
