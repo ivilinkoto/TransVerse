@@ -10565,7 +10565,7 @@
  "Пътни такси": "Road tolls",
  "Пътните сигнали идват с обновление {0}.": "Road reports come with update {0}.",
  "Пътници/ден": "Passengers/day",
- "Пътниците зависят от големината на двата града, разстоянието, цената на билета (3–15 лв. на 100 км), комфорта и другите превозвачи на същата линия.": "Passengers depend on the size of the two cities, the distance, the ticket price (3–15 lv. per 100 km), the comfort and the other carriers on the same line.",
+ "Пътниците зависят от големината на двата града, разстоянието, цената на билета (3–10 лв. на 100 км), комфорта и другите превозвачи на същата линия.": "Passengers depend on the size of the two cities, the distance, the ticket price (3–10 lv. per 100 km), the comfort and the other carriers on the same line.",
  "Пътниците зависят от градовете, разстоянието, цената, комфорта и другите превозвачи на линията. Касата пази до {0} часа.": "Passengers depend on the cities, the distance, the price, the comfort and the other carriers on the line. The till keeps up to {0} hours.",
  "Пътнически линии до големите градове — приходите се трупат в касата.": "Passenger lines to the big cities — the takings pile up in the till.",
  "Пътнически линии с автобус до големите градове.": "Passenger bus lines to the big cities.",
