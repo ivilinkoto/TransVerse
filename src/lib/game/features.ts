@@ -222,6 +222,8 @@ export const FEATURES = {
   company_plot: '1.4',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).
   christmas_night: '1.4',
+  // 1.4 „Пътна служба“: real passes close in winter; salt and sand loads open them for everyone.
+  road_service: '1.4',
   plot_guests: '1.4',
   livery: '1.4',
   maintenance: '1.4',

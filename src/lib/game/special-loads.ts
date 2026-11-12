@@ -41,7 +41,7 @@ export const LIVESTOCK = {
   goods: ['Говеда', 'Овце', 'Свине', 'Агнета', 'Коне', 'Живи пилета'],
 };
 
-export type LoadTag = 'night_courier' | 'last_mile' | 'livestock' | 'weekly_lane';
+export type LoadTag = 'night_courier' | 'last_mile' | 'livestock' | 'weekly_lane' | 'road_service';
 
 export const isNightCourierHour = (sofiaHour: number) => sofiaHour >= NIGHT_COURIER.from || sofiaHour < NIGHT_COURIER.to;
 
@@ -50,6 +50,8 @@ export const TAG_LABELS: Record<LoadTag, { label: string; emoji: string }> = {
   last_mile: { label: 'Последна миля', emoji: '🏙' },
   livestock: { label: 'Живи животни', emoji: '🐄' },
   weekly_lane: { label: 'Договор на седмицата', emoji: '🏁' },
+  // 1.4: salt and sand to a closed mountain pass.
+  road_service: { label: 'Пътна служба', emoji: '❄️' },
 };
 
 /** Whether the animals were well cared for on this run. */

@@ -41,6 +41,7 @@ import { acceptJobOffer, payHireCommission } from './hire';
 import { mentorXpFactor } from './mentor';
 import { recordBattleDelivery } from './battles';
 import { boomFor, recordMaterialDelivery } from './plot';
+import { closedPassOnRoute, recordPassDelivery } from './road-service';
 import { BOOM } from '@/lib/game/plot';
 import { recordWeeklyGoal } from './weekly-goal';
 import { addFeed, FEED_LONG_TRIP_KM } from './feed';
@@ -454,10 +455,12 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     // The real weather on the roads now (v1.4), when there is a fresh reading.
     // 1.2.5: countries whose roads the players cleared today are one step easier.
     const real = withCleared(loadedRoute!.countries, now, await realConditionsFor(tx, userId, now), await clearedCountries(tx, now));
+    // 1.4 „Пътна служба“: a road over a pass that is closed now meets the snowplows (as in a blizzard).
+    const overClosedPass = await closedPassOnRoute(tx, loadedRoute!.geometry, now);
     // Surprises on the way, decided now and revealed when the truck gets there.
     // Maintenance (v1.3): an overdue truck gets into trouble more often, a freshly serviced one less.
     const upkeep = !rented && (await featureFor(tx, userId, 'maintenance', now)) ? maintenanceState(bundle.vehicle.odometerKm, bundle.vehicle.serviceKm).factor : 1;
-    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + roadLoadedKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep * (bundle.trailer?.upgrades.includes('led_markers') ? (TRAILER_UPGRADES.led_markers.incidents ?? 1) : 1), ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: isSnowTime(now) || real ? { condition: routeCondition(loadedRoute!.countries, now, real).condition, tyres: rented || hasWinterGrip(bundle.vehicle.upgrades) } : undefined });
+    const roadEvents = process.env.ROAD_EVENTS === 'off' ? [] : planRoadEvents(schedule, { totalKm: chargedEmptyKm + roadLoadedKm, borders: loadedRoute!.borders.length + (contract!.urgent ? 0 : (emptyRoute?.borders.length ?? 0)), rented, random: Math.random, chance: crew.eventChance * upkeep * (bundle.trailer?.upgrades.includes('led_markers') ? (TRAILER_UPGRADES.led_markers.incidents ?? 1) : 1), ghostChance: isHalloween(now) ? HALLOWEEN.ghostChance : 0, risks: violations, winter: overClosedPass ? { condition: 'blizzard', tyres: rented || hasWinterGrip(bundle.vehicle.upgrades) } : isSnowTime(now) || real ? { condition: routeCondition(loadedRoute!.countries, now, real).condition, tyres: rented || hasWinterGrip(bundle.vehicle.upgrades) } : undefined });
     const [delivery] = await tx
       .insert(deliveries)
       .values({
@@ -817,6 +820,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (org) await recordBattleDelivery(tx, org.id, contract.weightTons, completedAt);
   // Building materials for the company's plot.
   await recordMaterialDelivery(tx, contract, company!.ownerId, completedAt);
+  // 1.4 „Пътна служба“: salt and sand to a closed pass.
+  if (contract.tag === 'road_service') await recordPassDelivery(tx, contract.id, company!.ownerId, contract.weightTons, completedAt);
   await recordWeeklyGoal(tx, company!.ownerId, { loadedKm: d.loadedKm, tons: contract.weightTons }, completedAt);
   // A long trip the player drove themselves goes to the friends feed.
   if (ownerDrove && d.loadedKm >= FEED_LONG_TRIP_KM) await addFeed(tx, { userId: company!.ownerId, kind: 'trip', text: t('достави {0} до {1} ({2} км)', contract.goods, dest!.nameBg, Math.round(d.loadedKm).toLocaleString(intlLocale())) }, completedAt);

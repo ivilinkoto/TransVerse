@@ -124,6 +124,7 @@ import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
 import { starvedCountryAlerts } from './game-health';
 import { awardSantas, awardSnowKings } from './first-snow';
+import { awardPassGuardians, ensurePassLoads } from './road-service';
 import { postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
@@ -291,6 +292,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
+    // 1.4 „Пътна служба“: salt and sand loads for the closed passes.
+    await every(db, 'road-service', 15 * 60_000, now, () => ensurePassLoads(db, now, provider));
     await every(db, 'local-jobs', 60_000, now, () => ensureLocalJobsForFleet(db, now, undefined, provider));
     await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));
     await every(db, 'demand', 60 * 60_000, now, (elapsed) => recoverDemand(db, Math.min(48, elapsed / 3_600_000)));
@@ -419,6 +422,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'snow-kings', 60 * 60_000, now, async () => {
       await awardSnowKings(db, now);
       await awardSantas(db, now);
+      await awardPassGuardians(db, now);
     });
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
     // 1.2.6: the question of the day in the global chat.

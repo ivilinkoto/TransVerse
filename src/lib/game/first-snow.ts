@@ -26,6 +26,9 @@ export const TITLES: Record<string, { label: string; color: string }> = {
   'christmas-night-elf': { label: 'Елф на пътя', color: '#86efac' },
   'santa-of-roads': { label: 'Дядо Коледа на пътищата', color: '#fca5a5' },
   'santa-helper': { label: 'Помощник на Дядо Коледа', color: '#fecaca' },
+  // 1.4 „Пътна служба“.
+  'pass-guardian': { label: 'Пазител на прохода', color: '#93c5fd' },
+  'pass-keeper': { label: 'Пътен служител', color: '#bfdbfe' },
 };
 export const isTitle = (id: string) => id in TITLES;
 
