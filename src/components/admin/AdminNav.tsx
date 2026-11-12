@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, ChevronDown, ClipboardList, Coins, CreditCard, Flag, Gauge, Handshake, HeartPulse, LifeBuoy, LineChart, LogOut, Mail, Megaphone, Package, PartyPopper, Rocket, Route, Search, Siren, Stethoscope, Ticket, Users, type LucideIcon } from 'lucide-react';
+import { Activity, BarChart3, ChevronDown, ClipboardList, Coins, CreditCard, Flag, Gauge, Handshake, HeartPulse, LifeBuoy, LineChart, LogOut, Mail, Megaphone, Package, PartyPopper, Rocket, Route, Search, Siren, Stethoscope, Ticket, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -9,7 +9,7 @@ import { t, tx } from '@/i18n/t';
 
 const ICONS: Record<AdminIcon, LucideIcon> = {
   gauge: Gauge, search: Search, users: Users, health: Stethoscope, sources: Megaphone, retention: HeartPulse, journey: Route, tickets: LifeBuoy, reports: Flag, urgent: Siren,
-  events: PartyPopper, payments: CreditCard, promo: Ticket, coins: Coins, items: Package, economy: LineChart, mail: Mail, system: Activity, readiness: Rocket, audit: ClipboardList, partners: Handshake,
+  events: PartyPopper, payments: CreditCard, promo: Ticket, coins: Coins, items: Package, economy: LineChart, mail: Mail, system: Activity, readiness: Rocket, audit: ClipboardList, partners: Handshake, adoption: BarChart3,
 };
 
 /** 1.2.3.1: the admin menu in groups that fold, with „Отиди на…“ and the counters on the pages and their groups. */

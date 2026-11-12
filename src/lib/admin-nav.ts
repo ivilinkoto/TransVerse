@@ -2,7 +2,7 @@
  * 1.2.3.1: the admin menu in groups. `admin: true` pages are for administrators
  * only (support staff do not see them and are sent back to the dashboard).
  */
-export type AdminIcon = 'gauge' | 'search' | 'users' | 'health' | 'sources' | 'retention' | 'journey' | 'tickets' | 'reports' | 'urgent' | 'events' | 'payments' | 'promo' | 'coins' | 'items' | 'economy' | 'mail' | 'system' | 'readiness' | 'audit' | 'partners';
+export type AdminIcon = 'gauge' | 'search' | 'users' | 'health' | 'sources' | 'retention' | 'journey' | 'tickets' | 'reports' | 'urgent' | 'events' | 'payments' | 'promo' | 'coins' | 'items' | 'economy' | 'mail' | 'system' | 'readiness' | 'audit' | 'partners' | 'adoption';
 
 export interface AdminPage { href: string; label: string; icon: AdminIcon; admin?: boolean }
 export interface AdminGroup { id: string; label: string; pages: AdminPage[] }
@@ -25,6 +25,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     label: 'Игра',
     pages: [
       { href: '/admin/health', label: 'Здраве на играта', icon: 'health', admin: true },
+      { href: '/admin/adoption', label: 'Как се играе 1.3', icon: 'adoption', admin: true },
       { href: '/admin/economy', label: 'Икономика', icon: 'economy', admin: true },
       { href: '/admin/events', label: 'Ивенти', icon: 'events' },
       { href: '/admin/items', label: 'Предмети и кейсове', icon: 'items', admin: true },

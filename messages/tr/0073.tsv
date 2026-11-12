@@ -453,3 +453,11 @@ f2471c825b	Passenger bus lines to the big cities.	Пассажирские ав�
 5a7b24bebe	Every bus has a 3D model (the "3D" button on its card): turn it and look at it from every side — doors, mirrors, the route sign.	У каждого автобуса есть 3D-модель (кнопка «3D» в карточке): поверни её и рассмотри со всех сторон — двери, зеркала, табличку с маршрутом.
 4586a070cb	Every section — Loads, Fleet, Finances, Market, Depots, Company, Rankings, Events, Season, Profile, Settings and more — opens as a window over the game.	Все разделы — Курсы, Автопарк, Финансы, Рынок, Склады, Компания, Рейтинги, Ивенты, Сезон, Профиль, Настройки и другие — открываются окнами поверх игры.
 6f98bb74bb	Passengers depend on the size of the two cities, the distance, the ticket price (3–10 lv. per 100 km), the comfort and the other carriers on the same line.	Пассажиры зависят от размера двух городов, расстояния, цены билета (3–10 лв. на 100 км), комфорта и других перевозчиков на той же линии.
+800e5cb7e7	Bus lines in total: {0}.	Всего автобусных линий: {0}.
+2c552f91aa	Active players in the last 7 days: {0}. Percentages are of them.	Активных игроков за последние 7 дней: {0}. Проценты считаются от них.
+d732f43e55	How 1.3 is played	Как играют в 1.3
+fedcbc4d05	How many players have tried each new system. Players only, not the staff; nothing new is recorded.	Сколько игроков попробовали каждую новую систему. Только игроки, без команды; ничего нового не записывается.
+6ad6c1d7af	Night run by day	Ночной рейс по дням
+11a9bdbb7d	Route of the day by day	Маршрут дня по дням
+5378c651ac	World crises (voted)	Мировые кризисы (голосовали)
+23bfc66ca4	Admin → Game → “How 1.3 is played”: how many players (not the staff) have tried each new 1.3 system, compared with those active in the last 7 days, plus Night run and Route of the day by day. The page only reads what is already recorded.	Админка → Игра → «Как играют в 1.3»: сколько игроков (без команды) попробовали каждую новую систему 1.3 по сравнению с активными за 7 дней, а Ночной рейс и Маршрут дня — по дням. Страница только читает уже записанное.
