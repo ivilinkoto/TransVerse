@@ -224,6 +224,8 @@ export const FEATURES = {
   christmas_night: '1.4',
   // 1.4 „Пътна служба“: real passes close in winter; salt and sand loads open them for everyone.
   road_service: '1.4',
+  // 1.4 „Градски куриер“: a delivery van on the real streets of Sofia, Plovdiv and Varna (OpenStreetMap).
+  city_courier: '1.4',
   plot_guests: '1.4',
   livery: '1.4',
   maintenance: '1.4',

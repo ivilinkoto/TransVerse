@@ -509,3 +509,23 @@ bb36092d70	Road conditions are game data based on the real weather.	Дорожн
 09cff305cb	❄️ {0} is open again — thanks to everyone who brought salt and sand.	❄️ {0} снова открыт — спасибо всем, кто привёз соль и песок.
 9ac0549e66	🛡️ Pass Guardian	🛡️ Хранитель перевала
 241d102a61	A blizzard, ice or heavy snow closes the pass, and a trip over it waits for the snowplows. {0} t of salt and sand open it until the end of the day.	Метель, гололёд или сильный снег закрывают перевал, и рейс через него ждёт снегоуборщики. {0} т соли и песка открывают его до конца дня.
+6155084dbd	+{0} XP.	+{0} опыта.
+386905d5ed	8 parcels on the real streets of the centre in {0} minutes.	8 посылок по настоящим улицам центра за {0} минут.
+2124527f6d	No name	Без названия
+a95b7b6eb2	Time is up — hand in the shift.	Время вышло — сдай смену.
+9ecc076e0d	City courier	Городской курьер
+7ff0303d20	City courier: a van in the real centre of Sofia, Plovdiv or Varna — the streets and one-way streets come from OpenStreetMap. Every day 8 parcels on real streets and traffic jams, the same for everyone. Tap a junction and the van takes the shortest way, but the navigator does not know the jams — you choose the order and the way. 3 shifts a day, stars and XP, a daily ranking for each city.	Городской курьер: фургон в настоящем центре Софии, Пловдива или Варны — улицы и односторонние улицы взяты из OpenStreetMap. Каждый день 8 посылок на настоящих улицах и пробки, одинаковые для всех. Нажми на перекрёсток, и фургон поедет кратчайшим путём, но навигатор не знает о пробках — ты выбираешь порядок и дорогу. 3 смены в день, звёзды и опыт, дневной рейтинг для каждого города.
+d64a20331e	No shifts left today — new parcels tomorrow.	Смены на сегодня закончились — новые посылки завтра.
+0e52d0cc67	Today's best · {0}	Лучшие сегодня · {0}
+7f0a24afcf	Delivered: {0} of {1}.	Доставлено: {0} из {1}.
+1353261939	Loading the streets…	Загружаю улицы…
+466f23b181	Map of the centre	Карта центра
+c4848118aa	Nobody has driven today yet.	Сегодня ещё никто не ездил.
+dda61896f7	Plovdiv	Пловдив
+a5a464a5e2	Hand in the shift	Сдать смену
+8516433d7a	End the shift	Закончить смену
+ae1b7ed238	Shifts today: {0}	Смен сегодня: {0}
+9855d020a6	Too many stops.	Слишком много остановок.
+bf4cfcd092	contributors	участники
+6a3f495563	↶ Back	↶ Назад
+651d7fa79f	Tap a junction and the van takes the shortest way. The navigator does not know the jams (red) — add stops to go around them.	Нажми на перекрёсток, и фургон поедет кратчайшим путём. Навигатор не знает о пробках (красные) — добавь остановки, чтобы объехать их.
