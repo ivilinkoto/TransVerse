@@ -8,7 +8,8 @@ import { gameContext } from '@/server/game/context';
 import { TruckPass } from '@/components/game/TruckPass';
 import { FINAL_SPRINT, lastRecapSeason } from '@/server/game/final-sprint';
 import { FIRST_SNOW, PLOW } from '@/lib/game/first-snow';
-import { plowToday, snowKings } from '@/server/game/first-snow';
+import { plowToday, santaRanking, snowKings } from '@/server/game/first-snow';
+import { CHRISTMAS_NIGHT, SANTA_OF_ROADS } from '@/lib/game/christmas-night';
 import { leaderboard } from '@/server/game/queries';
 import { companyPrizes, organizationSeasonResults, organizationSeasonTable, type SeasonRules } from '@/server/game/seasons';
 import { membershipOf } from '@/server/game/membership';
@@ -47,6 +48,8 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
   const sprint = features.final_sprint && hoursLeft <= FINAL_SPRINT.countdownDays * 24 && hoursLeft > 0;
   const recapId = features.final_sprint ? await lastRecapSeason(db, user.id) : null;
   const snow = features.season_v2 && rules.theme === FIRST_SNOW.theme ? { kings: await snowKings(db, season!.id), plow: await plowToday(db, now) } : null;
+  // 1.4 „Коледна нощ“: „Дядо Коледа на пътищата“ (and clearing the roads goes on).
+  const xmasNight = features.christmas_night && rules.theme === CHRISTMAS_NIGHT.theme ? { santas: await santaRanking(db, season!.id), plow: await plowToday(db, now) } : null;
   const prizes = companies ? companyPrizes(rules) : rules.prizesCents;
   // 1.1.3.1: the medal the place would win if the season ended now.
   const medalIcon = (place: number) => {
@@ -104,6 +107,26 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
             {snow.plow.length === 0 ? <p className="text-sm text-mist-400">{t('Днес още никой не е разчиствал.')}</p> : (
               <ul className="space-y-1 text-sm" data-testid="plow-today">
                 {snow.plow.map((c) => <li key={c.country} className="flex justify-between gap-2"><span>{c.country}</span><span className="num">{c.cleared ? t('✓ разчистено') : t('{0} / {1} т', int(c.tons), int(PLOW.tonsPerDay))}</span></li>)}
+              </ul>
+            )}
+          </Card>
+        </div>
+      )}
+      {xmasNight && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card title={t('🎅 Дядо Коледа на пътищата')}>
+            <p className="mb-3 text-sm text-mist-300">{t('Тонове коледни товари този сезон (от 15 декември). Първите трима взимат титли и {0}, {1} и {2} TC.', SANTA_OF_ROADS.places[0].coins, SANTA_OF_ROADS.places[1].coins, SANTA_OF_ROADS.places[2].coins)}</p>
+            {xmasNight.santas.length === 0 ? <p className="text-sm text-mist-400">{t('Още никой не е карал коледни товари.')}</p> : (
+              <ol className="space-y-1 text-sm" data-testid="santa-ranking">
+                {xmasNight.santas.map((k) => <li key={k.userId} className={`flex justify-between gap-2 ${k.userId === user.id ? 'font-semibold text-gold-300' : ''}`}><span>{k.place}. {k.username}</span><span className="num">{int(k.tons)} т</span></li>)}
+              </ol>
+            )}
+          </Card>
+          <Card title={t('🧂 Разчисти пътищата')}>
+            <p className="mb-3 text-sm text-mist-300">{t('Сол и пясък до държава със сняг: при {0} т за деня пътищата там олекват. {1} точки за пропуска на тон.', int(PLOW.tonsPerDay), PLOW.pointsPerTon)}</p>
+            {xmasNight.plow.length === 0 ? <p className="text-sm text-mist-400">{t('Днес още никой не е разчиствал.')}</p> : (
+              <ul className="space-y-1 text-sm">
+                {xmasNight.plow.map((c) => <li key={c.country} className="flex justify-between gap-2"><span>{c.country}</span><span className="num">{c.cleared ? t('✓ разчистено') : t('{0} / {1} т', int(c.tons), int(PLOW.tonsPerDay))}</span></li>)}
               </ul>
             )}
           </Card>

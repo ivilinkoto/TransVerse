@@ -21,11 +21,16 @@ export const TITLES: Record<string, { label: string; color: string }> = {
   'snow-prince': { label: 'Принц на снега', color: '#cbd5e1' },
   'road-clearer': { label: 'Разчиствач на пътища', color: '#fbbf24' },
   'region-builder': { label: 'Строител на региона', color: '#86efac' },
+  // 1.4 „Коледна нощ“.
+  'christmas-night-50': { label: 'Звезда на Коледната нощ', color: '#fde047' },
+  'christmas-night-elf': { label: 'Елф на пътя', color: '#86efac' },
+  'santa-of-roads': { label: 'Дядо Коледа на пътищата', color: '#fca5a5' },
+  'santa-helper': { label: 'Помощник на Дядо Коледа', color: '#fecaca' },
 };
 export const isTitle = (id: string) => id in TITLES;
 
 /** Weekly pass tasks: three a week from this list (the same for everybody), each worth pass points. */
-export type PassTaskKind = 'deliveries' | 'km' | 'ontime' | 'reefer' | 'convoy' | 'countries' | 'long' | 'winter' | 'heavy';
+export type PassTaskKind = 'deliveries' | 'km' | 'ontime' | 'reefer' | 'convoy' | 'countries' | 'long' | 'winter' | 'heavy' | 'xmas' | 'night';
 export interface PassTask { id: string; kind: PassTaskKind; target: number; label: string }
 export const PASS_TASKS: PassTask[] = [
   { id: 'deliveries-15', kind: 'deliveries', target: 15, label: 'Направи 15 доставки' },
@@ -40,11 +45,14 @@ export const PASS_TASKS: PassTask[] = [
 ];
 export const PASS_TASK = { perWeek: 3, points: 3_000 } as const;
 
-/** The three tasks of an ISO week, chosen the same way for everybody (winter loads only in weeks that reach their dates). */
-export function weekTasks(week: string, winterOk = true): PassTask[] {
+/**
+ * The three tasks of an ISO week, chosen the same way for everybody (winter loads only in weeks that reach their dates).
+ * 1.4 „Коледна нощ“: the season's own tasks join the pool (Christmas loads only in weeks that reach 15.12).
+ */
+export function weekTasks(week: string, winterOk = true, extra: { tasks: PassTask[]; xmasOk: boolean } | null = null): PassTask[] {
   let h = 0;
   for (const ch of week) h = (h * 33 + ch.charCodeAt(0)) >>> 0;
-  const pool = PASS_TASKS.filter((x) => winterOk || x.kind !== 'winter');
+  const pool = [...PASS_TASKS, ...(extra?.tasks ?? []).filter((x) => extra!.xmasOk || x.kind !== 'xmas')].filter((x) => winterOk || x.kind !== 'winter');
   const out: PassTask[] = [];
   while (out.length < PASS_TASK.perWeek && pool.length) {
     h = (h * 1103515245 + 12345) >>> 0;
@@ -54,7 +62,7 @@ export function weekTasks(week: string, winterOk = true): PassTask[] {
 }
 
 /** What one delivery adds to each kind of task. */
-export function taskIncrements(f: { loadedKm: number; late: boolean; cargoType: string; convoy: boolean; destCountry: string; tons: number; holiday: string | null }, seen: string[]): Record<PassTaskKind, number> {
+export function taskIncrements(f: { loadedKm: number; late: boolean; cargoType: string; convoy: boolean; destCountry: string; tons: number; holiday: string | null; night?: boolean }, seen: string[]): Record<PassTaskKind, number> {
   return {
     deliveries: 1,
     km: Math.round(f.loadedKm),
@@ -65,6 +73,8 @@ export function taskIncrements(f: { loadedKm: number; late: boolean; cargoType: 
     long: f.loadedKm >= 800 ? 1 : 0,
     winter: f.holiday === 'winter' || f.holiday === 'prewinter' ? 1 : 0,
     heavy: Math.round(f.tons),
+    xmas: f.holiday === 'christmas' ? 1 : 0,
+    night: f.night ? 1 : 0,
   };
 }
 

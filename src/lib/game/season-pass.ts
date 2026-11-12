@@ -1,4 +1,4 @@
-import { t, intlLocale } from '@/i18n/t';
+import { t, tx, intlLocale } from '@/i18n/t';
 /**
  * Season pass: 30 levels filled by season points from deliveries. Every level
  * has a free reward; the premium track (bought with ТрансКоин) adds more.
@@ -54,6 +54,12 @@ export interface PassRewardV2 extends PassReward {
   /** A truck model given for free (the season truck). */
   truck?: string;
 }
+
+/** 1.4: the season truck's paint (older seasons: „Първи сняг“). */
+export const SEASON_TRUCK_LOOK: Record<string, { color: string; livery: string; name: string }> = {
+  'rila-nordik-plow': { color: '#93c5fd', livery: 'firstsnow', name: 'Камион Rila Nordik 540 Снегорин' },
+  'rila-xt620': { color: '#14532d', livery: 'christmasnight', name: 'Камион Rila XT 620 6×4 „Коледна нощ“' },
+};
 
 export const PASS_V2 = {
   levels: 50,
@@ -120,8 +126,31 @@ export function rewardLabelV2(r: PassRewardV2, itemName: (id: string) => string,
   if (base) parts.push(base);
   for (const i of r.items ?? []) parts.push(i.qty > 1 ? `${itemName(i.itemId)} ×${i.qty}` : itemName(i.itemId));
   if (r.title) parts.push(t('Титла „{0}“', titleName(r.title)));
-  if (r.truck) parts.push(t('Камион Rila Nordik 540 Снегорин'));
+  if (r.truck) parts.push(tx(SEASON_TRUCK_LOOK[r.truck]?.name ?? r.truck));
   return parts.join(' + ');
 }
 
-export const passRewards = (v: PassVersion): { level: number; free: PassRewardV2 | null; premium: PassRewardV2 }[] => (v === 1 ? PASS_REWARDS : PASS_REWARDS_V2);
+// ───────────── 1.4 „Коледна нощ“: the same pass, its own rewards ─────────────
+const FREE_CN: Record<number, PassRewardV2> = {
+  2: { cents: 2_000_00 }, 4: it('coffee', 2), 6: it('repair_kit'), 8: it('fuel_voucher', 2), 10: it('case_bronze'),
+  12: { cents: 4_000_00 }, 14: it('energy_drink'), 16: it('cargo_cover'), 18: it('thermos'), 20: it('case_silver'),
+  22: it('paint_christmasnight'), 24: it('queue_ticket'), 26: { cents: 8_000_00 }, 28: it('coffee', 3), 30: { coins: 20 },
+  32: it('fuel_voucher', 3), 34: it('driver_handbook'), 36: it('repair_kit', 2), 38: { cents: 12_000_00 }, 40: it('case_gold'),
+  42: it('cab_coffee'), 44: it('coin_pouch'), 46: it('case_silver'), 48: { cents: 20_000_00 }, 50: { title: 'christmas-night-50', items: [{ itemId: 'case_gold', qty: 1 }] },
+};
+const PREMIUM_CN: Record<number, PassRewardV2> = {
+  1: it('coffee', 3), 3: it('repair_kit', 2), 5: { coins: 15 }, 7: it('fuel_voucher', 3), 9: it('energy_drink', 2),
+  10: it('night_frame'), 11: it('case_bronze'), 13: it('cargo_cover', 2), 15: { title: 'christmas-night-elf' }, 17: it('queue_ticket', 2),
+  19: { xpBoostHours: 24 }, 20: it('case_gold'), 21: it('thermos'), 23: it('driver_handbook', 2), 25: { coins: 40 },
+  27: it('power_nap'), 29: it('case_silver'), 30: { vipDays: 3 }, 31: it('coin_pouch', 2), 33: it('repair_kit', 3),
+  35: { coins: 60 }, 37: it('case_silver'), 39: it('treasure_map'), 40: it('case_gold'), 41: it('cab_coffee'),
+  43: { xpBoostHours: 48 }, 45: { coins: 25 }, 47: it('case_gold'), 49: { coins: 100 }, 50: { truck: 'rila-xt620', vipDays: 7 },
+};
+export const PASS_REWARDS_CN: { level: number; free: PassRewardV2 | null; premium: PassRewardV2 }[] = Array.from({ length: PASS_V2.levels }, (_, i) => {
+  const level = i + 1;
+  return { level, free: FREE_CN[level] ?? null, premium: PREMIUM_CN[level] ?? { cents: 1_500_00 + level * 150_00 } };
+});
+
+/** The rewards of a season's pass: version 1, „Коледна нощ“ (1.4), or the version-2 table of „Първи сняг“. */
+export const passRewards = (v: PassVersion, theme?: string | null): { level: number; free: PassRewardV2 | null; premium: PassRewardV2 }[] =>
+  v === 1 ? PASS_REWARDS : theme === 'christmas_night' ? PASS_REWARDS_CN : PASS_REWARDS_V2;

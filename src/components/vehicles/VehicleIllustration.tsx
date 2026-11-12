@@ -16,7 +16,7 @@ export interface VehicleIllustrationProps {
   trailerColor?: string;
   className?: string;
   title?: string;
-  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027, 'easter' — Easter 2027, 'blackfriday' — Black Friday 2026, 'firstsnow' — the season „Първи сняг“, 'frost' — „Зимен поход“ 1.3). */
+  /** Special paint scheme drawn on top ('pumpkin' — Halloween 2026, 'christmas' — Christmas 2026, 'retro70' / 'retro80' / 'retro90' — the retro collection, 'cherry' — spring 2027, 'easter' — Easter 2027, 'blackfriday' — Black Friday 2026, 'firstsnow' — the season „Първи сняг“, 'frost' — „Зимен поход“ 1.3, 'christmasnight' — the season „Коледна нощ“ 1.4). */
   livery?: string | null;
   /** Bought truck parts (v1.4): grille, roof lights, visor, company sticker. */
   cosmetics?: Cosmetics | null;
@@ -116,6 +116,7 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
       {livery && livery in RETRO && decals.map(([x, y, size], i) => <RetroDecal key={`r${i}`} x={x} y={y} size={size} stripes={RETRO[livery as RetroStyle].stripes} />)}
       {livery === 'easter' && decals.map(([x, y, size], i) => <EasterDecal key={`ea${i}`} x={x} y={y} size={size} />)}
       {livery === 'firstsnow' && decals.map(([x, y, size], i) => <SnowDecal key={`fs${i}`} x={x} y={y} size={size} />)}
+      {livery === 'christmasnight' && decals.map(([x, y, size], i) => <StarNightDecal key={`cn${i}`} x={x} y={y} size={size} />)}
       {livery === 'frost' && decals.map(([x, y, size], i) => <FrostDecal key={`fr${i}`} x={x} y={y} size={size} />)}
       {livery === 'blackfriday' && decals.map(([x, y, size], i) => <BlackFridayDecal key={`bf${i}`} x={x} y={y} size={size} />)}
       {unit.electric && decals.slice(0, 1).map(([x, y, size], i) => <ElectricDecal key={`e${i}`} x={x} y={y + size * 0.9} size={size * 0.55} />)}
@@ -225,6 +226,25 @@ function SnowDecal({ x, y, size }: { x: number; y: number; size: number }) {
 }
 
 /** „Скреж“ (1.3 „Зимен поход“): a frosted edge with icicles and a snowflake, centred on (x, y). */
+/** 1.4 „Коледна нощ“: golden stars and a thin gold ribbon on the dark green paint. */
+function StarNightDecal({ x, y, size }: { x: number; y: number; size: number }) {
+  const k = size / 32;
+  const star = (cx: number, cy: number, r: number) => {
+    const pts = Array.from({ length: 10 }, (_, i) => {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      const rr = i % 2 ? r * 0.45 : r;
+      return `${(cx + rr * Math.cos(a)).toFixed(2)},${(cy + rr * Math.sin(a)).toFixed(2)}`;
+    });
+    return <polygon key={`${cx}-${cy}`} points={pts.join(' ')} fill="#fde047" />;
+  };
+  return (
+    <g transform={`translate(${x - 16 * k} ${y - 16 * k}) scale(${k})`} opacity="0.95">
+      <path d="M-6 26 q22 -6 44 0" fill="none" stroke="#facc15" strokeWidth="1.6" />
+      {star(10, 12, 7)}{star(25, 7, 4)}{star(24, 20, 3)}
+    </g>
+  );
+}
+
 function FrostDecal({ x, y, size }: { x: number; y: number; size: number }) {
   const k = size / 32;
   return (

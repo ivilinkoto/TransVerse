@@ -21,7 +21,7 @@ export async function TruckPass({ db, userId, coins, now, fx = false }: { db: Db
   const tasks = v2 ? await passTasksView(db, userId, now) : null;
   const claimedFree = new Set(p.claimedFree);
   const claimedPremium = new Set(p.claimedPremium);
-  const rewards = passRewards(p.version);
+  const rewards = passRewards(p.version, p.theme);
   return (
     <>
       <section className="panel relative overflow-hidden p-5 sm:p-6">

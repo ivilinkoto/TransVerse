@@ -10,6 +10,8 @@ import { featureLive } from '@/lib/game/features';
 import { postMoment } from './chat-life';
 import { FIRST_SNOW, PASS_TASK, PLOW, SNOW_EVENTS, SNOW_KING, taskIncrements, TITLES, weekTasks, type PassTaskKind } from '@/lib/game/first-snow';
 import { passVersion } from '@/lib/game/season-pass';
+import { arrivesAtNight, CHRISTMAS_NIGHT, CHRISTMAS_NIGHT_TASKS, SANTA_OF_ROADS } from '@/lib/game/christmas-night';
+import { isChristmas } from '@/lib/game/christmas';
 import { isoWeek, sofiaDay } from '@/lib/game/shop-v2';
 import { isWinter, roadCondition, type RealConditions, type RoadCondition } from '@/lib/game/winter';
 import { isPrewinter } from '@/lib/game/prewinter';
@@ -22,12 +24,18 @@ import { addPassPoints } from './season-pass';
 import { activeSeason } from './seasons';
 import { t } from '@/i18n/t';
 
-/** This week's tasks: the winter-loads task only when the week's Sunday is in the pre-winter or winter dates. */
-function tasksFor(now: Date) {
+/**
+ * This week's tasks: the winter-loads task only when the week's Sunday is in the pre-winter or winter dates.
+ * 1.4 „Коледна нощ“: the season's own tasks join in (Christmas loads only when the Sunday is in the Christmas dates).
+ */
+function tasksFor(now: Date, theme?: string | null) {
   const dow = (new Date(`${sofiaDay(now)}T12:00:00Z`).getUTCDay() + 6) % 7;
   const sunday = new Date(now.getTime() + (6 - dow) * 86_400_000);
-  return weekTasks(isoWeek(now), isPrewinter(sunday) || isWinter(sunday));
+  const extra = theme === CHRISTMAS_NIGHT.theme ? { tasks: CHRISTMAS_NIGHT_TASKS, xmasOk: isChristmas(sunday) } : null;
+  return weekTasks(isoWeek(now), isPrewinter(sunday) || isWinter(sunday), extra);
 }
+
+const themeOf = (rules: unknown) => (rules as { theme?: string } | null)?.theme ?? null;
 
 interface TaskState { p: Partial<Record<PassTaskKind, number>>; done: string[]; countries: string[] }
 
@@ -40,7 +48,7 @@ export async function passTasksView(db: DbOrTx, userId: string, now: Date) {
   const week = isoWeek(now);
   const [row] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, taskKey(season.id, week, userId)));
   const st = (row?.value as TaskState | undefined) ?? { p: {}, done: [], countries: [] };
-  return tasksFor(now).map((task) => ({ ...task, progress: Math.min(task.target, st.p[task.kind] ?? 0), done: st.done.includes(task.id), points: PASS_TASK.points }));
+  return tasksFor(now, themeOf(season.rules)).map((task) => ({ ...task, progress: Math.min(task.target, st.p[task.kind] ?? 0), done: st.done.includes(task.id), points: PASS_TASK.points }));
 }
 
 export interface SnowFacts { userId: string; loadedKm: number; late: boolean; cargoType: string; convoy: boolean; destCountry: string; tons: number; holiday: string | null; goods: string; roadEvents: { kind: string }[]; /** The player drove this truck themselves (only such trips count for the weekly tasks). */ ownerDrove: boolean }
@@ -51,23 +59,25 @@ export async function recordSnowSeason(tx: Tx, f: SnowFacts, at: Date) {
   const season = await activeSeason(tx, at);
   if (passVersion(season.rules) !== 2) return;
   // Weekly tasks count only the trips the player drives themselves: a big fleet with hired drivers does not finish them faster.
-  if (f.ownerDrove) await recordTasks(tx, season.id, f, at);
+  if (f.ownerDrove) await recordTasks(tx, season.id, themeOf(season.rules), f, at);
+  // 1.4 „Коледна нощ“: „Дядо Коледа на пътищата“ counts the tonnes of Christmas loads.
+  if (themeOf(season.rules) === CHRISTMAS_NIGHT.theme && f.holiday === 'christmas') await addTons(tx, `santa:${season.id}:${f.userId}`, f.tons, at);
   await recordPlow(tx, season.id, f, at);
   if (f.roadEvents.some((e) => (SNOW_EVENTS as readonly string[]).includes(e.kind))) await addTons(tx, `snow-king:${season.id}:${f.userId}`, f.tons, at);
 }
 
-async function recordTasks(tx: Tx, seasonId: number, f: SnowFacts, at: Date) {
+async function recordTasks(tx: Tx, seasonId: number, theme: string | null, f: SnowFacts, at: Date) {
   const week = isoWeek(at);
   const key = taskKey(seasonId, week, f.userId);
   await tx.insert(jobState).values({ key, value: { p: {}, done: [], countries: [] } }).onConflictDoNothing();
   const [row] = await tx.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, key)).for('update');
   const st = row!.value as TaskState;
-  const inc = taskIncrements(f, st.countries);
+  const inc = taskIncrements({ ...f, night: arrivesAtNight(at) }, st.countries);
   const p = { ...st.p };
   for (const k of Object.keys(inc) as PassTaskKind[]) p[k] = (p[k] ?? 0) + inc[k];
   const countries = st.countries.includes(f.destCountry) ? st.countries : [...st.countries, f.destCountry];
   const done = [...st.done];
-  for (const task of tasksFor(at)) {
+  for (const task of tasksFor(at, theme)) {
     if (done.includes(task.id) || (p[task.kind] ?? 0) < task.target) continue;
     done.push(task.id);
     await addPassPoints(tx, f.userId, PASS_TASK.points, at);
@@ -134,11 +144,11 @@ export async function plowToday(db: DbOrTx, now: Date) {
 }
 
 /** „Крал на снега“: the season's ranking by tonnes through snow, ice and closed passes. */
-export async function snowKings(db: DbOrTx, seasonId: number, limit = 10) {
+export async function snowKings(db: DbOrTx, seasonId: number, limit = 10, prefix = 'snow-king') {
   const rows = await db
     .select({ key: jobState.key, tons: sql<number>`(${jobState.value}->>'tons')::float` })
     .from(jobState)
-    .where(like(jobState.key, `snow-king:${seasonId}:%`))
+    .where(like(jobState.key, `${prefix}:${seasonId}:%`))
     .orderBy(desc(sql`(${jobState.value}->>'tons')::float`))
     .limit(limit);
   const ids = rows.map((r) => r.key.split(':')[2]!);
@@ -160,6 +170,30 @@ export async function awardSnowKings(db: Database, now = new Date()) {
         await tx.insert(userBadges).values({ userId: k.userId, badge: prize.title, awardedAt: now }).onConflictDoNothing();
         await postCoins(tx, k.userId, { amount: prize.coins, reason: 'challenge', description: t('Крал на снега · място {0}', k.place), idempotencyKey: `snow-king:${s.id}:${k.userId}` });
         await notify(tx, k.userId, 'achievement', () => t('Крал на снега: място {0}!', k.place), () => t('Титла „{0}“ и {1} TC.', TITLES[prize.title]!.label, prize.coins), '/game/profile');
+        n++;
+      }
+    });
+  }
+  return n;
+}
+
+/** 1.4 „Дядо Коледа на пътищата“: the season's ranking by tonnes of Christmas loads. */
+export const santaRanking = (db: DbOrTx, seasonId: number, limit = 10) => snowKings(db, seasonId, limit, 'santa');
+
+/** Worker: when „Коледна нощ“ is over, the top three of „Дядо Коледа на пътищата“ get their titles and ТрансКоин (once). */
+export async function awardSantas(db: Database, now = new Date()) {
+  const done = await db.select({ id: seasons.id, rules: seasons.rules }).from(seasons).where(eq(seasons.status, 'finished')).orderBy(desc(seasons.id)).limit(3);
+  let n = 0;
+  for (const s of done.filter((x) => themeOf(x.rules) === CHRISTMAS_NIGHT.theme)) {
+    const [first] = await db.insert(jobState).values({ key: `santa-awarded:${s.id}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning();
+    if (!first) continue;
+    const top = await santaRanking(db, s.id, SANTA_OF_ROADS.places.length);
+    await db.transaction(async (tx) => {
+      for (const k of top) {
+        const prize = SANTA_OF_ROADS.places[k.place - 1]!;
+        await tx.insert(userBadges).values({ userId: k.userId, badge: prize.title, awardedAt: now }).onConflictDoNothing();
+        await postCoins(tx, k.userId, { amount: prize.coins, reason: 'challenge', description: t('Дядо Коледа на пътищата · място {0}', k.place), idempotencyKey: `santa:${s.id}:${k.userId}` });
+        await notify(tx, k.userId, 'achievement', () => t('Дядо Коледа на пътищата: място {0}!', k.place), () => t('Титла „{0}“ и {1} TC.', TITLES[prize.title]!.label, prize.coins), '/game/profile');
         n++;
       }
     });

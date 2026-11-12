@@ -6,6 +6,7 @@ import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, drivers, inventoryItems, itemEffects, itemLog, itemSerials, notifications, userBadges, users, vehicles } from '@/server/db/schema';
 import { CASE_TABLES, COLLECTIONS, GOLDEN_KEY, RECEIVED_REASONS, ITEMS, ITEM_RULES, ROAD_FIND, TREASURE, coinsOf, isCase, lookPart, pickFrom, type CaseId, type ItemId } from '@/lib/game/items';
 import { hash } from '@/lib/game/missions';
+import { CHRISTMAS_NIGHT } from '@/lib/game/christmas-night';
 import { t } from '@/i18n/t';
 import { postMoment } from './chat-life';
 import { featureFor } from '@/server/features';
@@ -176,6 +177,16 @@ export async function applyItem(db: Database, userId: string, itemId: string, ta
         result = t('{0} е в цветовете на „Първи сняг“.', v!.plate);
         break;
       }
+      case 'paint_christmasnight': {
+        // 1.4: the paint from the pass of „Коледна нощ“ — on an own truck only.
+        if (!target.vehicleId) fail('need_vehicle', t('Избери камион.'));
+        const [v] = await tx.select({ plate: vehicles.plate, ownership: vehicles.ownership }).from(vehicles).where(and(eq(vehicles.id, target.vehicleId!), eq(vehicles.companyId, company.id)));
+        if (!v) fail('vehicle_not_found', t('Превозното средство не е намерено.'), 404);
+        if (v!.ownership !== 'owned') fail('rented', t('Боядисват се само собствени камиони.'));
+        await tx.update(vehicles).set({ color: CHRISTMAS_NIGHT.paintColor, livery: CHRISTMAS_NIGHT.livery }).where(eq(vehicles.id, target.vehicleId!));
+        result = t('{0} е в цветовете на „Коледна нощ“.', v!.plate);
+        break;
+      }
       case 'paint_frost': {
         // 1.3: the reward for the whole „Зимен поход“ — on an own truck only.
         if (!target.vehicleId) fail('need_vehicle', t('Избери камион.'));
@@ -214,7 +225,8 @@ export async function applyItem(db: Database, userId: string, itemId: string, ta
       case 'gold_frame':
       case 'frost_frame':
       case 'euro_frame':
-      case 'xmas_frame': {
+      case 'xmas_frame':
+      case 'night_frame': {
         const d = await ownDriver(tx, company.id, target.driverId);
         const look = { ...(d.look ?? {}) };
         const part = lookPart(itemId as ItemId)!;

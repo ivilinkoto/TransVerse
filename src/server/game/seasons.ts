@@ -7,6 +7,7 @@ import { awardSeasonMedals } from './medals';
 import { t, intlLocale } from '@/i18n/t';
 import { featureLive } from '@/lib/game/features';
 import { FIRST_SNOW } from '@/lib/game/first-snow';
+import { CHRISTMAS_NIGHT, inChristmasNightWindow } from '@/lib/game/christmas-night';
 
 export interface SeasonRules {
   /** Season length in days. */
@@ -26,6 +27,8 @@ export function newSeasonSetup(now: Date, live: boolean): { name: string; rules:
   const plain = { name: `Сезон ${MONTHS_BG[now.getUTCMonth()]} ${now.getUTCFullYear()}`, rules: DEFAULT_SEASON_RULES };
   if (!live) return plain;
   const snow = now >= new Date(FIRST_SNOW.from) && now < new Date(FIRST_SNOW.to);
+  // 1.4: a season that starts in December is „Коледна нощ“ (once 1.4 is out).
+  if (!snow && inChristmasNightWindow(now) && featureLive('christmas_night', now)) return { name: CHRISTMAS_NIGHT.seasonName, rules: { ...DEFAULT_SEASON_RULES, pass: 2, theme: CHRISTMAS_NIGHT.theme } };
   return snow ? { name: `Сезон „${FIRST_SNOW.name}“`, rules: { ...DEFAULT_SEASON_RULES, pass: 2, theme: FIRST_SNOW.theme } } : { ...plain, rules: { ...DEFAULT_SEASON_RULES, pass: 2 } };
 }
 
@@ -131,6 +134,20 @@ async function closeOrganizationSeason(tx: Tx, season: typeof seasons.$inferSele
  * Closes finished seasons: stores final ranks, pays prizes and opens the next
  * season. Companies keep all their assets — only the season table restarts.
  */
+/**
+ * 1.4: „Първи сняг“ ends a few days before 1.4 is out, so the season after it starts plain.
+ * When „Коледна нощ“ goes live, a plain season that started in its window takes its name and
+ * theme (its pass rewards, tasks and ranking from then on; the rewards already claimed stay).
+ */
+export async function upgradeToChristmasNight(db: DbOrTx, now = new Date()): Promise<boolean> {
+  if (!featureLive('christmas_night', now) || !inChristmasNightWindow(now)) return false;
+  const [season] = await db.select().from(seasons).where(eq(seasons.status, 'active')).orderBy(desc(seasons.id)).limit(1);
+  const rules = season?.rules as SeasonRules | undefined;
+  if (!season || !rules || rules.theme || rules.pass !== 2 || !inChristmasNightWindow(season.startsAt)) return false;
+  await db.update(seasons).set({ name: CHRISTMAS_NIGHT.seasonName, rules: { ...rules, theme: CHRISTMAS_NIGHT.theme } }).where(eq(seasons.id, season.id));
+  return true;
+}
+
 export async function rotateSeasons(db: Database, now = new Date()): Promise<number> {
   return db.transaction(async (tx) => {
     const ended = await tx.select().from(seasons).where(and(eq(seasons.status, 'active'), lte(seasons.endsAt, now))).for('update');

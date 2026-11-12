@@ -75,7 +75,7 @@ import { expireMentorships } from './mentor';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
 import { pick, randInt } from './random';
-import { activeSeason, rotateSeasons } from './seasons';
+import { activeSeason, rotateSeasons, upgradeToChristmasNight } from './seasons';
 import { applyDueRoadEvents } from './road-events';
 import { expireListings } from './used-market';
 import { settleLeagues } from './leagues';
@@ -123,7 +123,7 @@ import { backfillMedalBadges, checkCompanyAchievements } from './medals';
 import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
 import { starvedCountryAlerts } from './game-health';
-import { awardSnowKings } from './first-snow';
+import { awardSantas, awardSnowKings } from './first-snow';
 import { postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
@@ -302,6 +302,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'seasons', 10 * 60_000, now, async () => {
       await activeSeason(db, now);
       await rotateSeasons(db, now);
+      await upgradeToChristmasNight(db, now);
     });
     // Payroll for the previous UTC day, once per day (idempotent per company/day).
     await job(db, 'payroll', now, async () => {
@@ -415,7 +416,10 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'test-drives', 15 * 60_000, now, () => expireTestDrives(db, now));
     await every(db, 'staff-alerts', 60 * 60_000, now, () => postStaffAlerts(db, now));
     await every(db, 'starved-countries', 15 * 60_000, now, () => starvedCountryAlerts(db, now));
-    await every(db, 'snow-kings', 60 * 60_000, now, () => awardSnowKings(db, now));
+    await every(db, 'snow-kings', 60 * 60_000, now, async () => {
+      await awardSnowKings(db, now);
+      await awardSantas(db, now);
+    });
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
     // 1.2.6: the question of the day in the global chat.
     await every(db, 'chat-question', 10 * 60_000, now, () => postDailyQuestion(db, now));
