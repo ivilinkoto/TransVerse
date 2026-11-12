@@ -55,7 +55,7 @@ function Board({ g, day, city, runsLeft, router }: { g: StreetGraph; day: string
     for (let i = 0; i < inner.length; i += 2) mid.push(proj(inner[i]!, inner[i + 1]!));
     return [pts[a]!, ...mid, pts[b]!];
   }), [g, pts, proj]);
-  const d = (line: [number, number][]) => `M${line.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join('L')}`;
+  const d = (line: [number, number][]) => (line.length < 2 ? '' : `M${line.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join('L')}`);
   const byKind = useMemo(() => KIND_STYLE.map((_, kind) => g.edges.map((e, i) => (e[3] === kind ? d(edgeLine[i]!) : '')).join('')), [g, edgeLine]);
   const jams = useMemo(() => [...job.jams].map((i) => d(edgeLine[i]!)).join(''), [job, edgeLine]);
   const parcelAt = useMemo(() => job.parcels.map((e) => { const l = edgeLine[e]!; return l[Math.floor(l.length / 2)]!; }), [job, edgeLine]);
@@ -189,8 +189,8 @@ function Board({ g, day, city, runsLeft, router }: { g: StreetGraph; day: string
         <svg ref={svg} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} className="h-[62vh] w-full touch-none select-none" preserveAspectRatio="xMidYMid meet"
           onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onWheel={onWheel} role="img" aria-label={t('Карта на центъра')}>
           {byKind.map((path, kind) => path && <path key={kind} d={path} stroke={KIND_STYLE[kind]!.c} strokeWidth={KIND_STYLE[kind]!.w} fill="none" strokeLinecap="round" strokeLinejoin="round" />)}
-          <path d={jams} stroke="#ef4444" strokeOpacity={0.85} strokeWidth={9} fill="none" strokeLinecap="round" strokeDasharray="18 10" />
-          <path d={driven} stroke="#22d3ee" strokeOpacity={0.9} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          {jams && <path d={jams} stroke="#ef4444" strokeOpacity={0.85} strokeWidth={9} fill="none" strokeLinecap="round" strokeDasharray="18 10" />}
+          {driven && <path d={driven} stroke="#22d3ee" strokeOpacity={0.9} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round" />}
           {job.parcels.map((e, i) => {
             const [x, y] = parcelAt[i]!;
             const ok = delivered.has(e);
