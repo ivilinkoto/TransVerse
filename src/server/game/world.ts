@@ -126,6 +126,7 @@ import { starvedCountryAlerts } from './game-health';
 import { awardSantas, awardSnowKings } from './first-snow';
 import { awardPassGuardians, ensurePassLoads } from './road-service';
 import { awardWinterGames } from './winter-games';
+import { runBaseStaff } from './base-staff';
 import { postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
@@ -293,6 +294,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
+    // 1.4 „Персонал на базата“: weekly pay, stories.
+    await every(db, 'base-staff', 60 * 60_000, now, () => runBaseStaff(db, now));
     // 1.4 „Пътна служба“: salt and sand loads for the closed passes.
     await every(db, 'road-service', 15 * 60_000, now, () => ensurePassLoads(db, now, provider));
     await every(db, 'local-jobs', 60_000, now, () => ensureLocalJobsForFleet(db, now, undefined, provider));

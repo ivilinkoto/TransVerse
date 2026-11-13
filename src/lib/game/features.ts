@@ -228,6 +228,10 @@ export const FEATURES = {
   city_courier: '1.4',
   // 1.4 „Зимни игри на компаниите“ (14–27.12) and „Най-красивата коледна база“.
   winter_games: '1.4',
+  // 1.4 „Първите 7 дни“: a step a day for new players.
+  first_week: '1.4',
+  // 1.4 „Персонал на базата“: a mechanic, a dispatcher, a cook and an instructor for the base.
+  base_staff: '1.4',
   plot_guests: '1.4',
   livery: '1.4',
   maintenance: '1.4',

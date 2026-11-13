@@ -71,6 +71,8 @@ import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
 import { playCourier } from './courier';
 import { voteXmasBase } from './winter-games';
+import { claimFirstWeek } from './first-week';
+import { fireStaff, hireStaff } from './base-staff';
 import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
 import { openWorkshop, rateWorkshop, setWorkshopPrice, upgradeWorkshop } from '@/server/game/workshops';
@@ -266,6 +268,9 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('resetSkills') }),
   z.object({ type: z.literal('nightRun'), inputs: z.array(z.number().int().min(-1).max(1)).max(2250) }),
   z.object({ type: z.literal('voteXmasBase'), organizationId: id }),
+  z.object({ type: z.literal('claimFirstWeek'), step: z.string().max(40) }),
+  z.object({ type: z.literal('hireBaseStaff'), role: z.enum(['mechanic', 'dispatcher', 'cook', 'instructor']) }),
+  z.object({ type: z.literal('fireBaseStaff'), role: z.enum(['mechanic', 'dispatcher', 'cook', 'instructor']) }),
   z.object({ type: z.literal('courierRun'), city: z.enum(['sofia', 'plovdiv', 'varna']), taps: z.array(z.number().int().min(0).max(100_000)).max(80) }),
   z.object({ type: z.literal('dailyRouteGuess'), order: z.array(z.number().int().positive()).min(2).max(12) }),
   z.object({ type: z.literal('foundCompany'), name: companyNameSchema, hqCityId: cityId }),
@@ -741,6 +746,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   nightRun: 'night_run',
   courierRun: 'city_courier',
   voteXmasBase: 'winter_games',
+  claimFirstWeek: 'first_week',
+  hireBaseStaff: 'base_staff',
+  fireBaseStaff: 'base_staff',
   learnSkill: 'driver_skills',
   openWorkshop: 'player_workshops',
   voteCrisis: 'world_crises',
@@ -1002,6 +1010,12 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, costCents: await resetSkills(db, user.id, new Date()) };
     case 'nightRun':
       return { ok: true, ...(await playNightRun(db, user.id, input.inputs, new Date())) };
+    case 'hireBaseStaff':
+      return { ok: true, ...(await hireStaff(db, user.id, input.role, new Date())) };
+    case 'fireBaseStaff':
+      return await fireStaff(db, user.id, input.role, new Date());
+    case 'claimFirstWeek':
+      return await claimFirstWeek(db, user.id, input.step, new Date());
     case 'voteXmasBase':
       return await voteXmasBase(db, user.id, input.organizationId, new Date());
     case 'courierRun':

@@ -37,6 +37,7 @@ import { addChronicle } from './chronicle';
 import { returnOnLeave, sellFleetOnDissolve } from './company-fleet';
 import { returnTrailersOnLeave, sellTrailersOnDissolve } from './company-trailers';
 import { queueRoles } from '@/server/discord/outbox';
+import { staffBonuses } from './base-staff';
 import { t } from '@/i18n/t';
 
 export type Rank = typeof companyRanks.$inferSelect;
@@ -101,7 +102,8 @@ export async function requirePermission(tx: Tx, userId: string, permission: Perm
 export async function bonusesForUser(db: DbOrTx, userId: string): Promise<{ membership: Membership; bonuses: MemberBonuses } | null> {
   const m = await membershipOf(db, userId);
   if (!m) return null;
-  return { membership: m, bonuses: memberBonuses(m.company.upgrades as UpgradeLevels) };
+  // 1.4: the base's staff add their bonus on top.
+  return { membership: m, bonuses: await staffBonuses(db, m.company.id, memberBonuses(m.company.upgrades as UpgradeLevels)) };
 }
 
 export async function memberCount(db: DbOrTx, companyId: string): Promise<number> {

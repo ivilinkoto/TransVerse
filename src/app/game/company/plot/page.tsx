@@ -10,6 +10,9 @@ import { isBoom } from '@/lib/game/plot';
 import { isNight, plotWeather } from '@/lib/game/ambience';
 import { companyShowcase, recentVisitors } from '@/server/game/base-life';
 import { Showcase } from '@/components/company/plot/Showcase';
+import { BaseStaffCard } from '@/components/company/plot/BaseStaffCard';
+import { staffOf } from '@/server/game/base-staff';
+import type { UpgradeLevels } from '@/lib/game/company';
 import { isWinter } from '@/lib/game/winter';
 import { companies, contracts, deliveries, trailers, users, vehicles } from '@/server/db/schema';
 import { orgFleetView } from '@/server/game/company-fleet';
@@ -45,6 +48,7 @@ export default async function PlotPage() {
   const season = !features.plot_season ? null : isChristmas(now) ? 'christmas' : isWinter(now) ? 'winter' : features.marta && isMarta(now) ? 'marta' : null;
   const yard = fleet?.vehicles.filter((v) => !v.lentTo).length ?? 0;
   const visitors = features.plot_visits && data.hq ? await recentVisitors(db, hub.company.id, data.hq.id, now) : [];
+  const staff = features.base_staff ? await staffOf(db, hub.company.id) : null;
   const showcase = features.company_trophies || features.builder_week ? await companyShowcase(db, hub.company.id) : null;
   const c = data.construction;
   // Material loads driving to the plot right now (drawn on the street).
@@ -88,6 +92,7 @@ export default async function PlotPage() {
         },
       }}
     >
+      {staff && <BaseStaffCard staff={staff} upgrades={hub.company.upgrades as UpgradeLevels} canManage={can(hub.rank, 'build')} treasuryCents={data.org.treasuryCents} />}
       {showcase && <Showcase data={showcase} trophies={features.company_trophies} builderWeek={features.builder_week} />}
       {fleet && <CompanyFleetCard fleet={fleet} me={user.id} myVehicleId={mine?.id ?? null} canManage={can(hub.rank, 'manage_upgrades')} treasuryCents={data.org.treasuryCents} notes={features.truck_notes} />}
       {orgTrailerList && <CompanyTrailersCard list={orgTrailerList} me={user.id} myTrailerId={myTrailer?.id ?? null} canManage={can(hub.rank, 'manage_upgrades')} treasuryCents={data.org.treasuryCents} companyName={hub.company.name} />}
