@@ -538,7 +538,6 @@ b6251b0e6d	One vote a day for a base of another company. The top three get {0}, 
 e274de6865	Winter Games · {0}: place {1}	Зимние игры · {0}: {1} место
 1db2ef52e3	Company Winter Games	Зимние игры компаний
 a38e31fb2d	Company Winter Games (14 – 27 December): five disciplines — Night run, Route of the day, City courier, tonnes on the road and materials for the base. In the daily ones a company's best 5 members of the day count. Medals for the top three in each discipline and money for the treasury; the company with the most medals is the champion — a title for every member.	Зимние игры компаний (14 – 27 декабря): пять дисциплин — Ночной рейс, Маршрут дня, Городской курьер, тонны на дорогах и материалы для базы. В ежедневных считаются лучшие 5 участников компании за день. Медали за первые три места в каждой дисциплине и деньги в кассу; компания с наибольшим числом медалей — чемпион, титул для каждого участника.
-cbe26cb65a	The Games start on {0}. Get ready!	Игры начинаются {0}. Готовьтесь!
 9744caee69	The Games are over — the prizes are in the treasuries.	Игры закончились — призы в кассах.
 43a5d23410	The Games are for companies —	Игры — для компаний:
 b77a6d2104	Your company won the Winter Games — the title “Winter Games Champion” for every member.	Ваша компания выиграла Зимние игры — титул «Чемпион Зимних игр» для каждого участника.
@@ -651,3 +650,4 @@ e10fd2b75b	This job is free.	Эта должность свободна.
 544f727808	A member of the company with the most medals at the Winter Games.	Участник компании с наибольшим числом медалей на Зимних играх.
 95e8a4d62a	opens on day {0}	откроется в день {0}
 22daa59b11	👷 Base staff	👷 Персонал базы
+0f548ffb35	The Games start on {0} — get ready!	Игры начинаются {0} — готовьтесь!

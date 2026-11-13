@@ -7,10 +7,10 @@
  */
 import polyline from '@mapbox/polyline';
 import { desc, eq, inArray, like, sql } from 'drizzle-orm';
-import { featureLive } from '@/lib/game/features';
 import { TITLES } from '@/lib/game/first-snow';
 import { closedByWeather, goesOver, PASS_GUARDIAN, passById, PASSES, ROAD_SERVICE, type MountainPass } from '@/lib/game/road-service';
 import { sofiaDay } from '@/lib/game/shop-v2';
+import { featureOn } from '@/server/feature-off';
 import type { RealConditions } from '@/lib/game/winter';
 import { haversineKm, type LatLon } from '@/lib/geo/geometry';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -46,7 +46,7 @@ export async function passesToday(db: DbOrTx, now: Date, real?: RealConditions |
 
 /** The passes closed right now (not opened again today). */
 export async function closedPasses(db: DbOrTx, now: Date, real?: RealConditions | null): Promise<MountainPass[]> {
-  if (!featureLive('road_service', now)) return [];
+  if (!(await featureOn(db, 'road_service', now))) return [];
   return (await passesToday(db, now, real)).filter((p) => p.status === 'closed').map((p) => p.pass);
 }
 
@@ -156,7 +156,7 @@ export async function passGuardians(db: DbOrTx, seasonId: number, limit = 10) {
 
 /** Worker: when a season is over, the top three of „Пазител на прохода“ get titles and ТрансКоин (once). */
 export async function awardPassGuardians(db: Database, now = new Date()) {
-  if (!featureLive('road_service', now)) return 0;
+  if (!(await featureOn(db, 'road_service', now))) return 0;
   const done = await db.select({ id: seasons.id }).from(seasons).where(eq(seasons.status, 'finished')).orderBy(desc(seasons.id)).limit(3);
   let n = 0;
   for (const s of done) {

@@ -12,9 +12,9 @@ export const WINTER_GAMES = {
   /** In a daily discipline a company's day counts its best members only, so a big company is not the winner by size alone. */
   topMembers: 5,
   /** Treasury prizes for each discipline: gold, silver, bronze (cents). */
-  prizesCents: [60_000_00, 35_000_00, 20_000_00] as const,
+  prizesCents: [30_000_00, 18_000_00, 10_000_00] as const,
   /** The champion of the Games: a title for every member and a prize for the treasury. */
-  championCents: 100_000_00,
+  championCents: 60_000_00,
   championTitle: 'winter-games-champion',
 } as const;
 
@@ -40,6 +40,6 @@ export function medalTable<T extends { gold: number; silver: number; bronze: num
 /** „Най-красивата коледна база“: one vote a day for a base of another company; the top three get prizes. */
 export const BASE_CONTEST = {
   votesPerDay: 1,
-  prizesCents: [50_000_00, 25_000_00, 15_000_00] as const,
+  prizesCents: [30_000_00, 15_000_00, 8_000_00] as const,
   title: 'xmas-base',
 } as const;

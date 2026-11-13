@@ -34,7 +34,7 @@ export default async function WinterGamesPage() {
     <div className="space-y-5">
       <PageHeader title={t('Зимни игри на компаниите')} subtitle={t('{0} – {1}: пет дисциплини, медали и шампион.', date(from), date(new Date(to.getTime() - 1)))}
         help={t('В дневните дисциплини се броят най-добрите {0} членове за деня. Първите трима във всяка дисциплина взимат пари в касата.', WINTER_GAMES.topMembers)} />
-      {now < from && <p className="rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 p-4 text-sm" data-testid="winter-games-soon">{t('Игрите започват на {0}. Подгответе се!', date(from))}</p>}
+      {now < from && <p className="rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 p-4 text-sm" data-testid="winter-games-soon">{t('Игрите започват на {0} — подгответе се!', date(from))}</p>}
       {!mine && <p className="text-sm text-mist-400">{t('Игрите са за компании —')} <Link href="/game/company" className="text-cyan-glow hover:underline">{t('влез в компания')}</Link>.</p>}
       {standings && (
         <Card title={t('🏅 Класиране по медали')}>

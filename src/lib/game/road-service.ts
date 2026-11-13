@@ -42,7 +42,7 @@ export const ROAD_SERVICE = {
 } as const;
 
 /** „Пазител на прохода“: tonnes brought to closed passes in a season; the top three get titles and ТрансКоин. */
-export const PASS_GUARDIAN = { places: [{ title: 'pass-guardian', coins: 120 }, { title: 'pass-keeper', coins: 70 }, { title: 'pass-keeper', coins: 40 }] } as const;
+export const PASS_GUARDIAN = { places: [{ title: 'pass-guardian', coins: 80 }, { title: 'pass-keeper', coins: 50 }, { title: 'pass-keeper', coins: 30 }] } as const;
 
 const sofiaDate = (t: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia', year: 'numeric', month: '2-digit', day: '2-digit' }).format(t);
 

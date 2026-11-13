@@ -6,9 +6,9 @@
  */
 import { eq, like } from 'drizzle-orm';
 import { STAFF, STAFF_ROLES, staffAllowed, staffName, withStaff, type StaffRole } from '@/lib/game/base-staff';
+import { featureOn } from '@/server/feature-off';
 import type { MemberBonuses, UpgradeLevels } from '@/lib/game/company';
 import { dayKey } from '@/lib/game/daily';
-import { featureLive } from '@/lib/game/features';
 import { seededRandom } from '@/lib/game/road-events';
 import { isoWeek } from '@/lib/game/shop-v2';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -29,7 +29,7 @@ export async function staffOf(db: DbOrTx, orgId: string): Promise<Staff> {
 
 /** The members' bonuses with the staff the company has now (the staff count only from 1.4 on). */
 export async function staffBonuses(db: DbOrTx, orgId: string, bonuses: MemberBonuses, now = new Date()): Promise<MemberBonuses> {
-  if (!featureLive('base_staff', now)) return bonuses;
+  if (!(await featureOn(db, 'base_staff', now))) return bonuses;
   return withStaff(bonuses, Object.keys(await staffOf(db, orgId)) as StaffRole[]);
 }
 
@@ -80,7 +80,7 @@ const tx_ = tx;
 
 /** Worker: the week's pay (or the person leaves), the building check and a story a day. */
 export async function runBaseStaff(db: Database, now = new Date()) {
-  if (!featureLive('base_staff', now)) return 0;
+  if (!(await featureOn(db, 'base_staff', now))) return 0;
   const rows = await db.select({ key: jobState.key, value: jobState.value }).from(jobState).where(like(jobState.key, 'base-staff:%'));
   let n = 0;
   for (const r of rows) {

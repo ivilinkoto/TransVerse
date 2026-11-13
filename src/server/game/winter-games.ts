@@ -7,8 +7,8 @@
  */
 import { and, eq, gte, inArray, isNotNull, like, lt, sql } from 'drizzle-orm';
 import { dayKey } from '@/lib/game/daily';
-import { featureLive } from '@/lib/game/features';
 import { BASE_CONTEST, DISCIPLINES, inWinterGames, medalTable, topSum, WINTER_GAMES, type WinterDiscipline } from '@/lib/game/winter-games';
+import { featureOn } from '@/server/feature-off';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companies, companyBuildings, companyBuilds, companyMembers, contracts, deliveries, jobState, organizations, userBadges } from '@/server/db/schema';
 import { t } from '@/i18n/t';
@@ -156,7 +156,7 @@ async function membersOf(tx: DbOrTx, orgId: string) {
 
 /** Worker: after the Games, the prizes — once. */
 export async function awardWinterGames(db: Database, now = new Date()): Promise<boolean> {
-  if (!featureLive('winter_games', now) || now < new Date(WINTER_GAMES.to)) return false;
+  if (!(await featureOn(db, 'winter_games', now)) || now < new Date(WINTER_GAMES.to)) return false;
   const [first] = await db.insert(jobState).values({ key: 'winter-games-awarded:2026', value: { at: now.toISOString() } }).onConflictDoNothing().returning();
   if (!first) return false;
   const standings = await winterGamesStandings(db, now);
