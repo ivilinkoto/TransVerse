@@ -75,7 +75,7 @@ export function ShopStore({ coins, vip, vipUntil, friday, promo, tiles, buy, vip
         <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-gold-300">TransVerse</p>
-            <p className="font-display text-2xl font-bold text-white sm:text-3xl">{t('Магазин')}</p>
+            <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t('Магазин')}</h1>
             <p className="mt-1 text-sm text-mist-300">{t('VIP, удобства и стил за твоята компания.')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

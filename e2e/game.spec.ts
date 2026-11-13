@@ -19,7 +19,8 @@ async function register(page: Page) {
   await expect(page.locator('#captcha')).toHaveAttribute('aria-checked', 'true', { timeout: 30_000 });
   await page.click('button[type=submit]');
   await page.waitForURL('**/game');
-  await expect(page.getByRole('heading', { name: /^(Табло|Начало)$/ })).toBeVisible();
+  // 1.3: the command centre (its heading is the player's name) replaced the „Начало“ / „Табло“ panel.
+  await expect(page.getByTestId('command-center').or(page.getByRole('heading', { name: /^(Табло|Начало)$/ }))).toBeVisible();
   return tag;
 }
 
@@ -105,8 +106,9 @@ test.describe('core loop', () => {
     await expect(page.getByText('Сезонни мисии')).toBeVisible();
     await page.goto('/game/shop');
     await expect(page.getByRole('heading', { name: 'Магазин', exact: true })).toBeVisible();
-    await expect(page.getByText('VIP · 30 дни', { exact: true })).toBeVisible();
-    await expect(page.getByText(/^Купи ТрансКоин/).first()).toBeVisible();
+    // 1.3: the shop is a store with tabs.
+    await expect(page.getByRole('tab', { name: /VIP/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Купи TC/ })).toBeVisible();
     await page.goto('/game/licences');
     await expect(page.getByRole('heading', { name: 'Международен лиценз' })).toBeVisible();
     await page.goto('/game/clients');
@@ -147,7 +149,8 @@ test.describe('core loop', () => {
     await expect(page.getByRole('heading', { name: 'Присъедини се към компания' })).toBeVisible();
     await page.getByRole('link', { name: 'Разгледай компаниите' }).click();
     await page.waitForURL('**/game/companies');
-    await expect(page.getByRole('heading', { name: 'Компании', exact: true })).toBeVisible();
+    // 1.3: inside the game the list opens as a window („Всички компании“).
+    await expect(page.getByRole('heading', { name: /^(Компании|Всички компании)$/ }).first()).toBeVisible();
     const first = page.locator('a[href^="/game/companies/"]').first();
     if (await first.count()) {
       await first.click();
@@ -220,6 +223,12 @@ test('navigation: four sections and „Още“ in the sidebar, account pages i
   await page.getByRole('menuitem', { name: 'Финанси' }).click();
   await expect(page).toHaveURL(/\/game\/finance$/);
   await expect(page.getByRole('menuitem', { name: 'Финанси' })).toHaveCount(0);
+  // 1.3: the page opens as a window over the board; Escape closes it.
+  const win = page.getByRole('dialog', { name: 'Финанси' });
+  if (await win.waitFor({ timeout: 5_000 }).then(() => true, () => false)) {
+    await page.keyboard.press('Escape');
+    await expect(win).toHaveCount(0);
+  }
   await header.getByRole('button', { name: 'Профил и още' }).click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menu')).toHaveCount(0);
@@ -260,17 +269,19 @@ test('1.2.2: the new menu — Курсове with the map, „Къде е…?“
 
 test('section tabs: Автопарк and Състезание group their pages', async ({ page }) => {
   await register(page);
-  await page.locator('aside').getByRole('link', { name: 'Автопарк' }).click();
+  // 1.3: the sidebar opens pages as windows; the section tabs are on the full page.
+  await page.goto('/game/fleet');
   const fleetTabs = page.getByRole('navigation', { name: 'Автопарк' });
   // 1.2.2: the row keeps Камиони, Шофьори and Пазар; the rest is under „Още ▾“.
   if (v2()) await fleetTabs.getByRole('button', { name: /^Още \(\d+\)/ }).click();
-  await fleetTabs.getByRole('link', { name: 'Сервиз' }).click();
+  await fleetTabs.getByRole('link', { name: 'Сервиз', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
   await expect(page.locator('aside').getByRole('link', { name: 'Автопарк' })).toHaveAttribute('aria-current', 'page');
   // 1.1.4.1: Състезание is reached through „Още“.
   // 1.2.2: missions and events moved to the „Награди“ button.
   if (v2()) {
-    await page.locator('aside').getByRole('link', { name: 'Награди' }).click();
+    // 1.3: the sidebar opens pages as windows; the section tabs are on the full page.
+    await page.goto('/game/rewards');
   } else {
     await page.locator('aside').getByRole('button', { name: 'Още' }).click();
     await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: /^Мисии/ }).click();
@@ -358,8 +369,15 @@ test('v1.1 pages: dispatcher, special loads, analytics, newspaper, help, updates
   await register(page);
   await page.goto('/game/contracts');
   await expect(page.getByText('Диспечер', { exact: true })).toBeVisible();
+  // 1.3: the dispatcher is a tool tile that opens a window.
+  const tile = page.getByTestId('tool-dispatch');
+  if (await tile.count()) await tile.click();
   await page.getByRole('button', { name: 'Предложи курсове' }).click();
   await expect(page.getByRole('button', { name: /Изпрати \d/ }).or(page.getByText('Няма подходящи поръчки'))).toBeVisible();
+  if (await page.getByRole('dialog', { name: 'Диспечер' }).count()) {
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Диспечер' })).toHaveCount(0);
+  }
   await page.getByRole('button', { name: '★ Любими линии' }).click();
   await expect(page.getByRole('button', { name: '★ Любими линии' })).toHaveAttribute('aria-pressed', 'true');
   for (const [path, heading] of [
@@ -396,7 +414,8 @@ test('v1.2: search, money transfers, map filter', async ({ page }) => {
   await expect(page.getByText('Преводи между играчи')).toBeVisible();
   await expect(page.getByText(/лв\./).first()).toBeVisible();
   await page.goto('/game/map');
-  await expect(page.getByRole('radiogroup', { name: 'Кои играчи да се виждат' })).toBeVisible();
+  // The map layers (1.2.3.6) replaced the „who is shown“ switch.
+  await expect(page.getByTestId('map-layers').or(page.getByRole('radiogroup', { name: 'Кои играчи да се виждат' }))).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });
 
