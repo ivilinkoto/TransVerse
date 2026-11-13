@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import { jobState } from '@/server/db/schema';
-import { FEATURES, type FeatureId } from '@/lib/game/features';
+import { FEATURES, featureLive, type FeatureId } from '@/lib/game/features';
 
 /**
  * The features the admins switched off (`features:off` in job_state), cached for 30 s.
@@ -22,4 +22,9 @@ export async function disabledFeatures(db: DbOrTx, fresh = false): Promise<Set<F
 /** Forgets the cached list (after a switch). */
 export function forgetDisabledFeatures() {
   cache = null;
+}
+
+/** Live for the players and not switched off by the admins — for effects outside a player's request (workers, bonuses, trip planning). */
+export async function featureOn(db: DbOrTx, id: FeatureId, now: Date): Promise<boolean> {
+  return featureLive(id, now) && !(await disabledFeatures(db)).has(id);
 }

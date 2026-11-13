@@ -75,7 +75,7 @@ import { expireMentorships } from './mentor';
 import { paymentConfig, reconcilePaypal } from '@/server/payments';
 import { broadcast } from './notify';
 import { pick, randInt } from './random';
-import { activeSeason, rotateSeasons } from './seasons';
+import { activeSeason, rotateSeasons, upgradeToChristmasNight } from './seasons';
 import { applyDueRoadEvents } from './road-events';
 import { expireListings } from './used-market';
 import { settleLeagues } from './leagues';
@@ -123,7 +123,10 @@ import { backfillMedalBadges, checkCompanyAchievements } from './medals';
 import { expireTestDrives } from './rentals';
 import { postStaffAlerts } from '@/server/discord/staff-alerts';
 import { starvedCountryAlerts } from './game-health';
-import { awardSnowKings } from './first-snow';
+import { awardSantas, awardSnowKings } from './first-snow';
+import { awardPassGuardians, ensurePassLoads } from './road-service';
+import { awardWinterGames } from './winter-games';
+import { runBaseStaff } from './base-staff';
 import { postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
@@ -291,6 +294,10 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // PayPal: finish approved orders whose buyer never came back; expire abandoned ones.
     if (paymentConfig().paypal.enabled) await every(db, 'paypal-reconcile', 2 * 60_000, now, () => reconcilePaypal(db, now));
     await every(db, 'market', 5 * 60_000, now, () => replenishMarket(db, now, provider));
+    // 1.4 „Персонал на базата“: weekly pay, stories.
+    await every(db, 'base-staff', 60 * 60_000, now, () => runBaseStaff(db, now));
+    // 1.4 „Пътна служба“: salt and sand loads for the closed passes.
+    await every(db, 'road-service', 15 * 60_000, now, () => ensurePassLoads(db, now, provider));
     await every(db, 'local-jobs', 60_000, now, () => ensureLocalJobsForFleet(db, now, undefined, provider));
     await every(db, 'routes', 15 * 60_000, now, () => upgradeApproximateRoutes(db, 5, provider));
     await every(db, 'demand', 60 * 60_000, now, (elapsed) => recoverDemand(db, Math.min(48, elapsed / 3_600_000)));
@@ -302,6 +309,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'seasons', 10 * 60_000, now, async () => {
       await activeSeason(db, now);
       await rotateSeasons(db, now);
+      await upgradeToChristmasNight(db, now);
     });
     // Payroll for the previous UTC day, once per day (idempotent per company/day).
     await job(db, 'payroll', now, async () => {
@@ -415,7 +423,12 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'test-drives', 15 * 60_000, now, () => expireTestDrives(db, now));
     await every(db, 'staff-alerts', 60 * 60_000, now, () => postStaffAlerts(db, now));
     await every(db, 'starved-countries', 15 * 60_000, now, () => starvedCountryAlerts(db, now));
-    await every(db, 'snow-kings', 60 * 60_000, now, () => awardSnowKings(db, now));
+    await every(db, 'snow-kings', 60 * 60_000, now, async () => {
+      await awardSnowKings(db, now);
+      await awardSantas(db, now);
+      await awardPassGuardians(db, now);
+      await awardWinterGames(db, now);
+    });
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
     // 1.2.6: the question of the day in the global chat.
     await every(db, 'chat-question', 10 * 60_000, now, () => postDailyQuestion(db, now));

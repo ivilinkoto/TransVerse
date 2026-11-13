@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm';
-import { eliteLevels, eliteReward, passLevelOf, passLevels, passPrice, passRewards, passVersion, type PassRewardV2 } from '@/lib/game/season-pass';
+import { eliteLevels, eliteReward, passLevelOf, passLevels, passPrice, passRewards, passVersion, SEASON_TRUCK_LOOK, type PassRewardV2 } from '@/lib/game/season-pass';
 import type { ItemId } from '@/lib/game/items';
 import { companies as companiesTable, jobState, userBadges, vehicles } from '@/server/db/schema';
 import { grantItem } from './inventory';
@@ -12,7 +12,7 @@ import { fail } from './errors';
 import { post } from './finance';
 import { logActivity } from './notify';
 import { activeSeason } from './seasons';
-import { t } from '@/i18n/t';
+import { t, tx as tx_ } from '@/i18n/t';
 
 /** Season points of a delivery also fill the pass. */
 export async function addPassPoints(tx: Tx, userId: string, points: number, now = new Date()) {
@@ -42,8 +42,9 @@ export async function passView(db: DbOrTx, userId: string, now = new Date()) {
   const max = passLevels(v);
   const elite = eliteLevels(points, v);
   const eliteClaimed = [...claimedFree].filter((l) => l > max).length;
-  const claimable = passRewards(v).filter((r) => r.level <= level && ((r.free && !claimedFree.has(r.level)) || (premium && !claimedPremium.has(r.level)))).length + Math.max(0, elite - eliteClaimed);
-  return { season, version: v, points, level, max, elite, premium, price: passPrice(v), claimedFree: [...claimedFree], claimedPremium: [...claimedPremium], claimable };
+  const theme = (season.rules as { theme?: string } | null)?.theme;
+  const claimable = passRewards(v, theme).filter((r) => r.level <= level && ((r.free && !claimedFree.has(r.level)) || (premium && !claimedPremium.has(r.level)))).length + Math.max(0, elite - eliteClaimed);
+  return { season, version: v, theme: theme ?? null, points, level, max, elite, premium, price: passPrice(v), claimedFree: [...claimedFree], claimedPremium: [...claimedPremium], claimable };
 }
 
 /** Unlocks the premium track for this season with ТрансКоин. Rewards of reached levels can be claimed at once. */
@@ -66,8 +67,9 @@ async function grant(tx: Tx, userId: string, r: PassRewardV2, key: string, label
     const [acct] = await tx.select({ id: companiesTable.id, hq: companiesTable.hqCityId }).from(companiesTable).where(eq(companiesTable.ownerId, userId));
     const [got] = acct ? await tx.insert(jobState).values({ key: `pass-truck:${key}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning() : [];
     if (acct && got) {
-      await tx.insert(vehicles).values({ companyId: acct.id, modelId: r.truck, plate: await uniquePlate(tx), color: '#93c5fd', livery: 'firstsnow', cityId: acct.hq, purchasePriceCents: 0 });
-      await notify(tx, userId, 'achievement', () => t('Сезонният камион е твой!'), () => t('Rila Nordik 540 Снегорин те чака в базата.'), '/game/fleet');
+      const look = SEASON_TRUCK_LOOK[r.truck] ?? SEASON_TRUCK_LOOK['rila-nordik-plow']!;
+      await tx.insert(vehicles).values({ companyId: acct.id, modelId: r.truck, plate: await uniquePlate(tx), color: look.color, livery: look.livery, cityId: acct.hq, purchasePriceCents: 0 });
+      await notify(tx, userId, 'achievement', () => t('Сезонният камион е твой!'), () => t('{0} те чака в базата.', tx_(look.name)), '/game/fleet');
     }
   }
   if (r.cents) {
@@ -106,7 +108,7 @@ export async function claimPassRewards(db: Database, userId: string, now = new D
       free.add(max + n);
       claimed++;
     }
-    for (const r of passRewards(v).slice(0, Math.min(level, max))) {
+    for (const r of passRewards(v, (season.rules as { theme?: string } | null)?.theme).slice(0, Math.min(level, max))) {
       if (r.free && !free.has(r.level)) {
         await grant(tx, userId, r.free, `pass:${season.id}:${userId}:free:${r.level}`, t('Пропуск ниво {0}', r.level), now);
         free.add(r.level);

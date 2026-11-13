@@ -1,5 +1,5 @@
 import type { FeatureId } from '@/lib/game/features';
-import { Backpack, BookOpen, Building2, ClipboardList, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { Briefcase, Backpack, BookOpen, Building2, ClipboardList, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
@@ -134,7 +134,10 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/parking', label: 'Паркирай', feature: 'parking_game', group: 'Днес' },
       { href: '/game/daily-route', label: 'Пътят на деня', feature: 'daily_route', group: 'Днес', core: true },
       { href: '/game/night-run', label: 'Нощен рейс', feature: 'night_run', group: 'Днес', core: true },
+      { href: '/game/courier', label: 'Градски куриер', feature: 'city_courier', group: 'Днес' },
       { href: '/game/crisis', label: 'Световни кризи', feature: 'world_crises', group: 'Днес' },
+      { href: '/game/road-service', label: 'Пътна служба', feature: 'road_service', group: 'Днес' },
+      { href: '/game/winter-games', label: 'Зимни игри', feature: 'winter_games', group: 'Класации' },
       { href: '/game/league', label: 'Лига', group: 'Класации', minLevel: 2 },
       { href: '/game/cities', label: 'Градовете растат', feature: 'city_growth', group: 'Класации' },
       { href: '/game/duels', label: 'Дуели', feature: 'duels', group: 'Класации', minLevel: 3 },
@@ -168,6 +171,8 @@ export const ACCOUNT_MENU = [
   { href: '/game/shop', label: 'Магазин и VIP', icon: Gem },
   { href: '/game/invite', label: 'Покани приятел', icon: UserPlus },
   { href: '/game/mentor', label: 'Наставник', icon: GraduationCap },
+  // 1.3.1 „Екипът“.
+  { href: '/game/careers', label: 'Кариери в TransVerse', icon: Briefcase },
   { href: '/game/updates', label: 'Обновления', icon: ScrollText },
   { href: '/game/settings', label: 'Настройки', icon: Settings },
   { href: '/game/help', label: 'Помощ и правила', icon: BookOpen },

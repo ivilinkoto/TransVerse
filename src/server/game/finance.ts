@@ -254,9 +254,11 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
 
 // ── Company treasury ─────────────────────────────────────────────────────
 
-export type TreasuryCategory = 'insurance' | 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary' | 'share_issue' | 'share_dividend' | 'holding';
+export type TreasuryCategory = 'insurance' | 'member_contribution' | 'deposit' | 'company_upgrade' | 'dissolution' | 'admin_adjustment' | 'company_mission' | 'company_licence' | 'tender_deposit' | 'tender_bonus' | 'season_prize' | 'hire_commission' | 'company_project' | 'company_battle' | 'member_bonus' | 'company_build' | 'company_decor' | 'company_land' | 'company_fleet' | 'discord_activity' | 'ship_call' | 'factory' | 'company_branch' | 'company_trailer' | 'fuel_station' | 'alliance' | 'company_contract' | 'academy' | 'division' | 'anniversary' | 'share_issue' | 'share_dividend' | 'holding' | 'winter_games' | 'base_staff';
 
 export const TREASURY_LABELS: Record<TreasuryCategory, string> = {
+  winter_games: 'Зимни игри',
+  base_staff: 'Персонал на базата',
   share_issue: 'Продадени акции',
   holding: 'Холдинг',
   share_dividend: 'Дивиденти на акционерите',

@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, like } from 'drizzle-orm';
+import { and, eq, gt, like } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -26,6 +26,8 @@ const ROTATE = at('2026-11-13T10:05:00+02:00');
 const SEASON_END = at('2026-11-13T10:00:00+02:00');
 
 let original: typeof seasons.$inferSelect;
+/** The player whose company scores in the old season (test 3); other files may leave scores of their own in it. */
+let scorer = '';
 
 beforeAll(async () => {
   original = await activeSeason(db());
@@ -51,12 +53,15 @@ describe('rehearsal: 12–20 November 2026', () => {
     expect(latestPublished(LIVE)?.version).toBe('1.3');
     expect(unseenRelease('1.2.3.2', LIVE)?.version).toBe('1.3');
     expect(unseenRelease('1.3', LIVE)).toBeNull();
-    // Nothing new on the 20th any more: the November update came out whole on the 12th.
-    expect(latestPublished(at('2026-11-20T11:00:00+02:00'))?.version).toBe('1.3');
+    // Nothing else of the old plan on the 20th: the November update came out whole on the 12th
+    // (1.3.1 „Екипът“, the recruiting window, followed on the 14th).
+    expect(latestPublished(at('2026-11-14T11:00:00+02:00'))?.version).toBe('1.3');
+    expect(latestPublished(at('2026-11-20T11:00:00+02:00'))?.version).toBe('1.3.1');
   });
 
   it('the season that runs keeps its old pass on the 12th; the last-day reminder goes out', async () => {
     const p = await newPlayer();
+    scorer = p.userId;
     const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
     await db().update(seasons).set({ startsAt: at('2026-10-16T10:00:00+02:00'), endsAt: SEASON_END, rules: DEFAULT_SEASON_RULES }).where(eq(seasons.id, original.id));
     await db().insert(seasonScores).values({ seasonId: original.id, companyId: account!.id, points: 5_000, deliveries: 4 }).onConflictDoNothing();
@@ -95,10 +100,9 @@ describe('rehearsal: 12–20 November 2026', () => {
   it('the old season: final places, the recap and its link in the notification', async () => {
     const rows = await db().select().from(seasonScores).where(and(eq(seasonScores.seasonId, original.id), gt(seasonScores.points, 0)));
     expect(rows.every((r) => r.finalRank != null)).toBe(true);
-    const owner = await db().select({ ownerId: companies.ownerId }).from(companies).where(inArray(companies.id, rows.map((r) => r.companyId)));
-    const recap = await seasonRecap(db(), original.id, owner[0]!.ownerId);
+    const recap = await seasonRecap(db(), original.id, scorer);
     expect(recap?.place).toBeGreaterThan(0);
-    const told = await db().select().from(notifications).where(and(eq(notifications.userId, owner[0]!.ownerId), like(notifications.href, `/game/seasons/recap/${original.id}%`)));
+    const told = await db().select().from(notifications).where(and(eq(notifications.userId, scorer), eq(notifications.href, `/game/seasons/recap/${original.id}`)));
     expect(told.length).toBe(1);
   });
 

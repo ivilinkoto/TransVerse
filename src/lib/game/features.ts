@@ -220,6 +220,20 @@ export const FEATURES = {
   driver_portraits: '1.2',
   truck_pass: '1.2',
   company_plot: '1.4',
+  // 1.3.1 „Екипът“: the recruiting window, the „Кариери“ page and the applications.
+  careers: '1.3.1',
+  // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).
+  christmas_night: '1.4',
+  // 1.4 „Пътна служба“: real passes close in winter; salt and sand loads open them for everyone.
+  road_service: '1.4',
+  // 1.4 „Градски куриер“: a delivery van on the real streets of Sofia, Plovdiv and Varna (OpenStreetMap).
+  city_courier: '1.4',
+  // 1.4 „Зимни игри на компаниите“ (14–27.12) and „Най-красивата коледна база“.
+  winter_games: '1.4',
+  // 1.4 „Първите 7 дни“: a step a day for new players.
+  first_week: '1.4',
+  // 1.4 „Персонал на базата“: a mechanic, a dispatcher, a cook and an instructor for the base.
+  base_staff: '1.4',
   plot_guests: '1.4',
   livery: '1.4',
   maintenance: '1.4',

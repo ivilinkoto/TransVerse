@@ -1,5 +1,5 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { BookOpen, CalendarHeart, ChevronRight, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Swords, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { BookOpen, CalendarHeart, Sprout, ChevronRight, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Swords, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
@@ -50,6 +50,7 @@ import { isMarta, MARTA } from '@/lib/game/marta';
 
 import { RoadChoices } from '@/components/game/RoadChoices';
 import { CommandCenter } from '@/components/gameui/CommandCenter';
+import { firstWeekView } from '@/server/game/first-week';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 
@@ -58,6 +59,8 @@ export default async function OverviewPage() {
   const { db, user, company, hq, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
   const marta = features.marta && isMarta(now);
+  // 1.4 „Първите 7 дни“: the new player's path, while it lasts.
+  const firstWeek = features.first_week ? await firstWeekView(db, user.id, now) : null;
   // 1.1.4: the same for everyone — kept for a minute instead of read on every visit.
   const real = features.real_weather ? await cached('dash:weather', 60_000, () => realConditions(db, now, true), now.getTime()) : null;
   const [paper] = await cached('dash:paper', 60_000, () => latestIssues(db, 1), now.getTime());
@@ -323,6 +326,15 @@ export default async function OverviewPage() {
       )}
       {!user.seenHints.includes('discord') && <DiscordInvite />}
       {features.online_now && <OnlineNow db={db} now={now} />}
+      {firstWeek && (
+        <Link href="/game/first-week" className="panel group flex items-center gap-3 border-emerald-500/40 p-3.5 transition hover:border-emerald-400" data-testid="first-week-card">
+          <Sprout className="h-6 w-6 shrink-0 text-emerald-300" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t('Първите 7 дни · ден {0}', firstWeek.day)}</span>
+            <span className="block text-sm text-mist-300">{firstWeek.steps.some((s) => s.open && s.done && !s.claimed) ? t('Има награда за взимане!') : t('Взети {0} от 7 стъпки — всеки ден нова.', firstWeek.claimed)}</span>
+          </span>
+        </Link>
+      )}
       {features.year_recap && isRecapTime(now) && (
         <Link href="/game/recap" className="panel group flex items-center gap-3 border-prestige/40 p-3.5 transition hover:border-prestige">
           <CalendarHeart className="h-6 w-6 shrink-0 text-prestige" />

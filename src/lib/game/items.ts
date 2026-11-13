@@ -72,6 +72,8 @@ export const ITEMS = {
   euro_frame: { name: 'Рамка „Европа“', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Синя рамка със звезди около портрета.' },
   xmas_frame: { name: 'Коледна рамка', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Червено-зелена рамка около портрета.' },
   paint_firstsnow: { name: 'Боя „Първи сняг“', rarity: 'epic', kind: 'consumable', target: 'vehicle', effect: 'Боядисва собствен камион светлосиньо със снежинки — само от пропуска на сезона „Първи сняг“.' },
+  paint_christmasnight: { name: 'Боя „Коледна нощ“', rarity: 'epic', kind: 'consumable', target: 'vehicle', effect: 'Боядисва собствен камион в тъмнозелено със златни звезди — само от пропуска на сезона „Коледна нощ“.' },
+  night_frame: { name: 'Рамка „Звездна нощ“', rarity: 'epic', kind: 'cosmetic', target: 'driver', effect: 'Тъмносиня рамка със златни звезди около портрета.' },
   paint_frost: { name: 'Боя „Скреж“', rarity: 'legendary', kind: 'consumable', target: 'vehicle', effect: 'Боядисва собствен камион в ледено синьо със скреж по ръбовете — само за целия „Зимен поход“.' },
 } as const satisfies Record<string, ItemDef>;
 export type ItemId = keyof typeof ITEMS;
@@ -144,7 +146,7 @@ export const SELL_DAY_CAP = 50;
 export const TRADE_RULES = { minLevel: 5, openMax: 5, noteMax: 120 };
 
 /** 1.2.5: items that come only from a season pass (never from cases, finds or the workshop). */
-export const PASS_ONLY_ITEMS: ItemId[] = ['paint_firstsnow', 'paint_frost'];
+export const PASS_ONLY_ITEMS: ItemId[] = ['paint_firstsnow', 'paint_frost', 'paint_christmasnight', 'night_frame'];
 
 /** Items that stay with the one who found them (no sale, gift or trade). */
 export const BOUND_ITEMS: ItemId[] = ['golden_key'];
@@ -237,6 +239,7 @@ export function sourcesOf(id: ItemId): { source: string; arg?: string; percent: 
   const frameOf = COLLECTIONS.find((c) => c.frame === id);
   if (frameOf) out.push({ source: 'Награда за колекцията „{0}“', arg: frameOf.name, percent: null });
   if (id === 'paint_firstsnow') out.push({ source: 'Пропуск на сезона „Първи сняг“', percent: null });
+  if (id === 'paint_christmasnight' || id === 'night_frame') out.push({ source: 'Пропуск на сезона „Коледна нощ“', percent: null });
   if (id === 'paint_frost') out.push({ source: 'Последната стъпка на „Зимен поход“', percent: null });
   return out;
 }
@@ -255,10 +258,10 @@ export const ITEM_RULES = {
 };
 
 /** 1.2.1: the portrait frames and the item each one comes from. */
-export type FrameId = 'gold' | 'frost' | 'euro' | 'xmas';
+export type FrameId = 'gold' | 'frost' | 'euro' | 'xmas' | 'night';
 export type DriverLook = { cap?: boolean; glasses?: boolean; frame?: FrameId };
-export const FRAME_ITEMS: Record<FrameId, ItemId> = { gold: 'gold_frame', frost: 'frost_frame', euro: 'euro_frame', xmas: 'xmas_frame' };
-export const FRAME_COLORS: Record<FrameId, string[]> = { gold: ['#facc15'], frost: ['#7dd3fc', '#e0f2fe'], euro: ['#1d4ed8', '#facc15'], xmas: ['#dc2626', '#16a34a'] };
+export const FRAME_ITEMS: Record<FrameId, ItemId> = { gold: 'gold_frame', frost: 'frost_frame', euro: 'euro_frame', xmas: 'xmas_frame', night: 'night_frame' };
+export const FRAME_COLORS: Record<FrameId, string[]> = { gold: ['#facc15'], frost: ['#7dd3fc', '#e0f2fe'], euro: ['#1d4ed8', '#facc15'], xmas: ['#dc2626', '#16a34a'], night: ['#1e3a8a', '#fde047'] };
 /** The look part a cosmetic item sets. */
 export function lookPart(id: ItemId): { part: 'cap' } | { part: 'glasses' } | { part: 'frame'; frame: FrameId } | null {
   if (id === 'trucker_cap') return { part: 'cap' };

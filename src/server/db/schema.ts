@@ -397,7 +397,7 @@ export const drivers = pgTable(
     vacationUntil: ts('vacation_until'),
     lastVacationAt: ts('last_vacation_at'),
     /** 1.2: what the portrait wears (items from the inventory). */
-    look: jsonb('look').$type<{ cap?: boolean; glasses?: boolean; frame?: 'gold' | 'frost' | 'euro' | 'xmas' }>().notNull().default({}),
+    look: jsonb('look').$type<{ cap?: boolean; glasses?: boolean; frame?: 'gold' | 'frost' | 'euro' | 'xmas' | 'night' }>().notNull().default({}),
     hiredAt: createdAt(),
   },
   (t) => [index('drivers_company_idx').on(t.companyId), uniqueIndex('drivers_vehicle_idx').on(t.vehicleId), uniqueIndex('drivers_co_vehicle_idx').on(t.coVehicleId)],

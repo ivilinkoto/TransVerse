@@ -453,3 +453,309 @@ f2471c825b	Passenger bus lines to the big cities.	Пассажирские ав�
 5a7b24bebe	Every bus has a 3D model (the "3D" button on its card): turn it and look at it from every side — doors, mirrors, the route sign.	У каждого автобуса есть 3D-модель (кнопка «3D» в карточке): поверни её и рассмотри со всех сторон — двери, зеркала, табличку с маршрутом.
 4586a070cb	Every section — Loads, Fleet, Finances, Market, Depots, Company, Rankings, Events, Season, Profile, Settings and more — opens as a window over the game.	Все разделы — Курсы, Автопарк, Финансы, Рынок, Склады, Компания, Рейтинги, Ивенты, Сезон, Профиль, Настройки и другие — открываются окнами поверх игры.
 6f98bb74bb	Passengers depend on the size of the two cities, the distance, the ticket price (3–10 lv. per 100 km), the comfort and the other carriers on the same line.	Пассажиры зависят от размера двух городов, расстояния, цены билета (3–10 лв. на 100 км), комфорта и других перевозчиков на той же линии.
+800e5cb7e7	Bus lines in total: {0}.	Всего автобусных линий: {0}.
+2c552f91aa	Active players in the last 7 days: {0}. Percentages are of them.	Активных игроков за последние 7 дней: {0}. Проценты считаются от них.
+d732f43e55	How 1.3 is played	Как играют в 1.3
+fedcbc4d05	How many players have tried each new system. Players only, not the staff; nothing new is recorded.	Сколько игроков попробовали каждую новую систему. Только игроки, без команды; ничего нового не записывается.
+6ad6c1d7af	Night run by day	Ночной рейс по дням
+11a9bdbb7d	Route of the day by day	Маршрут дня по дням
+5378c651ac	World crises (voted)	Мировые кризисы (голосовали)
+23bfc66ca4	Admin → Game → “How 1.3 is played”: how many players (not the staff) have tried each new 1.3 system, compared with those active in the last 7 days, plus Night run and Route of the day by day. The page only reads what is already recorded.	Админка → Игра → «Как играют в 1.3»: сколько игроков (без команды) попробовали каждую новую систему 1.3 по сравнению с активными за 7 дней, а Ночной рейс и Маршрут дня — по дням. Страница только читает уже записанное.
+965c2e7725	5 deliveries arriving between 18:00 and 6:00	5 доставок с прибытием между 18:00 и 6:00
+0006d39b91	{0} is in the colours of “Christmas Night”.	{0} в цветах «Рождественской ночи».
+0359abb348	{0} is waiting for you at the base.	{0} ждёт тебя на базе.
+46715e5373	“Christmas Night” paint	Краска «Рождественская ночь»
+7bb8bb427c	Paints an own truck dark green with golden stars — only from the “Christmas Night” season pass.	Красит собственный грузовик в тёмно-зелёный с золотыми звёздами — только из пропуска сезона «Рождественская ночь».
+12528a1f4f	Deliver 6 Christmas loads	Доставь 6 рождественских грузов
+e077a332db	Santa of the Roads	Дед Мороз на дорогах
+dfa8bbc693	Santa of the Roads · place {0}	Дед Мороз на дорогах · место {0}
+1d52ae453e	Santa of the Roads: place {0}!	Дед Мороз на дорогах: место {0}!
+509b3b6ee5	Road Elf	Эльф дороги
+e97f99dd94	Star of Christmas Night	Звезда Рождественской ночи
+2f662c7854	Rila XT 620 6×4 “Christmas Night” truck	Грузовик Rila XT 620 6×4 «Рождественская ночь»
+ce162f4e07	Christmas Night	Рождественская ночь
+0e55ae6075	Nobody has driven Christmas loads yet.	Ещё никто не возил рождественские грузы.
+e33f081695	Santa's Helper	Помощник Деда Мороза
+30c38a2ae7	“Christmas Night” season pass	Пропуск сезона «Рождественская ночь»
+4d81995786	“Starry Night” frame	Рамка «Звёздная ночь»
+4d6a86863f	Season “Christmas Night”	Сезон «Рождественская ночь»
+fd0ac75aab	Season “Christmas Night”: from December the season is a Christmas one — its own pass rewards (the “Christmas Night” paint, the “Starry Night” frame, two titles and a Rila XT 620 in the season's colours at level 50), tasks for Christmas loads and night deliveries, and the “Santa of the Roads” ranking — the top three get titles and TransCoin.	Сезон «Рождественская ночь»: с декабря сезон рождественский — свои награды в пропуске (краска «Рождественская ночь», рамка «Звёздная ночь», два титула и Rila XT 620 в цветах сезона на уровне 50), задания на рождественские грузы и ночные доставки и рейтинг «Дед Мороз на дорогах» — первые трое получают титулы и ТрансКоины.
+c65343ee40	Tonnes of Christmas loads this season (from 15 December). The top three get titles and {0}, {1} and {2} TC.	Тонны рождественских грузов за сезон (с 15 декабря). Первые трое получают титулы и {0}, {1} и {2} TC.
+e14540b651	A dark blue frame with golden stars around the portrait.	Тёмно-синяя рамка с золотыми звёздами вокруг портрета.
+a1cf94cc0d	🎅 Santa of the Roads	🎅 Дед Мороз на дорогах
+6167d52837	{0} / {1} t of salt and sand · {2} loads on the market	{0} / {1} т соли и песка · {2} грузов на бирже
+5be7f388df	{0} is open	{0} открыт
+8703a904af	Beklemeto (Troyan Pass)	Беклемето (Троянский перевал)
+8a839d8ff7	The real mountain passes in winter. When a pass is closed, salt and sand to the town below open it for everyone.	Настоящие горные перевалы зимой. Когда перевал закрыт, соль и песок в город под ним открывают его для всех.
+8cbd517504	Opened by the players	Открыт игроками
+bec2e23b92	Nobody has opened a pass yet.	Ещё никто не открыл перевал.
+abb265664f	Pass Guardian	Хранитель перевала
+af3291eb84	Pass Guardian · place {0}	Хранитель перевала · место {0}
+d5794d75f6	Pass Guardian: place {0}!	Хранитель перевала: место {0}!
+cfb2793090	Petrohan	Петрохан
+1927b303f2	You helped with {0} t. Trucks are crossing the pass again.	Ты помог {0} т. Грузовики снова идут через перевал.
+fd15ed88bc	Arlberg Pass	Перевал Арльберг
+26a1cf30a6	Brenner Pass	Перевал Бреннер
+421ca7ce60	Predeal Pass	Перевал Предял
+ffd9480b4d	Pass of the Republic	Перевал Республики
+40820cef39	The passes today	Перевалы сегодня
+d1dca458b9	Road Crew	Дорожник
+a44aa0deb2	Road service	Дорожная служба
+70781af296	Road service: the real mountain passes — Shipka, Petrohan, Beklemeto, the Pass of the Republic, Predeal, Brenner and Arlberg — close in blizzards, on ice and in heavy snow. A trip over a closed pass waits for the snowplows. Salt and sand loads to the town below the pass come to the market (60% better pay and pass points); 40 t open it for everyone until the end of the day. The “Pass Guardian” ranking gives titles and TransCoin to the top three.	Дорожная служба: настоящие горные перевалы — Шипка, Петрохан, Беклемето, перевал Республики, Предял, Бреннер и Арльберг — закрываются при метели, гололёде и сильном снеге. Рейс через закрытый перевал ждёт снегоуборщики. На бирже появляются грузы соли и песка в город под перевалом (оплата на 60 % выше и очки пропуска); 40 т открывают его для всех до конца дня. Рейтинг «Хранитель перевала» с титулами и ТрансКоинами для первой тройки.
+8ae317fdc9	The loads are labelled “❄️ Road service” in	Грузы с меткой «❄️ Дорожная служба» в разделе
+ee5df39d6a	Tonnes of salt and sand to closed passes this season. The top three get titles and {0}, {1} and {2} TC.	Тонны соли и песка к закрытым перевалам за сезон. Первые трое получают титулы и {0}, {1} и {2} TC.
+bb36092d70	Road conditions are game data based on the real weather.	Дорожные условия — игровые данные по реальной погоде.
+90a05e490f	Shipka Pass	Шипкинский перевал
+09cff305cb	❄️ {0} is open again — thanks to everyone who brought salt and sand.	❄️ {0} снова открыт — спасибо всем, кто привёз соль и песок.
+9ac0549e66	🛡️ Pass Guardian	🛡️ Хранитель перевала
+241d102a61	A blizzard, ice or heavy snow closes the pass, and a trip over it waits for the snowplows. {0} t of salt and sand open it until the end of the day.	Метель, гололёд или сильный снег закрывают перевал, и рейс через него ждёт снегоуборщики. {0} т соли и песка открывают его до конца дня.
+6155084dbd	+{0} XP.	+{0} опыта.
+386905d5ed	8 parcels on the real streets of the centre in {0} minutes.	8 посылок по настоящим улицам центра за {0} минут.
+2124527f6d	No name	Без названия
+a95b7b6eb2	Time is up — hand in the shift.	Время вышло — сдай смену.
+9ecc076e0d	City courier	Городской курьер
+7ff0303d20	City courier: a van in the real centre of Sofia, Plovdiv or Varna — the streets and one-way streets come from OpenStreetMap. Every day 8 parcels on real streets and traffic jams, the same for everyone. Tap a junction and the van takes the shortest way, but the navigator does not know the jams — you choose the order and the way. 3 shifts a day, stars and XP, a daily ranking for each city.	Городской курьер: фургон в настоящем центре Софии, Пловдива или Варны — улицы и односторонние улицы взяты из OpenStreetMap. Каждый день 8 посылок на настоящих улицах и пробки, одинаковые для всех. Нажми на перекрёсток, и фургон поедет кратчайшим путём, но навигатор не знает о пробках — ты выбираешь порядок и дорогу. 3 смены в день, звёзды и опыт, дневной рейтинг для каждого города.
+d64a20331e	No shifts left today — new parcels tomorrow.	Смены на сегодня закончились — новые посылки завтра.
+0e52d0cc67	Today's best · {0}	Лучшие сегодня · {0}
+7f0a24afcf	Delivered: {0} of {1}.	Доставлено: {0} из {1}.
+1353261939	Loading the streets…	Загружаю улицы…
+466f23b181	Map of the centre	Карта центра
+c4848118aa	Nobody has driven today yet.	Сегодня ещё никто не ездил.
+dda61896f7	Plovdiv	Пловдив
+a5a464a5e2	Hand in the shift	Сдать смену
+8516433d7a	End the shift	Закончить смену
+ae1b7ed238	Shifts today: {0}	Смен сегодня: {0}
+9855d020a6	Too many stops.	Слишком много остановок.
+bf4cfcd092	contributors	участники
+6a3f495563	↶ Back	↶ Назад
+651d7fa79f	Tap a junction and the van takes the shortest way. The navigator does not know the jams (red) — add stops to go around them.	Нажми на перекрёсток, и фургон поедет кратчайшим путём. Навигатор не знает о пробках (красные) — добавь остановки, чтобы объехать их.
+96c2332d99	{0} votes	{0} голосов
+1f6d065a66	{0} – {1}: five disciplines, medals and a champion.	{0} – {1}: пять дисциплин, медали и чемпион.
+4324f44955	In the daily disciplines a company's best {0} members of the day count. The top three in each discipline get money for the treasury.	В ежедневных дисциплинах считаются лучшие {0} участников компании за день. Первые трое в каждой дисциплине получают деньги в кассу.
+c5191c0da6	You have already voted today — again tomorrow.	Сегодня ты уже голосовал — снова завтра.
+b6251b0e6d	One vote a day for a base of another company. The top three get {0}, {1} and {2}, and the winner a title for every member.	Один голос в день за базу другой компании. Первые три получают {0}, {1} и {2}, а победитель — титул для каждого участника.
+2d28b7fbc2	Winter Games	Зимние игры
+e274de6865	Winter Games · {0}: place {1}	Зимние игры · {0}: {1} место
+1db2ef52e3	Company Winter Games	Зимние игры компаний
+a38e31fb2d	Company Winter Games (14 – 27 December): five disciplines — Night run, Route of the day, City courier, tonnes on the road and materials for the base. In the daily ones a company's best 5 members of the day count. Medals for the top three in each discipline and money for the treasury; the company with the most medals is the champion — a title for every member.	Зимние игры компаний (14 – 27 декабря): пять дисциплин — Ночной рейс, Маршрут дня, Городской курьер, тонны на дорогах и материалы для базы. В ежедневных считаются лучшие 5 участников компании за день. Медали за первые три места в каждой дисциплине и деньги в кассу; компания с наибольшим числом медалей — чемпион, титул для каждого участника.
+9744caee69	The Games are over — the prizes are in the treasuries.	Игры закончились — призы в кассах.
+43a5d23410	The Games are for companies —	Игры — для компаний:
+b77a6d2104	Your company won the Winter Games — the title “Winter Games Champion” for every member.	Ваша компания выиграла Зимние игры — титул «Чемпион Зимних игр» для каждого участника.
+c486ac5a03	The contest for the most beautiful Christmas base is not open.	Конкурс на самую красивую рождественскую базу не открыт.
+0cf901e1d2	Each member's longest run of the day; the sum of the best 5 of the day counts.	Самый дальний рейс дня каждого участника; считается сумма лучших 5 за день.
+b7b183f1fb	Each member's best shift of the day; the best 5 of the day.	Лучшая смена дня каждого участника; лучшие 5 за день.
+7097e85099	Each member's best try of the day; the best 5 of the day.	Лучшая попытка дня каждого участника; лучшие 5 за день.
+7553fb9487	The most beautiful Christmas base	Самая красивая рождественская база
+60fa9fee07	The most beautiful Christmas base: place {0}	Самая красивая рождественская база: {0} место
+e93be39a26	The most beautiful Christmas base: one vote a day for the base of another company. The top three bases get prizes for the treasury, and the winner a title for every member.	Самая красивая рождественская база: один голос в день за базу другой компании. Первые три базы получают призы в кассу, а победитель — титул для каждого участника.
+164b7ca1a6	You cannot vote for your own company's base.	Нельзя голосовать за базу своей компании.
+ec4ab96400	No medals yet.	Медалей пока нет.
+e8cccdac7d	No results yet.	Результатов пока нет.
+092fad283e	Builders	Строители
+93a631e5be	This company has no base yet.	У этой компании ещё нет базы.
+5617a1ce34	Tonnes on the road	Тонны на дорогах
+1ec6267cfd	Tonnes of materials for the company's base.	Тонны материалов для базы компании.
+ef95957e53	Tonnes the members delivered; the best 5 members.	Тонны, доставленные участниками; лучшие 5 участников.
+6dd8f00ead	Winter Games Champion	Чемпион Зимних игр
+a6c92aa59b	Winter Games champions!	Чемпионы Зимних игр!
+e25fa44736	join a company	вступи в компанию
+bf6379458c	m	м
+f1591c8eee	pts	очк.
+d015a9787e	✓ your vote today	✓ твой голос сегодня
+9a5a38df8c	🎄 Vote	🎄 Голосовать
+1f01f833e6	🎄 The most beautiful Christmas base	🎄 Самая красивая рождественская база
+73628d3185	🏅 Medal table	🏅 Медальный зачёт
+35325eb0ca	{0} got a better price from a client in Plovdiv.	{0} договорился о лучшей цене с клиентом в Пловдиве.
+de7573a0ee	{0} put a map of Europe on the wall with a pin for every truck.	{0} повесил на стену карту Европы и воткнул булавку для каждого грузовика.
+41470be3bf	{0} starts work as {1}.	{0} начинает работать: {1}.
+4055ba473f	{0} baked banitsa for the whole team.	{0} испёк баницу для всей команды.
+6bbcab0784	{0} sent coffee to the driver who was late because of the snow.	{0} отправил кофе водителю, опоздавшему из-за снега.
+591ed653e0	{0} a week	{0} в неделю
+42cedcebf7	{0} found a split hose before the trip — we left on time.	{0} нашёл лопнувший шланг перед рейсом — выехали без опоздания.
+0ab54e514a	{0} reminded everyone about the tachograph breaks.	{0} напомнил всем о перерывах по тахографу.
+40b3fe917e	{0} left the base	{0} покинул базу
+7d53a78230	{0} asks who stole the last meatballs. Silence.	{0} спрашивает, кто украл последние котлеты. Тишина.
+f1360052a9	{0} sorted the spanners by size. Nobody dares to touch them.	{0} разложил ключи по размеру. Никто не смеет их трогать.
+2222b86878	{0} showed the new ones how to reverse a trailer.	{0} показал новичкам, как парковать прицеп задним ходом.
+79096066e5	{0} praised a driver for a perfect trip on time.	{0} похвалил водителя за идеальный рейс вовремя.
+79d17a524e	{0} gave a lesson in winter driving — with chains and a lot of patience.	{0} провёл урок зимнего вождения — с цепями и большим терпением.
+91c648d53d	{0} cooked bean soup — the drivers came back for more.	{0} сварил фасолевый суп — водители вернулись за добавкой.
+2ea74287d5	{0} left a thermos of tea for the night shift.	{0} оставил термос с чаем для ночной смены.
+0aa4ab6cf4	{0} changed the oil on three trucks and said “this engine needs love”.	{0} поменял масло на трёх грузовиках и сказал: «этому мотору нужна любовь».
+6aec5d89e7	{0} spent the morning on two phones at once.	{0} всё утро говорил по двум телефонам одновременно.
+a0f2d65c8f	{0} spent the morning looking for a noise in the cab. It was a forgotten can.	{0} всё утро искал шум в кабине. Оказалась забытая банка.
+ba2a7d2f0e	Boris	Борис
+6a97a80bae	There was no money in the treasury for the pay.	В кассе не было денег на зарплату.
+759b69e59e	Take a load from Trips and deliver it.	Возьми груз в разделе «Рейсы» и доставь его.
+1c988987e7	{0} of 7 steps taken — a new one every day.	Получено {0} из 7 шагов — каждый день новый.
+1a05493c95	Join a company	Вступи в компанию
+9bf6dbb6c2	A new step with a reward every day. At the end — a badge and a gold case.	Каждый день новый шаг с наградой. В конце — значок и золотой кейс.
+6b6a1a396a	Each needs their building and pay every week from the treasury. No money in the treasury — they leave.	Каждому нужно своё здание и зарплата каждую неделю из кассы. Нет денег в кассе — уходит.
+98f93279c5	Every step of the first week in TransVerse.	Все шаги первой недели в TransVerse.
+23ede6871d	A second truck	Второй грузовик
+811661301e	Second or third place by tonnes of Christmas loads in the “Christmas Night” season.	Второе или третье место по тоннам рождественских грузов в сезоне «Рождественская ночь».
+6b2c2a0531	Second or third place by tonnes of salt and sand to closed passes in a season.	Второе или третье место по тоннам соли и песка к закрытым перевалам за сезон.
+2448d9f2b9	Cook	Повар
+a4b0f9a5d6	Let {0} go?	Уволить {0}?
+e3a2feb1c8	Daniela	Даниэла
+b7a44da3aa	Day {0} of 7 · {1} of 7 taken	День {0} из 7 · получено {1} из 7
+8e179cc538	Elitsa	Элица
+ad35299604	Pay: {0}	Зарплата: {0}
+742a3c18fa	The “First 7 days” badge and a gold case. Welcome to TransVerse!	Значок «Первые 7 дней» и золотой кейс. Добро пожаловать в TransVerse!
+54630c0e6b	Ivo	Иво
+a24f377238	Play one of the mini games.	Сыграй в одну из мини-игр.
+ccc197d44b	A reward to collect!	Есть награда!
+079e2911a0	Instructor	Инструктор
+7e7f39bdff	Buy or rent one more — two trucks earn twice as much.	Купи или арендуй ещё один — два грузовика зарабатывают вдвое больше.
+7569ec6900	Trips and missions give XP.	Рейсы и миссии дают опыт.
+c526cafbfb	Trips pay 1% more.	Рейсы оплачиваются ещё на 1 % выше.
+b9122ea281	To the task →	К заданию →
+d5fbcb148c	Mechanic	Механик
+c916d9c76d	Nadya	Надя
+90e39745a9	Put the cities in the shortest route.	Расставь города в кратчайший маршрут.
+4a921af968	Level 4	Уровень 4
+ac9d23798d	A new person at the base	Новый человек на базе
+7191b0c802	Night run or City courier	Ночной рейс или Городской курьер
+134db11d52	Needs the “{0}” building	Нужно здание «{0}»
+09dc089dab	The “{0}” building is needed.	Нужно здание «{0}».
+f2fef4f816	No such step.	Такого шага нет.
+7975e76ad3	3% more XP from trips.	Ещё 3 % опыта за рейсы.
+efe40a16e0	Not done yet.	Ещё не выполнено.
+c18bd6ed0d	Base staff	Персонал базы
+65ab70ffea	Base staff: a mechanic, a dispatcher, a cook and an instructor — each for their building, with a small bonus for every member and pay every week from the treasury. Every day one of them tells something in the company chat.	Персонал базы: механик, диспетчер, повар и инструктор — каждый для своего здания, с небольшим бонусом для всех участников и зарплатой каждую неделю из кассы. Каждый день один из них что-то рассказывает в чате компании.
+ee1dddf4d6	Five deliveries	Пять доставок
+b6f93edb51	Five loads in all — the truck must not stand still.	Пять грузов всего — грузовик не должен простаивать.
+d7c35a95ef	Petko	Петко
+52021a6374	The break after a trip is 5% shorter.	Отдых после рейса ещё на 5 % короче.
+8ddddfabf1	Join a company or found your own.	Вступи в компанию или основай свою.
+48043aae3f	A missed day is not lost — the steps stay open {0} more days.	Пропущенный день не теряется — шаги открыты ещё {0} дн.
+5597f2a8f5	The first delivery	Первая доставка
+a8c3c06110	The first week is behind you. Have a good road!	Первая неделя позади. Удачи в пути!
+eb097c0991	The first week is over.	Первая неделя закончилась.
+b43ce7fe1e	The first 7 days	Первые 7 дней
+0f8d25627a	The first 7 days · day {0}	Первые 7 дней · день {0}
+75c41278e2	The first 7 days — done!	Первые 7 дней — готово!
+36748de29d	The first 7 days: {0}	Первые 7 дней: {0}
+cc0e6e996b	The first 7 days: new players get one step a day — the first delivery, the Route of the day, a company, a second truck, a mini game and level 4 — each with a reward. At the end a badge and a gold case. A missed day is not lost: the steps stay open for three weeks.	Первые 7 дней: новые игроки получают по шагу в день — первая доставка, Маршрут дня, компания, второй грузовик, мини-игра и уровень 4 — с наградой за каждый. В конце значок и золотой кейс. Пропущенный день не теряется: шаги открыты три недели.
+1c33454e7c	First place by tonnes of Christmas loads in the “Christmas Night” season.	Первое место по тоннам рождественских грузов в сезоне «Рождественская ночь».
+f733ded0bf	First place by tonnes of salt and sand to closed passes in a season.	Первое место по тоннам соли и песка к закрытым перевалам за сезон.
+33220bc72e	Repairs are 5% cheaper.	Ремонт ещё на 5 % дешевле.
+687e0e0cbc	Rositsa	Росица
+4c3e710ea8	The building for this job is gone.	Здания для этой должности больше нет.
+e10fd2b75b	This job is free.	Эта должность свободна.
+275eee996d	This step opens on day {0}.	Этот шаг откроется в день {0}.
+1cc4e2d59a	The title for level 50 of the pass in the “Christmas Night” season.	Титул за уровень 50 пропуска в сезоне «Рождественская ночь».
+99e1b475b8	A title from the premium pass of the “Christmas Night” season (level 15).	Титул из премиум-пропуска сезона «Рождественская ночь» (уровень 15).
+361bddb633	A member of the company with the most votes in the Christmas base contest.	Участник компании с наибольшим числом голосов в конкурсе рождественских баз.
+544f727808	A member of the company with the most medals at the Winter Games.	Участник компании с наибольшим числом медалей на Зимних играх.
+95e8a4d62a	opens on day {0}	откроется в день {0}
+22daa59b11	👷 Base staff	👷 Персонал базы
+0f548ffb35	The Games start on {0} — get ready!	Игры начинаются {0} — готовьтесь!
+d594938bf1	10–15 h a week	10–15 ч в неделю
+cad4ce9c86	2–4 h a week	2–4 ч в неделю
+8c7b5ffb5c	3–5 h a week	3–5 ч в неделю
+4075106977	5–10 h a week	5–10 ч в неделю
+f22d0b9d9a	Discord name or another contact	Ник в Discord или другой контакт
+14f916b284	The game's Facebook, Instagram, TikTok and Discord	Facebook, Instagram, TikTok и Discord игры
+4919c21206	TransVerse is looking for people	TransVerse ищет людей
+72101037bb	TransVerse is looking for people: join the team that builds the game.	TransVerse ищет людей: стань частью команды, которая развивает игру.
+de743001ed	VIP and TransCoin every month	VIP и ТрансКоины каждый месяц
+c2a6a42691	{0} h a week	{0} ч в неделю
+f1bbd5ed52	Admin → Players → “Applications”: every application with the player's level and activity; status New / Reviewing / Interview / Accepted / Declined. On “Interview”, “Accepted” and “Declined” the player gets a notification, and the accepted one the “TransVerse Team” badge. Logged in the audit.	Админка → Игроки → «Заявки»: все заявки с уровнем и активностью игрока; статус Новая / Рассматриваем / Разговор / Принят / Отказ. При «Разговор», «Принят» и «Отказ» игрок получает уведомление, а принятый — значок «Команда TransVerse». Записывается в журнал.
+2f3429eb71	Balance of rewards and prices	Баланс наград и цен
+6896ab2d0d	Thank you for applying	Спасибо за заявку
+05bcb53b83	We are already talking with you — we will be in touch.	Мы уже общаемся с тобой — мы свяжемся.
+8f365e5853	Visual ideas for new trucks, buildings and items	Визуальные идеи для новых грузовиков, зданий и предметов
+1acd4da4f8	You pay attention to details and like finding bugs.	Ты внимателен к деталям и любишь находить ошибки.
+722e061201	Leads the team day to day and the weekly meeting	Ведёт команду изо дня в день и еженедельную встречу
+7caefcbef8	Contact with streamers and YouTube channels	Связь со стримерами и YouTube-каналами
+6a7dde6174	Game designer	Гейм-дизайнер
+f3c9aad77f	Graphic designer	Графический дизайнер
+4246a5278e	The share grows with the time you are in the team	Доля растёт со временем, которое ты в команде
+3848f0cdae	Welcome to the TransVerse team!	Добро пожаловать в команду TransVerse!
+209ebc07c3	A contract and a place in the team	Договор и место в команде
+ed9ed49ed5	A share of the profit when TransVerse starts to make a profit — in a written contract	Доля прибыли, когда TransVerse начнёт приносить прибыль — по письменному договору
+6aa41fec93	TransVerse Team	Команда TransVerse
+3d556157e4	And later	И дальше
+b328d27790	You play a lot, think about how the game can be more fun and can explain why.	Ты много играешь, думаешь, как сделать игру интереснее, и можешь объяснить почему.
+afb6655f65	Players who want to be in the team. Only the admins see this page.	Игроки, которые хотят в команду. Эту страницу видят только администраторы.
+4d29c01130	The player will get a notification. Are you sure?	Игрок получит уведомление. Уверен?
+157f3a3bc5	Ideas for new systems and events	Идеи новых систем и событий
+dad8eca66e	A trial month	Испытательный месяц
+e912d355a1	Sent	Отправлена
+7eda845697	Send the application	Отправить заявку
+abb495944b	Icons, logo and mock-ups of new screens	Иконки, логотип и макеты новых экранов
+c05ff137bf	You have a portfolio or examples — show us.	У тебя есть портфолио или примеры — покажи нам.
+f87a565197	We want TransVerse to become a real business. We are looking for driven people — best of all our own players, who know the game.	Мы хотим, чтобы TransVerse стал настоящим бизнесом. Ищем людей с драйвом — лучше всего наших игроков, которые знают игру.
+d0d208698c	We would like to talk about “{0}” — we will write to you on Discord.	Хотим поговорить о «{0}» — напишем тебе в Discord.
+9ac72c6974	How we choose	Как мы выбираем
+39ceddeacd	What you get	Что ты получаешь
+de1573cdba	Apply	Подать заявку
+8516f8e275	The application is sent! We will review it and write to you.	Заявка отправлена! Мы рассмотрим её и напишем тебе.
+e9e91ccbdc	We liked your application	Нам понравилась твоя заявка
+75fbf4842e	Applications	Заявки
+ba3a812d0f	Careers	Карьера
+c0aefe7b88	Careers at TransVerse	Карьера в TransVerse
+e175975f56	Images for the posts and banners	Картинки для публикаций и баннеры
+314f9d3036	Contests and events with the players	Конкурсы и события с игроками
+62f220e3a2	Contact	Контакт
+7ca77f5786	A short talk on Discord (20–30 minutes)	Короткий разговор в Discord (20–30 минут)
+a20598306d	Link to a portfolio or sample work (optional)	Ссылка на портфолио или пример работы (необязательно)
+8b784250e3	The link must start with https://	Ссылка должна начинаться с https://
+5d7049f177	A small trial task (1–3 hours)	Небольшое тестовое задание (1–3 часа)
+788f6b8286	Moderator and support	Модератор и поддержка
+dd733e29cc	You can change it below — the new one replaces the old one.	Можешь изменить её ниже — новая заменит старую.
+965de30192	Write at least a few sentences about yourself.	Напиши хотя бы несколько предложений о себе.
+b61da44dce	Do not write passwords, phone numbers or addresses. We will contact you on Discord or in the game.	Не пиши пароли, телефон или адрес. Мы свяжемся с тобой в Discord или в игре.
+aaaa100405	Not now	Не сейчас
+f43cbd16bf	New	Новая
+644baea55d	No applications.	Заявок нет.
+83ac8e7109	No such application.	Такой заявки нет.
+42f66076ba	No such open position.	Такой открытой позиции нет.
+673faa5737	You like to write, have a feel for social media and ideas for bringing in new players.	Ты любишь писать, чувствуешь соцсети и знаешь, как привлечь новых игроков.
+8bb8add2f6	Operations manager	Операционный менеджер
+d005dc2eb0	Writes down what does not work and what could be better	Описывает, что не работает и что можно улучшить
+61ceb8c3d6	Leave a Discord name or another way to reach you.	Оставь ник в Discord или другой способ связи.
+d85438c0bc	Open positions	Открытые позиции
+59806c347b	Answers the questions in the game and on Discord	Отвечает на вопросы в игре и в Discord
+cf64c2cf2c	Keeps order in the chat and looks at the reports	Следит за порядком в чате и разбирает жалобы
+838f0e2ce1	Prepares the update plan together with the creator	Готовит план обновлений вместе с создателем
+c139a7f870	Position	Позиция
+defacbbe29	You get now	Получаешь сейчас
+6d6dc1d142	You fill in a short form here	Заполняешь короткую форму здесь
+20d89d736f	Portfolio	Портфолио
+64dac15a56	Accepted	Принят
+36c5eb590f	You are accepted as “{0}”. The “TransVerse Team” badge — we will contact you about the next steps.	Ты принят на позицию «{0}». Значок «Команда TransVerse» — мы свяжемся с тобой насчёт следующих шагов.
+109c8e6c33	Tries the new features before everyone — on phone and computer	Пробует новые функции раньше всех — на телефоне и компьютере
+6cd8c7c2bd	A “TransVerse is looking for people” window after login — once.	Окно «TransVerse ищет людей» после входа — один раз.
+e9e818d711	The “Careers” page (profile menu → “Careers at TransVerse”): the open positions, what they do, how much time they take, what you get and how we choose. You apply with a short form; your application's status is shown there.	Страница «Карьера» (меню профиля → «Карьера в TransVerse»): открытые позиции, чем они занимаются, сколько времени требуют, что ты получаешь и как мы выбираем. Заявка — короткой формой; её статус виден там же.
+80d3e30c91	Change the application	Изменить заявку
+fb56139e0e	Player's profile →	Профиль игрока →
+fc59775308	Posts for every update	Публикации к каждому обновлению
+e68384cd91	Work from home, at a time that suits you	Работа из дома, в удобное для тебя время
+01c385c553	The work is from home, at a time that suits you. Moderators and testers need no experience — just will and regularity.	Работа из дома, в удобное время. Модераторам и тестерам опыт не нужен — нужны желание и регулярность.
+ebe1bc5f58	Reviewing	Рассматриваем
+80161fc571	Interview	Разговор
+8118a505cd	Tell us about yourself: what you do, what you have done so far and why you want to be in the team	Расскажи о себе: чем занимаешься, что делал раньше и почему хочешь в команду
+69579579b5	Hands out the tasks and keeps the deadlines	Распределяет задачи и следит за сроками
+3ef6204f82	Early access to every update and a say in what we do	Ранний доступ ко всем обновлениям и право голоса в том, что делать
+b00d32642f	Real experience and a reference for your CV and portfolio	Реальный опыт и рекомендация для резюме и портфолио
+2dea7d1ed1	The “TransVerse Team” role and badge in the game and on Discord	Роль и значок «Команда TransVerse» в игре и в Discord
+cec3cf0a5e	The “TransVerse Team” role and badge, VIP and TransCoin every month, early access to updates, and when the game starts to make a profit — a share of it under a written contract.	Роль и значок «Команда TransVerse», VIP и ТрансКоины каждый месяц, ранний доступ к обновлениям, а когда игра начнёт приносить прибыль — доля от неё по письменному договору.
+ccb0a73039	Community and marketing lead	Руководитель сообщества и маркетинга
+786c31662f	Watches the numbers: new players, retention, revenue	Следит за цифрами: новые игроки, удержание, доходы
+d734703fe6	You are calm, polite, know the game well and are here regularly. No experience needed.	Ты спокоен, вежлив, хорошо знаешь игру и бываешь здесь регулярно. Опыт не нужен.
+e5157766ca	Join the team that builds TransVerse.	Стань частью команды, которая развивает TransVerse.
+e19f7ab4ef	Collects bugs and describes them clearly	Собирает баги и чётко их описывает
+49979a3eae	Collects the players' wishes and orders them by importance	Собирает пожелания игроков и упорядочивает их по важности
+bd1c1c3539	We are building a team — see the open positions.	Мы собираем команду — посмотри открытые позиции.
+991e929a0d	We are building a team: marketing and community, moderators, a designer, an operations manager, testers and a game designer. See what each position does and apply right from the game.	Мы собираем команду: маркетинг и сообщество, модераторы, дизайнер, операционный менеджер, тестеры и гейм-дизайнер. Посмотри, чем занимается каждая позиция, и подай заявку прямо из игры.
+76d7b0c370	Your application	Твоя заявка
+feff3526b2	The text is too long.	Текст слишком длинный.
+81c79def81	Update tester	Тестер обновлений
+0f9cc453c8	This time we chose someone else for “{0}”, but we will keep you in mind when we look again.	В этот раз мы выбрали другого человека на «{0}», но будем иметь тебя в виду, когда будем искать снова.
+1625275a6b	You can organise people and have experience with a team or a project. After proven results — a path to executive director.	Ты умеешь организовывать людей, есть опыт с командой или проектом. После доказанных результатов — путь к исполнительному директору.
+ca24068515	Hours a week	Часов в неделю
+65d362cc73	A member of the team that builds TransVerse.	Участник команды, которая развивает TransVerse.
+bcc27d6643	by task	по задачам
+140b79d97f	last in the game {0}	последний раз в игре {0}

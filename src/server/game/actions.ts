@@ -69,6 +69,11 @@ import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTr
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
+import { playCourier } from './courier';
+import { voteXmasBase } from './winter-games';
+import { claimFirstWeek } from './first-week';
+import { applyForRole } from './careers';
+import { fireStaff, hireStaff } from './base-staff';
 import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
 import { openWorkshop, rateWorkshop, setWorkshopPrice, upgradeWorkshop } from '@/server/game/workshops';
@@ -263,6 +268,12 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
   z.object({ type: z.literal('resetSkills') }),
   z.object({ type: z.literal('nightRun'), inputs: z.array(z.number().int().min(-1).max(1)).max(2250) }),
+  z.object({ type: z.literal('voteXmasBase'), organizationId: id }),
+  z.object({ type: z.literal('claimFirstWeek'), step: z.string().max(40) }),
+  z.object({ type: z.literal('applyForRole'), role: z.string().max(40), about: z.string().max(2000), hours: z.coerce.number().int().min(1).max(40), contact: z.string().max(200), link: z.string().max(400).optional() }),
+  z.object({ type: z.literal('hireBaseStaff'), role: z.enum(['mechanic', 'dispatcher', 'cook', 'instructor']) }),
+  z.object({ type: z.literal('fireBaseStaff'), role: z.enum(['mechanic', 'dispatcher', 'cook', 'instructor']) }),
+  z.object({ type: z.literal('courierRun'), city: z.enum(['sofia', 'plovdiv', 'varna']), taps: z.array(z.number().int().min(0).max(100_000)).max(80) }),
   z.object({ type: z.literal('dailyRouteGuess'), order: z.array(z.number().int().positive()).min(2).max(12) }),
   z.object({ type: z.literal('foundCompany'), name: companyNameSchema, hqCityId: cityId }),
   z.object({ type: z.literal('returnRental'), vehicleId: id }),
@@ -735,6 +746,12 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   signUpDuo: 'duo_week',
   dailyRouteGuess: 'daily_route',
   nightRun: 'night_run',
+  courierRun: 'city_courier',
+  voteXmasBase: 'winter_games',
+  claimFirstWeek: 'first_week',
+  applyForRole: 'careers',
+  hireBaseStaff: 'base_staff',
+  fireBaseStaff: 'base_staff',
   learnSkill: 'driver_skills',
   openWorkshop: 'player_workshops',
   voteCrisis: 'world_crises',
@@ -996,6 +1013,18 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, costCents: await resetSkills(db, user.id, new Date()) };
     case 'nightRun':
       return { ok: true, ...(await playNightRun(db, user.id, input.inputs, new Date())) };
+    case 'hireBaseStaff':
+      return { ok: true, ...(await hireStaff(db, user.id, input.role, new Date())) };
+    case 'fireBaseStaff':
+      return await fireStaff(db, user.id, input.role, new Date());
+    case 'applyForRole':
+      return await applyForRole(db, user.id, input, new Date());
+    case 'claimFirstWeek':
+      return await claimFirstWeek(db, user.id, input.step, new Date());
+    case 'voteXmasBase':
+      return await voteXmasBase(db, user.id, input.organizationId, new Date());
+    case 'courierRun':
+      return { ok: true, ...(await playCourier(db, user.id, input.city, input.taps, new Date())) };
     case 'dailyRouteGuess':
       return { ok: true, ...(await guessDailyRoute(db, user.id, input.order, new Date())) };
     case 'foundCompany':

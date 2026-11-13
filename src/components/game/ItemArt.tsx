@@ -134,6 +134,16 @@ const ART: Record<ItemId, ReactNode> = {
       <path d="M44 22 q6 -12 12 0" fill="none" stroke="#475569" strokeWidth="3" />
     </g>
   ),
+  paint_christmasnight: (
+    <g>
+      <rect x="26" y="30" width="48" height="56" rx="6" fill="#14532d" stroke="#052e16" strokeWidth="2" />
+      <rect x="22" y="22" width="56" height="12" rx="4" fill="#64748b" />
+      {star(50, 58, 12, '#fde047')}
+      {star(36, 76, 5, '#facc15')}
+      {star(64, 44, 5, '#facc15')}
+      <path d="M44 22 q6 -12 12 0" fill="none" stroke="#475569" strokeWidth="3" />
+    </g>
+  ),
   paint_frost: (
     <g>
       <rect x="26" y="30" width="48" height="56" rx="6" fill="#bae6fd" stroke="#0c4a6e" strokeWidth="2" />
@@ -400,6 +410,7 @@ const ART: Record<ItemId, ReactNode> = {
   ),
   frost_frame: frame('#7dd3fc', '#e0f2fe', <g fill="#e0f2fe">{star(18, 18, 7, '#e0f2fe')}{star(82, 82, 7, '#e0f2fe')}<path d="M30 14 v6 M70 86 v-6" stroke="#bae6fd" strokeWidth="2" /></g>),
   euro_frame: frame('#1d4ed8', '#facc15', <g>{[0, 1, 2, 3, 4, 5, 6, 7].map((i) => star(50 + 38 * Math.cos((Math.PI / 4) * i), 50 + 38 * Math.sin((Math.PI / 4) * i), 4.5, '#facc15'))}</g>),
+  night_frame: frame('#1e3a8a', '#fde047', <g>{star(18, 18, 6, '#fde047')}{star(82, 18, 4, '#fde047')}{star(18, 82, 4, '#fde047')}{star(82, 82, 6, '#fde047')}<circle cx="50" cy="10" r="3" fill="#fef9c3" /></g>),
   xmas_frame: frame('#dc2626', '#16a34a', <g><circle cx="18" cy="18" r="5" fill="#16a34a" /><circle cx="82" cy="18" r="5" fill="#facc15" /><circle cx="18" cy="82" r="5" fill="#facc15" /><circle cx="82" cy="82" r="5" fill="#16a34a" /></g>),
 };
 
