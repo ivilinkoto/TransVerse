@@ -125,6 +125,7 @@ import { postStaffAlerts } from '@/server/discord/staff-alerts';
 import { starvedCountryAlerts } from './game-health';
 import { awardSantas, awardSnowKings } from './first-snow';
 import { awardPassGuardians, ensurePassLoads } from './road-service';
+import { awardWinterGames } from './winter-games';
 import { postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
@@ -423,6 +424,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await awardSnowKings(db, now);
       await awardSantas(db, now);
       await awardPassGuardians(db, now);
+      await awardWinterGames(db, now);
     });
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
     // 1.2.6: the question of the day in the global chat.

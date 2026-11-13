@@ -29,6 +29,9 @@ export const TITLES: Record<string, { label: string; color: string }> = {
   // 1.4 „Пътна служба“.
   'pass-guardian': { label: 'Пазител на прохода', color: '#93c5fd' },
   'pass-keeper': { label: 'Пътен служител', color: '#bfdbfe' },
+  // 1.4 „Зимни игри на компаниите“.
+  'winter-games-champion': { label: 'Шампион на Зимните игри', color: '#fde68a' },
+  'xmas-base': { label: 'Най-красивата коледна база', color: '#86efac' },
 };
 export const isTitle = (id: string) => id in TITLES;
 

@@ -226,6 +226,8 @@ export const FEATURES = {
   road_service: '1.4',
   // 1.4 „Градски куриер“: a delivery van on the real streets of Sofia, Plovdiv and Varna (OpenStreetMap).
   city_courier: '1.4',
+  // 1.4 „Зимни игри на компаниите“ (14–27.12) and „Най-красивата коледна база“.
+  winter_games: '1.4',
   plot_guests: '1.4',
   livery: '1.4',
   maintenance: '1.4',

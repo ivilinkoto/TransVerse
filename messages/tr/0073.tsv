@@ -529,3 +529,40 @@ ae1b7ed238	Shifts today: {0}	Смен сегодня: {0}
 bf4cfcd092	contributors	участники
 6a3f495563	↶ Back	↶ Назад
 651d7fa79f	Tap a junction and the van takes the shortest way. The navigator does not know the jams (red) — add stops to go around them.	Нажми на перекрёсток, и фургон поедет кратчайшим путём. Навигатор не знает о пробках (красные) — добавь остановки, чтобы объехать их.
+96c2332d99	{0} votes	{0} голосов
+1f6d065a66	{0} – {1}: five disciplines, medals and a champion.	{0} – {1}: пять дисциплин, медали и чемпион.
+4324f44955	In the daily disciplines a company's best {0} members of the day count. The top three in each discipline get money for the treasury.	В ежедневных дисциплинах считаются лучшие {0} участников компании за день. Первые трое в каждой дисциплине получают деньги в кассу.
+c5191c0da6	You have already voted today — again tomorrow.	Сегодня ты уже голосовал — снова завтра.
+b6251b0e6d	One vote a day for a base of another company. The top three get {0}, {1} and {2}, and the winner a title for every member.	Один голос в день за базу другой компании. Первые три получают {0}, {1} и {2}, а победитель — титул для каждого участника.
+2d28b7fbc2	Winter Games	Зимние игры
+e274de6865	Winter Games · {0}: place {1}	Зимние игры · {0}: {1} место
+1db2ef52e3	Company Winter Games	Зимние игры компаний
+a38e31fb2d	Company Winter Games (14 – 27 December): five disciplines — Night run, Route of the day, City courier, tonnes on the road and materials for the base. In the daily ones a company's best 5 members of the day count. Medals for the top three in each discipline and money for the treasury; the company with the most medals is the champion — a title for every member.	Зимние игры компаний (14 – 27 декабря): пять дисциплин — Ночной рейс, Маршрут дня, Городской курьер, тонны на дорогах и материалы для базы. В ежедневных считаются лучшие 5 участников компании за день. Медали за первые три места в каждой дисциплине и деньги в кассу; компания с наибольшим числом медалей — чемпион, титул для каждого участника.
+cbe26cb65a	The Games start on {0}. Get ready!	Игры начинаются {0}. Готовьтесь!
+9744caee69	The Games are over — the prizes are in the treasuries.	Игры закончились — призы в кассах.
+43a5d23410	The Games are for companies —	Игры — для компаний:
+b77a6d2104	Your company won the Winter Games — the title “Winter Games Champion” for every member.	Ваша компания выиграла Зимние игры — титул «Чемпион Зимних игр» для каждого участника.
+c486ac5a03	The contest for the most beautiful Christmas base is not open.	Конкурс на самую красивую рождественскую базу не открыт.
+0cf901e1d2	Each member's longest run of the day; the sum of the best 5 of the day counts.	Самый дальний рейс дня каждого участника; считается сумма лучших 5 за день.
+b7b183f1fb	Each member's best shift of the day; the best 5 of the day.	Лучшая смена дня каждого участника; лучшие 5 за день.
+7097e85099	Each member's best try of the day; the best 5 of the day.	Лучшая попытка дня каждого участника; лучшие 5 за день.
+7553fb9487	The most beautiful Christmas base	Самая красивая рождественская база
+60fa9fee07	The most beautiful Christmas base: place {0}	Самая красивая рождественская база: {0} место
+e93be39a26	The most beautiful Christmas base: one vote a day for the base of another company. The top three bases get prizes for the treasury, and the winner a title for every member.	Самая красивая рождественская база: один голос в день за базу другой компании. Первые три базы получают призы в кассу, а победитель — титул для каждого участника.
+164b7ca1a6	You cannot vote for your own company's base.	Нельзя голосовать за базу своей компании.
+ec4ab96400	No medals yet.	Медалей пока нет.
+e8cccdac7d	No results yet.	Результатов пока нет.
+092fad283e	Builders	Строители
+93a631e5be	This company has no base yet.	У этой компании ещё нет базы.
+5617a1ce34	Tonnes on the road	Тонны на дорогах
+1ec6267cfd	Tonnes of materials for the company's base.	Тонны материалов для базы компании.
+ef95957e53	Tonnes the members delivered; the best 5 members.	Тонны, доставленные участниками; лучшие 5 участников.
+6dd8f00ead	Winter Games Champion	Чемпион Зимних игр
+a6c92aa59b	Winter Games champions!	Чемпионы Зимних игр!
+e25fa44736	join a company	вступи в компанию
+bf6379458c	m	м
+f1591c8eee	pts	очк.
+d015a9787e	✓ your vote today	✓ твой голос сегодня
+9a5a38df8c	🎄 Vote	🎄 Голосовать
+1f01f833e6	🎄 The most beautiful Christmas base	🎄 Самая красивая рождественская база
+73628d3185	🏅 Medal table	🏅 Медальный зачёт
