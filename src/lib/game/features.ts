@@ -220,6 +220,8 @@ export const FEATURES = {
   driver_portraits: '1.2',
   truck_pass: '1.2',
   company_plot: '1.4',
+  // 1.3.1 „Екипът“: the recruiting window, the „Кариери“ page and the applications.
+  careers: '1.3.1',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).
   christmas_night: '1.4',
   // 1.4 „Пътна служба“: real passes close in winter; salt and sand loads open them for everyone.

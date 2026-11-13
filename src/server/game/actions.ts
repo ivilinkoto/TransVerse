@@ -72,6 +72,7 @@ import { guessDailyRoute } from '@/server/game/daily-route';
 import { playCourier } from './courier';
 import { voteXmasBase } from './winter-games';
 import { claimFirstWeek } from './first-week';
+import { applyForRole } from './careers';
 import { fireStaff, hireStaff } from './base-staff';
 import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
@@ -269,6 +270,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('nightRun'), inputs: z.array(z.number().int().min(-1).max(1)).max(2250) }),
   z.object({ type: z.literal('voteXmasBase'), organizationId: id }),
   z.object({ type: z.literal('claimFirstWeek'), step: z.string().max(40) }),
+  z.object({ type: z.literal('applyForRole'), role: z.string().max(40), about: z.string().max(2000), hours: z.coerce.number().int().min(1).max(40), contact: z.string().max(200), link: z.string().max(400).optional() }),
   z.object({ type: z.literal('hireBaseStaff'), role: z.enum(['mechanic', 'dispatcher', 'cook', 'instructor']) }),
   z.object({ type: z.literal('fireBaseStaff'), role: z.enum(['mechanic', 'dispatcher', 'cook', 'instructor']) }),
   z.object({ type: z.literal('courierRun'), city: z.enum(['sofia', 'plovdiv', 'varna']), taps: z.array(z.number().int().min(0).max(100_000)).max(80) }),
@@ -747,6 +749,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   courierRun: 'city_courier',
   voteXmasBase: 'winter_games',
   claimFirstWeek: 'first_week',
+  applyForRole: 'careers',
   hireBaseStaff: 'base_staff',
   fireBaseStaff: 'base_staff',
   learnSkill: 'driver_skills',
@@ -1014,6 +1017,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await hireStaff(db, user.id, input.role, new Date())) };
     case 'fireBaseStaff':
       return await fireStaff(db, user.id, input.role, new Date());
+    case 'applyForRole':
+      return await applyForRole(db, user.id, input, new Date());
     case 'claimFirstWeek':
       return await claimFirstWeek(db, user.id, input.step, new Date());
     case 'voteXmasBase':

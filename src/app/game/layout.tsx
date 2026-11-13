@@ -23,6 +23,8 @@ import { globalEvents, notifications } from '@/server/db/schema';
 import { TutorialCoach } from '@/components/game/TutorialCoach';
 import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
 import { WhatsNew } from '@/components/game/WhatsNew';
+import { CareersPitch } from '@/components/careers/CareersPitch';
+import { CareersWindow } from '@/components/careers/CareersWindow';
 import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isHalloween } from '@/lib/game/halloween';
 import { staffAttention } from '@/server/admin';
@@ -138,6 +140,10 @@ export default async function GameLayout({ children, modal }: { children: React.
         {/* 1.2.2: a short tour of the new menu, once (not over the release notes or the tutorial). */}
         {features.nav_v2 && !fresh && !(tutorial.active && tutorial.step) && !unlocks.length && !user.uiPrefs?.seenPages?.includes('nav-tour-v2') && <MenuTour />}
         {back && !unlocks.length && <WelcomeBack summary={back} />}
+        {/* 1.3.1 „Екипът“: once, not over the release notes, the tutorial or the welcome-back summary. */}
+        {features.careers && !fresh && !back && !(tutorial.active && tutorial.step) && !unlocks.length && !user.seenHints.includes('careers') && (
+          <CareersWindow><CareersPitch compact /></CareersWindow>
+        )}
         {fresh && !(tutorial.active && tutorial.step) && (
           <WhatsNew version={fresh.version}>
             <ReleaseTitle release={fresh} />
