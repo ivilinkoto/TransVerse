@@ -22,6 +22,7 @@ import { TopBar } from '@/components/game/TopBar';
 import { globalEvents, notifications } from '@/server/db/schema';
 import { TutorialCoach } from '@/components/game/TutorialCoach';
 import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
+import { PageVisit } from '@/components/game/PageVisit';
 import { WhatsNew } from '@/components/game/WhatsNew';
 import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isHalloween } from '@/lib/game/halloween';
@@ -138,6 +139,7 @@ export default async function GameLayout({ children, modal }: { children: React.
         </div>
         <MobileNav badges={navBadges} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <LiveUpdates />
+        <PageVisit />
         {features.game_fx && <MotionInit />}
         {features.game_fx && <FxHost />}
         {features.accessibility && <A11yApply />}

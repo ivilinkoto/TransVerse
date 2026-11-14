@@ -802,3 +802,15 @@ ab912135c9	Competitions	Соревнования
 ce12ca4aaa	first start	первый запуск
 d3b3b8c2b8	site	сайт
 c053bd1956	site: {0} in 24 h	сайт: {0} за 24 ч
+1b2ec69d96	Active players in {0} days: {1}. The share is of them.	Активных игроков за {0} дней: {1}. Доля — от них.
+ccdf5036d5	Counting starts today — in a few days you will see here which pages are opened.	Подсчёт начинается сегодня — через несколько дней здесь будет видно, какие страницы открывают.
+69f99be9fb	Counted since {0}. A page not in the list has not been opened by anyone.	Считается с {0}. Страницу, которой нет в списке, никто не открывал.
+a653ac867e	Players who got experience from it (mini-games, missions, deliveries…).	Игроки, получившие от этого опыт (мини-игры, миссии, доставки…).
+9c4817d4ea	Usage	Использование
+95031cfd82	How many different players use each thing over the last {0} days — to decide what stays in the game. Players only, without the team.	Сколько разных игроков пользуются каждой вещью за последние {0} дней — чтобы решить, что остаётся в игре. Только игроки, без команды.
+2d33df73b2	No data for this period.	Нет данных за этот период.
+3cc7d07cc6	Experience by source	Опыт по источнику
+83c4d12307	Pages opened	Открытые страницы
+d926e494a8	Money by kind	Деньги по видам
+988b6d214d	Owners of carriers with entries of this kind (insurance, shares, smuggling, rentals…).	Владельцы перевозчиков с движением этого вида (страховки, акции, контрабанда, аренда…).
+d9fd971c42	ТрансКоин by source	ТрансКоин по источнику

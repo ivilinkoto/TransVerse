@@ -39,7 +39,6 @@ const ABOUT: Record<string, string> = {
   '/game/night-run': 'Аркадно каране нощем',
   '/game/courier': 'Колети по истински улици',
   '/game/big-run': 'Седмичният маршрут',
-  '/game/parking': 'Паркирай камиона',
   '/game/challenges': 'Предизвикателството на седмицата',
   '/game/story': 'Историята, глава по глава',
   '/game/case': 'Разкрий кой е взел пратката',

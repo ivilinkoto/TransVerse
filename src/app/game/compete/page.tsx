@@ -39,7 +39,6 @@ const CARDS: Record<string, { emoji: string; text: string }> = {
   '/game/easter': { emoji: '🥚', text: 'Великденските мисии и яйцата' },
   '/game/story': { emoji: '📖', text: 'Историята на TransVerse, глава по глава' },
   '/game/case': { emoji: '🕵️', text: 'Разкрий кой е взел пратката' },
-  '/game/parking': { emoji: '🅿️', text: 'Мини-игра: паркирай камиона' },
   '/game/challenges': { emoji: '🎯', text: 'Предизвикателството на седмицата и Евротур' },
   '/game/leaderboards': { emoji: '🏆', text: 'Най-добрите играчи и компании' },
   '/game/league': { emoji: '📊', text: 'Седмичната лига: качи се нагоре' },

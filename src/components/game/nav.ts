@@ -131,7 +131,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/big-run', label: 'Голям рейс', feature: 'big_run', group: 'Днес', core: true },
       { href: '/game/story', label: 'Историята', feature: 'story', group: 'Днес' },
       { href: '/game/case', label: 'Изгубена пратка', feature: 'lost_cargo', group: 'Днес' },
-      { href: '/game/parking', label: 'Паркирай', feature: 'parking_game', group: 'Днес' },
       { href: '/game/daily-route', label: 'Пътят на деня', feature: 'daily_route', group: 'Днес', core: true },
       { href: '/game/night-run', label: 'Нощен рейс', feature: 'night_run', group: 'Днес', core: true },
       { href: '/game/courier', label: 'Градски куриер', feature: 'city_courier', group: 'Днес' },
@@ -297,7 +296,7 @@ const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
  */
 const PLAY_GROUPS: { name: string; pages: Place[] }[] = [
   { name: 'Награди', pages: [['/game/missions', true], ['/game/seasons', true], ['/game/inventory', true], ['/game/events'], ['/game/inventory/workshop'], ['/game/inventory/album'], ['/game/inventory/hall']] },
-  { name: 'Всеки ден', pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/parking'], ['/game/challenges'], ['/game/story'], ['/game/case'], ['/game/crisis'], ['/game/road-service']] },
+  { name: 'Всеки ден', pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/story'], ['/game/case'], ['/game/crisis'], ['/game/road-service']] },
   { name: 'Състезания', pages: [['/game/leaderboards', true], ['/game/league'], ['/game/winter-games'], ['/game/duels'], ['/game/rally'], ['/game/cities'], ['/game/cup']] },
   { name: 'Общност', pages: [['/game/news'], ['/game/ideas'], ['/game/player-challenges'], ['/game/cups'], ['/game/predictions'], ['/game/livery'], ['/game/truck-contest']] },
   { name: 'Колекции', pages: [['/game/progress'], ['/game/collection'], ['/game/postcards'], ['/game/my-map']] },

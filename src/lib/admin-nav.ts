@@ -26,6 +26,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     pages: [
       { href: '/admin/health', label: 'Здраве на играта', icon: 'health', admin: true },
       { href: '/admin/adoption', label: 'Как се играе 1.3', icon: 'adoption', admin: true },
+      { href: '/admin/usage', label: 'Използване', icon: 'adoption', admin: true },
       { href: '/admin/economy', label: 'Икономика', icon: 'economy', admin: true },
       { href: '/admin/events', label: 'Ивенти', icon: 'events' },
       { href: '/admin/items', label: 'Предмети и кейсове', icon: 'items', admin: true },

@@ -14,7 +14,6 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
-import { playParking } from '@/server/game/parking';
 import { playLane } from '@/server/game/cabin';
 import { announceCup, cancelCup, createCup, joinCommunityCup, removeFromCup } from '@/server/game/community-cups';
 import { CUP_METRICS } from '@/lib/game/community-cups';
@@ -374,7 +373,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('setSpecialization'), specialization: z.enum(Object.keys(SPECIALIZATIONS) as [Specialization, ...Specialization[]]).nullable() }),
   z.object({ type: z.literal('postRecruitment'), kind: z.enum(['company', 'driver']), text: z.string().max(400), minLevel: z.coerce.number().int().min(1).max(100).optional() }),
   z.object({ type: z.literal('removeRecruitment'), postId: id }),
-  z.object({ type: z.literal('parking'), inputs: z.array(z.number().int().min(-1).max(1)).max(400) }),
   z.object({
     type: z.literal('cupCreate'),
     name: z.string().min(1).max(60),
@@ -604,7 +602,6 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   sellShares: 'share_market',
   staffBus: 'staff_bus',
   // testDrive: startTestDrive checks the release itself (1.1.3.1: the new models can be tried earlier).
-  parking: 'parking_game',
   lane: 'cabin',
   cupCreate: 'community_cups',
   cupJoin: 'community_cups',
@@ -1418,8 +1415,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'lane':
       return { ok: true, ...(await playLane(db, user.id, input.deliveryId, input.inputs)) };
-    case 'parking':
-      return { ok: true, ...(await playParking(db, user.id, input.inputs)) };
     case 'scrapVehicle':
       return { ok: true, ...(await scrapVehicle(db, user.id, input.vehicleId)) };
     case 'repairWithPart':

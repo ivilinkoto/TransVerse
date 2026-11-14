@@ -320,7 +320,6 @@ export const FEATURES = {
   driver_of_month: '1.6',
   test_drive: '1.6',
   rush_hour: '1.6',
-  parking_game: '1.6',
   retro_collection: '1.6',
   spring: '1.7',
   pass_opening: '1.7',
