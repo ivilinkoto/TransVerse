@@ -8,6 +8,9 @@ Type=simple
 User=deploy
 WorkingDirectory=/var/www/transverse/current
 EnvironmentFile=/etc/transverse/transverse.env
+# Keep the JavaScript heap under MemoryMax: Node then cleans up memory in time instead of the
+# process being killed for it (a killed web process = 502 for every player until it is back).
+Environment=NODE_OPTIONS=--max-old-space-size=256
 ExecStart=/usr/bin/node --enable-source-maps dist/worker.js
 Restart=always
 RestartSec=5

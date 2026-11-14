@@ -794,3 +794,11 @@ edfcb2253b	The first collectors	Первые коллекционеры
 877e9c0f43	The season and the pass with rewards	Сезон и пропуск с наградами
 ab912135c9	Competitions	Соревнования
 741cf150ea	The board shows only what waits for you now: the trucks, today's missions, the daily reward and the current event.	Панель показывает только то, что ждёт тебя сейчас: грузовики, сегодняшние миссии, ежедневную награду и текущий ивент.
+7caed54838	 — probably stopped for memory	 — вероятно остановлен из-за памяти
+3dc5c38a27	Every restart of the site = a few seconds of 502 for the players. Uploading an update restarts it too.	Каждый перезапуск сайта = несколько секунд 502 для игроков. Загрузка обновления тоже перезапускает.
+88b474dc79	No starts recorded yet.	Запусков пока нет.
+50fda2992f	Server restarts	Перезапуски сервера
+5696efb873	before that: {0} MB memory, ran {1} min	до этого: {0} МБ памяти, работал {1} мин
+ce12ca4aaa	first start	первый запуск
+d3b3b8c2b8	site	сайт
+c053bd1956	site: {0} in 24 h	сайт: {0} за 24 ч

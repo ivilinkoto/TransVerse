@@ -9,6 +9,7 @@ import { loadSecretsFile } from '../server/secrets';
 import { worldTick } from '../server/game/world';
 import { startGateway } from '../server/discord/gateway';
 import { registerCommands } from '../server/discord/register';
+import { watchProcess } from '../server/process-health';
 
 const INTERVAL_MS = Number(process.env.WORKER_INTERVAL_MS ?? 15_000);
 let running = true;
@@ -16,6 +17,7 @@ let running = true;
 async function loop() {
   loadSecretsFile();
   const db = getDb();
+  watchProcess(getDb, 'worker');
   console.log(`[worker] started, tick every ${INTERVAL_MS} ms`);
   // The Discord bot (when its secrets are set): slash commands and the live connection for the chat bridge.
   registerCommands().then((n) => n && console.log(`[discord] ${n} commands registered`)).catch((e) => console.warn('[discord] commands failed', (e as Error).message));
