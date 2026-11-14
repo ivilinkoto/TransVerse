@@ -1,5 +1,5 @@
 import type { FeatureId } from '@/lib/game/features';
-import { Briefcase, Backpack, BookOpen, Building2, ClipboardList, Gamepad2, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { Backpack, BookOpen, Building2, ClipboardList, Gamepad2, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
@@ -171,8 +171,6 @@ export const ACCOUNT_MENU = [
   { href: '/game/shop', label: 'Магазин и VIP', icon: Gem },
   { href: '/game/invite', label: 'Покани приятел', icon: UserPlus },
   { href: '/game/mentor', label: 'Наставник', icon: GraduationCap },
-  // 1.3.1 „Екипът“.
-  { href: '/game/careers', label: 'Кариери в TransVerse', icon: Briefcase },
   { href: '/game/updates', label: 'Обновления', icon: ScrollText },
   { href: '/game/settings', label: 'Настройки', icon: Settings },
   { href: '/game/help', label: 'Помощ и правила', icon: BookOpen },

@@ -104,8 +104,6 @@ export const BADGES: Record<string, { label: string; description: string }> = {
   'winter-games-champion': { label: 'Шампион на Зимните игри', description: 'Член на компанията с най-много медали на Зимните игри.' },
   'xmas-base': { label: 'Най-красивата коледна база', description: 'Член на компанията с най-много гласове в конкурса за коледна база.' },
   'first-week': { label: 'Първите 7 дни', description: 'Всички стъпки на първата седмица в TransVerse.' },
-  // 1.3.1 „Екипът“.
-  team: { label: 'Екип TransVerse', description: 'Член на екипа, който развива TransVerse.' },
   'pumpkin-2026': { label: 'Тиквен шофьор 2026', description: 'Изпълни всички хелуински мисии в „Нощта на тиквите“ 2026.' },
   'santa-2026': { label: 'Коледен шофьор 2026', description: 'Изпълни всички коледни мисии в „Коледна треска“ 2026.' },
   'album-at': { label: 'Албум: Австрия', description: 'Достави до всичките 20 най-големи града в Австрия (колекция „Градове“).' },

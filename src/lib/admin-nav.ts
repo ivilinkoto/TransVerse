@@ -2,7 +2,7 @@
  * 1.2.3.1: the admin menu in groups. `admin: true` pages are for administrators
  * only (support staff do not see them and are sent back to the dashboard).
  */
-export type AdminIcon = 'gauge' | 'search' | 'users' | 'health' | 'sources' | 'retention' | 'journey' | 'tickets' | 'reports' | 'urgent' | 'events' | 'payments' | 'promo' | 'coins' | 'items' | 'economy' | 'mail' | 'system' | 'readiness' | 'audit' | 'partners' | 'adoption' | 'careers';
+export type AdminIcon = 'gauge' | 'search' | 'users' | 'health' | 'sources' | 'retention' | 'journey' | 'tickets' | 'reports' | 'urgent' | 'events' | 'payments' | 'promo' | 'coins' | 'items' | 'economy' | 'mail' | 'system' | 'readiness' | 'audit' | 'partners' | 'adoption';
 
 export interface AdminPage { href: string; label: string; icon: AdminIcon; admin?: boolean }
 export interface AdminGroup { id: string; label: string; pages: AdminPage[] }
@@ -18,7 +18,6 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { href: '/admin/sources', label: 'Откъде идват играчите', icon: 'sources', admin: true },
       { href: '/admin/retention', label: 'Задържане', icon: 'retention', admin: true },
       { href: '/admin/journey', label: 'Пътят на играча', icon: 'journey', admin: true },
-      { href: '/admin/careers', label: 'Кандидатури', icon: 'careers', admin: true },
     ],
   },
   {

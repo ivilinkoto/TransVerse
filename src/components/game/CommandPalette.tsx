@@ -42,7 +42,7 @@ export function CommandPalette() {
   const items = useMemo(
     () => [
       ...SECTIONS.flatMap((s) => (s.tabs?.length ? s.tabs.filter((t) => (!t.feature || has(t.feature)) && (!t.hiddenWith || !has(t.hiddenWith))).map((t) => ({ href: t.href, label: t.label, where: s.label })) : [{ href: s.href, label: s.label, where: '' }])),
-      ...ACCOUNT_MENU.filter((m) => m.href !== '/game/careers' || has('careers')).map((m) => ({ href: m.href, label: m.label, where: profile })),
+      ...ACCOUNT_MENU.map((m) => ({ href: m.href, label: m.label, where: profile })),
     ].filter((x, i, all) => all.findIndex((y) => y.href === x.href) === i),
     [has, profile],
   );

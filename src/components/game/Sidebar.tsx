@@ -281,7 +281,6 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
   const pathname = usePathname();
   const router = useRouter();
   const mentor = useFeature('mentor');
-  const careers = useFeature('careers');
   const has = useFeatures();
   const player = useNavPlayer();
   const simple = useFeature('simple_nav');
@@ -338,7 +337,7 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
             <section>
               <h2 className="label mb-2 flex items-center justify-between gap-2">{tr('Профил')}<span className="sm:hidden"><LanguageSwitcher /></span></h2>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {ACCOUNT_MENU.filter((item) => (mentor || item.href !== '/game/mentor') && (careers || item.href !== '/game/careers')).map((item) => (
+                {ACCOUNT_MENU.filter((item) => (mentor || item.href !== '/game/mentor')).map((item) => (
                   <Link key={item.href} href={item.href} onClick={onClose} className={`${tile} ${pathname.startsWith(item.href) ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
                     <item.icon className={`h-5 w-5 ${item.href === '/game/shop' ? 'text-gold-400' : 'text-mist-400'}`} />
                     {tx(item.label)}

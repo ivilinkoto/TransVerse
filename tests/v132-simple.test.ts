@@ -12,7 +12,7 @@ describe('1.3.2 „Просто“', () => {
     expect(FEATURES.simple_menu).toBe('1.3.2');
     const r = releaseByVersion('1.3.2')!;
     expect(r.name).toBe('Просто');
-    expect(new Date(r.publishedAt) > new Date(releaseByVersion('1.3.1')!.publishedAt)).toBe(true);
+    expect(new Date(r.publishedAt) > new Date(releaseByVersion('1.3')!.publishedAt)).toBe(true);
     expect(navSections(all)).toBe(SECTIONS_V3);
   });
 

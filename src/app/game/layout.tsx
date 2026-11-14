@@ -23,8 +23,6 @@ import { globalEvents, notifications } from '@/server/db/schema';
 import { TutorialCoach } from '@/components/game/TutorialCoach';
 import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
 import { WhatsNew } from '@/components/game/WhatsNew';
-import { CareersPitch } from '@/components/careers/CareersPitch';
-import { CareersWindow } from '@/components/careers/CareersWindow';
 import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isHalloween } from '@/lib/game/halloween';
 import { staffAttention } from '@/server/admin';
@@ -94,16 +92,15 @@ export default async function GameLayout({ children, modal }: { children: React.
   });
   // The windows that open by themselves: at most one at a time (1.3.2 „Просто“), never over the
   // tutorial or the terms. The release notes come first, then what the level unlocked, then
-  // „Докато те нямаше“ and the recruiting window. With „Просто“ the menu tour is gone (five places need none).
+  // „Докато те нямаше“. With „Просто“ the menu tour is gone (five places need none).
   const coaching = !!(tutorial.active && tutorial.step);
   const simpleMenu = !!features.simple_menu;
-  const popup: 'news' | 'unlocks' | 'tour' | 'back' | 'careers' | null = (() => {
+  const popup: 'news' | 'unlocks' | 'tour' | 'back' | null = (() => {
     if (simpleMenu && !user.termsAcceptedAt) return null;
     if (fresh && !coaching) return 'news';
     if (unlocks.length) return 'unlocks';
     if (!simpleMenu && features.nav_v2 && !fresh && !coaching && !user.uiPrefs?.seenPages?.includes('nav-tour-v2')) return 'tour';
     if (back) return 'back';
-    if (features.careers && !fresh && !coaching && !user.seenHints.includes('careers')) return 'careers';
     return null;
   })();
   return (
@@ -154,8 +151,6 @@ export default async function GameLayout({ children, modal }: { children: React.
         {/* 1.2.2: a short tour of the new menu, once (not over the release notes or the tutorial). */}
         {popup === 'tour' && <MenuTour />}
         {popup === 'back' && back && <WelcomeBack summary={back} />}
-        {/* 1.3.1 „Екипът“: once, not over the release notes, the tutorial or the welcome-back summary. */}
-        {popup === 'careers' && <CareersWindow><CareersPitch compact /></CareersWindow>}
         {popup === 'news' && fresh && (
           <WhatsNew version={fresh.version}>
             <ReleaseTitle release={fresh} />

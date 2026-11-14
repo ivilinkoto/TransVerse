@@ -42,7 +42,6 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const mentor = useFeature('mentor');
-  const careers = useFeature('careers');
   // 1.3.2 „Просто“: a shorter avatar menu (the mentor and the updates are found with the search).
   const simpleMenu = useFeature('simple_menu');
   const report = useFeature('report_problem');
@@ -102,7 +101,7 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
             <div className="num mt-1 text-[11px] text-mist-400">{t('{0}% до ниво {1}', pct, level.level + 1)}</div>
           </div>
           <div className="mt-1.5">
-            {(simpleMenu ? ACCOUNT_MENU_V3 : ACCOUNT_MENU).filter((item) => (mentor || item.href !== '/game/mentor') && (careers || item.href !== '/game/careers')).map((item) => {
+            {(simpleMenu ? ACCOUNT_MENU_V3 : ACCOUNT_MENU).filter((item) => (mentor || item.href !== '/game/mentor')).map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
