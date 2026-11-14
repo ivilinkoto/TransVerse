@@ -27,6 +27,8 @@ export default async function RewardsPage() {
   await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.nav_v2) redirect('/game/inventory');
+  // 1.3.2 „Просто“: one start page for games and rewards.
+  if (features.simple_menu) redirect('/game/play');
   const [missions, pass, inv, week, events, run] = await Promise.all([
     claimableCount(db, user.id),
     features.truck_pass ? passView(db, user.id, now) : null,

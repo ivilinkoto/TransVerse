@@ -70,6 +70,8 @@ export default async function CompetePage() {
   await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.nav_v2) redirect('/game/leaderboards');
+  // 1.3.2 „Просто“: one start page for games and rewards.
+  if (features.simple_menu) redirect('/game/play');
   const has = (f: FeatureId) => !!features[f];
   const holiday = [isHalloween(now) && 'halloween', isChristmas(now) && 'christmas', isMarta(now) && 'marta', isSpring(now) && 'spring', isEaster(now) && 'easter'].filter(Boolean).join(',') || null;
   const section = SECTIONS_V2.find((s) => s.key === 'compete')!;

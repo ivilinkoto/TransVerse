@@ -1,6 +1,10 @@
 /** 1.2.2: one icon per page for the „Още“ sheet tiles (falls back to the section's icon). */
 export const NAV_EMOJI: Record<string, string> = {
   '/game': '🏠',
+  '/game/play': '🎮',
+  '/game/courier': '🚐',
+  '/game/road-service': '🧂',
+  '/game/winter-games': '⛷️',
   '/game/analytics': '📊',
   '/game/auctions': '🔨',
   '/game/big-run': '🏁',

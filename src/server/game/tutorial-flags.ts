@@ -15,6 +15,7 @@ export async function tutorialPending(db: DbOrTx, userId: string, step: string):
  * the same pages, so the tutorial's visit steps are still marked inside them.
  * The db and userId are kept so the callers stay as they are.
  */
-export async function windowsLive(db: DbOrTx, userId: string, features: { game_ui?: boolean }): Promise<boolean> {
-  return !!features.game_ui;
+export async function windowsLive(db: DbOrTx, userId: string, features: { game_ui?: boolean; simple_menu?: boolean }): Promise<boolean> {
+  // 1.3.2 „Просто“: sections are full pages again; windows stay for the small tools only.
+  return !!features.game_ui && !features.simple_menu;
 }
