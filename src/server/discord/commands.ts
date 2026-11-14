@@ -65,7 +65,6 @@ export const COMMANDS = [
   { name: 'карта', description: 'Картинка с камионите ти на картата (свързан акаунт)' },
   { name: 'конвой', description: 'Обяви в #конвои курса, с който току-що тръгна — другите се включват (свързан акаунт)' },
   { name: 'финанси', description: 'Приходи, нетно и най-добрите линии за последните 7 дни (свързан акаунт)' },
-  { name: 'дуел', description: 'Дуел 1 срещу 1: кой ще превози повече тонове за седмица (без член — твоите дуели)', options: [{ type: 6, name: 'потребител', description: 'Кого предизвикваш', required: false }] },
   { name: 'пропуск', description: 'Truck Pass: ниво и наградите, които те чакат (свързан акаунт)' },
   { name: 'борса', description: 'Най-добре платените товари от град', options: [{ type: 3, name: 'град', description: 'Град (напр. София)', required: true }] },
   { name: 'дневна', description: 'Вземи дневната награда' },
@@ -75,7 +74,6 @@ export const COMMANDS = [
   { name: 'камион', description: 'Картичка с твой камион — боя, ливрея, части (свързан акаунт)', options: [{ type: 3, name: 'номер', description: 'Регистрационен номер (без него — последно купеният)', required: false }] },
   { name: 'съюз', description: 'Съюзът на компанията ти (или съюз по име): компании, седмица и съюзна база', options: [{ type: 3, name: 'име', description: 'Име на съюза', required: false }] },
   { name: 'конвой-голям', description: 'Обявените конвои, в които има място (голям конвой — до 5 камиона)' },
-  { name: 'турнир', description: 'Пролетната купа: кръгът, двойките и километрите' },
   {
     name: 'маршрут',
     description: 'Път с камион между два града: километри, време, граници, тол',
@@ -83,7 +81,6 @@ export const COMMANDS = [
   },
   { name: 'държава', description: 'Държава в играта: дизел днес, тол, забрани, празник, крал и най-добрите товари', options: [{ type: 3, name: 'име', description: 'Държава (напр. Италия)', required: true }] },
   { name: 'предизвикателство', description: 'Предизвикателството на седмицата: мярката, първите и твоето място' },
-  { name: 'албум', description: 'Колекцията от градове (без име — твоята)', options: [{ type: 3, name: 'играч', description: 'Име в играта', required: false }] },
   { name: 'ивент', description: 'Текущият ивент на общността и твоят принос' },
   { name: 'битка', description: 'Битката на компанията ти тази седмица' },
   { name: 'тикет', description: 'Отвори тикет към екипа на TransVerse' },
@@ -205,16 +202,12 @@ export async function runCommand(db: DbOrTx, input: CommandInput, now = new Date
       return alliance(db, input.options['име'] ?? null, me?.id ?? null, now);
     case 'конвой-голям':
       return bigConvoys(db, now);
-    case 'турнир':
-      return cup(db, now);
     case 'маршрут':
       return route(db, input.options['от'] ?? '', input.options['до'] ?? '', now);
     case 'държава':
       return country(db, input.options['име'] ?? '', now);
     case 'предизвикателство':
       return challenge(db, me?.id ?? null, now);
-    case 'албум':
-      return album(db, input.options['играч'] ?? me?.username ?? null, now);
     case 'свързване':
       return { ephemeral: true, content: me ? tr('Свързан си като **{0}**. Отвързваш от Настройки → Discord.', me.username) : linkHint() };
     default:

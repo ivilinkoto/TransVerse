@@ -53,7 +53,6 @@ const COMMAND_HANDLERS: Record<string, (ctx: Ctx) => Answer | Promise<Answer>> =
   карта: mapCommand,
   конвой: convoyCommand,
   финанси: financeView,
-  дуел: duelCommand,
   пропуск: passCommand,
   новина: newsCommand,
   анкета: pollCommand,

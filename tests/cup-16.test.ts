@@ -38,38 +38,6 @@ describe('the cup rules', () => {
 });
 
 describe('v1.6 company and community', () => {
-  it('the spring cup: sign-up, seeding by level, byes, the prizes once', async () => {
-    await db().delete(tournamentMatches).where(eq(tournamentMatches.tournament, SPRING_CUP.key));
-    await db().delete(tournamentEntries).where(eq(tournamentEntries.tournament, SPRING_CUP.key));
-    const signup = new Date('2027-03-25T10:00:00Z');
-    const [p1, p2, p3, low] = [await newPlayer(), await newPlayer(), await newPlayer(), await newPlayer()];
-    for (const [p, level] of [[p1, 10], [p2, 8], [p3, 6]] as const) await db().update(users).set({ level }).where(eq(users.id, p.userId));
-    // Signed up in the "wrong" order: the seeds follow the level.
-    for (const p of [p3, p1, p2]) await joinCup(db(), p.userId, signup);
-    expect(await code(joinCup(db(), p1.userId, signup))).toBe('already');
-    expect(await code(joinCup(db(), low.userId, signup))).toBe('level');
-    expect(await code(joinCup(db(), p1.userId, SPRING_CUP.rounds[0].from))).toBe('closed');
-
-    await runCup(db(), new Date(SPRING_CUP.rounds[0].from.getTime() + 60_000));
-    const seeds = await db().select().from(tournamentEntries).where(eq(tournamentEntries.tournament, SPRING_CUP.key));
-    expect(Object.fromEntries(seeds.map((s) => [s.userId, s.seed]))).toEqual({ [p1.userId]: 1, [p2.userId]: 2, [p3.userId]: 3 });
-    expect(await db().select().from(tournamentMatches).where(and(eq(tournamentMatches.tournament, SPRING_CUP.key), eq(tournamentMatches.round, 1)))).toHaveLength(8);
-
-    // After the final: byes carry 1, 2 and 3 on; 3 and 2 meet in the semi-final (tie → seed 2), 1 beats 2 in the final.
-    const [c1, c2, c3] = [await coins(p1.userId), await coins(p2.userId), await coins(p3.userId)];
-    const end = new Date(SPRING_CUP.rounds[3].to.getTime() + SPRING_CUP.graceMs + 60_000);
-    await runCup(db(), end);
-    await runCup(db(), end);
-    const [final] = await db().select().from(tournamentMatches).where(and(eq(tournamentMatches.tournament, SPRING_CUP.key), eq(tournamentMatches.round, 4)));
-    expect(final!.winnerId).toBe(p1.userId);
-    expect(await coins(p1.userId)).toBe(c1 + SPRING_CUP.prizes.champion);
-    expect(await coins(p2.userId)).toBe(c2 + SPRING_CUP.prizes.finalist);
-    expect(await coins(p3.userId)).toBe(c3 + SPRING_CUP.prizes.semifinal);
-    expect(await db().select().from(userBadges).where(and(eq(userBadges.userId, p1.userId), eq(userBadges.badge, SPRING_CUP.badge)))).toHaveLength(1);
-    const reply = await runCommand(db(), { name: 'турнир', options: {}, discordUserId: 'nobody' }, end);
-    expect(reply.embeds![0]!.title).toContain(SPRING_CUP.title);
-  });
-
   it('a specialisation pays on its cargo, changes once a month; "Картата ми" shows the trip', async () => {
     const p = await playerWithCompany();
     expect(await setSpecialization(db(), p.userId, 'general')).toEqual({ specialization: 'general' });

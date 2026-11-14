@@ -814,3 +814,37 @@ a653ac867e	Players who got experience from it (mini-games, missions, deliveries�
 d926e494a8	Money by kind	Деньги по видам
 988b6d214d	Owners of carriers with entries of this kind (insurance, shares, smuggling, rentals…).	Владельцы перевозчиков с движением этого вида (страховки, акции, контрабанда, аренда…).
 d9fd971c42	ТрансКоин by source	ТрансКоин по источнику
+840252b99a	`/конвой` — post your trip in #конвои	`/конвой` — объяви свой рейс в #конвои
+c6c75c6767	`/маршрут от до` — the truck route between two cities	`/маршрут от до` — маршрут грузовика между двумя городами
+c6f6420d38	`/рекорди [играч]` — the lane records	`/рекорди [играч]` — рекорды линий
+4fd0d41908	Your shares were bought back: {0} is in your account.	Твои акции выкуплены: {0} на твоём счёте.
+0b93229d58	The share market is closed	Биржа акций закрыта
+7884ab0554	The share market is closed: {0} shares of {1}	Биржа акций закрыта: {0} акций {1}
+b709618d65	The insurers are closed — the premium is back	Страховщики закрыты — премия возвращена
+56bc85a96d	The insurers are closed. The premium of {0} is back.	Страховщики закрыты. Премия {0} возвращена.
+f7807f4fc3	The insurance has ended	Страховка прекращена
+8feb3e86bd	Trailer hire is closed — {0} unused days	Аренда прицепов закрыта — {0} неиспользованных дней
+ae3e0d900d	Your bid of {0} TC is back.	Твоя ставка {0} TC возвращена.
+0ac1b1db11	Player challenges are closed. The prize of {0} is back.	Испытания от игроков закрыты. Награда {0} возвращена.
+52a90b2548	The challenge „{0}“ is cancelled	Испытание «{0}» отменено
+2cacb3ccf1	Community tournaments are closed. The fees and the prize are back.	Турниры сообщества закрыты. Взносы и награда возвращены.
+a767fb66bf	Community tournaments are closed: „{0}“	Турниры сообщества закрыты: «{0}»
+d9a045aa18	The tournament „{0}“ is cancelled	Турнир «{0}» отменён
+5968689566	The auction for the plate „{0}“ is closed — your bid is back	Аукцион номера «{0}» закрыт — твоя ставка возвращена
+a341ca8f08	The plate auction is closed	Аукцион номеров закрыт
+8e94628328	Discord: the commands /дуел, /турнир and /албум.	Discord: команды /дуел, /турнир и /албум.
+d86b4832e8	Shares are bought back, bids and premiums are returned, tournaments and challenges are cancelled with the money returned. You get a notification for each.	Акции выкуплены, ставки и премии возвращены, турниры и испытания отменены с возвратом денег. О каждом приходит уведомление.
+046a3e9d6f	Shares — at the price they were bought for (or today's, if higher).	Акции — по цене покупки (или по сегодняшней, если она выше).
+26be6007e8	Business: Сенки (smuggling), the share market, Economy and containers, Insurers, Rare plates, Trailer hire, Letters from clients, CB radio.	Бизнес: Тени (контрабанда), биржа акций, Экономика и контейнеры, Страховщики, Редкие номера, Аренда прицепов, Письма клиентов, CB-радио.
+b893839ac0	The leading bid in the plate auction, the premium of a running insurance, the fees and prizes of open tournaments and challenges.	Лидирующая ставка в аукционе номеров, премия действующей страховки, взносы и награды открытых турниров и испытаний.
+ad1da418d2	Returned	Возвращено
+079e0d5ec7	Collections: Postcards, My map, the city album.	Коллекции: Открытки, Моя карта, альбом городов.
+f88895536b	Removed	Убрано
+f96c93aea7	We removed 23 side systems so the important things — jobs, trucks and the company — are easier to find.	Мы убрали 23 побочные системы, чтобы главное — рейсы, грузовики и компанию — было легче найти.
+824aa28b5e	Mini-games and content: Parking, Lost cargo, The story.	Мини-игры и контент: Парковка, Потерянный груз, История.
+dfdb9e77d1	Hired trailers go back to their owners, and the renter gets the money for the unused days.	Арендованные прицепы возвращаются владельцам, а арендатор получает деньги за неиспользованные дни.
+e6fd459326	Your money comes back	Твои деньги возвращаются
+5b979fc60a	Less, but better: we remove what is hardly used so the game is clearer and faster.	Меньше, но лучше: убираем то, чем почти не пользуются, чтобы игра была понятнее и быстрее.
+ee9af4fdf7	A simpler game	Более простая игра
+5e5f880946	Cleanup	Чистка
+e9a5359a77	Competitions and community: Predictions, Player challenges, Community tournaments, the Spring cup, Duels, Rally, Cities grow, the livery contest, Truck of the month.	Соревнования и сообщество: Прогнозы, Испытания от игроков, Турниры сообщества, Весенний кубок, Дуэли, Ралли, Города растут, конкурс ливрей, Грузовик месяца.

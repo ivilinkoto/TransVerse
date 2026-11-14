@@ -37,7 +37,7 @@ import { settleTruckContest } from './truck-contest';
 import { awardKeyClients, closeAssemblies, endInternships, ownerReports, topUpKeyClientLoads } from './company-life';
 import { runCup } from './tournament';
 import { ensurePlateAuction, settlePlateAuctions } from './plates';
-import { endTrailerHires } from './trailer-hire';
+import { returnRetiredHires, settleRetired } from './retired';
 import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
@@ -247,7 +247,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'co2-week', 60 * 60_000, now, () => settleCo2Weeks(db, now));
     await every(db, 'driver-wishes', 24 * 60 * 60_000, now, () => spawnWishes(db, now));
     await every(db, 'driver-wishes-expire', 10 * 60_000, now, () => expireWishes(db, now));
-    await every(db, 'player-challenges', 5 * 60_000, now, () => settlePlayerChallenges(db, now));
+    if (featureLive('player_challenges', now)) await every(db, 'player-challenges', 5 * 60_000, now, () => settlePlayerChallenges(db, now));
     await every(db, 'night-courier', 10 * 60_000, now, () => ensureNightCouriers(db, now, provider));
     await every(db, 'last-mile', 15 * 60_000, now, () => ensureLastMile(db, now, provider));
     await every(db, 'livestock', 30 * 60_000, now, () => ensureLivestockLoads(db, now, provider));
@@ -348,7 +348,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.4: the real weather on the roads, port containers and ship calls.
     if (process.env.WEATHER !== 'off') await every(db, 'weather', 30 * 60_000, now, () => fetchWeather(db, now));
-    await every(db, 'rally', 30 * 60_000, now, async () => {
+    if (featureLive('rally', now)) await every(db, 'rally', 30 * 60_000, now, async () => {
       const rally = await ensureRally(db, now, provider);
       if (rally) await announceRally(db, rally.id, now);
       await settleRallies(db, now);
@@ -412,7 +412,11 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await settlePlateAuctions(db, now);
       await ensurePlateAuction(db, now);
     });
-    await every(db, 'trailer-hires', 10 * 60_000, now, () => endTrailerHires(db, now));
+    // „Просто“: the removed features give back what players had in them (once); hired trailers go home.
+    await every(db, 'retired', 10 * 60_000, now, async () => {
+      await settleRetired(db, now);
+      await returnRetiredHires(db, now);
+    });
     // v1.7: a few trans-European loads on the board.
     if (featureLive('trans_europe', now)) await every(db, 'trans-europe', 60 * 60_000, now, () => ensureTransEuropeLoads(db, now, provider));
     if (featureLive('urgent_raise', now)) await every(db, 'urgent-raise', 5 * 60_000, now, () => raiseUrgentPrices(db, now));
@@ -473,15 +477,15 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'together', 10 * 60_000, now, async () => {
       await settleDuels(db, now);
       await closeExpiredSharedLoads(db, now);
-      const winner = await settleLiveryContest(db, now);
+      const winner = featureLive('livery_contest', now) ? await settleLiveryContest(db, now) : null;
       if (winner) await announceLiveryWinner(db, winner, now);
     });
     await every(db, 'discord-live', 10 * 60_000, now, async () => {
       await liveBattles(db, now);
       await liveShipCalls(db, now);
-      await postLiveryEntries(db, now);
+      if (featureLive('livery_contest', now)) await postLiveryEntries(db, now);
       await syncScheduledEvents(db, now);
-      await liveRally(db, now);
+      if (featureLive('rally', now)) await liveRally(db, now);
     });
     // The Discord bot: chat bridge and messages often, announcements and roles less often.
     await every(db, 'discord-chat', 15_000, now, async () => {

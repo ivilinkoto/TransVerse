@@ -6,7 +6,7 @@ import { afterAll, describe, expect, it } from 'vitest';
  * minute earlier; the staff have it before. The new systems answer for a player
  * at the release time.
  */
-import { FEATURES, featureLive, type FeatureId } from '@/lib/game/features';
+import { FEATURES, featureLive, type FeatureId, RETIRED } from '@/lib/game/features';
 import { latestPublished, releaseByVersion } from '@/lib/game/releases';
 import { crisisAt } from '@/lib/game/crises';
 import { trekUnlocked } from '@/lib/game/winter-trek';
@@ -33,7 +33,7 @@ describe('rehearsal: 1.3 „Зимен път“ on 12.11.2026 at 10:00', () => 
   it('every 1.3 feature is off at 09:59 and on at 10:00 for players, on for the staff before', () => {
     const all = (Object.keys(FEATURES) as FeatureId[]).filter((f) => FEATURES[f] === '1.3');
     for (const f of NEW_13) expect(all, f).toContain(f);
-    for (const f of all) {
+    for (const f of all.filter((x) => !RETIRED.has(x))) {
       expect(featureLive(f, BEFORE), f).toBe(false);
       expect(featureLive(f, LIVE), f).toBe(true);
       expect(featureLive(f, BEFORE, true), f).toBe(true);

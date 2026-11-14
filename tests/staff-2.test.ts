@@ -83,7 +83,7 @@ describe('Discord in v1.5', () => {
     expect(await jobs()).toBe(before + 2);
   });
 
-  it('/рекорди and /албум', async () => {
+  it('/рекорди', async () => {
     const p = await newPlayer();
     const [a, b] = [await cityByName('Sofia'), await cityByName('Varna')];
     const now = new Date();
@@ -91,8 +91,5 @@ describe('Discord in v1.5', () => {
     await db().insert(laneRecords).values({ month, originCityId: a.id, destCityId: b.id, userId: p.userId, deliveryId: crypto.randomUUID(), minutes: 290, km: 440, setAt: now }).onConflictDoUpdate({ target: [laneRecords.month, laneRecords.originCityId, laneRecords.destCityId], set: { userId: p.userId, minutes: 290 } });
     const records = await runCommand(db(), { name: 'рекорди', options: { играч: p.username }, discordUserId: 'nobody' }, now);
     expect(records.embeds![0]!.description).toContain('4 ч 50 мин');
-    const album = await runCommand(db(), { name: 'албум', options: { играч: p.username }, discordUserId: 'nobody' }, now);
-    expect(album.embeds![0]!.title).toContain(`Албумът на ${p.username}: 0 /`);
-    expect((await runCommand(db(), { name: 'албум', options: {}, discordUserId: 'nobody' }, now)).ephemeral).toBe(true);
   });
 });

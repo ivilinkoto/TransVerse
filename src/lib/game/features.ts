@@ -427,8 +427,24 @@ export function featureDate(id: FeatureId): Date | null {
   return r ? new Date(r.publishedAt) : null;
 }
 
-/** Is the feature on for this viewer? Always for the staff; for players from the release date. */
+/**
+ * Removed from the game (14 November 2026, „Просто“): off for everyone, the staff too — no
+ * page, no menu entry, no action, no worker job. What players had in them was settled once
+ * (retired.ts: shares, bids, policies, prizes and fees came back). Their code goes away step
+ * by step; until then this switch keeps it from running.
+ */
+export const RETIRED: ReadonlySet<FeatureId> = new Set<FeatureId>([
+  'lost_cargo', 'story', 'predictions', 'player_challenges', 'community_cups', 'spring_cup', 'duels', 'rally', 'city_growth',
+  'livery_contest', 'truck_contest', 'postcards', 'my_map', 'city_album', 'smuggling', 'share_market', 'living_economy',
+  'insurers', 'plate_auction', 'trailer_hire', 'client_letters', 'cb_radio',
+]);
+
+/** The pages of the removed features; they lead to „Игри и награди“ (next.config redirects). */
+export const RETIRED_PAGES = ['/game/case', '/game/story', '/game/predictions', '/game/player-challenges', '/game/cups', '/game/cup', '/game/duels', '/game/rally', '/game/cities', '/game/livery', '/game/truck-contest', '/game/postcards', '/game/my-map', '/game/collection', '/game/underground', '/game/shares', '/game/economy', '/game/insurance', '/game/plates', '/game/trailer-hire', '/game/letters', '/game/road'];
+
+/** Is the feature on for this viewer? Always for the staff; for players from the release date. Never once removed. */
 export function featureLive(id: FeatureId, now: Date, staff = false): boolean {
+  if (RETIRED.has(id)) return false;
   if (staff) return true;
   const at = featureDate(id);
   return !at || at <= now;

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
-import { FEATURES, featureDate, featureLive, liveFeatures } from '@/lib/game/features';
+import { FEATURES, featureDate, featureLive, liveFeatures, RETIRED } from '@/lib/game/features';
 import { compareVersions, releaseByVersion } from '@/lib/game/releases';
 import { closeDb } from '@/server/db/client';
 import { users } from '@/server/db/schema';
@@ -23,12 +23,13 @@ describe('release gating', () => {
     // Before 1.2 only the earlier point releases (1.1.1) are on.
     const early = (Object.keys(FEATURES) as (keyof typeof FEATURES)[]).filter((id) => compareVersions(FEATURES[id], '1.2') < 0);
     expect(early.length).toBeGreaterThan(0);
-    expect(Object.entries(liveFeatures(before)).every(([id, on]) => on === early.includes(id as keyof typeof FEATURES))).toBe(true);
-    expect(Object.values(liveFeatures(before, true)).every(Boolean)).toBe(true);
+    // The features removed in „Просто“ (RETIRED) are off for everyone.
+    expect(Object.entries(liveFeatures(before)).every(([id, on]) => on === (early.includes(id as keyof typeof FEATURES) && !RETIRED.has(id as keyof typeof FEATURES)))).toBe(true);
+    expect(Object.entries(liveFeatures(before, true)).every(([id, on]) => on === !RETIRED.has(id as keyof typeof FEATURES))).toBe(true);
     expect(Object.keys(liveFeatures(after))).toEqual(Object.keys(FEATURES));
     // After the 1.2 release its features (and the earlier ones) are on; a later update's stay off until its own date.
     const live = liveFeatures(after);
-    expect((Object.keys(FEATURES) as (keyof typeof FEATURES)[]).every((id) => live[id] === (compareVersions(FEATURES[id], '1.2') <= 0))).toBe(true);
+    expect((Object.keys(FEATURES) as (keyof typeof FEATURES)[]).every((id) => live[id] === (compareVersions(FEATURES[id], '1.2') <= 0 && !RETIRED.has(id)))).toBe(true);
     expect(featureLive('company_plot', after)).toBe(false);
   });
 
