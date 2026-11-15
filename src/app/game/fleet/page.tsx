@@ -295,8 +295,6 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                 { href: `/game/garage#v-${v.id}`, label: tr('Сервиз'), emoji: '🔧', on: true },
                 { href: '/game/cabin', label: tr('Кабина'), emoji: '🛋️', on: features.cabin },
                 { href: '/game/trips', label: tr('Дневник'), emoji: '📓', on: features.trip_log },
-                { href: '/game/plates', label: tr('Номер'), emoji: '🔢', on: features.plate_auction },
-                { href: '/game/trailer-hire', label: tr('Ремарке'), emoji: '🔗', on: features.trailer_hire },
                 { href: `/game/garage#v-${v.id}`, label: tr('Продай'), emoji: '🏷️', on: !v.rental },
               ].filter((x) => x.on);
               return (

@@ -3,17 +3,14 @@ import { settleCo2Weeks } from './co2';
 import { closeFuelLocks } from './fuel-hedge';
 import { runLaneRepeats } from './lane-repeat';
 import { runOfficePayroll } from './office';
-import { settlePlayerChallenges } from './player-challenges';
 import { ensureLastMile, ensureLivestockLoads, ensureNightCouriers } from './special-loads';
 import { ensureWeeklyLaneLoads } from './weekly-lane';
 import { expireWishes, spawnWishes } from './wishes';
-import { coolHeat, customsWeekly } from './smuggling';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
 import { expireRelays, topUpRelays, topUpPartnerLoads } from './relay';
 import { ensureRegionProject } from './region-projects';
 import { announceConvoyHour, topUpEscortLoads } from './on-the-road';
 import { confirmRumor, pairDuos, spreadRumors } from './meet';
-import { announceCityOfWeek } from './city-growth';
 import { tickChoices } from './road-choices';
 import { playableCountries } from '@/lib/geo/scope';
 import { and, eq, gt, lte, sql } from 'drizzle-orm';
@@ -23,27 +20,19 @@ import { upgradeApproximateRoutes } from '@/server/geo/route-service';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { settleClientContracts } from './clients';
 import { driverMoods } from './moods';
-import { ensureRally, settleRallies } from './rally';
 import { settleWeeklyChallenge } from './challenges';
 import { settleCountryKings } from './kings';
 import { payHoldingFees } from './holdings';
 import { ensureIntermodal, releaseIntermodal } from './intermodal';
-import { settleCups } from './community-cups';
 import { settleTerritories } from './territories';
-import { pruneLiveRoad } from './live-road';
-import { payDividends, updateSharePrices } from './shares';
 import { runRelief } from './relief';
-import { settleTruckContest } from './truck-contest';
 import { awardKeyClients, closeAssemblies, endInternships, ownerReports, topUpKeyClientLoads } from './company-life';
-import { runCup } from './tournament';
-import { ensurePlateAuction, settlePlateAuctions } from './plates';
 import { returnRetiredHires, settleRetired } from './retired';
 import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
 import { settleDivisions } from './competition';
-import { settlePredictions } from './predictions';
-import { announceRally, syncScheduledEvents } from '@/server/discord/scheduled';
+import { syncScheduledEvents } from '@/server/discord/scheduled';
 import { ensureHalloweenEvent, HALLOWEEN_DEF } from './halloween';
 import { rewardEarlierVerified } from '@/server/auth/email-reward';
 import { runDueDeletions } from '@/server/auth/account-close';
@@ -102,19 +91,17 @@ import { updateStats } from '@/server/discord/stats';
 import { syncTickets } from '@/server/discord/tickets';
 import { announceWeeklyRanking } from '@/server/discord/weekly';
 import { announceWeeklyDigest } from '@/server/discord/digest';
-import { liveRally } from '@/server/discord/rally';
 import { syncAllRoles } from '@/server/discord/sync';
-import { announceDailyLoad, announceLiveryWinner } from '@/server/discord/announce';
-import { dailyLoadLane, liveBattles, postLiveryEntries } from '@/server/discord/together';
+import { announceDailyLoad } from '@/server/discord/announce';
+import { dailyLoadLane, liveBattles } from '@/server/discord/together';
 import { announceShipCall, liveShipCalls } from '@/server/discord/ports';
 import { DAILY_LOAD } from '@/lib/game/together';
-import { closeExpiredSharedLoads, settleDuels } from './together';
+import { closeExpiredSharedLoads } from './together';
 import { ensurePortLoads, settleShipCalls, startShipCall } from './ports';
 import { fetchWeather } from './weather';
 import { runFactories } from './factory';
 import { collectLoans, ensureBranchLoads } from './business';
 import { expireFreight } from './trade';
-import { settleLiveryContest } from './livery-contest';
 import { featureLive } from '@/lib/game/features';
 import { runPayroll } from './staff';
 import { expireAllianceListings } from './alliance-market';
@@ -247,7 +234,6 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'co2-week', 60 * 60_000, now, () => settleCo2Weeks(db, now));
     await every(db, 'driver-wishes', 24 * 60 * 60_000, now, () => spawnWishes(db, now));
     await every(db, 'driver-wishes-expire', 10 * 60_000, now, () => expireWishes(db, now));
-    if (featureLive('player_challenges', now)) await every(db, 'player-challenges', 5 * 60_000, now, () => settlePlayerChallenges(db, now));
     await every(db, 'night-courier', 10 * 60_000, now, () => ensureNightCouriers(db, now, provider));
     await every(db, 'last-mile', 15 * 60_000, now, () => ensureLastMile(db, now, provider));
     await every(db, 'livestock', 30 * 60_000, now, () => ensureLivestockLoads(db, now, provider));
@@ -348,18 +334,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     // v1.4: the real weather on the roads, port containers and ship calls.
     if (process.env.WEATHER !== 'off') await every(db, 'weather', 30 * 60_000, now, () => fetchWeather(db, now));
-    if (featureLive('rally', now)) await every(db, 'rally', 30 * 60_000, now, async () => {
-      const rally = await ensureRally(db, now, provider);
-      if (rally) await announceRally(db, rally.id, now);
-      await settleRallies(db, now);
-    });
     // v1.6: the challenge of the week pays its top three.
     await every(db, 'weekly-challenge', 30 * 60_000, now, () => settleWeeklyChallenge(db, now));
-    // v1.8: share prices once a day, dividends on Monday (Sofia).
-    if (featureLive('share_market', now)) {
-      await every(db, 'share-prices', 24 * 3_600_000, now, () => updateSharePrices(db, now));
-      if (new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'share-dividends', 6 * 3_600_000, now, () => payDividends(db, now));
-    }
     // v1.9: company life — assemblies, key clients, the owner's Monday report, interns.
     await every(db, 'company-assemblies', 30 * 60_000, now, () => closeAssemblies(db, now));
     if (featureLive('key_clients', now)) await every(db, 'key-clients', 60 * 60_000, now, async () => {
@@ -370,8 +346,6 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'interns', 60 * 60_000, now, () => endInternships(db, now));
     if (featureLive('season_medals', now)) await every(db, 'medal-badges-backfill', 3650 * 86_400_000, now, () => backfillMedalBadges(db, now));
     if (featureLive('company_achievements', now)) await every(db, 'company-achievements', 60 * 60_000, now, () => checkCompanyAchievements(db, now));
-    // v1.10: the city of the week (Monday).
-    if (featureLive('city_growth', now) && new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'city-week', 7 * 24 * 3_600_000, now, () => announceCityOfWeek(db, now));
     // v1.10: decisions on the way.
     if (featureLive('road_choices', now)) await every(db, 'road-choices', 60_000, now, () => tickChoices(db, now));
     // v1.10: relay loads.
@@ -390,28 +364,13 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // v1.10: organized convoys leave on time; the game's Sunday convoy.
     await every(db, 'convoy-depart', 60_000, now, () => departConvoys(db, now));
     if (featureLive('weekly_convoy', now)) await every(db, 'weekly-convoy', 60 * 60_000, now, () => ensureWeeklyConvoy(db, now));
-    // v1.9: smuggling — the heat cools by itself; Monday's anonymous customs summary.
-    if (featureLive('smuggling', now)) {
-      await every(db, 'smuggling-heat', 24 * 3_600_000, now, () => coolHeat(db, now));
-      if (new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short' }).format(now) === 'Mon') await every(db, 'customs-weekly', 7 * 24 * 3_600_000, now, () => customsWeekly(db, now));
-    }
-    // v1.8: last month's "Камион на месеца".
-    if (featureLive('truck_contest', now)) await every(db, 'truck-contest', 60 * 60_000, now, () => settleTruckContest(db, now));
     // v1.8: humanitarian convoys (every three weeks; loads while one runs).
     await every(db, 'humanitarian', 30 * 60_000, now, () => runRelief(db, now));
-    // v1.8: old CB messages and road reports.
-    await every(db, 'live-road-prune', 24 * 3_600_000, now, () => pruneLiveRoad(db, now));
     // v1.7: last month's king of every country.
     if (featureLive('country_kings', now)) await every(db, 'country-kings', 60 * 60_000, now, () => settleCountryKings(db, now));
     // v2.0: last week's territories, and the subsidiaries' fees to their holdings.
     if (featureLive('territories', now)) await every(db, 'territories', 60 * 60_000, now, () => settleTerritories(db, now));
     if (featureLive('holdings', now)) await every(db, 'holding-fees', 6 * 60 * 60_000, now, () => payHoldingFees(db, now));
-    if (featureLive('spring_cup', now)) await every(db, 'spring-cup', 30 * 60_000, now, () => runCup(db, now));
-    // v1.6: the weekly rare plate auction and trailer hires that ended.
-    if (featureLive('plate_auction', now)) await every(db, 'plate-auction', 15 * 60_000, now, async () => {
-      await settlePlateAuctions(db, now);
-      await ensurePlateAuction(db, now);
-    });
     // „Просто“: the removed features give back what players had in them (once); hired trailers go home.
     await every(db, 'retired', 10 * 60_000, now, async () => {
       await settleRetired(db, now);
@@ -451,7 +410,6 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     if (featureLive('divisions', now)) await every(db, 'divisions', 60 * 60_000, now, () => settleDivisions(db, now));
     await every(db, 'alliances', 30 * 60_000, now, async () => {
       await runAlliances(db, now);
-      await settlePredictions(db);
       await endCompanyContracts(db, now);
     });
     await every(db, 'driver-moods', 24 * 3_600_000, now, () => driverMoods(db, now));
@@ -461,8 +419,6 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       await ensureBranchLoads(db, now, provider);
     });
     await every(db, 'freight-exchange', 10 * 60_000, now, () => expireFreight(db, now));
-    // v2.0: finished community tournaments pay their prizes.
-    if (featureLive('community_cups', now)) await every(db, 'community-cups', 5 * 60_000, now, () => settleCups(db, now));
     // v2.0: intermodal containers — new ones on the board, and the last leg when the line arrives.
     if (featureLive('intermodal', now)) {
       await every(db, 'intermodal', 30 * 60_000, now, () => ensureIntermodal(db, now, provider));
@@ -475,17 +431,12 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       if (call) await announceShipCall(db, call, now);
     });
     await every(db, 'together', 10 * 60_000, now, async () => {
-      await settleDuels(db, now);
       await closeExpiredSharedLoads(db, now);
-      const winner = featureLive('livery_contest', now) ? await settleLiveryContest(db, now) : null;
-      if (winner) await announceLiveryWinner(db, winner, now);
     });
     await every(db, 'discord-live', 10 * 60_000, now, async () => {
       await liveBattles(db, now);
       await liveShipCalls(db, now);
-      if (featureLive('livery_contest', now)) await postLiveryEntries(db, now);
       await syncScheduledEvents(db, now);
-      if (featureLive('rally', now)) await liveRally(db, now);
     });
     // The Discord bot: chat bridge and messages often, announcements and roles less often.
     await every(db, 'discord-chat', 15_000, now, async () => {

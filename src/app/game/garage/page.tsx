@@ -241,7 +241,6 @@ export default async function GaragePage() {
                   ) : t.ownership === 'hired' || t.hiredOut ? (
                     <div className="mt-2 space-y-1">
                       <Badge tone="violet">{t.ownership === 'hired' ? tr('наето от играч') : tr('дадено под наем')}</Badge>
-                      <p className="text-xs text-mist-400"><Link href="/game/trailer-hire" className="underline">{tr('Ремаркета под наем')}</Link></p>
                     </div>
                   ) : (
                   <div className="mt-2 flex flex-wrap gap-2">

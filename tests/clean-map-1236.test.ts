@@ -2,17 +2,15 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { DOCK, bookSlot, slotOf, withDockWait } from '@/lib/game/dock';
 import { FEATURES, featureLive } from '@/lib/game/features';
-import { LETTERS, letterKind, thanksBonus } from '@/lib/game/letters';
 import { CROWD_CAP, DEFAULT_MAP_LAYERS, mapLayers, nearestFirst } from '@/lib/game/map-layers';
 import { POSTCARD, postcardReason, postcardScene } from '@/lib/game/postcard';
 import { releaseByVersion } from '@/lib/game/releases';
 import { closeDb } from '@/server/db/client';
-import { clientLetters, companies, deliveries, dockSlots, users, vehicles } from '@/server/db/schema';
+import { companies, deliveries, dockSlots, users, vehicles } from '@/server/db/schema';
 import { acceptContract, settleDelivery } from '@/server/game/deliveries';
 import { answerDockSwap, dockView, offerDockSwap, planDock } from '@/server/game/dock';
 import { GameError } from '@/server/game/errors';
 import { post } from '@/server/game/finance';
-import { lettersView, markLettersRead, unreadLetters } from '@/server/game/letters';
 import { postcardView, sharePostcard } from '@/server/game/postcards';
 import { setUiPrefs } from '@/server/game/ui-prefs';
 import { cityByName, db, makeContract, newPlayer } from './helpers';
@@ -60,24 +58,6 @@ describe('1.2.3.6 „Чиста карта“: rules', () => {
     const back = withDockWait(waited, 0, 30);
     expect(back[1]).toMatchObject({ start: 100, end: 145 });
     expect(back[1]!.note).toBeUndefined();
-  });
-
-  it('letters: about one in seven on-time trips, a third of the late ones, the bonus within bounds', () => {
-    let onTime = 0;
-    let late = 0;
-    const kinds = new Set<string>();
-    for (let i = 0; i < 4000; i++) {
-      const k = letterKind(`letter:${i}`, false);
-      if (k) (onTime++, kinds.add(k));
-      if (letterKind(`letter:${i}`, true)) late++;
-    }
-    expect(onTime / 4000).toBeGreaterThan(LETTERS.chance - 0.03);
-    expect(onTime / 4000).toBeLessThan(LETTERS.chance + 0.03);
-    expect(late / 4000).toBeGreaterThan(LETTERS.complaintChance - 0.04);
-    expect([...kinds].sort()).toEqual(['request', 'thanks']);
-    expect(letterKind('letter:x', true)).not.toBe('thanks');
-    expect(thanksBonus(10_00)).toBe(LETTERS.thanksMinCents);
-    expect(thanksBonus(100_000_00)).toBe(LETTERS.thanksMaxCents);
   });
 
   it('postcards: a new city or a long trip', () => {
@@ -172,17 +152,6 @@ describe('1.2.3.6 „Чиста карта“: the game', () => {
     expect(await code(sharePostcard(db(), late.userId, late.delivery.id))).toBe('ok');
     expect(await code(sharePostcard(db(), late.userId, late.delivery.id))).toBe('already_shared');
 
-    // A letter (written by hand here; on arrival it comes by chance) is shown and then marked read.
-    await db().delete(clientLetters).where(eq(clientLetters.deliveryId, late.delivery.id));
-    await db().insert(clientLetters).values({ userId: late.userId, deliveryId: late.delivery.id, kind: 'thanks', client: 'Тест ООД', goods: 'Мебели', cityId: sofia.id, bonusCents: 50_00 });
-    const letters = await lettersView(db(), late.userId);
-    expect(letters[0]).toMatchObject({ kind: 'thanks', bonusCents: 50_00 });
-    expect(letters[0]!.title).toContain('Тест ООД');
-    expect(await unreadLetters(db(), late.userId)).toBe(1);
-    await markLettersRead(db(), late.userId);
-    expect(await unreadLetters(db(), late.userId)).toBe(0);
-    const [left] = await db().select().from(clientLetters).where(and(eq(clientLetters.userId, late.userId), eq(clientLetters.deliveryId, late.delivery.id)));
-    expect(left!.readAt).not.toBeNull();
   });
 });
 

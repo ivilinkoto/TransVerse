@@ -1,5 +1,4 @@
-import { and, eq, gt, inArray } from 'drizzle-orm';
-import { ArrowRight, Radio } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, Card, PageHeader } from '@/components/ui';
@@ -7,8 +6,6 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { dateTime, money } from '@/lib/format';
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { ACCESS_LABELS, columnShare, CONVOYS, CONVOY_ROLES, type ConvoyAccess, type ConvoyRole } from '@/lib/game/convoys';
-import { REPORT_KINDS, type ReportKind } from '@/lib/game/live-road';
-import { cities, roadReports } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { convoyDetail, laneLoads } from '@/server/game/convoys';
 import { fleetView } from '@/server/game/queries';
@@ -36,10 +33,6 @@ export default async function ConvoyPage({ params }: { params: Promise<{ id: str
   const loads = open && !c.mine ? await laneLoads(db, c, now) : [];
   const freeRoles = (['tail', 'scout'] as const).filter((r) => !c.members.some((m) => m.role === r && m.status === 'ready'));
   const leading = c.leaderId === user.id;
-  // The scout sees the road reports on the lane.
-  const scout = c.mine?.role === 'scout' || leading;
-  const ends = scout ? await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, [c.originCityId, c.destCityId])) : [];
-  const reports = scout && ends.length === 2 ? (await db.select({ kind: roadReports.kind, near: roadReports.near, lat: roadReports.lat, lon: roadReports.lon }).from(roadReports).where(and(gt(roadReports.expiresAt, now), eq(roadReports.settled, false)))).filter((r) => r.lat >= Math.min(ends[0]!.lat, ends[1]!.lat) - 0.3 && r.lat <= Math.max(ends[0]!.lat, ends[1]!.lat) + 0.3 && r.lon >= Math.min(ends[0]!.lon, ends[1]!.lon) - 0.3 && r.lon <= Math.max(ends[0]!.lon, ends[1]!.lon) + 0.3) : [];
   const ready = c.members.filter((m) => m.status === 'ready' || m.status === 'departed');
 
   return (
@@ -86,11 +79,6 @@ export default async function ConvoyPage({ params }: { params: Promise<{ id: str
                 {c.messages.length === 0 && <li className="text-mist-400">{t('Кажи здрасти на колоната.')}</li>}
               </ul>
               <ConvoyChat convoyId={c.id} />
-            </Card>
-          )}
-          {scout && (
-            <Card title={<span className="inline-flex items-center gap-2"><Radio className="h-4 w-4 text-mist-400" />{t('Сигнали по линията')}</span>}>
-              {reports.length === 0 ? <p className="text-sm text-mist-400">{t('Няма активни сигнали.')}</p> : <ul className="space-y-1 text-sm">{reports.map((r, i) => <li key={i}>{REPORT_KINDS[r.kind as ReportKind]?.emoji ?? '⚠️'} {tx(REPORT_KINDS[r.kind as ReportKind]?.label ?? r.kind)} · {tx(r.near)}</li>)}</ul>}
             </Card>
           )}
           {c.byCompany.length > 0 && (

@@ -1,9 +1,9 @@
 import { and, eq, inArray, lte, or, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
 import { canSplit } from '@/lib/game/partial';
-import { DAILY_LOAD, DUEL, duelWinner, SHARED_LOAD } from '@/lib/game/together';
+import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, companies, contracts, deliveries, duels, sharedLoads, userBadges, users } from '@/server/db/schema';
+import { cities, companies, contracts, deliveries, sharedLoads, userBadges, users } from '@/server/db/schema';
 import { enqueue } from '@/server/discord/outbox';
 import { featureFor } from '@/server/features';
 import { postCoins } from './coins';
@@ -120,93 +120,4 @@ export async function deliverDailyLoad(tx: Tx, contract: { id: string; goods: st
   if (await postCoins(tx, userId, { amount: DAILY_LOAD.coins, reason: 'daily_load', description: tr('Товар на деня: {0}', contract.goods), idempotencyKey: `daily-load:${contract.id}` })) {
     await notify(tx, userId, 'success', () => tr('Товарът на деня е доставен! ⭐'), () => tr('+{0} ТрансКоин за доставката навреме.', DAILY_LOAD.coins), '/game/shop');
   }
-}
-
-// ── Duels ────────────────────────────────────────────────────────────────
-
-const pair = (a: string, b: string) => or(and(eq(duels.challengerId, a), eq(duels.opponentId, b)), and(eq(duels.challengerId, b), eq(duels.opponentId, a)));
-const openStatus = inArray(duels.status, ['pending', 'active']);
-
-/** A player challenges another to a week of hauling: who carries more tonnes. */
-export async function challengeDuel(db: Database, userId: string, opponentId: string, now = new Date()) {
-  if (userId === opponentId) fail('self', tr('Не можеш да се дуелираш със себе си.'));
-  return db.transaction(async (tx) => {
-    const both = await tx.select({ id: users.id, username: users.username, bannedAt: users.bannedAt }).from(users).where(inArray(users.id, [userId, opponentId]));
-    const me = both.find((u) => u.id === userId);
-    const rival = both.find((u) => u.id === opponentId);
-    if (!rival || rival.bannedAt) fail('not_found', tr('Няма такъв играч.'), 404);
-    // One open duel per pair; a few at a time per player.
-    const [same] = await tx.select({ id: duels.id }).from(duels).where(and(pair(userId, opponentId), openStatus));
-    if (same) fail('already', tr('Вече имате дуел с {0}.', rival!.username));
-    for (const id of [userId, opponentId]) {
-      const [{ n = 0 } = {}] = await tx.select({ n: sql<number>`count(*)::int` }).from(duels).where(and(or(eq(duels.challengerId, id), eq(duels.opponentId, id)), openStatus));
-      if (n >= DUEL.maxOpen) fail('too_many', id === userId ? tr('Може да имаш до {0} дуела наведнъж.', DUEL.maxOpen) : tr('{0} вече има {1} дуела.', rival!.username, DUEL.maxOpen));
-    }
-    const [d] = await tx.insert(duels).values({ challengerId: userId, opponentId, createdAt: now }).returning();
-    await notify(tx, opponentId, 'info', () => tr('{0} те предизвика на дуел ⚔️', me!.username), () => tr('Кой ще превози повече тонове за {0} дни? Победителят печели {1} ТрансКоин. Приеми до {2} часа.', DUEL.days, DUEL.coins, DUEL.pendingHours), `/game/duels?duel=${d!.id}`);
-    return d!;
-  });
-}
-
-/** The challenged player accepts (the week starts now) or declines. */
-export async function respondDuel(db: Database, userId: string, duelId: string, accept: boolean, now = new Date()) {
-  return db.transaction(async (tx) => {
-    const [d] = await tx.select().from(duels).where(eq(duels.id, duelId)).for('update');
-    if (!d || d.opponentId !== userId) fail('not_found', tr('Няма такава покана.'), 404);
-    if (d!.status !== 'pending' || d!.createdAt.getTime() + DUEL.pendingHours * 3_600_000 <= now.getTime()) fail('expired', tr('Поканата вече не е активна.'), 409);
-    const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
-    if (!accept) {
-      await tx.update(duels).set({ status: 'declined', settledAt: now }).where(eq(duels.id, d!.id));
-      await notify(tx, d!.challengerId, 'info', () => tr('{0} отказа дуела', me!.username), () => tr('Предизвикай някой друг!'), '/game/duels');
-      return { status: 'declined' as const };
-    }
-    const endsAt = new Date(now.getTime() + DUEL.days * 86_400_000);
-    await tx.update(duels).set({ status: 'active', startsAt: now, endsAt }).where(eq(duels.id, d!.id));
-    await notify(tx, d!.challengerId, 'success', () => tr('{0} прие дуела ⚔️', me!.username), () => tr('Броят се тоновете, които превозите до {0}.', endsAt.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })), '/game/duels');
-    return { status: 'active' as const, endsAt };
-  });
-}
-
-/** A delivery of a player in a running duel: its tonnes count. */
-export async function recordDuelDelivery(tx: Tx, userId: string, tons: number, at: Date) {
-  const running = and(eq(duels.status, 'active'), lte(duels.startsAt, at), sql`${duels.endsAt} > ${at}`);
-  await tx.update(duels).set({ challengerTons: sql`${duels.challengerTons} + ${tons}` }).where(and(running, eq(duels.challengerId, userId)));
-  await tx.update(duels).set({ opponentTons: sql`${duels.opponentTons} + ${tons}` }).where(and(running, eq(duels.opponentId, userId)));
-}
-
-/** Worker: ends the duels whose week is over (prize and badge to the winner) and old invitations. */
-export async function settleDuels(db: Database, now = new Date()) {
-  await db.update(duels).set({ status: 'expired', settledAt: now }).where(and(eq(duels.status, 'pending'), lte(duels.createdAt, new Date(now.getTime() - DUEL.pendingHours * 3_600_000))));
-  const due = await db.select({ id: duels.id }).from(duels).where(and(eq(duels.status, 'active'), lte(duels.endsAt, now))).limit(100);
-  for (const { id } of due) {
-    await db.transaction(async (tx) => {
-      const [d] = await tx.select().from(duels).where(and(eq(duels.id, id), eq(duels.status, 'active'))).for('update');
-      if (!d) return;
-      const winnerId = duelWinner(d);
-      await tx.update(duels).set({ status: 'done', winnerId, settledAt: now }).where(eq(duels.id, d.id));
-      const names = new Map((await tx.select({ id: users.id, username: users.username }).from(users).where(inArray(users.id, [d.challengerId, d.opponentId]))).map((u) => [u.id, u.username]));
-      const score = (id: string) => (id === d.challengerId ? tr('{0} : {1} т', Math.round(d.challengerTons), Math.round(d.opponentTons)) : tr('{0} : {1} т', Math.round(d.opponentTons), Math.round(d.challengerTons)));
-      if (winnerId) {
-        await postCoins(tx, winnerId, { amount: DUEL.coins, reason: 'duel', description: tr('Дуел срещу {0}', names.get(winnerId === d.challengerId ? d.opponentId : d.challengerId)), idempotencyKey: `duel:${d.id}` });
-        await tx.insert(userBadges).values({ userId: winnerId, badge: DUEL.badge, awardedAt: now }).onConflictDoNothing();
-      }
-      for (const id of [d.challengerId, d.opponentId]) {
-        const rival = names.get(id === d.challengerId ? d.opponentId : d.challengerId);
-        const text = !winnerId ? tr('Равенство ({0}).', score(id)) : winnerId === id ? tr('Победа {0}! +{1} ТрансКоин.', score(id), DUEL.coins) : tr('Загуба {0}. Реванш?', score(id));
-        await notify(tx, id, winnerId === id ? 'success' : 'info', () => tr('Дуелът с {0} приключи', rival), text, '/game/duels');
-      }
-    });
-  }
-  return due.length;
-}
-
-/** The player's duels: open ones and the last finished. */
-export async function duelsOf(db: DbOrTx, userId: string, limit = 8) {
-  const rows = await db.select().from(duels).where(or(eq(duels.challengerId, userId), eq(duels.opponentId, userId))).orderBy(sql`case when ${duels.status} in ('pending', 'active') then 0 else 1 end`, sql`${duels.createdAt} desc`).limit(limit);
-  const ids = [...new Set(rows.flatMap((d) => [d.challengerId, d.opponentId]))];
-  const names = new Map(ids.length ? (await db.select({ id: users.id, username: users.username }).from(users).where(inArray(users.id, ids))).map((u) => [u.id, u.username]) : []);
-  return rows.map((d) => {
-    const mine = d.challengerId === userId;
-    return { id: d.id, status: d.status, incoming: !mine && d.status === 'pending', rival: names.get(mine ? d.opponentId : d.challengerId) ?? '—', myTons: mine ? d.challengerTons : d.opponentTons, theirTons: mine ? d.opponentTons : d.challengerTons, endsAt: d.endsAt, createdAt: d.createdAt, won: d.status === 'done' ? (d.winnerId === null ? null : d.winnerId === userId) : null };
-  });
 }

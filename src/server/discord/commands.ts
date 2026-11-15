@@ -13,10 +13,8 @@ import { companyLeaderboard, fleetView, leaderboard } from '@/server/game/querie
 import { playerCard } from '@/server/game/social';
 import { playerCareer } from '@/server/game/career';
 import { laneRecordsView } from '@/server/game/community';
-import { albumOf } from '@/server/game/competition';
 import { openBigConvoys, weeklyChallenge } from '@/server/game/challenges';
 import { openConvoysList } from '@/server/game/convoys';
-import { cupView } from '@/server/game/tournament';
 import { approximateProvider, routeOpen } from '@/server/geo/routing';
 import { countryOpen, GAME_COUNTRIES, type GameCountry } from '@/lib/geo/scope';
 import { countryInfo, findCountry } from '@/server/game/countries';
@@ -442,21 +440,8 @@ async function bigConvoys(db: DbOrTx, now: Date): Promise<CommandReply> {
   };
 }
 
-/** /турнир — the spring cup (v1.6). */
-async function cup(db: DbOrTx, now: Date): Promise<CommandReply> {
-  if (!featureLive('spring_cup', now)) return { ephemeral: true, content: tr('Пролетната купа идва с обновление {0}.', FEATURES.spring_cup) };
-  const c = await cupView(db, now);
-  const round = c.rounds.find((r) => r.live) ?? [...c.rounds].reverse().find((r) => r.matches.length);
-  const side = (n: string | null, km: number | null) => (n ? `${n}${km != null ? tr(' ({0} км)', int(km)) : ''}` : '—');
-  const lines = round
-    ? round.matches.map((m) => tr('{0}{1}{2} срещу {3}{4}{5}', m.settled && m.winner === m.a ? '**' : '', side(m.a, m.aKm), m.settled && m.winner === m.a ? '**' : '', m.settled && m.winner === m.b ? '**' : '', side(m.b, m.bKm), m.settled && m.winner === m.b ? '**' : ''))
-    : [tr('Записани: {0} / {1}{2}', c.entries.length, c.size, c.signupOpen ? tr(' · записване в играта до <t:{0}:f>', Math.floor(c.rounds[0]!.from.getTime() / 1000)) : '')];
-  return { embeds: [{ title: `🏆 ${c.title}${round ? ` · ${round.title}` : ''}`, url: `${appUrl()}/game/cup`, color: BRAND, description: lines.join('\n'), footer }] };
-}
-
 /** /маршрут — the truck route between two cities (the stored one, else an approximation; v1.6). */
 async function route(db: DbOrTx, fromName: string, toName: string, now: Date): Promise<CommandReply> {
-  if (!featureLive('my_map', now)) return { ephemeral: true, content: tr('Командата идва с обновление {0}.', FEATURES.my_map) };
   const find = async (q: string) => (q.trim() ? (await db.select().from(cities).where(or(ilike(cities.nameBg, q.trim()), ilike(cities.name, q.trim()))).orderBy(desc(cities.population)).limit(1))[0] : undefined);
   const [a, b] = [await find(fromName), await find(toName)];
   if (!a || !b) return { ephemeral: true, content: tr('Няма град „{0}“ в играта.', !a ? fromName : toName) };
@@ -522,29 +507,6 @@ async function challenge(db: DbOrTx, userId: string | null, now: Date): Promise<
         w.top.length ? w.top.map((r, i) => `**${i + 1}.** ${r.username} · ${int(r.value)} ${w.unit}`).join('\n') : tr('Още няма курс навреме тази седмица.'),
         ...(w.mine ? ['', tr('Ти си **{0}.** от {1} · {2} {3}', w.mine.place, int(w.players), int(w.mine.value), w.unit)] : []),
       ].join('\n'),
-      footer,
-    }],
-  };
-}
-
-/** /албум — the city album: cards per country (v1.5). */
-async function album(db: DbOrTx, username: string | null, now: Date): Promise<CommandReply> {
-  if (!featureLive('city_album', now)) return { ephemeral: true, content: tr('Колекцията от градове идва с обновление {0}.', FEATURES.city_album) };
-  if (!username) return { ephemeral: true, content: tr('Напиши име на играч или свържи акаунта си. {0}', linkHint()) };
-  const who = await playerByName(db, username);
-  if (!who) return { ephemeral: true, content: tr('Няма играч „{0}“.', username) };
-  const pages = await albumOf(db, who.id);
-  const have = pages.reduce((s, p) => s + p.cities.filter((c) => c.at).length, 0);
-  const all = pages.reduce((s, p) => s + p.cities.length, 0);
-  return {
-    embeds: [{
-      title: tr('📒 Албумът на {0}: {1} / {2} града', who.username, have, all),
-      url: `${appUrl()}/game/collection`,
-      color: BRAND,
-      fields: pages.map((p) => {
-        const n = p.cities.filter((c) => c.at).length;
-        return { name: `${n === p.cities.length ? '✅ ' : ''}${p.name}`, value: `${n} / ${p.cities.length}`, inline: true };
-      }).slice(0, 24),
       footer,
     }],
   };

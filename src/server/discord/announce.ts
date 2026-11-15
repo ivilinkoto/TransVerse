@@ -126,15 +126,6 @@ export async function announceDailyLoad(db: DbOrTx, load: { id: string; goods: s
   }), now);
 }
 
-/** The livery of the month (from settleLiveryContest). */
-export async function announceLiveryWinner(db: DbOrTx, entry: { id: string; monthKey: string; userId: string; plate: string; votes: number }, now: Date) {
-  if (!featureLive('livery_contest', now)) return;
-  const [u] = await db.select({ username: users.username }).from(users).where(eq(users.id, entry.userId));
-  await announce(db, `livery-win:${entry.monthKey}`, 'livery', () => ({
-    embeds: [{ title: t('🎨 Ливрея на месеца: {0}', u?.username ?? ''), description: t('{0} събра {1} 👍 — +{2} ТрансКоин и значка „Ливрея на месеца“. Новият конкурс вече тече: покажи камиона си от Състезание → Ливреи.', entry.plate, entry.votes, LIVERY_CONTEST.coins), color: 0xa66bff, image: { url: `${appUrl()}/api/discord/card/livery/${entry.id}` }, footer }],
-  }), now);
-}
-
 /** Discord's limits for one message (embed description, field value, fields, all text together). */
 const LIMIT = { description: 4096, fieldValue: 1024, fields: 25, total: 6000 } as const;
 const cut = (text: string, max: number) => (text.length <= max ? text : `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…`);

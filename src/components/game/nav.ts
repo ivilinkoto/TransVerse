@@ -40,7 +40,6 @@ export const SECTIONS: NavSection[] = [
     icon: Map,
     tabs: [
       { href: '/game/map', label: 'Карта', core: true },
-      { href: '/game/road', label: 'Пътят · CB', feature: 'cb_radio', minLevel: 2, core: true },
     ],
   },
   {
@@ -53,12 +52,9 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/clients', label: 'Клиенти', minLevel: 3, core: true },
       { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' },
       { href: '/game/dock', label: 'Рампата', feature: 'dock_slots', core: true },
-      { href: '/game/letters', label: 'Писма от клиенти', feature: 'client_letters', core: true },
       { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
       { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
       { href: '/game/convoys', label: 'Конвои', feature: 'convoy_lobby', minLevel: 2, core: true },
-      { href: '/game/economy', label: 'Икономика и контейнери', feature: 'living_economy', minLevel: 2 },
-      { href: '/game/underground', label: 'Сенки', feature: 'smuggling', minLevel: 10 },
     ],
   },
   // 1.2.1: the inventory has its own place in the main menu (drawn apart, in purple and gold).
@@ -93,8 +89,6 @@ export const SECTIONS: NavSection[] = [
       // 1.2.3.1: the player's own business (research, office, adverts, fuel, CO₂) — not the company's „Развитие“.
       { href: '/game/growth', label: 'Технологии и офис', feature: 'research', group: 'Сервиз и депа' },
       { href: '/game/market', label: 'Пазар', group: 'Камиони', core: true },
-      { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire', group: 'Камиони', minLevel: 6 },
-      { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction', group: 'Камиони', minLevel: 6 },
       { href: '/game/staff', label: 'Шофьори', group: 'Хора', core: true },
       { href: '/game/mascot', label: 'Талисман', feature: 'mascot', group: 'Хора', core: true },
       { href: '/game/skills', label: 'Умения', feature: 'driver_skills', group: 'Хора', core: true },
@@ -110,10 +104,8 @@ export const SECTIONS: NavSection[] = [
     icon: Building2,
     tabs: [
       { href: '/game/company', label: 'Моята компания', core: true },
-      { href: '/game/insurance', label: 'Застрахователи', feature: 'insurers', minLevel: 3 },
       { href: '/game/companies', label: 'Всички компании', core: true },
       { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board', minLevel: 3 },
-      { href: '/game/shares', label: 'Борса за акции', feature: 'share_market', minLevel: 6 },
     ],
   },
   {
@@ -129,8 +121,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/easter', label: 'Великден', holiday: 'easter', feature: 'easter', group: 'Сезонни' },
       { href: '/game/missions', label: 'Мисии', group: 'Днес', core: true },
       { href: '/game/big-run', label: 'Голям рейс', feature: 'big_run', group: 'Днес', core: true },
-      { href: '/game/story', label: 'Историята', feature: 'story', group: 'Днес' },
-      { href: '/game/case', label: 'Изгубена пратка', feature: 'lost_cargo', group: 'Днес' },
       { href: '/game/daily-route', label: 'Пътят на деня', feature: 'daily_route', group: 'Днес', core: true },
       { href: '/game/night-run', label: 'Нощен рейс', feature: 'night_run', group: 'Днес', core: true },
       { href: '/game/courier', label: 'Градски куриер', feature: 'city_courier', group: 'Днес' },
@@ -138,16 +128,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/road-service', label: 'Пътна служба', feature: 'road_service', group: 'Днес' },
       { href: '/game/winter-games', label: 'Зимни игри', feature: 'winter_games', group: 'Класации' },
       { href: '/game/league', label: 'Лига', group: 'Класации', minLevel: 2 },
-      { href: '/game/cities', label: 'Градовете растат', feature: 'city_growth', group: 'Класации' },
-      { href: '/game/duels', label: 'Дуели', feature: 'duels', group: 'Класации', minLevel: 3 },
-      { href: '/game/rally', label: 'Рали', feature: 'rally', group: 'Класации', minLevel: 4 },
       { href: '/game/challenges', label: 'Предизвикателства', feature: 'weekly_challenge', group: 'Днес', minLevel: 3 },
-      { href: '/game/cup', label: 'Пролетна купа', feature: 'spring_cup', group: 'Класации', minLevel: 5 },
-      { href: '/game/player-challenges', label: 'Предизвикателства от играчи', feature: 'player_challenges', group: 'Общност', minLevel: 2 },
-      { href: '/game/cups', label: 'Турнири на общността', feature: 'community_cups', group: 'Общност', minLevel: 3 },
-      { href: '/game/predictions', label: 'Прогнози', feature: 'predictions', group: 'Общност', minLevel: 5 },
-      { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest', group: 'Общност', minLevel: 5 },
-      { href: '/game/truck-contest', label: 'Камион на месеца', feature: 'truck_contest', group: 'Общност', minLevel: 5 },
       { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2, core: true, hiddenWith: 'truck_pass' },
       { href: '/game/events', label: 'Ивенти', group: 'Днес', core: true },
       { href: '/game/leaderboards', label: 'Класации', group: 'Класации', core: true },
@@ -156,9 +137,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2, hiddenWith: 'truck_pass' },
       { href: '/game/seasons', label: 'Сезон и Truck Pass', feature: 'truck_pass', group: 'Днес', minLevel: 2, core: true },
       { href: '/game/progress', label: 'Постижения', group: 'Колекции', core: true },
-      { href: '/game/collection', label: 'Албум', feature: 'city_album', group: 'Колекции', minLevel: 2 },
-      { href: '/game/postcards', label: 'Картички', feature: 'postcards', group: 'Колекции', minLevel: 2 },
-      { href: '/game/my-map', label: 'Картата ми', feature: 'my_map', group: 'Колекции', minLevel: 3 },
     ],
   },
 ];
@@ -285,9 +263,9 @@ type Place = [href: string, core?: boolean];
 
 /** The pages of each place in the order they are shown; the core ones are in the row, the rest behind „Още ▾“. */
 const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
-  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/convoys', true], ['/game/clients', true], ['/game/auctions'], ['/game/trade'], ['/game/dock'], ['/game/letters'], ['/game/reviews'], ['/game/economy'], ['/game/road'], ['/game/underground']],
-  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/analytics'], ['/game/earnings'], ['/game/buses'], ['/game/workshops'], ['/game/growth'], ['/game/trailer-hire'], ['/game/plates']],
-  company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment'], ['/game/insurance'], ['/game/shares']],
+  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/convoys', true], ['/game/clients', true], ['/game/auctions'], ['/game/trade'], ['/game/dock'], ['/game/reviews']],
+  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/analytics'], ['/game/earnings'], ['/game/buses'], ['/game/workshops'], ['/game/growth']],
+  company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment']],
 };
 
 /**
@@ -296,10 +274,10 @@ const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
  */
 const PLAY_GROUPS: { name: string; pages: Place[] }[] = [
   { name: 'Награди', pages: [['/game/missions', true], ['/game/seasons', true], ['/game/inventory', true], ['/game/events'], ['/game/inventory/workshop'], ['/game/inventory/album'], ['/game/inventory/hall']] },
-  { name: 'Всеки ден', pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/story'], ['/game/case'], ['/game/crisis'], ['/game/road-service']] },
-  { name: 'Състезания', pages: [['/game/leaderboards', true], ['/game/league'], ['/game/winter-games'], ['/game/duels'], ['/game/rally'], ['/game/cities'], ['/game/cup']] },
-  { name: 'Общност', pages: [['/game/news'], ['/game/ideas'], ['/game/player-challenges'], ['/game/cups'], ['/game/predictions'], ['/game/livery'], ['/game/truck-contest']] },
-  { name: 'Колекции', pages: [['/game/progress'], ['/game/collection'], ['/game/postcards'], ['/game/my-map']] },
+  { name: 'Всеки ден', pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/crisis'], ['/game/road-service']] },
+  { name: 'Състезания', pages: [['/game/leaderboards', true], ['/game/league'], ['/game/winter-games']] },
+  { name: 'Общност', pages: [['/game/news'], ['/game/ideas']] },
+  { name: 'Колекции', pages: [['/game/progress']] },
 ];
 
 const allTabs = (): NavTab[] => SECTIONS.flatMap((s) => s.tabs ?? []);

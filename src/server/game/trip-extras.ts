@@ -18,11 +18,8 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post, type Posting } from './finance';
 import { burnLockedFuel } from './fuel-hedge';
-import { insurerClaim } from './insurers';
 import { boldUntil, offerInterview } from './interviews';
-import { maybeLostCase } from './lost-cargo';
 import { officeEffects } from './office';
-import { recordChallengeRun } from './player-challenges';
 import { researchOf } from './research';
 import { notify } from './notify';
 import { recordWishDelivery } from './wishes';
@@ -163,7 +160,6 @@ export async function settleExtras(tx: Tx, f: TripFacts): Promise<number> {
   if (list.length) await post(tx, f.companyId, list);
   let total = list.reduce((s, p) => s + p.amountCents, 0);
   if (await featureFor(tx, f.userId, 'fuel_hedge', at)) total += await burnLockedFuel(tx, f.companyId, f.deliveryId, f.fuelLitres, f.fuelCents, at);
-  if (f.late && (await featureFor(tx, f.userId, 'insurers', at))) total += await insurerClaim(tx, f.companyId, f.userId, f.deliveryId, f.penaltyCents, at);
   // 1.2: „Застраховка за един курс“ from the inventory returns the whole late penalty.
   if (f.late && f.penaltyCents > 0 && (await featureFor(tx, f.userId, 'inventory', at)) && (await coverLate(tx, f.userId))) {
     await post(tx, f.companyId, [{ category: 'items', amountCents: f.penaltyCents, description: t('Застраховка за един курс (инвентар)'), idempotencyKey: key('item-cover') }]);
@@ -218,7 +214,7 @@ export async function afterExtras(tx: Tx, f: TripFacts) {
       const paid = await postCoins(tx, f.userId, { amount: FOG.coins, reason: 'fog_pilot', description: t('Пилот в мъглата {0}', year), idempotencyKey: `fog-pilot:${year}:${f.userId}` });
       if (paid) {
         await tx.insert(userBadges).values({ userId: f.userId, badge: FOG.badge, awardedAt: at }).onConflictDoNothing();
-        await notify(tx, f.userId, 'achievement', () => t('🌫 Пилот в мъглата'), () => t('Пет курса в мъглата — +{0} ТрансКоин и значка.', FOG.coins), '/game/collection');
+        await notify(tx, f.userId, 'achievement', () => t('🌫 Пилот в мъглата'), () => t('Пет курса в мъглата — +{0} ТрансКоин и значка.', FOG.coins), '/game/progress');
       }
     }
   }
@@ -233,8 +229,6 @@ export async function afterExtras(tx: Tx, f: TripFacts) {
     await recordAdKm(tx, f.companyId, f.userId, contractCountries(o?.cc ?? '', dd?.cc ?? '', route?.countries), f.loadedKm, !f.late, at);
   }
   if (await featureFor(tx, f.userId, 'driver_wishes', at)) await recordWishDelivery(tx, f.userId, f.crew, f.destCityId, at);
-  if (await featureFor(tx, f.userId, 'player_challenges', at)) await recordChallengeRun(tx, f.userId, { originCityId: f.originCityId, destCityId: f.destCityId }, { minutes: Math.round((at.getTime() - f.startedAt.getTime()) / 6000) / 10, solo: f.crew.length <= 1, deliveryId: f.deliveryId }, at);
-  if (['pallets', 'container'].includes(f.cargoType) && !f.tag) await maybeLostCase(tx, f.userId, f.deliveryId, f.goods, at);
   if (f.perfectStreak === 10) await offerInterview(tx, f.userId, 'perfect', at);
   // 1.2: drivers under „no rest“ are rested at once; now and then a find on the road.
   await applyNoRest(tx, f.userId, f.crew, at);

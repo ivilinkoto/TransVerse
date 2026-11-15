@@ -91,11 +91,8 @@ export const FEATURES = {
   co2: '1.1.4.2',
   office: '1.1.4.2',
   driver_wishes: '1.1.4.2',
-  player_challenges: '1.1.4.2',
   live_tracking: '1.1.4.2',
-  insurers: '1.1.4.2',
   interviews: '1.1.4.2',
-  lost_cargo: '1.1.4.2',
   night_courier: '1.1.4.2',
   last_mile: '1.1.4.2',
   discord_1142: '1.1.4.2',
@@ -135,7 +132,6 @@ export const FEATURES = {
   map_layers: '1.3',
   delivery_postcard: '1.3',
   dock_slots: '1.3',
-  client_letters: '1.3',
   // every truck in 3D (fleet, profile, dealership) and the depot yards in 3D.
   truck_3d_view: '1.3',
   depot_3d: '1.3',
@@ -259,8 +255,6 @@ export const FEATURES = {
   partial_loads: '1.4',
   shared_loads: '1.4',
   daily_load: '1.4',
-  duels: '1.4',
-  livery_contest: '1.4',
   // 1.2.3: released early (built for a later update).
   roadside_paid: '1.2.3',
   ferries: '1.5',
@@ -275,7 +269,6 @@ export const FEATURES = {
   electric: '1.5',
   driver_moods: '1.5',
   cosmetics: '1.5',
-  rally: '1.5',
   company_report: '1.5',
   trailer_upgrades: '1.5',
   company_trailers: '1.5',
@@ -290,10 +283,8 @@ export const FEATURES = {
   academy: '1.6',
   divisions: '1.6',
   perfect_run: '1.6',
-  city_album: '1.6',
   garage_showcase: '1.6',
   discord_rally: '1.6',
-  predictions: '1.6',
   event_autostart: '1.6',
   trailer_cosmetics: '1.6',
   easter: '1.8',
@@ -333,17 +324,13 @@ export const FEATURES = {
   eurotour: '1.7',
   big_convoy: '1.7',
   weekly_challenge: '1.7',
-  spring_cup: '1.7',
   specializations: '1.7',
   recruitment_board: '1.7',
-  my_map: '1.7',
   legendary_trucks: '1.7',
   scrapyard: '1.7',
   museum: '1.7',
   // 1.2.3: released early (built for a later update).
   photo_mode: '1.2.3',
-  plate_auction: '1.7',
-  trailer_hire: '1.7',
   // 1.2.3: the countries of „Цяла Европа“ (planned for 1.7) open early.
   europe: '1.2.3',
   // v2.0 "Светът се отваря".
@@ -354,10 +341,8 @@ export const FEATURES = {
   territories: '2.0',
   legacy: '2.0',
   intermodal: '2.0',
-  living_economy: '2.0',
   eras: '2.0',
   cabin: '2.0',
-  community_cups: '2.0',
   map_3d: '2.0',
   new_look: '2.0',
   country_tolls: '1.8',
@@ -369,10 +354,8 @@ export const FEATURES = {
   // 1.2.3: released early (built for a later update).
   weekly_convoy: '1.2.3',
   relay: '1.3', // released early with 1.2.4 (planned for 1.10)
-  trip_log: '1.3', // released early with 1.2.4 (planned for 1.10)
-  city_growth: '1.3', // released early with 1.2.4 (planned for 1.10)
+  trip_log: '1.3', // released early with 1.2.4 (planned for 1.10) // released early with 1.2.4 (planned for 1.10)
   harvest: '1.11',
-  story: '1.11',
   road_choices: '1.11',
   reefer: '1.3', // released early with 1.2.4 (planned for 1.10)
   // v1.9 "Светлини и сенки".
@@ -393,24 +376,13 @@ export const FEATURES = {
   company_traditions: '1.10',
   interns: '1.10',
   mergers: '1.10',
-  smuggling: '1.10',
   // v1.8 "Жив път".
-  // 1.2.3: released early (built for a later update).
-  cb_radio: '1.2.3',
-  // 1.2.3: released early (built for a later update).
-  road_reports: '1.2.3',
-  // 1.2.3: released early (built for a later update).
-  postcards: '1.2.3',
-  // 1.2.3: released early (built for a later update).
-  hitchhikers: '1.2.3',
   // 1.2.3: released early (built for a later update).
   sealed_cargo: '1.2.3',
   // 1.2.3: released early (built for a later update).
   haggling: '1.2.3',
   ghost_record: '1.3', // released early with 1.2.4 (planned for 1.8)
-  share_market: '1.9',
   humanitarian: '1.3', // released early with 1.2.4 (planned for 1.8)
-  truck_contest: '1.3', // released early with 1.2.4 (planned for 1.8)
   trans_europe: '1.8',
   grand_eurotour: '1.8',
   country_kings: '1.8',
@@ -427,24 +399,11 @@ export function featureDate(id: FeatureId): Date | null {
   return r ? new Date(r.publishedAt) : null;
 }
 
-/**
- * Removed from the game (14 November 2026, „Просто“): off for everyone, the staff too — no
- * page, no menu entry, no action, no worker job. What players had in them was settled once
- * (retired.ts: shares, bids, policies, prizes and fees came back). Their code goes away step
- * by step; until then this switch keeps it from running.
- */
-export const RETIRED: ReadonlySet<FeatureId> = new Set<FeatureId>([
-  'lost_cargo', 'story', 'predictions', 'player_challenges', 'community_cups', 'spring_cup', 'duels', 'rally', 'city_growth',
-  'livery_contest', 'truck_contest', 'postcards', 'my_map', 'city_album', 'smuggling', 'share_market', 'living_economy',
-  'insurers', 'plate_auction', 'trailer_hire', 'client_letters', 'cb_radio',
-]);
-
-/** The pages of the removed features; they lead to „Игри и награди“ (next.config redirects). */
+/** Pages of features deleted in „Почистване“ (14 November 2026); old links lead to „Игри и награди“ (next.config redirects). */
 export const RETIRED_PAGES = ['/game/case', '/game/story', '/game/predictions', '/game/player-challenges', '/game/cups', '/game/cup', '/game/duels', '/game/rally', '/game/cities', '/game/livery', '/game/truck-contest', '/game/postcards', '/game/my-map', '/game/collection', '/game/underground', '/game/shares', '/game/economy', '/game/insurance', '/game/plates', '/game/trailer-hire', '/game/letters', '/game/road'];
 
-/** Is the feature on for this viewer? Always for the staff; for players from the release date. Never once removed. */
+/** Is the feature on for this viewer? Always for the staff; for players from the release date. */
 export function featureLive(id: FeatureId, now: Date, staff = false): boolean {
-  if (RETIRED.has(id)) return false;
   if (staff) return true;
   const at = featureDate(id);
   return !at || at <= now;

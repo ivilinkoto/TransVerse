@@ -22,8 +22,8 @@ describe('v1.9 a clearer game', () => {
     expect(groups).toEqual(expect.arrayContaining(['Днес', 'Класации', 'Колекции', 'Общност']));
     const newcomer = visibleTabs(compete, null, '/game/missions', () => true, { level: 1, showAll: false }).map((t) => t.href);
     expect(newcomer).toContain('/game/missions');
-    expect(newcomer).not.toContain('/game/cup');
-    expect(visibleTabs(compete, null, '/game/cup', () => true, { level: 1, showAll: false }).map((t) => t.href)).toContain('/game/cup');
+    expect(newcomer).not.toContain('/game/challenges');
+    expect(visibleTabs(compete, null, '/game/challenges', () => true, { level: 1, showAll: false }).map((t) => t.href)).toContain('/game/challenges');
     expect(visibleTabs(compete, null, '/game/missions', () => true, { level: 1, showAll: true }).length).toBe(all.length);
     // Every page that unlocks has its short how-to.
     for (const t of unlockTabs()) expect(UNLOCK_INFO[t.href], t.href).toBeTruthy();

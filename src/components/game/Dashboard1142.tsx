@@ -6,7 +6,6 @@ import type { FeatureId } from '@/lib/game/features';
 import { FOG, foggyAreas } from '@/lib/game/fog';
 import { INTERVIEW_ANSWERS, INTERVIEW_OCCASIONS, type InterviewAnswer, type InterviewOccasion } from '@/lib/game/interviews';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { caseOf } from '@/server/game/lost-cargo';
 import { openInterview } from '@/server/game/interviews';
 import { t, tx } from '@/i18n/t';
 
@@ -22,7 +21,7 @@ const TIPS: { feature: FeatureId; text: string; href: string; unused: (db: DbOrT
 
 /** 1.1.4.2 on the dashboard: the press, the lost pallet, the fog and a tip. */
 export async function Dashboard1142({ db, userId, companyId, now, features }: { db: DbOrTx; userId: string; companyId: string; now: Date; features: Record<FeatureId, boolean> }) {
-  const [interview, lost] = await Promise.all([features.interviews ? openInterview(db, userId) : null, features.lost_cargo ? caseOf(db, userId) : null]);
+  const interview = features.interviews ? await openInterview(db, userId) : null;
   const fog = features.fog ? foggyAreas(now) : [];
   let tip: (typeof TIPS)[number] | null = null;
   if (features.did_you_know) {
@@ -48,13 +47,6 @@ export async function Dashboard1142({ db, userId, companyId, now, features }: { 
             ))}
           </div>
         </section>
-      )}
-      {lost && !lost.closed && (
-        <Link href="/game/case" className="panel flex items-center gap-3 border-amber-400/40 p-3.5 transition hover:border-amber-400/80">
-          <span className="text-3xl" aria-hidden="true">🔍</span>
-          <span className="min-w-0 flex-1 text-sm"><span className="block font-semibold">{t('Липсва палет: {0}', tx(lost.goods))}</span><span className="text-mist-300">{t('Разгледай уликите и посочи виновника.')}</span></span>
-          <span className="btn-primary px-3 py-1.5 text-xs">{t('Към случая')}</span>
-        </Link>
       )}
       {fog.length > 0 && (
         <Link href="/game/contracts" className="panel flex items-center gap-3 border-slate-400/40 p-3.5 transition hover:border-slate-300/70">

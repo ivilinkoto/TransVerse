@@ -3,41 +3,13 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
-import { cityLevel, cityPayFactor, HARVEST, isHarvest } from '@/lib/game/city-growth';
+import { HARVEST, isHarvest } from '@/lib/game/city-growth';
 import { closeDb } from '@/server/db/client';
-import { cityGrowth, coinEntries, userBadges } from '@/server/db/schema';
-import { cityGrowthOf, cityPay, cityRankings, growCity, harvestDelivered } from '@/server/game/city-growth';
-import { cityByName, db, newPlayer } from './helpers';
+import { coinEntries, userBadges } from '@/server/db/schema';
+import { harvestDelivered } from '@/server/game/harvest';
+import { db, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
-
-describe('v1.10 the cities grow', () => {
-  it('levels by tonnes and the pay they give', () => {
-    expect(cityLevel(0).level).toBe(1);
-    expect(cityLevel(1_600).level).toBe(3);
-    expect(cityLevel(1_000_000).next).toBeNull();
-    expect(cityPayFactor(1)).toBe(1);
-    expect(cityPayFactor(5)).toBeCloseTo(1.12);
-  });
-
-  it('every delivery adds to the city for everyone; the week resets; loads from it pay more', async () => {
-    const city = await cityByName('Ruse');
-    await db().delete(cityGrowth).where(eq(cityGrowth.cityId, city.id));
-    const monday = new Date('2027-08-02T10:00:00Z');
-    await db().transaction((tx) => growCity(tx, city.id, 200, monday));
-    await db().transaction((tx) => growCity(tx, city.id, 150, new Date('2027-08-03T10:00:00Z')));
-    const g = await cityGrowthOf(db(), city.id);
-    expect(g.tons).toBe(350);
-    expect(g.level).toBe(2);
-    expect(await cityPay(db(), city.id, monday)).toBeCloseTo(1.03);
-    const week = await cityRankings(db(), new Date('2027-08-04T10:00:00Z'));
-    expect(week.thisWeek.find((c) => c.id === city.id)?.weekTons).toBe(350);
-    await db().transaction((tx) => growCity(tx, city.id, 10, new Date('2027-08-10T10:00:00Z')));
-    const [row] = await db().select().from(cityGrowth).where(eq(cityGrowth.cityId, city.id));
-    expect(row!.weekTons).toBe(10);
-    expect(row!.tons).toBe(360);
-  });
-});
 
 describe('v1.10 Гроздобер', () => {
   it('in season only; ten harvest loads on time — the badge and ТрансКоин once', async () => {

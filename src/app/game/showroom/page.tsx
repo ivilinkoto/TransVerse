@@ -33,7 +33,6 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
       />
       {next && <p className="text-xs text-mist-400">{t('На ниво {0} халето става „{1}“ ({2} платформи).', next.minLevel, tx(next.label), next.platforms)}</p>}
       <GarageClient view={view} initialTruck={truck ?? null} isVip={isVip(user.vipUntil, now)} />
-      {features.truck_contest && <p className="text-xs text-mist-400">{t('Харесва ти как изглежда?')} <Link href="/game/truck-contest" className="font-semibold text-cyan-glow hover:underline">{t('Пусни го в „Камион на месеца“ →')}</Link></p>}
     </div>
   );
 }

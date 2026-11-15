@@ -7,8 +7,6 @@ import { fleetView, routeGeometries } from './queries';
 import { isMarta } from '@/lib/game/marta';
 import { storkOfDay } from './marta';
 import { allianceBases } from './alliances';
-import { activeReports } from './live-road';
-import { REPORT_KINDS } from '@/lib/game/live-road';
 import { tx } from '@/i18n/t';
 import { GAME_COUNTRIES } from '@/lib/geo/scope';
 import { isSnowTime, roadCondition } from '@/lib/game/winter';
@@ -23,7 +21,6 @@ export async function mapData(db: DbOrTx, ctx: { userId: string; companyId: stri
   const { features, now } = ctx;
   const storkRow = features.marta && isMarta(now) ? await storkOfDay(db, now) : null;
   const bases = features.alliance_map ? await allianceBases(db, ctx.userId) : [];
-  const reports = features.road_reports ? (await activeReports(db, now, ctx.userId)).map((r) => ({ id: r.id, emoji: REPORT_KINDS[r.kind].emoji, label: REPORT_KINDS[r.kind].label, near: r.near, position: r.position })) : [];
   const fleet = await fleetView(db, ctx.companyId);
   const routeIds = fleet.vehicles.flatMap((v) => (v.delivery ? [v.delivery.routeId, v.delivery.emptyRouteId].filter((x): x is number => !!x) : []));
   const geoms = await routeGeometries(db, routeIds);
@@ -70,5 +67,5 @@ export async function mapData(db: DbOrTx, ctx: { userId: string; companyId: stri
       if (c !== 'clear') weather[cc] = c;
     }
   } else weather = undefined;
-  return { vehicles, depots: depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] as [number, number] })), preview, stork: storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null, bases, reports, weather };
+  return { vehicles, depots: depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] as [number, number] })), preview, stork: storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null, bases, weather };
 }

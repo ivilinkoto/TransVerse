@@ -3,15 +3,12 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
-import { recordMonth } from '@/lib/game/community';
 import { RELIEF } from '@/lib/game/relief';
-import { TRUCK_CONTEST } from '@/lib/game/truck-contest';
 import { closeDb } from '@/server/db/client';
-import { companies, contracts, globalEvents, jobState, truckContestEntries, userBadges, users, vehicles } from '@/server/db/schema';
+import { companies, contracts, globalEvents, jobState, userBadges, users, vehicles } from '@/server/db/schema';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
 import { runRelief } from '@/server/game/relief';
-import { enterTruck, lastWinners, settleTruckContest, truckContestView, voteTruck } from '@/server/game/truck-contest';
 import { db, makeContract, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
@@ -45,29 +42,4 @@ describe('v1.8 community', () => {
     expect(await db().select().from(userBadges).where(and(eq(userBadges.userId, p.userId), eq(userBadges.badge, RELIEF.badge)))).toHaveLength(1);
   });
 
-  it('Камион на месеца: one truck a month, three votes, not for yourself; the winners after the month', async () => {
-    const [a, b, c] = [await newPlayer(), await newPlayer(), await newPlayer()];
-    // The starter truck is rented: make it the player's own.
-    for (const p of [a, b]) await db().update(vehicles).set({ ownership: 'owned' }).where(eq(vehicles.id, (await truckOf(p.userId)).truck.id));
-    expect(await code(enterTruck(db(), c.userId, (await truckOf(c.userId)).truck.id))).toBe('rented');
-    const ea = await enterTruck(db(), a.userId, (await truckOf(a.userId)).truck.id);
-    expect(await code(enterTruck(db(), a.userId, (await truckOf(a.userId)).truck.id))).toBe('already_entered');
-    const eb = await enterTruck(db(), b.userId, (await truckOf(b.userId)).truck.id);
-    expect(await code(voteTruck(db(), a.userId, ea.id))).toBe('own_entry');
-    await voteTruck(db(), c.userId, ea.id);
-    await voteTruck(db(), c.userId, eb.id);
-    expect(await code(voteTruck(db(), c.userId, eb.id))).toBe('already_voted');
-    expect((await truckContestView(db(), c.userId)).votesLeft).toBe(1);
-
-    // Last month: an entry with enough votes wins.
-    const now = new Date();
-    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 15);
-    await db().insert(truckContestEntries).values({ month: recordMonth(prev), userId: b.userId, vehicleId: (await truckOf(b.userId)).truck.id, look: { modelId: 'hemus-r12-box', trailerModelId: null, color: '#123456', livery: null, cosmetics: null, trailerUpgrades: [], trailerLogo: null, trailerCosmetics: null }, title: 'Тест', votes: TRUCK_CONTEST.minVotes });
-    await db().delete(jobState).where(eq(jobState.key, `truck-contest:${recordMonth(prev)}`));
-    const c0 = await coins(b.userId);
-    await settleTruckContest(db(), now);
-    expect(await settleTruckContest(db(), now)).toBeNull();
-    expect(await coins(b.userId)).toBe(c0 + TRUCK_CONTEST.prizes[0]);
-    expect((await lastWinners(db(), now))?.winners[0]?.title).toBe('Тест');
-  });
 });

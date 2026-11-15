@@ -12,7 +12,6 @@ import { companyAnalytics } from '@/server/game/analytics';
 import { periodWindow } from '@/lib/game/missions';
 import { compatibilityError } from '@/server/game/deliveries';
 import { featureFor } from '@/server/features';
-import { duelsOf } from '@/server/game/together';
 import { openContracts } from '@/server/game/contracts';
 import { membershipOf } from '@/server/game/membership';
 import { fleetView } from '@/server/game/queries';
@@ -155,34 +154,6 @@ export async function financeView(ctx: Ctx): Promise<Answer> {
 
 // ── /дуел ────────────────────────────────────────────────────────────────
 
-export async function duelCommand(ctx: Ctx): Promise<Answer> {
-  const me = released(ctx);
-  const target = opt(ctx.i, 'потребител');
-  if (target) {
-    const [rival] = await ctx.db.select({ id: users.id, username: users.username }).from(users).where(eq(users.discordId, target));
-    if (!rival) stop(t('Този член не е свързал акаунта си с играта.'));
-    await act(ctx, { type: 'challengeDuel', userId: rival!.id });
-    return answer(reply({ content: t('⚔️ Предизвика **{0}** на дуел: кой ще превози повече тонове за {1} дни. Победителят печели {2} ТрансКоин.', rival!.username, DUEL.days, DUEL.coins) }, true));
-  }
-  const list = await duelsOf(ctx.db, me.id);
-  if (!list.length) return answer(say(t('Нямаш дуели. Предизвикай някого: `/дуел @потребител` — {0} дни, повече тонове печели {1} ТрансКоин.', DUEL.days, DUEL.coins)));
-  const line = (d: (typeof list)[number]) =>
-    d.status === 'active' ? t('⚔️ **{0}** · {1} : {2} т · край {3}', d.rival, dec(d.myTons), dec(d.theirTons), d.endsAt ? at(d.endsAt) : '')
-    : d.status === 'pending' ? `⏳ **${d.rival}** · ${d.incoming ? t('те предизвика') : t('чака отговор')}`
-    : d.status === 'done' ? t('{0} **{1}** · {2} : {3} т', d.won === true ? '🏆' : d.won === false ? '✖️' : '🤝', d.rival, dec(d.myTons), dec(d.theirTons))
-    : `▫️ **${d.rival}** · ${d.status === 'declined' ? t('отказан') : t('изтекъл')}`;
-  const incoming = list.filter((d) => d.incoming).slice(0, 2);
-  return answer(reply({
-    embeds: [{ title: t('⚔️ Дуелите ти'), color: BRAND, description: list.map(line).join('\n'), footer }],
-    components: rows(...incoming.flatMap((d) => [button(t('Приеми · {0}', d.rival), `duel:yes:${d.id}`, STYLE.success, '⚔️'), button(t('Откажи'), `duel:no:${d.id}`, STYLE.secondary)])),
-  }, true));
-}
-
-export async function duelAnswer(ctx: Ctx, duelId: string, accept: boolean): Promise<Answer> {
-  await act(ctx, { type: 'respondDuel', duelId, accept });
-  return answer(update({ content: accept ? t('⚔️ Дуелът започна! {0} дни — всеки тон се брои. Резултатът: `/дуел`.', DUEL.days) : t('Дуелът е отказан.') }));
-}
-
 // ── /пропуск ─────────────────────────────────────────────────────────────
 
 export async function passCommand(ctx: Ctx): Promise<Answer> {
@@ -226,34 +197,6 @@ export async function roadHelp(ctx: Ctx, deliveryId: string): Promise<Answer> {
 }
 
 // ── Livery contest ───────────────────────────────────────────────────────
-
-export async function liveryVote(ctx: Ctx, entryId: string): Promise<Answer> {
-  const r = await act<{ votes: number }>(ctx, { type: 'voteLivery', entryId });
-  return answer(say(t('👍 Гласът ти е записан — камионът вече има {0} 👍.', r.votes)));
-}
-
-/** Worker: new entries of the livery contest go to #ливреи with their picture and a 👍 button. */
-export async function postLiveryEntries(db: Database, now = new Date()) {
-  if (!discordConfig().bot || !featureLive('livery_contest', now)) return 0;
-  const channelId = await layoutChannel(db, 'ливреи');
-  if (!channelId) return 0;
-  const fresh = await db.select({ e: liveryEntries, username: users.username }).from(liveryEntries).innerJoin(users, eq(users.id, liveryEntries.userId)).where(and(isNull(liveryEntries.messageId), gt(liveryEntries.createdAt, new Date(now.getTime() - 3 * 86_400_000)))).limit(20);
-  let n = 0;
-  for (const { e, username } of fresh) {
-    // Taken first, so two workers do not post it twice.
-    const [mine] = await db.update(liveryEntries).set({ messageId: 'posting' }).where(and(eq(liveryEntries.id, e.id), isNull(liveryEntries.messageId))).returning({ id: liveryEntries.id });
-    if (!mine) continue;
-    const msg = await discord<{ id: string }>('POST', `/channels/${channelId}/messages`, {
-      embeds: [{ title: `🎨 ${username} · ${e.plate}`, color: Number.parseInt(e.color.replace('#', ''), 16) || BRAND, image: { url: `${appUrl()}/api/discord/card/livery/${e.id}` }, description: t('Дай 👍, ако ти харесва — най-харесваният камион на месеца печели.'), footer }],
-      components: rows(button(t('Харесва ми'), `livery:vote:${e.id}`, STYLE.success, '👍')),
-      allowed_mentions: { parse: [] },
-    }).catch(() => null);
-    // A failed post stays marked, so it is not retried every minute.
-    await db.update(liveryEntries).set({ messageId: msg?.id ?? 'failed' }).where(eq(liveryEntries.id, e.id));
-    if (msg) n++;
-  }
-  return n;
-}
 
 // ── Battles, live ────────────────────────────────────────────────────────
 

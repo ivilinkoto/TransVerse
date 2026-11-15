@@ -2,14 +2,14 @@ import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
-import { CYCLE, cycleIndex, cyclePhase, INTERMODAL, SUPPLY, supplyAfter } from '@/lib/game/living';
+import { INTERMODAL } from '@/lib/game/living';
 import { closeDb } from '@/server/db/client';
-import { cityMarkets, companies, contracts, intermodalShipments, ledgerEntries, vehicles } from '@/server/db/schema';
-import { acceptContract, recoverDemand, settleDueDeliveries } from '@/server/game/deliveries';
+import { companies, contracts, intermodalShipments, ledgerEntries, vehicles } from '@/server/db/schema';
+import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { loadHubs } from '@/server/game/contracts';
 import { ensureIntermodal, intermodalBoard, lineOf, releaseIntermodal } from '@/server/game/intermodal';
 import { approximateProvider } from '@/server/geo/routing';
-import { cityByName, db, grantLicences, makeContract, newPlayer } from './helpers';
+import { db, grantLicences, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
 
@@ -23,42 +23,6 @@ async function drive(userId: string, contractId: string) {
   await settleDueDeliveries(db(), new Date(d.etaAt.getTime() + 1000), account!.id);
   return d.id;
 }
-
-describe('the economic cycle', () => {
-  it('stays in its band, is the same for everyone in a week, and differs by country', () => {
-    const now = new Date('2027-10-04T12:00:00Z');
-    for (let w = 0; w < 60; w++) {
-      const at = new Date(now.getTime() + w * 7 * 86_400_000);
-      for (const c of [undefined, 'BG', 'DE', 'UA']) {
-        const v = cycleIndex(at, c);
-        expect(v).toBeGreaterThanOrEqual(CYCLE.min);
-        expect(v).toBeLessThanOrEqual(CYCLE.max);
-      }
-    }
-    expect(cycleIndex(now, 'BG')).toBe(cycleIndex(new Date(now.getTime() + 3_600_000), 'BG'));
-    expect(cyclePhase(1.08)).toBe('boom');
-    expect(cyclePhase(0.9)).toBe('slowdown');
-    expect(cyclePhase(1)).toBe('steady');
-  });
-});
-
-describe('supply', () => {
-  it('a city that ships a cargo has less of it, and fills up again by the hour', async () => {
-    expect(supplyAfter(1, 10)).toBeCloseTo(1 - 10 * SUPPLY.dropPerTon);
-    expect(supplyAfter(0.41, 100)).toBe(SUPPLY.floor);
-    const p = await newPlayer('Sofia');
-    const sofia = await cityByName('Sofia');
-    const c = await makeContract('Sofia', 'Plovdiv', { weightTons: 5, windowMinutes: 3 * 24 * 60 });
-    await db().update(cityMarkets).set({ produces: true }).where(and(eq(cityMarkets.cityId, sofia.id), eq(cityMarkets.cargoType, 'pallets')));
-    await db().update(cityMarkets).set({ supply: 1 }).where(and(eq(cityMarkets.cityId, sofia.id), eq(cityMarkets.cargoType, 'pallets')));
-    await drive(p.userId, c.id);
-    const [after] = await db().select().from(cityMarkets).where(and(eq(cityMarkets.cityId, sofia.id), eq(cityMarkets.cargoType, 'pallets')));
-    expect(after!.supply).toBeCloseTo(1 - 5 * SUPPLY.dropPerTon);
-    await recoverDemand(db(), 100);
-    const [full] = await db().select().from(cityMarkets).where(and(eq(cityMarkets.cityId, sofia.id), eq(cityMarkets.cargoType, 'pallets')));
-    expect(full!.supply).toBe(1);
-  });
-});
 
 describe('intermodal containers', () => {
   it('only opens containers whose other terminal is a freight hub, so the last leg can start', async () => {
