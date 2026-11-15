@@ -296,6 +296,7 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
   const logout = async () => {
     await api('/api/auth/logout', {});
     // A full load: a soft replace raced with refresh and could leave the player on /game.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- logout wants the full load
     window.location.href = '/';
   };
   const tile = 'flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-asphalt-700 bg-asphalt-850 px-2 py-3 text-center text-xs font-medium text-mist-100 transition hover:border-asphalt-500 active:scale-95';

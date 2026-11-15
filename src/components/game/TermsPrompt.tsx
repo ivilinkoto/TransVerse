@@ -26,6 +26,7 @@ export function TermsPrompt() {
   const logout = async () => {
     await api('/api/auth/logout', {}).catch(() => undefined);
     // A full load: a soft replace raced with refresh and could leave the player on /game.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- logout wants the full load
     window.location.href = '/';
   };
   return (

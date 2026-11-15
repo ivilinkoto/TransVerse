@@ -64,6 +64,7 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
   const logout = async () => {
     await api('/api/auth/logout', {});
     // A full load: a soft replace raced with refresh and could leave the player on /game.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- logout wants the full load
     window.location.href = '/';
   };
 
