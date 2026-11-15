@@ -4,7 +4,7 @@ import { useFeature } from './Features';
 import { Bell, Bug, ExternalLink, LogOut, MessagesSquare, ShieldCheck, ThumbsUp, Star } from 'lucide-react';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { ACCOUNT_MENU, ACCOUNT_MENU_V3 } from './nav';
@@ -38,7 +38,6 @@ export function NotificationBell({ unread }: { unread: number }) {
 /** The avatar menu: level, reputation, account pages, admin and logout. */
 export function AccountMenu({ staff, attention = 0, user, level, reputation }: { staff: boolean; attention?: number; user: { id: string; username: string; role: string; vip: boolean; avatarVersion: number }; level: { level: number; share: number; current: number; next: number }; reputation: number }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const mentor = useFeature('mentor');
@@ -64,8 +63,8 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
 
   const logout = async () => {
     await api('/api/auth/logout', {});
-    router.replace('/');
-    router.refresh();
+    // A full load: a soft replace raced with refresh and could leave the player on /game.
+    window.location.href = '/';
   };
 
   const pct = Math.max(2, Math.round(level.share * 100));

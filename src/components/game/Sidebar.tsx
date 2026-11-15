@@ -6,7 +6,7 @@ import { navEmoji } from './nav-emoji';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Logo, LogoMark } from '@/components/brand/Logo';
@@ -279,7 +279,6 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
 /** "Още": the other sections as tiles by group, the account pages, Discord and logout. */
 function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false }: { badges: NavBadges; staff: boolean; holiday: string | null; attention: number; onClose: () => void; desktop?: boolean }) {
   const pathname = usePathname();
-  const router = useRouter();
   const mentor = useFeature('mentor');
   const has = useFeatures();
   const player = useNavPlayer();
@@ -296,8 +295,8 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
   }, [onClose]);
   const logout = async () => {
     await api('/api/auth/logout', {});
-    router.replace('/');
-    router.refresh();
+    // A full load: a soft replace raced with refresh and could leave the player on /game.
+    window.location.href = '/';
   };
   const tile = 'flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-asphalt-700 bg-asphalt-850 px-2 py-3 text-center text-xs font-medium text-mist-100 transition hover:border-asphalt-500 active:scale-95';
   // 1.1.4.2: drawn at the end of <body>. Inside the sidebar (backdrop-blur makes it the containing

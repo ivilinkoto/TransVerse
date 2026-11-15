@@ -25,8 +25,8 @@ export function TermsPrompt() {
   };
   const logout = async () => {
     await api('/api/auth/logout', {}).catch(() => undefined);
-    router.replace('/');
-    router.refresh();
+    // A full load: a soft replace raced with refresh and could leave the player on /game.
+    window.location.href = '/';
   };
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="terms-title">
