@@ -37,27 +37,12 @@ const CARDS: Record<string, { emoji: string; text: string }> = {
   '/game/marta': { emoji: '🧶', text: 'Мартеници и пролетни мисии' },
   '/game/spring': { emoji: '🌱', text: 'Пролетните мисии' },
   '/game/easter': { emoji: '🥚', text: 'Великденските мисии и яйцата' },
-  '/game/story': { emoji: '📖', text: 'Историята на TransVerse, глава по глава' },
-  '/game/case': { emoji: '🕵️', text: 'Разкрий кой е взел пратката' },
-  '/game/parking': { emoji: '🅿️', text: 'Мини-игра: паркирай камиона' },
   '/game/challenges': { emoji: '🎯', text: 'Предизвикателството на седмицата и Евротур' },
   '/game/leaderboards': { emoji: '🏆', text: 'Най-добрите играчи и компании' },
   '/game/league': { emoji: '📊', text: 'Седмичната лига: качи се нагоре' },
-  '/game/cities': { emoji: '🏙️', text: 'Градовете растат с доставките' },
-  '/game/duels': { emoji: '⚔️', text: '1 срещу 1: кой ще превози повече' },
-  '/game/rally': { emoji: '🏎️', text: 'Седмичното рали' },
-  '/game/cup': { emoji: '🥇', text: 'Пролетната купа' },
-  '/game/player-challenges': { emoji: '🧭', text: 'Предизвикателства, пуснати от играчи' },
-  '/game/cups': { emoji: '🏟️', text: 'Турнири на общността' },
-  '/game/predictions': { emoji: '🔮', text: 'Познай резултатите' },
-  '/game/livery': { emoji: '🎨', text: 'Конкурс за ливреи' },
-  '/game/truck-contest': { emoji: '🚚', text: 'Гласувай за камион на месеца' },
   '/game/news': { emoji: '📰', text: 'Седмичникът на TransVerse' },
   '/game/ideas': { emoji: '💡', text: 'Предложи идея и гласувай' },
   '/game/progress': { emoji: '🏅', text: 'Постиженията и значките ти' },
-  '/game/collection': { emoji: '🖼️', text: 'Албумът на градовете' },
-  '/game/postcards': { emoji: '✉️', text: 'Картички от забележителности' },
-  '/game/my-map': { emoji: '🗺️', text: 'Картата на местата, където си бил' },
 };
 const GROUP_ORDER = ['Днес', 'Класации', 'Общност', 'Колекции'];
 
@@ -70,6 +55,8 @@ export default async function CompetePage() {
   await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.nav_v2) redirect('/game/leaderboards');
+  // 1.3.2 „Просто“: one start page for games and rewards.
+  if (features.simple_menu) redirect('/game/play');
   const has = (f: FeatureId) => !!features[f];
   const holiday = [isHalloween(now) && 'halloween', isChristmas(now) && 'christmas', isMarta(now) && 'marta', isSpring(now) && 'spring', isEaster(now) && 'easter'].filter(Boolean).join(',') || null;
   const section = SECTIONS_V2.find((s) => s.key === 'compete')!;

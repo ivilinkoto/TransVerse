@@ -5,7 +5,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 // the night shift (faster trips at night) and postcards (extra XP) are left off here and tested in v123-*.test.ts.
 vi.mock('@/lib/game/features', async (load) => {
   const m = await load<typeof import('@/lib/game/features')>();
-  return { ...m, featureLive: (id: Parameters<typeof m.featureLive>[0], ...rest: unknown[]) => (id === 'shop_v2' || id === 'night_shift' || id === 'postcards' ? false : (m.featureLive as (...a: unknown[]) => boolean)(id, ...rest)) };
+  return { ...m, featureLive: (id: Parameters<typeof m.featureLive>[0], ...rest: unknown[]) => (id === 'shop_v2' || id === 'night_shift' ? false : (m.featureLive as (...a: unknown[]) => boolean)(id, ...rest)) };
 });
 import { rentalFeeCents } from '@/lib/game/economy';
 import { MISSION_REROLL_COINS } from '@/lib/game/missions';

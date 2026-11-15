@@ -21,7 +21,6 @@ import { Badge, Card, Table } from '@/components/ui';
 import { date, int, money } from '@/lib/format';
 import { COMPANY_UPGRADES, memberBonuses, memberCapacity, RECRUITMENT, type UpgradeLevels } from '@/lib/game/company';
 import { companyHistory } from '@/server/game/company-life';
-import { companyShadeOf } from '@/server/game/smuggling';
 import { INTERNS } from '@/lib/game/company-life';
 import { gameContext } from '@/server/game/context';
 import { CompanyLicences } from '@/components/company/CompanyLicences';
@@ -55,7 +54,6 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
   const showcase = base && features.company_trophies ? await companyShowcase(db, c.id) : null;
   const history = features.company_history ? await companyHistory(db, c.id) : null;
   const [medals, companyAchievements] = await Promise.all([features.season_medals ? organizationMedals(db, c.id) : null, features.company_achievements ? companyAchievementsOf(db, c.id) : null]);
-  const shade = features.smuggling ? await companyShadeOf(db, c.id) : null;
   const own = mine?.company.id === c.id;
   const capacity = memberCapacity(c.upgrades as UpgradeLevels);
   const bonuses = memberBonuses(c.upgrades as UpgradeLevels);
@@ -74,7 +72,6 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 space-y-6">
           {features.specializations && c.specialization && c.specialization in SPECIALIZATIONS && <div><Badge tone="violet">{t('🎯 Специализация: {0}', SPECIALIZATIONS[c.specialization as Specialization].label)}</Badge></div>}
-          {shade && <div><Badge tone={shade === 'grey' ? 'neutral' : 'green'}>{shade === 'grey' ? t('🌫️ Сива компания — членовете ѝ карат и сенчести пратки') : t('✨ Чиста компания')}</Badge></div>}
           {(medals || companyAchievements) && <CompanyMedals medals={medals} achievements={companyAchievements} />}
           {features.company_profile && highlights && <CompanyHighlights h={highlights} />}
           {exhibits.length > 0 && (

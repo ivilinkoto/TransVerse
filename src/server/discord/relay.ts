@@ -40,9 +40,6 @@ export function actionButtons(href: string | null, staff: boolean, now: Date) {
   // A friend's or colleague's truck stands: help it.
   const help = id('help');
   if (help) return [button(t('Помогни'), `road:help:${help}`, STYLE.success, '🤝')];
-  // A duel invitation.
-  const duel = id('duel');
-  if (duel && featureLive('duels', now, staff)) return [button(t('Приеми дуела'), `duel:yes:${duel}`, STYLE.success, '⚔️'), button(t('Откажи'), `duel:no:${duel}`, STYLE.secondary)];
   return [];
 }
 

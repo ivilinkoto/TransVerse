@@ -4,8 +4,9 @@ import { FEATURES } from '@/lib/game/features';
 import { releaseByVersion } from '@/lib/game/releases';
 
 const all = () => true;
-const v2 = (f: string) => f !== 'none';
-const old = (f: string) => f !== 'nav_v2';
+// 1.3.2 „Просто“ replaced this menu; these check the 1.2.2 menu itself (without simple_menu).
+const v2 = (f: string) => f !== 'simple_menu';
+const old = (f: string) => f !== 'nav_v2' && f !== 'simple_menu';
 const hrefs = (list: typeof SECTIONS) => list.flatMap((s) => (s.tabs?.length ? s.tabs.map((t) => t.href) : [s.href]));
 
 describe('1.2.2 the simpler menu', () => {

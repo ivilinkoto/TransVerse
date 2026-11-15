@@ -4,10 +4,10 @@ import { useFeature } from './Features';
 import { Bell, Bug, ExternalLink, LogOut, MessagesSquare, ShieldCheck, ThumbsUp, Star } from 'lucide-react';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
-import { ACCOUNT_MENU } from './nav';
+import { ACCOUNT_MENU, ACCOUNT_MENU_V3 } from './nav';
 import { Avatar } from './Avatar';
 import { PlayerName } from './PlayerName';
 import { t, tx } from '@/i18n/t';
@@ -38,11 +38,11 @@ export function NotificationBell({ unread }: { unread: number }) {
 /** The avatar menu: level, reputation, account pages, admin and logout. */
 export function AccountMenu({ staff, attention = 0, user, level, reputation }: { staff: boolean; attention?: number; user: { id: string; username: string; role: string; vip: boolean; avatarVersion: number }; level: { level: number; share: number; current: number; next: number }; reputation: number }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const mentor = useFeature('mentor');
-  const careers = useFeature('careers');
+  // 1.3.2 „Просто“: a shorter avatar menu (the mentor and the updates are found with the search).
+  const simpleMenu = useFeature('simple_menu');
   const report = useFeature('report_problem');
 
   useEffect(() => {
@@ -63,8 +63,9 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
 
   const logout = async () => {
     await api('/api/auth/logout', {});
-    router.replace('/');
-    router.refresh();
+    // A full load: a soft replace raced with refresh and could leave the player on /game.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- logout wants the full load
+    window.location.href = '/';
   };
 
   const pct = Math.max(2, Math.round(level.share * 100));
@@ -100,7 +101,7 @@ export function AccountMenu({ staff, attention = 0, user, level, reputation }: {
             <div className="num mt-1 text-[11px] text-mist-400">{t('{0}% до ниво {1}', pct, level.level + 1)}</div>
           </div>
           <div className="mt-1.5">
-            {ACCOUNT_MENU.filter((item) => (mentor || item.href !== '/game/mentor') && (careers || item.href !== '/game/careers')).map((item) => {
+            {(simpleMenu ? ACCOUNT_MENU_V3 : ACCOUNT_MENU).filter((item) => (mentor || item.href !== '/game/mentor')).map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link

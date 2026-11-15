@@ -9,13 +9,12 @@ import { co2Week, quotaKg } from '@/lib/game/co2';
 import { FEATURES } from '@/lib/game/features';
 import { FOG_AREAS, fogAt, foggyAreas, isFogSeason } from '@/lib/game/fog';
 import { PUZZLE, puzzleFill, puzzlePieces, puzzleShare } from '@/lib/game/loading-puzzle';
-import { CLUES, caseSeed, clueText, culpritOf } from '@/lib/game/lost-cargo';
 import { promiseOutcome } from '@/lib/game/promise';
 import { compareVersions, releaseByVersion } from '@/lib/game/releases';
 import { starsFor } from '@/lib/game/reviews';
 import { techCost } from '@/lib/game/research';
 import { closeDb } from '@/server/db/client';
-import { adContracts, co2Credits, co2Weeks, companies, contracts, deliveries, deliveryExtras, drivers, driverWishes, interviews, ledgerEntries, lostCases, organizations, playerChallenges, tripQueue, users, vehicles } from '@/server/db/schema';
+import { adContracts, co2Credits, co2Weeks, companies, contracts, deliveries, deliveryExtras, drivers, driverWishes, interviews, ledgerEntries, tripQueue, users, vehicles } from '@/server/db/schema';
 import { runAction } from '@/server/game/actions';
 import { recordAdKm, takeAd } from '@/server/game/ads';
 import { settleCo2Weeks } from '@/server/game/co2';
@@ -23,12 +22,9 @@ import { acceptContract, settleDelivery } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
 import { post } from '@/server/game/finance';
 import { giftLoad } from '@/server/game/gifts';
-import { buyPolicy, setInsurancePlan } from '@/server/game/insurers';
 import { answerInterview, offerInterview, openInterview } from '@/server/game/interviews';
 import { runLaneRepeats, setLaneRepeat } from '@/server/game/lane-repeat';
-import { accuse, caseOf, lookClue } from '@/server/game/lost-cargo';
 import { hireOffice, officeEffects, trainOffice } from '@/server/game/office';
-import { createChallenge, joinChallenge, recordChallengeRun, settlePlayerChallenges } from '@/server/game/player-challenges';
 import { researchOf, startResearch } from '@/server/game/research';
 import { respondFriendRequest, sendFriendRequest } from '@/server/game/social';
 import { checkTripRules, ensureLivestockLoads } from '@/server/game/special-loads';
@@ -38,7 +34,7 @@ import { moveQueued, queueTrip, queuedTrips } from '@/server/game/trip-queue';
 import { puzzleFor, starsOf, submitPuzzle } from '@/server/game/trip-extras';
 import { setVacation } from '@/server/game/vacation';
 import { recordWishDelivery, spawnWishes } from '@/server/game/wishes';
-import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
+import { db, makeContract, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
 
@@ -102,16 +98,12 @@ describe('v1.1.4.2 „Мъгла и марки“ — rules', () => {
     expect(foggyDays).toBeLessThan(30);
   });
 
-  it('CO₂, adverts, research, the lost pallet: game data that adds up', () => {
+  it('CO₂, adverts, research: game data that adds up', () => {
     expect(co2Week(5000, quotaKg(1))).toEqual({ creditsT: 4, overT: 0 });
     expect(co2Week(10_500, quotaKg(1))).toEqual({ creditsT: 0, overT: 1.5 });
     expect(adOffers('W2026-11-02', 'c1')).toEqual(adOffers('W2026-11-02', 'c1'));
     expect(adOffers('W2026-11-02', 'c1')).toHaveLength(3);
     expect(techCost(1).cents).toBeLessThan(techCost(3).cents);
-    // Exactly one clue points at the culprit.
-    // The seed fits the integer column for any trip (a raw hash went over 2^31 and failed the insert).
-    for (let i = 0; i < 2000; i++) expect(caseSeed(`00000000-0000-4000-8000-${String(i).padStart(12, '0')}`)).toBeLessThan(2 ** 31);
-    for (const seed of [1, 2, 3, 99]) expect(CLUES.filter((c) => clueText(seed, c).odd).map((c) => clueText(seed, c).suspect)).toEqual([culpritOf(seed)]);
   });
 
   it('livestock is a new cargo with its own trailer, never from the markets', () => {
@@ -203,49 +195,6 @@ describe('v1.1.4.2 — in the game', () => {
     // A rented truck does not count, so the quota is the minimum one.
     expect(credits!.tonnes).toBeGreaterThan(0);
     expect((await ledger(acc2.id, 'co2'))[0]!.amountCents).toBeLessThan(0);
-  });
-
-  it('an insurer pays a late penalty from its treasury', async () => {
-    const owner = await playerWithCompany();
-    await setInsurancePlan(db(), owner.userId, { premiumCents: 100_00, coverPct: 50, maxPayoutCents: 10_000_00, active: true });
-    const [org] = await db().select().from(organizations).where(eq(organizations.ownerId, owner.userId));
-    await db().update(organizations).set({ treasuryCents: 50_000_00 }).where(eq(organizations.id, org!.id));
-    const p = await newPlayer();
-    const acc = await account(p.userId);
-    await buyPolicy(db(), p.userId, org!.id);
-    expect(await code(buyPolicy(db(), p.userId, org!.id))).toBe('policy_active');
-    const truck = await truckOf(acc.id);
-    const d = await acceptContract(db(), p.userId, (await makeContract('Sofia', 'Plovdiv', { windowMinutes: 1 })).id, truck.id);
-    const [row] = await db().select().from(deliveries).where(eq(deliveries.id, d.id));
-    await db().transaction((tx) => settleDelivery(tx, d.id, new Date(row!.etaAt.getTime() + 60_000)));
-    const penalty = (await ledger(acc.id, 'penalty')).reduce((s, e) => s + e.amountCents, 0);
-    if (penalty < 0) expect((await ledger(acc.id, 'insurance_claim'))[0]!.amountCents).toBe(Math.round((-penalty * 50) / 100));
-  });
-
-  it('the lost pallet: clues, then one accusation', async () => {
-    const p = await newPlayer();
-    const [c] = await db().insert(lostCases).values({ userId: p.userId, goods: 'Мебели', seed: 7 }).returning();
-    await lookClue(db(), p.userId, c!.id, 'camera');
-    expect((await caseOf(db(), p.userId))!.clues).toHaveLength(1);
-    const r = await accuse(db(), p.userId, c!.id, culpritOf(7));
-    expect(r.solved).toBe(true);
-    expect(await code(accuse(db(), p.userId, c!.id, 0))).toBe('case_closed');
-  });
-
-  it('a challenge: the fastest run wins the prize', async () => {
-    const a = await newPlayer();
-    const b = await newPlayer();
-    const accA = await account(a.userId);
-    await fund(accA.id, 10_000_00, 'challenge');
-    const sofia = (await makeContract('Sofia', 'Plovdiv'));
-    const ch = await createChallenge(db(), a.userId, { title: 'Бързо до Пловдив', originCityId: sofia.originCityId, destCityId: sofia.destCityId, days: 1, prizeCents: 500_00, soloOnly: false });
-    expect(await code(joinChallenge(db(), a.userId, ch.id))).toBe('own_challenge');
-    await joinChallenge(db(), b.userId, ch.id);
-    await db().transaction((tx) => recordChallengeRun(tx, b.userId, { originCityId: sofia.originCityId, destCityId: sofia.destCityId }, { minutes: 42, solo: true, deliveryId: sofia.id }, new Date()));
-    await settlePlayerChallenges(db(), new Date(Date.now() + 2 * 86_400_000));
-    const [row] = await db().select().from(playerChallenges).where(eq(playerChallenges.id, ch.id));
-    expect(row!.winnerId).toBe(b.userId);
-    expect((await ledger((await account(b.userId)).id, 'player_challenge'))[0]!.amountCents).toBe(500_00);
   });
 
   it('a load given to a friend is kept for them and pays 5% more', async () => {

@@ -55,8 +55,9 @@ describe('1.2.1 inventory — rules', () => {
   it('the inventory is its own section, listed apart; without the feature it stays under „Автопарк“', () => {
     expect(SECTIONS.find((s) => s.key === 'inventory')).toBeTruthy();
     expect(LISTED_SECTIONS.find((s) => s.key === 'inventory')).toBeUndefined();
-    expect(sectionFor('/game/inventory/workshop')?.key).toBe('inventory');
-    expect(sectionFor('/game/inventory', (f) => f !== 'inventory_menu')?.key).toBe('fleet');
+    // Before 1.3.2 „Просто“ (which puts the bag in „Игри и награди“).
+    expect(sectionFor('/game/inventory/workshop', (f) => f !== 'simple_menu')?.key).toBe('inventory');
+    expect(sectionFor('/game/inventory', (f) => f !== 'inventory_menu' && f !== 'simple_menu')?.key).toBe('fleet');
   });
 
   it('every item has a source or is a reward; collections hold known items; recipes make real items', () => {

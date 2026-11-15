@@ -18,9 +18,6 @@ const KEYWORDS: Record<string, string> = {
   '/game/licences': 'лиценз хладилен опасни адр митница',
   '/game/finance': 'пари глоби сметка дизел гориво',
   '/game/shop': 'транскоин vip магазин боя',
-  '/game/road': 'cb радио сигнал полиция задръстване автостоп',
-  '/game/shares': 'акции борса дивидент инвестиция',
-  '/game/postcards': 'картички забележителности',
   '/game/company': 'компания каса членове',
   '/game/map': 'карта камиони на живо',
   '/game/help': 'помощ правила речник',
@@ -42,7 +39,7 @@ export function CommandPalette() {
   const items = useMemo(
     () => [
       ...SECTIONS.flatMap((s) => (s.tabs?.length ? s.tabs.filter((t) => (!t.feature || has(t.feature)) && (!t.hiddenWith || !has(t.hiddenWith))).map((t) => ({ href: t.href, label: t.label, where: s.label })) : [{ href: s.href, label: s.label, where: '' }])),
-      ...ACCOUNT_MENU.filter((m) => m.href !== '/game/careers' || has('careers')).map((m) => ({ href: m.href, label: m.label, where: profile })),
+      ...ACCOUNT_MENU.map((m) => ({ href: m.href, label: m.label, where: profile })),
     ].filter((x, i, all) => all.findIndex((y) => y.href === x.href) === i),
     [has, profile],
   );

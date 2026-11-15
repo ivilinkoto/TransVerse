@@ -23,8 +23,6 @@ import { sessions, users } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { OLD_MENU_DAYS, oldMenuOffered } from '@/lib/game/nav-choice';
 import { HIRE_RULES } from '@/lib/game/hire';
-import { SMUGGLING } from '@/lib/game/smuggling';
-import { smugglingProfile } from '@/server/game/smuggling';
 import { t, tx } from '@/i18n/t';
 import { listSessions } from '@/server/auth/account-close';
 import { lastUsernameChange, USERNAME_CHANGE_DAYS } from '@/server/auth/account-data';
@@ -45,7 +43,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const { db, user, now, features } = await gameContext();
   const site = activeSeason(now, await seasonMode(db));
   const [u] = await db.select({ email: users.email, createdAt: users.createdAt, verified: users.emailVerifiedAt, pushPrefs: users.pushPrefs, discordName: users.discordName, discordId: users.discordId, discordPrefs: users.discordPrefs }).from(users).where(eq(users.id, user.id));
-  const [keys, devices, blocked, shade] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id), features.smuggling ? smugglingProfile(db, user.id) : null]);
+  const [keys, devices, blocked] = await Promise.all([vapidKeys(db), deviceCount(db, user.id), blockList(db, user.id)]);
   const [{ n = 0 } = {}] = await db.select({ n: sql<number>`count(*)::int` }).from(sessions).where(and(eq(sessions.userId, user.id), gt(sessions.expiresAt, new Date())));
   // 1.1.3: the signed-in devices and when the name can change again.
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
@@ -124,16 +122,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <LanguageSwitcher />
           </div>
         </Card>
-        {shade && (
-          <Card title={<span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-mist-400" />{t('Сенчести товари')}</span>} className="lg:col-span-2">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-mist-300">
-                {user.level < SMUGGLING.minLevel ? t('По избор от ниво {0}: вечерни пратки с безобидна „сива“ стока, по-добре платени, но с риск от глоба и конфискация (само игрови пари).', SMUGGLING.minLevel) : shade.optIn ? t('Включено: виждаш вечерните сенчести оферти в „Сенки“.') : t('Изключено: играта е само честна. Можеш да ги включиш по всяко време.')}
-              </p>
-              {user.level >= SMUGGLING.minLevel && <ActionButton action={{ type: 'smugglingOptIn', on: !shade.optIn }} className="btn-ghost">{shade.optIn ? t('Изключи') : t('Включи')}</ActionButton>}
-            </div>
-          </Card>
-        )}
         {(features.progressive_unlock || features.simple_board) && (
           <Card title={<span className="inline-flex items-center gap-2"><LayoutGrid className="h-4 w-4 text-mist-400" />{t('Как изглежда играта')}</span>} className="lg:col-span-2">
             {features.progressive_unlock && (

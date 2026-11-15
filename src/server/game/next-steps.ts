@@ -2,7 +2,7 @@ import { and, count, eq, gt, inArray, isNull } from 'drizzle-orm';
 import { dailyState } from '@/lib/game/daily';
 import { money } from '@/lib/format';
 import type { DbOrTx } from '@/server/db/client';
-import { cities, contracts, fines, hitchhikers, vehicles } from '@/server/db/schema';
+import { cities, contracts, fines, vehicles } from '@/server/db/schema';
 import { claimableCount } from './missions';
 import { t } from '@/i18n/t';
 
@@ -22,8 +22,6 @@ export async function nextSteps(db: DbOrTx, user: { id: string; loginStreak: num
   const out: NextStep[] = [];
   const [fine] = await db.select({ amount: fines.amountCents }).from(fines).where(and(eq(fines.companyId, companyId), eq(fines.status, 'unpaid'))).limit(1);
   if (fine) out.push({ emoji: '👮', text: t('Имаш неплатена глоба ({0}) — плати или обжалвай.', money(fine.amount)), href: '/game/finance', action: t('Към глобите') });
-  const [rider] = await db.select({ id: hitchhikers.id }).from(hitchhikers).where(and(eq(hitchhikers.userId, user.id), eq(hitchhikers.status, 'waiting'), gt(hitchhikers.waitUntil, now))).limit(1);
-  if (rider) out.push({ emoji: '👋', text: t('Някой маха на пътя и чака да го вземеш.'), href: '/game/road', action: t('Виж') });
   // Idle trucks with a driver: how many loads wait in their city.
   const idle = await db
     .select({ plate: vehicles.plate, cityId: vehicles.cityId, city: cities.nameBg })

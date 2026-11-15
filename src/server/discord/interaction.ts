@@ -17,7 +17,7 @@ import { eventStart, helpView } from './help';
 import { rankView, topView } from './levels';
 import { auctionForm, auctionOffer, auctionView, cheerBase, inviteAnswer, inviteMember, marketBuyers, marketSell, marketView, missionClaim, missionsView } from './market';
 import { quizAnswer } from './quiz';
-import { convoyCommand, convoyGo, convoyJoin, duelAnswer, duelCommand, financeView, liveryVote, mapCommand, passClaim, passCommand, roadCall, roadHelp, roadPay, takeGo, takeStart, usedBuy } from './together';
+import { convoyCommand, convoyGo, convoyJoin, financeView, mapCommand, passClaim, passCommand, roadCall, roadHelp, roadPay, takeGo, takeStart, usedBuy } from './together';
 import { reply, say } from './ui';
 import { ideaVote, newsCommand, pollCommand, pollVote } from './channels-1132';
 import { translateMessage } from './translate';
@@ -53,7 +53,6 @@ const COMMAND_HANDLERS: Record<string, (ctx: Ctx) => Answer | Promise<Answer>> =
   карта: mapCommand,
   конвой: convoyCommand,
   финанси: financeView,
-  дуел: duelCommand,
   пропуск: passCommand,
   новина: newsCommand,
   анкета: pollCommand,
@@ -122,8 +121,6 @@ async function component(ctx: Ctx, id: string, values: string[]): Promise<Answer
       break;
     case 'used':
       return usedBuy(ctx, b);
-    case 'duel':
-      return duelAnswer(ctx, b, a === 'yes');
     case 'pass':
       return passClaim(ctx);
     case 'road':
@@ -131,8 +128,6 @@ async function component(ctx: Ctx, id: string, values: string[]): Promise<Answer
       if (a === 'call') return roadCall(ctx, b);
       if (a === 'help') return roadHelp(ctx, b);
       break;
-    case 'livery':
-      return liveryVote(ctx, b);
     case 'idea':
       if (a === 'vote') return ideaVote(ctx, b);
       break;

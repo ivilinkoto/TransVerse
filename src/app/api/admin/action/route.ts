@@ -19,14 +19,12 @@ import { resolveReport, unmute } from '@/server/game/moderation';
 import { createUrgentContract, urgentSchema } from '@/server/urgent';
 import { applyPayFactor } from '@/server/admin-economy';
 import { requireFeature } from '@/server/features';
-import { adminCancelPlateAuction, adminEndTrailerHire, adminRemoveCupEntrant } from '@/server/staff-tools';
 import { broadcastSchema, setBroadcast } from '@/server/broadcast';
 import { IDEA_STATUSES, setIdeaStatus } from '@/server/game/ideas';
 import { clearServerErrors } from '@/server/error-log';
 import { retryOutbox } from '@/server/discord/outbox';
 import { setStaffNote } from '@/server/staff-notes';
 import { winBack } from '@/server/admin-retention';
-import { setApplicationStatus } from '@/server/game/careers';
 import { adminGrantItem, deleteSupportTemplate, saveSupportTemplate } from '@/server/admin-1142';
 import { setFeatureOff } from '@/server/feature-switches';
 import { INQUIRY_STATUSES, setPartnerInquiry } from '@/server/partners';
@@ -75,7 +73,6 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('discordRetry'), id: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('staffNote'), userId: id, note: z.string().trim().max(500) }),
   z.object({ type: z.literal('winBack'), userId: id }),
-  z.object({ type: z.literal('careerStatus'), userId: id, status: z.enum(['new', 'reviewing', 'interview', 'accepted', 'rejected']), note: z.string().max(500).optional() }),
   z.object({ type: z.literal('featureSwitch'), feature: z.string().max(60), off: z.boolean(), reason: z.string().trim().max(200).default('') }),
   z.object({ type: z.literal('promoCreate'), promo: promoInput.extend({ code: z.string().trim().max(32).optional(), maxUses: z.coerce.number().int().min(1).max(1_000_000).nullable().optional() }) }),
   z.object({ type: z.literal('promoBatch'), promo: promoInput.extend({ count: z.coerce.number().int().min(1).max(500), prefix: z.string().trim().max(12).optional() }) }),
@@ -93,9 +90,6 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('testMail'), to: z.string().trim().toLowerCase().email('Невалиден имейл.') }),
   z.object({ type: z.literal('verifyUserEmail'), userId: id }),
   z.object({ type: z.literal('seasonMode'), value: z.string().trim().max(40) }),
-  z.object({ type: z.literal('cancelPlateAuction'), weekKey: z.string().max(12) }),
-  z.object({ type: z.literal('endTrailerHire'), hireId: id }),
-  z.object({ type: z.literal('removeCupEntrant'), userId: id }),
   z.object({ type: z.literal('broadcast'), banner: broadcastSchema }),
   z.object({ type: z.literal('partnerInquiry'), id, status: z.enum(INQUIRY_STATUSES), note: z.string().trim().max(500).optional() }),
   z.object({ type: z.literal('ideaStatus'), ideaId: id, status: z.enum(IDEA_STATUSES), note: z.string().max(300).default('') }),
@@ -154,12 +148,6 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true };
     case 'createUrgentContract':
       return { ok: true, id: (await createUrgentContract(db, user, input.contract)).id };
-    case 'cancelPlateAuction':
-      return { ok: true, ...(await adminCancelPlateAuction(db, user, input.weekKey)) };
-    case 'endTrailerHire':
-      return { ok: true, ...(await adminEndTrailerHire(db, user, input.hireId)) };
-    case 'removeCupEntrant':
-      return { ok: true, ...(await adminRemoveCupEntrant(db, user, input.userId)) };
     case 'compensateAll':
       requireFeature('compensation', user);
       return { ok: true, ...(await compensateAll(db, user, { kind: input.kind, amount: input.amount, reason: input.reason })) };
@@ -243,11 +231,6 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
       return { ok: true };
     case 'staffNote':
       await setStaffNote(db, user, input.userId, input.note);
-      return { ok: true };
-    case 'careerStatus':
-      requireAdminRole(user);
-      await setApplicationStatus(db, input.userId, input.status, input.note, new Date());
-      await recordAudit(db, user.id, 'career_status', input.userId, { status: input.status });
       return { ok: true };
     case 'winBack':
       return { ok: true, ...(await winBack(db, user, input.userId)) };

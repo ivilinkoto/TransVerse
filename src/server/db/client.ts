@@ -16,7 +16,13 @@ function connectionString(): string {
 
 /** Shared pool (survives Next.js hot reloads in development). */
 export function getPool(): pg.Pool {
-  globalForDb.tvPool ??= new pg.Pool({ connectionString: connectionString(), max: Number(process.env.DB_POOL_SIZE ?? 10) });
+  if (!globalForDb.tvPool) {
+    const pool = new pg.Pool({ connectionString: connectionString(), max: Number(process.env.DB_POOL_SIZE ?? 10) });
+    // An idle connection that the database closes (a restart, a network blip) is reported here.
+    // Without a listener the error ends the whole process — every player sees 502 until it restarts.
+    pool.on('error', (error) => console.error('[db] idle connection error', error.message));
+    globalForDb.tvPool = pool;
+  }
   return globalForDb.tvPool;
 }
 

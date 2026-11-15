@@ -1,18 +1,16 @@
 import { and, eq, gt, inArray, isNull, lte } from 'drizzle-orm';
 import { money } from '@/lib/format';
 import { featureLive } from '@/lib/game/features';
-import { RALLY } from '@/lib/game/rally';
 import { BATTLE_RULES } from '@/lib/game/battles';
 import type { Database } from '@/server/db/client';
 import { companyBattles, globalEvents, jobState } from '@/server/db/schema';
-import { activeRally } from '@/server/game/rally';
 import { discord } from './api';
 import { appUrl, discordConfig } from './config';
 import { announce } from './outbox';
 import { t } from '@/i18n/t';
 
 /**
- * Discord scheduled events (v1.4): the weekly rally, the company battles of
+ * Discord scheduled events (v1.4): the company battles of
  * the week and the global events show up in the server's "Събития" list
  * (with "Интересува ме" and a reminder from Discord itself). One Discord
  * event per game item, remembered in job_state.
@@ -29,10 +27,6 @@ export interface ScheduledItem {
 /** What should be in Discord's event list now. */
 export async function scheduledItems(db: Database, now: Date): Promise<ScheduledItem[]> {
   const items: ScheduledItem[] = [];
-  const rally = await activeRally(db);
-  if (rally && rally.endsAt > now) {
-    items.push({ key: `rally:${rally.id}`, name: t('🏁 Рали: {0} → {1}', rally.from, rally.to), description: t('Седмичното рали — {0} км. Най-бързите и най-икономичните трима печелят до {1} и {2} TC. Записване: {3}/game/rally', Math.round(rally.distanceKm), money(RALLY.prizes[0].cents), RALLY.prizes[0].coins, appUrl()), startsAt: rally.startsAt, endsAt: rally.endsAt });
-  }
   const [battle] = await db.select({ weekKey: companyBattles.weekKey, endsAt: companyBattles.endsAt, createdAt: companyBattles.createdAt }).from(companyBattles).where(and(eq(companyBattles.status, 'active'), gt(companyBattles.endsAt, now))).limit(1);
   if (battle) {
     items.push({ key: `battles:${battle.weekKey}`, name: t('⚔️ Битка на компаниите'), description: t('Компаниите се борят по двойки: всеки превозен тон се брои. Победителят взема {0} за касата. {1}/game/company/missions', money(BATTLE_RULES.rewardCents), appUrl()), startsAt: battle.createdAt, endsAt: battle.endsAt });
@@ -70,20 +64,4 @@ export async function syncScheduledEvents(db: Database, now = new Date()) {
     created++;
   }
   return created;
-}
-
-/** The new weekly rally in #събития. */
-export async function announceRally(db: Database, rallyId: string, now: Date) {
-  if (!featureLive('rally', now)) return;
-  const rally = await activeRally(db);
-  if (!rally || rally.id !== rallyId) return;
-  await announce(db, `rally:${rally.id}`, 'events', () => ({
-    embeds: [{
-      title: t('🏁 Ралито на седмицата: {0} → {1}', rally.from, rally.to),
-      url: `${appUrl()}/game/rally`,
-      color: 0xf97316,
-      description: t('{0} км по истински път, един и същ товар за всички. Мери се времето от товаренето до разтоварването и горивото на 100 км. Първите трима във всяка категория печелят до **{1}** и **{2} TC**. Край <t:{3}:R>.', Math.round(rally.distanceKm), money(RALLY.prizes[0].cents), RALLY.prizes[0].coins, Math.floor(rally.endsAt.getTime() / 1000)),
-      footer: { text: t('TransVerse · игрови данни') },
-    }],
-  }), now);
 }

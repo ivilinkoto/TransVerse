@@ -46,7 +46,7 @@ describe('v1.1.4.1 „По-просто“', () => {
     expect(core.length).toBeLessThanOrEqual(8);
     expect(core.length).toBeLessThan(compete.tabs!.length);
     // The open page is always in the row.
-    expect(coreTabs(visibleTabs(compete, null, '/game/rally'), '/game/rally').some((t) => t.href === '/game/rally')).toBe(true);
+    expect(coreTabs(visibleTabs(compete, null, '/game/league'), '/game/league').some((t) => t.href === '/game/league')).toBe(true);
   });
 
   it('„Докато те нямаше“: what the trucks did while the player was away, only after 6 hours', async () => {

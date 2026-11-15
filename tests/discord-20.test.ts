@@ -6,7 +6,7 @@ import { closeDb } from '@/server/db/client';
 import { discordOutbox } from '@/server/db/schema';
 import { LOCALE_CHANNELS } from '@/server/discord/config';
 import { LAYOUT } from '@/server/discord/layout';
-import { announceRallyFinish } from '@/server/discord/rally';
+import { announceDailyLoad } from '@/server/discord/announce';
 import { localizedCommands } from '@/server/discord/register';
 import { channelKey } from '@/server/discord/guild';
 import { db } from './helpers';
@@ -17,13 +17,13 @@ describe('v2.0 Discord in three languages', () => {
   it('an announcement goes to the Bulgarian, English and Russian channels, each in its language', async () => {
     Object.assign(process.env, { DISCORD_BOT_TOKEN: 'test-token', DISCORD_APPLICATION_ID: 'app', DISCORD_GUILD_ID: 'g1' });
     const key = `i18n-${Date.now()}`;
-    await announceRallyFinish(db(), key, { username: 'Тест', minutes: 245, fuelCentsPer100: 9000, from: 'София', to: 'Варна' }, new Date());
-    const rows = await db().select().from(discordOutbox).where(like(discordOutbox.dedupeKey, `rally-finish:${key}%`));
-    const by = Object.fromEntries(rows.map((r) => [r.target, (r.payload as { content: string }).content]));
-    expect(Object.keys(by).sort()).toEqual(['channel:rally', 'channel:rally@en', 'channel:rally@ru']);
-    expect(by['channel:rally']).toContain('финишира София → Варна');
-    expect(by['channel:rally@en']).toContain('finished Sofia → Varna');
-    expect(by['channel:rally@ru']).toContain('финишировал София → Варна');
+    await announceDailyLoad(db(), { id: key, goods: 'Мебели', weightTons: 10, distanceKm: 150, rewardCents: 900_00, expiresAt: new Date(Date.now() + 3_600_000) }, { from: 'София', to: 'Пловдив' }, 5, new Date());
+    const rows = await db().select().from(discordOutbox).where(like(discordOutbox.dedupeKey, `daily-load:${key}%`));
+    const by = Object.fromEntries(rows.map((r) => [r.target, (r.payload as { embeds: { title: string }[] }).embeds[0]!.title]));
+    expect(Object.keys(by).sort()).toEqual(['channel:dailyLoad', 'channel:dailyLoad@en', 'channel:dailyLoad@ru']);
+    expect(by['channel:dailyLoad']).toContain('Товар на деня');
+    expect(by['channel:dailyLoad@en']).not.toContain('Товар на деня');
+    expect(by['channel:dailyLoad@ru']).not.toBe(by['channel:dailyLoad@en']);
     for (const k of ['DISCORD_BOT_TOKEN', 'DISCORD_APPLICATION_ID', 'DISCORD_GUILD_ID']) delete process.env[k];
   });
 

@@ -6,7 +6,7 @@ import { navEmoji } from './nav-emoji';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Logo, LogoMark } from '@/components/brand/Logo';
@@ -66,9 +66,12 @@ function InventoryNavItem({ badges, active, variant }: { badges: NavBadges; acti
 }
 
 function SectionBadge({ section, badges, compact = false }: { section: NavSection; badges: NavBadges; compact?: boolean }) {
+  // 1.3.2: „Игри и награди“ also holds the bag, so its new items count here.
+  const simpleMenu = useFeature('simple_menu');
   if (section.key !== 'compete') return null;
-  if (badges.missions > 0)
-    return compact ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-gold-400" aria-label={tr('{0} награди', badges.missions)} /> : <span className="num rounded-full bg-gold-400 px-1.5 text-[11px] font-bold text-asphalt-950" title={tr('Награди за взимане')}>{tx(badges.missions)}</span>;
+  const waiting = badges.missions + (simpleMenu ? (badges.inventoryNew ?? 0) + (badges.caseReady ? 1 : 0) : 0);
+  if (waiting > 0)
+    return compact ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-gold-400" aria-label={tr('{0} награди', waiting)} /> : <span className="num rounded-full bg-gold-400 px-1.5 text-[11px] font-bold text-asphalt-950" title={tr('Награди за взимане')}>{waiting > 99 ? '99+' : tx(waiting)}</span>;
   if (badges.eventLive)
     return compact ? <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-cyan-glow" aria-label={tr('Тече ивент')} /> : <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-glow" title={tr('Тече ивент')} />;
   return null;
@@ -80,11 +83,13 @@ export function Sidebar({ badges, version, staff = false, holiday = null, attent
   const has = useFeatures();
   const current = sectionFor(pathname, has);
   // 1.1.4.1: four sections in the rail, the rest in "Още".
-  const simple = useFeature('simple_ui');
-  const invMenu = useFeature('inventory_menu');
+  // 1.3.2 „Просто“: the five places, all in the rail; no „Още“, the bag is in „Игри и награди“.
+  const simpleMenu = useFeature('simple_menu');
+  const simple = useFeature('simple_ui') && !simpleMenu;
+  const invMenu = useFeature('inventory_menu') && !simpleMenu;
   const [more, setMore] = useState(false);
   const main = mainKeys(has);
-  const sections = simple ? listed(has).filter((s) => main.includes(s.key)) : listed(has);
+  const sections = simple || simpleMenu ? listed(has).filter((s) => main.includes(s.key)) : listed(has);
   const inMore = simple && !!current && !main.includes(current.key) && current.key !== 'inventory';
   return (
     <aside className="sticky top-0 hidden h-dvh w-[84px] shrink-0 flex-col border-r border-asphalt-800/80 bg-asphalt-900/60 px-3 py-5 backdrop-blur lg:flex xl:w-60">
@@ -229,7 +234,9 @@ export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
 export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { badges: NavBadges; staff: boolean; holiday?: string | null; attention?: number }) {
   const pathname = usePathname();
   const has = useFeatures();
-  const invMenu = useFeature('inventory_menu');
+  // 1.3.2 „Просто“: five places in the bar and nothing else (the account pages are in the avatar menu).
+  const simpleMenu = useFeature('simple_menu');
+  const invMenu = useFeature('inventory_menu') && !simpleMenu;
   const [open, setOpen] = useState(false);
   const current = sectionFor(pathname, has);
   const main = listed(has).filter((s) => mainKeys(has).includes(s.key));
@@ -240,24 +247,26 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
   return (
     <>
       <nav aria-label={tr('Основна навигация')} className="fixed inset-x-0 bottom-0 z-40 border-t border-asphalt-800 bg-asphalt-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-        <div className={`mx-auto grid max-w-xl ${slots.length + 1 >= 6 ? 'grid-cols-6' : 'grid-cols-5'}`}>
+        <div className={`mx-auto grid max-w-xl ${simpleMenu ? 'grid-cols-5' : slots.length + 1 >= 6 ? 'grid-cols-6' : 'grid-cols-5'}`}>
           {slots.map((s) => {
             if (s === 'inventory') return <InventoryNavItem key="inventory" badges={badges} active={current?.key === 'inventory' && !open} variant="bar" />;
             const active = current?.key === s.key && !open;
             return (
-              <Link key={s.key} href={s.href} aria-current={active ? 'page' : undefined} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${active ? 'text-cyan-glow' : 'text-mist-400'}`}>
+              <Link key={s.key} href={s.href} aria-current={active ? 'page' : undefined} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium leading-tight ${active ? 'text-cyan-glow' : 'text-mist-400'}`}>
                 {active && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-cyan-glow" aria-hidden="true" />}
                 <s.icon className="h-5 w-5" />
-                {tx(s.label)}
+                {/* „Игри и награди“ is short enough on a phone as „Игри“. */}
+                {simpleMenu && s.key === 'compete' ? tr('Игри') : tx(s.label)}
+                {simpleMenu && <SectionBadge section={s} badges={badges} compact />}
               </Link>
             );
           })}
-          <button type="button" onClick={() => { if (!open) window.dispatchEvent(new Event('tv:chat-close')); setOpen((o) => !o); }} aria-expanded={open} data-tour="more" aria-label={tr('Още')} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
+          {!simpleMenu && <button type="button" onClick={() => { if (!open) window.dispatchEvent(new Event('tv:chat-close')); setOpen((o) => !o); }} aria-expanded={open} data-tour="more" aria-label={tr('Още')} className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${open || inMore ? 'text-cyan-glow' : 'text-mist-400'}`}>
             {(badges.missions > 0 || badges.eventLive) && !open && attention === 0 && <span className="absolute right-[calc(50%-14px)] top-2 h-2 w-2 rounded-full bg-gold-400" aria-hidden="true" />}
             {staff && attention > 0 && !open && <span className="absolute right-[calc(50%-14px)] top-2 h-2.5 w-2.5 rounded-full bg-loss" aria-hidden="true" />}
             {open ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}
             {tr('Още')}
-          </button>
+          </button>}
         </div>
       </nav>
 
@@ -270,9 +279,7 @@ export function MobileNav({ badges, staff, holiday = null, attention = 0 }: { ba
 /** "Още": the other sections as tiles by group, the account pages, Discord and logout. */
 function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false }: { badges: NavBadges; staff: boolean; holiday: string | null; attention: number; onClose: () => void; desktop?: boolean }) {
   const pathname = usePathname();
-  const router = useRouter();
   const mentor = useFeature('mentor');
-  const careers = useFeature('careers');
   const has = useFeatures();
   const player = useNavPlayer();
   const simple = useFeature('simple_nav');
@@ -288,8 +295,9 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
   }, [onClose]);
   const logout = async () => {
     await api('/api/auth/logout', {});
-    router.replace('/');
-    router.refresh();
+    // A full load: a soft replace raced with refresh and could leave the player on /game.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- logout wants the full load
+    window.location.href = '/';
   };
   const tile = 'flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-asphalt-700 bg-asphalt-850 px-2 py-3 text-center text-xs font-medium text-mist-100 transition hover:border-asphalt-500 active:scale-95';
   // 1.1.4.2: drawn at the end of <body>. Inside the sidebar (backdrop-blur makes it the containing
@@ -329,7 +337,7 @@ function MoreSheet({ badges, staff, holiday, attention, onClose, desktop = false
             <section>
               <h2 className="label mb-2 flex items-center justify-between gap-2">{tr('Профил')}<span className="sm:hidden"><LanguageSwitcher /></span></h2>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {ACCOUNT_MENU.filter((item) => (mentor || item.href !== '/game/mentor') && (careers || item.href !== '/game/careers')).map((item) => (
+                {ACCOUNT_MENU.filter((item) => (mentor || item.href !== '/game/mentor')).map((item) => (
                   <Link key={item.href} href={item.href} onClick={onClose} className={`${tile} ${pathname.startsWith(item.href) ? 'border-cyan-glow/50 text-cyan-glow' : ''}`}>
                     <item.icon className={`h-5 w-5 ${item.href === '/game/shop' ? 'text-gold-400' : 'text-mist-400'}`} />
                     {tx(item.label)}

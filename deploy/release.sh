@@ -26,6 +26,14 @@ node dist/import-geonames.js data/geo/launch-region.json
 echo "==> Founder account"
 node dist/grant-founder.js "${FOUNDER_USERNAMES:-ANGELov,V3s1chaa}" || echo "Founder bootstrap failed (non-fatal)"
 
+# The service files are installed by root (setup-server.sh / fix-502.sh); say when the server's are older.
+for unit in transverse-web transverse-worker; do
+  if ! cmp -s "deploy/$unit.service" "/etc/systemd/system/$unit.service"; then
+    echo "!! /etc/systemd/system/$unit.service is older than this release."
+    echo "!! As root, run once: bash $RELEASE/deploy/fix-502.sh"
+  fi
+done
+
 echo "==> Switching release"
 ln -sfn "$RELEASE" "$APP_DIR/current.new" && mv -Tf "$APP_DIR/current.new" "$APP_DIR/current"
 sudo /usr/bin/systemctl restart transverse-web

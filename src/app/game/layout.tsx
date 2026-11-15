@@ -22,9 +22,8 @@ import { TopBar } from '@/components/game/TopBar';
 import { globalEvents, notifications } from '@/server/db/schema';
 import { TutorialCoach } from '@/components/game/TutorialCoach';
 import { ReleaseBody, ReleaseTitle } from '@/components/game/ReleaseNotes';
+import { PageVisit } from '@/components/game/PageVisit';
 import { WhatsNew } from '@/components/game/WhatsNew';
-import { CareersPitch } from '@/components/careers/CareersPitch';
-import { CareersWindow } from '@/components/careers/CareersWindow';
 import { currentVersion, unseenRelease } from '@/lib/game/releases';
 import { isHalloween } from '@/lib/game/halloween';
 import { staffAttention } from '@/server/admin';
@@ -92,6 +91,19 @@ export default async function GameLayout({ children, modal }: { children: React.
     const info = UNLOCK_INFO[href];
     return t && info ? [{ href, label: t.label, section: t.section, ...info }] : [];
   });
+  // The windows that open by themselves: at most one at a time (1.3.2 „Просто“), never over the
+  // tutorial or the terms. The release notes come first, then what the level unlocked, then
+  // „Докато те нямаше“. With „Просто“ the menu tour is gone (five places need none).
+  const coaching = !!(tutorial.active && tutorial.step);
+  const simpleMenu = !!features.simple_menu;
+  const popup: 'news' | 'unlocks' | 'tour' | 'back' | null = (() => {
+    if (simpleMenu && !user.termsAcceptedAt) return null;
+    if (fresh && !coaching) return 'news';
+    if (unlocks.length) return 'unlocks';
+    if (!simpleMenu && features.nav_v2 && !fresh && !coaching && !user.uiPrefs?.seenPages?.includes('nav-tour-v2')) return 'tour';
+    if (back) return 'back';
+    return null;
+  })();
   return (
     <FeaturesProvider value={features}>
       <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll, staff: testing }}>
@@ -127,6 +139,7 @@ export default async function GameLayout({ children, modal }: { children: React.
         </div>
         <MobileNav badges={navBadges} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <LiveUpdates />
+        <PageVisit />
         {features.game_fx && <MotionInit />}
         {features.game_fx && <FxHost />}
         {features.accessibility && <A11yApply />}
@@ -136,15 +149,11 @@ export default async function GameLayout({ children, modal }: { children: React.
         <ReportHost />
         <RegisterServiceWorker />
         {!user.termsAcceptedAt && <TermsPrompt />}
-        {unlocks.length > 0 && <UnlockNotice items={unlocks} />}
+        {popup === 'unlocks' && <UnlockNotice items={unlocks} />}
         {/* 1.2.2: a short tour of the new menu, once (not over the release notes or the tutorial). */}
-        {features.nav_v2 && !fresh && !(tutorial.active && tutorial.step) && !unlocks.length && !user.uiPrefs?.seenPages?.includes('nav-tour-v2') && <MenuTour />}
-        {back && !unlocks.length && <WelcomeBack summary={back} />}
-        {/* 1.3.1 „Екипът“: once, not over the release notes, the tutorial or the welcome-back summary. */}
-        {features.careers && !fresh && !back && !(tutorial.active && tutorial.step) && !unlocks.length && !user.seenHints.includes('careers') && (
-          <CareersWindow><CareersPitch compact /></CareersWindow>
-        )}
-        {fresh && !(tutorial.active && tutorial.step) && (
+        {popup === 'tour' && <MenuTour />}
+        {popup === 'back' && back && <WelcomeBack summary={back} />}
+        {popup === 'news' && fresh && (
           <WhatsNew version={fresh.version}>
             <ReleaseTitle release={fresh} />
             <div className="mt-5"><ReleaseBody release={fresh} staff={testing} /></div>

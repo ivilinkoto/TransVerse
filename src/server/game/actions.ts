@@ -1,3 +1,4 @@
+import { sharePostcard } from '@/server/game/postcards';
 import { z } from 'zod';
 import { ideaSchema, submitIdea, voteIdea } from '@/server/game/ideas';
 import { companyNameSchema } from '@/server/auth/accounts';
@@ -14,13 +15,7 @@ import { HINT_IDS, type HintId } from '@/lib/game/hints';
 import { claimHalloweenQuest } from '@/server/game/halloween';
 import { claimChristmasQuest } from '@/server/game/christmas';
 import { claimMartaQuest, giveMartenitsa, spotStork } from '@/server/game/marta';
-import { playParking } from '@/server/game/parking';
 import { playLane } from '@/server/game/cabin';
-import { announceCup, cancelCup, createCup, joinCommunityCup, removeFromCup } from '@/server/game/community-cups';
-import { CUP_METRICS } from '@/lib/game/community-cups';
-import { joinCup } from '@/server/game/tournament';
-import { bidForPlate, fitRarePlate } from '@/server/game/plates';
-import { hireTrailer, offerTrailer, returnHiredTrailer, withdrawTrailer } from '@/server/game/trailer-hire';
 import { donateToMuseum, scrapVehicle, repairWithPart } from '@/server/game/heritage';
 import { thankHelper } from '@/server/game/chat-life';
 import { acceptPartner, askPartner, invitePartner } from '@/server/game/partner-loads';
@@ -32,25 +27,17 @@ import { SPECIALIZATIONS, type Specialization } from '@/lib/game/specialization'
 import { TRUCK_NAME_MAX } from '@/lib/game/truck-names';
 import { setDriverOfMonthPrize, setShowcase, staffBus } from '@/server/game/community';
 import { claimEasterQuest, eggFight } from '@/server/game/easter';
-import { createReport, sendCb, voteReport } from '@/server/game/live-road';
-import { pickHitchhiker } from '@/server/game/road-life';
 import { haggle } from '@/server/game/deals';
-import { buyShares, listCompany, sellShares } from '@/server/game/shares';
-import { enterTruck, voteTruck } from '@/server/game/truck-contest';
 import { acceptTerms, setUiPrefs } from '@/server/game/ui-prefs';
 import { shareTrip } from '@/server/game/trip-log';
 import { decideChoice } from '@/server/game/road-choices';
 import { cancelConvoy, createConvoy, joinConvoy, leaveConvoy, postConvoyMessage } from '@/server/game/convoys';
-import { blackMarketRepair, buyCompartment, reportShadyOffer, setSmugglingOptIn } from '@/server/game/smuggling';
 import { acceptMerger, createDepartment, decideInternship, declineMerger, deleteDepartment, joinDepartment, openAssembly, proposeMerger, requestInternship, setDepartmentHead, setLogoDesign, setTradition, voteAssembly } from '@/server/game/company-life';
-import { REPORT_KIND_IDS, type ReportKind } from '@/lib/game/live-road';
 import { buyAllianceListing, listForAlliance, withdrawAllianceListing } from '@/server/game/alliance-market';
-import { predictBattle } from '@/server/game/predictions';
 import { createAlliance, dissolveAlliance, setAllianceDiscord, enrolAcademy, inviteToAlliance, leaveAlliance, offerCompanyContract, postAllianceMessage, rateCompanyContract, respondAllianceInvite, respondCompanyContract } from '@/server/game/alliances';
 import { CARGO_TYPES } from '@/lib/game/cargo';
 import { blockUser, reportPlayer, reportSchema, unblockUser } from '@/server/game/moderation';
 import { answerDriver } from '@/server/game/moods';
-import { joinRally } from '@/server/game/rally';
 import { buyGoods, clearStock, postFreight, rateHauler, shipGoods } from '@/server/game/trade';
 import { buyPremiumPass, claimPassRewards } from '@/server/game/season-pass';
 import { deleteChannelMessage, deleteConversation, messageBodySchema, postToChannel, sendDirectMessage, unsendDirectMessage } from '@/server/game/messages';
@@ -72,7 +59,6 @@ import { guessDailyRoute } from '@/server/game/daily-route';
 import { playCourier } from './courier';
 import { voteXmasBase } from './winter-games';
 import { claimFirstWeek } from './first-week';
-import { applyForRole } from './careers';
 import { fireStaff, hireStaff } from './base-staff';
 import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
@@ -98,8 +84,7 @@ import { pollInputSchema } from '@/lib/game/polls';
 import { sendMoney, transferSchema } from '@/server/game/transfers';
 import { redeemCode } from '@/server/game/promo';
 import { callForHelp, helpOnRoad, paidRoadHelp } from '@/server/game/roadside';
-import { challengeDuel, respondDuel, shareLoad } from '@/server/game/together';
-import { enterLiveryContest, voteLivery } from '@/server/game/livery-contest';
+import { shareLoad } from '@/server/game/together';
 import { announceConvoy } from '@/server/game/convoy';
 import { chooseRecipe, orderRaw, sellProduct } from '@/server/game/factory';
 import { closeBranch, openBranch, repayLoan, takeLoan } from '@/server/game/business';
@@ -117,12 +102,9 @@ import { buyCo2, cancelCo2Listing, listCo2, sellCo2ToMarket } from '@/server/gam
 import { takeAd } from '@/server/game/ads';
 import { lockFuel } from '@/server/game/fuel-hedge';
 import { giftLoad } from '@/server/game/gifts';
-import { buyPolicy, setInsurancePlan } from '@/server/game/insurers';
 import { answerInterview } from '@/server/game/interviews';
 import { setLaneRepeat } from '@/server/game/lane-repeat';
-import { accuse, lookClue } from '@/server/game/lost-cargo';
 import { fireOffice, hireOffice, trainOffice } from '@/server/game/office';
-import { createChallenge, joinChallenge } from '@/server/game/player-challenges';
 import { startResearch } from '@/server/game/research';
 import { trackLink } from '@/server/game/tracking';
 import { setPromise, submitPuzzle } from '@/server/game/trip-extras';
@@ -139,8 +121,6 @@ import { refreshLoads, reserveContract } from '@/server/game/contracts';
 import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
 import { applyTuningPreset, fitTuning, likeGarage, saveTuningPreset, shareGarage } from '@/server/game/showroom';
 import { answerDockSwap, offerDockSwap } from '@/server/game/dock';
-import { sharePostcard } from '@/server/game/postcards';
-import { markLettersRead } from '@/server/game/letters';
 import { chatBodySchema, clearCompanyChat, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
 import {
   buyCompanyUpgrade,
@@ -197,7 +177,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('dockSwapOffer'), deliveryId: z.string().uuid(), withDeliveryId: z.string().uuid(), giftCents: z.number().int().min(0).max(100_000_00) }),
   z.object({ type: z.literal('dockSwapAnswer'), swapId: z.string().uuid(), accept: z.boolean() }),
   z.object({ type: z.literal('sharePostcard'), deliveryId: z.string().uuid() }),
-  z.object({ type: z.literal('readLetters') }),
   z.object({ type: z.literal('likeGarage'), username: z.string().trim().min(1).max(30), note: z.string().max(200).default('') }),
   z.object({ type: z.literal('shareGarage') }),
   z.object({ type: z.literal('nameVehicle'), vehicleId: id, name: z.string().max(TRUCK_NAME_MAX * 4) }),
@@ -270,7 +249,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('nightRun'), inputs: z.array(z.number().int().min(-1).max(1)).max(2250) }),
   z.object({ type: z.literal('voteXmasBase'), organizationId: id }),
   z.object({ type: z.literal('claimFirstWeek'), step: z.string().max(40) }),
-  z.object({ type: z.literal('applyForRole'), role: z.string().max(40), about: z.string().max(2000), hours: z.coerce.number().int().min(1).max(40), contact: z.string().max(200), link: z.string().max(400).optional() }),
   z.object({ type: z.literal('hireBaseStaff'), role: z.enum(['mechanic', 'dispatcher', 'cook', 'instructor']) }),
   z.object({ type: z.literal('fireBaseStaff'), role: z.enum(['mechanic', 'dispatcher', 'cook', 'instructor']) }),
   z.object({ type: z.literal('courierRun'), city: z.enum(['sofia', 'plovdiv', 'varna']), taps: z.array(z.number().int().min(0).max(100_000)).max(80) }),
@@ -327,9 +305,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('spotStork') }),
   z.object({ type: z.literal('claimEasterQuest'), questId: z.string().max(30) }),
   z.object({ type: z.literal('eggFight'), friendId: id }),
-  z.object({ type: z.literal('cbSend'), body: z.string().max(400), vehicleId: id.optional() }),
-  z.object({ type: z.literal('roadReport'), kind: z.enum(REPORT_KIND_IDS as [ReportKind, ...ReportKind[]]), vehicleId: id.optional() }),
-  z.object({ type: z.literal('listCompany') }),
   z.object({ type: z.literal('createDepartment'), name: z.string().max(60), goalTons: z.coerce.number().int().optional() }),
   z.object({ type: z.literal('deleteDepartment'), id: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('joinDepartment'), id: z.coerce.number().int().positive().nullable() }),
@@ -342,7 +317,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('decideInternship'), id: z.coerce.number().int().positive(), accept: z.boolean() }),
   z.object({ type: z.literal('proposeMerger'), organizationId: id }),
   z.object({ type: z.literal('decideMerger'), id: z.coerce.number().int().positive(), accept: z.boolean() }),
-  z.object({ type: z.literal('smugglingOptIn'), on: z.boolean() }),
   z.object({ type: z.literal('createConvoy'), kind: z.enum(['personal', 'company']).default('personal'), access: z.enum(['open', 'friends', 'link']).default('open'), originCityId: z.coerce.number().int().positive(), destCityId: z.coerce.number().int().positive(), departInMin: z.coerce.number().int(), seats: z.coerce.number().int(), minLevel: z.coerce.number().int().min(1).max(100).default(1), sharedCargo: z.string().max(20).nullable().optional(), sharedTons: z.coerce.number().nullable().optional(), title: z.string().max(60).optional() }),
   z.object({ type: z.literal('joinConvoy'), convoyId: id, vehicleId: id, contractId: id.nullable().optional(), role: z.enum(['member', 'tail', 'scout']).optional() }),
   z.object({ type: z.literal('leaveConvoy'), convoyId: id }),
@@ -350,50 +324,16 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('shareTrip'), deliveryId: id, on: z.boolean().default(true) }),
   z.object({ type: z.literal('cancelConvoy'), convoyId: id }),
   z.object({ type: z.literal('convoyMessage'), convoyId: id, body: z.string().max(400) }),
-  z.object({ type: z.literal('reportShady'), contractId: id }),
-  z.object({ type: z.literal('buyCompartment'), vehicleId: id }),
-  z.object({ type: z.literal('blackRepair'), vehicleId: id }),
   z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional(), hideBusiness: z.boolean().optional(), mapLayers: z.object({ mine: z.boolean().optional(), company: z.boolean().optional(), friends: z.boolean().optional(), others: z.boolean().optional(), movingOnly: z.boolean().optional(), plates: z.boolean().optional(), depots: z.boolean().optional(), routes: z.boolean().optional(), weather: z.boolean().optional() }).strict().optional() }),
-  z.object({ type: z.literal('enterTruck'), vehicleId: id }),
-  z.object({ type: z.literal('voteTruck'), entryId: z.coerce.number().int().positive() }),
-  z.object({ type: z.literal('buyShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
-  z.object({ type: z.literal('sellShares'), organizationId: id, count: z.coerce.number().int().min(1).max(1000) }),
   z.object({ type: z.literal('haggle'), contractId: id, percent: z.union([z.literal(10), z.literal(20), z.literal(30)]) }),
-  z.object({ type: z.literal('pickHitchhiker'), id: z.coerce.number().int().positive() }),
-  z.object({ type: z.literal('roadVote'), reportId: z.coerce.number().int().positive(), vote: z.union([z.literal(1), z.literal(-1)]) }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
-  z.object({ type: z.literal('joinCup') }),
-  z.object({ type: z.literal('bidPlate'), coins: z.coerce.number().int().positive().max(1_000_000), weekKey: z.string().max(12).optional() }),
-  z.object({ type: z.literal('fitRarePlate'), weekKey: z.string().max(12), vehicleId: id }),
-  z.object({ type: z.literal('offerTrailer'), trailerId: id, pricePerDay: z.coerce.number().positive().max(100_000), maxDays: z.coerce.number().int().min(1).max(7) }),
-  z.object({ type: z.literal('withdrawTrailer'), hireId: id }),
-  z.object({ type: z.literal('hireTrailer'), hireId: id, days: z.coerce.number().int().min(1).max(7) }),
-  z.object({ type: z.literal('returnHiredTrailer'), hireId: id }),
   z.object({ type: z.literal('scrapVehicle'), vehicleId: id }),
   z.object({ type: z.literal('repairWithPart'), vehicleId: id }),
   z.object({ type: z.literal('donateToMuseum'), vehicleId: id }),
   z.object({ type: z.literal('setSpecialization'), specialization: z.enum(Object.keys(SPECIALIZATIONS) as [Specialization, ...Specialization[]]).nullable() }),
   z.object({ type: z.literal('postRecruitment'), kind: z.enum(['company', 'driver']), text: z.string().max(400), minLevel: z.coerce.number().int().min(1).max(100).optional() }),
   z.object({ type: z.literal('removeRecruitment'), postId: id }),
-  z.object({ type: z.literal('parking'), inputs: z.array(z.number().int().min(-1).max(1)).max(400) }),
-  z.object({
-    type: z.literal('cupCreate'),
-    name: z.string().min(1).max(60),
-    description: z.string().max(400).default(''),
-    metric: z.enum(CUP_METRICS),
-    cargoType: z.string().max(20).nullable().default(null),
-    countryCode: z.string().length(2).nullable().default(null),
-    startsAt: z.coerce.date(),
-    endsAt: z.coerce.date(),
-    prizeEur: z.coerce.number().int().positive().max(500_000),
-    feeEur: z.coerce.number().int().min(0).max(10_000).default(0),
-    maxPlayers: z.coerce.number().int().min(2).max(200),
-  }),
-  z.object({ type: z.literal('cupJoin'), cupId: id }),
-  z.object({ type: z.literal('cupRemove'), cupId: id, userId: id }),
-  z.object({ type: z.literal('cupAnnounce'), cupId: id, text: z.string().max(400) }),
-  z.object({ type: z.literal('cupCancel'), cupId: id }),
   z.object({ type: z.literal('lane'), deliveryId: id, inputs: z.array(z.number().int().min(-1).max(1)).max(300) }),
   z.object({ type: z.literal('driverOfMonthPrize'), cents: z.coerce.number().int().min(0).max(5_000_00) }),
   z.object({ type: z.literal('setShowcase'), trucks: z.array(id).max(3), badges: z.array(z.string().max(40)).max(3) }),
@@ -417,7 +357,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('respondCompanyContract'), contractId: id, accept: z.boolean() }),
   z.object({ type: z.literal('rateCompanyContract'), contractId: id, stars: z.coerce.number().int().min(1).max(5) }),
   z.object({ type: z.literal('enrolAcademy'), mentorId: id }),
-  z.object({ type: z.literal('predictBattle'), battleId: id, pickOrgId: id }),
   z.object({ type: z.literal('blockUser'), userId: id }),
   z.object({ type: z.literal('unblockUser'), userId: id }),
   z.object({ type: z.literal('report'), report: reportSchema }),
@@ -462,10 +401,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyListing'), listingId: id }),
   z.object({ type: z.literal('claimMission'), periodKey: z.string().max(20), missionId: z.string().max(40) }),
   z.object({ type: z.literal('shareLoad'), contractId: id }),
-  z.object({ type: z.literal('challengeDuel'), userId: id }),
-  z.object({ type: z.literal('respondDuel'), duelId: id, accept: z.boolean() }),
-  z.object({ type: z.literal('enterLivery'), vehicleId: id }),
-  z.object({ type: z.literal('voteLivery'), entryId: id }),
   z.object({ type: z.literal('roadsidePaid'), deliveryId: id }),
   z.object({ type: z.literal('callForHelp'), deliveryId: id }),
   z.object({ type: z.literal('announceConvoy') }),
@@ -478,7 +413,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('closeBranch'), branchId: id }),
   z.object({ type: z.literal('takeLoan'), amountEur: z.coerce.number().int().min(1_000).max(1_000_000), weeks: z.coerce.number().int() }),
   z.object({ type: z.literal('repayLoan') }),
-  z.object({ type: z.literal('joinRally') }),
   z.object({ type: z.literal('moveToDepot'), vehicleId: id, depotId: id }),
   z.object({ type: z.literal('moveAllToDepot') }),
   z.object({ type: z.literal('queueTrip'), vehicleId: id, contractId: id }),
@@ -499,14 +433,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('officeHire'), role: z.enum(['dispatcher', 'accountant', 'sales', 'inspector']) }),
   z.object({ type: z.literal('officeTrain'), role: z.enum(['dispatcher', 'accountant', 'sales', 'inspector']) }),
   z.object({ type: z.literal('officeFire'), role: z.enum(['dispatcher', 'accountant', 'sales', 'inspector']) }),
-  z.object({ type: z.literal('createPlayerChallenge'), title: z.string().max(60), originCityId: cityId, destCityId: cityId, days: z.coerce.number().int().min(1).max(7), prizeLev: z.coerce.number().int().min(1).max(1_000_000), soloOnly: z.boolean().default(false) }),
-  z.object({ type: z.literal('joinPlayerChallenge'), id }),
   z.object({ type: z.literal('trackLink'), deliveryId: id }),
-  z.object({ type: z.literal('insurancePlan'), premiumLev: z.coerce.number().positive().max(100_000), coverPct: z.coerce.number().int().min(1).max(100), maxPayoutLev: z.coerce.number().positive().max(1_000_000), active: z.boolean().default(true) }),
-  z.object({ type: z.literal('buyPolicy'), orgId: id }),
   z.object({ type: z.literal('answerInterview'), id, answer: z.enum(['modest', 'bold', 'team']) }),
-  z.object({ type: z.literal('lookClue'), id, clue: z.enum(['warehouse', 'driver', 'camera']) }),
-  z.object({ type: z.literal('accuse'), id, suspect: z.coerce.number().int().min(0).max(2) }),
   // 1.2
   z.object({ type: z.literal('redeemCode'), code: z.string().trim().min(1).max(40), via: z.enum(['web', 'discord']).default('web') }),
   z.object({ type: z.literal('useItem'), itemId: z.string().max(40), driverId: id.optional(), vehicleId: id.optional() }),
@@ -548,10 +476,6 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   endMentorship: 'mentor',
   helpOnRoad: 'roadside',
   shareLoad: 'shared_loads',
-  challengeDuel: 'duels',
-  respondDuel: 'duels',
-  enterLivery: 'livery_contest',
-  voteLivery: 'livery_contest',
   roadsidePaid: 'roadside_paid',
   callForHelp: 'roadside_paid',
   announceConvoy: 'discord_bot',
@@ -565,18 +489,12 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   takeLoan: 'loans',
   repayLoan: 'loans',
   answerDriver: 'driver_moods',
-  joinRally: 'rally',
   claimMartaQuest: 'marta',
   giveMartenitsa: 'marta',
   spotStork: 'marta',
   claimEasterQuest: 'easter',
   eggFight: 'easter',
-  cbSend: 'cb_radio',
-  roadReport: 'road_reports',
-  roadVote: 'road_reports',
-  pickHitchhiker: 'hitchhikers',
   haggle: 'haggling',
-  listCompany: 'share_market',
   createDepartment: 'departments',
   deleteDepartment: 'departments',
   joinDepartment: 'departments',
@@ -589,7 +507,6 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   decideInternship: 'interns',
   proposeMerger: 'mergers',
   decideMerger: 'mergers',
-  smugglingOptIn: 'smuggling',
   createConvoy: 'convoy_lobby',
   joinConvoy: 'convoy_lobby',
   leaveConvoy: 'convoy_lobby',
@@ -597,29 +514,9 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   roadChoice: 'road_choices',
   cancelConvoy: 'convoy_lobby',
   convoyMessage: 'convoy_lobby',
-  reportShady: 'smuggling',
-  buyCompartment: 'smuggling',
-  blackRepair: 'smuggling',
-  enterTruck: 'truck_contest',
-  voteTruck: 'truck_contest',
-  buyShares: 'share_market',
-  sellShares: 'share_market',
   staffBus: 'staff_bus',
   // testDrive: startTestDrive checks the release itself (1.1.3.1: the new models can be tried earlier).
-  parking: 'parking_game',
   lane: 'cabin',
-  cupCreate: 'community_cups',
-  cupJoin: 'community_cups',
-  cupRemove: 'community_cups',
-  cupAnnounce: 'community_cups',
-  cupCancel: 'community_cups',
-  joinCup: 'spring_cup',
-  bidPlate: 'plate_auction',
-  fitRarePlate: 'plate_auction',
-  offerTrailer: 'trailer_hire',
-  withdrawTrailer: 'trailer_hire',
-  hireTrailer: 'trailer_hire',
-  returnHiredTrailer: 'trailer_hire',
   scrapVehicle: 'scrapyard',
   repairWithPart: 'scrapyard',
   donateToMuseum: 'museum',
@@ -648,7 +545,6 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   respondCompanyContract: 'company_contracts',
   rateCompanyContract: 'company_contracts',
   enrolAcademy: 'academy',
-  predictBattle: 'predictions',
   trailerUpgrade: 'trailer_upgrades',
   buyOrgTrailer: 'company_trailers',
   sellOrgTrailer: 'company_trailers',
@@ -705,14 +601,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   officeHire: 'office',
   officeTrain: 'office',
   officeFire: 'office',
-  createPlayerChallenge: 'player_challenges',
-  joinPlayerChallenge: 'player_challenges',
   trackLink: 'live_tracking',
-  insurancePlan: 'insurers',
-  buyPolicy: 'insurers',
   answerInterview: 'interviews',
-  lookClue: 'lost_cargo',
-  accuse: 'lost_cargo',
   useItem: 'inventory',
   openCase: 'inventory',
   sellItem: 'item_trade',
@@ -738,7 +628,6 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   dockSwapOffer: 'dock_slots',
   dockSwapAnswer: 'dock_slots',
   sharePostcard: 'delivery_postcard',
-  readLetters: 'client_letters',
   shareGarage: 'garage_showroom',
   ratePartner: 'partner_ratings',
   roadWave: 'road_wave',
@@ -749,7 +638,6 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   courierRun: 'city_courier',
   voteXmasBase: 'winter_games',
   claimFirstWeek: 'first_week',
-  applyForRole: 'careers',
   hireBaseStaff: 'base_staff',
   fireBaseStaff: 'base_staff',
   learnSkill: 'driver_skills',
@@ -831,8 +719,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await answerDockSwap(db, user.id, input.swapId, input.accept)) };
     case 'sharePostcard':
       return await sharePostcard(db, user.id, input.deliveryId);
-    case 'readLetters':
-      return await markLettersRead(db, user.id);
     case 'likeGarage':
       return { ok: true, ...(await likeGarage(db, user.id, input.username, input.note)) };
     case 'shareGarage':
@@ -1017,8 +903,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await hireStaff(db, user.id, input.role, new Date())) };
     case 'fireBaseStaff':
       return await fireStaff(db, user.id, input.role, new Date());
-    case 'applyForRole':
-      return await applyForRole(db, user.id, input, new Date());
     case 'claimFirstWeek':
       return await claimFirstWeek(db, user.id, input.step, new Date());
     case 'voteXmasBase':
@@ -1117,14 +1001,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'shareLoad':
       return { ok: true, id: (await shareLoad(db, user.id, input.contractId)).id };
-    case 'challengeDuel':
-      return { ok: true, id: (await challengeDuel(db, user.id, input.userId)).id };
-    case 'respondDuel':
-      return { ok: true, ...(await respondDuel(db, user.id, input.duelId, input.accept)) };
-    case 'enterLivery':
-      return { ok: true, id: (await enterLiveryContest(db, user.id, input.vehicleId)).id };
-    case 'voteLivery':
-      return { ok: true, ...(await voteLivery(db, user.id, input.entryId)) };
     case 'roadsidePaid':
       return { ok: true, ...(await paidRoadHelp(db, user.id, input.deliveryId)) };
     case 'callForHelp':
@@ -1177,22 +1053,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'officeFire':
       await fireOffice(db, user.id, input.role);
       return { ok: true };
-    case 'createPlayerChallenge':
-      return { ok: true, id: (await createChallenge(db, user.id, { title: input.title, originCityId: input.originCityId, destCityId: input.destCityId, days: input.days, prizeCents: input.prizeLev * 100, soloOnly: input.soloOnly })).id };
-    case 'joinPlayerChallenge':
-      await joinChallenge(db, user.id, input.id);
-      return { ok: true };
     case 'trackLink':
       return { ok: true, token: await trackLink(db, user.id, input.deliveryId) };
-    case 'insurancePlan':
-      await setInsurancePlan(db, user.id, { premiumCents: Math.round(input.premiumLev * 100), coverPct: input.coverPct, maxPayoutCents: Math.round(input.maxPayoutLev * 100), active: input.active });
-      return { ok: true };
-    case 'buyPolicy':
-      return { ok: true, id: (await buyPolicy(db, user.id, input.orgId)).id };
     case 'answerInterview':
       return { ok: true, ...(await answerInterview(db, user.id, input.id, input.answer)) };
-    case 'lookClue':
-      return { ok: true, ...(await lookClue(db, user.id, input.id, input.clue)) };
     case 'useItem':
       return { ok: true, ...(await applyItem(db, user.id, input.itemId, { driverId: input.driverId, vehicleId: input.vehicleId })) };
     case 'openCase':
@@ -1216,8 +1080,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'giveFromChest':
       await giveFromChest(db, user.id, input.memberId, input.itemId);
       return { ok: true };
-    case 'accuse':
-      return { ok: true, ...(await accuse(db, user.id, input.id, input.suspect)) };
     case 'unqueueTrip':
       await unqueueTrip(db, user.id, input.id);
       return { ok: true };
@@ -1234,8 +1096,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'returnOrgTrailer':
       await returnOrgTrailer(db, user.id, input.trailerId);
       return { ok: true };
-    case 'joinRally':
-      return { ok: true, ...(await joinRally(db, user.id)) };
     case 'answerDriver':
       return { ok: true, ...(await answerDriver(db, user.id, input.driverId, input.accept)) };
     case 'rateHauler':
@@ -1396,9 +1256,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'rateCompanyContract':
       await rateCompanyContract(db, user.id, input.contractId, input.stars);
       return { ok: true };
-    case 'predictBattle':
-      await predictBattle(db, user.id, input.battleId, input.pickOrgId);
-      return { ok: true };
     case 'enrolAcademy':
       await enrolAcademy(db, user.id, input.mentorId);
       return { ok: true };
@@ -1407,44 +1264,14 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'driverOfMonthPrize':
       await setDriverOfMonthPrize(db, user.id, input.cents);
       return { ok: true };
-    case 'cupCreate':
-      return { ok: true, id: (await createCup(db, user.id, { name: input.name, description: input.description, metric: input.metric, cargoType: input.cargoType, countryCode: input.countryCode, startsAt: input.startsAt, endsAt: input.endsAt, prizeCents: input.prizeEur * 100, entryFeeCents: input.feeEur * 100, maxPlayers: input.maxPlayers })).id };
-    case 'cupJoin':
-      await joinCommunityCup(db, user.id, input.cupId);
-      return { ok: true };
-    case 'cupRemove':
-      await removeFromCup(db, user.id, input.cupId, input.userId);
-      return { ok: true };
-    case 'cupAnnounce':
-      await announceCup(db, user.id, input.cupId, input.text);
-      return { ok: true };
-    case 'cupCancel':
-      await cancelCup(db, user.id, input.cupId);
-      return { ok: true };
     case 'lane':
       return { ok: true, ...(await playLane(db, user.id, input.deliveryId, input.inputs)) };
-    case 'parking':
-      return { ok: true, ...(await playParking(db, user.id, input.inputs)) };
     case 'scrapVehicle':
       return { ok: true, ...(await scrapVehicle(db, user.id, input.vehicleId)) };
     case 'repairWithPart':
       return { ok: true, ...(await repairWithPart(db, user.id, input.vehicleId)) };
     case 'donateToMuseum':
       return { ok: true, ...(await donateToMuseum(db, user.id, input.vehicleId)) };
-    case 'bidPlate':
-      return { ok: true, ...(await bidForPlate(db, user.id, input.coins, new Date(), input.weekKey)) };
-    case 'fitRarePlate':
-      return { ok: true, ...(await fitRarePlate(db, user.id, input.weekKey, input.vehicleId)) };
-    case 'offerTrailer':
-      return { ok: true, offer: await offerTrailer(db, user.id, { trailerId: input.trailerId, pricePerDayCents: Math.round(input.pricePerDay * 100), maxDays: input.maxDays }) };
-    case 'withdrawTrailer':
-      return { ok: true, ...(await withdrawTrailer(db, user.id, input.hireId)) };
-    case 'hireTrailer':
-      return { ok: true, ...(await hireTrailer(db, user.id, input.hireId, input.days)) };
-    case 'returnHiredTrailer':
-      return { ok: true, ...(await returnHiredTrailer(db, user.id, input.hireId)) };
-    case 'joinCup':
-      return { ok: true, ...(await joinCup(db, user.id)) };
     case 'setSpecialization':
       return { ok: true, ...(await setSpecialization(db, user.id, input.specialization)) };
     case 'postRecruitment':
@@ -1457,14 +1284,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await claimEasterQuest(db, user.id, input.questId)) };
     case 'eggFight':
       return { ok: true, ...(await eggFight(db, user.id, input.friendId)) };
-    case 'cbSend':
-      return { ok: true, ...(await sendCb(db, user.id, input.body, new Date(), input.vehicleId)) };
-    case 'roadReport':
-      return { ok: true, ...(await createReport(db, user.id, input.kind, new Date(), input.vehicleId)) };
-    case 'enterTruck':
-      return { ok: true, ...(await enterTruck(db, user.id, input.vehicleId)) };
-    case 'voteTruck':
-      return { ok: true, ...(await voteTruck(db, user.id, input.entryId)) };
     case 'uiPrefs':
       return { ok: true, ...(await setUiPrefs(db, user.id, input)) };
     case 'createDepartment':
@@ -1507,26 +1326,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await cancelConvoy(db, user.id, input.convoyId)) };
     case 'convoyMessage':
       return { ok: true, ...(await postConvoyMessage(db, user.id, input.convoyId, input.body)) };
-    case 'smugglingOptIn':
-      return { ok: true, ...(await setSmugglingOptIn(db, user.id, input.on)) };
-    case 'reportShady':
-      return { ok: true, ...(await reportShadyOffer(db, user.id, input.contractId)) };
-    case 'buyCompartment':
-      return { ok: true, ...(await buyCompartment(db, user.id, input.vehicleId)) };
-    case 'blackRepair':
-      return { ok: true, ...(await blackMarketRepair(db, user.id, input.vehicleId)) };
-    case 'listCompany':
-      return { ok: true, ...(await listCompany(db, user.id)) };
-    case 'buyShares':
-      return { ok: true, ...(await buyShares(db, user.id, input.organizationId, input.count)) };
-    case 'sellShares':
-      return { ok: true, ...(await sellShares(db, user.id, input.organizationId, input.count)) };
     case 'haggle':
       return { ok: true, ...(await haggle(db, user.id, input.contractId, input.percent)) };
-    case 'pickHitchhiker':
-      return { ok: true, ...(await pickHitchhiker(db, user.id, input.id)) };
-    case 'roadVote':
-      return { ok: true, ...(await voteReport(db, user.id, input.reportId, input.vote)) };
     case 'staffBus':
       return { ok: true, ...(await staffBus(db, user.id, input.vehicleId)) };
     case 'setShowcase':

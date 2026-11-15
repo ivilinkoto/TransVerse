@@ -3,10 +3,10 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
-import { ALBUM, divisionMoves, isPerfectTrip, nextDivision, PERFECT, perfectBonusShare } from '@/lib/game/competition';
+import { divisionMoves, isPerfectTrip, nextDivision, PERFECT, perfectBonusShare } from '@/lib/game/competition';
 import { closeDb } from '@/server/db/client';
-import { cityVisits, userBadges, users } from '@/server/db/schema';
-import { albumCities, albumOf, recordCityVisit, recordPerfectTrip } from '@/server/game/competition';
+import { userBadges, users } from '@/server/db/schema';
+import { recordPerfectTrip } from '@/server/game/competition';
 import { db, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
@@ -43,18 +43,3 @@ describe('the perfect trip', () => {
   });
 });
 
-describe('the city album', () => {
-  it('a card per big city; a full country page earns coins and a badge', async () => {
-    const p = await newPlayer();
-    const page = (await albumCities(db())).filter((c) => c.country === 'MK');
-    expect(page.length).toBeGreaterThan(0);
-    expect(page.length).toBeLessThanOrEqual(ALBUM.citiesPerCountry);
-    const coins0 = (await db().select().from(users).where(eq(users.id, p.userId)))[0]!.coins;
-    for (const c of page) await db().transaction((tx) => recordCityVisit(tx, p.userId, c.id, new Date()));
-    expect(await db().select().from(cityVisits).where(eq(cityVisits.userId, p.userId))).toHaveLength(page.length);
-    expect(await db().select().from(userBadges).where(and(eq(userBadges.userId, p.userId), eq(userBadges.badge, 'album-mk')))).toHaveLength(1);
-    expect((await db().select().from(users).where(eq(users.id, p.userId)))[0]!.coins).toBe(coins0 + ALBUM.coins);
-    const album = await albumOf(db(), p.userId);
-    expect(album.find((x) => x.code === 'MK')!.cities.every((c) => c.at)).toBe(true);
-  });
-});

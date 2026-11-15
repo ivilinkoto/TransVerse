@@ -59,13 +59,17 @@ export default async function OverviewPage() {
   const { db, user, company, hq, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
   const marta = features.marta && isMarta(now);
+  // 1.3.2 „Просто“: the board keeps what needs the player now (what waits, decisions on the road,
+  // the daily reward, a running event or holiday, the trucks and today's missions); the rest has its
+  // place in the menu, and its data is not read here.
+  const simpleHome = !!features.simple_menu;
   // 1.4 „Първите 7 дни“: the new player's path, while it lasts.
   const firstWeek = features.first_week ? await firstWeekView(db, user.id, now) : null;
   // 1.1.4: the same for everyone — kept for a minute instead of read on every visit.
-  const real = features.real_weather ? await cached('dash:weather', 60_000, () => realConditions(db, now, true), now.getTime()) : null;
-  const [paper] = await cached('dash:paper', 60_000, () => latestIssues(db, 1), now.getTime());
-  const feed = features.feed ? await friendsFeed(db, user.id, now) : [];
-  const goal = features.weekly_goal ? await weeklyGoalState(db, user.id, now) : null;
+  const real = features.real_weather && !simpleHome ? await cached('dash:weather', 60_000, () => realConditions(db, now, true), now.getTime()) : null;
+  const [paper] = simpleHome ? [] : await cached('dash:paper', 60_000, () => latestIssues(db, 1), now.getTime());
+  const feed = features.feed && !simpleHome ? await friendsFeed(db, user.id, now) : [];
+  const goal = features.weekly_goal && !simpleHome ? await weeklyGoalState(db, user.id, now) : null;
   // v1.9: three concrete things to do now.
   const steps = features.next_steps && !features.nav_v2 ? await nextSteps(db, user, company.id, now) : [];
   // 1.2.2 „Сега“: everything to do now, one button each, instead of the welcome card.
@@ -74,9 +78,9 @@ export default async function OverviewPage() {
   const hwEnd = HALLOWEEN_DEF.eventWindow().endsAt.getTime();
   const halloweenLeft = now.getTime() >= hwEnd && now.getTime() <= hwEnd + 7 * 86_400_000 ? ((await unclaimedHolidayQuests(db, HALLOWEEN_DEF, user.id)).get(user.id) ?? 0) : 0;
   // 1.1.3: the next update's countdown, the first own truck, the last trips.
-  const upcoming = features.next_update ? upcomingRelease(now) : null;
+  const upcoming = features.next_update && !simpleHome ? upcomingRelease(now) : null;
   const ownTruck = features.first_own_truck ? await firstOwnTruck(db, company.id, company.deliveries) : null;
-  const trips = features.recent_trips ? await recentTrips(db, company.id, user.id, now) : [];
+  const trips = features.recent_trips && !simpleHome ? await recentTrips(db, company.id, user.id, now) : [];
   const since = new Date(now.getTime() - 7 * 86_400_000);
   const [fleet, stats, unlocked, recent, worth, flows, missions, events] = await Promise.all([
     fleetView(db, company.id),
@@ -104,8 +108,8 @@ export default async function OverviewPage() {
   // 1.1.4.1: the rival of the week.
   // In parallel: the dashboard waits for the slowest, not for the sum.
   const [rival, weekBest] = await Promise.all([
-    features.rival ? rivalStanding(db, user.id, now) : null,
-    features.weekly_card && features.trip_log ? bestTripOfWeek(db, user.id, now) : null,
+    features.rival && !simpleHome ? rivalStanding(db, user.id, now) : null,
+    features.weekly_card && features.trip_log && !simpleHome ? bestTripOfWeek(db, user.id, now) : null,
   ]);
   const freeTrucks = fleet.vehicles.filter((v) => !v.delivery && v.status === 'idle' && !(v.movingUntil && v.movingUntil > now)).slice(0, 6);
   const idle = fleet.vehicles.filter((v) => !v.delivery);
@@ -147,7 +151,7 @@ export default async function OverviewPage() {
       truck={hero ? <VehicleIllustration modelId={hero.modelId} trailerModelId={hero.trailer?.modelId} color={hero.color} livery={hero.livery} cosmetics={hero.cosmetics} trailerUpgrades={hero.trailer?.upgrades} trailerLogo={hero.trailer?.logo} trailerCosmetics={hero.trailer?.cosmetics} martenitsa={marta} className="dash-truck h-24 w-auto max-w-[340px] lg:h-28" /> : null}
       now={now2.map((it) => ({ emoji: it.emoji, text: it.text, action: it.action, href: it.href, tone: it.tone ?? 'plain' }))}
       primary={{ href: next.href, label: tx(next.cta) }}
-      tiles={[
+      tiles={simpleHome ? [] : [
         { href: '/game/contracts', emoji: '📋', label: 'Курсове', badge: idle.length ? String(idle.length) : null, colour: '#22d3ee' },
         { href: '/game/fleet', emoji: '🚛', label: 'Автопарк', badge: active.length ? String(active.length) : null, colour: '#60a5fa' },
         { href: '/game/map', emoji: '🗺️', label: 'Карта', colour: '#34d399' },
@@ -234,7 +238,7 @@ export default async function OverviewPage() {
         </section>
       ))}
 
-      {upcoming && (() => {
+      {!simpleHome && upcoming && (() => {
         const ms = new Date(upcoming.publishedAt).getTime() - now.getTime();
         const days = Math.floor(ms / 86_400_000);
         const hours = Math.floor((ms % 86_400_000) / 3_600_000);
@@ -269,7 +273,7 @@ export default async function OverviewPage() {
           </div>
         </section>
       )}
-      <Dashboard1142 db={db} userId={user.id} companyId={company.id} now={now} features={features} />
+      {!simpleHome && <Dashboard1142 db={db} userId={user.id} companyId={company.id} now={now} features={features} />}
       {features.buditeli && isBuditeli(now) && (
         <Link href="/game/contracts" className="panel flex items-center gap-3 border-gold-400/50 p-3.5 transition hover:border-gold-400/80">
           <BookOpen className="h-8 w-8 shrink-0 text-gold-400" />
@@ -314,7 +318,16 @@ export default async function OverviewPage() {
           <span className="btn-primary max-sm:hidden">{t('Към празника')}</span>
         </Link>
       )}
-      <MoreOnDashboard lean={lean}>
+      {simpleHome && firstWeek && (
+        <Link href="/game/first-week" className="panel group flex items-center gap-3 border-emerald-500/40 p-3.5 transition hover:border-emerald-400" data-testid="first-week-card">
+          <Sprout className="h-6 w-6 shrink-0 text-emerald-300" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t('Първите 7 дни · ден {0}', firstWeek.day)}</span>
+            <span className="block text-sm text-mist-300">{firstWeek.steps.some((s) => s.open && s.done && !s.claimed) ? t('Има награда за взимане!') : t('Взети {0} от 7 стъпки — всеки ден нова.', firstWeek.claimed)}</span>
+          </span>
+        </Link>
+      )}
+      {!simpleHome && <MoreOnDashboard lean={lean}>
       {goal && !goal.goal && (
         <Link href="/game/missions" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
           <Flag className="h-6 w-6 shrink-0 text-gold-400" />
@@ -326,7 +339,7 @@ export default async function OverviewPage() {
       )}
       {!user.seenHints.includes('discord') && <DiscordInvite />}
       {features.online_now && <OnlineNow db={db} now={now} />}
-      {firstWeek && (
+      {!simpleHome && firstWeek && (
         <Link href="/game/first-week" className="panel group flex items-center gap-3 border-emerald-500/40 p-3.5 transition hover:border-emerald-400" data-testid="first-week-card">
           <Sprout className="h-6 w-6 shrink-0 text-emerald-300" />
           <span className="min-w-0 flex-1">
@@ -364,9 +377,9 @@ export default async function OverviewPage() {
           <ChevronRight className="h-4 w-4 shrink-0 text-mist-400 transition group-hover:translate-x-0.5" />
         </Link>
       )}
-      </MoreOnDashboard>
+      </MoreOnDashboard>}
       {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
-      {rival && (
+      {!simpleHome && rival && (
         <section className="panel flex flex-wrap items-center gap-3 p-3.5" aria-label={t('Съперник за седмицата')}>
           <Swords className="h-6 w-6 shrink-0 text-prestige" />
           <span className="min-w-0 flex-1 text-sm">
@@ -377,7 +390,7 @@ export default async function OverviewPage() {
           <span className="num font-display text-lg font-bold"><span className={rival.mine >= rival.theirs ? 'text-profit' : ''}>{rival.mine}</span> <span className="text-mist-500">:</span> <span className={rival.theirs > rival.mine ? 'text-loss' : ''}>{rival.theirs}</span></span>
         </section>
       )}
-      {weekBest && (
+      {!simpleHome && weekBest && (
         <section className="panel flex flex-wrap items-center gap-3 border-gold-400/40 p-3.5" aria-label={t('Курсът ти на седмицата')}>
           <Star className="h-6 w-6 shrink-0 text-gold-400" />
           <span className="min-w-0 flex-1 text-sm">
@@ -446,7 +459,7 @@ export default async function OverviewPage() {
               </ul>
             )}
           </Card>
-          {trips.length > 0 && (
+          {!simpleHome && trips.length > 0 && (
             <Card title={t('Последни курсове')} actions={<History className="h-4 w-4 text-mist-400" />}>
               <ul className="divide-y divide-asphalt-800">
                 {trips.map((r) => (
@@ -472,7 +485,7 @@ export default async function OverviewPage() {
         </div>
 
         <div className="space-y-5 sm:space-y-6">
-          {feed.length > 0 && (
+          {!simpleHome && feed.length > 0 && (
             <Card title={t('При приятелите')} actions={<Link href="/game/profile" className="text-sm text-cyan-glow hover:underline">{t('Приятели →')}</Link>}>
               <FriendsFeed items={feed.map((f) => ({ ...f, createdAt: f.createdAt.toISOString() }))} me={user.id} now={now.getTime()} />
             </Card>
@@ -493,7 +506,7 @@ export default async function OverviewPage() {
               })}
             </ul>
           </Card>
-          <MoreOnDashboard lean={lean} title={t('Цели и събития')}>
+          {!simpleHome && <MoreOnDashboard lean={lean} title={t('Цели и събития')}>
           <Card title={t('Следващи цели')} actions={<Link href="/game/progress" className="text-sm text-cyan-glow hover:underline">{t('Постижения →')}</Link>}>
             <ul className="space-y-3">
               {goals.map((g) => (
@@ -528,7 +541,7 @@ export default async function OverviewPage() {
               </ul>
             )}
           </Card>
-          </MoreOnDashboard>
+          </MoreOnDashboard>}
         </div>
       </div>
     </div>

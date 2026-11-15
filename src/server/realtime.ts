@@ -46,6 +46,10 @@ function ensureListening() {
       client.on('error', () => {
         g.tvListen = undefined; // reconnect on next subscriber
       });
+      // The database closed the connection without an error (a restart): listen again on the next subscriber.
+      client.on('end', () => {
+        g.tvListen = undefined;
+      });
       await client.connect();
       await client.query('LISTEN tv_events');
     };

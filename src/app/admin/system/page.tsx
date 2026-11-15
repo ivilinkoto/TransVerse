@@ -7,6 +7,7 @@ import { DiscordLayout } from '@/components/admin/DiscordLayout';
 import { DiscordSwitches } from '@/components/admin/DiscordSwitches';
 import { layoutState } from '@/server/discord/layout';
 import { Badge, Card, PageHeader } from '@/components/ui';
+import { nearMemoryLimit, processBoots } from '@/server/process-health';
 import { dateTime } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
 import { jobHealth } from '@/server/game/world';
@@ -35,13 +36,14 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
   await initLocale();
   const { db, now } = await adminContext({ admin: true });
   const filter = ((await searchParams).errors ?? '').trim().slice(0, 80).toLowerCase();
-  const [jobs, devices, cursor, errors, backup, undelivered] = await Promise.all([
+  const [jobs, devices, cursor, errors, backup, undelivered, boots] = await Promise.all([
     jobHealth(db),
     pushDevices(db),
     db.execute<{ cursor: number | null; newest: number | null }>(sql`select (select (value->>'id')::bigint from job_state where key = 'push-cursor') as cursor, (select max(id) from notifications) as newest`),
     recentServerErrors(db),
     lastBackup(db),
     failedOutbox(db),
+    processBoots(db),
   ]);
   // 1.1.4.1: the newest features, and every switched-off one, can be turned off for the players.
   const off = await disabledFeatures(db, true);
@@ -73,6 +75,21 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
               <p className="text-xs text-mist-400">{tr('Пазят се последните {0} копия. Копие извън сървъра: виж docs/DEPLOYMENT.md → „Архивиране“.', BACKUP.keep)}</p>
             </div>
           )}
+        </Card>
+        {/* Why the site answers 502: every start of the web and the worker, and the memory just before it. */}
+        <Card title={tr('Рестарти на сървъра')} actions={<Badge tone={boots.filter((b) => b.kind === 'web' && now.getTime() - new Date(b.at).getTime() < 86_400_000).length > 1 ? 'red' : 'green'}>{tr('сайт: {0} за 24 ч', boots.filter((b) => b.kind === 'web' && now.getTime() - new Date(b.at).getTime() < 86_400_000).length)}</Badge>}>
+          {boots.length === 0 ? <p className="text-sm text-mist-400">{tr('Още няма записани стартирания.')}</p> : (
+            <ul className="space-y-1 text-sm" data-testid="process-boots">
+              {boots.slice(0, 15).map((b) => (
+                <li key={`${b.kind}-${b.at}`} className="flex flex-wrap items-center gap-x-2">
+                  <span className="num text-mist-400">{at(new Date(b.at))}</span>
+                  <span className="font-semibold">{b.kind === 'web' ? tr('сайт') : tr('worker')}</span>
+                  {b.before ? <span className={nearMemoryLimit(b) ? 'text-loss' : 'text-mist-300'}>{tr('преди това: {0} MB памет, работил {1} мин', b.before.rssMb, Math.round(b.before.uptimeS / 60))}{nearMemoryLimit(b) ? tr(' — вероятно спрян заради паметта') : ''}</span> : <span className="text-mist-500">{tr('първо стартиране')}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-xs text-mist-400">{tr('Всяко рестартиране на сайта = няколко секунди 502 за играчите. Качване на обновление също рестартира.')}</p>
         </Card>
         <Card title={tr('Грешки на сървъра ({0})', errors.length)} actions={errors.length ? <ActionButton action={{ type: 'clearServerErrors' }} endpoint="/api/admin/action" className="btn-ghost px-2.5 py-1 text-xs" confirm={tr('Списъкът с грешки се изчиства. Продължаваш ли?')}>{tr('Изчисти')}</ActionButton> : undefined}>
           {errors.length === 0 ? <p className="text-sm text-mist-400">{tr('Няма неочаквани грешки.')}</p> : (

@@ -27,11 +27,7 @@ export const COMING_SOON: { channel: string; lang: 'bg' | 'en' | 'ru'; feature: 
   { channel: 'товар-на-деня', lang: 'bg', feature: 'daily_load', what: 'Товарът на деня' },
   { channel: 'en-load-of-the-day', lang: 'en', feature: 'daily_load', what: 'Товарът на деня' },
   { channel: 'ru-груз-дня', lang: 'ru', feature: 'daily_load', what: 'Товарът на деня' },
-  { channel: 'ливреи', lang: 'bg', feature: 'livery_contest', what: 'Конкурсът за ливрея на месеца' },
   { channel: 'пристанище', lang: 'bg', feature: 'ship_calls', what: 'Корабите на пристанищата' },
-  { channel: 'рали', lang: 'bg', feature: 'rally', what: 'Седмичното рали' },
-  { channel: 'en-rally', lang: 'en', feature: 'rally', what: 'Седмичното рали' },
-  { channel: 'ru-ралли', lang: 'ru', feature: 'rally', what: 'Седмичното рали' },
 ];
 
 const stateKey = (channel: string) => `coming-soon:${channel}`;

@@ -1,7 +1,6 @@
 'use client';
 
 import { useFeature } from './Features';
-import { DuelChallenge } from './TogetherActions';
 import { askConfirm } from '@/components/gameui/confirm';
 import { Award, Ban, Banknote, Building2, CalendarDays, Check, Flag, MessageSquare, Settings, Star, Truck, UserCheck, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import Link from 'next/link';
@@ -50,7 +49,6 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
   const transfers = useFeature('transfers');
   const career = useFeature('career');
   const compare = useFeature('compare_players');
-  const duels = useFeature('duels');
   const act = async (action: Record<string, unknown>) => {
     setBusy(true);
     setError(null);
@@ -161,7 +159,6 @@ export function PlayerCardView({ card, onChange, onClose, careerLink = true }: {
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" className="btn-primary" onClick={() => { openDirectChat(card.id, card.username); onClose?.(); }}><MessageSquare className="h-4 w-4" />{t('Съобщение')}</button>
           {card.relation === 'none' && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'friendRequest', userId: card.id })}><UserPlus className="h-4 w-4" />{t('Добави приятел')}</button>}
-          {duels && <DuelChallenge userId={card.id} username={card.username} />}
           {card.relation === 'sent' && <button type="button" className="btn-ghost" disabled={busy} onClick={() => void act({ type: 'friendRemove', userId: card.id })}><X className="h-4 w-4" />{t('Отмени поканата')}</button>}
           {card.relation === 'received' && card.friendshipId && (
             <>

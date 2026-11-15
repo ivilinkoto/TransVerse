@@ -1,5 +1,5 @@
 import type { FeatureId } from '@/lib/game/features';
-import { Briefcase, Backpack, BookOpen, Building2, ClipboardList, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { Backpack, BookOpen, Building2, ClipboardList, Gamepad2, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
@@ -40,7 +40,6 @@ export const SECTIONS: NavSection[] = [
     icon: Map,
     tabs: [
       { href: '/game/map', label: 'Карта', core: true },
-      { href: '/game/road', label: 'Пътят · CB', feature: 'cb_radio', minLevel: 2, core: true },
     ],
   },
   {
@@ -53,12 +52,9 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/clients', label: 'Клиенти', minLevel: 3, core: true },
       { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' },
       { href: '/game/dock', label: 'Рампата', feature: 'dock_slots', core: true },
-      { href: '/game/letters', label: 'Писма от клиенти', feature: 'client_letters', core: true },
       { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
       { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
       { href: '/game/convoys', label: 'Конвои', feature: 'convoy_lobby', minLevel: 2, core: true },
-      { href: '/game/economy', label: 'Икономика и контейнери', feature: 'living_economy', minLevel: 2 },
-      { href: '/game/underground', label: 'Сенки', feature: 'smuggling', minLevel: 10 },
     ],
   },
   // 1.2.1: the inventory has its own place in the main menu (drawn apart, in purple and gold).
@@ -93,8 +89,6 @@ export const SECTIONS: NavSection[] = [
       // 1.2.3.1: the player's own business (research, office, adverts, fuel, CO₂) — not the company's „Развитие“.
       { href: '/game/growth', label: 'Технологии и офис', feature: 'research', group: 'Сервиз и депа' },
       { href: '/game/market', label: 'Пазар', group: 'Камиони', core: true },
-      { href: '/game/trailer-hire', label: 'Ремаркета под наем', feature: 'trailer_hire', group: 'Камиони', minLevel: 6 },
-      { href: '/game/plates', label: 'Редки номера', feature: 'plate_auction', group: 'Камиони', minLevel: 6 },
       { href: '/game/staff', label: 'Шофьори', group: 'Хора', core: true },
       { href: '/game/mascot', label: 'Талисман', feature: 'mascot', group: 'Хора', core: true },
       { href: '/game/skills', label: 'Умения', feature: 'driver_skills', group: 'Хора', core: true },
@@ -110,10 +104,8 @@ export const SECTIONS: NavSection[] = [
     icon: Building2,
     tabs: [
       { href: '/game/company', label: 'Моята компания', core: true },
-      { href: '/game/insurance', label: 'Застрахователи', feature: 'insurers', minLevel: 3 },
       { href: '/game/companies', label: 'Всички компании', core: true },
       { href: '/game/recruitment', label: 'Набиране', feature: 'recruitment_board', minLevel: 3 },
-      { href: '/game/shares', label: 'Борса за акции', feature: 'share_market', minLevel: 6 },
     ],
   },
   {
@@ -129,9 +121,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/easter', label: 'Великден', holiday: 'easter', feature: 'easter', group: 'Сезонни' },
       { href: '/game/missions', label: 'Мисии', group: 'Днес', core: true },
       { href: '/game/big-run', label: 'Голям рейс', feature: 'big_run', group: 'Днес', core: true },
-      { href: '/game/story', label: 'Историята', feature: 'story', group: 'Днес' },
-      { href: '/game/case', label: 'Изгубена пратка', feature: 'lost_cargo', group: 'Днес' },
-      { href: '/game/parking', label: 'Паркирай', feature: 'parking_game', group: 'Днес' },
       { href: '/game/daily-route', label: 'Пътят на деня', feature: 'daily_route', group: 'Днес', core: true },
       { href: '/game/night-run', label: 'Нощен рейс', feature: 'night_run', group: 'Днес', core: true },
       { href: '/game/courier', label: 'Градски куриер', feature: 'city_courier', group: 'Днес' },
@@ -139,16 +128,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/road-service', label: 'Пътна служба', feature: 'road_service', group: 'Днес' },
       { href: '/game/winter-games', label: 'Зимни игри', feature: 'winter_games', group: 'Класации' },
       { href: '/game/league', label: 'Лига', group: 'Класации', minLevel: 2 },
-      { href: '/game/cities', label: 'Градовете растат', feature: 'city_growth', group: 'Класации' },
-      { href: '/game/duels', label: 'Дуели', feature: 'duels', group: 'Класации', minLevel: 3 },
-      { href: '/game/rally', label: 'Рали', feature: 'rally', group: 'Класации', minLevel: 4 },
       { href: '/game/challenges', label: 'Предизвикателства', feature: 'weekly_challenge', group: 'Днес', minLevel: 3 },
-      { href: '/game/cup', label: 'Пролетна купа', feature: 'spring_cup', group: 'Класации', minLevel: 5 },
-      { href: '/game/player-challenges', label: 'Предизвикателства от играчи', feature: 'player_challenges', group: 'Общност', minLevel: 2 },
-      { href: '/game/cups', label: 'Турнири на общността', feature: 'community_cups', group: 'Общност', minLevel: 3 },
-      { href: '/game/predictions', label: 'Прогнози', feature: 'predictions', group: 'Общност', minLevel: 5 },
-      { href: '/game/livery', label: 'Ливреи', feature: 'livery_contest', group: 'Общност', minLevel: 5 },
-      { href: '/game/truck-contest', label: 'Камион на месеца', feature: 'truck_contest', group: 'Общност', minLevel: 5 },
       { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2, core: true, hiddenWith: 'truck_pass' },
       { href: '/game/events', label: 'Ивенти', group: 'Днес', core: true },
       { href: '/game/leaderboards', label: 'Класации', group: 'Класации', core: true },
@@ -157,9 +137,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2, hiddenWith: 'truck_pass' },
       { href: '/game/seasons', label: 'Сезон и Truck Pass', feature: 'truck_pass', group: 'Днес', minLevel: 2, core: true },
       { href: '/game/progress', label: 'Постижения', group: 'Колекции', core: true },
-      { href: '/game/collection', label: 'Албум', feature: 'city_album', group: 'Колекции', minLevel: 2 },
-      { href: '/game/postcards', label: 'Картички', feature: 'postcards', group: 'Колекции', minLevel: 2 },
-      { href: '/game/my-map', label: 'Картата ми', feature: 'my_map', group: 'Колекции', minLevel: 3 },
     ],
   },
 ];
@@ -171,8 +148,6 @@ export const ACCOUNT_MENU = [
   { href: '/game/shop', label: 'Магазин и VIP', icon: Gem },
   { href: '/game/invite', label: 'Покани приятел', icon: UserPlus },
   { href: '/game/mentor', label: 'Наставник', icon: GraduationCap },
-  // 1.3.1 „Екипът“.
-  { href: '/game/careers', label: 'Кариери в TransVerse', icon: Briefcase },
   { href: '/game/updates', label: 'Обновления', icon: ScrollText },
   { href: '/game/settings', label: 'Настройки', icon: Settings },
   { href: '/game/help', label: 'Помощ и правила', icon: BookOpen },
@@ -281,8 +256,69 @@ export const SECTIONS_V2: NavSection[] = (() => {
   ];
 })();
 
-/** The sections for this viewer: the new menu with nav_v2, the old one otherwise. */
-export const navSections = (has: (feature: FeatureId) => boolean = () => true) => (has('nav_v2') ? SECTIONS_V2 : SECTIONS);
+// ── 1.3.2 „Просто“: one menu of five places (feature simple_menu) ─────────
+
+/** A page in the new menu: where it is and whether it is one of the few always in the row. */
+type Place = [href: string, core?: boolean];
+
+/** The pages of each place in the order they are shown; the core ones are in the row, the rest behind „Още ▾“. */
+const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
+  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/convoys', true], ['/game/clients', true], ['/game/auctions'], ['/game/trade'], ['/game/dock'], ['/game/reviews']],
+  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/analytics'], ['/game/earnings'], ['/game/buses'], ['/game/workshops'], ['/game/growth']],
+  company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment']],
+};
+
+/**
+ * „Игри и награди“: everything the player plays and collects, by group. The start page shows
+ * them as cards (and what runs now on top); the row keeps the start, missions, the season and the bag.
+ */
+const PLAY_GROUPS: { name: string; pages: Place[] }[] = [
+  { name: 'Награди', pages: [['/game/missions', true], ['/game/seasons', true], ['/game/inventory', true], ['/game/events'], ['/game/inventory/workshop'], ['/game/inventory/album'], ['/game/inventory/hall']] },
+  { name: 'Всеки ден', pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/crisis'], ['/game/road-service']] },
+  { name: 'Състезания', pages: [['/game/leaderboards', true], ['/game/league'], ['/game/winter-games']] },
+  { name: 'Общност', pages: [['/game/news'], ['/game/ideas']] },
+  { name: 'Колекции', pages: [['/game/progress']] },
+];
+
+const allTabs = (): NavTab[] => SECTIONS.flatMap((s) => s.tabs ?? []);
+/** The tab of SECTIONS for a page (its feature, level and holiday stay), with the new menu's group and row. */
+function tabOf(href: string, core = false, group?: string): NavTab {
+  // „Сезон и Truck Pass“ replaced „Сезони“ with the pass; the bag is one page, not three entries.
+  const found = allTabs().filter((t) => t.href === href);
+  const t = found.find((x) => !x.hiddenWith) ?? found[0];
+  if (!t) throw new Error(`nav: no page ${href}`);
+  return { ...t, hiddenWith: undefined, core, group };
+}
+
+export const SECTIONS_V3: NavSection[] = (() => {
+  const by = (k: NavSection['key']) => SECTIONS.find((s) => s.key === k)!;
+  const place = (k: 'jobs' | 'fleet' | 'company') => PLACES[k].map(([href, core]) => tabOf(href, !!core));
+  const compete = by('compete');
+  const holidays = (compete.tabs ?? []).filter((t) => t.holiday).map((t) => ({ ...t, group: 'Сега', core: true }));
+  return [
+    { ...by('home'), label: 'Начало' },
+    { ...by('jobs'), label: 'Курсове', tabs: place('jobs') },
+    { ...by('fleet'), tabs: place('fleet') },
+    { ...by('company'), tabs: place('company') },
+    {
+      key: 'compete',
+      href: '/game/play',
+      label: 'Игри и награди',
+      icon: Gamepad2,
+      tabs: [{ href: '/game/play', label: 'Всичко', core: true }, ...holidays, ...PLAY_GROUPS.flatMap((g) => g.pages.map(([href, core]) => tabOf(href, !!core, g.name)))],
+    },
+  ];
+})();
+
+/** The group names of „Игри и награди“, in order (the start page draws them as sections). */
+export const PLAY_GROUP_NAMES = ['Сега', ...PLAY_GROUPS.map((g) => g.name)];
+
+/** The account pages of the avatar menu in the new menu (the rest are found with the search). */
+export const ACCOUNT_MENU_V3 = ACCOUNT_MENU.filter((i) => !['/game/mentor', '/game/updates'].includes(i.href));
+
+/** The sections for this viewer: „Просто“ with simple_menu, then the 1.2.2 menu with nav_v2, the old one otherwise. */
+export const navSections = (has: (feature: FeatureId) => boolean = () => true) => (has('simple_menu') ? SECTIONS_V3 : has('nav_v2') ? SECTIONS_V2 : SECTIONS);
 
 /** The sections the main menu shows itself (the rest are in „Още“); the inventory/„Награди“ is drawn on its own. */
-export const mainKeys = (has: (feature: FeatureId) => boolean = () => true): NavSection['key'][] => (has('nav_v2') ? ['home', 'jobs', 'fleet'] : ['home', 'jobs', 'fleet', 'map']);
+export const mainKeys = (has: (feature: FeatureId) => boolean = () => true): NavSection['key'][] =>
+  has('simple_menu') ? ['home', 'jobs', 'fleet', 'company', 'compete'] : has('nav_v2') ? ['home', 'jobs', 'fleet'] : ['home', 'jobs', 'fleet', 'map'];

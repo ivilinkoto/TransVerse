@@ -1,9 +1,17 @@
 import type { NextConfig } from 'next';
+import { RETIRED_PAGES } from './src/lib/game/features';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   serverExternalPackages: ['@node-rs/argon2', 'pg'],
+  // Pages of the features removed in „Просто“ lead to „Игри и награди“ (old links, bookmarks).
+  async redirects() {
+    return RETIRED_PAGES.flatMap((page) => [
+      { source: page, destination: '/game/play', permanent: false },
+      { source: `${page}/:rest*`, destination: '/game/play', permanent: false },
+    ]);
+  },
   async headers() {
     return [
       {

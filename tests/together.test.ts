@@ -8,19 +8,18 @@ import { canSplit } from '@/lib/game/partial';
 import type { RoadEventPlan } from '@/lib/game/road-events';
 import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
 import type { Segment } from '@/lib/game/schedule';
-import { DAILY_LOAD, DUEL, duelWinner, LIVERY_CONTEST, previousMonth, SHARED_LOAD, sofiaMonth } from '@/lib/game/together';
+import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
 import { closeDb } from '@/server/db/client';
-import { coinEntries, companies, contracts, deliveries, duels, friendships, ledgerEntries, liveryEntries, notifications, organizations, sharedLoads, userBadges, vehicles } from '@/server/db/schema';
+import { coinEntries, companies, contracts, deliveries, friendships, ledgerEntries, notifications, organizations, sharedLoads, userBadges, vehicles } from '@/server/db/schema';
 import { actionButtons } from '@/server/discord/relay';
 import { ensureDailyLoad, openContracts } from '@/server/game/contracts';
 import { announceConvoy } from '@/server/game/convoy';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
-import { enterLiveryContest, settleLiveryContest, voteLivery } from '@/server/game/livery-contest';
 import { joinCompany } from '@/server/game/membership';
 import { applyDueRoadEvents } from '@/server/game/road-events';
 import { callForHelp, paidRoadHelp } from '@/server/game/roadside';
-import { challengeDuel, respondDuel, settleDuels, shareLoad } from '@/server/game/together';
+import { shareLoad } from '@/server/game/together';
 import { approximateProvider } from '@/server/geo/routing';
 import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
@@ -95,58 +94,6 @@ describe('the load of the day', () => {
     await haul(p.userId, job.id);
     const [coins] = await db().select().from(coinEntries).where(and(eq(coinEntries.userId, p.userId), eq(coinEntries.reason, 'daily_load')));
     expect(coins!.amount).toBe(DAILY_LOAD.coins);
-  });
-});
-
-describe('duels', () => {
-  it('an invitation, a week of tonnes, the winner gets ТрансКоин and the badge', async () => {
-    const a = await newPlayer('Sofia');
-    const b = await newPlayer('Sofia');
-    expect(await code(challengeDuel(db(), a.userId, a.userId))).toBe('self');
-    const d = await challengeDuel(db(), a.userId, b.userId);
-    expect(await code(challengeDuel(db(), b.userId, a.userId))).toBe('already');
-    expect(await code(respondDuel(db(), a.userId, d.id, true))).toBe('not_found');
-    const [invite] = await db().select().from(notifications).where(and(eq(notifications.userId, b.userId), sql`${notifications.href} like '/game/duels?duel=%'`));
-    expect(actionButtons(invite!.href, false, new Date()).map((x) => x.custom_id)).toEqual([`duel:yes:${d.id}`, `duel:no:${d.id}`]);
-    await respondDuel(db(), b.userId, d.id, true);
-
-    await haul(a.userId, (await makeContract('Sofia', 'Plovdiv', { weightTons: 1.2 })).id);
-    const [running] = await db().select().from(duels).where(eq(duels.id, d.id));
-    expect(running!.challengerTons).toBeCloseTo(1.2);
-    expect(duelWinner(running!)).toBe(a.userId);
-
-    await settleDuels(db(), new Date(running!.endsAt!.getTime() + 1000));
-    const [done] = await db().select().from(duels).where(eq(duels.id, d.id));
-    expect(done).toMatchObject({ status: 'done', winnerId: a.userId });
-    const [coins] = await db().select().from(coinEntries).where(and(eq(coinEntries.userId, a.userId), eq(coinEntries.reason, 'duel')));
-    expect(coins!.amount).toBe(DUEL.coins);
-    expect(await db().select().from(userBadges).where(and(eq(userBadges.userId, a.userId), eq(userBadges.badge, DUEL.badge)))).toHaveLength(1);
-  });
-});
-
-describe('livery contest', () => {
-  it('one truck a month, 👍 from others, the winner on the 1st', async () => {
-    const now = new Date();
-    const owner = await newPlayer('Sofia');
-    const entry = await enterLiveryContest(db(), owner.userId, await truck(owner.userId), now);
-    expect(await code(enterLiveryContest(db(), owner.userId, await truck(owner.userId), now))).toBe('already_entered');
-    expect(await code(voteLivery(db(), owner.userId, entry.id, now))).toBe('own');
-    for (let i = 0; i < LIVERY_CONTEST.minVotes; i++) {
-      const fan = await newPlayer('Sofia');
-      expect((await voteLivery(db(), fan.userId, entry.id, now)).votes).toBe(i + 1);
-      if (i === 0) expect(await code(voteLivery(db(), fan.userId, entry.id, now))).toBe('already_voted');
-    }
-    // This month's entries are decided only on the 1st of the next month.
-    expect(await settleLiveryContest(db(), now)).toBeNull();
-    const [y, m] = sofiaMonth(now).split('-').map(Number) as [number, number];
-    const first = new Date(Date.UTC(m === 12 ? y + 1 : y, m === 12 ? 0 : m, 1, 9, 30));
-    expect(previousMonth(sofiaMonth(first))).toBe(sofiaMonth(now));
-    const won = await settleLiveryContest(db(), first);
-    expect(won!.id).toBe(entry.id);
-    expect(await settleLiveryContest(db(), first)).toBeNull();
-    expect((await db().select().from(liveryEntries).where(eq(liveryEntries.id, entry.id)))[0]!.won).toBe(true);
-    const [coins] = await db().select().from(coinEntries).where(and(eq(coinEntries.userId, owner.userId), eq(coinEntries.reason, 'livery_contest')));
-    expect(coins!.amount).toBe(LIVERY_CONTEST.coins);
   });
 });
 

@@ -3,6 +3,11 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
   const { loadSecretsFile } = await import('@/server/secrets');
   loadSecretsFile();
+  // Starts, memory and uncaught errors of the web process for Админ → Система (the 502s).
+  if (process.env.NODE_ENV === 'production') {
+    const [{ watchProcess }, { getDb }] = await Promise.all([import('@/server/process-health'), import('@/server/db/client')]);
+    watchProcess(getDb, 'web');
+  }
 }
 
 /** 1.1.4: an error while rendering a page or a route is also kept for the admin panel. */

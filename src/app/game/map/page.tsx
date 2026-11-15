@@ -13,8 +13,6 @@ import { isVip } from '@/lib/game/vip';
 import { isMarta } from '@/lib/game/marta';
 import { storkOfDay } from '@/server/game/marta';
 import { allianceBases } from '@/server/game/alliances';
-import { activeReports } from '@/server/game/live-road';
-import { REPORT_KINDS } from '@/lib/game/live-road';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';

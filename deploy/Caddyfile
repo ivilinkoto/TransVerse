@@ -8,7 +8,11 @@
 	reverse_proxy @sse 127.0.0.1:3000 {
 		flush_interval -1
 	}
-	reverse_proxy 127.0.0.1:3000
+	# While the game restarts (an update, a crash), wait up to 30 s for it instead of answering 502.
+	reverse_proxy 127.0.0.1:3000 {
+		lb_try_duration 30s
+		lb_try_interval 500ms
+	}
 	header {
 		Strict-Transport-Security "max-age=31536000"
 		-Server

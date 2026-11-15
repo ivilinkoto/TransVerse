@@ -4,7 +4,6 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
 import { dayKey } from '@/lib/game/daily';
-import { PARKING, parkingStart, replayParking } from '@/lib/game/parking';
 import { applyRushHour, isRushHour, RUSH_HOUR } from '@/lib/game/roads';
 import { RETRO_BADGE } from '@/lib/game/shop';
 import { closeDb } from '@/server/db/client';
@@ -12,7 +11,6 @@ import { companies, deliveries, drivers, jobState, userBadges, users, vehicles }
 import { runCommand } from '@/server/discord/commands';
 import { acceptContract, settleDueDeliveries } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
-import { playParking } from '@/server/game/parking';
 import { expireTestDrives, startTestDrive } from '@/server/game/rentals';
 import { buyShopItem } from '@/server/game/shop';
 import { db, makeContract, newPlayer } from './helpers';
@@ -40,24 +38,9 @@ describe('rules', () => {
     expect(r.segments[2]!.end).toBe(segs[2]!.end + 20 * 60_000);
   });
 
-  it('parking: the server replays the steering; leaving the yard scores nothing', () => {
-    const day = 'D2027-03-01';
-    expect(replayParking(day, []).pose).toEqual(parkingStart(day));
-    expect(replayParking(day, Array(PARKING.maxTicks).fill(1)).stars).toBe(0);
-    expect(replayParking(day, [2, -5, 0]).pose).toEqual(replayParking(day, [1, -1, 0]).pose);
-  });
 });
 
 describe('v1.5, the last part', () => {
-  it('the daily parking run: XP by the server, once a day', async () => {
-    const p = await newPlayer();
-    const xp0 = (await db().select().from(users).where(eq(users.id, p.userId)))[0]!.xp;
-    const r = await playParking(db(), p.userId, Array(50).fill(0));
-    expect(r.stars).toBe(replayParking(dayKey(new Date()), Array(50).fill(0)).stars);
-    expect((await db().select().from(users).where(eq(users.id, p.userId)))[0]!.xp).toBe(xp0 + (PARKING.xp[r.stars] ?? 0));
-    expect(await code(playParking(db(), p.userId, []))).toBe('already');
-  });
-
   it('a test drive: the own driver takes the dealer truck for one trip, no rental fee, then it goes back', async () => {
     const p = await newPlayer();
     await db().update(users).set({ level: 30 }).where(eq(users.id, p.userId));

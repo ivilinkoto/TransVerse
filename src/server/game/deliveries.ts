@@ -12,7 +12,6 @@ import { MULTISTOP, stopPenaltyCents, type ContractStop } from '@/lib/game/multi
 import { formConvoy } from './convoy';
 import { isEastCountry, isEuropeCountry } from '@/lib/geo/scope';
 import { bigConvoyBonus, checkEurotour, checkGrandEurotour } from './challenges';
-import { collectPostcards, dropHitchhiker, maybeHitchhiker } from './road-life';
 import { agreedHaggle, settleDeals } from './deals';
 import { reliefDelivered } from './relief';
 import { internDelivery, traditionBonus } from './company-life';
@@ -23,9 +22,6 @@ import { legacyBonus } from './legacy';
 import { territoryBonus } from './territories';
 import { intermodalDelivered } from './intermodal';
 import { eraBonus } from './eras';
-import { recordCupDelivery } from './community-cups';
-import { SUPPLY } from '@/lib/game/living';
-import { featureLive } from '@/lib/game/features';
 import { checkLegend } from './heritage';
 import { recordWeeklyLane } from './weekly-lane';
 import { recordPrewinterDelivery } from './prewinter';
@@ -46,7 +42,7 @@ import { BOOM } from '@/lib/game/plot';
 import { recordWeeklyGoal } from './weekly-goal';
 import { addFeed, FEED_LONG_TRIP_KM } from './feed';
 import { recordProjectDelivery } from './projects';
-import { isWinter, routeCondition, WINTER, isSnowTime } from '@/lib/game/winter';
+import { routeCondition, isSnowTime } from '@/lib/game/winter';
 import { CREW_RULES, crewEffects } from '@/lib/game/crew';
 import { canOverload, FINE_RULES, overloadPercent, type Violation } from '@/lib/game/fines';
 import { COMPANY_XP_SHARE, deliveryXp, FLEET_XP_SHARE, reputationAfter, reputationBonusShare, seasonPoints } from '@/lib/game/progression';
@@ -59,7 +55,6 @@ import { fail } from './errors';
 import { post, postTreasury, type Posting } from './finance';
 import { broadcast, logActivity, notify } from './notify';
 import { planDock, saveDock } from './dock';
-import { clientLetter } from './letters';
 import { postcardOnArrival } from './postcards';
 import { awardXp, checkAchievements } from './progression';
 import { heldLicences, licenceNames, missingFor } from './licences';
@@ -91,11 +86,10 @@ import { recordEasterDelivery } from './easter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { canSplit, partError, partRewardCents } from '@/lib/game/partial';
 import { BOARDING_GAME_MIN, CROSSING_LINES, crossingLine as crossingLine_, crossingNote, DEPARTURE_EVERY_MIN, onBoardGameMinutes, railOptions } from '@/lib/game/crossings';
-import { checkSharedLoad, deliverDailyLoad, recordDuelDelivery, settleSharedPart } from './together';
+import { checkSharedLoad, deliverDailyLoad, settleSharedPart } from './together';
 import { recordShipContainer } from './ports';
-import { recordRallyRun } from './rally';
 import { activeRoadWorks } from './roads';
-import { recordCityVisit, recordPerfectTrip } from './competition';
+import { recordPerfectTrip } from './competition';
 import { clientsOf, fuelStationAt, payCompanyContract, recordAcademyCourse, allianceHallBonus, recordAllianceDelivery, recordHallDelivery } from './alliances';
 import { FUEL_STATION } from '@/lib/game/alliances';
 import { CARGO_INSURANCE, isNightShift, NIGHT, OVERSIZE, oversizeCostCents, roadWorksFactor, applyRushHour } from '@/lib/game/roads';
@@ -114,12 +108,10 @@ import { checkPartnerLeg } from './partner-loads';
 import { recordRegionDelivery } from './region-projects';
 import { checkEscortRun, convoyHourPoints, roadAccepted, roadDelivered } from './on-the-road';
 import { meetDelivered } from './meet';
-import { growCity, harvestDelivered } from './city-growth';
+import { harvestDelivered } from './harvest';
 import { choiceMoney, choiceXp, planChoice } from './road-choices';
-import { storyDelivered } from './story';
 import { settleReefer } from './reefer';
 import { CONVOYS } from '@/lib/game/convoys';
-import { afterCustoms, checkShadyLoad, compartmentError, customsCheck, honestDelivery } from './smuggling';
 import { t, intlLocale } from '@/i18n/t';
 
 const timeScale = () => Math.max(1, Number(process.env.GAME_TIME_SCALE ?? 1));
@@ -242,7 +234,6 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     const [user] = await tx.select({ level: users.level, vipUntil: users.vipUntil }).from(users).where(eq(users.id, userId));
     const vip = isVip(user?.vipUntil, now);
     const bundle = await vehicleBundle(tx, company.id, vehicleId, true);
-    await checkShadyLoad(tx, userId, contract!, bundle.vehicle, now);
     // A partial load re-reads the load under a lock: another truck may have just taken a part of it.
     let load = contract!;
     if (partial) {
@@ -261,9 +252,6 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       !partial && !!risks.overload,
     );
     if (error) fail('incompatible', error);
-    // v1.9: a hidden compartment takes payload; a shady load is its own player's, in an own truck.
-    const hidden = compartmentError(bundle.vehicle, bundle.trailer?.modelId ?? null, load.weightTons);
-    if (hidden) fail('incompatible', hidden);
     // A driver on a day off does not drive (v1.4).
     if (onVacation(bundle.driver, now) || onVacation(bundle.coDriver, now)) fail('vacation', t('Шофьорът е в почивен ден — назначи друг или изчакай.'));
     const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
@@ -499,7 +487,6 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     // A load handed over by a company: the agreed commission is paid when it arrives.
     await acceptJobOffer(tx, userId, contractId, delivery!.id, now);
     // v1.8: someone may wave at the edge of town.
-    await maybeHitchhiker(tx, userId, delivery!, { originCityId: contract!.originCityId, destCityId: contract!.destCityId, urgent: contract!.urgent }, now);
     // 1.2.7: the escort (open or taken) and „👋 Махни“ with a truck coming the other way.
     await roadAccepted(tx, userId, contract!, delivery!, now);
     await logActivity(tx, userId, 'contract_accepted', { contractId: loadId, ...(partial ? { partOf: contractId } : {}), vehicleId, deliveryId: delivery!.id });
@@ -541,10 +528,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const [vehicle] = await tx.select().from(vehicles).where(eq(vehicles.id, d.vehicleId));
   const costs = d.estimatedCosts as ReturnType<typeof tripCosts>;
   const completedAt = d.etaAt; // the truck arrived at ETA even if we settle later
-  // v1.9: customs may find a shady load — then it is confiscated (no pay, no penalty) and fined after the postings.
-  const customs = contract.shady ? await customsCheck(tx, company!.ownerId, d, contract, completedAt) : null;
-  const settled = settle(contract.rewardCents, d.startedAt.getTime(), d.deadlineAt.getTime(), completedAt.getTime());
-  const result = customs?.caught ? { ...settled, rewardCents: 0, bonusCents: 0, penaltyCents: 0 } : settled;
+  const result = settle(contract.rewardCents, d.startedAt.getTime(), d.deadlineAt.getTime(), completedAt.getTime());
   const [dest] = await tx.select().from(cities).where(eq(cities.id, contract.destCityId));
   const key = (k: string) => `delivery:${d.id}:${k}`;
 
@@ -598,8 +582,6 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (companyBonus) postings.push({ category: 'company_bonus', amountCents: companyBonus, description: t('Бонус от „{0}“', org!.name), idempotencyKey: key('company-bonus'), refType: 'delivery', refId: d.id });
   if (contribution) postings.push({ category: 'company_contribution', amountCents: -contribution, description: t('Вноска към касата на „{0}“', org!.name), idempotencyKey: key('contribution'), refType: 'delivery', refId: d.id });
   await post(tx, d.companyId, postings.filter((p) => p.amountCents !== 0));
-  const customsFine = customs ? (await afterCustoms(tx, company!.ownerId, d, contract, customs, completedAt)).fine : 0;
-  if (!customs) await honestDelivery(tx, company!.ownerId);
   // The perfect trip (v1.5): on time, no breakdown or police, no fine, a full truck — the streak pays.
   const [trailerRow] = d.trailerId ? await tx.select({ modelId: trailers.modelId }).from(trailers).where(eq(trailers.id, d.trailerId)) : [];
   const payloadTons = combinationCapability({ unit: powerUnitModel(vehicle!.modelId), trailer: trailerRow ? trailerModel(trailerRow.modelId) : null }).payloadTons;
@@ -617,8 +599,6 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const intermodalCents = await intermodalDelivered(tx, company!.ownerId, d, contract.id, result.late, result.rewardCents, completedAt);
   // v2.0: a load that fits this month's era.
   const eraCents = await eraBonus(tx, company!.ownerId, d, vehicle!, contract.cargoType, result.rewardCents, completedAt);
-  // v2.0: community tournaments the player is in.
-  await recordCupDelivery(tx, company!.ownerId, { destCityId: contract.destCityId, cargoType: contract.cargoType, tons: contract.weightTons, km: d.loadedKm, late: result.late }, completedAt);
   const empireBonus =
     (await territoryBonus(tx, company!.ownerId, d, contract.destCityId, result.rewardCents, completedAt)) +
     (await holdingBonus(tx, company!.ownerId, d, contract.destCityId, result.rewardCents, completedAt)) +
@@ -676,14 +656,12 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // 1.2.7: the escort's bonuses when both trucks are in, a true market rumour, the duo of the week.
   const roadBonus = (await roadDelivered(tx, company!.ownerId, d, contract, result.late, completedAt)) + (await meetDelivered(tx, company!.ownerId, d.companyId, d, contract, dest!.countryCode, result.late, completedAt));
   // 1.2.3.6: sometimes the client writes (thanks with a bonus, a complaint, a request for the same run); a 3D postcard for a new city or a long trip.
-  const letterCents = await clientLetter(tx, company!.ownerId, d, contract, dest!, { late: result.late, rewardCents: result.rewardCents }, completedAt);
   await postcardOnArrival(tx, company!.ownerId, d, contract.destCityId, dest!.nameBg, completedAt);
-  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution - customsFine + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus + letterCents;
+  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
   // The city album (v1.5): a card for the destination.
-  await recordCityVisit(tx, company!.ownerId, contract.destCityId, completedAt);
   // v1.7: the first trans-European load on time earns a badge.
   await transEuropeDone(tx, company!.ownerId, contract, result.late, completedAt);
   // Евротур (v1.6): all nine countries in one month.
@@ -691,15 +669,12 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // 1.2.6: the common project of the region counts the stage's cargo to its country.
   await recordRegionDelivery(tx, company!.ownerId, { cargoType: contract.cargoType, destCountry: dest!.countryCode, tons: contract.weightTons }, completedAt);
   // v1.10: the destination city grows; Гроздобер counts its harvest loads.
-  await growCity(tx, contract.destCityId, contract.weightTons, completedAt);
   await harvestDelivered(tx, company!.ownerId, contract.holiday, result.late, completedAt);
   // v1.8: a humanitarian load on time.
   await reliefDelivered(tx, company!.ownerId, d, contract, result.late, completedAt);
   // v1.8: the sealed load is opened, the haggled extra paid.
   await settleDeals(tx, company!.ownerId, d, contract, result.rewardCents, result.late, completedAt);
   // v1.8: postcards from the landmarks on the way, and the hitchhiker's fare.
-  await collectPostcards(tx, company!.ownerId, d, completedAt);
-  await dropHitchhiker(tx, company!.ownerId, d, result.late, completedAt);
   // Голям евротур (v1.7): every country of the game in one season.
   await checkGrandEurotour(tx, company!.ownerId, dest!.countryCode, completedAt);
   // The company academy (v1.5): an on-time trip of a student is a course.
@@ -709,7 +684,6 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await traditionBonus(tx, company!.ownerId, d, result.rewardCents, completedAt);
   await internDelivery(tx, company!.ownerId, baseXp, completedAt);
   await choiceXp(tx, company!.ownerId, d, baseXp);
-  await storyDelivered(tx, company!.ownerId, d.companyId, { onTime, km: d.loadedKm, tons: contract.weightTons, foreign: dest!.countryCode !== (await tx.select({ cc: cities.countryCode }).from(cities).where(eq(cities.id, contract.originCityId)))[0]?.cc, convoy: !!d.organizedConvoyId || !!d.convoyWith, destCityId: contract.destCityId }, completedAt);
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
   const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;
@@ -790,11 +764,6 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     .update(cityMarkets)
     .set({ demand: sql`greatest(${ECONOMY.demandFloor}, ${cityMarkets.demand} - ${contract.weightTons * ECONOMY.demandDropPerTon})`, updatedAt: now })
     .where(and(eq(cityMarkets.cityId, contract.destCityId), eq(cityMarkets.cargoType, contract.cargoType)));
-  // v2.0 the living economy: the origin has shipped this cargo and has less of it for a while.
-  if (featureLive('living_economy', completedAt)) await tx
-    .update(cityMarkets)
-    .set({ supply: sql`greatest(${SUPPLY.floor}, ${cityMarkets.supply} - ${contract.weightTons * SUPPLY.dropPerTon})`, updatedAt: now })
-    .where(and(eq(cityMarkets.cityId, contract.originCityId), eq(cityMarkets.cargoType, contract.cargoType), eq(cityMarkets.produces, true)));
 
   await awardXp(tx, company!.ownerId, playerXp, ownerDrove ? 'delivery' : 'fleet');
   // Missions: what this delivery contributes (route countries plus both ends).
@@ -889,9 +858,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // A container of a ship call ("Кораб пристига").
   if (contract.portCallId) await recordShipContainer(tx, contract.portCallId);
   // A weekly rally run: its time and fuel count.
-  if (contract.rallyId) await recordRallyRun(tx, contract, d, completedAt);
   // Duels count the tonnes by arrival time.
-  await recordDuelDelivery(tx, company!.ownerId, contract.weightTons, completedAt);
   // Starter rental: returned now if the player bought their own truck, or offered for buy-out.
   if (vehicle!.ownership === 'rented') await afterRentedTrip(tx, vehicle!.id, company!.ownerId, now);
   // 1.1.4.2: stars, the mystery client, wear, adverts, CO₂, wishes, challenges, the lost pallet.
@@ -949,7 +916,6 @@ export async function recoverDemand(db: DbOrTx, hours: number) {
       when demand > 1 then greatest(1, demand - ${step})
       else demand end, updated_at = now()
     where demand <> 1`);
-  await db.execute(sql`update city_markets set supply = least(1, supply + ${SUPPLY.recoveryPerHour * hours}), updated_at = now() where supply < 1`);
 }
 
 /**
