@@ -11,6 +11,7 @@ import { runCommand } from '@/server/discord/commands';
 import { allianceBases, allianceHall, allianceHallBonus, createAlliance, dissolveAlliance, fuelStationAt, inviteToAlliance, recordHallDelivery, respondAllianceInvite } from '@/server/game/alliances';
 import { acceptContract } from '@/server/game/deliveries';
 import { alliesOf, worldSnapshot } from '@/server/game/world-map';
+import { forgetCached } from '@/server/cache';
 import { db, makeContract, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
@@ -53,6 +54,7 @@ describe('together in the alliance', () => {
     const d2 = await acceptContract(db(), b.userId, c2.id, (await truckOf(b.userId)).id);
     expect((await db().select().from(deliveries).where(eq(deliveries.id, d2.id)))[0]!.convoyWith).toBe(d1.id);
     // The map: the ally's trip can be helped on the road.
+    forgetCached('world:base');
     const world = await worldSnapshot(db(), new Date(), b.userId);
     expect(world.trucks.find((t) => t.delivery?.deliveryId === d1.id)).toBeTruthy();
 

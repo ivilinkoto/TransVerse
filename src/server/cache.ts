@@ -14,3 +14,8 @@ export function cached<T>(key: string, ttlMs: number, load: () => Promise<T>, no
   value.catch(() => store.delete(key));
   return value;
 }
+
+/** Forgets one entry (tests, or data that just changed for everyone). */
+export function forgetCached(key: string) {
+  store.delete(key);
+}

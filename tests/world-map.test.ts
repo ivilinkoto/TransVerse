@@ -1,10 +1,11 @@
 import { and, eq, sql } from 'drizzle-orm';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { closeDb } from '@/server/db/client';
 import { companies, friendships, organizations, users, vehicles } from '@/server/db/schema';
 import { joinCompany } from '@/server/game/membership';
 import { acceptContract } from '@/server/game/deliveries';
 import { worldSnapshot } from '@/server/game/world-map';
+import { forgetCached } from '@/server/cache';
 import { trackOnline } from '@/server/realtime';
 import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
@@ -14,6 +15,9 @@ const truckOf = async (userId: string) => {
   const [c] = await db().select().from(companies).where(eq(companies.ownerId, userId));
   return (await db().select().from(vehicles).where(and(eq(vehicles.companyId, c!.id), sql`${vehicles.soldAt} is null`)))[0]!;
 };
+
+// The map's shared part is kept for a few seconds; each test builds its own world.
+beforeEach(() => forgetCached('world:base'));
 
 describe('shared world map', () => {
   it('shows every player’s trucks with live schedules, presence and no money data', async () => {
