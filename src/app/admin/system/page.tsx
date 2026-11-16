@@ -84,7 +84,7 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
                 <li key={`${b.kind}-${b.at}`} className="flex flex-wrap items-center gap-x-2">
                   <span className="num text-mist-400">{at(new Date(b.at))}</span>
                   <span className="font-semibold">{b.kind === 'web' ? tr('сайт') : tr('worker')}</span>
-                  {b.before ? <span className={nearMemoryLimit(b) ? 'text-loss' : 'text-mist-300'}>{tr('преди това: {0} MB памет, работил {1} мин', b.before.rssMb, Math.round(b.before.uptimeS / 60))}{nearMemoryLimit(b) ? tr(' — вероятно спрян заради паметта') : ''}</span> : <span className="text-mist-500">{tr('първо стартиране')}</span>}
+                  {b.before ? <span className={nearMemoryLimit(b) ? 'text-loss' : 'text-mist-300'}>{b.before.uptimeS < 60 ? tr('преди това: {0} MB памет, работил само {1} с — спира веднага след старта', b.before.rssMb, b.before.uptimeS) : tr('преди това: {0} MB памет, работил {1} мин', b.before.rssMb, Math.round(b.before.uptimeS / 60))}{nearMemoryLimit(b) ? tr(' — вероятно спрян заради паметта') : ''}</span> : <span className="text-mist-500">{tr('първо стартиране')}</span>}
                 </li>
               ))}
             </ul>

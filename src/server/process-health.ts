@@ -16,7 +16,7 @@ export interface ProcessBoot { at: string; kind: ProcessKind; pid: number; /** T
 
 const BOOTS = 'process-boots';
 const sampleKey = (kind: ProcessKind) => `process-sample:${kind}`;
-export const PROCESS_HEALTH = { keepBoots: 40, sampleMs: 60_000, /** systemd MemoryMax of each service (deploy/*.service). */ memoryMaxMb: { web: 900, worker: 400 } as Record<ProcessKind, number> };
+export const PROCESS_HEALTH = { keepBoots: 40, sampleMs: 15_000, /** systemd MemoryMax of each service (deploy/*.service). */ memoryMaxMb: { web: 1400, worker: 500 } as Record<ProcessKind, number> };
 
 const mb = (bytes: number) => Math.round(bytes / 1_048_576);
 
@@ -57,15 +57,22 @@ const g = globalThis as unknown as { tvWatch?: boolean };
 export function watchProcess(db: () => DbOrTx, kind: ProcessKind) {
   if (g.tvWatch) return;
   g.tvWatch = true;
-  void recordBoot(db(), kind).catch(() => {});
+  // The first sample right after the start: a process that dies again within seconds (a restart
+  // loop) then shows its own short life, not the memory of the one before it.
+  void recordBoot(db(), kind).then(() => recordSample(db(), kind)).catch(() => {});
   const timer = setInterval(() => void recordSample(db(), kind).catch(() => {}), PROCESS_HEALTH.sampleMs);
   timer.unref();
-  process.on('uncaughtException', (error) => {
-    console.error(`[${kind}] uncaught exception`, error);
-    void recordServerError(`${kind}: uncaughtException`, error, db());
-  });
-  process.on('unhandledRejection', (reason) => {
-    console.error(`[${kind}] unhandled rejection`, reason);
-    void recordServerError(`${kind}: unhandledRejection`, reason, db());
-  });
+  // The same error over and over is written to the log once a minute, not on every repeat.
+  const lastLogged = new Map<string, number>();
+  const log = (where: string, error: unknown) => {
+    const key = `${where}|${error instanceof Error ? error.message : String(error)}`.slice(0, 300);
+    const now = Date.now();
+    if ((lastLogged.get(key) ?? 0) > now - 60_000) return;
+    if (lastLogged.size > 200) lastLogged.clear();
+    lastLogged.set(key, now);
+    console.error(`[${where}]`, error);
+    void recordServerError(where, error, db());
+  };
+  process.on('uncaughtException', (error) => log(`${kind}: uncaughtException`, error));
+  process.on('unhandledRejection', (reason) => log(`${kind}: unhandledRejection`, reason));
 }

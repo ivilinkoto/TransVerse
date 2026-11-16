@@ -33,7 +33,7 @@ describe('restarts of the server (the 502s)', () => {
 
   it('tells a stop near the memory limit', () => {
     const at = new Date().toISOString();
-    expect(nearMemoryLimit({ at, kind: 'web', pid: 1, before: { at, rssMb: 880, heapMb: 600, uptimeS: 3600 } })).toBe(true);
+    expect(nearMemoryLimit({ at, kind: 'web', pid: 1, before: { at, rssMb: 1250, heapMb: 600, uptimeS: 3600 } })).toBe(true);
     expect(nearMemoryLimit({ at, kind: 'web', pid: 1, before: { at, rssMb: 300, heapMb: 120, uptimeS: 3600 } })).toBe(false);
     expect(nearMemoryLimit({ at, kind: 'web', pid: 1, before: null })).toBe(false);
     expect(memorySample().rssMb).toBeGreaterThan(0);
