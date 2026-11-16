@@ -54,8 +54,6 @@ export async function countryInfo(db: DbOrTx, code: string, now: Date, viewerId?
   };
 }
 
-export type CountryInfo = NonNullable<Awaited<ReturnType<typeof countryInfo>>>;
-
 /** A country by its code or its name (Bulgarian or English). */
 export async function findCountry(db: DbOrTx, q: string) {
   const s = q.trim();

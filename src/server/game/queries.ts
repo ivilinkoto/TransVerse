@@ -51,8 +51,6 @@ export async function fleetView(db: DbOrTx, companyId: string) {
   return { vehicles: vehiclesOut, trailers: trailersOut, drivers: ds };
 }
 
-export type FleetVehicle = Awaited<ReturnType<typeof fleetView>>['vehicles'][number];
-
 export async function netWorthCents(db: DbOrTx, companyId: string): Promise<number> {
   const { vehicles: vs, trailers: ts } = await fleetView(db, companyId);
   const [company] = await db.select({ balance: companies.balanceCents }).from(companies).where(eq(companies.id, companyId));

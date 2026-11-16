@@ -1,4 +1,4 @@
-import { and, count, eq, gt, inArray, lte } from 'drizzle-orm';
+import { and, count, eq, gt } from 'drizzle-orm';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { contracts, users } from '@/server/db/schema';
 import { powerUnitModel } from '@/lib/game/catalog';
@@ -92,8 +92,3 @@ export async function checkTripRules(db: DbOrTx, userId: string, contract: { tag
   if (contract.tag && !(await featureFor(db, userId, contract.tag as LoadTag, now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
 }
 
-/** Expired special loads are left to the usual expiry; this just counts them for the admin. */
-export async function specialLoadCounts(db: DbOrTx, now = new Date()) {
-  const rows = await db.select({ tag: contracts.tag, n: count() }).from(contracts).where(and(inArray(contracts.tag, ['night_courier', 'last_mile', 'livestock']), eq(contracts.status, 'open'), gt(contracts.expiresAt, now), lte(contracts.createdAt, now))).groupBy(contracts.tag);
-  return Object.fromEntries(rows.map((r) => [r.tag, r.n]));
-}

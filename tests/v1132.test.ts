@@ -1,4 +1,4 @@
-import { and, eq, like } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Features that are "not out yet" in a test (everything else is live). */

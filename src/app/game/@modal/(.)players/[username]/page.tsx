@@ -2,7 +2,6 @@ import Page from '../../../players/[username]/page';
 import { RouteWindow } from '@/components/gameui/RouteWindow';
 import { gameContext } from '@/server/game/context';
 import { windowsLive } from '@/server/game/tutorial-flags';
-import { t } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 
 /** 1.3 „Нов облик“: a player's card opens as a game window — from the chat, the rankings or a search. */

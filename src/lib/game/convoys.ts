@@ -47,7 +47,6 @@ export const CONVOYS = {
   countriesBadge: 4,
 } as const;
 
-export type ConvoyKind = 'personal' | 'company' | 'official';
 export type ConvoyAccess = 'open' | 'friends' | 'link';
 export type ConvoyRole = 'leader' | 'tail' | 'scout' | 'member';
 

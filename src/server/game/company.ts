@@ -1,5 +1,5 @@
 import { featureFor } from '@/server/features';
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { RENTAL_OFFERS, STARTER_RENTAL } from '@/lib/game/catalog';
 import { ECONOMY } from '@/lib/game/economy';
 import { isFreightHub } from '@/lib/game/markets';
@@ -14,27 +14,10 @@ import { t } from '@/i18n/t';
 
 export type Company = typeof companies.$inferSelect;
 
-/** Name shown for a player: their company's name, or the player as a carrier / independent driver. */
-export function displayName(companyName: string | null | undefined, username: string, kind = 'independent'): string {
-  return companyName ?? `${username} · ${kind === 'company' ? t('частен превозвач') : t('самостоятелен шофьор')}`;
-}
-
 export async function companyForUser(db: DbOrTx, userId: string): Promise<Company> {
   const [company] = await db.select().from(companies).where(eq(companies.ownerId, userId));
   if (!company) fail('company_not_found', t('Профилът няма игрови акаунт.'), 404);
   return company!;
-}
-
-/** Fails unless the player has founded a company (used to gate company-only features). */
-export async function requireFoundedCompany(db: DbOrTx, userId: string): Promise<Company> {
-  const company = await companyForUser(db, userId);
-  if (company.kind !== 'company') fail('company_required', t('Тази възможност изисква лиценз от основана (или поета) транспортна компания.'), 403);
-  return company;
-}
-
-/** Hiring drivers: open to licensed operators and to members of any player company. */
-export async function canHireStaff(db: DbOrTx, userId: string, company: Pick<Company, 'kind'>, now = new Date()): Promise<boolean> {
-  return (await hireMode(db, userId, company, now)) !== 'none';
 }
 
 /**

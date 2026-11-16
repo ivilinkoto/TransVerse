@@ -3,7 +3,7 @@ import { BADGES, HALLOWEEN, HALLOWEEN_QUESTS, halloweenEventWindow, isHalloween,
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { userBadges } from '@/server/db/schema';
 import { postCoins } from './coins';
-import { addHolidayProgress, claimHolidayQuest, ensureHolidayEvent, holidayState, HOLIDAY_EVENT_REWARDS, type HolidayDef } from './holiday';
+import { addHolidayProgress, claimHolidayQuest, ensureHolidayEvent, holidayState, type HolidayDef } from './holiday';
 import { t } from '@/i18n/t';
 
 export { hasBadge } from './holiday';
@@ -45,8 +45,6 @@ export const halloweenState = (db: DbOrTx, userId: string) => holidayState(db, H
 
 /** Takes a quest's reward; the last one also gives the badge. */
 export const claimHalloweenQuest = (db: Database, userId: string, questId: string, now = new Date()) => claimHolidayQuest(db, HALLOWEEN_DEF, userId, questId, now);
-
-export const HALLOWEEN_EVENT_REWARDS = HOLIDAY_EVENT_REWARDS;
 
 /** Worker: creates (and announces) the Halloween community event once, during the holiday. */
 export const ensureHalloweenEvent = (db: Database, now = new Date()) => ensureHolidayEvent(db, HALLOWEEN_DEF, now);

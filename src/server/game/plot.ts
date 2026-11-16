@@ -52,8 +52,6 @@ import { addChronicle } from './chronicle';
 import { t as tr, intlLocale } from '@/i18n/t';
 
 type Organization = typeof organizations.$inferSelect;
-export type CompanyBuilding = typeof companyBuildings.$inferSelect;
-export type CompanyBuild = typeof companyBuilds.$inferSelect;
 
 /**
  * Gives a company its plot as it stands: companies founded before the plot

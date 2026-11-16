@@ -76,12 +76,6 @@ export async function currentTerritories(db: DbOrTx, now = new Date()) {
     .orderBy(territories.countryCode, territories.region);
 }
 
-/** The race for a region this week: the companies so far. */
-export async function territoryRace(db: DbOrTx, countryCode: string, region: string, now = new Date()) {
-  const w = weeks(now);
-  return (await regionTons(db, w.startsAt, now, { countryCode, region })).slice(0, 10);
-}
-
 /** A member's load into a region the company holds pays a little more (personal account). */
 export async function territoryBonus(tx: Tx, userId: string, d: { id: string; companyId: string }, destCityId: number, rewardCents: number, now: Date) {
   if (!(await featureFor(tx, userId, 'territories', now))) return 0;

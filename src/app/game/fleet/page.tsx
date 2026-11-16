@@ -1,5 +1,5 @@
 import { LEGEND, legendTier } from '@/lib/game/heritage';
-import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Warehouse, Wrench } from 'lucide-react';
+import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Warehouse } from 'lucide-react';
 import { leasesOf } from '@/server/game/leasing';
 import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { cities, deliveries, deliveryExtras, depots, ledgerEntries, users } from '@/server/db/schema';

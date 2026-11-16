@@ -8,7 +8,6 @@ import { sectionsFor, compareVersions, RELEASES, type Release } from '@/lib/game
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyBattles, globalEvents, jobState, newspapers, organizations, users } from '@/server/db/schema';
-import { LIVERY_CONTEST } from '@/lib/game/together';
 import { appUrl, BRAND, discordConfig } from './config';
 import { announce } from './outbox';
 import { button, linkButton, rows, STYLE } from './ui';

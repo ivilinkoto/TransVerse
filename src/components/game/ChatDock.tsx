@@ -106,14 +106,15 @@ export function ChatDock() {
     }
   }, []);
 
-  // Many messages in a busy channel: refresh the counters at most every few seconds.
+  // Many messages in a busy channel: refresh the counters at most every ~15 s (spread out, so
+  // the open games of all players do not ask at the same moment), and not in a hidden tab.
   const inboxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const soonInbox = useCallback(() => {
     if (inboxTimer.current) return;
     inboxTimer.current = setTimeout(() => {
       inboxTimer.current = null;
-      void loadInbox();
-    }, 3000);
+      if (!document.hidden) void loadInbox();
+    }, 10_000 + Math.random() * 5_000);
   }, [loadInbox]);
 
   const loadFeed = useCallback(async (which: string) => {
@@ -194,6 +195,7 @@ export function ChatDock() {
     const onClose = () => setOpen(false);
     window.addEventListener('tv:chat-close', onClose);
     const safety = setInterval(() => {
+      if (document.hidden) return;
       void loadInbox();
       if (openRef.current) void loadFeed(tabRef.current);
     }, 45_000);

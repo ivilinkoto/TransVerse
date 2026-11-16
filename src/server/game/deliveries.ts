@@ -885,10 +885,6 @@ export async function activeDeliveries(db: DbOrTx, companyId: string) {
   return deliveryViews(db, and(eq(deliveries.companyId, companyId), eq(deliveries.status, 'in_progress'))!, 50);
 }
 
-export async function recentDeliveries(db: DbOrTx, companyId: string, limit = 20) {
-  return deliveryViews(db, and(eq(deliveries.companyId, companyId), eq(deliveries.status, 'completed'))!, limit, true);
-}
-
 async function deliveryViews(db: DbOrTx, where: ReturnType<typeof and>, limit: number, newestFirst = false) {
   const rows: DeliveryRow[] = await db.select().from(deliveries).where(where).orderBy(newestFirst ? desc(deliveries.completedAt) : asc(deliveries.etaAt)).limit(limit);
   if (!rows.length) return [];
@@ -904,8 +900,6 @@ async function deliveryViews(db: DbOrTx, where: ReturnType<typeof and>, limit: n
     return { ...d, schedule: d.schedule as Segment[], contract, origin: cityMap.get(contract.originCityId)!, destination: cityMap.get(contract.destCityId)!, vehicle: vMap.get(d.vehicleId)! };
   });
 }
-
-export type DeliveryView = Awaited<ReturnType<typeof activeDeliveries>>[number];
 
 /** Hourly drift of the shared market back toward neutral demand. */
 export async function recoverDemand(db: DbOrTx, hours: number) {

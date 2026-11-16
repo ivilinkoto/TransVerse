@@ -1,7 +1,6 @@
 import { and, asc, count, desc, eq, gt, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { BADGES } from '@/lib/game/halloween';
 import { BIG_CONVOY, bigConvoyShare, CHALLENGE_METRICS, challengeMetric, EUROTOUR, GRAND_EUROTOUR, WEEKLY_CHALLENGE, type ChallengeMetric } from '@/lib/game/challenges';
-import { CONVOY_RULES } from '@/lib/game/convoy';
 import { featureLive } from '@/lib/game/features';
 import { periodWindow, sofiaMidnight, sofiaParts } from '@/lib/game/missions';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
@@ -190,5 +189,3 @@ export async function lastChallengeWinners(db: DbOrTx, now: Date) {
   return { ...CHALLENGE_METRICS[v.metric], winners: v.winners };
 }
 
-/** How far in time a convoy can still grow (for the page). */
-export const CONVOY_WINDOW_MIN = Math.round(CONVOY_RULES.windowMs / 60_000);

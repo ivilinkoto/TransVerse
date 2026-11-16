@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { GarageClient } from '@/components/garage/GarageClient';
 import { Badge, PageHeader } from '@/components/ui';

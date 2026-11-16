@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, sql } from 'drizzle-orm';
+import { gt, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { featureFor } from '@/server/features';
 import { GAME_COUNTRIES } from '@/lib/geo/scope';
@@ -68,13 +68,3 @@ async function readConditions(db: DbOrTx, now: Date): Promise<RealConditions | n
   return out;
 }
 
-/** The readings for the dashboard (city, temperature, condition). */
-export async function weatherReadings(db: DbOrTx, countries: string[]) {
-  if (!countries.length) return [];
-  return db
-    .select({ cityId: weatherNow.cityId, name: cities.nameBg, country: weatherNow.countryCode, tempC: weatherNow.tempC, condition: weatherNow.condition, fetchedAt: weatherNow.fetchedAt })
-    .from(weatherNow)
-    .innerJoin(cities, eq(cities.id, weatherNow.cityId))
-    .where(and(inArray(weatherNow.countryCode, countries)))
-    .orderBy(desc(weatherNow.fetchedAt));
-}

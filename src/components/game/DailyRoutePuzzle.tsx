@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { api } from '@/lib/client/api';
-import { crowKm, DAILY_ROUTE, type RouteCity } from '@/lib/game/daily-route';
+import { crowKm, type RouteCity } from '@/lib/game/daily-route';
 import { playCoin, playSelect } from '@/lib/client/motion';
 import { int } from '@/lib/format';
 import { t } from '@/i18n/t';

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { money } from '@/lib/format';
 import { commissionCents, HIRE_RULES } from '@/lib/game/hire';
@@ -129,18 +129,6 @@ export async function offersFor(db: DbOrTx, userId: string, now = new Date()) {
     .innerJoin(organizations, eq(organizations.id, jobOffers.organizationId))
     .where(and(eq(jobOffers.toUserId, userId), eq(jobOffers.status, 'pending'), gt(jobOffers.expiresAt, now)))
     .orderBy(asc(jobOffers.expiresAt));
-}
-
-/** The company's recent offers (company page). */
-export async function companyOffers(db: DbOrTx, organizationId: string, limit = 20) {
-  return db
-    .select({ id: jobOffers.id, status: jobOffers.status, share: jobOffers.share, expiresAt: jobOffers.expiresAt, createdAt: jobOffers.createdAt, driver: users.username, goods: contracts.goods, rewardCents: contracts.rewardCents })
-    .from(jobOffers)
-    .innerJoin(users, eq(users.id, jobOffers.toUserId))
-    .innerJoin(contracts, eq(contracts.id, jobOffers.contractId))
-    .where(eq(jobOffers.organizationId, organizationId))
-    .orderBy(desc(jobOffers.createdAt))
-    .limit(limit);
 }
 
 /** Does this player have the right to hand out loads (for the board button)? */

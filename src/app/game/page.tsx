@@ -15,7 +15,7 @@ import { cached } from '@/server/cache';
 import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
-import { isWinter, isSnowTime } from '@/lib/game/winter';
+import { isSnowTime } from '@/lib/game/winter';
 import { realConditions } from '@/server/game/weather';
 import { RoadConditions } from '@/components/game/RoadConditions';
 import { isNewcomer, MENTOR } from '@/lib/game/mentor';

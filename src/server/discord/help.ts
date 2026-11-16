@@ -1,4 +1,3 @@
-import { ALL_EVENT_TEMPLATES } from '@/lib/game/events';
 import { isAdmin } from '@/server/auth/roles';
 import { GameError } from '@/server/game/errors';
 import { startTemplateEvent } from '@/server/game/events';
@@ -102,4 +101,3 @@ export async function eventStart(ctx: Ctx): Promise<Answer> {
   }
 }
 
-export const EVENT_TEMPLATE_CHOICES = ALL_EVENT_TEMPLATES.slice(0, 25).map((t) => ({ name: t.name.slice(0, 100), value: t.id }));

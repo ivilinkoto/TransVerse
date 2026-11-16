@@ -63,4 +63,3 @@ export async function playerCareer(db: DbOrTx, userId: string) {
   };
 }
 
-export type PlayerCareer = NonNullable<Awaited<ReturnType<typeof playerCareer>>>;

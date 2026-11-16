@@ -1,19 +1,11 @@
-import { eq, inArray } from 'drizzle-orm';
 import { PageHeader } from '@/components/ui';
-import type { MapProps, MapVehicle } from '@/components/game/WorldMap';
-import { km } from '@/lib/format';
-import { cities, contracts, depots, routes } from '@/server/db/schema';
 import { TutorialVisit } from '@/components/game/TutorialVisit';
 import { gameContext } from '@/server/game/context';
 import { mapData } from '@/server/game/map-data';
 import { tutorialPending } from '@/server/game/tutorial-flags';
-import { fleetView, routeGeometries } from '@/server/game/queries';
 import { MapClient } from './MapClient';
 import { isVip } from '@/lib/game/vip';
-import { isMarta } from '@/lib/game/marta';
-import { storkOfDay } from '@/server/game/marta';
-import { allianceBases } from '@/server/game/alliances';
-import { t, tx } from '@/i18n/t';
+import { t } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 

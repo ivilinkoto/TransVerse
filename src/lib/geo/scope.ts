@@ -3,7 +3,6 @@
  * part of the real world is imported and playable.
  */
 export const LAUNCH_COUNTRIES = ['BG', 'RO', 'GR', 'TR', 'RS', 'MK', 'HU', 'AT', 'DE'] as const;
-export type LaunchCountry = (typeof LAUNCH_COUNTRIES)[number];
 
 /** "Цяла Европа" (v1.7): playable from the release, for the staff before it. */
 export const EUROPE_COUNTRIES = ['PL', 'CZ', 'SK', 'SI', 'HR', 'BA', 'ME', 'AL', 'XK', 'IT', 'FR', 'ES', 'PT', 'NL', 'BE', 'LU', 'CH'] as const;

@@ -4,7 +4,7 @@
  * every evening with pass points for the first answers, and a thank-you from
  * new players to whoever helped them. Rewards are pass points, never ТрансКоин.
  */
-import { and, count, eq, gt, gte, sql } from 'drizzle-orm';
+import { count, eq, sql } from 'drizzle-orm';
 import { CHAT_LIFE, questionFor } from '@/lib/game/chat-life';
 import { featureLive } from '@/lib/game/features';
 import { sofiaHour } from '@/lib/game/halloween';
@@ -117,8 +117,3 @@ export async function thankHelper(db: Database, who: { id: string; username: str
   });
 }
 
-/** How many world-chat lines the game posted since a moment (for the admin and tests). */
-export async function gameLinesSince(db: DbOrTx, since: Date) {
-  const [row] = await db.select({ n: count() }).from(chatMessages).where(and(gte(chatMessages.createdAt, since), gt(sql`length(coalesce(${chatMessages.kind}, ''))`, 0)));
-  return row?.n ?? 0;
-}

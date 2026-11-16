@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
-import { GRILLE_COLORS, LIGHT_COLORS, type Cosmetics } from '@/lib/game/cosmetics';
+import { LIGHT_COLORS, type Cosmetics } from '@/lib/game/cosmetics';
 import type { Tuning } from '@/lib/game/garage';
 import { badgeTexture, clusterTexture, contourTexture, corrugatedNormal, curtainNormal, fabricTexture, navTexture, plateTexture, textTexture, treadTexture, woodTexture } from './textures';
 

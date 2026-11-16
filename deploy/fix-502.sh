@@ -42,10 +42,31 @@ else
   fi
 fi
 
+echo "==> 3b. Caddy serves the game's static files itself (not through Node)"
+STATIC=/var/www/transverse/current/app/.next/static
+CADDY_USER=$(ps -o user= -C caddy 2>/dev/null | head -n1 || true)
+CADDY_USER=${CADDY_USER:-caddy}
+if grep -q "_next/static" "$CF"; then
+  echo "   already set"
+elif [ ! -d "$STATIC" ] || ! sudo -u "$CADDY_USER" test -r "$(find "$STATIC" -type f -name '*.js' | head -n1)"; then
+  echo "   skipped: $CADDY_USER cannot read $STATIC"
+else
+  cp "$CF" "$CF.bak-$(date +%Y%m%d%H%M%S)"
+  # Before the first "reverse_proxy" of the site: /_next/static straight from disk, cached for a year.
+  perl -0pi -e 's/^(\s*)(\@sse|reverse_proxy)/$1handle_path \/_next\/static\/* {\n$1\troot * \/var\/www\/transverse\/current\/app\/.next\/static\n$1\theader Cache-Control "public, max-age=31536000, immutable"\n$1\tfile_server\n$1}\n$1$2/m' "$CF"
+  if caddy validate --config "$CF" --adapter caddyfile >/dev/null 2>&1; then
+    systemctl reload caddy && echo "   done"
+  else
+    echo "   the new Caddyfile did not validate — the old one is back"
+    cp "$(ls -1t "$CF".bak-* | head -n1)" "$CF"
+  fi
+fi
+grep -q "encode" "$CF" || echo "   !! The Caddyfile has no \"encode zstd gzip\": add it, the game no longer compresses answers itself."
+
 echo "==> 4. Swap"
 if [ "$(swapon --show --noheadings | wc -l)" -gt 0 ]; then
   echo "   already on"
-elif [ "$(awk '/MemTotal/ {print $2}' /proc/meminfo)" -lt 4000000 ] && [ ! -e /swapfile ]; then
+elif [ "$(awk '/MemTotal/ {print $2}' /proc/meminfo)" -lt 8000000 ] && [ ! -e /swapfile ]; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
   grep -q "^/swapfile" /etc/fstab || echo "/swapfile none swap sw 0 0" >> /etc/fstab
   echo "   2 GB swap added"

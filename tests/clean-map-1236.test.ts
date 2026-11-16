@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { DOCK, bookSlot, slotOf, withDockWait } from '@/lib/game/dock';
 import { FEATURES, featureLive } from '@/lib/game/features';

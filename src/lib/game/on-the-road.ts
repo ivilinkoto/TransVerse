@@ -18,11 +18,6 @@ export const ESCORT = {
   passPoints: 400,
 } as const;
 
-export const RATING = {
-  /** Ratings can be given this long after the load arrived. */
-  hours: 72,
-} as const;
-
 export const CAFE = {
   perMinute: 4,
   /** Who is shown as „here“: trucks in the city now (idle) and in the last hours. */

@@ -243,12 +243,6 @@ export async function rateHauler(db: Database, userId: string, contractId: strin
   return r!;
 }
 
-/** A hauler's average stars and how many ratings. */
-export async function haulerRating(db: DbOrTx, userId: string) {
-  const [r] = await db.select({ avg: sql<number | null>`avg(${haulerRatings.stars})::float`, n: sql<number>`count(${haulerRatings.stars})::int` }).from(haulerRatings).where(eq(haulerRatings.haulerUserId, userId));
-  return { stars: r?.avg ?? null, count: r?.n ?? 0 };
-}
-
 /** The owner's open offers and the ratings waiting. */
 export async function myFreight(db: DbOrTx, companyId: string, userId: string) {
   const offers = await db.select().from(contracts).where(and(eq(contracts.exchange, true), eq(contracts.tradeCompanyId, companyId), inArray(contracts.status, ['open', 'accepted']))).limit(30);

@@ -13,7 +13,6 @@ export const MESSAGES: Record<Locale, Messages | null> = { bg: null, en: en as M
 
 const store = new AsyncLocalStorage<Locale>();
 export const withLocale = <T,>(locale: Locale, fn: () => T): T => store.run(locale, fn);
-export const localeNow = () => store.getStore();
 
 /** Rendering pages adds the request's language (src/i18n/server.ts). */
 let fallback: () => Locale | null = () => null;

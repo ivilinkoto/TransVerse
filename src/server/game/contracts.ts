@@ -11,7 +11,7 @@ import { isVip, VIP_PERKS } from '@/lib/game/vip';
 import { contractWindowMinutes } from '@/lib/game/schedule';
 import { LOCAL_JOBS } from '@/lib/game/local-jobs';
 import { seasonalFactor } from '@/lib/game/seasonality';
-import { isWinter, WINTER, isSnowTime } from '@/lib/game/winter';
+import { WINTER, isSnowTime } from '@/lib/game/winter';
 import { HALLOWEEN, isHalloween } from '@/lib/game/halloween';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { isMarta, MARTA } from '@/lib/game/marta';
@@ -569,8 +569,6 @@ export async function openContracts(db: DbOrTx, filter: ContractFilter = {}, now
     // So do the loads of "Цяла Европа" (v1.7) and of the east (v2.0).
     .filter((r) => [r.origin.countryCode, r.destination.countryCode, ...r.stopCities.map((s) => s.country)].every((c) => countryOpen(c, europe, openWorld)));
 }
-
-export type ContractView = Awaited<ReturnType<typeof openContracts>>[number];
 
 /** VIP: holds an open (non-urgent) contract for the player for a few minutes. One reservation at a time. */
 export async function reserveContract(db: Database, userId: string, contractId: string, now = new Date()) {

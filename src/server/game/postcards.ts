@@ -84,4 +84,3 @@ export async function sharePostcard(db: Database, userId: string, deliveryId: st
   });
 }
 
-export type Postcard = NonNullable<Awaited<ReturnType<typeof postcardView>>>;

@@ -1,12 +1,12 @@
-import { and, count, eq, gt, gte, inArray, sql } from 'drizzle-orm';
+import { and, count, eq, gt } from 'drizzle-orm';
 import { BADGES } from '@/lib/game/halloween';
 import { TRANS_EUROPE } from '@/lib/game/europe';
 import { CARGO_TYPES, type CargoType } from '@/lib/game/cargo';
 import { islandOf } from '@/lib/game/crossings';
 import { featureLive } from '@/lib/game/features';
 import { haversineKm } from '@/lib/geo/geometry';
-import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, companies, contracts, deliveries, userBadges } from '@/server/db/schema';
+import type { Database, Tx } from '@/server/db/client';
+import { contracts, userBadges } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import type { RoutingProvider } from '@/server/geo/routing';
 import { addLoad, loadHubs } from './contracts';

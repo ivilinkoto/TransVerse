@@ -6,7 +6,6 @@ import type { Database } from '@/server/db/client';
 import { companyBattles, globalEvents, jobState } from '@/server/db/schema';
 import { discord } from './api';
 import { appUrl, discordConfig } from './config';
-import { announce } from './outbox';
 import { t } from '@/i18n/t';
 
 /**

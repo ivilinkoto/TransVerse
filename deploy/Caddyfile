@@ -4,6 +4,13 @@
 # obtained automatically. Then set COOKIE_SECURE=true in /etc/transverse/transverse.env.
 :80 {
 	encode zstd gzip
+	# The game's JavaScript, CSS and fonts straight from disk: never through Node (one CPU).
+	# The file names carry a hash, so browsers keep them for a year.
+	handle_path /_next/static/* {
+		root * /var/www/transverse/current/app/.next/static
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
 	@sse path /api/events
 	reverse_proxy @sse 127.0.0.1:3000 {
 		flush_interval -1
