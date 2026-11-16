@@ -5,6 +5,9 @@ import { cities, companies, companyMembers, contracts, deliveries, friendships, 
 import { onlineUserIds } from '@/server/realtime';
 import { isVip } from '@/lib/game/vip';
 import { featureFor } from '@/server/features';
+import { cached } from '@/server/cache';
+import polyline from '@mapbox/polyline';
+import { simplify, type LatLon } from '@/lib/geo/geometry';
 
 /** A leg of another player's trip; the geometry is shared through `routes` to keep the payload small. */
 export interface WorldLeg {
@@ -58,15 +61,14 @@ const IDLE_ACTIVE_DAYS = 14;
 const MAX_TRUCKS = 3000;
 
 /**
- * Every player's trucks for the shared world map: where they stand or the
- * schedule they drive. Clients animate positions locally from the schedules,
- * so the map moves in real time without polling every second. Contains no
- * money or contract terms — only who drives where.
+ * The part of the map that is the same for every player — the trucks, their trips and the
+ * road lines — built once and shared for a few seconds. Before, every open map rebuilt all of
+ * it (thousands of trucks and every route's full road geometry) after each truck that left or
+ * arrived: a player sending 20 trucks made every open map load the world 20 times, and the web
+ * process ran out of memory.
  */
-export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: string): Promise<WorldSnapshot> {
-  const { friends, mates } = viewerId ? await circleOf(db, viewerId) : { friends: new Set<string>(), mates: new Set<string>() };
-  // v1.5: the alliance's other companies see each other's loads and help on the road.
-  const allies = viewerId && (await featureFor(db, viewerId, 'alliance_help', now)) ? await alliesOf(db, viewerId) : new Set<string>();
+const WORLD_TTL_MS = 10_000;
+async function worldBase(db: DbOrTx, now: Date) {
   const activeSince = new Date(now.getTime() - IDLE_ACTIVE_DAYS * 86_400_000);
   const rows = await db
     .select({
@@ -112,6 +114,38 @@ export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: str
   const routeRows = routeIds.length ? await db.select({ id: routes.id, geometry: routes.geometry, fromCityId: routes.fromCityId }).from(routes).where(inArray(routes.id, routeIds)) : [];
   const cityIds = [...new Set([...trips.flatMap((t) => [t.originCityId, t.destCityId]), ...routeRows.map((r) => r.fromCityId)])];
   const cityRows = cityIds.length ? await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon, nameBg: cities.nameBg }).from(cities).where(inArray(cities.id, cityIds)) : [];
+  return { rows, trips, routeRows: routeRows.map((r) => ({ ...r, geometry: lightGeometry(r.id, r.geometry) })), cityRows };
+}
+
+/** Road lines for the world map, simplified (~300 m) and kept per route: the full line is not needed at this zoom. */
+const LIGHT = new Map<number, string | null>();
+function lightGeometry(id: number, geometry: string | null): string | null {
+  const hit = LIGHT.get(id);
+  if (hit !== undefined) return hit;
+  let light = geometry;
+  if (geometry) {
+    try {
+      light = polyline.encode(simplify(polyline.decode(geometry, 6) as LatLon[], 0.003), 6);
+    } catch {
+      light = geometry;
+    }
+  }
+  if (LIGHT.size > 5000) LIGHT.clear();
+  LIGHT.set(id, light);
+  return light;
+}
+
+/**
+ * Every player's trucks for the shared world map: where they stand or the
+ * schedule they drive. Clients animate positions locally from the schedules,
+ * so the map moves in real time without polling every second. Contains no
+ * money or contract terms — only who drives where.
+ */
+export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: string): Promise<WorldSnapshot> {
+  const { friends, mates } = viewerId ? await circleOf(db, viewerId) : { friends: new Set<string>(), mates: new Set<string>() };
+  // v1.5: the alliance's other companies see each other's loads and help on the road.
+  const allies = viewerId && (await featureFor(db, viewerId, 'alliance_help', now)) ? await alliesOf(db, viewerId) : new Set<string>();
+  const { rows, trips, routeRows, cityRows } = await cached('world:base', WORLD_TTL_MS, () => worldBase(db, now), now.getTime());
   const cityById = new Map(cityRows.map((c) => [c.id, c]));
   const routeById = new Map(routeRows.map((r) => [r.id, r]));
   const tripByVehicle = new Map(trips.map((t) => [t.vehicleId, t]));

@@ -510,25 +510,40 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     if (!ready) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let loadedAt = 0;
     const load = async () => {
+      // A hidden tab does not ask; it catches up when it is shown again.
+      if (document.hidden) return;
+      loadedAt = Date.now();
       const res = await fetch('/api/world');
       if (!res.ok || cancelled) return;
       const data = (await res.json()) as WorldSnapshot;
       worldRef.current = data;
       setWorld(data);
     };
+    // Many trucks leaving at once are many events: one load at most every 15 s, spread over a
+    // few seconds so that the open maps of all players do not ask at the same moment.
     const soon = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => void load(), 1500);
+      if (timer) return;
+      const wait = Math.max(0, loadedAt + 15_000 - Date.now()) + 1_000 + Math.random() * 4_000;
+      timer = setTimeout(() => {
+        timer = undefined;
+        void load();
+      }, wait);
+    };
+    const shown = () => {
+      if (!document.hidden && Date.now() - loadedAt > 45_000) soon();
     };
     void load();
     window.addEventListener('tv:world', soon);
+    document.addEventListener('visibilitychange', shown);
     const interval = setInterval(() => void load(), 45_000);
     return () => {
       cancelled = true;
       clearTimeout(timer);
       clearInterval(interval);
       window.removeEventListener('tv:world', soon);
+      document.removeEventListener('visibilitychange', shown);
     };
   }, [ready]);
 
