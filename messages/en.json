@@ -13602,6 +13602,7 @@
  "преди {0} ч": "{0} h ago",
  "преди малко": "a moment ago",
  "преди това: {0} MB памет, работил {1} мин": "before that: {0} MB memory, ran {1} min",
+ "преди това: {0} MB памет, работил само {1} с — спира веднага след старта": "before: {0} MB memory, ran only {1} s — stops right after starting",
  "предизвикателство": "challenge",
  "предстои": "coming up",
  "предупреждение": "warning",

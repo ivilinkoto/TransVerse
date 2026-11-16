@@ -19,7 +19,10 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-MemoryMax=900M
+# MemoryHigh makes the kernel reclaim memory first; MemoryMax is the last resort. The heap
+# limit above plus Next.js outside the heap (~300 MB) stays well under both.
+MemoryHigh=1100M
+MemoryMax=1400M
 
 [Install]
 WantedBy=multi-user.target

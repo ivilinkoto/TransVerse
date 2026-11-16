@@ -18,7 +18,8 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-MemoryMax=400M
+MemoryHigh=400M
+MemoryMax=500M
 
 [Install]
 WantedBy=multi-user.target

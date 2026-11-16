@@ -21,9 +21,37 @@ export async function GET(request: Request) {
   const seen = (force = false) => void touchLastSeen(getDb(), user.id, force).catch(() => {});
   seen(true);
   let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let closed = false;
+  /**
+   * Ends this connection once: no listener, no timer, no closure left behind. Before, a
+   * connection whose end was never signalled kept its heartbeat and its listener forever —
+   * every 25 s and every game event threw on the closed stream, and the web process grew
+   * until it was killed for memory.
+   */
+  const close = (controller?: ReadableStreamDefaultController) => {
+    if (closed) return;
+    closed = true;
+    unsubscribe();
+    offline();
+    seen(true);
+    clearInterval(heartbeat);
+    try {
+      controller?.close();
+    } catch {
+      /* already closed */
+    }
+  };
   const stream = new ReadableStream({
     start(controller) {
-      const send = (data: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      const write = (chunk: string) => {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(chunk));
+        } catch {
+          close(controller); // the stream is gone: the browser left
+        }
+      };
+      const send = (data: unknown) => write(`data: ${JSON.stringify(data)}\n\n`);
       send({ type: 'hello' });
       // Which company this player belongs to (re-checked at most every 30 s) — chat events go to members only.
       let member: { companyId: string | null; at: number } = { companyId: null, at: 0 };
@@ -51,25 +79,14 @@ export async function GET(request: Request) {
         send(event.type === 'notification' ? { type: event.type, ...(event.sound ? { sound: event.sound } : {}), ...(event.kind ? { kind: event.kind, title: event.title } : {}) } : { type: event.type });
       });
       heartbeat = setInterval(() => {
-        controller.enqueue(encoder.encode(': ping\n\n'));
-        seen();
+        write(': ping\n\n');
+        if (!closed) seen();
       }, 25_000);
-      request.signal.addEventListener('abort', () => {
-        unsubscribe();
-        offline();
-        seen(true);
-        clearInterval(heartbeat);
-        try {
-          controller.close();
-        } catch {
-          /* already closed */
-        }
-      });
+      if (request.signal.aborted) close(controller);
+      else request.signal.addEventListener('abort', () => close(controller), { once: true });
     },
     cancel() {
-      unsubscribe();
-      offline();
-      clearInterval(heartbeat);
+      close();
     },
   });
   return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' } });
