@@ -5,13 +5,16 @@
  * minute before (a process killed for memory is close to its MemoryMax), and errors that
  * nothing caught. Kept in job_state, a short list, never in the way of the game.
  */
+import { readFileSync } from 'node:fs';
+import { cpus, freemem, totalmem } from 'node:os';
+import { getHeapStatistics } from 'node:v8';
 import { eq } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import { jobState } from '@/server/db/schema';
 import { recordServerError } from './error-log';
 
 export type ProcessKind = 'web' | 'worker';
-export interface MemorySample { at: string; rssMb: number; heapMb: number; uptimeS: number }
+export interface MemorySample { at: string; rssMb: number; heapMb: number; uptimeS: number; /** The service's MemoryMax when it was taken (cgroup v2). */ limitMb?: number | null }
 export interface ProcessBoot { at: string; kind: ProcessKind; pid: number; /** The last sample of the process before it: its memory just before it stopped. */ before: MemorySample | null }
 
 const BOOTS = 'process-boots';
@@ -20,9 +23,23 @@ export const PROCESS_HEALTH = { keepBoots: 40, sampleMs: 15_000, /** systemd Mem
 
 const mb = (bytes: number) => Math.round(bytes / 1_048_576);
 
+const readText = (path: string) => {
+  try {
+    return readFileSync(path, 'utf8').trim();
+  } catch {
+    return null;
+  }
+};
+/** A memory limit of this service's cgroup (v2) in MB, or null when there is none / not on Linux. */
+function serviceLimitMb(name: 'memory.max' | 'memory.high'): number | null {
+  const group = readText('/proc/self/cgroup')?.split('\n').find((l) => l.startsWith('0::'))?.slice(3);
+  const v = group ? readText(`/sys/fs/cgroup${group}/${name}`) : null;
+  return v && v !== 'max' && Number.isFinite(Number(v)) ? mb(Number(v)) : null;
+}
+
 export function memorySample(now = new Date()): MemorySample {
   const m = process.memoryUsage();
-  return { at: now.toISOString(), rssMb: mb(m.rss), heapMb: mb(m.heapUsed), uptimeS: Math.round(process.uptime()) };
+  return { at: now.toISOString(), rssMb: mb(m.rss), heapMb: mb(m.heapUsed), uptimeS: Math.round(process.uptime()), limitMb: serviceLimitMb('memory.max') };
 }
 
 /** Records this start (with the last memory sample of the process before it). */
@@ -45,7 +62,7 @@ export async function processBoots(db: DbOrTx): Promise<ProcessBoot[]> {
 }
 
 /** Was the process before this start probably killed for memory? (its last sample near the limit) */
-export const nearMemoryLimit = (boot: ProcessBoot) => !!boot.before && boot.before.rssMb >= PROCESS_HEALTH.memoryMaxMb[boot.kind] * 0.85;
+export const nearMemoryLimit = (boot: ProcessBoot) => !!boot.before && boot.before.rssMb >= (boot.before.limitMb ?? PROCESS_HEALTH.memoryMaxMb[boot.kind]) * 0.85;
 
 const g = globalThis as unknown as { tvWatch?: boolean };
 
@@ -75,4 +92,28 @@ export function watchProcess(db: () => DbOrTx, kind: ProcessKind) {
   };
   process.on('uncaughtException', (error) => log(`${kind}: uncaughtException`, error));
   process.on('unhandledRejection', (reason) => log(`${kind}: unhandledRejection`, reason));
+}
+
+/**
+ * The memory of this process right now and of the machine, for Админ → Система: where it goes
+ * (JavaScript heap, buffers outside it), the heap limit Node runs with and the systemd limits
+ * of the service (cgroup v2), so a stop for memory can be told from a limit set too low.
+ */
+export function memoryNow() {
+  const m = process.memoryUsage();
+  const limit = serviceLimitMb;
+  return {
+    rssMb: mb(m.rss),
+    heapUsedMb: mb(m.heapUsed),
+    heapTotalMb: mb(m.heapTotal),
+    heapLimitMb: mb(getHeapStatistics().heap_size_limit),
+    externalMb: mb(m.external),
+    buffersMb: mb(m.arrayBuffers),
+    uptimeS: Math.round(process.uptime()),
+    serviceHighMb: limit('memory.high'),
+    serviceMaxMb: limit('memory.max'),
+    serverTotalMb: mb(totalmem()),
+    serverFreeMb: mb(freemem()),
+    cpus: cpus().length,
+  };
 }

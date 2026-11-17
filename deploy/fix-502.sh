@@ -24,6 +24,17 @@ free -h | sed 's/^/     /'
 echo "==> 2. Service files (memory limit for Node)"
 install -m 644 "$DIR/transverse-web.service" /etc/systemd/system/transverse-web.service
 install -m 644 "$DIR/transverse-worker.service" /etc/systemd/system/transverse-worker.service
+# Limits that fit this server. The JavaScript heap stays small (640 MB): Node then cleans up as
+# it goes — under load a capped site stayed at ~350 MB, an uncapped one grew past 1 GB just
+# because it could. The service limit is generous (half the RAM, at least 1400 MB) so a busy
+# moment is never a kill; no MemoryHigh (above it the kernel throttles the site).
+RAM_MB=$(( $(awk '/MemTotal/ {print $2}' /proc/meminfo) / 1024 ))
+WEB_MAX=$(( RAM_MB / 2 )); [ "$WEB_MAX" -lt 1400 ] && WEB_MAX=1400
+WEB_HEAP=640
+mkdir -p /etc/systemd/system/transverse-web.service.d /etc/systemd/system/transverse-worker.service.d
+printf '[Service]\nMemoryHigh=infinity\nMemoryMax=%sM\nEnvironment=NODE_OPTIONS=--max-old-space-size=%s\n' "$WEB_MAX" "$WEB_HEAP" > /etc/systemd/system/transverse-web.service.d/memory.conf
+printf '[Service]\nMemoryHigh=infinity\nMemoryMax=600M\nEnvironment=NODE_OPTIONS=--max-old-space-size=384\n' > /etc/systemd/system/transverse-worker.service.d/memory.conf
+echo "   server: ${RAM_MB} MB RAM, $(nproc) CPU -> site: limit ${WEB_MAX} MB, heap ${WEB_HEAP} MB; worker: 600 MB, heap 384 MB"
 systemctl daemon-reload
 
 echo "==> 3. Caddy waits for the game during a restart"

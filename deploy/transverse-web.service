@@ -19,9 +19,9 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-# MemoryHigh makes the kernel reclaim memory first; MemoryMax is the last resort. The heap
-# limit above plus Next.js outside the heap (~300 MB) stays well under both.
-MemoryHigh=1100M
+# No MemoryHigh: above it the kernel throttles the process and every player waits.
+# MemoryMax is the last resort; fix-502.sh fits both limits to the server's RAM
+# (/etc/systemd/system/transverse-web.service.d/memory.conf).
 MemoryMax=1400M
 
 [Install]

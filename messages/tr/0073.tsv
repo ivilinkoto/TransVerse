@@ -850,3 +850,6 @@ ee9af4fdf7	A simpler game	Более простая игра
 e9a5359a77	Competitions and community: Predictions, Player challenges, Community tournaments, the Spring cup, Duels, Rally, Cities grow, the livery contest, Truck of the month.	Соревнования и сообщество: Прогнозы, Испытания от игроков, Турниры сообщества, Весенний кубок, Дуэли, Ралли, Города растут, конкурс ливрей, Грузовик месяца.
 aed02b5d2b	Hitchhiker	Автостоп
 67149ca5d2	before: {0} MB memory, ran only {1} s — stops right after starting	до этого: {0} МБ памяти, работал всего {1} с — останавливается сразу после запуска
+fa68ade120	The site's memory now	Память сайта сейчас
+717c1aea04	service limit: slowed from {0}, stopped at {1} · server: {2} MB RAM, {3} MB free, {4} CPU	лимит службы: замедление с {0}, остановка при {1} · сервер: {2} МБ RAM, свободно {3} МБ, {4} CPU
+cb114a08a5	total {0} MB · JavaScript {1} / {2} MB (cap {3} MB) · outside it {4} MB (buffers {5} MB) · up {6} min	всего {0} МБ · JavaScript {1} / {2} МБ (предел {3} МБ) · вне его {4} МБ (буферы {5} МБ) · работает {6} мин
