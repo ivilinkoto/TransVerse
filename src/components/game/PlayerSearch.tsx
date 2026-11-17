@@ -10,11 +10,6 @@ import { Avatar } from './Avatar';
 import { openPlayerCard, PlayerName } from './PlayerName';
 import { t as tr, tx } from '@/i18n/t';
 
-/** Opens the search from anywhere (e.g. the finance page hint). */
-export function openPlayerSearch() {
-  window.dispatchEvent(new CustomEvent('tv:search'));
-}
-
 /** Top-bar search: players by name, companies by name or tag. "/" or Ctrl+K opens it. */
 /** The search in the top bar (a release feature). */
 export function PlayerSearch() {

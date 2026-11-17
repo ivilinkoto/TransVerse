@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { BuyButton } from '@/components/game/BuyButton';
 import { LICENCES, type LicenceId } from '@/lib/game/licences';
 import { heldLicences } from '@/server/game/licences';

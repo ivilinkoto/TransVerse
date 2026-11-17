@@ -39,12 +39,6 @@ export const channelKey = (name: string) =>
     .replace(/[^\p{L}\p{N}-]|[\u04c0\u04cf]/gu, '')
     .replace(/^[^a-z0-9\p{Script=Cyrillic}]+|[^a-z0-9\p{Script=Cyrillic}]+$/gu, '');
 
-/** A text channel by name (as shown in Discord, with or without "#" and emoji). */
-export async function channelByName(name: string) {
-  const { channels } = await guild();
-  return channels.find((c) => (c.type === 0 || c.type === 5) && channelKey(c.name) === channelKey(name)) ?? null;
-}
-
 /** A role by name; created (no permissions, not mentionable) when it is missing. */
 export async function ensureRole(name: string, color: number): Promise<string> {
   const { roles } = await guild();

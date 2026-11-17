@@ -45,7 +45,7 @@ const medal = (i: number) => (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1);
 
 export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ tab?: string; country?: string }> }) {
   await initLocale();
-  const { db, user, company, features } = await gameContext();
+  const { user, company, features } = await gameContext();
   const tabs = TABS.filter((t) => (t.id !== 'eco' || features.eco) && (t.id !== 'earners' || features.business_profile) && (t.id !== 'bases' || features.plot_guests) && (t.id !== 'divisions' || features.divisions) && (t.id !== 'records' || features.lane_records) && (t.id !== 'nations' || features.national_rankings));
   const params = await searchParams;
   const requested = params.tab;

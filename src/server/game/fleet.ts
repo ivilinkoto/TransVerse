@@ -6,12 +6,9 @@ import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingE
 import { stickerText } from '@/lib/game/cosmetics';
 import { cleanTruckName } from '@/lib/game/truck-names';
 import { springDiscount } from '@/lib/game/marta';
-import { fuelPriceCents } from '@/lib/game/fuel';
-import { getRoute } from '@/server/geo/route-service';
 import { haversineKm } from '@/lib/geo/geometry';
 import { relocateQuote } from '@/lib/game/relocate';
-import type { RoutingProvider } from '@/server/geo/routing';
-import { ECONOMY, resaleValueCents, tripCosts } from '@/lib/game/economy';
+import { ECONOMY, resaleValueCents } from '@/lib/game/economy';
 import { repairPlan, type RepairPart } from '@/lib/game/repair';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';

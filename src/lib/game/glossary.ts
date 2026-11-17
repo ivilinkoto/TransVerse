@@ -21,4 +21,3 @@ export const GLOSSARY: Record<string, { term: string; text: string }> = {
   underground: { term: 'Подземна репутация', text: 'Втората репутация — от сенчестите товари. Отключва по-скъпи пратки и черния пазар; не пречи на обикновената, но митницата я забелязва.' },
 };
 
-export type GlossaryId = keyof typeof GLOSSARY;

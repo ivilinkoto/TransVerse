@@ -21,8 +21,6 @@ import { trailerModel } from '@/lib/game/catalog';
 import { isSpring } from '@/lib/game/spring';
 import { isEaster } from '@/lib/game/easter';
 import { t as tr, tx, intlLocale } from '@/i18n/t';
-import { initLocale } from '@/i18n/server';
-import type { Metadata } from 'next';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { bonusWeekend, VIP_PRICES_V2, MONTH_CARD, OFFER_DISCOUNT, PASS_LEVEL_SALE, PATRON_LEVELS, VIP_BENEFITS_V2, vipMonthColor, WEEKEND_BONUS, weeklyOffers } from '@/lib/game/shop-v2';
 import { depots } from '@/server/db/schema';

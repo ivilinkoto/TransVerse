@@ -41,5 +41,3 @@ export function duration(minutes: number): string {
 
 export const dateTime = (d: Date | string | number) => dt().format(new Date(d));
 export const date = (d: Date | string | number) => dOnly().format(new Date(d));
-/** The Intl tag of the player's language (for local formatting elsewhere). */
-export const intlTag = () => INTL_LOCALE[currentLocale()];

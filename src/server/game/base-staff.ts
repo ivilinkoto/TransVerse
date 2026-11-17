@@ -5,7 +5,7 @@
  * (`base-staff-story:<org>:<day>`).
  */
 import { eq, like } from 'drizzle-orm';
-import { STAFF, STAFF_ROLES, staffAllowed, staffName, withStaff, type StaffRole } from '@/lib/game/base-staff';
+import { STAFF, staffAllowed, staffName, withStaff, type StaffRole } from '@/lib/game/base-staff';
 import { featureOn } from '@/server/feature-off';
 import type { MemberBonuses, UpgradeLevels } from '@/lib/game/company';
 import { dayKey } from '@/lib/game/daily';

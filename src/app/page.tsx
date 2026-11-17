@@ -23,10 +23,7 @@ import { DEFAULT_SEASON_RULES } from '@/server/game/seasons';
 import { requestSeason } from '@/server/seasonal';
 import { requestNow } from '@/server/site';
 import { countryNames, liveWorld, publicStats, showcaseRoutes, type LiveWorld } from '@/server/showcase';
-import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
-import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
 import { featureLive } from '@/lib/game/features';
-import { getDb } from '@/server/db/client';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 

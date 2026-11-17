@@ -32,7 +32,6 @@ import { UnlockNotice } from '@/components/game/UnlockNotice';
 import { unlockTabs } from '@/components/game/nav';
 import { UNLOCK_INFO } from '@/lib/game/unlocks';
 import { pendingUnlocks } from '@/server/game/ui-prefs';
-import { liveFeatures } from '@/lib/game/features';
 import { isChristmas } from '@/lib/game/christmas';
 import { isMarta } from '@/lib/game/marta';
 import { isEaster } from '@/lib/game/easter';
@@ -42,6 +41,7 @@ import { TermsPrompt } from '@/components/game/TermsPrompt';
 import { BroadcastBanner } from '@/components/game/BroadcastBanner';
 import { activeBroadcast } from '@/server/broadcast';
 import { EMAIL_REWARD_COINS } from '@/server/auth/email-reward';
+import { cached } from '@/server/cache';
 import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
 import { claimableCount } from '@/server/game/missions';
@@ -74,9 +74,10 @@ export default async function GameLayout({ children, modal }: { children: React.
     membershipOf(db, user.id),
     claimableCount(db, user.id),
     db.select({ unread: sql<number>`count(*)::int` }).from(notifications).where(and(eq(notifications.userId, user.id), isNull(notifications.readAt))),
-    db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1),
+    // The same for every player: read once every 30 s, not on every page of every player.
+    cached('frame:event-live', 30_000, () => db.select({ id: globalEvents.id }).from(globalEvents).where(and(isNull(globalEvents.settledAt), isNull(globalEvents.completedAt), lte(globalEvents.startsAt, now), sql`${globalEvents.endsAt} > ${now}`)).limit(1), now.getTime()),
     // 1.1.3: the team's message for everyone.
-    activeBroadcast(db, now),
+    cached('frame:broadcast', 30_000, () => activeBroadcast(db, now), now.getTime()),
   ]);
   // 1.2.1: the inventory button's count (new items, presents, trade offers) and its pulse (a case waits).
   const inv = features.inventory_menu ? await inventoryBadge(db, user.id, user.uiPrefs?.inventorySeenAt, now) : { fresh: 0, caseReady: false };

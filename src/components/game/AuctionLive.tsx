@@ -13,7 +13,9 @@ export function AuctionCountdown({ endsAt }: { endsAt: string }) {
     const tick = () => setLeft(Math.max(0, new Date(endsAt).getTime() - Date.now()));
     tick();
     const t = setInterval(tick, 1000);
-    const r = setInterval(() => router.refresh(), 8000);
+    const r = setInterval(() => {
+      if (!document.hidden) router.refresh();
+    }, 8000);
     return () => {
       clearInterval(t);
       clearInterval(r);

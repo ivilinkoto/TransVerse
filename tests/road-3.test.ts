@@ -3,7 +3,6 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
-import { dayKey } from '@/lib/game/daily';
 import { applyRushHour, isRushHour, RUSH_HOUR } from '@/lib/game/roads';
 import { RETRO_BADGE } from '@/lib/game/shop';
 import { closeDb } from '@/server/db/client';

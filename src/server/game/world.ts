@@ -138,12 +138,23 @@ const EVENT_TEMPLATES = [
   { title: 'Отоплителен сезон', description: 'Търсенето на горива расте.', cargoType: 'liquid', multiplier: 1.25 },
 ] as const;
 
+/**
+ * When each periodic job last ran. Read once per tick in one query (before: one query per job,
+ * 120 of them every 15 s just to learn that most jobs were not due yet).
+ */
+let lastRuns: Map<string, number> | null = null;
+async function loadLastRuns(db: Database) {
+  const { rows } = await db.execute<{ key: string; at: string | number }>(sql`select key, value->>'at' as at from job_state where value ? 'at' and jsonb_typeof(value->'at') = 'number'`);
+  lastRuns = new Map(rows.map((r) => [r.key, Number(r.at)]));
+}
 async function lastRun(db: Database, key: string): Promise<number> {
+  if (lastRuns) return lastRuns.get(key) ?? 0;
   const [row] = await db.select().from(jobState).where(eq(jobState.key, key));
   return row ? Number((row.value as { at: number }).at) : 0;
 }
 async function markRun(db: Database, key: string, at: number) {
   await db.insert(jobState).values({ key, value: { at } }).onConflictDoUpdate({ target: jobState.key, set: { value: { at }, updatedAt: new Date() } });
+  lastRuns?.set(key, at);
 }
 
 /** Last outcome of every worker job (admin "Система" page): when it ran, and the last error if it failed. */
@@ -155,14 +166,21 @@ export interface JobHealth {
 }
 const HEALTH_PREFIX = 'health:';
 
+/** The worker is the only writer (one at a time, advisory lock), so its own copy is current. */
+const healthSeen = new Map<string, JobHealth>();
 async function recordHealth(db: Database, key: string, error: unknown, at: number) {
-  const [row] = await db.select().from(jobState).where(eq(jobState.key, HEALTH_PREFIX + key));
-  const prev = (row?.value as JobHealth | undefined) ?? { okAt: null, errorAt: null, error: null, failures: 0 };
+  let prev = healthSeen.get(key);
+  if (!prev) {
+    const [row] = await db.select().from(jobState).where(eq(jobState.key, HEALTH_PREFIX + key));
+    prev = (row?.value as JobHealth | undefined) ?? { okAt: null, errorAt: null, error: null, failures: 0 };
+    healthSeen.set(key, prev);
+  }
   const value: JobHealth = error
     ? { ...prev, errorAt: at, error: String((error as Error)?.stack ?? error).slice(0, 2000), failures: prev.failures + 1 }
     : { ...prev, okAt: at, failures: 0 };
   // Success is recorded at most once a minute per job (keeps writes low on a 15 s tick).
   if (!error && prev.okAt && at - prev.okAt < 60_000 && !prev.failures) return;
+  healthSeen.set(key, value);
   await db.insert(jobState).values({ key: HEALTH_PREFIX + key, value }).onConflictDoUpdate({ target: jobState.key, set: { value, updatedAt: new Date(at) } });
 }
 
@@ -218,8 +236,10 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
   const { rows } = await db.execute<{ locked: boolean }>(sql`select pg_try_advisory_lock(424242) as locked`);
   if (!rows[0]?.locked) return { skipped: true };
   try {
+    await loadLastRuns(db);
     let settled = 0;
-    await job(db, 'game-time', now, () => migrateToGameTime(db));
+    // A one-time catch-up (old schedules, old windows): it used to read every open load each 15 s.
+    await every(db, 'game-time', 6 * 60 * 60_000, now, () => migrateToGameTime(db));
     // Road events first: a jam or a breakdown can push an arrival past this tick.
     await job(db, 'road-events', now, () => applyDueRoadEvents(db, now));
     await job(db, 'deliveries', now, async () => {
@@ -496,6 +516,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     });
     return { skipped: false, settled };
   } finally {
+    lastRuns = null;
     await db.execute(sql`select pg_advisory_unlock(424242)`);
   }
 }

@@ -4,6 +4,8 @@ import { RETIRED_PAGES } from './src/lib/game/features';
 const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
+  // Caddy compresses every answer (encode zstd gzip); doing it here too cost the single CPU twice.
+  compress: false,
   serverExternalPackages: ['@node-rs/argon2', 'pg'],
   // Pages of the features removed in „Просто“ lead to „Игри и награди“ (old links, bookmarks).
   async redirects() {

@@ -51,8 +51,6 @@ export async function closePoll(db: Database, actorId: string, pollId: string, n
   });
 }
 
-export type PollView = Awaited<ReturnType<typeof companyPollsView>>[number];
-
 /** The open poll and the last closed ones, with the votes and the viewer's own vote. */
 export async function companyPollsView(db: DbOrTx, organizationId: string, viewerId: string, now = new Date()) {
   const polls = await db.select().from(companyPolls).where(eq(companyPolls.organizationId, organizationId)).orderBy(desc(companyPolls.createdAt)).limit(4);

@@ -39,8 +39,3 @@ export async function giftLoad(db: Database, userId: string, contractId: string,
   });
 }
 
-/** How many loads a player has given (the thanks shown on the profile). */
-export async function giftsGiven(db: Database, userId: string) {
-  const [{ n = 0 } = {}] = await db.select({ n: count() }).from(contractGifts).where(eq(contractGifts.fromUserId, userId));
-  return n;
-}

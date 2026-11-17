@@ -33,7 +33,6 @@ export const TITLES: Record<string, { label: string; color: string }> = {
   'winter-games-champion': { label: 'Шампион на Зимните игри', color: '#fde68a' },
   'xmas-base': { label: 'Най-красивата коледна база', color: '#86efac' },
 };
-export const isTitle = (id: string) => id in TITLES;
 
 /** Weekly pass tasks: three a week from this list (the same for everybody), each worth pass points. */
 export type PassTaskKind = 'deliveries' | 'km' | 'ontime' | 'reefer' | 'convoy' | 'countries' | 'long' | 'winter' | 'heavy' | 'xmas' | 'night';

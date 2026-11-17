@@ -145,10 +145,6 @@ export function resaleValueCents(priceCents: number, condition: number, ageDays:
   return Math.round(priceCents * ECONOMY.resaleShare * (0.4 + 0.6 * (condition / 100)) * ageFactor);
 }
 
-export function clampDemand(value: number): number {
-  return Math.min(ECONOMY.demandCeiling, Math.max(ECONOMY.demandFloor, value));
-}
-
 /** Per-delivery fee for a rented vehicle — replaces fuel, tolls, maintenance and wear. */
 export function rentalFeeCents(rewardCents: number, totalKm: number, shareReduction = 0): number {
   const share = Math.max(0.2, ECONOMY.rentalShare - shareReduction);

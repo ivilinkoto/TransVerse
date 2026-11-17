@@ -3,7 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { HARVEST } from '@/lib/game/city-growth';
 import { featureLive } from '@/lib/game/features';
 import { BADGES } from '@/lib/game/halloween';
-import type { DbOrTx, Tx } from '@/server/db/client';
+import type { Tx } from '@/server/db/client';
 import { harvestProgress, userBadges } from '@/server/db/schema';
 import { postCoins } from './coins';
 import { notify } from './notify';
@@ -22,7 +22,3 @@ export async function harvestDelivered(tx: Tx, userId: string, holiday: string |
   await notify(tx, userId, 'achievement', () => t('Значка: {0} 🍇', BADGES[HARVEST.badge]?.label ?? t('Гроздобер')), () => t('{0} есенни товара навреме: +{1} TC.', HARVEST.loadsForBadge, HARVEST.coins), '/game/progress');
 }
 
-export async function harvestOf(db: DbOrTx, userId: string, now: Date) {
-  const [p] = await db.select().from(harvestProgress).where(and(eq(harvestProgress.userId, userId), eq(harvestProgress.year, now.getUTCFullYear())));
-  return { loads: p?.loads ?? 0, rewarded: !!p?.rewarded };
-}

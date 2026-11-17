@@ -26,7 +26,6 @@ export const CHANNELS = {
   projects: { label: 'Проекти', perMinute: 4 },
 } as const;
 export type Channel = keyof typeof CHANNELS;
-export const CHANNEL_IDS = Object.keys(CHANNELS) as Channel[];
 
 export const MESSAGE_MAX = 500;
 

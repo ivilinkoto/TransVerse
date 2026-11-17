@@ -97,4 +97,3 @@ export async function yearRecap(db: DbOrTx, userId: string, year: number) {
   };
 }
 
-export type YearRecap = NonNullable<Awaited<ReturnType<typeof yearRecap>>>;

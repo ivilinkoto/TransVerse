@@ -6,7 +6,7 @@ import { rentalFeeCents } from '@/lib/game/economy';
 import { isVip } from '@/lib/game/vip';
 import { setVip } from '@/server/admin';
 import { closeDb } from '@/server/db/client';
-import { cities, companies, contracts, drivers, notifications, userLicences, users, vehicles } from '@/server/db/schema';
+import { cities, companies, contracts, drivers, notifications, users, vehicles } from '@/server/db/schema';
 import { ensureLocalJob } from '@/server/game/contracts';
 import { acceptContract } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';

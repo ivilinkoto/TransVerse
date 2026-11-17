@@ -18,7 +18,7 @@ const KEY = 'backup:last';
 
 export function backupDir(): string | null {
   if (process.env.BACKUP_DIR) return process.env.BACKUP_DIR;
-  return existsSync(BACKUP.sharedDir) ? join(BACKUP.sharedDir, 'backups') : null;
+  return existsSync(/*turbopackIgnore: true*/ BACKUP.sharedDir) ? join(/*turbopackIgnore: true*/ BACKUP.sharedDir, 'backups') : null;
 }
 
 export interface BackupState {

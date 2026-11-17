@@ -61,14 +61,3 @@ export const sofiaDate = (now: Date) => fmt(now, { year: 'numeric', month: '2-di
 export const sofiaMonth = (now: Date) => fmt(now, { year: 'numeric', month: '2-digit' });
 export const sofiaHourOf = (now: Date) => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', hour: '2-digit', hourCycle: 'h23' }).format(now));
 
-/** The month before "2026-12" → "2026-11". */
-export function previousMonth(month: string): string {
-  const [y, m] = month.split('-').map(Number) as [number, number];
-  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
-}
-
-/** Winner of a duel by tonnes (null on a draw). */
-export function duelWinner(d: { challengerId: string; opponentId: string; challengerTons: number; opponentTons: number }): string | null {
-  if (Math.abs(d.challengerTons - d.opponentTons) < 0.05) return null;
-  return d.challengerTons > d.opponentTons ? d.challengerId : d.opponentId;
-}

@@ -7,7 +7,7 @@
 import { featureLive } from '@/lib/game/features';
 import { plainGoodsFor } from '@/lib/game/goods';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
-import { CARGO, type CargoType } from '@/lib/game/cargo';
+import { type CargoType } from '@/lib/game/cargo';
 import { rewardCents } from '@/lib/game/economy';
 
 /** How much an automatic urgent shipment pays, × a normal load of the same size. */

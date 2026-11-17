@@ -1,4 +1,3 @@
-import { t as tr } from '@/i18n/t';
 
 /**
  * Closed land borders (v2.0), as they are for freight in reality. The game
@@ -17,12 +16,6 @@ export const isClosedBorder = (from: string, to: string) => closed.has(`${from}-
 
 /** The first closed border a route crosses, or null. */
 export const closedCrossing = (borders: readonly { from: string; to: string }[]) => borders.find((b) => isClosedBorder(b.from, b.to)) ?? null;
-
-/** Why a border is closed (for the route panel). */
-export function closedBorderNote(from: string, to: string): string | null {
-  const b = CLOSED_BORDERS.find((x) => (x.a === from && x.b === to) || (x.a === to && x.b === from));
-  return b ? tr(b.note) : null;
-}
 
 /** A real border crossing a detour goes through. */
 export interface Waypoint {

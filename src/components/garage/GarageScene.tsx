@@ -16,7 +16,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { Tuning } from '@/lib/game/garage';
-import { HALLS, buildHall, buildOutdoor } from './hall3d';
+import { buildHall, buildOutdoor } from './hall3d';
 import { box, buildTruck, disposeTree, mat, type BuiltTruck, type TruckLook } from './truck3d';
 
 export type GarageMode = 'orbit' | 'cab' | 'drive';

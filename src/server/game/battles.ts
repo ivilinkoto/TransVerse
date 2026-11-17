@@ -11,8 +11,6 @@ import { addCompanyXp, notifyMembers } from './membership';
 import { addChronicle } from './chronicle';
 import { t } from '@/i18n/t';
 
-export type CompanyBattle = typeof companyBattles.$inferSelect;
-
 /**
  * Worker: pairs this week's battles once (companies with a member delivery in
  * the last two weeks, by level), and tells both companies who they face.

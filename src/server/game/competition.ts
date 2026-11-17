@@ -1,13 +1,12 @@
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
-import { ALBUM, albumBadge, DIVISION_LABELS, DIVISION_RULES, DIVISIONS, divisionMoves, isPerfectTrip, nextDivision, PERFECT, PERFECT_ROLE_STREAK, perfectBonusShare, type Division } from '@/lib/game/competition';
+import { DIVISION_LABELS, DIVISION_RULES, DIVISIONS, divisionMoves, isPerfectTrip, nextDivision, PERFECT, PERFECT_ROLE_STREAK, perfectBonusShare, type Division } from '@/lib/game/competition';
 import { periodWindow } from '@/lib/game/missions';
 import { BADGES } from '@/lib/game/halloween';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, cityVisits, companyMembers, countries, divisionResults, jobState, organizations, userBadges, users } from '@/server/db/schema';
+import { companyMembers, divisionResults, jobState, organizations, userBadges, users } from '@/server/db/schema';
 import { queueRoles } from '@/server/discord/outbox';
 import { featureFor } from '@/server/features';
-import { postCoins } from './coins';
 import { postTreasury } from './finance';
 import { notifyMembers } from './membership';
 import { notify } from './notify';

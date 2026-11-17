@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 // The plot as released; companies founded after this date start with an empty plot.
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true, featureDate: () => new Date('2026-01-01T00:00:00Z') }));
 import { memberBonuses } from '@/lib/game/company';
-import { BUILDING_TYPES, BUILDINGS, DEFAULT_SPOTS, levelSpec, type BuildingType, materialCostCents, missing, PLOT, placementError, splitLoads, upgradesFromBuildings } from '@/lib/game/plot';
+import { BUILDINGS, DEFAULT_SPOTS, levelSpec, type BuildingType, materialCostCents, missing, PLOT, placementError, splitLoads, upgradesFromBuildings } from '@/lib/game/plot';
 import { closeDb } from '@/server/db/client';
 import { companies, companyBuildings, companyBuilds, contracts, organizations, vehicles } from '@/server/db/schema';
 import { openContracts } from '@/server/game/contracts';

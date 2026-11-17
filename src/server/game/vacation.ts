@@ -11,11 +11,6 @@ import { fail } from './errors';
  */
 export const VACATION = { maxDays: 14, cooldownDays: 30 };
 
-export async function vacationOf(db: DbOrTx, userId: string) {
-  const [u] = await db.select({ until: users.vacationUntil }).from(users).where(eq(users.id, userId));
-  return u?.until ?? null;
-}
-
 export const onVacation = (until: Date | null | undefined, now: Date) => !!until && until > now;
 
 export async function setVacation(db: DbOrTx, userId: string, days: number, now = new Date()) {
