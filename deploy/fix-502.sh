@@ -32,8 +32,8 @@ RAM_MB=$(( $(awk '/MemTotal/ {print $2}' /proc/meminfo) / 1024 ))
 WEB_MAX=$(( RAM_MB / 2 )); [ "$WEB_MAX" -lt 1400 ] && WEB_MAX=1400
 WEB_HEAP=640
 mkdir -p /etc/systemd/system/transverse-web.service.d /etc/systemd/system/transverse-worker.service.d
-printf '[Service]\nMemoryHigh=infinity\nMemoryMax=%sM\nEnvironment=NODE_OPTIONS=--max-old-space-size=%s\n' "$WEB_MAX" "$WEB_HEAP" > /etc/systemd/system/transverse-web.service.d/memory.conf
-printf '[Service]\nMemoryHigh=infinity\nMemoryMax=600M\nEnvironment=NODE_OPTIONS=--max-old-space-size=384\n' > /etc/systemd/system/transverse-worker.service.d/memory.conf
+printf '[Service]\nMemoryHigh=infinity\nMemoryMax=%sM\nEnvironment=NODE_OPTIONS=--max-old-space-size=%s\nTimeoutStopSec=10\nKillMode=mixed\n' "$WEB_MAX" "$WEB_HEAP" > /etc/systemd/system/transverse-web.service.d/memory.conf
+printf '[Service]\nMemoryHigh=infinity\nMemoryMax=600M\nEnvironment=NODE_OPTIONS=--max-old-space-size=384\nTimeoutStopSec=10\nKillMode=mixed\n' > /etc/systemd/system/transverse-worker.service.d/memory.conf
 echo "   server: ${RAM_MB} MB RAM, $(nproc) CPU -> site: limit ${WEB_MAX} MB, heap ${WEB_HEAP} MB; worker: 600 MB, heap 384 MB"
 systemctl daemon-reload
 
@@ -85,8 +85,20 @@ else
   echo "   not needed"
 fi
 
-echo "==> 5. Restart with the new settings"
-systemctl restart transverse-web transverse-worker
+echo "==> 5. Restart with the new settings (and no left-over processes)"
+systemctl stop transverse-web transverse-worker || true
+sleep 2
+LEFT=$(pgrep -f "next-server|node server.js|dist/worker.js" || true)
+if [ -n "$LEFT" ]; then
+  echo "   left-over processes of the game (killed now):"
+  ps -o pid,rss,etime,cmd -p $LEFT | sed 's/^/     /'
+  kill -9 $LEFT || true
+  sleep 1
+fi
+if [ "$(swapon --show --noheadings | wc -l)" -gt 0 ] && [ "$(free -m | awk '/Mem:/ {print $7}')" -gt "$(free -m | awk '/Swap:/ {print $3}')" ]; then
+  swapoff -a && swapon -a && echo "   swap emptied"
+fi
+systemctl start transverse-worker transverse-web
 sleep 5
 systemctl is-active transverse-web transverse-worker
 echo "Done. Админ → Система → „Рестарти на сървъра“ shows from now on every restart and the memory before it."

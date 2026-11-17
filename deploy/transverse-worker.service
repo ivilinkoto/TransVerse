@@ -13,6 +13,11 @@ EnvironmentFile=/etc/transverse/transverse.env
 Environment=NODE_OPTIONS=--max-old-space-size=384
 ExecStart=/usr/bin/node --enable-source-maps dist/worker.js
 Restart=always
+# A stop (a deploy, a restart) waits at most 10 s, then every process of the service is killed.
+# Before: open live connections kept the old site up to the 90 s timeout, and a left-over
+# process held memory and the port while the new one failed to start.
+TimeoutStopSec=10
+KillMode=mixed
 RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
