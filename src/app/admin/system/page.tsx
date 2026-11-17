@@ -7,7 +7,7 @@ import { DiscordLayout } from '@/components/admin/DiscordLayout';
 import { DiscordSwitches } from '@/components/admin/DiscordSwitches';
 import { layoutState } from '@/server/discord/layout';
 import { Badge, Card, PageHeader } from '@/components/ui';
-import { nearMemoryLimit, processBoots } from '@/server/process-health';
+import { memoryNow, nearMemoryLimit, processBoots } from '@/server/process-health';
 import { dateTime } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
 import { jobHealth } from '@/server/game/world';
@@ -89,6 +89,16 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
               ))}
             </ul>
           )}
+          {(() => {
+            const m = memoryNow();
+            return (
+              <div className="mt-3 rounded-lg border border-asphalt-700 p-2 text-xs" data-testid="memory-now">
+                <p className="font-semibold">{tr('Паметта на сайта сега')}</p>
+                <p className="num text-mist-300">{tr('общо {0} MB · JavaScript {1} / {2} MB (таван {3} MB) · извън него {4} MB (буфери {5} MB) · работи {6} мин', m.rssMb, m.heapUsedMb, m.heapTotalMb, m.heapLimitMb, m.externalMb, m.buffersMb, Math.round(m.uptimeS / 60))}</p>
+                <p className="num text-mist-400">{tr('граница на услугата: забавяне от {0}, спиране при {1} · сървър: {2} MB RAM, свободни {3} MB, {4} CPU', m.serviceHighMb != null ? `${m.serviceHighMb} MB` : '—', m.serviceMaxMb != null ? `${m.serviceMaxMb} MB` : '—', m.serverTotalMb, m.serverFreeMb, m.cpus)}</p>
+              </div>
+            );
+          })()}
           <p className="mt-2 text-xs text-mist-400">{tr('Всяко рестартиране на сайта = няколко секунди 502 за играчите. Качване на обновление също рестартира.')}</p>
         </Card>
         <Card title={tr('Грешки на сървъра ({0})', errors.length)} actions={errors.length ? <ActionButton action={{ type: 'clearServerErrors' }} endpoint="/api/admin/action" className="btn-ghost px-2.5 py-1 text-xs" confirm={tr('Списъкът с грешки се изчиства. Продължаваш ли?')}>{tr('Изчисти')}</ActionButton> : undefined}>
