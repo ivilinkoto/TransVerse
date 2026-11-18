@@ -7,7 +7,9 @@ import { CAREERS, type CareerRole } from '@/lib/game/careers';
 import { t } from '@/i18n/t';
 
 /** 1.3.1 „Екипът“: the application form (the server checks everything again). */
-export function CareersForm({ roles, initial }: { roles: { id: CareerRole; label: string }[]; initial?: { role: CareerRole; about: string; hours: number; contact: string; link: string } | null }) {
+export interface FormRole { id: CareerRole; label: string; emoji: string; hours: string; does: string[]; fits: string }
+
+export function CareersForm({ roles, initial }: { roles: FormRole[]; initial?: { role: CareerRole; about: string; hours: number; contact: string; link: string } | null }) {
   const router = useRouter();
   const [role, setRole] = useState<CareerRole>(initial?.role ?? roles[0]!.id);
   const [about, setAbout] = useState(initial?.about ?? '');
@@ -34,6 +36,7 @@ export function CareersForm({ roles, initial }: { roles: { id: CareerRole; label
     }
   };
   if (sent) return <p className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-200" data-testid="careers-sent">{t('Кандидатурата е изпратена! Ще я прегледаме и ще ти пишем.')}</p>;
+  const picked = roles.find((r) => r.id === role);
   const field = 'mt-1 w-full rounded-xl border border-asphalt-700 bg-asphalt-950 px-3 py-2 text-sm';
   return (
     <form onSubmit={submit} className="space-y-3" data-testid="careers-form">
@@ -43,6 +46,16 @@ export function CareersForm({ roles, initial }: { roles: { id: CareerRole; label
           {roles.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
         </select>
       </label>
+      {picked && (
+        <div className="rounded-xl border border-asphalt-700 bg-asphalt-900/60 p-3 text-sm" data-testid="career-role-info">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="font-semibold text-white">{picked.emoji} {picked.label}</span>
+            <span className="text-xs text-mist-400">{picked.hours}</span>
+          </div>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-mist-300">{picked.does.map((d) => <li key={d}>{d}</li>)}</ul>
+          <p className="mt-1.5 text-xs text-mist-400">{picked.fits}</p>
+        </div>
+      )}
       <label className="block text-sm">
         <span className="text-mist-300">{t('Разкажи за себе си: с какво се занимаваш, какво си правил досега и защо искаш да си в екипа')}</span>
         <textarea id="career-about" className={`${field} min-h-32`} value={about} onChange={(e) => setAbout(e.target.value)} maxLength={CAREERS.aboutMax} required />
