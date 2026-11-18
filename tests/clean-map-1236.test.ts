@@ -81,8 +81,9 @@ describe('1.2.3.6 „Чиста карта“: the game', () => {
   it('a full dock means a queue; a swap for a gift moves both unloadings and pays the gift', async () => {
     const sofia = await cityByName('Sofia');
     expect(sofia.population).toBeGreaterThanOrEqual(DOCK.minPopulation);
-    // The dock comes with 1.3: run after its release (or now, if that is later).
-    const now = new Date(Math.max(Date.now(), new Date(releaseByVersion('1.3')!.publishedAt).getTime() + 3_600_000));
+    // The dock comes with 1.3: run after its release. A month ahead: tests run side by side on one
+    // database, and some settle every delivery due by their own time — these trips must not be among them.
+    const now = new Date(Math.max(Date.now(), new Date(releaseByVersion('1.3')!.publishedAt).getTime() + 3_600_000) + 30 * 86_400_000);
     const players = [];
     for (let i = 0; i < DOCK.perSlot + 1; i++) {
       const p = await newPlayer('Plovdiv');
