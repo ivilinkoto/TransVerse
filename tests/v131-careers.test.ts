@@ -21,7 +21,7 @@ describe('1.3.1 „Екипът“', () => {
   it('is its own small release with open roles and no window', () => {
     expect(FEATURES.careers).toBe('1.3.1');
     expect(releaseByVersion('1.3.1')?.name).toBe('Екипът');
-    expect(CAREER_ROLES.filter((r) => r.open).length).toBeGreaterThanOrEqual(5);
+    expect(CAREER_ROLES.filter((r) => r.open).length).toBe(4);
   });
 
   it('a player applies, can change it, and the admins decide; accepted gets the team badge', async () => {

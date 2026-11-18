@@ -173,8 +173,10 @@ describe('v1.1.4.1 „По-просто“', () => {
     await db().update(users).set({ lastSeenAt: new Date(now.getTime() - 5 * 86_400_000) }).where(eq(users.id, gone.userId));
     expect((await missingPlayers(db(), now, 500)).some((m) => m.id === gone.userId)).toBe(true);
     const staff = await newPlayer();
-    await db().update(users).set({ role: 'support' }).where(eq(users.id, staff.userId));
-    const actor = { id: staff.userId, role: 'support', username: staff.username };
+    await db().update(users).set({ role: 'admin' }).where(eq(users.id, staff.userId));
+    const actor = { id: staff.userId, role: 'admin', username: staff.username };
+    // Support may not give ТрансКоин; an administrator may, once a month.
+    await expect(winBack(db(), { ...actor, role: 'support' }, gone.userId, now)).rejects.toBeInstanceOf(GameError);
     await winBack(db(), actor, gone.userId, now);
     await expect(winBack(db(), actor, gone.userId, now)).rejects.toBeInstanceOf(GameError);
     const [{ n }] = (await db().execute<{ n: number }>(sql`select count(*)::int as n from notifications where user_id = ${gone.userId}`)).rows as [{ n: number }];

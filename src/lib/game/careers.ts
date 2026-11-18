@@ -4,7 +4,7 @@
  * menu, where a player of 16 or older applies. No window opens by itself. The admins read the
  * applications (Админ → Кандидатури).
  */
-export type CareerRole = 'lead' | 'tester' | 'moderator' | 'community' | 'designer' | 'server';
+export type CareerRole = 'lead' | 'tester' | 'moderator' | 'community' | 'designer';
 
 export interface CareerRoleDef { id: CareerRole; label: string; emoji: string; hours: string; does: string[]; fits: string; open: boolean; /** Shown on the page, but chosen by the founder: no form. */ invite?: boolean }
 
@@ -12,7 +12,7 @@ export const CAREER_ROLES: CareerRoleDef[] = [
   {
     // The founder keeps the code, the server, the money and the last word on releases; the lead runs the rest.
     id: 'lead', label: 'Ръководител на играта', emoji: '🧭', hours: '6–10 ч седмично', open: false, invite: true,
-    does: ['Отговаря за играта като цяло: поддръжка, общност и Discord', 'Намира и води екипа, води седмичната среща', 'Събира желанията и бъговете в един подреден списък за основателя и е връзката с него'],
+    does: ['Отговаря за играта като цяло: поддръжка, общност и Discord', 'Намира и води екипа, води седмичната среща', 'Взема решенията за играта и екипа и е единствената връзка с основателя'],
     fits: 'Пълнолетен, организиран и спокоен. Избираме го сред хората, които вече познаваме — по покана, без формуляр.',
   },
   {
@@ -35,11 +35,6 @@ export const CAREER_ROLES: CareerRoleDef[] = [
     does: ['Банери и картинки за обявленията', 'Иконки и идеи за нови екрани, камиони и предмети'],
     fits: 'Имаш примери от свои работи — покажи ни ги.',
   },
-  {
-    id: 'server', label: 'Помощник по сървъра', emoji: '🖥️', hours: '1–3 ч седмично + при авария', open: true,
-    does: ['Следи дали играта работи и вдига тревога при проблем', 'Пуска готовите стъпки при авария (има писмени инструкции)', 'Помага с обновленията на сървъра'],
-    fits: 'Познаваш Linux и командния ред. Достъп до сървъра се дава постепенно, след изпитателния период.',
-  },
 ];
 
 export const careerRole = (id: string) => CAREER_ROLES.find((r) => r.id === id);
@@ -48,7 +43,7 @@ export const careerRole = (id: string) => CAREER_ROLES.find((r) => r.id === id);
 export const CAREER_OFFER = {
   now: ['Роля и значка „Екип TransVerse“ в играта и в Discord', 'VIP, докато си в екипа', 'Ранен достъп до обновленията и думата си в това какво да се прави', 'Реален опит и препоръка за CV и портфолио'],
   later: ['Засега всички роли са доброволни — играта още няма приход', 'Ако започне да носи приход, първо ще помислим за хората от екипа — ще го обсъдим заедно и открито', 'Работа от вкъщи, в удобно за теб време'],
-  process: ['Попълваш формуляра тук', 'Кратък разговор в Discord (15–20 минути)', 'Изпитателен период от 3–4 седмици', 'Място в екипа и правата на ролята'],
+  process: ['Попълваш формуляра тук', 'Кратък разговор (15–20 минути)', 'Изпитателен период от 3–4 седмици', 'Място в екипа и правата на ролята'],
 } as const;
 
 export const CAREERS = {

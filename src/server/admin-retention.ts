@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companies, users } from '@/server/db/schema';
-import { recordAudit, requireStaff, type Staff } from '@/server/admin';
+import { recordAudit, requireAdminRole, requireStaff, type Staff } from '@/server/admin';
 import { postCoins } from '@/server/game/coins';
 import { fail } from '@/server/game/errors';
 import { notify } from '@/server/game/notify';
@@ -61,6 +61,8 @@ export const WIN_BACK_COINS = 10;
 /** „Покани обратно“: a notification, an email (when it can be sent) and a small gift — once a month per player. */
 export async function winBack(db: Database, actor: Staff | null, userId: string, now = new Date()) {
   requireStaff(actor);
+  // A gift of ТрансКоин: like every other gift, only an administrator gives it.
+  requireAdminRole(actor);
   const [u] = await db.select({ id: users.id, username: users.username, email: users.email, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId));
   if (!u) fail('user_not_found', t('Потребителят не е намерен.'), 404);
   const month = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia', year: 'numeric', month: '2-digit' }).format(now);
