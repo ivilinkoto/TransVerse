@@ -88,11 +88,11 @@ $SSH "systemctl disable --now transverse-web transverse-worker"
 
 echo "==> 6. Copy the database"
 systemctl stop transverse-web transverse-worker 2>/dev/null || true
-$SSH "sudo -u postgres pg_dump -Fc transverse" > /root/transverse-move.dump
-ls -lh /root/transverse-move.dump
+$SSH "sudo -u postgres pg_dump -Fc transverse" > /tmp/transverse-move.dump
+chown postgres /tmp/transverse-move.dump && ls -lh /tmp/transverse-move.dump
 sudo -u postgres dropdb --if-exists transverse
 sudo -u postgres createdb -O transverse transverse
-sudo -u postgres pg_restore --no-owner --role=transverse -j 4 -d transverse /root/transverse-move.dump
+sudo -u postgres pg_restore --no-owner --role=transverse -j 4 -d transverse /tmp/transverse-move.dump
 sudo -u postgres psql -d transverse -tc "select count(*) || ' players' from users"
 
 echo "==> 7. Memory limits, static files, start"
