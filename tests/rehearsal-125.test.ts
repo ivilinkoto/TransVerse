@@ -53,8 +53,10 @@ describe('rehearsal: 12–20 November 2026', () => {
     expect(latestPublished(LIVE)?.version).toBe('1.3');
     expect(unseenRelease('1.2.3.2', LIVE)?.version).toBe('1.3');
     expect(unseenRelease('1.3', LIVE)).toBeNull();
-    // Nothing else of the old plan on the 20th: the November update came out whole on the 12th.
-    expect(latestPublished(at('2026-11-20T11:00:00+02:00'))?.version).toBe('1.3');
+    // Nothing else of the old plan on the 20th: the November update came out whole on the 12th;
+    // the only later one by then is the small 1.3.1 „Екипът“ (the careers page, 18 November).
+    expect(latestPublished(at('2026-11-17T11:00:00+02:00'))?.version).toBe('1.3');
+    expect(latestPublished(at('2026-11-20T11:00:00+02:00'))?.version).toBe('1.3.1');
   });
 
   it('the season that runs keeps its old pass on the 12th; the last-day reminder goes out', async () => {
