@@ -41,8 +41,13 @@ jobs:
           REL=release
           mkdir -p $REL/app
           cp -r .next/standalone/. $REL/app/
-          mkdir -p $REL/app/.next && cp -r .next/static $REL/app/.next/static
-          cp -r public $REL/app/public
+          # Copy the contents (dir/.): the standalone output may already hold .next/ or public/
+          # (fonts it traced), and "cp -r public app/public" then nests them in app/public/public —
+          # the map's worker, the icons and sw.js answered 404.
+          mkdir -p $REL/app/.next/static $REL/app/public
+          cp -r .next/static/. $REL/app/.next/static/
+          cp -r public/. $REL/app/public/
+          test -f $REL/app/public/vendor/maplibre-gl-worker.mjs && test -f $REL/app/public/sw.js
           cp -r dist drizzle deploy $REL/
           mkdir -p $REL/data && cp -r data/geo $REL/data/geo
           echo "${GITHUB_SHA}" > $REL/REVISION
