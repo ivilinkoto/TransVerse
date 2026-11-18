@@ -173,3 +173,8 @@ DNS записи (в Spaceship → домейнът → Advanced DNS; при DNS
 - Build: `backup.ts` е с `turbopackIgnore`, за да не влиза целият проект в standalone пакета.
 - Спиране: `TimeoutStopSec=10` и `KillMode=mixed` (в unit-ите и в `memory.conf`), а процесът сам излиза до 5 s след SIGTERM. Преди отворените живи връзки държаха стария сайт до 90 s таймаута, systemd не успяваше да изчисти групата му („Failed to kill control group“), остатъчен процес държеше паметта (swap-ът се пълнеше) и порта, а новият сайт не тръгваше. `fix-502.sh` спира услугите, убива остатъци, изпразва swap-а (ако има място в RAM) и ги пуска наново.
 
+
+## Преместване на нов сървър (`deploy/move-server.sh`)
+- На **новия** сървър (Ubuntu 24.04), като root: `curl -fsSLO https://raw.githubusercontent.com/ivilinkoto/TransVerse/main/deploy/move-server.sh && bash move-server.sh <IP на стария сървър>`.
+- Скриптът иска паролата на стария сървър веднъж (или казва кой ключ да се добави там), копира настройките, тайните, Caddyfile, ключа за деплой, текущата версия и архивите, инсталира всичко (`setup-server.sh`). След потвърждение (`YES`) спира играта на стария сървър завинаги (`disable --now`: без втори worker и втори Discord бот), пренася базата (`pg_dump -Fc` → `pg_restore`) и пуска играта тук (`fix-502.sh`).
+- След това: DNS на домейна към новия IP и `VPS_HOST` в GitHub Secrets. Старият сървър остава спрян, с базата си, като резерва.
