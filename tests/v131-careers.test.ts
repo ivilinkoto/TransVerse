@@ -30,6 +30,8 @@ describe('1.3.1 „Екипът“', () => {
     expect(await code(applyForRole(db(), p.userId, { role: 'community', about: ABOUT, hours: 5, contact: 'me#1', consent: true }, now))).toBe('too_young');
     expect(await code(applyForRole(db(), p.userId, { role: 'community', about: ABOUT, hours: 5, contact: 'me#1', adult: true }, now))).toBe('no_consent');
     expect(await code(applyForRole(db(), p.userId, { role: 'pilot', about: ABOUT, hours: 5, contact: 'me#1', ...OK }, now))).toBe('no_role');
+    // The game lead is chosen by invitation: shown on the page, but there is no form for it.
+    expect(await code(applyForRole(db(), p.userId, { role: 'lead', about: ABOUT, hours: 8, contact: 'me#1', ...OK }, now))).toBe('no_role');
     expect(await code(applyForRole(db(), p.userId, { role: 'community', about: 'кратко', hours: 5, contact: 'me#1', ...OK }, now))).toBe('too_short');
     expect(await code(applyForRole(db(), p.userId, { role: 'community', about: ABOUT, hours: 5, contact: ' ', ...OK }, now))).toBe('no_contact');
     expect(await code(applyForRole(db(), p.userId, { role: 'community', about: ABOUT, hours: 5, contact: 'me#1', link: 'javascript:alert(1)', ...OK }, now))).toBe('bad_link');

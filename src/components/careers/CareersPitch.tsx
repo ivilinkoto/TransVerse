@@ -23,10 +23,10 @@ export function CareersPitch() {
       <div>
         <p className="font-semibold text-white">{t('Отворени позиции')}</p>
         <ul className="mt-2 space-y-2" data-testid="career-roles">
-          {CAREER_ROLES.filter((r) => r.open).map((r) => (
-            <li key={r.id} className="rounded-xl border border-asphalt-700 bg-asphalt-900/60 p-3">
+          {CAREER_ROLES.filter((r) => r.open || r.invite).map((r) => (
+            <li key={r.id} className={`rounded-xl border p-3 ${r.invite ? 'border-gold-400/30 bg-gold-400/5' : 'border-asphalt-700 bg-asphalt-900/60'}`}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-semibold text-white">{r.emoji} {tx(r.label)}</span>
+                <span className="font-semibold text-white">{r.emoji} {tx(r.label)}{r.invite && <span className="ml-2 rounded-full border border-gold-400/40 bg-gold-400/10 px-2 py-0.5 align-middle text-[11px] font-semibold text-gold-300">{t('по покана')}</span>}</span>
                 <span className="text-xs text-mist-400">{tx(r.hours)}</span>
               </div>
               <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-mist-300">{r.does.map((d) => <li key={d}>{tx(d)}</li>)}</ul>

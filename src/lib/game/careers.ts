@@ -4,11 +4,17 @@
  * menu, where a player of 16 or older applies. No window opens by itself. The admins read the
  * applications (Админ → Кандидатури).
  */
-export type CareerRole = 'tester' | 'moderator' | 'community' | 'designer' | 'server';
+export type CareerRole = 'lead' | 'tester' | 'moderator' | 'community' | 'designer' | 'server';
 
-export interface CareerRoleDef { id: CareerRole; label: string; emoji: string; hours: string; does: string[]; fits: string; open: boolean }
+export interface CareerRoleDef { id: CareerRole; label: string; emoji: string; hours: string; does: string[]; fits: string; open: boolean; /** Shown on the page, but chosen by the founder: no form. */ invite?: boolean }
 
 export const CAREER_ROLES: CareerRoleDef[] = [
+  {
+    // The founder keeps the code, the server, the money and the last word on releases; the lead runs the rest.
+    id: 'lead', label: 'Ръководител на играта', emoji: '🧭', hours: '6–10 ч седмично', open: false, invite: true,
+    does: ['Отговаря за играта като цяло: поддръжка, общност и Discord', 'Намира и води екипа, води седмичната среща', 'Събира желанията и бъговете в един подреден списък за основателя и е връзката с него'],
+    fits: 'Пълнолетен, организиран и спокоен. Избираме го сред хората, които вече познаваме — по покана, без формуляр.',
+  },
   {
     id: 'tester', label: 'Тестер на обновленията', emoji: '🧪', hours: '2–4 ч седмично', open: true,
     does: ['Пробва новите функции преди всички — на телефон и компютър', 'Описва ясно какво не работи и как да се повтори', 'Казва кое е объркващо за нов играч'],
