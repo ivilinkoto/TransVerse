@@ -1,5 +1,5 @@
 import type { FeatureId } from '@/lib/game/features';
-import { Backpack, BookOpen, Building2, ClipboardList, Gamepad2, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
+import { Briefcase, Backpack, BookOpen, Building2, ClipboardList, Gamepad2, Gem, GraduationCap, LayoutDashboard, Landmark, LifeBuoy, Map, ScrollText, Settings, Trophy, Truck, UserPlus, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavTab {
   href: string;
@@ -152,6 +152,8 @@ export const ACCOUNT_MENU = [
   { href: '/game/settings', label: 'Настройки', icon: Settings },
   { href: '/game/help', label: 'Помощ и правила', icon: BookOpen },
   { href: '/game/support', label: 'Поддръжка', icon: LifeBuoy },
+  // 1.3.1 „Екипът“.
+  { href: '/game/careers', label: 'Кариери в TransVerse', icon: Briefcase },
 ] as const;
 
 const within = (pathname: string, href: string) => (href === '/game' ? pathname === '/game' : pathname === href || pathname.startsWith(href + '/'));

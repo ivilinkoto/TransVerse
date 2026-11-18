@@ -86,6 +86,8 @@ export function questIncrements(f: QuestFacts): Record<string, number> {
 }
 
 export const BADGES: Record<string, { label: string; description: string }> = {
+  // 1.3.1 „Екипът“.
+  team: { label: 'Екип TransVerse', description: 'Член на екипа, който развива TransVerse.' },
   'weekly-lane': { label: 'Договор на седмицата', description: 'Сред първите 20, доставили навреме товар по „Договора на седмицата“.' },
   'winter-ready': { label: 'Зимна готовност', description: '5 зимни товара (сол, пясък, гориво за отопление, зимни гуми), доставени навреме преди зимата.' },
   'first-snow-icebreaker': { label: 'Ледоразбивач', description: 'Титла от премиум пропуска на сезона „Първи сняг“ (ниво 15).' },

@@ -853,3 +853,44 @@ aed02b5d2b	Hitchhiker	Автостоп
 fa68ade120	The site's memory now	Память сайта сейчас
 717c1aea04	service limit: slowed from {0}, stopped at {1} · server: {2} MB RAM, {3} MB free, {4} CPU	лимит службы: замедление с {0}, остановка при {1} · сервер: {2} МБ RAM, свободно {3} МБ, {4} CPU
 cb114a08a5	total {0} MB · JavaScript {1} / {2} MB (cap {3} MB) · outside it {4} MB (buffers {5} MB) · up {6} min	всего {0} МБ · JavaScript {1} / {2} МБ (предел {3} МБ) · вне его {4} МБ (буферы {5} МБ) · работает {6} мин
+3009804f56	1–3 h a week + during outages	1–3 ч в неделю + при авариях
+eb543e73f6	3–6 h a week	3–6 ч в неделю
+ad49e15e2e	TransVerse is building a team: become one of the people who develop the game.	TransVerse собирает команду: стань одним из тех, кто развивает игру.
+ae412673a1	VIP while you are in the team	VIP, пока ты в команде
+38bdad3632	Admin → “Applications”: all applications with the player's level and activity; status New / Reviewing / Interview / Accepted / Rejected. On “Interview”, “Accepted” and “Rejected” the player gets a notification, and an accepted player gets the “TransVerse Team” badge. Recorded in the audit log. Team handbook: docs/TEAM_HANDBOOK.md.	Админ → «Заявки»: все заявки с уровнем и активностью игрока; статус Новая / Рассматриваем / Разговор / Принят / Отказ. При «Разговор», «Принят» и «Отказ» игрок получает уведомление, а принятый — значок «Команда TransVerse». Записывается в журнал аудита. Руководство команды: docs/TEAM_HANDBOOK.md.
+6abd3479f5	If it starts to earn money, we will think of the team first — and talk about it together and openly	Если игра начнёт приносить доход, в первую очередь мы подумаем о команде — обсудим это вместе и открыто
+ae7f4459cc	Banners and pictures for announcements	Баннеры и картинки для объявлений
+83a41f8fe6	You pay attention to detail and play regularly. No experience needed.	Ты внимателен к деталям и играешь регулярно. Опыт не нужен.
+58ed026103	Testers and moderators need no experience — just willingness and regularity. Players aged {0} or older can apply.	Тестерам и модераторам опыт не нужен — нужны желание и регулярность. Подавать заявку могут игроки от {0} лет.
+5f920e527e	For now all roles are volunteer — the game has no income yet	Пока все роли добровольные — у игры ещё нет дохода
+929497e29d	Ideas for events and contests with the players	Идеи для ивентов и конкурсов с игроками
+86de14cfbf	A trial period of 3–4 weeks	Испытательный срок 3–4 недели
+c1cfdd4752	Icons and ideas for new screens, trucks and items	Иконки и идеи для новых экранов, грузовиков и предметов
+d45f837463	You have examples of your own work — show them to us.	У тебя есть примеры своих работ — покажи их нам.
+86c5fa9108	Points out what confuses a new player	Говорит, что непонятно новому игроку
+17b87d33d2	Players aged {0} or older can apply.	Подавать заявку могут игроки от {0} лет.
+8633709df3	A short talk on Discord (15–20 minutes)	Короткий разговор в Discord (15–20 минут)
+da3aa2d5f7	A place in the team and the role's permissions	Место в команде и права роли
+f0a0a75c9b	I am {0} or older.	Мне {0} лет или больше.
+1547e4f6dd	We need your consent to keep the application.	Нужно твоё согласие, чтобы мы хранили заявку.
+cd708ec483	Feedback from the players to the team	Обратная связь от игроков команде
+bf19c37279	Community and content	Сообщество и контент
+e56d2198d5	Update announcements on Discord and social media	Объявления об обновлениях в Discord и соцсетях
+76ae162013	Describes clearly what does not work and how to reproduce it	Чётко описывает, что не работает и как это повторить
+6bc64ce766	Answers questions in the game and on Discord	Отвечает на вопросы в игре и в Discord
+4a1504d9c1	You write well and have ideas how to delight players and bring new ones.	Ты хорошо пишешь и знаешь, как порадовать игроков и привлечь новых.
+f8b3dfcbac	You know Linux and the command line. Server access is given step by step, after the trial period.	Ты знаешь Linux и командную строку. Доступ к серверу даётся постепенно, после испытательного срока.
+9d79108898	Helps with server updates	Помогает с обновлениями сервера
+b4e3372407	Server assistant	Помощник по серверу
+1723421694	You fill in the form here	Ты заполняешь форму здесь
+5becf903bb	Runs the ready-made steps during an outage (there are written instructions)	Выполняет готовые шаги при аварии (есть письменные инструкции)
+7fb7313671	Early access to updates and a say in what gets done	Ранний доступ к обновлениям и право голоса в том, что делать
+e3e376b99a	A role and the “TransVerse Team” badge, VIP while in the team, early access to updates and a say in what gets done. For now the roles are volunteer — the game has no income yet.	Роль и значок «Команда TransVerse», VIP, пока ты в команде, ранний доступ к обновлениям и право голоса в том, что делать. Пока роли добровольные — у игры ещё нет дохода.
+a629dda598	Watches whether the game works and raises the alarm when there is a problem	Следит, работает ли игра, и поднимает тревогу при проблеме
+84d7be58e1	You are calm and polite, know the game and are here regularly. No experience needed.	Ты спокоен и вежлив, знаешь игру и бываешь здесь регулярно. Опыт не нужен.
+a2dddd2afa	“Careers at TransVerse” page in the account menu: the roles, how much time they take, what you get and how we choose. Players aged 16 or older apply with a short form; the application's status is shown there.	Страница «Карьера в TransVerse» в меню профиля: роли, сколько времени они занимают, что ты получаешь и как мы выбираем. Игроки от 16 лет подают заявку через короткую форму; там же виден её статус.
+d1c6ba827f	Collects bugs and passes them to the team	Собирает баги и передаёт их команде
+b113ef9663	We are building a small volunteer team: testers, moderators, community and content, a graphic designer and a server assistant. See what each role does and apply right from the game.	Мы собираем небольшую добровольную команду: тестеры, модераторы, сообщество и контент, графический дизайнер и помощник по серверу. Посмотри, что делает каждая роль, и подай заявку прямо из игры.
+f0516ffc21	We are building a small, serious team to make TransVerse better and more stable. We look mostly among our players — people who know and love the game.	Мы собираем небольшую серьёзную команду, чтобы сделать TransVerse лучше и стабильнее. Ищем в первую очередь среди наших игроков — людей, которые знают и любят игру.
+bb3cee570a	I agree that the TransVerse team may keep and read this application until it decides. I can ask for it to be deleted at any time through “Support”.	Я согласен(на), чтобы команда TransVerse хранила и читала эту заявку, пока не примет решение. Я могу попросить удалить её в любой момент через «Поддержку».
+4467b14ff4	Honestly about pay	Честно об оплате
