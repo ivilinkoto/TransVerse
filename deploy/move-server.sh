@@ -12,7 +12,7 @@ OLD=${1:?usage: bash move-server.sh <old-server-ip> [ssh-port]}
 PORT=${2:-22}
 APP=/var/www/transverse
 [ "$(id -u)" -eq 0 ] || { echo "Run as root"; exit 1; }
-OPTS="-p $PORT -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ControlPath=/root/.ssh/cm-move-%h-%p"
+OPTS="-p $PORT -o PubkeyAuthentication=no -o PreferredAuthentications=keyboard-interactive,password -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ControlPath=/root/.ssh/cm-move-%h-%p"
 SSH="ssh $OPTS root@$OLD"
 export RSYNC_RSH="ssh $OPTS"
 # The newest install scripts (the release that runs now may be older than them).
