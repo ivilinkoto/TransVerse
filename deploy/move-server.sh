@@ -8,10 +8,13 @@
 #      starts the game here.
 # Nothing on the old server is deleted: its database and files stay as they were (stopped).
 set -euo pipefail
-OLD=${1:?usage: bash move-server.sh <old-server-ip>}
+OLD=${1:?usage: bash move-server.sh <old-server-ip> [ssh-port]}
+PORT=${2:-22}
 APP=/var/www/transverse
 [ "$(id -u)" -eq 0 ] || { echo "Run as root"; exit 1; }
-SSH="ssh -o StrictHostKeyChecking=accept-new root@$OLD"
+OPTS="-p $PORT -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15"
+SSH="ssh $OPTS root@$OLD"
+export RSYNC_RSH="ssh $OPTS"
 # The newest install scripts (the release that runs now may be older than them).
 RAW=${RAW:-https://raw.githubusercontent.com/ivilinkoto/TransVerse/claude/transport-game-unique-svnq1g/deploy}
 KIT=/root/transverse-deploy
@@ -31,9 +34,13 @@ done
 
 echo "==> 1. Access to the old server ($OLD)"
 [ -f /root/.ssh/id_ed25519 ] || ssh-keygen -t ed25519 -N "" -f /root/.ssh/id_ed25519 -q
-if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new "root@$OLD" true 2>/dev/null; then
+if ! nc -z -w 10 "$OLD" "$PORT" 2>/dev/null && ! timeout 12 bash -c "</dev/tcp/$OLD/$PORT" 2>/dev/null; then
+  echo "   !! The old server does not answer on SSH port $PORT. If its SSH uses another port, run: bash move-server.sh $OLD <port>"
+  exit 1
+fi
+if ! ssh $OPTS -o BatchMode=yes "root@$OLD" true 2>/dev/null; then
   echo "   Type the OLD server's root password once:"
-  if ! ssh-copy-id -o StrictHostKeyChecking=accept-new "root@$OLD"; then
+  if ! ssh-copy-id $OPTS "root@$OLD"; then
     echo
     echo "   The old server does not take a password. In the OLD server's console run this one line:"
     echo "   mkdir -p /root/.ssh && echo '$(cat /root/.ssh/id_ed25519.pub)' >> /root/.ssh/authorized_keys"
