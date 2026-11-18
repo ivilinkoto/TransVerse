@@ -16,8 +16,13 @@ SSH="ssh -o StrictHostKeyChecking=accept-new root@$OLD"
 RAW=${RAW:-https://raw.githubusercontent.com/ivilinkoto/TransVerse/claude/transport-game-unique-svnq1g/deploy}
 KIT=/root/transverse-deploy
 
+# No question may stop an install (a hidden prompt used to hang here).
+export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
 echo "==> 0. Tools"
-apt-get update -y >/dev/null && apt-get install -y rsync openssh-client >/dev/null
+# A fresh server may still be updating itself in the background: wait for apt's lock.
+while fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock >/dev/null 2>&1; do echo "   waiting for the system's own update to finish..."; sleep 5; done
+apt-get update -y -q
+apt-get install -y -q -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold rsync openssh-client psmisc
 
 install -d "$KIT"
 for f in setup-server.sh fix-502.sh transverse-web.service transverse-worker.service Caddyfile; do
