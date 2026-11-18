@@ -90,6 +90,12 @@ export function watchProcess(db: () => DbOrTx, kind: ProcessKind) {
     console.error(`[${where}]`, error);
     void recordServerError(where, error, db());
   };
+  // A stop (deploy, restart) ends the process within 5 s even while live connections are open.
+  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+    process.once(signal, () => {
+      setTimeout(() => process.exit(0), 5_000).unref();
+    });
+  }
   process.on('uncaughtException', (error) => log(`${kind}: uncaughtException`, error));
   process.on('unhandledRejection', (reason) => log(`${kind}: unhandledRejection`, reason));
 }
