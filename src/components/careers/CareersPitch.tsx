@@ -7,7 +7,7 @@ export function CareersPitch() {
     <div className="space-y-5 text-sm">
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-glow">{t('Екипът на TransVerse')}</p>
-        <h2 className="mt-1 font-display text-2xl font-bold text-white">{t('TransVerse търси хора')}</h2>
+        <h2 className="mt-1 font-display text-2xl font-bold text-white">{t('TransVerse набира екип')}</h2>
         <p className="mt-2 text-mist-300">{t('Събираме малък и сериозен екип, който да прави TransVerse по-добра и по-стабилна. Търсим най-вече от нашите играчи — хора, които познават и обичат играта.')}</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
