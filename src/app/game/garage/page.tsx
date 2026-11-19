@@ -72,6 +72,8 @@ export default async function GaragePage() {
           const repair = Math.round((repairCostCents(v.model.priceCents, v.condition) + (v.trailer ? repairCostCents(v.trailer.model.priceCents, v.trailer.condition) : 0)) * discount * (1 - serviceDiscount));
           const upkeep = maintenanceState(v.odometerKm, v.serviceKm);
           // 1.2.3.1: partial repair — the truck, the trailer or both, and how much of the damage.
+          // What VIP would save on this repair (shown to players without VIP, where they pay).
+          const vipSave = features.vip_value && discount === 1 && repair > 0 ? Math.round(repair * VIP_PERKS.garageDiscount) : 0;
           const repairPanel = features.partial_repair ? <RepairPanel vehicleId={v.id} truck={{ priceCents: v.model.priceCents, condition: v.condition }} trailer={v.trailer ? { priceCents: v.trailer.model.priceCents, condition: v.trailer.condition } : null} factor={discount * (1 - serviceDiscount)} balanceCents={company.balanceCents} disabled={busy} /> : null;
           const upkeepCost = maintenanceCostCents(v.model.priceCents, 1 - discount * (1 - serviceDiscount));
           const trailerOptions = fleet.trailers.filter((t) => t.cityId === v.cityId && canCouple(v.model, t.model));
@@ -148,6 +150,7 @@ export default async function GaragePage() {
                 ) : (
                 <div className="space-y-4">
                   {repairPanel}
+                  {vipSave > 0 && <Link href="/game/shop" className="block text-xs text-gold-300 hover:underline" data-testid="vip-repair-hint">{tr('С VIP този ремонт е с {0} по-евтин →', money(vipSave))}</Link>}
                   <div className="flex flex-wrap items-center gap-2">
                     {!repairPanel && (
                       <ActionButton action={{ type: 'repairVehicle', vehicleId: v.id }} className="btn-primary" disabled={busy || repair <= 0}>

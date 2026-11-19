@@ -8,10 +8,10 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq, like, ne, sql } from 'drizzle-orm';
 import { levelStart, passLevelOf, passLevels, passVersion } from '@/lib/game/season-pass';
-import { bonusWeekend, FIRST_PURCHASE_MULTIPLIER, isoWeek, MONTH_CARD, PASS_LEVEL_SALE, patronBonus, patronLevel, REFERRAL_PURCHASE_SHARE, sofiaDay, STARTER_PACK, VIP_V2, WEEKEND_BONUS } from '@/lib/game/shop-v2';
+import { bonusWeekend, FIRST_PURCHASE_MULTIPLIER, isoWeek, MONTH_CARD, PASS_LEVEL_SALE, patronBonus, patronLevel, REFERRAL_PURCHASE_SHARE, sofiaDay, STARTER_PACK, SUPPORTER_PACK, VIP_V2, WEEKEND_BONUS } from '@/lib/game/shop-v2';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { coinEntries, jobState, payments, seasonPasses, users } from '@/server/db/schema';
+import { coinEntries, jobState, payments, seasonPasses, userBadges, users } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { postCoins } from './coins';
 import { fail } from './errors';
@@ -98,6 +98,13 @@ export async function starterPackOpen(db: DbOrTx, userId: string, level: number)
   return !bought;
 }
 
+/** May the player still buy „Подкрепи TransVerse“ (once per account, until SUPPORTER_PACK.until)? */
+export async function supporterPackOpen(db: DbOrTx, userId: string, now: Date) {
+  if (now >= new Date(SUPPORTER_PACK.until)) return false;
+  const [bought] = await db.select({ id: payments.id }).from(payments).where(and(eq(payments.userId, userId), eq(payments.productId, 'supporter_pack'), eq(payments.status, 'paid')));
+  return !bought;
+}
+
 /** Has the player never bought ТрансКоин (the first pack is doubled)? */
 export async function firstPurchaseOpen(db: DbOrTx, userId: string) {
   const [paid] = await db.select({ id: payments.id }).from(payments).where(and(eq(payments.userId, userId), sql`${payments.status} in ('paid', 'refunded')`, like(payments.productId, 'tc_%')));
@@ -113,6 +120,10 @@ export async function firstPurchaseOpen(db: DbOrTx, userId: string) {
 export async function deliverExtras(tx: Tx, p: { id: string; userId: string; productId: string; coins: number }, now: Date) {
   if (!(await featureFor(tx, p.userId, 'shop_v2', now))) return;
   const key = (k: string) => `payment-extra:${p.id}:${k}`;
+  if (p.productId === 'supporter_pack') {
+    await tx.insert(userBadges).values({ userId: p.userId, badge: SUPPORTER_PACK.badge, awardedAt: now }).onConflictDoNothing();
+    await notify(tx, p.userId, 'success', () => t('Благодарим ти!'), () => t('Значката „Поддръжник от първите дни“ е твоя завинаги. Подкрепата ти ни помага да развиваме TransVerse.'), '/game/profile');
+  }
   if (p.productId === 'starter_pack') await grantItem(tx, p.userId, STARTER_PACK.case, 1, 'starter_pack', key('case'));
   if (p.productId === 'month_card') {
     const until = await extendMonthCard(tx, p.userId, MONTH_CARD.days, now);
@@ -142,6 +153,7 @@ export async function deliverExtras(tx: Tx, p: { id: string; userId: string; pro
 export async function refundExtras(tx: Tx, p: { id: string; userId: string; productId: string }, now: Date) {
   const given = await tx.select().from(coinEntries).where(and(like(coinEntries.idempotencyKey, `payment-extra:${p.id}:%`), sql`${coinEntries.amount} > 0`));
   for (const e of given) await postCoins(tx, e.userId, { amount: -e.amount, reason: 'payment_refund', description: t('Върнато плащане: бонус'), idempotencyKey: `refund:${e.idempotencyKey}` });
+  if (p.productId === 'supporter_pack') await tx.delete(userBadges).where(and(eq(userBadges.userId, p.userId), eq(userBadges.badge, SUPPORTER_PACK.badge)));
   if (p.productId === 'month_card') {
     const [row] = await tx.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, cardKey(p.userId))).for('update');
     if (row) {

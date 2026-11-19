@@ -217,6 +217,10 @@ export const FEATURES = {
   careers: '1.3.2',
   // The team's polls from Discord (/анкета) and the admin panel, answered on the dashboard too.
   team_polls: '1.3.2',
+  // What VIP would give, shown where it counts (the arrival message, the repair).
+  vip_value: '1.3.2',
+  // „Подкрепи TransVerse“: a pack with a badge for the early supporters.
+  supporter_pack: '1.3.2',
   // 1.3.2 „Просто“: one menu of five places, pages instead of windows, a shorter board.
   simple_menu: '1.3.2',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).

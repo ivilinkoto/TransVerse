@@ -810,6 +810,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // Return loads come with v1.2 (staff see them before the release).
   // The hauler of someone else's goods gets the usual "Доставено" message.
   const ownGoods = !!contract.trade && !contract.exchange;
+  // What VIP would have added to this trip's XP (a player without VIP sees it in the arrival message).
+  const vipMore = vipXp === 1 && (await featureFor(tx, company!.ownerId, 'vip_value', completedAt)) ? Math.round(playerXp * (VIP_PERKS.xpMultiplier - 1)) : 0;
   const backhaul = !ownGoods && (await featureFor(tx, company!.ownerId, 'backhaul', completedAt));
   // Own goods get their own message (sale or warehouse) from settleTradeLot.
   if (!ownGoods) await notify(
@@ -817,7 +819,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     company!.ownerId,
     onTime ? 'success' : 'warning',
     () => onTime ? t('Доставено: {0} в {1}', contract.goods, dest!.nameBg) : t('Закъсняла доставка в {0}', dest!.nameBg),
-    () => t('Нетен резултат {0} лв., +{1} опит.{2}{3}', (payout / 100).toLocaleString(intlLocale(), { maximumFractionDigits: 0 }), playerXp, drops.length ? t(' Спирки навреме: {0} от {1}.', drops.filter((x) => !x.late).length, drops.length) : '', backhaul ? t(' Виж товарите обратно от {0}.', dest!.nameBg) : ''),
+    () => t('Нетен резултат {0} лв., +{1} опит.{2}{3}', (payout / 100).toLocaleString(intlLocale(), { maximumFractionDigits: 0 }), playerXp, drops.length ? t(' Спирки навреме: {0} от {1}.', drops.filter((x) => !x.late).length, drops.length) : '', backhaul ? t(' Виж товарите обратно от {0}.', dest!.nameBg) : '') + (vipMore > 0 ? t(' С VIP: +{0} опит.', vipMore) : ''),
     // Straight to the return loads from where the truck now stands.
     backhaul ? `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}` : (await featureFor(tx, company!.ownerId, 'trip_log', completedAt)) ? `/game/trips/${d.id}` : '/game/finance',
     { sound: 'arrival' },
