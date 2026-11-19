@@ -214,7 +214,7 @@ export const FEATURES = {
   truck_pass: '1.2',
   company_plot: '1.4',
   // 1.3.1 „Екипът“: the „Кариери“ page (account menu) and Админ → Кандидатури; no window.
-  careers: '1.3.1',
+  careers: '1.3.2',
   // 1.3.2 „Просто“: one menu of five places, pages instead of windows, a shorter board.
   simple_menu: '1.3.2',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).

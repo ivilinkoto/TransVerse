@@ -18,9 +18,11 @@ const OK = { adult: true, consent: true };
 const ABOUT = 'Играя всеки ден от септември, водя Facebook страница на местен клуб и обичам да пиша.';
 
 describe('1.3.1 „Екипът“', () => {
-  it('is its own small release with open roles and no window', () => {
-    expect(FEATURES.careers).toBe('1.3.1');
-    expect(releaseByVersion('1.3.1')?.name).toBe('Екипът');
+  it('comes with 1.3.2, with open roles and no window', () => {
+    expect(FEATURES.careers).toBe('1.3.2');
+    // Out with 1.3.2 „Просто“ (1.3.1 „Екипът“ was folded into it).
+    expect(releaseByVersion('1.3.1')).toBeUndefined();
+    expect(releaseByVersion('1.3.2')!.sections.find((x) => x.title === 'Ново')!.items[0]).toContain('Кариери в TransVerse');
     expect(CAREER_ROLES.filter((r) => r.open).length).toBe(4);
   });
 
