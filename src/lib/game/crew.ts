@@ -44,6 +44,17 @@ export interface DriverState {
   traits?: Traits | null;
 }
 
+/**
+ * Who of a truck's crew can drive now: a driver on a day off stays home and the other one drives
+ * alone (the co-driver takes the wheel if it is the main driver who is off). Null when neither can.
+ */
+export function onDutyCrew<D extends { vacationUntil?: Date | null }>(driver: D | null | undefined, coDriver: D | null | undefined, now: Date): { driver: D; coDriver: D | null } | null {
+  const free = (d: D | null | undefined): d is D => !!d && !(d.vacationUntil && d.vacationUntil > now);
+  if (free(driver)) return { driver, coDriver: free(coDriver) ? coDriver : null };
+  if (free(coDriver)) return { driver: coDriver, coDriver: null };
+  return null;
+}
+
 /** Driving minutes that still count at `now` (0 once the driver has rested). */
 export function dutyAt(d: DriverState, now: Date): number {
   if (d.dutyMin <= 0 || !d.restedAt || d.restedAt <= now) return 0;

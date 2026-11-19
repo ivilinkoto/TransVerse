@@ -64,6 +64,7 @@ import { recordMissionProgress } from './missions';
 import { afterRentedTrip } from './rentals';
 import { checkTenderLoad, recordTenderLoad } from './tenders';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
+import { onDutyCrew } from '@/lib/game/crew';
 import { contractCountries } from '@/lib/game/licences';
 import { addOrganizationSeasonScore, addSeasonScore } from './seasons';
 import { rewardReferral } from './referrals';
@@ -99,7 +100,6 @@ import { countryTollCents, lezFeeCents, withoutBanWaits } from '@/lib/game/europ
 import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
-import { onVacation } from './moods';
 import { equinoxBonus, recordPassOpening } from './spring';
 import { companyConvoyOf, settleConvoyTruck } from './convoys';
 import { relayDelivered } from './relay';
@@ -251,8 +251,10 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       !partial && !!risks.overload,
     );
     if (error) fail('incompatible', error);
-    // A driver on a day off does not drive (v1.4).
-    if (onVacation(bundle.driver, now) || onVacation(bundle.coDriver, now)) fail('vacation', t('Шофьорът е в почивен ден — назначи друг или изчакай.'));
+    // A driver on a day off does not drive (v1.4); in a two-driver crew the other one drives alone.
+    const onDuty = bundle.driver ? onDutyCrew(bundle.driver, bundle.coDriver, now) : null;
+    if (bundle.driver && !onDuty) fail('vacation', t('Шофьорът е в почивен ден — назначи друг или изчакай.'));
+    if (onDuty) Object.assign(bundle, onDuty);
     const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
     const [parked] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, bundle.vehicle.cityId));
     const [to] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.destCityId));
