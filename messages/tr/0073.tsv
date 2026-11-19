@@ -998,7 +998,6 @@ e12877ea66	With VIP this repair is {0} cheaper →	С VIP этот ремонт 
 6889f60254	{0} of {1} wagons	{0} из {1} вагонов
 6ef19f5250	{0} of {1} trains	{0} из {1} поездов
 3d9cebc197	{0} t of {1} unloaded. You got {2} lv.	{0} т груза «{1}» разгружены. Получено {2} лв.
-1fc66138a8	Fleet → “Trains”: up to 3 trains per player (4 in a company). Locomotives Danubia D22 (diesel, up to 18 wagons), Balkan Rail E40 (electric, up to 24) and Rila Rail E60 Heavy (electric, up to 32).	Автопарк → «Поезда»: до 3 поездов на игрока (4 в компании). Локомотивы Danubia D22 (дизель, до 18 вагонов), Balkan Rail E40 (электро, до 24) и Rila Rail E60 Heavy (электро, до 32).
 f8dc6c34f7	Athens	Афины
 3b476a034b	Empty to another terminal	Без груза на другую станцию
 a613930401	Belgrade	Белград
@@ -1099,3 +1098,11 @@ f4a7638f0e	Take a block-train order at the terminal.	Возьми заказ н�
 ebeb2912e9	The train pays when it arrives.	Поезд приносит деньги по прибытии.
 62e19fd532	Buy a locomotive and wagons at a freight terminal.	Купи локомотив и вагоны на грузовой станции.
 4b76e56e36	Your own freight trains on real rail lines.	Собственные грузовые поезда по настоящим железнодорожным линиям.
+e39836fa7b	Trucks or trains	Грузовики или поезда
+05c60046e9	Jobs for the train →	Рейсы для поезда →
+8cb1a05715	Train jobs	Рейсы для поездов
+d05103990d	To the trains →	К поездам →
+f529affaf8	You have no train yet. Buy a locomotive and wagons in Fleet → Trains.	У тебя ещё нет поезда. Купи локомотив и вагоны в Автопарк → Поезда.
+5cae5dc5fc	Block-train orders at the terminals where your trains stand.	Заказы на маршрутные поезда на станциях, где стоят твои поезда.
+f9b3b6bf7d	Orders for this train: {0}	Заказов для этого поезда: {0}
+d242672dd5	Fleet and Jobs now have two sections each — “Trucks” and “Trains”. In Fleet → Trains you buy and manage your trains, in Jobs → Trains you give them orders. Up to 3 trains per player (4 in a company). Locomotives Danubia D22 (diesel, up to 18 wagons), Balkan Rail E40 (electric, up to 24) and Rila Rail E60 Heavy (electric, up to 32).	В Автопарке и Рейсах теперь по два раздела — «Грузовики» и «Поезда». В Автопарк → Поезда ты покупаешь поезда и управляешь ими, а в Рейсы → Поезда даёшь им заказы. До 3 поездов на игрока (4 в компании). Локомотивы Danubia D22 (дизель, до 18 вагонов), Balkan Rail E40 (электро, до 24) и Rila Rail E60 Heavy (электро, до 32).

@@ -7,6 +7,7 @@ import { cities, companies, jobState, users } from '@/server/db/schema';
 import { post } from '@/server/game/finance';
 import { GameError } from '@/server/game/errors';
 import { buyTrain, moveTrain, sellTrain, sendTrain, settleTrains, trainsView } from '@/server/game/trains';
+import { isTrainPage, sectionFor, VEHICLE_SWITCH } from '@/components/game/nav';
 import { db, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
@@ -136,5 +137,16 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     expect(o.pay).toBe(Math.round(o.payCents * 1.1));
     expect(o.cost).toBe(runCost('danubia-d22', o.km, true, true).total);
     expect(runCost('danubia-d22', 100, true, true).track).toBeLessThan(runCost('danubia-d22', 100, true, false).track);
+  });
+
+  it('Автопарк and Курсове each have a trucks half and a trains half', () => {
+    const has = () => true;
+    expect(sectionFor('/game/trains', has)?.key).toBe('fleet');
+    expect(sectionFor('/game/contracts/trains', has)?.key).toBe('jobs');
+    expect(VEHICLE_SWITCH.fleet).toEqual({ trucks: '/game/fleet', trains: '/game/trains' });
+    expect(VEHICLE_SWITCH.jobs).toEqual({ trucks: '/game/contracts', trains: '/game/contracts/trains' });
+    expect(isTrainPage('/game/contracts/trains')).toBe(true);
+    expect(isTrainPage('/game/contracts')).toBe(false);
+    expect(isTrainPage('/game/trainsx')).toBe(false);
   });
 });

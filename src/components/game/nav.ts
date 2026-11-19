@@ -298,6 +298,18 @@ export const PAGE_FAMILIES: NavTab[][] = [
   [{ href: '/game/company', label: 'Моята компания' }, { href: '/game/growth', label: 'Технологии и офис', feature: 'research' }, { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' }],
 ];
 
+/**
+ * 1.3.3: Автопарк and Курсове each have two halves — trucks and trains (feature
+ * trains). A switch on top leads between them; the truck pages' row of tabs
+ * shows only on the truck half.
+ */
+export const VEHICLE_SWITCH: Partial<Record<NavSection['key'], { trucks: string; trains: string }>> = {
+  fleet: { trucks: '/game/fleet', trains: '/game/trains' },
+  jobs: { trucks: '/game/contracts', trains: '/game/contracts/trains' },
+};
+const TRAIN_PAGES = ['/game/trains', '/game/contracts/trains'];
+export const isTrainPage = (pathname: string) => TRAIN_PAGES.some((p) => within(pathname, p));
+
 /** The family of the page at this path (the longest match wins: /game/inventory/album is the album, not the bag). */
 export function familyFor(pathname: string): { family: NavTab[]; page: NavTab } | undefined {
   let best: { family: NavTab[]; page: NavTab } | undefined;

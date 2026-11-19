@@ -58,7 +58,7 @@ async function finishRun(tx: Tx, train: Train, now: Date): Promise<Train> {
   const next: Train = { ...train, at: run.to, run: null, runs: train.runs + (run.orderId ? 1 : 0), tons: train.tons + run.tons, earnedCents: train.earnedCents + run.payCents };
   await save(tx, next, now);
   const to = terminal(run.to)?.name ?? '';
-  await notify(tx, train.ownerId, 'success', () => t('🚆 Влакът пристигна в {0}', place(to)), () => (run.payCents ? t('{0} т {1} са разтоварени. Получи {2} лв.', run.tons, place(run.goods ?? ''), Math.round(run.payCents / 100)) : t('Влакът чака нов товар на гарата.')), '/game/trains');
+  await notify(tx, train.ownerId, 'success', () => t('🚆 Влакът пристигна в {0}', place(to)), () => (run.payCents ? t('{0} т {1} са разтоварени. Получи {2} лв.', run.tons, place(run.goods ?? ''), Math.round(run.payCents / 100)) : t('Влакът чака нов товар на гарата.')), '/game/contracts/trains');
   return next;
 }
 
@@ -212,6 +212,8 @@ async function depart(tx: Tx, train: Train, order: TrainOrder | null, company: b
 const tx_ = (name: string | undefined) => place(name ?? '');
 
 /** The page: my trains (with the board at each one's terminal) and what I may buy. */
+export type TrainsView = Awaited<ReturnType<typeof trainsView>>;
+
 export async function trainsView(db: Database, userId: string, now: Date) {
   await settleTrains(db, now, userId);
   const company = await inCompany(db, userId);
