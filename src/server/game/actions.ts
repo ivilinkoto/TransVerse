@@ -63,7 +63,6 @@ import { claimFirstWeek } from './first-week';
 import { fireStaff, hireStaff } from './base-staff';
 import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
-import { openWorkshop, rateWorkshop, setWorkshopPrice, upgradeWorkshop } from '@/server/game/workshops';
 import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
@@ -121,7 +120,6 @@ import { claimMission, rerollMission } from '@/server/game/missions';
 import { refreshLoads, reserveContract } from '@/server/game/contracts';
 import { buyShopItem, shopPurchaseSchema } from '@/server/game/shop';
 import { applyTuningPreset, fitTuning, likeGarage, saveTuningPreset, shareGarage } from '@/server/game/showroom';
-import { answerDockSwap, offerDockSwap } from '@/server/game/dock';
 import { chatBodySchema, clearCompanyChat, deleteChatMessage, sendChatMessage } from '@/server/game/chat';
 import {
   buyCompanyUpgrade,
@@ -176,8 +174,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('saveTuningPreset'), vehicleId: id, slot: z.coerce.number().int().min(0).max(2), name: z.string().max(40).default('') }),
   z.object({ type: z.literal('applyTuningPreset'), vehicleId: id, slot: z.coerce.number().int().min(0).max(2) }),
   // 1.2.3.6: „Рампата“, the 3D postcard, the letters from the clients.
-  z.object({ type: z.literal('dockSwapOffer'), deliveryId: z.string().uuid(), withDeliveryId: z.string().uuid(), giftCents: z.number().int().min(0).max(100_000_00) }),
-  z.object({ type: z.literal('dockSwapAnswer'), swapId: z.string().uuid(), accept: z.boolean() }),
   z.object({ type: z.literal('sharePostcard'), deliveryId: z.string().uuid() }),
   z.object({ type: z.literal('likeGarage'), username: z.string().trim().min(1).max(30), note: z.string().max(200).default('') }),
   z.object({ type: z.literal('shareGarage') }),
@@ -241,11 +237,6 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('upgradeBusComfort'), lineId: id }),
   z.object({ type: z.literal('sellBusLine'), lineId: id }),
   z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
-  z.object({ type: z.literal('openWorkshop'), cityId, name: z.string().max(80) }),
-  z.object({ type: z.literal('setWorkshopPrice'), pricePct: z.coerce.number().int().min(1).max(500) }),
-  z.object({ type: z.literal('upgradeWorkshop') }),
-  z.object({ type: z.literal('repairAtWorkshop'), vehicleId: id, ownerId: id }),
-  z.object({ type: z.literal('rateWorkshop'), ownerId: id, stars: z.coerce.number().int().min(1).max(5) }),
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
   z.object({ type: z.literal('resetSkills') }),
   z.object({ type: z.literal('nightRun'), inputs: z.array(z.number().int().min(-1).max(1)).max(2250) }),
@@ -628,8 +619,6 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   saveTuningPreset: 'garage_showroom',
   applyTuningPreset: 'garage_showroom',
   likeGarage: 'garage_showroom',
-  dockSwapOffer: 'dock_slots',
-  dockSwapAnswer: 'dock_slots',
   sharePostcard: 'delivery_postcard',
   shareGarage: 'garage_showroom',
   ratePartner: 'partner_ratings',
@@ -644,17 +633,12 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   hireBaseStaff: 'base_staff',
   fireBaseStaff: 'base_staff',
   learnSkill: 'driver_skills',
-  openWorkshop: 'player_workshops',
   voteCrisis: 'world_crises',
   buyBusLine: 'bus_lines',
   collectBusLine: 'bus_lines',
   setBusLine: 'bus_lines',
   upgradeBusComfort: 'bus_lines',
   sellBusLine: 'bus_lines',
-  setWorkshopPrice: 'player_workshops',
-  upgradeWorkshop: 'player_workshops',
-  repairAtWorkshop: 'player_workshops',
-  rateWorkshop: 'player_workshops',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
   renameMascot: 'mascot',
@@ -718,10 +702,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await saveTuningPreset(db, user.id, input.vehicleId, input.slot, input.name)) };
     case 'applyTuningPreset':
       return { ok: true, ...(await applyTuningPreset(db, user.id, input.vehicleId, input.slot)) };
-    case 'dockSwapOffer':
-      return await offerDockSwap(db, user.id, input.deliveryId, input.withDeliveryId, input.giftCents);
-    case 'dockSwapAnswer':
-      return { ok: true, ...(await answerDockSwap(db, user.id, input.swapId, input.accept)) };
     case 'sharePostcard':
       return await sharePostcard(db, user.id, input.deliveryId);
     case 'likeGarage':
@@ -885,18 +865,6 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, backCents: await sellBusLine(db, user.id, input.lineId, new Date()) };
     case 'voteCrisis':
       await voteCrisis(db, user.id, input.option, new Date());
-      return { ok: true };
-    case 'openWorkshop':
-      await openWorkshop(db, user.id, input.cityId, input.name, new Date());
-      return { ok: true };
-    case 'setWorkshopPrice':
-      return { ok: true, pricePct: await setWorkshopPrice(db, user.id, input.pricePct, new Date()) };
-    case 'upgradeWorkshop':
-      return { ok: true, level: await upgradeWorkshop(db, user.id, new Date()) };
-    case 'repairAtWorkshop':
-      return { ok: true, costCents: await repairVehicle(db, user.id, input.vehicleId, { workshop: input.ownerId }) };
-    case 'rateWorkshop':
-      await rateWorkshop(db, user.id, input.ownerId, input.stars, new Date());
       return { ok: true };
     case 'learnSkill':
       return { ok: true, rank: await learnSkill(db, user.id, input.skill, new Date()) };

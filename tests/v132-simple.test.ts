@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACCOUNT_MENU_V3, PLAY_GROUP_NAMES, SECTIONS, SECTIONS_V3, coreTabs, mainKeys, navSections, sectionFor, visibleTabs } from '@/components/game/nav';
+import { ACCOUNT_MENU_V3, PAGE_FAMILIES, PLAY_GROUP_NAMES, SECTIONS, SECTIONS_V3, coreTabs, mainKeys, navSections, sectionFor, visibleTabs } from '@/components/game/nav';
 import { FEATURES } from '@/lib/game/features';
 import { releaseByVersion } from '@/lib/game/releases';
 import { windowsLive } from '@/server/game/tutorial-flags';
@@ -22,7 +22,8 @@ describe('1.3.2 „Просто“', () => {
   });
 
   it('keeps every page of the old menu reachable (only the old pass page, replaced by the season, goes)', () => {
-    const v3 = pages(SECTIONS_V3);
+    // A page in a family (Лига, Албум, Анализ…) is reached through the tabs of its first page.
+    const v3 = new Set([...pages(SECTIONS_V3), ...PAGE_FAMILIES.flat().map((p) => p.href)]);
     expect([...pages(SECTIONS)].filter((h) => !v3.has(h))).toEqual(['/game/pass']);
   });
 

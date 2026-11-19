@@ -60,7 +60,7 @@ export async function announceWeeklyDigest(db: Database, now = new Date()) {
     t('Приятно каране тази седмица! 🚚'),
   ].filter(Boolean);
   await announce(db, `weekly-digest:${d.key}`, 'news', () => ({
-    embeds: [{ title: t('🎙️ Седмицата в TransVerse'), url: `${appUrl()}/game/news`, color: BRAND, description: lines.join('\n\n'), footer: { text: t('Седмичен обзор · игрови данни') } }],
+    embeds: [{ title: t('🎙️ Седмицата в TransVerse'), url: `${appUrl()}/game`, color: BRAND, description: lines.join('\n\n'), footer: { text: t('Седмичен обзор · игрови данни') } }],
   }), now);
   return true;
 }

@@ -2,10 +2,9 @@ import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from 'driz
 import { CARGO, type CargoType } from '@/lib/game/cargo';
 import { fuelPriceCents } from '@/lib/game/fuel';
 import { weekEndsAt, weekKey } from '@/lib/game/leagues';
-import { headline, type NewsIssue } from '@/lib/game/news';
+import type { NewsIssue } from '@/lib/game/news';
 import type { Database, DbOrTx } from '@/server/db/client';
-import { cities, cityMarkets, companies, companyMembers, contracts, countries, deliveries, globalEvents, marketEvents, newspapers, notifications, organizations, users } from '@/server/db/schema';
-import { t as tr } from '@/i18n/t';
+import { cities, cityMarkets, companies, companyMembers, contracts, countries, deliveries, globalEvents, marketEvents, newspapers, organizations, users } from '@/server/db/schema';
 
 const DAY = 86_400_000;
 
@@ -92,7 +91,7 @@ export async function writeIssue(db: DbOrTx, key: string, now: Date): Promise<Ne
   };
 }
 
-/** Worker: publishes the issue of the week that just ended (once), and tells every player. */
+/** Worker: writes the issue of the week that just ended (once); Discord posts it (1.3.2: no page and no notice in the game any more). */
 export async function publishWeeklyNews(db: Database, now = new Date()) {
   const key = weekKey(new Date(now.getTime() - 7 * DAY));
   if (weekEndsAt(key) > now) return null;
@@ -103,8 +102,6 @@ export async function publishWeeklyNews(db: Database, now = new Date()) {
     const [{ last = 0 } = {}] = await tx.select({ last: sql<number>`coalesce(max(${newspapers.number}), 0)::int` }).from(newspapers);
     const [row] = await tx.insert(newspapers).values({ weekKey: key, number: last + 1, content, publishedAt: now }).onConflictDoNothing().returning();
     if (!row) return null;
-    const title = tr('Седмичник TransVerse, брой {0}', row.number);
-    await tx.execute(sql`insert into ${notifications} (user_id, kind, title, body, href) select ${users.id}, 'info', ${title}, ${headline(content)}, '/game/news' from ${users} where ${users.bannedAt} is null`);
     return row;
   });
 }

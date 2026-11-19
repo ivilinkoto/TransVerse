@@ -233,7 +233,7 @@ export async function announceFromGame(db: Database, now = new Date()) {
     await announce(db, `news:${n.weekKey}`, 'news', () => ({
       embeds: [{
         title: t('📰 Седмичник TransVerse № {0}: {1}', n.number, headline(issue)),
-        url: `${appUrl()}/game/news`,
+        url: `${appUrl()}/game`,
         color: BRAND,
         fields: [
           { name: t('Седмицата'), value: t('{0} курса · {1} · {2} т', int(issue.totals.deliveries), km(issue.totals.km), int(issue.totals.tons)), inline: false },

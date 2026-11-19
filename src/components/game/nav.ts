@@ -51,7 +51,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/contracts', label: 'Поръчки', core: true },
       { href: '/game/clients', label: 'Клиенти', minLevel: 3, core: true },
       { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' },
-      { href: '/game/dock', label: 'Рампата', feature: 'dock_slots', core: true },
       { href: '/game/auctions', label: 'Специални товари', minLevel: 4 },
       { href: '/game/trade', label: 'Търговия със стоки', minLevel: 5 },
       { href: '/game/convoys', label: 'Конвои', feature: 'convoy_lobby', minLevel: 2, core: true },
@@ -85,7 +84,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map', group: 'Камиони', minLevel: 2 },
       { href: '/game/buses', label: 'Автобусна компания', feature: 'bus_lines', group: 'Камиони', minLevel: 8 },
       { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа', core: true },
-      { href: '/game/workshops', label: 'Сервизи на играчите', feature: 'player_workshops', group: 'Сервиз и депа', core: true },
       // 1.2.3.1: the player's own business (research, office, adverts, fuel, CO₂) — not the company's „Развитие“.
       { href: '/game/growth', label: 'Технологии и офис', feature: 'research', group: 'Сервиз и депа' },
       { href: '/game/market', label: 'Пазар', group: 'Камиони', core: true },
@@ -132,7 +130,6 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2, core: true, hiddenWith: 'truck_pass' },
       { href: '/game/events', label: 'Ивенти', group: 'Днес', core: true },
       { href: '/game/leaderboards', label: 'Класации', group: 'Класации', core: true },
-      { href: '/game/news', label: 'Седмичник', group: 'Общност' },
       { href: '/game/ideas', label: 'Идеи', feature: 'ideas', group: 'Общност' },
       { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2, hiddenWith: 'truck_pass' },
       { href: '/game/seasons', label: 'Сезон и Truck Pass', feature: 'truck_pass', group: 'Днес', minLevel: 2, core: true },
@@ -202,7 +199,11 @@ export function unlockTabs(): (NavTab & { section: string })[] {
 
 /** The tab of a section that matches the path (the longest match wins, so /game/company/chat stays on "Моята компания"). */
 export function activeTab(section: NavSection, pathname: string): NavTab | undefined {
-  return section.tabs?.filter((t) => within(pathname, t.href)).sort((a, b) => b.href.length - a.href.length)[0];
+  const own = section.tabs?.filter((t) => within(pathname, t.href)).sort((a, b) => b.href.length - a.href.length)[0];
+  if (own) return own;
+  // 1.3.2: a page of a family (Лига, Албум, Отзиви…) belongs to the tab of the family's first page.
+  const head = familyFor(pathname)?.family[0]?.href;
+  return head ? section.tabs?.find((t) => t.href === head) : undefined;
 }
 
 /** The section a path belongs to, if any. Without the 1.2.1 menu the inventory stays under „Автопарк“. */
@@ -265,8 +266,10 @@ type Place = [href: string, core?: boolean];
 
 /** The pages of each place in the order they are shown; the core ones are in the row, the rest behind „Още ▾“. */
 const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
-  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/convoys', true], ['/game/clients', true], ['/game/auctions'], ['/game/trade'], ['/game/dock'], ['/game/reviews']],
-  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/analytics'], ['/game/earnings'], ['/game/buses'], ['/game/workshops'], ['/game/growth']],
+  // 1.3.2: Клиенти and Конвои (2 players a week each) wait behind „Още ▾“; Рампата is gone.
+  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/clients'], ['/game/convoys'], ['/game/auctions'], ['/game/trade']],
+  // Анализ and Къде печеля moved to „Финанси“, Технологии и офис to „Компания“; Сервизи на играчите are gone.
+  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/buses']],
   company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment']],
 };
 
@@ -275,12 +278,35 @@ const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
  * them as cards (and what runs now on top); the row keeps the start, missions, the season and the bag.
  */
 const PLAY_GROUPS: { name: string; pages: Place[] }[] = [
-  { name: 'Награди', pages: [['/game/missions', true], ['/game/seasons', true], ['/game/inventory', true], ['/game/events'], ['/game/inventory/workshop'], ['/game/inventory/album'], ['/game/inventory/hall']] },
+  // The workshop, the album and the hall are tabs of „Инвентар“ (PAGE_FAMILIES), the league and the winter games of „Класации“.
+  { name: 'Награди', pages: [['/game/missions', true], ['/game/seasons', true], ['/game/inventory', true], ['/game/events']] },
   { name: 'Всеки ден', pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/crisis'], ['/game/road-service']] },
-  { name: 'Състезания', pages: [['/game/leaderboards', true], ['/game/league'], ['/game/winter-games']] },
-  { name: 'Общност', pages: [['/game/news'], ['/game/ideas']] },
+  { name: 'Състезания', pages: [['/game/leaderboards', true]] },
+  { name: 'Общност', pages: [['/game/ideas']] },
   { name: 'Колекции', pages: [['/game/progress']] },
 ];
+
+/**
+ * 1.3.2: pages that belong together are one place in the menu; on each of them a small row of
+ * tabs leads to the others. The first page is the one in the menu.
+ */
+export const PAGE_FAMILIES: NavTab[][] = [
+  [{ href: '/game/leaderboards', label: 'Класации' }, { href: '/game/league', label: 'Лига' }, { href: '/game/winter-games', label: 'Зимни игри', feature: 'winter_games' }],
+  [{ href: '/game/inventory', label: 'Инвентар' }, { href: '/game/inventory/workshop', label: 'Работилница', feature: 'workshop' }, { href: '/game/inventory/album', label: 'Албум', feature: 'item_album' }, { href: '/game/inventory/hall', label: 'Зала на славата', feature: 'item_album' }],
+  [{ href: '/game/finance', label: 'Финанси' }, { href: '/game/analytics', label: 'Анализ' }, { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map' }],
+  [{ href: '/game/company', label: 'Моята компания' }, { href: '/game/growth', label: 'Технологии и офис', feature: 'research' }, { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' }],
+];
+
+/** The family of the page at this path (the longest match wins: /game/inventory/album is the album, not the bag). */
+export function familyFor(pathname: string): { family: NavTab[]; page: NavTab } | undefined {
+  let best: { family: NavTab[]; page: NavTab } | undefined;
+  for (const family of PAGE_FAMILIES) {
+    for (const page of family) {
+      if (within(pathname, page.href) && (!best || page.href.length > best.page.href.length)) best = { family, page };
+    }
+  }
+  return best;
+}
 
 const allTabs = (): NavTab[] => SECTIONS.flatMap((s) => s.tabs ?? []);
 /** The tab of SECTIONS for a page (its feature, level and holiday stay), with the new menu's group and row. */

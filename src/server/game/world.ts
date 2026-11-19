@@ -28,6 +28,7 @@ import { settleTerritories } from './territories';
 import { runRelief } from './relief';
 import { awardKeyClients, closeAssemblies, endInternships, ownerReports, topUpKeyClientLoads } from './company-life';
 import { returnRetiredHires, settleRetired } from './retired';
+import { settleRetired2 } from './retired-2';
 import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
@@ -395,6 +396,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'retired', 10 * 60_000, now, async () => {
       await settleRetired(db, now);
       await returnRetiredHires(db, now);
+      // 1.3.2 „Просто“: the player workshops' cost back to their owners.
+      await settleRetired2(db);
     });
     // v1.7: a few trans-European loads on the board.
     if (featureLive('trans_europe', now)) await every(db, 'trans-europe', 60 * 60_000, now, () => ensureTransEuropeLoads(db, now, provider));

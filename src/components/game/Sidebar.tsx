@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Logo, LogoMark } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
-import { ACCOUNT_MENU, activeTab, coreTabs, mainKeys, navSections, sectionFor, tabGroups, visibleTabs, type NavSection, type NavTab } from './nav';
+import { ACCOUNT_MENU, activeTab, coreTabs, familyFor, mainKeys, navSections, sectionFor, tabGroups, visibleTabs, type NavSection, type NavTab } from './nav';
 import type { FeatureId } from '@/lib/game/features';
 
 /** The sections listed the usual way (the inventory/„Награди“ is drawn on its own). */
@@ -140,8 +140,40 @@ export function Sidebar({ badges, version, staff = false, holiday = null, attent
   );
 }
 
-/** Tabs for the pages of the current section (e.g. Автопарк → Сервиз, Пазар, Шофьори…). */
+/** 1.3.2: the small row of a page family (Класации · Лига · Зимни игри), under the section's tabs. */
+function FamilyTabs({ pathname, has }: { pathname: string; has: (f: FeatureId) => boolean }) {
+  const found = has('simple_menu') ? familyFor(pathname) : undefined;
+  const pages = found?.family.filter((p) => !p.feature || has(p.feature)) ?? [];
+  if (!found || pages.length < 2) return null;
+  return (
+    <nav aria-label={tx(pages[0]!.label)} className="-mx-4 -mt-2 mb-5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0" data-testid="family-tabs">
+      <div className="flex min-w-max gap-1.5">
+        {pages.map((p) => {
+          const active = p.href === found.page.href;
+          return (
+            <Link key={p.href} href={p.href} aria-current={active ? 'page' : undefined} className={`rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition ${active ? 'border-cyan-glow/60 bg-cyan-glow/10 text-cyan-glow' : 'border-asphalt-700 text-mist-400 hover:text-white'}`}>
+              {tx(p.label)}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+/** Tabs for the pages of the current section (e.g. Автопарк → Сервиз, Пазар, Шофьори…), and the page family's row under them. */
 export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
+  const pathname = usePathname();
+  const has = useFeatures();
+  return (
+    <>
+      <SectionRow holiday={holiday} />
+      <FamilyTabs pathname={pathname} has={has} />
+    </>
+  );
+}
+
+function SectionRow({ holiday = null }: { holiday?: string | null }) {
   const pathname = usePathname();
   const has = useFeatures();
   const player = useNavPlayer();

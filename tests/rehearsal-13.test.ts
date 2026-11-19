@@ -21,7 +21,7 @@ afterAll(() => closeDb());
 const at = (s: string) => new Date(s);
 const BEFORE = at('2026-11-12T09:59:00+02:00');
 const LIVE = at('2026-11-12T10:00:00+02:00');
-const NEW_13: FeatureId[] = ['game_ui', 'winter_trek', 'daily_route', 'mascot', 'night_run', 'driver_skills', 'player_workshops', 'world_crises', 'bus_lines'];
+const NEW_13: FeatureId[] = ['game_ui', 'winter_trek', 'daily_route', 'mascot', 'night_run', 'driver_skills', 'world_crises', 'bus_lines'];
 
 describe('rehearsal: 1.3 „Зимен път“ on 12.11.2026 at 10:00', () => {
   it('the release is dated and is the latest from 10:00', () => {
