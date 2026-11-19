@@ -955,3 +955,31 @@ eb1e30bee0	Player workshops. Owners get back what they paid to open and upgrade 
 f7be8c143c	A simpler menu with five places and fewer things you do not need. And TransVerse is building a team.	Более простое меню из пяти разделов и меньше лишнего. И TransVerse набирает команду.
 7e653b3c3f	A “Careers at TransVerse” page in the account menu: how applying works, what each role does, what we look for and answers to common questions. Players aged 16 or older apply with a short form; the application's status is shown there.	Страница «Карьера в TransVerse» в меню профиля: как проходит подача заявки, чем занимается каждая роль, кого мы ищем и ответы на частые вопросы. Игроки от 16 лет подают заявку через короткую форму; там же виден её статус.
 341d73bea8	Drive this truck yourself ({0} steps out)	Вести этот грузовик самому ({0} выходит)
+8a233ccae7	+ answer	+ ответ
+b46a6f6df8	`/анкета question answers [hours]` — a poll in #анкети and on the game's dashboard (answers separated by “;”)	`/анкета вопрос ответы [часы]` — опрос в #анкети и на панели в игре (ответы через «;»)
+6ff052acd5	{0} votes (in the game {1}, on Discord {2})	{0} голосов (в игре {1}, в Discord {2})
+0ff6bf8f9f	Admin → “Polls”: a new poll (it goes to the dashboard and to #анкети on Discord), each poll's results with the game and Discord votes apart, and “End now”. A poll started with /анкета on Discord also comes here and to the dashboard.	Админ → «Опросы»: новый опрос (попадает на панель и в #анкети в Discord), результаты каждого опроса с голосами из игры и Discord отдельно и «Завершить сейчас». Опрос, запущенный через /анкета в Discord, тоже появляется здесь и на панели.
+0ac78c73d1	Team poll	Опрос команды
+89c72bdea3	Team poll · {0} h left	Опрос команды · осталось {0} ч
+88b68cca97	The poll is on the game's dashboard (Discord did not answer or there is no #анкети channel).	Опрос на панели в игре (Discord не ответил или нет канала #анкети).
+6a445dbf08	The poll is on the game's dashboard and in #анкети on Discord.	Опрос на панели в игре и в #анкети в Discord.
+f6c7d273a4	The poll was not found.	Опрос не найден.
+ac02fd80c3	A poll lasts from {0} to {1} hours.	Опрос длится от {0} до {1} часов.
+67a33fa316	The team's polls are on the game's dashboard too, not only on Discord. You vote with one button and the poll goes away; the votes from the game and from Discord are counted together.	Опросы команды теперь есть и на панели в игре, не только в Discord. Голосуешь одной кнопкой, и опрос исчезает; голоса из игры и из Discord считаются вместе.
+3da713611a	The team's polls: on the game's dashboard and in #анкети on Discord. In the game, players see only the question; the full results are here.	Опросы команды: на панели в игре и в #анкети в Discord. В игре игроки видят только вопрос; полные результаты здесь.
+fc842d8ad3	On Discord the team can also start a poll with /анкета in #анкети — it comes here and to the dashboard too.	В Discord команда может запустить опрос и через /анкета в #анкети — он тоже появится здесь и на панели.
+cb00159d3f	Question, e.g. “Which event should be next?”	Вопрос, например «Какой ивент будет следующим?»
+c8d7b8276e	Vote with the buttons (you can change your vote) or in the game. Ends <t:{0}:R>.	Голосуй кнопками (можно изменить голос) или в игре. Конец <t:{0}:R>.
+90dcff4771	Your vote is counted together with the votes from Discord.	Твой голос считается вместе с голосами из Discord.
+536c152d1f	End the poll now?	Завершить опрос сейчас?
+a7bd9663c8	There are {0} to {1} answers.	Ответов от {0} до {1}.
+facbcce444	Ended {0}	Завершён {0}
+20fadac5ed	Ended poll {0}	Завершил опрос {0}
+0461e88124	End now	Завершить сейчас
+c189c8a9eb	Started the poll “{0}”	Запустил опрос «{0}»
+5bb617f8aa	Open until {0}	Идёт до {0}
+c21a101b5a	game {0}, Discord {1}	игра {0}, Discord {1}
+b392f70439	started on Discord by {0}	запущен в Discord пользователем {0}
+6b82d0d333	started by {0}	запустил {0}
+afa2f3e126	✅ The poll is in <#{0}> and on the game's dashboard.	✅ Опрос в <#{0}> и на панели в игре.
+fc6780b2d1	1 vote (in the game {0}, on Discord {1})	1 голос (в игре {0}, в Discord {1})

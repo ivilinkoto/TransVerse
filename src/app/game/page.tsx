@@ -23,6 +23,7 @@ import { weeklyGoalState } from '@/server/game/weekly-goal';
 import { isRecapTime, recapYear } from '@/lib/game/recap';
 import { DiscordInvite } from '@/components/game/DiscordInvite';
 import { OnlineNow } from '@/components/game/OnlineNow';
+import { TeamPolls } from '@/components/game/TeamPolls';
 import { FriendsFeed } from '@/components/game/FriendsFeed';
 import { countries as countryTable } from '@/server/db/schema';
 import { DeliveryProgress } from '@/components/game/DeliveryProgress';
@@ -324,6 +325,8 @@ export default async function OverviewPage() {
           </span>
         </Link>
       )}
+      {/* The team's poll (also in #анкети in Discord) until the player answers it. */}
+      {features.team_polls && <TeamPolls db={db} userId={user.id} now={now} />}
       {/* Who else is in the game now: always in view (it was hidden under „Още“ and missing from the 1.3.2 dashboard). */}
       {features.online_now && <OnlineNow db={db} now={now} />}
       {!simpleHome && <MoreOnDashboard lean={lean}>

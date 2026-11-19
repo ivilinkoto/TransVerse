@@ -80,6 +80,10 @@ export function describeAudit(entry: { action: string; details: unknown }, actor
       return t('Създаде спешна доставка „{0}“: {1} → {2}, {3}, срок {4} мин, ×{5} по-бързо', String(d.goods ?? ''), String(d.from ?? ''), String(d.to ?? ''), eur(d.rewardCents), Number(d.windowMinutes ?? 0), Number(d.speedFactor ?? 1));
     case 'reset_company_branding':
       return t('Изчисти профила на компанията „{0}“ на {1}{2}', String(d.company ?? '—'), who, d.reason ? ` — ${String(d.reason)}` : '');
+    case 'team_poll':
+      return t('Пусна анкета „{0}“', String(d.question ?? ''));
+    case 'team_poll_close':
+      return t('Приключи анкета {0}', String(d.id ?? ''));
     default:
       return entry.action;
   }
