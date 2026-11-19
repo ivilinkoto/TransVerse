@@ -54,7 +54,6 @@ import { companyForUser } from './company';
 import { fail } from './errors';
 import { post, postTreasury, type Posting } from './finance';
 import { broadcast, logActivity, notify } from './notify';
-import { planDock, saveDock } from './dock';
 import { postcardOnArrival } from './postcards';
 import { awardXp, checkAchievements } from './progression';
 import { heldLicences, licenceNames, missingFor } from './licences';
@@ -371,9 +370,6 @@ export async function acceptContract(db: Database, userId: string, contractId: s
     }
     // Border queues by the day and the hour (v1.6).
     if (await featureFor(tx, userId, 'border_queues', now)) schedule = applyBorderQueues(schedule);
-    // 1.2.3.6 „Рампата“: a slot at a big warehouse — or the queue when its docks are full.
-    const dock = await planDock(tx, userId, contract!.destCityId, schedule, now);
-    if (dock) schedule = dock.schedule;
     const countryTolls = await featureFor(tx, userId, 'country_tolls', now);
     // The daily rests on the way (v1.6): a guarded car park for a fee, or a free lay-by with a small risk of fuel theft.
     const parkingLive = await featureFor(tx, userId, 'secure_parking', now);
@@ -481,7 +477,6 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       })
       .returning();
     await tx.update(vehicles).set({ status: 'on_delivery' }).where(eq(vehicles.id, vehicleId));
-    if (dock) await saveDock(tx, delivery!.id, userId, dock.booking);
     // A friend or company member left on the same lane a moment ago: drive together.
     if (!contract!.urgent) await formConvoy(tx, delivery!, userId, { originCityId: contract!.originCityId, destCityId: contract!.destCityId }, now);
     // A load handed over by a company: the agreed commission is paid when it arrives.

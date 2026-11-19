@@ -131,7 +131,6 @@ export const FEATURES = {
   // 1.2.3.6 „Чиста карта“: map layers and focus, the delivery postcard, the dock slots, letters from the clients and
   map_layers: '1.3',
   delivery_postcard: '1.3',
-  dock_slots: '1.3',
   // every truck in 3D (fleet, profile, dealership) and the depot yards in 3D.
   truck_3d_view: '1.3',
   depot_3d: '1.3',
@@ -147,8 +146,6 @@ export const FEATURES = {
   night_run: '1.3',
   // „Умения на шофьора“: the player's own skill tree.
   driver_skills: '1.3',
-  // „Собствен сервиз“: player-run repair workshops.
-  player_workshops: '1.3',
   // „Световни кризи“: three-day crises with a community vote and a week's effect.
   world_crises: '1.3',
   // „Автобусна компания“: passenger bus lines next to the freight.
@@ -217,7 +214,7 @@ export const FEATURES = {
   truck_pass: '1.2',
   company_plot: '1.4',
   // 1.3.1 „Екипът“: the „Кариери“ page (account menu) and Админ → Кандидатури; no window.
-  careers: '1.3.1',
+  careers: '1.3.2',
   // 1.3.2 „Просто“: one menu of five places, pages instead of windows, a shorter board.
   simple_menu: '1.3.2',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).
@@ -402,7 +399,7 @@ export function featureDate(id: FeatureId): Date | null {
 }
 
 /** Pages of features deleted in „Почистване“ (14 November 2026); old links lead to „Игри и награди“ (next.config redirects). */
-export const RETIRED_PAGES = ['/game/case', '/game/story', '/game/predictions', '/game/player-challenges', '/game/cups', '/game/cup', '/game/duels', '/game/rally', '/game/cities', '/game/livery', '/game/truck-contest', '/game/postcards', '/game/my-map', '/game/collection', '/game/underground', '/game/shares', '/game/economy', '/game/insurance', '/game/plates', '/game/trailer-hire', '/game/letters', '/game/road'];
+export const RETIRED_PAGES = ['/game/case', '/game/story', '/game/predictions', '/game/player-challenges', '/game/cups', '/game/cup', '/game/duels', '/game/rally', '/game/cities', '/game/livery', '/game/truck-contest', '/game/postcards', '/game/my-map', '/game/collection', '/game/underground', '/game/shares', '/game/economy', '/game/insurance', '/game/plates', '/game/trailer-hire', '/game/letters', '/game/road', '/game/workshops', '/game/dock', '/game/news'];
 
 /** Is the feature on for this viewer? Always for the staff; for players from the release date. */
 export function featureLive(id: FeatureId, now: Date, staff = false): boolean {

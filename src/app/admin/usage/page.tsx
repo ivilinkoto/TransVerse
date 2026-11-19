@@ -17,7 +17,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = 'force-dynamic';
 
 /** The menu name of a page. */
-const PAGE_NAMES = new Map<string, string>([...SECTIONS.flatMap((s) => [[s.href, s.label] as [string, string], ...(s.tabs ?? []).map((x) => [x.href, x.label] as [string, string])]), ...ACCOUNT_MENU.map((m) => [m.href, m.label] as [string, string]), ['/game/play', 'Игри и награди'], ['/game', 'Начало']]);
+const PAGE_NAMES = new Map<string, string>([...SECTIONS.flatMap((s) => [[s.href, s.label] as [string, string], ...(s.tabs ?? []).map((x) => [x.href, x.label] as [string, string])]), ...ACCOUNT_MENU.map((m) => [m.href, m.label] as [string, string]), ['/game/play', 'Игри и награди'], ['/game', 'Начало'], ['/game/rewards', 'Награди (старото меню)'], ['/game/compete', 'Състезание (старото меню)']]);
+
+/** The first counted day: the stored key is „D2026-11-16“; shown as 16.11.2026. */
+const dayLabel = (key: string) => key.replace(/^D/, '').split('-').reverse().join('.');
 
 function Rows({ rows, active, label }: { rows: { key: string; players: number }[]; active: number; label: (key: string) => string }) {
   if (!rows.length) return <p className="text-sm text-mist-400">{t('Няма данни за този период.')}</p>;
@@ -46,7 +49,7 @@ export default async function AdminUsage() {
       <p className="text-sm text-mist-300">{t('Активни играчи за {0} дни: {1}. Процентът е спрямо тях.', u.days, int(u.active))}</p>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title={t('Отворени страници')}>
-          <p className="mb-3 text-xs text-mist-400">{u.pages.since ? t('Броят се от {0}. Страница, която не е в списъка, никой не е отворил.', u.pages.since) : t('Броенето започва от днес — след няколко дни тук ще се види кои страници се отварят.')}</p>
+          <p className="mb-3 text-xs text-mist-400">{u.pages.since ? t('Броят се от {0}. Страница, която не е в списъка, никой не е отворил.', dayLabel(u.pages.since)) : t('Броенето започва от днес — след няколко дни тук ще се види кои страници се отварят.')}</p>
           <Rows rows={u.pages.pages.map((p) => ({ key: p.page, players: p.players }))} active={u.active} label={(k) => PAGE_NAMES.get(k) ?? k} />
         </Card>
         <Card title={t('Опит по източник')}>

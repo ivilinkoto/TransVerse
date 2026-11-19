@@ -1,5 +1,5 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { BookOpen, CalendarHeart, Sprout, ChevronRight, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Newspaper, Route, Star, Swords, Truck, TrendingDown, TrendingUp } from 'lucide-react';
+import { BookOpen, CalendarHeart, Sprout, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Route, Star, Swords, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { EventBanner } from '@/components/events/EventBanner';
 import { DailyRewardCard } from '@/components/game/DailyRewardCard';
@@ -9,8 +9,6 @@ import { rivalStanding } from '@/server/game/rival';
 import { bestTripOfWeek } from '@/server/game/weekly-card';
 import { appUrl } from '@/server/discord/config';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { headline } from '@/lib/game/news';
-import { latestIssues } from '@/server/game/news';
 import { cached } from '@/server/cache';
 import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
 import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
@@ -67,7 +65,6 @@ export default async function OverviewPage() {
   const firstWeek = features.first_week ? await firstWeekView(db, user.id, now) : null;
   // 1.1.4: the same for everyone — kept for a minute instead of read on every visit.
   const real = features.real_weather && !simpleHome ? await cached('dash:weather', 60_000, () => realConditions(db, now, true), now.getTime()) : null;
-  const [paper] = simpleHome ? [] : await cached('dash:paper', 60_000, () => latestIssues(db, 1), now.getTime());
   const feed = features.feed && !simpleHome ? await friendsFeed(db, user.id, now) : [];
   const goal = features.weekly_goal && !simpleHome ? await weeklyGoalState(db, user.id, now) : null;
   // v1.9: three concrete things to do now.
@@ -327,6 +324,8 @@ export default async function OverviewPage() {
           </span>
         </Link>
       )}
+      {/* Who else is in the game now: always in view (it was hidden under „Още“ and missing from the 1.3.2 dashboard). */}
+      {features.online_now && <OnlineNow db={db} now={now} />}
       {!simpleHome && <MoreOnDashboard lean={lean}>
       {goal && !goal.goal && (
         <Link href="/game/missions" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
@@ -338,7 +337,6 @@ export default async function OverviewPage() {
         </Link>
       )}
       {!user.seenHints.includes('discord') && <DiscordInvite />}
-      {features.online_now && <OnlineNow db={db} now={now} />}
       {!simpleHome && firstWeek && (
         <Link href="/game/first-week" className="panel group flex items-center gap-3 border-emerald-500/40 p-3.5 transition hover:border-emerald-400" data-testid="first-week-card">
           <Sprout className="h-6 w-6 shrink-0 text-emerald-300" />
@@ -367,16 +365,6 @@ export default async function OverviewPage() {
         </Link>
       )}
       {(isSnowTime(now) || real) && <RoadConditions countries={await db.select({ code: countryTable.code, nameBg: countryTable.nameBg }).from(countryTable).orderBy(countryTable.nameBg)} now={now} real={real} />}
-      {paper && (
-        <Link href="/game/news" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
-          <Newspaper className="h-6 w-6 shrink-0 text-mist-300" />
-          <span className="min-w-0 flex-1">
-            <span className="label block">{t('Седмичник · брой {0}', paper.number)}</span>
-            <span className="block truncate font-medium">{headline(paper.content)}</span>
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-mist-400 transition group-hover:translate-x-0.5" />
-        </Link>
-      )}
       </MoreOnDashboard>}
       {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
       {!simpleHome && rival && (

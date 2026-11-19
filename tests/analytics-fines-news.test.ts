@@ -115,7 +115,7 @@ describe('fines and insurance', () => {
 });
 
 describe('weekly newspaper', () => {
-  it('is published once for the week that ended, with this week\'s deliveries, and tells the players', async () => {
+  it('is published once for the week that ended, with this week\'s deliveries (1.3.2: no notice in the game, Discord posts it)', async () => {
     const p = await newPlayer();
     const [account] = await db().select().from(companies).where(eq(companies.ownerId, p.userId));
     const [truck] = await db().select().from(vehicles).where(eq(vehicles.companyId, account!.id));
@@ -133,6 +133,7 @@ describe('weekly newspaper', () => {
     expect(issue!.content.totals.deliveries).toBeGreaterThanOrEqual(1);
     expect(issue!.content.topDrivers.length).toBeGreaterThan(0);
     const notes = await db().select().from(notifications).where(and(eq(notifications.userId, p.userId), eq(notifications.title, `Седмичник TransVerse, брой ${row.number}`)));
-    expect(notes[0]!.body).toBe(headline(issue!.content));
+    expect(notes).toHaveLength(0);
+    expect(headline(issue!.content).length).toBeGreaterThan(0);
   });
 });

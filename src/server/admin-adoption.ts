@@ -17,7 +17,6 @@ const SYSTEMS: { id: string; label: string; pattern: string; part?: number; owne
   { id: 'mascot', label: 'Талисман', pattern: '^mascot:[^:]+$', part: 2 },
   { id: 'night_run', label: 'Нощен рейс', pattern: '^night-run:[^:]+:[^:]+$', part: 3 },
   { id: 'driver_skills', label: 'Умения на шофьора', pattern: '^skills:[^:]+$', part: 2 },
-  { id: 'player_workshops', label: 'Собствен сервиз', pattern: '^workshop:[^:]+$', part: 2 },
   { id: 'world_crises', label: 'Световни кризи (гласували)', pattern: '^crisis-vote:[^:]+:[^:]+$', part: 3 },
   { id: 'bus_lines', label: 'Автобусна компания', pattern: '^bus-line:', owner: true },
 ];
