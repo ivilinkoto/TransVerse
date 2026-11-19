@@ -993,3 +993,105 @@ f1d21dfe1c	 With VIP: +{0} XP.	 С VIP: +{0} опыта.
 e0f415f3de	Supported TransVerse while the game was very young.	Поддержал TransVerse, когда игра была совсем молодой.
 e12877ea66	With VIP this repair is {0} cheaper →	С VIP этот ремонт дешевле на {0} →
 12e11119e1	“Support TransVerse” is once per account, until the end of 2026.	«Поддержи TransVerse» — один раз на профиль, до конца 2026 г.
+1eb20d11ca	30 real lines	30 настоящих линий
+86b49d965a	{0} × {1} for the train	{0} × {1} для поезда
+6889f60254	{0} of {1} wagons	{0} из {1} вагонов
+6ef19f5250	{0} of {1} trains	{0} из {1} поездов
+3d9cebc197	{0} t of {1} unloaded. You got {2} lv.	{0} т груза «{1}» разгружены. Получено {2} лв.
+1fc66138a8	Fleet → “Trains”: up to 3 trains per player (4 in a company). Locomotives Danubia D22 (diesel, up to 18 wagons), Balkan Rail E40 (electric, up to 24) and Rila Rail E60 Heavy (electric, up to 32).	Автопарк → «Поезда»: до 3 поездов на игрока (4 в компании). Локомотивы Danubia D22 (дизель, до 18 вагонов), Balkan Rail E40 (электро, до 24) и Rila Rail E60 Heavy (электро, до 32).
+f8dc6c34f7	Athens	Афины
+3b476a034b	Empty to another terminal	Без груза на другую станцию
+a613930401	Belgrade	Белград
+e9460bb597	Block trains	Маршрутные поезда
+fd0920c48b	Brașov	Брашов
+a873c6a055	Number of wagons	Количество вагонов
+e5afed6089	Bucharest	Бухарест
+f976da8130	You are in a company: +{0}% on every order, −{1}% track fee and up to {2} trains.	Ты в компании: +{0}% за каждый заказ, −{1}% плата за линию и до {2} поездов.
+5bd751c3c3	In a company: trains from level {0}, +{1}% on orders, −{2}% track fee and one more train.	В компании: поезда с уровня {0}, +{1}% за заказы, −{2}% плата за линию и ещё один поезд.
+5a8edd337d	Wagon	Вагон
+13c14605a8	Wagons	Вагоны
+2881659dec	This locomotive takes {0} to {1} wagons.	Этот локомотив тянет от {0} до {1} вагонов.
+1060b8b987	Verona	Верона
+80be08d0e1	Vidin	Видин
+52b51de9b1	Train {0} → {1}: {2} t {3}	Поезд {0} → {1}: {2} т, {3}
+619365f376	Train: {0} and {1} × {2}	Поезд: {0} и {1} × {2}
+33c70081ff	Trains	Поезда
+2e8f2067b4	Trains are from level {0}.	Поезда — с уровня {0}.
+cb560c19ce	The train is on its way.	Поезд в пути.
+03daf708ee	The train is on its way. Wagons are coupled at the terminal.	Поезд в пути. Вагоны прицепляют на станции.
+f31fdbcd52	The train is on its way. Wagons are uncoupled at the terminal.	Поезд в пути. Вагоны отцепляют на станции.
+8a041b5333	The train is on its way. It can be sold at a terminal.	Поезд в пути. Продать его можно на станции.
+c89f3a77d9	A train runs only between freight terminals. Each terminal has block-train orders ({0}–{1} t), new every {2} hours. The track fee and the energy are paid at departure, the order on arrival. The lines and distances are real; prices and orders are game data.	Поезд ходит только между грузовыми станциями. На каждой станции есть заказы на маршрутные поезда ({0}–{1} т), новые каждые {2} часа. Плата за линию и энергия оплачиваются при отправлении, заказ — по прибытии. Линии и расстояния настоящие; цены и заказы — игровые данные.
+7564909e37	A train can also go empty to a neighbouring terminal to pick up a load there. Wagons are bought and sold at the terminal; a sold train returns half its price.	Поезд может и порожняком поехать на соседнюю станцию, чтобы взять груз там. Вагоны покупают и продают на станции; проданный поезд возвращает половину цены.
+400bf23b33	The train is not at this terminal.	Поезд не на этой станции.
+46dae9740a	Train not found.	Поезд не найден.
+a5044cfffa	The train does not have enough wagons of this kind.	У поезда недостаточно вагонов этого типа.
+fe00551914	The train does not have that many such wagons.	У поезда нет столько таких вагонов.
+5e1d3c47cc	A train needs at least one wagon. Sell the whole train.	У поезда должен быть хотя бы один вагон. Продай весь поезд.
+d97d3ed50a	The train is waiting for a new load at the terminal.	Поезд ждёт новый груз на станции.
+a645390e03	Anyone can own a train from level 15. In a company — from level 12, with +10% on orders, −25% track fee and one more train.	Поезд может быть у каждого с уровня 15. В компании — с уровня 12, с +10% за заказы, −25% платы за линию и ещё одним поездом.
+87b8a19fe2	Fuels	Топливо
+3c0ab74184	Gorna Oryahovitsa	Горна-Оряховица
+4aa502cb05	Sell the whole train for half its price?	Продать весь поезд за половину цены?
+ceacd880b5	Diesel	Дизельный
+f85da8e97a	Diesel: anywhere, dearer to run	Дизельный: везде, дороже в эксплуатации
+c3dbe49eff	Another train has already taken this order.	Другой поезд уже взял этот заказ.
+68d94345fa	Duisburg	Дуйсбург
+e20ec6534d	Electric	Электрический
+c5c610aa52	Electric: electrified lines only, cheaper to run	Электрический: только по электрифицированным линиям, дешевле в эксплуатации
+c3945875cd	Energy for the train {0} → {1}	Энергия для поезда {0} → {1}
+1265882f36	Rail Line	Железная дорога
+84cf6c3a97	Koper	Копер
+5a22e5a18b	Craiova	Крайова
+ace57ab5b7	Buy wagons	Купить вагоны
+40627e0fb1	Buy the train	Купить поезд
+5864c4630a	Buy a locomotive and wagons: container flats, tank wagons, covered wagons or hoppers. The electric one is cheaper to run, the diesel goes anywhere.	Купи локомотив и вагоны: платформы для контейнеров, цистерны, крытые вагоны или хопперы. Электрический дешевле в эксплуатации, дизельный проходит везде.
+d906a97a85	Runs: {0} · {1} t · earned {2}	Рейсы: {0} · {1} т · заработано {2}
+b98d0374eb	The lines and terminals are real; prices, orders and times are game data. The brands are invented.	Линии и станции настоящие; цены, заказы и время — игровые данные. Марки вымышлены.
+fd9773f261	The line is not electrified — it needs a diesel locomotive.	Линия не электрифицирована — нужен дизельный локомотив.
+6ca77f30f0	Locomotive	Локомотив
+3747c98c5f	The locomotive pulls at most {0} wagons.	Локомотив тянет не больше {0} вагонов.
+7fc35bf193	The brands are invented. Prices, orders and timetables are game data.	Марки вымышлены. Цены, заказы и расписания — игровые данные.
+5a1e192ab8	Every terminal has orders from 300 to 1500 t, new every 4 hours. The train leaves at once and brings the money when it arrives.	На каждой станции есть заказы от 300 до 1500 т, новые каждые 4 часа. Поезд отправляется сразу и приносит деньги по прибытии.
+13909dc0ad	At {0} terminal	На станции {0}
+7f86c31294	At most {0} trains per player.	Не больше {0} поездов на игрока.
+88f5164336	Niš	Ниш
+f011cac146	New train	Новый поезд
+8b50620883	New orders come {0}.	Новые заказы появятся {0}.
+0ea32475d8	No such line from this terminal.	Нет такой линии от этой станции.
+9437cbf4a0	No such freight terminal.	Нет такой грузовой станции.
+5390bfcc8e	No such wagon.	Нет такого вагона.
+50c23a9f6b	No such locomotive.	Нет такого локомотива.
+56649b5f08	Container flat wagon	Платформа для контейнеров
+d093b9f451	Better in a company	Лучше в компании
+4d2643c982	Covered wagon	Крытый вагон
+f57ebab374	At least one wagon.	Хотя бы один вагон.
+76b1828956	The order is no longer on the board.	Заказа больше нет на бирже.
+b8434ec93b	An order needs enough wagons of its kind. The track fee and the energy are paid at departure, the order on arrival.	Заказу нужно достаточно вагонов своего типа. Плата за линию и энергия оплачиваются при отправлении, заказ — по прибытии.
+f25cfe9def	Orders at the terminal	Заказы на станции
+8539b86ac3	Prague	Прага
+0c267207b9	Arrives {0}	Прибывает {0}
+9782e80300	Sold train {0}	Продан поезд {0}
+9bea7aa9c9	Sold {0} × {1}	Проданы {0} × {1}
+d7ad6693d0	Sell wagons	Продать вагоны
+0d03aebb10	Sell the train	Продать поезд
+07162a5a17	Send the train	Отправить поезд
+477ffc35eb	Send empty	Отправить порожняком
+50d2fb0c98	Rotterdam	Роттердам
+4d7057f61a	No orders from here right now.	Сейчас отсюда нет заказов.
+36d8442a6b	Your own train	Собственный поезд
+1ea9d5ba66	Your own freight trains on real rail lines — big loads between freight terminals.	Собственные грузовые поезда по настоящим железнодорожным линиям — большие грузы между грузовыми станциями.
+a699849b48	Your own freight trains on real rail lines — from Sofia to Burgas, Varna, Thessaloniki, Istanbul and Hamburg.	Собственные грузовые поезда по настоящим железнодорожным линиям — из Софии в Бургас, Варну, Салоники, Стамбул и Гамбург.
+b56f4d9d73	Stara Zagora	Стара-Загора
+7e2d064423	Palletised goods	Товары на поддонах
+77bb445115	Rail track fee {0} → {1}	Плата за ж/д линию {0} → {1}
+115a828cdd	Freight terminal	Грузовая станция
+a6af2d66e0	Freight terminals in Bulgaria and Europe: Sofia–Plovdiv–Burgas, Ruse–Varna, Vidin–Craiova, Thessaloniki–Athens, Belgrade–Budapest, Hamburg–Munich and more. The distances are the real ones.	Грузовые станции в Болгарии и Европе: София–Пловдив–Бургас, Русе–Варна, Видин–Крайова, Салоники–Афины, Белград–Будапешт, Гамбург–Мюнхен и другие. Расстояния настоящие.
+99671344e5	Paper	Бумага
+e241e1b697	Hopper	Хоппер
+90e15b76e7	Tank wagon	Цистерна
+3d6d02d9cd	no load	без груза
+8b87ee46ad	no wires	без электрификации
+c3d3fbd226	up to {0} wagons	до {0} вагонов
+3ec6882b26	you will get {0}	получишь {0}
+ddfb71c939	🚆 The train arrived in {0}	🚆 Поезд прибыл в {0}

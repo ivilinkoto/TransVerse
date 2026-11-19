@@ -223,6 +223,8 @@ export const FEATURES = {
   supporter_pack: '1.3.2',
   // 1.3.2 „Просто“: one menu of five places, pages instead of windows, a shorter board.
   simple_menu: '1.3.2',
+  // 1.3.3 „Жп линия“: the players' own freight trains on real rail lines (/game/trains).
+  trains: '1.3.3',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).
   christmas_night: '1.4',
   // 1.4 „Пътна служба“: real passes close in winter; salt and sand loads open them for everyone.

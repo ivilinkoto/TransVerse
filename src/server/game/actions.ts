@@ -67,6 +67,7 @@ import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
 import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
+import { addWagons, buyTrain, moveTrain, sellTrain, sellWagons, sendTrain } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -239,6 +240,12 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('setBusLine'), lineId: id, departures: z.coerce.number().int().min(1).max(4).optional(), price: z.coerce.number().int().min(1).max(100).optional() }),
   z.object({ type: z.literal('upgradeBusComfort'), lineId: id }),
   z.object({ type: z.literal('sellBusLine'), lineId: id }),
+  z.object({ type: z.literal('buyTrain'), loco: z.enum(['danubia-d22', 'balkan-e40', 'rila-e60']), wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), wagons: z.coerce.number().int().min(1).max(40), terminal: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('addWagons'), trainId: id, wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), count: z.coerce.number().int().min(1).max(40) }),
+  z.object({ type: z.literal('sellWagons'), trainId: id, wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), count: z.coerce.number().int().min(1).max(40) }),
+  z.object({ type: z.literal('sellTrain'), trainId: id }),
+  z.object({ type: z.literal('sendTrain'), trainId: id, orderId: z.string().regex(/^[a-z-]+:\d+:\d+:\d+$/).max(80) }),
+  z.object({ type: z.literal('moveTrain'), trainId: id, lineId: z.string().regex(/^[a-z-]+$/).max(60) }),
   z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
   z.object({ type: z.literal('resetSkills') }),
@@ -643,6 +650,12 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   setBusLine: 'bus_lines',
   upgradeBusComfort: 'bus_lines',
   sellBusLine: 'bus_lines',
+  buyTrain: 'trains',
+  addWagons: 'trains',
+  sellWagons: 'trains',
+  sellTrain: 'trains',
+  sendTrain: 'trains',
+  moveTrain: 'trains',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
   renameMascot: 'mascot',
@@ -873,6 +886,23 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, comfort: await upgradeBusComfort(db, user.id, input.lineId, new Date()) };
     case 'sellBusLine':
       return { ok: true, backCents: await sellBusLine(db, user.id, input.lineId, new Date()) };
+    case 'buyTrain':
+      return { ok: true, trainId: (await buyTrain(db, user.id, { loco: input.loco, wagonType: input.wagonType, wagons: input.wagons, terminalId: input.terminal }, new Date())).id };
+    case 'addWagons':
+      await addWagons(db, user.id, input.trainId, input.wagonType, input.count, new Date());
+      return { ok: true };
+    case 'sellWagons':
+      return { ok: true, backCents: await sellWagons(db, user.id, input.trainId, input.wagonType, input.count, new Date()) };
+    case 'sellTrain':
+      return { ok: true, backCents: await sellTrain(db, user.id, input.trainId, new Date()) };
+    case 'sendTrain': {
+      const tr = await sendTrain(db, user.id, input.trainId, input.orderId, new Date());
+      return { ok: true, arriveAt: tr.run?.arriveAt };
+    }
+    case 'moveTrain': {
+      const tr = await moveTrain(db, user.id, input.trainId, input.lineId, new Date());
+      return { ok: true, arriveAt: tr.run?.arriveAt };
+    }
     case 'voteCrisis':
       await voteCrisis(db, user.id, input.option, new Date());
       return { ok: true };
