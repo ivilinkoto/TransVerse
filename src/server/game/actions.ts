@@ -57,6 +57,8 @@ import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgr
 import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
 import { playCourier } from './courier';
+import { voteTeamPoll } from '@/server/game/team-polls';
+import { refreshTeamPollMessage } from '@/server/discord/team-poll-view';
 import { applyForRole } from './careers';
 import { voteXmasBase } from './winter-games';
 import { claimFirstWeek } from './first-week';
@@ -152,6 +154,7 @@ const buildingType = z.enum(BUILDING_TYPES as [BuildingType, ...BuildingType[]])
 /** Every player command goes through this single, validated, server-authoritative endpoint. */
 /** Every player command (the web game and the Discord bot alike). */
 export const Action = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('voteTeamPoll'), pollId: z.string().max(20), option: z.coerce.number().int().min(0).max(9) }),
   z.object({ type: z.literal('applyForRole'), role: z.string().max(40), about: z.string().max(2000), hours: z.coerce.number().int().min(1).max(40), contact: z.string().max(200), link: z.string().max(400).optional(), adult: z.boolean().optional(), consent: z.boolean().optional() }),
   z.object({ type: z.literal('acceptContract'), contractId: id, vehicleId: id, rush: z.boolean().default(false), overload: z.boolean().default(false), tons: z.number().positive().max(100).optional(), rail: z.string().regex(/^[a-z-]+:[fr]$/).optional(), insure: z.boolean().default(false), route: z.enum(['fast', 'cheap']).default('fast'), parking: z.enum(['secure', 'free']).default('free'), refuel: z.boolean().default(false) , promise: z.enum(['fast', 'normal', 'easy']).optional()}),
   z.object({ type: z.literal('payFine'), fineId: id }),
@@ -454,6 +457,7 @@ export const Action = z.discriminatedUnion('type', [
 /** Actions of features that go live with a release (staff can use them earlier, to test). */
 const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   applyForRole: 'careers',
+  voteTeamPoll: 'team_polls',
   nameVehicle: 'truck_names',
   renameCompany: 'company_rename',
   submitIdea: 'ideas',
@@ -662,6 +666,12 @@ export async function runAction(db: Database, user: { id: string; role: string; 
   switch (input.type) {
     case 'applyForRole':
       return await applyForRole(db, user.id, input, new Date());
+    case 'voteTeamPoll': {
+      const poll = await voteTeamPoll(db, `u:${user.id}`, input.pollId, input.option);
+      // The poll's message in #анкети shows the new numbers (best effort, without holding up the answer).
+      void refreshTeamPollMessage(input.pollId, poll).catch(() => undefined);
+      return { ok: true };
+    }
     case 'acceptContract': {
       if (input.promise && input.promise !== 'normal') requireFeature('load_promise', user);
       const d = await acceptContract(db, user.id, input.contractId, input.vehicleId, new Date(), { rush: input.rush, overload: input.overload, tons: input.tons, rail: input.rail, insure: input.insure, route: input.route, parking: input.parking, refuel: input.refuel });

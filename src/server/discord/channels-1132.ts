@@ -8,10 +8,12 @@ import { ONLINE_MS } from '@/lib/game/social';
 import { IDEAS } from '@/server/game/ideas';
 import { GameError } from '@/server/game/errors';
 import { runAction } from '@/server/game/actions';
+import { cleanPoll, closeDuePolls, discordVoter, saveTeamPoll, voteTeamPoll, type TeamPoll } from '@/server/game/team-polls';
+import { pollView, refreshTeamPollMessage } from './team-poll-view';
 import { int } from '@/lib/format';
 import { t, tx } from '@/i18n/t';
 import { discord, noPings } from './api';
-import { appUrl, BRAND, discordConfig } from './config';
+import { appUrl, discordConfig } from './config';
 import { ideasOn } from './announce';
 import { answer, hasPerm, linkHint, opt, PERM, stop, act, type Answer, type Ctx } from './context';
 import { layoutChannel } from './layout';
@@ -219,76 +221,41 @@ export async function newsCommand(ctx: Ctx): Promise<Answer> {
 
 // ── #анкети ──────────────────────────────────────────────────────────────
 
-const POLL_PREFIX = 'team-poll:';
-interface TeamPoll { question: string; options: string[]; votes: Record<string, number>; endsAt: number; channelId: string; messageId: string | null; closed?: boolean }
+// The polls themselves (votes, closing) are shared with the game: src/server/game/team-polls.ts.
 
-function pollView(id: string, p: TeamPoll, now: Date) {
-  const counts = p.options.map((_, i) => Object.values(p.votes).filter((v) => v === i).length);
-  const total = counts.reduce((a, b) => a + b, 0);
-  const open = !p.closed && now.getTime() < p.endsAt;
-  const lines = p.options.map((o, i) => {
-    const share = total ? counts[i]! / total : 0;
-    return `**${o}**\n${'█'.repeat(Math.round(share * 12)).padEnd(12, '░')} ${Math.round(share * 100)}% · ${counts[i]}`;
-  });
-  return {
-    ...noPings,
-    embeds: [{
-      title: `📊 ${p.question}`,
-      description: `${lines.join('\n\n')}\n\n${open ? t('Гласувай с бутоните (може да смениш гласа). Край <t:{0}:R>.', Math.floor(p.endsAt / 1000)) : t('Анкетата приключи · {0} гласа.', total)}`,
-      color: open ? BRAND : 0x9aa3b2,
-    }],
-    components: open ? rows(...p.options.map((o, i) => button(o.slice(0, 80), `tpoll:${id}:${i}`, STYLE.secondary))) : [],
-  };
-}
-
-/** /анкета (the team): question, 2–5 answers separated by ";", how many hours. */
+/** /анкета (the team): question, 2–5 answers separated by ";", how many hours. Also on the game's dashboard. */
 export async function pollCommand(ctx: Ctx): Promise<Answer> {
   if (!hasPerm(ctx, PERM.manageGuild)) stop(t('Само екипът пуска анкети.'));
-  const question = (opt(ctx.i, 'въпрос') ?? '').trim().slice(0, 200);
-  const options = (opt(ctx.i, 'отговори') ?? '').split(';').map((s) => s.trim().slice(0, 80)).filter(Boolean);
-  const hours = Math.round(Number(opt(ctx.i, 'часове') ?? 24));
-  if (question.length < 5) stop(t('Въпросът е твърде кратък.'));
-  if (options.length < 2 || options.length > 5) stop(t('Отговорите са от 2 до 5, разделени с „;“.'));
-  if (!(hours >= 1 && hours <= 168)) stop(t('Анкетата трае от 1 до 168 часа.'));
+  let clean: ReturnType<typeof cleanPoll>;
+  try {
+    clean = cleanPoll({ question: opt(ctx.i, 'въпрос') ?? '', options: (opt(ctx.i, 'отговори') ?? '').split(';'), hours: Number(opt(ctx.i, 'часове') ?? 24) });
+  } catch (e) {
+    if (e instanceof GameError) stop(e.message);
+    throw e;
+  }
   const channelId = await layoutChannel(ctx.db, 'анкети');
   if (!channelId) stop(t('Няма канал #анкети — подреди сървъра от админ панела.'));
   const id = randomUUID().slice(0, 8);
-  const poll: TeamPoll = { question, options, votes: {}, endsAt: ctx.now.getTime() + hours * 3_600_000, channelId: channelId!, messageId: null };
-  // In a forum channel the poll is a post of its own.
+  const poll: TeamPoll = { question: clean!.question, options: clean!.options, votes: {}, endsAt: ctx.now.getTime() + clean!.hours * 3_600_000, channelId: channelId!, messageId: null, source: 'discord', createdBy: ctx.discordName, createdAt: ctx.now.getTime() };
   const posted = await postIn(channelId!, pollView(id, poll, ctx.now));
-  await ctx.db.insert(jobState).values({ key: POLL_PREFIX + id, value: { ...poll, channelId: posted.channelId, messageId: posted.messageId } });
-  return answer(say(t('✅ Анкетата е в <#{0}>.', channelId!)));
+  await saveTeamPoll(ctx.db, { ...poll, channelId: posted.channelId, messageId: posted.messageId }, id);
+  return answer(say(t('✅ Анкетата е в <#{0}> и на таблото в играта.', channelId!)));
 }
 
-/** A vote (or a changed vote) — the poll's own message shows the new numbers. */
+/** A vote (or a changed vote) from the buttons — a linked account votes as its game player. */
 export async function pollVote(ctx: Ctx, id: string, index: number): Promise<Answer> {
-  return ctx.db.transaction(async (tx) => {
-    const [row] = await tx.select().from(jobState).where(eq(jobState.key, POLL_PREFIX + id)).for('update');
-    const poll = row?.value as TeamPoll | undefined;
-    if (!poll || poll.closed || ctx.now.getTime() >= poll.endsAt) return answer(say(t('Анкетата вече е приключила.')));
-    if (!Number.isInteger(index) || index < 0 || index >= poll.options.length) return answer(say(t('Този бутон вече не работи.')));
-    const votes = { ...poll.votes, [ctx.discordId]: index };
-    const next = { ...poll, votes };
-    await tx.update(jobState).set({ value: next, updatedAt: ctx.now }).where(eq(jobState.key, POLL_PREFIX + id));
+  try {
+    const next = await voteTeamPoll(ctx.db, await discordVoter(ctx.db, ctx.discordId), id, index, ctx.now);
     return answer(update(pollView(id, next, ctx.now)));
-  });
+  } catch (e) {
+    if (e instanceof GameError) return answer(say(e.code === 'poll_closed' || e.code === 'poll_not_found' ? t('Анкетата вече е приключила.') : t('Този бутон вече не работи.')));
+    throw e;
+  }
 }
 
-/** Worker: polls that ended show their results and lose the buttons. */
+/** Worker: polls that ended are closed; in Discord they show their results and lose the buttons. */
 export async function closeTeamPolls(db: Database, now = new Date()) {
-  if (!discordConfig().bot) return 0;
-  const rows = await db.select().from(jobState).where(sql`${jobState.key} like ${POLL_PREFIX + '%'}`);
-  let closed = 0;
-  for (const r of rows) {
-    const poll = r.value as TeamPoll;
-    if (poll.closed || now.getTime() < poll.endsAt) continue;
-    const id = r.key.slice(POLL_PREFIX.length);
-    const done = { ...poll, closed: true };
-    if (poll.messageId) await discord('PATCH', `/channels/${poll.channelId}/messages/${poll.messageId}`, pollView(id, done, now)).catch(() => undefined);
-    await db.update(jobState).set({ value: done, updatedAt: now }).where(eq(jobState.key, r.key));
-    closed++;
-  }
-  // Ended polls are kept 30 days.
-  await db.delete(jobState).where(sql`${jobState.key} like ${POLL_PREFIX + '%'} and ${jobState.updatedAt} < ${new Date(now.getTime() - 30 * 86_400_000)}`);
-  return closed;
+  const closed = await closeDuePolls(db, now);
+  for (const p of closed) await refreshTeamPollMessage(p.id, p, now);
+  return closed.length;
 }

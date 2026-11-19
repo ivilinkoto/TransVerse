@@ -237,10 +237,11 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                 </div>
               );
             })()}
-            {!v.driver && !v.delivery && self && !selfBusy && (
+            {/* The player can take the wheel of any idle truck (a hired driver on it steps out); before, only of one without a driver. */}
+            {!v.delivery && v.status === 'idle' && self && !selfBusy && v.driver?.id !== self.id && (
               <div className="mt-3">
                 <ActionButton action={{ type: 'assignDriver', driverId: self.id, vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">
-                  <UserRound className="h-4 w-4" />{tr('Карай този камион сам')}
+                  <UserRound className="h-4 w-4" />{v.driver ? tr('Карай този камион сам ({0} слиза)', tx(v.driver.name)) : tr('Карай този камион сам')}
                 </ActionButton>
               </div>
             )}

@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto';
+import { cleanPoll, endTeamPoll, saveTeamPoll, type TeamPoll } from '@/server/game/team-polls';
+import { postTeamPoll, refreshTeamPollMessage } from '@/server/discord/team-poll-view';
 import { z } from 'zod';
 import { createPromo, createPromoBatch, setPromoDisabled } from '@/server/game/promo';
 import { compensateAll, adminResetLink, adminVerifyEmail, sendTestMail, adjustBalance, adjustCoins, adminReplenishMarket, adminResetCompanyBranding, setVip, requireStaff, setBan, setUserRole } from '@/server/admin';
@@ -74,6 +77,8 @@ const AdminAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('discordRetry'), id: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('staffNote'), userId: id, note: z.string().trim().max(500) }),
   z.object({ type: z.literal('winBack'), userId: id }),
+  z.object({ type: z.literal('teamPollCreate'), question: z.string().max(300), options: z.array(z.string().max(120)).max(10), hours: z.coerce.number().int() }),
+  z.object({ type: z.literal('teamPollClose'), pollId: z.string().max(20) }),
   z.object({ type: z.literal('careerStatus'), userId: id, status: z.enum(['new', 'reviewing', 'interview', 'accepted', 'rejected']), note: z.string().max(500).optional() }),
   z.object({ type: z.literal('featureSwitch'), feature: z.string().max(60), off: z.boolean(), reason: z.string().trim().max(200).default('') }),
   z.object({ type: z.literal('promoCreate'), promo: promoInput.extend({ code: z.string().trim().max(32).optional(), maxUses: z.coerce.number().int().min(1).max(1_000_000).nullable().optional() }) }),
@@ -234,6 +239,25 @@ export const POST = handler({ schema: AdminAction, perMinute: 60 }, async ({ use
     case 'staffNote':
       await setStaffNote(db, user, input.userId, input.note);
       return { ok: true };
+    case 'teamPollCreate': {
+      requireAdminRole(user);
+      const clean = cleanPoll(input);
+      const now = new Date();
+      const id = randomUUID().slice(0, 8);
+      const poll: TeamPoll = { question: clean.question, options: clean.options, votes: {}, endsAt: now.getTime() + clean.hours * 3_600_000, channelId: null, messageId: null, source: 'game', createdBy: user.username, createdAt: now.getTime() };
+      // In #анкети too when the bot runs; the poll is saved even if Discord does not answer.
+      const posted = await postTeamPoll(db, id, poll, now).catch(() => ({ channelId: null, messageId: null }));
+      await saveTeamPoll(db, { ...poll, ...posted }, id);
+      await recordAudit(db, user.id, 'team_poll', null, { id, question: clean.question });
+      return { ok: true, id, discord: !!posted.messageId };
+    }
+    case 'teamPollClose': {
+      requireAdminRole(user);
+      const done = await endTeamPoll(db, input.pollId);
+      await refreshTeamPollMessage(input.pollId, done);
+      await recordAudit(db, user.id, 'team_poll_close', null, { id: input.pollId });
+      return { ok: true };
+    }
     case 'careerStatus':
       requireAdminRole(user);
       await setApplicationStatus(db, input.userId, input.status, input.note, new Date());
