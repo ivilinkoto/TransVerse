@@ -26,8 +26,9 @@ async function crewTruck() {
 
 describe('two drivers: a day off for one is not a day off for both', () => {
   it('the rule: the other one drives alone', () => {
-    const a = { id: 'a', vacationUntil: null }, b = { id: 'b', vacationUntil: null };
-    const off = (d: { id: string }) => ({ ...d, vacationUntil: OFF });
+    type D = { id: string; vacationUntil: Date | null };
+    const a: D = { id: 'a', vacationUntil: null }, b: D = { id: 'b', vacationUntil: null };
+    const off = (d: D): D => ({ ...d, vacationUntil: OFF });
     expect(onDutyCrew(a, b, NOW)).toEqual({ driver: a, coDriver: b });
     expect(onDutyCrew(a, off(b), NOW)).toEqual({ driver: a, coDriver: null });
     expect(onDutyCrew(off(a), b, NOW)).toEqual({ driver: b, coDriver: null });
