@@ -197,7 +197,7 @@ test('navigation: five places in the sidebar, account pages in the avatar menu',
   await register(page);
   const aside = page.locator('aside');
   // 1.3.2 „Просто“: five places and no „Още“.
-  for (const name of ['Начало', 'Курсове', 'Автопарк', 'Компания', 'Игри и награди']) await expect(aside.getByRole('link', { name, exact: true })).toBeVisible();
+  for (const name of ['Начало', 'Курсове', 'Автопарк', 'Компания', 'Игри и награди']) await expect(aside.getByRole('link', { name: new RegExp(`^${name}`) })).toBeVisible(); // a place may carry a badge („Игри и награди 3“)
   await expect(aside.getByRole('button', { name: 'Още' })).toHaveCount(0);
   await expect(aside.getByRole('link', { name: /Магазин и VIP/ })).toBeVisible();
   await expect(aside.getByRole('link', { name: 'Финанси' })).toHaveCount(0);
