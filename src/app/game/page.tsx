@@ -324,6 +324,8 @@ export default async function OverviewPage() {
           </span>
         </Link>
       )}
+      {/* Who else is in the game now: always in view (it was hidden under „Още“ and missing from the 1.3.2 dashboard). */}
+      {features.online_now && <OnlineNow db={db} now={now} />}
       {!simpleHome && <MoreOnDashboard lean={lean}>
       {goal && !goal.goal && (
         <Link href="/game/missions" className="panel group flex items-center gap-3 p-3.5 transition hover:border-asphalt-500">
@@ -335,7 +337,6 @@ export default async function OverviewPage() {
         </Link>
       )}
       {!user.seenHints.includes('discord') && <DiscordInvite />}
-      {features.online_now && <OnlineNow db={db} now={now} />}
       {!simpleHome && firstWeek && (
         <Link href="/game/first-week" className="panel group flex items-center gap-3 border-emerald-500/40 p-3.5 transition hover:border-emerald-400" data-testid="first-week-card">
           <Sprout className="h-6 w-6 shrink-0 text-emerald-300" />
