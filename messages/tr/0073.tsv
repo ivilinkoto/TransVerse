@@ -1095,3 +1095,7 @@ e241e1b697	Hopper	Хоппер
 c3d3fbd226	up to {0} wagons	до {0} вагонов
 3ec6882b26	you will get {0}	получишь {0}
 ddfb71c939	🚆 The train arrived in {0}	🚆 Поезд прибыл в {0}
+f4a7638f0e	Take a block-train order at the terminal.	Возьми заказ на маршрутный поезд на станции.
+ebeb2912e9	The train pays when it arrives.	Поезд приносит деньги по прибытии.
+62e19fd532	Buy a locomotive and wagons at a freight terminal.	Купи локомотив и вагоны на грузовой станции.
+4b76e56e36	Your own freight trains on real rail lines.	Собственные грузовые поезда по настоящим железнодорожным линиям.
