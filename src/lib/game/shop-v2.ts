@@ -77,6 +77,9 @@ export const REFERRAL_PURCHASE_SHARE = 0.1;
 /** The monthly card: VIP for 30 days and this many ТрансКоин to claim every day. */
 export const MONTH_CARD = { days: 30, coinsPerDay: 30 } as const;
 /** The starter pack (once per account): ТрансКоин, VIP days and a silver case. */
+/** The pack for the players who back the game early: once per account, until the end of 2026, with a badge for good. */
+export const SUPPORTER_PACK = { until: '2027-01-01T00:00:00+02:00', badge: 'early-supporter' } as const;
+
 export const STARTER_PACK = { minLevel: 3, case: 'case_silver' as const } as const;
 
 /** Patron levels by everything paid (euro cents, refunds excluded): +1 % ТрансКоин per level on later packs. */

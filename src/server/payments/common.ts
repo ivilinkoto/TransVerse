@@ -14,7 +14,7 @@ import { notify } from '@/server/game/notify';
 import { mailConfig } from '@/server/mail';
 import { t } from '@/i18n/t';
 import { featureFor } from '@/server/features';
-import { deliverExtras, refundExtras, starterPackOpen } from '@/server/game/shop-v2';
+import { deliverExtras, refundExtras, starterPackOpen, supporterPackOpen } from '@/server/game/shop-v2';
 
 export type Payment = typeof payments.$inferSelect;
 export type Provider = 'paypal' | 'stripe';
@@ -72,6 +72,7 @@ export async function startPayment(db: Database, userId: string, input: z.output
   if (!user || user.bannedAt) fail('forbidden', t('Профилът не може да прави покупки.'), 403);
   // 1.2.3: the starter pack and the monthly card come with the new shop; the starter pack once per account.
   if (product!.v2 && !(await featureFor(db, userId, 'shop_v2', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
+  if (product!.id === 'supporter_pack' && !(await featureFor(db, userId, 'supporter_pack', now) && (await supporterPackOpen(db, userId, now)))) fail('supporter_used', t('„Подкрепи TransVerse“ е веднъж за профил, до края на 2026 г.'), 409);
   if (product!.id === 'starter_pack' && !(await starterPackOpen(db, userId, user!.level))) fail('starter_used', t('Началният пакет е веднъж за профил, от ниво 3.'), 409);
   // With e-mail switched on, purchases need a confirmed address (receipts, account recovery).
   if (mailConfig().enabled && !user!.verified) fail('email_unverified', t('Първо потвърди имейла си — линкът е в пощата ти (или го изпрати отново от „Профил и настройки“).'), 403);

@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Logo, LogoMark } from '@/components/brand/Logo';
 import { api } from '@/lib/client/api';
-import { ACCOUNT_MENU, activeTab, coreTabs, familyFor, mainKeys, navSections, sectionFor, tabGroups, visibleTabs, type NavSection, type NavTab } from './nav';
+import { ACCOUNT_MENU, activeTab, coreTabs, familyFor, isTrainPage, mainKeys, navSections, sectionFor, tabGroups, VEHICLE_SWITCH, visibleTabs, type NavSection, type NavTab } from './nav';
 import type { FeatureId } from '@/lib/game/features';
 
 /** The sections listed the usual way (the inventory/„Награди“ is drawn on its own). */
@@ -165,11 +165,30 @@ function FamilyTabs({ pathname, has }: { pathname: string; has: (f: FeatureId) =
 export function SectionTabs({ holiday = null }: { holiday?: string | null }) {
   const pathname = usePathname();
   const has = useFeatures();
+  const section = sectionFor(pathname, has);
+  const halves = has('trains') && has('simple_menu') && section ? VEHICLE_SWITCH[section.key] : undefined;
   return (
     <>
-      <SectionRow holiday={holiday} />
+      {halves && <VehicleSwitch halves={halves} pathname={pathname} />}
+      {!(halves && isTrainPage(pathname)) && <SectionRow holiday={holiday} />}
       <FamilyTabs pathname={pathname} has={has} />
     </>
+  );
+}
+
+/** 1.3.3: the two halves of Автопарк and Курсове — trucks and trains. */
+function VehicleSwitch({ halves, pathname }: { halves: { trucks: string; trains: string }; pathname: string }) {
+  const trains = isTrainPage(pathname);
+  const item = (href: string, active: boolean, icon: string, label: string) => (
+    <Link href={href} aria-current={active ? 'page' : undefined} className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition sm:px-6 ${active ? 'bg-gradient-to-b from-cyan-glow/25 to-cyan-glow/10 text-white ring-1 ring-cyan-glow/50' : 'text-mist-400 hover:bg-asphalt-800 hover:text-white'}`}>
+      <span aria-hidden="true">{icon}</span>{label}
+    </Link>
+  );
+  return (
+    <nav aria-label={tr('Камиони или влакове')} className="mb-3 grid grid-cols-2 gap-1 rounded-2xl border border-asphalt-800 bg-asphalt-900/70 p-1 sm:inline-grid" data-testid="vehicle-switch">
+      {item(halves.trucks, !trains, '🚛', tr('Камиони'))}
+      {item(halves.trains, trains, '🚆', tr('Влакове'))}
+    </nav>
   );
 }
 
@@ -188,7 +207,9 @@ function SectionRow({ holiday = null }: { holiday?: string | null }) {
     box.current?.querySelector('[aria-current=page]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }, [tab?.href]);
   if (!section?.tabs) return null;
-  const tabs = visibleTabs(section, holiday, pathname, has, player);
+  // 1.3.3: the train pages are the other half of the switch, not tabs of the truck row.
+  const halves = has('trains') && has('simple_menu') && !!VEHICLE_SWITCH[section.key];
+  const tabs = visibleTabs(section, holiday, pathname, has, player).filter((t) => !(halves && isTrainPage(t.href)));
   // 1.1.4.1: only the few main pages in the row; the others behind "Още ▾".
   if (lean) {
     const core = coreTabs(tabs, pathname);

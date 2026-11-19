@@ -24,7 +24,7 @@ import { t as tr, tx, intlLocale } from '@/i18n/t';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { bonusWeekend, VIP_PRICES_V2, MONTH_CARD, OFFER_DISCOUNT, PASS_LEVEL_SALE, PATRON_LEVELS, VIP_BENEFITS_V2, vipMonthColor, WEEKEND_BONUS, weeklyOffers } from '@/lib/game/shop-v2';
 import { depots } from '@/server/db/schema';
-import { firstPurchaseOpen, monthCardOf, passLevelSaleOpen, patronOf, starterPackOpen, vipCaseReady } from '@/server/game/shop-v2';
+import { firstPurchaseOpen, monthCardOf, passLevelSaleOpen, patronOf, starterPackOpen, supporterPackOpen, vipCaseReady } from '@/server/game/shop-v2';
 import { shopPrice } from '@/server/game/shop';
 import { activeSeason } from '@/server/game/seasons';
 import { ShopStore } from '@/components/shop/ShopStore';
@@ -62,7 +62,9 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
   const [vipCase, card, patron, starter, first, season] = v2
     ? await Promise.all([vipCaseReady(db, user.id, user.vipUntil, now), monthCardOf(db, user.id, now), patronOf(db, user.id), starterPackOpen(db, user.id, user.level), firstPurchaseOpen(db, user.id), activeSeason(db, now)])
     : [false, null, null, false, false, null];
-  const products = PAID_PRODUCTS.filter((p) => !p.v2 || (v2 && (p.id !== 'starter_pack' || starter)));
+  // „Подкрепи TransVerse“: once per account and until the end of 2026 — first in the list while it is open.
+  const supporter = v2 && features.supporter_pack && (await supporterPackOpen(db, user.id, now));
+  const products = PAID_PRODUCTS.filter((p) => !p.v2 || (v2 && (p.id !== 'starter_pack' || starter) && (p.id !== 'supporter_pack' || supporter))).sort((a, b) => Number(b.id === 'supporter_pack') - Number(a.id === 'supporter_pack'));
   const notes = v2 ? [first && tr('Първата ти покупка на ТрансКоин е двойна — получаваш двойно повече TC.'), bonusWeekend(now) && tr('Бонус уикенд: +{0}% ТрансКоин на всеки пакет.', WEEKEND_BONUS * 100), patron && patron.level > 0 && tr('Покровител ниво {0}: +{1}% ТрансКоин на всеки пакет.', patron.level, patron.level)].filter((x): x is string => !!x) : [];
   const seasonOk = (i: { id: string; seasonal?: string }) => (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics);
   const passSale = v2 && season ? passLevelSaleOpen(season.endsAt, now) : false;
@@ -100,7 +102,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {products.map((p) => (
                     <li key={p.id} className="shop-tile flex flex-col items-center gap-1 rounded-2xl p-3 text-center" style={{ '--tile': '#22d3ee' } as React.CSSProperties}>
-                      <span className="text-3xl" aria-hidden>💎</span>
+                      <span className="text-3xl" aria-hidden>{p.id === 'supporter_pack' ? '❤️' : '💎'}</span>
                       <span className="num font-display text-lg font-bold text-cyan-glow">{p.v2 ? tx(p.label) : p.vipDays ? tr('VIP {0} дни', p.vipDays) : `${p.coins.toLocaleString(intlLocale())} TC`}</span>
                       {p.bonus > 0 && <span className="text-xs text-profit">{tr('+{0} подарък', p.bonus)}</span>}
                       <span className="num text-sm text-mist-300">{euro(p.priceCents)}</span>

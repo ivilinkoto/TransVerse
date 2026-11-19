@@ -64,6 +64,7 @@ import { recordMissionProgress } from './missions';
 import { afterRentedTrip } from './rentals';
 import { checkTenderLoad, recordTenderLoad } from './tenders';
 import { isVip, VIP_PERKS } from '@/lib/game/vip';
+import { onDutyCrew } from '@/lib/game/crew';
 import { contractCountries } from '@/lib/game/licences';
 import { addOrganizationSeasonScore, addSeasonScore } from './seasons';
 import { rewardReferral } from './referrals';
@@ -99,7 +100,6 @@ import { countryTollCents, lezFeeCents, withoutBanWaits } from '@/lib/game/europ
 import { recordFactoryDelivery } from './factory';
 import { branchBonus } from './business';
 import { realConditionsFor } from './weather';
-import { onVacation } from './moods';
 import { equinoxBonus, recordPassOpening } from './spring';
 import { companyConvoyOf, settleConvoyTruck } from './convoys';
 import { relayDelivered } from './relay';
@@ -251,8 +251,10 @@ export async function acceptContract(db: Database, userId: string, contractId: s
       !partial && !!risks.overload,
     );
     if (error) fail('incompatible', error);
-    // A driver on a day off does not drive (v1.4).
-    if (onVacation(bundle.driver, now) || onVacation(bundle.coDriver, now)) fail('vacation', t('Шофьорът е в почивен ден — назначи друг или изчакай.'));
+    // A driver on a day off does not drive (v1.4); in a two-driver crew the other one drives alone.
+    const onDuty = bundle.driver ? onDutyCrew(bundle.driver, bundle.coDriver, now) : null;
+    if (bundle.driver && !onDuty) fail('vacation', t('Шофьорът е в почивен ден — назначи друг или изчакай.'));
+    if (onDuty) Object.assign(bundle, onDuty);
     const [from] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.originCityId));
     const [parked] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, bundle.vehicle.cityId));
     const [to] = await tx.select({ country: cities.countryCode }).from(cities).where(eq(cities.id, contract!.destCityId));
@@ -810,6 +812,8 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // Return loads come with v1.2 (staff see them before the release).
   // The hauler of someone else's goods gets the usual "Доставено" message.
   const ownGoods = !!contract.trade && !contract.exchange;
+  // What VIP would have added to this trip's XP (a player without VIP sees it in the arrival message).
+  const vipMore = vipXp === 1 && (await featureFor(tx, company!.ownerId, 'vip_value', completedAt)) ? Math.round(playerXp * (VIP_PERKS.xpMultiplier - 1)) : 0;
   const backhaul = !ownGoods && (await featureFor(tx, company!.ownerId, 'backhaul', completedAt));
   // Own goods get their own message (sale or warehouse) from settleTradeLot.
   if (!ownGoods) await notify(
@@ -817,7 +821,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     company!.ownerId,
     onTime ? 'success' : 'warning',
     () => onTime ? t('Доставено: {0} в {1}', contract.goods, dest!.nameBg) : t('Закъсняла доставка в {0}', dest!.nameBg),
-    () => t('Нетен резултат {0} лв., +{1} опит.{2}{3}', (payout / 100).toLocaleString(intlLocale(), { maximumFractionDigits: 0 }), playerXp, drops.length ? t(' Спирки навреме: {0} от {1}.', drops.filter((x) => !x.late).length, drops.length) : '', backhaul ? t(' Виж товарите обратно от {0}.', dest!.nameBg) : ''),
+    () => t('Нетен резултат {0} лв., +{1} опит.{2}{3}', (payout / 100).toLocaleString(intlLocale(), { maximumFractionDigits: 0 }), playerXp, drops.length ? t(' Спирки навреме: {0} от {1}.', drops.filter((x) => !x.late).length, drops.length) : '', backhaul ? t(' Виж товарите обратно от {0}.', dest!.nameBg) : '') + (vipMore > 0 ? t(' С VIP: +{0} опит.', vipMore) : ''),
     // Straight to the return loads from where the truck now stands.
     backhaul ? `/game/contracts?from=${contract.destCityId}&truck=${vehicle!.id}` : (await featureFor(tx, company!.ownerId, 'trip_log', completedAt)) ? `/game/trips/${d.id}` : '/game/finance',
     { sound: 'arrival' },

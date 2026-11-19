@@ -83,6 +83,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/analytics', label: 'Анализ', group: 'Камиони', minLevel: 3 },
       { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map', group: 'Камиони', minLevel: 2 },
       { href: '/game/buses', label: 'Автобусна компания', feature: 'bus_lines', group: 'Камиони', minLevel: 8 },
+      { href: '/game/trains', label: 'Влакове', feature: 'trains', group: 'Камиони', minLevel: 12 },
       { href: '/game/garage', label: 'Сервиз', group: 'Сервиз и депа', core: true },
       // 1.2.3.1: the player's own business (research, office, adverts, fuel, CO₂) — not the company's „Развитие“.
       { href: '/game/growth', label: 'Технологии и офис', feature: 'research', group: 'Сервиз и депа' },
@@ -269,7 +270,7 @@ const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
   // 1.3.2: Клиенти and Конвои (2 players a week each) wait behind „Още ▾“; Рампата is gone.
   jobs: [['/game/contracts', true], ['/game/map', true], ['/game/clients'], ['/game/convoys'], ['/game/auctions'], ['/game/trade']],
   // Анализ and Къде печеля moved to „Финанси“, Технологии и офис to „Компания“; Сервизи на играчите are gone.
-  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/buses']],
+  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/buses'], ['/game/trains']],
   company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment']],
 };
 
@@ -296,6 +297,18 @@ export const PAGE_FAMILIES: NavTab[][] = [
   [{ href: '/game/finance', label: 'Финанси' }, { href: '/game/analytics', label: 'Анализ' }, { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map' }],
   [{ href: '/game/company', label: 'Моята компания' }, { href: '/game/growth', label: 'Технологии и офис', feature: 'research' }, { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' }],
 ];
+
+/**
+ * 1.3.3: Автопарк and Курсове each have two halves — trucks and trains (feature
+ * trains). A switch on top leads between them; the truck pages' row of tabs
+ * shows only on the truck half.
+ */
+export const VEHICLE_SWITCH: Partial<Record<NavSection['key'], { trucks: string; trains: string }>> = {
+  fleet: { trucks: '/game/fleet', trains: '/game/trains' },
+  jobs: { trucks: '/game/contracts', trains: '/game/contracts/trains' },
+};
+const TRAIN_PAGES = ['/game/trains', '/game/contracts/trains'];
+export const isTrainPage = (pathname: string) => TRAIN_PAGES.some((p) => within(pathname, p));
 
 /** The family of the page at this path (the longest match wins: /game/inventory/album is the album, not the bag). */
 export function familyFor(pathname: string): { family: NavTab[]; page: NavTab } | undefined {

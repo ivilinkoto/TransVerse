@@ -4,7 +4,7 @@
  * Game money (лв. in the game) is never sold; real prices are in euro.
  */
 
-export type PaidProductId = 'tc_100' | 'tc_550' | 'tc_1200' | 'tc_3200' | 'vip_30_direct' | 'starter_pack' | 'month_card';
+export type PaidProductId = 'tc_100' | 'tc_550' | 'tc_1200' | 'tc_3200' | 'vip_30_direct' | 'starter_pack' | 'month_card' | 'supporter_pack';
 
 export interface PaidProduct {
   id: PaidProductId;
@@ -27,6 +27,7 @@ export const PAID_PRODUCTS: PaidProduct[] = [
   { id: 'tc_3200', label: '3 200 ТрансКоин', description: '2 500 TC + 700 подарък.', priceCents: 4999, coins: 3200, bonus: 700, vipDays: 0 },
   { id: 'starter_pack', label: 'Начален пакет', description: '300 TC, 7 дни VIP и сребърен кейс. Веднъж за профил, от ниво 3.', priceCents: 299, coins: 300, bonus: 0, vipDays: 7, v2: true },
   { id: 'month_card', label: 'Месечна карта', description: '30 дни VIP и по 30 TC всеки ден, в който влезеш (до 900 TC).', priceCents: 499, coins: 0, bonus: 0, vipDays: 30, v2: true },
+  { id: 'supporter_pack', label: 'Подкрепи TransVerse', description: 'Значка „Поддръжник от първите дни“ завинаги и 300 TC. Веднъж за профил, до края на 2026 г. Помагаш ни да плащаме сървъра и да развиваме играта.', priceCents: 499, coins: 300, bonus: 0, vipDays: 0, v2: true },
   { id: 'vip_30_direct', label: 'VIP · 30 дни', description: 'Всички VIP предимства за 30 дни, добавени към текущия ти VIP.', priceCents: 999, coins: 0, bonus: 0, vipDays: 30 },
 ];
 

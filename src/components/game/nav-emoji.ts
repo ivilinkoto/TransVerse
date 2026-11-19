@@ -47,6 +47,7 @@ export const NAV_EMOJI: Record<string, string> = {
   '/game/skills': '🌳',
   '/game/crisis': '🌍',
   '/game/buses': '🚌',
+  '/game/trains': '🚆',
   '/game/pass': '🎟️',
   '/game/profile': '👤',
   '/game/progress': '🏅',
