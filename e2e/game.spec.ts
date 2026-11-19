@@ -122,18 +122,13 @@ test.describe('core loop', () => {
     await expect(page.getByRole('button', { name: /Основи компания/ })).toBeDisabled();
   });
 
-  test('1.2.1: the inventory has its own menu button and pages once the release is out', async ({ page }) => {
+  test('1.2.1: the inventory and its pages (1.3.2: in „Игри и награди“, a row of tabs)', async ({ page }) => {
     await register(page);
     await page.goto('/game/inventory');
     await expect(page.getByRole('heading', { name: 'Инвентар', exact: true })).toBeVisible();
-    const live = new Date(releaseByVersion('1.2.1')!.publishedAt) <= new Date();
-    const button = page.getByTestId('nav-inventory');
-    if (!live) {
-      await expect(button).toHaveCount(0);
-      return;
-    }
-    await expect(button.first()).toBeVisible();
-    await page.goto('/game/inventory/workshop');
+    // 1.3.2: the bag is in „Игри и награди“; its pages are a row of tabs on each of them.
+    await expect(page.locator('aside').getByRole('link', { name: 'Игри и награди' })).toHaveAttribute('aria-current', 'page');
+    await page.getByTestId('family-tabs').getByRole('link', { name: 'Работилница' }).click();
     await expect(page.getByRole('heading', { name: 'Работилница', exact: true })).toBeVisible();
     await expect(page.getByText(/Тетрадка на механика/)).toBeVisible();
     await page.goto('/game/inventory/album');
@@ -198,24 +193,12 @@ test('opening notifications marks them as read', async ({ page }) => {
   await expect(page.locator('header').getByRole('link', { name: /Известия/ })).not.toContainText(/\d/);
 });
 
-test('navigation: four sections and „Още“ in the sidebar, account pages in the avatar menu', async ({ page }) => {
+test('navigation: five places in the sidebar, account pages in the avatar menu', async ({ page }) => {
   await register(page);
   const aside = page.locator('aside');
-  for (const name of v2() ? ['Табло', 'Курсове', 'Автопарк'] : ['Табло', 'Карта', 'Поръчки', 'Автопарк']) await expect(aside.getByRole('link', { name })).toBeVisible();
-  // 1.1.4.1: Компания and Състезание are in „Още“.
-  await expect(aside.getByRole('link', { name: 'Компания' })).toHaveCount(0);
-  await aside.getByRole('button', { name: 'Още' }).click();
-  const more = page.getByRole('dialog', { name: 'Още раздели' });
-  await expect(more.getByRole('heading', { name: 'Компания' })).toBeVisible();
-  await expect(more.getByRole('heading', { name: 'Състезание' })).toBeVisible();
-  // 1.1.4.2: the sheet is on top of the page, not under it (it was hidden behind the dashboard on tablets).
-  const onTop = await more.getByRole('heading', { name: 'Компания' }).evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    return el.closest('[role=dialog]')!.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
-  });
-  expect(onTop).toBe(true);
-  await page.keyboard.press('Escape');
-  await expect(more).toHaveCount(0);
+  // 1.3.2 „Просто“: five places and no „Още“.
+  for (const name of ['Начало', 'Курсове', 'Автопарк', 'Компания', 'Игри и награди']) await expect(aside.getByRole('link', { name, exact: true })).toBeVisible();
+  await expect(aside.getByRole('button', { name: 'Още' })).toHaveCount(0);
   await expect(aside.getByRole('link', { name: /Магазин и VIP/ })).toBeVisible();
   await expect(aside.getByRole('link', { name: 'Финанси' })).toHaveCount(0);
   const header = page.locator('header');
@@ -237,56 +220,36 @@ test('navigation: four sections and „Още“ in the sidebar, account pages i
   await expect(page).toHaveURL(/\/$/);
 });
 
-test('1.2.2: the new menu — Курсове with the map, „Къде е…?“, Награди, Състезание and the old menu', async ({ page }) => {
-  test.skip(!v2(), '1.2.2 is not out yet');
+test('1.3.2: Курсове with the map, the page search and „Игри и награди“', async ({ page }) => {
   await register(page);
   const aside = page.locator('aside');
   await expect(aside.getByRole('link', { name: 'Карта', exact: true })).toHaveCount(0);
   await aside.getByRole('link', { name: 'Курсове' }).click();
   await expect(page.getByRole('heading', { name: 'Курсове', exact: true })).toBeVisible();
   await expect(page.getByTestId('jobs-map')).toBeVisible();
-  // „Още“: a big search on top, then the sections with icons.
-  await aside.getByRole('button', { name: 'Още' }).click();
-  await page.getByTestId('more-search').click();
+  // Everything else is found with the search at the top.
+  await page.locator('header').getByRole('button', { name: 'Търси страница' }).click();
   const search = page.getByRole('dialog', { name: 'Търси страница' });
   await expect(search).toBeVisible();
   await search.getByRole('textbox').fill('сервиз');
   await search.getByRole('button', { name: /Сервиз/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
-  await page.goto('/game/rewards');
-  await expect(page.getByRole('heading', { name: 'Награди', exact: true })).toBeVisible();
-  await page.goto('/game/compete');
-  await expect(page.getByRole('heading', { name: 'Състезание', exact: true })).toBeVisible();
-  // The old menu can come back for two weeks.
-  const offered = Date.now() < Date.parse(releaseByVersion('1.2.2')!.publishedAt) + 14 * 86_400_000;
-  if (!offered) return;
-  await page.goto('/game/settings');
-  await page.getByRole('button', { name: 'Върни старото меню' }).click();
-  await expect(aside.getByRole('link', { name: 'Карта', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Към новото меню' }).click();
-  await expect(aside.getByRole('link', { name: 'Карта', exact: true })).toHaveCount(0);
+  await aside.getByRole('link', { name: 'Игри и награди' }).click();
+  await expect(page.getByRole('heading', { name: 'Игри и награди', exact: true })).toBeVisible();
 });
 
-test('section tabs: Автопарк and Състезание group their pages', async ({ page }) => {
+test('section tabs: Автопарк and „Игри и награди“ group their pages', async ({ page }) => {
   await register(page);
-  // 1.3: the sidebar opens pages as windows; the section tabs are on the full page.
   await page.goto('/game/fleet');
+  // 1.3.2: the row keeps Камиони, Шофьори, Сервиз and Пазар; the rest is under „Още ▾“.
   const fleetTabs = page.getByRole('navigation', { name: 'Автопарк' });
-  // 1.2.2: the row keeps Камиони, Шофьори and Пазар; the rest is under „Още ▾“.
-  if (v2()) await fleetTabs.getByRole('button', { name: /^Още \(\d+\)/ }).click();
   await fleetTabs.getByRole('link', { name: 'Сервиз', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
   await expect(page.locator('aside').getByRole('link', { name: 'Автопарк' })).toHaveAttribute('aria-current', 'page');
-  // 1.1.4.1: Състезание is reached through „Още“.
-  // 1.2.2: missions and events moved to the „Награди“ button.
-  if (v2()) {
-    // 1.3: the sidebar opens pages as windows; the section tabs are on the full page.
-    await page.goto('/game/rewards');
-  } else {
-    await page.locator('aside').getByRole('button', { name: 'Още' }).click();
-    await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: /^Мисии/ }).click();
-  }
-  await page.getByRole('navigation', { name: v2() ? 'Награди' : 'Състезание' }).getByRole('link', { name: 'Ивенти' }).click();
+  await page.goto('/game/play');
+  const playTabs = page.getByRole('navigation', { name: 'Игри и награди' });
+  await playTabs.getByRole('button', { name: /^Още \(\d+\)/ }).click();
+  await playTabs.getByRole('link', { name: 'Ивенти' }).click();
   await expect(page.getByRole('heading', { name: 'Ивенти', exact: true })).toBeVisible();
   // Either a running/announced event with its goal or the empty state.
   await expect(page.getByText(/Награди, ако целта бъде постигната|В момента няма ивент/).first()).toBeVisible();
@@ -355,17 +318,17 @@ test('@mobile dashboard is usable on a phone without horizontal scrolling', asyn
   expect(overflow).toBeLessThanOrEqual(1);
   const bottom = page.getByRole('navigation', { name: 'Основна навигация' });
   // 1.2.2: the new menu calls it „Курсове“.
-  await bottom.getByRole('link', { name: /^(Поръчки|Курсове)$/ }).click();
-  await expect(page.getByRole('heading', { name: v2() ? 'Курсове' : 'Поръчки', exact: true })).toBeVisible();
-  await bottom.getByRole('button', { name: 'Още', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Още раздели' }).getByRole('link', { name: 'Класации' }).click();
-  // Before the new look is out for players this is two loads (the intercepted window, then the full
-  // page); on a busy CI runner that took over the default 5 s on 11.11.
+  await bottom.getByRole('link', { name: 'Курсове' }).click();
+  await expect(page.getByRole('heading', { name: 'Курсове', exact: true })).toBeVisible();
+  // 1.3.2: five places, the last one is „Игри“; the rankings are in its row of tabs.
+  await bottom.getByRole('link', { name: 'Игри' }).click();
+  await page.getByRole('navigation', { name: 'Игри и награди' }).getByRole('link', { name: 'Класации' }).click();
+  // On a busy CI runner a page load took over the default 5 s on 11.11.
   await expect(page.getByRole('heading', { name: 'Класации', exact: true })).toBeVisible({ timeout: 20_000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
 });
 
-test('v1.1 pages: dispatcher, special loads, analytics, newspaper, help, updates', async ({ page }) => {
+test('v1.1 pages: dispatcher, special loads, analytics, help, updates', async ({ page }) => {
   await register(page);
   await page.goto('/game/contracts');
   await expect(page.getByText('Диспечер', { exact: true })).toBeVisible();
@@ -383,7 +346,6 @@ test('v1.1 pages: dispatcher, special loads, analytics, newspaper, help, updates
   for (const [path, heading] of [
     ['/game/auctions', 'Специални товари'],
     ['/game/analytics', 'Анализ'],
-    ['/game/news', 'Седмичник TransVerse'],
     ['/game/help', 'Помощ и правила'],
     ['/game/updates', 'Обновления'],
   ] as const) {
