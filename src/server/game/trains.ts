@@ -9,12 +9,12 @@ import { randomUUID } from 'node:crypto';
 import { eq, inArray, like } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import {
-  cannotTake, LOCOS, ordersAt, payFor, RAIL_TERMINALS, railLine, runCost, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
-  type LocoId, type Train, type TrainOrder, type WagonType,
+  cannotTake, grossFor, LOCOS, ordersAt, pathsFrom, payFor, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
+  type LocoId, type RailPath, type Train, type TrainOrder, type TrainRun, type WagonType,
 } from '@/lib/game/trains';
 import { countryOpen } from '@/lib/geo/scope';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { companies, jobState, users } from '@/server/db/schema';
+import { cities, companies, jobState, users } from '@/server/db/schema';
 import { fail } from './errors';
 import { post } from './finance';
 import { membershipOf } from './membership';
@@ -147,8 +147,9 @@ export async function sellTrain(db: Database, userId: string, trainId: string, n
 const REASONS: Record<string, () => string> = {
   busy: () => t('Влакът е на път.'),
   elsewhere: () => t('Влакът не е на тази гара.'),
-  diesel_only: () => t('Линията не е електрифицирана — трябва дизелов локомотив.'),
+  diesel_only: () => t('По пътя има линия без ток — трябва дизелов локомотив.'),
   wagons: () => t('Влакът няма достатъчно вагони от този вид.'),
+  too_heavy: () => t('Влакът е твърде тежък за локомотива по тези линии. Махни вагони или вземи по-силен локомотив.'),
 };
 export const reasonText = (code: string) => REASONS[code]?.() ?? code;
 
@@ -163,47 +164,57 @@ export async function sendTrain(db: Database, userId: string, trainId: string, o
     if (why) fail(why, reasonText(why));
     const taken = await tx.insert(jobState).values({ key: orderKey(order!.id), value: { trainId: train.id, userId, at: now.toISOString() }, updatedAt: now }).onConflictDoNothing().returning({ key: jobState.key });
     if (!taken.length) fail('order_taken', t('Друг влак вече взе тази поръчка.'));
-    return depart(tx, train, order!, company, now);
+    return depart(tx, train, order!, order!, company, now);
   });
 }
 
-/** Sends the train empty to the other end of a line (to find loads there). */
-export async function moveTrain(db: Database, userId: string, trainId: string, lineId: string, now: Date) {
+/** Where a train can go empty from its terminal (the quickest way through the open countries, by its locomotive). */
+export const emptyRoutes = (train: Pick<Train, 'at' | 'loco'>, now: Date) => [...pathsFrom(train.at, openAt(now), LOCOS[train.loco].electric).values()].sort((a, b) => a.km - b.km);
+
+/** Sends the train empty to another terminal (to find loads there). */
+export async function moveTrain(db: Database, userId: string, trainId: string, to: number, now: Date) {
   const company = await inCompany(db, userId);
   return db.transaction(async (tx) => {
     const train = await finishRun(tx, await lockTrain(tx, userId, trainId), now);
     if (train.run) fail('busy', reasonText('busy'));
-    const line = railLine(lineId);
-    if (!line || (line.a !== train.at && line.b !== train.at)) fail('no_line', t('Няма такава линия от тази гара.'));
-    const to = line!.a === train.at ? line!.b : line!.a;
-    if (!openAt(now)(terminal(to)!.country)) fail('closed_country', t('Тази държава още не е отворена.'));
-    if (LOCOS[train.loco].electric && !line!.electric) fail('diesel_only', reasonText('diesel_only'));
-    return depart(tx, train, null, company, now, { lineId: line!.id, to, km: line!.km, hours: line!.hours });
+    const path = emptyRoutes(train, now).find((p) => p.to === to);
+    if (!path) fail('no_route', LOCOS[train.loco].electric && pathsFrom(train.at, openAt(now)).has(to) ? reasonText('diesel_only') : t('Няма жп път дотам.'));
+    if (grossFor(train, 0) > pullOver(train.loco, path!)) fail('too_heavy', reasonText('too_heavy'));
+    return depart(tx, train, path!, null, company, now);
   });
 }
 
-async function depart(tx: Tx, train: Train, order: TrainOrder | null, company: boolean, now: Date, empty?: { lineId: string; to: number; km: number; hours: number }) {
-  const km = order?.km ?? empty!.km;
-  const hours = order?.hours ?? empty!.hours;
-  const cost = runCost(train.loco, km, !!order, company);
+/** What a run would cost and take for this train (the order's load, or empty). */
+export function planRun(train: Pick<Train, 'loco' | 'wagons'>, path: RailPath, cargoTons: number, company: boolean, start: number) {
+  const gross = grossFor(train, cargoTons);
+  const legs = runLegs(path, train.loco, gross, start);
+  const cost = runCost(train.loco, path, gross, company);
+  return { gross, legs, cost, hours: ((legs[legs.length - 1]?.end ?? start) - start) / 3_600_000, limit: pullOver(train.loco, path) };
+}
+
+async function depart(tx: Tx, train: Train, path: RailPath, order: TrainOrder | null, company: boolean, now: Date) {
+  const plan = planRun(train, path, order?.tons ?? 0, company, now.getTime());
   const acc = await account(tx, train.ownerId);
-  const from = tx_(terminal(train.at)?.name), to = tx_(terminal(order?.to ?? empty!.to)?.name);
+  const from = tx_(terminal(path.from)?.name), to = tx_(terminal(path.to)?.name);
   await post(tx, acc.id, [
-    { category: 'tolls', amountCents: -cost.track, description: t('Такса за жп линия {0} → {1}', from, to), idempotencyKey: `train-track:${train.id}:${now.getTime()}` },
-    { category: 'fuel', amountCents: -cost.energy, description: t('Енергия за влака {0} → {1}', from, to), idempotencyKey: `train-energy:${train.id}:${now.getTime()}` },
+    { category: 'tolls', amountCents: -plan.cost.track, description: t('Такса за жп линия {0} → {1}', from, to), idempotencyKey: `train-track:${train.id}:${now.getTime()}` },
+    { category: 'fuel', amountCents: -plan.cost.energy, description: t('Енергия за влака {0} → {1}', from, to), idempotencyKey: `train-energy:${train.id}:${now.getTime()}` },
   ], { requireFunds: true });
-  const run = {
-    lineId: order?.lineId ?? empty!.lineId,
-    from: train.at,
-    to: order?.to ?? empty!.to,
+  const run: TrainRun = {
+    lines: path.lines,
+    stops: path.stops,
+    from: path.from,
+    to: path.to,
     departAt: now.toISOString(),
-    arriveAt: new Date(now.getTime() + hours * 3_600_000).toISOString(),
+    arriveAt: new Date(plan.legs[plan.legs.length - 1]!.end).toISOString(),
+    legs: plan.legs,
     orderId: order?.id ?? null,
     wagonType: order?.wagonType ?? null,
     goods: order?.goods ?? null,
     tons: order?.tons ?? 0,
+    grossTons: plan.gross,
     payCents: order ? payFor(order, company) : 0,
-    costCents: cost.total,
+    costCents: plan.cost.total,
   };
   const next: Train = { ...train, run };
   await save(tx, next, now);
@@ -224,11 +235,30 @@ export async function trainsView(db: Database, userId: string, now: Date) {
   const taken = new Set(ids.length ? (await db.select({ key: jobState.key }).from(jobState).where(inArray(jobState.key, ids))).map((r) => r.key.slice('train-order:'.length)) : []);
   const trains = mine.map((tr) => ({
     ...tr,
+    empty: tr.run ? [] : emptyRoutes(tr, now).filter((p) => p.stops.length <= 4).map((p) => ({ ...p, ...planRun(tr, p, 0, company, now.getTime()) })),
     orders: tr.run ? [] : ordersAt(tr.at, now.getTime(), open).map((o) => {
       const why = taken.has(o.id) ? 'order_taken' : cannotTake(tr, o);
-      const cost = runCost(tr.loco, o.km, true, company);
-      return { ...o, pay: payFor(o, company), cost: cost.total, need: wagonsFor(o.wagonType, o.tons), why };
+      const plan = planRun(tr, o, o.tons, company, now.getTime());
+      return { ...o, pay: payFor(o, company), cost: plan.cost.total, hours: plan.hours, gross: plan.gross, limit: plan.limit, need: wagonsFor(o.wagonType, o.tons), why };
     }).sort((a, b) => Number(!!a.why) - Number(!!b.why) || b.pay - b.cost - (a.pay - a.cost)),
   }));
   return { trains, company, limits: lim, terminals: RAIL_TERMINALS.filter((x) => open(x.country)) };
+}
+
+export interface RailMap {
+  lines: { id: string; electric: boolean; coords: [number, number][] }[];
+  terminals: { id: number; name: string; position: [number, number] }[];
+  trains: { id: string; label: string; at: number; run: TrainRun | null }[];
+}
+
+/** 1.3.3: the rail layer of the live map — the lines through their real towns, the terminals and my trains. */
+export async function railMap(db: DbOrTx, userId: string, now: Date): Promise<RailMap> {
+  const open = openAt(now);
+  const ids = [...new Set([...RAIL_TERMINALS.map((x) => x.id), ...RAIL_LINES.flatMap((l) => l.via)])];
+  const rows = await db.select({ id: cities.id, lat: cities.lat, lon: cities.lon }).from(cities).where(inArray(cities.id, ids));
+  const at = new Map(rows.map((r) => [r.id, [r.lat, r.lon] as [number, number]]));
+  const lines = RAIL_LINES.filter((l) => open(terminal(l.a)!.country) && open(terminal(l.b)!.country)).map((l) => ({ id: l.id, electric: l.electric, coords: [l.a, ...l.via, l.b].flatMap((id) => (at.has(id) ? [at.get(id)!] : [])) }));
+  const terminals = RAIL_TERMINALS.filter((x) => open(x.country) && at.has(x.id)).map((x) => ({ id: x.id, name: x.name, position: at.get(x.id)! }));
+  const trains = (await allTrains(db)).filter((tr) => tr.ownerId === userId).map((tr) => ({ id: tr.id, label: LOCOS[tr.loco].name, at: tr.at, run: tr.run }));
+  return { lines, terminals, trains };
 }

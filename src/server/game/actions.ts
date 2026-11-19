@@ -244,8 +244,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('addWagons'), trainId: id, wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), count: z.coerce.number().int().min(1).max(40) }),
   z.object({ type: z.literal('sellWagons'), trainId: id, wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), count: z.coerce.number().int().min(1).max(40) }),
   z.object({ type: z.literal('sellTrain'), trainId: id }),
-  z.object({ type: z.literal('sendTrain'), trainId: id, orderId: z.string().regex(/^[a-z-]+:\d+:\d+:\d+$/).max(80) }),
-  z.object({ type: z.literal('moveTrain'), trainId: id, lineId: z.string().regex(/^[a-z-]+$/).max(60) }),
+  z.object({ type: z.literal('sendTrain'), trainId: id, orderId: z.string().regex(/^\d+-\d+:\d+:f?\d+$/).max(80) }),
+  z.object({ type: z.literal('moveTrain'), trainId: id, to: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
   z.object({ type: z.literal('resetSkills') }),
@@ -327,7 +327,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('shareTrip'), deliveryId: id, on: z.boolean().default(true) }),
   z.object({ type: z.literal('cancelConvoy'), convoyId: id }),
   z.object({ type: z.literal('convoyMessage'), convoyId: id, body: z.string().max(400) }),
-  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional(), hideBusiness: z.boolean().optional(), mapLayers: z.object({ mine: z.boolean().optional(), company: z.boolean().optional(), friends: z.boolean().optional(), others: z.boolean().optional(), movingOnly: z.boolean().optional(), plates: z.boolean().optional(), depots: z.boolean().optional(), routes: z.boolean().optional(), weather: z.boolean().optional() }).strict().optional() }),
+  z.object({ type: z.literal('uiPrefs'), showAll: z.boolean().optional(), boardView: z.enum(['simple', 'full']).optional(), seenUnlocks: z.array(z.string().max(60)).max(60).optional(), seenPage: z.string().max(60).optional(), asPlayer: z.boolean().optional(), dailySummary: z.boolean().optional(), inventorySeen: z.literal(true).optional(), oldMenu: z.boolean().optional(), theme: z.enum(['dark', 'light']).optional(), textSize: z.enum(['normal', 'large', 'xl']).optional(), hideBusiness: z.boolean().optional(), mapLayers: z.object({ mine: z.boolean().optional(), company: z.boolean().optional(), friends: z.boolean().optional(), others: z.boolean().optional(), movingOnly: z.boolean().optional(), plates: z.boolean().optional(), depots: z.boolean().optional(), routes: z.boolean().optional(), weather: z.boolean().optional(), rail: z.boolean().optional() }).strict().optional() }),
   z.object({ type: z.literal('haggle'), contractId: id, percent: z.union([z.literal(10), z.literal(20), z.literal(30)]) }),
   z.object({ type: z.literal('staffBus'), vehicleId: id }),
   z.object({ type: z.literal('testDrive'), modelId: z.string().max(60) }),
@@ -900,7 +900,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, arriveAt: tr.run?.arriveAt };
     }
     case 'moveTrain': {
-      const tr = await moveTrain(db, user.id, input.trainId, input.lineId, new Date());
+      const tr = await moveTrain(db, user.id, input.trainId, input.to, new Date());
       return { ok: true, arriveAt: tr.run?.arriveAt };
     }
     case 'voteCrisis':

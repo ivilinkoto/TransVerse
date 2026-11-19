@@ -2,11 +2,11 @@
  * 1.2.3.6 „Чиста карта“: what each player chooses to see on the map.
  * Kept in the profile (users.uiPrefs.mapLayers) so it follows the player to the phone.
  */
-export const MAP_LAYER_KEYS = ['mine', 'company', 'friends', 'others', 'movingOnly', 'plates', 'depots', 'routes', 'weather'] as const;
+export const MAP_LAYER_KEYS = ['mine', 'company', 'friends', 'others', 'movingOnly', 'plates', 'depots', 'routes', 'weather', 'rail'] as const;
 export type MapLayerKey = (typeof MAP_LAYER_KEYS)[number];
 export type MapLayers = Record<MapLayerKey, boolean>;
 
-export const DEFAULT_MAP_LAYERS: MapLayers = { mine: true, company: true, friends: true, others: true, movingOnly: false, plates: true, depots: true, routes: true, weather: true };
+export const DEFAULT_MAP_LAYERS: MapLayers = { mine: true, company: true, friends: true, others: true, movingOnly: false, plates: true, depots: true, routes: true, weather: true, rail: true };
 
 /** The stored choice over the defaults (keys added later default to the table above). */
 export function mapLayers(stored?: Partial<MapLayers> | null): MapLayers {

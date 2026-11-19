@@ -1,3 +1,4 @@
+import { railMap } from './trains';
 import { eq, inArray } from 'drizzle-orm';
 import type { DbOrTx } from '@/server/db/client';
 import type { MapProps, MapVehicle } from '@/components/game/WorldMap';
@@ -67,5 +68,7 @@ export async function mapData(db: DbOrTx, ctx: { userId: string; companyId: stri
       if (c !== 'clear') weather[cc] = c;
     }
   } else weather = undefined;
-  return { vehicles, depots: depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] as [number, number] })), preview, stork: storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null, bases, weather };
+  // 1.3.3: the rail lines, the terminals and the player's trains.
+  const rail = features.trains ? await railMap(db, ctx.userId, now) : null;
+  return { rail, vehicles, depots: depotRows.map((d) => ({ name: d.name, position: [d.lat, d.lon] as [number, number] })), preview, stork: storkRow ? { name: storkRow.name, position: [storkRow.lat, storkRow.lon] } : null, bases, weather };
 }

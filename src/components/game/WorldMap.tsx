@@ -11,6 +11,8 @@ import { duration, int, money } from '@/lib/format';
 import { cumulativeKm, greatCircle, headingWest, pointAlong, type LatLon } from '@/lib/geo/geometry';
 import { isMoving, scheduleEnd, stateAt, type Segment } from '@/lib/game/schedule';
 import type { WorldSnapshot, WorldTruck } from '@/server/game/world-map';
+import type { RailMap } from '@/server/game/trains';
+import { trainPosition } from '@/lib/game/trains';
 import { PlayerName } from './PlayerName';
 import { CONVOY_RULES } from '@/lib/game/convoy';
 import { helpableStop, ROADSIDE } from '@/lib/game/roadside';
@@ -53,6 +55,8 @@ export interface MapProps {
   weather?: Partial<Record<string, 'snow' | 'ice' | 'blizzard'>>;
   /** 1.2.3.6: the map layers the player chose (kept in the profile). */
   layers?: Partial<MapLayers> | null;
+  /** 1.3.3: the rail lines through their real towns, the freight terminals and the player's trains. */
+  rail?: RailMap | null;
 }
 
 interface CityDetails {
@@ -231,7 +235,7 @@ function depotFeatures(depots: MapProps['depots']): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: depots.map((d) => ({ type: 'Feature', properties: { name: d.name }, geometry: { type: 'Point', coordinates: toLngLat(d.position) } })) };
 }
 
-export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], compact = false, weather, layers }: MapProps) {
+export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip = false, stork = null, bases = [], compact = false, weather, layers, rail = null }: MapProps) {
   const compactAtStart = useRef(compact);
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
@@ -257,6 +261,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     ['depots', tr('Депа')],
     ['routes', tr('Маршрути')],
     ['weather', tr('Сняг и лед')],
+    ...(rail ? [['rail', tr('Жп линии и влакове')] as [MapLayerKey, string]] : []),
   ];
   const toggleLayer = (k: MapLayerKey) => {
     const next = { ...chosen, [k]: !chosen[k] };
@@ -347,6 +352,15 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
         'text-field': ['case', ['>', ['get', 'open'], 0], ['concat', ['get', 'name'], ' · ', ['to-string', ['get', 'open']]], ['get', 'name']],
         'text-size': 12, 'text-offset': [0, 1.1], 'text-anchor': 'top', 'text-font': ['Noto Sans Regular'],
       }, paint: { 'text-color': '#e8eef7', 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } });
+
+      // 1.3.3: the rail lines (a grey line with sleepers), the freight terminals and the player's trains.
+      map.addSource('rail', { type: 'geojson', data: empty });
+      map.addLayer({ id: 'rail-base', type: 'line', source: 'rail', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-join': 'round' }, paint: { 'line-color': '#94a3b8', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 1.5, 9, 4], 'line-opacity': 0.75 } });
+      map.addLayer({ id: 'rail-ties', type: 'line', source: 'rail', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#0f172a', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.8, 9, 2], 'line-dasharray': ['literal', [1, 2.5]] } });
+      map.addLayer({ id: 'rail-terminals', type: 'circle', source: 'rail', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 5, 'circle-color': '#0f172a', 'circle-stroke-color': '#e2e8f0', 'circle-stroke-width': 2 } });
+      map.addSource('trains', { type: 'geojson', data: empty });
+      map.addLayer({ id: 'trains', type: 'circle', source: 'trains', paint: { 'circle-radius': 8, 'circle-color': '#f59e0b', 'circle-stroke-color': '#05070b', 'circle-stroke-width': 2 } });
+      map.addLayer({ id: 'trains-label', type: 'symbol', source: 'trains', layout: { 'text-field': ['get', 'label'], 'text-size': 11, 'text-offset': [0, -1.6], 'text-font': ['Noto Sans Regular'], 'text-allow-overlap': true }, paint: { 'text-color': '#fbbf24', 'text-halo-color': '#05070b', 'text-halo-width': 1.5 } });
 
       map.addSource('routes', { type: 'geojson', data: empty });
       map.addLayer({ id: 'routes-glow', type: 'line', source: 'routes', paint: { 'line-color': '#2f7bff', 'line-width': 9, 'line-opacity': 0.25 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
@@ -504,6 +518,34 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     (mapRef.current?.getSource('depots') as GeoJSONSource | undefined)?.setData(depotFeatures(depots));
   }, [ready, vehicles, depots, preview]);
 
+  // 1.3.3: the rail lines and terminals once, the trains moved every few seconds along their lines.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !rail) return;
+    const lines = new Map(rail.lines.map((l) => [l.id, l.coords]));
+    const places = new Map(rail.terminals.map((x) => [x.id, x.position]));
+    (map.getSource('rail') as GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features: [
+        ...rail.lines.map((l) => ({ type: 'Feature' as const, properties: { id: l.id, electric: l.electric }, geometry: { type: 'LineString' as const, coordinates: l.coords.map(toLngLat) } })),
+        ...rail.terminals.map((x) => ({ type: 'Feature' as const, properties: { name: tx(x.name) }, geometry: { type: 'Point' as const, coordinates: toLngLat(x.position) } })),
+      ],
+    });
+    const tick = () => {
+      const now = Date.now();
+      (map.getSource('trains') as GeoJSONSource | undefined)?.setData({
+        type: 'FeatureCollection',
+        features: rail.trains.flatMap((tr) => {
+          const p = trainPosition(tr, lines, places, now);
+          return p ? [{ type: 'Feature' as const, properties: { id: tr.id, label: tr.label }, geometry: { type: 'Point' as const, coordinates: toLngLat(p) } }] : [];
+        }),
+      });
+    };
+    tick();
+    const id = setInterval(tick, 5000);
+    return () => clearInterval(id);
+  }, [ready, rail]);
+
   // Other players: loaded from the server when something changes in the world (live event),
   // with a slow safety refresh; positions are animated locally from their schedules.
   useEffect(() => {
@@ -580,6 +622,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     vis(['depots'], shown.depots && !f);
     vis(['routes-glow', 'routes-line'], shown.routes || !!f);
     vis(['weather-snow'], shown.weather);
+    vis(['rail-base', 'rail-ties', 'rail-terminals', 'trains', 'trains-label'], shown.rail && !f);
     const own: maplibregl.FilterSpecification | null = shown.movingOnly ? ['get', 'moving'] : null;
     map.setFilter('vehicles', own);
     map.setFilter('vehicles-label', own);

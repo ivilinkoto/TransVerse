@@ -1106,3 +1106,41 @@ f529affaf8	You have no train yet. Buy a locomotive and wagons in Fleet → Train
 5cae5dc5fc	Block-train orders at the terminals where your trains stand.	Заказы на маршрутные поезда на станциях, где стоят твои поезда.
 f9b3b6bf7d	Orders for this train: {0}	Заказов для этого поезда: {0}
 d242672dd5	Fleet and Jobs now have two sections each — “Trucks” and “Trains”. In Fleet → Trains you buy and manage your trains, in Jobs → Trains you give them orders. Up to 3 trains per player (4 in a company). Locomotives Danubia D22 (diesel, up to 18 wagons), Balkan Rail E40 (electric, up to 24) and Rila Rail E60 Heavy (electric, up to 32).	В Автопарке и Рейсах теперь по два раздела — «Грузовики» и «Поезда». В Автопарк → Поезда ты покупаешь поезда и управляешь ими, а в Рейсы → Поезда даёшь им заказы. До 3 поездов на игрока (4 в компании). Локомотивы Danubia D22 (дизель, до 18 вагонов), Balkan Rail E40 (электро, до 24) и Rila Rail E60 Heavy (электро, до 32).
+b0bcf984d9	32 lines between 28 freight terminals in Bulgaria and Europe, through the real towns along the way. A run to a far terminal goes through the terminals on the way, and the train waits at the borders.	32 линии между 28 грузовыми станциями в Болгарии и Европе, через настоящие города на трассе. Рейс на дальнюю станцию идёт через станции по пути, а на границах поезд ждёт.
+54f1d757b3	{0} kW · up to {1} t on the flat · up to {2} wagons	{0} кВт · до {1} т по равнине · до {2} вагонов
+ea7f190b11	{0} of {1} t	{0} из {1} т
+e9ba1f6e57	{0} t empty, up to {1} t on the flat	{0} т порожний, до {1} т по равнине
+6de72c72c4	{0} t with the wagons	{0} т с вагонами
+ae3b7c743d	{0} t load, {1} t empty	{0} т груза, {1} т порожний
+abbd8e0930	Bad Schandau	Бад-Шандау
+8165fe18d8	Břeclav and Štúrovo	Бржецлав и Штурово
+a359af0fe7	Vidin – Calafat	Видин – Калафат
+4d4a77c887	Trains move on the live map along the rail lines; the “Rail lines and trains” layer hides them.	Поезда движутся по живой карте по железнодорожным линиям; слой «Ж/д линии и поезда» их скрывает.
+670fd712f5	The train is too heavy for the locomotive on these lines. Take off wagons or get a stronger locomotive.	Поезд слишком тяжёл для локомотива на этих линиях. Отцепи вагоны или возьми более мощный локомотив.
+27dc39db1e	Every locomotive pulls up to a set weight, and less on hilly and mountain lines (the Iskar gorge, Kresna, Predeal, the Brenner). A heavier train is slower and uses more energy.	Каждый локомотив тянет до определённого веса, а на холмистых и горных линиях (ущелье Искыра, Кресна, Предял, Бреннер) — меньше. Более тяжёлый поезд медленнее и тратит больше энергии.
+719ebe3388	Terminal	Станция
+2fe486c78f	Emmerich	Эммерих
+295165b03e	Rail lines and trains	Ж/д линии и поезда
+b8f8fbe961	Salzburg	Зальцбург
+7ae44fa6c0	A real rail network	Настоящая железнодорожная сеть
+4ede314968	Kalotina – Dimitrovgrad	Калотина – Димитровград
+2fae6e90da	Kulata – Promachonas	Кулата – Промахонас
+f7b12d6e58	Kufstein and the Brenner	Куфштайн и Бреннер
+0eeebf2f7c	Lőkösháza – Curtici	Лёкёшхаза – Куртич
+e63533dc95	The lines, terminals and towns along the way are real; prices, power figures, orders and times are game data. The brands are invented.	Линии, станции и города на трассах настоящие; цены, мощности, заказы и время — игровые данные. Марки вымышлены.
+833a04a5d0	Every terminal has orders from 300 to 1500 t — to the neighbouring terminals and further, new every 4 hours. They are paid when the train arrives.	На каждой станции есть заказы от 300 до 1500 т — на соседние станции и дальше, новые каждые 4 часа. Оплата — по прибытии поезда.
+c5820959c6	There is no rail way there.	Туда нет железнодорожного пути.
+611f571ae9	Passau	Пассау
+49df09f88d	There is a line without wires on the way — it needs a diesel locomotive.	По пути есть неэлектрифицированная линия — нужен дизельный локомотив.
+0259f40eab	Ruse – Giurgiu	Русе – Джурджу
+b39f38eac0	Svilengrad – Kapıkule	Свиленград – Капыкуле
+715b724628	Subotica – Kelebia	Суботица – Келебия
+90a1d3298d	Hegyeshalom	Хедьешхалом
+79f26c233f	Hodoš – Őriszentpéter	Ходош – Эрисентпетер
+085b18731b	mountain	горная
+4e75096463	flat	равнинная
+317ed49c9f	track and energy	плата и энергия
+3054b27f58	hilly	холмистая
+7a929e59ff	⏸️ Short stop at {0} terminal	⏸️ Короткая остановка на станции {0}
+3c27f3168f	🛂 At the border: {0}	🛂 На границе: {0}
+2031f7f77b	🛤️ Between {0} and {1}	🛤️ Между {0} и {1}

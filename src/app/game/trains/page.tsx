@@ -4,10 +4,10 @@ import type { Metadata } from 'next';
 import { PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FormAction } from '@/components/ui/FormAction';
-import { TrainArt } from '@/components/game/TrainArt';
-import { place, WAGON_ICON } from '@/components/game/TrainOrders';
+import { TrainArt } from '@/components/vehicles/trains';
+import { place, RunStatus, WAGON_ICON } from '@/components/game/TrainOrders';
 import { dateTime, int, money } from '@/lib/format';
-import { LOCO_IDS, LOCOS, TRAINS, WAGON_TYPES, WAGONS, wagonCount } from '@/lib/game/trains';
+import { LOCO_IDS, LOCOS, tareTons, TRAINS, WAGON_TYPES, WAGONS, wagonCount } from '@/lib/game/trains';
 import { gameContext } from '@/server/game/context';
 import { trainsView } from '@/server/game/trains';
 import { t, tx } from '@/i18n/t';
@@ -55,18 +55,14 @@ export default async function TrainsPage() {
                 <div className="min-w-0">
                   <p className="font-display text-lg font-bold text-white">{loco.name}</p>
                   <p className="text-xs text-mist-400">
-                    {loco.electric ? t('Електрически') : t('Дизелов')} · {t('{0} от {1} вагона', wagonCount(tr.wagons), loco.maxWagons)} · {WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => `${WAGON_ICON[k]} ${tr.wagons[k]} ${tx(WAGONS[k].name)}`).join(' · ')}
+                    {loco.electric ? t('Електрически') : t('Дизелов')} · {t('{0} от {1} вагона', wagonCount(tr.wagons), loco.maxWagons)} · {t('{0} т празен, до {1} т на равно', int(tareTons(tr.wagons)), int(loco.maxTons))} · {WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => `${WAGON_ICON[k]} ${tr.wagons[k]} ${tx(WAGONS[k].name)}`).join(' · ')}
                   </p>
                   <p className="text-xs text-mist-400">{t('Курсове: {0} · {1} т · спечелени {2}', tr.runs, int(tr.tons), money(tr.earnedCents))}</p>
                 </div>
               </div>
               <TrainArt loco={tr.loco} wagons={list} show={4} className="h-14 w-full max-w-xl" />
               {run ? (
-                <div className="space-y-1" data-testid="train-run">
-                  <p className="text-sm text-mist-200">🚆 {place(run.from)} → {place(run.to)}{run.orderId ? ` · ${int(run.tons)} т ${tx(run.goods ?? '')}` : ` · ${t('без товар')}`}</p>
-                  <div className="h-2 overflow-hidden rounded-full bg-asphalt-800"><div className="h-full rounded-full bg-cyan-glow" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
-                  <p className="text-xs text-mist-400">{t('Пристига {0}', dateTime(run.arriveAt))}{run.payCents > 0 && ` · ${t('ще получиш {0}', money(run.payCents))}`}</p>
-                </div>
+                <RunStatus run={run} now={now} />
               ) : (
                 <>
                   <p className="text-sm text-mist-200">📍 {t('На гара {0}', place(tr.at))}{' · '}{t('Поръчки за този влак: {0}', tr.orders.filter((o) => !o.why).length)}</p>
@@ -100,7 +96,7 @@ export default async function TrainsPage() {
               <TrainArt loco={id} show={0} className="h-12 w-28" />
               <span className="text-xs font-semibold text-white">{LOCOS[id].name}</span>
               <span className="text-[11px] text-mist-400">{LOCOS[id].electric ? t('Електрически: само по електрифицирани линии, по-евтин за каране') : t('Дизелов: навсякъде, по-скъп за каране')}</span>
-              <span className="text-[11px] text-mist-400">{t('до {0} вагона', LOCOS[id].maxWagons)} · {money(LOCOS[id].priceCents)}</span>
+              <span className="text-[11px] text-mist-400">{t('{0} kW · до {1} т на равно · до {2} вагона', int(LOCOS[id].powerKw), int(LOCOS[id].maxTons), LOCOS[id].maxWagons)} · {money(LOCOS[id].priceCents)}</span>
             </li>
           ))}
         </ul>
@@ -109,7 +105,7 @@ export default async function TrainsPage() {
             <li key={k} className="bus-model rounded-2xl p-2 text-center text-xs">
               <TrainArt loco={null} wagons={[k]} show={1} className="mx-auto h-10 w-24" />
               <span className="block font-semibold text-white">{WAGON_ICON[k]} {tx(WAGONS[k].name)}</span>
-              <span className="block text-[11px] text-mist-400">{WAGONS[k].tons} т · {money(WAGONS[k].priceCents)}</span>
+              <span className="block text-[11px] text-mist-400">{t('{0} т товар, {1} т празен', WAGONS[k].tons, WAGONS[k].tare)} · {money(WAGONS[k].priceCents)}</span>
               <span className="block text-[11px] text-mist-400">{WAGONS[k].goods.map((g) => tx(g)).join(', ')}</span>
             </li>
           ))}

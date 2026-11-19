@@ -2,13 +2,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { PageHeader } from '@/components/ui';
-import { TrainArt } from '@/components/game/TrainArt';
-import { place, TrainOrders } from '@/components/game/TrainOrders';
-import { dateTime, int, money } from '@/lib/format';
+import { TrainArt } from '@/components/vehicles/trains';
+import { place, RunStatus, TrainOrders } from '@/components/game/TrainOrders';
 import { LOCOS, TRAINS, WAGON_TYPES } from '@/lib/game/trains';
 import { gameContext } from '@/server/game/context';
 import { trainsView } from '@/server/game/trains';
-import { t, tx } from '@/i18n/t';
+import { t } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -56,9 +55,9 @@ export default async function TrainJobsPage() {
           <h2 className="font-display text-lg font-bold text-white">{t('На път')}</h2>
           <ul className="space-y-1.5 text-sm">
             {going.map((tr) => (
-              <li key={tr.id} className="stat-tile rounded-xl px-3 py-2">
-                <p className="font-semibold text-white">🚆 {LOCOS[tr.loco].name}: {place(tr.run!.from)} → {place(tr.run!.to)}{tr.run!.orderId ? ` · ${int(tr.run!.tons)} т ${tx(tr.run!.goods ?? '')}` : ` · ${t('без товар')}`}</p>
-                <p className="text-xs text-mist-400">{t('Пристига {0}', dateTime(tr.run!.arriveAt))}{tr.run!.payCents > 0 && ` · ${t('ще получиш {0}', money(tr.run!.payCents))}`}</p>
+              <li key={tr.id} className="stat-tile space-y-1 rounded-xl px-3 py-2">
+                <p className="font-semibold text-white">{LOCOS[tr.loco].name}</p>
+                <RunStatus run={tr.run!} now={now} />
               </li>
             ))}
           </ul>
