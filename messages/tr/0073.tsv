@@ -1144,3 +1144,5 @@ b39f38eac0	Svilengrad – Kapıkule	Свиленград – Капыкуле
 7a929e59ff	⏸️ Short stop at {0} terminal	⏸️ Короткая остановка на станции {0}
 3c27f3168f	🛂 At the border: {0}	🛂 На границе: {0}
 2031f7f77b	🛤️ Between {0} and {1}	🛤️ Между {0} и {1}
+a46d941070	The held trip there	Забронированный рейс туда
+e8816fcc7d	Wants a trip to {0} for {1} — within 3 days. The trip is waiting in Jobs, held for you.	Просит рейс до {0} на {1} — в течение 3 дней. Рейс ждёт в Рейсах, забронирован для тебя.

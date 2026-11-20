@@ -10,8 +10,10 @@ export const WISHES = {
   loyaltyKept: 10,
   loyaltyMissed: -12,
   xpKept: 1500,
-  /** The city is a big one this far from the company's base at most (km). */
+  /** The city is a big one this far from where the driver's truck stands at most (km). */
   maxKm: 700,
+  /** Only real towns this big (not a district of a big city). */
+  minPopulation: 50_000,
 };
 
 export const WISH_REASONS = [

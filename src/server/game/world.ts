@@ -5,7 +5,7 @@ import { runLaneRepeats } from './lane-repeat';
 import { runOfficePayroll } from './office';
 import { ensureLastMile, ensureLivestockLoads, ensureNightCouriers } from './special-loads';
 import { ensureWeeklyLaneLoads } from './weekly-lane';
-import { expireWishes, spawnWishes } from './wishes';
+import { ensureWishLoads, expireWishes, spawnWishes } from './wishes';
 import { departConvoys, ensureWeeklyConvoy } from './convoys';
 import { expireRelays, topUpRelays, topUpPartnerLoads } from './relay';
 import { ensureRegionProject } from './region-projects';
@@ -256,6 +256,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'co2-week', 60 * 60_000, now, () => settleCo2Weeks(db, now));
     await every(db, 'driver-wishes', 24 * 60 * 60_000, now, () => spawnWishes(db, now));
     await every(db, 'driver-wishes-expire', 10 * 60_000, now, () => expireWishes(db, now));
+    // Every open wish keeps a load to its city on the board, held for the company.
+    await every(db, 'driver-wishes-loads', 30 * 60_000, now, () => ensureWishLoads(db, now));
     await every(db, 'night-courier', 10 * 60_000, now, () => ensureNightCouriers(db, now, provider));
     await every(db, 'last-mile', 15 * 60_000, now, () => ensureLastMile(db, now, provider));
     await every(db, 'livestock', 30 * 60_000, now, () => ensureLivestockLoads(db, now, provider));

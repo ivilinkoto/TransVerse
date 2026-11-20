@@ -265,6 +265,38 @@ export async function ensureLocalJob(db: Database, need: LocalNeed, now = new Da
 }
 
 /**
+ * „Желанията на шофьорите“: a load from where the driver's truck stands to the
+ * city the driver asked for, that this truck can take, held for the player's
+ * company until the wish ends (others see it as taken). Returns its id.
+ */
+export async function wishLoad(db: Database, need: LocalNeed & { companyId: string }, destId: number, until: Date, now = new Date(), provider?: RoutingProvider): Promise<string | null> {
+  const compatible = CARGO_TYPES.filter(
+    (c) => c !== 'livestock' && CARGO[c].minLevel <= need.level && CARGO[c].bodies.some((b) => need.bodies.includes(b)) && missingLicences(requiredLicences(c, []), need.licences).length === 0,
+  );
+  if (!compatible.length || need.payloadTons <= 0 || need.cityId === destId) return null;
+  const hubs = await loadHubs(db);
+  const hub = async (id: number): Promise<Hub | null> => {
+    const found = hubs.find((h) => h.id === id);
+    if (found) return found;
+    const [city] = await db.select().from(cities).where(eq(cities.id, id));
+    return city ? { id: city.id, countryCode: city.countryCode, lat: city.lat, lon: city.lon, population: city.population, produces: new Set(), consumes: new Map() } : null;
+  };
+  const origin = await hub(need.cityId);
+  const destination = await hub(destId);
+  if (!origin || !destination) return null;
+  const cargo = pick(compatible.filter((c) => origin.produces.has(c) || destination.consumes.has(c)).length ? compatible.filter((c) => origin.produces.has(c) || destination.consumes.has(c)) : compatible);
+  const [minT, maxT] = CARGO[cargo].tons;
+  const hi = Math.min(maxT, need.payloadTons);
+  const lo = Math.min(hi, Math.max(0.2, minT));
+  const tons = Math.round((lo + rand() * (hi - lo)) * 10) / 10;
+  const id = await insertContract(db, origin, destination, cargo, tons, now, Math.max(3_600_000, until.getTime() - now.getTime()), provider);
+  if (!id) return null;
+  await db.update(contracts).set({ reservedByCompanyId: need.companyId, reservedUntil: until }).where(eq(contracts.id, id));
+  await broadcast(db, 'market');
+  return id;
+}
+
+/**
  * Up to two cities near the straight line from origin to destination (by
  * distance from the origin) that take the cargo; none when the trip is short
  * or nothing fits without a long detour.
@@ -583,7 +615,8 @@ export async function reserveContract(db: Database, userId: string, contractId: 
     if (c!.urgent) fail('urgent', tr('Спешните поръчки не се запазват — може да ги поеме всеки.'));
     if (c!.reservedUntil && c!.reservedUntil > now && c!.reservedByCompanyId !== account.id) fail('reserved', tr('Поръчката вече е запазена от друг играч.'), 409);
     // Only one reservation at a time: release any other one.
-    await tx.update(contracts).set({ reservedByCompanyId: null, reservedUntil: null }).where(and(eq(contracts.reservedByCompanyId, account.id), sql`${contracts.id} <> ${contractId}`));
+    // (Not the loads held for a driver's wish: those are held for days, a VIP reservation for minutes.)
+    await tx.update(contracts).set({ reservedByCompanyId: null, reservedUntil: null }).where(and(eq(contracts.reservedByCompanyId, account.id), sql`${contracts.id} <> ${contractId}`, lte(contracts.reservedUntil, new Date(now.getTime() + 2 * 3_600_000))));
     const { featureFor } = await import('@/server/features');
     const minutes = (await featureFor(tx, userId, 'shop_v2', now)) ? VIP_PERKS.reservationMinutesV2 : VIP_PERKS.reservationMinutes;
     const until = new Date(now.getTime() + minutes * 60_000);

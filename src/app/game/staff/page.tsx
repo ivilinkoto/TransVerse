@@ -36,7 +36,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
   const [fleet, pool] = await Promise.all([fleetView(db, company.id), candidates(db, company.id)]);
   // The tachograph (v1.5): driving and rest by day for each driver.
   // 1.1.4.2: what the drivers ask for (a trip to a city by a date).
-  const wishes = features.driver_wishes ? await wishesOf(db, company.id) : [];
+  const wishes = features.driver_wishes ? await wishesOf(db, company.id, now) : [];
   const tacho = features.tachograph ? new Map(await Promise.all(fleet.drivers.map(async (d) => [d.id, await tachograph(db, d.id, now)] as const))) : null;
   const payroll = fleet.drivers.reduce((s, d) => s + d.salaryCentsPerDay, 0);
   const label = (v: (typeof fleet.vehicles)[number]) => `${v.plate} · ${v.model.name}`;
@@ -115,7 +115,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                     return w ? (
                       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs">
                         <span>{tr('🙏 Иска курс до {0} за {1} — до {2}.', tx(w.city), tx(w.reason), w.until.toLocaleString(intlLocale(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }))}</span>
-                        <a href={`/game/contracts?q=${encodeURIComponent(w.city)}`} className="btn-ghost px-2 py-0.5 text-[11px]">{tr('Товари натам')}</a>
+                        <a href={w.loadId ? `/game/contracts?load=${w.loadId}` : `/game/contracts?q=${encodeURIComponent(tx(w.city))}`} className="btn-ghost px-2 py-0.5 text-[11px]">{w.loadId ? tr('Запазеният курс натам') : tr('Товари натам')}</a>
                       </div>
                     ) : null;
                   })()}
