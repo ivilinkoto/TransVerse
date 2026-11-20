@@ -14,7 +14,7 @@ import { compareVersions, releaseByVersion } from '@/lib/game/releases';
 import { starsFor } from '@/lib/game/reviews';
 import { techCost } from '@/lib/game/research';
 import { closeDb } from '@/server/db/client';
-import { adContracts, co2Credits, co2Weeks, companies, contracts, deliveries, deliveryExtras, drivers, driverWishes, interviews, ledgerEntries, tripQueue, users, vehicles } from '@/server/db/schema';
+import { adContracts, cities, co2Credits, co2Weeks, companies, contracts, deliveries, deliveryExtras, drivers, driverWishes, interviews, ledgerEntries, tripQueue, users, vehicles } from '@/server/db/schema';
 import { runAction } from '@/server/game/actions';
 import { recordAdKm, takeAd } from '@/server/game/ads';
 import { settleCo2Weeks } from '@/server/game/co2';
@@ -33,7 +33,9 @@ import { trackLink, trackView } from '@/server/game/tracking';
 import { moveQueued, queueTrip, queuedTrips } from '@/server/game/trip-queue';
 import { puzzleFor, starsOf, submitPuzzle } from '@/server/game/trip-extras';
 import { setVacation } from '@/server/game/vacation';
-import { recordWishDelivery, spawnWishes } from '@/server/game/wishes';
+import { reserveContract } from '@/server/game/contracts';
+import { ensureWishLoads, recordWishDelivery, spawnWishes, wishesOf } from '@/server/game/wishes';
+import { WISHES } from '@/lib/game/wishes';
 import { db, makeContract, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
@@ -264,10 +266,33 @@ describe('v1.1.4.2 — in the game', () => {
   it('a driver’s wish: kept by a trip to the city', async () => {
     const p = await newPlayer();
     const acc = await account(p.userId);
-    const [d] = await db().insert(drivers).values({ companyId: acc.id, name: 'Иван', skill: 1, salaryCentsPerDay: 100_00, loyalty: 50 }).returning();
-    await spawnWishes(db(), new Date(), () => 0);
+    const truck = await truckOf(acc.id);
+    // A hired co-driver on the player's truck (a wish needs a truck to drive there).
+    const [d] = await db().insert(drivers).values({ companyId: acc.id, name: 'Иван', skill: 1, salaryCentsPerDay: 100_00, loyalty: 50, coVehicleId: truck.id }).returning();
+    const now = new Date();
+    await spawnWishes(db(), now, () => 0);
     const [wish] = await db().select().from(driverWishes).where(eq(driverWishes.driverId, d!.id));
     expect(wish?.status).toBe('open');
+    // A real town with a name, and a load there from where the truck stands, held for the player until the wish ends.
+    const [city] = await db().select({ name: cities.nameBg, population: cities.population }).from(cities).where(eq(cities.id, wish!.cityId));
+    expect(city!.name).toMatch(/[а-яА-Я]/);
+    expect(city!.population).toBeGreaterThanOrEqual(WISHES.minPopulation);
+    const held = await db().select().from(contracts).where(and(eq(contracts.destCityId, wish!.cityId), eq(contracts.reservedByCompanyId, acc.id), eq(contracts.status, 'open')));
+    expect(held).toHaveLength(1);
+    expect(held[0]).toMatchObject({ originCityId: truck.cityId, reservedUntil: wish!.until });
+    // The worker keeps one, and makes it again when it is gone.
+    await ensureWishLoads(db(), now);
+    expect(await db().select().from(contracts).where(and(eq(contracts.destCityId, wish!.cityId), eq(contracts.reservedByCompanyId, acc.id), eq(contracts.status, 'open')))).toHaveLength(1);
+    await db().update(contracts).set({ status: 'expired' }).where(eq(contracts.id, held[0]!.id));
+    await ensureWishLoads(db(), now);
+    const again = await db().select().from(contracts).where(and(eq(contracts.destCityId, wish!.cityId), eq(contracts.reservedByCompanyId, acc.id), eq(contracts.status, 'open')));
+    expect(again).toHaveLength(1);
+    expect((await wishesOf(db(), acc.id, now)).find((w) => w.driverId === d!.id)?.loadId).toBe(again[0]!.id);
+    // A VIP reservation of another load (one at a time) leaves the wish load held.
+    await db().update(users).set({ vipUntil: new Date(now.getTime() + 86_400_000) }).where(eq(users.id, p.userId));
+    await reserveContract(db(), p.userId, (await makeContract('Sofia', 'Plovdiv')).id, now);
+    const [still] = await db().select().from(contracts).where(eq(contracts.id, again[0]!.id));
+    expect(still!.reservedByCompanyId).toBe(acc.id);
     await db().transaction((tx) => recordWishDelivery(tx, p.userId, [d!.id], wish!.cityId, new Date()));
     const [after] = await db().select().from(drivers).where(eq(drivers.id, d!.id));
     expect(after!.loyalty).toBe(60);
