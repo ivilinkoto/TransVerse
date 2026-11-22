@@ -30,6 +30,7 @@ import { awardKeyClients, closeAssemblies, endInternships, ownerReports, topUpKe
 import { returnRetiredHires, settleRetired } from './retired';
 import { settleRetired2 } from './retired-2';
 import { settleTrains } from './trains';
+import { chargeProfitTax } from './profit-tax';
 import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
@@ -385,6 +386,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       const [day, hour] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(now).filter((p) => p.type === 'weekday' || p.type === 'hour').map((p) => p.value);
       if (day === 'Mon' && Number(hour) >= 9) await every(db, 'weekly-report', 6 * 24 * 3_600_000, now, () => sendWeeklyReports(db, now));
     }
+    // 1.3.2.1: last week's profit tax, once per account (charged from Monday).
+    await every(db, 'profit-tax', 60 * 60_000, now, () => chargeProfitTax(db, now));
     // 1.3.3: the players' trains that arrived are paid and wait at the terminal.
     await every(db, 'trains', 60_000, now, () => settleTrains(db, now));
     // v1.10: organized convoys leave on time; the game's Sunday convoy.

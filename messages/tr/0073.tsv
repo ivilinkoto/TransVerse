@@ -1172,6 +1172,17 @@ f38c85ee89	TC earned this week: {0} of {1}	Заработано TC на этой
 e804117868	What you earned so far stays with you — we take nothing away.	Заработанное до сих пор остаётся у тебя — мы ничего не забираем.
 18f6bc806a	The cap is reached: until Monday rewards come in money ({0} lv. per 1 TC).	Лимит достигнут: до понедельника награды приходят деньгами ({0} лв. за 1 TC).
 ddb329bdf8	ТрансКоин piled up much faster than the game is meant to. Rewards lost their value and the shop prices their sense. The cap keeps the value of every TC you earn.	ТрансКоин копились гораздо быстрее, чем задумано в игре. Награды теряли ценность, а цены в магазине — смысл. Лимит сохраняет ценность каждого заработанного TC.
-95ed3c75d2	ТрансКоин is worth something again: a weekly cap on earned TC and cases without TC.	ТрансКоин снова чего-то стоит: недельный лимит на заработанные TC и кейсы без TC.
 d6fd9116ab	Fair Coin	Честная монета
 ab5345dcbf	A cap, sunglasses and a CB radio.	Кепка, очки и рация.
+b7f6749bfd	Every Monday a tax is paid on last week's profit: 0% up to 150 000 lv., 10% up to 750 000 lv., 20% up to 3 million lv. and 30% above. Small firms pay nothing. The first tax is for the week from 23 November.	Каждый понедельник платится налог на прибыль прошлой недели: 0% до 150 000 лв., 10% до 750 000 лв., 20% до 3 млн лв. и 30% сверх того. Маленькие фирмы не платят ничего. Первый налог — за неделю с 23 ноября.
+6f1818596e	Every Monday: 0% up to 150 000 lv. of profit for the week, 10% up to 750 000 lv., 20% up to 3 million lv. and 30% above. Bought trucks and trailers lower the profit.	Каждый понедельник: 0% до 150 000 лв. прибыли за неделю, 10% до 750 000 лв., 20% до 3 млн лв. и 30% сверх того. Купленные грузовики и прицепы уменьшают прибыль.
+cacd1e7616	Big fleets piled up money much faster than there was anything to spend it on. The tax only touches big profits and brings back the point of expensive goals — new trucks, depots, trains.	Большие автопарки копили деньги гораздо быстрее, чем было на что их тратить. Налог касается только большой прибыли и возвращает смысл дорогим целям — новым грузовикам, депо, поездам.
+7052bf6468	Tax on Monday: {0}	Налог в понедельник: {0}
+c505553814	Profit tax	Налог на прибыль
+f7e07c52f2	Profit tax for the week ({0})	Налог на прибыль за неделю ({0})
+e63f692ac6	The tax is worked out from all income and costs of the week (Monday to Monday). Transfers between players, loans and deposits into the company's treasury do not count; bought trucks and trailers lower the profit. The tax never takes the balance below zero. In “Finances” you see this week's profit and what the tax will be.	Налог считается по всем доходам и расходам за неделю (с понедельника по понедельник). Переводы между игроками, займы и взносы в кассу компании не учитываются; купленные грузовики и прицепы уменьшают прибыль. Налог никогда не опускает баланс ниже нуля. В «Финансах» видно прибыль за эту неделю и каким будет налог.
+78b3c2ac86	Profit this week: {0}	Прибыль на этой неделе: {0}
+4f6bb7d170	Your profit last week was {0}. The tax is progressive: up to 150 000 lv. it is 0%.	Твоя прибыль за прошлую неделю — {0}. Налог прогрессивный: до 150 000 лв. — 0%.
+e3d0b4d808	A fairer economy: a weekly cap on earned TC, cases without TC and a tax on big profits.	Более честная экономика: недельный лимит на заработанные TC, кейсы без TC и налог на большую прибыль.
+0b3c106fab	The first tax is for the week from 23 November.	Первый налог — за неделю с 23 ноября.
+9548102610	🧾 Profit tax: {0}	🧾 Налог на прибыль: {0}

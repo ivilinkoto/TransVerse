@@ -24,6 +24,7 @@ import { leasesOf } from '@/server/game/leasing';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
+import { taxThisWeek } from '@/server/game/profit-tax';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -43,6 +44,8 @@ export default async function FinancePage() {
     db.select({ level: users.level, createdAt: users.createdAt }).from(users).where(eq(users.id, user.id)),
   ]);
   const leases = features.leasing ? await leasesOf(db, company.id) : [];
+  // 1.3.2.1: this week's profit and the tax it would make on Monday.
+  const tax = await taxThisWeek(db, company.id, now);
   const transferBlock = me ? senderBlock(me, now) : null;
   const income = summary.byCategory.filter((c) => c.total > 0 && c.category !== 'starting_capital').reduce((s, c) => s + c.total, 0);
   const expense = -summary.byCategory.filter((c) => c.total < 0).reduce((s, c) => s + c.total, 0) || 0; // no expenses: 0, not -0
@@ -64,6 +67,16 @@ export default async function FinancePage() {
         <Stat label={tr('Приходи · 30 дни')} value={money(income)} tone="profit" icon={TrendingUp} />
         <Stat label={tr('Разходи · 30 дни')} value={money(expense)} tone="loss" icon={TrendingDown} hint={tr('Нетно {0}', money(income - expense))} />
       </div>
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-asphalt-700 bg-asphalt-900/70 px-4 py-3 text-sm" data-testid="profit-tax">
+        <div>
+          <p className="font-semibold text-white">🧾 {tr('Данък върху печалбата')}</p>
+          <p className="text-xs text-mist-400">{tr('Всеки понеделник: 0% до 150 000 лв. печалба за седмицата, 10% до 750 000 лв., 20% до 3 млн. лв. и 30% над тях. Купените камиони и ремаркета намаляват печалбата.')}</p>
+        </div>
+        <div className="text-right">
+          <p>{tr('Печалба тази седмица: {0}', money(tax.profit))}</p>
+          <p className={tax.tax > 0 ? 'text-loss' : 'text-profit'}>{tax.live ? tr('Данък в понеделник: {0}', money(tax.tax)) : tr('Първият данък е за седмицата от 23 ноември.')}</p>
+        </div>
+      </section>
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <Card title={tr('Паричен поток по дни')}><CashflowChart days={summary.daily} /></Card>
         <Card title={tr('По категории · 30 дни')}>

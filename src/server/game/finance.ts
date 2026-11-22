@@ -105,7 +105,8 @@ export type LedgerCategory =
   | 'legacy_reset'
   | 'intermodal_bonus'
   | 'era_bonus'
-  | 'tournament';
+  | 'tournament'
+  | 'profit_tax';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   relocation: 'Преместване на камион',
@@ -190,6 +191,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   intermodal_bonus: 'Бонус за интермодален контейнер',
   era_bonus: 'Бонус на ерата',
   tournament: 'Турнири на общността',
+  profit_tax: 'Данък върху печалбата',
   items: 'Предмети от инвентара',
   promo: 'Промокод',
   promise: 'Обещан срок',
