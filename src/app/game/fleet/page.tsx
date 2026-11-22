@@ -1,3 +1,4 @@
+import { upkeepCents } from '@/lib/game/fleet-upkeep';
 import { LEGEND, legendTier } from '@/lib/game/heritage';
 import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Warehouse } from 'lucide-react';
 import { leasesOf } from '@/server/game/leasing';
@@ -117,6 +118,12 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
           {myDepots.length
             ? <span>{tr('Депа: {0}', myDepots.map((d) => tx(d.name)).join(', '))}{' · '}<span className="num font-semibold">{tr('{0} / {1} места', capacity.used, capacity.slots)}</span></span>
             : <span>{tr('Нямаш депо — първото е безплатно, там купуваш и паркираш собствени камиони.')}</span>}
+          {(() => {
+            // 1.3.2.1: the own fleet's daily upkeep (free for the first trucks).
+            const owned = fleet.vehicles.filter((v) => v.ownership === 'owned').length;
+            const upkeep = upkeepCents(owned);
+            return upkeep > 0 ? <span className="text-xs text-mist-400" data-testid="fleet-upkeep">{' · '}{tr('Поддръжка: {0}/ден', money(upkeep))}</span> : null;
+          })()}
         </span>
         <span className="flex flex-wrap items-center gap-2">
           {features.depot_all && awayIdle > 1 && (
