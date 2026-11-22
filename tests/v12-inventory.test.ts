@@ -75,7 +75,7 @@ describe('1.2 inventory — server', () => {
     const p = await playerWithCompany();
     await give(p.userId, 'case_gold', 'gold');
     expect(await code(openCase(db(), p.userId, 'case_bronze'))).toBe('no_item');
-    const { item } = await openCase(db(), p.userId, 'case_gold', new Date(), () => 0);
+    const { item } = await openCase(db(), p.userId, 'case_gold', new Date(), () => 0, () => 1);
     expect(item).toBe(CASE_TABLES.case_gold[0]![0]);
     expect(await qty(p.userId, 'case_gold')).toBe(0);
     expect(await qty(p.userId, item)).toBe(1);
@@ -185,7 +185,7 @@ describe('1.2 inventory — ТрансКоин in cases and the team', () => {
     const p = await playerWithCompany();
     await give(p.userId, 'case_gold', 'gold-coins');
     const [before] = await db().select({ coins: users.coins }).from(users).where(eq(users.id, p.userId));
-    const r = await openCase(db(), p.userId, 'case_gold', new Date(), () => weightBefore('case_gold', 'tc_jackpot'));
+    const r = await openCase(db(), p.userId, 'case_gold', new Date(), () => weightBefore('case_gold', 'tc_jackpot'), () => 1);
     expect(r).toMatchObject({ item: 'tc_jackpot', coins: 100 });
     const [after] = await db().select({ coins: users.coins }).from(users).where(eq(users.id, p.userId));
     expect(after!.coins - before!.coins).toBe(100);
