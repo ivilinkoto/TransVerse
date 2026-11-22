@@ -1154,3 +1154,24 @@ a6967814e4	A licence is needed: {0} (Fleet → Licences).	Нужна лицен�
 7f16364750	Your own freight trains: buying locomotives and wagons and runs over the rail network. For a run across a border also the international one, and outside the EU the customs one.	Собственные грузовые поезда: покупка локомотивов и вагонов и рейсы по железнодорожной сети. Для рейса через границу — ещё международная, а за пределами ЕС и таможенная.
 b585774347	Rail licence (Fleet → Licences): 300 000 lv., from level 25. It is needed for an own train; for a run across a border also the international one, and outside the EU the customs one, as with trucks. A company can buy it from its treasury for all its members (600 000 lv.) — then its members run trains from level 12.	Ж/д лицензия (Автопарк → Лицензии): 300 000 лв., с уровня 25. Нужна для собственного поезда; для рейса через границу — ещё международная, а за пределами ЕС и таможенная, как у грузовиков. Компания может купить её из кассы для всех участников (600 000 лв.) — тогда участники водят поезда с уровня 12.
 b3bd2519d8	On your own — from level 25 with the rail licence. In a company with the rail licence — from level 12, with +10% on orders, −25% track fee and one more train.	Самостоятельно — с уровня 25 с ж/д лицензией. В компании с ж/д лицензией — с уровня 12, с +10% за заказы, −25% платы за линию и ещё одним поездом.
+d8ae6110bc	{0} TC over the weekly cap became money ({1})	{0} TC сверх недельного лимита превратились в деньги ({1})
+2c412d3cca	The bronze, silver and gold cases no longer hold ТрансКоин. Items took their place — more coffee, repair kits, thermoses, atlases and frames.	Бронзовый, серебряный и золотой кейсы больше не содержат ТрансКоин. Их место заняли предметы — больше кофе, ремкомплектов, термосов, атласов и рамок.
+4909382b37	In the Shop you see how many TC you earned this week. When you reach the cap, you get a notification.	В Магазине видно, сколько TC ты заработал на этой неделе. Когда достигнешь лимита, придёт уведомление.
+08ac87b084	The cap counts every reward in TC (events, challenges, missions, the pass, the daily reward, items) and items sold to the game. Bought TC, gifts, promo codes and refunded payments do not count.	В лимит входят все награды в TC (ивенты, испытания, миссии, пропуск, ежедневная награда, предметы) и предметы, проданные игре. Купленные TC, подарки, промокоды и возвращённые платежи не считаются.
+38f7137e4a	Until Monday, rewards in ТрансКоин are paid in money ({0} lv. per 1 TC). Bought TC do not count.	До понедельника награды в ТрансКоин выплачиваются деньгами ({0} лв. за 1 TC). Купленные TC не считаются.
+ba37957174	Why	Почему
+d7c2195477	Cases without TC	Кейсы без TC
+3fcf174b98	Over the cap, rewards come in money. Bought TC do not count.	Сверх лимита награды приходят деньгами. Купленные TC не считаются.
+fbb5ec143c	From rewards in the game you can earn up to 100 TC a week (from Monday). Over the cap the reward comes in money — 200 lv. for every TC. Bought TC do not count and have no cap.	Из наград в игре можно заработать до 100 TC в неделю (с понедельника). Сверх лимита награда приходит деньгами — 200 лв. за каждый TC. Купленные TC не считаются и не имеют лимита.
+f1e4583c90	Details	Подробно
+6e0df686f4	Season pass	Пропуск сезона
+5991c06f0f	The Gold frame recipe in the Workshop now needs a cap, sunglasses and a CB radio (instead of a coin pouch). The coin pouch stays only in the season pass.	Рецепт Золотой рамки в Мастерской теперь требует кепку, очки и рацию (вместо мешочка ТрансКоин). Мешочек ТрансКоин остаётся только в пропуске сезона.
+6592c5872e	Weekly cap	Недельный лимит
+1edb291740	The weekly cap of {0} TC is reached	Недельный лимит в {0} TC достигнут
+f38c85ee89	TC earned this week: {0} of {1}	Заработано TC на этой неделе: {0} из {1}
+e804117868	What you earned so far stays with you — we take nothing away.	Заработанное до сих пор остаётся у тебя — мы ничего не забираем.
+18f6bc806a	The cap is reached: until Monday rewards come in money ({0} lv. per 1 TC).	Лимит достигнут: до понедельника награды приходят деньгами ({0} лв. за 1 TC).
+ddb329bdf8	ТрансКоин piled up much faster than the game is meant to. Rewards lost their value and the shop prices their sense. The cap keeps the value of every TC you earn.	ТрансКоин копились гораздо быстрее, чем задумано в игре. Награды теряли ценность, а цены в магазине — смысл. Лимит сохраняет ценность каждого заработанного TC.
+95ed3c75d2	ТрансКоин is worth something again: a weekly cap on earned TC and cases without TC.	ТрансКоин снова чего-то стоит: недельный лимит на заработанные TC и кейсы без TC.
+d6fd9116ab	Fair Coin	Честная монета
+ab5345dcbf	A cap, sunglasses and a CB radio.	Кепка, очки и рация.

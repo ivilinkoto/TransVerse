@@ -12,7 +12,8 @@ import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { isVip, STANDARD_COLORS, VIP_BENEFITS, VIP_COLORS } from '@/lib/game/vip';
 import { cities, trailers, vehicles } from '@/server/db/schema';
-import { coinHistory, COIN_REASON_LABELS, type CoinReason } from '@/server/game/coins';
+import { coinHistory, COIN_REASON_LABELS, earnedThisWeek, type CoinReason } from '@/server/game/coins';
+import { COIN_CAP } from '@/lib/game/coin-cap';
 import { gameContext } from '@/server/game/context';
 import { BuyWithMoney } from '@/components/game/BuyWithMoney';
 import { euro, paidProduct, PAID_PRODUCTS, PAYMENT_STATUS_LABELS } from '@/lib/game/payments';
@@ -45,6 +46,8 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
     coinHistory(db, user.id, 20),
     userPayments(db, user.id, 8),
   ]);
+  // 1.3.2.1: how much of this week's cap on earned ТрансКоин is used.
+  const earnedWeek = await earnedThisWeek(db, user.id, now);
   const trailerOptions = (await db.select({ id: trailers.id, plate: trailers.plate, modelId: trailers.modelId }).from(trailers).where(and(eq(trailers.companyId, company.id), eq(trailers.ownership, 'owned'), isNull(trailers.soldAt)))).map((t) => ({ id: t.id, label: `${t.plate} · ${trailerModel(t.modelId).name}` }));
   const vehicleOptions: VehicleOption[] = fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${tx(v.city)}${v.ownership === 'rented' ? tr(' (нает)') : ''}${v.status !== 'idle' ? tr(' · на курс') : ''}`, owned: v.ownership === 'owned', idle: v.status === 'idle' }));
   const hubs = cityRows.filter((c) => isFreightHub({ population: c.population, country: c.country })).map((c) => ({ id: c.id, name: `${tx(c.name)} (${c.country})` }));
@@ -139,6 +142,11 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
         help={tr('ТрансКоин (TC) е премиум валутата на TransVerse. С нея се купуват VIP, удобства и козметика — никога игрови пари, за да е честно за всички.')}
         actions={<span className="flex items-center gap-2 rounded-xl border border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2"><Coins className="h-5 w-5 text-cyan-glow" /><span className="num font-display text-xl font-bold text-cyan-glow">{user.coins.toLocaleString(intlLocale())} TC</span></span>}
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-asphalt-700 bg-asphalt-900/70 px-4 py-3 text-sm" data-testid="coin-cap">
+        <span>{tr('Спечелени TC тази седмица: {0} от {1}', Math.min(earnedWeek, COIN_CAP.weekly), COIN_CAP.weekly)}</span>
+        <span className="text-xs text-mist-400">{earnedWeek >= COIN_CAP.weekly ? tr('Таванът е достигнат: до понеделник наградите идват в пари ({0} лв. за 1 TC).', COIN_CAP.centsPerCoin / 100) : tr('Над тавана наградите идват в пари. Купените TC не се броят.')}</span>
+      </div>
 
       {friday && (
         <div className="rounded-2xl border border-gold-400/50 bg-gradient-to-r from-black/60 to-gold-400/10 p-4" data-testid="black-friday">
