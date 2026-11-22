@@ -93,6 +93,28 @@ export async function assignDriver(db: Database, userId: string, driverId: strin
   });
 }
 
+/**
+ * The player takes the wheel of one of their idle trucks (a hired driver on it
+ * steps out). The player's own driver is made again if an old account lost it.
+ * While the player drives another truck on a trip, it waits for that trip.
+ */
+export async function driveMyself(db: Database, userId: string, vehicleId: string) {
+  const ownerId = await db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [own] = await tx.select().from(drivers).where(and(eq(drivers.companyId, company.id), eq(drivers.isOwner, true))).for('update');
+    if (own) {
+      const seats = [own.vehicleId, own.coVehicleId].filter((x): x is string => !!x);
+      const busy = seats.length ? await tx.select({ id: vehicles.id }).from(vehicles).where(and(inArray(vehicles.id, seats), eq(vehicles.status, 'on_delivery'))) : [];
+      if (busy.length) fail('driver_busy', t('Ти караш друг камион на курс. Ще можеш да смениш камиона, когато пристигне.'));
+      return own.id;
+    }
+    const [u] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
+    const [made] = await tx.insert(drivers).values({ companyId: company.id, name: u?.username ?? t('Шофьор'), skill: 1, salaryCentsPerDay: 0, isOwner: true }).returning({ id: drivers.id });
+    return made!.id;
+  });
+  await assignDriver(db, userId, ownerId, vehicleId, 'main');
+}
+
 /** Spends one of a driver's skill points (one per skill level above the first). */
 export async function trainDriver(db: Database, userId: string, driverId: string, trait: TraitId) {
   return db.transaction(async (tx) => {

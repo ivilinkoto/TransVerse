@@ -69,7 +69,7 @@ import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
 import { addWagons, buyTrain, moveTrain, sellTrain, sellWagons, sendTrain } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
-import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
+import { assignDriver, driveMyself, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
 import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
 import { hashIp } from '@/server/game/referrals';
@@ -224,6 +224,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('hireDriver'), candidateId: id }),
   z.object({ type: z.literal('fireDriver'), driverId: id }),
   z.object({ type: z.literal('assignDriver'), driverId: id, vehicleId: id.nullable(), seat: z.enum(['main', 'co']).default('main') }),
+  z.object({ type: z.literal('driveMyself'), vehicleId: id }),
   z.object({ type: z.literal('trainDriver'), driverId: id, trait: z.enum(TRAIT_IDS) }),
   z.object({ type: z.literal('clientAccept'), clientContractId: id }),
   z.object({ type: z.literal('clientDecline'), clientContractId: id }),
@@ -844,6 +845,9 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true };
     case 'assignDriver':
       await assignDriver(db, user.id, input.driverId, input.vehicleId, input.seat);
+      return { ok: true };
+    case 'driveMyself':
+      await driveMyself(db, user.id, input.vehicleId);
       return { ok: true };
     case 'clientAccept':
       await acceptClientContract(db, user.id, input.clientContractId);

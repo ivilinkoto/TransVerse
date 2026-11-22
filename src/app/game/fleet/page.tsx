@@ -68,7 +68,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
   const loose = fleet.trailers.filter((t) => !t.vehicleId);
   // The player drives one truck themselves and can switch to another idle one.
   const self = fleet.drivers.find((d) => d.isOwner);
-  const selfBusy = !!self?.vehicleId && fleet.vehicles.some((x) => x.id === self.vehicleId && x.status !== 'idle');
+  const selfBusy = !!self && fleet.vehicles.some((x) => (x.id === self.vehicleId || x.id === self.coVehicleId) && x.status !== 'idle');
   // 1.1.3: the depots at a glance (where own trucks are bought and parked).
   const [myDepots, capacity] = await Promise.all([
     db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg, slots: depots.slots }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)),
@@ -237,12 +237,16 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                 </div>
               );
             })()}
-            {/* The player can take the wheel of any idle truck (a hired driver on it steps out); before, only of one without a driver. */}
-            {!v.delivery && v.status === 'idle' && self && !selfBusy && v.driver?.id !== self.id && (
+            {/* The player can take the wheel of any idle truck (a hired driver on it steps out); while driving another truck on a trip, it says so. */}
+            {!v.delivery && v.status === 'idle' && v.driver?.id !== self?.id && (
               <div className="mt-3">
-                <ActionButton action={{ type: 'assignDriver', driverId: self.id, vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">
-                  <UserRound className="h-4 w-4" />{v.driver ? tr('Карай този камион сам ({0} слиза)', tx(v.driver.name)) : tr('Карай този камион сам')}
-                </ActionButton>
+                {selfBusy ? (
+                  <p className="text-xs text-mist-400">{tr('Ти караш друг камион на курс. Ще можеш да караш този, когато пристигне.')}</p>
+                ) : (
+                  <ActionButton action={{ type: 'driveMyself', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">
+                    <UserRound className="h-4 w-4" />{v.driver ? tr('Карай този камион сам ({0} слиза)', tx(v.driver.name)) : tr('Карай този камион сам')}
+                  </ActionButton>
+                )}
               </div>
             )}
             {/* The VIP dispatcher switch is on every truck of a VIP (and stays while it is on, so it can always be turned off). */}
