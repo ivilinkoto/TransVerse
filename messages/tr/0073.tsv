@@ -1028,7 +1028,6 @@ a5044cfffa	The train does not have enough wagons of this kind.	У поезда �
 fe00551914	The train does not have that many such wagons.	У поезда нет столько таких вагонов.
 5e1d3c47cc	A train needs at least one wagon. Sell the whole train.	У поезда должен быть хотя бы один вагон. Продай весь поезд.
 d97d3ed50a	The train is waiting for a new load at the terminal.	Поезд ждёт новый груз на станции.
-a645390e03	Anyone can own a train from level 15. In a company — from level 12, with +10% on orders, −25% track fee and one more train.	Поезд может быть у каждого с уровня 15. В компании — с уровня 12, с +10% за заказы, −25% платы за линию и ещё одним поездом.
 87b8a19fe2	Fuels	Топливо
 3c0ab74184	Gorna Oryahovitsa	Горна-Оряховица
 4aa502cb05	Sell the whole train for half its price?	Продать весь поезд за половину цены?
@@ -1148,9 +1147,10 @@ a46d941070	The held trip there	Забронированный рейс туда
 e8816fcc7d	Wants a trip to {0} for {1} — within 3 days. The trip is waiting in Jobs, held for you.	Просит рейс до {0} на {1} — в течение 3 дней. Рейс ждёт в Рейсах, забронирован для тебя.
 3173ad05e0	You are driving another truck on a trip. You can drive this one when it arrives.	Ты ведёшь другой грузовик в рейсе. Сможешь вести этот, когда он прибудет.
 600f69bd94	You are driving another truck on a trip. You can change trucks when it arrives.	Ты ведёшь другой грузовик в рейсе. Сможешь сменить грузовик, когда он прибудет.
-2022dfd7fe	Rail licence (Fleet → Licences): 50 000 lv., from level 12. It is needed for an own train; for a run across a border also the international one, and outside the EU the customs one, as with trucks. A company can buy it for all its members.	Ж/д лицензия (Автопарк → Лицензии): 50 000 лв., с уровня 12. Нужна для собственного поезда; для рейса через границу — ещё международная, а за пределами ЕС и таможенная, как у грузовиков. Компания может купить её для всех участников.
 476839be18	An own train needs the rail licence ({0}). A run across a border also needs the international one, and outside the EU the customs one.	Для собственного поезда нужна ж/д лицензия ({0}). Для рейса через границу — ещё международная, а за пределами ЕС и таможенная.
 14721777b3	To the licences	К лицензиям
 a6967814e4	A licence is needed: {0} (Fleet → Licences).	Нужна лицензия: {0} (Автопарк → Лицензии).
 915081de19	They unlock international, refrigerated, dangerous (ADR) and oversize loads, and the rail licence your own trains.	Открывают международные, рефрижераторные, опасные (ADR) и негабаритные грузы, а ж/д лицензия — собственные поезда.
 7f16364750	Your own freight trains: buying locomotives and wagons and runs over the rail network. For a run across a border also the international one, and outside the EU the customs one.	Собственные грузовые поезда: покупка локомотивов и вагонов и рейсы по железнодорожной сети. Для рейса через границу — ещё международная, а за пределами ЕС и таможенная.
+b585774347	Rail licence (Fleet → Licences): 300 000 lv., from level 25. It is needed for an own train; for a run across a border also the international one, and outside the EU the customs one, as with trucks. A company can buy it from its treasury for all its members (600 000 lv.) — then its members run trains from level 12.	Ж/д лицензия (Автопарк → Лицензии): 300 000 лв., с уровня 25. Нужна для собственного поезда; для рейса через границу — ещё международная, а за пределами ЕС и таможенная, как у грузовиков. Компания может купить её из кассы для всех участников (600 000 лв.) — тогда участники водят поезда с уровня 12.
+b3bd2519d8	On your own — from level 25 with the rail licence. In a company with the rail licence — from level 12, with +10% on orders, −25% track fee and one more train.	Самостоятельно — с уровня 25 с ж/д лицензией. В компании с ж/д лицензией — с уровня 12, с +10% за заказы, −25% платы за линию и ещё одним поездом.

@@ -3,7 +3,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { FEATURES } from '@/lib/game/features';
 import { cannotTake, GRADES, grossFor, LOCOS, orderPay, ordersAt, pathsFrom, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, tareTons, TRAINS, WAGONS, type Train } from '@/lib/game/trains';
 import { closeDb } from '@/server/db/client';
-import { cities, companies, jobState, userLicences, users } from '@/server/db/schema';
+import { cities, companies, companyLicences, jobState, userLicences, users } from '@/server/db/schema';
+import { membershipOf } from '@/server/game/membership';
 import { LICENCES, licenceOpen } from '@/lib/game/licences';
 import { buyLicence } from '@/server/game/licences';
 import { post } from '@/server/game/finance';
@@ -108,15 +109,15 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     expect(ordersAt(SOFIA, t0 + TRAINS.windowHours * 3_600_000)).not.toEqual(a);
   });
 
-  it('solo from level 15: buy, take an order once, get paid on arrival, run empty, sell', async () => {
+  it('solo from level 25: buy, take an order once, get paid on arrival, run empty, sell', async () => {
     const p = await newPlayer();
     const n = { loco: 'rila-e60' as const, wagonType: 'container' as const, wagons: 25, terminalId: SOFIA };
     // A board with a container order this train takes (some windows have none).
     let now = new Date();
     for (let i = 0; i < 50 && !ordersAt(SOFIA, now.getTime()).some((o) => o.wagonType === 'container' && o.electric && !cannotTake({ ...n, run: null, at: SOFIA, wagons: { container: 25 } }, o)); i++) now = new Date(now.getTime() + TRAINS.windowHours * 3_600_000);
-    await rich(p.userId, 14);
+    await rich(p.userId, 24);
     expect(await code(buyTrain(db(), p.userId, n, now))).toBe('level');
-    await rich(p.userId, 15);
+    await rich(p.userId, 25);
     const before = await balance(p.userId);
     const train = await buyTrain(db(), p.userId, n, now);
     expect(await balance(p.userId)).toBe(before - LOCOS['rila-e60'].priceCents - 25 * WAGONS.container.priceCents);
@@ -130,7 +131,7 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     expect(new Date(sent.run!.arriveAt).getTime() - now.getTime()).toBe(Math.round(order.hours * 3_600_000));
     // Taken: not again, by this train or another one.
     const other = await newPlayer();
-    await rich(other.userId, 15);
+    await rich(other.userId, 25);
     const t2 = await buyTrain(db(), other.userId, n, now);
     expect(await code(sendTrain(db(), other.userId, t2.id, order.id, now))).toBe('order_taken');
     // Arrival.
@@ -157,7 +158,7 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
 
   it('an electric locomotive stays off the lines without wires', async () => {
     const p = await newPlayer();
-    await rich(p.userId, 15);
+    await rich(p.userId, 25);
     const train = await buyTrain(db(), p.userId, { loco: 'balkan-e40', wagonType: 'hopper', wagons: 10, terminalId: SOFIA }, new Date());
     expect(await code(moveTrain(db(), p.userId, train.id, 787657, new Date()))).toBe('no_route');
     const view = await trainsView(db(), p.userId, new Date());
@@ -165,9 +166,12 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     expect(view.trains[0]!.empty.every((p) => p.electric)).toBe(true);
   });
 
-  it('in a player company: from level 12, +10% pay, a cheaper track and one more train', async () => {
+  it('in a player company with the rail licence: from level 12, +10% pay, a cheaper track and one more train', async () => {
     const p = await playerWithCompany();
-    await rich(p.userId, 12);
+    // No licence of their own: the company's (bought from its treasury) is enough for its members.
+    await rich(p.userId, 12, ['international', 'customs']);
+    const m = (await membershipOf(db(), p.userId))!;
+    await db().insert(companyLicences).values({ companyId: m.company.id, licence: 'rail', priceCents: 0, boughtBy: p.userId });
     const view0 = await trainsView(db(), p.userId, new Date());
     expect(view0.company).toBe(true);
     expect(view0.limits).toEqual({ minLevel: TRAINS.company.minLevel, maxTrains: TRAINS.maxTrains + 1 });
@@ -190,12 +194,12 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
   });
 
   it('the rail licence: needed for a train; over a border also the international and outside the EU the customs one', async () => {
-    expect(LICENCES.rail).toMatchObject({ feature: 'trains', minLevel: 12, priceCents: 50_000_00 });
+    expect(LICENCES.rail).toMatchObject({ feature: 'trains', minLevel: 25, priceCents: 300_000_00 });
     expect(licenceOpen(LICENCES.rail, () => false)).toBe(false);
     expect(licenceOpen(LICENCES.rail, (f) => f === 'trains')).toBe(true);
     expect(licenceOpen(LICENCES.air, () => true)).toBe(false);
     const p = await newPlayer();
-    await rich(p.userId, 15, []);
+    await rich(p.userId, 25, []);
     const n = { loco: 'danubia-d22' as const, wagonType: 'container' as const, wagons: 10, terminalId: SOFIA };
     expect(await code(buyTrain(db(), p.userId, n, new Date()))).toBe('licence');
     // Before the release only the team can buy it.

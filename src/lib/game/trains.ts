@@ -15,8 +15,9 @@ import { seededRandom } from './road-events';
  * invented and the prices, power figures, times and orders are game data
  * (labelled so in the game).
  *
- * Anyone can own a train from level 15; a member of a player company from
- * level 12, with a better pay, a cheaper track and one more train.
+ * Anyone can own a train from level 25 (with the rail licence, from the same
+ * level); a member of a player company from level 12 when the company holds
+ * the licence, with a better pay, a cheaper track and one more train.
  */
 
 export type LocoId = 'danubia-d22' | 'balkan-e40' | 'rila-e60';
@@ -73,7 +74,7 @@ export const GRADES: Record<Grade, { pull: number; energy: number; label: string
 };
 
 export const TRAINS = {
-  minLevel: 15,
+  minLevel: 25,
   maxTrains: 3,
   /** Wagons a new train starts with at least (of one kind). */
   minWagons: 5,
