@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { ItemArt } from '@/components/game/ItemArt';
 import { date, int, money } from '@/lib/format';
 import type { winterTrekView } from '@/server/game/winter-trek';
@@ -55,7 +56,7 @@ export function WinterTrek({ trek }: { trek: Trek }) {
           </div>
           <p className="mt-2 text-xs text-sky-100/70">
             {t('Награда: {0}', money(current.cents))}
-            {current.coins > 0 && ` · ${t('{0} TC', current.coins)}`}
+            {current.coins > 0 && ` · ${t('{0}', coinsAsMoney(current.coins))}`}
             {current.item && ` · ${t('Боя „Скреж“')}`}
           </p>
         </div>

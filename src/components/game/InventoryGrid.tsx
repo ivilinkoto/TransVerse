@@ -1,5 +1,6 @@
 'use client';
 
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -384,7 +385,7 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
             )}
             {(canSell || canSwap || (workshop && menu && up)) && (
               <div className="flex flex-wrap gap-1.5">
-                {canSell && <button type="button" className={`btn-ghost px-3 py-1 text-xs ${panel === 'sell' ? 'border-gold-400/60 text-gold-300' : ''}`} onClick={() => setPanel(panel === 'sell' ? null : 'sell')}>{t('Продай · {0} TC', price)}</button>}
+                {canSell && <button type="button" className={`btn-ghost px-3 py-1 text-xs ${panel === 'sell' ? 'border-gold-400/60 text-gold-300' : ''}`} onClick={() => setPanel(panel === 'sell' ? null : 'sell')}>{t('Продай · {0}', coinsAsMoney(price))}</button>}
                 {canSwap && <button type="button" className={`btn-ghost px-3 py-1 text-xs ${panel === 'gift' ? 'border-gold-400/60 text-gold-300' : ''}`} onClick={() => setPanel(panel === 'gift' ? null : 'gift')}>{t('Подари')}</button>}
                 {canSwap && <button type="button" className={`btn-ghost px-3 py-1 text-xs ${panel === 'trade' ? 'border-gold-400/60 text-gold-300' : ''}`} onClick={() => setPanel(panel === 'trade' ? null : 'trade')}>{t('Размени')}</button>}
                 {workshop && menu && up && <Link href={`/game/inventory/workshop?item=${open}`} className="btn-ghost px-3 py-1 text-xs">{t('В работилницата')}</Link>}
@@ -392,11 +393,11 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
             )}
             {panel === 'sell' && canSell && (
               <div className="space-y-2 rounded-xl border border-gold-400/30 bg-gold-400/5 p-3 text-xs">
-                <p className="text-mist-300">{def.kind === 'collectible' ? t('Един остава за албума. Продаваш от повторените: {0}.', spare) : t('Може да продадеш до {0}.', spare)} {t('Днес още {0} от {1} TC.', capLeft, SELL_DAY_CAP)}</p>
+                <p className="text-mist-300">{def.kind === 'collectible' ? t('Един остава за албума. Продаваш от повторените: {0}.', spare) : t('Може да продадеш до {0}.', spare)} {t('Днес още {0} от {1}.', coinsAsMoney(capLeft), coinsAsMoney(SELL_DAY_CAP))}</p>
                 <div className="flex items-center gap-2">
                   <input type="number" className="input w-20 py-1 text-sm" min={1} max={spare} value={sellQty} onChange={(e) => setSellQty(Math.max(1, Math.min(Number(e.target.value) || 1, spare)))} aria-label={t('Брой')} />
                   <button type="button" className="btn-primary flex-1 py-1.5 text-sm" disabled={busy || capLeft < price} onClick={() => void call<{ sold: number; coins: number }>({ type: 'sellItem', itemId: open, qty: sellQty }, (r) => { setNote(t('Продадени: {0} — +{1} ТрансКоин.', r.sold, r.coins)); setPanel(null); })}>
-                    {t('Продай за {0} TC', Math.min(sellQty, Math.floor(capLeft / price)) * price)}
+                    {t('Продай за {0}', coinsAsMoney(Math.min(sellQty, Math.floor(capLeft / price)) * price))}
                   </button>
                 </div>
               </div>

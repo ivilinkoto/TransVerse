@@ -38,8 +38,13 @@ export const ECONOMY = {
   depotSlotsDefault: 3,
   depotPriceCents: 56_000_00,
   depotSlotUpgradeCents: 22_500_00,
-  /** 1.2.3.4: the freight pays 60 % more (closer to real rates); trucks and the rest cost 25 % more (PRICE_SCALE). */
-  rewardScale: 1.6,
+  /**
+   * 1.2.3.4: the freight paid 60 % more (closer to real rates); trucks and the rest cost 25 % more (PRICE_SCALE).
+   * 1.3.2.1 „Честна монета“: 1.3 — money piled up much faster than the game is meant to.
+   */
+  rewardScale: 1.3,
+  /** 1.3.2.1: all a delivery pays on top of its freight (bonuses of every kind) is at most this share of the freight. */
+  bonusCapShare: 0.4,
 } as const;
 
 /** Electric trucks (v1.4, game data): energy price and the lower road tolls. */

@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { eq } from 'drizzle-orm';
 import { isRecapTime, recapYear } from '@/lib/game/recap';
 import { CalendarDays, Coins, HandHeart, PartyPopper, Trophy } from 'lucide-react';
@@ -72,7 +73,7 @@ export default async function ChristmasPage() {
                     {q.id === 'c_help' ? <HandHeart className="h-5 w-5 shrink-0 text-gold-400" /> : q.id === 'c_eve' ? <ChristmasTreeIcon className="h-5 w-5 shrink-0" /> : <GiftIcon className="h-5 w-5 shrink-0" />}
                     {tx(q.title)}
                   </span>
-                  <span className="num text-xs text-mist-300">{[q.coins ? `${q.coins} TC` : '', q.cents ? money(q.cents) : ''].filter(Boolean).join(' · ')}</span>
+                  <span className="num text-xs text-mist-300">{[q.coins ? coinsAsMoney(q.coins) : '', q.cents ? money(q.cents) : ''].filter(Boolean).join(' · ')}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-3">
                   <Meter value={(q.progress / q.target) * 100} tone="gold" className="flex-1" />
@@ -91,7 +92,7 @@ export default async function ChristmasPage() {
               <span className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-2 ${state.badge ? 'border-red-500 bg-red-500/15' : 'border-dashed border-asphalt-600 opacity-60'}`}><ChristmasTreeIcon className="h-10 w-10" /></span>
               <div className="min-w-0">
                 <div className="font-display text-lg font-bold">{tx(badge.label)}</div>
-                <p className="text-sm text-mist-300">{state.badge ? t('Твоя е — вижда се в профила ти и на картата на играча.') : t('{0} Плюс {1} TC.', badge.description, QUEST_BADGE_COINS)}</p>
+                <p className="text-sm text-mist-300">{state.badge ? t('Твоя е — вижда се в профила ти и на картата на играча.') : t('{0} Плюс {1}.', badge.description, coinsAsMoney(QUEST_BADGE_COINS))}</p>
               </div>
             </div>
           </Card>

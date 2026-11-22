@@ -2,6 +2,7 @@
  * 1.2.3 „Договор на седмицата“: the lane of the week (stored in job_state),
  * the loads kept open on it, and the first players who deliver one on time.
  */
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, eq, like, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { isoWeek } from '@/lib/game/shop-v2';
@@ -69,7 +70,7 @@ export async function recordWeeklyLane(tx: Tx, f: { userId: string; tag: string 
   if (!first) return false;
   await tx.insert(userBadges).values({ userId: f.userId, badge: WEEKLY_LANE.badge, awardedAt: at }).onConflictDoNothing();
   await postCoins(tx, f.userId, { amount: WEEKLY_LANE.coins, reason: 'challenge', description: t('Договор на седмицата · място {0}', n + 1), idempotencyKey: `weekly-lane-win:${week}:${f.userId}` });
-  await notify(tx, f.userId, 'achievement', () => t('Договор на седмицата: място {0}!', n + 1), () => t('Значка „Договор на седмицата“ и {0} TC.', WEEKLY_LANE.coins), '/game/compete');
+  await notify(tx, f.userId, 'achievement', () => t('Договор на седмицата: място {0}!', n + 1), () => t('Значка „Договор на седмицата“ и {0}.', coinsAsMoney(WEEKLY_LANE.coins)), '/game/compete');
   return true;
 }
 

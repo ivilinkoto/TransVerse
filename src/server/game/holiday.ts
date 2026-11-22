@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, eq, gt, inArray, like, sql } from 'drizzle-orm';
 import { autoTarget, DEFAULT_REWARDS, type EventRewards } from '@/lib/game/events';
 import { BADGES, QUEST_BADGE_COINS, type HalloweenQuest } from '@/lib/game/halloween';
@@ -94,7 +95,7 @@ export async function claimHolidayQuest(db: Database, def: HolidayDef, userId: s
       if (inserted.length) {
         badge = true;
         await postCoins(tx, userId, { amount: QUEST_BADGE_COINS, reason: 'holiday_reward', description: t('Значка „{0}“', BADGES[def.badge]!.label), idempotencyKey: `holiday:${def.key}:${userId}:badge` });
-        await notify(tx, userId, 'achievement', () => t('Значка „{0}“', BADGES[def.badge]!.label), () => t('{0} +{1} TC и значка завинаги в профила ти.', def.allDone, QUEST_BADGE_COINS), def.href);
+        await notify(tx, userId, 'achievement', () => t('Значка „{0}“', BADGES[def.badge]!.label), () => t('{0} +{1} и значка завинаги в профила ти.', def.allDone, coinsAsMoney(QUEST_BADGE_COINS)), def.href);
       }
     }
     return { badge };

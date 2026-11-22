@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { Building, Clock, Hammer, Landmark } from 'lucide-react';
 import { PlayerName } from '@/components/game/PlayerName';
 import { Card, Meter } from '@/components/ui';
@@ -31,7 +32,7 @@ interface Running {
 /** The company project: the running one with its helpers, or this week's choice. */
 export function ProjectCard({ running, choices, canStart, now, startedThisWeek }: { running: Running | null; choices: Choice[]; canStart: boolean; now: Date; startedThisWeek: boolean }) {
   return (
-    <Card title={<span className="inline-flex items-center gap-2"><Hammer className="h-4 w-4 text-gold-400" />{t('Фирмен проект')}</span>} actions={<span className="text-xs text-mist-400">{t('{0} дни · {1} TC за всеки, който помогне', PROJECT_RULES.days, PROJECT_RULES.helperCoins)}</span>}>
+    <Card title={<span className="inline-flex items-center gap-2"><Hammer className="h-4 w-4 text-gold-400" />{t('Фирмен проект')}</span>} actions={<span className="text-xs text-mist-400">{t('{0} дни · {1} за всеки, който помогне', PROJECT_RULES.days, coinsAsMoney(PROJECT_RULES.helperCoins))}</span>}>
       {running ? (
         <div>
           <div className="flex flex-wrap items-baseline justify-between gap-2">

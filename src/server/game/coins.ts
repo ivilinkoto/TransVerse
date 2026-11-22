@@ -3,7 +3,7 @@ import type { DbOrTx, Tx } from '@/server/db/client';
 import { coinEntries, companies, users } from '@/server/db/schema';
 import { post } from './finance';
 import { notify } from './notify';
-import { capWeekStart, capped, COIN_CAP, splitByCap } from '@/lib/game/coin-cap';
+import { capWeekStart, capped, COIN_CAP, moneyForCoins, paidInMoney, splitByCap } from '@/lib/game/coin-cap';
 import { UNTAPERED_REASONS } from '@/lib/game/coin-taper';
 import { fail } from './errors';
 import { t } from '@/i18n/t';
@@ -71,6 +71,12 @@ export async function postCoins(
   options: { requireFunds?: boolean } = {},
 ): Promise<boolean> {
   if (!Number.isSafeInteger(entry.amount) || entry.amount === 0) throw new Error(`Invalid coin amount ${entry.amount}`);
+  // 1.3.2.1: most rewards are paid in game money, not ТрансКоин (tests: only when they pass `at`, like the taper).
+  if (entry.amount > 0 && paidInMoney(entry.reason) && (entry.at || process.env.NODE_ENV !== 'test')) {
+    const [acc] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
+    if (acc) await post(tx, acc.id, [{ category: 'bonus', amountCents: moneyForCoins(entry.amount), description: entry.description, idempotencyKey: `${entry.idempotencyKey}:money` }]);
+    return true;
+  }
   // 1.2.6: rewards pay a little less step by step (src/lib/game/coin-taper.ts). Tests see the full amounts
   // unless they pass `at`, so their expectations do not change with the calendar.
   if (entry.amount > 0 && (entry.at || process.env.NODE_ENV !== 'test')) entry = { ...entry, amount: taperCoins(entry.amount, entry.at ?? new Date(), entry.reason) };

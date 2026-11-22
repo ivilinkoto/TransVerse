@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, eq, gte, isNull, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
 import { periodWindow } from '@/lib/game/missions';
@@ -64,7 +65,7 @@ export async function recordWeeklyGoal(tx: Tx, userId: string, load: { loadedKm:
   if (!g || g.progress >= g.target) return;
   const progress = Math.min(g.target, g.progress + goalIncrement(g.metric as GoalMetric, load));
   await tx.update(weeklyGoals).set({ progress }).where(and(eq(weeklyGoals.userId, userId), eq(weeklyGoals.weekKey, week)));
-  if (progress >= g.target) await notify(tx, userId, 'achievement', () => t('Седмичната цел е изпълнена!'), () => t('{0} — вземи наградата: {1} и {2} TC.', GOAL_METRICS[g.metric as GoalMetric].label(g.target), money(g.rewardCents), g.rewardCoins), '/game/missions');
+  if (progress >= g.target) await notify(tx, userId, 'achievement', () => t('Седмичната цел е изпълнена!'), () => t('{0} — вземи наградата: {1} и {2}.', GOAL_METRICS[g.metric as GoalMetric].label(g.target), money(g.rewardCents), coinsAsMoney(g.rewardCoins)), '/game/missions');
 }
 
 /** Takes the reward of a finished goal (this week or the last one). */

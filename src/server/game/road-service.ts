@@ -5,6 +5,7 @@
  * - `pass-tons:<season>:<user>` = { tons } — „Пазител на прохода“; `pass-guardian-awarded:<season>` once the titles are given.
  * A pass is closed by the weather (`closedByWeather`) until the players bring `ROAD_SERVICE.tonsToOpen`.
  */
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import polyline from '@mapbox/polyline';
 import { desc, eq, inArray, like, sql } from 'drizzle-orm';
 import { TITLES } from '@/lib/game/first-snow';
@@ -169,7 +170,7 @@ export async function awardPassGuardians(db: Database, now = new Date()) {
         const prize = PASS_GUARDIAN.places[k.place - 1]!;
         await tx.insert(userBadges).values({ userId: k.userId, badge: prize.title, awardedAt: now }).onConflictDoNothing();
         await postCoins(tx, k.userId, { amount: prize.coins, reason: 'challenge', description: t('Пазител на прохода · място {0}', k.place), idempotencyKey: `pass-guardian:${s.id}:${k.userId}` });
-        await notify(tx, k.userId, 'achievement', () => t('Пазител на прохода: място {0}!', k.place), () => t('Титла „{0}“ и {1} TC.', TITLES[prize.title]!.label, prize.coins), '/game/profile');
+        await notify(tx, k.userId, 'achievement', () => t('Пазител на прохода: място {0}!', k.place), () => t('Титла „{0}“ и {1}.', TITLES[prize.title]!.label, coinsAsMoney(prize.coins)), '/game/profile');
         n++;
       }
     });

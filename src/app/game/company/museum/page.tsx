@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { Landmark } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
@@ -32,7 +33,7 @@ export default async function MuseumPage() {
       <PageHeader
         title={t('Музеят на „{0}“', m.company.name)}
         subtitle={level ? t('Ниво {0} · {1} / {2} експоната', level, exhibits.length, MUSEUM.capacity[level]) : t('Компанията още няма музей — постройте го на участъка.')}
-        help={t('Член дарява свой камион с поне {0} км от витрината му в сервиза. Камионът остава в музея завинаги, дарителят получава {1} TC ({2} TC за легенда).', int(MUSEUM.minKm), MUSEUM.coins, MUSEUM.legendCoins)}
+        help={t('Член дарява свой камион с поне {0} км от витрината му в сервиза. Камионът остава в музея завинаги, дарителят получава {1} ({2} за легенда).', int(MUSEUM.minKm), coinsAsMoney(MUSEUM.coins), coinsAsMoney(MUSEUM.legendCoins))}
       />
       {exhibits.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

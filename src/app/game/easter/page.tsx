@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, Card, Meter, PageHeader } from '@/components/ui';
@@ -34,7 +35,7 @@ export default async function EasterPage() {
       <PageHeader
         title={t('Великден')}
         subtitle={live ? t('Христос воскресе! Козунаци и яйца по пътищата, яйчени битки с приятели и пролетна боя.') : t('Великден по пътищата на TransVerse — от 25 април до 9 май (Великден е на 2 май 2027).')}
-        help={t('Великденските товари имат етикет „Великден“ и се плащат с {0}% повече. Яйчената битка е без залог: всеки чифт приятели веднъж годишно, победителят получава {1} TC от играта, а на {2} победи — значка „{3}“. Игрови данни.', Math.round((EASTER.rewardMultiplier - 1) * 100), EASTER.eggCoins, EASTER.eggBadgeWins, BADGES[EASTER.eggBadge]?.label)}
+        help={t('Великденските товари имат етикет „Великден“ и се плащат с {0}% повече. Яйчената битка е без залог: всеки чифт приятели веднъж годишно, победителят получава {1} от играта, а на {2} победи — значка „{3}“. Игрови данни.', Math.round((EASTER.rewardMultiplier - 1) * 100), coinsAsMoney(EASTER.eggCoins), EASTER.eggBadgeWins, BADGES[EASTER.eggBadge]?.label)}
       />
       <Card>
         <Badge tone="violet">{t('🥚 Ивент „Великденски рейс“: {0} – {1}', day(w.startsAt), day(w.endsAt))}</Badge>
@@ -45,7 +46,7 @@ export default async function EasterPage() {
           <ul className="space-y-3">
             {state.quests.map((q) => (
               <li key={q.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{tx(q.title)}</span><span className="num text-xs text-mist-300">{[q.coins ? `${q.coins} TC` : '', q.cents ? money(q.cents) : ''].filter(Boolean).join(' · ')}</span></div>
+                <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{tx(q.title)}</span><span className="num text-xs text-mist-300">{[q.coins ? coinsAsMoney(q.coins) : '', q.cents ? money(q.cents) : ''].filter(Boolean).join(' · ')}</span></div>
                 <div className="mt-2 flex items-center gap-3">
                   <Meter value={(q.progress / q.target) * 100} tone="gold" className="flex-1" />
                   <span className="num w-24 text-right text-xs text-mist-400">{Math.floor(q.progress).toLocaleString(intlLocale())} / {q.target.toLocaleString(intlLocale())}</span>
@@ -60,11 +61,11 @@ export default async function EasterPage() {
             {live && friends.friends.length ? (
               <SelectAction label={t('Чукни се')} ariaLabel={t('Приятел')} value="" options={[{ value: '', label: t('— избери приятел —') }, ...friends.friends.map((f) => ({ value: f.id, label: f.username }))]} action={{ type: 'eggFight' }} field="friendId" />
             ) : <p className="text-sm text-mist-400">{live ? t('Добави приятели, за да се чукнеш с тях.') : t('Яйчените битки са около Великден.')}</p>}
-            <p className="mt-2 text-xs text-mist-400">{t('Без залог — по-здравото яйце печели {0} TC от играта.', EASTER.eggCoins)}</p>
+            <p className="mt-2 text-xs text-mist-400">{t('Без залог — по-здравото яйце печели {0} от играта.', coinsAsMoney(EASTER.eggCoins))}</p>
           </Card>
           <Card title={t('Значка')}>
             <div className="font-display text-lg font-bold">{tx(badge.label)}</div>
-            <p className="text-sm text-mist-300">{state.badge ? t('Твоя е.') : t('{0} Плюс {1} TC.', badge.description, QUEST_BADGE_COINS)}</p>
+            <p className="text-sm text-mist-300">{state.badge ? t('Твоя е.') : t('{0} Плюс {1}.', badge.description, coinsAsMoney(QUEST_BADGE_COINS))}</p>
           </Card>
           <Card title={t('Боя „Великден“')}>
             <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={EASTER.paintColor} livery="easter" className="h-20 w-full" />

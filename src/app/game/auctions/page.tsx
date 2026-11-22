@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { ArrowRight, Coins, Gavel, Timer, Trophy } from 'lucide-react';
 import { AuctionBid, AuctionCountdown } from '@/components/game/AuctionLive';
 import { Badge, Card, Empty, PageHeader } from '@/components/ui';
@@ -52,7 +53,7 @@ export default async function AuctionsPage() {
                 <li key={w.id} className="rounded-xl border border-gold-400/40 bg-gold-400/5 p-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-semibold">{t('{0} · {1} т', w.title, w.weightTons)}</span>
-                    <span className="num">{money(w.winningBidCents ?? 0)} + {tx(w.coins)} TC</span>
+                    <span className="num">{money(w.winningBidCents ?? 0)} + {coinsAsMoney(Number(w.coins) || 0)}</span>
                   </div>
                   <div className="text-mist-300">{tx(w.from)} <ArrowRight className="inline h-3 w-3" />{' '}{t('{0} · {1} · изпрати до {2}', w.to, km(w.distanceKm), dateTime(w.contract.expiresAt))}</div>
                   <div className="mt-2"><SelectAction label={t('Изпрати')} ariaLabel={t('Камион за {0}', w.title)} value="" options={[{ value: '', label: t('— избери камион —') }, ...options]} action={{ type: 'acceptContract', contractId: w.contract.id }} field="vehicleId" /></div>
@@ -86,7 +87,7 @@ export default async function AuctionsPage() {
                     <div><dt className="label">{t('Начална цена')}</dt><dd className="num">{money(a.startPriceCents)}</dd></div>
                     <div><dt className="label">{t('Най-ниска оферта')}</dt><dd className="num text-profit">{a.lowest ? money(a.lowest.amount) : '—'}</dd></div>
                     <div><dt className="label">{t('Води')}</dt><dd className="truncate">{a.lowest ? (leading ? t('ти') : a.lowest.username) : '—'}</dd></div>
-                    <div><dt className="label">{t('Бонус')}</dt><dd className="num inline-flex items-center gap-1 text-cyan-glow"><Coins className="h-3.5 w-3.5" />{tx(a.coins)} TC</dd></div>
+                    <div><dt className="label">{t('Бонус')}</dt><dd className="num inline-flex items-center gap-1 text-cyan-glow"><Coins className="h-3.5 w-3.5" />{coinsAsMoney(Number(a.coins) || 0)}</dd></div>
                   </dl>
                   <p className="mt-3 text-xs text-mist-400">{tx(a.bids)} {a.bids === 1 ? t('оферта') : t('оферти')}{a.myBid ? t(' · твоята: {0}', money(a.myBid)) : ''}</p>
                 </div>

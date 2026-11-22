@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { Crown, Fuel, Leaf, PartyPopper, Receipt, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -51,7 +52,7 @@ export default async function CountryPage({ params }: { params: Promise<{ code: 
             ) : (
               <p className="text-sm text-mist-400">{t('Още няма крал.')}</p>
             )}
-            <p className="mt-2 text-xs text-mist-400">{t('Който докара най-много тонове до държавата за месеца (поне {0} т), носи титлата следващия месец и получава {1} TC. Този месец досега:', COUNTRY_KINGS.minTons, COUNTRY_KINGS.coins)}</p>
+            <p className="mt-2 text-xs text-mist-400">{t('Който докара най-много тонове до държавата за месеца (поне {0} т), носи титлата следващия месец и получава {1}. Този месец досега:', COUNTRY_KINGS.minTons, coinsAsMoney(COUNTRY_KINGS.coins))}</p>
             {c.race.length ? (
               <ol className="mt-1 divide-y divide-white/5 text-sm">
                 {c.race.map((r, i) => <li key={r.userId} className={`flex justify-between py-1.5 ${r.userId === user.id ? 'text-cyan-glow' : ''}`}><span><span className="num mr-2 text-mist-400">{i + 1}.</span>{tx(r.username)}</span><span className="num">{t('{0} т', dec(r.tons))}</span></li>)}

@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, eq, or, sql } from 'drizzle-orm';
 import { EASTER, EASTER_QUESTS, easterEventWindow, easterIncrements, isEaster } from '@/lib/game/easter';
 import { BADGES } from '@/lib/game/halloween';
@@ -57,7 +58,7 @@ export async function eggFight(db: Database, userId: string, friendId: string, n
     const names = await tx.select({ id: users.id, username: users.username }).from(users).where(or(eq(users.id, userId), eq(users.id, friendId)));
     const name = (id: string) => names.find((n) => n.id === id)?.username ?? '';
     const loser = winnerId === userId ? friendId : userId;
-    await notify(tx, winnerId, 'success', () => t('Твоето яйце издържа! 🥚'), () => t('Спечели яйчената битка с {0} — +{1} TC. Христос воскресе!', name(loser), EASTER.eggCoins), '/game/easter');
+    await notify(tx, winnerId, 'success', () => t('Твоето яйце издържа! 🥚'), () => t('Спечели яйчената битка с {0} — +{1}. Христос воскресе!', name(loser), coinsAsMoney(EASTER.eggCoins)), '/game/easter');
     await notify(tx, loser, 'info', () => t('{0} спечели яйчената битка 🥚', name(winnerId)), () => t('Догодина ще е твоят ред. Христос воскресе!'), '/game/easter');
     return { won: winnerId === userId, badge: BADGES[EASTER.eggBadge]?.label };
   });

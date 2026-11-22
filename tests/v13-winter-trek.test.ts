@@ -1,3 +1,4 @@
+import { moneyForCoins } from '@/lib/game/coin-cap';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 
@@ -82,7 +83,8 @@ describe('1.3 „Зимен поход“', () => {
     view = (await winterTrekView(db(), p.userId, day(0)))!;
     expect(view.done).toBe(1);
     expect(view.steps[1]!.state).toBe('locked');
-    expect(await balance(p.userId)).toBe(start + TREK_STEPS[0]!.cents);
+    // 1.3.2.1: the step's ТрансКоин come in money too (200 lv. per TC).
+    expect(await balance(p.userId)).toBe(start + TREK_STEPS[0]!.cents + moneyForCoins(TREK_STEPS[0]!.coins));
 
     // A trip driven by a hired driver does not count.
     await record({ ...big(p.userId), ownerDrove: false }, day(1));
@@ -99,9 +101,9 @@ describe('1.3 „Зимен поход“', () => {
     }
     view = (await winterTrekView(db(), p.userId, day(7)))!;
     expect(view.finished).toBe(true);
-    expect(await balance(p.userId)).toBe(start + TREK_STEPS.reduce((s, x) => s + x.cents, 0));
+    expect(await balance(p.userId)).toBe(start + TREK_STEPS.reduce((s, x) => s + x.cents + moneyForCoins(x.coins), 0));
     const coins = (await db().select({ coins: users.coins }).from(users).where(eq(users.id, p.userId)))[0]!.coins;
-    expect(coins - coins0).toBe(TREK_STEPS.reduce((s, x) => s + x.coins, 0));
+    expect(coins - coins0).toBe(0);
     const [paint] = await db().select().from(inventoryItems).where(and(eq(inventoryItems.userId, p.userId), eq(inventoryItems.itemId, 'paint_frost')));
     expect(paint?.qty).toBe(1);
     const notes = await db().select({ title: notifications.title }).from(notifications).where(and(eq(notifications.userId, p.userId), eq(notifications.href, '/game/missions')));
@@ -109,7 +111,7 @@ describe('1.3 „Зимен поход“', () => {
 
     // Nothing more after the end; the card goes away when the season ends.
     await record(big(p.userId), day(8));
-    expect(await balance(p.userId)).toBe(start + TREK_STEPS.reduce((s, x) => s + x.cents, 0));
+    expect(await balance(p.userId)).toBe(start + TREK_STEPS.reduce((s, x) => s + x.cents + moneyForCoins(x.coins), 0));
     expect(await winterTrekView(db(), p.userId, new Date(WINTER_TREK.to))).toBeNull();
   });
 });

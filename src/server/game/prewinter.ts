@@ -4,6 +4,7 @@
  * badge for five on-time winter loads, and +5% on new loads in the first week
  * of winter when the goal was reached.
  */
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { eq, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { isFirstWinterWeek, isPrewinter, PREWINTER, prewinterKey } from '@/lib/game/prewinter';
@@ -55,7 +56,7 @@ export async function recordPrewinterDelivery(tx: Tx, userId: string, f: { holid
   const [badge] = await tx.insert(userBadges).values({ userId, badge: PREWINTER.badge, awardedAt: at }).onConflictDoNothing().returning();
   if (!badge) return;
   await postCoins(tx, userId, { amount: PREWINTER.coins, reason: 'holiday_reward', description: t('Значка „Зимна готовност“'), idempotencyKey: `${mine}:badge` });
-  await notify(tx, userId, 'achievement', () => t('Значка: Зимна готовност'), () => t('{0} зимни товара навреме — и {1} TC.', PREWINTER.loadsForBadge, PREWINTER.coins), '/game/profile');
+  await notify(tx, userId, 'achievement', () => t('Значка: Зимна готовност'), () => t('{0} зимни товара навреме — и {1}.', PREWINTER.loadsForBadge, coinsAsMoney(PREWINTER.coins)), '/game/profile');
 }
 
 /** How many winter loads the player delivered on time this year. */

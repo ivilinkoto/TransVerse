@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { BADGES } from '@/lib/game/halloween';
 import { legendTier, legendTiersCrossed, LEGEND_BADGE, MUSEUM, SCRAP } from '@/lib/game/heritage';
@@ -21,7 +22,7 @@ export async function checkLegend(tx: Tx, userId: string, v: { id: string; plate
   for (const t of legendTiersCrossed(before, after)) {
     const paid = await postCoins(tx, userId, { amount: t.coins, reason: 'legend', description: `${t.title}: ${v.plate}`, idempotencyKey: `legend:${v.id}:${t.tier}` });
     if (!paid) continue;
-    await notify(tx, userId, 'achievement', `${t.title}! 🏆`, () => tr('{0} ({1}) измина {2} 000 км. +{3} TC.', powerUnitModel(v.modelId).name, v.plate, (t.km / 1000).toLocaleString(intlLocale()), t.coins), `/game/garage/${v.id}`);
+    await notify(tx, userId, 'achievement', `${t.title}! 🏆`, () => tr('{0} ({1}) измина {2} 000 км. +{3}.', powerUnitModel(v.modelId).name, v.plate, (t.km / 1000).toLocaleString(intlLocale()), coinsAsMoney(t.coins)), `/game/garage/${v.id}`);
     if (t.tier === 1) {
       const [got] = await tx.insert(userBadges).values({ userId, badge: LEGEND_BADGE, awardedAt: at }).onConflictDoNothing().returning();
       if (got) await notify(tx, userId, 'achievement', () => tr('Значка: {0}', BADGES[LEGEND_BADGE]?.label ?? ''), () => tr('Първият ти камион легенда.'), '/game/progress');

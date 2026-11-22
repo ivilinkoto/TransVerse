@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import { COUNTRY_KINGS } from '@/lib/game/europe';
 import { featureLive } from '@/lib/game/features';
@@ -54,7 +55,7 @@ export async function settleCountryKings(db: Database, now: Date) {
     for (const k of rows) {
       const country = names.get(k.countryCode) ?? k.countryCode;
       await postCoins(tx, k.userId, { amount: COUNTRY_KINGS.coins, reason: 'challenge', description: t('Крал на {0} ({1})', country, last.key.slice(1)), idempotencyKey: `country-king:${last.key}:${k.countryCode}` });
-      await notify(tx, k.userId, 'achievement', () => t('Крал на {0}! 👑', country), () => t('Най-много тонове до {0} миналия месец — {1} т. Титлата е твоя този месец, плюс {2} TC.', country, k.tons.toLocaleString(intlLocale()), COUNTRY_KINGS.coins), `/game/countries/${k.countryCode}`);
+      await notify(tx, k.userId, 'achievement', () => t('Крал на {0}! 👑', country), () => t('Най-много тонове до {0} миналия месец — {1} т. Титлата е твоя този месец, плюс {2}.', country, k.tons.toLocaleString(intlLocale()), coinsAsMoney(COUNTRY_KINGS.coins)), `/game/countries/${k.countryCode}`);
     }
     if (rows.length && featureLive('discord_bot', now)) {
       const lines = rows

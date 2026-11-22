@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import Link from 'next/link';
 import { Globe2, Trophy, Truck } from 'lucide-react';
 import { notFound } from 'next/navigation';
@@ -28,7 +29,7 @@ export default async function ChallengesPage() {
     features.big_convoy ? openBigConvoys(db, now) : [],
     lastChallengeWinners(db, now),
   ]);
-  const prizes = WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${c} TC`).join(' · ');
+  const prizes = WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${coinsAsMoney(c)}`).join(' · ');
   const visited = tour?.filter((c) => c.done).length ?? 0;
   const grandVisited = grand?.countries.filter((c) => c.done).length ?? 0;
   return (
@@ -45,7 +46,7 @@ export default async function ChallengesPage() {
           <ol className="mt-3 divide-y divide-white/5 text-sm">
             {week.top.map((r, i) => (
               <li key={r.userId} className={`flex justify-between py-1.5 ${r.userId === user.id ? 'text-cyan-glow' : ''}`}>
-                <span><span className="num mr-2 text-mist-400">{i + 1}.</span>{tx(r.username)}{i < WEEKLY_CHALLENGE.prizes.length ? <span className="ml-2"><Badge tone="orange">{tx(WEEKLY_CHALLENGE.prizes[i])} TC</Badge></span> : null}</span>
+                <span><span className="num mr-2 text-mist-400">{i + 1}.</span>{tx(r.username)}{i < WEEKLY_CHALLENGE.prizes.length ? <span className="ml-2"><Badge tone="orange">{coinsAsMoney(WEEKLY_CHALLENGE.prizes[i] ?? 0)}</Badge></span> : null}</span>
                 <span className="num">{int(r.value)} {tx(week.unit)}</span>
               </li>
             ))}
@@ -57,14 +58,14 @@ export default async function ChallengesPage() {
       {last && (
         <Card title={t('Миналата седмица: {0}', last.title)}>
           <ol className="space-y-1 text-sm">
-            {last.winners.map((w, i) => <li key={w.userId} className="flex justify-between"><span><span className="num mr-2 text-mist-400">{i + 1}.</span>{w.username ?? '—'}</span><span className="num">{int(w.value ?? 0)} {tx(last.unit)} · {tx(WEEKLY_CHALLENGE.prizes[i])} TC</span></li>)}
+            {last.winners.map((w, i) => <li key={w.userId} className="flex justify-between"><span><span className="num mr-2 text-mist-400">{i + 1}.</span>{w.username ?? '—'}</span><span className="num">{int(w.value ?? 0)} {tx(last.unit)} · {coinsAsMoney(WEEKLY_CHALLENGE.prizes[i] ?? 0)}</span></li>)}
           </ol>
         </Card>
       )}
       <div className="grid gap-6 lg:grid-cols-2">
         {tour && (
           <Card title={<span className="inline-flex items-center gap-2"><Globe2 className="h-4 w-4 text-cyan-glow" />{t('Евротур · {0} / {1}', visited, tour.length)}</span>}>
-            <p className="text-sm text-mist-300">{t('Достави до всичките {0} държави на играта в един календарен месец — значка „Евротур“ и {1} TC (веднъж в месеца).', tour.length, EUROTOUR.coins)}</p>
+            <p className="text-sm text-mist-300">{t('Достави до всичките {0} държави на играта в един календарен месец — значка „Евротур“ и {1} (веднъж в месеца).', tour.length, coinsAsMoney(EUROTOUR.coins))}</p>
             <Meter value={(visited / tour.length) * 100} tone="cyan" className="mt-3" />
             <div className="mt-3 flex flex-wrap gap-2">
               {tour.map((c) => <Badge key={c.code} tone={c.done ? 'green' : 'neutral'}>{c.done ? '✓ ' : ''}{tx(c.name)}</Badge>)}
@@ -73,7 +74,7 @@ export default async function ChallengesPage() {
         )}
         {grand && (
           <Card title={<span className="inline-flex items-center gap-2"><Globe2 className="h-4 w-4 text-amber-sig" />{t('Голям евротур · {0} / {1}', grandVisited, grand.countries.length)}</span>}>
-            <p className="text-sm text-mist-300">{t('Достави до всичките {0} държави на играта в един сезон ({1}, до {2}) — значка „Голям евротур“ и {3} TC.', grand.countries.length, grand.season.name, dateTime(grand.season.endsAt), GRAND_EUROTOUR.coins)}</p>
+            <p className="text-sm text-mist-300">{t('Достави до всичките {0} държави на играта в един сезон ({1}, до {2}) — значка „Голям евротур“ и {3}.', grand.countries.length, grand.season.name, dateTime(grand.season.endsAt), coinsAsMoney(GRAND_EUROTOUR.coins))}</p>
             <Meter value={(grandVisited / grand.countries.length) * 100} tone="cyan" className="mt-3" />
             <div className="mt-3 flex flex-wrap gap-2">
               {grand.countries.map((c) => <Badge key={c.code} tone={c.done ? 'green' : 'neutral'}>{c.done ? '✓ ' : ''}{tx(c.name)}</Badge>)}
