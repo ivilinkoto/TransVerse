@@ -13,12 +13,14 @@ import {
   type LocoId, type RailPath, type Train, type TrainOrder, type TrainRun, type WagonType,
 } from '@/lib/game/trains';
 import { countryOpen } from '@/lib/geo/scope';
+import { LICENCES, missingLicences, railLicences, type LicenceId } from '@/lib/game/licences';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, jobState, users } from '@/server/db/schema';
 import { fail } from './errors';
 import { post } from './finance';
 import { membershipOf } from './membership';
 import { notify } from './notify';
+import { heldLicences } from './licences';
 import { t, tx as place } from '@/i18n/t';
 
 const key = (id: string) => `train:${id}`;
@@ -34,6 +36,14 @@ async function account(db: DbOrTx, userId: string) {
   const [a] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
   if (!a) fail('company_not_found', t('Компанията не е намерена.'), 404);
   return a!;
+}
+
+/** The countries a run passes (its terminals), for the licences it needs. */
+const pathCountries = (stops: readonly number[]) => [...new Set(stops.map((id) => terminal(id)?.country).filter((c): c is string => !!c))];
+const licenceNames = (ids: readonly LicenceId[]) => ids.map((id) => place(LICENCES[id].label)).join(', ');
+function needLicences(held: ReadonlySet<string>, stops: readonly number[]) {
+  const missing = missingLicences(railLicences(pathCountries(stops)), held);
+  if (missing.length) fail('licence', t('Нужен е лиценз: {0} (Автопарк → Лицензи).', licenceNames(missing)));
 }
 
 const inCompany = async (db: DbOrTx, userId: string) => !!(await membershipOf(db, userId));
@@ -82,6 +92,7 @@ export async function buyTrain(db: Database, userId: string, n: { loco: LocoId; 
   const lim = trainLimits(company);
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
   if ((u?.level ?? 0) < lim.minLevel) fail('level', t('Влаковете са от ниво {0}.', lim.minLevel));
+  if (!(await heldLicences(db, userId)).has('rail')) fail('licence', t('Нужен е лиценз: {0} (Автопарк → Лицензи).', place(LICENCES.rail.label)));
   const acc = await account(db, userId);
   return db.transaction(async (tx) => {
     // One purchase at a time per player (the count below must not race).
@@ -156,12 +167,14 @@ export const reasonText = (code: string) => REASONS[code]?.() ?? code;
 /** Takes an order from the board at the train's terminal and sends the train. */
 export async function sendTrain(db: Database, userId: string, trainId: string, orderId: string, now: Date) {
   const company = await inCompany(db, userId);
+  const held = await heldLicences(db, userId);
   return db.transaction(async (tx) => {
     const train = await finishRun(tx, await lockTrain(tx, userId, trainId), now);
     const order = ordersAt(train.at, now.getTime(), openAt(now)).find((o) => o.id === orderId);
     if (!order) fail('no_order', t('Поръчката вече не е на борсата.'), 404);
     const why = cannotTake(train, order!);
     if (why) fail(why, reasonText(why));
+    needLicences(held, order!.stops);
     const taken = await tx.insert(jobState).values({ key: orderKey(order!.id), value: { trainId: train.id, userId, at: now.toISOString() }, updatedAt: now }).onConflictDoNothing().returning({ key: jobState.key });
     if (!taken.length) fail('order_taken', t('Друг влак вече взе тази поръчка.'));
     return depart(tx, train, order!, order!, company, now);
@@ -174,12 +187,14 @@ export const emptyRoutes = (train: Pick<Train, 'at' | 'loco'>, now: Date) => [..
 /** Sends the train empty to another terminal (to find loads there). */
 export async function moveTrain(db: Database, userId: string, trainId: string, to: number, now: Date) {
   const company = await inCompany(db, userId);
+  const held = await heldLicences(db, userId);
   return db.transaction(async (tx) => {
     const train = await finishRun(tx, await lockTrain(tx, userId, trainId), now);
     if (train.run) fail('busy', reasonText('busy'));
     const path = emptyRoutes(train, now).find((p) => p.to === to);
     if (!path) fail('no_route', LOCOS[train.loco].electric && pathsFrom(train.at, openAt(now)).has(to) ? reasonText('diesel_only') : t('Няма жп път дотам.'));
     if (grossFor(train, 0) > pullOver(train.loco, path!)) fail('too_heavy', reasonText('too_heavy'));
+    needLicences(held, path!.stops);
     return depart(tx, train, path!, null, company, now);
   });
 }
@@ -230,19 +245,21 @@ export async function trainsView(db: Database, userId: string, now: Date) {
   const company = await inCompany(db, userId);
   const lim = trainLimits(company);
   const open = openAt(now);
+  const held = await heldLicences(db, userId);
   const mine = (await allTrains(db)).filter((tr) => tr.ownerId === userId).sort((a, b) => a.boughtAt.localeCompare(b.boughtAt));
   const ids = [...new Set(mine.filter((tr) => !tr.run).flatMap((tr) => ordersAt(tr.at, now.getTime(), open).map((o) => orderKey(o.id))))];
   const taken = new Set(ids.length ? (await db.select({ key: jobState.key }).from(jobState).where(inArray(jobState.key, ids))).map((r) => r.key.slice('train-order:'.length)) : []);
   const trains = mine.map((tr) => ({
     ...tr,
-    empty: tr.run ? [] : emptyRoutes(tr, now).filter((p) => p.stops.length <= 4).map((p) => ({ ...p, ...planRun(tr, p, 0, company, now.getTime()) })),
+    empty: tr.run ? [] : emptyRoutes(tr, now).filter((p) => p.stops.length <= 4 && !missingLicences(railLicences(pathCountries(p.stops)), held).length).map((p) => ({ ...p, ...planRun(tr, p, 0, company, now.getTime()) })),
     orders: tr.run ? [] : ordersAt(tr.at, now.getTime(), open).map((o) => {
-      const why = taken.has(o.id) ? 'order_taken' : cannotTake(tr, o);
+      const missing = missingLicences(railLicences(pathCountries(o.stops)), held);
+      const why = taken.has(o.id) ? 'order_taken' : (cannotTake(tr, o) ?? (missing.length ? 'licence' : null));
       const plan = planRun(tr, o, o.tons, company, now.getTime());
-      return { ...o, pay: payFor(o, company), cost: plan.cost.total, hours: plan.hours, gross: plan.gross, limit: plan.limit, need: wagonsFor(o.wagonType, o.tons), why };
+      return { ...o, pay: payFor(o, company), cost: plan.cost.total, hours: plan.hours, gross: plan.gross, limit: plan.limit, need: wagonsFor(o.wagonType, o.tons), why, missing };
     }).sort((a, b) => Number(!!a.why) - Number(!!b.why) || b.pay - b.cost - (a.pay - a.cost)),
   }));
-  return { trains, company, limits: lim, terminals: RAIL_TERMINALS.filter((x) => open(x.country)) };
+  return { trains, company, limits: lim, licensed: held.has('rail'), terminals: RAIL_TERMINALS.filter((x) => open(x.country)) };
 }
 
 export interface RailMap {

@@ -50,7 +50,7 @@ export default async function CompanyPage() {
       <>
         <TutorialVisit step="company_goal" pending={visitPending} />
         {features.nav_v2 && <div className="mb-4"><CompanyCards db={db} organizationId={hub.company.id} pending={hub.pending.length} now={now} has={(f) => !!features[f]} /></div>}
-        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month, medals: features.season_medals ? await organizationMedals(db, hub.company.id) : null, companyAchievements: features.company_achievements ? await companyAchievementsOf(db, hub.company.id) : null }} />
+        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month, medals: features.season_medals ? await organizationMedals(db, hub.company.id) : null, companyAchievements: features.company_achievements ? await companyAchievementsOf(db, hub.company.id) : null, trains: !!features.trains }} />
         {features.item_chests && <div className="mt-4"><CompanyChest db={db} organizationId={hub.company.id} owner={hub.rank.isOwner} /></div>}
         {/* 1.2.3.1: the polls moved here from the company chat page (the chat is in the floating chat). */}
         {features.company_polls && (
@@ -168,7 +168,7 @@ async function staffBusView(db: ReturnType<typeof getDb>, userId: string, accoun
   return { ...state, trucks: trucks.filter((t) => t.cityId !== state.hqCityId) };
 }
 
-type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null; chronicle: Awaited<ReturnType<typeof chronicleOf>> | null; driverOfMonth: boolean; medals: Awaited<ReturnType<typeof organizationMedals>> | null; companyAchievements: Awaited<ReturnType<typeof companyAchievementsOf>> | null };
+type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null; chronicle: Awaited<ReturnType<typeof chronicleOf>> | null; driverOfMonth: boolean; medals: Awaited<ReturnType<typeof organizationMedals>> | null; companyAchievements: Awaited<ReturnType<typeof companyAchievementsOf>> | null; trains?: boolean };
 
 const CHRONICLE_ICON: Record<string, string> = { driver: '🚚', founded: '🏁', level: '⭐', build: '🏗️', battle: '⚔️', project: '📦', division: '🏆', anniversary: '🎂', alliance: '🛡', specialization: '🎯', museum: '🏛️', owner: '🔑', name: '✏️' };
 
@@ -238,7 +238,7 @@ function CompanyOverview({ hub, history, licences, extras }: { hub: Hub; history
         <CompanyProgress hub={hub} />
         {(extras.medals || extras.companyAchievements) && <CompanyMedals medals={extras.medals} achievements={extras.companyAchievements} />}
         <CompanySeason db={getDb()} organizationId={c.id} />
-        <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} />
+        <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} has={(f) => f === 'trains' && !!extras.trains} />
         <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-mist-400" />{tr('Моето членство')}</span>}>
           <div className="flex flex-wrap items-center gap-2 text-sm"><Badge tone={hub.rank.isOwner ? 'gold' : 'violet'}>{tx(hub.rank.name)}</Badge><span className="text-mist-400">{tr('член от {0}', date(hub.member.joinedAt))}</span></div>
           <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">

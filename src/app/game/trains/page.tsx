@@ -8,6 +8,7 @@ import { TrainArt } from '@/components/vehicles/trains';
 import { place, RunStatus, WAGON_ICON } from '@/components/game/TrainOrders';
 import { dateTime, int, money } from '@/lib/format';
 import { LOCO_IDS, LOCOS, tareTons, TRAINS, WAGON_TYPES, WAGONS, wagonCount } from '@/lib/game/trains';
+import { LICENCES } from '@/lib/game/licences';
 import { gameContext } from '@/server/game/context';
 import { trainsView } from '@/server/game/trains';
 import { t, tx } from '@/i18n/t';
@@ -111,6 +112,12 @@ export default async function TrainsPage() {
           ))}
         </ul>
         {locked ? <p className="text-sm text-mist-300">🔒 {t('Влаковете са от ниво {0}.', v.limits.minLevel)}</p>
+          : !v.licensed ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-sm" data-testid="train-licence">
+              <span>📜 {t('За собствен влак е нужен ЖП лиценз ({0}). За курс през граница — и международен, а извън ЕС и митнически лиценз.', money(LICENCES.rail.priceCents))}</span>
+              <Link href="/game/licences" className="btn-gold px-3 py-1.5 text-xs">{t('Към лицензите')}</Link>
+            </div>
+          )
           : v.trains.length >= v.limits.maxTrains ? <p className="text-sm text-mist-300">{t('Най-много {0} влака на играч.', v.limits.maxTrains)}</p>
           : (
             <FormAction action={{ type: 'buyTrain' }} submit={t('Купи влака')} fields={[

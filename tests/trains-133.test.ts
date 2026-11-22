@@ -3,7 +3,9 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { FEATURES } from '@/lib/game/features';
 import { cannotTake, GRADES, grossFor, LOCOS, orderPay, ordersAt, pathsFrom, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, tareTons, TRAINS, WAGONS, type Train } from '@/lib/game/trains';
 import { closeDb } from '@/server/db/client';
-import { cities, companies, jobState, users } from '@/server/db/schema';
+import { cities, companies, jobState, userLicences, users } from '@/server/db/schema';
+import { LICENCES, licenceOpen } from '@/lib/game/licences';
+import { buyLicence } from '@/server/game/licences';
 import { post } from '@/server/game/finance';
 import { GameError } from '@/server/game/errors';
 import { buyTrain, moveTrain, sellTrain, sendTrain, settleTrains, trainsView } from '@/server/game/trains';
@@ -15,8 +17,9 @@ afterAll(() => closeDb());
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : String(e)));
 const SOFIA = 727011;
 const balance = async (userId: string) => (await db().select({ b: companies.balanceCents }).from(companies).where(eq(companies.ownerId, userId)))[0]!.b;
-async function rich(userId: string, level: number) {
+async function rich(userId: string, level: number, licences: string[] = ['rail', 'international', 'customs']) {
   await db().update(users).set({ level }).where(eq(users.id, userId));
+  if (licences.length) await db().insert(userLicences).values(licences.map((licence) => ({ userId, licence, priceCents: 0, source: 'purchase' }))).onConflictDoNothing();
   const [acc] = await db().select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
   await db().transaction((tx) => post(tx, acc!.id, [{ category: 'admin_adjustment', amountCents: 3_000_000_00, description: 'test funds', idempotencyKey: `test-train:${userId}` }]));
 }
@@ -184,5 +187,31 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     expect(isTrainPage('/game/contracts/trains')).toBe(true);
     expect(isTrainPage('/game/contracts')).toBe(false);
     expect(isTrainPage('/game/trainsx')).toBe(false);
+  });
+
+  it('the rail licence: needed for a train; over a border also the international and outside the EU the customs one', async () => {
+    expect(LICENCES.rail).toMatchObject({ feature: 'trains', minLevel: 12, priceCents: 50_000_00 });
+    expect(licenceOpen(LICENCES.rail, () => false)).toBe(false);
+    expect(licenceOpen(LICENCES.rail, (f) => f === 'trains')).toBe(true);
+    expect(licenceOpen(LICENCES.air, () => true)).toBe(false);
+    const p = await newPlayer();
+    await rich(p.userId, 15, []);
+    const n = { loco: 'danubia-d22' as const, wagonType: 'container' as const, wagons: 10, terminalId: SOFIA };
+    expect(await code(buyTrain(db(), p.userId, n, new Date()))).toBe('licence');
+    // Before the release only the team can buy it.
+    if (!FEATURES.trains || Date.now() < Date.parse('2026-12-04T00:00:00+02:00')) expect(await code(buyLicence(db(), p.userId, 'rail'))).toBe('licence_unavailable');
+    await db().insert(userLicences).values({ userId: p.userId, licence: 'rail', priceCents: 0, source: 'purchase' });
+    const train = await buyTrain(db(), p.userId, n, new Date());
+    const view = await trainsView(db(), p.userId, new Date());
+    const tr = view.trains.find((x) => x.id === train.id)!;
+    for (const o of tr.orders) {
+      const abroad = o.stops.some((id) => RAIL_TERMINALS.find((x) => x.id === id)!.country !== 'BG');
+      if (abroad && !o.why?.match(/order_taken|wagons|too_heavy/)) expect(o.why, o.id).toBe('licence');
+      if (abroad) expect(o.missing).toContain('international');
+      if (!abroad) expect(o.missing).toEqual([]);
+    }
+    // No empty run abroad without the licences, and none is offered.
+    expect(tr.empty.every((e) => e.stops.every((id) => RAIL_TERMINALS.find((x) => x.id === id)!.country === 'BG'))).toBe(true);
+    expect(await code(moveTrain(db(), p.userId, train.id, 787657, new Date()))).toBe('licence');
   });
 });

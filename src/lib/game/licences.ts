@@ -1,12 +1,13 @@
 /**
  * Carrier licences a player buys once and keeps. Pure rules shared by server and UI.
  *
- * The truck licences gate real contracts today. Rail, air, coastal and ocean
- * licences belong to transport modes the game does not have yet; they are listed
- * as "coming soon" and cannot be bought, so nobody pays for something that does
- * nothing.
+ * The truck licences gate real contracts today, and (1.3.3) the rail licence
+ * the players' own trains. Air, coastal and ocean licences belong to transport
+ * modes the game does not have yet; they are listed as "coming soon" and cannot
+ * be bought, so nobody pays for something that does nothing.
  */
 import type { CargoType } from './cargo';
+import type { FeatureId } from './features';
 
 export const LICENCE_IDS = ['international', 'customs', 'adr', 'reefer', 'oversize', 'rail', 'air', 'coastal', 'ocean'] as const;
 export type LicenceId = (typeof LICENCE_IDS)[number];
@@ -22,6 +23,8 @@ export interface LicenceDefinition {
   requires?: LicenceId;
   /** False for modes that are not in the game yet. */
   available: boolean;
+  /** 1.3.3: open once this feature is (the staff see it before the release). */
+  feature?: FeatureId;
 }
 
 export const LICENCES: Record<LicenceId, LicenceDefinition> = {
@@ -71,11 +74,23 @@ export const LICENCES: Record<LicenceId, LicenceDefinition> = {
     minLevel: 6,
     available: true,
   },
-  rail: { id: 'rail', label: 'ЖП лиценз', short: 'ЖП', description: 'Железопътен превоз на товари.', priceCents: 15_000_00, minLevel: 8, available: false },
+  rail: {
+    id: 'rail',
+    label: 'ЖП лиценз',
+    short: 'ЖП',
+    description: 'Собствени товарни влакове: купуване на локомотиви и вагони и курсове по жп мрежата. За курс през граница — и международен, а извън ЕС и митнически лиценз.',
+    priceCents: 50_000_00,
+    minLevel: 12,
+    available: false,
+    feature: 'trains',
+  },
   air: { id: 'air', label: 'Въздушен карго лиценз', short: 'Въздушен', description: 'Въздушен превоз на товари.', priceCents: 25_000_00, minLevel: 10, available: false },
   coastal: { id: 'coastal', label: 'Крайбрежен лиценз', short: 'Крайбрежен', description: 'Морски превоз между пристанища по крайбрежието.', priceCents: 18_000_00, minLevel: 9, available: false },
   ocean: { id: 'ocean', label: 'Океански лиценз', short: 'Океански', description: 'Океански превоз на контейнери.', priceCents: 30_000_00, minLevel: 12, requires: 'coastal', available: false },
 };
+
+/** Whether a licence can be bought now: always, or (1.3.3) once its transport mode is in the game for this viewer. */
+export const licenceOpen = (def: LicenceDefinition, has: (f: FeatureId) => boolean) => def.available || (!!def.feature && has(def.feature));
 
 /** Countries in the game that are outside the EU (crossing into them needs customs clearance). */
 export const NON_EU = new Set(['TR', 'RS', 'MK', 'CH', 'BA', 'ME', 'AL', 'XK', 'MD', 'UA', 'BY', 'RU', 'GE', 'AM']);
@@ -107,3 +122,6 @@ export function contractCountries(originCountry: string, destCountry: string, ro
 /** Companies pay double; in exchange every member may use the licence. */
 export const COMPANY_LICENCE_MULTIPLIER = 2;
 export const companyLicencePrice = (id: LicenceId) => LICENCES[id].priceCents * COMPANY_LICENCE_MULTIPLIER;
+
+/** 1.3.3: what a train run needs — the rail licence, and over a border the international (and outside the EU the customs) one. */
+export const railLicences = (countries: readonly string[]): LicenceId[] => ['rail', ...requiredLicences('', countries)];

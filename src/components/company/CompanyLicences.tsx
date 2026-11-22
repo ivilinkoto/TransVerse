@@ -2,15 +2,17 @@ import { BadgeCheck, CircleDashed, Clock } from 'lucide-react';
 import { Card } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { date, money } from '@/lib/format';
-import { companyLicencePrice, LICENCE_IDS, LICENCES, type LicenceId } from '@/lib/game/licences';
+import { companyLicencePrice, licenceOpen, LICENCE_IDS, LICENCES, type LicenceId } from '@/lib/game/licences';
+import type { FeatureId } from '@/lib/game/features';
 import { t, tx } from '@/i18n/t';
 
 /** The company's licences: bought ones (usable by every member) and the missing ones, with a buy button for those allowed. */
-export function CompanyLicences({ held, canBuy = false, treasuryCents }: { held: { licence: string; acquiredAt: Date }[]; canBuy?: boolean; treasuryCents?: number }) {
+export function CompanyLicences({ held, canBuy = false, treasuryCents, has = () => false }: { held: { licence: string; acquiredAt: Date }[]; canBuy?: boolean; treasuryCents?: number; has?: (f: FeatureId) => boolean }) {
   const owned = new Map(held.map((h) => [h.licence, h]));
-  const ids = [...LICENCE_IDS].sort((a, b) => Number(owned.has(b)) - Number(owned.has(a)) || Number(LICENCES[b].available) - Number(LICENCES[a].available));
+  const open = (id: LicenceId) => licenceOpen(LICENCES[id], has);
+  const ids = [...LICENCE_IDS].sort((a, b) => Number(owned.has(b)) - Number(owned.has(a)) || Number(open(b)) - Number(open(a)));
   return (
-    <Card title={<span className="inline-flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-mist-400" />{t('Лицензи на компанията')}</span>} actions={<span className="text-xs text-mist-400">{t('{0} от', owned.size)}{' '}{LICENCE_IDS.filter((id) => LICENCES[id].available).length}{' '}{t('налични')}</span>}>
+    <Card title={<span className="inline-flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-mist-400" />{t('Лицензи на компанията')}</span>} actions={<span className="text-xs text-mist-400">{t('{0} от', owned.size)}{' '}{LICENCE_IDS.filter((id) => open(id)).length}{' '}{t('налични')}</span>}>
       <p className="mb-3 text-sm text-mist-400">{t('Купуват се от касата на двойна цена и важат за всички членове на компанията.')}</p>
       <ul className="divide-y divide-asphalt-800 text-sm">
         {ids.map((id: LicenceId) => {
@@ -20,12 +22,12 @@ export function CompanyLicences({ held, canBuy = false, treasuryCents }: { held:
           return (
             <li key={id} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span className="flex items-center gap-2">
-                {have ? <BadgeCheck className="h-4 w-4 text-profit" /> : def.available ? <CircleDashed className="h-4 w-4 text-mist-400" /> : <Clock className="h-4 w-4 text-mist-500" />}
-                <span className={have ? 'font-semibold' : def.available ? '' : 'text-mist-500'}>{tx(def.label)}</span>
+                {have ? <BadgeCheck className="h-4 w-4 text-profit" /> : open(def.id) ? <CircleDashed className="h-4 w-4 text-mist-400" /> : <Clock className="h-4 w-4 text-mist-500" />}
+                <span className={have ? 'font-semibold' : open(def.id) ? '' : 'text-mist-500'}>{tx(def.label)}</span>
               </span>
               {have ? (
                 <span className="text-xs text-profit">{t('има · от {0}', date(have.acquiredAt))}</span>
-              ) : !def.available ? (
+              ) : !open(def.id) ? (
                 <span className="text-xs text-mist-500">{t('скоро')}</span>
               ) : canBuy ? (
                 <ActionButton

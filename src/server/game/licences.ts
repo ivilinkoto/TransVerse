@@ -7,6 +7,7 @@ import { fail } from './errors';
 import { post, postTreasury } from './finance';
 import { logActivity, notify } from './notify';
 import { notifyMembers, requirePermission } from './membership';
+import { featureFor } from '@/server/features';
 import { t } from '@/i18n/t';
 
 /** Licences of several players at once: their own plus their company's. */
@@ -35,12 +36,17 @@ export async function companyLicenceSet(db: DbOrTx, companyId: string) {
   return db.select().from(companyLicences).where(eq(companyLicences.companyId, companyId));
 }
 
+/** A licence can be bought now by this player (its transport mode is in the game for them). */
+async function isOpen(db: DbOrTx, userId: string, def: (typeof LICENCES)[LicenceId]) {
+  return def.available || (!!def.feature && (await featureFor(db, userId, def.feature)));
+}
+
 /** A company buys a licence from its treasury at double price; all members may use it. */
 export async function buyCompanyLicence(db: Database, actorId: string, licenceId: string) {
   return db.transaction(async (tx) => {
     if (!LICENCE_IDS.includes(licenceId as LicenceId)) fail('unknown_licence', t('Непознат лиценз.'));
     const def = LICENCES[licenceId as LicenceId];
-    if (!def.available) fail('licence_unavailable', t('{0} ще бъде наличен, когато в играта се появи този вид транспорт.', def.label));
+    if (!(await isOpen(tx, actorId, def))) fail('licence_unavailable', t('{0} ще бъде наличен, когато в играта се появи този вид транспорт.', def.label));
     const actor = await requirePermission(tx, actorId, 'manage_upgrades');
     const held = new Set((await companyLicenceSet(tx, actor.company.id)).map((l) => l.licence));
     if (held.has(def.id)) fail('licence_owned', t('Компанията вече има този лиценз.'), 409);
@@ -59,7 +65,7 @@ export async function buyLicence(db: Database, userId: string, licenceId: string
   return db.transaction(async (tx) => {
     if (!LICENCE_IDS.includes(licenceId as LicenceId)) fail('unknown_licence', t('Непознат лиценз.'));
     const def = LICENCES[licenceId as LicenceId];
-    if (!def.available) fail('licence_unavailable', t('{0} ще бъде наличен, когато в играта се появи този вид транспорт.', def.label));
+    if (!(await isOpen(tx, userId, def))) fail('licence_unavailable', t('{0} ще бъде наличен, когато в играта се появи този вид транспорт.', def.label));
     const held = new Set((await tx.select({ l: userLicences.licence }).from(userLicences).where(eq(userLicences.userId, userId))).map((r) => r.l));
     if (held.has(def.id)) fail('licence_owned', t('Вече притежавате този лиценз.'), 409);
     const [user] = await tx.select({ level: users.level }).from(users).where(eq(users.id, userId));

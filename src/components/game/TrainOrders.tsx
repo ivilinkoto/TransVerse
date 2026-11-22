@@ -1,7 +1,9 @@
+import Link from 'next/link';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FormAction } from '@/components/ui/FormAction';
 import { dateTime, duration, int, money } from '@/lib/format';
 import { runProgress, terminal, WAGONS, type WagonType } from '@/lib/game/trains';
+import { LICENCES } from '@/lib/game/licences';
 import { reasonText, type TrainsView } from '@/server/game/trains';
 import { t, tx } from '@/i18n/t';
 
@@ -30,7 +32,7 @@ export function TrainOrders({ tr, now }: { tr: TrainsView['trains'][number]; now
                     {o.borders.length > 0 && ` · 🛂 ${o.borders.map((b) => tx(b.name)).join(', ')}`}
                   </p>
                   <p className="text-xs text-mist-400"><span className="text-profit">{money(o.pay)}</span> − {money(o.cost)} {t('такса и енергия')}</p>
-                  {o.why && <p className="text-xs text-loss">{o.why === 'order_taken' ? t('Друг влак вече взе тази поръчка.') : reasonText(o.why)}</p>}
+                  {o.why && <p className="text-xs text-loss">{o.why === 'order_taken' ? t('Друг влак вече взе тази поръчка.') : o.why === 'licence' ? <>{t('Нужен е лиценз: {0}.', o.missing.map((id) => tx(LICENCES[id].label)).join(', '))} <Link href="/game/licences" className="underline">{t('Към лицензите')}</Link></> : reasonText(o.why)}</p>}
                 </div>
                 <ActionButton action={{ type: 'sendTrain', trainId: tr.id, orderId: o.id }} disabled={!!o.why} className="game-action game-action-gold flex-row px-3 py-1.5 text-xs">{t('Пусни влака')}</ActionButton>
               </li>
