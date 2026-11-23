@@ -1,26 +1,74 @@
-import { Fender, Wheel, type Ids } from './parts';
+import { Fender, Wheel, type Ids, type RimStyle } from './parts';
 import { GRILLE_COLORS, LIGHT_COLORS, type Cosmetics } from '@/lib/game/cosmetics';
 import { tx } from '@/i18n/t';
 
+/**
+ * 1.3.2.2: each (invented) brand has its own cab: Hemus — the plain local
+ * truck with round lamps and amber roof markers; Danubia — rounded, with
+ * chrome bars and slim lamps; Rila Heavy — square and massive, a big grille,
+ * twin lamps, air horns and exhaust stacks; Volta — the electric, a sloped
+ * aero nose with a light band and camera mirrors.
+ */
+export type CabBrand = 'hemus' | 'danubia' | 'rila' | 'volta';
+export interface CabDesign {
+  brand: CabBrand;
+  /** Chrome exhaust stacks behind the cab (tractors). */
+  stacks?: boolean;
+  /** A bull bar in front of the bumper. */
+  bullbar?: boolean;
+  /** The roof deflector even without a trailer. */
+  aero?: boolean;
+}
+/** The rims each brand fits. */
+export const RIMS: Record<CabBrand, RimStyle> = { hemus: 'steel', danubia: 'alloy', rila: 'heavy', volta: 'aero' };
+export function cabBrand(brand: string): CabBrand {
+  return brand.startsWith('Danubia') ? 'danubia' : brand.startsWith('Rila') ? 'rila' : brand.startsWith('Volta') ? 'volta' : 'hemus';
+}
+
 /** Cab-over European truck cab. `x` = rear of cab, faces right. */
-export function Cab({ x, style, ids, color, aero = false, extras }: { x: number; style: 'day' | 'sleeper' | 'highline'; ids: Ids; color: string; aero?: boolean; extras?: Cosmetics }) {
+export function Cab({ x, style, ids, color, aero = false, extras, design = { brand: 'hemus' } }: { x: number; style: 'day' | 'sleeper' | 'highline'; ids: Ids; color: string; aero?: boolean; extras?: Cosmetics; design?: CabDesign }) {
   const L = style === 'day' ? 200 : 240;
-  const T = style === 'day' ? -300 : style === 'sleeper' ? -330 : -372;
+  const b = design.brand;
+  // Rila's cab sits higher on its frame; Volta's is low and smooth.
+  const T = (style === 'day' ? -300 : style === 'sleeper' ? -330 : -372) + (b === 'rila' ? -18 : b === 'volta' ? 10 : 0);
   const f = x + L; // front face
   const doorX = f - 160;
   const beltY = -205;
+  aero = (aero || !!design.aero) && b !== 'volta';
+  const shell =
+    b === 'danubia' ? `M ${x} -108 L ${x} ${T + 14} Q ${x} ${T} ${x + 14} ${T} L ${f - 70} ${T} Q ${f - 6} ${T} ${f - 3} ${T + 64} L ${f} -150 L ${f + 2} -112 L ${f - 2} -104 L ${x + 4} -104 Z`
+    : b === 'volta' ? `M ${x} -108 L ${x} ${T + 20} Q ${x} ${T} ${x + 20} ${T} L ${f - 90} ${T} Q ${f - 40} ${T} ${f - 22} ${T + 50} L ${f - 4} -200 Q ${f + 2} -176 ${f + 2} -150 L ${f + 2} -112 L ${f - 2} -104 L ${x + 4} -104 Z`
+    : b === 'rila' ? `M ${x} -108 L ${x} ${T + 6} L ${x + 6} ${T} L ${f - 8} ${T} L ${f - 1} ${T + 8} L ${f + 2} -150 L ${f + 4} -112 L ${f - 2} -104 L ${x + 4} -104 Z`
+    : `M ${x} -108 L ${x} ${T + 14} Q ${x} ${T} ${x + 14} ${T} L ${f - 22} ${T} Q ${f - 5} ${T} ${f - 3} ${T + 18} L ${f} -150 L ${f + 2} -112 L ${f - 2} -104 L ${x + 4} -104 Z`;
   return (
     <g>
+      {design.stacks && (
+        // Rila: twin chrome exhaust stacks behind the cab with heat shields
+        <g>
+          {[x - 30, x - 48].map((sx, i) => (
+            <g key={sx}>
+              <rect x={sx} y={T - 40 + i * 14} width={12} height={-T - 80 - i * 14} rx={5} fill={`url(#${ids.chrome})`} stroke="#475569" strokeWidth="1.5" />
+              <rect x={sx - 2} y={T + 60} width={16} height={80} rx={4} fill="#94a3b8" stroke="#475569" strokeWidth="1" />
+              {Array.from({ length: 5 }, (_, k) => <rect key={k} x={sx} y={T + 68 + k * 14} width={12} height={4} fill="#475569" opacity="0.6" />)}
+              <path d={`M ${sx - 1} ${T - 40 + i * 14} L ${sx + 14} ${T - 46 + i * 14}`} stroke="#334155" strokeWidth="4" strokeLinecap="round" />
+            </g>
+          ))}
+        </g>
+      )}
       {/* rear wall shadow + air intake */}
       <rect x={x - 14} y={T + 70} width={10} height={-T - 190} rx={4} fill="#374151" />
       <rect x={x - 17} y={T + 64} width={16} height={12} rx={3} fill="#4b5563" />
       {/* body shell */}
       <path
-        d={`M ${x} -108 L ${x} ${T + 14} Q ${x} ${T} ${x + 14} ${T} L ${f - 22} ${T} Q ${f - 5} ${T} ${f - 3} ${T + 18} L ${f} -150 L ${f + 2} -112 L ${f - 2} -104 L ${x + 4} -104 Z`}
+        d={shell}
         fill={`url(#${ids.body})`}
         stroke="#0b1220"
         strokeWidth="2"
       />
+      {b === 'volta' && style !== 'day' && (
+        // Volta: a low roof fairing grown out of the cab
+        <path d={`M ${x + 6} ${T + 2} L ${x + 6} ${T - 30} Q ${x + 10} ${T - 38} ${x + 30} ${T - 38} L ${x + 110} ${T - 38} Q ${f - 110} ${T - 30} ${f - 80} ${T + 2} Z`} fill={`url(#${ids.body})`} stroke="#0b1220" strokeWidth="2" />
+      )}
       {aero && style !== 'day' && (
         // Roof deflector and side extenders close the gap to a 4 m trailer
         <g>
@@ -31,9 +79,41 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
       )}
       {/* grille slats on the front corner (a bought grille: a finished panel behind them) */}
       {extras?.grille && <rect x={f - 12} y={-268} width={13} height={88} rx={3} fill={extras.grille === 'chrome' ? `url(#${ids.chrome})` : GRILLE_COLORS[extras.grille]} stroke="#0b1220" strokeWidth="1.5" />}
-      {Array.from({ length: 6 }, (_, i) => (
+      {b === 'hemus' && Array.from({ length: 6 }, (_, i) => (
         <rect key={`g${i}`} x={f - 9} y={-262 + i * 14} width={9} height={6} rx={2} fill={extras?.grille === 'black' ? '#475569' : '#0b1220'} opacity="0.55" />
       ))}
+      {b === 'danubia' && (
+        // three wide chrome bars and the round badge
+        <g>
+          {[0, 1, 2].map((i) => <rect key={i} x={f - 16} y={-262 + i * 24} width={18} height={9} rx={4} fill={extras?.grille && extras.grille !== 'chrome' ? GRILLE_COLORS[extras.grille] : `url(#${ids.chrome})`} stroke="#334155" strokeWidth="1" />)}
+          <circle cx={f - 7} cy={-276} r={7} fill={`url(#${ids.chrome})`} stroke="#334155" strokeWidth="1" />
+        </g>
+      )}
+      {b === 'rila' && (
+        // a tall, massive grille with heavy bars
+        <g>
+          <rect x={f - 18} y={-292} width={21} height={130} rx={3} fill="#0b1220" stroke="#334155" strokeWidth="1.5" />
+          {Array.from({ length: 7 }, (_, i) => <rect key={i} x={f - 16} y={-286 + i * 18} width={18} height={8} rx={1} fill={extras?.grille ? (extras.grille === 'chrome' ? `url(#${ids.chrome})` : GRILLE_COLORS[extras.grille]) : '#475569'} />)}
+        </g>
+      )}
+      {b === 'volta' && (
+        // a closed nose with a light band (no radiator)
+        <g>
+          <rect x={f - 6} y={-284} width={7} height={96} rx={3} fill="#38bdf8" />
+          <rect x={f - 9} y={-288} width={13} height={104} rx={5} fill="#38bdf8" opacity="0.18" />
+        </g>
+      )}
+      {b === 'hemus' && style === 'day' && !extras?.lights && (
+        // amber cab markers on the roof front
+        <g>{[0, 1, 2].map((i) => <rect key={i} x={f - 70 + i * 18} y={T - 8} width={10} height={8} rx={2} fill="#f59e0b" stroke="#78350f" strokeWidth="1" />)}</g>
+      )}
+      {b === 'rila' && (
+        // air horns on the roof
+        <g>
+          <path d={`M ${x + 70} ${T - 4} L ${x + 70} ${T - 14} L ${x + 120} ${T - 20} L ${x + 120} ${T - 2} Z`} fill={`url(#${ids.chrome})`} stroke="#475569" strokeWidth="1.5" />
+          <path d={`M ${x + 82} ${T - 4} L ${x + 82} ${T - 24} L ${x + 144} ${T - 32} L ${x + 144} ${T - 6} Z`} fill={`url(#${ids.chrome})`} stroke="#475569" strokeWidth="1.5" />
+        </g>
+      )}
       {/* roof highlight */}
       <path d={`M ${x + 14} ${T + 3} L ${f - 22} ${T + 3}`} stroke="#fff" strokeOpacity="0.35" strokeWidth="4" strokeLinecap="round" />
       {style === 'highline' && <rect x={x + 30} y={T + 18} width={L - 80} height={10} rx={4} fill="#000" opacity="0.12" />}
@@ -46,8 +126,19 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
           ))}
         </g>
       )}
-      {/* side window and A-pillar glass */}
-      <path d={`M ${doorX + 10} ${T + 34} L ${f - 26} ${T + 34} Q ${f - 15} ${T + 36} ${f - 13} ${T + 48} L ${f - 10} ${beltY} L ${doorX + 10} ${beltY} Z`} fill={`url(#${ids.glass})`} stroke="#0b1220" strokeWidth="2" />
+      {/* brand graphics on the cab side */}
+      {b === 'danubia' && <path d={`M ${x + 4} -128 L ${x + 4} -150 Q ${x + L * 0.45} -150 ${f - 30} ${T + 90} L ${f - 6} ${T + 90} Q ${x + L * 0.55} -120 ${x + 4} -128 Z`} fill="#fff" opacity="0.22" />}
+      {b === 'rila' && <rect x={x + 2} y={-150} width={L - 4} height={44} fill="#0b1220" opacity="0.55" />}
+      {b === 'volta' && <path d={`M ${x + 4} -132 L ${f - 4} -168`} stroke="#38bdf8" strokeWidth="6" strokeLinecap="round" />}
+      {b === 'hemus' && <rect x={x + 2} y={-196} width={L - 6} height={14} fill="#fff" opacity="0.85" />}
+      {/* side window and A-pillar glass (by brand: Rila square, Volta raked) */}
+      {b === 'rila' ? (
+        <path d={`M ${doorX + 16} ${T + 40} L ${f - 16} ${T + 40} L ${f - 16} ${beltY} L ${doorX + 16} ${beltY} Z`} fill={`url(#${ids.glass})`} stroke="#0b1220" strokeWidth="3" />
+      ) : b === 'volta' ? (
+        <path d={`M ${doorX + 30} ${T + 34} L ${f - 40} ${T + 34} Q ${f - 24} ${T + 40} ${f - 16} ${T + 70} L ${f - 8} ${beltY} L ${doorX - 10} ${beltY} Z`} fill={`url(#${ids.glass})`} stroke="#0b1220" strokeWidth="2" />
+      ) : (
+        <path d={`M ${doorX + 10} ${T + 34} L ${f - 26} ${T + 34} Q ${f - 15} ${T + 36} ${f - 13} ${T + 48} L ${f - 10} ${beltY} L ${doorX + 10} ${beltY} Z`} fill={`url(#${ids.glass})`} stroke="#0b1220" strokeWidth="2" />
+      )}
       <path d={`M ${doorX + 18} ${T + 42} L ${doorX + 70} ${T + 42} L ${doorX + 40} ${beltY - 6} L ${doorX + 18} ${beltY - 6} Z`} fill="#fff" opacity="0.12" />
       <path d={`M ${f - 6} ${T + 22} L ${f - 1} ${T + 26} L ${f + 1} -192 L ${f - 7} -192 Z`} fill={`url(#${ids.glass})`} />
       {/* door seams and handle */}
@@ -94,18 +185,43 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
       {extras?.sticker && (
         <text x={doorX + 72} y={-121} textAnchor="middle" fontSize="16" fontWeight="800" fill="#fff" stroke="#0b1220" strokeWidth="0.8" paintOrder="stroke" fontFamily="system-ui, sans-serif" letterSpacing="1" {...(extras.sticker.length > 13 ? { textLength: 130, lengthAdjust: 'spacingAndGlyphs' } : {})}>{tx(extras.sticker)}</text>
       )}
-      {/* headlight, indicator, bumper, step */}
-      <rect x={f - 16} y={-150} width={16} height={18} rx={4} fill="#fffbe6" stroke="#9ca3af" />
+      {/* headlight (by brand), indicator, bumper, step */}
+      {b === 'hemus' ? <circle cx={f - 8} cy={-141} r={10} fill="#fffbe6" stroke="#9ca3af" strokeWidth="2" />
+        : b === 'danubia' ? <><rect x={f - 26} y={-147} width={28} height={10} rx={5} fill="#fffbe6" stroke="#9ca3af" /><rect x={f - 24} y={-134} width={24} height={3} rx={1.5} fill="#e0f2fe" /></>
+        : b === 'rila' ? <>{[-158, -138].map((y) => <rect key={y} x={f - 14} y={y} width={16} height={15} rx={2} fill="#fffbe6" stroke="#9ca3af" />)}</>
+        : <><rect x={f - 34} y={-146} width={36} height={6} rx={3} fill="#f0f9ff" /><rect x={f - 30} y={-136} width={30} height={3} rx={1.5} fill="#38bdf8" /></>}
       <ellipse cx={f + 4} cy={-141} rx={18} ry={8} fill="#fff7c2" opacity="0.35" />
       <rect x={f - 30} y={-128} width={9} height={7} rx={2} fill="#f59e0b" />
-      <path d={`M ${f - 44} -118 L ${f + 4} -118 L ${f + 6} -74 L ${f - 44} -74 Z`} fill="#1f2937" stroke="#0b1220" />
-      <rect x={f - 40} y={-96} width={44} height={6} fill="#4b5563" />
+      {b === 'rila' ? (
+        <path d={`M ${f - 54} -122 L ${f + 8} -122 L ${f + 10} -66 L ${f - 54} -66 Z`} fill="#111827" stroke="#0b1220" />
+      ) : b === 'volta' ? (
+        <path d={`M ${f - 44} -118 L ${f + 2} -118 Q ${f + 8} -96 ${f + 2} -74 L ${f - 44} -74 Z`} fill={color} stroke="#0b1220" />
+      ) : (
+        <path d={`M ${f - 44} -118 L ${f + 4} -118 L ${f + 6} -74 L ${f - 44} -74 Z`} fill="#1f2937" stroke="#0b1220" />
+      )}
+      <rect x={f - 40} y={-96} width={44} height={6} fill={b === 'danubia' ? `url(#${ids.chrome})` : '#4b5563'} />
+      {design.bullbar && (
+        // a chrome bull bar in front of the bumper
+        <g fill="none" stroke={`url(#${ids.chrome})`} strokeWidth="7" strokeLinecap="round">
+          <path d={`M ${f - 10} -170 L ${f + 18} -164 L ${f + 20} -76 L ${f - 6} -72`} />
+          <path d={`M ${f + 18} -132 L ${f - 4} -132`} />
+        </g>
+      )}
       <rect x={doorX - 34} y={-96} width={32} height={7} rx={2} fill="#4b5563" />
       <rect x={doorX - 34} y={-66} width={32} height={7} rx={2} fill="#4b5563" />
-      {/* mirror */}
-      <path d={`M ${f - 8} ${T + 54} L ${f + 20} ${T + 60}`} stroke="#111827" strokeWidth="5" strokeLinecap="round" />
-      <rect x={f + 14} y={T + 50} width={12} height={74} rx={5} fill="#111827" />
-      <rect x={f + 16} y={T + 130} width={9} height={26} rx={4} fill="#111827" />
+      {/* mirror (Volta: camera arms) */}
+      {b === 'volta' ? (
+        <g>
+          <path d={`M ${f - 30} ${T + 70} L ${f + 8} ${T + 66}`} stroke="#111827" strokeWidth="6" strokeLinecap="round" />
+          <rect x={f + 4} y={T + 58} width={16} height={14} rx={4} fill="#111827" />
+        </g>
+      ) : (
+        <g>
+          <path d={`M ${f - 8} ${T + 54} L ${f + 20} ${T + 60}`} stroke="#111827" strokeWidth="5" strokeLinecap="round" />
+          <rect x={f + 14} y={T + 50} width={12} height={b === 'rila' ? 84 : 74} rx={b === 'rila' ? 2 : 5} fill="#111827" />
+          <rect x={f + 16} y={T + (b === 'rila' ? 140 : 130)} width={9} height={26} rx={4} fill="#111827" />
+        </g>
+      )}
       {/* side marker */}
       <rect x={x + 6} y={-122} width={10} height={6} rx={2} fill="#f59e0b" />
     </g>
@@ -113,7 +229,7 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
 }
 
 /** Tractor unit, rear at x = 0, front at ≈ 602. Fifth wheel centre at x = 120 (kingpin sits 1.6 m behind the trailer nose). */
-export function Tractor({ ids, color, cab, heavy = false, coupled = false, classic = false, plow = false, extras }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; classic?: boolean; plow?: boolean; extras?: Cosmetics }) {
+export function Tractor({ ids, color, cab, heavy = false, coupled = false, classic = false, plow = false, extras, design }: { ids: Ids; color: string; cab: 'day' | 'sleeper' | 'highline'; heavy?: boolean; coupled?: boolean; classic?: boolean; plow?: boolean; extras?: Cosmetics; design?: CabDesign }) {
   const cabX = 362;
   const rear = heavy ? [72, 198] : [100];
   return (
@@ -144,7 +260,11 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
       <rect x={heavy ? 232 : 190} y={-134} width={16} height={6} fill="#2563eb" />
       {/* side skirt */}
       {!heavy && <rect x={160} y={-102} width={196} height={18} rx={4} fill={color} opacity="0.85" />}
-      <Cab x={cabX} style={cab} ids={ids} color={color} aero={coupled && !heavy} extras={extras} />
+      {design?.aero && !heavy && (
+        // aero side skirt over the tanks, in the cab colour
+        <path d="M 150 -150 L 356 -150 L 356 -84 L 150 -84 Q 140 -84 140 -96 L 140 -138 Q 140 -150 150 -150 Z" fill={color} opacity="0.92" stroke="#0b1220" strokeWidth="1.5" />
+      )}
+      <Cab x={cabX} style={cab} ids={ids} color={color} aero={coupled && !heavy} extras={extras} design={design} />
       {plow && (
         // 1.2.5 „Първи сняг“: a snow plough blade on a push frame in front, and amber beacons on the roof
         <g>
@@ -166,8 +286,8 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
       {classic && (
         // Old-school look: twin cream stripes along the cab, a round lamp and a chrome bumper
         <g>
-          <rect x={cabX + 4} y={-232} width={cab === 'day' ? 192 : 232} height={9} fill="#fef3c7" opacity="0.9" />
-          <rect x={cabX + 4} y={-218} width={cab === 'day' ? 192 : 232} height={5} fill="#fef3c7" opacity="0.9" />
+          <rect x={cabX + 4} y={-197} width={cab === 'day' ? 192 : 232} height={9} fill="#fef3c7" opacity="0.9" />
+          <rect x={cabX + 4} y={-183} width={cab === 'day' ? 192 : 232} height={5} fill="#fef3c7" opacity="0.9" />
           <circle cx={cabX + (cab === 'day' ? 194 : 234)} cy={-140} r={11} fill="#fef9c3" stroke="#78716c" strokeWidth="2" />
           <rect x={cabX + (cab === 'day' ? 176 : 216)} y={-116} width={30} height={12} rx={4} fill={`url(#${ids.chrome})`} stroke="#475569" />
         </g>
@@ -177,17 +297,17 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
           <Fender x={wx} color="#334155" />
           {/* the bracket that holds the mudguard to the frame */}
           <rect x={wx - 6} y={-122} width={12} height={14} rx={2} fill="#334155" />
-          <Wheel x={wx} ids={ids} twin />
+          <Wheel x={wx} ids={ids} twin rim={extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus']} />
         </g>
       ))}
       <Fender x={482} />
-      <Wheel x={482} ids={ids} />
+      <Wheel x={482} ids={ids} rim={extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus']} />
     </g>
   );
 }
 
 /** Rigid truck with its own body. Rear at 0, front at ≈ 902. */
-export function Rigid({ ids, color, body, extras }: { ids: Ids; color: string; body: 'box' | 'reefer' | 'tipper' | 'tanker'; extras?: Cosmetics }) {
+export function Rigid({ ids, color, body, extras, design }: { ids: Ids; color: string; body: 'box' | 'reefer' | 'tipper' | 'tanker'; extras?: Cosmetics; design?: CabDesign }) {
   const bodyEnd = 680;
   return (
     <g>
@@ -255,11 +375,11 @@ export function Rigid({ ids, color, body, extras }: { ids: Ids; color: string; b
       <rect x={300} y={-96} width={320} height={6} rx={2} fill="#9ca3af" />
       <rect x={300} y={-74} width={320} height={6} rx={2} fill="#9ca3af" />
       <rect x={430} y={-150} width={110} height={56} rx={12} fill={`url(#${ids.metal})`} stroke="#475569" />
-      <Cab x={bodyEnd + 12} style="day" ids={ids} color={color} extras={extras} />
+      <Cab x={bodyEnd + 12} style="day" ids={ids} color={color} extras={extras} design={design ? { ...design, stacks: false } : undefined} />
       <Fender x={200} />
-      <Wheel x={200} ids={ids} twin />
+      <Wheel x={200} ids={ids} twin rim={extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus']} />
       <Fender x={778} />
-      <Wheel x={778} ids={ids} />
+      <Wheel x={778} ids={ids} rim={extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus']} />
     </g>
   );
 }

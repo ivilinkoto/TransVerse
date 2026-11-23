@@ -69,7 +69,10 @@ export function Defs({ ids, color }: { ids: Ids; color: string }) {
 }
 
 /** Tyre with sidewall, rim, lug nuts and hub cap. */
-export function Wheel({ x, r = 52, ids, twin = false }: { x: number; r?: number; ids: Ids; twin?: boolean }) {
+/** 1.3.2.2: the rim look by brand — steel (default), alloy spokes, a heavy red-hub steel rim, a flat aero cover. */
+export type RimStyle = 'steel' | 'alloy' | 'heavy' | 'aero' | 'gold';
+
+export function Wheel({ x, r = 52, ids, twin = false, rim = 'steel' }: { x: number; r?: number; ids: Ids; twin?: boolean; rim?: RimStyle }) {
   const cy = -r;
   const rimR = r * 0.56;
   const lugs = Array.from({ length: 10 }, (_, i) => {
@@ -85,6 +88,13 @@ export function Wheel({ x, r = 52, ids, twin = false }: { x: number; r?: number;
       {lugs}
       <circle cx={x} cy={cy} r={rimR * 0.3} fill="#6b7280" stroke="#d1d5db" strokeWidth={r * 0.02} />
       <circle cx={x - r * 0.08} cy={cy - r * 0.08} r={rimR * 0.1} fill="#f9fafb" opacity="0.8" />
+      {rim === 'gold' && <circle cx={x} cy={cy} r={rimR} fill="#ca8a04" stroke="#78350f" strokeWidth={r * 0.03} />}
+      {(rim === 'alloy' || rim === 'gold') && Array.from({ length: 6 }, (_, i) => {
+        const a = (i / 6) * Math.PI * 2;
+        return <path key={`s${i}`} d={`M ${x + Math.cos(a) * rimR * 0.3} ${cy + Math.sin(a) * rimR * 0.3} L ${x + Math.cos(a) * rimR * 0.92} ${cy + Math.sin(a) * rimR * 0.92}`} stroke={rim === 'gold' ? '#fde68a' : '#e2e8f0'} strokeWidth={r * 0.09} strokeLinecap="round" />;
+      })}
+      {rim === 'heavy' && <><circle cx={x} cy={cy} r={rimR * 0.95} fill="none" stroke="#b91c1c" strokeWidth={r * 0.07} /><circle cx={x} cy={cy} r={rimR * 0.34} fill="#b91c1c" stroke="#111827" strokeWidth={r * 0.03} /></>}
+      {rim === 'aero' && <><circle cx={x} cy={cy} r={rimR * 1.02} fill="#e2e8f0" stroke="#94a3b8" strokeWidth={r * 0.03} /><circle cx={x} cy={cy} r={rimR * 0.3} fill="#38bdf8" /><path d={`M ${x - rimR * 0.7} ${cy - rimR * 0.4} A ${rimR * 0.8} ${rimR * 0.8} 0 0 1 ${x + rimR * 0.3} ${cy - rimR * 0.75}`} fill="none" stroke="#fff" strokeWidth={r * 0.04} opacity="0.8" /></>}
     </g>
   );
 }
