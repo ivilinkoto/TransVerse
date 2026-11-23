@@ -52,7 +52,7 @@ import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispat
 import { toggleFavoriteLane } from '@/server/game/favorites';
 import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
-import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, relocateVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
+import { buyDepot, buyTrailer, buyPremiumTruck, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, relocateVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
@@ -186,6 +186,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('appealFine'), fineId: id }),
   z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
   z.object({ type: z.literal('buyVehicle'), modelId: z.string().max(40), cityId }),
+  z.object({ type: z.literal('buyPremiumTruck'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('leaseVehicle'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('payOffLease'), leaseId: id }),
   z.object({ type: z.literal('payBonus'), bonus: bonusSchema }),
@@ -663,6 +664,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   sendTrain: 'trains',
   moveTrain: 'trains',
   hireTrain: 'trains',
+  buyPremiumTruck: 'premium_trucks',
   setTrainHire: 'trains',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
@@ -758,6 +760,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await buyInsurance(db, user.id, input.vehicleId)) };
     case 'buyVehicle':
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId)).id };
+    case 'buyPremiumTruck':
+      return { ok: true, id: (await buyPremiumTruck(db, user.id, input.modelId, input.cityId)).id };
     case 'leaseVehicle':
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId, { lease: true })).id };
     case 'payOffLease':

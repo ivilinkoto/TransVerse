@@ -4,7 +4,7 @@ import { winterTyreDiscount } from './prewinter';
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { countryOpen } from '@/lib/geo/scope';
-import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
+import { POWER_UNITS, PREMIUM_TRUCK, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
 import { stickerText } from '@/lib/game/cosmetics';
 import { cleanTruckName } from '@/lib/game/truck-names';
 import { springDiscount } from '@/lib/game/marta';
@@ -29,6 +29,7 @@ import { logActivity, notify } from './notify';
 import { checkAchievements } from './progression';
 import { pick } from './random';
 import { t as tr } from '@/i18n/t';
+import { postCoins } from './coins';
 
 async function level(db: DbOrTx, userId: string) {
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
@@ -95,6 +96,28 @@ export async function buyVehicle(db: Database, userId: string, modelId: string, 
     // A truck of their own replaces the rented one (now, or when its current trip ends).
     const rental = await retireRentalFor(tx, company.id, vehicle!.id);
     await logActivity(tx, userId, 'vehicle_bought', { vehicleId: vehicle!.id, modelId, rental });
+    await checkAchievements(tx, userId, company.id);
+    return vehicle!;
+  });
+}
+
+/** 1.3.2.2: a premium truck, for ТрансКоин only, from VIP2 (it parks in a depot like any truck). */
+export async function buyPremiumTruck(db: Database, userId: string, modelId: string, depotCityId: number, now = new Date()) {
+  const model = POWER_UNITS.find((m) => m.id === modelId && m.premium);
+  if (!model) fail('unknown_model', tr('Непознат модел.'));
+  if (!(await featureFor(db, userId, 'premium_trucks', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [u] = await tx.select({ level: users.level, vip: users.vipLevel }).from(users).where(eq(users.id, userId));
+    if ((u?.vip ?? 0) < PREMIUM_TRUCK.vipLevel) fail('vip_level', tr('Премиум камионите са от VIP{0}.', PREMIUM_TRUCK.vipLevel));
+    if ((u?.level ?? 0) < model!.minLevel) fail('level', tr('Изисква ниво {0}.', model!.minLevel));
+    await depotInCity(tx, company.id, depotCityId);
+    const cap = await fleetCapacity(tx, company.id);
+    if (cap.used >= cap.slots) fail('no_capacity', tr('Нямате свободни места в депата. Разширете депо или открийте ново.'));
+    const [vehicle] = await tx.insert(vehicles).values({ companyId: company.id, modelId: model!.id, plate: await uniquePlate(tx), color: PREMIUM_TRUCK.color, cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
+    await postCoins(tx, userId, { amount: -model!.premium!.coins, reason: 'shop', description: tr('Премиум камион {0} ({1})', model!.name, vehicle!.plate), idempotencyKey: `premium-truck:${vehicle!.id}` }, { requireFunds: true });
+    const rental = await retireRentalFor(tx, company.id, vehicle!.id);
+    await logActivity(tx, userId, 'vehicle_bought', { vehicleId: vehicle!.id, modelId, rental, premium: true });
     await checkAchievements(tx, userId, company.id);
     return vehicle!;
   });

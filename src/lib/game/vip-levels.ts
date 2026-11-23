@@ -53,6 +53,7 @@ export interface VipUnlock {
 
 export const VIP_UNLOCKS: VipUnlock[] = [
   { level: 1, label: 'Два наети влака наведнъж', feature: 'trains' },
+  { level: 2, label: 'Премиум камиони за ТрансКоин (Пазар)', feature: 'premium_trucks' },
   { level: 2, label: 'Три наети влака наведнъж', feature: 'trains' },
   { level: 3, label: 'Собствени влакове и пускане под наем', feature: 'trains' },
   { level: 4, label: 'Още един собствен влак', feature: 'trains' },

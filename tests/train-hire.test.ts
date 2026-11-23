@@ -29,7 +29,7 @@ describe('1.3.3: trains by VIP level, and hiring a train for one order', () => {
     expect(trainLimits(false, 3)).toMatchObject({ vip: true, maxTrains: TRAINS.maxTrains, hires: 3 });
     expect(trainLimits(false, 5).maxTrains).toBe(TRAINS.maxTrains + 2);
     expect([0, 1, 2].map((v) => trainLimits(false, v).hires)).toEqual([1, 2, 3]);
-    expect(VIP_UNLOCKS.map((u) => u.level)).toEqual([1, 2, 3, 4, 5]);
+    expect(VIP_UNLOCKS.map((u) => u.level)).toEqual([1, 2, 2, 3, 4, 5]);
     expect(unlocksAt(3, () => false)).toEqual([]);
     const p = await newPlayer();
     await setUp(p.userId, 30, 2, ['rail']);

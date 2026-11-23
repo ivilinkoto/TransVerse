@@ -227,6 +227,8 @@ export const FEATURES = {
   speed_up: '1.3.2.2',
   // 1.3.2.2: new products for real money (the smallest pack, the pass, cases, VIP+).
   paid_v3: '1.3.2.2',
+  // 1.3.2.2: premium trucks for ТрансКоин, from VIP2 (/game/market).
+  premium_trucks: '1.3.2.2',
   // 1.3.3 „Жп линия“: the players' own freight trains on real rail lines (/game/trains).
   trains: '1.3.3',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).

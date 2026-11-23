@@ -1346,3 +1346,13 @@ c40298e2c5	Own trains and putting them out for hire	Свои поезда и с�
 490a1a070f	hired from a player	арендован у игрока
 dbc4320488	fee {0}% ({1})	плата {0}% ({1})
 5470f30d34	🚆 Your hired train arrived in {0}	🚆 Твой арендованный поезд прибыл в {0}
+7090e82414	VIP{0} · level {1}	VIP{0} · уровень {1}
+756fb2aefd	The Market has three premium trucks for ТрансКоин only, from VIP2: Hemus R20 Express Premium (600 TC), Danubia T560 Signature (900 TC) and Rila XT 700 Titan 6×4 (1,500 TC). They use less fuel, have more power, cheaper upkeep and a gold paint.	На Рынке есть три премиум-грузовика только за ТрансКоины, с VIP2: Hemus R20 Express Premium (600 TC), Danubia T560 Signature (900 TC) и Rila XT 700 Titan 6×4 (1 500 TC). Они экономичнее, мощнее, дешевле в обслуживании и окрашены в золото.
+b712134013	Buy for {0} TC	Купить за {0} TC
+3d3a845c60	Some levels also unlock new things — VIP2, for example, unlocks the premium trucks. The Shop shows what each level gives.	Некоторые уровни открывают и новое — например, VIP2 открывает премиум-грузовики. Что даёт каждый уровень, написано в Магазине.
+df61080f33	More economical, more powerful and cheaper to maintain — for ТрансКоин only, from VIP{0}. Painted gold. You have {1} TC.	Экономичнее, мощнее и дешевле в обслуживании — только за ТрансКоины, с VIP{0}. Окрашены в золото. У тебя {1} TC.
+5195f04126	Premium truck {0} ({1})	Премиум-грузовик {0} ({1})
+c380d270e7	Premium trucks	Премиум-грузовики
+3fabd9367a	Premium trucks for ТрансКоин (Market)	Премиум-грузовики за ТрансКоины (Рынок)
+a6ba651eed	Premium trucks are from VIP{0}.	Премиум-грузовики — с VIP{0}.
+0aa7f17079	heavy trailers	тяжёлые прицепы
