@@ -22,6 +22,9 @@ export interface PaidProduct {
   feature?: 'paid_v3';
 }
 
+/** 1.3.2.2: the plain ТрансКоин packs can be bought for another player (`gift_tc`). */
+export const giftable = (p: Pick<PaidProduct, 'id' | 'vipDays'>) => p.id.startsWith('tc_') && !p.vipDays;
+
 export const PAID_PRODUCTS: PaidProduct[] = [
   // 1.3.2.2: more to buy — the smallest pack, the season pass and boosters for real money.
   { id: 'tc_60', label: 'Шепа ТрансКоин', description: '60 TC — най-малкият пакет.', priceCents: 99, coins: 60, bonus: 0, vipDays: 0, feature: 'paid_v3' },

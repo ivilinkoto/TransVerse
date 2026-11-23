@@ -1364,3 +1364,15 @@ a1de7208f5	Bigger depots	Большие депо
 124c45d9ed	Full	Заполнено
 26430f9d63	First expand the depot to {0} places with money.	Сначала расширь депо до {0} мест за деньги.
 79d3bd858f	Each brand's trucks now look different: Hemus — round headlights and a white stripe, Danubia — a rounded cab with chrome bars and alloy wheels, Rila Heavy — a tall square cab with a big grille, exhaust stacks and roof horns, Volta — a sloped aero nose, a light band and cameras instead of mirrors.	Грузовики каждой марки теперь выглядят по-разному: Hemus — круглые фары и белая полоса, Danubia — округлая кабина с хромированными полосами и литыми дисками, Rila Heavy — высокая угловатая кабина с большой решёткой, выхлопными трубами и сигналами на крыше, Volta — скошенный аэродинамичный нос, световая полоса и камеры вместо зеркал.
+dca68513b4	{0} received {1} TC from you. Thank you!	{0} получил(а) от тебя {1} TC. Спасибо!
+7d7165c742	In the Shop you can buy a ТрансКоин pack for a friend: type their username and the TC go straight to them.	В Магазине можно купить пакет ТрансКоинов для друга: введи его имя пользователя, и TC придут прямо к нему.
+4eb2d37980	You can't give a gift to yourself.	Нельзя подарить самому себе.
+4fc801687e	The ТрансКоин packs go to {0}. Purchase bonuses don't apply to gifts.	Пакеты ТрансКоинов уйдут к {0}. Бонусы за покупку на подарки не действуют.
+51d581091f	Gift ТрансКоин	Подари ТрансКоины
+007dce9e04	Gift ТрансКоин to a friend	Подари ТрансКоины другу
+4242ce25ab	Gift from {0}: {1}	Подарок от {0}: {1}
+18ffca8901	The gift was sent	Подарок отправлен
+53467306d9	Username (empty — for you)	Имя пользователя (пусто — для тебя)
+cdd7d3c691	Only ТрансКоин packs can be given as gifts.	Дарить можно только пакеты ТрансКоинов.
+2d1ea11576	The ТрансКоин are already in your profile.	ТрансКоины уже в твоём профиле.
+cc0e267df8	🎁 {0} gave you {1} TC!	🎁 {0} подарил(а) тебе {1} TC!

@@ -129,7 +129,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
           <div className="space-y-4">
             {cancelled && <p role="status" className="rounded-lg border border-asphalt-600 bg-asphalt-800 px-3 py-2 text-sm text-mist-300">{tr('Плащането беше отказано — нищо не е таксувано.')}</p>}
             {payment.enabled ? (
-              <BuyWithMoney products={products} testMode={payment.testMode} providers={payment.providers} notes={notes} />
+              <BuyWithMoney products={products} testMode={payment.testMode} providers={payment.providers} notes={notes} gift={!!features.gift_tc} />
             ) : (
               <>
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -286,7 +286,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
           {cancelled && <p role="status" className="mb-3 rounded-lg border border-asphalt-600 bg-asphalt-800 px-3 py-2 text-sm text-mist-300">{tr('Плащането беше отказано — нищо не е таксувано.')}</p>}
           {payment.enabled ? (
             <>
-              <BuyWithMoney products={products} testMode={payment.testMode} providers={payment.providers} notes={notes} />
+              <BuyWithMoney products={products} testMode={payment.testMode} providers={payment.providers} notes={notes} gift={!!features.gift_tc} />
               {v2 && patron && (
                 <p className="mt-3 text-xs text-mist-400">{patron.level < PATRON_LEVELS.length ? tr('Покровител ниво {0} от {1}. Следващото — след още {2}: всяко ниво дава +1% ТрансКоин на покупките завинаги.', patron.level, PATRON_LEVELS.length, euro(PATRON_LEVELS[patron.level]! - patron.paidCents)) : tr('Покровител ниво {0} — най-високото. Благодарим ти!', patron.level)}</p>
               )}

@@ -827,6 +827,13 @@
       "when": 1795452158143,
       "tag": "0117_boosters",
       "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1795460617709,
+      "tag": "0118_payment_gifts",
+      "breakpoints": true
     }
   ]
 }

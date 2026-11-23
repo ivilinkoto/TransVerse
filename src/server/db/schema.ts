@@ -1085,6 +1085,8 @@ export const payments = pgTable(
     createdAt: createdAt(),
     paidAt: ts('paid_at'),
     refundedAt: ts('refunded_at'),
+    /** 1.3.2.2: a ТрансКоин pack bought for another player — the coins go to them. */
+    giftUserId: uuid('gift_user_id').references(() => users.id, { onDelete: 'restrict' }),
   },
   (t) => [
     uniqueIndex('payments_session_idx').on(t.checkoutSessionId),
