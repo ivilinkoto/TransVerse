@@ -198,6 +198,10 @@ export const users = pgTable(
     coins: integer('coins').notNull().default(0),
     /** Double delivery XP while in the future (shop booster). */
     xpBoostUntil: ts('xp_boost_until'),
+    /** 1.3.2.2: +50 % pay on every delivery until then (a shop booster). */
+    moneyBoostUntil: ts('money_boost_until'),
+    /** 1.3.2.2: no road tolls until then (a shop booster). */
+    tollFreeUntil: ts('toll_free_until'),
     /** Daily mission period of the last free VIP mission swap. */
     vipRerollKey: text('vip_reroll_key'),
     /** Personal invite code (created when first needed). */

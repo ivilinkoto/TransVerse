@@ -107,7 +107,8 @@ export type LedgerCategory =
   | 'intermodal_bonus'
   | 'era_bonus'
   | 'tournament'
-  | 'profit_tax';
+  | 'profit_tax'
+  | 'booster';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   relocation: 'Преместване на камион',
@@ -193,6 +194,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   era_bonus: 'Бонус на ерата',
   tournament: 'Турнири на общността',
   profit_tax: 'Данък върху печалбата',
+  booster: 'Бустер за пари',
   items: 'Предмети от инвентара',
   promo: 'Промокод',
   promise: 'Обещан срок',
@@ -236,7 +238,7 @@ export interface Posting {
  * transaction: the freight comes first, each bonus takes what room is left.
  */
 const deliveryPay = new WeakMap<Tx, Map<string, { freight: number; extra: number }>>();
-const NOT_BONUS = new Set(['freight', 'insurance_payout', 'freight_escrow', 'trade_sale', 'vehicle_sale']);
+const NOT_BONUS = new Set(['freight', 'insurance_payout', 'freight_escrow', 'trade_sale', 'vehicle_sale', 'booster']);
 function capDeliveryBonus<P extends { category: string; amountCents: number; idempotencyKey: string }>(tx: Tx, p: P): P | null {
   const m = /^delivery:([0-9a-f-]{36}):/.exec(p.idempotencyKey);
   if (!m || p.amountCents <= 0) return p;

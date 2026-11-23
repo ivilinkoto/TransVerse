@@ -1245,8 +1245,6 @@ e56804538b	They mostly hit big fleets: new players hardly feel them.	Они бь
 c5b327621a	Only the game writes here: records, finds, postcards and news from the road.	Здесь пишет только игра: рекорды, находки, открытки и новости с дороги.
 e9418374e8	+{0} depot place	+{0} место в депо
 6bd91e5ce2	+{0}% XP, −{1}% garage, +{2}% per run	+{0}% опыта, −{1}% сервис, +{2}% за рейс
-653cafa9d3	VIP now has levels — from VIP0 to VIP5. Every level is for good and gives bonuses on top of the regular VIP.	У VIP теперь есть уровни — от VIP0 до VIP5. Каждый уровень навсегда и даёт бонусы сверх обычного VIP.
-fc31f1216f	VIP levels	VIP-уровни
 1fe3550d05	VIP level {0}	VIP-уровень {0}
 bb9a8a2311	VIP{0} · from {1}	VIP{0} · от {1}
 15691e5b97	Thank you, first VIPs	Спасибо первым VIP
@@ -1261,3 +1259,29 @@ bde80b3c08	Per level: +2% XP, −2% at the garage and +1% on every run; VIP3 and
 a3bc2f7ec0	The level grows with purchases in the shop: VIP1 from 5 €, VIP2 from 20 €, VIP3 from 50 €, VIP4 from 100 € and VIP5 from 200 € in total. The level is for good and its bonuses always apply — even when the VIP days are over.	Уровень растёт с покупками в магазине: VIP1 от 5 €, VIP2 от 20 €, VIP3 от 50 €, VIP4 от 100 € и VIP5 от 200 € в сумме. Уровень навсегда, и его бонусы действуют всегда — даже когда дни VIP закончились.
 16065e6beb	The level counts all paid purchases in the shop (not refunded ones). In the Shop you see your level and how much is left to the next.	Уровень считается по всем оплаченным покупкам в магазине (без возвращённых). В Магазине видно твой уровень и сколько осталось до следующего.
 a1a433de62	Five VIP levels	Пять VIP-уровней
+fc31f1216f	VIP levels	VIP-уровни
+6cfac3d071	+50% of the pay of every run for 24 hours — for all your trucks. Outside the bonus cap.	+50% к оплате каждого рейса на 24 часа — для всех твоих грузовиков. Вне лимита бонусов.
+f6a74b0d55	+50% money · 24 hours	+50% денег · 24 часа
+da5754b9e2	VIP now has levels from VIP0 to VIP5, a run can be hurried with ТрансКоин, and the shop has new boosters.	У VIP теперь уровни от VIP0 до VIP5, рейс можно ускорить за ТрансКоин, а в магазине новые бустеры.
+449220399f	VIP levels and speed-ups	VIP-уровни и ускорение
+4f0897e77f	No road tolls · 24 hours	Без дорожных сборов · 24 часа
+dc24d1dcd1	Booster +{0}% money	Бустер +{0}% денег
+1477b116dc	Money booster	Бустер денег
+819ddc3829	Boosters in the shop: +50% money, no road tolls, ×2 XP	Бустеры в магазине: +50% денег, без дорожных сборов, ×2 опыта
+def3565517	In Fleet, by every truck on a run: “Arrive now” or “−50% of the time” for ТрансКоин. The price depends on the time left; with VIP it is 20% cheaper. Convoy runs cannot be hurried.	В Автопарке у каждого грузовика в рейсе: «Прибыть сейчас» или «−50% времени» за ТрансКоин. Цена зависит от оставшегося времени; с VIP на 20% дешевле. Рейсы в конвое не ускоряются.
+a04ae61c20	In the shop: “+50% money · 24 hours” for all your trucks and “No road tolls · 24 hours”. The money booster is outside the bonus cap.	В магазине: «+50% денег · 24 часа» для всех твоих грузовиков и «Без дорожных сборов · 24 часа». Бустер денег вне лимита бонусов.
+d5aab4e8d0	The truck arrives at once for {0} TC?	Грузовик прибудет сразу за {0} TC?
+3f12109af6	The truck arrives within a minute.	Грузовик прибудет в течение минуты.
+4c984f701b	A convoy run cannot be hurried — the others are waiting for it.	Рейс в конвое нельзя ускорить — его ждут остальные.
+d55e8e65ed	The run was not found or has already ended.	Рейс не найден или уже завершён.
+516df815a6	No road tolls on the runs of all your trucks for 24 hours.	Никаких дорожных сборов на рейсах всех твоих грузовиков 24 часа.
+54302c23aa	New boosters	Новые бустеры
+d31797baa2	Halve the time left for {0} TC?	Сократить оставшееся время вдвое за {0} TC?
+804f24841a	Arrive now	Прибыть сейчас
+a763d960c8	Arrive now · {0} TC	Прибыть сейчас · {0} TC
+6e983dfb0d	Hurry the run	Ускорь рейс
+39c7773286	Hurrying the run (−50%)	Ускорение рейса (−50%)
+cb96d112e1	−50% of the time · {0} TC	−50% времени · {0} TC
+1b76aa9816	⭐ ×2 XP until {0}	⭐ ×2 опыта до {0}
+2083560968	💰 +50% money until {0}	💰 +50% денег до {0}
+1be6b534e6	🛣️ No road tolls until {0}	🛣️ Без дорожных сборов до {0}

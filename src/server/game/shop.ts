@@ -99,6 +99,18 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         summary = tr('Подарък VIP 30 дни за {0}', to!.username);
         break;
       }
+      case 'money_boost_24h': {
+        const until = extend(user!.moneyBoostUntil, DAY, now);
+        await tx.update(users).set({ moneyBoostUntil: until }).where(eq(users.id, userId));
+        summary = tr('{0} (до {1})', item!.label, until.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia' }));
+        break;
+      }
+      case 'toll_free_24h': {
+        const until = extend(user!.tollFreeUntil, DAY, now);
+        await tx.update(users).set({ tollFreeUntil: until }).where(eq(users.id, userId));
+        summary = tr('{0} (до {1})', item!.label, until.toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia' }));
+        break;
+      }
       case 'xp_boost_24h': {
         const until = extend(user!.xpBoostUntil, DAY, now);
         await tx.update(users).set({ xpBoostUntil: until }).where(eq(users.id, userId));

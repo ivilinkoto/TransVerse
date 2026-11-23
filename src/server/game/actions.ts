@@ -67,6 +67,7 @@ import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
 import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
+import { speedUpDelivery } from '@/server/game/speed-up';
 import { addWagons, buyTrain, moveTrain, sellTrain, sellWagons, sendTrain } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, driveMyself, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
@@ -225,6 +226,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('fireDriver'), driverId: id }),
   z.object({ type: z.literal('assignDriver'), driverId: id, vehicleId: id.nullable(), seat: z.enum(['main', 'co']).default('main') }),
   z.object({ type: z.literal('driveMyself'), vehicleId: id }),
+  z.object({ type: z.literal('speedUpDelivery'), deliveryId: id, mode: z.enum(['finish', 'half']) }),
   z.object({ type: z.literal('trainDriver'), driverId: id, trait: z.enum(TRAIT_IDS) }),
   z.object({ type: z.literal('clientAccept'), clientContractId: id }),
   z.object({ type: z.literal('clientDecline'), clientContractId: id }),
@@ -651,6 +653,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   setBusLine: 'bus_lines',
   upgradeBusComfort: 'bus_lines',
   sellBusLine: 'bus_lines',
+  speedUpDelivery: 'speed_up',
   buyTrain: 'trains',
   addWagons: 'trains',
   sellWagons: 'trains',
@@ -846,6 +849,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'assignDriver':
       await assignDriver(db, user.id, input.driverId, input.vehicleId, input.seat);
       return { ok: true };
+    case 'speedUpDelivery':
+      return { ok: true, ...(await speedUpDelivery(db, user.id, input.deliveryId, input.mode, new Date())) };
     case 'driveMyself':
       await driveMyself(db, user.id, input.vehicleId);
       return { ok: true };

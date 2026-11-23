@@ -1,3 +1,4 @@
+import { BOOSTERS } from '@/lib/game/speed-up';
 import { vipLevel } from '@/lib/game/vip-levels';
 import { ownerVipLevel } from './vip-levels';
 import { checkTripRules } from './special-loads';
@@ -536,7 +537,12 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     { category: 'fuel', amountCents: -costs.fuelCents, description: t('Гориво ({0} км)', Math.round(d.emptyKm + d.loadedKm)), idempotencyKey: key('fuel'), refType: 'delivery', refId: d.id },
     { category: 'maintenance', amountCents: -costs.maintenanceCents, description: t('Поддръжка по курса'), idempotencyKey: key('maintenance'), refType: 'delivery', refId: d.id },
   ];
-  if (costs.tollCents) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: t('Пътни такси'), idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
+  // 1.3.2.2: the shop's boosters — no tolls, and +50 % on the freight (outside the bonus cap).
+  const [boosts] = await tx.select({ money: users.moneyBoostUntil, tolls: users.tollFreeUntil }).from(users).where(eq(users.id, company!.ownerId));
+  const tollFree = !!boosts?.tolls && boosts.tolls > completedAt;
+  const boosterCents = boosts?.money && boosts.money > completedAt ? Math.round(result.rewardCents * BOOSTERS.moneyShare) : 0;
+  if (costs.tollCents && !tollFree) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: t('Пътни такси'), idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
+  if (boosterCents) postings.push({ category: 'booster', amountCents: boosterCents, description: t('Бустер +{0}% пари', Math.round(BOOSTERS.moneyShare * 100)), idempotencyKey: key('booster'), refType: 'delivery', refId: d.id });
   const crossingCents = (costs as { crossingCents?: number }).crossingCents ?? 0;
   if (crossingCents) postings.push({ category: 'crossings', amountCents: -crossingCents, description: t('Билет за ферибот / влак'), idempotencyKey: key('crossing'), refType: 'delivery', refId: d.id });
   // The fuel station where the truck filled up earns its margin (paid by the game).
@@ -659,7 +665,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const roadBonus = (await roadDelivered(tx, company!.ownerId, d, contract, result.late, completedAt)) + (await meetDelivered(tx, company!.ownerId, d.companyId, d, contract, dest!.countryCode, result.late, completedAt));
   // 1.2.3.6: sometimes the client writes (thanks with a bonus, a complaint, a request for the same run); a 3D postcard for a new city or a long trip.
   await postcardOnArrival(tx, company!.ownerId, d, contract.destCityId, dest!.nameBg, completedAt);
-  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus;
+  const payout = boosterCents + levelPay + (tollFree ? costs.tollCents : 0) + extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
