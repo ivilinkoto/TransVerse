@@ -79,6 +79,18 @@ export function Cab({ x, style, ids, color, aero = false, extras }: { x: number;
           <path d={`M ${f - 5} ${T + 110} l -2 14 M ${f - 1} ${T + 111} l 0 14 M ${f + 9} ${T + 112} l 0 14 M ${f + 14} ${T + 112} l 2 14`} stroke="#94a3b8" strokeWidth="1.5" />
         </g>
       )}
+      {extras?.premium && (
+        // Premium trim: twin gold pinstripes along the cab and a crown badge on the door
+        <g>
+          <rect x={x + 2} y={-182} width={f - x - 4} height={5} fill="#f6c343" />
+          <rect x={x + 2} y={-173} width={f - x - 4} height={2} fill="#f6c343" opacity="0.8" />
+          <rect x={x + 2} y={-108} width={f - x - 4} height={3} fill="#f6c343" opacity="0.9" />
+          <g transform={`translate(${doorX + 80} -132) scale(0.8)`}>
+            <path d="M -20 8 L -24 -12 L -11 -2 L 0 -18 L 11 -2 L 24 -12 L 20 8 Z" fill="#f6c343" stroke="#78350f" strokeWidth="1.5" />
+            <rect x={-20} y={9} width={40} height={6} rx={2} fill="#f6c343" stroke="#78350f" strokeWidth="1.5" />
+          </g>
+        </g>
+      )}
       {extras?.sticker && (
         <text x={doorX + 72} y={-121} textAnchor="middle" fontSize="16" fontWeight="800" fill="#fff" stroke="#0b1220" strokeWidth="0.8" paintOrder="stroke" fontFamily="system-ui, sans-serif" letterSpacing="1" {...(extras.sticker.length > 13 ? { textLength: 130, lengthAdjust: 'spacingAndGlyphs' } : {})}>{tx(extras.sticker)}</text>
       )}

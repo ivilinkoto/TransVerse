@@ -161,7 +161,7 @@ export const POWER_UNITS: PowerUnitModel[] = [
 
 /** 1.3.2.2: the premium trucks (for ТрансКоин, from VIP2), their paint, and the VIP level they need. */
 export const PREMIUM_TRUCKS = () => POWER_UNITS.filter((m) => m.premium);
-export const PREMIUM_TRUCK = { vipLevel: 2, color: '#ca8a04' } as const;
+export const PREMIUM_TRUCK = { vipLevel: 2, color: '#1e293b', trailer: '#ca8a04' } as const;
 
 /**
  * 1.2.3.4: trucks, trailers and upgrades cost 25 % more (the freight pays 60 % more —

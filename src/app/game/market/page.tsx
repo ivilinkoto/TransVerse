@@ -139,7 +139,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         <section className="space-y-3" data-testid="premium-trucks">
           <div>
             <h2 className="font-display text-lg font-bold text-gold-300">👑 {tr('Премиум камиони')}</h2>
-            <p className="text-sm text-mist-400">{tr('По-икономични, по-мощни и с по-евтина поддръжка — само за ТрансКоин, от VIP{0}. Боядисани в златно. Имаш {1} TC.', PREMIUM_TRUCK.vipLevel, user.coins)}</p>
+            <p className="text-sm text-mist-400">{tr('По-икономични, по-мощни и с по-евтина поддръжка — само за ТрансКоин, от VIP{0}. Черни със златна украса. Имаш {1} TC.', PREMIUM_TRUCK.vipLevel, user.coins)}</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {PREMIUM_TRUCKS().filter((m) => show === 'all' || m.kind === show).map((m) => {
