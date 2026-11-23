@@ -38,6 +38,9 @@ export const ECONOMY = {
   depotSlotsDefault: 3,
   depotPriceCents: 56_000_00,
   depotSlotUpgradeCents: 22_500_00,
+  /** 1.3.2.2: a depot grows to `depotMaxSlots` for money, then to `depotCoinSlots.max` for ТрансКоин only (the price of each place). */
+  depotMaxSlots: 20,
+  depotCoinSlots: { max: 25, coins: [150, 200, 250, 300, 350] },
   /**
    * 1.2.3.4: the freight paid 60 % more (closer to real rates); trucks and the rest cost 25 % more (PRICE_SCALE).
    * 1.3.2.1 „Честна монета“: 1.3 — money piled up much faster than the game is meant to.
@@ -162,4 +165,10 @@ export function serviceState(condition: number): 'ok' | 'soon' | 'required' {
   if (condition < ECONOMY.minConditionForJobs) return 'required';
   if (condition < SERVICE_SOON_BELOW) return 'soon';
   return 'ok';
+}
+
+/** 1.3.2.2: the ТрансКоин price of the next place of a depot past the money limit (null: none left). */
+export function depotCoinSlotPrice(slots: number): number | null {
+  if (slots < ECONOMY.depotMaxSlots || slots >= ECONOMY.depotCoinSlots.max) return null;
+  return ECONOMY.depotCoinSlots.coins[slots - ECONOMY.depotMaxSlots] ?? null;
 }

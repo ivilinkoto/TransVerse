@@ -52,7 +52,7 @@ import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispat
 import { toggleFavoriteLane } from '@/server/game/favorites';
 import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
-import { buyDepot, buyTrailer, buyPremiumTruck, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, relocateVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
+import { buyDepot, buyTrailer, buyPremiumTruck, buyVehicle, coupleTrailer, expandDepot, expandDepotCoins, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, relocateVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
@@ -234,6 +234,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clientLoad'), clientContractId: id, vehicleId: id }),
   z.object({ type: z.literal('buyDepot'), cityId }),
   z.object({ type: z.literal('expandDepot'), depotId: id }),
+  z.object({ type: z.literal('expandDepotCoins'), depotId: id }),
   z.object({ type: z.literal('markNotificationsRead') }),
   z.object({ type: z.literal('adoptMascot'), kind: z.enum(['cat', 'dog', 'parrot', 'turtle']), name: z.string().max(60) }),
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
@@ -665,6 +666,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   moveTrain: 'trains',
   hireTrain: 'trains',
   buyPremiumTruck: 'premium_trucks',
+  expandDepotCoins: 'premium_slots',
   setTrainHire: 'trains',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
@@ -877,6 +879,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, id: (await buyDepot(db, user.id, input.cityId)).id };
     case 'expandDepot':
       return { ok: true, costCents: await expandDepot(db, user.id, input.depotId) };
+    case 'expandDepotCoins':
+      return { ok: true, coins: await expandDepotCoins(db, user.id, input.depotId) };
     case 'markNotificationsRead':
       await markNotificationsRead(db, user.id);
       return { ok: true };

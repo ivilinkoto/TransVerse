@@ -10,7 +10,7 @@ import { cleanTruckName } from '@/lib/game/truck-names';
 import { springDiscount } from '@/lib/game/marta';
 import { haversineKm } from '@/lib/geo/geometry';
 import { relocateQuote } from '@/lib/game/relocate';
-import { ECONOMY, resaleValueCents } from '@/lib/game/economy';
+import { depotCoinSlotPrice, ECONOMY, resaleValueCents } from '@/lib/game/economy';
 import { repairPlan, type RepairPart } from '@/lib/game/repair';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';
@@ -327,11 +327,26 @@ export async function expandDepot(db: Database, userId: string, depotId: string)
     const company = await companyForUser(tx, userId);
     const [depot] = await tx.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id))).for('update');
     if (!depot) fail('depot_not_found', tr('Депото не е намерено.'), 404);
-    if (depot!.slots >= 20) fail('max_slots', tr('Депото е с максимален капацитет.'));
+    if (depot!.slots >= ECONOMY.depotMaxSlots) fail('max_slots', (await featureFor(tx, userId, 'premium_slots')) && depotCoinSlotPrice(depot!.slots) ? tr('Депото е с {0} места. Още места — само за ТрансКоин.', ECONOMY.depotMaxSlots) : tr('Депото е с максимален капацитет.'));
     const cost = ECONOMY.depotSlotUpgradeCents * Math.ceil(depot!.slots / 3);
     await post(tx, company.id, [{ category: 'depots', amountCents: -cost, description: tr('Разширение на депо ({0} места)', depot!.slots + 1), idempotencyKey: `depot:${depot!.id}:slot:${depot!.slots + 1}` }], { requireFunds: true });
     await tx.update(depots).set({ slots: depot!.slots + 1 }).where(eq(depots.id, depot!.id));
     return cost;
+  });
+}
+
+/** 1.3.2.2: one more place past the money limit, for ТрансКоин (up to ECONOMY.depotCoinSlots.max). */
+export async function expandDepotCoins(db: Database, userId: string, depotId: string, now = new Date()) {
+  if (!(await featureFor(db, userId, 'premium_slots', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [depot] = await tx.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id))).for('update');
+    if (!depot) fail('depot_not_found', tr('Депото не е намерено.'), 404);
+    const price = depotCoinSlotPrice(depot!.slots);
+    if (price === null) fail('max_slots', depot!.slots < ECONOMY.depotMaxSlots ? tr('Първо разшири депото до {0} места с пари.', ECONOMY.depotMaxSlots) : tr('Депото е с максимален капацитет.'));
+    await postCoins(tx, userId, { amount: -price!, reason: 'shop', description: tr('Разширение на депо ({0} места)', depot!.slots + 1), idempotencyKey: `depot:${depot!.id}:coin-slot:${depot!.slots + 1}` }, { requireFunds: true });
+    await tx.update(depots).set({ slots: depot!.slots + 1 }).where(eq(depots.id, depot!.id));
+    return price!;
   });
 }
 

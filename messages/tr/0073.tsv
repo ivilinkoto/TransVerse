@@ -1356,3 +1356,10 @@ a6ba651eed	Premium trucks are from VIP{0}.	Премиум-грузовики —
 0aa7f17079	heavy trailers	тяжёлые прицепы
 1e6e73e76c	The Market has three premium trucks for ТрансКоин only, from VIP2: Hemus R20 Express Premium (600 TC), Danubia T560 Signature (900 TC) and Rila XT 700 Titan 6×4 (1,500 TC). They use less fuel, have more power and cheaper upkeep, and they look different: black with gold pinstripes, a gold grille, a chrome visor, roof lights and a crown on the door.	На Рынке есть три премиум-грузовика только за ТрансКоины, с VIP2: Hemus R20 Express Premium (600 TC), Danubia T560 Signature (900 TC) и Rila XT 700 Titan 6×4 (1 500 TC). Они экономичнее, мощнее, дешевле в обслуживании и выглядят иначе: чёрные с золотыми полосами, золотой решёткой, хромированным козырьком, огнями на крыше и короной на двери.
 b4edc7f8a4	More economical, more powerful and cheaper to maintain — for ТрансКоин only, from VIP{0}. Black with gold trim. You have {1} TC.	Экономичнее, мощнее и дешевле в обслуживании — только за ТрансКоины, с VIP{0}. Чёрные с золотой отделкой. У тебя {1} TC.
+7151f6c3cc	+1 place · {0} TC	+1 место · {0} TC
+d7aec12b90	+1 place in the depot for {0} TC?	+1 место в депо за {0} TC?
+55a76fe689	A depot now grows past 20 places: places 21 to 25 are bought with ТрансКоин (150, 200, 250, 300 and 350 TC) in Fleet → Depots.	Депо теперь растёт больше 20 мест: места с 21-го по 25-е покупаются за ТрансКоины (150, 200, 250, 300 и 350 TC) в Автопарк → Депо.
+86c9aa53df	The depot has {0} places. More places — for ТрансКоин only.	В депо {0} мест. Больше мест — только за ТрансКоины.
+a1de7208f5	Bigger depots	Большие депо
+124c45d9ed	Full	Заполнено
+26430f9d63	First expand the depot to {0} places with money.	Сначала расширь депо до {0} мест за деньги.

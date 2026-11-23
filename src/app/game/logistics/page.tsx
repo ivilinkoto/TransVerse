@@ -5,7 +5,7 @@ import { Card, PageHeader, Table } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { int, money } from '@/lib/format';
-import { ECONOMY } from '@/lib/game/economy';
+import { depotCoinSlotPrice, ECONOMY } from '@/lib/game/economy';
 import { cities, cityMarkets, depots, ports, vehicles } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { depotSlotCostCents } from '@/server/game/fleet';
@@ -61,7 +61,11 @@ export default async function LogisticsPage() {
               <td className="num px-3 py-3">{parked.find((p) => p.cityId === d.cityId)?.n ?? 0}</td>
               <td className="px-3 py-3 text-mist-400">{d.createdAt.toLocaleDateString(intlLocale())}</td>
               <td className="px-3 py-3 text-right">
-                <ActionButton action={{ type: 'expandDepot', depotId: d.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={company.balanceCents < depotSlotCostCents(d.slots)}>{t('+1 място · {0}', money(depotSlotCostCents(d.slots)))}</ActionButton>
+                {d.slots < ECONOMY.depotMaxSlots ? (
+                  <ActionButton action={{ type: 'expandDepot', depotId: d.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={company.balanceCents < depotSlotCostCents(d.slots)}>{t('+1 място · {0}', money(depotSlotCostCents(d.slots)))}</ActionButton>
+                ) : features.premium_slots && depotCoinSlotPrice(d.slots) ? (
+                  <ActionButton action={{ type: 'expandDepotCoins', depotId: d.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={user.coins < depotCoinSlotPrice(d.slots)!} confirm={t('+1 място в депото за {0} TC?', depotCoinSlotPrice(d.slots)!)}>{t('+1 място · {0} TC', depotCoinSlotPrice(d.slots)!)}</ActionButton>
+                ) : <span className="text-xs text-mist-400">{t('Пълно')}</span>}
               </td>
             </tr>
           ))}
