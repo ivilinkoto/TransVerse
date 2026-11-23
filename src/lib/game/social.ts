@@ -24,6 +24,8 @@ export const CHANNELS = {
   trade: { label: 'Търговия', perMinute: 3 },
   /** 1.2.6: the regional projects — who hauls what. */
   projects: { label: 'Проекти', perMinute: 4 },
+  /** 1.3.2.1: the game's own lines (records, finds, postcards, rumours…) — players only read it. */
+  events: { label: 'Събития', perMinute: 0 },
 } as const;
 export type Channel = keyof typeof CHANNELS;
 

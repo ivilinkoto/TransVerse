@@ -79,7 +79,7 @@ export async function sharePostcard(db: Database, userId: string, deliveryId: st
     const value = { ids: [...shared, deliveryId].slice(-50) };
     await tx.insert(jobState).values({ key, value, updatedAt: now }).onConflictDoUpdate({ target: jobState.key, set: { value, updatedAt: now } });
     const line = card!.reason === 'first_city' ? tr('📸 {0} стигна за първи път до {1}! Виж камиона в 3D.', card!.username, card!.city) : tr('📸 {0} докара {1} на {2} км до {3}. Виж камиона в 3D.', card!.username, card!.goods, card!.km, card!.city);
-    await postGameLine(tx, 'global', 'postcard', line, { href: `/game/postcard/${deliveryId}`, button: tr('Виж картичката') }, now);
+    await postGameLine(tx, 'events', 'postcard', line, { href: `/game/postcard/${deliveryId}`, button: tr('Виж картичката') }, now);
     return { ok: true };
   });
 }

@@ -117,7 +117,7 @@ import { awardSantas, awardSnowKings } from './first-snow';
 import { awardPassGuardians, ensurePassLoads } from './road-service';
 import { awardWinterGames } from './winter-games';
 import { runBaseStaff } from './base-staff';
-import { postDailyQuestion } from './chat-life';
+import { moveGameLinesToEvents, postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
 import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
@@ -428,6 +428,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
     // 1.2.6: the question of the day in the global chat.
     await every(db, 'chat-question', 10 * 60_000, now, () => postDailyQuestion(db, now));
+    // 1.3.2.1: the game's earlier lines leave the global chat for „Събития“ (once).
+    await every(db, 'chat-events-move', 60 * 60_000, now, () => moveGameLinesToEvents(db));
     await every(db, 'region-project', 10 * 60_000, now, () => ensureRegionProject(db, now));
     // 1.2.7: escorts for oversize loads, the convoy hour, rumours, the duo of the week.
     await every(db, 'escort-loads', 30 * 60_000, now, () => topUpEscortLoads(db, now));

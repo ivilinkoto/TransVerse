@@ -8,7 +8,7 @@ import { coinTaperFactor, taperCoins } from '@/lib/game/coin-taper';
 import { closeDb } from '@/server/db/client';
 import { chatMessages, jobState, users } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
-import { botUserId, postDailyQuestion, postGameLine, postMoment, thankHelper } from '@/server/game/chat-life';
+import { botUserId, moveGameLinesToEvents, postDailyQuestion, postGameLine, postMoment, thankHelper } from '@/server/game/chat-life';
 import { postToChannel } from '@/server/game/messages';
 import { passView } from '@/server/game/season-pass';
 import { db, newPlayer } from './helpers';
@@ -67,6 +67,20 @@ describe('1.2.6 the game in the chat', () => {
     const bot = await botUserId(db());
     const lines = await db().select().from(chatMessages).where(and(eq(chatMessages.userId, bot), eq(chatMessages.kind, 'moment')));
     expect(lines.length).toBeGreaterThanOrEqual(2);
+    // 1.3.2.1: the game's moments go to „Събития“, not to the global chat.
+    const mine = await db().select({ channel: chatMessages.channel }).from(chatMessages).where(and(eq(chatMessages.userId, bot), eq(chatMessages.body, 'Момент 2')));
+    expect(mine.map((m) => m.channel)).toContain('events');
+  });
+
+  it('1.3.2.1: earlier game lines move from the global chat to „Събития“ once; the question of the day stays', async () => {
+    const bot = await botUserId(db());
+    await db().delete(jobState).where(eq(jobState.key, 'chat-events-moved'));
+    const [old] = await db().insert(chatMessages).values({ channel: 'global', userId: bot, body: 'Стар рекорд', kind: 'moment', meta: {} }).returning();
+    const [q] = await db().insert(chatMessages).values({ channel: 'global', userId: bot, body: 'Въпрос', kind: 'question', meta: {} }).returning();
+    expect(await moveGameLinesToEvents(db())).toBeGreaterThanOrEqual(1);
+    expect(await moveGameLinesToEvents(db())).toBe(0);
+    const rows = await db().select({ id: chatMessages.id, channel: chatMessages.channel }).from(chatMessages).where(inArray(chatMessages.id, [old!.id, q!.id]));
+    expect(Object.fromEntries(rows.map((r) => [r.id, r.channel]))).toEqual({ [old!.id]: 'events', [q!.id]: 'global' });
   });
 
   it('„Благодаря“: a new player thanks whoever answered them, once per answer', async () => {
