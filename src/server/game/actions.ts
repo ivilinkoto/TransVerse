@@ -68,7 +68,7 @@ import { learnSkill, resetSkills } from '@/server/game/skills';
 import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
 import { speedUpDelivery } from '@/server/game/speed-up';
-import { addWagons, buyTrain, moveTrain, sellTrain, sellWagons, sendTrain } from '@/server/game/trains';
+import { addWagons, buyTrain, hireTrain, moveTrain, sellTrain, sellWagons, sendTrain, setTrainHire } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, driveMyself, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -249,6 +249,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sellTrain'), trainId: id }),
   z.object({ type: z.literal('sendTrain'), trainId: id, orderId: z.string().regex(/^\d+-\d+:\d+:f?\d+$/).max(80) }),
   z.object({ type: z.literal('moveTrain'), trainId: id, to: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('hireTrain'), terminal: z.coerce.number().int().positive(), orderId: z.string().regex(/^\d+-\d+:\d+:f?\d+$/).max(80), via: z.union([z.literal('game'), id]) }),
+  z.object({ type: z.literal('setTrainHire'), trainId: id, share: z.coerce.number().min(0).max(1) }),
   z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
   z.object({ type: z.literal('resetSkills') }),
@@ -660,6 +662,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   sellTrain: 'trains',
   sendTrain: 'trains',
   moveTrain: 'trains',
+  hireTrain: 'trains',
+  setTrainHire: 'trains',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
   renameMascot: 'mascot',
@@ -912,6 +916,13 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       const tr = await moveTrain(db, user.id, input.trainId, input.to, new Date());
       return { ok: true, arriveAt: tr.run?.arriveAt };
     }
+    case 'hireTrain': {
+      const tr = await hireTrain(db, user.id, input.terminal, input.orderId, input.via, new Date());
+      return { ok: true, arriveAt: tr.run?.arriveAt };
+    }
+    case 'setTrainHire':
+      await setTrainHire(db, user.id, input.trainId, input.share > 0 ? input.share : null, new Date());
+      return { ok: true };
     case 'voteCrisis':
       await voteCrisis(db, user.id, input.option, new Date());
       return { ok: true };

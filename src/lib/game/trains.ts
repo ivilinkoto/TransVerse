@@ -15,9 +15,11 @@ import { seededRandom } from './road-events';
  * invented and the prices, power figures, times and orders are game data
  * (labelled so in the game).
  *
- * Anyone can own a train from level 25 (with the rail licence, from the same
- * level); a member of a player company from level 12 when the company holds
- * the licence, with a better pay, a cheaper track and one more train.
+ * Own trains are a VIP3 privilege (from level 25, with the rail licence; a
+ * member of a player company from level 12, with a better pay, a cheaper track
+ * and one more train; VIP4 and VIP5 one and two more). Everyone else from
+ * level 10 hires a train for one order: one of the game's (a share of the pay)
+ * or a player's that its owner put out for hire (the owner gets the fee).
  */
 
 export type LocoId = 'danubia-d22' | 'balkan-e40' | 'rila-e60';
@@ -93,6 +95,15 @@ export const TRAINS = {
   sellBack: 0.5,
   /** In a player company: unlocked earlier, paid more, a cheaper track, one more train. */
   company: { minLevel: 12, payBonus: 0.1, trackDiscount: 0.25, extraTrains: 1 },
+  /** Own trains from this VIP level; more trains at the higher ones (by VIP level). */
+  vipLevel: 3,
+  vipExtraTrains: [0, 0, 0, 0, 1, 2],
+  /**
+   * Hiring a train for one order: from level 10; the game's trains take
+   * `gameShare` of the pay, a player sets a share from `minShare` to `maxShare`.
+   * Hired runs at once by VIP level (VIP0 one, VIP1 two, VIP2+ three).
+   */
+  hire: { minLevel: 10, gameShare: 0.35, minShare: 0.05, maxShare: 0.4, shares: [0.1, 0.15, 0.2, 0.25, 0.3], active: [1, 2, 3, 3, 3, 3] },
 } as const;
 
 export interface RailTerminal {
@@ -340,6 +351,9 @@ export interface TrainRun {
   payCents: number;
   /** Paid at the departure (track and energy). */
   costCents: number;
+  /** Hired by another player: they paid the run, the fee to the owner, and get the pay. */
+  hirerId?: string | null;
+  hireFeeCents?: number;
 }
 
 export interface Train {
@@ -354,6 +368,10 @@ export interface Train {
   runs: number;
   tons: number;
   earnedCents: number;
+  /** One of the game's trains hired for a single order (it goes away on arrival). */
+  rental?: boolean;
+  /** Put out for hire by its owner at this share of an order's pay (null: not for hire). */
+  hireShare?: number | null;
 }
 
 export interface TrainOrder extends RailPath {
@@ -424,10 +442,23 @@ export function cannotTake(train: Pick<Train, 'loco' | 'wagons' | 'run' | 'at'>,
   return null;
 }
 
-export const trainLimits = (inCompany: boolean) => ({
+export const trainLimits = (inCompany: boolean, vipLevel = 0) => ({
   minLevel: inCompany ? TRAINS.company.minLevel : TRAINS.minLevel,
-  maxTrains: TRAINS.maxTrains + (inCompany ? TRAINS.company.extraTrains : 0),
+  maxTrains: TRAINS.maxTrains + (inCompany ? TRAINS.company.extraTrains : 0) + (TRAINS.vipExtraTrains[Math.max(0, Math.min(5, vipLevel))] ?? 0),
+  vip: vipLevel >= TRAINS.vipLevel,
+  hires: TRAINS.hire.active[Math.max(0, Math.min(5, vipLevel))] ?? 1,
 });
+
+/** The smallest game train that can carry an order (the cheapest locomotive that can, with just the wagons it needs), or null. */
+export function rentalFor(order: Pick<TrainOrder, 'from' | 'electric' | 'wagonType' | 'tons' | 'pull'>): Pick<Train, 'loco' | 'wagons'> | null {
+  const wagons = { [order.wagonType]: wagonsFor(order.wagonType, order.tons) };
+  const loco = [...LOCO_IDS].sort((a, b) => LOCOS[a].priceCents - LOCOS[b].priceCents)
+    .find((l) => wagonsFor(order.wagonType, order.tons) <= LOCOS[l].maxWagons && !cannotTake({ loco: l, wagons, run: null, at: order.from }, order));
+  return loco ? { loco, wagons } : null;
+}
+
+/** The fee for a hired train (cents): its share of the order's pay. */
+export const hireFee = (payCents: number, share: number) => Math.round(payCents * share);
 
 /** Where a train on a run is now: the leg it is on and how far along the whole run (0–1). */
 export function runProgress(run: Pick<TrainRun, 'legs' | 'departAt' | 'arriveAt'>, now: number) {

@@ -1309,3 +1309,40 @@ d6d9d3173f	🎁 Level {0} offer — until {1}.	🎁 Предложение за 
 f66b1f6b3d	New packs in the shop	Новые пакеты в магазине
 0866de27b2	New level offer	Предложение за новый уровень
 a04436292f	“Fast” pack (250 TC and a 3-day booster), Truck Pass Premium and Premium+ (with +15,000 pass points), 10 gold cases, VIP+ for 30 days (with 1,200 TC and a 7-day booster) and the smallest pack — 60 TC.	Пакет «Быстрый» (250 TC и 3 дня бустера), Truck Pass Премиум и Премиум+ (с +15 000 очков пропуска), 10 золотых кейсов, VIP+ на 30 дней (с 1 200 TC и 7 днями бустера) и самый маленький пакет — 60 TC.
+43537d5428	{0}% of the order	{0}% от заказа
+a9eeb60ff4	No train of your own: take an order and run it with a hired train — one of the game's (for {0}% of the order) or another player's train put out for hire (for their fee). You pay the track fee and the energy; the order is yours.	Нет своего поезда: возьми заказ и выполни его на арендованном — поезде игры (за {0}% от заказа) или поезде другого игрока, сданном в аренду (за его плату). Ты платишь сбор за линию и энергию; заказ твой.
+aa1467210e	The VIP levels in the shop show what each level unlocks.	В магазине у VIP-уровней написано, что открывает каждый уровень.
+78e2d1222a	Game train ({0})	Поезд игры ({0})
+4401e3723d	Train for hire	Поезд в аренду
+e4ccfc1cf8	The train is free at the terminal.	Поезд свободен на станции.
+62172c37b5	Your train was hired: {0} → {1}	Твой поезд арендовали: {0} → {1}
+58728b2304	Everyone from level 10 can run train orders without a train of their own: with one of the game's trains (for 35% of the order) or with another player's train put out for hire. The owner sets the fee (10–30%) and gets it at the departure.	Все с 10 уровня могут выполнять заказы для поездов и без своего поезда: на поезде игры (за 35% от заказа) или на поезде другого игрока, сданном в аренду. Владелец сам выбирает плату (10–30%) и получает её при отправлении.
+9a775ed160	Two hired trains at once	Два арендованных поезда одновременно
+19cb6374c7	Buy a locomotive and wagons: container flats, tank wagons, covered wagons or hoppers. The electric one is cheaper to run, the diesel one goes everywhere. Own trains are for VIP3 and up; VIP4 gets one more, VIP5 two more.	Купи локомотив и вагоны: платформы для контейнеров, цистерны, крытые вагоны или хопперы. Электрический дешевле в эксплуатации, дизельный проходит везде. Свои поезда — для VIP3 и выше; у VIP4 на один больше, у VIP5 — на два.
+978aef6ceb	Hire (Jobs → Trains → “Hire a train”): pick a terminal and an order, and the game shows its own train and the trains for hire there with the fee, the costs and what you keep. You pay the fee, the track and the energy at the departure and get the order on arrival. The game's train needs no licence; a player's train runs on its owner's licences. Hired trains at once: 1, with VIP1 — 2, with VIP2 and up — 3.	Аренда (Рейсы → Поезда → «Арендуй поезд»): выбираешь станцию и заказ, а игра показывает свой поезд и поезда в аренду там с платой, расходами и тем, что тебе останется. Плату, линию и энергию платишь при отправлении, а заказ получаешь по прибытии. Поезду игры лицензия не нужна; поезд игрока ездит по лицензиям владельца. Арендованных поездов одновременно: 1, с VIP1 — 2, с VIP2 и выше — 3.
+97103639e7	Hiring a train is from level {0}.	Аренда поезда — с уровня {0}.
+fc0e541be3	Hire a train	Арендуй поезд
+805235fd58	Hired train {0} → {1}	Арендованный поезд {0} → {1}
+652df44079	Hired trains on the way: {0} of {1}	Арендованных поездов в пути: {0} из {1}
+d66236d230	At most {0} hired trains at once. More with a higher VIP level.	Не более {0} арендованных поездов одновременно. Больше — с более высоким VIP-уровнем.
+e89d37fd94	Not for hire	Не сдаётся в аренду
+2ba1eef4db	No game train for this order.	Нет поезда игры для этого заказа.
+35186210ea	No game train is free for this order.	Нет свободного поезда игры для этого заказа.
+5bc9341e1f	No such fee.	Нет такой платы.
+c7f0548dbc	You have no train of your own — hire one for an order below. Own trains are bought from VIP{0} in Fleet → Trains.	У тебя нет своего поезда — арендуй поезд для заказа ниже. Свой поезд покупается с VIP{0} в Автопарке → Поезда.
+0fa6cd3422	Two more own trains	Ещё два своих поезда
+6714efb1f1	One more own train	Ещё один свой поезд
+726ac1da23	For hire at {0}% of the order — other players can run orders with it	В аренде за {0}% от заказа — другие игроки могут выполнять заказы на нём
+d1da7e1de0	Put the train out for hire: other players run orders with it and you get the fee	Сдай поезд в аренду: другие игроки выполняют на нём заказы, а ты получаешь плату
+571cc46c52	Own trains are from VIP{0}. Until then hire a train for the order (Jobs → Trains).	Свой поезд — с VIP{0}. До тех пор арендуй поезд для заказа (Рейсы → Поезда).
+30ca3bbe94	Own trains are from VIP{0}. Until then hire a train for the order in Jobs → Trains.	Свой поезд — с VIP{0}. До тех пор арендуй поезд для заказа в Рейсы → Поезда.
+99b8312aaa	Own train from VIP3	Свой поезд с VIP3
+a494833bae	An own train on your own — from level 25 with the rail licence. In a company with the rail licence — from level 12, with +10% on orders, −25% track fee and one more train.	Свой поезд в одиночку — с 25 уровня и ж/д лицензией. В компании с ж/д лицензией — с 12 уровня, с +10% за заказы, −25% сбора за линию и ещё одним поездом.
+c40298e2c5	Own trains and putting them out for hire	Свои поезда и сдача в аренду
+4cd83a1987	This train is not for hire.	Этот поезд не сдаётся в аренду.
+505ca1870b	Three hired trains at once	Три арендованных поезда одновременно
+23c6aa2df2	game train	поезд игры
+84c8cff624	track and energy {0}	линия и энергия {0}
+490a1a070f	hired from a player	арендован у игрока
+dbc4320488	fee {0}% ({1})	плата {0}% ({1})
+5470f30d34	🚆 Your hired train arrived in {0}	🚆 Твой арендованный поезд прибыл в {0}

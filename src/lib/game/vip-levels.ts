@@ -39,3 +39,25 @@ export function nextVipLevel(spentCents: number, level: number) {
   const next = VIP_LEVELS[level + 1];
   return next ? { level: next.level, leftCents: Math.max(0, next.fromCents - spentCents) } : null;
 }
+
+/**
+ * 1.3.3: what each VIP level unlocks on top of its bonuses (a new feature or
+ * a bigger limit), shown in the shop once the feature is out.
+ */
+export interface VipUnlock {
+  level: number;
+  label: string;
+  /** Shown once this feature is out (FEATURES). */
+  feature: string;
+}
+
+export const VIP_UNLOCKS: VipUnlock[] = [
+  { level: 1, label: 'Два наети влака наведнъж', feature: 'trains' },
+  { level: 2, label: 'Три наети влака наведнъж', feature: 'trains' },
+  { level: 3, label: 'Собствени влакове и пускане под наем', feature: 'trains' },
+  { level: 4, label: 'Още един собствен влак', feature: 'trains' },
+  { level: 5, label: 'Още два собствени влака', feature: 'trains' },
+];
+
+/** The unlocks of one level, among the features that are out. */
+export const unlocksAt = (level: number, live: (feature: string) => boolean) => VIP_UNLOCKS.filter((u) => u.level === level && live(u.feature));

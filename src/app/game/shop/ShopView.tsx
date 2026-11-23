@@ -14,7 +14,7 @@ import { isVip, STANDARD_COLORS, VIP_BENEFITS, VIP_COLORS } from '@/lib/game/vip
 import { cities, trailers, vehicles } from '@/server/db/schema';
 import { coinHistory, COIN_REASON_LABELS, earnedThisWeek, type CoinReason } from '@/server/game/coins';
 import { COIN_CAP } from '@/lib/game/coin-cap';
-import { nextVipLevel, VIP_LEVELS } from '@/lib/game/vip-levels';
+import { nextVipLevel, unlocksAt, VIP_LEVELS } from '@/lib/game/vip-levels';
 import { spentCents } from '@/server/game/vip-levels';
 import { premiumPassOpen } from '@/server/game/season-pass';
 import { gameContext } from '@/server/game/context';
@@ -64,6 +64,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
           <li key={l.level} className={`rounded-lg border px-2 py-1 ${l.level === level ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-asphalt-700'}`}>
             <span className="block font-semibold">{tr('VIP{0} · от {1}', l.level, euro(l.fromCents))}</span>
             <span className="block">{tr('+{0}% опит, −{1}% сервиз, +{2}% на курс', Math.round(l.xp * 100), Math.round(l.garage * 100), Math.round(l.pay * 100))}{l.depotSlots ? `, ${tr('+{0} място в депо', l.depotSlots)}` : ''}</span>
+            {unlocksAt(l.level, (f) => !!(features as Record<string, boolean>)[f]).map((u) => <span key={u.label} className="block text-gold-300">🔓 {tx(u.label)}</span>)}
           </li>
         ))}
       </ul>

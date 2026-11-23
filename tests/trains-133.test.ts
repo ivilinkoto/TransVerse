@@ -18,8 +18,8 @@ afterAll(() => closeDb());
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : String(e)));
 const SOFIA = 727011;
 const balance = async (userId: string) => (await db().select({ b: companies.balanceCents }).from(companies).where(eq(companies.ownerId, userId)))[0]!.b;
-async function rich(userId: string, level: number, licences: string[] = ['rail', 'international', 'customs']) {
-  await db().update(users).set({ level }).where(eq(users.id, userId));
+async function rich(userId: string, level: number, licences: string[] = ['rail', 'international', 'customs'], vipLevel = 3) {
+  await db().update(users).set({ level, vipLevel }).where(eq(users.id, userId));
   if (licences.length) await db().insert(userLicences).values(licences.map((licence) => ({ userId, licence, priceCents: 0, source: 'purchase' }))).onConflictDoNothing();
   const [acc] = await db().select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
   await db().transaction((tx) => post(tx, acc!.id, [{ category: 'admin_adjustment', amountCents: 3_000_000_00, description: 'test funds', idempotencyKey: `test-train:${userId}` }]));
@@ -174,7 +174,7 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     await db().insert(companyLicences).values({ companyId: m.company.id, licence: 'rail', priceCents: 0, boughtBy: p.userId });
     const view0 = await trainsView(db(), p.userId, new Date());
     expect(view0.company).toBe(true);
-    expect(view0.limits).toEqual({ minLevel: TRAINS.company.minLevel, maxTrains: TRAINS.maxTrains + 1 });
+    expect(view0.limits).toMatchObject({ minLevel: TRAINS.company.minLevel, maxTrains: TRAINS.maxTrains + 1 });
     await buyTrain(db(), p.userId, { loco: 'danubia-d22', wagonType: 'tank', wagons: 18, terminalId: SOFIA }, new Date());
     const view = await trainsView(db(), p.userId, new Date());
     const o = view.trains[0]!.orders[0]!;
