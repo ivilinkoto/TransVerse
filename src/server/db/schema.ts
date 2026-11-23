@@ -188,6 +188,10 @@ export const users = pgTable(
     quietHours: jsonb('quiet_hours').$type<{ from: number; to: number } | null>(),
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
+    /** 1.3.2.2: the VIP level (0–5) by real money spent, kept up to date with each payment and refund. */
+    vipLevel: integer('vip_level').notNull().default(0),
+    /** 1.3.2.2: a level the player keeps whatever they spent (VIP5 for those with VIP when the levels came). */
+    vipLevelFloor: integer('vip_level_floor').notNull().default(0),
     /** ТрансКоин — premium currency balance (whole coins). Changes only through coin_entries. */
     /** Spare parts from the scrapyard (v1.6): each repairs a truck by a quarter. */
     spareParts: integer('spare_parts').notNull().default(0),

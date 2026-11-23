@@ -1243,3 +1243,21 @@ e56804538b	They mostly hit big fleets: new players hardly feel them.	Они бь
 41e1aef978	New “Events” tab in the chat: the game's messages go there — records, legendary finds, postcards, rumours, looking for a partner or an escort. The global chat stays for talk between players (the question of the day stays in it).	Новый раздел «События» в чате: туда приходят сообщения игры — рекорды, легендарные находки, открытки, слухи, поиск напарника и эскорта. Глобальный чат остаётся для разговоров между игроками (вопрос дня остаётся в нём).
 3944e31b4f	Events	События
 c5b327621a	Only the game writes here: records, finds, postcards and news from the road.	Здесь пишет только игра: рекорды, находки, открытки и новости с дороги.
+e9418374e8	+{0} depot place	+{0} место в депо
+6bd91e5ce2	+{0}% XP, −{1}% garage, +{2}% per run	+{0}% опыта, −{1}% сервис, +{2}% за рейс
+653cafa9d3	VIP now has levels — from VIP0 to VIP5. Every level is for good and gives bonuses on top of the regular VIP.	У VIP теперь есть уровни — от VIP0 до VIP5. Каждый уровень навсегда и даёт бонусы сверх обычного VIP.
+fc31f1216f	VIP levels	VIP-уровни
+1fe3550d05	VIP level {0}	VIP-уровень {0}
+bb9a8a2311	VIP{0} · from {1}	VIP{0} · от {1}
+15691e5b97	Thank you, first VIPs	Спасибо первым VIP
+e8d325e092	VIP level bonus	Бонус за VIP-уровень
+82df270240	Bonuses on every level	Бонусы на каждом уровне
+65bf6367b7	The level's bonuses add to those of the regular VIP (by days), which stays as before.	Бонусы уровня добавляются к бонусам обычного VIP (по дням), который остаётся как раньше.
+594d05870e	The run bonus counts towards the bonus cap (at most 40% of the load).	Бонус за рейс входит в лимит бонусов (не больше 40% от груза).
+f85290e566	Everyone who had VIP when the levels came out got VIP5 for good.	Все, у кого был VIP, когда появились уровни, получили VIP5 навсегда.
+fe67314fe8	{1} more in purchases to VIP{0}.	До VIP{0} осталось покупок на {1}.
+bde80b3c08	Per level: +2% XP, −2% at the garage and +1% on every run; VIP3 and VIP4 also give +1 place in every depot, and VIP5 +2. At VIP5: +10% XP, −10% garage and +5% per run.	На уровень: +2% опыта, −2% в сервисе и +1% за каждый рейс; VIP3 и VIP4 дают ещё +1 место в каждом депо, а VIP5 — +2. На VIP5: +10% опыта, −10% сервис и +5% за рейс.
+9d89d64ecd	The highest level — thank you!	Высший уровень — спасибо тебе!
+a3bc2f7ec0	The level grows with purchases in the shop: VIP1 from 5 €, VIP2 from 20 €, VIP3 from 50 €, VIP4 from 100 € and VIP5 from 200 € in total. The level is for good and its bonuses always apply — even when the VIP days are over.	Уровень растёт с покупками в магазине: VIP1 от 5 €, VIP2 от 20 €, VIP3 от 50 €, VIP4 от 100 € и VIP5 от 200 € в сумме. Уровень навсегда, и его бонусы действуют всегда — даже когда дни VIP закончились.
+16065e6beb	The level counts all paid purchases in the shop (not refunded ones). In the Shop you see your level and how much is left to the next.	Уровень считается по всем оплаченным покупкам в магазине (без возвращённых). В Магазине видно твой уровень и сколько осталось до следующего.
+a1a433de62	Five VIP levels	Пять VIP-уровней

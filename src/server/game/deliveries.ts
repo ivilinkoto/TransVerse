@@ -1,3 +1,5 @@
+import { vipLevel } from '@/lib/game/vip-levels';
+import { ownerVipLevel } from './vip-levels';
 import { checkTripRules } from './special-loads';
 import { afterExtras, settleExtras, type TripFacts } from './trip-extras';
 import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
@@ -556,6 +558,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (result.bonusCents) postings.push({ category: 'bonus', amountCents: result.bonusCents, description: t('Бонус за ранна доставка'), idempotencyKey: key('bonus'), refType: 'delivery', refId: d.id });
   // Reputation pays: +1 % of the reward per 10 points (up to +10 %), by the reputation before this delivery.
   const reputationBonus = Math.round(result.rewardCents * reputationBonusShare(company!.reputation));
+  // 1.3.2.2: the VIP level pays a little more on every delivery (inside the bonus cap).
+  const levelPay = Math.round(result.rewardCents * vipLevel(await ownerVipLevel(tx, d.companyId)).pay);
+  if (levelPay) postings.push({ category: 'bonus', amountCents: levelPay, description: t('Бонус за VIP ниво'), idempotencyKey: key('vip-level'), refType: 'delivery', refId: d.id });
   if (reputationBonus) postings.push({ category: 'reputation_bonus', amountCents: reputationBonus, description: t('Бонус за репутация ({0})', Math.floor(company!.reputation)), idempotencyKey: key('reputation'), refType: 'delivery', refId: d.id });
   if (d.rentalFeeCents) postings.push({ category: 'rental', amountCents: -d.rentalFeeCents, description: t('Наем на камиона ({0} км)', Math.round(d.emptyKm + d.loadedKm)), idempotencyKey: key('rental'), refType: 'delivery', refId: d.id });
   // Convoy: a friend or company member drove the same lane; on time, each gets a bonus.
@@ -682,14 +687,16 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await internDelivery(tx, company!.ownerId, baseXp, completedAt);
   await choiceXp(tx, company!.ownerId, d, baseXp);
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
-  const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
+  const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil, vipLevel: users.vipLevel }).from(users).where(eq(users.id, company!.ownerId));
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;
+  // 1.3.2.2: the VIP level's own XP bonus, kept for good.
+  const levelXp = 1 + vipLevel(owner?.vipLevel).xp;
   const boostXp = owner?.xpBoostUntil && owner.xpBoostUntil > now ? 2 : 1;
   // A newcomer with a mentor learns faster.
   const mentorXp = await mentorXpFactor(tx, company!.ownerId, now);
   // "Строителен бум": hauling building materials teaches more.
   const boomXp = contract.constructionId && (await boomFor(tx, company!.ownerId, completedAt)) ? BOOM.xpFactor : 1;
-  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp * mentorXp * boomXp);
+  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * levelXp * boostXp * mentorXp * boomXp);
   // The player's own driving gives all of the XP; a hired driver's trip only a share (the driver learns from all of it).
   const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, [d.driverId, d.coDriverId].filter((x): x is string => !!x)), eq(drivers.isOwner, true)))).length > 0;
   const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);

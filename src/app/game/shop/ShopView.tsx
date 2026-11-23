@@ -14,6 +14,8 @@ import { isVip, STANDARD_COLORS, VIP_BENEFITS, VIP_COLORS } from '@/lib/game/vip
 import { cities, trailers, vehicles } from '@/server/db/schema';
 import { coinHistory, COIN_REASON_LABELS, earnedThisWeek, type CoinReason } from '@/server/game/coins';
 import { COIN_CAP } from '@/lib/game/coin-cap';
+import { nextVipLevel, VIP_LEVELS } from '@/lib/game/vip-levels';
+import { spentCents } from '@/server/game/vip-levels';
 import { gameContext } from '@/server/game/context';
 import { BuyWithMoney } from '@/components/game/BuyWithMoney';
 import { euro, paidProduct, PAID_PRODUCTS, PAYMENT_STATUS_LABELS } from '@/lib/game/payments';
@@ -48,6 +50,27 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
   ]);
   // 1.3.2.1: how much of this week's cap on earned ТрансКоин is used.
   const earnedWeek = await earnedThisWeek(db, user.id, now);
+  // 1.3.2.2: the VIP level by what the player has paid, and what is left to the next one.
+  const spent = await spentCents(db, user.id);
+  const level = user.vipLevel ?? 0;
+  const next = nextVipLevel(spent, level);
+  const levelCard = (
+    <div className="w-full rounded-2xl border border-gold-400/30 bg-gold-400/5 p-3 text-sm" data-testid="vip-level">
+      <p className="font-display text-base font-bold text-gold-300">{tr('VIP ниво {0}', level)}</p>
+      <p className="text-xs text-mist-300">{next ? tr('До VIP{0} остават покупки за {1}.', next.level, euro(next.leftCents)) : tr('Най-високото ниво — благодарим ти!')}</p>
+      <ul className="mt-2 grid grid-cols-2 gap-1 text-[11px] text-mist-300 sm:grid-cols-5">
+        {VIP_LEVELS.filter((l) => l.level > 0).map((l) => (
+          <li key={l.level} className={`rounded-lg border px-2 py-1 ${l.level === level ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-asphalt-700'}`}>
+            <span className="block font-semibold">{tr('VIP{0} · от {1}', l.level, euro(l.fromCents))}</span>
+            <span className="block">{tr('+{0}% опит, −{1}% сервиз, +{2}% на курс', Math.round(l.xp * 100), Math.round(l.garage * 100), Math.round(l.pay * 100))}{l.depotSlots ? `, ${tr('+{0} място в депо', l.depotSlots)}` : ''}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+  const capCard = (
+    <p className="w-full text-xs text-mist-400" data-testid="coin-cap-store">{tr('Спечелени TC тази седмица: {0} от {1}', Math.min(earnedWeek, COIN_CAP.weekly), COIN_CAP.weekly)}</p>
+  );
   const trailerOptions = (await db.select({ id: trailers.id, plate: trailers.plate, modelId: trailers.modelId }).from(trailers).where(and(eq(trailers.companyId, company.id), eq(trailers.ownership, 'owned'), isNull(trailers.soldAt)))).map((t) => ({ id: t.id, label: `${t.plate} · ${trailerModel(t.modelId).name}` }));
   const vehicleOptions: VehicleOption[] = fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${tx(v.city)}${v.ownership === 'rented' ? tr(' (нает)') : ''}${v.status !== 'idle' ? tr(' · на курс') : ''}`, owned: v.ownership === 'owned', idle: v.status === 'idle' }));
   const hubs = cityRows.filter((c) => isFreightHub({ population: c.population, country: c.country })).map((c) => ({ id: c.id, name: `${tx(c.name)} (${c.country})` }));
@@ -90,6 +113,8 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
         vipBenefits={vipBenefits.map((b) => ({ group: tx(b.group), items: b.items.map((i) => tx(i)) }))}
         extras={
           <>
+            {levelCard}
+            {capCard}
             {v2 && vip && vipCase && <ActionButton action={{ type: 'claimVipCase' }} className="btn-gold px-3 py-2 text-sm">{tr('Вземи VIP кейса на седмицата')}</ActionButton>}
             {v2 && card?.active && (card.ready ? <ActionButton action={{ type: 'claimMonthCard' }} className="btn-primary px-3 py-2 text-sm">{tr('Вземи {0} TC за днес', MONTH_CARD.coinsPerDay)}</ActionButton> : <p className="text-xs text-mist-400">{tr('Днешните {0} TC са взети. Ела утре!', MONTH_CARD.coinsPerDay)}</p>)}
             {passSale && <ActionButton action={{ type: 'buyPassLevel' }} className="btn-gold px-3 py-2 text-sm" disabled={user.coins < PASS_LEVEL_SALE.coins}>{tr('Купи ниво от пропуска · {0} TC', PASS_LEVEL_SALE.coins)}</ActionButton>}

@@ -813,6 +813,13 @@
       "when": 1794244771749,
       "tag": "0115_dock_letters",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1795444190245,
+      "tag": "0116_vip_levels",
+      "breakpoints": true
     }
   ]
 }

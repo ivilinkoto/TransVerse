@@ -1,3 +1,5 @@
+import { vipLevel } from '@/lib/game/vip-levels';
+import { ownerVipLevel } from './vip-levels';
 import { winterTyreDiscount } from './prewinter';
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
@@ -47,7 +49,7 @@ async function fleetCapacity(db: DbOrTx, companyId: string) {
   // A borrowed company truck stands on the company's parking, not in the member's depot.
   const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt), ne(vehicles.ownership, 'company')));
   // VIP: one extra place in every depot.
-  let extra = (await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0;
+  let extra = ((await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0) + n * vipLevel(await ownerVipLevel(db, companyId)).depotSlots;
   // The parking on the company's plot: places in the member's depot in the company's base city.
   const [owner] = await db.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, companyId));
   const perks = owner ? await bonusesForUser(db, owner.ownerId) : null;
@@ -202,7 +204,7 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
     // VIP and the company's service on the plot make it cheaper.
     const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
     const spring = await springOff(tx, userId);
-    const factor = (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service) * (1 - spring);
+    const factor = (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - vipLevel(await ownerVipLevel(tx, company.id)).garage) * (1 - service) * (1 - spring);
     const plan = repairPlan(truckUnit, trailerUnit, part, share, factor, opts.afford ? company.balanceCents : undefined);
     if (plan.truckPoints + plan.trailerPoints <= 0 || plan.costCents <= 0) fail('too_little', opts.afford ? tr('Парите не стигат дори за малък ремонт.') : tr('Няма нужда от ремонт.'));
     const repairKey = `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}:${trailer ? trailer.condition.toFixed(3) : '-'}`;
@@ -222,7 +224,7 @@ export async function serviceVehicle(db: Database, userId: string, vehicleId: st
     if (v.status !== 'idle') fail('vehicle_busy', tr('Профилактика се прави само между курсовете.'));
     if (maintenanceState(v.odometerKm, v.serviceKm).fresh) fail('fresh', tr('Камионът наскоро мина профилактика.'));
     const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
-    const vip = (await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0;
+    const vip = 1 - (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - vipLevel(await ownerVipLevel(tx, company.id)).garage);
     const spring = await springOff(tx, userId);
     const cost = maintenanceCostCents(powerUnitModel(v.modelId).priceCents, 1 - (1 - service) * (1 - vip) * (1 - spring));
     await post(tx, company.id, [{ category: 'maintenance', amountCents: -cost, description: tr('Профилактика {0}', v.plate), idempotencyKey: `service:${v.id}:${v.odometerKm.toFixed(1)}`, refType: 'vehicle', refId: v.id }], { requireFunds: true });
@@ -246,7 +248,7 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
     const kept = TYRE_SETS.includes(upgrade!.id) ? v.upgrades.filter((u) => !TYRE_SETS.includes(u as UpgradeId)) : v.upgrades;
     // 1.2.4: winter and all-season tyres cost less until the end of November.
     const before = winterTyreDiscount(upgrade!.id, new Date(), await featureFor(tx, userId, 'winter_prep'));
-    const price = Math.round(upgrade!.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - before));
+    const price = Math.round(upgrade!.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - vipLevel(await ownerVipLevel(tx, company.id)).garage) * (1 - before));
     await post(tx, company.id, [{ category: 'upgrades', amountCents: -price, description: `${upgrade!.label} — ${v.plate}`, idempotencyKey: `upgrade:${v.id}:${upgrade!.id}` }], { requireFunds: true });
     await tx.update(vehicles).set({ upgrades: [...kept, upgrade!.id] }).where(eq(vehicles.id, v.id));
   });
@@ -420,7 +422,7 @@ export async function installTrailerUpgrade(db: Database, userId: string, traile
       if (!m) fail('no_company', tr('Логото е с името на компанията — първо влез в компания.'));
       logo = stickerText(m!.company.name);
     }
-    const price = Math.round(upgrade.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
+    const price = Math.round(upgrade.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - vipLevel(await ownerVipLevel(tx, company.id)).garage));
     await post(tx, company.id, [{ category: 'upgrades', amountCents: -price, description: tr('{0} — ремарке {1}', upgrade.label, t.plate), idempotencyKey: `trailer-upgrade:${t.id}:${upgrade.id}` }], { requireFunds: true });
     await tx.update(trailers).set({ upgrades: [...t.upgrades, upgrade.id], logo }).where(eq(trailers.id, t.id));
     return price;

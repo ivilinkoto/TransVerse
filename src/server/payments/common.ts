@@ -3,6 +3,7 @@
  * pending payments, delivery and refunds. Providers (PayPal, Stripe) only
  * confirm that money arrived; delivery always goes through here, exactly once.
  */
+import { refreshVipLevel } from '@/server/game/vip-levels';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { euro, paidProduct } from '@/lib/game/payments';
@@ -139,6 +140,8 @@ export async function settlePaid(tx: Tx, p: Payment, confirmed: { amountCents: n
   }
   await tx.update(payments).set({ status: 'paid', paidAt: now, ...ids }).where(eq(payments.id, p.id));
   await deliverPayment(tx, p, now);
+  // 1.3.2.2: the VIP level follows what the player has paid.
+  await refreshVipLevel(tx, p.userId);
   return 'paid' as const;
 }
 
@@ -146,6 +149,7 @@ export async function settlePaid(tx: Tx, p: Payment, confirmed: { amountCents: n
 export async function refundLocked(tx: Tx, p: Payment, now: Date) {
   if (p.status !== 'paid') return false;
   await tx.update(payments).set({ status: 'refunded', refundedAt: now }).where(eq(payments.id, p.id));
+  await refreshVipLevel(tx, p.userId);
   // The balance may go below zero if the coins were already spent; nothing more can be bought until it is positive.
   await refundExtras(tx, p, now);
   if (p.coins) await postCoins(tx, p.userId, { amount: -p.coins, reason: 'payment_refund', description: t('Върнато плащане: {0}', paidProduct(p.productId)?.label ?? p.productId), idempotencyKey: `payment-refund:${p.id}` });

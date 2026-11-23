@@ -637,6 +637,27 @@ export const RELEASES: Release[] = [
     ],
   },
   {
+    version: '1.3.2.2',
+    name: 'VIP нива',
+    publishedAt: '2026-11-23T12:00:00+02:00',
+    tagline: 'VIP вече има нива — от VIP0 до VIP5. Всяко ниво е завинаги и дава бонуси отгоре на обикновения VIP.',
+    highlights: [
+      { icon: 'trophy', title: 'Пет VIP нива', body: 'Нивото расте с покупките в магазина: VIP1 от 5 €, VIP2 от 20 €, VIP3 от 50 €, VIP4 от 100 € и VIP5 от 200 € общо. Нивото е завинаги и бонусите му важат винаги — и когато VIP дните са свършили.' },
+      { icon: 'sparkles', title: 'Бонуси на всяко ниво', body: 'На ниво: +2% опит, −2% за сервиза и +1% на всеки курс; VIP3 и VIP4 дават и +1 място във всяко депо, а VIP5 — +2. На VIP5: +10% опит, −10% сервиз и +5% на курс.' },
+      { icon: 'shield', title: 'Благодарим на първите VIP', body: 'Всички, които имаха VIP, когато излязоха нивата, получиха VIP5 завинаги.' },
+    ],
+    sections: [
+      {
+        title: 'Подробно',
+        items: [
+          'Нивото се смята от всички платени покупки в магазина (без върнатите). В Магазина виждаш нивото си и колко остава до следващото.',
+          'Бонусите на нивото се добавят към тези на обикновения VIP (по дни), който остава както досега.',
+          'Бонусът на курса влиза в тавана на бонусите (най-много 40% от товара).',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.3.2.1',
     name: 'Честна монета',
     publishedAt: '2026-11-22T12:00:00+02:00',
@@ -2089,7 +2110,12 @@ export function unseenRelease(seenVersion: string | null, now: Date, staff = fal
   // 1.2.5: compare by when the seen release came out (a lower number can come out later).
   const seen = releaseByVersion(seenVersion);
   if (!seen) return compareVersions(seenVersion, latest.version) >= 0 ? null : latest;
-  return new Date(seen.publishedAt) >= new Date(latest.publishedAt) ? null : latest;
+  if (new Date(seen.publishedAt) >= new Date(latest.publishedAt)) return null;
+  // 1.3.2.2: two releases that came out together are shown one at a time, oldest first, when the
+  // player missed only those of the last week; after a longer break, or more missed, only the latest.
+  const weekAgo = now.getTime() - 7 * 86_400_000;
+  const missed = RELEASES.filter((r) => (staff || new Date(r.publishedAt) <= now) && new Date(r.publishedAt) > new Date(seen.publishedAt)).sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
+  return missed.length > 0 && missed.length <= 2 && missed.every((r) => new Date(r.publishedAt).getTime() >= weekAgo) ? missed[0]! : latest;
 }
 
 export function releaseByVersion(version: string): Release | undefined {
