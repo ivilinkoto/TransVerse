@@ -16,6 +16,7 @@ import { coinHistory, COIN_REASON_LABELS, earnedThisWeek, type CoinReason } from
 import { COIN_CAP } from '@/lib/game/coin-cap';
 import { nextVipLevel, VIP_LEVELS } from '@/lib/game/vip-levels';
 import { spentCents } from '@/server/game/vip-levels';
+import { premiumPassOpen } from '@/server/game/season-pass';
 import { gameContext } from '@/server/game/context';
 import { BuyWithMoney } from '@/components/game/BuyWithMoney';
 import { euro, paidProduct, PAID_PRODUCTS, PAYMENT_STATUS_LABELS } from '@/lib/game/payments';
@@ -27,7 +28,7 @@ import { t as tr, tx, intlLocale } from '@/i18n/t';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { bonusWeekend, VIP_PRICES_V2, MONTH_CARD, OFFER_DISCOUNT, PASS_LEVEL_SALE, PATRON_LEVELS, VIP_BENEFITS_V2, vipMonthColor, WEEKEND_BONUS, weeklyOffers } from '@/lib/game/shop-v2';
 import { depots } from '@/server/db/schema';
-import { firstPurchaseOpen, monthCardOf, passLevelSaleOpen, patronOf, starterPackOpen, supporterPackOpen, vipCaseReady } from '@/server/game/shop-v2';
+import { firstPurchaseOpen, monthCardOf, passLevelSaleOpen, patronOf, starterPackOpen, supporterPackOpen, vipCaseReady , levelOfferOf } from '@/server/game/shop-v2';
 import { shopPrice } from '@/server/game/shop';
 import { activeSeason } from '@/server/game/seasons';
 import { ShopStore } from '@/components/shop/ShopStore';
@@ -90,8 +91,11 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
     : [false, null, null, false, false, null];
   // „Подкрепи TransVerse“: once per account and until the end of 2026 — first in the list while it is open.
   const supporter = v2 && features.supporter_pack && (await supporterPackOpen(db, user.id, now));
-  const products = PAID_PRODUCTS.filter((p) => !p.v2 || (v2 && (p.id !== 'starter_pack' || starter) && (p.id !== 'supporter_pack' || supporter))).sort((a, b) => Number(b.id === 'supporter_pack') - Number(a.id === 'supporter_pack'));
-  const notes = v2 ? [first && tr('Първата ти покупка на ТрансКоин е двойна — получаваш двойно повече TC.'), bonusWeekend(now) && tr('Бонус уикенд: +{0}% ТрансКоин на всеки пакет.', WEEKEND_BONUS * 100), patron && patron.level > 0 && tr('Покровител ниво {0}: +{1}% ТрансКоин на всеки пакет.', patron.level, patron.level)].filter((x): x is string => !!x) : [];
+  // 1.3.2.2: the new products (and the pass only while it is not premium yet).
+  const passOpen = features.paid_v3 ? await premiumPassOpen(db, user.id, now).catch(() => false) : false;
+  const levelOffer = features.paid_v3 ? await levelOfferOf(db, user.id, now) : null;
+  const products = PAID_PRODUCTS.filter((p) => (p.id !== 'level_offer' || !!levelOffer) && (!p.v2 || (v2 && (p.id !== 'starter_pack' || starter) && (p.id !== 'supporter_pack' || supporter))) && (!p.feature || !!features[p.feature]) && (!p.id.startsWith('pass_') || passOpen)).sort((a, b) => Number(b.id === 'level_offer') - Number(a.id === 'level_offer') || Number(b.id === 'supporter_pack') - Number(a.id === 'supporter_pack'));
+  const notes = v2 ? [levelOffer && tr('🎁 Оферта за ниво {0} — до {1}.', levelOffer.level, new Date(levelOffer.until).toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })), first && tr('Първата ти покупка на ТрансКоин е двойна — получаваш двойно повече TC.'), bonusWeekend(now) && tr('Бонус уикенд: +{0}% ТрансКоин на всеки пакет.', WEEKEND_BONUS * 100), patron && patron.level > 0 && tr('Покровител ниво {0}: +{1}% ТрансКоин на всеки пакет.', patron.level, patron.level)].filter((x): x is string => !!x) : [];
   const seasonOk = (i: { id: string; seasonal?: string }) => (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics);
   const passSale = v2 && season ? passLevelSaleOpen(season.endsAt, now) : false;
   const vipBenefits = v2 ? [...VIP_BENEFITS.map((b) => ({ ...b, items: b.items.filter((i) => i !== 'Запазване на поръчка за 10 минути') })), ...VIP_BENEFITS_V2] : VIP_BENEFITS;

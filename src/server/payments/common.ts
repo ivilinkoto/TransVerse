@@ -3,6 +3,7 @@
  * pending payments, delivery and refunds. Providers (PayPal, Stripe) only
  * confirm that money arrived; delivery always goes through here, exactly once.
  */
+import { premiumPassOpen } from '@/server/game/season-pass';
 import { refreshVipLevel } from '@/server/game/vip-levels';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ import { notify } from '@/server/game/notify';
 import { mailConfig } from '@/server/mail';
 import { t } from '@/i18n/t';
 import { featureFor } from '@/server/features';
-import { deliverExtras, refundExtras, starterPackOpen, supporterPackOpen } from '@/server/game/shop-v2';
+import { deliverExtras, levelOfferOf, refundExtras, starterPackOpen, supporterPackOpen } from '@/server/game/shop-v2';
 
 export type Payment = typeof payments.$inferSelect;
 export type Provider = 'paypal' | 'stripe';
@@ -75,6 +76,9 @@ export async function startPayment(db: Database, userId: string, input: z.output
   if (product!.v2 && !(await featureFor(db, userId, 'shop_v2', now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   if (product!.id === 'supporter_pack' && !(await featureFor(db, userId, 'supporter_pack', now) && (await supporterPackOpen(db, userId, now)))) fail('supporter_used', t('„Подкрепи TransVerse“ е веднъж за профил, до края на 2026 г.'), 409);
   if (product!.id === 'starter_pack' && !(await starterPackOpen(db, userId, user!.level))) fail('starter_used', t('Началният пакет е веднъж за профил, от ниво 3.'), 409);
+  if (product!.feature && !(await featureFor(db, userId, product!.feature, now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
+  if ((product!.id === 'pass_premium' || product!.id === 'pass_plus') && !(await premiumPassOpen(db, userId, now))) fail('already_premium', t('Вече имаш премиум пропуска за този сезон.'), 409);
+  if (product!.id === 'level_offer' && !(await levelOfferOf(db, userId, now))) fail('offer_closed', t('Офертата за ниво е изтекла или вече е купена.'), 409);
   // With e-mail switched on, purchases need a confirmed address (receipts, account recovery).
   if (mailConfig().enabled && !user!.verified) fail('email_unverified', t('Първо потвърди имейла си — линкът е в пощата ти (или го изпрати отново от „Профил и настройки“).'), 403);
   // At most a few unfinished checkouts at a time (stops spamming the provider).

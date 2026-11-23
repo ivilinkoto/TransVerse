@@ -83,6 +83,10 @@ export const SUPPORTER_PACK = { until: '2027-01-01T00:00:00+02:00', badge: 'earl
 export const STARTER_PACK = { minLevel: 3, case: 'case_silver' as const } as const;
 
 /** Patron levels by everything paid (euro cents, refunds excluded): +1 % ТрансКоин per level on later packs. */
+/** 1.3.2.2: pass points that come with „Truck Pass Премиум+“, and days of the +50 % money booster in the packs. */
+export const PAID_PASS = { plusPoints: 15_000 } as const;
+export const PAID_BOOST_DAYS: Record<string, number> = { speed_pack: 3, vip_plus: 7, level_offer: 3 };
+
 export const PATRON_LEVELS = [500, 1500, 3000, 5000, 8000, 12000, 18000, 25000, 35000, 50000];
 export function patronLevel(paidCents: number): number { return PATRON_LEVELS.filter((c) => paidCents >= c).length; }
 export const patronBonus = (level: number) => level / 100;
@@ -90,3 +94,11 @@ export const patronBonus = (level: number) => level / 100;
 // ---------- Truck Pass ----------
 /** In the last days of a season a pass level can be bought (pass points only — never season points). */
 export const PASS_LEVEL_SALE = { lastDays: 7, coins: 150, points: 1000 } as const;
+
+/**
+ * 1.3.2.2: a one-off offer when a player reaches one of these levels — open for
+ * `hours`, bought once per level (product `level_offer`).
+ */
+export const LEVEL_OFFER = { levels: [5, 10, 15, 20, 25, 30, 40, 50], hours: 48, coins: 600, boostDays: 3 } as const;
+export interface LevelOffer { level: number; until: string; used?: boolean }
+export const levelOfferOpen = (o: LevelOffer | null | undefined, now: Date) => !!o && !o.used && new Date(o.until) > now;

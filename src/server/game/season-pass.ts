@@ -59,6 +59,22 @@ export async function buyPremiumPass(db: Database, userId: string, now = new Dat
   });
 }
 
+/** 1.3.2.2: the premium track (and extra pass points) bought for real money; false when it was already premium. */
+export async function grantPremiumPass(tx: Tx, userId: string, extraPoints: number, now = new Date()) {
+  const season = await activeSeason(tx, now);
+  const row = await passRow(tx, season.id, userId, true);
+  await tx.update(seasonPasses).set({ premium: true, points: sql`${seasonPasses.points} + ${extraPoints}`, updatedAt: now }).where(and(eq(seasonPasses.seasonId, season.id), eq(seasonPasses.userId, userId)));
+  await logActivity(tx, userId, 'season_pass_bought', { seasonId: season.id, paid: true });
+  return !row.premium;
+}
+
+/** 1.3.2.2: whether the player can still buy the premium track this season. */
+export async function premiumPassOpen(db: Database, userId: string, now = new Date()) {
+  const season = await activeSeason(db, now);
+  const [row] = await db.select({ premium: seasonPasses.premium }).from(seasonPasses).where(and(eq(seasonPasses.seasonId, season.id), eq(seasonPasses.userId, userId)));
+  return !row?.premium;
+}
+
 async function grant(tx: Tx, userId: string, r: PassRewardV2, key: string, label: string, now: Date) {
   // 1.2.5: items, a title and the season truck.
   for (const i of r.items ?? []) await grantItem(tx, userId, i.itemId as ItemId, i.qty, 'season_pass', `${key}:item:${i.itemId}`);

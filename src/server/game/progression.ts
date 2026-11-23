@@ -1,3 +1,4 @@
+import { openLevelOffer } from './shop-v2';
 import { rewardCase } from './inventory';
 import { and, eq, gte, isNull, ne, sql } from 'drizzle-orm';
 import { LEDGER_LABELS, type LedgerCategory } from './finance';
@@ -91,6 +92,7 @@ export async function awardXp(tx: Tx, userId: string, xp: number, reason: XpReas
     await addFeed(tx, { userId, kind: 'level', text: t('достигна ниво {0}', level) });
     // 1.2: a silver case for every new level.
     await rewardCase(tx, userId, 'case_silver', 'level', `level-case:${userId}:${level}`, new Date());
+    await openLevelOffer(tx, userId, user!.level, level, new Date());
     return { level, leveledUp: true };
   }
   return { level, leveledUp: false };

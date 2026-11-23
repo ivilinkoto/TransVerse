@@ -5,10 +5,11 @@
  * ТрансКоин move only through `postCoins`, items only through `grantItem`,
  * each with a unique key, so nothing is ever given twice.
  */
+import { grantPremiumPass } from './season-pass';
 import { randomUUID } from 'node:crypto';
 import { and, eq, like, ne, sql } from 'drizzle-orm';
 import { levelStart, passLevelOf, passLevels, passVersion } from '@/lib/game/season-pass';
-import { bonusWeekend, FIRST_PURCHASE_MULTIPLIER, isoWeek, MONTH_CARD, PASS_LEVEL_SALE, patronBonus, patronLevel, REFERRAL_PURCHASE_SHARE, sofiaDay, STARTER_PACK, SUPPORTER_PACK, VIP_V2, WEEKEND_BONUS } from '@/lib/game/shop-v2';
+import { bonusWeekend, FIRST_PURCHASE_MULTIPLIER, LEVEL_OFFER, levelOfferOpen, PAID_BOOST_DAYS, PAID_PASS, type LevelOffer, isoWeek, MONTH_CARD, PASS_LEVEL_SALE, patronBonus, patronLevel, REFERRAL_PURCHASE_SHARE, sofiaDay, STARTER_PACK, SUPPORTER_PACK, VIP_V2, WEEKEND_BONUS } from '@/lib/game/shop-v2';
 import { isVip } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { coinEntries, jobState, payments, seasonPasses, userBadges, users } from '@/server/db/schema';
@@ -125,6 +126,25 @@ export async function deliverExtras(tx: Tx, p: { id: string; userId: string; pro
     await notify(tx, p.userId, 'success', () => t('Благодарим ти!'), () => t('Значката „Поддръжник от първите дни“ е твоя завинаги. Подкрепата ти ни помага да развиваме TransVerse.'), '/game/profile');
   }
   if (p.productId === 'starter_pack') await grantItem(tx, p.userId, STARTER_PACK.case, 1, 'starter_pack', key('case'));
+  // 1.3.2.2: the new products' extras.
+  if (p.productId === 'level_offer') {
+    await claimLevelOffer(tx, p.userId);
+    await grantItem(tx, p.userId, 'case_gold', 1, 'purchase', key('level-case'));
+  }
+  if (p.productId === 'gold_cases_10') {
+    await grantItem(tx, p.userId, 'case_gold', 10, 'purchase', key('gold-cases'));
+    await notify(tx, p.userId, 'success', () => t('10 златни кейса'), () => t('Чакат те в инвентара.'), '/game/inventory');
+  }
+  if (p.productId === 'pass_premium' || p.productId === 'pass_plus') {
+    await grantPremiumPass(tx, p.userId, p.productId === 'pass_plus' ? PAID_PASS.plusPoints : 0, now);
+    await notify(tx, p.userId, 'success', () => t('Премиум пропускът е твой'), () => t('Наградите от достигнатите нива те чакат в пропуска.'), '/game/seasons');
+  }
+  const boostDays = PAID_BOOST_DAYS[p.productId] ?? 0;
+  if (boostDays) {
+    const [u] = await tx.select({ until: users.moneyBoostUntil }).from(users).where(eq(users.id, p.userId)).for('update');
+    const from = u?.until && u.until > now ? u.until : now;
+    await tx.update(users).set({ moneyBoostUntil: new Date(from.getTime() + boostDays * DAY) }).where(eq(users.id, p.userId));
+  }
   if (p.productId === 'month_card') {
     const until = await extendMonthCard(tx, p.userId, MONTH_CARD.days, now);
     await notify(tx, p.userId, 'success', () => t('Месечната карта е активна'), () => t('{0} TC всеки ден до {1} — вземи ги от магазина или от „Награди“.', MONTH_CARD.coinsPerDay, until.toLocaleDateString('bg-BG')), '/game/shop');
@@ -186,4 +206,28 @@ export async function buyPassLevel(db: Database, userId: string, now = new Date(
     await tx.insert(seasonPasses).values({ seasonId: season.id, userId, points: add }).onConflictDoUpdate({ target: [seasonPasses.seasonId, seasonPasses.userId], set: { points: sql`${seasonPasses.points} + ${add}`, updatedAt: now } });
     await logActivity(tx, userId, 'pass_level_bought', { seasonId: season.id });
   });
+}
+
+const levelOfferKey = (userId: string) => `level-offer:${userId}`;
+
+/** 1.3.2.2: reaching an offer level opens the level offer for 48 hours (with a notification). */
+export async function openLevelOffer(tx: Tx, userId: string, from: number, to: number, now: Date) {
+  const level = [...LEVEL_OFFER.levels].reverse().find((l) => l > from && l <= to);
+  if (!level || !(await featureFor(tx, userId, 'paid_v3', now))) return;
+  const value: LevelOffer = { level, until: new Date(now.getTime() + LEVEL_OFFER.hours * 3_600_000).toISOString() };
+  await tx.insert(jobState).values({ key: levelOfferKey(userId), value, updatedAt: now }).onConflictDoUpdate({ target: jobState.key, set: { value, updatedAt: now } });
+  await notify(tx, userId, 'achievement', () => t('🎁 Оферта за ниво {0}', level), () => t('{0} TC, {1} дни бустер +50% пари и златен кейс — само {2} часа, в магазина.', LEVEL_OFFER.coins, LEVEL_OFFER.boostDays, LEVEL_OFFER.hours), '/game/shop');
+}
+
+/** The player's level offer, if it is open now. */
+export async function levelOfferOf(db: DbOrTx, userId: string, now: Date): Promise<LevelOffer | null> {
+  const [row] = await db.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, levelOfferKey(userId)));
+  const o = row?.value as LevelOffer | undefined;
+  return levelOfferOpen(o, now) ? o! : null;
+}
+
+/** Bought: the offer is used (it shows no more). */
+export async function claimLevelOffer(tx: Tx, userId: string) {
+  const [row] = await tx.select({ value: jobState.value }).from(jobState).where(eq(jobState.key, levelOfferKey(userId))).for('update');
+  if (row) await tx.update(jobState).set({ value: { ...(row.value as LevelOffer), used: true } }).where(eq(jobState.key, levelOfferKey(userId)));
 }
