@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Bird, Coins, Gift, Map } from 'lucide-react';
@@ -35,7 +36,7 @@ export default async function MartaPage() {
       <PageHeader
         title={t('Баба Марта')}
         subtitle={live ? t('Честита Баба Марта! Пролетни товари, мартенички по камионите и щъркел над някой град всеки ден.') : t('Баба Марта по пътищата на TransVerse — от 1 до 31 март.')}
-        help={t('Пролетните товари имат етикет „Баба Марта“ на борсата и се плащат с {0}% повече. През март камионите и базата носят мартенички, а ремонтите и профилактиката са с {1}% по-евтини (пролетно почистване). Всеки ден щъркел каца над един истински град — намери го на картата за {2} TC. Изпълни четирите мисии за значката „{3}“. Игрови данни.', Math.round((MARTA.rewardMultiplier - 1) * 100), Math.round(MARTA.springDiscount * 100), MARTA.storkCoins, badge.label)}
+        help={t('Пролетните товари имат етикет „Баба Марта“ на борсата и се плащат с {0}% повече. През март камионите и базата носят мартенички, а ремонтите и профилактиката са с {1}% по-евтини (пролетно почистване). Всеки ден щъркел каца над един истински град — намери го на картата за {2}. Изпълни четирите мисии за значката „{3}“. Игрови данни.', Math.round((MARTA.rewardMultiplier - 1) * 100), Math.round(MARTA.springDiscount * 100), coinsAsMoney(MARTA.storkCoins), badge.label)}
       />
       <section className="panel relative overflow-hidden p-5 sm:p-6">
         <div className="relative">
@@ -54,7 +55,7 @@ export default async function MartaPage() {
               <li key={q.id} className="rounded-xl border border-asphalt-700 bg-asphalt-850 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">{tx(q.title)}</span>
-                  <span className="num text-xs text-mist-300">{[q.coins ? `${q.coins} TC` : '', q.cents ? money(q.cents) : ''].filter(Boolean).join(' · ')}</span>
+                  <span className="num text-xs text-mist-300">{[q.coins ? coinsAsMoney(q.coins) : '', q.cents ? money(q.cents) : ''].filter(Boolean).join(' · ')}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-3">
                   <Meter value={(q.progress / q.target) * 100} tone="gold" className="flex-1" />
@@ -82,7 +83,7 @@ export default async function MartaPage() {
           </Card>
           <Card title={t('Значка')}>
             <div className="font-display text-lg font-bold">{tx(badge.label)}</div>
-            <p className="text-sm text-mist-300">{state.badge ? t('Твоя е — вижда се в профила ти.') : t('{0} Плюс {1} TC.', badge.description, QUEST_BADGE_COINS)}</p>
+            <p className="text-sm text-mist-300">{state.badge ? t('Твоя е — вижда се в профила ти.') : t('{0} Плюс {1}.', badge.description, coinsAsMoney(QUEST_BADGE_COINS))}</p>
           </Card>
           <Card title={t('Мартенички по камионите')}>
             <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color="#f8fafc" martenitsa className="h-20 w-full" />

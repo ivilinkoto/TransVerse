@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, asc, count, desc, eq, gt, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { BADGES } from '@/lib/game/halloween';
 import { BIG_CONVOY, bigConvoyShare, CHALLENGE_METRICS, challengeMetric, EUROTOUR, GRAND_EUROTOUR, WEEKLY_CHALLENGE, type ChallengeMetric } from '@/lib/game/challenges';
@@ -55,7 +56,7 @@ export async function checkGrandEurotour(tx: Tx, userId: string, destCountry: st
   if (!first) return false;
   await tx.insert(userBadges).values({ userId, badge: GRAND_EUROTOUR.badge, awardedAt: at }).onConflictDoNothing();
   await postCoins(tx, userId, { amount: GRAND_EUROTOUR.coins, reason: 'challenge', description: tr('Голям евротур · {0}', season.name), idempotencyKey: key });
-  await notify(tx, userId, 'achievement', () => tr('Голям евротур! 🌍'), () => tr('Доставки до всичките {0} държави този сезон — значка „{1}“ и {2} TC.', GRAND_EUROTOUR.countries.length, BADGES[GRAND_EUROTOUR.badge]?.label ?? '', GRAND_EUROTOUR.coins), '/game/challenges');
+  await notify(tx, userId, 'achievement', () => tr('Голям евротур! 🌍'), () => tr('Доставки до всичките {0} държави този сезон — значка „{1}“ и {2}.', GRAND_EUROTOUR.countries.length, BADGES[GRAND_EUROTOUR.badge]?.label ?? '', coinsAsMoney(GRAND_EUROTOUR.coins)), '/game/challenges');
   return true;
 }
 
@@ -70,7 +71,7 @@ export async function checkEurotour(tx: Tx, userId: string, destCountry: string,
   if (!first) return false;
   await tx.insert(userBadges).values({ userId, badge: EUROTOUR.badge, awardedAt: at }).onConflictDoNothing();
   await postCoins(tx, userId, { amount: EUROTOUR.coins, reason: 'challenge', description: tr('Евротур {0}', month.slice(1)), idempotencyKey: `eurotour:${userId}:${month}` });
-  await notify(tx, userId, 'achievement', () => tr('Евротур! 🇪🇺'), () => tr('Доставки до всичките {0} държави този месец — значка „{1}“ и {2} TC.', EUROTOUR.countries.length, BADGES[EUROTOUR.badge]?.label ?? '', EUROTOUR.coins), '/game/challenges');
+  await notify(tx, userId, 'achievement', () => tr('Евротур! 🇪🇺'), () => tr('Доставки до всичките {0} държави този месец — значка „{1}“ и {2}.', EUROTOUR.countries.length, BADGES[EUROTOUR.badge]?.label ?? '', coinsAsMoney(EUROTOUR.coins)), '/game/challenges');
   return true;
 }
 
@@ -169,11 +170,11 @@ export async function settleWeeklyChallenge(db: Database, now: Date) {
     for (const [i, r] of rows.entries()) {
       const coins = WEEKLY_CHALLENGE.prizes[i]!;
       await postCoins(tx, r.userId, { amount: coins, reason: 'challenge', description: tr('Предизвикателство {0}: {1}, {2}. място', last.key, m.title, i + 1), idempotencyKey: `weekly-challenge:${last.key}:${r.userId}` });
-      await notify(tx, r.userId, 'achievement', () => tr('Предизвикателство на седмицата: {0}. място! 🏆', i + 1), () => tr('„{0}“ — {1} {2}. Награда: {3} TC.', m.title, r.value, m.unit, coins), '/game/challenges');
+      await notify(tx, r.userId, 'achievement', () => tr('Предизвикателство на седмицата: {0}. място! 🏆', i + 1), () => tr('„{0}“ — {1} {2}. Награда: {3}.', m.title, r.value, m.unit, coinsAsMoney(coins)), '/game/challenges');
     }
     if (rows.length && featureLive('discord_bot', now)) {
       await announce(tx, `weekly-challenge:${last.key}`, 'rankings', () => ({
-        embeds: [{ title: tr('🏆 Предизвикателство на седмицата: {0}', m.title), url: `${appUrl()}/game/challenges`, color: 0xf6c343, description: rows.map((r, i) => `**${i + 1}.** ${r.username} · ${Math.round(r.value).toLocaleString(intlLocale())} ${m.unit} · ${WEEKLY_CHALLENGE.prizes[i]} TC`).join('\n'), footer: { text: tr('TransVerse · игрови данни') } }],
+        embeds: [{ title: tr('🏆 Предизвикателство на седмицата: {0}', m.title), url: `${appUrl()}/game/challenges`, color: 0xf6c343, description: rows.map((r, i) => `**${i + 1}.** ${r.username} · ${Math.round(r.value).toLocaleString(intlLocale())} ${m.unit} · ${coinsAsMoney(WEEKLY_CHALLENGE.prizes[i] ?? 0)}`).join('\n'), footer: { text: tr('TransVerse · игрови данни') } }],
       }), now);
     }
     return { week: last.key, winners: rows.length };

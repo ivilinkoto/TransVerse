@@ -43,6 +43,8 @@ export interface PowerUnitModel {
   look?: 'box-van' | 'classic' | 'plow';
   /** 1.2.5: a season reward only — never on the market, for rent or in the company fleet. */
   exclusive?: string;
+  /** 1.3.2.2: a premium truck — bought for ТрансКоин only (from VIP2, `PREMIUM_TRUCKS`), never for money or rent. */
+  premium?: { coins: number };
 }
 
 export interface TrailerModel {
@@ -136,7 +138,30 @@ export const POWER_UNITS: PowerUnitModel[] = [
     maintenanceCentsPerKm: 11, tolled: true, powerHp: 540, axles: 2, minLevel: 1, cab: 'highline', look: 'plow',
     exclusive: 'season_first_snow',
   },
+  // ── 1.3.2.2: premium trucks — for ТрансКоин only, from VIP2 (game data, invented brands) ──
+  {
+    id: 'hemus-r20-express', kind: 'rigid', brand: 'Hemus Trucks', name: 'Hemus R20 Express Premium', priceCents: 110_000_00,
+    payloadTons: 10, body: 'box', heavyHaul: false, maxSpeedKmh: 95, fuelEmpty: 15, fuelFull: 21,
+    maintenanceCentsPerKm: 6, tolled: true, powerHp: 360, axles: 2, minLevel: 3, cab: 'day',
+    exclusive: 'premium', premium: { coins: 600 },
+  },
+  {
+    id: 'danubia-t560-signature', kind: 'tractor', brand: 'Danubia', name: 'Danubia T560 Signature', priceCents: 150_000_00,
+    payloadTons: 0, body: null, heavyHaul: false, maxSpeedKmh: 90, fuelEmpty: 18, fuelFull: 25,
+    maintenanceCentsPerKm: 8, tolled: true, powerHp: 560, axles: 2, minLevel: 5, cab: 'highline',
+    exclusive: 'premium', premium: { coins: 900 },
+  },
+  {
+    id: 'rila-xt700-titan', kind: 'tractor', brand: 'Rila Heavy', name: 'Rila XT 700 Titan 6×4', priceCents: 210_000_00,
+    payloadTons: 0, body: null, heavyHaul: true, maxSpeedKmh: 85, fuelEmpty: 24, fuelFull: 37,
+    maintenanceCentsPerKm: 12, tolled: true, powerHp: 700, axles: 3, minLevel: 8, cab: 'highline',
+    exclusive: 'premium', premium: { coins: 1500 },
+  },
 ];
+
+/** 1.3.2.2: the premium trucks (for ТрансКоин, from VIP2), their paint, and the VIP level they need. */
+export const PREMIUM_TRUCKS = () => POWER_UNITS.filter((m) => m.premium);
+export const PREMIUM_TRUCK = { vipLevel: 2, color: '#1e293b', trailer: '#ca8a04' } as const;
 
 /**
  * 1.2.3.4: trucks, trailers and upgrades cost 25 % more (the freight pays 60 % more —

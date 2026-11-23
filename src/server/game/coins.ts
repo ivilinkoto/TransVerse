@@ -1,6 +1,10 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, gte, notInArray, sql } from 'drizzle-orm';
 import type { DbOrTx, Tx } from '@/server/db/client';
-import { coinEntries, users } from '@/server/db/schema';
+import { coinEntries, companies, users } from '@/server/db/schema';
+import { post } from './finance';
+import { notify } from './notify';
+import { capWeekStart, capped, COIN_CAP, moneyForCoins, paidInMoney, splitByCap } from '@/lib/game/coin-cap';
+import { UNTAPERED_REASONS } from '@/lib/game/coin-taper';
 import { fail } from './errors';
 import { t } from '@/i18n/t';
 import { taperCoins } from '@/lib/game/coin-taper';
@@ -67,11 +71,31 @@ export async function postCoins(
   options: { requireFunds?: boolean } = {},
 ): Promise<boolean> {
   if (!Number.isSafeInteger(entry.amount) || entry.amount === 0) throw new Error(`Invalid coin amount ${entry.amount}`);
+  // 1.3.2.1: most rewards are paid in game money, not ТрансКоин (tests: only when they pass `at`, like the taper).
+  if (entry.amount > 0 && paidInMoney(entry.reason) && (entry.at || process.env.NODE_ENV !== 'test')) {
+    const [acc] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
+    if (acc) await post(tx, acc.id, [{ category: 'bonus', amountCents: moneyForCoins(entry.amount), description: entry.description, idempotencyKey: `${entry.idempotencyKey}:money` }]);
+    return true;
+  }
   // 1.2.6: rewards pay a little less step by step (src/lib/game/coin-taper.ts). Tests see the full amounts
   // unless they pass `at`, so their expectations do not change with the calendar.
   if (entry.amount > 0 && (entry.at || process.env.NODE_ENV !== 'test')) entry = { ...entry, amount: taperCoins(entry.amount, entry.at ?? new Date(), entry.reason) };
   const [user] = await tx.select({ coins: users.coins }).from(users).where(eq(users.id, userId)).for('update');
   if (!user) fail('user_not_found', t('Потребителят не е намерен.'), 404);
+  // 1.3.2.1: rewards over the weekly cap are paid in game money (tests: only when they pass `at`, like the taper).
+  if (entry.amount > 0 && capped(entry.reason) && (entry.at || process.env.NODE_ENV !== 'test')) {
+    const at = entry.at ?? new Date();
+    const earned = await earnedThisWeek(tx, userId, at);
+    const { coins, over } = splitByCap(entry.amount, earned);
+    if (over > 0) {
+      const [acc] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
+      if (acc) await post(tx, acc.id, [{ category: 'bonus', amountCents: over * COIN_CAP.centsPerCoin, description: t('{0} TC над седмичния таван станаха пари ({1})', over, entry.description), idempotencyKey: `${entry.idempotencyKey}:over-cap` }]);
+      // Once a week, when the cap is reached.
+      if (earned < COIN_CAP.weekly) await notify(tx, userId, 'info', () => t('Седмичният таван от {0} TC е достигнат', COIN_CAP.weekly), () => t('До понеделник наградите в ТрансКоин се изплащат в пари ({0} лв. за 1 TC). Купените TC не се броят.', COIN_CAP.centsPerCoin / 100), '/game/shop');
+      if (!coins) return true;
+      entry = { ...entry, amount: coins };
+    }
+  }
   const next = user!.coins + entry.amount;
   if (options.requireFunds && next < 0) fail('insufficient_coins', t('Нямате достатъчно ТрансКоин.'));
   const inserted = await tx
@@ -82,6 +106,16 @@ export async function postCoins(
   if (!inserted.length) return false;
   await tx.update(users).set({ coins: sql`${next}` }).where(eq(users.id, userId));
   return true;
+}
+
+/** ТрансКоин earned this week that count towards the cap (rewards and items sold to the game). */
+export async function earnedThisWeek(db: DbOrTx, userId: string, now = new Date()) {
+  const free = UNTAPERED_REASONS.filter((r) => r !== 'item_sale');
+  const [row] = await db
+    .select({ n: sql<number>`coalesce(sum(${coinEntries.amount}), 0)::int` })
+    .from(coinEntries)
+    .where(and(eq(coinEntries.userId, userId), gt(coinEntries.amount, 0), gte(coinEntries.createdAt, capWeekStart(now)), notInArray(coinEntries.reason, [...free])));
+  return row?.n ?? 0;
 }
 
 export async function coinHistory(db: DbOrTx, userId: string, limit = 30) {

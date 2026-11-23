@@ -4,7 +4,7 @@
  * every evening with pass points for the first answers, and a thank-you from
  * new players to whoever helped them. Rewards are pass points, never ТрансКоин.
  */
-import { count, eq, sql } from 'drizzle-orm';
+import { and, count, eq, isNotNull, ne, sql } from 'drizzle-orm';
 import { CHAT_LIFE, questionFor } from '@/lib/game/chat-life';
 import { featureLive } from '@/lib/game/features';
 import { sofiaHour } from '@/lib/game/halloween';
@@ -45,7 +45,7 @@ export async function postGameLine(tx: Tx, channel: Channel, kind: ChatLineKind,
 }
 
 /**
- * A moment of the game in the global chat (a record, a legendary find, cleared roads…) —
+ * A moment of the game in the „Събития“ chat (a record, a legendary find, cleared roads…) —
  * once per key and at most one every few minutes, so the chat stays a chat.
  */
 export async function postMoment(tx: Tx, key: string, body: string, meta: { href?: string; button?: string } = {}, now = new Date()) {
@@ -55,7 +55,7 @@ export async function postMoment(tx: Tx, key: string, body: string, meta: { href
   const [first] = await tx.insert(jobState).values({ key: `chat-moment:${key}`, value: { at: now.toISOString() } }).onConflictDoNothing().returning();
   if (!first) return false;
   await tx.insert(jobState).values({ key: 'chat-moment:last', value: {}, updatedAt: now }).onConflictDoUpdate({ target: jobState.key, set: { updatedAt: now } });
-  await postGameLine(tx, 'global', 'moment', body, meta, now);
+  await postGameLine(tx, 'events', 'moment', body, meta, now);
   return true;
 }
 
@@ -117,3 +117,12 @@ export async function thankHelper(db: Database, who: { id: string; username: str
   });
 }
 
+
+/** 1.3.2.1: the game's earlier lines move from the global chat to „Събития“ (once; the question of the day stays). */
+export async function moveGameLinesToEvents(db: Database) {
+  const done = 'chat-events-moved';
+  if ((await db.select({ k: jobState.key }).from(jobState).where(eq(jobState.key, done))).length) return 0;
+  const moved = await db.update(chatMessages).set({ channel: 'events' }).where(and(eq(chatMessages.channel, 'global'), isNotNull(chatMessages.kind), ne(chatMessages.kind, 'question'))).returning({ id: chatMessages.id });
+  await db.insert(jobState).values({ key: done, value: { moved: moved.length } }).onConflictDoNothing();
+  return moved.length;
+}

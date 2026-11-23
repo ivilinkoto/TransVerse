@@ -167,7 +167,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
             </Card>
           )}
           <CompanySeason db={db} organizationId={c.id} />
-          <CompanyLicences held={licences} />
+          <CompanyLicences held={licences} has={(f) => !!features[f]} />
           <Card title={t('Какво получават членовете')}>
             <ul className="space-y-2 text-sm">
               <li className="flex justify-between"><span>{t('Бонус към възнаграждението')}</span><span className="num font-semibold text-profit">+{Math.round((bonuses.rewardMultiplier - 1) * 100)}%</span></li>

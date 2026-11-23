@@ -8,7 +8,7 @@ import { api } from '@/lib/client/api';
 import { t, tx } from '@/i18n/t';
 
 /** Purchase with depot selection (vehicles are delivered to one of your depots). */
-export function BuyButton({ type, modelId, depots, disabledReason, label, fix }: { type: 'buyVehicle' | 'leaseVehicle' | 'buyTrailer'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string; /** 1.1.3: where to fix the reason (e.g. expand the depot). */ fix?: { href: string; label: string } | null }) {
+export function BuyButton({ type, modelId, depots, disabledReason, label, fix }: { type: 'buyVehicle' | 'leaseVehicle' | 'buyTrailer' | 'buyPremiumTruck'; modelId: string; depots: { cityId: number; name: string; free: number }[]; disabledReason: string | null; label: string; /** 1.1.3: where to fix the reason (e.g. expand the depot). */ fix?: { href: string; label: string } | null }) {
   const router = useRouter();
   const [cityId, setCityId] = useState(depots[0]?.cityId ?? 0);
   const [busy, setBusy] = useState(false);

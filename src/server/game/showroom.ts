@@ -134,7 +134,7 @@ export async function shareGarage(db: Database, userId: string, now = new Date()
     if (row && now.getTime() - row.updatedAt.getTime() < GARAGE.shareEveryHours * 3_600_000) fail('too_soon', tr('Гаражът вече е в чата — пак след {0} ч.', GARAGE.shareEveryHours));
     const [me] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
     await tx.insert(jobState).values({ key, value: {}, updatedAt: now }).onConflictDoUpdate({ target: jobState.key, set: { updatedAt: now } });
-    await postGameLine(tx, 'global', 'garage', tr('🏁 {0} отвори гаража си за гости. Влез, разгледай камионите и остави 👍!', me!.username), { href: `/game/showroom/u/${encodeURIComponent(me!.username)}`, button: tr('Влез в гаража') }, now);
+    await postGameLine(tx, 'events', 'garage', tr('🏁 {0} отвори гаража си за гости. Влез, разгледай камионите и остави 👍!', me!.username), { href: `/game/showroom/u/${encodeURIComponent(me!.username)}`, button: tr('Влез в гаража') }, now);
     return { ok: true };
   });
 }

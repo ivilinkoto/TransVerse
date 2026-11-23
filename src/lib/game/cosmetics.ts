@@ -15,6 +15,8 @@ export interface Cosmetics {
   sticker?: string;
   /** Баба Марта (March): a martenitsa on the mirror — not sold, the season puts it on. */
   martenitsa?: boolean;
+  /** 1.3.2.2: a premium truck's trim — gold pinstripes and a crown on the door (not sold, the model has it). */
+  premium?: boolean;
   /** 1.2.3.5: tuning parts on the truck now (looks only), e.g. { spoiler: 'high' }. */
   tuning?: Partial<Record<'spoiler' | 'skirts' | 'bullbar' | 'exhaust' | 'rims' | 'stance' | 'decal', string>>;
   /** Tuning styles bought for this truck ("spoiler:high") — put back on for free. */

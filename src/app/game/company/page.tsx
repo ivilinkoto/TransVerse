@@ -15,6 +15,8 @@ import { CompanyCards } from '@/components/company/CompanyCards';
 import { CompanyPolls } from '@/components/company/CompanyPolls';
 import { companyPollsView } from '@/server/game/polls';
 import { can } from '@/server/game/membership';
+import { companyBoostUntil } from '@/server/game/company-boost';
+import { COMPANY_BOOST } from '@/lib/game/speed-up';
 import { companyHub, myApplications, treasuryHistory } from '@/server/game/membership';
 import { TREASURY_LABELS, type TreasuryCategory } from '@/server/game/finance';
 import { FoundCompanyForm } from '@/components/game/FoundCompanyForm';
@@ -50,7 +52,21 @@ export default async function CompanyPage() {
       <>
         <TutorialVisit step="company_goal" pending={visitPending} />
         {features.nav_v2 && <div className="mb-4"><CompanyCards db={db} organizationId={hub.company.id} pending={hub.pending.length} now={now} has={(f) => !!features[f]} /></div>}
-        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month, medals: features.season_medals ? await organizationMedals(db, hub.company.id) : null, companyAchievements: features.company_achievements ? await companyAchievementsOf(db, hub.company.id) : null }} />
+        {features.company_boost && await (async () => {
+          // 1.3.2.2: the company booster — any member pays ТрансКоин, everyone earns more.
+          const until = await companyBoostUntil(db, hub.company.id);
+          const on = until && until > now;
+          return (
+            <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-400/30 bg-gold-400/5 p-4 text-sm" data-testid="company-boost">
+              <div className="min-w-0">
+                <p className="font-display text-base font-bold text-gold-300">🚀 {tr('Бустер за компанията')}</p>
+                <p className="text-mist-300">{on ? tr('Работи до {0}: +{1}% пари за всеки курс на всички в компанията.', dateTime(until), Math.round(COMPANY_BOOST.share * 100)) : tr('+{0}% пари за всеки курс на всички в компанията за {1} часа. Плаща един — печелят всички. Личният бустер +50% е с предимство.', Math.round(COMPANY_BOOST.share * 100), COMPANY_BOOST.hours)}</p>
+              </div>
+              <ActionButton action={{ type: 'buyCompanyBoost' }} disabled={user.coins < COMPANY_BOOST.coins} confirm={tr('Бустер за цялата компания за {0} TC?', COMPANY_BOOST.coins)} className="btn-gold px-4 py-1.5 text-xs">{on ? tr('Удължи · {0} TC', COMPANY_BOOST.coins) : tr('Пусни · {0} TC', COMPANY_BOOST.coins)}</ActionButton>
+            </section>
+          );
+        })()}
+        <CompanyOverview hub={hub} history={await treasuryHistory(db, hub.company.id, 15)} licences={await companyLicenceSet(db, hub.company.id)} extras={{ bus: features.staff_bus ? await staffBusView(db, user.id, company.id, now) : null, anniversaryIn: features.anniversary ? daysToAnniversary(hub.company.foundedAt, now) : null, chronicle: features.chronicle ? await chronicleOf(db, hub.company.id, 20) : null, driverOfMonth: features.driver_of_month, medals: features.season_medals ? await organizationMedals(db, hub.company.id) : null, companyAchievements: features.company_achievements ? await companyAchievementsOf(db, hub.company.id) : null, trains: !!features.trains }} />
         {features.item_chests && <div className="mt-4"><CompanyChest db={db} organizationId={hub.company.id} owner={hub.rank.isOwner} /></div>}
         {/* 1.2.3.1: the polls moved here from the company chat page (the chat is in the floating chat). */}
         {features.company_polls && (
@@ -168,7 +184,7 @@ async function staffBusView(db: ReturnType<typeof getDb>, userId: string, accoun
   return { ...state, trucks: trucks.filter((t) => t.cityId !== state.hqCityId) };
 }
 
-type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null; chronicle: Awaited<ReturnType<typeof chronicleOf>> | null; driverOfMonth: boolean; medals: Awaited<ReturnType<typeof organizationMedals>> | null; companyAchievements: Awaited<ReturnType<typeof companyAchievementsOf>> | null };
+type Extras = { bus: Awaited<ReturnType<typeof staffBusView>>; anniversaryIn: number | null; chronicle: Awaited<ReturnType<typeof chronicleOf>> | null; driverOfMonth: boolean; medals: Awaited<ReturnType<typeof organizationMedals>> | null; companyAchievements: Awaited<ReturnType<typeof companyAchievementsOf>> | null; trains?: boolean };
 
 const CHRONICLE_ICON: Record<string, string> = { driver: '🚚', founded: '🏁', level: '⭐', build: '🏗️', battle: '⚔️', project: '📦', division: '🏆', anniversary: '🎂', alliance: '🛡', specialization: '🎯', museum: '🏛️', owner: '🔑', name: '✏️' };
 
@@ -238,7 +254,7 @@ function CompanyOverview({ hub, history, licences, extras }: { hub: Hub; history
         <CompanyProgress hub={hub} />
         {(extras.medals || extras.companyAchievements) && <CompanyMedals medals={extras.medals} achievements={extras.companyAchievements} />}
         <CompanySeason db={getDb()} organizationId={c.id} />
-        <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} />
+        <CompanyLicences held={licences} canBuy={hub.rank.isOwner || hub.rank.permissions.includes('manage_upgrades')} treasuryCents={c.treasuryCents} has={(f) => f === 'trains' && !!extras.trains} />
         <Card title={<span className="inline-flex items-center gap-2"><Gift className="h-4 w-4 text-mist-400" />{tr('Моето членство')}</span>}>
           <div className="flex flex-wrap items-center gap-2 text-sm"><Badge tone={hub.rank.isOwner ? 'gold' : 'violet'}>{tx(hub.rank.name)}</Badge><span className="text-mist-400">{tr('член от {0}', date(hub.member.joinedAt))}</span></div>
           <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">

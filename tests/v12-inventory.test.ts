@@ -75,7 +75,7 @@ describe('1.2 inventory — server', () => {
     const p = await playerWithCompany();
     await give(p.userId, 'case_gold', 'gold');
     expect(await code(openCase(db(), p.userId, 'case_bronze'))).toBe('no_item');
-    const { item } = await openCase(db(), p.userId, 'case_gold', new Date(), () => 0);
+    const { item } = await openCase(db(), p.userId, 'case_gold', new Date(), () => 0, () => 1);
     expect(item).toBe(CASE_TABLES.case_gold[0]![0]);
     expect(await qty(p.userId, 'case_gold')).toBe(0);
     expect(await qty(p.userId, item)).toBe(1);
@@ -181,16 +181,10 @@ describe('1.2 inventory — ТрансКоин in cases and the team', () => {
     throw new Error('not in table');
   };
 
-  it('a coin drop goes to the wallet, not to the inventory', async () => {
+  it('1.3.2.1: the cases hold no ТрансКоин; coin items never go into the inventory', async () => {
+    for (const table of Object.values(CASE_TABLES)) for (const [id] of table) expect(ITEMS[id].kind, id).not.toBe('coins');
+    for (const table of Object.values(CASE_TABLES)) expect(table.map(([id]) => id)).not.toContain('coin_pouch');
     const p = await playerWithCompany();
-    await give(p.userId, 'case_gold', 'gold-coins');
-    const [before] = await db().select({ coins: users.coins }).from(users).where(eq(users.id, p.userId));
-    const r = await openCase(db(), p.userId, 'case_gold', new Date(), () => weightBefore('case_gold', 'tc_jackpot'));
-    expect(r).toMatchObject({ item: 'tc_jackpot', coins: 100 });
-    const [after] = await db().select({ coins: users.coins }).from(users).where(eq(users.id, p.userId));
-    expect(after!.coins - before!.coins).toBe(100);
-    expect(await qty(p.userId, 'tc_jackpot')).toBe(0);
-    expect((await db().select().from(itemLog).where(and(eq(itemLog.userId, p.userId), eq(itemLog.itemId, 'tc_jackpot')))).length).toBe(1);
     await expect(db().transaction((tx) => grantItem(tx, p.userId, 'tc_small', 1, 'test', `bad:${p.userId}`))).rejects.toThrow();
   });
 

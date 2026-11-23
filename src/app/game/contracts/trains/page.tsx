@@ -3,10 +3,10 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { PageHeader } from '@/components/ui';
 import { TrainArt } from '@/components/vehicles/trains';
-import { place, RunStatus, TrainOrders } from '@/components/game/TrainOrders';
-import { LOCOS, TRAINS, WAGON_TYPES } from '@/lib/game/trains';
+import { HireBoard, place, RunStatus, TrainOrders } from '@/components/game/TrainOrders';
+import { LOCOS, RAIL_TERMINALS, TRAINS, WAGON_TYPES } from '@/lib/game/trains';
 import { gameContext } from '@/server/game/context';
-import { trainsView } from '@/server/game/trains';
+import { hireBoard, trainsView } from '@/server/game/trains';
 import { t } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 
@@ -16,11 +16,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** 1.3.3 „Жп линия“ (Курсове → Влакове): the block-train orders for each of my idle trains, and the ones on the way. */
-export default async function TrainJobsPage() {
+export default async function TrainJobsPage({ searchParams }: { searchParams: Promise<{ at?: string }> }) {
   await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.trains) notFound();
   const v = await trainsView(db, user.id, now);
+  const at = Number((await searchParams).at) || v.trains[0]?.at || RAIL_TERMINALS[0]!.id;
+  const hire = await hireBoard(db, user.id, at, now);
   const idle = v.trains.filter((tr) => !tr.run);
   const going = v.trains.filter((tr) => tr.run);
   return (
@@ -32,8 +34,8 @@ export default async function TrainJobsPage() {
       />
       {v.trains.length === 0 && (
         <section className="panel space-y-2 p-4" data-testid="train-jobs-empty">
-          <p className="text-sm text-mist-200">🚆 {t('Още нямаш влак. Купи локомотив и вагони в Автопарк → Влакове.')}</p>
-          <Link href="/game/trains" className="game-action game-action-gold inline-flex flex-row px-4 py-1.5 text-xs">{t('Към влаковете →')}</Link>
+          <p className="text-sm text-mist-200">🚆 {t('Нямаш собствен влак — наеми влак за поръчката по-долу. Собствен влак се купува от VIP{0} в Автопарк → Влакове.', TRAINS.vipLevel)}</p>
+          <Link href="/game/trains" className="game-action inline-flex flex-row px-4 py-1.5 text-xs">{t('Към влаковете →')}</Link>
         </section>
       )}
       <ul className="space-y-3" data-testid="train-jobs">
@@ -50,6 +52,7 @@ export default async function TrainJobsPage() {
           </li>
         ))}
       </ul>
+      <HireBoard v={hire} now={now} />
       {going.length > 0 && (
         <section className="panel space-y-2 p-4" data-testid="train-jobs-going">
           <h2 className="font-display text-lg font-bold text-white">{t('На път')}</h2>

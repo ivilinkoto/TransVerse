@@ -3,7 +3,7 @@ import { powerUnitModel, trailerModel } from '@/lib/game/catalog';
 import type { Cosmetics, TrailerCosmetics } from '@/lib/game/cosmetics';
 import { Defs, GroundShadow, type Ids } from './parts';
 import { DrawbarTrailer, Trailer, TrailerExtras, type TrailerBody } from './trailers';
-import { BoxVan, Rigid, Tractor, Van } from './units';
+import { BoxVan, cabBrand, Rigid, Tractor, Van, type CabDesign } from './units';
 import { RETRO, type RetroStyle } from '@/lib/game/shop';
 import { tx } from '@/i18n/t';
 
@@ -43,6 +43,16 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
     body: `b${uid}`, metal: `m${uid}`, glass: `g${uid}`, tire: `t${uid}`, rim: `r${uid}`, chrome: `c${uid}`, white: `w${uid}`, shadow: `s${uid}`, corrugation: `k${uid}`,
   };
   const unit = powerUnitModel(modelId);
+  // 1.3.2.2: a premium truck comes with its trim (gold grille, chrome visor, roof lights, pinstripes); bought parts win.
+  if (unit.premium) cosmetics = { grille: 'gold', visor: 'chrome', lights: 'white', premium: true, ...cosmetics };
+  // 1.3.2.2: each brand draws its own cab; some models add their own parts.
+  const brand = cabBrand(unit.brand);
+  const design: CabDesign = {
+    brand,
+    stacks: brand === 'rila' && unit.look !== 'plow',
+    bullbar: unit.id === 'rila-xt700-titan',
+    aero: brand === 'volta' || unit.id === 'danubia-t500-eco' || unit.id === 'danubia-t560-signature',
+  };
   const coupled = trailerModelId ? trailerModel(trailerModelId) : null;
   const trailer = unit.kind === 'tractor' && coupled?.kind === 'semi' ? coupled : null;
   const drawbar = unit.kind === 'rigid' && coupled?.kind === 'drawbar' ? coupled : null;
@@ -81,10 +91,10 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
     content = (
       <>
         <GroundShadow from={0} to={rigidX + 900} />
-        {drawbar && <DrawbarTrailer body={trailerBody} ids={ids} color={trailerCosmetics?.paint ?? trailerColor ?? color} />}
+        {drawbar && <DrawbarTrailer body={trailerBody} ids={ids} color={trailerCosmetics?.paint ?? trailerColor ?? (unit.premium ? '#ca8a04' : color)} />}
         {drawbar && <TrailerExtras kind="drawbar" upgrades={trailerUpgrades ?? []} logo={trailerLogo} cosmetics={trailerCosmetics} />}
         <g transform={`translate(${rigidX} 0)`}>
-          <Rigid ids={ids} color={color} body={body} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
+          <Rigid ids={ids} color={color} body={body} design={design} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
         </g>
       </>
     );
@@ -96,10 +106,10 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
     content = (
       <>
         <GroundShadow from={0} to={tractorX + 602} />
-        {trailer && <Trailer body={trailer.body as TrailerBody} ids={ids} color={trailerCosmetics?.paint ?? trailerColor ?? (trailer.body === 'container' ? '#b45309' : trailer.body === 'tipper' ? '#ca8a04' : color)} />}
+        {trailer && <Trailer body={trailer.body as TrailerBody} ids={ids} color={trailerCosmetics?.paint ?? trailerColor ?? (unit.premium ? '#ca8a04' : undefined) ?? (trailer.body === 'container' ? '#b45309' : trailer.body === 'tipper' ? '#ca8a04' : color)} />}
         {trailer && <TrailerExtras kind="semi" body={trailer.body} upgrades={trailerUpgrades ?? []} logo={trailerLogo} cosmetics={trailerCosmetics} />}
         <g transform={`translate(${tractorX} 0)`}>
-          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} classic={unit.look === 'classic'} plow={unit.look === 'plow'} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
+          <Tractor ids={ids} color={color} cab={unit.cab === 'day' || unit.cab === 'van' ? 'day' : unit.cab} heavy={unit.heavyHaul} coupled={!!trailer} classic={unit.look === 'classic'} plow={unit.look === 'plow'} design={design} extras={martenitsa ? { ...cosmetics, martenitsa } : (cosmetics ?? undefined)} />
         </g>
       </>
     );

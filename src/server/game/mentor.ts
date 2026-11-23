@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, asc, desc, eq, inArray, isNull, lte, ne, sql } from 'drizzle-orm';
 import { money } from '@/lib/format';
 import { isNewcomer, MENTOR } from '@/lib/game/mentor';
@@ -104,8 +105,8 @@ export async function completeMentorship(tx: Tx, menteeId: string, level: number
   await postCoins(tx, menteeId, { amount: MENTOR.menteeCoins, reason: 'mentor_reward', description: t('Ниво {0} с наставник', MENTOR.goalLevel), idempotencyKey: `mentor:${menteeId}:mentee-coins` });
   await tx.insert(userBadges).values({ userId: m.mentorId, badge: MENTOR.badge, awardedAt: now }).onConflictDoNothing();
   await addFeed(tx, { userId: m.mentorId, kind: 'mentor', text: t('изведе {0} до ниво {1} като наставник', mentee!.username, MENTOR.goalLevel) }, now);
-  await notify(tx, m.mentorId, 'achievement', () => t('{0} стигна ниво {1}!', mentee!.username, MENTOR.goalLevel), () => t('Благодарим, наставнико: {0} и {1} TC са твои, а значката „Наставник“ — в профила ти.', money(MENTOR.mentorCents), MENTOR.mentorCoins), '/game/mentor');
-  await notify(tx, menteeId, 'achievement', () => t('Ниво {0} с наставник!', MENTOR.goalLevel), () => t('Ти и {0} получавате награда: {1} и {2} TC за теб.', mentor!.username, money(MENTOR.menteeCents), MENTOR.menteeCoins), '/game/mentor');
+  await notify(tx, m.mentorId, 'achievement', () => t('{0} стигна ниво {1}!', mentee!.username, MENTOR.goalLevel), () => t('Благодарим, наставнико: {0} и {1} са твои, а значката „Наставник“ — в профила ти.', money(MENTOR.mentorCents), coinsAsMoney(MENTOR.mentorCoins)), '/game/mentor');
+  await notify(tx, menteeId, 'achievement', () => t('Ниво {0} с наставник!', MENTOR.goalLevel), () => t('Ти и {0} получавате награда: {1} и {2} за теб.', mentor!.username, money(MENTOR.menteeCents), coinsAsMoney(MENTOR.menteeCoins)), '/game/mentor');
   return true;
 }
 

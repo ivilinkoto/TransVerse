@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, eq, gt } from 'drizzle-orm';
 import { GraduationCap, Handshake, Shield, Warehouse } from 'lucide-react';
 import { redirect } from 'next/navigation';
@@ -163,7 +164,7 @@ export default async function AlliancePage() {
 
       {features.academy && (
         <Card title={<span className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-cyan-glow" />{t('Фирмена академия')}</span>}>
-          <p className="text-sm text-mist-300">{t('Новите членове (до {0} дни в компанията) избират наставник от ниво {1}+ и минават {2} учебни курса — доставки навреме от поне {3} км. Накрая: +{4} опит за ученика, {5} TC за наставника и {6} за касата.', ACADEMY.joinedDays, ACADEMY.mentorMinLevel, ACADEMY.courses, ACADEMY.minKm, ACADEMY.studentXp, ACADEMY.mentorCoins, money(ACADEMY.treasuryCents))}</p>
+          <p className="text-sm text-mist-300">{t('Новите членове (до {0} дни в компанията) избират наставник от ниво {1}+ и минават {2} учебни курса — доставки навреме от поне {3} км. Накрая: +{4} опит за ученика, {5} за наставника и {6} за касата.', ACADEMY.joinedDays, ACADEMY.mentorMinLevel, ACADEMY.courses, ACADEMY.minKm, ACADEMY.studentXp, coinsAsMoney(ACADEMY.mentorCoins), money(ACADEMY.treasuryCents))}</p>
           {newMember && !enrolled && (
             <div className="mt-3 max-w-md"><SelectAction label={t('Запиши се')} ariaLabel={t('Наставник')} value="" options={[{ value: '', label: t('— избери наставник —') }, ...members.filter((x) => x.id !== user.id && x.level >= ACADEMY.mentorMinLevel).map((x) => ({ value: x.id, label: t('{0} (ниво {1})', x.username, x.level) }))]} action={{ type: 'enrolAcademy' }} field="mentorId" /></div>
           )}

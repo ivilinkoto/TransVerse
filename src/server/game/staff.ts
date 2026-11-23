@@ -10,6 +10,7 @@ import { driverName } from './names';
 import { logActivity } from './notify';
 import { checkAchievements } from './progression';
 import { pickWeighted, randInt } from './random';
+import { FLEET_UPKEEP, upkeepCents } from '@/lib/game/fleet-upkeep';
 import { t } from '@/i18n/t';
 
 const CANDIDATES = 4;
@@ -93,6 +94,28 @@ export async function assignDriver(db: Database, userId: string, driverId: strin
   });
 }
 
+/**
+ * The player takes the wheel of one of their idle trucks (a hired driver on it
+ * steps out). The player's own driver is made again if an old account lost it.
+ * While the player drives another truck on a trip, it waits for that trip.
+ */
+export async function driveMyself(db: Database, userId: string, vehicleId: string) {
+  const ownerId = await db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [own] = await tx.select().from(drivers).where(and(eq(drivers.companyId, company.id), eq(drivers.isOwner, true))).for('update');
+    if (own) {
+      const seats = [own.vehicleId, own.coVehicleId].filter((x): x is string => !!x);
+      const busy = seats.length ? await tx.select({ id: vehicles.id }).from(vehicles).where(and(inArray(vehicles.id, seats), eq(vehicles.status, 'on_delivery'))) : [];
+      if (busy.length) fail('driver_busy', t('Ти караш друг камион на курс. Ще можеш да смениш камиона, когато пристигне.'));
+      return own.id;
+    }
+    const [u] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId));
+    const [made] = await tx.insert(drivers).values({ companyId: company.id, name: u?.username ?? t('Шофьор'), skill: 1, salaryCentsPerDay: 0, isOwner: true }).returning({ id: drivers.id });
+    return made!.id;
+  });
+  await assignDriver(db, userId, ownerId, vehicleId, 'main');
+}
+
 /** Spends one of a driver's skill points (one per skill level above the first). */
 export async function trainDriver(db: Database, userId: string, driverId: string, trait: TraitId) {
   return db.transaction(async (tx) => {
@@ -119,6 +142,32 @@ export async function runPayroll(db: Database, day: string) {
     charged += await db.transaction((tx) =>
       post(tx, r.companyId, [{ category: 'salaries', amountCents: -r.total, description: t('Заплати за {0} ({1} шофьори)', day, r.n), idempotencyKey: `payroll:${r.companyId}:${day}` }]),
     );
+  }
+  return charged;
+}
+
+/**
+ * 1.3.2.1: the daily upkeep of the own fleet (src/lib/game/fleet-upkeep.ts), with the
+ * payroll for the same day. Idempotent per account and day; never below a zero balance;
+ * no upkeep for a day the owner spent on vacation.
+ */
+export async function runFleetUpkeep(db: Database, day: string) {
+  if (day < FLEET_UPKEEP.from) return 0;
+  const rows = await db
+    .select({ companyId: vehicles.companyId, n: sql<number>`count(*)::int` })
+    .from(vehicles)
+    .where(and(eq(vehicles.ownership, 'owned'), isNull(vehicles.soldAt), sql`not exists (select 1 from ${companies} c join ${users} u on u.id = c.owner_id where c.id = ${vehicles.companyId} and u.vacation_until > ${`${day}T00:00:00Z`}::timestamptz)`))
+    .groupBy(vehicles.companyId);
+  let charged = 0;
+  for (const r of rows) {
+    const cost = upkeepCents(r.n);
+    if (cost <= 0) continue;
+    charged += await db.transaction(async (tx) => {
+      const [acc] = await tx.select({ balance: companies.balanceCents }).from(companies).where(eq(companies.id, r.companyId)).for('update');
+      const pay = Math.min(cost, Math.max(0, acc?.balance ?? 0));
+      if (pay <= 0) return 0;
+      return post(tx, r.companyId, [{ category: 'maintenance', amountCents: -pay, description: t('Поддръжка на автопарка за {0} ({1} камиона)', day, r.n), idempotencyKey: `fleet-upkeep:${r.companyId}:${day}` }]);
+    });
   }
   return charged;
 }

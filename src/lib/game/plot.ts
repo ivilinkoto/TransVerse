@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { MUSEUM } from './heritage';
 /**
  * The company plot (v1.3): every company has a plot in its base city and
@@ -191,7 +192,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
     offset: 0,
     maxLevel: 3,
     base: { bricks: 10, glass: 8, cement: 6, steel: 2 },
-    effect: (l) => tr('Място за {0} дарени камиона с поне {1} 000 км — дарителят получава {2} TC ({3} TC за легенда)', MUSEUM.capacity[l] ?? 0, MUSEUM.minKm / 1000, MUSEUM.coins, MUSEUM.legendCoins),
+    effect: (l) => tr('Място за {0} дарени камиона с поне {1} 000 км — дарителят получава {2} ({3} за легенда)', MUSEUM.capacity[l] ?? 0, MUSEUM.minKm / 1000, coinsAsMoney(MUSEUM.coins), coinsAsMoney(MUSEUM.legendCoins)),
     minCompanyLevel: [2, 4, 6],
   },
 };

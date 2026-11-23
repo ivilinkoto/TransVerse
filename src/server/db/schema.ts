@@ -188,12 +188,20 @@ export const users = pgTable(
     quietHours: jsonb('quiet_hours').$type<{ from: number; to: number } | null>(),
     /** VIP status (granted by an administrator or bought in the shop); active while in the future. */
     vipUntil: ts('vip_until'),
+    /** 1.3.2.2: the VIP level (0–5) by real money spent, kept up to date with each payment and refund. */
+    vipLevel: integer('vip_level').notNull().default(0),
+    /** 1.3.2.2: a level the player keeps whatever they spent (VIP5 for those with VIP when the levels came). */
+    vipLevelFloor: integer('vip_level_floor').notNull().default(0),
     /** ТрансКоин — premium currency balance (whole coins). Changes only through coin_entries. */
     /** Spare parts from the scrapyard (v1.6): each repairs a truck by a quarter. */
     spareParts: integer('spare_parts').notNull().default(0),
     coins: integer('coins').notNull().default(0),
     /** Double delivery XP while in the future (shop booster). */
     xpBoostUntil: ts('xp_boost_until'),
+    /** 1.3.2.2: +50 % pay on every delivery until then (a shop booster). */
+    moneyBoostUntil: ts('money_boost_until'),
+    /** 1.3.2.2: no road tolls until then (a shop booster). */
+    tollFreeUntil: ts('toll_free_until'),
     /** Daily mission period of the last free VIP mission swap. */
     vipRerollKey: text('vip_reroll_key'),
     /** Personal invite code (created when first needed). */
@@ -1077,6 +1085,8 @@ export const payments = pgTable(
     createdAt: createdAt(),
     paidAt: ts('paid_at'),
     refundedAt: ts('refunded_at'),
+    /** 1.3.2.2: a ТрансКоин pack bought for another player — the coins go to them. */
+    giftUserId: uuid('gift_user_id').references(() => users.id, { onDelete: 'restrict' }),
   },
   (t) => [
     uniqueIndex('payments_session_idx').on(t.checkoutSessionId),

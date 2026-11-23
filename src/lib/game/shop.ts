@@ -13,7 +13,7 @@ export const SHOP_CATEGORIES: Record<ShopCategory, string> = {
   account: 'Профил',
 };
 
-export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_easter' | 'paint_blackfriday' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename' | 'case_silver' | 'case_gold' | 'gift_case' | 'move_depot';
+export type ShopItemId = 'vip_7' | 'vip_30' | 'vip_90' | 'gift_vip_30' | 'xp_boost_24h' | 'money_boost_24h' | 'toll_free_24h' | 'instant_repair' | 'instant_relocate' | 'custom_plate' | 'paint' | 'paint_pumpkin' | 'paint_christmas' | 'paint_cherry' | 'paint_easter' | 'paint_blackfriday' | 'paint_retro70' | 'paint_retro80' | 'paint_retro90' | 'truck_part' | 'trailer_part' | 'rename' | 'case_silver' | 'case_gold' | 'gift_case' | 'move_depot';
 
 /** The retro collection (v1.5): three paints of past decades; all three earn a badge. */
 export const RETRO = {
@@ -44,6 +44,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'vip_90', category: 'vip', label: 'VIP · 90 дни', description: 'Три месеца VIP — най-изгодно.', price: 1200 },
   { id: 'gift_vip_30', category: 'vip', label: 'Подари VIP · 30 дни', description: 'Подари 30 дни VIP на друг играч.', price: 500, needs: 'recipient' },
   { id: 'xp_boost_24h', category: 'boost', label: '×2 опит · 24 часа', description: 'Двоен опит от доставки за 24 часа. Не влияе на сезонните точки.', price: 120 },
+  // 1.3.2.2: boosters for the money side.
+  { id: 'money_boost_24h', category: 'boost', label: '+50% пари · 24 часа', description: '+50% от заплащането на всеки курс за 24 часа — за всички твои камиони. Извън тавана на бонусите.', price: 250 },
+  { id: 'toll_free_24h', category: 'boost', label: 'Без пътни такси · 24 часа', description: 'Никакви пътни такси по курсовете на всички твои камиони за 24 часа.', price: 150 },
   { id: 'instant_repair', category: 'service', label: 'Моментален ремонт', description: 'Собствен камион (и ремаркето му) до 100% без разход на лв.', price: 40, needs: 'vehicle' },
   { id: 'instant_relocate', category: 'service', label: 'Моментално преместване', description: 'Свободен камион (с ремаркето) веднага в друг град от товарния пазар.', price: 60, needs: 'vehicle_city' },
   { id: 'custom_plate', category: 'cosmetic', label: 'Лична регистрационна табела', description: 'Собствен надпис на табелата на твой камион (2–10 знака).', price: 150, needs: 'vehicle_plate' },

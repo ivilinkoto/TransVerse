@@ -1,4 +1,5 @@
 /** „Гроздобер“ (the autumn season): harvest loads delivered on time; ten in a season — a badge and ТрансКоин. */
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, eq, sql } from 'drizzle-orm';
 import { HARVEST } from '@/lib/game/city-growth';
 import { featureLive } from '@/lib/game/features';
@@ -19,6 +20,6 @@ export async function harvestDelivered(tx: Tx, userId: string, holiday: string |
   if (!won) return;
   await postCoins(tx, userId, { amount: HARVEST.coins, reason: 'harvest', description: t('Гроздобер {0}: {1} есенни товара', year, HARVEST.loadsForBadge), idempotencyKey: `harvest:${year}:${userId}` });
   await tx.insert(userBadges).values({ userId, badge: HARVEST.badge, awardedAt: at }).onConflictDoNothing();
-  await notify(tx, userId, 'achievement', () => t('Значка: {0} 🍇', BADGES[HARVEST.badge]?.label ?? t('Гроздобер')), () => t('{0} есенни товара навреме: +{1} TC.', HARVEST.loadsForBadge, HARVEST.coins), '/game/progress');
+  await notify(tx, userId, 'achievement', () => t('Значка: {0} 🍇', BADGES[HARVEST.badge]?.label ?? t('Гроздобер')), () => t('{0} есенни товара навреме: +{1}.', HARVEST.loadsForBadge, coinsAsMoney(HARVEST.coins)), '/game/progress');
 }
 

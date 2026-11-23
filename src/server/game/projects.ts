@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, desc, eq, lte } from 'drizzle-orm';
 import { periodWindow } from '@/lib/game/missions';
 import { chestForProject } from './item-trade';
@@ -72,7 +73,7 @@ export async function recordProjectDelivery(tx: Tx, organizationId: string, user
   }
   // 1.2.1: cases into the company chest, for the owner to give out.
   await chestForProject(tx, organizationId, p.id, now);
-  await notifyMembers(tx, organizationId, null, () => tr('Проектът е завършен: {0}', p.title), () => tr('+{0} лв. в касата, +{1} опит за компанията и {2} TC за всеки, който помогна.', (p.rewardCents / 100).toLocaleString(intlLocale()), p.rewardXp, PROJECT_RULES.helperCoins), '/game/company/missions');
+  await notifyMembers(tx, organizationId, null, () => tr('Проектът е завършен: {0}', p.title), () => tr('+{0} лв. в касата, +{1} опит за компанията и {2} за всеки, който помогна.', (p.rewardCents / 100).toLocaleString(intlLocale()), p.rewardXp, coinsAsMoney(PROJECT_RULES.helperCoins)), '/game/company/missions');
 }
 
 /** Worker: projects past their week without the target fail. */

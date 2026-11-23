@@ -5,6 +5,7 @@
  * - `plow:<country>:<day>` = { tons, clearedAt }; `plow-tons:<season>:<user>` = { tons }
  * - `snow-king:<season>:<user>` = { tons }; `snow-king-awarded:<season>` once the titles are given.
  */
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { desc, eq, inArray, like, sql } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { postMoment } from './chat-life';
@@ -169,7 +170,7 @@ export async function awardSnowKings(db: Database, now = new Date()) {
         const prize = SNOW_KING.places[k.place - 1]!;
         await tx.insert(userBadges).values({ userId: k.userId, badge: prize.title, awardedAt: now }).onConflictDoNothing();
         await postCoins(tx, k.userId, { amount: prize.coins, reason: 'challenge', description: t('Крал на снега · място {0}', k.place), idempotencyKey: `snow-king:${s.id}:${k.userId}` });
-        await notify(tx, k.userId, 'achievement', () => t('Крал на снега: място {0}!', k.place), () => t('Титла „{0}“ и {1} TC.', TITLES[prize.title]!.label, prize.coins), '/game/profile');
+        await notify(tx, k.userId, 'achievement', () => t('Крал на снега: място {0}!', k.place), () => t('Титла „{0}“ и {1}.', TITLES[prize.title]!.label, coinsAsMoney(prize.coins)), '/game/profile');
         n++;
       }
     });
@@ -193,7 +194,7 @@ export async function awardSantas(db: Database, now = new Date()) {
         const prize = SANTA_OF_ROADS.places[k.place - 1]!;
         await tx.insert(userBadges).values({ userId: k.userId, badge: prize.title, awardedAt: now }).onConflictDoNothing();
         await postCoins(tx, k.userId, { amount: prize.coins, reason: 'challenge', description: t('Дядо Коледа на пътищата · място {0}', k.place), idempotencyKey: `santa:${s.id}:${k.userId}` });
-        await notify(tx, k.userId, 'achievement', () => t('Дядо Коледа на пътищата: място {0}!', k.place), () => t('Титла „{0}“ и {1} TC.', TITLES[prize.title]!.label, prize.coins), '/game/profile');
+        await notify(tx, k.userId, 'achievement', () => t('Дядо Коледа на пътищата: място {0}!', k.place), () => t('Титла „{0}“ и {1}.', TITLES[prize.title]!.label, coinsAsMoney(prize.coins)), '/game/profile');
         n++;
       }
     });

@@ -73,7 +73,7 @@ describe('1.2.6 partner loads', () => {
     const me = { id: a.userId, username: await nameOf(a.userId) };
     const { messageId } = await askPartner(db(), me, r.id);
     const [line] = await db().select().from(chatMessages).where(eq(chatMessages.id, messageId));
-    expect(line).toMatchObject({ channel: 'global', kind: 'partner' });
+    expect(line).toMatchObject({ channel: 'events', kind: 'partner' });
     expect((line!.meta as { href?: string }).href).toBe(`/game/contracts?partner=${r.id}`);
     await expect(askPartner(db(), me, r.id)).rejects.toThrow();
     expect((await partnerLoadCard(db(), b.userId, r.id))!.canJoin).toBe(true);

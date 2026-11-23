@@ -1,5 +1,6 @@
 'use client';
 
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import polyline from '@mapbox/polyline';
 import { nightShade, sunAltitude } from '@/lib/geo/sun';
 import * as maplibregl from 'maplibre-gl';
@@ -483,7 +484,7 @@ export function WorldMap({ styleUrl, center, vehicles, depots, preview, ownVip =
     el.onclick = async () => {
       try {
         const data = await api<{ coins: number; city: string }>('/api/game/action', { type: 'spotStork' });
-        setStorkNote(tr('Видя щъркела над {0}! +{1} TC 🔴⚪', data.city, data.coins));
+        setStorkNote(tr('Видя щъркела над {0}! +{1} 🔴⚪', data.city, coinsAsMoney(data.coins)));
       } catch (e) {
         setStorkNote((e as Error).message);
       }

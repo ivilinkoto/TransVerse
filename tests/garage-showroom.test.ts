@@ -93,13 +93,13 @@ describe('1.2.3.5 the 3D garage', () => {
     expect(notes).toHaveLength(1);
   });
 
-  it('the garage goes to the global chat once in a few hours', async () => {
+  it('the garage goes to the „Събития“ chat once in a few hours', async () => {
     const p = await newPlayer('Sofia');
     const now = new Date('2026-11-08T12:00:00Z');
     await shareGarage(db(), p.userId, now);
     expect(await code(shareGarage(db(), p.userId, new Date(now.getTime() + 3_600_000)))).toBe('too_soon');
     expect(await code(shareGarage(db(), p.userId, new Date(now.getTime() + 7 * 3_600_000)))).toBe('ok');
-    const lines = await db().select().from(chatMessages).where(and(eq(chatMessages.channel, 'global'), eq(chatMessages.kind, 'garage')));
+    const lines = await db().select().from(chatMessages).where(and(eq(chatMessages.channel, 'events'), eq(chatMessages.kind, 'garage')));
     expect(lines.length).toBeGreaterThanOrEqual(2);
   });
 

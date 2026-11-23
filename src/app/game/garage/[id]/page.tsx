@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { TruckNameForm } from '@/components/game/TruckNameForm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -70,7 +71,7 @@ export default async function ShowcasePage({ params }: { params: Promise<{ id: s
       {own && (features.scrapyard || features.museum || features.legendary_trucks) && (
         <Card title={tr('Пътят на камиона')}>
           <div className="space-y-3 text-sm text-mist-300">
-            {features.legendary_trucks && <p>{nextLegend ? tr('До „{0}“: {1} км (+{2} TC).', nextLegend.title, int(nextLegend.km - v.odometerKm), nextLegend.coins) : tr('Златна легенда — по-далеч няма.')}</p>}
+            {features.legendary_trucks && <p>{nextLegend ? tr('До „{0}“: {1} км (+{2}).', nextLegend.title, int(nextLegend.km - v.odometerKm), coinsAsMoney(nextLegend.coins)) : tr('Златна легенда — по-далеч няма.')}</p>}
             {features.scrapyard && (
               <div className="flex flex-wrap items-center gap-2">
                 <span>{tr('Резервни части:')}{' '}<span className="num font-semibold text-mist-100">{spare}</span></span>

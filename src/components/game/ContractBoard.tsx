@@ -1,5 +1,6 @@
 'use client';
 
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { GOODS_TRAITS, goodsTrait } from '@/lib/game/goods';
 import { AlertTriangle, ArrowRight, BadgeCheck, Boxes, Clock, Lock, MapPinned, Route, Search, Ship, ShieldCheck, Hammer, House, Siren, Snowflake, Star, TrainFront, Truck } from 'lucide-react';
 import { ChristmasTreeIcon, PumpkinIcon } from '@/components/seasonal/icons';
@@ -681,7 +682,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
           {c.rally && <Badge tone="orange">{t('🏁 РАЛИ — мери се времето и горивото')}</Badge>}
           {c.ferry && <Badge tone="cyan"><Ship className="h-3 w-3" />{c.ferry.note.toUpperCase()}</Badge>}
           {c.port && <Badge tone="blue"><Ship className="h-3 w-3" />{tx(c.port)}</Badge>}
-          {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />{t('ТОВАР НА ДЕНЯ · +{0} TC', DAILY_LOAD.coins)}</Badge>}
+          {c.featured && <Badge tone="gold"><Star className="h-3 w-3" />{t('ТОВАР НА ДЕНЯ · +{0}', coinsAsMoney(DAILY_LOAD.coins))}</Badge>}
           {c.shared && <Badge tone="cyan"><Boxes className="h-3 w-3" />{t('ОБЩ ТОВАР НА КОМПАНИЯТА · +{0}%', Math.round(SHARED_LOAD.bonusShare * 100))}</Badge>}
           {c.favorite && <Star className="h-4 w-4 fill-gold-400 text-gold-400" aria-label={t('Любима линия')} />}
           {c.holiday === 'halloween' && <Badge tone="orange"><PumpkinIcon className="h-3.5 w-3.5" />{t('ХЕЛУИН · +{0}%', Math.round((HALLOWEEN.rewardMultiplier - 1) * 100))}</Badge>}
@@ -694,7 +695,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
           {c.escort && <Badge tone="orange">{t('🚓 С ЕСКОРТ: +{0} % за двамата', Math.round(ESCORT.mainBonus * 100))}</Badge>}
           {c.escortRun && <Badge tone="orange">{t('🚓 ЕСКОРТ · тръгни веднага, бонус {0} % от товара', Math.round(ESCORT.escortShare * 100))}</Badge>}
           {c.regionProject && <Badge tone="green">{t('🏗️ ПРОЕКТ НА РЕГИОНА')}</Badge>}
-          {c.humanitarian && <Badge tone="red">{t('🆘 ХУМАНИТАРНА ПОМОЩ · +{0} TC навреме', RELIEF.coins)}</Badge>}
+          {c.humanitarian && <Badge tone="red">{t('🆘 ХУМАНИТАРНА ПОМОЩ · +{0} навреме', coinsAsMoney(RELIEF.coins))}</Badge>}
           {(() => {
             // 1.1.4: fragile, valuable and dangerous goods pay more.
             const trait = goodsTrait(c.goods);

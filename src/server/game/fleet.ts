@@ -1,14 +1,16 @@
+import { vipLevel } from '@/lib/game/vip-levels';
+import { ownerVipLevel } from './vip-levels';
 import { winterTyreDiscount } from './prewinter';
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { countryOpen } from '@/lib/geo/scope';
-import { POWER_UNITS, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
+import { POWER_UNITS, PREMIUM_TRUCK, TRAILERS, TRAILER_UPGRADES, TYRE_SETS, UPGRADES, couplingError, isTrailerUpgrade, powerUnitModel, trailerModel, type TrailerUpgradeId, type UpgradeId } from '@/lib/game/catalog';
 import { stickerText } from '@/lib/game/cosmetics';
 import { cleanTruckName } from '@/lib/game/truck-names';
 import { springDiscount } from '@/lib/game/marta';
 import { haversineKm } from '@/lib/geo/geometry';
 import { relocateQuote } from '@/lib/game/relocate';
-import { ECONOMY, resaleValueCents } from '@/lib/game/economy';
+import { depotCoinSlotPrice, ECONOMY, resaleValueCents } from '@/lib/game/economy';
 import { repairPlan, type RepairPart } from '@/lib/game/repair';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { cities, cityMarkets, companies, depots, drivers, trailers, users, vehicleLeases, vehicles } from '@/server/db/schema';
@@ -27,6 +29,7 @@ import { logActivity, notify } from './notify';
 import { checkAchievements } from './progression';
 import { pick } from './random';
 import { t as tr } from '@/i18n/t';
+import { postCoins } from './coins';
 
 async function level(db: DbOrTx, userId: string) {
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
@@ -47,7 +50,7 @@ async function fleetCapacity(db: DbOrTx, companyId: string) {
   // A borrowed company truck stands on the company's parking, not in the member's depot.
   const [{ used = 0 } = {}] = await db.select({ used: sql<number>`count(*)::int` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), isNull(vehicles.soldAt), ne(vehicles.ownership, 'company')));
   // VIP: one extra place in every depot.
-  let extra = (await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0;
+  let extra = ((await ownerIsVip(db, companyId)) ? n * VIP_PERKS.extraSlotsPerDepot : 0) + n * vipLevel(await ownerVipLevel(db, companyId)).depotSlots;
   // The parking on the company's plot: places in the member's depot in the company's base city.
   const [owner] = await db.select({ ownerId: companies.ownerId }).from(companies).where(eq(companies.id, companyId));
   const perks = owner ? await bonusesForUser(db, owner.ownerId) : null;
@@ -93,6 +96,28 @@ export async function buyVehicle(db: Database, userId: string, modelId: string, 
     // A truck of their own replaces the rented one (now, or when its current trip ends).
     const rental = await retireRentalFor(tx, company.id, vehicle!.id);
     await logActivity(tx, userId, 'vehicle_bought', { vehicleId: vehicle!.id, modelId, rental });
+    await checkAchievements(tx, userId, company.id);
+    return vehicle!;
+  });
+}
+
+/** 1.3.2.2: a premium truck, for ТрансКоин only, from VIP2 (it parks in a depot like any truck). */
+export async function buyPremiumTruck(db: Database, userId: string, modelId: string, depotCityId: number, now = new Date()) {
+  const model = POWER_UNITS.find((m) => m.id === modelId && m.premium);
+  if (!model) fail('unknown_model', tr('Непознат модел.'));
+  if (!(await featureFor(db, userId, 'premium_trucks', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [u] = await tx.select({ level: users.level, vip: users.vipLevel }).from(users).where(eq(users.id, userId));
+    if ((u?.vip ?? 0) < PREMIUM_TRUCK.vipLevel) fail('vip_level', tr('Премиум камионите са от VIP{0}.', PREMIUM_TRUCK.vipLevel));
+    if ((u?.level ?? 0) < model!.minLevel) fail('level', tr('Изисква ниво {0}.', model!.minLevel));
+    await depotInCity(tx, company.id, depotCityId);
+    const cap = await fleetCapacity(tx, company.id);
+    if (cap.used >= cap.slots) fail('no_capacity', tr('Нямате свободни места в депата. Разширете депо или открийте ново.'));
+    const [vehicle] = await tx.insert(vehicles).values({ companyId: company.id, modelId: model!.id, plate: await uniquePlate(tx), color: PREMIUM_TRUCK.color, cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
+    await postCoins(tx, userId, { amount: -model!.premium!.coins, reason: 'shop', description: tr('Премиум камион {0} ({1})', model!.name, vehicle!.plate), idempotencyKey: `premium-truck:${vehicle!.id}` }, { requireFunds: true });
+    const rental = await retireRentalFor(tx, company.id, vehicle!.id);
+    await logActivity(tx, userId, 'vehicle_bought', { vehicleId: vehicle!.id, modelId, rental, premium: true });
     await checkAchievements(tx, userId, company.id);
     return vehicle!;
   });
@@ -202,7 +227,7 @@ export async function repairVehicle(db: Database, userId: string, vehicleId: str
     // VIP and the company's service on the plot make it cheaper.
     const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
     const spring = await springOff(tx, userId);
-    const factor = (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - service) * (1 - spring);
+    const factor = (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - vipLevel(await ownerVipLevel(tx, company.id)).garage) * (1 - service) * (1 - spring);
     const plan = repairPlan(truckUnit, trailerUnit, part, share, factor, opts.afford ? company.balanceCents : undefined);
     if (plan.truckPoints + plan.trailerPoints <= 0 || plan.costCents <= 0) fail('too_little', opts.afford ? tr('Парите не стигат дори за малък ремонт.') : tr('Няма нужда от ремонт.'));
     const repairKey = `repair:${v.id}:${v.odometerKm.toFixed(1)}:${v.condition.toFixed(3)}:${trailer ? trailer.condition.toFixed(3) : '-'}`;
@@ -222,7 +247,7 @@ export async function serviceVehicle(db: Database, userId: string, vehicleId: st
     if (v.status !== 'idle') fail('vehicle_busy', tr('Профилактика се прави само между курсовете.'));
     if (maintenanceState(v.odometerKm, v.serviceKm).fresh) fail('fresh', tr('Камионът наскоро мина профилактика.'));
     const service = (await bonusesForUser(tx, userId))?.bonuses.repairDiscount ?? 0;
-    const vip = (await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0;
+    const vip = 1 - (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - vipLevel(await ownerVipLevel(tx, company.id)).garage);
     const spring = await springOff(tx, userId);
     const cost = maintenanceCostCents(powerUnitModel(v.modelId).priceCents, 1 - (1 - service) * (1 - vip) * (1 - spring));
     await post(tx, company.id, [{ category: 'maintenance', amountCents: -cost, description: tr('Профилактика {0}', v.plate), idempotencyKey: `service:${v.id}:${v.odometerKm.toFixed(1)}`, refType: 'vehicle', refId: v.id }], { requireFunds: true });
@@ -246,7 +271,7 @@ export async function installUpgrade(db: Database, userId: string, vehicleId: st
     const kept = TYRE_SETS.includes(upgrade!.id) ? v.upgrades.filter((u) => !TYRE_SETS.includes(u as UpgradeId)) : v.upgrades;
     // 1.2.4: winter and all-season tyres cost less until the end of November.
     const before = winterTyreDiscount(upgrade!.id, new Date(), await featureFor(tx, userId, 'winter_prep'));
-    const price = Math.round(upgrade!.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - before));
+    const price = Math.round(upgrade!.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - vipLevel(await ownerVipLevel(tx, company.id)).garage) * (1 - before));
     await post(tx, company.id, [{ category: 'upgrades', amountCents: -price, description: `${upgrade!.label} — ${v.plate}`, idempotencyKey: `upgrade:${v.id}:${upgrade!.id}` }], { requireFunds: true });
     await tx.update(vehicles).set({ upgrades: [...kept, upgrade!.id] }).where(eq(vehicles.id, v.id));
   });
@@ -302,11 +327,26 @@ export async function expandDepot(db: Database, userId: string, depotId: string)
     const company = await companyForUser(tx, userId);
     const [depot] = await tx.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id))).for('update');
     if (!depot) fail('depot_not_found', tr('Депото не е намерено.'), 404);
-    if (depot!.slots >= 20) fail('max_slots', tr('Депото е с максимален капацитет.'));
+    if (depot!.slots >= ECONOMY.depotMaxSlots) fail('max_slots', (await featureFor(tx, userId, 'premium_slots')) && depotCoinSlotPrice(depot!.slots) ? tr('Депото е с {0} места. Още места — само за ТрансКоин.', ECONOMY.depotMaxSlots) : tr('Депото е с максимален капацитет.'));
     const cost = ECONOMY.depotSlotUpgradeCents * Math.ceil(depot!.slots / 3);
     await post(tx, company.id, [{ category: 'depots', amountCents: -cost, description: tr('Разширение на депо ({0} места)', depot!.slots + 1), idempotencyKey: `depot:${depot!.id}:slot:${depot!.slots + 1}` }], { requireFunds: true });
     await tx.update(depots).set({ slots: depot!.slots + 1 }).where(eq(depots.id, depot!.id));
     return cost;
+  });
+}
+
+/** 1.3.2.2: one more place past the money limit, for ТрансКоин (up to ECONOMY.depotCoinSlots.max). */
+export async function expandDepotCoins(db: Database, userId: string, depotId: string, now = new Date()) {
+  if (!(await featureFor(db, userId, 'premium_slots', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
+  return db.transaction(async (tx) => {
+    const company = await companyForUser(tx, userId);
+    const [depot] = await tx.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id))).for('update');
+    if (!depot) fail('depot_not_found', tr('Депото не е намерено.'), 404);
+    const price = depotCoinSlotPrice(depot!.slots);
+    if (price === null) fail('max_slots', depot!.slots < ECONOMY.depotMaxSlots ? tr('Първо разшири депото до {0} места с пари.', ECONOMY.depotMaxSlots) : tr('Депото е с максимален капацитет.'));
+    await postCoins(tx, userId, { amount: -price!, reason: 'shop', description: tr('Разширение на депо ({0} места)', depot!.slots + 1), idempotencyKey: `depot:${depot!.id}:coin-slot:${depot!.slots + 1}` }, { requireFunds: true });
+    await tx.update(depots).set({ slots: depot!.slots + 1 }).where(eq(depots.id, depot!.id));
+    return price!;
   });
 }
 
@@ -420,7 +460,7 @@ export async function installTrailerUpgrade(db: Database, userId: string, traile
       if (!m) fail('no_company', tr('Логото е с името на компанията — първо влез в компания.'));
       logo = stickerText(m!.company.name);
     }
-    const price = Math.round(upgrade.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)));
+    const price = Math.round(upgrade.priceCents * (1 - ((await ownerIsVip(tx, company.id)) ? VIP_PERKS.garageDiscount : 0)) * (1 - vipLevel(await ownerVipLevel(tx, company.id)).garage));
     await post(tx, company.id, [{ category: 'upgrades', amountCents: -price, description: tr('{0} — ремарке {1}', upgrade.label, t.plate), idempotencyKey: `trailer-upgrade:${t.id}:${upgrade.id}` }], { requireFunds: true });
     await tx.update(trailers).set({ upgrades: [...t.upgrades, upgrade.id], logo }).where(eq(trailers.id, t.id));
     return price;

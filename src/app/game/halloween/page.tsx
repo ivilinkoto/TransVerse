@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { eq } from 'drizzle-orm';
 import { CalendarDays, Coins, Moon, PartyPopper, Trophy } from 'lucide-react';
 import Link from 'next/link';
@@ -36,7 +37,7 @@ export default async function HalloweenPage() {
       <PageHeader
         title={t('Нощта на тиквите')}
         subtitle={live ? t('Хелуин по пътищата на TransVerse — празнични поръчки, ивент, мисии и призрачен камион.') : t('Хелуин 2026 приключи. Благодарим на всички шофьори!')}
-        help={t('Празничните поръчки имат оранжев етикет „Хелуин“ на борсата и се плащат с {0}% повече. Броят се за общия ивент и за хелуинските мисии. Нощем (22:00–06:00) по пътя може да срещнеш призрачния камион — носи {1} TC. Изпълни всичките четири мисии и вземи значката „{2}“ завинаги. Празничното съдържание е от {3} до {4}; наградите от мисиите може да вземеш до седмица след ивента.', Math.round((HALLOWEEN.rewardMultiplier - 1) * 100), HALLOWEEN.ghostCoins, badge.label, HALLOWEEN.from.split('-').reverse().join('.'), HALLOWEEN.to.split('-').reverse().join('.'))}
+        help={t('Празничните поръчки имат оранжев етикет „Хелуин“ на борсата и се плащат с {0}% повече. Броят се за общия ивент и за хелуинските мисии. Нощем (22:00–06:00) по пътя може да срещнеш призрачния камион — носи {1}. Изпълни всичките четири мисии и вземи значката „{2}“ завинаги. Празничното съдържание е от {3} до {4}; наградите от мисиите може да вземеш до седмица след ивента.', Math.round((HALLOWEEN.rewardMultiplier - 1) * 100), coinsAsMoney(HALLOWEEN.ghostCoins), badge.label, HALLOWEEN.from.split('-').reverse().join('.'), HALLOWEEN.to.split('-').reverse().join('.'))}
       />
 
       <section className="panel relative overflow-hidden p-5 sm:p-6">
@@ -68,7 +69,7 @@ export default async function HalloweenPage() {
                     {q.id === 'h_ghost' ? <GhostTruckIcon className="h-5 w-5 shrink-0" /> : q.id === 'h_night' ? <Moon className="h-5 w-5 shrink-0 text-prestige" /> : <PumpkinIcon className="h-5 w-5 shrink-0" />}
                     {tx(q.title)}
                   </span>
-                  <span className="num text-xs text-mist-300">{[q.coins ? `${q.coins} TC` : '', q.cents ? money(q.cents) : ''].filter(Boolean).join(' · ')}</span>
+                  <span className="num text-xs text-mist-300">{[q.coins ? coinsAsMoney(q.coins) : '', q.cents ? money(q.cents) : ''].filter(Boolean).join(' · ')}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-3">
                   <Meter value={(q.progress / q.target) * 100} tone="gold" className="flex-1" />
@@ -90,7 +91,7 @@ export default async function HalloweenPage() {
               <span className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-2 ${state.badge ? 'border-orange-500 bg-orange-500/15' : 'border-dashed border-asphalt-600 opacity-60'}`}><PumpkinIcon className="h-10 w-10" /></span>
               <div className="min-w-0">
                 <div className="font-display text-lg font-bold">{tx(badge.label)}</div>
-                <p className="text-sm text-mist-300">{state.badge ? t('Твоя е — вижда се в профила ти и на картата на играча.') : t('{0} Плюс {1} TC.', badge.description, QUEST_BADGE_COINS)}</p>
+                <p className="text-sm text-mist-300">{state.badge ? t('Твоя е — вижда се в профила ти и на картата на играча.') : t('{0} Плюс {1}.', badge.description, coinsAsMoney(QUEST_BADGE_COINS))}</p>
               </div>
             </div>
           </Card>
@@ -104,7 +105,7 @@ export default async function HalloweenPage() {
           <Card title={t('Призрачният камион')}>
             <div className="flex gap-3 text-sm text-mist-300">
               <GhostTruckIcon className="h-12 w-12 shrink-0" />
-              <p>{t('Нощем (22:00–06:00) по пътя може да се появи светещ камион без шофьор. Не е опасен — носи {0} TC и изпълнява мисия. Колкото повече караш нощем, толкова по-голям е шансът.', HALLOWEEN.ghostCoins)}</p>
+              <p>{t('Нощем (22:00–06:00) по пътя може да се появи светещ камион без шофьор. Не е опасен — носи {0} и изпълнява мисия. Колкото повече караш нощем, толкова по-голям е шансът.', coinsAsMoney(HALLOWEEN.ghostCoins))}</p>
             </div>
           </Card>
         </div>

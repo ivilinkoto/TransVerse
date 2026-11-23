@@ -86,7 +86,7 @@ async function openEscort(tx: Tx, userId: string, load: Load, trip: Trip, now: D
   const [e] = await tx.insert(escorts).values({ mainContractId: load.id, mainDeliveryId: trip.id, leaderId: userId, escortContractId: run!.id }).onConflictDoNothing().returning({ id: escorts.id });
   if (!e) return;
   const [from, to, me] = [await cityName(tx, load.originCityId), await cityName(tx, load.destCityId), await nameOf(tx, userId)];
-  await postGameLine(tx, 'global', 'escort', t('🚓 {0} кара извънгабаритен товар {1} → {2} и търси ескорт. Тръгни до {3} мин от {1} — бонус и за двамата.', me, from, to, ESCORT.windowMinutes), { href: `/game/contracts?load=${run!.id}`, button: t('Стани ескорт') }, now);
+  await postGameLine(tx, 'events', 'escort', t('🚓 {0} кара извънгабаритен товар {1} → {2} и търси ескорт. Тръгни до {3} мин от {1} — бонус и за двамата.', me, from, to, ESCORT.windowMinutes), { href: `/game/contracts?load=${run!.id}`, button: t('Стани ескорт') }, now);
   await notify(tx, userId, 'info', () => t('🚓 Търси се ескорт'), () => t('Обявата е в глобалния чат. Покани някого до {0} мин от „Курсове“ → „Ескорт“.', ESCORT.windowMinutes), `/game/contracts?escort=${e.id}`);
 }
 
@@ -248,7 +248,7 @@ export async function announceConvoyHour(db: Database, now = new Date()) {
   return db.transaction(async (tx) => {
     const [first] = await tx.insert(jobState).values({ key: `convoy-hour:${sofiaDay(now)}`, value: {} }).onConflictDoNothing().returning();
     if (!first) return null;
-    return postGameLine(tx, 'global', 'moment', t('🚚 В 20:00 започва часът на конвоя: 30 минути, в които курс в конвой с играч от друга компания носи двойни точки за пропуска. Кой тръгва?'), { href: '/game/convoys', button: t('Конвои') }, now);
+    return postGameLine(tx, 'events', 'moment', t('🚚 В 20:00 започва часът на конвоя: 30 минути, в които курс в конвой с играч от друга компания носи двойни точки за пропуска. Кой тръгва?'), { href: '/game/convoys', button: t('Конвои') }, now);
   });
 }
 

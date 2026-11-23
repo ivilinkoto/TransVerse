@@ -4,12 +4,14 @@ import { CreditCard, Crown, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
-import { euro, type PaidProduct } from '@/lib/game/payments';
+import { euro, giftable, type PaidProduct } from '@/lib/game/payments';
 import { t, tx, intlLocale } from '@/i18n/t';
 
 /** Real-money products: the player confirms the EU withdrawal notice, then pays on Stripe's page. */
-export function BuyWithMoney({ products, testMode, providers, notes = [] }: { products: PaidProduct[]; testMode: boolean; providers: ('paypal' | 'stripe')[]; notes?: string[] }) {
+export function BuyWithMoney({ products, testMode, providers, notes = [], gift = false }: { products: PaidProduct[]; testMode: boolean; providers: ('paypal' | 'stripe')[]; notes?: string[]; /** 1.3.2.2: the ТрансКоин packs can be bought for a friend. */ gift?: boolean }) {
   const [consent, setConsent] = useState(false);
+  const [giftTo, setGiftTo] = useState('');
+  const gifting = gift && giftTo.trim().length > 0;
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +19,7 @@ export function BuyWithMoney({ products, testMode, providers, notes = [] }: { pr
     setError(null);
     setBusy(`${productId}:${provider}`);
     try {
-      const { url } = await api<{ url: string }>('/api/payments/checkout', { productId, provider, consent: true });
+      const { url } = await api<{ url: string }>('/api/payments/checkout', { productId, provider, consent: true, ...(gifting ? { giftTo: giftTo.trim() } : {}) });
       window.location.assign(url);
     } catch (e) {
       setError((e as Error).message);
@@ -29,8 +31,15 @@ export function BuyWithMoney({ products, testMode, providers, notes = [] }: { pr
     <div>
       {testMode && <p className="mb-3 rounded-lg border border-amber-sig/40 bg-amber-sig/10 px-3 py-2 text-xs text-amber-sig">{t('Тестов режим — плащанията са с тестови (sandbox) сметки, не се теглят истински пари.')}</p>}
       {notes.map((n) => <p key={n} className="mb-3 rounded-lg border border-profit/40 bg-profit/10 px-3 py-2 text-xs font-semibold text-profit">{n}</p>)}
+      {gift && (
+        <label className="mb-3 block rounded-lg border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-xs text-mist-200" data-testid="gift-to">
+          <span className="font-semibold text-gold-300">🎁 {t('Подари ТрансКоин на приятел')}</span>
+          <input className="input mt-1 w-full" value={giftTo} onChange={(e) => setGiftTo(e.target.value)} maxLength={40} placeholder={t('Потребителско име (празно — за теб)')} />
+          {gifting && <span className="mt-1 block text-mist-400">{t('Пакетите с ТрансКоин отиват при {0}. Бонусите за покупка не важат за подаръци.', giftTo.trim())}</span>}
+        </label>
+      )}
       <ul className="grid grid-cols-2 gap-3">
-        {products.map((p) => (
+        {products.filter((p) => !gifting || giftable(p)).map((p) => (
           <li key={p.id} className={`flex flex-col rounded-xl border p-3 text-center ${p.vipDays ? 'border-gold-400/40 bg-gold-400/5' : 'border-asphalt-700'}`}>
             <div className={`num font-display text-xl font-bold ${p.vipDays ? 'text-gold-400' : 'text-cyan-glow'}`}>{p.v2 ? <span className="inline-flex items-center gap-1"><Crown className="h-4 w-4" />{tx(p.label)}</span> : p.vipDays ? <span className="inline-flex items-center gap-1"><Crown className="h-4 w-4" />{t('VIP {0} дни', p.vipDays)}</span> : `${p.coins.toLocaleString(intlLocale())} TC`}</div>
             {p.bonus > 0 && <div className="text-xs text-profit">{t('+{0} подарък', p.bonus)}</div>}

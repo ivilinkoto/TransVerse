@@ -1,3 +1,5 @@
+import { speedUpPrice } from '@/lib/game/speed-up';
+import { upkeepCents } from '@/lib/game/fleet-upkeep';
 import { LEGEND, legendTier } from '@/lib/game/heritage';
 import { BadgeEuro, Gauge, MapPin, Truck, UserRound, Warehouse } from 'lucide-react';
 import { leasesOf } from '@/server/game/leasing';
@@ -20,7 +22,7 @@ import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/
 import { Truck3DButton } from '@/components/garage/Truck3DButton';
 import { TruckWindowButton } from '@/components/gameui/TruckWindowButton';
 import { MAINTENANCE, maintenanceState } from '@/lib/game/maintenance';
-import { dec, int, km, money } from '@/lib/format';
+import { dateTime, dec, int, km, money } from '@/lib/format';
 import { BODY_LABELS } from '@/server/game/deliveries';
 import { gameContext } from '@/server/game/context';
 import { fleetView } from '@/server/game/queries';
@@ -68,7 +70,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
   const loose = fleet.trailers.filter((t) => !t.vehicleId);
   // The player drives one truck themselves and can switch to another idle one.
   const self = fleet.drivers.find((d) => d.isOwner);
-  const selfBusy = !!self?.vehicleId && fleet.vehicles.some((x) => x.id === self.vehicleId && x.status !== 'idle');
+  const selfBusy = !!self && fleet.vehicles.some((x) => (x.id === self.vehicleId || x.id === self.coVehicleId) && x.status !== 'idle');
   // 1.1.3: the depots at a glance (where own trucks are bought and parked).
   const [myDepots, capacity] = await Promise.all([
     db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg, slots: depots.slots }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)),
@@ -111,12 +113,29 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
         </Link>
       )}
       {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
+      {(() => {
+        // 1.3.2.2: the shop's boosters while they run.
+        const on = [
+          user.moneyBoostUntil && user.moneyBoostUntil > now ? tr('💰 +50% пари до {0}', dateTime(user.moneyBoostUntil)) : null,
+          user.tollFreeUntil && user.tollFreeUntil > now ? tr('🛣️ Без пътни такси до {0}', dateTime(user.tollFreeUntil)) : null,
+          user.xpBoostUntil && user.xpBoostUntil > now ? tr('⭐ ×2 опит до {0}', dateTime(user.xpBoostUntil)) : null,
+        ].filter(Boolean);
+        return on.length ? <p className="rounded-xl border border-gold-400/40 bg-gold-400/10 px-3 py-2 text-xs text-gold-300" data-testid="boosters">{on.join(' · ')}</p> : (
+          features.speed_up ? <p className="text-xs text-mist-400"><Link href="/game/shop" className="underline">{tr('Бустери в магазина: +50% пари, без пътни такси, ×2 опит')}</Link></p> : null
+        );
+      })()}
       <div className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
         <span className="flex items-center gap-2">
           <Warehouse className="h-4 w-4 text-prestige" />
           {myDepots.length
             ? <span>{tr('Депа: {0}', myDepots.map((d) => tx(d.name)).join(', '))}{' · '}<span className="num font-semibold">{tr('{0} / {1} места', capacity.used, capacity.slots)}</span></span>
             : <span>{tr('Нямаш депо — първото е безплатно, там купуваш и паркираш собствени камиони.')}</span>}
+          {(() => {
+            // 1.3.2.1: the own fleet's daily upkeep (free for the first trucks).
+            const owned = fleet.vehicles.filter((v) => v.ownership === 'owned').length;
+            const upkeep = upkeepCents(owned);
+            return upkeep > 0 ? <span className="text-xs text-mist-400" data-testid="fleet-upkeep">{' · '}{tr('Поддръжка: {0}/ден', money(upkeep))}</span> : null;
+          })()}
         </span>
         <span className="flex flex-wrap items-center gap-2">
           {features.depot_all && awayIdle > 1 && (
@@ -173,6 +192,19 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                 <div className="mt-2 text-xs text-mist-400">{tr('{0}{1} с товар', v.delivery.emptyKm > 0 ? tr('{0} празен курс + ', km(v.delivery.emptyKm)) : '', km(v.delivery.loadedKm))}</div>
                 {features.loading_puzzle && !loaded.has(v.delivery.id) && now.getTime() < v.delivery.startedAt.getTime() + PUZZLE.minutes * 60_000 && <LoadingPuzzle deliveryId={v.delivery.id} endsAt={new Date(v.delivery.startedAt.getTime() + PUZZLE.minutes * 60_000).toISOString()} />}
                 {features.live_tracking && <TrackLink deliveryId={v.delivery.id} />}
+                {features.speed_up && !v.delivery.convoyWith && !v.delivery.convoyLead && !v.delivery.organizedConvoyId && v.delivery.etaAt.getTime() - now.getTime() > 60_000 && (() => {
+                  // 1.3.2.2: hurry the trip with ТрансКоин.
+                  const left = v.delivery.etaAt.getTime() - now.getTime();
+                  const vipNow = isVip(user.vipUntil, now);
+                  const finish = speedUpPrice(left, 'finish', vipNow);
+                  const half = speedUpPrice(left, 'half', vipNow);
+                  return (
+                    <div className="mt-2 flex flex-wrap gap-2" data-testid="speed-up">
+                      <ActionButton action={{ type: 'speedUpDelivery', deliveryId: v.delivery.id, mode: 'finish' }} confirm={tr('Камионът пристига веднага за {0} TC?', finish)} disabled={user.coins < finish} className="btn-gold px-3 py-1.5 text-xs">⚡ {tr('Пристигни сега · {0} TC', finish)}</ActionButton>
+                      <ActionButton action={{ type: 'speedUpDelivery', deliveryId: v.delivery.id, mode: 'half' }} confirm={tr('Оставащото време наполовина за {0} TC?', half)} disabled={user.coins < half} className="btn-ghost px-3 py-1.5 text-xs">⏩ {tr('−50% от времето · {0} TC', half)}</ActionButton>
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {queue.some((q) => q.vehicleId === v.id) && (
@@ -237,12 +269,16 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                 </div>
               );
             })()}
-            {/* The player can take the wheel of any idle truck (a hired driver on it steps out); before, only of one without a driver. */}
-            {!v.delivery && v.status === 'idle' && self && !selfBusy && v.driver?.id !== self.id && (
+            {/* The player can take the wheel of any idle truck (a hired driver on it steps out); while driving another truck on a trip, it says so. */}
+            {!v.delivery && v.status === 'idle' && v.driver?.id !== self?.id && (
               <div className="mt-3">
-                <ActionButton action={{ type: 'assignDriver', driverId: self.id, vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">
-                  <UserRound className="h-4 w-4" />{v.driver ? tr('Карай този камион сам ({0} слиза)', tx(v.driver.name)) : tr('Карай този камион сам')}
-                </ActionButton>
+                {selfBusy ? (
+                  <p className="text-xs text-mist-400">{tr('Ти караш друг камион на курс. Ще можеш да караш този, когато пристигне.')}</p>
+                ) : (
+                  <ActionButton action={{ type: 'driveMyself', vehicleId: v.id }} className="btn-ghost px-3 py-1.5 text-sm">
+                    <UserRound className="h-4 w-4" />{v.driver ? tr('Карай този камион сам ({0} слиза)', tx(v.driver.name)) : tr('Карай този камион сам')}
+                  </ActionButton>
+                )}
               </div>
             )}
             {/* The VIP dispatcher switch is on every truck of a VIP (and stays while it is on, so it can always be turned off). */}

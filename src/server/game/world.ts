@@ -30,6 +30,7 @@ import { awardKeyClients, closeAssemblies, endInternships, ownerReports, topUpKe
 import { returnRetiredHires, settleRetired } from './retired';
 import { settleRetired2 } from './retired-2';
 import { settleTrains } from './trains';
+import { chargeProfitTax } from './profit-tax';
 import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
 import { endCompanyContracts, runAlliances } from './alliances';
@@ -105,7 +106,7 @@ import { runFactories } from './factory';
 import { collectLoans, ensureBranchLoads } from './business';
 import { expireFreight } from './trade';
 import { featureLive } from '@/lib/game/features';
-import { runPayroll } from './staff';
+import { runFleetUpkeep, runPayroll } from './staff';
 import { expireAllianceListings } from './alliance-market';
 import { awardDriversOfMonth, celebrateAnniversaries } from './community';
 import { backfillMedalBadges, checkCompanyAchievements } from './medals';
@@ -116,7 +117,7 @@ import { awardSantas, awardSnowKings } from './first-snow';
 import { awardPassGuardians, ensurePassLoads } from './road-service';
 import { awardWinterGames } from './winter-games';
 import { runBaseStaff } from './base-staff';
-import { postDailyQuestion } from './chat-life';
+import { moveGameLinesToEvents, postDailyQuestion } from './chat-life';
 import { lastDayReminders } from './final-sprint';
 import { syncComingSoon } from '@/server/discord/coming-soon';
 import { closeTeamPolls, updateStatus } from '@/server/discord/channels-1132';
@@ -327,6 +328,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       const [payroll] = await db.select().from(jobState).where(eq(jobState.key, 'payroll'));
       if ((payroll?.value as { day?: string } | undefined)?.day === yesterday) return;
       await runPayroll(db, yesterday);
+      // 1.3.2.1: the own fleet's daily upkeep (bigger fleets pay more per truck).
+      await runFleetUpkeep(db, yesterday);
       await runOfficePayroll(db, yesterday, now);
       await db.insert(jobState).values({ key: 'payroll', value: { day: yesterday } }).onConflictDoUpdate({ target: jobState.key, set: { value: { day: yesterday }, updatedAt: now } });
     });
@@ -385,6 +388,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
       const [day, hour] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(now).filter((p) => p.type === 'weekday' || p.type === 'hour').map((p) => p.value);
       if (day === 'Mon' && Number(hour) >= 9) await every(db, 'weekly-report', 6 * 24 * 3_600_000, now, () => sendWeeklyReports(db, now));
     }
+    // 1.3.2.1: last week's profit tax, once per account (charged from Monday).
+    await every(db, 'profit-tax', 60 * 60_000, now, () => chargeProfitTax(db, now));
     // 1.3.3: the players' trains that arrived are paid and wait at the terminal.
     await every(db, 'trains', 60_000, now, () => settleTrains(db, now));
     // v1.10: organized convoys leave on time; the game's Sunday convoy.
@@ -423,6 +428,8 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'season-last-day', 30 * 60_000, now, () => lastDayReminders(db, now));
     // 1.2.6: the question of the day in the global chat.
     await every(db, 'chat-question', 10 * 60_000, now, () => postDailyQuestion(db, now));
+    // 1.3.2.1: the game's earlier lines leave the global chat for „Събития“ (once).
+    await every(db, 'chat-events-move', 60 * 60_000, now, () => moveGameLinesToEvents(db));
     await every(db, 'region-project', 10 * 60_000, now, () => ensureRegionProject(db, now));
     // 1.2.7: escorts for oversize loads, the convoy hour, rumours, the duo of the week.
     await every(db, 'escort-loads', 30 * 60_000, now, () => topUpEscortLoads(db, now));

@@ -1028,7 +1028,6 @@ a5044cfffa	The train does not have enough wagons of this kind.	У поезда �
 fe00551914	The train does not have that many such wagons.	У поезда нет столько таких вагонов.
 5e1d3c47cc	A train needs at least one wagon. Sell the whole train.	У поезда должен быть хотя бы один вагон. Продай весь поезд.
 d97d3ed50a	The train is waiting for a new load at the terminal.	Поезд ждёт новый груз на станции.
-a645390e03	Anyone can own a train from level 15. In a company — from level 12, with +10% on orders, −25% track fee and one more train.	Поезд может быть у каждого с уровня 15. В компании — с уровня 12, с +10% за заказы, −25% платы за линию и ещё одним поездом.
 87b8a19fe2	Fuels	Топливо
 3c0ab74184	Gorna Oryahovitsa	Горна-Оряховица
 4aa502cb05	Sell the whole train for half its price?	Продать весь поезд за половину цены?
@@ -1146,3 +1145,245 @@ b39f38eac0	Svilengrad – Kapıkule	Свиленград – Капыкуле
 2031f7f77b	🛤️ Between {0} and {1}	🛤️ Между {0} и {1}
 a46d941070	The held trip there	Забронированный рейс туда
 e8816fcc7d	Wants a trip to {0} for {1} — within 3 days. The trip is waiting in Jobs, held for you.	Просит рейс до {0} на {1} — в течение 3 дней. Рейс ждёт в Рейсах, забронирован для тебя.
+3173ad05e0	You are driving another truck on a trip. You can drive this one when it arrives.	Ты ведёшь другой грузовик в рейсе. Сможешь вести этот, когда он прибудет.
+600f69bd94	You are driving another truck on a trip. You can change trucks when it arrives.	Ты ведёшь другой грузовик в рейсе. Сможешь сменить грузовик, когда он прибудет.
+476839be18	An own train needs the rail licence ({0}). A run across a border also needs the international one, and outside the EU the customs one.	Для собственного поезда нужна ж/д лицензия ({0}). Для рейса через границу — ещё международная, а за пределами ЕС и таможенная.
+14721777b3	To the licences	К лицензиям
+a6967814e4	A licence is needed: {0} (Fleet → Licences).	Нужна лицензия: {0} (Автопарк → Лицензии).
+915081de19	They unlock international, refrigerated, dangerous (ADR) and oversize loads, and the rail licence your own trains.	Открывают международные, рефрижераторные, опасные (ADR) и негабаритные грузы, а ж/д лицензия — собственные поезда.
+7f16364750	Your own freight trains: buying locomotives and wagons and runs over the rail network. For a run across a border also the international one, and outside the EU the customs one.	Собственные грузовые поезда: покупка локомотивов и вагонов и рейсы по железнодорожной сети. Для рейса через границу — ещё международная, а за пределами ЕС и таможенная.
+b585774347	Rail licence (Fleet → Licences): 300 000 lv., from level 25. It is needed for an own train; for a run across a border also the international one, and outside the EU the customs one, as with trucks. A company can buy it from its treasury for all its members (600 000 lv.) — then its members run trains from level 12.	Ж/д лицензия (Автопарк → Лицензии): 300 000 лв., с уровня 25. Нужна для собственного поезда; для рейса через границу — ещё международная, а за пределами ЕС и таможенная, как у грузовиков. Компания может купить её из кассы для всех участников (600 000 лв.) — тогда участники водят поезда с уровня 12.
+b3bd2519d8	On your own — from level 25 with the rail licence. In a company with the rail licence — from level 12, with +10% on orders, −25% track fee and one more train.	Самостоятельно — с уровня 25 с ж/д лицензией. В компании с ж/д лицензией — с уровня 12, с +10% за заказы, −25% платы за линию и ещё одним поездом.
+d8ae6110bc	{0} TC over the weekly cap became money ({1})	{0} TC сверх недельного лимита превратились в деньги ({1})
+2c412d3cca	The bronze, silver and gold cases no longer hold ТрансКоин. Items took their place — more coffee, repair kits, thermoses, atlases and frames.	Бронзовый, серебряный и золотой кейсы больше не содержат ТрансКоин. Их место заняли предметы — больше кофе, ремкомплектов, термосов, атласов и рамок.
+4909382b37	In the Shop you see how many TC you earned this week. When you reach the cap, you get a notification.	В Магазине видно, сколько TC ты заработал на этой неделе. Когда достигнешь лимита, придёт уведомление.
+08ac87b084	The cap counts every reward in TC (events, challenges, missions, the pass, the daily reward, items) and items sold to the game. Bought TC, gifts, promo codes and refunded payments do not count.	В лимит входят все награды в TC (ивенты, испытания, миссии, пропуск, ежедневная награда, предметы) и предметы, проданные игре. Купленные TC, подарки, промокоды и возвращённые платежи не считаются.
+38f7137e4a	Until Monday, rewards in ТрансКоин are paid in money ({0} lv. per 1 TC). Bought TC do not count.	До понедельника награды в ТрансКоин выплачиваются деньгами ({0} лв. за 1 TC). Купленные TC не считаются.
+ba37957174	Why	Почему
+d7c2195477	Cases without TC	Кейсы без TC
+3fcf174b98	Over the cap, rewards come in money. Bought TC do not count.	Сверх лимита награды приходят деньгами. Купленные TC не считаются.
+fbb5ec143c	From rewards in the game you can earn up to 100 TC a week (from Monday). Over the cap the reward comes in money — 200 lv. for every TC. Bought TC do not count and have no cap.	Из наград в игре можно заработать до 100 TC в неделю (с понедельника). Сверх лимита награда приходит деньгами — 200 лв. за каждый TC. Купленные TC не считаются и не имеют лимита.
+f1e4583c90	Details	Подробно
+6e0df686f4	Season pass	Пропуск сезона
+5991c06f0f	The Gold frame recipe in the Workshop now needs a cap, sunglasses and a CB radio (instead of a coin pouch). The coin pouch stays only in the season pass.	Рецепт Золотой рамки в Мастерской теперь требует кепку, очки и рацию (вместо мешочка ТрансКоин). Мешочек ТрансКоин остаётся только в пропуске сезона.
+6592c5872e	Weekly cap	Недельный лимит
+1edb291740	The weekly cap of {0} TC is reached	Недельный лимит в {0} TC достигнут
+f38c85ee89	TC earned this week: {0} of {1}	Заработано TC на этой неделе: {0} из {1}
+e804117868	What you earned so far stays with you — we take nothing away.	Заработанное до сих пор остаётся у тебя — мы ничего не забираем.
+18f6bc806a	The cap is reached: until Monday rewards come in money ({0} lv. per 1 TC).	Лимит достигнут: до понедельника награды приходят деньгами ({0} лв. за 1 TC).
+ddb329bdf8	ТрансКоин piled up much faster than the game is meant to. Rewards lost their value and the shop prices their sense. The cap keeps the value of every TC you earn.	ТрансКоин копились гораздо быстрее, чем задумано в игре. Награды теряли ценность, а цены в магазине — смысл. Лимит сохраняет ценность каждого заработанного TC.
+d6fd9116ab	Fair Coin	Честная монета
+ab5345dcbf	A cap, sunglasses and a CB radio.	Кепка, очки и рация.
+b7f6749bfd	Every Monday a tax is paid on last week's profit: 0% up to 150 000 lv., 10% up to 750 000 lv., 20% up to 3 million lv. and 30% above. Small firms pay nothing. The first tax is for the week from 23 November.	Каждый понедельник платится налог на прибыль прошлой недели: 0% до 150 000 лв., 10% до 750 000 лв., 20% до 3 млн лв. и 30% сверх того. Маленькие фирмы не платят ничего. Первый налог — за неделю с 23 ноября.
+6f1818596e	Every Monday: 0% up to 150 000 lv. of profit for the week, 10% up to 750 000 lv., 20% up to 3 million lv. and 30% above. Bought trucks and trailers lower the profit.	Каждый понедельник: 0% до 150 000 лв. прибыли за неделю, 10% до 750 000 лв., 20% до 3 млн лв. и 30% сверх того. Купленные грузовики и прицепы уменьшают прибыль.
+cacd1e7616	Big fleets piled up money much faster than there was anything to spend it on. The tax only touches big profits and brings back the point of expensive goals — new trucks, depots, trains.	Большие автопарки копили деньги гораздо быстрее, чем было на что их тратить. Налог касается только большой прибыли и возвращает смысл дорогим целям — новым грузовикам, депо, поездам.
+7052bf6468	Tax on Monday: {0}	Налог в понедельник: {0}
+c505553814	Profit tax	Налог на прибыль
+f7e07c52f2	Profit tax for the week ({0})	Налог на прибыль за неделю ({0})
+e63f692ac6	The tax is worked out from all income and costs of the week (Monday to Monday). Transfers between players, loans and deposits into the company's treasury do not count; bought trucks and trailers lower the profit. The tax never takes the balance below zero. In “Finances” you see this week's profit and what the tax will be.	Налог считается по всем доходам и расходам за неделю (с понедельника по понедельник). Переводы между игроками, займы и взносы в кассу компании не учитываются; купленные грузовики и прицепы уменьшают прибыль. Налог никогда не опускает баланс ниже нуля. В «Финансах» видно прибыль за эту неделю и каким будет налог.
+78b3c2ac86	Profit this week: {0}	Прибыль на этой неделе: {0}
+4f6bb7d170	Your profit last week was {0}. The tax is progressive: up to 150 000 lv. it is 0%.	Твоя прибыль за прошлую неделю — {0}. Налог прогрессивный: до 150 000 лв. — 0%.
+0b3c106fab	The first tax is for the week from 23 November.	Первый налог — за неделю с 23 ноября.
+9548102610	🧾 Profit tax: {0}	🧾 Налог на прибыль: {0}
+ec029944f5	From 30 November own trucks have a daily upkeep (garage, papers, insurance): the first 3 are free, the 4th to the 10th cost 300 lv. a day each, the 11th to the 25th 700 lv., and over 25 1 500 lv.	С 30 ноября у собственных грузовиков ежедневное содержание (гараж, документы, страховка): первые 3 бесплатно, с 4-го по 10-й — по 300 лв. в день, с 11-го по 25-й — по 700 лв., а свыше 25 — по 1 500 лв.
+3346596f94	A fairer economy: a weekly cap on earned TC, cases without TC, a tax on big profits and upkeep for a big fleet.	Более честная экономика: недельный лимит на заработанные TC, кейсы без TC, налог на большую прибыль и содержание большого автопарка.
+f5ee2dd3b4	Fleet upkeep	Содержание автопарка
+6fe96f4edd	Fleet upkeep for {0} ({1} trucks)	Содержание автопарка за {0} ({1} грузовиков)
+bf7bf2cf9f	Upkeep: {0}/day	Содержание: {0}/день
+06c75eae89	The upkeep is paid every day with the salaries, only for own trucks (rented ones do not count), and never takes the balance below zero. In Fleet you see what it costs a day. On vacation days nothing is paid.	Содержание оплачивается каждый день вместе с зарплатами, только за собственные грузовики (арендованные не считаются), и никогда не опускает баланс ниже нуля. В Автопарке видно, сколько оно стоит в день. В дни отпуска не платится.
+2e89126ad1	+{0} lv in the treasury, +{1} XP for the company and {2} for everyone who helped.	+{0} лв. в казну, +{1} опыта компании и {2} каждому, кто помог.
+acf2d6a8e3	{0} ({1}) has covered {2},000 km. +{3}.	{0} ({1}) проехал {2} 000 км. +{3}.
+5ae0c76b08	{0} + {1} on delivery. Send a truck within {2} hours (Orders → Tenders).	{0} + {1} при доставке. Отправь грузовик в течение {2} ч (Заказы → Тендеры).
+1f98b855ff	{0} +{1} and a badge forever in your profile.	{0} +{1} и значок навсегда в профиле.
+f8688d3e35	{0} For everyone who reaches level {1} within {2} days: {3} and {4}.	{0} Каждому, кто достигнет уровня {1} за {2} дней: {3} и {4}.
+cb429733df	{0} Plus {1}.	{0} Плюс {1}.
+7776c2041c	{0} days · {1} for everyone who helps	{0} дней · {1} каждому, кто поможет
+031f48ac68	{0} autumn loads on time: +{1}.	{0} осенних грузов вовремя: +{1}.
+9d511e0d76	{0} winter loads on time — and {1}.	{0} зимних грузов вовремя — и {1}.
+ab5eb2f9d3	{0} — claim the reward: {1} and {2}.	{0} — забери награду: {1} и {2}.
+b820e425cb	No stake — the stronger egg wins {0} from the game.	Без ставки — более крепкое яйцо выигрывает {0} от игры.
+12288d7e92	Thank you, mentor: {0} and {1} are yours, and the “Mentor” badge is on your profile.	Спасибо, наставник: {0} и {1} — твои, а значок «Наставник» — в твоём профиле.
+b0a19a7270	Easter loads have the “Easter” label and pay {0}% more. The egg battle has no stake: every pair of friends once a year, the winner gets {1} from the game, and at {2} wins — the “{3}” badge. Game data.	Пасхальные грузы помечены «Пасха» и оплачиваются на {0}% больше. Яичный бой — без ставок: каждая пара друзей раз в год, победитель получает {1} от игры, а за {2} побед — значок «{3}». Игровые данные.
+3cf4df21e3	Take {0} + {1}	Забрать {0} + {1}
+df6db37869	You saw the stork over {0}! +{1} 🔴⚪	Ты увидел аиста над {0}! +{1} 🔴⚪
+690ae93da6	{0} of {1} left today.	Сегодня ещё {0} из {1}.
+58f2994198	To “{0}”: {1} km (+{2}).	До «{0}»: {1} км (+{2}).
+6b16998ae5	Deliver to all {0} countries of the game in one calendar month — the “Eurotour” badge and {1} (once a month).	Доставь во все {0} стран игры за один календарный месяц — значок «Евротур» и {1} (раз в месяц).
+8b98d144a4	Deliver to all {0} countries of the game in one season ({1}, until {2}) — the “Grand Eurotour” badge and {3}.	Доставь во все {0} стран игры за один сезон ({1}, до {2}) — значок «Большой евротур» и {3}.
+8df29f7e4d	Deliveries to all {0} countries this month — the “{1}” badge and {2}.	Доставки во все {0} стран в этом месяце — значок «{1}» и {2}.
+e782b93f1e	Deliveries to all {0} countries this season — the “{1}” badge and {2}.	Доставки во все {0} стран в этом сезоне — значок «{1}» и {2}.
+378714c769	The “Contract of the week” badge and {0}.	Значок «Контракт недели» и {0}.
+89f1ae5620	Whoever brings the most tonnes to the country in the month (at least {0} t) holds the title next month and gets {1}. This month so far:	Кто привезёт в страну больше всего тонн за месяц (не меньше {0} т), носит титул в следующем месяце и получает {1}. В этом месяце пока:
+ce5685eee5	Room for {0} donated trucks with at least {1},000 km — the donor gets {2} ({3} for a legend)	Место для {0} подаренных грузовиков с пробегом от {1} 000 км — даритель получает {2} ({3} за легенду)
+0c468499ec	The most tonnes to {0} last month — {1} t. The title is yours this month, plus {2}.	Больше всего тонн в {0} в прошлом месяце — {1} т. Титул твой в этом месяце, плюс {2}.
+7d34c4c4e2	A new player (up to {0} days in the game, below level {1}) picks a mentor of level {2}+. While the mentorship lasts, the student gets +{3} % XP. If they reach level {4} within {5} days, the mentor gets {6}, {7} and the “Mentor” badge, and the student — {8} and {9}. The reward for each new player is given once; a mentor and a student from the same network are not allowed.	Новый игрок (до {0} дней в игре, ниже уровня {1}) выбирает наставника с уровнем {2}+. Пока длится наставничество, ученик получает +{3} % опыта. Если он достигнет уровня {4} за {5} дней, наставник получит {6}, {7} и значок «Наставник», а ученик — {8} и {9}. Награда за каждого нового игрока выдаётся один раз; наставник и ученик из одной сети не допускаются.
+615b0d98aa	New members (up to {0} days in the company) pick a mentor of level {1}+ and go through {2} training trips — on-time deliveries of at least {3} km. At the end: +{4} XP for the student, {5} for the mentor and {6} for the treasury.	Новые участники (до {0} дней в компании) выбирают наставника с уровнем {1}+ и проходят {2} учебных рейса — доставки вовремя от {3} км. В конце: +{4} опыта ученику, {5} наставнику и {6} в казну.
+b14c166fe8	At night (22:00–06:00) a glowing truck without a driver may appear on the road. It isn't dangerous — it brings {0} and completes a mission. The more you drive at night, the greater the chance.	Ночью (22:00–06:00) на дороге может появиться светящийся грузовик без водителя. Он не опасен — приносит {0} и выполняет миссию. Чем больше ездишь ночью, тем выше шанс.
+e9f687d87e	Holiday orders have an orange “Halloween” label on the board and pay {0}% more. They count for the shared event and the Halloween missions. At night (22:00–06:00) you may meet the ghost truck on the road — it brings {1}. Complete all four missions and get the “{2}” badge forever. The holiday content runs from {3} to {4}; you can collect the mission rewards up to a week after the event.	Праздничные заказы помечены на бирже оранжевой меткой «Хэллоуин» и оплачиваются на {0}% выше. Они засчитываются в общий ивент и хэллоуинские миссии. Ночью (22:00–06:00) на дороге можно встретить призрачный грузовик — он приносит {1}. Выполни все четыре миссии и получи значок «{2}» навсегда. Праздничный контент — с {3} по {4}; награды за миссии можно забрать в течение недели после ивента.
+fbfea0359c	Sell for {0}	Продать за {0}
+a01562108d	Spring loads have the “Baba Marta” label on the board and pay {0}% more. In March the trucks and the base wear martenitsi, and repairs and check-ups are {1}% cheaper (spring cleaning). Every day a stork lands over a real city — find it on the map for {2}. Complete the four missions for the “{3}” badge. Game data.	Весенние грузы помечены на бирже меткой «Баба Марта» и оплачиваются на {0}% выше. В марте грузовики и база носят мартенички, а ремонт и ТО на {1}% дешевле (весенняя уборка). Каждый день аист садится над одним настоящим городом — найди его на карте за {2}. Выполни четыре миссии ради значка «{3}». Игровые данные.
+530f671f15	You won the egg battle with {0} — +{1}. Christ is risen!	Ты выиграл яичный бой с {0} — +{1}. Христос воскресе!
+d508890cc2	LOAD OF THE DAY · +{0}	ГРУЗ ДНЯ · +{0}
+1ab119435c	You and {0} get a reward: {1} and {2} for you.	Вы с {0} получаете награду: {1} и {2} для тебя.
+e7ac1c4c25	Title “{0}” and {1}.	Титул «{0}» и {1}.
+b5e4df7dc0	Tonnes of Christmas loads this season (from 15 December). The top three get titles and {0}, {1} and {2}.	Тонны рождественских грузов за сезон (с 15 декабря). Первые трое получают титулы и {0}, {1} и {2}.
+501f9cb9a6	Tonnes of salt and sand to closed passes this season. The top three get titles and {0}, {1} and {2}.	Тонны соли и песка к закрытым перевалам за сезон. Первые трое получают титулы и {0}, {1} и {2}.
+628b1741bb	A member donates their own truck with at least {0} km from its showcase in the service. The truck stays in the museum forever, the donor gets {1} ({2} for a legend).	Участник дарит свой грузовик с пробегом от {0} км с его витрины в сервисе. Грузовик остаётся в музее навсегда, даритель получает {1} ({2} за легенду).
+82a9b88448	“{0}” — {1} {2}. Reward: {3}.	«{0}» — {1} {2}. Награда: {3}.
+6786a171fb	🆘 HUMANITARIAN AID · +{0} on time	🆘 ГУМАНИТАРНАЯ ПОМОЩЬ · +{0} вовремя
+7c54064fd7	The new pay applies to loads that appear after the update; loads already taken pay as before.	Новая оплата действует для грузов, появившихся после обновления; уже взятые грузы оплачиваются как раньше.
+66e555b902	Money and ТрансКоин piled up much faster than the game is meant to. Rewards lost their value and goals their point. These changes bring back the value of every lev and every TC you earn, and the point of expensive goals — new trucks, depots, trains.	Деньги и ТрансКоин копились гораздо быстрее, чем задумано в игре. Награды теряли ценность, а цели — смысл. Эти изменения возвращают ценность каждому леву и каждому заработанному TC и смысл дорогим целям — новым грузовикам, депо, поездам.
+0d10849ae7	Lower pay	Ниже оплата
+f3255632a5	A fairer economy: ТрансКоин from few places and with a cap, lower pay, a cap on bonuses, a tax on big profits and upkeep for a big fleet.	Более честная экономика: ТрансКоин из немногих мест и с лимитом, ниже оплата, лимит бонусов, налог на большую прибыль и содержание большого автопарка.
+75f3c2e746	Most rewards are now paid in money instead of ТрансКоин (200 lv. per TC): the daily reward, missions, challenges, holidays, the mentor, auctions, sold items and more. TC stay in the season pass, the places in events and the league, the team's giveaways and invited friends — up to 100 TC a week.	Большинство наград теперь выплачивается деньгами вместо ТрансКоин (200 лв. за каждый TC): ежедневная награда, миссии, испытания, праздники, наставник, торги, проданные предметы и др. TC остаются в пропуске сезона, местах в ивентах и лиге, раздачах команды и приглашённых друзьях — до 100 TC в неделю.
+39207007de	Loads pay about 19% less, and everything a run pays on top of the load (bonuses for time, reputation, convoy, company, legacy and more) is at most 40% of the load.	Грузы платят примерно на 19% меньше, а всё, что рейс приносит сверх груза (бонусы за время, репутацию, конвой, компанию, наследие и др.), — не больше 40% от груза.
+e40d8dddc3	ТрансКоин — a rare reward	ТрансКоин — редкая награда
+d8b81037e3	ТрансКоин: the weekly cap of 100 TC counts the rewards that are still in TC. Bought TC, gifts, promo codes and refunded payments do not count and have no cap. In the Shop you see how many TC you earned this week.	ТрансКоин: в недельный лимит 100 TC входят награды, которые ещё выплачиваются в TC. Купленные TC, подарки, промокоды и возвращённые платежи не считаются и не имеют лимита. В Магазине видно, сколько TC ты заработал на этой неделе.
+e56804538b	They mostly hit big fleets: new players hardly feel them.	Они бьют в основном по большим автопаркам: новые игроки их почти не замечают.
+41e1aef978	New “Events” tab in the chat: the game's messages go there — records, legendary finds, postcards, rumours, looking for a partner or an escort. The global chat stays for talk between players (the question of the day stays in it).	Новый раздел «События» в чате: туда приходят сообщения игры — рекорды, легендарные находки, открытки, слухи, поиск напарника и эскорта. Глобальный чат остаётся для разговоров между игроками (вопрос дня остаётся в нём).
+3944e31b4f	Events	События
+c5b327621a	Only the game writes here: records, finds, postcards and news from the road.	Здесь пишет только игра: рекорды, находки, открытки и новости с дороги.
+e9418374e8	+{0} depot place	+{0} место в депо
+6bd91e5ce2	+{0}% XP, −{1}% garage, +{2}% per run	+{0}% опыта, −{1}% сервис, +{2}% за рейс
+1fe3550d05	VIP level {0}	VIP-уровень {0}
+bb9a8a2311	VIP{0} · from {1}	VIP{0} · от {1}
+15691e5b97	Thank you, first VIPs	Спасибо первым VIP
+e8d325e092	VIP level bonus	Бонус за VIP-уровень
+82df270240	Bonuses on every level	Бонусы на каждом уровне
+65bf6367b7	The level's bonuses add to those of the regular VIP (by days), which stays as before.	Бонусы уровня добавляются к бонусам обычного VIP (по дням), который остаётся как раньше.
+594d05870e	The run bonus counts towards the bonus cap (at most 40% of the load).	Бонус за рейс входит в лимит бонусов (не больше 40% от груза).
+f85290e566	Everyone who had VIP when the levels came out got VIP5 for good.	Все, у кого был VIP, когда появились уровни, получили VIP5 навсегда.
+fe67314fe8	{1} more in purchases to VIP{0}.	До VIP{0} осталось покупок на {1}.
+bde80b3c08	Per level: +2% XP, −2% at the garage and +1% on every run; VIP3 and VIP4 also give +1 place in every depot, and VIP5 +2. At VIP5: +10% XP, −10% garage and +5% per run.	На уровень: +2% опыта, −2% в сервисе и +1% за каждый рейс; VIP3 и VIP4 дают ещё +1 место в каждом депо, а VIP5 — +2. На VIP5: +10% опыта, −10% сервис и +5% за рейс.
+9d89d64ecd	The highest level — thank you!	Высший уровень — спасибо тебе!
+a3bc2f7ec0	The level grows with purchases in the shop: VIP1 from 5 €, VIP2 from 20 €, VIP3 from 50 €, VIP4 from 100 € and VIP5 from 200 € in total. The level is for good and its bonuses always apply — even when the VIP days are over.	Уровень растёт с покупками в магазине: VIP1 от 5 €, VIP2 от 20 €, VIP3 от 50 €, VIP4 от 100 € и VIP5 от 200 € в сумме. Уровень навсегда, и его бонусы действуют всегда — даже когда дни VIP закончились.
+16065e6beb	The level counts all paid purchases in the shop (not refunded ones). In the Shop you see your level and how much is left to the next.	Уровень считается по всем оплаченным покупкам в магазине (без возвращённых). В Магазине видно твой уровень и сколько осталось до следующего.
+a1a433de62	Five VIP levels	Пять VIP-уровней
+fc31f1216f	VIP levels	VIP-уровни
+6cfac3d071	+50% of the pay of every run for 24 hours — for all your trucks. Outside the bonus cap.	+50% к оплате каждого рейса на 24 часа — для всех твоих грузовиков. Вне лимита бонусов.
+f6a74b0d55	+50% money · 24 hours	+50% денег · 24 часа
+da5754b9e2	VIP now has levels from VIP0 to VIP5, a run can be hurried with ТрансКоин, and the shop has new boosters.	У VIP теперь уровни от VIP0 до VIP5, рейс можно ускорить за ТрансКоин, а в магазине новые бустеры.
+449220399f	VIP levels and speed-ups	VIP-уровни и ускорение
+4f0897e77f	No road tolls · 24 hours	Без дорожных сборов · 24 часа
+dc24d1dcd1	Booster +{0}% money	Бустер +{0}% денег
+1477b116dc	Money booster	Бустер денег
+819ddc3829	Boosters in the shop: +50% money, no road tolls, ×2 XP	Бустеры в магазине: +50% денег, без дорожных сборов, ×2 опыта
+def3565517	In Fleet, by every truck on a run: “Arrive now” or “−50% of the time” for ТрансКоин. The price depends on the time left; with VIP it is 20% cheaper. Convoy runs cannot be hurried.	В Автопарке у каждого грузовика в рейсе: «Прибыть сейчас» или «−50% времени» за ТрансКоин. Цена зависит от оставшегося времени; с VIP на 20% дешевле. Рейсы в конвое не ускоряются.
+a04ae61c20	In the shop: “+50% money · 24 hours” for all your trucks and “No road tolls · 24 hours”. The money booster is outside the bonus cap.	В магазине: «+50% денег · 24 часа» для всех твоих грузовиков и «Без дорожных сборов · 24 часа». Бустер денег вне лимита бонусов.
+d5aab4e8d0	The truck arrives at once for {0} TC?	Грузовик прибудет сразу за {0} TC?
+3f12109af6	The truck arrives within a minute.	Грузовик прибудет в течение минуты.
+4c984f701b	A convoy run cannot be hurried — the others are waiting for it.	Рейс в конвое нельзя ускорить — его ждут остальные.
+d55e8e65ed	The run was not found or has already ended.	Рейс не найден или уже завершён.
+516df815a6	No road tolls on the runs of all your trucks for 24 hours.	Никаких дорожных сборов на рейсах всех твоих грузовиков 24 часа.
+54302c23aa	New boosters	Новые бустеры
+d31797baa2	Halve the time left for {0} TC?	Сократить оставшееся время вдвое за {0} TC?
+804f24841a	Arrive now	Прибыть сейчас
+a763d960c8	Arrive now · {0} TC	Прибыть сейчас · {0} TC
+6e983dfb0d	Hurry the run	Ускорь рейс
+39c7773286	Hurrying the run (−50%)	Ускорение рейса (−50%)
+cb96d112e1	−50% of the time · {0} TC	−50% времени · {0} TC
+1b76aa9816	⭐ ×2 XP until {0}	⭐ ×2 опыта до {0}
+2083560968	💰 +50% money until {0}	💰 +50% денег до {0}
+1be6b534e6	🛣️ No road tolls until {0}	🛣️ Без дорожных сборов до {0}
+cf12d11591	10 gold cases	10 золотых кейсов
+5d42fa8af2	250 TC to speed up jobs and a 3-day +50% money booster.	250 TC на ускорение рейсов и 3 дня бустера +50% денег.
+8ea39c4533	30 days of VIP, 1,200 TC and a 7-day +50% money booster.	30 дней VIP, 1 200 TC и 7 дней бустера +50% денег.
+7bbebaeafc	60 TC — the smallest pack.	60 TC — самый маленький пакет.
+9bd248def7	600 TC, a 3-day +50% money booster and a gold case — only for 48 hours after you reach level 5, 10, 15, 20, 25, 30, 40 or 50.	600 TC, 3 дня бустера +50% денег и золотой кейс — только 48 часов после достижения уровня 5, 10, 15, 20, 25, 30, 40 или 50.
+074c4242b1	Truck Pass Premium	Truck Pass Премиум
+5cfc3cd219	Truck Pass Premium+	Truck Pass Премиум+
+3863f7d437	VIP+ · 30 days	VIP+ · 30 дней
+e3f0ff32b8	{0} TC, {1} days of +50% money booster and a gold case — only {2} hours, in the shop.	{0} TC, {1} дн. бустера +50% денег и золотой кейс — только {2} ч., в магазине.
+6145e45986	Ten gold cases in your inventory — rare items and a chance at a numbered gold key.	Десять золотых кейсов в инвентаре — редкие предметы и шанс на нумерованный золотой ключ.
+022912a1fa	The rewards of the levels you have reached are waiting in the pass.	Награды достигнутых уровней ждут тебя в пропуске.
+dac745ce34	New level offer	Предложение за новый уровень
+315b4813e8	The level offer has expired or was already bought.	Предложение за уровень истекло или уже куплено.
+393b9d00c9	“Fast” pack	Пакет «Быстрый»
+d373e2f64c	The premium track of the pass for the current season and +15,000 pass points (several levels at once).	Премиум-линия пропуска на текущий сезон и +15 000 очков пропуска (сразу несколько уровней).
+6138c7fa2b	The premium track of the pass for the current season — rewards of the levels you have reached are claimed at once.	Премиум-линия пропуска на текущий сезон — награды достигнутых уровней получаются сразу.
+e4aa027593	The premium pass is yours	Премиум-пропуск твой
+9d6c51e947	They are waiting in your inventory.	Они ждут тебя в инвентаре.
+524224b99f	🎁 Level {0} offer	🎁 Предложение за уровень {0}
+d6d9d3173f	🎁 Level {0} offer — until {1}.	🎁 Предложение за уровень {0} — до {1}.
+63166e8d5f	When you reach level 5, 10, 15, 20, 25, 30, 40 or 50, an offer waits for you in the shop for 48 hours: 600 TC, a 3-day +50% money booster and a gold case.	Когда достигаешь уровня 5, 10, 15, 20, 25, 30, 40 или 50, в магазине 48 часов тебя ждёт предложение: 600 TC, 3 дня бустера +50% денег и золотой кейс.
+f66b1f6b3d	New packs in the shop	Новые пакеты в магазине
+0866de27b2	New level offer	Предложение за новый уровень
+a04436292f	“Fast” pack (250 TC and a 3-day booster), Truck Pass Premium and Premium+ (with +15,000 pass points), 10 gold cases, VIP+ for 30 days (with 1,200 TC and a 7-day booster) and the smallest pack — 60 TC.	Пакет «Быстрый» (250 TC и 3 дня бустера), Truck Pass Премиум и Премиум+ (с +15 000 очков пропуска), 10 золотых кейсов, VIP+ на 30 дней (с 1 200 TC и 7 днями бустера) и самый маленький пакет — 60 TC.
+43537d5428	{0}% of the order	{0}% от заказа
+a9eeb60ff4	No train of your own: take an order and run it with a hired train — one of the game's (for {0}% of the order) or another player's train put out for hire (for their fee). You pay the track fee and the energy; the order is yours.	Нет своего поезда: возьми заказ и выполни его на арендованном — поезде игры (за {0}% от заказа) или поезде другого игрока, сданном в аренду (за его плату). Ты платишь сбор за линию и энергию; заказ твой.
+aa1467210e	The VIP levels in the shop show what each level unlocks.	В магазине у VIP-уровней написано, что открывает каждый уровень.
+78e2d1222a	Game train ({0})	Поезд игры ({0})
+4401e3723d	Train for hire	Поезд в аренду
+e4ccfc1cf8	The train is free at the terminal.	Поезд свободен на станции.
+62172c37b5	Your train was hired: {0} → {1}	Твой поезд арендовали: {0} → {1}
+58728b2304	Everyone from level 10 can run train orders without a train of their own: with one of the game's trains (for 35% of the order) or with another player's train put out for hire. The owner sets the fee (10–30%) and gets it at the departure.	Все с 10 уровня могут выполнять заказы для поездов и без своего поезда: на поезде игры (за 35% от заказа) или на поезде другого игрока, сданном в аренду. Владелец сам выбирает плату (10–30%) и получает её при отправлении.
+9a775ed160	Two hired trains at once	Два арендованных поезда одновременно
+19cb6374c7	Buy a locomotive and wagons: container flats, tank wagons, covered wagons or hoppers. The electric one is cheaper to run, the diesel one goes everywhere. Own trains are for VIP3 and up; VIP4 gets one more, VIP5 two more.	Купи локомотив и вагоны: платформы для контейнеров, цистерны, крытые вагоны или хопперы. Электрический дешевле в эксплуатации, дизельный проходит везде. Свои поезда — для VIP3 и выше; у VIP4 на один больше, у VIP5 — на два.
+978aef6ceb	Hire (Jobs → Trains → “Hire a train”): pick a terminal and an order, and the game shows its own train and the trains for hire there with the fee, the costs and what you keep. You pay the fee, the track and the energy at the departure and get the order on arrival. The game's train needs no licence; a player's train runs on its owner's licences. Hired trains at once: 1, with VIP1 — 2, with VIP2 and up — 3.	Аренда (Рейсы → Поезда → «Арендуй поезд»): выбираешь станцию и заказ, а игра показывает свой поезд и поезда в аренду там с платой, расходами и тем, что тебе останется. Плату, линию и энергию платишь при отправлении, а заказ получаешь по прибытии. Поезду игры лицензия не нужна; поезд игрока ездит по лицензиям владельца. Арендованных поездов одновременно: 1, с VIP1 — 2, с VIP2 и выше — 3.
+97103639e7	Hiring a train is from level {0}.	Аренда поезда — с уровня {0}.
+fc0e541be3	Hire a train	Арендуй поезд
+805235fd58	Hired train {0} → {1}	Арендованный поезд {0} → {1}
+652df44079	Hired trains on the way: {0} of {1}	Арендованных поездов в пути: {0} из {1}
+d66236d230	At most {0} hired trains at once. More with a higher VIP level.	Не более {0} арендованных поездов одновременно. Больше — с более высоким VIP-уровнем.
+e89d37fd94	Not for hire	Не сдаётся в аренду
+2ba1eef4db	No game train for this order.	Нет поезда игры для этого заказа.
+35186210ea	No game train is free for this order.	Нет свободного поезда игры для этого заказа.
+5bc9341e1f	No such fee.	Нет такой платы.
+c7f0548dbc	You have no train of your own — hire one for an order below. Own trains are bought from VIP{0} in Fleet → Trains.	У тебя нет своего поезда — арендуй поезд для заказа ниже. Свой поезд покупается с VIP{0} в Автопарке → Поезда.
+0fa6cd3422	Two more own trains	Ещё два своих поезда
+6714efb1f1	One more own train	Ещё один свой поезд
+726ac1da23	For hire at {0}% of the order — other players can run orders with it	В аренде за {0}% от заказа — другие игроки могут выполнять заказы на нём
+d1da7e1de0	Put the train out for hire: other players run orders with it and you get the fee	Сдай поезд в аренду: другие игроки выполняют на нём заказы, а ты получаешь плату
+571cc46c52	Own trains are from VIP{0}. Until then hire a train for the order (Jobs → Trains).	Свой поезд — с VIP{0}. До тех пор арендуй поезд для заказа (Рейсы → Поезда).
+30ca3bbe94	Own trains are from VIP{0}. Until then hire a train for the order in Jobs → Trains.	Свой поезд — с VIP{0}. До тех пор арендуй поезд для заказа в Рейсы → Поезда.
+99b8312aaa	Own train from VIP3	Свой поезд с VIP3
+a494833bae	An own train on your own — from level 25 with the rail licence. In a company with the rail licence — from level 12, with +10% on orders, −25% track fee and one more train.	Свой поезд в одиночку — с 25 уровня и ж/д лицензией. В компании с ж/д лицензией — с 12 уровня, с +10% за заказы, −25% сбора за линию и ещё одним поездом.
+c40298e2c5	Own trains and putting them out for hire	Свои поезда и сдача в аренду
+4cd83a1987	This train is not for hire.	Этот поезд не сдаётся в аренду.
+505ca1870b	Three hired trains at once	Три арендованных поезда одновременно
+23c6aa2df2	game train	поезд игры
+84c8cff624	track and energy {0}	линия и энергия {0}
+490a1a070f	hired from a player	арендован у игрока
+dbc4320488	fee {0}% ({1})	плата {0}% ({1})
+5470f30d34	🚆 Your hired train arrived in {0}	🚆 Твой арендованный поезд прибыл в {0}
+7090e82414	VIP{0} · level {1}	VIP{0} · уровень {1}
+b712134013	Buy for {0} TC	Купить за {0} TC
+3d3a845c60	Some levels also unlock new things — VIP2, for example, unlocks the premium trucks. The Shop shows what each level gives.	Некоторые уровни открывают и новое — например, VIP2 открывает премиум-грузовики. Что даёт каждый уровень, написано в Магазине.
+5195f04126	Premium truck {0} ({1})	Премиум-грузовик {0} ({1})
+c380d270e7	Premium trucks	Премиум-грузовики
+3fabd9367a	Premium trucks for ТрансКоин (Market)	Премиум-грузовики за ТрансКоины (Рынок)
+a6ba651eed	Premium trucks are from VIP{0}.	Премиум-грузовики — с VIP{0}.
+0aa7f17079	heavy trailers	тяжёлые прицепы
+1e6e73e76c	The Market has three premium trucks for ТрансКоин only, from VIP2: Hemus R20 Express Premium (600 TC), Danubia T560 Signature (900 TC) and Rila XT 700 Titan 6×4 (1,500 TC). They use less fuel, have more power and cheaper upkeep, and they look different: black with gold pinstripes, a gold grille, a chrome visor, roof lights and a crown on the door.	На Рынке есть три премиум-грузовика только за ТрансКоины, с VIP2: Hemus R20 Express Premium (600 TC), Danubia T560 Signature (900 TC) и Rila XT 700 Titan 6×4 (1 500 TC). Они экономичнее, мощнее, дешевле в обслуживании и выглядят иначе: чёрные с золотыми полосами, золотой решёткой, хромированным козырьком, огнями на крыше и короной на двери.
+b4edc7f8a4	More economical, more powerful and cheaper to maintain — for ТрансКоин only, from VIP{0}. Black with gold trim. You have {1} TC.	Экономичнее, мощнее и дешевле в обслуживании — только за ТрансКоины, с VIP{0}. Чёрные с золотой отделкой. У тебя {1} TC.
+7151f6c3cc	+1 place · {0} TC	+1 место · {0} TC
+d7aec12b90	+1 place in the depot for {0} TC?	+1 место в депо за {0} TC?
+55a76fe689	A depot now grows past 20 places: places 21 to 25 are bought with ТрансКоин (150, 200, 250, 300 and 350 TC) in Fleet → Depots.	Депо теперь растёт больше 20 мест: места с 21-го по 25-е покупаются за ТрансКоины (150, 200, 250, 300 и 350 TC) в Автопарк → Депо.
+86c9aa53df	The depot has {0} places. More places — for ТрансКоин only.	В депо {0} мест. Больше мест — только за ТрансКоины.
+a1de7208f5	Bigger depots	Большие депо
+124c45d9ed	Full	Заполнено
+26430f9d63	First expand the depot to {0} places with money.	Сначала расширь депо до {0} мест за деньги.
+79d3bd858f	Each brand's trucks now look different: Hemus — round headlights and a white stripe, Danubia — a rounded cab with chrome bars and alloy wheels, Rila Heavy — a tall square cab with a big grille, exhaust stacks and roof horns, Volta — a sloped aero nose, a light band and cameras instead of mirrors.	Грузовики каждой марки теперь выглядят по-разному: Hemus — круглые фары и белая полоса, Danubia — округлая кабина с хромированными полосами и литыми дисками, Rila Heavy — высокая угловатая кабина с большой решёткой, выхлопными трубами и сигналами на крыше, Volta — скошенный аэродинамичный нос, световая полоса и камеры вместо зеркал.
+dca68513b4	{0} received {1} TC from you. Thank you!	{0} получил(а) от тебя {1} TC. Спасибо!
+7d7165c742	In the Shop you can buy a ТрансКоин pack for a friend: type their username and the TC go straight to them.	В Магазине можно купить пакет ТрансКоинов для друга: введи его имя пользователя, и TC придут прямо к нему.
+4eb2d37980	You can't give a gift to yourself.	Нельзя подарить самому себе.
+4fc801687e	The ТрансКоин packs go to {0}. Purchase bonuses don't apply to gifts.	Пакеты ТрансКоинов уйдут к {0}. Бонусы за покупку на подарки не действуют.
+51d581091f	Gift ТрансКоин	Подари ТрансКоины
+007dce9e04	Gift ТрансКоин to a friend	Подари ТрансКоины другу
+4242ce25ab	Gift from {0}: {1}	Подарок от {0}: {1}
+18ffca8901	The gift was sent	Подарок отправлен
+53467306d9	Username (empty — for you)	Имя пользователя (пусто — для тебя)
+cdd7d3c691	Only ТрансКоин packs can be given as gifts.	Дарить можно только пакеты ТрансКоинов.
+2d1ea11576	The ТрансКоин are already in your profile.	ТрансКоины уже в твоём профиле.
+cc0e267df8	🎁 {0} gave you {1} TC!	🎁 {0} подарил(а) тебе {1} TC!
+ead3e32b88	+{0}% money on every run of everyone in the company until {1}.	+{0}% денег за каждый рейс всех в компании до {1}.
+0c58f87c62	+{0}% money on every run of everyone in the company for {1} hours. One pays — everyone earns. The personal +50% booster goes first.	+{0}% денег за каждый рейс всех в компании на {1} ч. Платит один — зарабатывают все. Личный бустер +50% в приоритете.
+31b5261e89	Company booster	Бустер компании
+c0e1949dab	Company booster · {0} h	Бустер компании · {0} ч
+218c91a1d7	A booster for the whole company for {0} TC?	Бустер для всей компании за {0} TC?
+78c63ebb1d	In the Company any member can start a booster for 900 TC: +25% money on every run of everyone in the company for 24 hours. One pays — everyone earns. The personal +50% booster goes first; the two don't add up.	В Компании любой участник может запустить бустер за 900 TC: +25% денег за каждый рейс всех в компании на 24 часа. Платит один — зарабатывают все. Личный бустер +50% в приоритете, они не суммируются.
+288c4055a3	Start · {0} TC	Запустить · {0} TC
+2c7ad8be45	Join a company first.	Сначала вступи в компанию.
+67b24ad9e9	On until {0}: +{1}% money on every run of everyone in the company.	Действует до {0}: +{1}% денег за каждый рейс всех в компании.
+ddb87bf535	Extend · {0} TC	Продлить · {0} TC
+c513aa98b3	🚀 {0} started a company booster	🚀 {0} запустил(а) бустер компании

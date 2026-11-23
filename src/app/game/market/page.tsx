@@ -10,7 +10,7 @@ import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/
 import { Truck3DButton } from '@/components/garage/Truck3DButton';
 import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
-import { modelAvailable, POWER_UNITS, TRAILERS } from '@/lib/game/catalog';
+import { modelAvailable, POWER_UNITS, PREMIUM_TRUCK, PREMIUM_TRUCKS, TRAILERS } from '@/lib/game/catalog';
 import { cities, depots, vehicles } from '@/server/db/schema';
 import { Warehouse } from 'lucide-react';
 import { BODY_LABELS } from '@/server/game/deliveries';
@@ -133,6 +133,48 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
           <h2 className="mb-1 font-display text-lg font-bold">{tr('Употребявана техника от играчи')}</h2>
           <p className="mb-3 text-sm text-mist-400">{tr('По-евтино от новото — с пробега и състоянието, които има. Продавачът плаща 5% такса. Своята техника обявяваш от Автопарк → Сервиз.')}</p>
           <UsedListings listings={used} companyId={company.id} level={user.level} balanceCents={company.balanceCents} freeSlots={freeSlots} now={now} />
+        </section>
+      )}
+      {showUnits && features.premium_trucks && (
+        <section className="space-y-3" data-testid="premium-trucks">
+          <div>
+            <h2 className="font-display text-lg font-bold text-gold-300">👑 {tr('Премиум камиони')}</h2>
+            <p className="text-sm text-mist-400">{tr('По-икономични, по-мощни и с по-евтина поддръжка — само за ТрансКоин, от VIP{0}. Черни със златна украса. Имаш {1} TC.', PREMIUM_TRUCK.vipLevel, user.coins)}</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            {PREMIUM_TRUCKS().filter((m) => show === 'all' || m.kind === show).map((m) => {
+              const coins = m.premium!.coins;
+              const reason = (user.vipLevel ?? 0) < PREMIUM_TRUCK.vipLevel ? tr('Премиум камионите са от VIP{0}.', PREMIUM_TRUCK.vipLevel) : user.level < m.minLevel ? tr('Изисква ниво {0}.', m.minLevel) : user.coins < coins ? tr('Нямате достатъчно ТрансКоин.') : noRoomReason;
+              return (
+                <Card key={m.id} className="flex flex-col border-gold-400/40">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-display text-lg font-bold">{tx(m.name)}</div>
+                      <div className="text-xs text-mist-400">{tx(m.brand)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="num font-display text-lg font-bold text-gold-400">{coins} TC</div>
+                      <Badge tone="violet">{tr('VIP{0} · ниво {1}', PREMIUM_TRUCK.vipLevel, m.minLevel)}</Badge>
+                    </div>
+                  </div>
+                  <div className="relative my-3 flex h-28 items-end rounded-xl bg-[linear-gradient(180deg,transparent_60%,rgba(246,195,67,0.08))] px-2">
+                    <VehicleIllustration modelId={m.id} color={PREMIUM_TRUCK.color} className="max-h-28 w-full" />
+                  </div>
+                  {m.kind === 'tractor' && <p className="-mt-1 mb-3 text-xs text-amber-sig">{tr('Само влекач — ремаркето се купува отделно (раздел „Ремаркета“).')}</p>}
+                  <dl className="mb-4 grid grid-cols-3 gap-2 text-xs">
+                    <div><dt className="text-mist-400">{tr('Мощност')}</dt><dd className="num">{tr('{0} к.с.', m.powerHp)}</dd></div>
+                    <div><dt className="text-mist-400">{tr('Товар')}</dt><dd className="num">{m.kind === 'tractor' ? (m.heavyHaul ? tr('тежки ремаркета') : tr('с ремарке')) : tr('{0} т · {1}', m.payloadTons, tx(BODY_LABELS[m.body!]))}</dd></div>
+                    <div><dt className="text-mist-400">{tr('Разход')}</dt><dd className="num">{tr('{0}–{1} л', m.fuelEmpty, m.fuelFull)}</dd></div>
+                    <div><dt className="text-mist-400">{tr('Поддръжка')}</dt><dd className="num">{tr('{0} лв./км', (m.maintenanceCentsPerKm / 100).toFixed(2))}</dd></div>
+                    <div><dt className="text-mist-400">{tr('Скорост')}</dt><dd className="num">{tr('{0} км/ч', m.maxSpeedKmh)}</dd></div>
+                  </dl>
+                  <div className="mt-auto">
+                    <BuyButton type="buyPremiumTruck" modelId={m.id} depots={depotOptions} disabledReason={reason} label={tr('Купи за {0} TC', coins)} fix={reason === noRoomReason ? fullFix : (user.vipLevel ?? 0) < PREMIUM_TRUCK.vipLevel ? { href: '/game/shop', label: tr('Към магазина') } : null} />
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         </section>
       )}
       {showUnits && (

@@ -149,7 +149,7 @@ export async function confirmRumor(db: Database, now = new Date()) {
   return db.transaction(async (tx) => {
     const [first] = await tx.insert(jobState).values({ key: `rumor-told:${day}`, value: {} }).onConflictDoNothing().returning();
     if (!first) return null;
-    return postGameLine(tx, 'global', 'rumor', t('🗣️ Слухът се потвърди: днес {0} до {1} се плащат с {2} % повече (навреме). Другите слухове бяха празни приказки.', t(CARGO[real.cargo as CargoType].label).toLowerCase(), place(countryLabel(real.country)), Math.round(RUMORS.bonusShare * 100)), { href: '/game/contracts', button: t('Курсове') }, now);
+    return postGameLine(tx, 'events', 'rumor', t('🗣️ Слухът се потвърди: днес {0} до {1} се плащат с {2} % повече (навреме). Другите слухове бяха празни приказки.', t(CARGO[real.cargo as CargoType].label).toLowerCase(), place(countryLabel(real.country)), Math.round(RUMORS.bonusShare * 100)), { href: '/game/contracts', button: t('Курсове') }, now);
   });
 }
 

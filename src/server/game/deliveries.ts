@@ -1,3 +1,7 @@
+import { BOOSTERS, COMPANY_BOOST } from '@/lib/game/speed-up';
+import { companyBoostUntil } from './company-boost';
+import { vipLevel } from '@/lib/game/vip-levels';
+import { ownerVipLevel } from './vip-levels';
 import { checkTripRules } from './special-loads';
 import { afterExtras, settleExtras, type TripFacts } from './trip-extras';
 import { and, asc, desc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
@@ -534,7 +538,16 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
     { category: 'fuel', amountCents: -costs.fuelCents, description: t('Гориво ({0} км)', Math.round(d.emptyKm + d.loadedKm)), idempotencyKey: key('fuel'), refType: 'delivery', refId: d.id },
     { category: 'maintenance', amountCents: -costs.maintenanceCents, description: t('Поддръжка по курса'), idempotencyKey: key('maintenance'), refType: 'delivery', refId: d.id },
   ];
-  if (costs.tollCents) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: t('Пътни такси'), idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
+  // 1.3.2.2: the shop's boosters — no tolls, and +50 % on the freight (outside the bonus cap).
+  const [boosts] = await tx.select({ money: users.moneyBoostUntil, tolls: users.tollFreeUntil }).from(users).where(eq(users.id, company!.ownerId));
+  const tollFree = !!boosts?.tolls && boosts.tolls > completedAt;
+  // 1.3.2.2: the personal booster (+50 %), else the company's (+25 %); they do not add up.
+  const crew = boosts?.money && boosts.money > completedAt ? null : await membershipOf(tx, company!.ownerId);
+  const crewBoost = crew && (await companyBoostUntil(tx, crew.company.id));
+  const boostShare = boosts?.money && boosts.money > completedAt ? BOOSTERS.moneyShare : crewBoost && crewBoost > completedAt ? COMPANY_BOOST.share : 0;
+  const boosterCents = Math.round(result.rewardCents * boostShare);
+  if (costs.tollCents && !tollFree) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: t('Пътни такси'), idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
+  if (boosterCents) postings.push({ category: 'booster', amountCents: boosterCents, description: t('Бустер +{0}% пари', Math.round(boostShare * 100)), idempotencyKey: key('booster'), refType: 'delivery', refId: d.id });
   const crossingCents = (costs as { crossingCents?: number }).crossingCents ?? 0;
   if (crossingCents) postings.push({ category: 'crossings', amountCents: -crossingCents, description: t('Билет за ферибот / влак'), idempotencyKey: key('crossing'), refType: 'delivery', refId: d.id });
   // The fuel station where the truck filled up earns its margin (paid by the game).
@@ -556,6 +569,9 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   if (result.bonusCents) postings.push({ category: 'bonus', amountCents: result.bonusCents, description: t('Бонус за ранна доставка'), idempotencyKey: key('bonus'), refType: 'delivery', refId: d.id });
   // Reputation pays: +1 % of the reward per 10 points (up to +10 %), by the reputation before this delivery.
   const reputationBonus = Math.round(result.rewardCents * reputationBonusShare(company!.reputation));
+  // 1.3.2.2: the VIP level pays a little more on every delivery (inside the bonus cap).
+  const levelPay = Math.round(result.rewardCents * vipLevel(await ownerVipLevel(tx, d.companyId)).pay);
+  if (levelPay) postings.push({ category: 'bonus', amountCents: levelPay, description: t('Бонус за VIP ниво'), idempotencyKey: key('vip-level'), refType: 'delivery', refId: d.id });
   if (reputationBonus) postings.push({ category: 'reputation_bonus', amountCents: reputationBonus, description: t('Бонус за репутация ({0})', Math.floor(company!.reputation)), idempotencyKey: key('reputation'), refType: 'delivery', refId: d.id });
   if (d.rentalFeeCents) postings.push({ category: 'rental', amountCents: -d.rentalFeeCents, description: t('Наем на камиона ({0} км)', Math.round(d.emptyKm + d.loadedKm)), idempotencyKey: key('rental'), refType: 'delivery', refId: d.id });
   // Convoy: a friend or company member drove the same lane; on time, each gets a bonus.
@@ -654,7 +670,7 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   const roadBonus = (await roadDelivered(tx, company!.ownerId, d, contract, result.late, completedAt)) + (await meetDelivered(tx, company!.ownerId, d.companyId, d, contract, dest!.countryCode, result.late, completedAt));
   // 1.2.3.6: sometimes the client writes (thanks with a bonus, a complaint, a request for the same run); a 3D postcard for a new city or a long trip.
   await postcardOnArrival(tx, company!.ownerId, d, contract.destCityId, dest!.nameBg, completedAt);
-  const payout = extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus;
+  const payout = boosterCents + levelPay + (tollFree ? costs.tollCents : 0) + extrasCents - hireCommission + result.rewardCents + result.bonusCents + reputationBonus + convoyBonus + nightBonus + perfect.bonusCents + convoyPerfect + firstTrip + hallBonus + springBonus + bigConvoy + specBonus + insurancePayout - result.penaltyCents - stopPenalty - costs.totalCents - theftCents - (d.rentalFeeCents ?? 0) + companyBonus - contribution + relayBonus + choiceBonus + reeferCents + empireBonus + intermodalCents + eraCents + roadBonus;
   const onTime = !result.late;
   // Lane records (v1.5): the fastest loaded run on the lane this month.
   await recordLaneRun(tx, company!.ownerId, d, { originCityId: contract.originCityId, destCityId: contract.destCityId }, result.late, completedAt);
@@ -682,14 +698,16 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   await internDelivery(tx, company!.ownerId, baseXp, completedAt);
   await choiceXp(tx, company!.ownerId, d, baseXp);
   // XP bonuses: company training, VIP, the shop's double-XP booster and a mentor.
-  const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil }).from(users).where(eq(users.id, company!.ownerId));
+  const [owner] = await tx.select({ vipUntil: users.vipUntil, xpBoostUntil: users.xpBoostUntil, vipLevel: users.vipLevel }).from(users).where(eq(users.id, company!.ownerId));
   const vipXp = isVip(owner?.vipUntil, now) ? VIP_PERKS.xpMultiplier : 1;
+  // 1.3.2.2: the VIP level's own XP bonus, kept for good.
+  const levelXp = 1 + vipLevel(owner?.vipLevel).xp;
   const boostXp = owner?.xpBoostUntil && owner.xpBoostUntil > now ? 2 : 1;
   // A newcomer with a mentor learns faster.
   const mentorXp = await mentorXpFactor(tx, company!.ownerId, now);
   // "Строителен бум": hauling building materials teaches more.
   const boomXp = contract.constructionId && (await boomFor(tx, company!.ownerId, completedAt)) ? BOOM.xpFactor : 1;
-  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * boostXp * mentorXp * boomXp);
+  const xp = Math.round(baseXp * (perks?.bonuses.xpMultiplier ?? 1) * vipXp * levelXp * boostXp * mentorXp * boomXp);
   // The player's own driving gives all of the XP; a hired driver's trip only a share (the driver learns from all of it).
   const ownerDrove = (await tx.select({ id: drivers.id }).from(drivers).where(and(inArray(drivers.id, [d.driverId, d.coDriverId].filter((x): x is string => !!x)), eq(drivers.isOwner, true)))).length > 0;
   const playerXp = ownerDrove ? xp : Math.round(xp * FLEET_XP_SHARE);

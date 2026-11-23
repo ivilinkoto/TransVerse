@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 
 const schema = z.object({
   /** global | trade | company | alliance | dm:<userId> */
-  tab: z.string().regex(/^(global|trade|projects|cafe|company|alliance|dm:[0-9a-f-]{36})$/, 'Непознат раздел.'),
+  tab: z.string().regex(/^(global|trade|projects|events|cafe|company|alliance|dm:[0-9a-f-]{36})$/, 'Непознат раздел.'),
   after: z.coerce.number().int().min(0).optional(),
 });
 
@@ -50,7 +50,7 @@ export const GET = handler({ perMinute: 120, schema }, async ({ user, input }) =
     const here = await cafeHere(db, city.id);
     return visible({ messages: await withReactions(db, 'channel', feed, user.id), canModerate: isStaff(user.role), cafe: { city: city.nameBg, here: here.filter((h) => h.id !== user.id).map((h) => h.username) } });
   }
-  const messages = await channelFeed(db, input.tab as 'global' | 'trade' | 'projects', input.after ?? 0);
+  const messages = await channelFeed(db, input.tab as 'global' | 'trade' | 'projects' | 'events', input.after ?? 0);
   await markChannelRead(db, user.id, input.tab, messages.at(-1)?.id ?? 0);
   // 1.2.6: a new player sees „Благодаря“ under the answers to their own messages.
   const canThank = user.level <= CHAT_LIFE.newbieLevel && (await featureFor(db, user.id, 'chat_life'));

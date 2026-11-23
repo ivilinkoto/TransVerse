@@ -52,7 +52,7 @@ import { planDispatch, runDispatch, setAutoDispatch } from '@/server/game/dispat
 import { toggleFavoriteLane } from '@/server/game/favorites';
 import { bidAuction } from '@/server/game/auctions';
 import { quietHoursSchema, setQuietHours } from '@/server/push';
-import { buyDepot, buyTrailer, buyVehicle, coupleTrailer, expandDepot, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, relocateVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
+import { buyDepot, buyTrailer, buyPremiumTruck, buyVehicle, coupleTrailer, expandDepot, expandDepotCoins, installTrailerUpgrade, installUpgrade, moveAllToDepot, moveToDepot, nameVehicle, relocateVehicle, repairVehicle, sellTrailer, sellVehicle, serviceVehicle } from '@/server/game/fleet';
 import { borrowOrgTrailer, buyOrgTrailer, returnOrgTrailer, sellOrgTrailer, upgradeOrgTrailer } from '@/server/game/company-trailers';
 import { markNotificationsRead } from '@/server/game/notify';
 import { guessDailyRoute } from '@/server/game/daily-route';
@@ -67,9 +67,11 @@ import { playNightRun } from '@/server/game/night-run';
 import { learnSkill, resetSkills } from '@/server/game/skills';
 import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
-import { addWagons, buyTrain, moveTrain, sellTrain, sellWagons, sendTrain } from '@/server/game/trains';
+import { speedUpDelivery } from '@/server/game/speed-up';
+import { buyCompanyBoost } from '@/server/game/company-boost';
+import { addWagons, buyTrain, hireTrain, moveTrain, sellTrain, sellWagons, sendTrain, setTrainHire } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
-import { assignDriver, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
+import { assignDriver, driveMyself, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
 import { acceptClientContract, declineClientContract, sendClientLoad } from '@/server/game/clients';
 import { hashIp } from '@/server/game/referrals';
@@ -185,6 +187,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('appealFine'), fineId: id }),
   z.object({ type: z.literal('buyInsurance'), vehicleId: id }),
   z.object({ type: z.literal('buyVehicle'), modelId: z.string().max(40), cityId }),
+  z.object({ type: z.literal('buyPremiumTruck'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('leaseVehicle'), modelId: z.string().max(40), cityId }),
   z.object({ type: z.literal('payOffLease'), leaseId: id }),
   z.object({ type: z.literal('payBonus'), bonus: bonusSchema }),
@@ -224,12 +227,16 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('hireDriver'), candidateId: id }),
   z.object({ type: z.literal('fireDriver'), driverId: id }),
   z.object({ type: z.literal('assignDriver'), driverId: id, vehicleId: id.nullable(), seat: z.enum(['main', 'co']).default('main') }),
+  z.object({ type: z.literal('driveMyself'), vehicleId: id }),
+  z.object({ type: z.literal('speedUpDelivery'), deliveryId: id, mode: z.enum(['finish', 'half']) }),
   z.object({ type: z.literal('trainDriver'), driverId: id, trait: z.enum(TRAIT_IDS) }),
   z.object({ type: z.literal('clientAccept'), clientContractId: id }),
   z.object({ type: z.literal('clientDecline'), clientContractId: id }),
   z.object({ type: z.literal('clientLoad'), clientContractId: id, vehicleId: id }),
   z.object({ type: z.literal('buyDepot'), cityId }),
   z.object({ type: z.literal('expandDepot'), depotId: id }),
+  z.object({ type: z.literal('expandDepotCoins'), depotId: id }),
+  z.object({ type: z.literal('buyCompanyBoost') }),
   z.object({ type: z.literal('markNotificationsRead') }),
   z.object({ type: z.literal('adoptMascot'), kind: z.enum(['cat', 'dog', 'parrot', 'turtle']), name: z.string().max(60) }),
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
@@ -246,6 +253,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sellTrain'), trainId: id }),
   z.object({ type: z.literal('sendTrain'), trainId: id, orderId: z.string().regex(/^\d+-\d+:\d+:f?\d+$/).max(80) }),
   z.object({ type: z.literal('moveTrain'), trainId: id, to: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('hireTrain'), terminal: z.coerce.number().int().positive(), orderId: z.string().regex(/^\d+-\d+:\d+:f?\d+$/).max(80), via: z.union([z.literal('game'), id]) }),
+  z.object({ type: z.literal('setTrainHire'), trainId: id, share: z.coerce.number().min(0).max(1) }),
   z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
   z.object({ type: z.literal('resetSkills') }),
@@ -650,12 +659,18 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   setBusLine: 'bus_lines',
   upgradeBusComfort: 'bus_lines',
   sellBusLine: 'bus_lines',
+  speedUpDelivery: 'speed_up',
   buyTrain: 'trains',
   addWagons: 'trains',
   sellWagons: 'trains',
   sellTrain: 'trains',
   sendTrain: 'trains',
   moveTrain: 'trains',
+  hireTrain: 'trains',
+  buyPremiumTruck: 'premium_trucks',
+  expandDepotCoins: 'premium_slots',
+  buyCompanyBoost: 'company_boost',
+  setTrainHire: 'trains',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
   renameMascot: 'mascot',
@@ -750,6 +765,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, ...(await buyInsurance(db, user.id, input.vehicleId)) };
     case 'buyVehicle':
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId)).id };
+    case 'buyPremiumTruck':
+      return { ok: true, id: (await buyPremiumTruck(db, user.id, input.modelId, input.cityId)).id };
     case 'leaseVehicle':
       return { ok: true, id: (await buyVehicle(db, user.id, input.modelId, input.cityId, { lease: true })).id };
     case 'payOffLease':
@@ -845,6 +862,11 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'assignDriver':
       await assignDriver(db, user.id, input.driverId, input.vehicleId, input.seat);
       return { ok: true };
+    case 'speedUpDelivery':
+      return { ok: true, ...(await speedUpDelivery(db, user.id, input.deliveryId, input.mode, new Date())) };
+    case 'driveMyself':
+      await driveMyself(db, user.id, input.vehicleId);
+      return { ok: true };
     case 'clientAccept':
       await acceptClientContract(db, user.id, input.clientContractId);
       return { ok: true };
@@ -860,6 +882,10 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, id: (await buyDepot(db, user.id, input.cityId)).id };
     case 'expandDepot':
       return { ok: true, costCents: await expandDepot(db, user.id, input.depotId) };
+    case 'buyCompanyBoost':
+      return { ok: true, until: (await buyCompanyBoost(db, user.id, new Date())).toISOString() };
+    case 'expandDepotCoins':
+      return { ok: true, coins: await expandDepotCoins(db, user.id, input.depotId) };
     case 'markNotificationsRead':
       await markNotificationsRead(db, user.id);
       return { ok: true };
@@ -903,6 +929,13 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       const tr = await moveTrain(db, user.id, input.trainId, input.to, new Date());
       return { ok: true, arriveAt: tr.run?.arriveAt };
     }
+    case 'hireTrain': {
+      const tr = await hireTrain(db, user.id, input.terminal, input.orderId, input.via, new Date());
+      return { ok: true, arriveAt: tr.run?.arriveAt };
+    }
+    case 'setTrainHire':
+      await setTrainHire(db, user.id, input.trainId, input.share > 0 ? input.share : null, new Date());
+      return { ok: true };
     case 'voteCrisis':
       await voteCrisis(db, user.id, input.option, new Date());
       return { ok: true };

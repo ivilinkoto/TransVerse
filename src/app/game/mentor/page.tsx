@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { notFound } from 'next/navigation';
 import { Clock, GraduationCap, HandHeart, Sparkles } from 'lucide-react';
 import { PlayerName } from '@/components/game/PlayerName';
@@ -32,7 +33,7 @@ export default async function MentorPage() {
       <PageHeader
         title={t('Наставник')}
         subtitle={t('Опитните шофьори помагат на новите — и двамата печелят.')}
-        help={t('Нов играч (до {0} дни в играта, под ниво {1}) избира наставник от ниво {2}+. Докато трае наставничеството, ученикът получава +{3} % опит. Ако стигне ниво {4} до {5} дни, наставникът получава {6}, {7} TC и значка „Наставник“, а ученикът — {8} и {9} TC. Наградата за всеки нов играч е веднъж; наставник и ученик от една и съща мрежа не може.', MENTOR.newcomerDays, MENTOR.goalLevel, MENTOR.mentorLevel, Math.round(MENTOR.xpBonus * 100), MENTOR.goalLevel, MENTOR.days, money(MENTOR.mentorCents), MENTOR.mentorCoins, money(MENTOR.menteeCents), MENTOR.menteeCoins)}
+        help={t('Нов играч (до {0} дни в играта, под ниво {1}) избира наставник от ниво {2}+. Докато трае наставничеството, ученикът получава +{3} % опит. Ако стигне ниво {4} до {5} дни, наставникът получава {6}, {7} и значка „Наставник“, а ученикът — {8} и {9}. Наградата за всеки нов играч е веднъж; наставник и ученик от една и съща мрежа не може.', MENTOR.newcomerDays, MENTOR.goalLevel, MENTOR.mentorLevel, Math.round(MENTOR.xpBonus * 100), MENTOR.goalLevel, MENTOR.days, money(MENTOR.mentorCents), coinsAsMoney(MENTOR.mentorCoins), money(MENTOR.menteeCents), coinsAsMoney(MENTOR.menteeCoins))}
       />
 
       {o.mentor && (
@@ -78,7 +79,7 @@ export default async function MentorPage() {
           title={<span className="inline-flex items-center gap-2"><HandHeart className="h-4 w-4 text-gold-400" />{t('Моите ученици')}</span>}
           actions={o.canMentor ? <ActionButton action={{ type: 'mentorOpen', on: !o.mentorOpen }} className={o.mentorOpen ? 'btn-ghost px-3 py-1.5 text-xs' : 'btn-primary px-3 py-1.5 text-xs'}>{o.mentorOpen ? t('Не приемам нови') : t('Приемам ученици')}</ActionButton> : undefined}
         >
-          <p className="mb-3 text-sm text-mist-300">{t('{0} За всеки, който стигне ниво {1} до {2} дни: {3} и {4} TC.', o.mentorOpen ? t('Нови играчи могат да те изберат (до {0} едновременно).', MENTOR.maxMentees) : t('В момента не приемаш нови ученици.'), MENTOR.goalLevel, MENTOR.days, money(MENTOR.mentorCents), MENTOR.mentorCoins)}</p>
+          <p className="mb-3 text-sm text-mist-300">{t('{0} За всеки, който стигне ниво {1} до {2} дни: {3} и {4}.', o.mentorOpen ? t('Нови играчи могат да те изберат (до {0} едновременно).', MENTOR.maxMentees) : t('В момента не приемаш нови ученици.'), MENTOR.goalLevel, MENTOR.days, money(MENTOR.mentorCents), coinsAsMoney(MENTOR.mentorCoins))}</p>
           {o.students.length === 0 ? (
             <Empty icon={GraduationCap} title={t('Още нямаш ученици')}>{t('Щом нов играч те избере, ще получиш известие.')}</Empty>
           ) : (

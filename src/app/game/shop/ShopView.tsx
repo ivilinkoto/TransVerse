@@ -12,7 +12,11 @@ import { CHRISTMAS, isChristmas } from '@/lib/game/christmas';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { isVip, STANDARD_COLORS, VIP_BENEFITS, VIP_COLORS } from '@/lib/game/vip';
 import { cities, trailers, vehicles } from '@/server/db/schema';
-import { coinHistory, COIN_REASON_LABELS, type CoinReason } from '@/server/game/coins';
+import { coinHistory, COIN_REASON_LABELS, earnedThisWeek, type CoinReason } from '@/server/game/coins';
+import { COIN_CAP } from '@/lib/game/coin-cap';
+import { nextVipLevel, unlocksAt, VIP_LEVELS } from '@/lib/game/vip-levels';
+import { spentCents } from '@/server/game/vip-levels';
+import { premiumPassOpen } from '@/server/game/season-pass';
 import { gameContext } from '@/server/game/context';
 import { BuyWithMoney } from '@/components/game/BuyWithMoney';
 import { euro, paidProduct, PAID_PRODUCTS, PAYMENT_STATUS_LABELS } from '@/lib/game/payments';
@@ -24,7 +28,7 @@ import { t as tr, tx, intlLocale } from '@/i18n/t';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { bonusWeekend, VIP_PRICES_V2, MONTH_CARD, OFFER_DISCOUNT, PASS_LEVEL_SALE, PATRON_LEVELS, VIP_BENEFITS_V2, vipMonthColor, WEEKEND_BONUS, weeklyOffers } from '@/lib/game/shop-v2';
 import { depots } from '@/server/db/schema';
-import { firstPurchaseOpen, monthCardOf, passLevelSaleOpen, patronOf, starterPackOpen, supporterPackOpen, vipCaseReady } from '@/server/game/shop-v2';
+import { firstPurchaseOpen, monthCardOf, passLevelSaleOpen, patronOf, starterPackOpen, supporterPackOpen, vipCaseReady , levelOfferOf } from '@/server/game/shop-v2';
 import { shopPrice } from '@/server/game/shop';
 import { activeSeason } from '@/server/game/seasons';
 import { ShopStore } from '@/components/shop/ShopStore';
@@ -45,6 +49,30 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
     coinHistory(db, user.id, 20),
     userPayments(db, user.id, 8),
   ]);
+  // 1.3.2.1: how much of this week's cap on earned ТрансКоин is used.
+  const earnedWeek = await earnedThisWeek(db, user.id, now);
+  // 1.3.2.2: the VIP level by what the player has paid, and what is left to the next one.
+  const spent = await spentCents(db, user.id);
+  const level = user.vipLevel ?? 0;
+  const next = nextVipLevel(spent, level);
+  const levelCard = (
+    <div className="w-full rounded-2xl border border-gold-400/30 bg-gold-400/5 p-3 text-sm" data-testid="vip-level">
+      <p className="font-display text-base font-bold text-gold-300">{tr('VIP ниво {0}', level)}</p>
+      <p className="text-xs text-mist-300">{next ? tr('До VIP{0} остават покупки за {1}.', next.level, euro(next.leftCents)) : tr('Най-високото ниво — благодарим ти!')}</p>
+      <ul className="mt-2 grid grid-cols-2 gap-1 text-[11px] text-mist-300 sm:grid-cols-5">
+        {VIP_LEVELS.filter((l) => l.level > 0).map((l) => (
+          <li key={l.level} className={`rounded-lg border px-2 py-1 ${l.level === level ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-asphalt-700'}`}>
+            <span className="block font-semibold">{tr('VIP{0} · от {1}', l.level, euro(l.fromCents))}</span>
+            <span className="block">{tr('+{0}% опит, −{1}% сервиз, +{2}% на курс', Math.round(l.xp * 100), Math.round(l.garage * 100), Math.round(l.pay * 100))}{l.depotSlots ? `, ${tr('+{0} място в депо', l.depotSlots)}` : ''}</span>
+            {unlocksAt(l.level, (f) => !!(features as Record<string, boolean>)[f]).map((u) => <span key={u.label} className="block text-gold-300">🔓 {tx(u.label)}</span>)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+  const capCard = (
+    <p className="w-full text-xs text-mist-400" data-testid="coin-cap-store">{tr('Спечелени TC тази седмица: {0} от {1}', Math.min(earnedWeek, COIN_CAP.weekly), COIN_CAP.weekly)}</p>
+  );
   const trailerOptions = (await db.select({ id: trailers.id, plate: trailers.plate, modelId: trailers.modelId }).from(trailers).where(and(eq(trailers.companyId, company.id), eq(trailers.ownership, 'owned'), isNull(trailers.soldAt)))).map((t) => ({ id: t.id, label: `${t.plate} · ${trailerModel(t.modelId).name}` }));
   const vehicleOptions: VehicleOption[] = fleet.map((v) => ({ id: v.id, label: `${v.plate} · ${tx(v.city)}${v.ownership === 'rented' ? tr(' (нает)') : ''}${v.status !== 'idle' ? tr(' · на курс') : ''}`, owned: v.ownership === 'owned', idle: v.status === 'idle' }));
   const hubs = cityRows.filter((c) => isFreightHub({ population: c.population, country: c.country })).map((c) => ({ id: c.id, name: `${tx(c.name)} (${c.country})` }));
@@ -64,8 +92,11 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
     : [false, null, null, false, false, null];
   // „Подкрепи TransVerse“: once per account and until the end of 2026 — first in the list while it is open.
   const supporter = v2 && features.supporter_pack && (await supporterPackOpen(db, user.id, now));
-  const products = PAID_PRODUCTS.filter((p) => !p.v2 || (v2 && (p.id !== 'starter_pack' || starter) && (p.id !== 'supporter_pack' || supporter))).sort((a, b) => Number(b.id === 'supporter_pack') - Number(a.id === 'supporter_pack'));
-  const notes = v2 ? [first && tr('Първата ти покупка на ТрансКоин е двойна — получаваш двойно повече TC.'), bonusWeekend(now) && tr('Бонус уикенд: +{0}% ТрансКоин на всеки пакет.', WEEKEND_BONUS * 100), patron && patron.level > 0 && tr('Покровител ниво {0}: +{1}% ТрансКоин на всеки пакет.', patron.level, patron.level)].filter((x): x is string => !!x) : [];
+  // 1.3.2.2: the new products (and the pass only while it is not premium yet).
+  const passOpen = features.paid_v3 ? await premiumPassOpen(db, user.id, now).catch(() => false) : false;
+  const levelOffer = features.paid_v3 ? await levelOfferOf(db, user.id, now) : null;
+  const products = PAID_PRODUCTS.filter((p) => (p.id !== 'level_offer' || !!levelOffer) && (!p.v2 || (v2 && (p.id !== 'starter_pack' || starter) && (p.id !== 'supporter_pack' || supporter))) && (!p.feature || !!features[p.feature]) && (!p.id.startsWith('pass_') || passOpen)).sort((a, b) => Number(b.id === 'level_offer') - Number(a.id === 'level_offer') || Number(b.id === 'supporter_pack') - Number(a.id === 'supporter_pack'));
+  const notes = v2 ? [levelOffer && tr('🎁 Оферта за ниво {0} — до {1}.', levelOffer.level, new Date(levelOffer.until).toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })), first && tr('Първата ти покупка на ТрансКоин е двойна — получаваш двойно повече TC.'), bonusWeekend(now) && tr('Бонус уикенд: +{0}% ТрансКоин на всеки пакет.', WEEKEND_BONUS * 100), patron && patron.level > 0 && tr('Покровител ниво {0}: +{1}% ТрансКоин на всеки пакет.', patron.level, patron.level)].filter((x): x is string => !!x) : [];
   const seasonOk = (i: { id: string; seasonal?: string }) => (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics);
   const passSale = v2 && season ? passLevelSaleOpen(season.endsAt, now) : false;
   const vipBenefits = v2 ? [...VIP_BENEFITS.map((b) => ({ ...b, items: b.items.filter((i) => i !== 'Запазване на поръчка за 10 минути') })), ...VIP_BENEFITS_V2] : VIP_BENEFITS;
@@ -87,6 +118,8 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
         vipBenefits={vipBenefits.map((b) => ({ group: tx(b.group), items: b.items.map((i) => tx(i)) }))}
         extras={
           <>
+            {levelCard}
+            {capCard}
             {v2 && vip && vipCase && <ActionButton action={{ type: 'claimVipCase' }} className="btn-gold px-3 py-2 text-sm">{tr('Вземи VIP кейса на седмицата')}</ActionButton>}
             {v2 && card?.active && (card.ready ? <ActionButton action={{ type: 'claimMonthCard' }} className="btn-primary px-3 py-2 text-sm">{tr('Вземи {0} TC за днес', MONTH_CARD.coinsPerDay)}</ActionButton> : <p className="text-xs text-mist-400">{tr('Днешните {0} TC са взети. Ела утре!', MONTH_CARD.coinsPerDay)}</p>)}
             {passSale && <ActionButton action={{ type: 'buyPassLevel' }} className="btn-gold px-3 py-2 text-sm" disabled={user.coins < PASS_LEVEL_SALE.coins}>{tr('Купи ниво от пропуска · {0} TC', PASS_LEVEL_SALE.coins)}</ActionButton>}
@@ -96,7 +129,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
           <div className="space-y-4">
             {cancelled && <p role="status" className="rounded-lg border border-asphalt-600 bg-asphalt-800 px-3 py-2 text-sm text-mist-300">{tr('Плащането беше отказано — нищо не е таксувано.')}</p>}
             {payment.enabled ? (
-              <BuyWithMoney products={products} testMode={payment.testMode} providers={payment.providers} notes={notes} />
+              <BuyWithMoney products={products} testMode={payment.testMode} providers={payment.providers} notes={notes} gift={!!features.gift_tc} />
             ) : (
               <>
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -139,6 +172,11 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
         help={tr('ТрансКоин (TC) е премиум валутата на TransVerse. С нея се купуват VIP, удобства и козметика — никога игрови пари, за да е честно за всички.')}
         actions={<span className="flex items-center gap-2 rounded-xl border border-cyan-glow/30 bg-cyan-glow/10 px-4 py-2"><Coins className="h-5 w-5 text-cyan-glow" /><span className="num font-display text-xl font-bold text-cyan-glow">{user.coins.toLocaleString(intlLocale())} TC</span></span>}
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-asphalt-700 bg-asphalt-900/70 px-4 py-3 text-sm" data-testid="coin-cap">
+        <span>{tr('Спечелени TC тази седмица: {0} от {1}', Math.min(earnedWeek, COIN_CAP.weekly), COIN_CAP.weekly)}</span>
+        <span className="text-xs text-mist-400">{earnedWeek >= COIN_CAP.weekly ? tr('Таванът е достигнат: до понеделник наградите идват в пари ({0} лв. за 1 TC).', COIN_CAP.centsPerCoin / 100) : tr('Над тавана наградите идват в пари. Купените TC не се броят.')}</span>
+      </div>
 
       {friday && (
         <div className="rounded-2xl border border-gold-400/50 bg-gradient-to-r from-black/60 to-gold-400/10 p-4" data-testid="black-friday">
@@ -248,7 +286,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
           {cancelled && <p role="status" className="mb-3 rounded-lg border border-asphalt-600 bg-asphalt-800 px-3 py-2 text-sm text-mist-300">{tr('Плащането беше отказано — нищо не е таксувано.')}</p>}
           {payment.enabled ? (
             <>
-              <BuyWithMoney products={products} testMode={payment.testMode} providers={payment.providers} notes={notes} />
+              <BuyWithMoney products={products} testMode={payment.testMode} providers={payment.providers} notes={notes} gift={!!features.gift_tc} />
               {v2 && patron && (
                 <p className="mt-3 text-xs text-mist-400">{patron.level < PATRON_LEVELS.length ? tr('Покровител ниво {0} от {1}. Следващото — след още {2}: всяко ниво дава +1% ТрансКоин на покупките завинаги.', patron.level, PATRON_LEVELS.length, euro(PATRON_LEVELS[patron.level]! - patron.paidCents)) : tr('Покровител ниво {0} — най-високото. Благодарим ти!', patron.level)}</p>
               )}

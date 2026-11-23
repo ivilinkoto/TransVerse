@@ -8,6 +8,7 @@ import { TrainArt } from '@/components/vehicles/trains';
 import { place, RunStatus, WAGON_ICON } from '@/components/game/TrainOrders';
 import { dateTime, int, money } from '@/lib/format';
 import { LOCO_IDS, LOCOS, tareTons, TRAINS, WAGON_TYPES, WAGONS, wagonCount } from '@/lib/game/trains';
+import { LICENCES } from '@/lib/game/licences';
 import { gameContext } from '@/server/game/context';
 import { trainsView } from '@/server/game/trains';
 import { t, tx } from '@/i18n/t';
@@ -67,6 +68,11 @@ export default async function TrainsPage() {
                 <>
                   <p className="text-sm text-mist-200">📍 {t('На гара {0}', place(tr.at))}{' · '}{t('Поръчки за този влак: {0}', tr.orders.filter((o) => !o.why).length)}</p>
                   <Link href="/game/contracts/trains" className="game-action game-action-gold inline-flex flex-row px-4 py-1.5 text-xs">{t('Курсове за влака →')}</Link>
+                  <div className="text-sm" data-testid="train-for-hire">
+                    <FormAction action={{ type: 'setTrainHire', trainId: tr.id }} submit={t('Запази')} fields={[
+                      { name: 'share', label: tr.hireShare ? t('Под наем за {0}% от поръчката — другите играчи могат да карат поръчки с него', Math.round(tr.hireShare * 100)) : t('Пусни влака под наем: другите играчи карат поръчки с него, а ти получаваш таксата'), type: 'select', defaultValue: String(tr.hireShare ?? 0), options: [{ value: '0', label: t('Не е под наем') }, ...TRAINS.hire.shares.map((x) => ({ value: String(x), label: t('{0}% от поръчката', Math.round(x * 100)) }))] },
+                    ]} />
+                  </div>
                   <details className="text-sm">
                     <summary className="cursor-pointer text-mist-300">{t('Вагони')}</summary>
                     <div className="mt-2 space-y-2">
@@ -110,7 +116,18 @@ export default async function TrainsPage() {
             </li>
           ))}
         </ul>
-        {locked ? <p className="text-sm text-mist-300">🔒 {t('Влаковете са от ниво {0}.', v.limits.minLevel)}</p>
+        {!v.limits.vip ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-sm" data-testid="train-vip">
+            <span>👑 {t('Собствен влак е от VIP{0}. Дотогава наемай влак за поръчката в Курсове → Влакове.', TRAINS.vipLevel)}</span>
+            <span className="flex gap-2"><Link href="/game/contracts/trains" className="btn-ghost px-3 py-1.5 text-xs">{t('Наеми влак')}</Link><Link href="/game/shop" className="btn-gold px-3 py-1.5 text-xs">{t('Към магазина')}</Link></span>
+          </div>
+        ) : locked ? <p className="text-sm text-mist-300">🔒 {t('Влаковете са от ниво {0}.', v.limits.minLevel)}</p>
+          : !v.licensed ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-400/30 bg-gold-400/5 px-3 py-2 text-sm" data-testid="train-licence">
+              <span>📜 {t('За собствен влак е нужен ЖП лиценз ({0}). За курс през граница — и международен, а извън ЕС и митнически лиценз.', money(LICENCES.rail.priceCents))}</span>
+              <Link href="/game/licences" className="btn-gold px-3 py-1.5 text-xs">{t('Към лицензите')}</Link>
+            </div>
+          )
           : v.trains.length >= v.limits.maxTrains ? <p className="text-sm text-mist-300">{t('Най-много {0} влака на играч.', v.limits.maxTrains)}</p>
           : (
             <FormAction action={{ type: 'buyTrain' }} submit={t('Купи влака')} fields={[

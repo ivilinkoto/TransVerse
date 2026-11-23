@@ -61,7 +61,7 @@ export async function askPartner(db: Database, user: { id: string; username: str
   const name = await cityNames(db, [r.originCityId, r.relayCityId, r.destCityId]);
   return db.transaction(async (tx) => {
     await tx.update(relays).set({ askedAt: now }).where(eq(relays.id, r.id));
-    const id = await postGameLine(tx, 'global', 'partner', t('🤝 {0} търси партньор: {1} → {2} → {3}. Втората част е от {2} — бонус за двамата.', user.username, name(r.originCityId), name(r.relayCityId), name(r.destCityId)), { href: href(r.id), button: t('Стани партньор') }, now);
+    const id = await postGameLine(tx, 'events', 'partner', t('🤝 {0} търси партньор: {1} → {2} → {3}. Втората част е от {2} — бонус за двамата.', user.username, name(r.originCityId), name(r.relayCityId), name(r.destCityId)), { href: href(r.id), button: t('Стани партньор') }, now);
     return { messageId: id };
   });
 }

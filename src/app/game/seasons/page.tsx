@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, desc, eq } from 'drizzle-orm';
 import { CalendarClock, Trophy } from 'lucide-react';
 import Link from 'next/link';
@@ -115,7 +116,7 @@ export default async function SeasonsPage({ searchParams }: { searchParams: Prom
       {xmasNight && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card title={t('🎅 Дядо Коледа на пътищата')}>
-            <p className="mb-3 text-sm text-mist-300">{t('Тонове коледни товари този сезон (от 15 декември). Първите трима взимат титли и {0}, {1} и {2} TC.', SANTA_OF_ROADS.places[0].coins, SANTA_OF_ROADS.places[1].coins, SANTA_OF_ROADS.places[2].coins)}</p>
+            <p className="mb-3 text-sm text-mist-300">{t('Тонове коледни товари този сезон (от 15 декември). Първите трима взимат титли и {0}, {1} и {2}.', SANTA_OF_ROADS.places[0].coins, SANTA_OF_ROADS.places[1].coins, coinsAsMoney(SANTA_OF_ROADS.places[2].coins))}</p>
             {xmasNight.santas.length === 0 ? <p className="text-sm text-mist-400">{t('Още никой не е карал коледни товари.')}</p> : (
               <ol className="space-y-1 text-sm" data-testid="santa-ranking">
                 {xmasNight.santas.map((k) => <li key={k.userId} className={`flex justify-between gap-2 ${k.userId === user.id ? 'font-semibold text-gold-300' : ''}`}><span>{k.place}. {k.username}</span><span className="num">{int(k.tons)} т</span></li>)}

@@ -223,6 +223,18 @@ export const FEATURES = {
   supporter_pack: '1.3.2',
   // 1.3.2 „Просто“: one menu of five places, pages instead of windows, a shorter board.
   simple_menu: '1.3.2',
+  // 1.3.2.2: hurry a running trip with ТрансКоин (arrive now / half the time left).
+  speed_up: '1.3.2.2',
+  // 1.3.2.2: new products for real money (the smallest pack, the pass, cases, VIP+).
+  paid_v3: '1.3.2.2',
+  // 1.3.2.2: premium trucks for ТрансКоин, from VIP2 (/game/market).
+  premium_trucks: '1.3.2.2',
+  // 1.3.2.2: depot places 21–25 for ТрансКоин (/game/logistics).
+  premium_slots: '1.3.2.2',
+  // 1.3.2.2: buy a ТрансКоин pack for another player (the shop).
+  gift_tc: '1.3.2.2',
+  // 1.3.2.2: a booster for the whole player company, paid with ТрансКоин (/game/company).
+  company_boost: '1.3.2.2',
   // 1.3.3 „Жп линия“: the players' own freight trains on real rail lines (/game/trains).
   trains: '1.3.3',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).

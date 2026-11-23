@@ -2,7 +2,7 @@
 
 import { TITLES } from '@/lib/game/first-snow';
 import { TitleChip } from '@/components/game/TitleChip';
-import { AtSign, Building2, Coffee, CornerUpLeft, Flag, Globe2, Hammer, MessageCircle, Pin, Send, Shield, Smile, Store, Trash2, X } from 'lucide-react';
+import { AtSign, Building2, Coffee, CornerUpLeft, Flag, Globe2, Hammer, MessageCircle, Pin, Send, Shield, Smile, Sparkles, Store, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
@@ -143,7 +143,7 @@ export function ChatDock() {
       } catch {
         /* ignore */
       }
-      if (fromUrl && /^(global|trade|projects|cafe|company|dm:[0-9a-f-]{36})$/.test(fromUrl)) {
+      if (fromUrl && /^(global|trade|projects|events|cafe|company|dm:[0-9a-f-]{36})$/.test(fromUrl)) {
         setTab(fromUrl);
         setOpen(true);
       } else {
@@ -215,7 +215,7 @@ export function ChatDock() {
   }, [messages]);
 
   // Labels outside the memo: t() reads the language while rendering.
-  const names = { global: tr('Глобален'), company: tr('Компания'), alliance: tr('Съюз'), trade: tr('Търговия'), projects: tr('Проекти') };
+  const names = { global: tr('Глобален'), company: tr('Компания'), alliance: tr('Съюз'), trade: tr('Търговия'), projects: tr('Проекти'), events: tr('Събития') };
   const tabs: Tab[] = useMemo(() => {
     const u = inbox?.unread;
     const out: Tab[] = [{ id: 'global', label: names.global, icon: Globe2, unread: u?.global }];
@@ -223,11 +223,13 @@ export function ChatDock() {
     if (inbox?.alliance) out.push({ id: 'alliance', label: names.alliance, icon: Shield });
     out.push({ id: 'trade', label: names.trade, icon: Store, unread: u?.trade });
     if (inbox?.projects) out.push({ id: 'projects', label: names.projects, icon: Hammer, unread: u?.projects });
+    // 1.3.2.1: the game's own lines (records, finds, postcards…), apart from the players' chat; no unread count.
+    out.push({ id: 'events', label: names.events, icon: Sparkles });
     if (inbox?.cafe) out.push({ id: 'cafe', label: tx(inbox.cafe.name), icon: Coffee });
     for (const c of inbox?.conversations ?? []) out.push({ id: `dm:${c.userId}`, label: c.username, unread: c.unread, online: c.online });
     if (extra && !out.some((t) => t.id === extra.id)) out.push({ id: extra.id, label: extra.title });
     return out;
-  }, [inbox, extra, names.global, names.company, names.alliance, names.trade, names.projects]);
+  }, [inbox, extra, names.global, names.company, names.alliance, names.trade, names.projects, names.events]);
 
   // Everything new: private messages and the channels.
   const unread = tabs.reduce((s, t) => s + (t.unread ?? 0), 0);
@@ -498,6 +500,9 @@ export function ChatDock() {
             </div>
           )}
           {replyTo && <ReplyBar to={replyTo} onCancel={() => setReplyTo(null)} />}
+          {tab === 'events' ? (
+            <p className="border-t border-asphalt-800 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-center text-xs text-mist-400 lg:pb-3" data-testid="chat-events-note">{tr('Тук пише само играта: рекорди, находки, картички и новини от пътя.')}</p>
+          ) : (
           <form onSubmit={(e) => void send(e)} className="flex gap-2 border-t border-asphalt-800 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] lg:pb-2">
             {extras && <button type="button" className={`shrink-0 rounded-xl px-2 transition ${emojiOpen ? 'bg-asphalt-700 text-gold-400' : 'text-mist-400 hover:bg-asphalt-800 hover:text-white'}`} onClick={() => setEmojiOpen((o) => !o)} aria-label={tr('Емоджи')} aria-expanded={emojiOpen}><Smile className="h-5 w-5" /></button>}
             <textarea
@@ -529,6 +534,7 @@ export function ChatDock() {
             />
             <button className="btn-primary px-3" disabled={busy || !text.trim()} aria-label={tr('Изпрати')}><Send className="h-4 w-4" /></button>
           </form>
+          )}
           {error && <p role="alert" className="px-3 pb-2 text-xs text-loss">{error}</p>}
         </section>
       )}

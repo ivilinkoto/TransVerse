@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -48,7 +49,7 @@ export default async function RoadServicePage() {
         <p className="mt-3 text-xs text-mist-400">{t('Товарите са с етикет „❄️ Пътна служба“ в')} <Link href="/game/contracts" className="text-cyan-glow hover:underline">{t('Курсове')}</Link>. {t('Условията по пътищата са игрови данни по истинското време.')}</p>
       </Card>
       <Card title={t('🛡️ Пазител на прохода')}>
-        <p className="mb-3 text-sm text-mist-300">{t('Тонове сол и пясък до затворени проходи този сезон. Първите трима взимат титли и {0}, {1} и {2} TC.', PASS_GUARDIAN.places[0].coins, PASS_GUARDIAN.places[1].coins, PASS_GUARDIAN.places[2].coins)}</p>
+        <p className="mb-3 text-sm text-mist-300">{t('Тонове сол и пясък до затворени проходи този сезон. Първите трима взимат титли и {0}, {1} и {2}.', PASS_GUARDIAN.places[0].coins, PASS_GUARDIAN.places[1].coins, coinsAsMoney(PASS_GUARDIAN.places[2].coins))}</p>
         {guardians.length === 0 ? <p className="text-sm text-mist-400">{t('Още никой не е отварял проход.')}</p> : (
           <ol className="space-y-1 text-sm" data-testid="pass-guardians">
             {guardians.map((k) => <li key={k.userId} className={`flex justify-between gap-2 ${k.userId === user.id ? 'font-semibold text-gold-300' : ''}`}><span>{k.place}. {k.username}</span><span className="num">{int(k.tons)} т</span></li>)}

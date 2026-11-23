@@ -82,9 +82,10 @@ export type CaseId = 'case_bronze' | 'case_silver' | 'case_gold';
 
 /** The contents of each case, with weights (shown as percent in the game). */
 export const CASE_TABLES: Record<CaseId, [ItemId, number][]> = {
-  case_bronze: [['coffee', 28], ['repair_kit', 22], ['fuel_voucher', 22], ['energy_drink', 10], ['tc_small', 8], ['cargo_cover', 7], ['trucker_cap', 3], ['old_tachograph', 2]],
-  case_silver: [['coffee', 10], ['energy_drink', 16], ['repair_kit', 10], ['cargo_cover', 12], ['queue_ticket', 10], ['thermos', 9], ['tc_small', 10], ['trucker_cap', 7], ['truck_keychain', 6], ['old_tachograph', 6], ['sunglasses', 3], ['tc_medium', 1]],
-  case_gold: [['thermos', 16], ['driver_handbook', 16], ['coin_pouch', 12], ['tc_medium', 10], ['sunglasses', 11], ['power_nap', 9], ['road_atlas', 8], ['cb_mic', 8], ['gold_frame', 5], ['cab_coffee', 3], ['tc_jackpot', 2]],
+  // 1.3.2.1 „Честна монета“: no ТрансКоин in the cases any more (their share went to items).
+  case_bronze: [['coffee', 30], ['repair_kit', 25], ['fuel_voucher', 25], ['energy_drink', 10], ['cargo_cover', 8], ['trucker_cap', 3], ['old_tachograph', 2]],
+  case_silver: [['coffee', 10], ['energy_drink', 16], ['repair_kit', 13], ['cargo_cover', 15], ['queue_ticket', 12], ['thermos', 9], ['trucker_cap', 8], ['truck_keychain', 6], ['old_tachograph', 6], ['sunglasses', 4]],
+  case_gold: [['thermos', 20], ['driver_handbook', 21], ['sunglasses', 13], ['power_nap', 12], ['road_atlas', 11], ['cb_mic', 11], ['gold_frame', 7], ['cab_coffee', 5]],
 };
 
 /** A small find on the road after a delivery. */
@@ -167,7 +168,7 @@ export const RECIPES: Recipe[] = [
   { id: 'power_nap', needs: { energy_drink: 2, coffee: 1 }, makes: 'power_nap', hint: 'Две енергийни и едно кафе — после сън.' },
   { id: 'queue_ticket', needs: { cargo_cover: 1, fuel_voucher: 2 }, makes: 'queue_ticket', hint: 'Застраховка и малко гориво — и си напред в опашката.' },
   { id: 'treasure_map', needs: { road_atlas: 1, fuel_voucher: 2 }, makes: 'treasure_map', hint: 'Стар атлас и гориво за път.' },
-  { id: 'gold_frame', needs: { trucker_cap: 1, sunglasses: 1, coin_pouch: 1 }, makes: 'gold_frame', hint: 'Шапка, очила и малко злато.' },
+  { id: 'gold_frame', needs: { trucker_cap: 1, sunglasses: 1, cb_mic: 1 }, makes: 'gold_frame', hint: 'Шапка, очила и радиостанция.' },
   { id: 'driver_handbook', needs: { old_tachograph: 2, coffee: 1 }, makes: 'driver_handbook', hint: 'Стари записи и кафе — уроци за шофьора.' },
 ];
 
@@ -241,6 +242,8 @@ export function sourcesOf(id: ItemId): { source: string; arg?: string; percent: 
   if (id === 'paint_firstsnow') out.push({ source: 'Пропуск на сезона „Първи сняг“', percent: null });
   if (id === 'paint_christmasnight' || id === 'night_frame') out.push({ source: 'Пропуск на сезона „Коледна нощ“', percent: null });
   if (id === 'paint_frost') out.push({ source: 'Последната стъпка на „Зимен поход“', percent: null });
+  // 1.3.2.1: the coin pouch is only in the season pass now (no longer in the gold case).
+  if (id === 'coin_pouch') out.push({ source: 'Пропуск на сезона', percent: null });
   return out;
 }
 

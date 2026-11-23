@@ -1,3 +1,4 @@
+import { vipLevel } from '@/lib/game/vip-levels';
 import { TruckNameForm } from '@/components/game/TruckNameForm';
 import { SCRAP } from '@/lib/game/heritage';
 import { sparePartsOf } from '@/server/game/heritage';
@@ -42,7 +43,7 @@ export default async function GaragePage() {
   // Баба Марта (v1.5): martenitsas on the trucks in March.
   const marta = features.marta && isMarta(now);
   // VIP: discount on repairs and upgrades; the company's service on the plot makes repairs cheaper too.
-  const discount = isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1;
+  const discount = (isVip(user.vipUntil, now) ? 1 - VIP_PERKS.garageDiscount : 1) * (1 - vipLevel(user.vipLevel).garage);
   // The company's service and, in March, spring cleaning (Баба Марта) make repairs cheaper.
   const serviceDiscount = 1 - (1 - ((await bonusesForUser(db, user.id))?.bonuses.repairDiscount ?? 0)) * (1 - (features.marta ? springDiscount(now) : 0));
   const [fleet, listings, myDepots, spareParts] = await Promise.all([fleetView(db, company.id), myListings(db, company.id), db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)), features.scrapyard ? sparePartsOf(db, user.id) : 0]);

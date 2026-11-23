@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import type { Tx } from '@/server/db/client';
 import { companies, ledgerEntries, organizations, treasuryEntries } from '@/server/db/schema';
 import { fail } from './errors';
+import { ECONOMY } from '@/lib/game/economy';
 import { t } from '@/i18n/t';
 
 export type LedgerCategory =
@@ -105,7 +106,10 @@ export type LedgerCategory =
   | 'legacy_reset'
   | 'intermodal_bonus'
   | 'era_bonus'
-  | 'tournament';
+  | 'tournament'
+  | 'profit_tax'
+  | 'booster'
+  | 'train_hire';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   relocation: 'Преместване на камион',
@@ -190,6 +194,9 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   intermodal_bonus: 'Бонус за интермодален контейнер',
   era_bonus: 'Бонус на ерата',
   tournament: 'Турнири на общността',
+  profit_tax: 'Данък върху печалбата',
+  booster: 'Бустер за пари',
+  train_hire: 'Влак под наем',
   items: 'Предмети от инвентара',
   promo: 'Промокод',
   promise: 'Обещан срок',
@@ -226,6 +233,32 @@ export interface Posting {
  * ledger exactly once (idempotency key) and updates the balance in the same
  * database transaction. Returns how many postings were applied.
  */
+/**
+ * 1.3.2.1 „Честна монета“: everything a delivery pays on top of its freight
+ * (bonuses of every kind, posted under `delivery:<id>:…` in the same
+ * settlement) is capped at ECONOMY.bonusCapShare of the freight. Kept per
+ * transaction: the freight comes first, each bonus takes what room is left.
+ */
+const deliveryPay = new WeakMap<Tx, Map<string, { freight: number; extra: number }>>();
+const NOT_BONUS = new Set(['freight', 'insurance_payout', 'freight_escrow', 'trade_sale', 'vehicle_sale', 'booster']);
+function capDeliveryBonus<P extends { category: string; amountCents: number; idempotencyKey: string }>(tx: Tx, p: P): P | null {
+  const m = /^delivery:([0-9a-f-]{36}):/.exec(p.idempotencyKey);
+  if (!m || p.amountCents <= 0) return p;
+  let byTx = deliveryPay.get(tx);
+  if (!byTx) deliveryPay.set(tx, (byTx = new Map()));
+  const d = byTx.get(m[1]!) ?? { freight: 0, extra: 0 };
+  byTx.set(m[1]!, d);
+  if (p.category === 'freight') {
+    d.freight += p.amountCents;
+    return p;
+  }
+  if (NOT_BONUS.has(p.category) || !d.freight) return p;
+  const room = Math.max(0, Math.round(d.freight * ECONOMY.bonusCapShare) - d.extra);
+  const amount = Math.min(p.amountCents, room);
+  d.extra += amount;
+  return amount > 0 ? { ...p, amountCents: amount } : null;
+}
+
 export async function post(tx: Tx, companyId: string, postings: Posting[], options: { requireFunds?: boolean } = {}): Promise<number> {
   const [company] = await tx.select({ balance: companies.balanceCents }).from(companies).where(eq(companies.id, companyId)).for('update');
   if (!company) fail('company_not_found', t('Компанията не е намерена.'), 404);
@@ -235,7 +268,9 @@ export async function post(tx: Tx, companyId: string, postings: Posting[], optio
   if (options.requireFunds && total < 0 && balance + total < 0) fail('insufficient_funds', t('Нямате достатъчно средства.'));
 
   let applied = 0;
-  for (const p of postings) {
+  for (const raw of postings) {
+    const p = capDeliveryBonus(tx, raw);
+    if (!p) continue;
     if (!Number.isSafeInteger(p.amountCents)) throw new Error(`Invalid amount ${p.amountCents}`);
     const next = balance + p.amountCents;
     const inserted = await tx

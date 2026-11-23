@@ -1,3 +1,4 @@
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { AUCTION_RULES, floorBidCents, maxBidCents, SPECIAL_LOADS } from '@/lib/game/auctions';
 import { CARGO, canCarry, type CargoType } from '@/lib/game/cargo';
@@ -156,7 +157,7 @@ export async function settleAuctions(db: Database, now = new Date()): Promise<nu
         .returning({ id: contracts.id });
       await tx.update(specialAuctions).set({ status: 'awarded', winnerCompanyId: win.companyId, winningBidCents: win.amountCents, contractId: c!.id }).where(eq(specialAuctions.id, row.id));
       const eur = (x: number) => tr('{0} лв.', Math.round(x / 100).toLocaleString(intlLocale()));
-      await notify(tx, win.userId, 'achievement', () => tr('Спечели търга: {0}', row.title), () => tr('{0} + {1} TC при доставка. Изпрати камион до {2} часа (Поръчки → Търгове).', eur(win.amountCents), row.coins, AUCTION_RULES.sendHours), '/game/auctions');
+      await notify(tx, win.userId, 'achievement', () => tr('Спечели търга: {0}', row.title), () => tr('{0} + {1} при доставка. Изпрати камион до {2} часа (Поръчки → Търгове).', eur(win.amountCents), coinsAsMoney(row.coins), AUCTION_RULES.sendHours), '/game/auctions');
       for (const b of bids.slice(1)) await notify(tx, b.userId, 'info', () => tr('Търгът „{0}“ приключи', row.title), () => tr('Спечели оферта от {0} Твоята беше {1}', eur(win.amountCents), eur(b.amountCents)), '/game/auctions');
       return 1;
     });
