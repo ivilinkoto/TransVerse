@@ -1376,3 +1376,14 @@ dca68513b4	{0} received {1} TC from you. Thank you!	{0} получил(а) от 
 cdd7d3c691	Only ТрансКоин packs can be given as gifts.	Дарить можно только пакеты ТрансКоинов.
 2d1ea11576	The ТрансКоин are already in your profile.	ТрансКоины уже в твоём профиле.
 cc0e267df8	🎁 {0} gave you {1} TC!	🎁 {0} подарил(а) тебе {1} TC!
+ead3e32b88	+{0}% money on every run of everyone in the company until {1}.	+{0}% денег за каждый рейс всех в компании до {1}.
+0c58f87c62	+{0}% money on every run of everyone in the company for {1} hours. One pays — everyone earns. The personal +50% booster goes first.	+{0}% денег за каждый рейс всех в компании на {1} ч. Платит один — зарабатывают все. Личный бустер +50% в приоритете.
+31b5261e89	Company booster	Бустер компании
+c0e1949dab	Company booster · {0} h	Бустер компании · {0} ч
+218c91a1d7	A booster for the whole company for {0} TC?	Бустер для всей компании за {0} TC?
+78c63ebb1d	In the Company any member can start a booster for 900 TC: +25% money on every run of everyone in the company for 24 hours. One pays — everyone earns. The personal +50% booster goes first; the two don't add up.	В Компании любой участник может запустить бустер за 900 TC: +25% денег за каждый рейс всех в компании на 24 часа. Платит один — зарабатывают все. Личный бустер +50% в приоритете, они не суммируются.
+288c4055a3	Start · {0} TC	Запустить · {0} TC
+2c7ad8be45	Join a company first.	Сначала вступи в компанию.
+67b24ad9e9	On until {0}: +{1}% money on every run of everyone in the company.	Действует до {0}: +{1}% денег за каждый рейс всех в компании.
+ddb87bf535	Extend · {0} TC	Продлить · {0} TC
+c513aa98b3	🚀 {0} started a company booster	🚀 {0} запустил(а) бустер компании

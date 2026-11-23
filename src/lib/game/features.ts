@@ -233,6 +233,8 @@ export const FEATURES = {
   premium_slots: '1.3.2.2',
   // 1.3.2.2: buy a ТрансКоин pack for another player (the shop).
   gift_tc: '1.3.2.2',
+  // 1.3.2.2: a booster for the whole player company, paid with ТрансКоин (/game/company).
+  company_boost: '1.3.2.2',
   // 1.3.3 „Жп линия“: the players' own freight trains on real rail lines (/game/trains).
   trains: '1.3.3',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).

@@ -36,3 +36,4 @@ export async function speedUpDelivery(db: Database, userId: string, deliveryId: 
   if (mode === 'finish') await settleDueDeliveries(db, new Date(done.etaAt.getTime() + 1), done.companyId);
   return { price: done.price, etaAt: done.etaAt };
 }
+

@@ -68,6 +68,7 @@ import { learnSkill, resetSkills } from '@/server/game/skills';
 import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
 import { speedUpDelivery } from '@/server/game/speed-up';
+import { buyCompanyBoost } from '@/server/game/company-boost';
 import { addWagons, buyTrain, hireTrain, moveTrain, sellTrain, sellWagons, sendTrain, setTrainHire } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, driveMyself, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
@@ -235,6 +236,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('buyDepot'), cityId }),
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('expandDepotCoins'), depotId: id }),
+  z.object({ type: z.literal('buyCompanyBoost') }),
   z.object({ type: z.literal('markNotificationsRead') }),
   z.object({ type: z.literal('adoptMascot'), kind: z.enum(['cat', 'dog', 'parrot', 'turtle']), name: z.string().max(60) }),
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
@@ -667,6 +669,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   hireTrain: 'trains',
   buyPremiumTruck: 'premium_trucks',
   expandDepotCoins: 'premium_slots',
+  buyCompanyBoost: 'company_boost',
   setTrainHire: 'trains',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
@@ -879,6 +882,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, id: (await buyDepot(db, user.id, input.cityId)).id };
     case 'expandDepot':
       return { ok: true, costCents: await expandDepot(db, user.id, input.depotId) };
+    case 'buyCompanyBoost':
+      return { ok: true, until: (await buyCompanyBoost(db, user.id, new Date())).toISOString() };
     case 'expandDepotCoins':
       return { ok: true, coins: await expandDepotCoins(db, user.id, input.depotId) };
     case 'markNotificationsRead':

@@ -1,4 +1,5 @@
-import { BOOSTERS } from '@/lib/game/speed-up';
+import { BOOSTERS, COMPANY_BOOST } from '@/lib/game/speed-up';
+import { companyBoostUntil } from './company-boost';
 import { vipLevel } from '@/lib/game/vip-levels';
 import { ownerVipLevel } from './vip-levels';
 import { checkTripRules } from './special-loads';
@@ -540,9 +541,13 @@ export async function settleDelivery(tx: Tx, deliveryId: string, now = new Date(
   // 1.3.2.2: the shop's boosters — no tolls, and +50 % on the freight (outside the bonus cap).
   const [boosts] = await tx.select({ money: users.moneyBoostUntil, tolls: users.tollFreeUntil }).from(users).where(eq(users.id, company!.ownerId));
   const tollFree = !!boosts?.tolls && boosts.tolls > completedAt;
-  const boosterCents = boosts?.money && boosts.money > completedAt ? Math.round(result.rewardCents * BOOSTERS.moneyShare) : 0;
+  // 1.3.2.2: the personal booster (+50 %), else the company's (+25 %); they do not add up.
+  const crew = boosts?.money && boosts.money > completedAt ? null : await membershipOf(tx, company!.ownerId);
+  const crewBoost = crew && (await companyBoostUntil(tx, crew.company.id));
+  const boostShare = boosts?.money && boosts.money > completedAt ? BOOSTERS.moneyShare : crewBoost && crewBoost > completedAt ? COMPANY_BOOST.share : 0;
+  const boosterCents = Math.round(result.rewardCents * boostShare);
   if (costs.tollCents && !tollFree) postings.push({ category: 'tolls', amountCents: -costs.tollCents, description: t('Пътни такси'), idempotencyKey: key('tolls'), refType: 'delivery', refId: d.id });
-  if (boosterCents) postings.push({ category: 'booster', amountCents: boosterCents, description: t('Бустер +{0}% пари', Math.round(BOOSTERS.moneyShare * 100)), idempotencyKey: key('booster'), refType: 'delivery', refId: d.id });
+  if (boosterCents) postings.push({ category: 'booster', amountCents: boosterCents, description: t('Бустер +{0}% пари', Math.round(boostShare * 100)), idempotencyKey: key('booster'), refType: 'delivery', refId: d.id });
   const crossingCents = (costs as { crossingCents?: number }).crossingCents ?? 0;
   if (crossingCents) postings.push({ category: 'crossings', amountCents: -crossingCents, description: t('Билет за ферибот / влак'), idempotencyKey: key('crossing'), refType: 'delivery', refId: d.id });
   // The fuel station where the truck filled up earns its margin (paid by the game).

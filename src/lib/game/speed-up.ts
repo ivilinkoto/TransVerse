@@ -39,3 +39,10 @@ export function hurrySchedule(segments: readonly Segment[], now: number, factor:
 
 /** 1.3.2.2: the money booster from the shop pays this share of the freight on top (outside the bonus cap). */
 export const BOOSTERS = { moneyShare: 0.5 } as const;
+
+/**
+ * 1.3.2.2: a company booster — any member pays ТрансКоин and every member gets
+ * +25 % of the freight on their runs for 24 hours (the personal +50 % booster
+ * wins where both run; they do not add up). Bought again, it runs longer.
+ */
+export const COMPANY_BOOST = { coins: 900, hours: 24, share: 0.25 } as const;
