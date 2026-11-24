@@ -231,9 +231,10 @@ test('1.3.2: Курсове with the map, the page search and „Игри и н�
   await page.locator('header').getByRole('button', { name: 'Търси страница' }).click();
   const search = page.getByRole('dialog', { name: 'Търси страница' });
   await expect(search).toBeVisible();
+  // 1.3.3: the service is in each truck's window, so „сервиз“ finds Автопарк.
   await search.getByRole('textbox').fill('сервиз');
-  await search.getByRole('button', { name: /Сервиз/ }).first().click();
-  await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
+  await search.getByRole('button', { name: /Камиони/ }).first().click();
+  await expect(page.getByRole('heading', { name: 'Автопарк', exact: true })).toBeVisible();
   await aside.getByRole('link', { name: 'Игри и награди' }).click();
   await expect(page.getByRole('heading', { name: 'Игри и награди', exact: true })).toBeVisible();
 });
@@ -241,10 +242,10 @@ test('1.3.2: Курсове with the map, the page search and „Игри и н�
 test('section tabs: Автопарк and „Игри и награди“ group their pages', async ({ page }) => {
   await register(page);
   await page.goto('/game/fleet');
-  // 1.3.2: the row keeps Камиони, Шофьори, Сервиз and Пазар; the rest is under „Още ▾“.
+  // 1.3.3: the row keeps Камиони, Ремаркета, Влакове, Шофьори and Пазар; the rest is under „Още ▾“.
   const fleetTabs = page.getByRole('navigation', { name: 'Автопарк' });
-  await fleetTabs.getByRole('link', { name: 'Сервиз', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Сервиз', exact: true })).toBeVisible();
+  await fleetTabs.getByRole('link', { name: 'Ремаркета', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Ремаркета', exact: true })).toBeVisible();
   await expect(page.locator('aside').getByRole('link', { name: 'Автопарк' })).toHaveAttribute('aria-current', 'page');
   await page.goto('/game/play');
   const playTabs = page.getByRole('navigation', { name: 'Игри и награди' });

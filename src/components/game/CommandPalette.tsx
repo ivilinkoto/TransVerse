@@ -11,8 +11,9 @@ import { t as tr, tx } from '@/i18n/t';
 /** Extra words people search for, by page. */
 const KEYWORDS: Record<string, string> = {
   '/game/contracts': 'товари поръчки борса курс работа',
-  '/game/fleet': 'камиони автопарк превозни средства',
-  '/game/garage': 'ремонт сервиз ремарке прикачи гуми подобрения',
+  // 1.3.3: the service is in each truck's window in Автопарк.
+  '/game/fleet': 'камиони автопарк превозни средства ремонт сервиз ремарке прикачи гуми подобрения застраховка продай',
+  '/game/fleet/trailers': 'ремаркета ремарке продай подобрения',
   '/game/market': 'купи камион ремарке пазар втора ръка',
   '/game/staff': 'шофьори наеми екипаж',
   '/game/licences': 'лиценз хладилен опасни адр митница',
@@ -40,7 +41,7 @@ export function CommandPalette() {
     () => [
       ...SECTIONS.flatMap((s) => (s.tabs?.length ? s.tabs.filter((t) => (!t.feature || has(t.feature)) && (!t.hiddenWith || !has(t.hiddenWith))).map((t) => ({ href: t.href, label: t.label, where: s.label })) : [{ href: s.href, label: s.label, where: '' }])),
       ...ACCOUNT_MENU.filter((m) => m.href !== '/game/careers' || has('careers')).map((m) => ({ href: m.href, label: m.label, where: profile })),
-    ].filter((x, i, all) => all.findIndex((y) => y.href === x.href) === i),
+    ].filter((x, i, all) => x.href !== '/game/garage' && all.findIndex((y) => y.href === x.href) === i),
     [has, profile],
   );
   const found = useMemo(() => {

@@ -1513,3 +1513,5 @@ b5193b42b9	The train can also go empty to a neighbouring terminal to pick up a l
 2d04625e15	Locomotive {0}	Локомотив {0}
 fccdfe4608	The locomotive comes without wagons. You buy the wagons apart — in the train's window → Wagons, as many and of whatever kind you want.	Локомотив поставляется без вагонов. Вагоны покупаешь отдельно — в окне поезда → Вагоны, сколько и какого типа хочешь.
 e6bd8b6215	📍 At terminal {0} · no wagons	📍 На станции {0} · без вагонов
+d348662411	trucks fleet vehicles repair service trailer couple tyres upgrades insurance sell	грузовики автопарк транспорт ремонт сервис прицеп сцепить шины улучшения страховка продать
+528eaca554	trailers trailer sell upgrades	прицепы прицеп продать улучшения
