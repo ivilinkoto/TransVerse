@@ -18,7 +18,7 @@ import type { Database, Tx } from '@/server/db/client';
 import { cityMarkets, companyMembers, drivers, jobState, organizations, trailers, userBadges, users, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
 import { powerUnitModel } from '@/lib/game/catalog';
-import { COSMETIC_PARTS, parseCosmetic, parseTrailerCosmetic, stickerText, TRAILER_COSMETIC_PARTS } from '@/lib/game/cosmetics';
+import { COSMETIC_PARTS, cosmeticVip, parseCosmetic, parseTrailerCosmetic, stickerText, TRAILER_COSMETIC_PARTS } from '@/lib/game/cosmetics';
 import { postCoins } from './coins';
 import { companyForUser } from './company';
 import { fail } from './errors';
@@ -227,12 +227,19 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         break;
       }
       case 'truck_part': {
-        if (!(await featureFor(tx, userId, 'cosmetics', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
         const choice = parseCosmetic(input.cosmetic ?? '');
         if (!choice) fail('invalid_part', tr('Изберете част и стил.'));
+        // Each part comes with its release: the first four with `cosmetics`, the 1.3.2.3 ones with `brand_parts`.
+        if (!(await featureFor(tx, userId, COSMETIC_PARTS[choice!.part].feature ?? 'cosmetics', now))) fail('not_released', tr('Това идва със следващото обновление.'), 403);
         const v = await ownVehicle(tx, account.id, input.vehicleId);
         if (powerUnitModel(v.modelId).kind === 'van') fail('van', tr('Частите са за камиони, не за бусове.'));
         const { part, style } = choice!;
+        // 1.3.2.3 „Части по марки“: the new parts come with their release; some styles need a VIP level; stacks and the aero kit are for tractors.
+        const def = COSMETIC_PARTS[part];
+        const needVip = cosmeticVip(part, style);
+        if (needVip && (user!.vipLevel ?? 0) < needVip) fail('vip_level', tr('Тази част е от VIP{0}.', needVip));
+        if (def.tractorOnly && powerUnitModel(v.modelId).kind !== 'tractor') fail('tractor_only', tr('Тази част е само за влекачи.'));
+        if (def.noElectric && powerUnitModel(v.modelId).electric) fail('electric', tr('Електрическите камиони нямат ауспуси.'));
         let value = style;
         if (part === 'sticker') {
           const [org] = await tx.select({ name: organizations.name }).from(companyMembers).innerJoin(organizations, eq(organizations.id, companyMembers.companyId)).where(eq(companyMembers.userId, userId));

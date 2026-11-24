@@ -70,7 +70,7 @@ export function Defs({ ids, color }: { ids: Ids; color: string }) {
 
 /** Tyre with sidewall, rim, lug nuts and hub cap. */
 /** 1.3.2.2: the rim look by brand — steel (default), alloy spokes, a heavy red-hub steel rim, a flat aero cover. */
-export type RimStyle = 'steel' | 'alloy' | 'heavy' | 'aero' | 'gold';
+export type RimStyle = 'steel' | 'alloy' | 'heavy' | 'aero' | 'gold' | 'black';
 
 export function Wheel({ x, r = 52, ids, twin = false, rim = 'steel' }: { x: number; r?: number; ids: Ids; twin?: boolean; rim?: RimStyle }) {
   const cy = -r;
@@ -88,6 +88,7 @@ export function Wheel({ x, r = 52, ids, twin = false, rim = 'steel' }: { x: numb
       {lugs}
       <circle cx={x} cy={cy} r={rimR * 0.3} fill="#6b7280" stroke="#d1d5db" strokeWidth={r * 0.02} />
       <circle cx={x - r * 0.08} cy={cy - r * 0.08} r={rimR * 0.1} fill="#f9fafb" opacity="0.8" />
+      {rim === 'black' && <><circle cx={x} cy={cy} r={rimR} fill="#111827" stroke="#334155" strokeWidth={r * 0.03} /><circle cx={x} cy={cy} r={rimR * 0.3} fill="#334155" /></>}
       {rim === 'gold' && <circle cx={x} cy={cy} r={rimR} fill="#ca8a04" stroke="#78350f" strokeWidth={r * 0.03} />}
       {(rim === 'alloy' || rim === 'gold') && Array.from({ length: 6 }, (_, i) => {
         const a = (i / 6) * Math.PI * 2;

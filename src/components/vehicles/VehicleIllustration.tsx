@@ -47,11 +47,14 @@ export function VehicleDrawing({ modelId, trailerModelId, color = '#1d4ed8', tra
   if (unit.premium) cosmetics = { grille: 'gold', visor: 'chrome', lights: 'white', premium: true, ...cosmetics };
   // 1.3.2.2: each brand draws its own cab; some models add their own parts.
   const brand = cabBrand(unit.brand);
+  // 1.3.2.3: bought parts add to (or change) what the model comes with.
   const design: CabDesign = {
     brand,
-    stacks: brand === 'rila' && unit.look !== 'plow',
-    bullbar: unit.id === 'rila-xt700-titan',
-    aero: brand === 'volta' || unit.id === 'danubia-t500-eco' || unit.id === 'danubia-t560-signature',
+    stacks: (brand === 'rila' && unit.look !== 'plow') || (!!cosmetics?.stacks && !unit.electric),
+    stacksColor: cosmetics?.stacks === 'black' ? 'black' : 'chrome',
+    bullbar: unit.id === 'rila-xt700-titan' || !!cosmetics?.bullbar,
+    bullbarColor: cosmetics?.bullbar === 'black' ? 'black' : 'chrome',
+    aero: brand === 'volta' || unit.id === 'danubia-t500-eco' || unit.id === 'danubia-t560-signature' || cosmetics?.aero === 'on',
   };
   const coupled = trailerModelId ? trailerModel(trailerModelId) : null;
   const trailer = unit.kind === 'tractor' && coupled?.kind === 'semi' ? coupled : null;

@@ -32,6 +32,8 @@ export function ShopBuy({
   trailers = [],
   depots = [],
   compact = false,
+  parts,
+  vipLevel = 0,
 }: {
   item: ShopItem;
   balance: number;
@@ -46,6 +48,10 @@ export function ShopBuy({
   depots?: { id: string; label: string }[];
   /** 1.2.3.6: in a store card the price is shown above, so the button just says „Купи“. */
   compact?: boolean;
+  /** 1.3.2.3: the truck parts on sale now (the new ones come with their release). */
+  parts?: string[];
+  /** 1.3.2.3: some styles need a VIP level. */
+  vipLevel?: number;
 }) {
   const router = useRouter();
   const usable = vehicles.filter((v) => (item.needs === 'vehicle_city' ? v.idle : v.owned && (item.needs !== 'vehicle' || v.idle)));
@@ -53,7 +59,8 @@ export function ShopBuy({
   const [cityId, setCityId] = useState('');
   const [text, setText] = useState('');
   const [color, setColor] = useState(colors[0] ?? '');
-  const [cosmetic, setCosmetic] = useState(item.needs === 'trailer_cosmetic' ? 'stripe:red' : 'grille:chrome');
+  const firstPart = parts?.[0] as keyof typeof COSMETIC_PARTS | undefined;
+  const [cosmetic, setCosmetic] = useState(item.needs === 'trailer_cosmetic' ? 'stripe:red' : firstPart ? `${firstPart}:${COSMETIC_PARTS[firstPart].styles[0]!.id}` : 'grille:chrome');
   const [trailerId, setTrailerId] = useState(trailers[0]?.id ?? '');
   const [depotId, setDepotId] = useState(depots[0]?.id ?? '');
   const [confirming, setConfirming] = useState(false);
@@ -132,9 +139,9 @@ export function ShopBuy({
       )}
       {item.needs === 'vehicle_cosmetic' && (
         <select className="input py-2 text-sm" value={cosmetic} onChange={(e) => setCosmetic(e.target.value)} aria-label={tr('Част')}>
-          {COSMETIC_IDS.map((part) => (
-            <optgroup key={part} label={`${tx(COSMETIC_PARTS[part].label)} · ${COSMETIC_PARTS[part].price} TC`}>
-              {COSMETIC_PARTS[part].styles.map((st) => <option key={st.id} value={`${part}:${st.id}`}>{tx(COSMETIC_PARTS[part].label)}: {tx(st.label)}</option>)}
+          {COSMETIC_IDS.filter((part) => !parts || parts.includes(part)).map((part) => (
+            <optgroup key={part} label={`${tx(COSMETIC_PARTS[part].label)} · ${COSMETIC_PARTS[part].price} TC${COSMETIC_PARTS[part].tractorOnly ? ` · ${tr('за влекачи')}` : ''}`}>
+              {COSMETIC_PARTS[part].styles.map((st) => <option key={st.id} value={`${part}:${st.id}`} disabled={!!st.vip && vipLevel < st.vip}>{tx(COSMETIC_PARTS[part].label)}: {tx(st.label)}{st.vip ? ` (VIP${st.vip})` : ''}</option>)}
             </optgroup>
           ))}
         </select>

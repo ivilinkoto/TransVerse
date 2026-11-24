@@ -14,6 +14,7 @@ import { isVip, STANDARD_COLORS, VIP_BENEFITS, VIP_COLORS } from '@/lib/game/vip
 import { cities, trailers, vehicles } from '@/server/db/schema';
 import { coinHistory, COIN_REASON_LABELS, earnedThisWeek, type CoinReason } from '@/server/game/coins';
 import { COIN_CAP } from '@/lib/game/coin-cap';
+import { COSMETIC_IDS, COSMETIC_PARTS } from '@/lib/game/cosmetics';
 import { nextVipLevel, unlocksAt, VIP_LEVELS } from '@/lib/game/vip-levels';
 import { spentCents } from '@/server/game/vip-levels';
 import { premiumPassOpen } from '@/server/game/season-pass';
@@ -55,6 +56,8 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
   const spent = await spentCents(db, user.id);
   const level = user.vipLevel ?? 0;
   const next = nextVipLevel(spent, level);
+  // 1.3.2.3: the truck parts on sale now.
+  const liveParts = COSMETIC_IDS.filter((p) => !!(features as Record<string, boolean>)[COSMETIC_PARTS[p].feature ?? 'cosmetics']);
   const levelCard = (
     <div className="w-full rounded-2xl border border-gold-400/30 bg-gold-400/5 p-3 text-sm" data-testid="vip-level">
       <p className="font-display text-base font-bold text-gold-300">{tr('VIP ниво {0}', level)}</p>
@@ -97,7 +100,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
   const levelOffer = features.paid_v3 ? await levelOfferOf(db, user.id, now) : null;
   const products = PAID_PRODUCTS.filter((p) => (p.id !== 'level_offer' || !!levelOffer) && (!p.v2 || (v2 && (p.id !== 'starter_pack' || starter) && (p.id !== 'supporter_pack' || supporter))) && (!p.feature || !!features[p.feature]) && (!p.id.startsWith('pass_') || passOpen)).sort((a, b) => Number(b.id === 'level_offer') - Number(a.id === 'level_offer') || Number(b.id === 'supporter_pack') - Number(a.id === 'supporter_pack'));
   const notes = v2 ? [levelOffer && tr('🎁 Оферта за ниво {0} — до {1}.', levelOffer.level, new Date(levelOffer.until).toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })), first && tr('Първата ти покупка на ТрансКоин е двойна — получаваш двойно повече TC.'), bonusWeekend(now) && tr('Бонус уикенд: +{0}% ТрансКоин на всеки пакет.', WEEKEND_BONUS * 100), patron && patron.level > 0 && tr('Покровител ниво {0}: +{1}% ТрансКоин на всеки пакет.', patron.level, patron.level)].filter((x): x is string => !!x) : [];
-  const seasonOk = (i: { id: string; seasonal?: string }) => (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics);
+  const seasonOk = (i: { id: string; seasonal?: string }) => (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics || features.brand_parts) && (i.id !== 'trailer_part' || features.trailer_cosmetics);
   const passSale = v2 && season ? passLevelSaleOpen(season.endsAt, now) : false;
   const vipBenefits = v2 ? [...VIP_BENEFITS.map((b) => ({ ...b, items: b.items.filter((i) => i !== 'Запазване на поръчка за 10 минути') })), ...VIP_BENEFITS_V2] : VIP_BENEFITS;
 
@@ -114,7 +117,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
           vip: SHOP_ITEMS.filter((i) => i.category === 'vip').map(priced).map((item) => ({ item })),
           ...Object.fromEntries(categories.map((cat) => [cat, visible.map(priced).filter((i) => i.category === cat && seasonOk(i)).map((item) => ({ item, ribbon: item.seasonal ? tr('Сезонно') : friday && item.price < (SHOP_ITEMS.find((x) => x.id === item.id)?.price ?? 0) ? tr('−{0}%', Math.round(BLACK_FRIDAY.discount * 100)) : undefined }))])),
         }}
-        buy={{ balance: user.coins, vip, vehicles: vehicleOptions, cities: hubs, colors: STANDARD_COLORS, vipColors: vipColorsNow, trailers: trailerOptions, depots: depotOptions }}
+        buy={{ balance: user.coins, vip, vehicles: vehicleOptions, cities: hubs, colors: STANDARD_COLORS, vipColors: vipColorsNow, trailers: trailerOptions, depots: depotOptions, parts: liveParts, vipLevel: level }}
         vipBenefits={vipBenefits.map((b) => ({ group: tx(b.group), items: b.items.map((i) => tx(i)) }))}
         extras={
           <>
@@ -220,7 +223,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
               <div key={i.id} className="rounded-xl border border-gold-400/30 bg-gold-400/5 p-3">
                 <div className="flex items-center justify-between gap-2"><span className="font-semibold">{tx(i.label)}</span><span className="num font-bold text-cyan-glow">{tx(i.price)} TC</span></div>
                 <p className="mb-2 mt-1 text-xs text-mist-400">{tx(i.description)}</p>
-                <ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={vipColorsNow} />
+                <ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={vipColorsNow} parts={liveParts} vipLevel={level} />
               </div>
             ))}
             {v2 && <p className="text-xs text-mist-400">{tr('С истински пари VIP за 30 дни е най-изгодно — виж „Купи ТрансКоин и VIP“ по-долу.')}</p>}
@@ -241,7 +244,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
                     <span className="num shrink-0 text-right"><span className="block text-xs text-mist-400 line-through">{VIP_PRICES_V2[base.id] ?? base.price} TC</span><span className="font-bold text-gold-400">{i.price} TC</span></span>
                   </div>
                   <p className="mb-3 mt-1 text-sm text-mist-300">{tx(i.description)}</p>
-                  <div className="mt-auto"><ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={vipColorsNow} trailers={trailerOptions} depots={depotOptions} /></div>
+                  <div className="mt-auto"><ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={vipColorsNow} trailers={trailerOptions} depots={depotOptions} parts={liveParts} vipLevel={level} /></div>
                 </Card>
               );
             })}
@@ -261,7 +264,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
         <section key={cat}>
           <h2 className="mb-3 font-display text-lg font-bold">{tx(SHOP_CATEGORIES[cat])}</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {visible.map(priced).filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics) && (i.id !== 'trailer_part' || features.trailer_cosmetics)).map((i) => (
+            {visible.map(priced).filter((i) => i.category === cat && (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics || features.brand_parts) && (i.id !== 'trailer_part' || features.trailer_cosmetics)).map((i) => (
               <Card key={i.id} className="flex flex-col">
                 {i.id === 'paint_christmas' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color={CHRISTMAS.paintColor} livery="christmas" className="mb-3 h-16 w-full" />}
                 {i.id === 'trailer_part' && <VehicleIllustration modelId="danubia-t440" trailerModelId="curtain-13" color="#111827" trailerCosmetics={{ paint: '#111827', stripe: 'gold', flaps: 'chrome', toplights: 'amber' }} className="mb-3 h-16 w-full" />}

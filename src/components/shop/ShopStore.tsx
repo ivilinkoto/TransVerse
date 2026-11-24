@@ -8,7 +8,7 @@ import { playSelect } from '@/lib/client/motion';
 import { t, tx } from '@/i18n/t';
 
 type Tile = { item: ShopItem; was?: number; ribbon?: string };
-type BuyProps = { balance: number; vip: boolean; vehicles: VehicleOption[]; cities: { id: number; name: string }[]; colors: string[]; vipColors: string[]; trailers: { id: string; label: string }[]; depots: { id: string; label: string }[] };
+type BuyProps = { balance: number; vip: boolean; vehicles: VehicleOption[]; cities: { id: number; name: string }[]; colors: string[]; vipColors: string[]; trailers: { id: string; label: string }[]; depots: { id: string; label: string }[]; parts?: string[]; vipLevel?: number };
 
 /** One product as a game card: a glowing picture, a ribbon, the price as a coin and the buy button. */
 function ShopTile({ tile, buy }: { tile: Tile; buy: BuyProps }) {
