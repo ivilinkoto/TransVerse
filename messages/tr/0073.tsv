@@ -1515,3 +1515,29 @@ fccdfe4608	The locomotive comes without wagons. You buy the wagons apart — in 
 e6bd8b6215	📍 At terminal {0} · no wagons	📍 На станции {0} · без вагонов
 d348662411	trucks fleet vehicles repair service trailer couple tyres upgrades insurance sell	грузовики автопарк транспорт ремонт сервис прицеп сцепить шины улучшения страховка продать
 528eaca554	trailers trailer sell upgrades	прицепы прицеп продать улучшения
+7577e3b457	{0} loaded runs · bonus {1}	{0} рейсов с грузом · бонус {1}
+e3a3a4360e	{0} of {1} runs	{0} из {1} рейсов
+b422d48990	{0} ⇄ {1}: {2} runs. Bonus {3} lv.	{0} ⇄ {1}: {2} рейсов. Бонус {3} лв.
+f3fa9906b0	You already have this contract.	У тебя уже есть этот договор.
+896260ddf5	The train is in excellent condition.	Поезд в отличном состоянии.
+257ae7e574	The train is on the way. It is repaired at the terminal.	Поезд в пути. Ремонт — на станции.
+33268a5a80	The train is too worn to run ({0}% or less). Repair it.	Поезд слишком изношен для рейса ({0}% и меньше). Отремонтируй его.
+c6020c4637	Every run wears it by the km, the weight and the hills. Below {0}% it uses more energy, below {1}% it does not leave.	Каждый рейс изнашивает его по километрам, весу и уклону. Ниже {0}% тратит больше энергии, ниже {1}% не отправляется.
+57e5f6a8b5	Every run wears the locomotive and the wagons by the km, the weight and the hills. Below 70% the train uses more energy, below 25% it does not leave. The repair is in the train's window.	Каждый рейс изнашивает локомотив и вагоны по километрам, весу и уклону. Ниже 70% поезд тратит больше энергии, ниже 25% не отправляется. Ремонт — в окне поезда.
+b5cf04cde0	Every week there are six contracts between neighbouring terminals: carry the number of loaded runs between the two (either way) by Sunday and get a bonus on top of the pay. Up to two contracts a week; hired trains count too.	Каждую неделю шесть договоров между соседними станциями: сделай нужное число рейсов с грузом между ними (в любую сторону) до воскресенья и получи бонус сверх оплаты. До двух договоров в неделю; арендованные поезда тоже считаются.
+577adcbf1e	Contract {0} ⇄ {1}: {2} runs	Договор {0} ⇄ {1}: {2} рейсов
+9eb54c29b7	Train contract	Договор на поезд
+99bab1f6b7	Contracts of the week	Договоры недели
+d55eae7cc0	Carry this many loaded runs between the two terminals (either way, any goods) by Sunday and you get the bonus on top of the orders' pay. A hired train counts too.	Сделай столько рейсов с грузом между двумя станциями (в любую сторону, любой товар) до воскресенья и получишь бонус сверх оплаты заказов. Арендованный поезд тоже считается.
+8f4600234f	Wear and repair	Износ и ремонт
+5586511843	Worn — uses {0}% more energy.	Изношен — тратит на {0}% больше энергии.
+16f9412bfd	At most {0} contracts a week.	Не более {0} договоров в неделю.
+76407e79d3	Take the contract	Взять договор
+d35636d269	Taken {0} of {1} · until {2}	Взято {0} из {1} · до {2}
+2554c12cd8	Train repair {0}	Ремонт поезда {0}
+61ac175bc4	Condition of the locomotive and the wagons	Состояние локомотива и вагонов
+8a46193d6c	Too worn — it does not leave until you repair it.	Слишком изношен — не отправится, пока не отремонтируешь.
+e4ca58b679	This contract is no longer valid.	Этот договор больше не действует.
+910b046a58	worn — needs a repair	изношен — нужен ремонт
+3dbbcba44a	✓ Done — the bonus is paid	✓ Выполнен — бонус выплачен
+2af1bee9a8	📜 The contract is done!	📜 Договор выполнен!
