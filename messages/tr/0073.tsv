@@ -1474,3 +1474,5 @@ f71cb43185	Old links to the Service page (from the dashboard, „Now“ and noti
 a5690b0a61	🔁 regular line	🔁 регулярная линия
 b2f3c5cde7	🚆 Send again	🚆 Отправь снова
 f060d5eb25	🛤️ On the way to {0}	🛤️ В пути к {0}
+a03b513e86	Other orders this train cannot take ({0})	Другие заказы, которые поезд не может взять ({0})
+08709e23b8	There is no order this train can take right now. See the others below or send the train empty to another terminal.	Сейчас нет заказа, который этот поезд может взять. Посмотри другие ниже или отправь поезд порожняком на другую станцию.
