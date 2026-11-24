@@ -7,7 +7,7 @@ import { companies, jobState, notifications, userLicences, users } from '@/serve
 import { post } from '@/server/game/finance';
 import { GameError } from '@/server/game/errors';
 import { buyTrain, runLines, sendBest, setTrainLine, settleTrains } from '@/server/game/trains';
-import { db, newPlayer } from './helpers';
+import { db, newPlayer, trainWith } from './helpers';
 
 afterAll(() => closeDb());
 
@@ -50,7 +50,7 @@ describe('1.3.3: the regular line and „Пусни пак“', () => {
       return false;
     };
     for (let i = 0; i < 120 && !(await fits(now.getTime())); i++) now = new Date(now.getTime() + TRAINS.windowHours * 3_600_000);
-    const train = await buyTrain(db(), p.userId, n, now);
+    const train = await trainWith(p.userId, n, now);
     expect(await code(sendBest(db(), p.userId, train.id, now, () => false))).toBe('no_order');
     await setTrainLine(db(), p.userId, train.id, { home: SOFIA, far: null, wagonType: 'hopper', emptyBack: false }, now);
     expect((await trainRow(train.id)).line).toMatchObject({ on: true, home: SOFIA, wagonType: 'hopper' });
@@ -66,5 +66,26 @@ describe('1.3.3: the regular line and „Пусни пак“', () => {
     // Turned off: the worker leaves it alone.
     await setTrainLine(db(), p.userId, train.id, null, arrive);
     expect((await trainRow(train.id)).line).toBeNull();
+  });
+});
+
+describe('1.3.3: the locomotive and the wagons are bought apart', () => {
+  it('a locomotive comes alone; wagons are added by kind and can all be sold again', async () => {
+    const { addWagons, sellWagons } = await import('@/server/game/trains');
+    const { LOCOS, WAGONS } = await import('@/lib/game/trains');
+    const p = await owner();
+    const [acc] = await db().select({ id: companies.id, b: companies.balanceCents }).from(companies).where(eq(companies.ownerId, p.userId));
+    const loco = await buyTrain(db(), p.userId, { loco: 'balkan-e40', terminalId: SOFIA }, new Date());
+    expect(loco.wagons).toEqual({});
+    const [after] = await db().select({ b: companies.balanceCents }).from(companies).where(eq(companies.id, acc!.id));
+    expect(after!.b).toBe(acc!.b - LOCOS['balkan-e40'].priceCents);
+    const t1 = await addWagons(db(), p.userId, loco.id, 'container', 6, new Date());
+    const t2 = await addWagons(db(), p.userId, loco.id, 'tank', 4, new Date());
+    expect(t2.wagons).toEqual({ container: 6, tank: 4 });
+    expect(t1.wagons.container).toBe(6);
+    await sellWagons(db(), p.userId, loco.id, 'container', 6, new Date());
+    await sellWagons(db(), p.userId, loco.id, 'tank', 4, new Date());
+    expect((await trainRow(loco.id)).wagons).toEqual({});
+    expect(WAGONS.container.priceCents).toBeGreaterThan(0);
   });
 });

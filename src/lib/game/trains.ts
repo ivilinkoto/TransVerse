@@ -78,8 +78,6 @@ export const GRADES: Record<Grade, { pull: number; energy: number; label: string
 export const TRAINS = {
   minLevel: 25,
   maxTrains: 3,
-  /** Wagons a new train starts with at least (of one kind). */
-  minWagons: 5,
   /** Freight rate per ton-km, cents (before the wagon's factor) — far below a truck's. */
   centsPerTonKm: 2.6,
   /** Track access fee per train-km, cents (paid at every departure, loaded or empty). */

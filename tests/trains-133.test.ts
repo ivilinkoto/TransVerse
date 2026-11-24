@@ -11,7 +11,7 @@ import { post } from '@/server/game/finance';
 import { GameError } from '@/server/game/errors';
 import { buyTrain, moveTrain, sellTrain, sendTrain, settleTrains, trainsView } from '@/server/game/trains';
 import { isTrainPage, sectionFor, VEHICLE_SWITCH } from '@/components/game/nav';
-import { db, newPlayer, playerWithCompany } from './helpers';
+import { db, newPlayer, playerWithCompany, trainWith } from './helpers';
 
 afterAll(() => closeDb());
 
@@ -119,7 +119,7 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     expect(await code(buyTrain(db(), p.userId, n, now))).toBe('level');
     await rich(p.userId, 25);
     const before = await balance(p.userId);
-    const train = await buyTrain(db(), p.userId, n, now);
+    const train = await trainWith(p.userId, n, now);
     expect(await balance(p.userId)).toBe(before - LOCOS['rila-e60'].priceCents - 25 * WAGONS.container.priceCents);
 
     const view = await trainsView(db(), p.userId, now);
@@ -132,7 +132,7 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     // Taken: not again, by this train or another one.
     const other = await newPlayer();
     await rich(other.userId, 25);
-    const t2 = await buyTrain(db(), other.userId, n, now);
+    const t2 = await trainWith(other.userId, n, now);
     expect(await code(sendTrain(db(), other.userId, t2.id, order.id, now))).toBe('order_taken');
     // Arrival.
     const arrive = new Date(new Date(sent.run!.arriveAt).getTime() + 1000);
@@ -159,7 +159,7 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
   it('an electric locomotive stays off the lines without wires', async () => {
     const p = await newPlayer();
     await rich(p.userId, 25);
-    const train = await buyTrain(db(), p.userId, { loco: 'balkan-e40', wagonType: 'hopper', wagons: 10, terminalId: SOFIA }, new Date());
+    const train = await trainWith(p.userId, { loco: 'balkan-e40', wagonType: 'hopper', wagons: 10, terminalId: SOFIA }, new Date());
     expect(await code(moveTrain(db(), p.userId, train.id, 787657, new Date()))).toBe('no_route');
     const view = await trainsView(db(), p.userId, new Date());
     for (const o of view.trains[0]!.orders.filter((x) => !x.electric)) expect(o.why).toBe('diesel_only');
@@ -175,7 +175,7 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     const view0 = await trainsView(db(), p.userId, new Date());
     expect(view0.company).toBe(true);
     expect(view0.limits).toMatchObject({ minLevel: TRAINS.company.minLevel, maxTrains: TRAINS.maxTrains + 1 });
-    await buyTrain(db(), p.userId, { loco: 'danubia-d22', wagonType: 'tank', wagons: 18, terminalId: SOFIA }, new Date());
+    await trainWith(p.userId, { loco: 'danubia-d22', wagonType: 'tank', wagons: 18, terminalId: SOFIA }, new Date());
     const view = await trainsView(db(), p.userId, new Date());
     const o = view.trains[0]!.orders[0]!;
     expect(o.pay).toBe(Math.round(o.payCents * 1.1));
@@ -206,7 +206,7 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     // Before the release only the team can buy it.
     if (!FEATURES.trains || Date.now() < Date.parse('2026-12-04T00:00:00+02:00')) expect(await code(buyLicence(db(), p.userId, 'rail'))).toBe('licence_unavailable');
     await db().insert(userLicences).values({ userId: p.userId, licence: 'rail', priceCents: 0, source: 'purchase' });
-    const train = await buyTrain(db(), p.userId, n, new Date());
+    const train = await trainWith(p.userId, n, new Date());
     const view = await trainsView(db(), p.userId, new Date());
     const tr = view.trains.find((x) => x.id === train.id)!;
     for (const o of tr.orders) {

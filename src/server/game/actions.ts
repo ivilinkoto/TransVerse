@@ -247,7 +247,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('setBusLine'), lineId: id, departures: z.coerce.number().int().min(1).max(4).optional(), price: z.coerce.number().int().min(1).max(100).optional() }),
   z.object({ type: z.literal('upgradeBusComfort'), lineId: id }),
   z.object({ type: z.literal('sellBusLine'), lineId: id }),
-  z.object({ type: z.literal('buyTrain'), loco: z.enum(['danubia-d22', 'balkan-e40', 'rila-e60']), wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), wagons: z.coerce.number().int().min(1).max(40), terminal: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('buyTrain'), loco: z.enum(['danubia-d22', 'balkan-e40', 'rila-e60']), terminal: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('addWagons'), trainId: id, wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), count: z.coerce.number().int().min(1).max(40) }),
   z.object({ type: z.literal('sellWagons'), trainId: id, wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), count: z.coerce.number().int().min(1).max(40) }),
   z.object({ type: z.literal('sellTrain'), trainId: id }),
@@ -917,7 +917,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'sellBusLine':
       return { ok: true, backCents: await sellBusLine(db, user.id, input.lineId, new Date()) };
     case 'buyTrain':
-      return { ok: true, trainId: (await buyTrain(db, user.id, { loco: input.loco, wagonType: input.wagonType, wagons: input.wagons, terminalId: input.terminal }, new Date())).id };
+      return { ok: true, trainId: (await buyTrain(db, user.id, { loco: input.loco, terminalId: input.terminal }, new Date())).id };
     case 'addWagons':
       await addWagons(db, user.id, input.trainId, input.wagonType, input.count, new Date());
       return { ok: true };

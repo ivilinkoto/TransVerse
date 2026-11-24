@@ -74,7 +74,7 @@ export default async function TrainsPage({ searchParams }: { searchParams: Promi
                 </div>
               ),
             },
-            { id: 'orders', label: t('Поръчки'), emoji: '📋', content: run ? <RunStatus run={run} now={now} /> : <TrainOrders tr={tr} now={now} /> },
+            { id: 'orders', label: t('Поръчки'), emoji: '📋', content: run ? <RunStatus run={run} now={now} /> : wagonCount(tr.wagons) === 0 ? <p className="text-sm text-mist-300">{t('Влакът още няма вагони. Купи вагони в таб „Вагони“ — после вземай поръчки.')}</p> : <TrainOrders tr={tr} now={now} /> },
             {
               id: 'line', label: t('Редовна линия'), emoji: '🔁',
               content: (
@@ -97,12 +97,13 @@ export default async function TrainsPage({ searchParams }: { searchParams: Promi
                 <div className="space-y-2 text-sm">
                   {free > 0 && <FormAction action={{ type: 'addWagons', trainId: tr.id }} submit={t('Купи вагони')} fields={[
                     { name: 'wagonType', label: t('Вагон'), type: 'select', options: WAGON_TYPES.map((k) => ({ value: k, label: `${tx(WAGONS[k].name)} · ${WAGONS[k].tons} т · ${money(WAGONS[k].priceCents)}` })) },
-                    { name: 'count', label: t('Брой'), type: 'number', defaultValue: 1, min: 1, max: free, step: 1 },
+                    { name: 'count', label: t('Брой'), type: 'number', defaultValue: Math.min(10, free), min: 1, max: free, step: 1 },
                   ]} />}
-                  <FormAction action={{ type: 'sellWagons', trainId: tr.id }} submit={t('Продай вагони')} fields={[
+                  {wagonCount(tr.wagons) > 0 && <FormAction action={{ type: 'sellWagons', trainId: tr.id }} submit={t('Продай вагони')} fields={[
                     { name: 'wagonType', label: t('Вагон'), type: 'select', options: WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => ({ value: k, label: `${tx(WAGONS[k].name)} (${tr.wagons[k]})` })) },
                     { name: 'count', label: t('Брой'), type: 'number', defaultValue: 1, min: 1, max: wagonCount(tr.wagons), step: 1 },
-                  ]} />
+                  ]} />}
+                  <p className="text-xs text-mist-400">{t('Вагоните се купуват и продават по вид; продаденият вагон връща половината от цената.')}</p>
                 </div>
               ),
             },
@@ -126,7 +127,7 @@ export default async function TrainsPage({ searchParams }: { searchParams: Promi
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-display text-lg font-bold text-white">{loco.name}</p>
-                  <p className="text-xs text-mist-400">{run ? t('🛤️ На път към {0}', place(run.to)) : t('📍 На гара {0} · поръчки: {1}', place(tr.at), fit)}{lineText ? ` · ${lineText}` : ''}</p>
+                  <p className="text-xs text-mist-400">{run ? t('🛤️ На път към {0}', place(run.to)) : wagonCount(tr.wagons) === 0 ? t('📍 На гара {0} · без вагони', place(tr.at)) : t('📍 На гара {0} · поръчки: {1}', place(tr.at), fit)}{lineText ? ` · ${lineText}` : ''}</p>
                 </div>
               </div>
               <TrainArt loco={tr.loco} wagons={list} show={4} className="h-14 w-full max-w-xl" />
@@ -137,7 +138,7 @@ export default async function TrainsPage({ searchParams }: { searchParams: Promi
                 icon="🚆"
                 sections={sections}
                 initialOpen={params.train === tr.id}
-                initialTab={params.train === tr.id ? (run ? 'overview' : 'orders') : undefined}
+                initialTab={params.train === tr.id ? (run ? 'overview' : wagonCount(tr.wagons) === 0 ? 'wagons' : 'orders') : undefined}
                 testId="train-window"
               />
             </li>
@@ -181,12 +182,13 @@ export default async function TrainsPage({ searchParams }: { searchParams: Promi
           )
           : v.trains.length >= v.limits.maxTrains ? <p className="text-sm text-mist-300">{t('Най-много {0} влака на играч.', v.limits.maxTrains)}</p>
           : (
-            <FormAction action={{ type: 'buyTrain' }} submit={t('Купи влака')} fields={[
-              { name: 'loco', label: t('Локомотив'), type: 'select', options: LOCO_IDS.map((id) => ({ value: id, label: `${LOCOS[id].name} · ${money(LOCOS[id].priceCents)}` })) },
-              { name: 'wagonType', label: t('Вагони'), type: 'select', options: WAGON_TYPES.map((k) => ({ value: k, label: `${tx(WAGONS[k].name)} · ${money(WAGONS[k].priceCents)}` })) },
-              { name: 'wagons', label: t('Брой вагони'), type: 'number', defaultValue: 10, min: TRAINS.minWagons, max: 32, step: 1 },
-              { name: 'terminal', label: t('Товарна гара'), type: 'select', options: v.terminals.map((x) => ({ value: String(x.id), label: tx(x.name) })) },
-            ]} />
+            <div className="space-y-2">
+              <FormAction action={{ type: 'buyTrain' }} submit={t('Купи локомотива')} fields={[
+                { name: 'loco', label: t('Локомотив'), type: 'select', options: LOCO_IDS.map((id) => ({ value: id, label: `${LOCOS[id].name} · ${money(LOCOS[id].priceCents)}` })) },
+                { name: 'terminal', label: t('Товарна гара'), type: 'select', options: v.terminals.map((x) => ({ value: String(x.id), label: tx(x.name) })) },
+              ]} />
+              <p className="text-xs text-mist-400">{t('Локомотивът идва без вагони. Вагоните купуваш отделно — в прозореца на влака → Вагони, колкото и от какъвто вид искаш.')}</p>
+            </div>
           )}
         <p className="text-[11px] text-mist-400">{t('Марките са измислени. Цените, поръчките и разписанията са игрови данни.')}</p>
       </section>

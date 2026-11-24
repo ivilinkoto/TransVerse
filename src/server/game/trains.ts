@@ -96,11 +96,10 @@ export async function settleTrains(db: Database, now = new Date(), ownerId?: str
   return due.length;
 }
 
-export async function buyTrain(db: Database, userId: string, n: { loco: LocoId; wagonType: WagonType; wagons: number; terminalId: number }, now: Date) {
+/** 1.3.3: buys a locomotive alone (no wagons); the wagons are bought for it one kind at a time (`addWagons`). */
+export async function buyTrain(db: Database, userId: string, n: { loco: LocoId; terminalId: number }, now: Date) {
   if (!(n.loco in LOCOS)) fail('bad_loco', t('Няма такъв локомотив.'));
-  if (!(n.wagonType in WAGONS)) fail('bad_wagon', t('Няма такъв вагон.'));
   const loco = LOCOS[n.loco];
-  if (!Number.isInteger(n.wagons) || n.wagons < TRAINS.minWagons || n.wagons > loco.maxWagons) fail('bad_wagons', t('Вагоните са от {0} до {1} за този локомотив.', TRAINS.minWagons, loco.maxWagons));
   const term = terminal(n.terminalId);
   if (!term || !openAt(now)(term.country)) fail('bad_terminal', t('Няма такава товарна гара.'));
   const company = await inCompany(db, userId);
@@ -116,10 +115,8 @@ export async function buyTrain(db: Database, userId: string, n: { loco: LocoId; 
     const mine = (await allTrains(tx)).filter((tr) => tr.ownerId === userId && !tr.rental);
     if (mine.length >= lim.maxTrains) fail('max_trains', t('Най-много {0} влака на играч.', lim.maxTrains));
     const id = randomUUID();
-    const wagons = { [n.wagonType]: n.wagons };
-    const price = loco.priceCents + wagonsValue(wagons);
-    await post(tx, acc.id, [{ category: 'vehicle_purchase', amountCents: -price, description: t('Влак: {0} и {1} × {2}', loco.name, n.wagons, place(WAGONS[n.wagonType].name)), idempotencyKey: `train-buy:${id}` }], { requireFunds: true });
-    const train: Train = { id, ownerId: userId, loco: n.loco, wagons, at: term!.id, run: null, boughtAt: now.toISOString(), runs: 0, tons: 0, earnedCents: 0 };
+    await post(tx, acc.id, [{ category: 'vehicle_purchase', amountCents: -loco.priceCents, description: t('Локомотив {0}', loco.name), idempotencyKey: `train-buy:${id}` }], { requireFunds: true });
+    const train: Train = { id, ownerId: userId, loco: n.loco, wagons: {}, at: term!.id, run: null, boughtAt: now.toISOString(), runs: 0, tons: 0, earnedCents: 0 };
     await tx.insert(jobState).values({ key: key(id), value: train, updatedAt: now });
     return train;
   });
@@ -148,7 +145,6 @@ export async function sellWagons(db: Database, userId: string, trainId: string, 
     if (train.run) fail('busy', t('Влакът е на път. Вагоните се откачат на гарата.'));
     const have = train.wagons[type] ?? 0;
     if (!Number.isInteger(count) || count < 1 || count > have) fail('bad_wagons', t('Влакът няма толкова такива вагони.'));
-    if (wagonCount(train.wagons) - count < 1) fail('bad_wagons', t('Влакът трябва да има поне един вагон. Продай целия влак.'));
     const back = Math.round(count * WAGONS[type].priceCents * TRAINS.sellBack);
     const acc = await account(tx, userId);
     await post(tx, acc.id, [{ category: 'vehicle_sale', amountCents: back, description: t('Продадени {0} × {1}', count, place(WAGONS[type].name)), idempotencyKey: `train-wagons-sell:${train.id}:${now.getTime()}` }]);
