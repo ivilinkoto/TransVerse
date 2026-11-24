@@ -1,4 +1,7 @@
 import { Hint } from '@/components/game/Hint';
+import { ThingWindow } from '@/components/gameui/ThingWindow';
+import { SkillsTree } from '@/components/game/SkillsTree';
+import { skillsView } from '@/server/game/skills';
 import { hireMode, SOLO_HIRE_MAX } from '@/server/game/company';
 import { Moon, Plus, UserPlus, UserRound, Users } from 'lucide-react';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
@@ -40,6 +43,8 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
   const tacho = features.tachograph ? new Map(await Promise.all(fleet.drivers.map(async (d) => [d.id, await tachograph(db, d.id, now)] as const))) : null;
   const payroll = fleet.drivers.reduce((s, d) => s + d.salaryCentsPerDay, 0);
   const label = (v: (typeof fleet.vehicles)[number]) => `${v.plate} · ${v.model.name}`;
+  // 1.3.3: the player's own skills are a tab of their own driver's window.
+  const mySkills = features.driver_skills ? await skillsView(db, user.id) : null;
 
   return (
     <div className="space-y-6">
@@ -79,7 +84,25 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                     </div>
                     <div className="num shrink-0 text-right text-sm">{d.isOwner ? <span className="text-mist-400">{tr('без заплата')}</span> : <>{money(d.salaryCentsPerDay)}<span className="text-mist-400">{' '}{tr('/ ден')}</span></>}</div>
                   </div>
-
+                  {/* 1.3.3: the card says where the driver is and what waits; everything else is in the driver's window. */}
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs" data-testid="driver-summary">
+                    {onTrip ? <Badge tone="cyan">{tr('на курс с {0}{1}', (main ?? co)!.plate, co ? tr(' (втори шофьор)') : '')}</Badge> : main ? <Badge tone="green">{tr('кара {0}', main.plate)}</Badge> : <Badge tone="orange">{tr('без превозно средство')}</Badge>}
+                    {rest > 0 && <Badge tone="orange">{tr('почива още {0} мин', rest)}</Badge>}
+                    {points > 0 && <Badge tone="gold">{points} {points === 1 ? tr('свободна точка') : tr('свободни точки')}</Badge>}
+                    {d.request && <Badge tone="violet">{tr('чака отговор')}</Badge>}
+                    {wishes.some((x) => x.driverId === d.id && x.status === 'open') && <Badge tone="gold">{tr('иска курс')}</Badge>}
+                  </div>
+                  <div className="mt-3">
+                    <ThingWindow
+                      button={<><span aria-hidden>🧑‍✈️</span>{tr('Всичко за шофьора')}</>}
+                      title={tx(d.name)}
+                      icon="🧑‍✈️"
+                      accent="#a78bfa"
+                      initialOpen={focus === d.id}
+                      testId="driver-window"
+                      sections={[
+                        { id: 'overview', label: tr('Преглед'), emoji: '🧑‍✈️', content: (
+                          <div className="text-sm">
                   <div className="mt-3 rounded-xl bg-asphalt-900/60 p-3 text-sm">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-mist-300">{tr('Кормуване днес')}</span>
@@ -88,7 +111,6 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                     <Meter value={100 - (duty / CREW_RULES.soloDailyMin) * 100} className="mt-2" />
                     {rest > 0 && <p className="mt-1.5 text-xs text-mist-400">{tr('Ако тръгне сега, ще спре за почивка след {0} кормуване.', hours(Math.max(0, CREW_RULES.soloDailyMin + traitLevel(d.traits, 'long') * CREW_RULES.longBonusMin - duty)))}</p>}
                   </div>
-
                   {tacho && (
                     <details className="mt-3 rounded-xl bg-asphalt-900/60 p-3 text-sm">
                       <summary className="cursor-pointer text-mist-300">{tr('Тахограф (7 дни)')}</summary>
@@ -139,6 +161,15 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                       <p className="mt-1.5 text-xs text-mist-400">{tr('Пазарна заплата за умението: {0} на ден. Платен поне толкова, шофьорът става все по-лоялен (игрови данни).', money(marketSalaryCents(d.skill)))}</p>
                     </div>
                   )}
+                  {!d.isOwner && (
+                    <div className="mt-3 border-t border-asphalt-700 pt-3 text-right">
+                      <ActionButton action={{ type: 'fireDriver', driverId: d.id }} className="btn-danger px-3 py-1.5 text-xs" confirm={tr('Обезщетение {0} Освобождаване?', money(d.salaryCentsPerDay * 3))} disabled={!!onTrip}>{tr('Освободи')}</ActionButton>
+                    </div>
+                  )}
+                          </div>
+                        ) },
+                        { id: 'assign', label: tr('Камион'), emoji: '🚛', content: (
+                          <div className="text-sm">
                   <div className="mt-3 space-y-2">
                     {onTrip ? (
                       <Badge tone="cyan">{tr('на курс с {0}{1}', (main ?? co)!.plate, co ? tr(' (втори шофьор)') : '')}</Badge>
@@ -155,7 +186,10 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                       </>
                     )}
                   </div>
-
+                          </div>
+                        ) },
+                        { id: 'traits', label: tr('Умения'), emoji: '⭐', content: (
+                          <div className="text-sm">
                   <div className="mt-3">
                     <div className="label mb-1.5 flex items-center justify-between">
                       <span>{tr('Умения')}</span>
@@ -182,11 +216,12 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
                     </ul>
                   </div>
 
-                  {!d.isOwner && (
-                    <div className="mt-3 border-t border-asphalt-700 pt-3 text-right">
-                      <ActionButton action={{ type: 'fireDriver', driverId: d.id }} className="btn-danger px-3 py-1.5 text-xs" confirm={tr('Обезщетение {0} Освобождаване?', money(d.salaryCentsPerDay * 3))} disabled={!!onTrip}>{tr('Освободи')}</ActionButton>
-                    </div>
-                  )}
+                          </div>
+                        ) },
+                        ...(d.isOwner && mySkills ? [{ id: 'skills', label: tr('Моите умения'), emoji: '🎓', content: <SkillsTree v={mySkills} /> }] : []),
+                      ]}
+                    />
+                  </div>
                 </li>
               );
             })}

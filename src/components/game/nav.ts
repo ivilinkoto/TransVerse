@@ -269,10 +269,12 @@ type Place = [href: string, core?: boolean];
 /** The pages of each place in the order they are shown; the core ones are in the row, the rest behind „Още ▾“. */
 const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
   // 1.3.2: Клиенти and Конвои (2 players a week each) wait behind „Още ▾“; Рампата is gone.
-  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/clients'], ['/game/convoys'], ['/game/auctions'], ['/game/trade']],
+  // 1.3.3: Отзиви are a tab of Клиенти, Търговия of Специални товари (PAGE_FAMILIES).
+  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/clients'], ['/game/convoys'], ['/game/auctions']],
   // Анализ and Къде печеля moved to „Финанси“, Технологии и офис to „Компания“; Сервизи на играчите are gone.
   // 1.3.3: one Автопарк with tabs — Сервиз, Дневник and Кабина moved into each truck's window.
-  fleet: [['/game/fleet', true], ['/game/fleet/trailers', true], ['/game/trains', true], ['/game/staff', true], ['/game/market', true], ['/game/logistics'], ['/game/licences'], ['/game/showroom'], ['/game/skills'], ['/game/mascot'], ['/game/buses']],
+  // Моите умения and Талисман are tabs of Шофьори (PAGE_FAMILIES); the player's skills are in their own driver's window too.
+  fleet: [['/game/fleet', true], ['/game/fleet/trailers', true], ['/game/trains', true], ['/game/staff', true], ['/game/market', true], ['/game/logistics'], ['/game/licences'], ['/game/showroom'], ['/game/buses']],
   company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment']],
 };
 
@@ -297,7 +299,12 @@ export const PAGE_FAMILIES: NavTab[][] = [
   [{ href: '/game/leaderboards', label: 'Класации' }, { href: '/game/league', label: 'Лига' }, { href: '/game/winter-games', label: 'Зимни игри', feature: 'winter_games' }],
   [{ href: '/game/inventory', label: 'Инвентар' }, { href: '/game/inventory/workshop', label: 'Работилница', feature: 'workshop' }, { href: '/game/inventory/album', label: 'Албум', feature: 'item_album' }, { href: '/game/inventory/hall', label: 'Зала на славата', feature: 'item_album' }],
   [{ href: '/game/finance', label: 'Финанси' }, { href: '/game/analytics', label: 'Анализ' }, { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map' }],
-  [{ href: '/game/company', label: 'Моята компания' }, { href: '/game/growth', label: 'Технологии и офис', feature: 'research' }, { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' }],
+  [{ href: '/game/company', label: 'Моята компания' }, { href: '/game/growth', label: 'Технологии и офис', feature: 'research' }],
+  // 1.3.3 „Всичко на едно място“, етап 2: more pages that belong together.
+  [{ href: '/game/staff', label: 'Шофьори' }, { href: '/game/skills', label: 'Моите умения', feature: 'driver_skills' }, { href: '/game/mascot', label: 'Талисман', feature: 'mascot' }],
+  [{ href: '/game/clients', label: 'Клиенти' }, { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' }],
+  [{ href: '/game/auctions', label: 'Специални товари' }, { href: '/game/trade', label: 'Търговия със стоки' }],
+  [{ href: '/game/profile', label: 'Профил' }, { href: '/game/settings', label: 'Настройки' }, { href: '/game/invite', label: 'Покани приятел' }, { href: '/game/mentor', label: 'Наставник' }, { href: '/game/updates', label: 'Обновления' }, { href: '/game/help', label: 'Помощ' }, { href: '/game/support', label: 'Поддръжка' }],
 ];
 
 /**

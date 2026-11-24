@@ -1476,3 +1476,13 @@ b2f3c5cde7	🚆 Send again	🚆 Отправь снова
 f060d5eb25	🛤️ On the way to {0}	🛤️ В пути к {0}
 a03b513e86	Other orders this train cannot take ({0})	Другие заказы, которые поезд не может взять ({0})
 08709e23b8	There is no order this train can take right now. See the others below or send the train empty to another terminal.	Сейчас нет заказа, который этот поезд может взять. Посмотри другие ниже или отправь поезд порожняком на другую станцию.
+b6f30a7b43	Everything about the driver	Всё о водителе
+49043a9f12	The driver's card says in short where they are and what waits (free points, a request, a wished trip), and „Everything about the driver“ holds the driving and the tachograph, the mood and the requests, the truck, the skills and the dismissal. Your own skills are in your window.	Карточка водителя коротко показывает, где он и что ждёт (свободные очки, просьба, желаемый рейс), а «Всё о водителе» собирает вождение и тахограф, настроение и просьбы, грузовик, навыки и увольнение. Твои собственные навыки — в твоём окне.
+fe09bdd71e	My skills	Мои навыки
+d3c82a938d	Related pages are tabs	Связанные страницы — вкладки
+c6bbc019c9	Drivers · My skills · Mascot, Clients · Reviews, Special loads · Trade and Profile · Settings · Invite · Mentor · Updates · Help · Support are now tabs in one place.	Водители · Мои навыки · Талисман, Клиенты · Отзывы, Особые грузы · Торговля и Профиль · Настройки · Пригласить · Наставник · Обновления · Помощь · Поддержка теперь вкладки в одном месте.
+1497bd0ce7	The driver in one window	Водитель в одном окне
+323fbb0b12	no vehicle	без транспорта
+d8fa48f8a4	wants a trip	хочет рейс
+9a4920c625	drives {0}	водит {0}
+c762a5683d	resting {0} more min	отдыхает ещё {0} мин

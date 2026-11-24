@@ -35,8 +35,9 @@ describe('1.3.2 „Просто“: fewer places', () => {
     // …and a page of the family lights up its tab.
     const play = SECTIONS_V3.find((s) => s.key === 'compete')!;
     expect(activeTab(play, '/game/league')?.href).toBe('/game/leaderboards');
-    const company = SECTIONS_V3.find((s) => s.key === 'company')!;
-    expect(activeTab(company, '/game/reviews')?.href).toBe('/game/company');
+    // 1.3.3: Отзиви are a tab of Клиенти (Курсове), not of the company.
+    const jobsSection = SECTIONS_V3.find((s) => s.key === 'jobs')!;
+    expect(activeTab(jobsSection, '/game/reviews')?.href).toBe('/game/clients');
     // Клиенти and Конвои wait behind „Още“.
     const jobs = SECTIONS_V3.find((s) => s.key === 'jobs')!;
     expect(jobs.tabs!.filter((t) => t.core).map((t) => t.href)).toEqual(['/game/contracts', '/game/map']);
