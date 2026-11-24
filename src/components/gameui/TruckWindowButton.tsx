@@ -2,7 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useState, type ReactNode } from 'react';
+import { useState, useSyncExternalStore, type ReactNode } from 'react';
+
+const noop = () => () => {};
 import { GameWindow } from './GameWindow';
 import { StatBar, StatTile } from './StatBar';
 import { Loading3D } from '@/components/garage/Modal3D';
@@ -50,7 +52,10 @@ export interface TruckWindowSection {
  * its condition and service as bars, the facts as tiles, and the actions as game buttons.
  */
 export function TruckWindowButton({ data, sections = [], initialOpen = false, initialTab }: { data: TruckWindowData; sections?: TruckWindowSection[]; initialOpen?: boolean; initialTab?: string }) {
-  const [open, setOpen] = useState(initialOpen);
+  // Opened from a link (?truck= / ?train=): only in the browser, after the first render — the window is a portal to document.body.
+  const mounted = useSyncExternalStore(noop, () => true, () => false);
+  const [chosen, setOpen] = useState<boolean | null>(null);
+  const open = chosen ?? (initialOpen && mounted);
   const [tab, setTab] = useState(initialTab && sections.some((s) => s.id === initialTab) ? initialTab : 'overview');
   const current = sections.find((s) => s.id === tab);
   const show3d = useFeature('truck_3d_view');
