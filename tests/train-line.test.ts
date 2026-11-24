@@ -89,3 +89,28 @@ describe('1.3.3: the locomotive and the wagons are bought apart', () => {
     expect(WAGONS.container.priceCents).toBeGreaterThan(0);
   });
 });
+
+describe('1.3.3: train wear and repair', () => {
+  it('a run wears the train; worn trains use more energy and stop below the limit; a repair brings it back', async () => {
+    const { conditionOf, runCost, runWear, trainRepairCents, wornEnergy } = await import('@/lib/game/trains');
+    const { moveTrain, repairTrain, emptyRoutes } = await import('@/server/game/trains');
+    expect(wornEnergy(100)).toBe(1);
+    expect(wornEnergy(TRAINS.wear.slowFrom - 20)).toBeCloseTo(1.2);
+    expect(conditionOf({})).toBe(100);
+    const p = await owner();
+    const now = new Date();
+    const train = await trainWith(p.userId, { loco: 'danubia-d22', wagonType: 'hopper', wagons: 10, terminalId: SOFIA }, now);
+    const path = emptyRoutes(train, now).find((x) => DOMESTIC.has(x.to) && x.stops.length === 2)!;
+    const moved = await moveTrain(db(), p.userId, train.id, path.to, now);
+    expect(moved.condition).toBeCloseTo(100 - runWear(path, moved.run!.grossTons), 5);
+    // Worn below the limit: no departure; heavier energy on the way down.
+    await db().update(jobState).set({ value: { ...(await trainRow(train.id)), run: null, at: path.to, condition: TRAINS.wear.minToRun - 1 } }).where(eq(jobState.key, `train:${train.id}`));
+    expect(await code(moveTrain(db(), p.userId, train.id, SOFIA, now))).toBe('worn');
+    expect(runCost('danubia-d22', path, 500, false, 40).energy).toBeGreaterThan(runCost('danubia-d22', path, 500, false, 100).energy);
+    const worn = await trainRow(train.id);
+    const cost = await repairTrain(db(), p.userId, train.id, now);
+    expect(cost).toBe(trainRepairCents(worn));
+    expect((await trainRow(train.id)).condition).toBe(100);
+    expect(await code(repairTrain(db(), p.userId, train.id, now))).toBe('not_needed');
+  });
+});

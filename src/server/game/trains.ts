@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { eq, inArray, like } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import {
-  cannotTake, grossFor, hireFee, lineFits, LOCOS, rentalFor, ordersAt, pathsFrom, payFor, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
+  cannotTake, conditionOf, grossFor, hireFee, lineFits, LOCOS, rentalFor, runWear, trainRepairCents, ordersAt, pathsFrom, payFor, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
   type LocoId, type RailPath, type Train, type TrainLine, type TrainOrder, type TrainRun, type WagonType,
 } from '@/lib/game/trains';
 import { countryOpen } from '@/lib/geo/scope';
@@ -173,6 +173,7 @@ const REASONS: Record<string, () => string> = {
   diesel_only: () => t('По пътя има линия без ток — трябва дизелов локомотив.'),
   wagons: () => t('Влакът няма достатъчно вагони от този вид.'),
   too_heavy: () => t('Влакът е твърде тежък за локомотива по тези линии. Махни вагони или вземи по-силен локомотив.'),
+  worn: () => t('Влакът е твърде износен за път ({0}% и по-малко). Ремонтирай го.', TRAINS.wear.minToRun),
 };
 export const reasonText = (code: string) => REASONS[code]?.() ?? code;
 
@@ -274,17 +275,18 @@ export async function moveTrain(db: Database, userId: string, trainId: string, t
     const path = emptyRoutes(train, now).find((p) => p.to === to);
     if (!path) fail('no_route', LOCOS[train.loco].electric && pathsFrom(train.at, openAt(now)).has(to) ? reasonText('diesel_only') : t('Няма жп път дотам.'));
     if (grossFor(train, 0) > pullOver(train.loco, path!)) fail('too_heavy', reasonText('too_heavy'));
+    if (conditionOf(train) < TRAINS.wear.minToRun) fail('worn', reasonText('worn'));
     needLicences(held, path!.stops);
     return depart(tx, train, path!, null, company, now);
   });
 }
 
 /** What a run would cost and take for this train (the order's load, or empty). */
-export function planRun(train: Pick<Train, 'loco' | 'wagons'>, path: RailPath, cargoTons: number, company: boolean, start: number) {
+export function planRun(train: Pick<Train, 'loco' | 'wagons'> & { condition?: number }, path: RailPath, cargoTons: number, company: boolean, start: number) {
   const gross = grossFor(train, cargoTons);
   const legs = runLegs(path, train.loco, gross, start);
-  const cost = runCost(train.loco, path, gross, company);
-  return { gross, legs, cost, hours: ((legs[legs.length - 1]?.end ?? start) - start) / 3_600_000, limit: pullOver(train.loco, path) };
+  const cost = runCost(train.loco, path, gross, company, conditionOf(train));
+  return { gross, legs, cost, hours: ((legs[legs.length - 1]?.end ?? start) - start) / 3_600_000, limit: pullOver(train.loco, path), wear: runWear(path, gross) };
 }
 
 /** How a hired run is paid: by `payerId`, with `feeCents` for the train (to `ownerId`, or to the game). */
@@ -320,9 +322,25 @@ async function depart(tx: Tx, train: Train, path: RailPath, order: TrainOrder | 
     costCents: plan.cost.total,
     ...(hire?.ownerId ? { hirerId: hire.payerId, hireFeeCents: hire.feeCents } : {}),
   };
-  const next: Train = { ...train, run };
+  // 1.3.3: the run wears the train (the game's own trains go away on arrival).
+  const next: Train = { ...train, run, ...(train.rental ? {} : { condition: Math.max(0, Math.round((conditionOf(train) - plan.wear) * 10) / 10) }) };
   await save(tx, next, now);
   return next;
+}
+
+/** 1.3.3: repairs the train to 100 % at its terminal (the owner pays `trainRepairCents`). */
+export async function repairTrain(db: Database, userId: string, trainId: string, now: Date) {
+  return db.transaction(async (tx) => {
+    const train = await finishRun(tx, await lockTrain(tx, userId, trainId), now);
+    if (train.run) fail('busy', t('Влакът е на път. Ремонтира се на гарата.'));
+    const cost = trainRepairCents(train);
+    if (cost <= 0) fail('not_needed', t('Влакът е в отлично състояние.'));
+    const acc = await account(tx, userId);
+    await post(tx, acc.id, [{ category: 'repairs', amountCents: -cost, description: t('Ремонт на влак {0}', LOCOS[train.loco].name), idempotencyKey: `train-repair:${train.id}:${now.getTime()}` }], { requireFunds: true });
+    const next = { ...train, condition: 100 };
+    await save(tx, next, now);
+    return cost;
+  });
 }
 const tx_ = (name: string | undefined) => place(name ?? '');
 
@@ -443,6 +461,8 @@ export async function trainsView(db: Database, userId: string, now: Date) {
   const taken = new Set(ids.length ? (await db.select({ key: jobState.key }).from(jobState).where(inArray(jobState.key, ids))).map((r) => r.key.slice('train-order:'.length)) : []);
   const trains = mine.map((tr) => ({
     ...tr,
+    condition: conditionOf(tr),
+    repairCents: trainRepairCents(tr),
     empty: tr.run ? [] : emptyRoutes(tr, now).filter((p) => p.stops.length <= 4 && !missingLicences(railLicences(pathCountries(p.stops)), held).length).map((p) => ({ ...p, ...planRun(tr, p, 0, company, now.getTime()) })),
     orders: tr.run ? [] : ordersAt(tr.at, now.getTime(), open).map((o) => {
       const missing = missingLicences(railLicences(pathCountries(o.stops)), held);

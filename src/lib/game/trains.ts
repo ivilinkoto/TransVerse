@@ -91,6 +91,13 @@ export const TRAINS = {
   far: { minStops: 2, maxStops: 5, maxKm: 2_000 },
   tons: { min: 300, max: 1500, step: 50 },
   sellBack: 0.5,
+  /**
+   * 1.3.3: wear — every run takes condition (%) by its km, the train's weight
+   * and the hills; a worn train uses more energy from `slowFrom` down and does
+   * not leave below `minToRun`. A repair costs `repairShare` of the train's
+   * value for a full 100 % (less for less).
+   */
+  wear: { perKm: 0.01, slowFrom: 70, minToRun: 25, repairShare: 0.06 },
   /** In a player company: unlocked earlier, paid more, a cheaper track, one more train. */
   company: { minLevel: 12, payBonus: 0.1, trackDiscount: 0.25, extraTrains: 1 },
   /** Own trains from this VIP level; more trains at the higher ones (by VIP level). */
@@ -321,12 +328,12 @@ export function runLegs(path: RailPath, loco: LocoId, grossTons: number, start: 
 }
 
 /** Track fee and energy for a run (cents): energy grows with the train's weight and the hills. */
-export function runCost(loco: LocoId, path: Pick<RailPath, 'lines'>, grossTons: number, inCompany: boolean) {
+export function runCost(loco: LocoId, path: Pick<RailPath, 'lines'>, grossTons: number, inCompany: boolean, condition = 100) {
   const lines = path.lines.map((id) => railLine(id)!);
   const km = lines.reduce((s, l) => s + l.km, 0);
   const track = Math.round(km * TRAINS.trackCentsPerKm * (inCompany ? 1 - TRAINS.company.trackDiscount : 1));
   const weight = 0.4 + 0.6 * (grossTons / 1000);
-  const energy = Math.round(lines.reduce((s, l) => s + l.km * GRADES[l.grade].energy, 0) * LOCOS[loco].energyCentsPerKm * weight);
+  const energy = Math.round(lines.reduce((s, l) => s + l.km * GRADES[l.grade].energy, 0) * LOCOS[loco].energyCentsPerKm * weight * wornEnergy(condition));
   return { track, energy, total: track + energy };
 }
 
@@ -368,6 +375,8 @@ export interface Train {
   earnedCents: number;
   /** One of the game's trains hired for a single order (it goes away on arrival). */
   rental?: boolean;
+  /** 1.3.3: condition of the locomotive and its wagons, % (missing: 100). */
+  condition?: number;
   /** Put out for hire by its owner at this share of an order's pay (null: not for hire). */
   hireShare?: number | null;
   /** 1.3.3: a regular line — the train takes the next fitting order by itself. */
@@ -458,8 +467,9 @@ export const payFor = (order: Pick<TrainOrder, 'payCents'>, inCompany: boolean) 
 export const grossFor = (train: Pick<Train, 'wagons'>, cargoTons: number) => tareTons(train.wagons) + cargoTons;
 
 /** Why this train cannot take this order, or null. */
-export function cannotTake(train: Pick<Train, 'loco' | 'wagons' | 'run' | 'at'>, order: Pick<TrainOrder, 'from' | 'electric' | 'wagonType' | 'tons' | 'pull'>): string | null {
+export function cannotTake(train: Pick<Train, 'loco' | 'wagons' | 'run' | 'at'> & { condition?: number }, order: Pick<TrainOrder, 'from' | 'electric' | 'wagonType' | 'tons' | 'pull'>): string | null {
   if (train.run) return 'busy';
+  if ((train.condition ?? 100) < TRAINS.wear.minToRun) return 'worn';
   if (train.at !== order.from) return 'elsewhere';
   if (LOCOS[train.loco].electric && !order.electric) return 'diesel_only';
   if ((train.wagons[order.wagonType] ?? 0) < wagonsFor(order.wagonType, order.tons)) return 'wagons';
@@ -534,3 +544,19 @@ function along(points: LatLonPt[], frac: number): LatLonPt {
   }
   return points[points.length - 1]!;
 }
+
+/** 1.3.3: the train's condition, % (100 for a train from before wear). */
+export const conditionOf = (t: Pick<Train, 'condition'>) => t.condition ?? 100;
+
+/** What a run takes from the condition (%): by km, the train's weight and the hills. */
+export function runWear(path: Pick<RailPath, 'lines'>, grossTons: number): number {
+  const lines = path.lines.map((id) => railLine(id)!);
+  const hillsKm = lines.reduce((s, l) => s + l.km * GRADES[l.grade].energy, 0);
+  return Math.round(hillsKm * TRAINS.wear.perKm * (0.6 + 0.4 * (grossTons / 1000)) * 10) / 10;
+}
+
+/** Energy factor of a worn train (1 down to `slowFrom`, then +1 % per % less). */
+export const wornEnergy = (condition: number) => 1 + Math.max(0, TRAINS.wear.slowFrom - condition) / 100;
+
+/** What bringing the train back to 100 % costs (cents). */
+export const trainRepairCents = (t: Pick<Train, 'loco' | 'wagons' | 'condition'>) => Math.round(((100 - conditionOf(t)) / 100) * TRAINS.wear.repairShare * (LOCOS[t.loco].priceCents + wagonsValue(t.wagons)));
