@@ -372,6 +372,33 @@ export interface Train {
   rental?: boolean;
   /** Put out for hire by its owner at this share of an order's pay (null: not for hire). */
   hireShare?: number | null;
+  /** 1.3.3: a regular line — the train takes the next fitting order by itself. */
+  line?: TrainLine | null;
+  /** When it last arrived (for the line's empty run back). */
+  idleSince?: string | null;
+}
+
+/**
+ * 1.3.3 „Редовна линия“: when the train stands free at a terminal it takes the
+ * best order there by itself — of its wagon kind (or any it can carry), to the
+ * other end of the line (or anywhere). With `emptyBack`, a train that found no
+ * load for a whole board window goes empty to the other end of the line.
+ */
+export interface TrainLine {
+  on: boolean;
+  home: number;
+  /** The other end (null: any destination). */
+  far: number | null;
+  wagonType: WagonType | null;
+  emptyBack: boolean;
+}
+
+/** Whether an order at `at` fits the line: its wagon kind and its destination (the other end). */
+export function lineFits(line: Pick<TrainLine, 'home' | 'far' | 'wagonType'>, at: number, order: Pick<TrainOrder, 'to' | 'wagonType'>): boolean {
+  if (line.wagonType && order.wagonType !== line.wagonType) return false;
+  if (line.far === null) return true;
+  const other = at === line.home ? line.far : at === line.far ? line.home : line.home;
+  return order.to === other;
 }
 
 export interface TrainOrder extends RailPath {

@@ -5,7 +5,8 @@ import { PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FormAction } from '@/components/ui/FormAction';
 import { TrainArt } from '@/components/vehicles/trains';
-import { place, RunStatus, WAGON_ICON } from '@/components/game/TrainOrders';
+import { place, RunStatus, TrainOrders, WAGON_ICON } from '@/components/game/TrainOrders';
+import { ThingWindow } from '@/components/gameui/ThingWindow';
 import { dateTime, int, money } from '@/lib/format';
 import { LOCO_IDS, LOCOS, tareTons, TRAINS, WAGON_TYPES, WAGONS, wagonCount } from '@/lib/game/trains';
 import { LICENCES } from '@/lib/game/licences';
@@ -20,12 +21,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 
-/** 1.3.3 „Жп линия“ (Автопарк → Влакове): my trains, their wagons, and a new train. The orders are in Курсове → Влакове. */
-export default async function TrainsPage() {
+/** 1.3.3 „Жп линия“ (Автопарк → Влакове): my trains — each with a window holding its orders, regular line, wagons, hire and sale — and a new train. */
+export default async function TrainsPage({ searchParams }: { searchParams: Promise<{ train?: string }> }) {
   await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.trains) notFound();
   const v = await trainsView(db, user.id, now);
+  const params = await searchParams;
   const locked = user.level < v.limits.minLevel;
   return (
     <div className="space-y-4">
@@ -48,47 +50,96 @@ export default async function TrainsPage() {
           const loco = LOCOS[tr.loco];
           const list = WAGON_TYPES.flatMap((k) => Array.from({ length: tr.wagons[k] ?? 0 }, () => k));
           const run = tr.run;
-          const progress = run ? Math.min(1, Math.max(0, (now.getTime() - new Date(run.departAt).getTime()) / (new Date(run.arriveAt).getTime() - new Date(run.departAt).getTime()))) : 0;
           const free = loco.maxWagons - wagonCount(tr.wagons);
+          const fit = tr.orders.filter((o) => !o.why).length;
+          const line = tr.line?.on ? tr.line : null;
+          const lineText = line ? t('🔁 Редовна линия: {0} ⇄ {1}{2}', place(line.home), line.far ? place(line.far) : t('всяка гара'), line.wagonType ? ` · ${WAGON_ICON[line.wagonType]} ${tx(WAGONS[line.wagonType].name)}` : '') : null;
+          const terminals = v.terminals.map((x) => ({ value: String(x.id), label: tx(x.name) }));
+          // 1.3.3: everything for the train in one window — its orders, the regular line, the wagons, the hire and the sale.
+          const sections = [
+            {
+              id: 'overview', label: t('Преглед'), emoji: '🚆',
+              content: (
+                <div className="space-y-3 text-sm">
+                  <TrainArt loco={tr.loco} wagons={list} show={6} className="h-20 w-full" />
+                  <p className="text-xs text-mist-400">{loco.electric ? t('Електрически') : t('Дизелов')} · {t('{0} kW', int(loco.powerKw))} · {t('{0} от {1} вагона', wagonCount(tr.wagons), loco.maxWagons)} · {t('{0} т празен, до {1} т на равно', int(tareTons(tr.wagons)), int(loco.maxTons))}</p>
+                  <p className="text-xs text-mist-400">{WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => `${WAGON_ICON[k]} ${tr.wagons[k]} ${tx(WAGONS[k].name)}`).join(' · ')}</p>
+                  {run ? <RunStatus run={run} now={now} /> : <p className="text-mist-200">📍 {t('На гара {0}', place(tr.at))}{' · '}{t('Поръчки за този влак: {0}', fit)}</p>}
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="stat-tile rounded-xl p-2"><b className="block text-base text-white">{tr.runs}</b>{t('курса')}</div>
+                    <div className="stat-tile rounded-xl p-2"><b className="block text-base text-white">{int(tr.tons)}</b>{t('тона')}</div>
+                    <div className="stat-tile rounded-xl p-2"><b className="block text-base text-profit">{money(tr.earnedCents)}</b>{t('спечелени')}</div>
+                  </div>
+                  <p className="text-xs text-mist-300">{lineText ?? t('Без редовна линия — пускаш го на ръка или от известието „Пусни пак“.')}{tr.hireShare ? ` · ${t('под наем за {0}%', Math.round(tr.hireShare * 100))}` : ''}</p>
+                </div>
+              ),
+            },
+            { id: 'orders', label: t('Поръчки'), emoji: '📋', content: run ? <RunStatus run={run} now={now} /> : <TrainOrders tr={tr} now={now} /> },
+            {
+              id: 'line', label: t('Редовна линия'), emoji: '🔁',
+              content: (
+                <div className="space-y-3 text-sm" data-testid="train-line">
+                  <p className="text-mist-300">{t('Влакът сам взима най-изгодната подходяща поръчка, щом е свободен на гарата: до другия край на линията (или до всяка гара), с вагоните, които избереш. Ако дълго няма товар, може да се върне празен.')}</p>
+                  {lineText && <p className="font-semibold text-white">{lineText}</p>}
+                  <FormAction action={{ type: 'setTrainLine', trainId: tr.id, on: true }} submit={line ? t('Промени линията') : t('Пусни линията')} fields={[
+                    { name: 'home', label: t('Начална гара'), type: 'select', defaultValue: String(line?.home ?? tr.at), options: terminals },
+                    { name: 'far', label: t('Другият край'), type: 'select', defaultValue: String(line?.far ?? 0), options: [{ value: '0', label: t('Всяка гара') }, ...terminals] },
+                    { name: 'wagonType', label: t('Товар'), type: 'select', defaultValue: line?.wagonType ?? 'any', options: [{ value: 'any', label: t('Всякакъв, който може') }, ...WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => ({ value: k, label: `${WAGON_ICON[k]} ${tx(WAGONS[k].name)}` }))] },
+                    { name: 'emptyBack', label: t('Без товар {0} часа — празен до другия край', TRAINS.windowHours), type: 'checkbox', defaultValue: line?.emptyBack ?? true },
+                  ]} />
+                  {line && <ActionButton action={{ type: 'setTrainLine', trainId: tr.id, on: false }} className="btn-ghost px-3 py-1.5 text-xs">{t('Спри линията')}</ActionButton>}
+                </div>
+              ),
+            },
+            {
+              id: 'wagons', label: t('Вагони'), emoji: '🚃',
+              content: run ? <p className="text-sm text-mist-300">{t('Влакът е на път. Вагоните се закачат на гарата.')}</p> : (
+                <div className="space-y-2 text-sm">
+                  {free > 0 && <FormAction action={{ type: 'addWagons', trainId: tr.id }} submit={t('Купи вагони')} fields={[
+                    { name: 'wagonType', label: t('Вагон'), type: 'select', options: WAGON_TYPES.map((k) => ({ value: k, label: `${tx(WAGONS[k].name)} · ${WAGONS[k].tons} т · ${money(WAGONS[k].priceCents)}` })) },
+                    { name: 'count', label: t('Брой'), type: 'number', defaultValue: 1, min: 1, max: free, step: 1 },
+                  ]} />}
+                  <FormAction action={{ type: 'sellWagons', trainId: tr.id }} submit={t('Продай вагони')} fields={[
+                    { name: 'wagonType', label: t('Вагон'), type: 'select', options: WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => ({ value: k, label: `${tx(WAGONS[k].name)} (${tr.wagons[k]})` })) },
+                    { name: 'count', label: t('Брой'), type: 'number', defaultValue: 1, min: 1, max: wagonCount(tr.wagons), step: 1 },
+                  ]} />
+                </div>
+              ),
+            },
+            {
+              id: 'hire', label: t('Под наем'), emoji: '🤝',
+              content: (
+                <div className="text-sm" data-testid="train-for-hire">
+                  <FormAction action={{ type: 'setTrainHire', trainId: tr.id }} submit={t('Запази')} fields={[
+                    { name: 'share', label: tr.hireShare ? t('Под наем за {0}% от поръчката — другите играчи могат да карат поръчки с него', Math.round(tr.hireShare * 100)) : t('Пусни влака под наем: другите играчи карат поръчки с него, а ти получаваш таксата'), type: 'select', defaultValue: String(tr.hireShare ?? 0), options: [{ value: '0', label: t('Не е под наем') }, ...TRAINS.hire.shares.map((x) => ({ value: String(x), label: t('{0}% от поръчката', Math.round(x * 100)) }))] },
+                  ]} />
+                </div>
+              ),
+            },
+            {
+              id: 'sell', label: t('Продажба'), emoji: '🏷️',
+              content: run ? <p className="text-sm text-mist-300">{t('Влакът е на път. Продава се, когато е на гара.')}</p> : <ActionButton action={{ type: 'sellTrain', trainId: tr.id }} confirm={t('Да продам целия влак за половината от цената?')} className="btn-danger px-3 py-1.5 text-sm">{t('Продай влака')}</ActionButton>,
+            },
+          ];
           return (
             <li key={tr.id} className="bus-card space-y-3 rounded-3xl p-4" data-testid="train">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-display text-lg font-bold text-white">{loco.name}</p>
-                  <p className="text-xs text-mist-400">
-                    {loco.electric ? t('Електрически') : t('Дизелов')} · {t('{0} от {1} вагона', wagonCount(tr.wagons), loco.maxWagons)} · {t('{0} т празен, до {1} т на равно', int(tareTons(tr.wagons)), int(loco.maxTons))} · {WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => `${WAGON_ICON[k]} ${tr.wagons[k]} ${tx(WAGONS[k].name)}`).join(' · ')}
-                  </p>
-                  <p className="text-xs text-mist-400">{t('Курсове: {0} · {1} т · спечелени {2}', tr.runs, int(tr.tons), money(tr.earnedCents))}</p>
+                  <p className="text-xs text-mist-400">{run ? t('🛤️ На път към {0}', place(run.to)) : t('📍 На гара {0} · поръчки: {1}', place(tr.at), fit)}{lineText ? ` · ${lineText}` : ''}</p>
                 </div>
               </div>
               <TrainArt loco={tr.loco} wagons={list} show={4} className="h-14 w-full max-w-xl" />
-              {run ? (
-                <RunStatus run={run} now={now} />
-              ) : (
-                <>
-                  <p className="text-sm text-mist-200">📍 {t('На гара {0}', place(tr.at))}{' · '}{t('Поръчки за този влак: {0}', tr.orders.filter((o) => !o.why).length)}</p>
-                  <Link href="/game/contracts/trains" className="game-action game-action-gold inline-flex flex-row px-4 py-1.5 text-xs">{t('Курсове за влака →')}</Link>
-                  <div className="text-sm" data-testid="train-for-hire">
-                    <FormAction action={{ type: 'setTrainHire', trainId: tr.id }} submit={t('Запази')} fields={[
-                      { name: 'share', label: tr.hireShare ? t('Под наем за {0}% от поръчката — другите играчи могат да карат поръчки с него', Math.round(tr.hireShare * 100)) : t('Пусни влака под наем: другите играчи карат поръчки с него, а ти получаваш таксата'), type: 'select', defaultValue: String(tr.hireShare ?? 0), options: [{ value: '0', label: t('Не е под наем') }, ...TRAINS.hire.shares.map((x) => ({ value: String(x), label: t('{0}% от поръчката', Math.round(x * 100)) }))] },
-                    ]} />
-                  </div>
-                  <details className="text-sm">
-                    <summary className="cursor-pointer text-mist-300">{t('Вагони')}</summary>
-                    <div className="mt-2 space-y-2">
-                      {free > 0 && <FormAction action={{ type: 'addWagons', trainId: tr.id }} submit={t('Купи вагони')} fields={[
-                        { name: 'wagonType', label: t('Вагон'), type: 'select', options: WAGON_TYPES.map((k) => ({ value: k, label: `${tx(WAGONS[k].name)} · ${WAGONS[k].tons} т · ${money(WAGONS[k].priceCents)}` })) },
-                        { name: 'count', label: t('Брой'), type: 'number', defaultValue: 1, min: 1, max: free, step: 1 },
-                      ]} />}
-                      <FormAction action={{ type: 'sellWagons', trainId: tr.id }} submit={t('Продай вагони')} fields={[
-                        { name: 'wagonType', label: t('Вагон'), type: 'select', options: WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => ({ value: k, label: `${tx(WAGONS[k].name)} (${tr.wagons[k]})` })) },
-                        { name: 'count', label: t('Брой'), type: 'number', defaultValue: 1, min: 1, max: wagonCount(tr.wagons), step: 1 },
-                      ]} />
-                      <ActionButton action={{ type: 'sellTrain', trainId: tr.id }} confirm={t('Да продам целия влак за половината от цената?')} className="game-action flex-row px-3 py-1.5 text-xs">{t('Продай влака')}</ActionButton>
-                    </div>
-                  </details>
-                </>
-              )}
+              {run && <RunStatus run={run} now={now} />}
+              <ThingWindow
+                button={<><span aria-hidden>🚆</span>{t('Всичко за този влак')}</>}
+                title={loco.name}
+                icon="🚆"
+                sections={sections}
+                initialOpen={params.train === tr.id}
+                initialTab={params.train === tr.id ? (run ? 'overview' : 'orders') : undefined}
+                testId="train-window"
+              />
             </li>
           );
         })}

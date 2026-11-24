@@ -9,8 +9,8 @@ import { randomUUID } from 'node:crypto';
 import { eq, inArray, like } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import {
-  cannotTake, grossFor, hireFee, LOCOS, rentalFor, ordersAt, pathsFrom, payFor, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
-  type LocoId, type RailPath, type Train, type TrainOrder, type TrainRun, type WagonType,
+  cannotTake, grossFor, hireFee, lineFits, LOCOS, rentalFor, ordersAt, pathsFrom, payFor, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
+  type LocoId, type RailPath, type Train, type TrainLine, type TrainOrder, type TrainRun, type WagonType,
 } from '@/lib/game/trains';
 import { countryOpen } from '@/lib/geo/scope';
 import { LICENCES, missingLicences, railLicences, type LicenceId } from '@/lib/game/licences';
@@ -72,11 +72,14 @@ async function finishRun(tx: Tx, train: Train, now: Date): Promise<Train> {
     const acc = await account(tx, payee);
     await post(tx, acc.id, [{ category: 'freight', amountCents: run.payCents, description: t('Влак {0} → {1}: {2} т {3}', place(terminal(run.from)?.name ?? ''), place(terminal(run.to)?.name ?? ''), run.tons, place(run.goods ?? '')), idempotencyKey: `train-run:${train.id}:${run.departAt}` }]);
   }
-  const next: Train = { ...train, at: run.to, run: null, runs: train.runs + (run.orderId ? 1 : 0), tons: train.tons + run.tons, earnedCents: train.earnedCents + (run.hirerId ? (run.hireFeeCents ?? 0) : run.payCents) };
+  const next: Train = { ...train, at: run.to, run: null, runs: train.runs + (run.orderId ? 1 : 0), tons: train.tons + run.tons, earnedCents: train.earnedCents + (run.hirerId ? (run.hireFeeCents ?? 0) : run.payCents), idleSince: run.arriveAt };
   if (train.rental) await tx.delete(jobState).where(eq(jobState.key, key(train.id)));
   else await save(tx, next, now);
   const to = terminal(run.to)?.name ?? '';
-  await notify(tx, payee, 'success', () => t('🚆 Влакът пристигна в {0}', place(to)), () => (run.payCents ? t('{0} т {1} са разтоварени. Получи {2} лв.', run.tons, place(run.goods ?? ''), Math.round(run.payCents / 100)) : t('Влакът чака нов товар на гарата.')), '/game/contracts/trains');
+  // 1.3.3: the owner's notification opens the train and offers „Пусни пак“ (the regular line goes on by itself).
+  const own = !run.hirerId && !train.rental;
+  const line = own && train.line?.on;
+  await notify(tx, payee, 'success', () => t('🚆 Влакът пристигна в {0}', place(to)), () => `${run.payCents ? t('{0} т {1} са разтоварени. Получи {2} лв.', run.tons, place(run.goods ?? ''), Math.round(run.payCents / 100)) : t('Влакът чака нов товар на гарата.')}${line ? ` ${t('Редовната линия го пуска отново.')}` : ''}`, own ? `/game/trains?train=${train.id}${line ? '' : `&trainAgain=${train.id}`}` : '/game/contracts/trains');
   if (run.hirerId) await notify(tx, train.ownerId, 'info', () => t('🚆 Наетият ти влак пристигна в {0}', place(to)), () => t('Влакът е свободен на гарата.'), '/game/trains');
   return next;
 }
@@ -192,6 +195,74 @@ export async function sendTrain(db: Database, userId: string, trainId: string, o
     if (!taken.length) fail('order_taken', t('Друг влак вече взе тази поръчка.'));
     return depart(tx, train, order!, order!, company, now);
   });
+}
+
+/** The best order for this train at its terminal (by pay less cost), among those `fits` lets through; null when none. */
+async function bestOrder(db: DbOrTx, train: Train, held: ReadonlySet<string>, company: boolean, now: Date, fits: (o: TrainOrder) => boolean = () => true) {
+  const orders = ordersAt(train.at, now.getTime(), openAt(now)).filter((o) => fits(o) && !cannotTake({ ...train, run: null }, o) && !missingLicences(railLicences(pathCountries(o.stops)), held).length);
+  if (!orders.length) return null;
+  const taken = new Set((await db.select({ key: jobState.key }).from(jobState).where(inArray(jobState.key, orders.map((o) => orderKey(o.id))))).map((r) => r.key.slice('train-order:'.length)));
+  const value = (o: TrainOrder) => payFor(o, company) - planRun(train, o, o.tons, company, now.getTime()).cost.total;
+  return orders.filter((o) => !taken.has(o.id) && value(o) > 0).sort((a, b) => value(b) - value(a))[0] ?? null;
+}
+
+/**
+ * 1.3.3: sends the train on the best order at its terminal that fits (the
+ * regular line, and „Пусни пак“ from a notification). Fails with `no_order`
+ * when there is none.
+ */
+export async function sendBest(db: Database, userId: string, trainId: string, now: Date, fits?: (o: TrainOrder) => boolean) {
+  const company = await inCompany(db, userId);
+  const held = await heldLicences(db, userId);
+  return db.transaction(async (tx) => {
+    const train = await finishRun(tx, await lockTrain(tx, userId, trainId), now);
+    if (train.run) fail('busy', reasonText('busy'));
+    const order = await bestOrder(tx, train, held, company, now, fits);
+    if (!order) fail('no_order', t('Сега на гарата няма подходяща поръчка за този влак.'));
+    const taken = await tx.insert(jobState).values({ key: orderKey(order!.id), value: { trainId: train.id, userId, at: now.toISOString() }, updatedAt: now }).onConflictDoNothing().returning({ key: jobState.key });
+    if (!taken.length) fail('order_taken', t('Друг влак вече взе тази поръчка.'));
+    return depart(tx, train, order!, order!, company, now);
+  });
+}
+
+/** 1.3.3: the owner sets the regular line (null turns it off). The ends must be open terminals the train's network reaches. */
+export async function setTrainLine(db: Database, userId: string, trainId: string, line: Omit<TrainLine, 'on'> | null, now: Date) {
+  if (line) {
+    for (const id of [line.home, line.far]) if (id !== null && (!terminal(id) || !openAt(now)(terminal(id)!.country))) fail('bad_terminal', t('Няма такава товарна гара.'));
+    if (line.far === line.home) fail('bad_line', t('Двата края на линията трябва да са различни гари.'));
+    if (line.wagonType && !(line.wagonType in WAGONS)) fail('bad_wagon', t('Няма такъв вагон.'));
+  }
+  return db.transaction(async (tx) => {
+    const train = await lockTrain(tx, userId, trainId);
+    const next: Train = { ...train, line: line ? { ...line, on: true } : null };
+    await save(tx, next, now);
+    return next;
+  });
+}
+
+/**
+ * 1.3.3: the worker runs the regular lines — every free train with a line takes
+ * the best fitting order at its terminal; with nothing there for a whole board
+ * window it goes empty to the other end (when the line says so). Money short or
+ * no order: it waits for the next try.
+ */
+export async function runLines(db: Database, now = new Date()) {
+  let sent = 0;
+  for (const tr of (await allTrains(db)).filter((x) => x.line?.on && !x.rental && (!x.run || new Date(x.run.arriveAt) <= now))) {
+    const line = tr.line!;
+    try {
+      await sendBest(db, tr.ownerId, tr.id, now, (o) => lineFits(line, tr.run?.to ?? tr.at, o));
+      sent++;
+    } catch (e) {
+      const at = tr.run?.to ?? tr.at;
+      const waited = tr.idleSince ? now.getTime() - new Date(tr.idleSince).getTime() : 0;
+      const other = at === line.home ? line.far : line.home;
+      if (line.emptyBack && other !== null && other !== at && waited >= TRAINS.windowHours * 3_600_000 && (e as { code?: string }).code === 'no_order') {
+        await moveTrain(db, tr.ownerId, tr.id, other, now).then(() => sent++, () => undefined);
+      }
+    }
+  }
+  return sent;
 }
 
 /** Where a train can go empty from its terminal (the quickest way through the open countries, by its locomotive). */
