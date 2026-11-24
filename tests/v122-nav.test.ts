@@ -65,7 +65,7 @@ describe('1.2.2 Начало „Сега“', () => {
     expect(list.every((i) => i.href.startsWith('/game'))).toBe(true);
     await db().update(vehicles).set({ condition: 30 }).where(eq(vehicles.id, u!.id));
     const worn = await nowList(db(), user, acc!.id, new Date(), {});
-    expect(worn.find((i) => i.tone === 'warn')?.href).toBe(`/game/garage#v-${u!.id}`);
+    expect(worn.find((i) => i.tone === 'warn')?.href).toBe(`/game/fleet?truck=${u!.id}`);
     expect(worn.length).toBeLessThanOrEqual(6);
   });
 });

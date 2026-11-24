@@ -22,6 +22,7 @@ export const NAV_EMOJI: Record<string, string> = {
   '/game/events': '🌍',
   '/game/finance': '🏦',
   '/game/fleet': '🚚',
+  '/game/fleet/trailers': '🔗',
   '/game/garage': '🔧',
   '/game/growth': '🌱',
   '/game/halloween': '🎃',

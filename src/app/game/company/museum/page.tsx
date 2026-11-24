@@ -54,7 +54,7 @@ export default async function MuseumPage() {
           })}
         </div>
       ) : (
-        <Card><Empty icon={Landmark} title={t('Залата е празна')}>{t('Дарете първия камион от витрината му в сервиза.')}<EmptyAction href="/game/garage" label="Към сервиза" /></Empty></Card>
+        <Card><Empty icon={Landmark} title={t('Залата е празна')}>{t('Дарете първия камион от витрината му в сервиза.')}<EmptyAction href="/game/fleet" label="Към сервиза" /></Empty></Card>
       )}
     </div>
   );

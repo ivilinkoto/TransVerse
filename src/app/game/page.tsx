@@ -157,7 +157,7 @@ export default async function OverviewPage() {
         { href: '/game/inventory', emoji: '🎒', label: 'Инвентар', colour: '#a78bfa' },
         { href: '/game/shop', emoji: '💎', label: 'Магазин', colour: '#f472b6' },
         { href: '/game/company', emoji: '🏢', label: 'Компания', colour: '#94a3b8' },
-        { href: '/game/garage', emoji: '🔧', label: 'Гараж', colour: '#fb923c' },
+        { href: '/game/showroom', emoji: '🏁', label: 'Гараж', colour: '#fb923c' },
       ]}
     />
   ) : null;
@@ -198,7 +198,7 @@ export default async function OverviewPage() {
               <p className="mt-1 font-display text-2xl font-bold sm:text-3xl">{greeting}, {tx(user.username)}</p>
               <p className="mt-2 max-w-xl text-mist-300">{tx(next.text)}</p>
               {worn.length > 0 && (
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-amber-sig"><TrendingDown className="h-4 w-4" />{t('{0} под 50% състояние.', worn.length === 1 ? t('Едно превозно средство е') : t('{0} превозни средства са', worn.length))}{' '}<Link href="/game/garage" className="underline">{t('Към сервиза')}</Link></p>
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-amber-sig"><TrendingDown className="h-4 w-4" />{t('{0} под 50% състояние.', worn.length === 1 ? t('Едно превозно средство е') : t('{0} превозни средства са', worn.length))}{' '}<Link href="/game/fleet" className="underline">{t('Към сервиза')}</Link></p>
               )}
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link href={next.href} className="btn-primary"><next.icon className="h-4 w-4" />{tx(next.cta)}</Link>

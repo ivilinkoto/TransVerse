@@ -70,7 +70,7 @@ describe('v1.9 clearer words and messages', () => {
   it('each reason a vehicle cannot take a load says what fixes it', async () => {
     const { fixFor } = await import('@/components/game/WhyNot');
     expect(fixFor('Нужна е надстройка: платформа.')?.href).toBe('/game/market');
-    expect(fixFor('Влекачът няма прикачено ремарке.')?.href).toBe('/game/garage');
+    expect(fixFor('Влекачът няма прикачено ремарке.')?.href).toBe('/game/fleet');
     expect(fixFor('Изисква ниво 4.')?.href).toBe('/game/progress');
   });
 });

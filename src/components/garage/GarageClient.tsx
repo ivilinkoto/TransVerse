@@ -275,7 +275,7 @@ export function GarageClient({ view, initialTruck, isVip, parts = ['grille', 'li
                   {truck.service.fresh ? t('Скоро е правена') : t('Профилактика · до {0}', money(truck.service.cents))}
                 </button>
               </div>
-              <p className="text-xs text-mist-400">{t('Цената е преди отстъпките (VIP и сервиза на компанията).')} <Link href="/game/garage" className="underline">{t('Целият сервиз')}</Link></p>
+              <p className="text-xs text-mist-400">{t('Цената е преди отстъпките (VIP и сервиза на компанията).')} <Link href="/game/fleet" className="underline">{t('Целият сервиз')}</Link></p>
             </div>
           )}
 

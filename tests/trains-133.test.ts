@@ -186,7 +186,8 @@ describe('1.3.3 „Жп линия“: own freight trains on real lines', () => 
     const has = () => true;
     expect(sectionFor('/game/trains', has)?.key).toBe('fleet');
     expect(sectionFor('/game/contracts/trains', has)?.key).toBe('jobs');
-    expect(VEHICLE_SWITCH.fleet).toEqual({ trucks: '/game/fleet', trains: '/game/trains' });
+    // 1.3.3: in Автопарк the trains are a tab (like the trailers), not a half.
+    expect(VEHICLE_SWITCH.fleet).toBeUndefined();
     expect(VEHICLE_SWITCH.jobs).toEqual({ trucks: '/game/contracts', trains: '/game/contracts/trains' });
     expect(isTrainPage('/game/contracts/trains')).toBe(true);
     expect(isTrainPage('/game/contracts')).toBe(false);

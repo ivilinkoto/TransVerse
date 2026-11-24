@@ -218,8 +218,8 @@ describe('v1.1.2 never stuck without a load', () => {
   it('says why a free truck cannot take any load, and where to fix it', () => {
     expect(truckBlock(base, now)).toBeNull();
     expect(truckBlock({ ...base, driver: null }, now)?.href).toBe('/game/staff');
-    expect(truckBlock({ ...base, status: 'listed' }, now)?.href).toBe('/game/garage');
-    expect(truckBlock({ ...base, model: { kind: 'tractor' } }, now)?.href).toBe('/game/fleet');
+    expect(truckBlock({ ...base, status: 'listed' }, now)?.href).toBe('/game/fleet?truck=v1');
+    expect(truckBlock({ ...base, model: { kind: 'tractor' } }, now)?.href).toBe('/game/fleet?truck=v1');
     expect(truckBlock({ ...base, condition: 10 }, now)?.reason).toContain('ремонт');
     expect(truckBlock({ ...base, driver: { vacationUntil: new Date(now.getTime() + 3_600_000) } }, now)?.href).toBe('/game/staff');
     // On a trip nothing is wrong.

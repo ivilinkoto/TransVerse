@@ -76,7 +76,8 @@ export const SECTIONS: NavSection[] = [
     label: 'Автопарк',
     icon: Truck,
     tabs: [
-      { href: '/game/fleet', label: 'Моите превозни средства', group: 'Камиони', core: true },
+      { href: '/game/fleet', label: 'Камиони', group: 'Камиони', core: true },
+      { href: '/game/fleet/trailers', label: 'Ремаркета', group: 'Камиони', core: true },
       { href: '/game/showroom', label: 'Гараж 3D', feature: 'garage_showroom', group: 'Камиони', core: true },
       { href: '/game/trips', label: 'Бордови дневник', feature: 'trip_log', group: 'Камиони' },
       { href: '/game/cabin', label: 'Кабина', feature: 'cabin', group: 'Камиони' },
@@ -270,7 +271,8 @@ const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
   // 1.3.2: Клиенти and Конвои (2 players a week each) wait behind „Още ▾“; Рампата is gone.
   jobs: [['/game/contracts', true], ['/game/map', true], ['/game/clients'], ['/game/convoys'], ['/game/auctions'], ['/game/trade']],
   // Анализ and Къде печеля moved to „Финанси“, Технологии и офис to „Компания“; Сервизи на играчите are gone.
-  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/buses'], ['/game/trains']],
+  // 1.3.3: one Автопарк with tabs — Сервиз, Дневник and Кабина moved into each truck's window.
+  fleet: [['/game/fleet', true], ['/game/fleet/trailers', true], ['/game/trains', true], ['/game/staff', true], ['/game/market', true], ['/game/logistics'], ['/game/licences'], ['/game/showroom'], ['/game/skills'], ['/game/mascot'], ['/game/buses']],
   company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment']],
 };
 
@@ -304,7 +306,7 @@ export const PAGE_FAMILIES: NavTab[][] = [
  * shows only on the truck half.
  */
 export const VEHICLE_SWITCH: Partial<Record<NavSection['key'], { trucks: string; trains: string }>> = {
-  fleet: { trucks: '/game/fleet', trains: '/game/trains' },
+  // 1.3.3: in Автопарк the trains are a tab like the trailers.
   jobs: { trucks: '/game/contracts', trains: '/game/contracts/trains' },
 };
 const TRAIN_PAGES = ['/game/trains', '/game/contracts/trains'];
