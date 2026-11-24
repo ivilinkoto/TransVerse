@@ -109,7 +109,8 @@ export type LedgerCategory =
   | 'tournament'
   | 'profit_tax'
   | 'booster'
-  | 'train_hire';
+  | 'train_hire'
+  | 'train_contract';
 
 export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   relocation: 'Преместване на камион',
@@ -197,6 +198,7 @@ export const LEDGER_LABELS: Record<LedgerCategory, string> = {
   profit_tax: 'Данък върху печалбата',
   booster: 'Бустер за пари',
   train_hire: 'Влак под наем',
+  train_contract: 'Договор за влак',
   items: 'Предмети от инвентара',
   promo: 'Промокод',
   promise: 'Обещан срок',

@@ -4,7 +4,7 @@ import { FormAction } from '@/components/ui/FormAction';
 import { dateTime, duration, int, money } from '@/lib/format';
 import { LOCOS, runProgress, terminal, TRAINS, WAGONS, type WagonType } from '@/lib/game/trains';
 import { LICENCES } from '@/lib/game/licences';
-import { reasonText, type hireBoard, type TrainsView } from '@/server/game/trains';
+import { reasonText, type contractsView, type hireBoard, type TrainsView } from '@/server/game/trains';
 import { t, tx } from '@/i18n/t';
 
 export const WAGON_ICON: Record<WagonType, string> = { container: '📦', tank: '🛢️', covered: '🚃', hopper: '🌾' };
@@ -156,6 +156,38 @@ export function HireBoard({ v, now }: { v: Awaited<ReturnType<typeof hireBoard>>
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+/** 1.3.3 „Договори за седмицата“: this week's contracts, take up to two, the progress and the bonus. */
+export function TrainContracts({ v }: { v: Awaited<ReturnType<typeof contractsView>> }) {
+  return (
+    <section className="panel space-y-3 p-4" data-testid="train-contracts">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-display text-lg font-bold text-white">📜 {t('Договори за седмицата')}</h2>
+        <p className="text-xs text-mist-400">{t('Поети {0} от {1} · до {2}', v.taken, v.max, dateTime(v.endsAt))}</p>
+      </div>
+      <p className="text-sm text-mist-300">{t('Изкарай толкова курса с товар между двете гари (в която и да е посока, с всякаква стока) до неделя и получаваш бонуса над заплащането на поръчките. Брои и наетият влак.')}</p>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {v.contracts.map((c) => {
+          const st = c.state;
+          return (
+            <li key={c.id} className={`stat-tile space-y-1.5 rounded-xl px-3 py-2 ${st?.done ? 'border border-profit/50' : ''}`} data-testid="train-contract">
+              <p className="text-sm font-semibold text-white">{place(c.a)} ⇄ {place(c.b)}</p>
+              <p className="text-xs text-mist-400">{t('{0} курса с товар · бонус {1}', c.runs, money(c.bonusCents))}</p>
+              {st ? (
+                <>
+                  <div className="h-2 overflow-hidden rounded-full bg-asphalt-800"><div className={`h-full rounded-full ${st.done ? 'bg-profit' : 'bg-gold-400'}`} style={{ width: `${Math.min(100, Math.round((st.runs / c.runs) * 100))}%` }} /></div>
+                  <p className={`text-xs ${st.done ? 'text-profit' : 'text-mist-300'}`}>{st.done ? t('✓ Изпълнен — бонусът е платен') : t('{0} от {1} курса', st.runs, c.runs)}</p>
+                </>
+              ) : (
+                <ActionButton action={{ type: 'takeTrainContract', contractId: c.id }} disabled={v.taken >= v.max} className="game-action game-action-gold flex-row px-3 py-1 text-xs">{t('Поеми договора')}</ActionButton>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

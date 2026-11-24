@@ -114,3 +114,38 @@ describe('1.3.3: train wear and repair', () => {
     expect(await code(repairTrain(db(), p.userId, train.id, now))).toBe('not_needed');
   });
 });
+
+describe('1.3.3: weekly train contracts', () => {
+  it('six contracts a week, the same for everyone; two at most; runs count both ways and the last pays the bonus', async () => {
+    const { weeklyContracts, runCounts, TRAIN_CONTRACTS } = await import('@/lib/game/trains');
+    const { contractsView, takeContract } = await import('@/server/game/trains');
+    const { weekKey } = await import('@/lib/game/leagues');
+    const { ledgerEntries } = await import('@/server/db/schema');
+    const week = weekKey(new Date());
+    const list = weeklyContracts(week);
+    expect(list).toEqual(weeklyContracts(week));
+    expect(list.length).toBe(TRAIN_CONTRACTS.perWeek);
+    expect(new Set(list.map((c) => c.id)).size).toBe(list.length);
+    const c = list[0]!;
+    expect(runCounts(c, { from: c.b, to: c.a, orderId: 'x' })).toBe(true);
+    expect(runCounts(c, { from: c.a, to: c.b, orderId: null })).toBe(false);
+    const p = await owner();
+    const now = new Date();
+    await takeContract(db(), p.userId, list[0]!.id, now);
+    await takeContract(db(), p.userId, list[1]!.id, now);
+    expect(await code(takeContract(db(), p.userId, list[2]!.id, now))).toBe('max_contracts');
+    // Loaded runs between the two terminals, settled one after the other.
+    const train = await trainWith(p.userId, { loco: 'danubia-d22', wagonType: 'hopper', wagons: 5, terminalId: c.a }, now);
+    for (let i = 0; i < c.runs; i++) {
+      const arrive = new Date(now.getTime() - 60_000 + i);
+      const run = { lines: [], stops: [c.a, c.b], from: i % 2 ? c.b : c.a, to: i % 2 ? c.a : c.b, departAt: new Date(arrive.getTime() - 3_600_000).toISOString(), arriveAt: arrive.toISOString(), legs: [], orderId: `test-${i}`, wagonType: 'hopper', goods: 'Зърно', tons: 300, grossTons: 400, payCents: 0, costCents: 0 };
+      await db().update(jobState).set({ value: { ...(await trainRow(train.id)), run } }).where(eq(jobState.key, `train:${train.id}`));
+      await settleTrains(db(), new Date(arrive.getTime() + 1000));
+    }
+    const view = await contractsView(db(), p.userId, now);
+    expect(view.contracts.find((x) => x.id === c.id)?.state).toEqual({ runs: c.runs, done: true });
+    const [acc] = await db().select({ id: companies.id }).from(companies).where(eq(companies.ownerId, p.userId));
+    const paid = await db().select().from(ledgerEntries).where(eq(ledgerEntries.idempotencyKey, `train-contract:${p.userId}:${c.id}`));
+    expect(paid.map((x) => [x.companyId, x.amountCents])).toEqual([[acc!.id, c.bonusCents]]);
+  });
+});

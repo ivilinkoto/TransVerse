@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { eq, inArray, like } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import {
-  cannotTake, conditionOf, grossFor, hireFee, lineFits, LOCOS, rentalFor, runWear, trainRepairCents, ordersAt, pathsFrom, payFor, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
+  cannotTake, conditionOf, grossFor, runCounts, TRAIN_CONTRACTS, weeklyContracts, hireFee, lineFits, LOCOS, rentalFor, runWear, trainRepairCents, ordersAt, pathsFrom, payFor, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
   type LocoId, type RailPath, type Train, type TrainLine, type TrainOrder, type TrainRun, type WagonType,
 } from '@/lib/game/trains';
 import { countryOpen } from '@/lib/geo/scope';
@@ -22,6 +22,7 @@ import { membershipOf } from './membership';
 import { notify } from './notify';
 import { heldLicences } from './licences';
 import { t, tx as place } from '@/i18n/t';
+import { weekEndsAt, weekKey } from '@/lib/game/leagues';
 
 const key = (id: string) => `train:${id}`;
 const orderKey = (id: string) => `train-order:${id}`;
@@ -80,8 +81,59 @@ async function finishRun(tx: Tx, train: Train, now: Date): Promise<Train> {
   const own = !run.hirerId && !train.rental;
   const line = own && train.line?.on;
   await notify(tx, payee, 'success', () => t('🚆 Влакът пристигна в {0}', place(to)), () => `${run.payCents ? t('{0} т {1} са разтоварени. Получи {2} лв.', run.tons, place(run.goods ?? ''), Math.round(run.payCents / 100)) : t('Влакът чака нов товар на гарата.')}${line ? ` ${t('Редовната линия го пуска отново.')}` : ''}`, own ? `/game/trains?train=${train.id}${line ? '' : `&trainAgain=${train.id}`}` : '/game/contracts/trains');
+  await countContracts(tx, payee, run);
   if (run.hirerId) await notify(tx, train.ownerId, 'info', () => t('🚆 Наетият ти влак пристигна в {0}', place(to)), () => t('Влакът е свободен на гарата.'), '/game/trains');
   return next;
+}
+
+const contractKey = (userId: string, contractId: string) => `train-contract:${userId}:${contractId}`;
+interface ContractState { runs: number; done: boolean }
+
+/** 1.3.3: a loaded run counts for the payee's contracts of the week it arrived in; the last one pays the bonus. */
+async function countContracts(tx: Tx, userId: string, run: TrainRun) {
+  if (!run.orderId) return;
+  const week = weekKey(new Date(run.arriveAt));
+  const rows = await tx.select({ key: jobState.key, value: jobState.value }).from(jobState).where(like(jobState.key, `train-contract:${userId}:${week}:%`)).for('update');
+  if (!rows.length) return;
+  const list = weeklyContracts(week);
+  for (const row of rows) {
+    const c = list.find((x) => contractKey(userId, x.id) === row.key);
+    const st = row.value as ContractState;
+    if (!c || st.done || !runCounts(c, run)) continue;
+    const next: ContractState = { runs: st.runs + 1, done: st.runs + 1 >= c.runs };
+    await tx.update(jobState).set({ value: next, updatedAt: new Date(run.arriveAt) }).where(eq(jobState.key, row.key));
+    if (next.done) {
+      const acc = await account(tx, userId);
+      await post(tx, acc.id, [{ category: 'train_contract', amountCents: c.bonusCents, description: t('Договор {0} ⇄ {1}: {2} курса', place(terminal(c.a)?.name ?? ''), place(terminal(c.b)?.name ?? ''), c.runs), idempotencyKey: `train-contract:${userId}:${c.id}` }]);
+      await notify(tx, userId, 'achievement', () => t('📜 Договорът е изпълнен!'), () => t('{0} ⇄ {1}: {2} курса. Бонус {3} лв.', place(terminal(c.a)?.name ?? ''), place(terminal(c.b)?.name ?? ''), c.runs, Math.round(c.bonusCents / 100)), '/game/contracts/trains');
+    }
+  }
+}
+
+/** 1.3.3: this week's contracts with the player's progress (taken, runs, done) and when the week ends. */
+export async function contractsView(db: DbOrTx, userId: string, now: Date) {
+  const week = weekKey(now);
+  const list = weeklyContracts(week, openAt(now));
+  const rows = await db.select({ key: jobState.key, value: jobState.value }).from(jobState).where(like(jobState.key, `train-contract:${userId}:${week}:%`));
+  const mine = new Map(rows.map((r) => [r.key, r.value as ContractState]));
+  const contracts = list.map((c) => ({ ...c, state: mine.get(contractKey(userId, c.id)) ?? null }));
+  return { week, endsAt: weekEndsAt(week), contracts, taken: rows.length, max: TRAIN_CONTRACTS.max };
+}
+
+/** 1.3.3: takes one of this week's contracts (up to TRAIN_CONTRACTS.max a week). */
+export async function takeContract(db: Database, userId: string, contractId: string, now: Date) {
+  const week = weekKey(now);
+  const c = weeklyContracts(week, openAt(now)).find((x) => x.id === contractId);
+  if (!c) fail('no_contract', t('Този договор вече не е в сила.'), 404);
+  return db.transaction(async (tx) => {
+    const acc = await account(tx, userId);
+    await tx.select({ id: companies.id }).from(companies).where(eq(companies.id, acc.id)).for('update');
+    const rows = await tx.select({ key: jobState.key }).from(jobState).where(like(jobState.key, `train-contract:${userId}:${week}:%`));
+    if (rows.some((r) => r.key === contractKey(userId, c!.id))) fail('taken', t('Вече имаш този договор.'));
+    if (rows.length >= TRAIN_CONTRACTS.max) fail('max_contracts', t('Най-много {0} договора на седмица.', TRAIN_CONTRACTS.max));
+    await tx.insert(jobState).values({ key: contractKey(userId, c!.id), value: { runs: 0, done: false } satisfies ContractState, updatedAt: now });
+    return c!;
+  });
 }
 
 /** Settles every train that arrived by now (the worker; also before a player's view). */

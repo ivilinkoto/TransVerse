@@ -560,3 +560,40 @@ export const wornEnergy = (condition: number) => 1 + Math.max(0, TRAINS.wear.slo
 
 /** What bringing the train back to 100 % costs (cents). */
 export const trainRepairCents = (t: Pick<Train, 'loco' | 'wagons' | 'condition'>) => Math.round(((100 - conditionOf(t)) / 100) * TRAINS.wear.repairShare * (LOCOS[t.loco].priceCents + wagonsValue(t.wagons)));
+
+/**
+ * 1.3.3 „Договори за седмицата“: every week a few contracts between
+ * neighbouring terminals — carry N loaded runs between the two (either way, any
+ * goods) by Sunday and the bonus is paid on top of the orders. A player takes
+ * up to `max` contracts a week. Game data, the same for every player.
+ */
+export const TRAIN_CONTRACTS = { perWeek: 6, max: 2, runs: { min: 3, max: 6 }, bonusShare: 0.3 } as const;
+
+export interface TrainContract {
+  id: string;
+  /** The two terminals (a line between neighbours). */
+  a: number;
+  b: number;
+  runs: number;
+  bonusCents: number;
+}
+
+/** This week's contracts (`week` like W2026-11-23), among the lines in the open countries. */
+export function weeklyContracts(week: string, open: (country: string) => boolean = () => true): TrainContract[] {
+  const r = seededRandom(`train-contracts:${week}`);
+  const lines = RAIL_LINES.filter((l) => open(terminal(l.a)!.country) && open(terminal(l.b)!.country));
+  const picked: typeof lines = [];
+  while (picked.length < Math.min(TRAIN_CONTRACTS.perWeek, lines.length)) {
+    const l = lines[Math.floor(r() * lines.length)]!;
+    if (!picked.includes(l)) picked.push(l);
+  }
+  return picked.map((l) => {
+    const runs = TRAIN_CONTRACTS.runs.min + Math.floor(r() * (TRAIN_CONTRACTS.runs.max - TRAIN_CONTRACTS.runs.min + 1));
+    // The bonus: a share of what N average orders on the line pay (900 t of goods).
+    const bonusCents = Math.round(runs * orderPay(900, l.km, 'covered') * TRAIN_CONTRACTS.bonusShare / 100) * 100;
+    return { id: `${week}:${l.id}`, a: l.a, b: l.b, runs, bonusCents };
+  });
+}
+
+/** Whether a run counts for a contract: loaded, between its two terminals (either way). */
+export const runCounts = (c: Pick<TrainContract, 'a' | 'b'>, run: Pick<TrainRun, 'from' | 'to' | 'orderId'>) => !!run.orderId && ((run.from === c.a && run.to === c.b) || (run.from === c.b && run.to === c.a));
