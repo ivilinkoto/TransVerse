@@ -3,7 +3,6 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
 
-import { SECTIONS, LISTED_SECTIONS, sectionFor } from '@/components/game/nav';
 import { FEATURES } from '@/lib/game/features';
 import { COLLECTIONS, ITEMS, ITEM_IDS, RECIPES, SELL_DAY_CAP, SELL_PRICE, craftPool, craftUp, matchRecipe, sourcesOf, tradable } from '@/lib/game/items';
 import { WEEKLY_CHEST } from '@/lib/game/item-chests';
@@ -50,14 +49,6 @@ describe('1.2.1 inventory — rules', () => {
     const r = releaseByVersion('1.2.1')!;
     expect(r.name).toBe('Раницата');
     expect(r.highlights.length).toBeGreaterThanOrEqual(4);
-  });
-
-  it('the inventory is its own section, listed apart; without the feature it stays under „Автопарк“', () => {
-    expect(SECTIONS.find((s) => s.key === 'inventory')).toBeTruthy();
-    expect(LISTED_SECTIONS.find((s) => s.key === 'inventory')).toBeUndefined();
-    // Before 1.3.2 „Просто“ (which puts the bag in „Игри и награди“).
-    expect(sectionFor('/game/inventory/workshop', (f) => f !== 'simple_menu')?.key).toBe('inventory');
-    expect(sectionFor('/game/inventory', (f) => f !== 'inventory_menu' && f !== 'simple_menu')?.key).toBe('fleet');
   });
 
   it('every item has a source or is a reward; collections hold known items; recipes make real items', () => {

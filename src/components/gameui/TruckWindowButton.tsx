@@ -2,7 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useSyncExternalStore, type ReactNode } from 'react';
+
+const noop = () => () => {};
 import { GameWindow } from './GameWindow';
 import { StatBar, StatTile } from './StatBar';
 import { Loading3D } from '@/components/garage/Modal3D';
@@ -37,12 +39,25 @@ export interface TruckWindowData {
   actions: { href: string; label: string; emoji: string }[];
 }
 
+/** 1.3.3: a tab of the truck window with what used to be on another page (service, upgrades, trips, sale). */
+export interface TruckWindowSection {
+  id: string;
+  label: string;
+  emoji: string;
+  content: ReactNode;
+}
+
 /**
  * 1.2.3.6 „Нов облик“: „Всичко за този камион“ as a game window — the truck in 3D,
  * its condition and service as bars, the facts as tiles, and the actions as game buttons.
  */
-export function TruckWindowButton({ data }: { data: TruckWindowData }) {
-  const [open, setOpen] = useState(false);
+export function TruckWindowButton({ data, sections = [], initialOpen = false, initialTab }: { data: TruckWindowData; sections?: TruckWindowSection[]; initialOpen?: boolean; initialTab?: string }) {
+  // Opened from a link (?truck= / ?train=): only in the browser, after the first render — the window is a portal to document.body.
+  const mounted = useSyncExternalStore(noop, () => true, () => false);
+  const [chosen, setOpen] = useState<boolean | null>(null);
+  const open = chosen ?? (initialOpen && mounted);
+  const [tab, setTab] = useState(initialTab && sections.some((s) => s.id === initialTab) ? initialTab : 'overview');
+  const current = sections.find((s) => s.id === tab);
   const show3d = useFeature('truck_3d_view');
   return (
     <>
@@ -51,6 +66,17 @@ export function TruckWindowButton({ data }: { data: TruckWindowData }) {
       </button>
       {open && (
         <GameWindow title={`${data.title} · ${data.plate}`} icon="🚛" accent="#22d3ee" size="lg" onClose={() => setOpen(false)} testId="truck-window">
+          {sections.length > 0 && (
+            <nav className="mb-4 flex flex-wrap gap-1.5" aria-label={t('Камион')} data-testid="truck-window-tabs">
+              {[{ id: 'overview', label: t('Преглед'), emoji: '🚛' }, ...sections].map((s) => (
+                <button key={s.id} type="button" onClick={() => (playSelect(), setTab(s.id))} className={`shop-tab px-3 py-1.5 text-xs ${tab === s.id ? 'shop-tab-on' : ''}`} aria-pressed={tab === s.id}>
+                  <span aria-hidden>{s.emoji}</span> {s.label}
+                </button>
+              ))}
+            </nav>
+          )}
+          {current ? <div data-testid={`truck-tab-${current.id}`}>{current.content}</div> : (
+          <>
           <div className="grid gap-4 md:grid-cols-[1.25fr_1fr]">
             <div className="space-y-3">
               <div className="h-56 overflow-hidden rounded-2xl border border-white/10 bg-asphalt-950 sm:h-64">
@@ -100,6 +126,8 @@ export function TruckWindowButton({ data }: { data: TruckWindowData }) {
               ))}
             </div>
           </div>
+          </>
+          )}
         </GameWindow>
       )}
     </>

@@ -13,7 +13,7 @@ export async function tripsOf(db: DbOrTx, userId: string, limit = 30) {
   const [account] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
   if (!account) return [];
   const rows = await db
-    .select({ id: deliveries.id, completedAt: deliveries.completedAt, late: deliveries.late, payoutCents: deliveries.payoutCents, loadedKm: deliveries.loadedKm, emptyKm: deliveries.emptyKm, goods: contracts.goods, originCityId: contracts.originCityId, destCityId: contracts.destCityId, sharedAt: deliveries.sharedAt })
+    .select({ id: deliveries.id, vehicleId: deliveries.vehicleId, completedAt: deliveries.completedAt, late: deliveries.late, payoutCents: deliveries.payoutCents, loadedKm: deliveries.loadedKm, emptyKm: deliveries.emptyKm, goods: contracts.goods, originCityId: contracts.originCityId, destCityId: contracts.destCityId, sharedAt: deliveries.sharedAt })
     .from(deliveries)
     .innerJoin(contracts, eq(contracts.id, deliveries.contractId))
     .where(and(eq(deliveries.companyId, account.id), eq(deliveries.status, 'completed'), isNotNull(deliveries.completedAt)))

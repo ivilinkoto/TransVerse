@@ -69,7 +69,7 @@ import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
 import { speedUpDelivery } from '@/server/game/speed-up';
 import { buyCompanyBoost } from '@/server/game/company-boost';
-import { addWagons, buyTrain, hireTrain, moveTrain, sellTrain, sellWagons, sendTrain, setTrainHire } from '@/server/game/trains';
+import { addWagons, buyTrain, hireTrain, moveTrain, sellTrain, sellWagons, sendBest, sendTrain, setTrainHire, setTrainLine } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, driveMyself, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -247,7 +247,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('setBusLine'), lineId: id, departures: z.coerce.number().int().min(1).max(4).optional(), price: z.coerce.number().int().min(1).max(100).optional() }),
   z.object({ type: z.literal('upgradeBusComfort'), lineId: id }),
   z.object({ type: z.literal('sellBusLine'), lineId: id }),
-  z.object({ type: z.literal('buyTrain'), loco: z.enum(['danubia-d22', 'balkan-e40', 'rila-e60']), wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), wagons: z.coerce.number().int().min(1).max(40), terminal: z.coerce.number().int().positive() }),
+  z.object({ type: z.literal('buyTrain'), loco: z.enum(['danubia-d22', 'balkan-e40', 'rila-e60']), terminal: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('addWagons'), trainId: id, wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), count: z.coerce.number().int().min(1).max(40) }),
   z.object({ type: z.literal('sellWagons'), trainId: id, wagonType: z.enum(['container', 'tank', 'covered', 'hopper']), count: z.coerce.number().int().min(1).max(40) }),
   z.object({ type: z.literal('sellTrain'), trainId: id }),
@@ -255,6 +255,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('moveTrain'), trainId: id, to: z.coerce.number().int().positive() }),
   z.object({ type: z.literal('hireTrain'), terminal: z.coerce.number().int().positive(), orderId: z.string().regex(/^\d+-\d+:\d+:f?\d+$/).max(80), via: z.union([z.literal('game'), id]) }),
   z.object({ type: z.literal('setTrainHire'), trainId: id, share: z.coerce.number().min(0).max(1) }),
+  z.object({ type: z.literal('trainAgain'), trainId: id }),
+  z.object({ type: z.literal('setTrainLine'), trainId: id, on: z.union([z.boolean(), z.enum(['true', 'false']).transform((v) => v === 'true')]), home: z.coerce.number().int().positive().optional(), far: z.coerce.number().int().min(0).optional(), wagonType: z.enum(['any', 'container', 'tank', 'covered', 'hopper']).optional(), emptyBack: z.union([z.boolean(), z.enum(['true', 'false', 'on']).transform((v) => v !== 'false')]).optional() }),
   z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
   z.object({ type: z.literal('resetSkills') }),
@@ -671,6 +673,8 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   expandDepotCoins: 'premium_slots',
   buyCompanyBoost: 'company_boost',
   setTrainHire: 'trains',
+  trainAgain: 'trains',
+  setTrainLine: 'trains',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
   renameMascot: 'mascot',
@@ -913,7 +917,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'sellBusLine':
       return { ok: true, backCents: await sellBusLine(db, user.id, input.lineId, new Date()) };
     case 'buyTrain':
-      return { ok: true, trainId: (await buyTrain(db, user.id, { loco: input.loco, wagonType: input.wagonType, wagons: input.wagons, terminalId: input.terminal }, new Date())).id };
+      return { ok: true, trainId: (await buyTrain(db, user.id, { loco: input.loco, terminalId: input.terminal }, new Date())).id };
     case 'addWagons':
       await addWagons(db, user.id, input.trainId, input.wagonType, input.count, new Date());
       return { ok: true };
@@ -933,6 +937,13 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       const tr = await hireTrain(db, user.id, input.terminal, input.orderId, input.via, new Date());
       return { ok: true, arriveAt: tr.run?.arriveAt };
     }
+    case 'trainAgain': {
+      const tr = await sendBest(db, user.id, input.trainId, new Date());
+      return { ok: true, arriveAt: tr.run?.arriveAt };
+    }
+    case 'setTrainLine':
+      await setTrainLine(db, user.id, input.trainId, input.on && input.home ? { home: input.home, far: input.far ? input.far : null, wagonType: !input.wagonType || input.wagonType === 'any' ? null : input.wagonType, emptyBack: !!input.emptyBack } : null, new Date());
+      return { ok: true };
     case 'setTrainHire':
       await setTrainHire(db, user.id, input.trainId, input.share > 0 ? input.share : null, new Date());
       return { ok: true };

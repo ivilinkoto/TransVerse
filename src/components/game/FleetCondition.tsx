@@ -51,7 +51,7 @@ export function FleetCondition({ rows }: { rows: ConditionRow[] }) {
             );
           })}
         </ul>
-        {attention > 0 && <Link href="/game/garage" className="mt-3 inline-block text-sm text-amber-sig hover:underline">{t('Към сервиза →')}</Link>}
+        {attention > 0 && <Link href="/game/fleet" className="mt-3 inline-block text-sm text-amber-sig hover:underline">{t('Към автопарка →')}</Link>}
       </div>
     </details>
   );

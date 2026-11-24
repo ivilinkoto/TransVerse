@@ -18,5 +18,8 @@ export function notificationButtons(href: string | null | undefined): Notificati
   if (waveId) return [{ label: '👋 Махни', action: { type: 'roadWave', waveId }, primary: true }];
   if (rate) return [{ label: '👍', action: { type: 'ratePartner', refId: rate, good: true }, primary: true }, { label: '👎', action: { type: 'ratePartner', refId: rate, good: false } }];
   if (greet) return [{ label: 'Поздрави', action: { type: 'greetNewcomer', userId: greet }, primary: true }];
+  // 1.3.3: a train that arrived — send it on the best order at the station.
+  const again = id('trainAgain');
+  if (again) return [{ label: '🚆 Пусни пак', action: { type: 'trainAgain', trainId: again }, primary: true }];
   return [];
 }

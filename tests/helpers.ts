@@ -62,3 +62,10 @@ export async function routeById(id: number) {
 export async function grantLicences(userId: string, ...licences: string[]) {
   await db().insert(userLicences).values(licences.map((licence) => ({ userId, licence, source: 'admin' }))).onConflictDoNothing();
 }
+
+/** 1.3.3: a locomotive and its wagons, bought one after the other (as a player does). */
+export async function trainWith(userId: string, n: { loco: import('@/lib/game/trains').LocoId; wagonType: import('@/lib/game/trains').WagonType; wagons: number; terminalId: number }, now: Date) {
+  const { addWagons, buyTrain } = await import('@/server/game/trains');
+  const train = await buyTrain(db(), userId, { loco: n.loco, terminalId: n.terminalId }, now);
+  return addWagons(db(), userId, train.id, n.wagonType, n.wagons, now);
+}

@@ -3,7 +3,6 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('@/lib/game/features')>()), featureLive: () => true }));
 
-import { SECTIONS, visibleTabs } from '@/components/game/nav';
 import { FEATURES } from '@/lib/game/features';
 import { CASE_TABLES, ITEMS, ITEM_IDS, caseOdds, isCase, pickFrom } from '@/lib/game/items';
 import { faceFor, isFemaleName } from '@/lib/game/portraits';
@@ -54,13 +53,6 @@ describe('1.2 inventory — rules', () => {
     expect(faceFor('x', 'Мария Петрова').beard).toBe(0);
   });
 
-  it('with Truck Pass the menu shows one season entry instead of season + pass', () => {
-    const tabs = (has: boolean) => SECTIONS.flatMap((s) => visibleTabs(s, null, '/game', (f) => (f === 'truck_pass' ? has : true))).map((t) => t.href);
-    expect(tabs(true).filter((h) => h === '/game/seasons')).toHaveLength(1);
-    expect(tabs(true)).not.toContain('/game/pass');
-    expect(tabs(false)).toContain('/game/pass');
-    expect(tabs(false).filter((h) => h === '/game/seasons')).toHaveLength(1);
-  });
 });
 
 describe('1.2 inventory — server', () => {

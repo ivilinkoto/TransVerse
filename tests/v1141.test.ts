@@ -6,7 +6,6 @@ vi.mock('@/lib/game/features', async (load) => ({ ...(await load<typeof import('
 import { BIG_RUN, pickBigRun } from '@/lib/game/big-run';
 import { FEATURES, liveFeatures } from '@/lib/game/features';
 import { compareVersions, releaseByVersion } from '@/lib/game/releases';
-import { coreTabs, SECTIONS, visibleTabs } from '@/components/game/nav';
 import { dailyActivity, missingPlayers, retentionCohorts, winBack } from '@/server/admin-retention';
 import { closeDb } from '@/server/db/client';
 import { coinEntries, companies, contracts, deliveries, jobState, notifications, tripQueue, userBadges, users, vehicles } from '@/server/db/schema';
@@ -38,15 +37,6 @@ describe('v1.1.4.1 „По-просто“', () => {
     expect(new Date(r.publishedAt) > new Date(releaseByVersion('1.1.4')!.publishedAt)).toBe(true);
     expect(r.publishedAt.startsWith('2026-10-31')).toBe(true);
     for (const f of ['simple_ui', 'welcome_back', 'trip_queue', 'big_run', 'rival', 'weekly_card', 'discord_game_menu'] as const) expect(FEATURES[f]).toBe('1.1.4.1');
-  });
-
-  it('the row of a section keeps a few main pages; the rest go behind „Още“', () => {
-    const compete = SECTIONS.find((s) => s.key === 'compete')!;
-    const core = coreTabs(visibleTabs(compete, null, '/game/missions'), '/game/missions');
-    expect(core.length).toBeLessThanOrEqual(8);
-    expect(core.length).toBeLessThan(compete.tabs!.length);
-    // The open page is always in the row.
-    expect(coreTabs(visibleTabs(compete, null, '/game/league'), '/game/league').some((t) => t.href === '/game/league')).toBe(true);
   });
 
   it('„Докато те нямаше“: what the trucks did while the player was away, only after 6 hours', async () => {

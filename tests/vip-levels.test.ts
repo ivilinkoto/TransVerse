@@ -43,7 +43,7 @@ describe('1.3.2.2 VIP levels', () => {
   });
 
   it('a player who missed both 1.3.2.1 and 1.3.2.2 sees them one at a time, oldest first', () => {
-    const at = new Date('2026-11-24T12:00:00+02:00');
+    const at = new Date('2026-11-23T20:00:00+02:00');
     expect(unseenRelease('1.3.2', at)?.version).toBe('1.3.2.1');
     expect(unseenRelease('1.3.2.1', at)?.version).toBe('1.3.2.2');
     expect(unseenRelease('1.3.2.2', at)).toBeNull();

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { GarageClient } from '@/components/garage/GarageClient';
 import { Badge, PageHeader } from '@/components/ui';
 import { HALL_TIERS } from '@/lib/game/garage';
+import { COSMETIC_IDS, COSMETIC_PARTS } from '@/lib/game/cosmetics';
 import { isVip } from '@/lib/game/vip';
 import { gameContext } from '@/server/game/context';
 import { garageView } from '@/server/game/showroom';
@@ -31,7 +32,7 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
         actions={<Badge tone="cyan">{tx(view.hall.label)}</Badge>}
       />
       {next && <p className="text-xs text-mist-400">{t('На ниво {0} халето става „{1}“ ({2} платформи).', next.minLevel, tx(next.label), next.platforms)}</p>}
-      <GarageClient view={view} initialTruck={truck ?? null} isVip={isVip(user.vipUntil, now)} />
+      <GarageClient view={view} initialTruck={truck ?? null} isVip={isVip(user.vipUntil, now)} vipLevel={user.vipLevel ?? 0} parts={COSMETIC_IDS.filter((p) => !!(features as Record<string, boolean>)[COSMETIC_PARTS[p].feature ?? 'cosmetics'])} />
     </div>
   );
 }

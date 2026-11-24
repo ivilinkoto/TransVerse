@@ -14,14 +14,10 @@ export const route = (stops: number[]) => stops.map(place).join(' → ');
 
 /** 1.3.3: the block-train orders at an idle train's terminal, and the empty run to another one (Курсове → Влакове). */
 export function TrainOrders({ tr, now }: { tr: TrainsView['trains'][number]; now: Date }) {
-  return (
-    <>
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-white">{t('Поръчки на гарата')}</h3>
-        {tr.orders.length === 0 ? <p className="text-sm text-mist-400">{t('Сега няма поръчки оттук.')}</p> : (
-          <ul className="space-y-1.5">
-            {tr.orders.map((o) => (
-              <li key={o.id} className={`stat-tile flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-2 ${o.why ? 'opacity-60' : ''}`} data-testid="train-order">
+  const fit = tr.orders.filter((o) => !o.why);
+  const other = tr.orders.filter((o) => o.why);
+  const row = (o: TrainsView['trains'][number]['orders'][number]) => (
+    <li key={o.id} className={`stat-tile flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-2 ${o.why ? 'opacity-60' : ''}`} data-testid="train-order">
                 <div className="min-w-0 text-sm">
                   <p className="font-semibold text-white">{WAGON_ICON[o.wagonType]} {int(o.tons)} т {tx(o.goods)} → {place(o.to)}</p>
                   {o.stops.length > 2 && <p className="text-xs text-mist-300">🛤️ {route(o.stops)}</p>}
@@ -36,8 +32,17 @@ export function TrainOrders({ tr, now }: { tr: TrainsView['trains'][number]; now
                 </div>
                 <ActionButton action={{ type: 'sendTrain', trainId: tr.id, orderId: o.id }} disabled={!!o.why} className="game-action game-action-gold flex-row px-3 py-1.5 text-xs">{t('Пусни влака')}</ActionButton>
               </li>
-            ))}
-          </ul>
+  );
+  return (
+    <>
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-white">{t('Поръчки на гарата')}</h3>
+        {tr.orders.length === 0 ? <p className="text-sm text-mist-400">{t('Сега няма поръчки оттук.')}</p> : (
+          <>
+            {fit.length ? <ul className="space-y-1.5">{fit.map(row)}</ul> : <p className="text-sm text-mist-400">{t('Сега няма поръчка, която този влак може да вземе. Виж другите по-долу или пусни влака празен до друга гара.')}</p>}
+            {/* 1.3.3: the orders this train cannot take wait behind a fold, each with its reason. */}
+            {other.length > 0 && <details className="text-sm"><summary className="cursor-pointer text-mist-300">{t('Други поръчки, които влакът не може да вземе ({0})', other.length)}</summary><ul className="mt-1.5 space-y-1.5">{other.map(row)}</ul></details>}
+          </>
         )}
         <p className="text-[11px] text-mist-400">{t('Новите поръчки идват {0}.', dateTime(tr.orders[0]?.until ?? now))}</p>
       </div>
@@ -81,16 +86,37 @@ export function HireBoard({ v, now }: { v: Awaited<ReturnType<typeof hireBoard>>
       <p className="text-sm text-mist-300">{t('Без собствен влак: вземи поръчка и я карай с наем — влак на играта (за {0}% от поръчката) или влак на друг играч, който го е пуснал под наем (за неговата такса). Плащаш таксата за линията и енергията; поръчката е твоя.', Math.round(TRAINS.hire.gameShare * 100))}</p>
       {locked ? <p className="text-sm text-mist-300">🔒 {t('Наем на влак е от ниво {0}.', v.minLevel)}</p> : (
         <>
-          <nav className="flex flex-wrap gap-1.5" aria-label={t('Гара')}>
-            {v.terminals.map((x) => {
-              const n = v.forHireAt.get(x.id) ?? 0;
-              return (
-                <Link key={x.id} href={`/game/contracts/trains?at=${x.id}`} scroll={false} className={`shop-tab px-2.5 py-1 text-xs ${v.terminal?.id === x.id ? 'shop-tab-on' : ''}`} aria-current={v.terminal?.id === x.id ? 'page' : undefined}>
-                  {tx(x.name)}{n > 0 && ` · 🚆${n}`}
+          {/* 1.3.3: the stations as a list, the best pay first, with a wagon filter (instead of 28 buttons). */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs" data-testid="hire-wagons">
+            <span className="text-mist-400">{t('Вагони:')}</span>
+            {[null, ...(Object.keys(WAGON_ICON) as WagonType[])].map((w) => (
+              <Link key={w ?? 'all'} href={`/game/contracts/trains?at=${v.terminal?.id ?? ''}${w ? `&wagon=${w}` : ''}`} scroll={false} className={`shop-tab px-2.5 py-1 ${v.wagon === w ? 'shop-tab-on' : ''}`}>{w ? `${WAGON_ICON[w]} ${tx(WAGONS[w].name)}` : t('Всички')}</Link>
+            ))}
+          </div>
+          {(() => {
+            const row = (x: (typeof v.stations)[number]) => (
+              <li key={x.id}>
+                <Link href={`/game/contracts/trains?at=${x.id}${v.wagon ? `&wagon=${v.wagon}` : ''}`} scroll={false} aria-current={v.terminal?.id === x.id ? 'page' : undefined} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 text-xs transition ${v.terminal?.id === x.id ? 'border-gold-400/60 bg-gold-400/10 text-white' : 'border-asphalt-700 text-mist-200 hover:border-cyan-glow/50'}`}>
+                  <span className="font-semibold">{tx(x.name)}</span>
+                  <span className="text-mist-400">{x.orders ? t('{0} поръчки · до {1}', x.orders, money(x.best)) : t('няма поръчки')}{x.trains > 0 && ` · 🚆${x.trains}`}</span>
                 </Link>
-              );
-            })}
-          </nav>
+              </li>
+            );
+            const top = v.stations.slice(0, 6);
+            const rest = v.stations.slice(6);
+            return (
+              <div className="space-y-1.5" data-testid="hire-stations">
+                <ul className="grid gap-1.5 sm:grid-cols-2">{top.map(row)}</ul>
+                {rest.length > 0 && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-mist-300">{t('Още {0} гари', rest.length)}</summary>
+                    <ul className="mt-1.5 grid gap-1.5 sm:grid-cols-2">{rest.map(row)}</ul>
+                  </details>
+                )}
+              </div>
+            );
+          })()}
+          {v.terminal && <h3 className="text-sm font-semibold text-white">📍 {tx(v.terminal.name)}</h3>}
           {v.orders.length === 0 ? <p className="text-sm text-mist-400">{t('Сега няма поръчки оттук.')}</p> : (
             <ul className="space-y-1.5">
               {v.orders.map((o) => (

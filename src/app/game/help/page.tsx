@@ -95,7 +95,7 @@ const sections = (): { id: string; title: string; items: React.ReactNode[] }[] =
     items: [
       tr('Рискът е по избор: без задължителната почивка (проверка с шанс {0}) или претоварване до {1} ({2}).', pct(FINE_RULES.checkChance.hours), pct(FINE_RULES.overloadMax), pct(FINE_RULES.checkChance.overload)),
       tr('Глобата се плаща до {0} ч или се обжалва веднъж: {1} шанс да отпадне, иначе +{2}. След срока се удържа с +{3}.', FINE_RULES.dueHours, pct(FINE_RULES.appealWinChance), pct(FINE_RULES.appealLossShare), pct(FINE_RULES.latePayShare)),
-      tr('Застраховка (Сервиз, {0} дни): пътната помощ при повреда е за сметка на застрахователя. Цена {1} + {2}% от стойността.', INSURANCE.days, eur(INSURANCE.baseCents), (INSURANCE.valueShare * 100).toFixed(2)),
+      tr('Застраховка (прозорецът на камиона → Сервиз, {0} дни): пътната помощ при повреда е за сметка на застрахователя. Цена {1} + {2}% от стойността.', INSURANCE.days, eur(INSURANCE.baseCents), (INSURANCE.valueShare * 100).toFixed(2)),
     ],
   },
   {

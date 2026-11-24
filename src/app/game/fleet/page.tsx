@@ -21,6 +21,8 @@ import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { TrailerIllustration, VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { Truck3DButton } from '@/components/garage/Truck3DButton';
 import { TruckWindowButton } from '@/components/gameui/TruckWindowButton';
+import { truckPanelContext, TruckSellPanel, TruckServicePanel, TruckUpgradesPanel } from '@/components/game/TruckPanels';
+import { tripsOf } from '@/server/game/trip-log';
 import { MAINTENANCE, maintenanceState } from '@/lib/game/maintenance';
 import { dateTime, dec, int, km, money } from '@/lib/format';
 import { BODY_LABELS } from '@/server/game/deliveries';
@@ -50,7 +52,7 @@ import { RelocateTruck } from '@/components/game/RelocateTruck';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
-export default async function FleetPage({ searchParams }: { searchParams: Promise<{ to?: string; truck?: string }> }) {
+export default async function FleetPage({ searchParams }: { searchParams: Promise<{ to?: string; truck?: string; tab?: string }> }) {
   await initLocale();
   const { db, user, company, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
@@ -76,6 +78,10 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
     db.select({ id: depots.id, cityId: depots.cityId, name: cities.nameBg, slots: depots.slots }).from(depots).innerJoin(cities, eq(cities.id, depots.cityId)).where(eq(depots.companyId, company.id)),
     fleetCapacity(db, company.id),
   ]);
+  // 1.3.3: what the truck window's service, upgrade and sale tabs need, and each truck's last trips.
+  const panels = await truckPanelContext(db, user, company, now, features);
+  const recent = new Map<string, Awaited<ReturnType<typeof tripsOf>>>();
+  if (features.game_ui) for (const r of await tripsOf(db, user.id, 200)) if (r.vehicleId && (recent.get(r.vehicleId)?.length ?? 0) < 5) recent.set(r.vehicleId, [...(recent.get(r.vehicleId) ?? []), r]);
   // 1.1.4.1: the trips lined up after the current one.
   const queue = features.trip_queue ? await queuedTrips(db, company.id) : [];
   // 1.2.3.6 „Нов облик“: trips, the longest one and all km per truck, for the truck window.
@@ -108,8 +114,8 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
     <div className="space-y-6">
       <PageHeader title={tr('Автопарк')} subtitle={tr('Твоите превозни средства, къде са и какво правят.')} actions={<Link href="/game/market" className="btn-primary"><Truck className="h-4 w-4" />{tr('Купи техника')}</Link>} />
       {features.winter_prep && isPrewinter(now) && fleet.vehicles.some((v) => v.ownership === 'owned' && !hasWinterGrip(v.upgrades)) && (
-        <Link href="/game/garage" className="block rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 p-3 text-sm" data-testid="fleet-winter-tyres">
-          {tr('❄ Зимата идва на 1 декември — {0} камиона са още без зимни гуми. В Сервиза до 30 ноември са с −{1}% →', fleet.vehicles.filter((v) => v.ownership === 'owned' && !hasWinterGrip(v.upgrades)).length, Math.round(PREWINTER.tyreDiscount * 100))}
+        <Link href="#trucks" className="block rounded-2xl border border-cyan-glow/40 bg-cyan-glow/10 p-3 text-sm" data-testid="fleet-winter-tyres">
+          {tr('❄ Зимата идва на 1 декември — {0} камиона са още без зимни гуми. До 30 ноември са с −{1}%: камион → „Всичко за този камион“ → Подобрения.', fleet.vehicles.filter((v) => v.ownership === 'owned' && !hasWinterGrip(v.upgrades)).length, Math.round(PREWINTER.tyreDiscount * 100))}
         </Link>
       )}
       {features.road_choices && <RoadChoices db={db} companyId={company.id} now={now} />}
@@ -147,7 +153,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
         </span>
       </div>
       {fleet.vehicles.length === 0 && <Empty icon={Truck} title={tr('Нямате превозни средства')}>{tr('Купете първото си превозно средство от пазара.')}</Empty>}
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div id="trucks" className="grid gap-4 xl:grid-cols-2">
         {fleet.vehicles.map((v) => (
           <Card key={v.id} className={`flex flex-col ${features.game_ui ? `truck-card ${v.delivery ? 'truck-card-road' : v.status === 'listed' ? 'truck-card-sale' : v.condition < 50 ? 'truck-card-worn' : 'truck-card-free'}` : ''}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -326,14 +332,17 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
               const main = v.delivery
                 ? { href: '/game/map', label: tr('🗺️ Виж на картата') }
                 : v.condition < 50
-                  ? { href: `/game/garage#v-${v.id}`, label: tr('🔧 Ремонтирай') }
+                  ? { href: `/game/fleet?truck=${v.id}&tab=service`, label: tr('🔧 Ремонтирай') }
                   : { href: `/game/contracts?from=${v.cityId}&truck=${v.id}`, label: tr('🚚 Пусни курс') };
+              // 1.3.3: service, upgrades, trips and the sale are tabs of the truck window; these open the places.
               const tiles = [
-                { href: `/game/garage#v-${v.id}`, label: tr('Сервиз'), emoji: '🔧', on: true },
+                { href: `/game/showroom?truck=${v.id}`, label: tr('Гараж 3D'), emoji: '🏁', on: !!features.garage_showroom },
+                { href: `/game/garage/${v.id}`, label: tr('Витрина'), emoji: '🖼️', on: !!features.garage_showcase && v.ownership !== 'rented' },
                 { href: '/game/cabin', label: tr('Кабина'), emoji: '🛋️', on: features.cabin },
                 { href: '/game/trips', label: tr('Дневник'), emoji: '📓', on: features.trip_log },
-                { href: `/game/garage#v-${v.id}`, label: tr('Продай'), emoji: '🏷️', on: !v.rental },
+                ...(features.game_ui ? [] : [{ href: '/game/garage', label: tr('Сервиз'), emoji: '🔧', on: true }]),
               ].filter((x) => x.on);
+              const trips = recent.get(v.id) ?? [];
               return (
                 <div className="mt-3 space-y-2" data-testid="truck-actions">
                   <Link href={main.href} className="btn-primary w-full justify-center">{main.label}</Link>
@@ -360,6 +369,26 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                         main,
                         actions: tiles.map((x) => ({ href: x.href, label: x.label, emoji: x.emoji })),
                       }}
+                      initialOpen={params.truck === v.id}
+                      initialTab={params.truck === v.id ? params.tab : undefined}
+                      sections={[
+                        { id: 'service', label: tr('Сервиз'), emoji: '🔧', content: <TruckServicePanel v={v} fleet={fleet} ctx={panels} /> },
+                        ...(v.ownership === 'owned' ? [{ id: 'upgrades', label: tr('Подобрения'), emoji: '⚙️', content: <TruckUpgradesPanel v={v} ctx={panels} /> }] : []),
+                        {
+                          id: 'trips', label: tr('Курсове'), emoji: '📓',
+                          content: trips.length ? (
+                            <ul className="space-y-1.5 text-sm" data-testid="truck-trips">
+                              {trips.map((r) => (
+                                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-asphalt-700 bg-asphalt-850 px-3 py-2">
+                                  <span className="min-w-0"><b>{tx(r.from)} → {tx(r.to)}</b> <span className="text-xs text-mist-400">· {tx(r.goods)} · {km(r.loadedKm)} · {dateTime(r.completedAt!)}</span></span>
+                                  <span className="flex items-center gap-2">{r.late && <Badge tone="orange">{tr('закъснял')}</Badge>}<span className="num font-semibold text-profit">{money(r.payoutCents ?? 0)}</span>{features.trip_log && <Link href={`/game/trips/${r.id}`} className="text-xs text-cyan-glow hover:underline">{tr('Дневник →')}</Link>}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : <p className="text-sm text-mist-300">{tr('Камионът още няма завършени курсове.')}</p>,
+                        },
+                        { id: 'sell', label: v.ownership === 'owned' ? tr('Продажба') : tr('Връщане'), emoji: '🏷️', content: <TruckSellPanel v={v} ctx={panels} /> },
+                      ]}
                     />
                   ) : (
                   <details className="group rounded-xl border border-asphalt-700">

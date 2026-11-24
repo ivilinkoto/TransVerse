@@ -235,6 +235,8 @@ export const FEATURES = {
   gift_tc: '1.3.2.2',
   // 1.3.2.2: a booster for the whole player company, paid with ТрансКоин (/game/company).
   company_boost: '1.3.2.2',
+  // 1.3.2.3 „Части по марки“: rims, stacks, bull bar, stripes, two-tone cab, aero kit and the crown for ТрансКоин.
+  brand_parts: '1.3.2.3',
   // 1.3.3 „Жп линия“: the players' own freight trains on real rail lines (/game/trains).
   trains: '1.3.3',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).
@@ -287,7 +289,8 @@ export const FEATURES = {
   loans: '1.5',
   electric: '1.5',
   driver_moods: '1.5',
-  cosmetics: '1.5',
+  // 1.3.2.3: the first four truck parts come with the brand parts (planned for 1.5).
+  cosmetics: '1.3.2.3',
   company_report: '1.5',
   trailer_upgrades: '1.5',
   company_trailers: '1.5',

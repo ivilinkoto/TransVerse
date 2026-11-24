@@ -29,7 +29,7 @@ import { runRelief } from './relief';
 import { awardKeyClients, closeAssemblies, endInternships, ownerReports, topUpKeyClientLoads } from './company-life';
 import { returnRetiredHires, settleRetired } from './retired';
 import { settleRetired2 } from './retired-2';
-import { settleTrains } from './trains';
+import { runLines, settleTrains } from './trains';
 import { chargeProfitTax } from './profit-tax';
 import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
@@ -391,7 +391,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     // 1.3.2.1: last week's profit tax, once per account (charged from Monday).
     await every(db, 'profit-tax', 60 * 60_000, now, () => chargeProfitTax(db, now));
     // 1.3.3: the players' trains that arrived are paid and wait at the terminal.
-    await every(db, 'trains', 60_000, now, () => settleTrains(db, now));
+    await every(db, 'trains', 60_000, now, async () => (await settleTrains(db, now)) + (await runLines(db, now)));
     // v1.10: organized convoys leave on time; the game's Sunday convoy.
     await every(db, 'convoy-depart', 60_000, now, () => departConvoys(db, now));
     if (featureLive('weekly_convoy', now)) await every(db, 'weekly-convoy', 60 * 60_000, now, () => ensureWeeklyConvoy(db, now));

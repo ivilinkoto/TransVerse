@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { vipLevel } from '@/lib/game/vip-levels';
 import { TruckNameForm } from '@/components/game/TruckNameForm';
 import { SCRAP } from '@/lib/game/heritage';
@@ -40,6 +41,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function GaragePage() {
   await initLocale();
   const { db, user, company, now, features } = await gameContext();
+  // 1.3.3: everything for a truck is in its window in Автопарк, the trailers have their own tab.
+  if (features.game_ui) redirect('/game/fleet');
   // Баба Марта (v1.5): martenitsas on the trucks in March.
   const marta = features.marta && isMarta(now);
   // VIP: discount on repairs and upgrades; the company's service on the plot makes repairs cheaper too.

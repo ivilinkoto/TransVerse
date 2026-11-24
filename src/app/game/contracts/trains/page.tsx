@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { PageHeader } from '@/components/ui';
 import { TrainArt } from '@/components/vehicles/trains';
 import { HireBoard, place, RunStatus, TrainOrders } from '@/components/game/TrainOrders';
-import { LOCOS, RAIL_TERMINALS, TRAINS, WAGON_TYPES } from '@/lib/game/trains';
+import { LOCOS, RAIL_TERMINALS, TRAINS, WAGON_TYPES, type WagonType } from '@/lib/game/trains';
 import { gameContext } from '@/server/game/context';
 import { hireBoard, trainsView } from '@/server/game/trains';
 import { t } from '@/i18n/t';
@@ -16,13 +16,17 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** 1.3.3 „Жп линия“ (Курсове → Влакове): the block-train orders for each of my idle trains, and the ones on the way. */
-export default async function TrainJobsPage({ searchParams }: { searchParams: Promise<{ at?: string }> }) {
+export default async function TrainJobsPage({ searchParams }: { searchParams: Promise<{ at?: string; wagon?: string }> }) {
   await initLocale();
   const { db, user, now, features } = await gameContext();
   if (!features.trains) notFound();
   const v = await trainsView(db, user.id, now);
-  const at = Number((await searchParams).at) || v.trains[0]?.at || RAIL_TERMINALS[0]!.id;
-  const hire = await hireBoard(db, user.id, at, now);
+  const q = await searchParams;
+  const wagon = WAGON_TYPES.includes(q.wagon as WagonType) ? (q.wagon as WagonType) : null;
+  const at = Number(q.at) || v.trains[0]?.at || RAIL_TERMINALS[0]!.id;
+  let hire = await hireBoard(db, user.id, at, now, wagon);
+  // 1.3.3: without a chosen station (and no own train), open the one with the best order.
+  if (!q.at && !v.trains.length && hire.stations[0] && hire.stations[0].id !== at) hire = await hireBoard(db, user.id, hire.stations[0].id, now, wagon);
   const idle = v.trains.filter((tr) => !tr.run);
   const going = v.trains.filter((tr) => tr.run);
   return (

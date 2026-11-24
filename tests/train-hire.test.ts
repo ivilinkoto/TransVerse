@@ -7,7 +7,7 @@ import { companies, jobState, userLicences, users } from '@/server/db/schema';
 import { post } from '@/server/game/finance';
 import { GameError } from '@/server/game/errors';
 import { buyTrain, hireBoard, hireTrain, setTrainHire, settleTrains } from '@/server/game/trains';
-import { db, newPlayer } from './helpers';
+import { db, newPlayer, trainWith } from './helpers';
 
 afterAll(() => closeDb());
 
@@ -33,9 +33,9 @@ describe('1.3.3: trains by VIP level, and hiring a train for one order', () => {
     expect(unlocksAt(3, () => false)).toEqual([]);
     const p = await newPlayer();
     await setUp(p.userId, 30, 2, ['rail']);
-    expect(await code(buyTrain(db(), p.userId, { loco: 'danubia-d22', wagonType: 'hopper', wagons: 10, terminalId: SOFIA }, new Date()))).toBe('vip_level');
+    expect(await code(buyTrain(db(), p.userId, { loco: 'danubia-d22', terminalId: SOFIA }, new Date()))).toBe('vip_level');
     await db().update(users).set({ vipLevel: 3 }).where(eq(users.id, p.userId));
-    expect(await code(buyTrain(db(), p.userId, { loco: 'danubia-d22', wagonType: 'hopper', wagons: 10, terminalId: SOFIA }, new Date()))).toBe('ok');
+    expect(await code(buyTrain(db(), p.userId, { loco: 'danubia-d22', terminalId: SOFIA }, new Date()))).toBe('ok');
   });
 
   it("a game train: the smallest that can, 35% of the pay, paid on arrival and gone", async () => {
@@ -71,7 +71,7 @@ describe('1.3.3: trains by VIP level, and hiring a train for one order', () => {
     await setUp(owner.userId, 25, 3, ['rail']);
     let now = new Date();
     const n = { loco: 'danubia-d22' as const, wagonType: 'hopper' as const, wagons: 22, terminalId: SOFIA };
-    const train = await buyTrain(db(), owner.userId, n, now);
+    const train = await trainWith(owner.userId, n, now);
     const hirer = await newPlayer();
     await setUp(hirer.userId, 12, 0);
     const any = ordersAt(SOFIA, now.getTime())[0]!;

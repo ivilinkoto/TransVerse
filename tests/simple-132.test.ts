@@ -27,7 +27,8 @@ describe('1.3.2 „Просто“: fewer places', () => {
     expect(familyFor('/game/league')!.family[0]!.href).toBe('/game/leaderboards');
     expect(familyFor('/game/inventory/album')!.page.href).toBe('/game/inventory/album');
     expect(familyFor('/game/inventory')!.page.href).toBe('/game/inventory');
-    expect(familyFor('/game/company/chat')!.family[0]!.href).toBe('/game/company');
+    // 1.3.3: the company's pages are its own tab groups (CompanyTabs), not a family.
+    expect(familyFor('/game/company/chat')).toBeUndefined();
     expect(familyFor('/game/analytics')!.family[0]!.href).toBe('/game/finance');
     expect(familyFor('/game/contracts')).toBeUndefined();
     // Only the first page of a family is in the menu…
@@ -35,8 +36,9 @@ describe('1.3.2 „Просто“: fewer places', () => {
     // …and a page of the family lights up its tab.
     const play = SECTIONS_V3.find((s) => s.key === 'compete')!;
     expect(activeTab(play, '/game/league')?.href).toBe('/game/leaderboards');
-    const company = SECTIONS_V3.find((s) => s.key === 'company')!;
-    expect(activeTab(company, '/game/reviews')?.href).toBe('/game/company');
+    // 1.3.3: Отзиви are a tab of Клиенти (Курсове), not of the company.
+    const jobsSection = SECTIONS_V3.find((s) => s.key === 'jobs')!;
+    expect(activeTab(jobsSection, '/game/reviews')?.href).toBe('/game/clients');
     // Клиенти and Конвои wait behind „Още“.
     const jobs = SECTIONS_V3.find((s) => s.key === 'jobs')!;
     expect(jobs.tabs!.filter((t) => t.core).map((t) => t.href)).toEqual(['/game/contracts', '/game/map']);

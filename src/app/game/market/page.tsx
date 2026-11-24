@@ -131,7 +131,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
       {show === 'used' && (
         <section>
           <h2 className="mb-1 font-display text-lg font-bold">{tr('Употребявана техника от играчи')}</h2>
-          <p className="mb-3 text-sm text-mist-400">{tr('По-евтино от новото — с пробега и състоянието, които има. Продавачът плаща 5% такса. Своята техника обявяваш от Автопарк → Сервиз.')}</p>
+          <p className="mb-3 text-sm text-mist-400">{tr('По-евтино от новото — с пробега и състоянието, които има. Продавачът плаща 5% такса. Своя камион обявяваш от прозореца му (Автопарк → „Всичко за този камион“ → Продажба), а ремарке — от Автопарк → Ремаркета.')}</p>
           <UsedListings listings={used} companyId={company.id} level={user.level} balanceCents={company.balanceCents} freeSlots={freeSlots} now={now} />
         </section>
       )}

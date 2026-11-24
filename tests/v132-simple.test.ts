@@ -24,7 +24,8 @@ describe('1.3.2 „Просто“', () => {
   it('keeps every page of the old menu reachable (only the old pass page, replaced by the season, goes)', () => {
     // A page in a family (Лига, Албум, Анализ…) is reached through the tabs of its first page.
     const v3 = new Set([...pages(SECTIONS_V3), ...PAGE_FAMILIES.flat().map((p) => p.href)]);
-    expect([...pages(SECTIONS)].filter((h) => !v3.has(h))).toEqual(['/game/pass']);
+    // 1.3.3: Сервиз, Дневник and Кабина are in each truck's window in Автопарк.
+    expect([...pages(SECTIONS)].filter((h) => !v3.has(h)).sort()).toEqual(['/game/cabin', '/game/garage', '/game/pass', '/game/trips'].sort());
   });
 
   it('lists every page once (no inventory or season twice)', () => {

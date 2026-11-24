@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client/api';
 import { UPGRADES, type UpgradeId } from '@/lib/game/catalog';
-import { COSMETIC_PARTS, type Cosmetics } from '@/lib/game/cosmetics';
+import { COSMETIC_PARTS, type CosmeticPart, type Cosmetics } from '@/lib/game/cosmetics';
+import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { GARAGE, TUNING_IDS, TUNING_PARTS, ownedKey, truckStats, type Tuning, type TuningPart } from '@/lib/game/garage';
 import { STANDARD_COLORS } from '@/lib/game/vip';
 import { int, money } from '@/lib/format';
@@ -42,7 +43,7 @@ const STAT_LABELS: [keyof ReturnType<typeof truckStats>, string][] = [
   ['winter', 'Зимно сцепление'],
 ];
 
-export function GarageClient({ view, initialTruck, isVip }: { view: GarageView; initialTruck?: string | null; isVip?: boolean }) {
+export function GarageClient({ view, initialTruck, isVip, parts = ['grille', 'lights', 'visor'], vipLevel = 0 }: { view: GarageView; initialTruck?: string | null; isVip?: boolean; /** 1.3.2.3: the parts on sale now. */ parts?: CosmeticPart[]; vipLevel?: number }) {
   const router = useRouter();
   const start = Math.max(0, view.trucks.findIndex((v) => v.id === initialTruck));
   const [index, setIndex] = useState(start);
@@ -232,12 +233,17 @@ export function GarageClient({ view, initialTruck, isVip }: { view: GarageView; 
                   </button>
                 )}
               </div>
-              {truck.kind !== 'van' && (['grille', 'lights', 'visor'] as const).map((part) => (
+              {truck.kind !== 'van' && parts.some((p) => COSMETIC_PARTS[p].feature) && (
+                // 1.3.2.3: the new parts show on the drawing (the 3D hall does not have them yet).
+                <VehicleIllustration modelId={truck.modelId} color={shownColor} cosmetics={shownCosmetics} className="h-28 w-full max-w-md" />
+              )}
+              {truck.kind !== 'van' && parts.filter((p) => p !== 'sticker' && (!COSMETIC_PARTS[p].tractorOnly || truck.kind === 'tractor') && (!COSMETIC_PARTS[p].noElectric || !truck.modelId.startsWith('volta'))).map((part) => (
                 <div key={part} className="flex flex-wrap items-center gap-1.5">
                   <span className="label w-36 shrink-0">{t(COSMETIC_PARTS[part].label)}</span>
                   {COSMETIC_PARTS[part].styles.map((s) => {
                     const on = (shownCosmetics[part] as string | undefined) === s.id;
                     const fitted = (truck.cosmetics[part] as string | undefined) === s.id;
+                    if (s.vip && vipLevel < s.vip) return <span key={s.id} className="text-[11px] text-mist-500">🔒 {t(s.label)} · VIP{s.vip}</span>;
                     return (
                       <span key={s.id} className="inline-flex items-center gap-1">
                         <button type="button" className={chip(on)} onClick={() => setPreview({ ...preview, cosmetics: { ...(preview?.cosmetics ?? {}), [part]: s.id } })}>{t(s.label)}</button>
@@ -269,7 +275,7 @@ export function GarageClient({ view, initialTruck, isVip }: { view: GarageView; 
                   {truck.service.fresh ? t('Скоро е правена') : t('Профилактика · до {0}', money(truck.service.cents))}
                 </button>
               </div>
-              <p className="text-xs text-mist-400">{t('Цената е преди отстъпките (VIP и сервиза на компанията).')} <Link href="/game/garage" className="underline">{t('Целият сервиз')}</Link></p>
+              <p className="text-xs text-mist-400">{t('Цената е преди отстъпките (VIP и сервиза на компанията).')} <Link href={`/game/fleet?truck=${truck.id}&tab=service`} className="underline">{t('Сервизът на камиона')}</Link></p>
             </div>
           )}
 

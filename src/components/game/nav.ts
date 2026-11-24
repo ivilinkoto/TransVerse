@@ -16,6 +16,8 @@ export interface NavTab {
   core?: boolean;
   /** 1.2: hidden once the viewer has this feature (the page moved elsewhere). */
   hiddenWith?: FeatureId;
+  /** 1.3.3: a card of the section's start page only — not in the row or behind „Още ▾“ (shown while it is open). */
+  hubOnly?: boolean;
 }
 
 export interface NavSection {
@@ -76,7 +78,8 @@ export const SECTIONS: NavSection[] = [
     label: 'Автопарк',
     icon: Truck,
     tabs: [
-      { href: '/game/fleet', label: 'Моите превозни средства', group: 'Камиони', core: true },
+      { href: '/game/fleet', label: 'Камиони', group: 'Камиони', core: true },
+      { href: '/game/fleet/trailers', label: 'Ремаркета', group: 'Камиони', core: true },
       { href: '/game/showroom', label: 'Гараж 3D', feature: 'garage_showroom', group: 'Камиони', core: true },
       { href: '/game/trips', label: 'Бордови дневник', feature: 'trip_log', group: 'Камиони' },
       { href: '/game/cabin', label: 'Кабина', feature: 'cabin', group: 'Камиони' },
@@ -268,20 +271,25 @@ type Place = [href: string, core?: boolean];
 /** The pages of each place in the order they are shown; the core ones are in the row, the rest behind „Още ▾“. */
 const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
   // 1.3.2: Клиенти and Конвои (2 players a week each) wait behind „Още ▾“; Рампата is gone.
-  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/clients'], ['/game/convoys'], ['/game/auctions'], ['/game/trade']],
+  // 1.3.3: Отзиви are a tab of Клиенти, Търговия of Специални товари (PAGE_FAMILIES).
+  jobs: [['/game/contracts', true], ['/game/map', true], ['/game/clients'], ['/game/convoys'], ['/game/auctions']],
   // Анализ and Къде печеля moved to „Финанси“, Технологии и офис to „Компания“; Сервизи на играчите are gone.
-  fleet: [['/game/fleet', true], ['/game/staff', true], ['/game/garage', true], ['/game/market', true], ['/game/showroom'], ['/game/logistics'], ['/game/skills'], ['/game/mascot'], ['/game/licences'], ['/game/trips'], ['/game/cabin'], ['/game/buses'], ['/game/trains']],
-  company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment']],
+  // 1.3.3: one Автопарк with tabs — Сервиз, Дневник and Кабина moved into each truck's window.
+  // Моите умения and Талисман are tabs of Шофьори (PAGE_FAMILIES); the player's skills are in their own driver's window too.
+  fleet: [['/game/fleet', true], ['/game/fleet/trailers', true], ['/game/trains', true], ['/game/staff', true], ['/game/market', true], ['/game/logistics'], ['/game/licences'], ['/game/showroom'], ['/game/buses']],
+  // 1.3.3: the company's own pages are its five tab groups (CompanyTabs); Технологии и офис is behind „Още ▾“.
+  company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment'], ['/game/growth']],
 };
 
 /**
  * „Игри и награди“: everything the player plays and collects, by group. The start page shows
  * them as cards (and what runs now on top); the row keeps the start, missions, the season and the bag.
  */
-const PLAY_GROUPS: { name: string; pages: Place[] }[] = [
+const PLAY_GROUPS: { name: string; pages: Place[]; hubOnly?: boolean }[] = [
   // The workshop, the album and the hall are tabs of „Инвентар“ (PAGE_FAMILIES), the league and the winter games of „Класации“.
   { name: 'Награди', pages: [['/game/missions', true], ['/game/seasons', true], ['/game/inventory', true], ['/game/events']] },
-  { name: 'Всеки ден', pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/crisis'], ['/game/road-service']] },
+  // 1.3.3: the daily games are cards of „Всичко“ (with what runs now), not entries of „Още ▾“.
+  { name: 'Всеки ден', hubOnly: true, pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/crisis'], ['/game/road-service']] },
   { name: 'Състезания', pages: [['/game/leaderboards', true]] },
   { name: 'Общност', pages: [['/game/ideas']] },
   { name: 'Колекции', pages: [['/game/progress']] },
@@ -295,7 +303,11 @@ export const PAGE_FAMILIES: NavTab[][] = [
   [{ href: '/game/leaderboards', label: 'Класации' }, { href: '/game/league', label: 'Лига' }, { href: '/game/winter-games', label: 'Зимни игри', feature: 'winter_games' }],
   [{ href: '/game/inventory', label: 'Инвентар' }, { href: '/game/inventory/workshop', label: 'Работилница', feature: 'workshop' }, { href: '/game/inventory/album', label: 'Албум', feature: 'item_album' }, { href: '/game/inventory/hall', label: 'Зала на славата', feature: 'item_album' }],
   [{ href: '/game/finance', label: 'Финанси' }, { href: '/game/analytics', label: 'Анализ' }, { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map' }],
-  [{ href: '/game/company', label: 'Моята компания' }, { href: '/game/growth', label: 'Технологии и офис', feature: 'research' }, { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' }],
+  // 1.3.3 „Всичко на едно място“, етап 2: more pages that belong together.
+  [{ href: '/game/staff', label: 'Шофьори' }, { href: '/game/skills', label: 'Моите умения', feature: 'driver_skills' }, { href: '/game/mascot', label: 'Талисман', feature: 'mascot' }],
+  [{ href: '/game/clients', label: 'Клиенти' }, { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' }],
+  [{ href: '/game/auctions', label: 'Специални товари' }, { href: '/game/trade', label: 'Търговия със стоки' }],
+  [{ href: '/game/profile', label: 'Профил' }, { href: '/game/settings', label: 'Настройки' }, { href: '/game/invite', label: 'Покани приятел' }, { href: '/game/mentor', label: 'Наставник' }, { href: '/game/updates', label: 'Обновления' }, { href: '/game/help', label: 'Помощ' }, { href: '/game/support', label: 'Поддръжка' }],
 ];
 
 /**
@@ -304,7 +316,7 @@ export const PAGE_FAMILIES: NavTab[][] = [
  * shows only on the truck half.
  */
 export const VEHICLE_SWITCH: Partial<Record<NavSection['key'], { trucks: string; trains: string }>> = {
-  fleet: { trucks: '/game/fleet', trains: '/game/trains' },
+  // 1.3.3: in Автопарк the trains are a tab like the trailers.
   jobs: { trucks: '/game/contracts', trains: '/game/contracts/trains' },
 };
 const TRAIN_PAGES = ['/game/trains', '/game/contracts/trains'];
@@ -346,7 +358,7 @@ export const SECTIONS_V3: NavSection[] = (() => {
       href: '/game/play',
       label: 'Игри и награди',
       icon: Gamepad2,
-      tabs: [{ href: '/game/play', label: 'Всичко', core: true }, ...holidays, ...PLAY_GROUPS.flatMap((g) => g.pages.map(([href, core]) => tabOf(href, !!core, g.name)))],
+      tabs: [{ href: '/game/play', label: 'Всичко', core: true }, ...holidays, ...PLAY_GROUPS.flatMap((g) => g.pages.map(([href, core]) => ({ ...tabOf(href, !!core, g.name), ...(g.hubOnly ? { hubOnly: true } : {}) })))],
     },
   ];
 })();

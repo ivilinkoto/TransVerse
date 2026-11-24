@@ -30,7 +30,7 @@ export async function nowList(db: DbOrTx, user: { id: string; loginStreak: numbe
   const steps = await nextSteps(db, user, companyId, now, 10);
   const out: NowItem[] = steps.map((s) => ({ ...s, tone: TONE[s.emoji] ?? 'info' }));
   const worn = await db.select({ id: vehicles.id, plate: vehicles.plate, condition: vehicles.condition }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'idle'), isNull(vehicles.soldAt), lt(vehicles.condition, 50))).limit(3);
-  for (const v of worn) out.push({ emoji: '🔧', text: t('{0} е на {1}% — ремонтирай го преди следващия курс.', v.plate, Math.round(v.condition)), href: `/game/garage#v-${v.id}`, action: t('Ремонт'), tone: 'warn' });
+  for (const v of worn) out.push({ emoji: '🔧', text: t('{0} е на {1}% — ремонтирай го преди следващия курс.', v.plate, Math.round(v.condition)), href: `/game/fleet?truck=${v.id}&tab=service`, action: t('Ремонт'), tone: 'warn' });
   if (features.inventory_menu) {
     const inv = await inventoryBadge(db, user.id, user.uiPrefs?.inventorySeenAt, now);
     if (inv.caseReady) out.push({ emoji: '📦', text: t('Имаш неотворен кейс.'), href: '/game/inventory', action: t('Отвори'), tone: 'gold' });

@@ -1,5 +1,5 @@
 import { Fender, Wheel, type Ids, type RimStyle } from './parts';
-import { GRILLE_COLORS, LIGHT_COLORS, type Cosmetics } from '@/lib/game/cosmetics';
+import { GRILLE_COLORS, LIGHT_COLORS, TWOTONE_COLORS, type Cosmetics } from '@/lib/game/cosmetics';
 import { tx } from '@/i18n/t';
 
 /**
@@ -18,6 +18,9 @@ export interface CabDesign {
   bullbar?: boolean;
   /** The roof deflector even without a trailer. */
   aero?: boolean;
+  /** 1.3.2.3: black stacks / a black bull bar instead of chrome. */
+  stacksColor?: 'chrome' | 'black';
+  bullbarColor?: 'chrome' | 'black';
 }
 /** The rims each brand fits. */
 export const RIMS: Record<CabBrand, RimStyle> = { hemus: 'steel', danubia: 'alloy', rila: 'heavy', volta: 'aero' };
@@ -47,7 +50,7 @@ export function Cab({ x, style, ids, color, aero = false, extras, design = { bra
         <g>
           {[x - 30, x - 48].map((sx, i) => (
             <g key={sx}>
-              <rect x={sx} y={T - 40 + i * 14} width={12} height={-T - 80 - i * 14} rx={5} fill={`url(#${ids.chrome})`} stroke="#475569" strokeWidth="1.5" />
+              <rect x={sx} y={T - 40 + i * 14} width={12} height={-T - 80 - i * 14} rx={5} fill={design.stacksColor === 'black' ? '#111827' : `url(#${ids.chrome})`} stroke="#475569" strokeWidth="1.5" />
               <rect x={sx - 2} y={T + 60} width={16} height={80} rx={4} fill="#94a3b8" stroke="#475569" strokeWidth="1" />
               {Array.from({ length: 5 }, (_, k) => <rect key={k} x={sx} y={T + 68 + k * 14} width={12} height={4} fill="#475569" opacity="0.6" />)}
               <path d={`M ${sx - 1} ${T - 40 + i * 14} L ${sx + 14} ${T - 46 + i * 14}`} stroke="#334155" strokeWidth="4" strokeLinecap="round" />
@@ -126,9 +129,28 @@ export function Cab({ x, style, ids, color, aero = false, extras, design = { bra
           ))}
         </g>
       )}
+      {extras?.twotone && (
+        // 1.3.2.3: a two-tone cab — the lower part in a second colour
+        <path d={`M ${x + 2} -172 L ${f - 1} -172 L ${f + 1} -112 L ${f - 2} -106 L ${x + 2} -106 Z`} fill={TWOTONE_COLORS[extras.twotone]} stroke="#0b1220" strokeWidth="1.5" />
+      )}
+      {extras?.stripes === 'racing' && (
+        <g><rect x={x + 2} y={-190} width={L - 4} height={10} fill="#f8fafc" /><rect x={x + 2} y={-176} width={L - 4} height={10} fill="#dc2626" /></g>
+      )}
+      {extras?.stripes === 'flame' && (
+        <path d={`M ${x + 4} -110 L ${x + 4} -170 Q ${x + 40} -150 ${x + 60} -175 Q ${x + 80} -140 ${x + 110} -168 Q ${x + 130} -136 ${x + 160} -160 Q ${x + 170} -128 ${f - 10} -140 L ${f - 6} -110 Z`} fill="#f97316" stroke="#facc15" strokeWidth="3" opacity="0.95" />
+      )}
+      {extras?.stripes === 'gold' && !extras.premium && (
+        <g><rect x={x + 2} y={-182} width={L - 4} height={5} fill="#f6c343" /><rect x={x + 2} y={-173} width={L - 4} height={2} fill="#f6c343" opacity="0.8" /></g>
+      )}
+      {extras?.emblem === 'crown' && !extras.premium && (
+        <g transform={`translate(${doorX + 80} -132) scale(0.8)`}>
+          <path d="M -20 8 L -24 -12 L -11 -2 L 0 -18 L 11 -2 L 24 -12 L 20 8 Z" fill="#f6c343" stroke="#78350f" strokeWidth="1.5" />
+          <rect x={-20} y={9} width={40} height={6} rx={2} fill="#f6c343" stroke="#78350f" strokeWidth="1.5" />
+        </g>
+      )}
       {/* brand graphics on the cab side */}
       {b === 'danubia' && <path d={`M ${x + 4} -128 L ${x + 4} -150 Q ${x + L * 0.45} -150 ${f - 30} ${T + 90} L ${f - 6} ${T + 90} Q ${x + L * 0.55} -120 ${x + 4} -128 Z`} fill="#fff" opacity="0.22" />}
-      {b === 'rila' && <rect x={x + 2} y={-150} width={L - 4} height={44} fill="#0b1220" opacity="0.55" />}
+      {b === 'rila' && !extras?.twotone && <rect x={x + 2} y={-150} width={L - 4} height={44} fill="#0b1220" opacity="0.55" />}
       {b === 'volta' && <path d={`M ${x + 4} -132 L ${f - 4} -168`} stroke="#38bdf8" strokeWidth="6" strokeLinecap="round" />}
       {b === 'hemus' && <rect x={x + 2} y={-196} width={L - 6} height={14} fill="#fff" opacity="0.85" />}
       {/* side window and A-pillar glass (by brand: Rila square, Volta raked) */}
@@ -202,7 +224,7 @@ export function Cab({ x, style, ids, color, aero = false, extras, design = { bra
       <rect x={f - 40} y={-96} width={44} height={6} fill={b === 'danubia' ? `url(#${ids.chrome})` : '#4b5563'} />
       {design.bullbar && (
         // a chrome bull bar in front of the bumper
-        <g fill="none" stroke={`url(#${ids.chrome})`} strokeWidth="7" strokeLinecap="round">
+        <g fill="none" stroke={design.bullbarColor === 'black' ? '#111827' : `url(#${ids.chrome})`} strokeWidth="7" strokeLinecap="round">
           <path d={`M ${f - 10} -170 L ${f + 18} -164 L ${f + 20} -76 L ${f - 6} -72`} />
           <path d={`M ${f + 18} -132 L ${f - 4} -132`} />
         </g>
@@ -297,11 +319,11 @@ export function Tractor({ ids, color, cab, heavy = false, coupled = false, class
           <Fender x={wx} color="#334155" />
           {/* the bracket that holds the mudguard to the frame */}
           <rect x={wx - 6} y={-122} width={12} height={14} rx={2} fill="#334155" />
-          <Wheel x={wx} ids={ids} twin rim={extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus']} />
+          <Wheel x={wx} ids={ids} twin rim={extras?.rims ?? (extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus'])} />
         </g>
       ))}
       <Fender x={482} />
-      <Wheel x={482} ids={ids} rim={extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus']} />
+      <Wheel x={482} ids={ids} rim={extras?.rims ?? (extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus'])} />
     </g>
   );
 }
@@ -377,9 +399,9 @@ export function Rigid({ ids, color, body, extras, design }: { ids: Ids; color: s
       <rect x={430} y={-150} width={110} height={56} rx={12} fill={`url(#${ids.metal})`} stroke="#475569" />
       <Cab x={bodyEnd + 12} style="day" ids={ids} color={color} extras={extras} design={design ? { ...design, stacks: false } : undefined} />
       <Fender x={200} />
-      <Wheel x={200} ids={ids} twin rim={extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus']} />
+      <Wheel x={200} ids={ids} twin rim={extras?.rims ?? (extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus'])} />
       <Fender x={778} />
-      <Wheel x={778} ids={ids} rim={extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus']} />
+      <Wheel x={778} ids={ids} rim={extras?.rims ?? (extras?.premium ? 'gold' : RIMS[design?.brand ?? 'hemus'])} />
     </g>
   );
 }
