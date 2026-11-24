@@ -23,3 +23,25 @@ describe('1.3.3 „Всичко на едно място“', () => {
     expect(hrefs.length).toBe(new Set(hrefs).size);
   });
 });
+
+describe('1.3.3 „Всичко на едно място“, етап 3', () => {
+  it('every company page is in one of five groups', async () => {
+    const { COMPANY_GROUPS, companyGroupOf } = await import('@/components/company/CompanyTabs');
+    const { readdirSync } = await import('node:fs');
+    expect(COMPANY_GROUPS.map((g) => g.label)).toEqual(['Преглед', 'Членове', 'Развитие', 'Общност', 'Управление']);
+    const pages = readdirSync('src/app/game/company', { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== 'chat').map((d) => `/game/company/${d.name}`);
+    const grouped = COMPANY_GROUPS.flatMap((g) => g.pages.map((p) => p.href));
+    for (const p of pages) expect(grouped, p).toContain(p);
+    expect(new Set(grouped).size).toBe(grouped.length);
+    expect(companyGroupOf('/game/company/ranks').id).toBe('people');
+    expect(companyGroupOf('/game/company/factory').id).toBe('growth');
+  });
+
+  it('the daily games are cards of „Игри и награди“, not entries of „Още“', () => {
+    const play = SECTIONS_V3.find((s) => s.key === 'compete')!;
+    const daily = play.tabs!.filter((t) => t.group === 'Всеки ден');
+    expect(daily.length).toBeGreaterThan(5);
+    expect(daily.every((t) => t.hubOnly)).toBe(true);
+    expect(play.tabs!.filter((t) => t.group !== 'Всеки ден').some((t) => t.hubOnly)).toBe(false);
+  });
+});

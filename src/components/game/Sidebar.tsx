@@ -209,7 +209,8 @@ function SectionRow({ holiday = null }: { holiday?: string | null }) {
   if (!section?.tabs) return null;
   // 1.3.3: the train pages are the other half of the switch, not tabs of the truck row.
   const halves = has('trains') && has('simple_menu') && !!VEHICLE_SWITCH[section.key];
-  const tabs = visibleTabs(section, holiday, pathname, has, player).filter((t) => !(halves && isTrainPage(t.href)));
+  // 1.3.3: hub-only pages (the daily games) are cards of the section's start page, not row entries — unless open.
+  const tabs = visibleTabs(section, holiday, pathname, has, player).filter((t) => !(halves && isTrainPage(t.href)) && (!t.hubOnly || pathname === t.href || pathname.startsWith(t.href + '/')));
   // 1.1.4.1: only the few main pages in the row; the others behind "Още ▾".
   if (lean) {
     const core = coreTabs(tabs, pathname);

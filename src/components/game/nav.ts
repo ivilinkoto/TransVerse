@@ -16,6 +16,8 @@ export interface NavTab {
   core?: boolean;
   /** 1.2: hidden once the viewer has this feature (the page moved elsewhere). */
   hiddenWith?: FeatureId;
+  /** 1.3.3: a card of the section's start page only — not in the row or behind „Още ▾“ (shown while it is open). */
+  hubOnly?: boolean;
 }
 
 export interface NavSection {
@@ -282,10 +284,11 @@ const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
  * „Игри и награди“: everything the player plays and collects, by group. The start page shows
  * them as cards (and what runs now on top); the row keeps the start, missions, the season and the bag.
  */
-const PLAY_GROUPS: { name: string; pages: Place[] }[] = [
+const PLAY_GROUPS: { name: string; pages: Place[]; hubOnly?: boolean }[] = [
   // The workshop, the album and the hall are tabs of „Инвентар“ (PAGE_FAMILIES), the league and the winter games of „Класации“.
   { name: 'Награди', pages: [['/game/missions', true], ['/game/seasons', true], ['/game/inventory', true], ['/game/events']] },
-  { name: 'Всеки ден', pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/crisis'], ['/game/road-service']] },
+  // 1.3.3: the daily games are cards of „Всичко“ (with what runs now), not entries of „Още ▾“.
+  { name: 'Всеки ден', hubOnly: true, pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/crisis'], ['/game/road-service']] },
   { name: 'Състезания', pages: [['/game/leaderboards', true]] },
   { name: 'Общност', pages: [['/game/ideas']] },
   { name: 'Колекции', pages: [['/game/progress']] },
@@ -355,7 +358,7 @@ export const SECTIONS_V3: NavSection[] = (() => {
       href: '/game/play',
       label: 'Игри и награди',
       icon: Gamepad2,
-      tabs: [{ href: '/game/play', label: 'Всичко', core: true }, ...holidays, ...PLAY_GROUPS.flatMap((g) => g.pages.map(([href, core]) => tabOf(href, !!core, g.name)))],
+      tabs: [{ href: '/game/play', label: 'Всичко', core: true }, ...holidays, ...PLAY_GROUPS.flatMap((g) => g.pages.map(([href, core]) => ({ ...tabOf(href, !!core, g.name), ...(g.hubOnly ? { hubOnly: true } : {}) })))],
     },
   ];
 })();
