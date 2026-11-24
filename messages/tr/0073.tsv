@@ -1418,3 +1418,59 @@ e6d82b3a79	Black lower half	Чёрный низ
 f107cacbb1	for tractors	для тягачей
 5033d5546b	Electric trucks have no exhaust stacks.	У электрических грузовиков нет выхлопных труб.
 3323144a12	The stacks and the aero kit are for tractors only (the stacks not for electric ones); the other parts fit every truck (not the vans).	Трубы и аэро-пакет только для тягачей (трубы — не для электрических); остальные детали — для всех грузовиков (кроме фургонов).
+2777cbaffa	{0} orders · up to {1}	{0} заказов · до {1}
+e92e50fbf9	Fleet with tabs	Автопарк с вкладками
+d69ffa3d26	No regular line — you send it by hand or from the „Send again“ notification.	Без регулярной линии — отправляешь вручную или из уведомления «Отправь снова».
+b826fd1e67	No load for {0} hours — empty to the other end	Без груза {0} ч — порожняком на другой конец
+be5ad9c3b8	Fleet → „Everything about this truck“ now has it all: overview, service (repair, maintenance, insurance, trailer, depot, name), upgrades, the last trips and the sale. No need to go through the Service page.	В Автопарке → «Всё об этом грузовике» теперь есть всё: обзор, сервис (ремонт, ТО, страховка, прицеп, депо, имя), улучшения, последние рейсы и продажа. Заходить в Сервис больше не нужно.
+188964c4f6	Wagons:	Вагоны:
+6ff591c91f	Trains →	Поезда →
+adc6c1c738	Trains now	Поезда сейчас
+34b2404b80	The train takes the best fitting order by itself as soon as it is free at the terminal: to the other end of the line (or to any terminal), with the wagons you choose. If there is no load for a long time, it can come back empty.	Поезд сам берёт самый выгодный подходящий заказ, как только свободен на станции: до другого конца линии (или до любой станции), с выбранными вагонами. Если долго нет груза, может вернуться порожняком.
+3875caaa2e	Return	Возврат
+c3d034526b	Everything for a truck is in its window, the Fleet has tabs, and there are new brand parts for ТрансКоин.	Всё для грузовика — в его окне, у Автопарка есть вкладки, а за ТрансКоины — новые детали по маркам.
+3310fcbf4d	Everything about this train	Всё об этом поезде
+dfc994a8b7	Everything in one place	Всё в одном месте
+c545c1724b	Any terminal	Любая станция
+75bf1cf3fb	Any it can carry	Любой, который может везти
+64a6152889	The terminals for hire are a list, ordered by the best order, with a filter by wagon kind.	Станции для аренды — список, упорядоченный по лучшему заказу, с фильтром по типу вагона.
+f9e62a833f	The two ends of the line must be different terminals.	Концы линии должны быть разными станциями.
+f9f01533fd	Log →	Журнал →
+29b46c9ae4	The other end	Другой конец
+50b411a4b9	Give the train a line — Sofia ⇄ Varna with hoppers, for example — and it takes the best order by itself whenever it is free. With no load for a long time it goes back empty to the other end.	Задай поезду линию — например, София ⇄ Варна с хопперами — и он сам берёт самый выгодный заказ, когда свободен. Если долго нет груза, возвращается порожняком на другой конец.
+706cf3c7e2	Trucks, Trailers, Trains, Drivers and Market are tabs of the Fleet; Depots, Licences and the rest are under „More“. The Service page, the trip log and the cab are in each truck's window.	Грузовики, Прицепы, Поезда, Водители и Рынок — вкладки Автопарка; Депо, Лицензии и остальное — в «Ещё». Сервис, бортовой журнал и кабина — в окне каждого грузовика.
+b73e3992b0	The truck has no finished trips yet.	У грузовика пока нет завершённых рейсов.
+1035668d4e	When the train arrives, the notification has a „Send again“ button, and the dashboard has a „Trains now“ card. Everything for a train is in its window: orders, line, wagons, hire and sale.	Когда поезд прибывает, в уведомлении есть кнопка «Отправь снова», а на панели — карточка «Поезда сейчас». Всё для поезда — в его окне: заказы, линия, вагоны, аренда и продажа.
+54ff7bef0e	Buy a trailer	Купи прицеп
+c68fbba6fa	Where each trailer is, the sale and the upgrades. You couple a trailer from the truck's window.	Где каждый прицеп, продажа и улучшения. Прицеп сцепляешь из окна грузовика.
+e0ea7ce5b3	To {0} · arrives {1}	В {0} · прибывает {1}
+e04e17b746	Rented and company trucks are not modified.	Арендованные и корпоративные грузовики не модифицируются.
+b104a1e2f0	The rented truck goes back once it is free.	Арендованный грузовик возвращается, когда свободен.
+4afd6aee02	Home terminal	Начальная станция
+9c942dc4eb	You have no trailers	У тебя нет прицепов
+59ab883dee	{0} more terminals	Ещё {0} станций
+c33e943c41	For hire	В аренду
+01fb93e421	Orders →	Заказы →
+2d432c81be	Overview	Обзор
+e9d405c4db	Sale	Продажа
+430e4cef3b	The truck window	Окно грузовика
+7e1d75b5f0	Change the line	Изменить линию
+c6da5557af	Start the line	Запустить линию
+bad245ab5d	Send again	Отправь снова
+f72350ffab	Regular line	Регулярная линия
+3fde9ac04b	The regular line sends it again.	Регулярная линия отправляет его снова.
+c6f8e9dd04	Trailers — sale, listing and upgrades — are in Fleet → Trailers; you couple a trailer from the truck's window.	Прицепы — продажа, объявление и улучшения — в Автопарке → Прицепы; прицеп сцепляешь из окна грузовика.
+870d61a70e	There is no fitting order for this train at the terminal right now.	Сейчас на станции нет подходящего заказа для этого поезда.
+cd33a97d4f	Stop the line	Остановить линию
+f71cb43185	Old links to the Service page (from the dashboard, „Now“ and notifications) open the truck's window.	Старые ссылки на Сервис (с панели, «Сейчас» и из уведомлений) открывают окно грузовика.
+1a8d1aa570	any terminal	любая станция
+6914349c7a	no orders	нет заказов
+6405119b08	for hire at {0}%	в аренде за {0}%
+42befd4af0	earned	заработано
+323f520bff	tons	тонн
+35a9fd0200	❄ Winter comes on 1 December — {0} trucks still have no winter tyres. Until 30 November they are {1}% off: truck → „Everything about this truck“ → Upgrades.	❄ Зима наступает 1 декабря — у {0} грузовиков ещё нет зимней резины. До 30 ноября скидка {1}%: грузовик → «Всё об этом грузовике» → Улучшения.
+5890b2de77	📍 At terminal {0} · orders: {1}	📍 На станции {0} · заказов: {1}
+0942225423	🔁 Regular line: {0} ⇄ {1}{2}	🔁 Регулярная линия: {0} ⇄ {1}{2}
+a5690b0a61	🔁 regular line	🔁 регулярная линия
+b2f3c5cde7	🚆 Send again	🚆 Отправь снова
+f060d5eb25	🛤️ On the way to {0}	🛤️ В пути к {0}

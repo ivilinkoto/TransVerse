@@ -43,8 +43,13 @@ describe('1.3.3: the regular line and „Пусни пак“', () => {
     const p = await owner();
     let now = new Date();
     const n = { loco: 'danubia-d22' as const, wagonType: 'hopper' as const, wagons: 22, terminalId: SOFIA };
-    const fits = (t: number) => ordersAt(SOFIA, t).some((o) => o.stops.every((s) => DOMESTIC.has(s)) && !cannotTake({ ...n, run: null, at: SOFIA, wagons: { hopper: 22 } }, o));
-    for (let i = 0; i < 80 && !fits(now.getTime()); i++) now = new Date(now.getTime() + TRAINS.windowHours * 3_600_000);
+    // A window with a free hopper order this train can carry (other test files take orders at Sofia too).
+    const taken = async (id: string) => (await db().select({ k: jobState.key }).from(jobState).where(eq(jobState.key, `train-order:${id}`))).length > 0;
+    const fits = async (t: number) => {
+      for (const o of ordersAt(SOFIA, t)) if (o.stops.every((s) => DOMESTIC.has(s)) && !cannotTake({ ...n, run: null, at: SOFIA, wagons: { hopper: 22 } }, o) && !(await taken(o.id))) return true;
+      return false;
+    };
+    for (let i = 0; i < 120 && !(await fits(now.getTime())); i++) now = new Date(now.getTime() + TRAINS.windowHours * 3_600_000);
     const train = await buyTrain(db(), p.userId, n, now);
     expect(await code(sendBest(db(), p.userId, train.id, now, () => false))).toBe('no_order');
     await setTrainLine(db(), p.userId, train.id, { home: SOFIA, far: null, wagonType: 'hopper', emptyBack: false }, now);
