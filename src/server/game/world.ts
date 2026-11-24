@@ -31,6 +31,7 @@ import { returnRetiredHires, settleRetired } from './retired';
 import { settleRetired2 } from './retired-2';
 import { runLines, settleTrains } from './trains';
 import { settleTournament } from './tournament';
+import { blackFridayNotice } from './black-friday';
 import { chargeProfitTax } from './profit-tax';
 import { ensureTransEuropeLoads } from './europe';
 import { ensureOversizeLoads, ensureRoadWorks } from './roads';
@@ -257,6 +258,7 @@ export async function worldTick(db: Database, now = new Date(), provider?: Routi
     await every(db, 'fuel-locks', 10 * 60_000, now, () => closeFuelLocks(db, now));
     await every(db, 'co2-week', 60 * 60_000, now, () => settleCo2Weeks(db, now));
     await every(db, 'tournament', 30 * 60_000, now, () => settleTournament(db, now));
+    await every(db, 'black-friday-notice', 30 * 60_000, now, () => blackFridayNotice(db, now));
     await every(db, 'driver-wishes', 24 * 60 * 60_000, now, () => spawnWishes(db, now));
     await every(db, 'driver-wishes-expire', 10 * 60_000, now, () => expireWishes(db, now));
     // Every open wish keeps a load to its city on the board, held for the company.

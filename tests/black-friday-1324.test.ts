@@ -48,4 +48,28 @@ describe('1.3.2.4: Black Friday for the newer things', () => {
     await db().transaction((tx) => settlePaid(tx, row!, { amountCents: 999, currency: 'eur' }, {}, FRIDAY));
     expect((await coins(p.userId)) - before).toBeGreaterThanOrEqual(550 + Math.round(550 * BLACK_FRIDAY_MORE.packBonus));
   });
+
+  it('the banner: the three days before, then while it runs; nothing otherwise', async () => {
+    const { blackFridayPhase } = await import('@/lib/game/prewinter');
+    expect(blackFridayPhase(new Date('2026-11-24T12:00:00+02:00'))).toEqual({ phase: 'soon', days: 3 });
+    expect(blackFridayPhase(new Date('2026-11-26T20:00:00+02:00'))).toEqual({ phase: 'soon', days: 1 });
+    expect(blackFridayPhase(FRIDAY)).toEqual({ phase: 'on' });
+    expect(blackFridayPhase(new Date('2026-11-20T12:00:00+02:00'))).toBeNull();
+    expect(blackFridayPhase(new Date('2026-12-01T12:00:00+02:00'))).toBeNull();
+  });
+
+  it('one notification to the recent players on the first morning, once', async () => {
+    const { blackFridayNotice } = await import('@/server/game/black-friday');
+    const { notifications } = await import('@/server/db/schema');
+    // A year of its own (other tests may run the worker on the real days).
+    const year = 2100 + Math.floor(Math.random() * 800);
+    const morning = new Date(`${year}-11-27T10:00:00+02:00`);
+    const p = await newPlayer();
+    await db().update(users).set({ lastSeenAt: morning }).where(eq(users.id, p.userId));
+    expect(await blackFridayNotice(db(), new Date(`${year}-11-27T07:00:00+02:00`))).toBe(0);
+    expect(await blackFridayNotice(db(), morning)).toBeGreaterThan(0);
+    expect(await blackFridayNotice(db(), new Date(morning.getTime() + 3_600_000))).toBe(0);
+    const mine = await db().select({ href: notifications.href }).from(notifications).where(and(eq(notifications.userId, p.userId), eq(notifications.href, '/game/shop')));
+    expect(mine.length).toBe(1);
+  });
 });
