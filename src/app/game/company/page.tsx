@@ -17,6 +17,7 @@ import { companyPollsView } from '@/server/game/polls';
 import { can } from '@/server/game/membership';
 import { companyBoostUntil } from '@/server/game/company-boost';
 import { COMPANY_BOOST } from '@/lib/game/speed-up';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { companyHub, myApplications, treasuryHistory } from '@/server/game/membership';
 import { TREASURY_LABELS, type TreasuryCategory } from '@/server/game/finance';
 import { FoundCompanyForm } from '@/components/game/FoundCompanyForm';
@@ -56,13 +57,14 @@ export default async function CompanyPage() {
           // 1.3.2.2: the company booster — any member pays ТрансКоин, everyone earns more.
           const until = await companyBoostUntil(db, hub.company.id);
           const on = until && until > now;
+          const price = blackFridayCoins(COMPANY_BOOST.coins, !!features.black_friday && isBlackFriday(now));
           return (
             <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-400/30 bg-gold-400/5 p-4 text-sm" data-testid="company-boost">
               <div className="min-w-0">
                 <p className="font-display text-base font-bold text-gold-300">🚀 {tr('Бустер за компанията')}</p>
                 <p className="text-mist-300">{on ? tr('Работи до {0}: +{1}% пари за всеки курс на всички в компанията.', dateTime(until), Math.round(COMPANY_BOOST.share * 100)) : tr('+{0}% пари за всеки курс на всички в компанията за {1} часа. Плаща един — печелят всички. Личният бустер +50% е с предимство.', Math.round(COMPANY_BOOST.share * 100), COMPANY_BOOST.hours)}</p>
               </div>
-              <ActionButton action={{ type: 'buyCompanyBoost' }} disabled={user.coins < COMPANY_BOOST.coins} confirm={tr('Бустер за цялата компания за {0} TC?', COMPANY_BOOST.coins)} className="btn-gold px-4 py-1.5 text-xs">{on ? tr('Удължи · {0} TC', COMPANY_BOOST.coins) : tr('Пусни · {0} TC', COMPANY_BOOST.coins)}</ActionButton>
+              <ActionButton action={{ type: 'buyCompanyBoost' }} disabled={user.coins < price} confirm={tr('Бустер за цялата компания за {0} TC?', price)} className="btn-gold px-4 py-1.5 text-xs">{on ? tr('Удължи · {0} TC', price) : tr('Пусни · {0} TC', price)}</ActionButton>
             </section>
           );
         })()}

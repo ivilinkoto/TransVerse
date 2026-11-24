@@ -54,3 +54,14 @@ export const BLACK_FRIDAY = {
 } as const;
 
 export const isBlackFriday = (now: Date) => inSeasonWindow(sofiaMonthDay(now), BLACK_FRIDAY);
+
+/**
+ * 1.3.2.4: Black Friday also takes `discount` off the newer ТрансКоин
+ * spending — truck and trailer parts, premium trucks, depot places for coins,
+ * the company booster — and gives `packBonus` more ТрансКоин on every coin
+ * pack bought for real money (the tournaments and speed-ups stay full price).
+ */
+export const BLACK_FRIDAY_MORE = { packBonus: 0.5 } as const;
+
+/** A ТрансКоин price on Black Friday (when `on`), at least 1. */
+export const blackFridayCoins = (coins: number, on: boolean) => (on ? Math.max(1, Math.round(coins * (1 - BLACK_FRIDAY.discount))) : coins);

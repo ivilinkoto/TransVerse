@@ -1586,3 +1586,10 @@ b53c0311b0	Entry: {0}	Взнос: {0}
 f1944aab46	For the big fleets: 500 TC entry, from level 20, with its own table and a five times bigger pool. You can enter both tournaments.	Для больших автопарков: взнос 500 TC, с 20 уровня, со своей таблицей и в пять раз большим фондом. Можно участвовать в обоих турнирах.
 a6a4df23a3	The score is the tons your trucks deliver from your entry until the end of the week (Monday 00:00). {0}% of the entries are the prize pool — in ТрансКоин for the first three places ({1}). With fewer than {2} players the entry is given back. You can enter both tournaments.	Очки — тонны, которые твои грузовики привезут с момента записи до конца недели (понедельник 00:00). {0}% взносов — призовой фонд, в ТрансКоинах для первых трёх мест ({1}). Если записалось меньше {2} игроков, взнос возвращается. Можно участвовать в обоих турнирах.
 e5ed40c857	entry {0} TC	взнос {0} TC
+1f7d31923c	3,000 TC, 30 days of VIP and 3 gold cases — only from 27 to 30 November.	3 000 TC, 30 дней VIP и 3 золотых кейса — только с 27 по 30 ноября.
+15d75582a1	From 27 to 30 November, 30% off also the truck and trailer parts, the premium trucks, the depot places and the company booster; +50% ТрансКоин on every TC pack and the Black Friday pack: 3,000 TC, 30 days of VIP and 3 gold cases.	С 27 по 30 ноября −30% и на детали для грузовика и прицепа, премиум-грузовики, места в депо и бустер компании; +50% ТрансКоинов на каждый пакет TC и пакет «Чёрная пятница»: 3 000 TC, 30 дней VIP и 3 золотых кейса.
+4ff8c5e7f9	Black Friday pack	Пакет «Чёрная пятница»
+c300331750	The Black Friday pack is sold only from 27 to 30 November.	Пакет «Чёрная пятница» продаётся только с 27 по 30 ноября.
+0d18dba806	Black Friday +{0}%	Чёрная пятница +{0}%
+6b8ae0410d	Black Friday — for the new things too	Чёрная пятница — и для новинок
+26b968b4c1	🛍 Black Friday: +{0}% ТрансКоин on every TC pack.	🛍 Чёрная пятница: +{0}% ТрансКоинов на каждый пакет TC.

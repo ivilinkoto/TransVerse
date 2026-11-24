@@ -4,7 +4,7 @@
  * Game money (лв. in the game) is never sold; real prices are in euro.
  */
 
-export type PaidProductId = 'tc_100' | 'tc_550' | 'tc_1200' | 'tc_3200' | 'vip_30_direct' | 'starter_pack' | 'month_card' | 'supporter_pack' | 'tc_60' | 'speed_pack' | 'pass_premium' | 'pass_plus' | 'gold_cases_10' | 'vip_plus' | 'level_offer';
+export type PaidProductId = 'tc_100' | 'tc_550' | 'tc_1200' | 'tc_3200' | 'vip_30_direct' | 'starter_pack' | 'month_card' | 'supporter_pack' | 'tc_60' | 'speed_pack' | 'pass_premium' | 'pass_plus' | 'gold_cases_10' | 'vip_plus' | 'level_offer' | 'black_friday_pack';
 
 export interface PaidProduct {
   id: PaidProductId;
@@ -19,13 +19,15 @@ export interface PaidProduct {
   /** 1.2.3: sold only with the new shop (`shop_v2`). */
   v2?: boolean;
   /** 1.3.2.2: sold from this feature on (the staff see it before). */
-  feature?: 'paid_v3';
+  feature?: 'paid_v3' | 'black_friday';
 }
 
 /** 1.3.2.2: the plain ТрансКоин packs can be bought for another player (`gift_tc`). */
 export const giftable = (p: Pick<PaidProduct, 'id' | 'vipDays'>) => p.id.startsWith('tc_') && !p.vipDays;
 
 export const PAID_PRODUCTS: PaidProduct[] = [
+  // 1.3.2.4: sold only on Black Friday (27–30 November).
+  { id: 'black_friday_pack', label: 'Пакет „Черен петък“', description: '3 000 TC, 30 дни VIP и 3 златни кейса — само от 27 до 30 ноември.', priceCents: 2499, coins: 3000, bonus: 0, vipDays: 30, feature: 'black_friday' },
   // 1.3.2.2: more to buy — the smallest pack, the season pass and boosters for real money.
   { id: 'tc_60', label: 'Шепа ТрансКоин', description: '60 TC — най-малкият пакет.', priceCents: 99, coins: 60, bonus: 0, vipDays: 0, feature: 'paid_v3' },
   { id: 'speed_pack', label: 'Пакет „Бързо“', description: '250 TC за ускоряване на курсове и 3 дни бустер +50% пари.', priceCents: 299, coins: 250, bonus: 0, vipDays: 0, feature: 'paid_v3' },

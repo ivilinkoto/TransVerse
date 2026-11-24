@@ -11,6 +11,7 @@ import { Truck3DButton } from '@/components/garage/Truck3DButton';
 import { money } from '@/lib/format';
 import { LEASE, leaseTerms } from '@/lib/game/leasing';
 import { modelAvailable, POWER_UNITS, PREMIUM_TRUCK, PREMIUM_TRUCKS, TRAILERS } from '@/lib/game/catalog';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { cities, depots, vehicles } from '@/server/db/schema';
 import { Warehouse } from 'lucide-react';
 import { BODY_LABELS } from '@/server/game/deliveries';
@@ -143,7 +144,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
           </div>
           <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {PREMIUM_TRUCKS().filter((m) => show === 'all' || m.kind === show).map((m) => {
-              const coins = m.premium!.coins;
+              const coins = blackFridayCoins(m.premium!.coins, !!features.black_friday && isBlackFriday(now));
               const reason = (user.vipLevel ?? 0) < PREMIUM_TRUCK.vipLevel ? tr('Премиум камионите са от VIP{0}.', PREMIUM_TRUCK.vipLevel) : user.level < m.minLevel ? tr('Изисква ниво {0}.', m.minLevel) : user.coins < coins ? tr('Нямате достатъчно ТрансКоин.') : noRoomReason;
               return (
                 <Card key={m.id} className="flex flex-col border-gold-400/40">

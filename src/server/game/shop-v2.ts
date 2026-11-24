@@ -20,6 +20,7 @@ import { grantItem } from './inventory';
 import { logActivity, notify } from './notify';
 import { activeSeason } from './seasons';
 import { t } from '@/i18n/t';
+import { BLACK_FRIDAY_MORE, isBlackFriday } from '@/lib/game/prewinter';
 
 const DAY = 86_400_000;
 
@@ -131,6 +132,7 @@ export async function deliverExtras(tx: Tx, p: { id: string; userId: string; pro
     await claimLevelOffer(tx, p.userId);
     await grantItem(tx, p.userId, 'case_gold', 1, 'purchase', key('level-case'));
   }
+  if (p.productId === 'black_friday_pack') await grantItem(tx, p.userId, 'case_gold', 3, 'purchase', key('bf-cases'));
   if (p.productId === 'gold_cases_10') {
     await grantItem(tx, p.userId, 'case_gold', 10, 'purchase', key('gold-cases'));
     await notify(tx, p.userId, 'success', () => t('10 златни кейса'), () => t('Чакат те в инвентара.'), '/game/inventory');
@@ -157,6 +159,8 @@ export async function deliverExtras(tx: Tx, p: { id: string; userId: string; pro
   let bonus = 0;
   if (first) { bonus += p.coins * (FIRST_PURCHASE_MULTIPLIER - 1); parts.push(t('първа покупка ×2')); }
   if (bonusWeekend(now)) { bonus += Math.round(p.coins * WEEKEND_BONUS); parts.push(t('уикенд +{0}%', WEEKEND_BONUS * 100)); }
+  // 1.3.2.4: Black Friday — more ТрансКоин on every pack.
+  if (isBlackFriday(now) && (await featureFor(tx, p.userId, 'black_friday', now))) { bonus += Math.round(p.coins * BLACK_FRIDAY_MORE.packBonus); parts.push(t('Черен петък +{0}%', BLACK_FRIDAY_MORE.packBonus * 100)); }
   if (patron.bonus > 0) { bonus += Math.round(p.coins * patron.bonus); parts.push(t('покровител ниво {0} +{1}%', patron.level, Math.round(patron.bonus * 100))); }
   if (bonus > 0) await postCoins(tx, p.userId, { amount: bonus, reason: 'purchase', description: t('Бонус към покупката: {0}', parts.join(', ')), idempotencyKey: key('bonus') });
   if (first) {

@@ -2,7 +2,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { CheckCircle2, Clock, Coins, Crown, History } from 'lucide-react';
 import { ShopBuy, type VehicleOption } from '@/components/shop/ShopBuy';
 import { Badge, Card, PageHeader } from '@/components/ui';
-import { BLACK_FRIDAY, isBlackFriday } from '@/lib/game/prewinter';
+import { BLACK_FRIDAY, BLACK_FRIDAY_MORE, isBlackFriday } from '@/lib/game/prewinter';
 import { PromoRedeem } from '@/components/game/PromoRedeem';
 import { dateTime } from '@/lib/format';
 import { isFreightHub } from '@/lib/game/markets';
@@ -98,8 +98,8 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
   // 1.3.2.2: the new products (and the pass only while it is not premium yet).
   const passOpen = features.paid_v3 ? await premiumPassOpen(db, user.id, now).catch(() => false) : false;
   const levelOffer = features.paid_v3 ? await levelOfferOf(db, user.id, now) : null;
-  const products = PAID_PRODUCTS.filter((p) => (p.id !== 'level_offer' || !!levelOffer) && (!p.v2 || (v2 && (p.id !== 'starter_pack' || starter) && (p.id !== 'supporter_pack' || supporter))) && (!p.feature || !!features[p.feature]) && (!p.id.startsWith('pass_') || passOpen)).sort((a, b) => Number(b.id === 'level_offer') - Number(a.id === 'level_offer') || Number(b.id === 'supporter_pack') - Number(a.id === 'supporter_pack'));
-  const notes = v2 ? [levelOffer && tr('🎁 Оферта за ниво {0} — до {1}.', levelOffer.level, new Date(levelOffer.until).toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })), first && tr('Първата ти покупка на ТрансКоин е двойна — получаваш двойно повече TC.'), bonusWeekend(now) && tr('Бонус уикенд: +{0}% ТрансКоин на всеки пакет.', WEEKEND_BONUS * 100), patron && patron.level > 0 && tr('Покровител ниво {0}: +{1}% ТрансКоин на всеки пакет.', patron.level, patron.level)].filter((x): x is string => !!x) : [];
+  const products = PAID_PRODUCTS.filter((p) => (p.id !== 'level_offer' || !!levelOffer) && (p.id !== 'black_friday_pack' || friday) && (!p.v2 || (v2 && (p.id !== 'starter_pack' || starter) && (p.id !== 'supporter_pack' || supporter))) && (!p.feature || !!features[p.feature]) && (!p.id.startsWith('pass_') || passOpen)).sort((a, b) => Number(b.id === 'black_friday_pack') - Number(a.id === 'black_friday_pack') || Number(b.id === 'level_offer') - Number(a.id === 'level_offer') || Number(b.id === 'supporter_pack') - Number(a.id === 'supporter_pack'));
+  const notes = v2 ? [levelOffer && tr('🎁 Оферта за ниво {0} — до {1}.', levelOffer.level, new Date(levelOffer.until).toLocaleString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })), first && tr('Първата ти покупка на ТрансКоин е двойна — получаваш двойно повече TC.'), bonusWeekend(now) && tr('Бонус уикенд: +{0}% ТрансКоин на всеки пакет.', WEEKEND_BONUS * 100), friday && tr('🛍 Черен петък: +{0}% ТрансКоин на всеки пакет с TC.', BLACK_FRIDAY_MORE.packBonus * 100), patron && patron.level > 0 && tr('Покровител ниво {0}: +{1}% ТрансКоин на всеки пакет.', patron.level, patron.level)].filter((x): x is string => !!x) : [];
   const seasonOk = (i: { id: string; seasonal?: string }) => (!i.seasonal || (i.seasonal === 'halloween' ? isHalloween(now) : i.seasonal === 'spring' ? isSpring(now) && features.spring : i.seasonal === 'easter' ? isEaster(now) && features.easter : i.seasonal === 'black_friday' ? friday : isChristmas(now))) && (!i.id.startsWith('paint_retro') || features.retro_collection) && (i.id !== 'truck_part' || features.cosmetics || features.brand_parts) && (i.id !== 'trailer_part' || features.trailer_cosmetics);
   const passSale = v2 && season ? passLevelSaleOpen(season.endsAt, now) : false;
   const vipBenefits = v2 ? [...VIP_BENEFITS.map((b) => ({ ...b, items: b.items.filter((i) => i !== 'Запазване на поръчка за 10 минути') })), ...VIP_BENEFITS_V2] : VIP_BENEFITS;
@@ -117,7 +117,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
           vip: SHOP_ITEMS.filter((i) => i.category === 'vip').map(priced).map((item) => ({ item })),
           ...Object.fromEntries(categories.map((cat) => [cat, visible.map(priced).filter((i) => i.category === cat && seasonOk(i)).map((item) => ({ item, ribbon: item.seasonal ? tr('Сезонно') : friday && item.price < (SHOP_ITEMS.find((x) => x.id === item.id)?.price ?? 0) ? tr('−{0}%', Math.round(BLACK_FRIDAY.discount * 100)) : undefined }))])),
         }}
-        buy={{ balance: user.coins, vip, vehicles: vehicleOptions, cities: hubs, colors: STANDARD_COLORS, vipColors: vipColorsNow, trailers: trailerOptions, depots: depotOptions, parts: liveParts, vipLevel: level }}
+        buy={{ balance: user.coins, vip, vehicles: vehicleOptions, cities: hubs, colors: STANDARD_COLORS, vipColors: vipColorsNow, trailers: trailerOptions, depots: depotOptions, parts: liveParts, vipLevel: level, friday }}
         vipBenefits={vipBenefits.map((b) => ({ group: tx(b.group), items: b.items.map((i) => tx(i)) }))}
         extras={
           <>
@@ -223,7 +223,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
               <div key={i.id} className="rounded-xl border border-gold-400/30 bg-gold-400/5 p-3">
                 <div className="flex items-center justify-between gap-2"><span className="font-semibold">{tx(i.label)}</span><span className="num font-bold text-cyan-glow">{tx(i.price)} TC</span></div>
                 <p className="mb-2 mt-1 text-xs text-mist-400">{tx(i.description)}</p>
-                <ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={vipColorsNow} parts={liveParts} vipLevel={level} />
+                <ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={vipColorsNow} parts={liveParts} vipLevel={level} friday={friday} />
               </div>
             ))}
             {v2 && <p className="text-xs text-mist-400">{tr('С истински пари VIP за 30 дни е най-изгодно — виж „Купи ТрансКоин и VIP“ по-долу.')}</p>}
@@ -244,7 +244,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
                     <span className="num shrink-0 text-right"><span className="block text-xs text-mist-400 line-through">{VIP_PRICES_V2[base.id] ?? base.price} TC</span><span className="font-bold text-gold-400">{i.price} TC</span></span>
                   </div>
                   <p className="mb-3 mt-1 text-sm text-mist-300">{tx(i.description)}</p>
-                  <div className="mt-auto"><ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={vipColorsNow} trailers={trailerOptions} depots={depotOptions} parts={liveParts} vipLevel={level} /></div>
+                  <div className="mt-auto"><ShopBuy item={i} balance={user.coins} vip={vip} vehicles={vehicleOptions} cities={hubs} colors={STANDARD_COLORS} vipColors={vipColorsNow} trailers={trailerOptions} depots={depotOptions} parts={liveParts} vipLevel={level} friday={friday} /></div>
                 </Card>
               );
             })}

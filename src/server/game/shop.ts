@@ -1,4 +1,4 @@
-import { BLACK_FRIDAY, isBlackFriday } from '@/lib/game/prewinter';
+import { BLACK_FRIDAY, blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { isRarePlate } from '@/lib/game/plates';
 import { randomUUID } from 'node:crypto';
 import { and, eq, isNull, like, sql } from 'drizzle-orm';
@@ -62,7 +62,8 @@ export function shopPrice(id: ShopItemId, base: number, v2: boolean, now: Date, 
 }
 
 /** Items that are cheaper on Black Friday. */
-export const blackFridayItem = (id: ShopItemId) => !id.startsWith('vip_') && id !== 'gift_vip_30' && id !== 'truck_part' && id !== 'trailer_part' && id !== 'paint_blackfriday';
+// 1.3.2.4: the parts are on Black Friday too (their own price is cut in buyShopItem).
+export const blackFridayItem = (id: ShopItemId) => !id.startsWith('vip_') && id !== 'gift_vip_30' && id !== 'paint_blackfriday';
 
 /** Buys a shop item with ТрансКоин: coins and the effect in one transaction. */
 export async function buyShopItem(db: Database, userId: string, input: ShopPurchase, now = new Date()) {
@@ -248,7 +249,7 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         }
         if (v.cosmetics[part] === value) fail('already_fitted', tr('Камионът вече е с тази част.'));
         await tx.update(vehicles).set({ cosmetics: { ...v.cosmetics, [part]: value } }).where(eq(vehicles.id, v.id));
-        price = COSMETIC_PARTS[part].price;
+        price = blackFridayCoins(COSMETIC_PARTS[part].price, friday);
         summary = tr('{0} ({1}) за {2}', COSMETIC_PARTS[part].label, COSMETIC_PARTS[part].styles.find((s) => s.id === style)!.label, v.plate);
         break;
       }
@@ -263,7 +264,7 @@ export async function buyShopItem(db: Database, userId: string, input: ShopPurch
         const { part, style } = choice!;
         if (t!.cosmetics[part] === style) fail('already_fitted', tr('Ремаркето вече е с тази част.'));
         await tx.update(trailers).set({ cosmetics: { ...t!.cosmetics, [part]: style } }).where(eq(trailers.id, t!.id));
-        price = TRAILER_COSMETIC_PARTS[part].price;
+        price = blackFridayCoins(TRAILER_COSMETIC_PARTS[part].price, friday);
         summary = tr('{0} ({1}) за ремарке {2}', TRAILER_COSMETIC_PARTS[part].label, TRAILER_COSMETIC_PARTS[part].styles.find((s) => s.id === style)!.label, t!.plate);
         break;
       }
