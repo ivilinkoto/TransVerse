@@ -1,3 +1,4 @@
+import { TrainsCard } from '@/components/game/TrainsCard';
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { BookOpen, CalendarHeart, Sprout, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Route, Star, Swords, Truck, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
@@ -450,6 +451,7 @@ export default async function OverviewPage() {
               </ul>
             )}
           </Card>
+          {features.trains && <TrainsCard db={db} userId={user.id} now={now} />}
           {!simpleHome && trips.length > 0 && (
             <Card title={t('Последни курсове')} actions={<History className="h-4 w-4 text-mist-400" />}>
               <ul className="divide-y divide-asphalt-800">

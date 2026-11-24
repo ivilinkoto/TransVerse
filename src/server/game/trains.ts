@@ -388,7 +388,7 @@ export async function hireTrain(db: Database, userId: string, terminalId: number
 }
 
 /** The hire board at a terminal: its orders, what the game's train and each player's train for hire there would cost, and my hired runs. */
-export async function hireBoard(db: Database, userId: string, terminalId: number, now: Date) {
+export async function hireBoard(db: Database, userId: string, terminalId: number, now: Date, wagon: WagonType | null = null) {
   await settleTrains(db, now, userId);
   const company = await inCompany(db, userId);
   const [u] = await db.select({ level: users.level, vip: users.vipLevel }).from(users).where(eq(users.id, userId));
@@ -396,7 +396,7 @@ export async function hireBoard(db: Database, userId: string, terminalId: number
   const open = openAt(now);
   const all = await allTrains(db);
   const term = terminal(terminalId);
-  const orders = term && open(term.country) ? ordersAt(terminalId, now.getTime(), open) : [];
+  const orders = term && open(term.country) ? ordersAt(terminalId, now.getTime(), open).filter((o) => !wagon || o.wagonType === wagon) : [];
   const ids = orders.map((o) => orderKey(o.id));
   const taken = new Set(ids.length ? (await db.select({ key: jobState.key }).from(jobState).where(inArray(jobState.key, ids))).map((r) => r.key.slice('train-order:'.length)) : []);
   const forHire = all.filter((tr) => !tr.rental && tr.hireShare && tr.ownerId !== userId && tr.at === terminalId && (!tr.run || new Date(tr.run.arriveAt) <= now));
@@ -422,7 +422,15 @@ export async function hireBoard(db: Database, userId: string, terminalId: number
     };
   }).sort((a, b) => Number(a.taken) - Number(b.taken) || b.pay - a.pay);
   const mine = hiredBy(all, userId).map((tr) => ({ id: tr.id, loco: tr.loco, rental: !!tr.rental, run: tr.run! })).filter((h) => h.run);
-  return { level: u?.level ?? 0, minLevel: TRAINS.hire.minLevel, hires: lim.hires, active: mine, orders: rows, terminal: term ?? null, terminals: RAIL_TERMINALS.filter((x) => open(x.country)), forHireAt: new Map(RAIL_TERMINALS.map((x) => [x.id, all.filter((tr) => !tr.rental && tr.hireShare && tr.ownerId !== userId && tr.at === x.id && !tr.run).length])) };
+  // 1.3.3: every open terminal with its free orders (of the chosen wagon kind), the best pay and the trains for hire — best first.
+  const everywhere = RAIL_TERMINALS.filter((x) => open(x.country)).map((x) => ({ x, list: ordersAt(x.id, now.getTime(), open).filter((o) => !wagon || o.wagonType === wagon) }));
+  const allKeys = everywhere.flatMap((e) => e.list.map((o) => orderKey(o.id)));
+  const takenAll = new Set(allKeys.length ? (await db.select({ key: jobState.key }).from(jobState).where(inArray(jobState.key, allKeys))).map((r) => r.key.slice('train-order:'.length)) : []);
+  const stations = everywhere.map(({ x, list }) => {
+    const freeOrders = list.filter((o) => !takenAll.has(o.id));
+    return { id: x.id, name: x.name, orders: freeOrders.length, best: Math.max(0, ...freeOrders.map((o) => payFor(o, company))), trains: all.filter((tr) => !tr.rental && tr.hireShare && tr.ownerId !== userId && tr.at === x.id && !tr.run).length };
+  }).sort((a, b) => b.best - a.best || b.orders - a.orders);
+  return { level: u?.level ?? 0, minLevel: TRAINS.hire.minLevel, hires: lim.hires, active: mine, orders: rows, terminal: term ?? null, stations, wagon };
 }
 
 /** The page: my trains (with the board at each one's terminal) and what I may buy. */

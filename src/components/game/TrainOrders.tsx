@@ -81,16 +81,37 @@ export function HireBoard({ v, now }: { v: Awaited<ReturnType<typeof hireBoard>>
       <p className="text-sm text-mist-300">{t('Без собствен влак: вземи поръчка и я карай с наем — влак на играта (за {0}% от поръчката) или влак на друг играч, който го е пуснал под наем (за неговата такса). Плащаш таксата за линията и енергията; поръчката е твоя.', Math.round(TRAINS.hire.gameShare * 100))}</p>
       {locked ? <p className="text-sm text-mist-300">🔒 {t('Наем на влак е от ниво {0}.', v.minLevel)}</p> : (
         <>
-          <nav className="flex flex-wrap gap-1.5" aria-label={t('Гара')}>
-            {v.terminals.map((x) => {
-              const n = v.forHireAt.get(x.id) ?? 0;
-              return (
-                <Link key={x.id} href={`/game/contracts/trains?at=${x.id}`} scroll={false} className={`shop-tab px-2.5 py-1 text-xs ${v.terminal?.id === x.id ? 'shop-tab-on' : ''}`} aria-current={v.terminal?.id === x.id ? 'page' : undefined}>
-                  {tx(x.name)}{n > 0 && ` · 🚆${n}`}
+          {/* 1.3.3: the stations as a list, the best pay first, with a wagon filter (instead of 28 buttons). */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs" data-testid="hire-wagons">
+            <span className="text-mist-400">{t('Вагони:')}</span>
+            {[null, ...(Object.keys(WAGON_ICON) as WagonType[])].map((w) => (
+              <Link key={w ?? 'all'} href={`/game/contracts/trains?at=${v.terminal?.id ?? ''}${w ? `&wagon=${w}` : ''}`} scroll={false} className={`shop-tab px-2.5 py-1 ${v.wagon === w ? 'shop-tab-on' : ''}`}>{w ? `${WAGON_ICON[w]} ${tx(WAGONS[w].name)}` : t('Всички')}</Link>
+            ))}
+          </div>
+          {(() => {
+            const row = (x: (typeof v.stations)[number]) => (
+              <li key={x.id}>
+                <Link href={`/game/contracts/trains?at=${x.id}${v.wagon ? `&wagon=${v.wagon}` : ''}`} scroll={false} aria-current={v.terminal?.id === x.id ? 'page' : undefined} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 text-xs transition ${v.terminal?.id === x.id ? 'border-gold-400/60 bg-gold-400/10 text-white' : 'border-asphalt-700 text-mist-200 hover:border-cyan-glow/50'}`}>
+                  <span className="font-semibold">{tx(x.name)}</span>
+                  <span className="text-mist-400">{x.orders ? t('{0} поръчки · до {1}', x.orders, money(x.best)) : t('няма поръчки')}{x.trains > 0 && ` · 🚆${x.trains}`}</span>
                 </Link>
-              );
-            })}
-          </nav>
+              </li>
+            );
+            const top = v.stations.slice(0, 6);
+            const rest = v.stations.slice(6);
+            return (
+              <div className="space-y-1.5" data-testid="hire-stations">
+                <ul className="grid gap-1.5 sm:grid-cols-2">{top.map(row)}</ul>
+                {rest.length > 0 && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-mist-300">{t('Още {0} гари', rest.length)}</summary>
+                    <ul className="mt-1.5 grid gap-1.5 sm:grid-cols-2">{rest.map(row)}</ul>
+                  </details>
+                )}
+              </div>
+            );
+          })()}
+          {v.terminal && <h3 className="text-sm font-semibold text-white">📍 {tx(v.terminal.name)}</h3>}
           {v.orders.length === 0 ? <p className="text-sm text-mist-400">{t('Сега няма поръчки оттук.')}</p> : (
             <ul className="space-y-1.5">
               {v.orders.map((o) => (
