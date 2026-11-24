@@ -33,7 +33,7 @@ export default async function MuseumPage() {
       <PageHeader
         title={t('Музеят на „{0}“', m.company.name)}
         subtitle={level ? t('Ниво {0} · {1} / {2} експоната', level, exhibits.length, MUSEUM.capacity[level]) : t('Компанията още няма музей — постройте го на участъка.')}
-        help={t('Член дарява свой камион с поне {0} км от витрината му в сервиза. Камионът остава в музея завинаги, дарителят получава {1} ({2} за легенда).', int(MUSEUM.minKm), coinsAsMoney(MUSEUM.coins), coinsAsMoney(MUSEUM.legendCoins))}
+        help={t('Член дарява свой камион с поне {0} км от витрината му (прозорецът на камиона → Витрина). Камионът остава в музея завинаги, дарителят получава {1} ({2} за легенда).', int(MUSEUM.minKm), coinsAsMoney(MUSEUM.coins), coinsAsMoney(MUSEUM.legendCoins))}
       />
       {exhibits.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -54,7 +54,7 @@ export default async function MuseumPage() {
           })}
         </div>
       ) : (
-        <Card><Empty icon={Landmark} title={t('Залата е празна')}>{t('Дарете първия камион от витрината му в сервиза.')}<EmptyAction href="/game/fleet" label="Към сервиза" /></Empty></Card>
+        <Card><Empty icon={Landmark} title={t('Залата е празна')}>{t('Дарете първия камион от витрината му (прозорецът на камиона → Витрина).')}<EmptyAction href="/game/fleet" label="Към автопарка" /></Empty></Card>
       )}
     </div>
   );

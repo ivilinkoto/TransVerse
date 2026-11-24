@@ -52,7 +52,7 @@ import { RelocateTruck } from '@/components/game/RelocateTruck';
 import { initLocale } from '@/i18n/server';
 import type { Metadata } from 'next';
 
-export default async function FleetPage({ searchParams }: { searchParams: Promise<{ to?: string; truck?: string }> }) {
+export default async function FleetPage({ searchParams }: { searchParams: Promise<{ to?: string; truck?: string; tab?: string }> }) {
   await initLocale();
   const { db, user, company, now, features } = await gameContext();
   // Баба Марта (v1.5): martenitsas on the trucks in March.
@@ -332,11 +332,12 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
               const main = v.delivery
                 ? { href: '/game/map', label: tr('🗺️ Виж на картата') }
                 : v.condition < 50
-                  ? { href: `/game/fleet?truck=${v.id}`, label: tr('🔧 Ремонтирай') }
+                  ? { href: `/game/fleet?truck=${v.id}&tab=service`, label: tr('🔧 Ремонтирай') }
                   : { href: `/game/contracts?from=${v.cityId}&truck=${v.id}`, label: tr('🚚 Пусни курс') };
               // 1.3.3: service, upgrades, trips and the sale are tabs of the truck window; these open the places.
               const tiles = [
                 { href: `/game/showroom?truck=${v.id}`, label: tr('Гараж 3D'), emoji: '🏁', on: !!features.garage_showroom },
+                { href: `/game/garage/${v.id}`, label: tr('Витрина'), emoji: '🖼️', on: !!features.garage_showcase && v.ownership !== 'rented' },
                 { href: '/game/cabin', label: tr('Кабина'), emoji: '🛋️', on: features.cabin },
                 { href: '/game/trips', label: tr('Дневник'), emoji: '📓', on: features.trip_log },
                 ...(features.game_ui ? [] : [{ href: '/game/garage', label: tr('Сервиз'), emoji: '🔧', on: true }]),
@@ -369,6 +370,7 @@ export default async function FleetPage({ searchParams }: { searchParams: Promis
                         actions: tiles.map((x) => ({ href: x.href, label: x.label, emoji: x.emoji })),
                       }}
                       initialOpen={params.truck === v.id}
+                      initialTab={params.truck === v.id ? params.tab : undefined}
                       sections={[
                         { id: 'service', label: tr('Сервиз'), emoji: '🔧', content: <TruckServicePanel v={v} fleet={fleet} ctx={panels} /> },
                         ...(v.ownership === 'owned' ? [{ id: 'upgrades', label: tr('Подобрения'), emoji: '⚙️', content: <TruckUpgradesPanel v={v} ctx={panels} /> }] : []),

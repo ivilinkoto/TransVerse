@@ -4,11 +4,11 @@ import { t, tx } from '@/i18n/t';
 
 /** What the player can do about a reason a vehicle cannot take a load, and where. */
 export function fixFor(reason: string): { text: string; href: string } | null {
-  if (reason.startsWith('Нужна е надстройка')) return { text: t('Прикачи подходящо ремарке в Сервиз или купи камион/ремарке с тази надстройка в Пазар.'), href: '/game/market' };
-  if (reason.includes('няма прикачено ремарке')) return { text: t('Прикачи ремарке към влекача в Сервиз.'), href: '/game/fleet' };
+  if (reason.startsWith('Нужна е надстройка')) return { text: t('Прикачи подходящо ремарке от прозореца на камиона (Сервиз) или купи камион/ремарке с тази надстройка в Пазар.'), href: '/game/market' };
+  if (reason.includes('няма прикачено ремарке')) return { text: t('Прикачи ремарке към влекача от прозореца му (Автопарк → „Всичко за този камион“ → Сервиз).'), href: '/game/fleet' };
   if (reason.includes('заето')) return { text: t('Камионът е на курс — изчакай да пристигне.'), href: '/game/fleet' };
   if (reason.includes('шофьор') || reason.includes('Шофьорът')) return { text: t('Назначи шофьор.'), href: '/game/staff' };
-  if (reason.includes('лошо състояние')) return { text: t('Ремонтирай в Сервиз.'), href: '/game/fleet' };
+  if (reason.includes('лошо състояние')) return { text: t('Ремонтирай от прозореца на камиона (Автопарк → „Всичко за този камион“ → Сервиз).'), href: '/game/fleet' };
   if (reason.includes('надвишава капацитета')) return { text: t('Нужен е камион с по-голяма товароподемност.'), href: '/game/market' };
   if (reason.includes('Обявено за продажба')) return { text: t('Свали обявата.'), href: '/game/market' };
   if (reason.startsWith('Изисква ниво')) return { text: t('Карай още курсове — нивото расте с опита.'), href: '/game/progress' };

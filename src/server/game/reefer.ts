@@ -18,6 +18,6 @@ export async function settleReefer(tx: Tx, userId: string, d: { id: string; comp
   const cents = Math.round(rewardCents * outcomeShare(outcome));
   await tx.update(deliveries).set({ reefer: { min: range.min, max: range.max, readings, outcome, cents } }).where(eq(deliveries.id, d.id));
   if (cents) await post(tx, d.companyId, [{ category: cents > 0 ? 'bonus' : 'penalty', amountCents: cents, description: `${OUTCOME_LABELS[outcome]} (${range.min}…${range.max} °C)`, idempotencyKey: `delivery:${d.id}:reefer`, refType: 'delivery', refId: d.id }]);
-  if (outcome !== 'perfect') await notify(tx, userId, 'warning', () => outcome === 'spoiled' ? t('Стоката се развали: {0} 🌡️', contract.goods) : t('Температурата излезе от нормата 🌡️'), () => t('{0} — {1} лв. Хладилният агрегат пази по-добре, когато е в добро състояние (ремонт в сервиза).', OUTCOME_LABELS[outcome], cents / 100), `/game/trips/${d.id}`);
+  if (outcome !== 'perfect') await notify(tx, userId, 'warning', () => outcome === 'spoiled' ? t('Стоката се развали: {0} 🌡️', contract.goods) : t('Температурата излезе от нормата 🌡️'), () => t('{0} — {1} лв. Хладилният агрегат пази по-добре, когато е в добро състояние (ремонт от прозореца на камиона).', OUTCOME_LABELS[outcome], cents / 100), `/game/trips/${d.id}`);
   return cents;
 }

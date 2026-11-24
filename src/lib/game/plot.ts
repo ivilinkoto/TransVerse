@@ -203,7 +203,7 @@ export const BUILDING_LINKS: Record<BuildingType, { href: string; label: string 
   office: { href: '/game/company/members', label: 'Отвори членовете' },
   logistics: { href: '/game/contracts', label: 'Отвори борсата' },
   training: { href: '/game/staff', label: 'Отвори шофьорите' },
-  service: { href: '/game/fleet', label: 'Отвори сервиза' },
+  service: { href: '/game/fleet', label: 'Към автопарка' },
   parking: { href: '/game/fleet', label: 'Отвори автопарка' },
   warehouse: { href: '/game/trade', label: 'Отвори склада' },
   rest: { href: '/game/staff', label: 'Отвори шофьорите' },

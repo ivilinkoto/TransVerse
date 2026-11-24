@@ -40,7 +40,7 @@ export default async function ShowcasePage({ params }: { params: Promise<{ id: s
   const parts = Object.entries(v.cosmetics).filter(([k, val]) => k in COSMETIC_PARTS && val) as [CosmeticPart, string][];
   return (
     <div className="space-y-6">
-      <Link href="/game/garage" className="inline-flex items-center gap-1 text-sm text-mist-300 hover:text-white"><ArrowLeft className="h-4 w-4" />{tr('Към сервиза')}</Link>
+      <Link href={`/game/fleet?truck=${v.id}`} className="inline-flex items-center gap-1 text-sm text-mist-300 hover:text-white"><ArrowLeft className="h-4 w-4" />{tr('Към камиона')}</Link>
       <PageHeader
         title={v.nickname ? `„${v.nickname}“ · ${v.model.brand} ${v.model.name}` : `${v.model.brand} ${v.model.name}`}
         subtitle={tr('{0} · {1} км · {2} %', v.plate, int(v.odometerKm), Math.round(v.condition))}

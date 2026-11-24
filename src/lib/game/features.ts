@@ -289,7 +289,8 @@ export const FEATURES = {
   loans: '1.5',
   electric: '1.5',
   driver_moods: '1.5',
-  cosmetics: '1.5',
+  // 1.3.2.3: the first four truck parts come with the brand parts (planned for 1.5).
+  cosmetics: '1.3.2.3',
   company_report: '1.5',
   trailer_upgrades: '1.5',
   company_trailers: '1.5',

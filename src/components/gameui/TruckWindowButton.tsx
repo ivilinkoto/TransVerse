@@ -49,9 +49,9 @@ export interface TruckWindowSection {
  * 1.2.3.6 „Нов облик“: „Всичко за този камион“ as a game window — the truck in 3D,
  * its condition and service as bars, the facts as tiles, and the actions as game buttons.
  */
-export function TruckWindowButton({ data, sections = [], initialOpen = false }: { data: TruckWindowData; sections?: TruckWindowSection[]; initialOpen?: boolean }) {
+export function TruckWindowButton({ data, sections = [], initialOpen = false, initialTab }: { data: TruckWindowData; sections?: TruckWindowSection[]; initialOpen?: boolean; initialTab?: string }) {
   const [open, setOpen] = useState(initialOpen);
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState(initialTab && sections.some((s) => s.id === initialTab) ? initialTab : 'overview');
   const current = sections.find((s) => s.id === tab);
   const show3d = useFeature('truck_3d_view');
   return (

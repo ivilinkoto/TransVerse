@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { hurrySchedule, speedUpPrice, SPEED_UP } from '@/lib/game/speed-up';
 import type { Segment } from '@/lib/game/schedule';
 import { closeDb } from '@/server/db/client';
-import { companies, deliveries, ledgerEntries, users, vehicles } from '@/server/db/schema';
+import { coinEntries, companies, deliveries, ledgerEntries, users, vehicles } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
 import { acceptContract } from '@/server/game/deliveries';
 import { GameError } from '@/server/game/errors';
@@ -50,9 +50,10 @@ describe('1.3.2.2: hurrying a trip with ТрансКоин', () => {
     const half = await speedUpDelivery(db(), p.userId, d.id, 'half', now);
     expect(await coins(p.userId)).toBe(before - half.price);
     expect(half.etaAt.getTime()).toBeLessThan(d.etaAt.getTime());
-    const mid = await coins(p.userId);
     const done = await speedUpDelivery(db(), p.userId, d.id, 'finish', new Date(now.getTime() + 1_000));
-    expect(await coins(p.userId)).toBe(mid - done.price);
+    // The finished trip can pay coin rewards of its own (achievements), so check the charge itself.
+    const [charge] = await db().select({ amount: coinEntries.amount }).from(coinEntries).where(and(eq(coinEntries.userId, p.userId), like(coinEntries.idempotencyKey, `speed-up:${d.id}:finish:%`)));
+    expect(charge?.amount).toBe(-done.price);
     const [row] = await db().select({ status: deliveries.status }).from(deliveries).where(eq(deliveries.id, d.id));
     expect(row!.status).toBe('completed');
     expect(await code(speedUpDelivery(db(), p.userId, d.id, 'finish', new Date()))).toBe('delivery_not_found');
