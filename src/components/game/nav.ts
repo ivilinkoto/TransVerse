@@ -277,7 +277,8 @@ const PLACES: Record<'jobs' | 'fleet' | 'company', Place[]> = {
   // 1.3.3: one Автопарк with tabs — Сервиз, Дневник and Кабина moved into each truck's window.
   // Моите умения and Талисман are tabs of Шофьори (PAGE_FAMILIES); the player's skills are in their own driver's window too.
   fleet: [['/game/fleet', true], ['/game/fleet/trailers', true], ['/game/trains', true], ['/game/staff', true], ['/game/market', true], ['/game/logistics'], ['/game/licences'], ['/game/showroom'], ['/game/buses']],
-  company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment']],
+  // 1.3.3: the company's own pages are its five tab groups (CompanyTabs); Технологии и офис is behind „Още ▾“.
+  company: [['/game/company', true], ['/game/companies', true], ['/game/recruitment'], ['/game/growth']],
 };
 
 /**
@@ -302,7 +303,6 @@ export const PAGE_FAMILIES: NavTab[][] = [
   [{ href: '/game/leaderboards', label: 'Класации' }, { href: '/game/league', label: 'Лига' }, { href: '/game/winter-games', label: 'Зимни игри', feature: 'winter_games' }],
   [{ href: '/game/inventory', label: 'Инвентар' }, { href: '/game/inventory/workshop', label: 'Работилница', feature: 'workshop' }, { href: '/game/inventory/album', label: 'Албум', feature: 'item_album' }, { href: '/game/inventory/hall', label: 'Зала на славата', feature: 'item_album' }],
   [{ href: '/game/finance', label: 'Финанси' }, { href: '/game/analytics', label: 'Анализ' }, { href: '/game/earnings', label: 'Къде печеля', feature: 'earnings_map' }],
-  [{ href: '/game/company', label: 'Моята компания' }, { href: '/game/growth', label: 'Технологии и офис', feature: 'research' }],
   // 1.3.3 „Всичко на едно място“, етап 2: more pages that belong together.
   [{ href: '/game/staff', label: 'Шофьори' }, { href: '/game/skills', label: 'Моите умения', feature: 'driver_skills' }, { href: '/game/mascot', label: 'Талисман', feature: 'mascot' }],
   [{ href: '/game/clients', label: 'Клиенти' }, { href: '/game/reviews', label: 'Отзиви', feature: 'client_reviews' }],

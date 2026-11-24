@@ -27,7 +27,8 @@ describe('1.3.2 „Просто“: fewer places', () => {
     expect(familyFor('/game/league')!.family[0]!.href).toBe('/game/leaderboards');
     expect(familyFor('/game/inventory/album')!.page.href).toBe('/game/inventory/album');
     expect(familyFor('/game/inventory')!.page.href).toBe('/game/inventory');
-    expect(familyFor('/game/company/chat')!.family[0]!.href).toBe('/game/company');
+    // 1.3.3: the company's pages are its own tab groups (CompanyTabs), not a family.
+    expect(familyFor('/game/company/chat')).toBeUndefined();
     expect(familyFor('/game/analytics')!.family[0]!.href).toBe('/game/finance');
     expect(familyFor('/game/contracts')).toBeUndefined();
     // Only the first page of a family is in the menu…
