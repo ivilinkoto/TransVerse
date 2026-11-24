@@ -69,6 +69,7 @@ import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
 import { speedUpDelivery } from '@/server/game/speed-up';
 import { buyCompanyBoost } from '@/server/game/company-boost';
+import { joinTournament } from '@/server/game/tournament';
 import { addWagons, buyTrain, hireTrain, takeContract, moveTrain, repairTrain, sellTrain, sellWagons, sendBest, sendTrain, setTrainHire, setTrainLine } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, driveMyself, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
@@ -237,6 +238,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('expandDepotCoins'), depotId: id }),
   z.object({ type: z.literal('buyCompanyBoost') }),
+  z.object({ type: z.literal('joinTournament') }),
   z.object({ type: z.literal('markNotificationsRead') }),
   z.object({ type: z.literal('adoptMascot'), kind: z.enum(['cat', 'dog', 'parrot', 'turtle']), name: z.string().max(60) }),
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
@@ -674,6 +676,7 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   buyPremiumTruck: 'premium_trucks',
   expandDepotCoins: 'premium_slots',
   buyCompanyBoost: 'company_boost',
+  joinTournament: 'tournaments',
   setTrainHire: 'trains',
   trainAgain: 'trains',
   repairTrain: 'trains',
@@ -890,6 +893,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, id: (await buyDepot(db, user.id, input.cityId)).id };
     case 'expandDepot':
       return { ok: true, costCents: await expandDepot(db, user.id, input.depotId) };
+    case 'joinTournament':
+      return { ok: true, week: await joinTournament(db, user.id, new Date()) };
     case 'buyCompanyBoost':
       return { ok: true, until: (await buyCompanyBoost(db, user.id, new Date())).toISOString() };
     case 'expandDepotCoins':

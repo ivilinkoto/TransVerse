@@ -1541,3 +1541,33 @@ e4ca58b679	This contract is no longer valid.	Этот договор больш�
 910b046a58	worn — needs a repair	изношен — нужен ремонт
 3dbbcba44a	✓ Done — the bonus is paid	✓ Выполнен — бонус выплачен
 2af1bee9a8	📜 The contract is done!	📜 Договор выполнен!
+fa234a188c	{0} t — the prize is {1} TC.	{0} т — награда {1} TC.
+ef7e2241db	With fewer than three players the entry is given back. Tons count only from your entry — the earlier you enter, the better.	Если записалось меньше трёх, взнос возвращается. Тонны считаются только с момента записи — чем раньше войдёшь, тем лучше.
+8964057af3	You are already in the tournament this week.	Ты уже участвуешь в турнире на этой неделе.
+134313989e	Enter · {0} TC	Войти · {0} TC
+208b27fd11	Enter for {0} TC and deliver the most tons by Sunday.	Войди за {0} TC и привези больше всех тонн до воскресенья.
+d8d6858a72	Every week — a tournament with a ТрансКоин entry: deliver the most tons and take the prize pool.	Каждую неделю — турнир со взносом в ТрансКоинах: привези больше всех тонн и забери призовой фонд.
+07754d9cb0	Entry 100 TC, prizes in ТрансКоин	Взнос 100 TC, призы в ТрансКоинах
+271827918d	Entry 100 TC. The score is the tons your trucks deliver from your entry until Sunday. 80% of the entries are the prize pool — in ТрансКоин for the first three places (50% / 30% / 20%).	Взнос 100 TC. Очки — тонны, которые твои грузовики привезут с момента записи до воскресенья. 80% взносов — призовой фонд, в ТрансКоинах для первых трёх мест (50% / 30% / 20%).
+5d0c3d41e7	Enter the tournament for {0} TC?	Войти в турнир за {0} TC?
+2a775ca357	Weekly tournament entry	Взнос за еженедельный турнир
+6117377920	Fewer than {0} players entered — your {1} TC entry is given back.	Записалось меньше {0} игроков — твой взнос {1} TC возвращён.
+f12acc9991	Weekly tournament prize	Приз еженедельного турнира
+bec672fea7	The prize pool	Призовой фонд
+166acb08c1	{0} more players and the tournament takes place.	Ещё {0} участников — и турнир состоится.
+e9fd0294e1	Nobody has entered this week yet. Be the first.	На этой неделе ещё никто не вошёл. Будь первым.
+5495611a4b	On equal tons, whoever entered first is ahead.	При равных тоннах выше тот, кто вошёл раньше.
+817fca1340	The week ends on Monday at 00:00; the prizes come within half an hour, with a notification.	Неделя заканчивается в понедельник в 00:00; призы приходят в течение получаса, с уведомлением.
+95282da113	Weekly tournament — place {0}	Еженедельный турнир — {0} место
+d3da34f5e7	The weekly tournament is over	Еженедельный турнир окончен
+e0cbe913fc	You are {0} of {1} with {2} t. The new tournament has already started.	Ты {0} из {1} с {2} т. Новый турнир уже начался.
+f669b268b2	Tons count from the moment you enter — the earlier, the better.	Тонны считаются с момента входа — чем раньше, тем лучше.
+19877e903d	The score is the tons your trucks deliver from your entry until the end of the week (Monday 00:00). {0}% of the entries are the prize pool — in ТрансКоин for the first three places ({1}). With fewer than {2} players the entry is given back.	Очки — тонны, которые твои грузовики привезут с момента записи до конца недели (понедельник 00:00). {0}% взносов — призовой фонд, в ТрансКоинах для первых трёх мест ({1}). Если записалось меньше {2} игроков, взнос возвращается.
+091b1b7b78	Tournament of the week	Турнир недели
+c83ccb3374	The tournament is in „Games and rewards“ → Rankings → Tournament of the week (and as a card on „All“).	Турнир — в «Игры и награды» → Рейтинги → Турнир недели (и карточкой во «Всё»).
+80cd9cf997	The tournament did not take place	Турнир не состоялся
+4053443bf4	The tournament did not take place — the entry is given back	Турнир не состоялся — взнос возвращён
+4866b27109	You are in: place {0} with {1} t.	Ты участвуешь: {0} место с {1} т.
+c103f7c7a8	Fair even with few players	Честно даже для немногих игроков
+b6f9672981	from {0} players up	от {0} участников
+69aa486aa6	🏆 Place {0} in the weekly tournament!	🏆 {0} место в еженедельном турнире!

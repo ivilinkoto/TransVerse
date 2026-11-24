@@ -134,6 +134,7 @@ export const SECTIONS: NavSection[] = [
       { href: '/game/pass', label: 'Пропуск', group: 'Днес', minLevel: 2, core: true, hiddenWith: 'truck_pass' },
       { href: '/game/events', label: 'Ивенти', group: 'Днес', core: true },
       { href: '/game/leaderboards', label: 'Класации', group: 'Класации', core: true },
+      { href: '/game/tournament', label: 'Турнир на седмицата', feature: 'tournaments', group: 'Класации' },
       { href: '/game/ideas', label: 'Идеи', feature: 'ideas', group: 'Общност' },
       { href: '/game/seasons', label: 'Сезони', group: 'Класации', minLevel: 2, hiddenWith: 'truck_pass' },
       { href: '/game/seasons', label: 'Сезон и Truck Pass', feature: 'truck_pass', group: 'Днес', minLevel: 2, core: true },
@@ -290,7 +291,7 @@ const PLAY_GROUPS: { name: string; pages: Place[]; hubOnly?: boolean }[] = [
   { name: 'Награди', pages: [['/game/missions', true], ['/game/seasons', true], ['/game/inventory', true], ['/game/events']] },
   // 1.3.3: the daily games are cards of „Всичко“ (with what runs now), not entries of „Още ▾“.
   { name: 'Всеки ден', hubOnly: true, pages: [['/game/daily-route'], ['/game/night-run'], ['/game/courier'], ['/game/big-run'], ['/game/challenges'], ['/game/crisis'], ['/game/road-service']] },
-  { name: 'Състезания', pages: [['/game/leaderboards', true]] },
+  { name: 'Състезания', pages: [['/game/leaderboards', true], ['/game/tournament']] },
   { name: 'Общност', pages: [['/game/ideas']] },
   { name: 'Колекции', pages: [['/game/progress']] },
 ];
