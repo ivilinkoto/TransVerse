@@ -1571,3 +1571,18 @@ c83ccb3374	The tournament is in „Games and rewards“ → Rankings → Tournam
 c103f7c7a8	Fair even with few players	Честно даже для немногих игроков
 b6f9672981	from {0} players up	от {0} участников
 69aa486aa6	🏆 Place {0} in the weekly tournament!	🏆 {0} место в еженедельном турнире!
+b3b8bdd202	{0} Place {1} — {2}!	{0} {1} место — {2}!
+e61917769d	{0} is from level {1}.	{0} — с уровня {1}.
+b6e849efda	{0} did not take place	{0} не состоялся
+8937ca8527	{0} did not take place — the entry is given back	{0} не состоялся — взнос возвращён
+5ed0cc1bdd	{0} is over	{0} окончен
+fe874ebaec	{0} — place {1}	{0} — {1} место
+8d7094cce0	You are already in this tournament this week.	Ты уже участвуешь в этом турнире на этой неделе.
+fa95304899	Enter, deliver the most tons by Sunday and take the prize in ТрансКоин.	Войди, привези больше всех тонн до воскресенья и забери приз в ТрансКоинах.
+344c55a661	Every week — two tournaments with a ТрансКоин entry: deliver the most tons and take the prize pool.	Каждую неделю — два турнира со взносом в ТрансКоинах: привези больше всех тонн и забери призовой фонд.
+fdab8ceb44	Enter „{0}“ for {1} TC?	Войти в «{0}» за {1} TC?
+b53c0311b0	Entry: {0}	Взнос: {0}
+612fcd1019	The Grand Cup	Большой кубок
+f1944aab46	For the big fleets: 500 TC entry, from level 20, with its own table and a five times bigger pool. You can enter both tournaments.	Для больших автопарков: взнос 500 TC, с 20 уровня, со своей таблицей и в пять раз большим фондом. Можно участвовать в обоих турнирах.
+a6a4df23a3	The score is the tons your trucks deliver from your entry until the end of the week (Monday 00:00). {0}% of the entries are the prize pool — in ТрансКоин for the first three places ({1}). With fewer than {2} players the entry is given back. You can enter both tournaments.	Очки — тонны, которые твои грузовики привезут с момента записи до конца недели (понедельник 00:00). {0}% взносов — призовой фонд, в ТрансКоинах для первых трёх мест ({1}). Если записалось меньше {2} игроков, взнос возвращается. Можно участвовать в обоих турнирах.
+e5ed40c857	entry {0} TC	взнос {0} TC

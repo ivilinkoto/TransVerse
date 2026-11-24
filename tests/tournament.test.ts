@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { FEATURES } from '@/lib/game/features';
 import { weekEndsAt, weekKey } from '@/lib/game/leagues';
-import { TOURNAMENT, tournamentPool, tournamentPrizes } from '@/lib/game/tournament';
+import { TOURNAMENTS, tournamentPool, tournamentPrizes } from '@/lib/game/tournament';
 import { closeDb } from '@/server/db/client';
 import { companies, contracts, deliveries, jobState, users, vehicles } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
@@ -40,15 +40,15 @@ describe('1.3.2.4 „Турнир на седмицата“', () => {
     const players: Awaited<ReturnType<typeof newPlayer>>[] = [];
     for (let i = 0; i < 4; i++) players.push(await newPlayer());
     for (const p of players) await give(p.userId, 500);
-    for (const p of players) await joinTournament(db(), p.userId, start);
-    expect(await code(joinTournament(db(), players[0]!.userId, start))).toBe('already_in');
-    expect(await coins(players[0]!.userId)).toBe(500 - TOURNAMENT.feeCoins);
+    for (const p of players) await joinTournament(db(), p.userId, 'weekly', start);
+    expect(await code(joinTournament(db(), players[0]!.userId, 'weekly', start))).toBe('already_in');
+    expect(await coins(players[0]!.userId)).toBe(500 - TOURNAMENTS.weekly.feeCoins);
     // Before the entry it does not count; after, it does.
     await delivered(players[0]!.userId, 50, new Date(start.getTime() - 60_000));
     await delivered(players[0]!.userId, 10, new Date(start.getTime() + 60_000));
     await delivered(players[1]!.userId, 30, new Date(start.getTime() + 60_000));
     await delivered(players[2]!.userId, 20, new Date(start.getTime() + 60_000));
-    const table = await standings(db(), lastWeek, weekEndsAt(lastWeek));
+    const table = await standings(db(), 'weekly', lastWeek, weekEndsAt(lastWeek));
     const ours = table.filter((r) => players.some((p) => p.userId === r.userId));
     expect(ours.map((r) => r.tons)).toEqual([30, 20, 10, 0]);
     const before = await Promise.all(players.map((p) => coins(p.userId)));
@@ -58,8 +58,21 @@ describe('1.3.2.4 „Турнир на седмицата“', () => {
     for (const [i, p] of players.entries()) expect(await coins(p.userId)).toBe(before[i]! + (prizes[place(p.userId)] ?? 0));
     // Once only.
     expect(await settleTournament(db(), now)).toBe(0);
-    const [flag] = await db().select().from(jobState).where(eq(jobState.key, `tourney-settled:${lastWeek}`));
+    const [flag] = await db().select().from(jobState).where(eq(jobState.key, `tourney-settled:weekly:${lastWeek}`));
     expect(flag).toBeTruthy();
     expect(contracts).toBeTruthy();
+  });
+
+  it('„Голямата купа“: a bigger fee and pool, from level 20; one can enter both', async () => {
+    expect(TOURNAMENTS.grand.feeCoins).toBe(500);
+    expect(tournamentPrizes(4, 'grand')).toEqual([800, 480, 320]);
+    const p = await newPlayer();
+    await give(p.userId, 1_000);
+    const now = new Date();
+    expect(await code(joinTournament(db(), p.userId, 'grand', now))).toBe('level');
+    await db().update(users).set({ level: TOURNAMENTS.grand.minLevel }).where(eq(users.id, p.userId));
+    await joinTournament(db(), p.userId, 'grand', now);
+    await joinTournament(db(), p.userId, 'weekly', now);
+    expect(await coins(p.userId)).toBe(1_000 - 500 - 100);
   });
 });

@@ -238,7 +238,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('expandDepotCoins'), depotId: id }),
   z.object({ type: z.literal('buyCompanyBoost') }),
-  z.object({ type: z.literal('joinTournament') }),
+  z.object({ type: z.literal('joinTournament'), tier: z.enum(['weekly', 'grand']).default('weekly') }),
   z.object({ type: z.literal('markNotificationsRead') }),
   z.object({ type: z.literal('adoptMascot'), kind: z.enum(['cat', 'dog', 'parrot', 'turtle']), name: z.string().max(60) }),
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
@@ -894,7 +894,7 @@ export async function runAction(db: Database, user: { id: string; role: string; 
     case 'expandDepot':
       return { ok: true, costCents: await expandDepot(db, user.id, input.depotId) };
     case 'joinTournament':
-      return { ok: true, week: await joinTournament(db, user.id, new Date()) };
+      return { ok: true, week: await joinTournament(db, user.id, input.tier, new Date()) };
     case 'buyCompanyBoost':
       return { ok: true, until: (await buyCompanyBoost(db, user.id, new Date())).toISOString() };
     case 'expandDepotCoins':
