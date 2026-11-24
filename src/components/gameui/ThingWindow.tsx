@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, useSyncExternalStore, type ReactNode } from 'react';
+
+const noop = () => () => {};
 import { GameWindow } from './GameWindow';
 import { playSelect } from '@/lib/client/motion';
 
@@ -26,7 +28,10 @@ export function ThingWindow({ button, title, icon, accent = '#22d3ee', sections,
   initialTab?: string;
   testId?: string;
 }) {
-  const [open, setOpen] = useState(initialOpen);
+  // Opened from a link (?truck= / ?train=): only in the browser, after the first render — the window is a portal to document.body.
+  const mounted = useSyncExternalStore(noop, () => true, () => false);
+  const [chosen, setOpen] = useState<boolean | null>(null);
+  const open = chosen ?? (initialOpen && mounted);
   const [tab, setTab] = useState(initialTab && sections.some((s) => s.id === initialTab) ? initialTab : sections[0]?.id);
   const current = sections.find((s) => s.id === tab) ?? sections[0];
   return (
