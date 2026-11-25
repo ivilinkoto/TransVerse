@@ -6,7 +6,7 @@ import { closeDb } from '@/server/db/client';
 import { companies, jobState, userLicences, users } from '@/server/db/schema';
 import { post } from '@/server/game/finance';
 import { GameError } from '@/server/game/errors';
-import { buyTrain, hireBoard, hireTrain, setTrainHire, settleTrains } from '@/server/game/trains';
+import { buyTrain, firstTrainDone, hireBoard, hireTrain, setTrainHire, settleTrains, trainsOf } from '@/server/game/trains';
 import { db, newPlayer, trainWith } from './helpers';
 
 afterAll(() => closeDb());
@@ -61,9 +61,17 @@ describe('1.3.3: trains by VIP level, and hiring a train for one order', () => {
     // VIP0: one hired train at a time.
     const second = ordersAt(SOFIA, now.getTime()).find((o) => o.id !== order.id && isDomestic(o) && rentalFor(o));
     if (second) expect(await code(hireTrain(db(), p.userId, SOFIA, second.id, 'game', now))).toBe('max_hires');
+    // The player's trains are found by owner or hirer (the game's train is theirs while it runs); the first-train guide stays until it arrives.
+    expect((await trainsOf(db(), p.userId)).map((x) => x.id)).toContain(tr.id);
+    expect(await firstTrainDone(db(), p.userId)).toBe(false);
+    // Before it arrives, settling does nothing.
+    await settleTrains(db(), new Date(new Date(tr.run!.arriveAt).getTime() - 1000));
+    expect(await trainRow(tr.id)).toBeDefined();
     await settleTrains(db(), new Date(new Date(tr.run!.arriveAt).getTime() + 1000));
     expect(await balance(p.userId)).toBe(b0 - row!.game!.fee - row!.game!.cost + row!.pay);
     expect(await trainRow(tr.id)).toBeUndefined();
+    expect(await firstTrainDone(db(), p.userId)).toBe(true);
+    expect(await trainsOf(db(), p.userId)).toEqual([]);
   });
 
   it("a player's train for hire: the fee to its owner, the pay to the one who hired it", async () => {

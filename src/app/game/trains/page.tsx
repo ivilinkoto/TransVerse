@@ -6,12 +6,13 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { FormAction } from '@/components/ui/FormAction';
 import { TrainArt } from '@/components/vehicles/trains';
 import { place, RunStatus, TrainOrders, WAGON_ICON } from '@/components/game/TrainOrders';
+import { FirstTrainGuide } from '@/components/game/FirstTrainGuide';
 import { ThingWindow } from '@/components/gameui/ThingWindow';
 import { dateTime, int, money } from '@/lib/format';
 import { LOCO_IDS, LOCOS, tareTons, TRAINS, WAGON_TYPES, WAGONS, wagonCount } from '@/lib/game/trains';
 import { LICENCES } from '@/lib/game/licences';
 import { gameContext } from '@/server/game/context';
-import { trainsView } from '@/server/game/trains';
+import { firstTrainDone, trainsView } from '@/server/game/trains';
 import { t, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 
@@ -36,6 +37,8 @@ export default async function TrainsPage({ searchParams }: { searchParams: Promi
         subtitle={t('Собствени товарни влакове по истински жп линии — големи товари между товарните гари.')}
         help={t('Влакът кара само между товарни гари. На всяка гара има поръчки за блок-влакове ({0}–{1} т), нови на всеки {2} часа. Таксата за линията и енергията се плащат при тръгване, а поръчката — при пристигане. Линиите и разстоянията са истински; цените и поръчките са игрови данни.', TRAINS.tons.min, TRAINS.tons.max, TRAINS.windowHours)}
       />
+      {/* 1.3.3: the steps to the first train run, until it is done. */}
+      {!(await firstTrainDone(db, user.id)) && <FirstTrainGuide level={user.level} vipLevel={user.vipLevel ?? 0} ownLevel={v.limits.minLevel} licensed={v.licensed} trains={v.trains.length} wagons={v.trains.reduce((n, tr) => n + wagonCount(tr.wagons), 0)} line={v.trains.some((tr) => tr.line?.on)} />}
       <section className="bus-bar flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4" data-testid="train-summary">
         <p className="text-sm text-mist-200">
           {v.company

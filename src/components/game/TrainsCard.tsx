@@ -4,13 +4,13 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { dateTime } from '@/lib/format';
 import { LOCOS } from '@/lib/game/trains';
 import type { Database } from '@/server/db/client';
-import { allTrains } from '@/server/game/trains';
+import { trainsOf } from '@/server/game/trains';
 import { place } from './TrainOrders';
 import { t } from '@/i18n/t';
 
 /** 1.3.3: the trains on the dashboard — where each is, when it arrives, and „Пусни пак“ for a free one. Nothing without trains. */
 export async function TrainsCard({ db, userId, now }: { db: Database; userId: string; now: Date }) {
-  const trains = (await allTrains(db)).filter((tr) => (tr.ownerId === userId && !tr.rental) || tr.run?.hirerId === userId || (tr.rental && tr.ownerId === userId && tr.run));
+  const trains = (await trainsOf(db, userId)).filter((tr) => (tr.ownerId === userId && !tr.rental) || tr.run?.hirerId === userId || (tr.rental && tr.ownerId === userId && tr.run));
   if (!trains.length) return null;
   return (
     <Card title={t('Влаковете сега')} actions={<Link href="/game/trains" className="text-sm text-cyan-glow hover:underline">{t('Влакове →')}</Link>}>

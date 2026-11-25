@@ -1152,7 +1152,7 @@ e8816fcc7d	Wants a trip to {0} for {1} — within 3 days. The trip is waiting in
 a6967814e4	A licence is needed: {0} (Fleet → Licences).	Нужна лицензия: {0} (Автопарк → Лицензии).
 915081de19	They unlock international, refrigerated, dangerous (ADR) and oversize loads, and the rail licence your own trains.	Открывают международные, рефрижераторные, опасные (ADR) и негабаритные грузы, а ж/д лицензия — собственные поезда.
 7f16364750	Your own freight trains: buying locomotives and wagons and runs over the rail network. For a run across a border also the international one, and outside the EU the customs one.	Собственные грузовые поезда: покупка локомотивов и вагонов и рейсы по железнодорожной сети. Для рейса через границу — ещё международная, а за пределами ЕС и таможенная.
-b585774347	Rail licence (Fleet → Licences): 300 000 lv., from level 25. It is needed for an own train; for a run across a border also the international one, and outside the EU the customs one, as with trucks. A company can buy it from its treasury for all its members (600 000 lv.) — then its members run trains from level 12.	Ж/д лицензия (Автопарк → Лицензии): 300 000 лв., с уровня 25. Нужна для собственного поезда; для рейса через границу — ещё международная, а за пределами ЕС и таможенная, как у грузовиков. Компания может купить её из кассы для всех участников (600 000 лв.) — тогда участники водят поезда с уровня 12.
+b585774347	Rail licence (Fleet → Licences): 300 000 lv., from level 25. It is needed for an own train; for a run across a border also the international one, and outside the EU the customs one, as with trucks. A company can buy it from its treasury for all its members (600 000 lv.) — then its members run trains from level 12.	Ж/Д лицензия (Автопарк → Лицензии): 300 000 лв., с уровня 25. Нужна для собственного поезда; для рейса через границу — ещё международная, а за пределами ЕС и таможенная, как у грузовиков. Компания может купить её из кассы для всех участников (600 000 лв.) — тогда участники водят поезда с уровня 12.
 b3bd2519d8	On your own — from level 25 with the rail licence. In a company with the rail licence — from level 12, with +10% on orders, −25% track fee and one more train.	Самостоятельно — с уровня 25 с ж/д лицензией. В компании с ж/д лицензией — с уровня 12, с +10% за заказы, −25% платы за линию и ещё одним поездом.
 d8ae6110bc	{0} TC over the weekly cap became money ({1})	{0} TC сверх недельного лимита превратились в деньги ({1})
 2c412d3cca	The bronze, silver and gold cases no longer hold ТрансКоин. Items took their place — more coffee, repair kits, thermoses, atlases and frames.	Бронзовый, серебряный и золотой кейсы больше не содержат ТрансКоин. Их место заняли предметы — больше кофе, ремкомплектов, термосов, атласов и рамок.
@@ -1602,3 +1602,15 @@ ba0140dc5c	Black Friday starts tomorrow	Чёрная пятница начина
 dc00480917	Black Friday is on — until 30 November	Чёрная пятница идёт — до 30 ноября
 0cb9830f31	{0}% off nearly everything for ТрансКоин (also the parts and premium trucks), +{1}% TC on every pack and the Black Friday pack for 4 days only.	−{0}% почти на всё за ТрансКоины (и на детали и премиум-грузовики), +{1}% TC на каждый пакет и пакет «Чёрная пятница» — только 4 дня.
 d33d9abf90	🛍 Black Friday has started!	🛍 Чёрная пятница началась!
+9549e7815a	Take an order or start a regular line so it runs on its own	Возьми заказ или запусти регулярную линию, чтобы он ездил сам
+dc90aae99e	Two ways to your first train run. This card goes away after your first finished run.	Два пути к первому рейсу на поезде. Эта карточка исчезнет после первого завершённого рейса.
+e65f8540cb	Rail licence ({0})	Ж/Д лицензия ({0})
+2077b12c1f	The „Your first train“ card in Fleet → Trains and Trips → Trains shows the steps to the first run — with a hired train (from level 10) or your own (from VIP3) — and goes away after the first finished run.	Карточка «Твой первый поезд» в Автопарк → Поезда и Рейсы → Поезда показывает шаги до первого рейса — на арендованном поезде (с уровня 10) или на своём (с VIP3) — и исчезает после первого завершённого рейса.
+d05a0d79a0	Buy wagons: the train's window → Wagons	Купи вагоны: окно поезда → Вагоны
+4c0aeecc20	Buy a locomotive: Fleet → Trains	Купи локомотив: Автопарк → Поезда
+e1e8ecb47a	Trips → Trains: pick a station and an order	Рейсы → Поезда: выбери станцию и заказ
+85c6083be3	Hire the game's train ({0}% of the order) or a player's train — the order is paid when it arrives	Арендуй поезд игры ({0}% от заказа) или поезд игрока — заказ оплачивается по прибытии
+9080d14fce	Hire a train — no own one needed	Арендуй поезд — без своего
+28e9c39aa0	Level {0} (in a company with a rail licence — from level {1})	Уровень {0} (в компании с Ж/Д лицензией — с уровня {1})
+7f89365000	Your first train	Твой первый поезд
+3280fea2dc	Own train — from VIP{0}	Свой поезд — с VIP{0}
