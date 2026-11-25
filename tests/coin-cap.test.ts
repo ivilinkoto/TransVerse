@@ -1,10 +1,13 @@
 import { and, eq, like } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
-import { COIN_CAP, capWeekStart, moneyForCoins, paidInMoney, splitByCap, TC_REWARDS } from '@/lib/game/coin-cap';
+import { COIN_CAP, capWeekStart, coinsAsMoney, moneyForCoins, paidInMoney, rewardCoins, splitByCap, TC_REWARDS } from '@/lib/game/coin-cap';
+import { PASS_REWARDS, PASS_REWARDS_CN, PASS_REWARDS_V2 } from '@/lib/game/season-pass';
 import { taperCoins } from '@/lib/game/coin-taper';
 import { closeDb } from '@/server/db/client';
 import { companies, ledgerEntries, notifications, users } from '@/server/db/schema';
 import { earnedThisWeek, postCoins } from '@/server/game/coins';
+import { post } from '@/server/game/finance';
+import { soldToday } from '@/server/game/item-trade';
 import { db, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
@@ -28,27 +31,32 @@ describe('1.3.2.1 „Честна монета“: a weekly cap on earned Тра
     await db().transaction((tx) => postCoins(tx, p.userId, { amount: 20, reason: 'purchase', description: 'test', idempotencyKey: `cap-buy:${p.userId}`, at }));
     expect(await coins(p.userId)).toBe(tc0 + 20);
     expect(await earnedThisWeek(db(), p.userId, at)).toBe(0);
-    await db().transaction((tx) => postCoins(tx, p.userId, { amount: 200, reason: 'event_reward', description: 'тест', idempotencyKey: `cap-a:${p.userId}`, at }));
+    await db().transaction((tx) => postCoins(tx, p.userId, { amount: 200, reason: 'season_pass', description: 'тест', idempotencyKey: `cap-a:${p.userId}`, at }));
     expect(await coins(p.userId)).toBe(tc0 + 20 + COIN_CAP.weekly);
     expect(await earnedThisWeek(db(), p.userId, at)).toBe(COIN_CAP.weekly);
     const lv1 = await balance(p.userId);
     expect(lv1).toBeGreaterThan(lv0);
     expect((lv1 - lv0) % COIN_CAP.centsPerCoin).toBe(0);
     // Over the cap: all in money, and the notice comes once.
-    await db().transaction((tx) => postCoins(tx, p.userId, { amount: 50, reason: 'league_reward', description: 'тест', idempotencyKey: `cap-b:${p.userId}`, at }));
+    await db().transaction((tx) => postCoins(tx, p.userId, { amount: 50, reason: 'giveaway', description: 'тест', idempotencyKey: `cap-b:${p.userId}`, at }));
     expect(await coins(p.userId)).toBe(tc0 + 20 + COIN_CAP.weekly);
-    expect(await balance(p.userId)).toBe(lv1 + taperCoins(50, at, 'league_reward') * COIN_CAP.centsPerCoin);
+    expect(await balance(p.userId)).toBe(lv1 + taperCoins(50, at, 'giveaway') * COIN_CAP.centsPerCoin);
     expect(await db().select().from(notifications).where(and(eq(notifications.userId, p.userId), like(notifications.title, '%таван%')))).toHaveLength(1);
     expect(await db().select().from(ledgerEntries).where(like(ledgerEntries.idempotencyKey, `cap-%:${p.userId}:over-cap`))).toHaveLength(2);
     // A new week: room again.
     const next = new Date(capWeekStart(at).getTime() + 8 * 86_400_000);
-    await db().transaction((tx) => postCoins(tx, p.userId, { amount: 10, reason: 'event_reward', description: 'тест', idempotencyKey: `cap-c:${p.userId}`, at: next }));
+    await db().transaction((tx) => postCoins(tx, p.userId, { amount: 10, reason: 'season_pass', description: 'тест', idempotencyKey: `cap-c:${p.userId}`, at: next }));
     expect(await coins(p.userId)).toBeGreaterThan(tc0 + 20 + COIN_CAP.weekly);
   });
 
-  it('most rewards are paid in game money, not TC; the season pass, events, league, giveaways and invites keep TC', async () => {
-    expect(TC_REWARDS).toEqual(['season_pass', 'event_reward', 'league_reward', 'giveaway', 'referral_reward']);
-    for (const r of ['daily_reward', 'challenge', 'weekly_goal', 'items', 'item_sale', 'holiday_reward', 'mentor_reward', 'discord_level']) expect(paidInMoney(r), r).toBe(true);
+  it('every reward is paid in game money, not TC; only the bought pass line, the team\'s giveaways and a share of a friend\'s purchase keep TC', async () => {
+    expect(TC_REWARDS).toEqual(['season_pass', 'giveaway', 'referral_purchase']);
+    for (const r of ['daily_reward', 'challenge', 'weekly_goal', 'items', 'item_sale', 'holiday_reward', 'mentor_reward', 'discord_level', 'event_reward', 'league_reward', 'referral_reward', 'email_verified', 'discord_link', 'quiz', 'photo_contest']) expect(paidInMoney(r), r).toBe(true);
+    expect(rewardCoins('league_reward', 20)).toBe(coinsAsMoney(20));
+    expect(rewardCoins('season_pass', 20)).toBe('20 TC');
+    // The free line of the pass gives money, not TC.
+    for (const row of [...PASS_REWARDS_V2, ...PASS_REWARDS_CN]) expect(row.free?.coins ?? 0, `free ${row.level}`).toBe(0);
+    for (const row of PASS_REWARDS) expect(row.free?.coins ?? 0).toBe(0);
     for (const r of ['purchase', 'promo', 'admin_grant', 'gift_received', ...TC_REWARDS]) expect(paidInMoney(r), r).toBe(false);
     const p = await newPlayer();
     const at = new Date();
@@ -57,5 +65,16 @@ describe('1.3.2.1 „Честна монета“: a weekly cap on earned Тра
     expect(await coins(p.userId)).toBe(tc0);
     expect(await balance(p.userId)).toBe(lv0 + moneyForCoins(25));
     expect(await earnedThisWeek(db(), p.userId, at)).toBe(0);
+  });
+});
+
+describe('1.3.3: item sales paid in money count towards the daily cap', () => {
+  it('a sale paid in money (ledger) counts like one paid in TC', async () => {
+    const p = await newPlayer();
+    const now = new Date();
+    expect(await soldToday(db(), p.userId, now)).toBe(0);
+    const [acc] = await db().select({ id: companies.id }).from(companies).where(eq(companies.ownerId, p.userId));
+    await db().transaction((tx) => post(tx, acc!.id, [{ category: 'bonus', amountCents: moneyForCoins(8), description: 'Продадени: тест', idempotencyKey: `sell:${p.userId}:test:1:money` }]));
+    expect(await soldToday(db(), p.userId, now)).toBe(8);
   });
 });

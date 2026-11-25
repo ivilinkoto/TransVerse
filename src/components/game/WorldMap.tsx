@@ -199,8 +199,8 @@ function playerFeatures(world: WorldSnapshot, ownIds: Set<string>, now: number, 
     if (layers.movingOnly && !moving && !focused) continue;
     const label = t.tag ? `[${t.tag}] ${t.player}` : t.player;
     const fill = t.color && HEX.test(t.color) ? t.color : '#e8eef7';
-    const ring = t.vip ? '#d4af37' : t.online ? '#34d399' : '#ef4444';
-    const f: GeoJSON.Feature = { type: 'Feature', properties: { id: t.id, label, rel: t.relation ?? '', icon: truckIcon(fill, ring, t.vip, west), fill, ring, moving, focus: focused }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
+    const ring = t.vip !== null ? '#d4af37' : t.online ? '#34d399' : '#ef4444';
+    const f: GeoJSON.Feature = { type: 'Feature', properties: { id: t.id, label, rel: t.relation ?? '', icon: truckIcon(fill, ring, t.vip !== null, west), fill, ring, moving, focus: focused }, geometry: { type: 'Point', coordinates: toLngLat(point) } };
     if (t.relation) circle.push(f);
     else crowd.push({ f, p: point, keep: focused });
     if (focused && t.delivery) {

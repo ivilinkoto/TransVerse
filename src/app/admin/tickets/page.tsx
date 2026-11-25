@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { vipLabel } from '@/lib/game/vip';
 import { Badge, Card, PageHeader, Table } from '@/components/ui';
 import { dateTime } from '@/lib/format';
 import { adminContext } from '@/server/admin-context';
@@ -41,10 +42,10 @@ export default async function AdminTickets({ searchParams }: { searchParams: Pro
       </nav>
       <Card>
         <Table head={[t('Тема'), t('Играч'), t('Категория'), t('Статус'), t('Обновено')]}>
-          {rows.map(({ ticket, username, vip }) => (
+          {rows.map(({ ticket, username, vip, vipLevel }) => (
             <tr key={ticket.id}>
               <td className="px-3 py-2"><Link href={`/admin/tickets/${ticket.id}`} className="font-semibold text-cyan-glow hover:underline">{tx(ticket.subject)}</Link></td>
-              <td className="px-3 py-2">{username}{vip && <>{" "}<Badge tone="gold">VIP</Badge></>}</td>
+              <td className="px-3 py-2">{username}{(vip || vipLevel > 0) && <>{" "}<Badge tone="gold">{vipLabel(vipLevel)}</Badge></>}</td>
               <td className="px-3 py-2 text-mist-300">{tx(TICKET_CATEGORIES[ticket.category as keyof typeof TICKET_CATEGORIES])}</td>
               <td className="px-3 py-2"><Badge tone={TONE[ticket.status as keyof typeof TONE] ?? 'neutral'}>{tx(TICKET_STATUS[ticket.status as keyof typeof TICKET_STATUS])}</Badge></td>
               <td className="px-3 py-2 text-mist-400">{dateTime(ticket.updatedAt)}</td>

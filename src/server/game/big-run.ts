@@ -1,4 +1,5 @@
 import { and, desc, eq, gt, gte, inArray, sql } from 'drizzle-orm';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, contracts, deliveries, jobState, userBadges } from '@/server/db/schema';
 import { BIG_RUN, pickBigRun, type BigRunLeg } from '@/lib/game/big-run';
@@ -57,7 +58,7 @@ export async function recordBigRunDelivery(tx: Tx, userId: string, originId: num
   if (!paid) return false;
   await tx.insert(userBadges).values({ userId, badge: BIG_RUN.badge, awardedAt: completedAt }).onConflictDoNothing();
   await rewardCase(tx, userId, 'case_gold', 'big_run', `big-run-case:${run.week}:${userId}`, completedAt);
-  await notify(tx, userId, 'achievement', () => t('🏁 Големият рейс е твой!'), () => t('Всички {0} етапа за седмицата — +{1} ТрансКоин.', BIG_RUN.legs, BIG_RUN.coins), '/game/big-run');
+  await notify(tx, userId, 'achievement', () => t('🏁 Големият рейс е твой!'), () => t('Всички {0} етапа за седмицата — +{1}.', BIG_RUN.legs, coinsAsMoney(BIG_RUN.coins)), '/game/big-run');
   return true;
 }
 

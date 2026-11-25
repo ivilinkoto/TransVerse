@@ -54,7 +54,7 @@ export async function businessCard(db: DbOrTx, userId: string, now: Date): Promi
 export async function weeklyEarners(db: DbOrTx, now: Date, limit = 50) {
   const earned = sql<number>`coalesce(sum(${deliveries.payoutCents}), 0)::float`;
   const rows = await db
-    .select({ userId: users.id, username: users.username, role: users.role, vipUntil: users.vipUntil, level: users.level, cents: earned, trips: sql<number>`count(*)::int` })
+    .select({ userId: users.id, username: users.username, role: users.role, vipUntil: users.vipUntil, vipLevel: users.vipLevel, level: users.level, cents: earned, trips: sql<number>`count(*)::int` })
     .from(deliveries)
     .innerJoin(companies, eq(companies.id, deliveries.companyId))
     .innerJoin(users, eq(users.id, companies.ownerId))

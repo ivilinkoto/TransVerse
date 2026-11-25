@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { and, asc, count, desc, eq, gt, gte, inArray, isNull, like, lt, notInArray, or, sql } from 'drizzle-orm';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { alias } from 'drizzle-orm/pg-core';
-import { cities, coinEntries, companyChest, companyChestLog, companyMembers, deliveries, drivers, friendships, inventoryItems, itemEffects, itemGifts, itemLog, itemSerials, itemTrades, userBadges, users } from '@/server/db/schema';
+import { cities, coinEntries, companies, ledgerEntries, companyChest, companyChestLog, companyMembers, deliveries, drivers, friendships, inventoryItems, itemEffects, itemGifts, itemLog, itemSerials, itemTrades, userBadges, users } from '@/server/db/schema';
 import {
   COLLECTIONS,
   CRAFT_SAME,
@@ -30,6 +30,7 @@ import { featureFor } from '@/server/features';
 import { featureLive } from '@/lib/game/features';
 import { t } from '@/i18n/t';
 import { postCoins } from './coins';
+import { COIN_CAP, coinsAsMoney } from '@/lib/game/coin-cap';
 import { companyForUser } from './company';
 import { fail } from './errors';
 import { grantItem, takeItem } from './inventory';
@@ -53,10 +54,15 @@ function sofiaDayStart(now: Date) {
 
 // ── Sell ─────────────────────────────────────────────────────────────────
 
-/** ТрансКоин from sales today (Sofia day). */
+/**
+ * Sales today (Sofia day), in TC of the sell price. Since 1.3.2.1 a sale is paid in game money
+ * (a `sell:<user>:…:money` ledger entry); earlier ones (and tests) are coin entries — both count.
+ */
 export async function soldToday(db: DbOrTx, userId: string, now: Date) {
-  const [{ n = 0 } = {}] = await db.select({ n: sql<number>`coalesce(sum(${coinEntries.amount}), 0)::int` }).from(coinEntries).where(and(eq(coinEntries.userId, userId), eq(coinEntries.reason, 'item_sale'), gte(coinEntries.createdAt, sofiaDayStart(now))));
-  return n;
+  const since = sofiaDayStart(now);
+  const [{ n = 0 } = {}] = await db.select({ n: sql<number>`coalesce(sum(${coinEntries.amount}), 0)::int` }).from(coinEntries).where(and(eq(coinEntries.userId, userId), eq(coinEntries.reason, 'item_sale'), gte(coinEntries.createdAt, since)));
+  const [{ c = 0 } = {}] = await db.select({ c: sql<number>`coalesce(sum(${ledgerEntries.amountCents}), 0)::bigint` }).from(ledgerEntries).where(and(inArray(ledgerEntries.companyId, db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId))), gte(ledgerEntries.createdAt, since), like(ledgerEntries.idempotencyKey, `sell:${userId}:%:money`)));
+  return n + Math.round(Number(c) / COIN_CAP.centsPerCoin);
 }
 
 /**
@@ -74,7 +80,7 @@ export async function sellItem(db: Database, userId: string, itemId: string, qty
     const spare = Math.max(0, (row?.qty ?? 0) - (ITEMS[id].kind === 'collectible' ? 1 : 0));
     if (spare < 1) fail('no_spare', ITEMS[id].kind === 'collectible' ? t('Пазиш последния за албума — продават се само повторените.') : t('Нямаш този предмет.'));
     const n = Math.min(Math.max(1, Math.floor(qty)), spare, Math.floor(left / price));
-    if (n < 1) fail('sell_cap', t('Днес продаде за {0} ТрансКоин — това е таванът. Утре пак.', SELL_DAY_CAP));
+    if (n < 1) fail('sell_cap', t('Днес продаде за {0} — това е таванът. Утре пак.', coinsAsMoney(SELL_DAY_CAP)));
     const key = `sell:${userId}:${id}:${nonce(now)}`;
     await takeItem(tx, userId, id, 'sell', key, n);
     await postCoins(tx, userId, { amount: n * price, reason: 'item_sale', description: t('Продадени: {0} ×{1}', ITEMS[id].name, n), idempotencyKey: key });

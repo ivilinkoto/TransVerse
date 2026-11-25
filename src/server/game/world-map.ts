@@ -1,9 +1,10 @@
+import type { VipTag } from '@/lib/game/vip';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { Segment } from '@/lib/game/schedule';
 import type { DbOrTx } from '@/server/db/client';
 import { cities, companies, companyMembers, contracts, deliveries, friendships, organizations, routes, users, vehicles } from '@/server/db/schema';
 import { onlineUserIds } from '@/server/realtime';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import { featureFor } from '@/server/features';
 import { cached } from '@/server/cache';
 import polyline from '@mapbox/polyline';
@@ -21,7 +22,8 @@ export interface WorldTruck {
   id: string;
   player: string;
   role: string;
-  vip: boolean;
+  /** 1.3.3: the VIP level shown (VIP1–5), 0 for VIP time, null without VIP. */
+  vip: VipTag;
   company: string | null;
   tag: string | null;
   color: string | null;
@@ -77,7 +79,7 @@ async function worldBase(db: DbOrTx, now: Date) {
       userId: users.id,
       player: users.username,
       role: users.role,
-      vipUntil: users.vipUntil,
+      vipUntil: users.vipUntil, vipLevel: users.vipLevel,
       company: organizations.name,
       tag: organizations.tag,
       color: organizations.color,
@@ -178,7 +180,7 @@ export async function worldSnapshot(db: DbOrTx, now = new Date(), viewerId?: str
       id: r.id,
       player: r.player,
       role: r.role,
-      vip: isVip(r.vipUntil, now),
+      vip: vipTag(r.vipUntil, r.vipLevel, now),
       company: r.company,
       tag: r.tag,
       color: r.color,

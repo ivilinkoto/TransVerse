@@ -104,7 +104,7 @@ export async function companyLeaderboard(db: DbOrTx, limit = 50) {
       color: organizations.color,
       owner: users.username,
       ownerRole: users.role,
-      ownerVipUntil: users.vipUntil,
+      ownerVipUntil: users.vipUntil, ownerVipLevel: users.vipLevel,
       level: organizations.companyLevel,
       value: organizations.companyXp,
       members: sql<number>`(select count(*)::int from company_members m where m.company_id = ${organizations.id})`,
@@ -119,7 +119,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   if (kind === 'season') {
     const season = await activeSeason(db);
     const rows = await db
-      .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
+      .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, ownerVipLevel: users.vipLevel, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
       .from(seasonScores)
       .innerJoin(companies, eq(companies.id, seasonScores.companyId))
       .innerJoin(users, eq(users.id, companies.ownerId))
@@ -130,7 +130,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
   }
   if (kind === 'deliveries') {
     const rows = await db
-      .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, level: users.level, value: companies.deliveries, deliveries: companies.deliveries })
+      .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, ownerVipLevel: users.vipLevel, level: users.level, value: companies.deliveries, deliveries: companies.deliveries })
       .from(companies)
       .innerJoin(users, eq(users.id, companies.ownerId))
       .orderBy(desc(companies.deliveries), desc(companies.totalKm))
@@ -145,7 +145,7 @@ export async function leaderboard(db: DbOrTx, kind: LeaderboardKind, limit = 50)
       company: playerLabel,
       owner: users.username,
       ownerRole: users.role,
-      ownerVipUntil: users.vipUntil,
+      ownerVipUntil: users.vipUntil, ownerVipLevel: users.vipLevel,
       level: users.level,
       value: wealth,
       deliveries: companies.deliveries,
@@ -175,7 +175,7 @@ export async function nationalTable(db: DbOrTx) {
 export async function nationalBoard(db: DbOrTx, country: string, limit = 50) {
   const season = await activeSeason(db);
   const rows = await db
-    .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
+    .select({ companyId: companies.id, company: playerLabel, owner: users.username, ownerRole: users.role, ownerVipUntil: users.vipUntil, ownerVipLevel: users.vipLevel, level: users.level, value: seasonScores.points, deliveries: seasonScores.deliveries })
     .from(seasonScores)
     .innerJoin(companies, eq(companies.id, seasonScores.companyId))
     .innerJoin(users, eq(users.id, companies.ownerId))

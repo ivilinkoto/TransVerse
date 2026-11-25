@@ -1,9 +1,10 @@
 import Link from 'next/link';
+import { moneyForCoins } from '@/lib/game/coin-cap';
 import { topBases } from '@/server/game/plot';
 import { Card, PageHeader, Segmented } from '@/components/ui';
 import { weeklyEarners } from '@/server/game/business-card';
 import { hasUnlock } from '@/lib/game/company';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import { PlayerName } from '@/components/game/PlayerName';
 import { int, money } from '@/lib/format';
 import { gameContext } from '@/server/game/context';
@@ -70,7 +71,7 @@ async function PlayerBoard({ kind, unit, companyId }: { kind: Exclude<Leaderboar
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
             <div className="min-w-0 flex-1">
               <div className="truncate font-semibold">{tx(r.company)}</div>
-              <div className="flex items-center gap-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>{tr('· ниво {0}', r.level)}</span></div>
+              <div className="flex items-center gap-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={vipTag(r.ownerVipUntil, r.ownerVipLevel, now)} /><span>{tr('· ниво {0}', r.level)}</span></div>
             </div>
             <div className="shrink-0 text-right">
               <div className="num font-display font-bold text-gold-400">{kind === 'wealth' ? money(r.value) : int(r.value)}</div>
@@ -95,7 +96,7 @@ async function EarnersBoard({ userId, unit }: { userId: string; unit: string }) 
           <li key={r.userId} className={`flex items-center gap-3 rounded-xl px-2 py-2.5 sm:px-3 ${r.userId === userId ? 'bg-volt-500/10 ring-1 ring-volt-500/30' : ''}`}>
             <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
             <div className="min-w-0 flex-1">
-              <Link href={`/game/players/${encodeURIComponent(r.username)}`} className="block truncate font-semibold hover:underline"><PlayerName name={r.username} role={r.role} vip={isVip(r.vipUntil, now)} /></Link>
+              <Link href={`/game/players/${encodeURIComponent(r.username)}`} className="block truncate font-semibold hover:underline"><PlayerName name={r.username} role={r.role} vip={vipTag(r.vipUntil, r.vipLevel, now)} /></Link>
               <div className="text-xs text-mist-400">{tr('{0} курса · ниво {1}', r.trips, r.level)}</div>
             </div>
             <div className="shrink-0 text-right">
@@ -125,7 +126,7 @@ async function CompanyBoard({ userId }: { userId: string }) {
                 {r.tag && hasUnlock(r.level, 'tag') && <span style={{ color: r.color ?? undefined }}>[{tx(r.tag)}] </span>}
                 {tx(r.company)}
               </Link>
-              <div className="flex flex-wrap items-center gap-x-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>{tr('· ниво {0} · {1} членове', r.level, int(r.members))}</span></div>
+              <div className="flex flex-wrap items-center gap-x-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={vipTag(r.ownerVipUntil, r.ownerVipLevel, now)} /><span>{tr('· ниво {0} · {1} членове', r.level, int(r.members))}</span></div>
             </div>
             <div className="shrink-0 text-right">
               <div className="num font-display font-bold text-gold-400">{int(r.value)}</div>
@@ -178,7 +179,7 @@ async function NationsBoard({ country, companyId }: { country?: string; companyI
                 <span className="num w-8 shrink-0 text-center font-display font-bold text-mist-300">{medal(i)}</span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{tx(r.company)}</div>
-                  <div className="flex items-center gap-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={isVip(r.ownerVipUntil, now)} /><span>{tr('· ниво {0}', r.level)}</span></div>
+                  <div className="flex items-center gap-2 text-xs text-mist-400"><PlayerName name={r.owner} role={r.ownerRole} vip={vipTag(r.ownerVipUntil, r.ownerVipLevel, now)} /><span>{tr('· ниво {0}', r.level)}</span></div>
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="num font-display font-bold text-gold-400">{int(r.value)}</div>
@@ -256,7 +257,7 @@ async function EcoBoardView({ userId }: { userId: string }) {
   return (
     <Card className="p-2 sm:p-3">
       <p className="px-2 pb-2 pt-1 text-sm text-mist-300 sm:px-3">
-        {tr('Седмицата до {0}: най-ниски разходи на километър (гориво, пътни такси, поддръжка, пътна помощ) за собствени курсове — наетите камиони не се броят. Нужни са поне {1} км. Първите трима получават', week.to.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' }), int(ECO.minKm))}{' '}{ECO.prizes.map((p) => `${money(p.cents)} + ${p.coins} TC`).join(' / ')}.
+        {tr('Седмицата до {0}: най-ниски разходи на километър (гориво, пътни такси, поддръжка, пътна помощ) за собствени курсове — наетите камиони не се броят. Нужни са поне {1} км. Първите трима получават', week.to.toLocaleDateString(intlLocale(), { timeZone: 'Europe/Sofia', day: 'numeric', month: 'long' }), int(ECO.minKm))}{' '}{ECO.prizes.map((p) => money(p.cents + moneyForCoins(p.coins))).join(' / ')}.
       </p>
       <ol className="lb-list divide-y divide-asphalt-800">
         {rows.map((r, i) => (

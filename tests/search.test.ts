@@ -18,7 +18,7 @@ describe('player search', () => {
     await db().update(users).set({ username: `${tag}Ivanov`, bannedAt: new Date() }).where(eq(users.id, c.userId));
     const r = await searchPlayers(db(), tag.toUpperCase() + 'iv');
     expect(r.players.map((p) => p.username)).toEqual([`${tag}Ivan`, `zz${tag}Ivan`]);
-    expect(r.players[0]).toMatchObject({ online: expect.any(Boolean), vip: false });
+    expect(r.players[0]).toMatchObject({ online: expect.any(Boolean), vip: null });
   });
 
   it('needs two letters and treats % and _ as plain text', async () => {

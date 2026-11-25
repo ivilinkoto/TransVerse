@@ -1,4 +1,6 @@
+import { money } from '@/lib/format';
 import { eq, sql } from 'drizzle-orm';
+import { moneyForCoins } from '@/lib/game/coin-cap';
 import { ECO } from '@/lib/game/eco';
 import { periodWindow } from '@/lib/game/missions';
 import type { Database, DbOrTx } from '@/server/db/client';
@@ -70,7 +72,7 @@ export async function settleEcoWeek(db: Database, now = new Date(), minKm: numbe
       const account = await companyForUser(tx, row.userId);
       await post(tx, account.id, [{ category: 'league_reward', amountCents: prize.cents, description: tr('Икономичен шофьор: {0}. място ({1})', i + 1, week.key), idempotencyKey: `eco:${week.key}:${row.userId}` }]);
       await postCoins(tx, row.userId, { amount: prize.coins, reason: 'league_reward', description: tr('Икономичен шофьор: {0}. място', i + 1), idempotencyKey: `eco:${week.key}:${row.userId}:coins` });
-      await notify(tx, row.userId, 'achievement', () => tr('Икономичен шофьор: {0}. място!', i + 1), () => tr('{0} лв./км за {1} км. Награда: {2} лв. и {3} TC.', (row.perKm / 100).toFixed(2).replace('.', ','), row.km.toLocaleString(intlLocale()), (prize.cents / 100).toLocaleString(intlLocale()), prize.coins), '/game/leaderboards?tab=eco');
+      await notify(tx, row.userId, 'achievement', () => tr('Икономичен шофьор: {0}. място!', i + 1), () => tr('{0} лв./км за {1} км. Награда: {2}.', (row.perKm / 100).toFixed(2).replace('.', ','), row.km.toLocaleString(intlLocale()), money(prize.cents + moneyForCoins(prize.coins))), '/game/leaderboards?tab=eco');
     }
     await tx.insert(jobState).values({ key, value: { paid: top.map((t) => t.userId) } });
     paid = top.length;

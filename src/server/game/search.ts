@@ -1,6 +1,6 @@
 import { and, asc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import { isOnline } from '@/lib/game/social';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import type { DbOrTx } from '@/server/db/client';
 import { companyMembers, organizations, users } from '@/server/db/schema';
 
@@ -18,7 +18,7 @@ export async function searchPlayers(db: DbOrTx, raw: string, now = new Date()) {
   const starts = `${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
   const [players, companies] = await Promise.all([
     db
-      .select({ id: users.id, username: users.username, role: users.role, level: users.level, lastSeenAt: users.lastSeenAt, vipUntil: users.vipUntil, avatarVersion: users.avatarVersion, companyName: organizations.name, companyTag: organizations.tag, companyColor: organizations.color })
+      .select({ id: users.id, username: users.username, role: users.role, level: users.level, lastSeenAt: users.lastSeenAt, vipUntil: users.vipUntil, vipLevel: users.vipLevel, avatarVersion: users.avatarVersion, companyName: organizations.name, companyTag: organizations.tag, companyColor: organizations.color })
       .from(users)
       .leftJoin(companyMembers, eq(companyMembers.userId, users.id))
       .leftJoin(organizations, eq(organizations.id, companyMembers.companyId))
@@ -33,7 +33,7 @@ export async function searchPlayers(db: DbOrTx, raw: string, now = new Date()) {
       .limit(5),
   ]);
   return {
-    players: players.map(({ lastSeenAt, vipUntil, ...p }) => ({ ...p, online: isOnline(lastSeenAt, now), vip: isVip(vipUntil, now) })),
+    players: players.map(({ lastSeenAt, vipUntil, vipLevel, ...p }) => ({ ...p, online: isOnline(lastSeenAt, now), vip: vipTag(vipUntil, vipLevel, now) })),
     companies,
   };
 }

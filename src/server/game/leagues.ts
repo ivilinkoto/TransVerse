@@ -1,7 +1,9 @@
+import { money } from '@/lib/format';
 import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm';
+import { moneyForCoins } from '@/lib/game/coin-cap';
 import { LEAGUE_GROUP_SIZE, LEAGUE_TIERS, TOP_TIER, leaguePrize, outcomeFor, weekEndsAt, weekKey } from '@/lib/game/leagues';
 import { isOnline } from '@/lib/game/social';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { companies, leagueGroups, leagueMembers, users } from '@/server/db/schema';
 import { postCoins } from './coins';
@@ -56,7 +58,7 @@ export async function settleLeagues(db: Database, now = new Date()): Promise<num
           await postCoins(tx, m.userId, { amount: prize.coins, reason: 'league_reward', description: t('Лига {0}: {1}. място', LEAGUE_TIERS[g.tier]!.name, rank), idempotencyKey: `${key}:coins` });
         }
         const move = outcome === 'up' ? t('Качваш се в {0}!', LEAGUE_TIERS[nextTier]!.name) : outcome === 'down' ? t('Слизаш в {0}.', LEAGUE_TIERS[nextTier]!.name) : t('Оставаш в {0}.', LEAGUE_TIERS[g.tier]!.name);
-        await notify(tx, m.userId, prize || outcome === 'up' ? 'achievement' : 'info', () => t('Седмичната лига приключи: {0}. място', rank), () => `${move}${prize ? t(' Награда: {0} лв. и {1} TC.', (prize.cents / 100).toLocaleString(intlLocale()), prize.coins) : ''}`, '/game/league');
+        await notify(tx, m.userId, prize || outcome === 'up' ? 'achievement' : 'info', () => t('Седмичната лига приключи: {0}. място', rank), () => `${move}${prize ? t(' Награда: {0}.', money(prize.cents + moneyForCoins(prize.coins))) : ''}`, '/game/league');
       }
       await tx.update(leagueGroups).set({ settledAt: now }).where(eq(leagueGroups.id, g.id));
     });
@@ -73,7 +75,7 @@ export async function leagueView(db: DbOrTx, userId: string, now = new Date()) {
   const tier = me?.tier ?? u?.tier ?? 0;
   const rows = me
     ? await db
-        .select({ userId: leagueMembers.userId, points: leagueMembers.points, deliveries: leagueMembers.deliveries, username: users.username, role: users.role, vipUntil: users.vipUntil, lastSeenAt: users.lastSeenAt, level: users.level, avatarVersion: users.avatarVersion })
+        .select({ userId: leagueMembers.userId, points: leagueMembers.points, deliveries: leagueMembers.deliveries, username: users.username, role: users.role, vipUntil: users.vipUntil, vipLevel: users.vipLevel, lastSeenAt: users.lastSeenAt, level: users.level, avatarVersion: users.avatarVersion })
         .from(leagueMembers)
         .innerJoin(users, eq(users.id, leagueMembers.userId))
         .where(eq(leagueMembers.groupId, me.groupId))
@@ -85,6 +87,6 @@ export async function leagueView(db: DbOrTx, userId: string, now = new Date()) {
     tier,
     joined: !!me,
     last: last ?? null,
-    members: rows.map((r, i) => ({ ...r, rank: i + 1, vip: isVip(r.vipUntil, now), online: isOnline(r.lastSeenAt, now), me: r.userId === userId, outcome: outcomeFor(tier, i + 1, rows.length) })),
+    members: rows.map((r, i) => ({ ...r, rank: i + 1, vip: vipTag(r.vipUntil, r.vipLevel, now), online: isOnline(r.lastSeenAt, now), me: r.userId === userId, outcome: outcomeFor(tier, i + 1, rows.length) })),
   };
 }

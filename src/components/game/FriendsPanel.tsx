@@ -1,5 +1,6 @@
 'use client';
 
+import type { VipTag } from '@/lib/game/vip';
 import { Building2, Check, MessageSquare, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -15,7 +16,8 @@ interface Friend {
   username: string;
   role: string;
   level: number;
-  vip: boolean;
+  /** 1.3.3: the VIP level shown (VIP1–5), 0 for VIP time, null without VIP. */
+  vip: VipTag;
   avatarVersion: number;
   online: boolean;
   lastSeen: string;

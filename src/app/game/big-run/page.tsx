@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { CheckCircle2, Circle, Flag } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -45,7 +46,7 @@ export default async function BigRunPage() {
         )}
       </Card>
       <Card title={t('Награда')}>
-        <p className="text-sm text-mist-300">{t('+{0} ТрансКоин всяка седмица и значка „Голям рейс“ първия път. Товарите по етапите плащат +{1}%.', BIG_RUN.coins, Math.round((BIG_RUN.multiplier - 1) * 100))}</p>
+        <p className="text-sm text-mist-300">{t('+{0} всяка седмица и значка „Голям рейс“ първия път. Товарите по етапите плащат +{1}%.', coinsAsMoney(BIG_RUN.coins), Math.round((BIG_RUN.multiplier - 1) * 100))}</p>
       </Card>
     </div>
   );

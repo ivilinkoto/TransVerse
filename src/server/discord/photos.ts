@@ -1,4 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { periodWindow } from '@/lib/game/missions';
 import type { Database } from '@/server/db/client';
 import { users } from '@/server/db/schema';
@@ -65,11 +66,11 @@ export async function photoContest(db: Database, now = new Date()) {
   if (u) {
     await db.transaction(async (tx) => {
       if (await postCoins(tx, u.id, { amount: PHOTO_CONTEST.prizeCoins, reason: 'photo_contest', description: t('Снимка на седмицата ({0})', week.key), idempotencyKey: `photo:${week.key}` })) {
-        await notify(tx, u.id, 'success', () => t('Снимка на седмицата! 📸'), () => t('Твоята снимка в Discord събра най-много ⭐ — +{0} ТрансКоин.', PHOTO_CONTEST.prizeCoins), '/game/shop');
+        await notify(tx, u.id, 'success', () => t('Снимка на седмицата! 📸'), () => t('Твоята снимка в Discord събра най-много ⭐ — +{0}.', coinsAsMoney(PHOTO_CONTEST.prizeCoins)), '/game/shop');
       }
     });
   }
-  const embed = { title: t('📸 Снимка на седмицата'), color: BRAND, description: `<@${best.m.author.id}> · ${best.votes} ⭐${u ? t(' · +{0} ТрансКоин', PHOTO_CONTEST.prizeCoins) : t(' · (свържи акаунта си за наградата)')}`, image: { url: picture(best.m)!.url } };
+  const embed = { title: t('📸 Снимка на седмицата'), color: BRAND, description: `<@${best.m.author.id}> · ${best.votes} ⭐${u ? t(' · +{0}', coinsAsMoney(PHOTO_CONTEST.prizeCoins)) : t(' · (свържи акаунта си за наградата)')}`, image: { url: picture(best.m)!.url } };
   await enqueue(db, `photo-week:${week.key}`, `msg:${channelId}`, { content: `<@${best.m.author.id}>`, allowed_mentions: { parse: [], users: [best.m.author.id] }, embeds: [embed] }, now);
   await announce(db, `photo-week-rank:${week.key}`, 'rankings', () => ({ ping: false, embeds: [embed] }), now);
   return best.m.id;

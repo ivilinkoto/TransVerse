@@ -20,7 +20,7 @@ async function squareImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t('Снимката не може да се обработи.')))), 'image/jpeg', 0.88));
 }
 
-export function AvatarUpload({ userId, username, version, vip }: { userId: string; username: string; version: number; vip: boolean }) {
+export function AvatarUpload({ userId, username, version, vip }: { userId: string; username: string; version: number; vip: boolean | number | null }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);

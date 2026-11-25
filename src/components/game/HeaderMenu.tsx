@@ -1,5 +1,6 @@
 'use client';
 
+import type { VipTag } from '@/lib/game/vip';
 import { useFeature } from './Features';
 import { Bell, Bug, ExternalLink, LogOut, MessagesSquare, ShieldCheck, ThumbsUp, Star } from 'lucide-react';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
@@ -36,7 +37,7 @@ export function NotificationBell({ unread }: { unread: number }) {
 }
 
 /** The avatar menu: level, reputation, account pages, admin and logout. */
-export function AccountMenu({ staff, attention = 0, user, level, reputation }: { staff: boolean; attention?: number; user: { id: string; username: string; role: string; vip: boolean; avatarVersion: number }; level: { level: number; share: number; current: number; next: number }; reputation: number }) {
+export function AccountMenu({ staff, attention = 0, user, level, reputation }: { staff: boolean; attention?: number; user: { id: string; username: string; role: string; vip: VipTag; avatarVersion: number }; level: { level: number; share: number; current: number; next: number }; reputation: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);

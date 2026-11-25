@@ -322,6 +322,7 @@ export interface EventLeader {
   username: string;
   role: string;
   vipUntil: Date | null;
+  vipLevel: number;
   company: string | null;
   tag: string | null;
   amount: number;
@@ -335,6 +336,7 @@ async function leaders(db: DbOrTx, eventId: string, limit: number): Promise<Even
       username: users.username,
       role: users.role,
       vipUntil: users.vipUntil,
+      vipLevel: users.vipLevel,
       company: organizations.name,
       tag: organizations.tag,
       amount: globalEventContributions.amount,

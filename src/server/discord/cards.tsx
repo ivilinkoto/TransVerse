@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { hasVipTag, vipLabel } from '@/lib/game/vip';
 import { join } from 'node:path';
 import { featureLive } from '@/lib/game/features';
 import { LEGEND, legendTier } from '@/lib/game/heritage';
@@ -97,14 +98,14 @@ export async function playerCardImage(db: Database, username: string, now = new 
         <div style={{ display: 'flex', alignItems: 'center', gap: 40, marginTop: 36 }}>
           {avatarSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarSrc} width={180} height={180} style={{ borderRadius: 90, border: `6px solid ${card.vip ? '#f6c343' : ORANGE}` }} alt="" />
+            <img src={avatarSrc} width={180} height={180} style={{ borderRadius: 90, border: `6px solid ${hasVipTag(card.vip) ? '#f6c343' : ORANGE}` }} alt="" />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 180, height: 180, borderRadius: 90, background: ORANGE, fontFamily: 'Exo 2', fontSize: 90 }}>{card.username.slice(0, 1).toUpperCase()}</div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ fontFamily: 'Exo 2', fontSize: 64, color: card.vip ? '#f6c343' : 'white' }}>{tx(card.username)}</span>
-              {card.vip && <span style={{ fontSize: 24, fontWeight: 600, background: '#f6c343', color: BG, borderRadius: 10, padding: '4px 12px' }}>VIP</span>}
+              <span style={{ fontFamily: 'Exo 2', fontSize: 64, color: hasVipTag(card.vip) ? '#f6c343' : 'white' }}>{tx(card.username)}</span>
+              {hasVipTag(card.vip) && <span style={{ fontSize: 24, fontWeight: 600, background: '#f6c343', color: BG, borderRadius: 10, padding: '4px 12px' }}>{vipLabel(card.vip)}</span>}
             </div>
             <span style={{ fontSize: 28, color: MIST }}>{card.company ? `${card.company.name} [${card.company.tag}] · ${card.company.rank}` : card.kind === 'company' ? tr('Собствена фирма') : tr('Независим шофьор')}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6 }}>

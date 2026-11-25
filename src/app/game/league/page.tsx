@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, Clock, Shield, Trophy } from 'lucide-react';
+import { moneyForCoins } from '@/lib/game/coin-cap';
 import Link from 'next/link';
 import { Avatar } from '@/components/game/Avatar';
 import { PlayerName } from '@/components/game/PlayerName';
@@ -92,7 +93,7 @@ export default async function LeaguePage() {
             <ul className="space-y-2 text-sm">
               {[1, 2, 3].map((r) => {
                 const p = leaguePrize(v.tier, r)!;
-                return <li key={r} className="flex justify-between rounded-lg bg-asphalt-850 px-3 py-2"><span>{tr('{0}. място', r)}</span><span className="num text-gold-400">{money(p.cents)} + <span className="text-cyan-glow">{tx(p.coins)} TC</span></span></li>;
+                return <li key={r} className="flex justify-between rounded-lg bg-asphalt-850 px-3 py-2"><span>{tr('{0}. място', r)}</span><span className="num text-gold-400">{money(p.cents + moneyForCoins(p.coins))}</span></li>;
               })}
             </ul>
             <p className="mt-3 text-xs text-mist-400">

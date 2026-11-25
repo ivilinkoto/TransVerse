@@ -1,4 +1,5 @@
 import { and, eq, inArray, lte, or, sql } from 'drizzle-orm';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { money } from '@/lib/format';
 import { canSplit } from '@/lib/game/partial';
 import { DAILY_LOAD, SHARED_LOAD } from '@/lib/game/together';
@@ -118,6 +119,6 @@ export async function closeExpiredSharedLoads(db: Database, now = new Date()) {
 /** The load of the day arrived on time: ТрансКоин for the driver (once). */
 export async function deliverDailyLoad(tx: Tx, contract: { id: string; goods: string }, userId: string) {
   if (await postCoins(tx, userId, { amount: DAILY_LOAD.coins, reason: 'daily_load', description: tr('Товар на деня: {0}', contract.goods), idempotencyKey: `daily-load:${contract.id}` })) {
-    await notify(tx, userId, 'success', () => tr('Товарът на деня е доставен! ⭐'), () => tr('+{0} ТрансКоин за доставката навреме.', DAILY_LOAD.coins), '/game/shop');
+    await notify(tx, userId, 'success', () => tr('Товарът на деня е доставен! ⭐'), () => tr('+{0} за доставката навреме.', coinsAsMoney(DAILY_LOAD.coins)), '/game/shop');
   }
 }

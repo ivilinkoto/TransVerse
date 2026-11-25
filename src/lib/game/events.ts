@@ -7,6 +7,7 @@
  * the top contributors get extra rewards (VIP days included). If the goal is
  * not reached, nobody is rewarded — the point is to pull together.
  */
+import { moneyForCoins } from './coin-cap';
 import { CARGO, type CargoType } from './cargo';
 import { hash, LONG_HAUL_KM, sofiaMidnight, sofiaParts, type DeliveryFacts } from './missions';
 import { t, tx, intlLocale } from '@/i18n/t';
@@ -133,8 +134,9 @@ export function rewardFor(rewards: EventRewards, rank: number | null): Reward {
 export function rewardText(r: Partial<Reward>): string {
   const parts: string[] = [];
   if (r.vipDays) parts.push(`VIP ${r.vipDays} ${r.vipDays === 1 ? t('ден') : t('дни')}`);
-  if (r.coins) parts.push(`${r.coins} TC`);
-  if (r.cents) parts.push(t('{0} лв.', Math.round(r.cents / 100).toLocaleString(intlLocale())));
+  // 1.3.3: event rewards in ТрансКоин are paid in game money (COIN_CAP.centsPerCoin each).
+  const cents = (r.cents ?? 0) + moneyForCoins(r.coins ?? 0);
+  if (cents) parts.push(t('{0} лв.', Math.round(cents / 100).toLocaleString(intlLocale())));
   if (r.xp) parts.push(t('{0} опит', r.xp.toLocaleString(intlLocale())));
   return parts.join(' · ') || '—';
 }

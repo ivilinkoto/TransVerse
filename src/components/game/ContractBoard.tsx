@@ -879,7 +879,7 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
           {hiring && <HireDialog contract={{ id: c.id, goods: c.goods, rewardCents: c.rewardCents, origin: c.origin.name, destination: c.destination.name }} onClose={() => setHiring(false)} />}
           {c.featured && (
             <p className="mt-3 rounded-lg border border-gold-400/40 bg-gold-400/10 px-3 py-2 text-sm text-mist-200">
-              {t('Товарът на деня: по-добро заплащане и +{0} ТрансКоин при доставка навреме. Взима се само цял — от първия, който го поеме.', DAILY_LOAD.coins)}
+              {t('Товарът на деня: по-добро заплащане и +{0} при доставка навреме. Взима се само цял — от първия, който го поеме.', coinsAsMoney(DAILY_LOAD.coins))}
             </p>
           )}
           {c.shared && (

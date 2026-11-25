@@ -396,7 +396,7 @@ export function InventoryGrid({ items, drivers, vehicles, extras }: { items: { i
                 <p className="text-mist-300">{def.kind === 'collectible' ? t('Един остава за албума. Продаваш от повторените: {0}.', spare) : t('Може да продадеш до {0}.', spare)} {t('Днес още {0} от {1}.', coinsAsMoney(capLeft), coinsAsMoney(SELL_DAY_CAP))}</p>
                 <div className="flex items-center gap-2">
                   <input type="number" className="input w-20 py-1 text-sm" min={1} max={spare} value={sellQty} onChange={(e) => setSellQty(Math.max(1, Math.min(Number(e.target.value) || 1, spare)))} aria-label={t('Брой')} />
-                  <button type="button" className="btn-primary flex-1 py-1.5 text-sm" disabled={busy || capLeft < price} onClick={() => void call<{ sold: number; coins: number }>({ type: 'sellItem', itemId: open, qty: sellQty }, (r) => { setNote(t('Продадени: {0} — +{1} ТрансКоин.', r.sold, r.coins)); setPanel(null); })}>
+                  <button type="button" className="btn-primary flex-1 py-1.5 text-sm" disabled={busy || capLeft < price} onClick={() => void call<{ sold: number; coins: number }>({ type: 'sellItem', itemId: open, qty: sellQty }, (r) => { setNote(t('Продадени: {0} — +{1}.', r.sold, coinsAsMoney(r.coins))); setPanel(null); })}>
                     {t('Продай за {0}', coinsAsMoney(Math.min(sellQty, Math.floor(capLeft / price)) * price))}
                   </button>
                 </div>

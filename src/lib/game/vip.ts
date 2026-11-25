@@ -7,6 +7,23 @@ export function isVip(vipUntil: Date | string | null | undefined, now: Date | nu
 export const VIP_MAX_DAYS = 3650;
 
 /**
+ * 1.3.3: the VIP a player shows next to the name — the VIP level (1–5) when there
+ * is one, 0 for VIP time without a level, null without any VIP.
+ */
+export type VipTag = number | null;
+
+export function vipTag(vipUntil: Date | string | null | undefined, level: number | null | undefined, now: Date | number): VipTag {
+  if ((level ?? 0) > 0) return Math.min(5, level!);
+  return isVip(vipUntil, now) ? 0 : null;
+}
+
+/** „VIP3“ for a level, „VIP“ for VIP time without a level. */
+export const vipLabel = (tag: VipTag | boolean | undefined) => (typeof tag === 'number' && tag > 0 ? `VIP${tag}` : 'VIP');
+
+/** Whether a tag (or an older true/false) means the player has VIP of any kind. */
+export const hasVipTag = (tag: VipTag | boolean | undefined) => (typeof tag === 'number' ? true : !!tag);
+
+/**
  * What VIP gives. Deliberately moderate: comfort and prestige, not a big edge —
  * season points and leaderboards are never boosted.
  */

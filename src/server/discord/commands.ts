@@ -1,4 +1,6 @@
 import { and, desc, eq, gt, ilike, isNull, or, sql } from 'drizzle-orm';
+import { hasVipTag, vipLabel } from '@/lib/game/vip';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { ALL_EVENT_TEMPLATES } from '@/lib/game/events';
 import { FEATURES, featureDate, featureLive } from '@/lib/game/features';
 import { dec, int, km, money, moneyPrecise } from '@/lib/format';
@@ -219,7 +221,7 @@ async function profile(db: DbOrTx, username: string | null, viewerId: string | n
   if (!card) return { ephemeral: true, content: tr('Няма играч „{0}“.', username) };
   return {
     embeds: [{
-      title: `${card.username}${card.vip ? ' · VIP' : ''}`,
+      title: `${card.username}${hasVipTag(card.vip) ? ` · ${vipLabel(card.vip)}` : ''}`,
       url: `${appUrl()}/game/players/${encodeURIComponent(card.username)}`,
       color: BRAND,
       image: { url: `${appUrl()}/api/discord/card/player/${encodeURIComponent(card.username)}?v=${pictureVersion()}` },
@@ -502,7 +504,7 @@ async function challenge(db: DbOrTx, userId: string | null, now: Date): Promise<
       color: BRAND,
       description: [
         w.description,
-        tr('Награди: {0} · до <t:{1}:f>', WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${c} TC`).join(' · '), Math.floor(w.endsAt.getTime() / 1000)),
+        tr('Награди: {0} · до <t:{1}:f>', WEEKLY_CHALLENGE.prizes.map((c, i) => `${i + 1}. ${coinsAsMoney(c)}`).join(' · '), Math.floor(w.endsAt.getTime() / 1000)),
         '',
         w.top.length ? w.top.map((r, i) => `**${i + 1}.** ${r.username} · ${int(r.value)} ${w.unit}`).join('\n') : tr('Още няма курс навреме тази седмица.'),
         ...(w.mine ? ['', tr('Ти си **{0}.** от {1} · {2} {3}', w.mine.place, int(w.players), int(w.mine.value), w.unit)] : []),
