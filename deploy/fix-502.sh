@@ -32,8 +32,8 @@ RAM_MB=$(( $(awk '/MemTotal/ {print $2}' /proc/meminfo) / 1024 ))
 WEB_MAX=$(( RAM_MB / 2 )); [ "$WEB_MAX" -lt 1400 ] && WEB_MAX=1400
 WEB_HEAP=640
 mkdir -p /etc/systemd/system/transverse-web.service.d /etc/systemd/system/transverse-worker.service.d
-printf '[Service]\nMemoryHigh=infinity\nMemoryMax=%sM\nEnvironment=NODE_OPTIONS=--max-old-space-size=%s\nTimeoutStopSec=10\nKillMode=mixed\n' "$WEB_MAX" "$WEB_HEAP" > /etc/systemd/system/transverse-web.service.d/memory.conf
-printf '[Service]\nMemoryHigh=infinity\nMemoryMax=600M\nEnvironment=NODE_OPTIONS=--max-old-space-size=384\nTimeoutStopSec=10\nKillMode=mixed\n' > /etc/systemd/system/transverse-worker.service.d/memory.conf
+printf '[Service]\nMemoryHigh=infinity\nMemoryMax=%sM\nEnvironment=NODE_OPTIONS=--max-old-space-size=%s\nEnvironment=MALLOC_ARENA_MAX=2\nTimeoutStopSec=10\nKillMode=mixed\n' "$WEB_MAX" "$WEB_HEAP" > /etc/systemd/system/transverse-web.service.d/memory.conf
+printf '[Service]\nMemoryHigh=infinity\nMemoryMax=600M\nEnvironment=NODE_OPTIONS=--max-old-space-size=384\nEnvironment=MALLOC_ARENA_MAX=2\nTimeoutStopSec=10\nKillMode=mixed\n' > /etc/systemd/system/transverse-worker.service.d/memory.conf
 echo "   server: ${RAM_MB} MB RAM, $(nproc) CPU -> site: limit ${WEB_MAX} MB, heap ${WEB_HEAP} MB; worker: 600 MB, heap 384 MB"
 systemctl daemon-reload
 

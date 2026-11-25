@@ -1651,3 +1651,4 @@ c566f65577	„{0}“ — +{1}, a badge and {2}.	«{0}» — +{1}, значок �
 9a7e6462ae	• **{0}** in the game and the „Discord driver“ badge the first time	• **{0}** в игре и значок «Discord-водитель» в первый раз
 4736d1b7d6	✅ Correct! Link your account in the game to win rewards.	✅ Верно! Привяжи аккаунт в игре, чтобы выигрывать награды.
 724459943c	🏆 First to guess: <@{0}> — +{1}	🏆 Первым угадал <@{0}> — +{1}
+052bb14ebb	outside JavaScript: allocated {0} MB · files {1} MB · shared {2} MB · threads {3}	вне JavaScript: выделено {0} MB · файлы {1} MB · общая {2} MB · потоки {3}

@@ -95,6 +95,7 @@ export default async function AdminSystem({ searchParams }: { searchParams: Prom
               <div className="mt-3 rounded-lg border border-asphalt-700 p-2 text-xs" data-testid="memory-now">
                 <p className="font-semibold">{tr('Паметта на сайта сега')}</p>
                 <p className="num text-mist-300">{tr('общо {0} MB · JavaScript {1} / {2} MB (таван {3} MB) · извън него {4} MB (буфери {5} MB) · работи {6} мин', m.rssMb, m.heapUsedMb, m.heapTotalMb, m.heapLimitMb, m.externalMb, m.buffersMb, Math.round(m.uptimeS / 60))}</p>
+                {m.anonMb !== null && <p className="num text-mist-400" data-testid="memory-split">{tr('извън JavaScript: заделена {0} MB · файлове {1} MB · споделена {2} MB · нишки {3}', m.anonMb, m.fileMb ?? 0, m.shmemMb ?? 0, m.threads ?? 0)}</p>}
                 <p className="num text-mist-400">{tr('граница на услугата: забавяне от {0}, спиране при {1} · сървър: {2} MB RAM, свободни {3} MB, {4} CPU', m.serviceHighMb != null ? `${m.serviceHighMb} MB` : '—', m.serviceMaxMb != null ? `${m.serviceMaxMb} MB` : '—', m.serverTotalMb, m.serverFreeMb, m.cpus)}</p>
               </div>
             );

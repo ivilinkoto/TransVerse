@@ -121,5 +121,23 @@ export function memoryNow() {
     serverTotalMb: mb(totalmem()),
     serverFreeMb: mb(freemem()),
     cpus: cpus().length,
+    ...procMemory(),
   };
+}
+
+/**
+ * Where the memory outside the JavaScript heap is (Linux /proc/self/status): RssAnon is
+ * memory the process allocated (native code, the allocator's arenas); RssFile is files
+ * mapped in (code, fonts — the kernel can drop it); Threads — each can hold its own
+ * allocator arena. Null where /proc is not there.
+ */
+export function procMemory(): { anonMb: number | null; fileMb: number | null; shmemMb: number | null; threads: number | null } {
+  try {
+    const status = readFileSync('/proc/self/status', 'utf8');
+    const kb = (name: string) => { const m = status.match(new RegExp(`^${name}:\\s+(\\d+)\\s+kB`, 'm')); return m ? Math.round(Number(m[1]) / 1024) : null; };
+    const th = status.match(/^Threads:\s+(\d+)/m);
+    return { anonMb: kb('RssAnon'), fileMb: kb('RssFile'), shmemMb: kb('RssShmem'), threads: th ? Number(th[1]) : null };
+  } catch {
+    return { anonMb: null, fileMb: null, shmemMb: null, threads: null };
+  }
 }
