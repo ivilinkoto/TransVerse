@@ -1,5 +1,4 @@
 import { A11ySettings } from '@/components/game/A11y';
-import { tycoonLook } from '@/lib/game/look';
 import { VacationForm } from '@/components/game/VacationForm';
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
@@ -71,25 +70,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </dl>
         </Card>
         {/* 1.2.3: a light look and bigger text. */}
-        {(features.look_settings || features.tycoon_look) && (
+        {features.look_settings && (
           <Card title={t('Изглед')}>
-            {/* 1.4 „Нов облик“: the new look, or the classic one. */}
-            {features.tycoon_look && (
-              <>
-                <div className="label mb-1.5">{t('Облик')}</div>
-                <div className="mb-4 flex flex-wrap gap-2" data-testid="look-style">
-                  {([['tycoon', t('Нов')], ['classic', t('Класически')]] as const).map(([v, label]) => <ActionButton key={v} action={{ type: 'uiPrefs', style: v }} className={(user.uiPrefs?.style ?? 'tycoon') === v ? 'btn-primary px-3 py-1.5 text-sm' : 'btn-ghost px-3 py-1.5 text-sm'}>{label}</ActionButton>)}
-                </div>
-              </>
-            )}
-            {!tycoonLook(features.tycoon_look, user.uiPrefs?.style) && (
-              <>
-                <div className="label mb-1.5">{t('Тема')}</div>
-                <div className="flex flex-wrap gap-2">
-                  {([['dark', t('Тъмна')], ['light', t('Светла')]] as const).map(([v, label]) => <ActionButton key={v} action={{ type: 'uiPrefs', theme: v }} className={(user.uiPrefs?.theme ?? 'dark') === v ? 'btn-primary px-3 py-1.5 text-sm' : 'btn-ghost px-3 py-1.5 text-sm'}>{label}</ActionButton>)}
-                </div>
-              </>
-            )}
+            <div className="label mb-1.5">{t('Тема')}</div>
+            <div className="flex flex-wrap gap-2">
+              {([['dark', t('Тъмна')], ['light', t('Светла')]] as const).map(([v, label]) => <ActionButton key={v} action={{ type: 'uiPrefs', theme: v }} className={(user.uiPrefs?.theme ?? 'dark') === v ? 'btn-primary px-3 py-1.5 text-sm' : 'btn-ghost px-3 py-1.5 text-sm'}>{label}</ActionButton>)}
+            </div>
             <div className="label mb-1.5 mt-4">{t('Размер на текста')}</div>
             <div className="flex flex-wrap gap-2">
               {([['normal', t('Нормален')], ['large', t('По-голям')], ['xl', t('Най-голям')]] as const).map(([v, label]) => <ActionButton key={v} action={{ type: 'uiPrefs', textSize: v }} className={(user.uiPrefs?.textSize ?? 'normal') === v ? 'btn-primary px-3 py-1.5 text-sm' : 'btn-ghost px-3 py-1.5 text-sm'}>{label}</ActionButton>)}

@@ -51,7 +51,6 @@ import { tutorialState } from '@/server/game/tutorial';
 import { isSpring } from '@/lib/game/spring';
 import { t as tr, tx } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
-import { tycoonLook } from '@/lib/game/look';
 
 export async function generateMetadata(): Promise<Metadata> {
   await initLocale();
@@ -106,13 +105,11 @@ export default async function GameLayout({ children, modal }: { children: React.
     if (back) return 'back';
     return null;
   })();
-  // 1.4 „Нов облик“: on unless the player went back to the classic look.
-  const tycoon = tycoonLook(features.tycoon_look, user.uiPrefs?.style);
   return (
     <FeaturesProvider value={features}>
       <PlayerUiProvider value={{ level: user.level, showAll: !!user.uiPrefs?.showAll, staff: testing }}>
-      {(features.look_settings || tycoon) && <LookApply theme={user.uiPrefs?.theme} textSize={user.uiPrefs?.textSize} tycoon={tycoon} />}
-      <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined} data-skin={features.game_ui ? 'game' : undefined} data-style={tycoon ? 'tycoon' : undefined}>
+      {features.look_settings && <LookApply theme={user.uiPrefs?.theme} textSize={user.uiPrefs?.textSize} />}
+      <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined} data-skin={features.game_ui ? 'game' : undefined}>
         <Sidebar badges={navBadges} version={currentVersion(now, testing)} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
           <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
