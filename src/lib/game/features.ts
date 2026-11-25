@@ -237,6 +237,8 @@ export const FEATURES = {
   company_boost: '1.3.2.2',
   // 1.3.2.3 „Части по марки“: rims, stacks, bull bar, stripes, two-tone cab, aero kit and the crown for ТрансКоин.
   brand_parts: '1.3.2.3',
+  // 1.3.2.4 „Турнир на седмицата“: a weekly tournament with a ТрансКоин entry fee (/game/tournament).
+  tournaments: '1.3.2.4',
   // 1.3.3 „Жп линия“: the players' own freight trains on real rail lines (/game/trains).
   trains: '1.3.3',
   // 1.4 „Коледна нощ“: the December season (its pass, tasks and „Дядо Коледа на пътищата“).

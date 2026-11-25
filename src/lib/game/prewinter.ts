@@ -54,3 +54,27 @@ export const BLACK_FRIDAY = {
 } as const;
 
 export const isBlackFriday = (now: Date) => inSeasonWindow(sofiaMonthDay(now), BLACK_FRIDAY);
+
+/**
+ * 1.3.2.4: Black Friday also takes `discount` off the newer ТрансКоин
+ * spending — truck and trailer parts, premium trucks, depot places for coins,
+ * the company booster — and gives `packBonus` more ТрансКоин on every coin
+ * pack bought for real money (the tournaments and speed-ups stay full price).
+ */
+export const BLACK_FRIDAY_MORE = { packBonus: 0.5 } as const;
+
+/** A ТрансКоин price on Black Friday (when `on`), at least 1. */
+export const blackFridayCoins = (coins: number, on: boolean) => (on ? Math.max(1, Math.round(coins * (1 - BLACK_FRIDAY.discount))) : coins);
+
+/**
+ * 1.3.2.4: where Black Friday stands for the dashboard banner — `soon` the
+ * `teaseDays` before it (with the days left), `on` while it runs, else null.
+ */
+export const BLACK_FRIDAY_TEASE = { teaseDays: 3, noticeHour: 9 } as const;
+export function blackFridayPhase(now: Date): { phase: 'soon'; days: number } | { phase: 'on' } | null {
+  if (isBlackFriday(now)) return { phase: 'on' };
+  const year = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', year: 'numeric' }).format(now);
+  const start = new Date(`${year}-${BLACK_FRIDAY.from}T00:00:00+02:00`);
+  const days = Math.ceil((start.getTime() - now.getTime()) / 86_400_000);
+  return days > 0 && days <= BLACK_FRIDAY_TEASE.teaseDays ? { phase: 'soon', days } : null;
+}

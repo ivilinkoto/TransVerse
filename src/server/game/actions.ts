@@ -69,7 +69,8 @@ import { voteCrisis } from '@/server/game/crises';
 import { buyBusLine, collectBusLine, sellBusLine, setBusLine, upgradeBusComfort } from '@/server/game/buses';
 import { speedUpDelivery } from '@/server/game/speed-up';
 import { buyCompanyBoost } from '@/server/game/company-boost';
-import { addWagons, buyTrain, hireTrain, moveTrain, sellTrain, sellWagons, sendBest, sendTrain, setTrainHire, setTrainLine } from '@/server/game/trains';
+import { joinTournament } from '@/server/game/tournament';
+import { addWagons, buyTrain, hireTrain, takeContract, moveTrain, repairTrain, sellTrain, sellWagons, sendBest, sendTrain, setTrainHire, setTrainLine } from '@/server/game/trains';
 import { adoptMascot, petMascot, renameMascot, setMascotAccessory } from '@/server/game/mascot';
 import { assignDriver, driveMyself, fireDriver, hireDriver, trainDriver } from '@/server/game/staff';
 import { TRAIT_IDS } from '@/lib/game/crew';
@@ -237,6 +238,7 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('expandDepot'), depotId: id }),
   z.object({ type: z.literal('expandDepotCoins'), depotId: id }),
   z.object({ type: z.literal('buyCompanyBoost') }),
+  z.object({ type: z.literal('joinTournament'), tier: z.enum(['weekly', 'grand']).default('weekly') }),
   z.object({ type: z.literal('markNotificationsRead') }),
   z.object({ type: z.literal('adoptMascot'), kind: z.enum(['cat', 'dog', 'parrot', 'turtle']), name: z.string().max(60) }),
   z.object({ type: z.literal('renameMascot'), name: z.string().max(60) }),
@@ -256,6 +258,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('hireTrain'), terminal: z.coerce.number().int().positive(), orderId: z.string().regex(/^\d+-\d+:\d+:f?\d+$/).max(80), via: z.union([z.literal('game'), id]) }),
   z.object({ type: z.literal('setTrainHire'), trainId: id, share: z.coerce.number().min(0).max(1) }),
   z.object({ type: z.literal('trainAgain'), trainId: id }),
+  z.object({ type: z.literal('repairTrain'), trainId: id }),
+  z.object({ type: z.literal('takeTrainContract'), contractId: z.string().regex(/^W\d{4}-\d{2}-\d{2}:[a-z0-9-]+$/).max(60) }),
   z.object({ type: z.literal('setTrainLine'), trainId: id, on: z.union([z.boolean(), z.enum(['true', 'false']).transform((v) => v === 'true')]), home: z.coerce.number().int().positive().optional(), far: z.coerce.number().int().min(0).optional(), wagonType: z.enum(['any', 'container', 'tank', 'covered', 'hopper']).optional(), emptyBack: z.union([z.boolean(), z.enum(['true', 'false', 'on']).transform((v) => v !== 'false')]).optional() }),
   z.object({ type: z.literal('voteCrisis'), option: z.enum(['a', 'b']) }),
   z.object({ type: z.literal('learnSkill'), skill: z.enum(['fuel_saver', 'gentle', 'toll_wise', 'haggler', 'punctual', 'long_haul', 'boss', 'convoy', 'night_owl']) }),
@@ -672,8 +676,11 @@ const ACTION_FEATURE: Partial<Record<string, FeatureId>> = {
   buyPremiumTruck: 'premium_trucks',
   expandDepotCoins: 'premium_slots',
   buyCompanyBoost: 'company_boost',
+  joinTournament: 'tournaments',
   setTrainHire: 'trains',
   trainAgain: 'trains',
+  repairTrain: 'trains',
+  takeTrainContract: 'trains',
   setTrainLine: 'trains',
   resetSkills: 'driver_skills',
   adoptMascot: 'mascot',
@@ -886,6 +893,8 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       return { ok: true, id: (await buyDepot(db, user.id, input.cityId)).id };
     case 'expandDepot':
       return { ok: true, costCents: await expandDepot(db, user.id, input.depotId) };
+    case 'joinTournament':
+      return { ok: true, week: await joinTournament(db, user.id, input.tier, new Date()) };
     case 'buyCompanyBoost':
       return { ok: true, until: (await buyCompanyBoost(db, user.id, new Date())).toISOString() };
     case 'expandDepotCoins':
@@ -937,6 +946,11 @@ export async function runAction(db: Database, user: { id: string; role: string; 
       const tr = await hireTrain(db, user.id, input.terminal, input.orderId, input.via, new Date());
       return { ok: true, arriveAt: tr.run?.arriveAt };
     }
+    case 'takeTrainContract':
+      await takeContract(db, user.id, input.contractId, new Date());
+      return { ok: true };
+    case 'repairTrain':
+      return { ok: true, costCents: await repairTrain(db, user.id, input.trainId, new Date()) };
     case 'trainAgain': {
       const tr = await sendBest(db, user.id, input.trainId, new Date());
       return { ok: true, arriveAt: tr.run?.arriveAt };

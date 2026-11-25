@@ -1,3 +1,4 @@
+import { BlackFridayBanner } from '@/components/game/BlackFridayBanner';
 import { TrainsCard } from '@/components/game/TrainsCard';
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { BookOpen, CalendarHeart, Sprout, History, Rocket, RotateCcw, ClipboardList, Flag, GraduationCap, Landmark, Map as MapIcon, Route, Star, Swords, Truck, TrendingDown, TrendingUp } from 'lucide-react';
@@ -411,6 +412,7 @@ export default async function OverviewPage() {
       )}
       <DailyRewardCard streak={user.loginStreak} lastKey={user.dailyClaimKey} now={now} />
 
+      {features.black_friday && <BlackFridayBanner now={now} />}
       <EventBanner events={events} now={now} />
 
       <div className="grid gap-5 sm:gap-6 xl:grid-cols-[1.6fr_1fr]">

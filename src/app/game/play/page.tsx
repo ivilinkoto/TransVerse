@@ -43,6 +43,7 @@ const ABOUT: Record<string, string> = {
   '/game/crisis': 'Кризата на картата и гласуване',
   '/game/road-service': 'Отвори затворените проходи',
   '/game/leaderboards': 'Най-добрите играчи и компании',
+  '/game/tournament': 'Вход 100 TC, награди в ТрансКоин',
   '/game/league': 'Седмичната лига',
   '/game/winter-games': 'Компаниите се състезават',
   '/game/news': 'Седмичникът на TransVerse',

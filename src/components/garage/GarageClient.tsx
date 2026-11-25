@@ -8,6 +8,7 @@ import { api } from '@/lib/client/api';
 import { UPGRADES, type UpgradeId } from '@/lib/game/catalog';
 import { COSMETIC_PARTS, type CosmeticPart, type Cosmetics } from '@/lib/game/cosmetics';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
+import { blackFridayCoins } from '@/lib/game/prewinter';
 import { GARAGE, TUNING_IDS, TUNING_PARTS, ownedKey, truckStats, type Tuning, type TuningPart } from '@/lib/game/garage';
 import { STANDARD_COLORS } from '@/lib/game/vip';
 import { int, money } from '@/lib/format';
@@ -43,7 +44,7 @@ const STAT_LABELS: [keyof ReturnType<typeof truckStats>, string][] = [
   ['winter', 'Зимно сцепление'],
 ];
 
-export function GarageClient({ view, initialTruck, isVip, parts = ['grille', 'lights', 'visor'], vipLevel = 0 }: { view: GarageView; initialTruck?: string | null; isVip?: boolean; /** 1.3.2.3: the parts on sale now. */ parts?: CosmeticPart[]; vipLevel?: number }) {
+export function GarageClient({ view, initialTruck, isVip, parts = ['grille', 'lights', 'visor'], vipLevel = 0, friday = false }: { view: GarageView; initialTruck?: string | null; isVip?: boolean; /** 1.3.2.3: the parts on sale now. */ parts?: CosmeticPart[]; vipLevel?: number; /** 1.3.2.4: Black Friday — parts 30 % off. */ friday?: boolean }) {
   const router = useRouter();
   const start = Math.max(0, view.trucks.findIndex((v) => v.id === initialTruck));
   const [index, setIndex] = useState(start);
@@ -249,7 +250,7 @@ export function GarageClient({ view, initialTruck, isVip, parts = ['grille', 'li
                         <button type="button" className={chip(on)} onClick={() => setPreview({ ...preview, cosmetics: { ...(preview?.cosmetics ?? {}), [part]: s.id } })}>{t(s.label)}</button>
                         {own && on && !fitted && (
                           <button type="button" className="btn-primary px-2 py-0.5 text-[11px]" disabled={busy} onClick={() => run({ type: 'shopBuy', purchase: { item: 'truck_part', vehicleId: truck.id, cosmetic: `${part}:${s.id}` } }, t('Частта е сложена.'))}>
-                            {t('Купи · {0} TC', COSMETIC_PARTS[part].price)}
+                            {t('Купи · {0} TC', blackFridayCoins(COSMETIC_PARTS[part].price, friday))}
                           </button>
                         )}
                       </span>

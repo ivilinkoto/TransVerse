@@ -30,6 +30,7 @@ import { checkAchievements } from './progression';
 import { pick } from './random';
 import { t as tr } from '@/i18n/t';
 import { postCoins } from './coins';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 
 async function level(db: DbOrTx, userId: string) {
   const [u] = await db.select({ level: users.level }).from(users).where(eq(users.id, userId));
@@ -115,7 +116,8 @@ export async function buyPremiumTruck(db: Database, userId: string, modelId: str
     const cap = await fleetCapacity(tx, company.id);
     if (cap.used >= cap.slots) fail('no_capacity', tr('Нямате свободни места в депата. Разширете депо или открийте ново.'));
     const [vehicle] = await tx.insert(vehicles).values({ companyId: company.id, modelId: model!.id, plate: await uniquePlate(tx), color: PREMIUM_TRUCK.color, cityId: depotCityId, purchasePriceCents: model!.priceCents }).returning();
-    await postCoins(tx, userId, { amount: -model!.premium!.coins, reason: 'shop', description: tr('Премиум камион {0} ({1})', model!.name, vehicle!.plate), idempotencyKey: `premium-truck:${vehicle!.id}` }, { requireFunds: true });
+    const friday = isBlackFriday(now) && (await featureFor(tx, userId, 'black_friday', now));
+    await postCoins(tx, userId, { amount: -blackFridayCoins(model!.premium!.coins, friday), reason: 'shop', description: tr('Премиум камион {0} ({1})', model!.name, vehicle!.plate), idempotencyKey: `premium-truck:${vehicle!.id}` }, { requireFunds: true });
     const rental = await retireRentalFor(tx, company.id, vehicle!.id);
     await logActivity(tx, userId, 'vehicle_bought', { vehicleId: vehicle!.id, modelId, rental, premium: true });
     await checkAchievements(tx, userId, company.id);
@@ -342,7 +344,8 @@ export async function expandDepotCoins(db: Database, userId: string, depotId: st
     const company = await companyForUser(tx, userId);
     const [depot] = await tx.select().from(depots).where(and(eq(depots.id, depotId), eq(depots.companyId, company.id))).for('update');
     if (!depot) fail('depot_not_found', tr('Депото не е намерено.'), 404);
-    const price = depotCoinSlotPrice(depot!.slots);
+    const base = depotCoinSlotPrice(depot!.slots);
+    const price = base === null ? null : blackFridayCoins(base, isBlackFriday(now) && (await featureFor(tx, userId, 'black_friday', now)));
     if (price === null) fail('max_slots', depot!.slots < ECONOMY.depotMaxSlots ? tr('Първо разшири депото до {0} места с пари.', ECONOMY.depotMaxSlots) : tr('Депото е с максимален капацитет.'));
     await postCoins(tx, userId, { amount: -price!, reason: 'shop', description: tr('Разширение на депо ({0} места)', depot!.slots + 1), idempotencyKey: `depot:${depot!.id}:coin-slot:${depot!.slots + 1}` }, { requireFunds: true });
     await tx.update(depots).set({ slots: depot!.slots + 1 }).where(eq(depots.id, depot!.id));

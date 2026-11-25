@@ -89,3 +89,63 @@ describe('1.3.3: the locomotive and the wagons are bought apart', () => {
     expect(WAGONS.container.priceCents).toBeGreaterThan(0);
   });
 });
+
+describe('1.3.3: train wear and repair', () => {
+  it('a run wears the train; worn trains use more energy and stop below the limit; a repair brings it back', async () => {
+    const { conditionOf, runCost, runWear, trainRepairCents, wornEnergy } = await import('@/lib/game/trains');
+    const { moveTrain, repairTrain, emptyRoutes } = await import('@/server/game/trains');
+    expect(wornEnergy(100)).toBe(1);
+    expect(wornEnergy(TRAINS.wear.slowFrom - 20)).toBeCloseTo(1.2);
+    expect(conditionOf({})).toBe(100);
+    const p = await owner();
+    const now = new Date();
+    const train = await trainWith(p.userId, { loco: 'danubia-d22', wagonType: 'hopper', wagons: 10, terminalId: SOFIA }, now);
+    const path = emptyRoutes(train, now).find((x) => DOMESTIC.has(x.to) && x.stops.length === 2)!;
+    const moved = await moveTrain(db(), p.userId, train.id, path.to, now);
+    expect(moved.condition).toBeCloseTo(100 - runWear(path, moved.run!.grossTons), 5);
+    // Worn below the limit: no departure; heavier energy on the way down.
+    await db().update(jobState).set({ value: { ...(await trainRow(train.id)), run: null, at: path.to, condition: TRAINS.wear.minToRun - 1 } }).where(eq(jobState.key, `train:${train.id}`));
+    expect(await code(moveTrain(db(), p.userId, train.id, SOFIA, now))).toBe('worn');
+    expect(runCost('danubia-d22', path, 500, false, 40).energy).toBeGreaterThan(runCost('danubia-d22', path, 500, false, 100).energy);
+    const worn = await trainRow(train.id);
+    const cost = await repairTrain(db(), p.userId, train.id, now);
+    expect(cost).toBe(trainRepairCents(worn));
+    expect((await trainRow(train.id)).condition).toBe(100);
+    expect(await code(repairTrain(db(), p.userId, train.id, now))).toBe('not_needed');
+  });
+});
+
+describe('1.3.3: weekly train contracts', () => {
+  it('six contracts a week, the same for everyone; two at most; runs count both ways and the last pays the bonus', async () => {
+    const { weeklyContracts, runCounts, TRAIN_CONTRACTS } = await import('@/lib/game/trains');
+    const { contractsView, takeContract } = await import('@/server/game/trains');
+    const { weekKey } = await import('@/lib/game/leagues');
+    const { ledgerEntries } = await import('@/server/db/schema');
+    const week = weekKey(new Date());
+    const list = weeklyContracts(week);
+    expect(list).toEqual(weeklyContracts(week));
+    expect(list.length).toBe(TRAIN_CONTRACTS.perWeek);
+    expect(new Set(list.map((c) => c.id)).size).toBe(list.length);
+    const c = list[0]!;
+    expect(runCounts(c, { from: c.b, to: c.a, orderId: 'x' })).toBe(true);
+    expect(runCounts(c, { from: c.a, to: c.b, orderId: null })).toBe(false);
+    const p = await owner();
+    const now = new Date();
+    await takeContract(db(), p.userId, list[0]!.id, now);
+    await takeContract(db(), p.userId, list[1]!.id, now);
+    expect(await code(takeContract(db(), p.userId, list[2]!.id, now))).toBe('max_contracts');
+    // Loaded runs between the two terminals, settled one after the other.
+    const train = await trainWith(p.userId, { loco: 'danubia-d22', wagonType: 'hopper', wagons: 5, terminalId: c.a }, now);
+    for (let i = 0; i < c.runs; i++) {
+      const arrive = new Date(now.getTime() - 60_000 + i);
+      const run = { lines: [], stops: [c.a, c.b], from: i % 2 ? c.b : c.a, to: i % 2 ? c.a : c.b, departAt: new Date(arrive.getTime() - 3_600_000).toISOString(), arriveAt: arrive.toISOString(), legs: [], orderId: `test-${i}`, wagonType: 'hopper', goods: 'Зърно', tons: 300, grossTons: 400, payCents: 0, costCents: 0 };
+      await db().update(jobState).set({ value: { ...(await trainRow(train.id)), run } }).where(eq(jobState.key, `train:${train.id}`));
+      await settleTrains(db(), new Date(arrive.getTime() + 1000));
+    }
+    const view = await contractsView(db(), p.userId, now);
+    expect(view.contracts.find((x) => x.id === c.id)?.state).toEqual({ runs: c.runs, done: true });
+    const [acc] = await db().select({ id: companies.id }).from(companies).where(eq(companies.ownerId, p.userId));
+    const paid = await db().select().from(ledgerEntries).where(eq(ledgerEntries.idempotencyKey, `train-contract:${p.userId}:${c.id}`));
+    expect(paid.map((x) => [x.companyId, x.amountCents])).toEqual([[acc!.id, c.bonusCents]]);
+  });
+});

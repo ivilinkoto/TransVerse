@@ -8,6 +8,7 @@ import { refreshVipLevel } from '@/server/game/vip-levels';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { euro, giftable, paidProduct } from '@/lib/game/payments';
+import { isBlackFriday } from '@/lib/game/prewinter';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { payments, users } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
@@ -81,6 +82,7 @@ export async function startPayment(db: Database, userId: string, input: z.output
   if (product!.feature && !(await featureFor(db, userId, product!.feature, now))) fail('not_released', t('Това идва със следващото обновление.'), 403);
   if ((product!.id === 'pass_premium' || product!.id === 'pass_plus') && !(await premiumPassOpen(db, userId, now))) fail('already_premium', t('Вече имаш премиум пропуска за този сезон.'), 409);
   if (product!.id === 'level_offer' && !(await levelOfferOf(db, userId, now))) fail('offer_closed', t('Офертата за ниво е изтекла или вече е купена.'), 409);
+  if (product!.id === 'black_friday_pack' && !isBlackFriday(now)) fail('not_in_season', t('Пакетът „Черен петък“ се продава само от 27 до 30 ноември.'), 409);
   // 1.3.2.2: a ТрансКоин pack for another player.
   let giftUserId: string | null = null;
   if (input.giftTo) {

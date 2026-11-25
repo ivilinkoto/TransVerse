@@ -1515,3 +1515,90 @@ fccdfe4608	The locomotive comes without wagons. You buy the wagons apart — in 
 e6bd8b6215	📍 At terminal {0} · no wagons	📍 На станции {0} · без вагонов
 d348662411	trucks fleet vehicles repair service trailer couple tyres upgrades insurance sell	грузовики автопарк транспорт ремонт сервис прицеп сцепить шины улучшения страховка продать
 528eaca554	trailers trailer sell upgrades	прицепы прицеп продать улучшения
+7577e3b457	{0} loaded runs · bonus {1}	{0} рейсов с грузом · бонус {1}
+e3a3a4360e	{0} of {1} runs	{0} из {1} рейсов
+b422d48990	{0} ⇄ {1}: {2} runs. Bonus {3} lv.	{0} ⇄ {1}: {2} рейсов. Бонус {3} лв.
+f3fa9906b0	You already have this contract.	У тебя уже есть этот договор.
+896260ddf5	The train is in excellent condition.	Поезд в отличном состоянии.
+257ae7e574	The train is on the way. It is repaired at the terminal.	Поезд в пути. Ремонт — на станции.
+33268a5a80	The train is too worn to run ({0}% or less). Repair it.	Поезд слишком изношен для рейса ({0}% и меньше). Отремонтируй его.
+c6020c4637	Every run wears it by the km, the weight and the hills. Below {0}% it uses more energy, below {1}% it does not leave.	Каждый рейс изнашивает его по километрам, весу и уклону. Ниже {0}% тратит больше энергии, ниже {1}% не отправляется.
+57e5f6a8b5	Every run wears the locomotive and the wagons by the km, the weight and the hills. Below 70% the train uses more energy, below 25% it does not leave. The repair is in the train's window.	Каждый рейс изнашивает локомотив и вагоны по километрам, весу и уклону. Ниже 70% поезд тратит больше энергии, ниже 25% не отправляется. Ремонт — в окне поезда.
+b5cf04cde0	Every week there are six contracts between neighbouring terminals: carry the number of loaded runs between the two (either way) by Sunday and get a bonus on top of the pay. Up to two contracts a week; hired trains count too.	Каждую неделю шесть договоров между соседними станциями: сделай нужное число рейсов с грузом между ними (в любую сторону) до воскресенья и получи бонус сверх оплаты. До двух договоров в неделю; арендованные поезда тоже считаются.
+577adcbf1e	Contract {0} ⇄ {1}: {2} runs	Договор {0} ⇄ {1}: {2} рейсов
+9eb54c29b7	Train contract	Договор на поезд
+99bab1f6b7	Contracts of the week	Договоры недели
+d55eae7cc0	Carry this many loaded runs between the two terminals (either way, any goods) by Sunday and you get the bonus on top of the orders' pay. A hired train counts too.	Сделай столько рейсов с грузом между двумя станциями (в любую сторону, любой товар) до воскресенья и получишь бонус сверх оплаты заказов. Арендованный поезд тоже считается.
+8f4600234f	Wear and repair	Износ и ремонт
+5586511843	Worn — uses {0}% more energy.	Изношен — тратит на {0}% больше энергии.
+16f9412bfd	At most {0} contracts a week.	Не более {0} договоров в неделю.
+76407e79d3	Take the contract	Взять договор
+d35636d269	Taken {0} of {1} · until {2}	Взято {0} из {1} · до {2}
+2554c12cd8	Train repair {0}	Ремонт поезда {0}
+61ac175bc4	Condition of the locomotive and the wagons	Состояние локомотива и вагонов
+8a46193d6c	Too worn — it does not leave until you repair it.	Слишком изношен — не отправится, пока не отремонтируешь.
+e4ca58b679	This contract is no longer valid.	Этот договор больше не действует.
+910b046a58	worn — needs a repair	изношен — нужен ремонт
+3dbbcba44a	✓ Done — the bonus is paid	✓ Выполнен — бонус выплачен
+2af1bee9a8	📜 The contract is done!	📜 Договор выполнен!
+fa234a188c	{0} t — the prize is {1} TC.	{0} т — награда {1} TC.
+ef7e2241db	With fewer than three players the entry is given back. Tons count only from your entry — the earlier you enter, the better.	Если записалось меньше трёх, взнос возвращается. Тонны считаются только с момента записи — чем раньше войдёшь, тем лучше.
+8964057af3	You are already in the tournament this week.	Ты уже участвуешь в турнире на этой неделе.
+134313989e	Enter · {0} TC	Войти · {0} TC
+208b27fd11	Enter for {0} TC and deliver the most tons by Sunday.	Войди за {0} TC и привези больше всех тонн до воскресенья.
+d8d6858a72	Every week — a tournament with a ТрансКоин entry: deliver the most tons and take the prize pool.	Каждую неделю — турнир со взносом в ТрансКоинах: привези больше всех тонн и забери призовой фонд.
+07754d9cb0	Entry 100 TC, prizes in ТрансКоин	Взнос 100 TC, призы в ТрансКоинах
+271827918d	Entry 100 TC. The score is the tons your trucks deliver from your entry until Sunday. 80% of the entries are the prize pool — in ТрансКоин for the first three places (50% / 30% / 20%).	Взнос 100 TC. Очки — тонны, которые твои грузовики привезут с момента записи до воскресенья. 80% взносов — призовой фонд, в ТрансКоинах для первых трёх мест (50% / 30% / 20%).
+5d0c3d41e7	Enter the tournament for {0} TC?	Войти в турнир за {0} TC?
+2a775ca357	Weekly tournament entry	Взнос за еженедельный турнир
+6117377920	Fewer than {0} players entered — your {1} TC entry is given back.	Записалось меньше {0} игроков — твой взнос {1} TC возвращён.
+f12acc9991	Weekly tournament prize	Приз еженедельного турнира
+bec672fea7	The prize pool	Призовой фонд
+166acb08c1	{0} more players and the tournament takes place.	Ещё {0} участников — и турнир состоится.
+e9fd0294e1	Nobody has entered this week yet. Be the first.	На этой неделе ещё никто не вошёл. Будь первым.
+5495611a4b	On equal tons, whoever entered first is ahead.	При равных тоннах выше тот, кто вошёл раньше.
+817fca1340	The week ends on Monday at 00:00; the prizes come within half an hour, with a notification.	Неделя заканчивается в понедельник в 00:00; призы приходят в течение получаса, с уведомлением.
+95282da113	Weekly tournament — place {0}	Еженедельный турнир — {0} место
+d3da34f5e7	The weekly tournament is over	Еженедельный турнир окончен
+e0cbe913fc	You are {0} of {1} with {2} t. The new tournament has already started.	Ты {0} из {1} с {2} т. Новый турнир уже начался.
+f669b268b2	Tons count from the moment you enter — the earlier, the better.	Тонны считаются с момента входа — чем раньше, тем лучше.
+19877e903d	The score is the tons your trucks deliver from your entry until the end of the week (Monday 00:00). {0}% of the entries are the prize pool — in ТрансКоин for the first three places ({1}). With fewer than {2} players the entry is given back.	Очки — тонны, которые твои грузовики привезут с момента записи до конца недели (понедельник 00:00). {0}% взносов — призовой фонд, в ТрансКоинах для первых трёх мест ({1}). Если записалось меньше {2} игроков, взнос возвращается.
+091b1b7b78	Tournament of the week	Турнир недели
+c83ccb3374	The tournament is in „Games and rewards“ → Rankings → Tournament of the week (and as a card on „All“).	Турнир — в «Игры и награды» → Рейтинги → Турнир недели (и карточкой во «Всё»).
+80cd9cf997	The tournament did not take place	Турнир не состоялся
+4053443bf4	The tournament did not take place — the entry is given back	Турнир не состоялся — взнос возвращён
+4866b27109	You are in: place {0} with {1} t.	Ты участвуешь: {0} место с {1} т.
+c103f7c7a8	Fair even with few players	Честно даже для немногих игроков
+b6f9672981	from {0} players up	от {0} участников
+69aa486aa6	🏆 Place {0} in the weekly tournament!	🏆 {0} место в еженедельном турнире!
+b3b8bdd202	{0} Place {1} — {2}!	{0} {1} место — {2}!
+e61917769d	{0} is from level {1}.	{0} — с уровня {1}.
+b6e849efda	{0} did not take place	{0} не состоялся
+8937ca8527	{0} did not take place — the entry is given back	{0} не состоялся — взнос возвращён
+5ed0cc1bdd	{0} is over	{0} окончен
+fe874ebaec	{0} — place {1}	{0} — {1} место
+8d7094cce0	You are already in this tournament this week.	Ты уже участвуешь в этом турнире на этой неделе.
+fa95304899	Enter, deliver the most tons by Sunday and take the prize in ТрансКоин.	Войди, привези больше всех тонн до воскресенья и забери приз в ТрансКоинах.
+344c55a661	Every week — two tournaments with a ТрансКоин entry: deliver the most tons and take the prize pool.	Каждую неделю — два турнира со взносом в ТрансКоинах: привези больше всех тонн и забери призовой фонд.
+fdab8ceb44	Enter „{0}“ for {1} TC?	Войти в «{0}» за {1} TC?
+b53c0311b0	Entry: {0}	Взнос: {0}
+612fcd1019	The Grand Cup	Большой кубок
+f1944aab46	For the big fleets: 500 TC entry, from level 20, with its own table and a five times bigger pool. You can enter both tournaments.	Для больших автопарков: взнос 500 TC, с 20 уровня, со своей таблицей и в пять раз большим фондом. Можно участвовать в обоих турнирах.
+a6a4df23a3	The score is the tons your trucks deliver from your entry until the end of the week (Monday 00:00). {0}% of the entries are the prize pool — in ТрансКоин for the first three places ({1}). With fewer than {2} players the entry is given back. You can enter both tournaments.	Очки — тонны, которые твои грузовики привезут с момента записи до конца недели (понедельник 00:00). {0}% взносов — призовой фонд, в ТрансКоинах для первых трёх мест ({1}). Если записалось меньше {2} игроков, взнос возвращается. Можно участвовать в обоих турнирах.
+e5ed40c857	entry {0} TC	взнос {0} TC
+1f7d31923c	3,000 TC, 30 days of VIP and 3 gold cases — only from 27 to 30 November.	3 000 TC, 30 дней VIP и 3 золотых кейса — только с 27 по 30 ноября.
+15d75582a1	From 27 to 30 November, 30% off also the truck and trailer parts, the premium trucks, the depot places and the company booster; +50% ТрансКоин on every TC pack and the Black Friday pack: 3,000 TC, 30 days of VIP and 3 gold cases.	С 27 по 30 ноября −30% и на детали для грузовика и прицепа, премиум-грузовики, места в депо и бустер компании; +50% ТрансКоинов на каждый пакет TC и пакет «Чёрная пятница»: 3 000 TC, 30 дней VIP и 3 золотых кейса.
+4ff8c5e7f9	Black Friday pack	Пакет «Чёрная пятница»
+c300331750	The Black Friday pack is sold only from 27 to 30 November.	Пакет «Чёрная пятница» продаётся только с 27 по 30 ноября.
+0d18dba806	Black Friday +{0}%	Чёрная пятница +{0}%
+6b8ae0410d	Black Friday — for the new things too	Чёрная пятница — и для новинок
+26b968b4c1	🛍 Black Friday: +{0}% ТрансКоин on every TC pack.	🛍 Чёрная пятница: +{0}% ТрансКоинов на каждый пакет TC.
+7bc2dfbdff	Until 30 November: {0}% off in the shop (also the parts, premium trucks and depot places), +{1}% ТрансКоин on every pack and the Black Friday pack.	До 30 ноября: −{0}% в магазине (и на детали, премиум-грузовики и места в депо), +{1}% ТрансКоинов на каждый пакет и пакет «Чёрная пятница».
+ffec934464	Save the date: 27–30 November	Запомни даты: 27–30 ноября
+17675d7b74	To the shop →	В магазин →
+86f47f80a1	Three days before Black Friday the dashboard shows how long is left, and on the morning of 27 November everyone gets a notification.	За три дня до Чёрной пятницы на панели видно, сколько осталось, а утром 27 ноября все получают уведомление.
+ba0140dc5c	Black Friday starts tomorrow	Чёрная пятница начинается завтра
+3388670c7a	Black Friday comes in {0} days	Чёрная пятница через {0} дн.
+dc00480917	Black Friday is on — until 30 November	Чёрная пятница идёт — до 30 ноября
+0cb9830f31	{0}% off nearly everything for ТрансКоин (also the parts and premium trucks), +{1}% TC on every pack and the Black Friday pack for 4 days only.	−{0}% почти на всё за ТрансКоины (и на детали и премиум-грузовики), +{1}% TC на каждый пакет и пакет «Чёрная пятница» — только 4 дня.
+d33d9abf90	🛍 Black Friday has started!	🛍 Чёрная пятница началась!

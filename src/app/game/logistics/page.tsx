@@ -6,6 +6,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { SelectAction } from '@/components/ui/SelectAction';
 import { int, money } from '@/lib/format';
 import { depotCoinSlotPrice, ECONOMY } from '@/lib/game/economy';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { cities, cityMarkets, depots, ports, vehicles } from '@/server/db/schema';
 import { gameContext } from '@/server/game/context';
 import { depotSlotCostCents } from '@/server/game/fleet';
@@ -22,7 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function LogisticsPage() {
   await initLocale();
-  const { db, user, company, features } = await gameContext();
+  const { db, user, company, now, features } = await gameContext();
+  // 1.3.2.4: Black Friday takes 30 % off the places for ТрансКоин too.
+  const friday = !!features.black_friday && isBlackFriday(now);
   const myDepots = await db
     .select({ id: depots.id, slots: depots.slots, cityId: depots.cityId, name: cities.nameBg, country: cities.countryCode, createdAt: depots.createdAt })
     .from(depots)
@@ -64,7 +67,7 @@ export default async function LogisticsPage() {
                 {d.slots < ECONOMY.depotMaxSlots ? (
                   <ActionButton action={{ type: 'expandDepot', depotId: d.id }} className="btn-ghost px-3 py-1.5 text-xs" disabled={company.balanceCents < depotSlotCostCents(d.slots)}>{t('+1 място · {0}', money(depotSlotCostCents(d.slots)))}</ActionButton>
                 ) : features.premium_slots && depotCoinSlotPrice(d.slots) ? (
-                  <ActionButton action={{ type: 'expandDepotCoins', depotId: d.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={user.coins < depotCoinSlotPrice(d.slots)!} confirm={t('+1 място в депото за {0} TC?', depotCoinSlotPrice(d.slots)!)}>{t('+1 място · {0} TC', depotCoinSlotPrice(d.slots)!)}</ActionButton>
+                  <ActionButton action={{ type: 'expandDepotCoins', depotId: d.id }} className="btn-gold px-3 py-1.5 text-xs" disabled={user.coins < blackFridayCoins(depotCoinSlotPrice(d.slots)!, friday)} confirm={t('+1 място в депото за {0} TC?', blackFridayCoins(depotCoinSlotPrice(d.slots)!, friday))}>{t('+1 място · {0} TC', blackFridayCoins(depotCoinSlotPrice(d.slots)!, friday))}</ActionButton>
                 ) : <span className="text-xs text-mist-400">{t('Пълно')}</span>}
               </td>
             </tr>

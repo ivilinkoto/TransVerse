@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { COSMETIC_IDS, COSMETIC_PARTS, TRAILER_COSMETIC_IDS, TRAILER_COSMETIC_PARTS } from '@/lib/game/cosmetics';
+import { blackFridayCoins } from '@/lib/game/prewinter';
 import type { ShopItem } from '@/lib/game/shop';
 import { useFeature } from '@/components/game/Features';
 import { GameWindow } from '@/components/gameui/GameWindow';
@@ -34,6 +35,7 @@ export function ShopBuy({
   compact = false,
   parts,
   vipLevel = 0,
+  friday = false,
 }: {
   item: ShopItem;
   balance: number;
@@ -52,6 +54,8 @@ export function ShopBuy({
   parts?: string[];
   /** 1.3.2.3: some styles need a VIP level. */
   vipLevel?: number;
+  /** 1.3.2.4: Black Friday — the parts are 30 % off too. */
+  friday?: boolean;
 }) {
   const router = useRouter();
   const usable = vehicles.filter((v) => (item.needs === 'vehicle_city' ? v.idle : v.owned && (item.needs !== 'vehicle' || v.idle)));
@@ -70,7 +74,7 @@ export function ShopBuy({
   const gameUi = useFeature('game_ui');
   const [open, setOpen] = useState(false);
 
-  const price = item.id === 'paint' && vip ? 0 : item.needs === 'vehicle_cosmetic' ? COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof COSMETIC_PARTS].price : item.needs === 'trailer_cosmetic' ? TRAILER_COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof TRAILER_COSMETIC_PARTS].price : item.price;
+  const price = item.id === 'paint' && vip ? 0 : item.needs === 'vehicle_cosmetic' ? blackFridayCoins(COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof COSMETIC_PARTS].price, friday) : item.needs === 'trailer_cosmetic' ? blackFridayCoins(TRAILER_COSMETIC_PARTS[cosmetic.split(':')[0] as keyof typeof TRAILER_COSMETIC_PARTS].price, friday) : item.price;
   const needsVehicle = item.needs?.startsWith('vehicle');
   const missing = (needsVehicle && !vehicleId) || (item.needs === 'vehicle_city' && !cityId) || (item.needs === 'depot_city' && (!depotId || !cityId)) || (item.needs === 'trailer_cosmetic' && !trailerId) || ((item.needs === 'vehicle_plate' || item.needs === 'username' || item.needs === 'recipient') && text.trim().length < 2);
 
@@ -140,7 +144,7 @@ export function ShopBuy({
       {item.needs === 'vehicle_cosmetic' && (
         <select className="input py-2 text-sm" value={cosmetic} onChange={(e) => setCosmetic(e.target.value)} aria-label={tr('Част')}>
           {COSMETIC_IDS.filter((part) => !parts || parts.includes(part)).map((part) => (
-            <optgroup key={part} label={`${tx(COSMETIC_PARTS[part].label)} · ${COSMETIC_PARTS[part].price} TC${COSMETIC_PARTS[part].tractorOnly ? ` · ${tr('за влекачи')}` : ''}`}>
+            <optgroup key={part} label={`${tx(COSMETIC_PARTS[part].label)} · ${blackFridayCoins(COSMETIC_PARTS[part].price, friday)} TC${COSMETIC_PARTS[part].tractorOnly ? ` · ${tr('за влекачи')}` : ''}`}>
               {COSMETIC_PARTS[part].styles.map((st) => <option key={st.id} value={`${part}:${st.id}`} disabled={!!st.vip && vipLevel < st.vip}>{tx(COSMETIC_PARTS[part].label)}: {tx(st.label)}{st.vip ? ` (VIP${st.vip})` : ''}</option>)}
             </optgroup>
           ))}
@@ -154,7 +158,7 @@ export function ShopBuy({
             </select>
             <select className="input py-2 text-sm" value={cosmetic} onChange={(e) => setCosmetic(e.target.value)} aria-label={tr('Част за ремаркето')}>
               {TRAILER_COSMETIC_IDS.map((part) => (
-                <optgroup key={part} label={`${tx(TRAILER_COSMETIC_PARTS[part].label)} · ${TRAILER_COSMETIC_PARTS[part].price} TC`}>
+                <optgroup key={part} label={`${tx(TRAILER_COSMETIC_PARTS[part].label)} · ${blackFridayCoins(TRAILER_COSMETIC_PARTS[part].price, friday)} TC`}>
                   {TRAILER_COSMETIC_PARTS[part].styles.map((st) => <option key={st.id} value={`${part}:${st.id}`}>{tx(TRAILER_COSMETIC_PARTS[part].label)}: {tx(st.label)}</option>)}
                 </optgroup>
               ))}

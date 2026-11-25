@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { PageHeader } from '@/components/ui';
+import { Meter, PageHeader } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FormAction } from '@/components/ui/FormAction';
 import { TrainArt } from '@/components/vehicles/trains';
@@ -65,6 +65,16 @@ export default async function TrainsPage({ searchParams }: { searchParams: Promi
                   <p className="text-xs text-mist-400">{loco.electric ? t('Електрически') : t('Дизелов')} · {t('{0} kW', int(loco.powerKw))} · {t('{0} от {1} вагона', wagonCount(tr.wagons), loco.maxWagons)} · {t('{0} т празен, до {1} т на равно', int(tareTons(tr.wagons)), int(loco.maxTons))}</p>
                   <p className="text-xs text-mist-400">{WAGON_TYPES.filter((k) => tr.wagons[k]).map((k) => `${WAGON_ICON[k]} ${tr.wagons[k]} ${tx(WAGONS[k].name)}`).join(' · ')}</p>
                   {run ? <RunStatus run={run} now={now} /> : <p className="text-mist-200">📍 {t('На гара {0}', place(tr.at))}{' · '}{t('Поръчки за този влак: {0}', fit)}</p>}
+                  {/* 1.3.3: wear — the condition, what it does and the repair. */}
+                  <div className="rounded-xl bg-asphalt-900/60 p-3" data-testid="train-condition">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="text-mist-300">{t('Състояние на локомотива и вагоните')}</span>
+                      <span className={`num font-semibold ${tr.condition < TRAINS.wear.minToRun ? 'text-loss' : tr.condition < TRAINS.wear.slowFrom ? 'text-amber-sig' : 'text-profit'}`}>{Math.round(tr.condition)}%</span>
+                    </div>
+                    <Meter value={tr.condition} className="mt-1.5" />
+                    <p className="mt-1.5 text-[11px] text-mist-400">{tr.condition < TRAINS.wear.minToRun ? t('Твърде износен — не тръгва, докато не го ремонтираш.') : tr.condition < TRAINS.wear.slowFrom ? t('Износен — харчи с {0}% повече енергия.', Math.round(TRAINS.wear.slowFrom - tr.condition)) : t('Всеки курс го износва според километрите, тежестта и наклона. Под {0}% харчи повече енергия, под {1}% не тръгва.', TRAINS.wear.slowFrom, TRAINS.wear.minToRun)}</p>
+                    {tr.repairCents > 0 && !run && <ActionButton action={{ type: 'repairTrain', trainId: tr.id }} className="btn-primary mt-2 px-3 py-1.5 text-xs">{t('Ремонт · {0}', money(tr.repairCents))}</ActionButton>}
+                  </div>
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
                     <div className="stat-tile rounded-xl p-2"><b className="block text-base text-white">{tr.runs}</b>{t('курса')}</div>
                     <div className="stat-tile rounded-xl p-2"><b className="block text-base text-white">{int(tr.tons)}</b>{t('тона')}</div>
@@ -127,7 +137,7 @@ export default async function TrainsPage({ searchParams }: { searchParams: Promi
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-display text-lg font-bold text-white">{loco.name}</p>
-                  <p className="text-xs text-mist-400">{run ? t('🛤️ На път към {0}', place(run.to)) : wagonCount(tr.wagons) === 0 ? t('📍 На гара {0} · без вагони', place(tr.at)) : t('📍 На гара {0} · поръчки: {1}', place(tr.at), fit)}{lineText ? ` · ${lineText}` : ''}</p>
+                  <p className="text-xs text-mist-400">{tr.condition < TRAINS.wear.minToRun ? `⚠️ ${t('износен — нужен е ремонт')} · ` : ''}{run ? t('🛤️ На път към {0}', place(run.to)) : wagonCount(tr.wagons) === 0 ? t('📍 На гара {0} · без вагони', place(tr.at)) : t('📍 На гара {0} · поръчки: {1}', place(tr.at), fit)}{lineText ? ` · ${lineText}` : ''}</p>
                 </div>
               </div>
               <TrainArt loco={tr.loco} wagons={list} show={4} className="h-14 w-full max-w-xl" />

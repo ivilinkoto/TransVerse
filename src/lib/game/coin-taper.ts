@@ -11,7 +11,7 @@ export const COIN_TAPER_STEPS: { from: string; factor: number }[] = [
 ];
 
 /** Reasons that are not rewards: bought, gifted, refunded, the team's, promo codes, sales and bids. */
-export const UNTAPERED_REASONS: readonly string[] = ['admin_grant', 'admin_remove', 'purchase', 'shop', 'gift_received', 'refund', 'payment_refund', 'promo', 'item_sale', 'plate_auction'];
+export const UNTAPERED_REASONS: readonly string[] = ['admin_grant', 'admin_remove', 'purchase', 'shop', 'gift_received', 'refund', 'payment_refund', 'promo', 'item_sale', 'plate_auction', 'tournament_prize'];
 
 /** The share of a reward in ТрансКоин paid out at `now` (1 before the first step). */
 export function coinTaperFactor(now: Date): number {
