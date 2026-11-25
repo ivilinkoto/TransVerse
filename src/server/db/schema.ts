@@ -698,11 +698,21 @@ export const activity = pgTable(
 );
 
 /** Bookkeeping for background jobs (last run, leases). */
-export const jobState = pgTable('job_state', {
-  key: text('key').primaryKey(),
-  value: jsonb('value').notNull(),
-  updatedAt: ts('updated_at').notNull().defaultNow(),
-});
+export const jobState = pgTable(
+  'job_state',
+  {
+    key: text('key').primaryKey(),
+    value: jsonb('value').notNull(),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  // 1.3.3: the trains live here (`train:<id>`); a player's trains are found by owner or hirer without reading every row.
+  (t) => [
+    // Keys are looked up by prefix (`train:`, `train-contract:<user>:<week>:`, `tourney:…`); text_pattern_ops makes `like 'prefix%'` an index range whatever the collation.
+    index('job_state_key_prefix_idx').on(t.key.op('text_pattern_ops')),
+    index('job_state_train_owner_idx').on(sql`(value->>'ownerId')`).where(sql`key like 'train:%'`),
+    index('job_state_train_hirer_idx').on(sql`(value->'run'->>'hirerId')`).where(sql`key like 'train:%'`),
+  ],
+);
 
 // ── Support and administration ────────────────────────────────────────────
 

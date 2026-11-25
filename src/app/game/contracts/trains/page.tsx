@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { PageHeader } from '@/components/ui';
+import { FirstTrainGuide } from '@/components/game/FirstTrainGuide';
 import { TrainArt } from '@/components/vehicles/trains';
 import { HireBoard, place, RunStatus, TrainContracts, TrainOrders } from '@/components/game/TrainOrders';
-import { LOCOS, RAIL_TERMINALS, TRAINS, WAGON_TYPES, type WagonType } from '@/lib/game/trains';
+import { LOCOS, RAIL_TERMINALS, TRAINS, WAGON_TYPES, wagonCount, type WagonType } from '@/lib/game/trains';
 import { gameContext } from '@/server/game/context';
-import { contractsView, hireBoard, trainsView } from '@/server/game/trains';
+import { contractsView, firstTrainDone, hireBoard, trainsView } from '@/server/game/trains';
 import { t } from '@/i18n/t';
 import { initLocale } from '@/i18n/server';
 
@@ -36,6 +37,8 @@ export default async function TrainJobsPage({ searchParams }: { searchParams: Pr
         subtitle={t('Поръчки за блок-влакове на гарите, където стоят твоите влакове.')}
         help={t('Влакът кара само между товарни гари. На всяка гара има поръчки за блок-влакове ({0}–{1} т), нови на всеки {2} часа. Таксата за линията и енергията се плащат при тръгване, а поръчката — при пристигане. Линиите и разстоянията са истински; цените и поръчките са игрови данни.', TRAINS.tons.min, TRAINS.tons.max, TRAINS.windowHours)}
       />
+      {/* 1.3.3: the steps to the first train run, until it is done. */}
+      {!(await firstTrainDone(db, user.id)) && <FirstTrainGuide level={user.level} vipLevel={user.vipLevel ?? 0} ownLevel={v.limits.minLevel} licensed={v.licensed} trains={v.trains.length} wagons={v.trains.reduce((n, tr) => n + wagonCount(tr.wagons), 0)} line={v.trains.some((tr) => tr.line?.on)} />}
       <TrainContracts v={await contractsView(db, user.id, now)} />
       {v.trains.length === 0 && (
         <section className="panel space-y-2 p-4" data-testid="train-jobs-empty">

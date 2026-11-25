@@ -834,6 +834,13 @@
       "when": 1795460617709,
       "tag": "0118_payment_gifts",
       "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1795647228577,
+      "tag": "0119_job_state_indexes",
+      "breakpoints": true
     }
   ]
 }

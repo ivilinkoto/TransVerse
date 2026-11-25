@@ -6,7 +6,7 @@
  * (`settleTrains`, from the worker and before any view or change).
  */
 import { randomUUID } from 'node:crypto';
-import { eq, inArray, like } from 'drizzle-orm';
+import { and, eq, inArray, like, sql, type SQL } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import {
   cannotTake, conditionOf, grossFor, runCounts, TRAIN_CONTRACTS, weeklyContracts, hireFee, lineFits, LOCOS, rentalFor, runWear, trainRepairCents, ordersAt, pathsFrom, payFor, pullOver, RAIL_LINES, RAIL_TERMINALS, runCost, runLegs, terminal, trainLimits, TRAINS, WAGONS, wagonCount, wagonsFor, wagonsValue,
@@ -15,7 +15,7 @@ import {
 import { countryOpen } from '@/lib/geo/scope';
 import { LICENCES, missingLicences, railLicences, type LicenceId } from '@/lib/game/licences';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
-import { cities, companies, jobState, users } from '@/server/db/schema';
+import { cities, companies, jobState, ledgerEntries, users } from '@/server/db/schema';
 import { fail } from './errors';
 import { post } from './finance';
 import { membershipOf } from './membership';
@@ -29,8 +29,21 @@ const orderKey = (id: string) => `train-order:${id}`;
 
 const openAt = (now: Date) => (c: string) => countryOpen(c, featureLive('europe', now), featureLive('open_world', now));
 
+/**
+ * The trains matching a condition on their stored value (`value->...`); every train without one.
+ * The prefix is a literal, not a parameter, so Postgres can use the partial train indexes (0119).
+ */
+async function trainsWhere(db: DbOrTx, where?: SQL): Promise<Train[]> {
+  return (await db.select({ value: jobState.value }).from(jobState).where(and(sql`${jobState.key} like 'train:%'`, where))).map((r) => r.value as Train);
+}
+
 export async function allTrains(db: DbOrTx): Promise<Train[]> {
-  return (await db.select({ value: jobState.value }).from(jobState).where(like(jobState.key, 'train:%'))).map((r) => r.value as Train);
+  return trainsWhere(db);
+}
+
+/** A player's trains: the ones they own (bought or the game's on a hire) and the ones on a run they hired. */
+export async function trainsOf(db: DbOrTx, userId: string): Promise<Train[]> {
+  return trainsWhere(db, sql`(${jobState.value}->>'ownerId' = ${userId} or ${jobState.value}->'run'->>'hirerId' = ${userId})`);
 }
 
 async function account(db: DbOrTx, userId: string) {
@@ -138,7 +151,7 @@ export async function takeContract(db: Database, userId: string, contractId: str
 
 /** Settles every train that arrived by now (the worker; also before a player's view). */
 export async function settleTrains(db: Database, now = new Date(), ownerId?: string) {
-  const due = (await allTrains(db)).filter((tr) => tr.run && new Date(tr.run.arriveAt) <= now && (!ownerId || tr.ownerId === ownerId || tr.run.hirerId === ownerId));
+  const due = (await trainsWhere(db, and(sql`${jobState.value}->'run'->>'arriveAt' <= ${now.toISOString()}`, ownerId ? sql`(${jobState.value}->>'ownerId' = ${ownerId} or ${jobState.value}->'run'->>'hirerId' = ${ownerId})` : undefined))).filter((tr) => tr.run && new Date(tr.run.arriveAt) <= now && (!ownerId || tr.ownerId === ownerId || tr.run.hirerId === ownerId));
   for (const d of due) {
     await db.transaction(async (tx) => {
       const train = await lockAny(tx, d.id);
@@ -164,7 +177,7 @@ export async function buyTrain(db: Database, userId: string, n: { loco: LocoId; 
   return db.transaction(async (tx) => {
     // One purchase at a time per player (the count below must not race).
     await tx.select({ id: companies.id }).from(companies).where(eq(companies.id, acc.id)).for('update');
-    const mine = (await allTrains(tx)).filter((tr) => tr.ownerId === userId && !tr.rental);
+    const mine = (await trainsOf(tx, userId)).filter((tr) => tr.ownerId === userId && !tr.rental);
     if (mine.length >= lim.maxTrains) fail('max_trains', t('Най-много {0} влака на играч.', lim.maxTrains));
     const id = randomUUID();
     await post(tx, acc.id, [{ category: 'vehicle_purchase', amountCents: -loco.priceCents, description: t('Локомотив {0}', loco.name), idempotencyKey: `train-buy:${id}` }], { requireFunds: true });
@@ -297,7 +310,7 @@ export async function setTrainLine(db: Database, userId: string, trainId: string
  */
 export async function runLines(db: Database, now = new Date()) {
   let sent = 0;
-  for (const tr of (await allTrains(db)).filter((x) => x.line?.on && !x.rental && (!x.run || new Date(x.run.arriveAt) <= now))) {
+  for (const tr of (await trainsWhere(db, sql`${jobState.value}->'line'->>'on' = 'true'`)).filter((x) => x.line?.on && !x.rental && (!x.run || new Date(x.run.arriveAt) <= now))) {
     const line = tr.line!;
     try {
       await sendBest(db, tr.ownerId, tr.id, now, (o) => lineFits(line, tr.run?.to ?? tr.at, o));
@@ -424,12 +437,12 @@ export async function hireTrain(db: Database, userId: string, terminalId: number
   if (!term || !openAt(now)(term.country)) fail('bad_terminal', t('Няма такава товарна гара.'));
   const order = ordersAt(terminalId, now.getTime(), openAt(now)).find((o) => o.id === orderId);
   if (!order) fail('no_order', t('Поръчката вече не е на борсата.'), 404);
-  const ownerHeld = via === 'game' ? null : await heldLicences(db, (await allTrains(db)).find((tr) => tr.id === via)?.ownerId ?? '');
+  const ownerHeld = via === 'game' ? null : await heldLicences(db, (await trainsWhere(db, eq(jobState.key, `train:${via}`)))[0]?.ownerId ?? '');
   return db.transaction(async (tx) => {
     // One hire at a time per player (the count below must not race).
     const acc = await account(tx, userId);
     await tx.select({ id: companies.id }).from(companies).where(eq(companies.id, acc.id)).for('update');
-    if (hiredBy(await allTrains(tx), userId).length >= lim.hires) fail('max_hires', t('Най-много {0} наети влака наведнъж. Повече — с по-високо VIP ниво.', lim.hires));
+    if (hiredBy(await trainsOf(tx, userId), userId).length >= lim.hires) fail('max_hires', t('Най-много {0} наети влака наведнъж. Повече — с по-високо VIP ниво.', lim.hires));
     let train: Train;
     let hire: Hire;
     if (via === 'game') {
@@ -460,7 +473,8 @@ export async function hireBoard(db: Database, userId: string, terminalId: number
   const [u] = await db.select({ level: users.level, vip: users.vipLevel }).from(users).where(eq(users.id, userId));
   const lim = trainLimits(company, u?.vip ?? 0);
   const open = openAt(now);
-  const all = await allTrains(db);
+  // The trains for hire anywhere (for the station list) and mine.
+  const all = await trainsWhere(db, sql`(${jobState.value}->>'hireShare' is not null or ${jobState.value}->>'ownerId' = ${userId} or ${jobState.value}->'run'->>'hirerId' = ${userId})`);
   const term = terminal(terminalId);
   const orders = term && open(term.country) ? ordersAt(terminalId, now.getTime(), open).filter((o) => !wagon || o.wagonType === wagon) : [];
   const ids = orders.map((o) => orderKey(o.id));
@@ -508,7 +522,7 @@ export async function trainsView(db: Database, userId: string, now: Date) {
   const lim = trainLimits(company, await vipOf(db, userId));
   const open = openAt(now);
   const held = await heldLicences(db, userId);
-  const mine = (await allTrains(db)).filter((tr) => tr.ownerId === userId && !tr.rental).sort((a, b) => a.boughtAt.localeCompare(b.boughtAt));
+  const mine = (await trainsOf(db, userId)).filter((tr) => tr.ownerId === userId && !tr.rental).sort((a, b) => a.boughtAt.localeCompare(b.boughtAt));
   const ids = [...new Set(mine.filter((tr) => !tr.run).flatMap((tr) => ordersAt(tr.at, now.getTime(), open).map((o) => orderKey(o.id))))];
   const taken = new Set(ids.length ? (await db.select({ key: jobState.key }).from(jobState).where(inArray(jobState.key, ids))).map((r) => r.key.slice('train-order:'.length)) : []);
   const trains = mine.map((tr) => ({
@@ -540,6 +554,14 @@ export async function railMap(db: DbOrTx, userId: string, now: Date): Promise<Ra
   const at = new Map(rows.map((r) => [r.id, [r.lat, r.lon] as [number, number]]));
   const lines = RAIL_LINES.filter((l) => open(terminal(l.a)!.country) && open(terminal(l.b)!.country)).map((l) => ({ id: l.id, electric: l.electric, coords: [l.a, ...l.via, l.b].flatMap((id) => (at.has(id) ? [at.get(id)!] : [])) }));
   const terminals = RAIL_TERMINALS.filter((x) => open(x.country) && at.has(x.id)).map((x) => ({ id: x.id, name: x.name, position: at.get(x.id)! }));
-  const trains = (await allTrains(db)).filter((tr) => (tr.ownerId === userId && (!tr.rental || tr.run)) || tr.run?.hirerId === userId).map((tr) => ({ id: tr.id, label: LOCOS[tr.loco].name, at: tr.at, run: tr.run }));
+  const trains = (await trainsOf(db, userId)).filter((tr) => (tr.ownerId === userId && (!tr.rental || tr.run)) || tr.run?.hirerId === userId).map((tr) => ({ id: tr.id, label: LOCOS[tr.loco].name, at: tr.at, run: tr.run }));
   return { lines, terminals, trains };
+}
+
+/** 1.3.3: has the player finished a train run (own or hired)? Until then the trains pages show the first-train guide. */
+export async function firstTrainDone(db: DbOrTx, userId: string): Promise<boolean> {
+  const [acc] = await db.select({ id: companies.id }).from(companies).where(eq(companies.ownerId, userId));
+  if (!acc) return false;
+  const [row] = await db.select({ id: ledgerEntries.id }).from(ledgerEntries).where(and(eq(ledgerEntries.companyId, acc.id), sql`${ledgerEntries.idempotencyKey} like 'train-run:%'`)).limit(1);
+  return !!row;
 }
