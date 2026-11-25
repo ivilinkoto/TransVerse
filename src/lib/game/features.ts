@@ -160,6 +160,8 @@ export const FEATURES = {
   city_cafe: '1.4',
   road_wave: '1.4',
   convoy_hour: '1.4',
+  // 1.4 „Нов облик“: the new game look (Unbounded/Rubik, bright 3D buttons and icons); the classic one stays in Settings.
+  tycoon_look: '1.4',
   item_wants: '1.4',
   rumors: '1.4',
   duo_week: '1.4',

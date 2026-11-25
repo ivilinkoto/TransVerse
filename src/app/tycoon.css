@@ -1,0 +1,199 @@
+/*
+ * 1.4 „Нов облик“ — the „Тайкун“ look: a deep violet-to-blue sky, bright chunky
+ * buttons that press down, rounded glassy cards, Unbounded for titles and Rubik
+ * for text. It sits on the root (`html[data-style]`, for windows rendered into
+ * <body>) and on the game wrapper (rendered on the server, so no flash).
+ *
+ * Every rule starts with T = `:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv)`:
+ * the `:not(#tv)` lifts it above the older game-skin rules without !important.
+ */
+
+@font-face { font-family: 'TV Unbounded'; font-style: normal; font-weight: 500 900; font-display: swap; src: url(/fonts/tycoon/Unbounded-cyrillic-ext.woff2) format('woff2'); unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }
+@font-face { font-family: 'TV Unbounded'; font-style: normal; font-weight: 500 900; font-display: swap; src: url(/fonts/tycoon/Unbounded-cyrillic.woff2) format('woff2'); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: 'TV Unbounded'; font-style: normal; font-weight: 500 900; font-display: swap; src: url(/fonts/tycoon/Unbounded-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'TV Unbounded'; font-style: normal; font-weight: 500 900; font-display: swap; src: url(/fonts/tycoon/Unbounded-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'TV Rubik'; font-style: normal; font-weight: 400 800; font-display: swap; src: url(/fonts/tycoon/Rubik-cyrillic-ext.woff2) format('woff2'); unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }
+@font-face { font-family: 'TV Rubik'; font-style: normal; font-weight: 400 800; font-display: swap; src: url(/fonts/tycoon/Rubik-cyrillic.woff2) format('woff2'); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: 'TV Rubik'; font-style: normal; font-weight: 400 800; font-display: swap; src: url(/fonts/tycoon/Rubik-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'TV Rubik'; font-style: normal; font-weight: 400 800; font-display: swap; src: url(/fonts/tycoon/Rubik-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+/* ---- tokens: the old palette names, new values (every Tailwind colour class follows) ---- */
+[data-style='tycoon'] {
+  --color-asphalt-950: #120a36;
+  --color-asphalt-900: #180f45;
+  --color-asphalt-850: #1d1452;
+  --color-asphalt-800: #241a61;
+  --color-asphalt-700: #302574;
+  --color-asphalt-600: #41358c;
+  --color-asphalt-500: #5a4eab;
+  --color-mist-500: #9f9ad8;
+  --color-mist-400: #b6b2ea;
+  --color-mist-300: #d6d3f8;
+  --color-mist-100: #f5f4ff;
+  --color-volt-500: #3b82f6;
+  --color-volt-400: #60a5fa;
+  --color-cyan-glow: #4fe3ff;
+  --color-gold-300: #ffe27a;
+  --color-gold-400: #ffc53d;
+  --color-gold-500: #ff9d1c;
+  --color-profit: #5ef07a;
+  --color-loss: #ff5c7a;
+  --color-prestige: #c08bff;
+  --font-display: 'TV Unbounded', var(--font-display-face), 'Arial Black', system-ui, sans-serif;
+  --font-sans: 'TV Rubik', var(--font-onest), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* this look's own tokens */
+  --ty-sky: radial-gradient(70rem 40rem at 10% -10%, rgba(124, 77, 255, 0.55), transparent 60%), radial-gradient(60rem 40rem at 100% 0%, rgba(59, 130, 246, 0.35), transparent 60%), linear-gradient(170deg, #1d1150 0%, #120a36 45%, #0b1d55 100%);
+  --ty-card: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+  --ty-card-edge: rgba(255, 255, 255, 0.12);
+  --ty-card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 5px 0 rgba(8, 4, 30, 0.55), 0 14px 28px -14px rgba(0, 0, 0, 0.6);
+  --ty-green: linear-gradient(180deg, #7ef08a, #22b24c);
+  --ty-green-base: #127a34;
+  --ty-gold: linear-gradient(180deg, #ffe27a, #ff9d1c);
+  --ty-gold-base: #a3530a;
+  --ty-blue: linear-gradient(180deg, #6aa8ff, #2f6bf0);
+  --ty-blue-base: #1b3c9c;
+  --ty-pink: linear-gradient(180deg, #ff8fc0, #f0458a);
+  --ty-pink-base: #9b1f56;
+  --ty-red: linear-gradient(180deg, #ff8a8a, #e5344d);
+  --ty-red-base: #8c1527;
+  --ty-ghost: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+  font-family: var(--font-sans);
+  /* Unbounded has Bulgarian letter forms (т as m, и as u); the plain ones read better on buttons. */
+  font-feature-settings: 'locl' 0;
+}
+
+/* ---- the sky behind the game ---- */
+html[data-style='tycoon'], html[data-style='tycoon'] body { background: #120a36; }
+html[data-style='tycoon'] body { background-image: var(--ty-sky); background-attachment: fixed; }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv)[data-style] { background: var(--ty-sky); background-attachment: fixed; }
+
+/* ---- titles: Unbounded is wide, so a touch smaller and tighter ---- */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(h1, h2, .font-display) { letter-spacing: -0.01em; }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) h1 { text-shadow: 0 3px 0 rgba(8, 4, 30, 0.45); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .label { color: #c9c4ff; letter-spacing: 0.12em; }
+
+/* ---- cards ---- */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.panel, .dash-now, .quest-card, .skill-bar, .bus-bar, .crisis-option, .player-stat, .stat-tile, .tool-tile, .route-card, .countdown-card) {
+  background: var(--ty-card);
+  border: 1px solid var(--ty-card-edge);
+  border-radius: 1.25rem;
+  box-shadow: var(--ty-card-shadow);
+  backdrop-filter: blur(8px);
+}
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .panel:hover { border-color: rgba(255, 255, 255, 0.2); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .hero-card { background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--hero) 30%, transparent), transparent 60%), var(--ty-card) !important; border-radius: 1.25rem; box-shadow: var(--ty-card-shadow); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.dash-stat, .countdown-tile, .crisis-day, .route-chip) { background: rgba(8, 4, 30, 0.38); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
+
+/* the dashboard: a bright blue stage for the truck, the tiles as toy boxes */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-hero {
+  background: radial-gradient(90% 70% at 80% 10%, rgba(147, 197, 253, 0.45), transparent 60%), linear-gradient(180deg, #4b8cff 0%, #2a55d6 55%, #1c2f8f 100%);
+  border: 0;
+  border-radius: 1.6rem;
+  box-shadow: inset 0 -7px 0 rgba(8, 4, 30, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 0 rgba(8, 4, 30, 0.45), 0 24px 40px -20px rgba(0, 0, 0, 0.7);
+}
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-road { opacity: 0.55; }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-level { background: conic-gradient(#ffd23d var(--ring), rgba(8, 4, 30, 0.35) 0); box-shadow: 0 4px 0 rgba(8, 4, 30, 0.45); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-tile {
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--tile) 45%, transparent), transparent 70%), var(--ty-card);
+  border: 1px solid color-mix(in srgb, var(--tile) 45%, rgba(255, 255, 255, 0.12));
+  border-radius: 1.4rem;
+  box-shadow: var(--ty-card-shadow);
+}
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-now-hot { box-shadow: inset 4px 0 0 #4fe3ff, var(--ty-card-shadow); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-now-gold { box-shadow: inset 4px 0 0 #ffc53d, var(--ty-card-shadow); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-now-warn { box-shadow: inset 4px 0 0 #ff9d1c, var(--ty-card-shadow); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-now-icon { background: none; border: 0; }
+
+/* ---- buttons: bright, rounded, with a base they press into ---- */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.btn-primary, .btn-gold, .btn-ghost, .btn-danger, .game-action) {
+  border: 0;
+  border-radius: 0.95rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
+}
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.btn-primary, .game-action-main) { background: var(--ty-green); color: #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 0 var(--ty-green-base), 0 8px 16px -8px rgba(0, 0, 0, 0.6); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.btn-gold, .game-action-gold) { background: var(--ty-gold); color: #4a2400; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 0 var(--ty-gold-base), 0 8px 16px -8px rgba(0, 0, 0, 0.6); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.btn-ghost, .game-action:not(.game-action-main, .game-action-gold, .game-action-danger)) { background: var(--ty-ghost); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 0 rgba(8, 4, 30, 0.55); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.btn-danger, .game-action-danger) { background: var(--ty-red); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 0 var(--ty-red-base), 0 8px 16px -8px rgba(0, 0, 0, 0.6); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.btn-primary, .btn-gold, .btn-ghost, .btn-danger, .game-action):hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is(.btn-primary, .btn-gold, .btn-ghost, .btn-danger, .game-action):active:not(:disabled) { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 1px 0 rgba(8, 4, 30, 0.6); }
+html[data-motion='off'] :is(.btn-primary, .btn-gold, .btn-ghost, .btn-danger, .game-action) { transform: none !important; }
+
+/* tabs: pills; the open one is the gold one */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .shop-tab { border: 0; border-radius: 999px; font-family: var(--font-display); font-weight: 700; color: #fff; background: var(--ty-ghost); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 3px 0 rgba(8, 4, 30, 0.55); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .shop-tab-on { background: var(--ty-gold); color: #4a2400; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 3px 0 var(--ty-gold-base); }
+
+/* fields */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .input { background: rgba(8, 4, 30, 0.45); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 0.9rem; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .input:focus { border-color: #ffc53d; }
+
+/* bars: thick and juicy */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) :is([role='meter'], .stat-track) { height: 0.65rem; border-radius: 999px; background: rgba(8, 4, 30, 0.5); border: 0; }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) [role='meter'] > div { border-radius: 999px; box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35); }
+
+/* ---- windows ---- */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .gw-panel {
+  background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--gw-accent) 28%, transparent), transparent 60%), linear-gradient(180deg, #2a1e74 0%, #1a1150 100%);
+  border: 0;
+  border-radius: 1.6rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 0 0 2px rgba(255, 255, 255, 0.08), 0 8px 0 rgba(8, 4, 30, 0.6), 0 40px 80px -20px rgba(0, 0, 0, 0.8);
+}
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .gw-head { background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02)); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .gw-icon { border: 0; border-radius: 0.9rem; background: linear-gradient(180deg, color-mix(in srgb, var(--gw-accent) 70%, #fff), var(--gw-accent)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 3px 0 color-mix(in srgb, var(--gw-accent) 50%, #000); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .gw-corner { display: none; }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .gw-close { border: 0; border-radius: 999px; background: var(--ty-red); color: #fff; box-shadow: 0 3px 0 var(--ty-red-base); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .gw-backdrop { background: radial-gradient(ellipse at center, rgba(30, 16, 90, 0.55), rgba(8, 4, 30, 0.88)); }
+
+/* ---- the shop ---- */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .shop-hero {
+  background: radial-gradient(80% 120% at 0% 0%, rgba(255, 197, 61, 0.45), transparent 55%), radial-gradient(70% 120% at 100% 100%, rgba(240, 69, 138, 0.35), transparent 60%), linear-gradient(135deg, #5b2bd6, #2a1e74);
+  border: 0;
+  border-radius: 1.6rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 0 rgba(8, 4, 30, 0.5);
+}
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .shop-wallet { background: rgba(8, 4, 30, 0.45); border: 0; border-radius: 999px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14); }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .shop-tile {
+  background: radial-gradient(90% 60% at 50% 0%, color-mix(in srgb, var(--tile) 40%, transparent), transparent 70%), var(--ty-card);
+  border: 1px solid color-mix(in srgb, var(--tile) 40%, rgba(255, 255, 255, 0.12));
+  border-radius: 1.5rem;
+  box-shadow: var(--ty-card-shadow);
+}
+
+/* ---- 1.4: 3D-style icons (Icon3D) ---- */
+.ty-icon {
+  --o1: #93c5fd; --o2: #2563eb; --o3: #1e3a8a;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 30%;
+  background: radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.75) 0 9%, transparent 28%), linear-gradient(180deg, var(--o1), var(--o2));
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 0.18em 0 var(--o3), 0 0.4em 0.7em -0.2em rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+.ty-icon > svg { width: 56%; height: 56%; stroke-width: 2.4; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.3)); }
+.ty-icon-tilt { transform: rotate(-5deg); }
+.ty-icon-gold { --o1: #ffe27a; --o2: #ff9d1c; --o3: #a3530a; }
+.ty-icon-green { --o1: #8af59a; --o2: #19a34a; --o3: #0f6b30; }
+.ty-icon-blue { --o1: #93c5fd; --o2: #2563eb; --o3: #1e3a8a; }
+.ty-icon-cyan { --o1: #a5f3fc; --o2: #0891b2; --o3: #155e75; }
+.ty-icon-pink { --o1: #f9a8d4; --o2: #db2777; --o3: #831843; }
+.ty-icon-violet { --o1: #d8b4fe; --o2: #7c3aed; --o3: #4c1d95; }
+.ty-icon-red { --o1: #fca5a5; --o2: #e11d48; --o3: #881337; }
+.ty-icon-orange { --o1: #fdba74; --o2: #ea580c; --o3: #7c2d12; }
+.ty-icon-silver { --o1: #f1f5f9; --o2: #94a3b8; --o3: #475569; }
+.ty-icon-ice { --o1: #e0f2fe; --o2: #38bdf8; --o3: #0c4a6e; }
+.dash-tile:hover .ty-icon, .shop-tile:hover .ty-icon { transform: rotate(-8deg) scale(1.08); }
+.ty-icon { transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+html[data-motion='off'] .ty-icon { transition: none; }
+@media (prefers-reduced-motion: reduce) { .ty-icon { transition: none; } }
+
+/* Glyph: the emoji in the classic look, its 3D icon in this one. */
+.ty-only { display: none !important; }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .ty-only { display: inline-grid !important; }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .ty-emoji { display: none !important; }
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-stat dt .ty-icon { vertical-align: -0.35em; margin-right: 0.15em; }
+/* Unbounded is wide: big numbers in the dashboard's stat tiles stay on one line on a phone. */
+:is(html[data-style='tycoon'], html [data-style='tycoon']):not(#tv) .dash-stat dd { font-size: clamp(0.9rem, 3.4vw, 1.125rem); white-space: nowrap; }

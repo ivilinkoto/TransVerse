@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { int, money } from '@/lib/format';
 import { t, tx } from '@/i18n/t';
+import { Glyph } from './Icon3D';
 
 export interface CommandTile {
   href: string;
@@ -83,19 +84,19 @@ export function CommandCenter({
         </div>
         <dl className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="dash-stat rounded-2xl px-3 py-2">
-            <dt className="text-[11px] font-semibold text-mist-400">💰 {t('Наличност')}</dt>
+            <dt className="text-[11px] font-semibold text-mist-400"><Glyph emoji="💰" size="1.6em" /> {t('Наличност')}</dt>
             <dd className={`num font-display text-lg font-bold ${balanceCents < 0 ? 'text-loss' : 'text-gold-400'}`}>{money(balanceCents)}</dd>
           </div>
           <div className="dash-stat rounded-2xl px-3 py-2">
-            <dt className="text-[11px] font-semibold text-mist-400">📈 {t('Нето · 7 дни')}</dt>
+            <dt className="text-[11px] font-semibold text-mist-400"><Glyph emoji="📈" size="1.6em" /> {t('Нето · 7 дни')}</dt>
             <dd className={`num font-display text-lg font-bold ${netCents < 0 ? 'text-loss' : 'text-profit'}`}>{money(netCents)}</dd>
           </div>
           <div className="dash-stat rounded-2xl px-3 py-2">
-            <dt className="text-[11px] font-semibold text-mist-400">🪙 {t('ТрансКоин')}</dt>
+            <dt className="text-[11px] font-semibold text-mist-400"><Glyph emoji="🪙" size="1.6em" /> {t('ТрансКоин')}</dt>
             <dd className="num font-display text-lg font-bold text-cyan-glow">{int(coins)}</dd>
           </div>
           <div className="dash-stat rounded-2xl px-3 py-2">
-            <dt className="text-[11px] font-semibold text-mist-400">🚚 {t('На път')}</dt>
+            <dt className="text-[11px] font-semibold text-mist-400"><Glyph emoji="🚚" size="1.6em" /> {t('На път')}</dt>
             <dd className="num font-display text-lg font-bold text-white">{onRoad} / {trucks}</dd>
           </div>
         </dl>
@@ -111,7 +112,7 @@ export function CommandCenter({
             {now.map((it, i) => (
               <li key={i} className="w-[78%] shrink-0 snap-start sm:w-auto">
                 <Link href={it.href} className={`dash-now flex h-full items-center gap-3 rounded-2xl p-3 dash-now-${it.tone}`}>
-                  <span className="dash-now-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl" aria-hidden>{it.emoji}</span>
+                  <span className="dash-now-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl" aria-hidden><Glyph emoji={it.emoji} size="1.7em" /></span>
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 block text-sm text-mist-100">{tx(it.text)}</span>
                     <span className="mt-0.5 block text-xs font-bold text-cyan-glow">{tx(it.action)} →</span>
@@ -128,7 +129,7 @@ export function CommandCenter({
           {tiles.map((tile) => (
             <li key={tile.href}>
               <Link href={tile.href} className="dash-tile relative flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl p-2 text-center" style={{ '--tile': tile.colour } as React.CSSProperties}>
-                <span className="dash-tile-emoji text-3xl sm:text-4xl" aria-hidden>{tile.emoji}</span>
+                <span className="dash-tile-emoji text-3xl sm:text-4xl" aria-hidden><Glyph emoji={tile.emoji} size="1.3em" tilt /></span>
                 <span className="text-[11px] font-bold leading-tight text-white sm:text-xs">{tx(tile.label)}</span>
                 {tile.badge && <span className="dash-tile-badge num absolute right-1.5 top-1.5 rounded-full px-1.5 text-[10px] font-bold">{tile.badge}</span>}
               </Link>
