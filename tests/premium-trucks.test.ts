@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { afterAll, describe, expect, it } from 'vitest';
 import { FEATURES } from '@/lib/game/features';
 import { modelAvailable, POWER_UNITS, PREMIUM_TRUCK, PREMIUM_TRUCKS } from '@/lib/game/catalog';
@@ -10,6 +11,9 @@ import { buyPremiumTruck, buyVehicle } from '@/server/game/fleet';
 import { db, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
+
+// The prices in ТрансКоин as on the day the test runs (−30 % on Black Friday, 27–30 Nov).
+const bf = (n: number, at = new Date()) => blackFridayCoins(n, isBlackFriday(at));
 
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : String(e)));
 const coins = async (userId: string) => (await db().select({ c: users.coins }).from(users).where(eq(users.id, userId)))[0]!.c;
@@ -38,7 +42,7 @@ describe('1.3.2.2: premium trucks for ТрансКоин, from VIP2', () => {
     expect(await code(buyPremiumTruck(db(), p.userId, model, p.hq.id))).toBe('insufficient_coins');
     await db().transaction((tx) => postCoins(tx, p.userId, { amount: 700, reason: 'purchase', description: 'test', idempotencyKey: `premium-coins:${p.userId}` }));
     const v = await buyPremiumTruck(db(), p.userId, model, p.hq.id);
-    expect(await coins(p.userId)).toBe(100);
+    expect(await coins(p.userId)).toBe(700 - bf(600));
     const [row] = await db().select().from(vehicles).where(eq(vehicles.id, v.id));
     expect(row).toMatchObject({ modelId: model, color: PREMIUM_TRUCK.color });
   });

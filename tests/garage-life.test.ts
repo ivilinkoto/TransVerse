@@ -1,4 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the features as released (before the date they are staff-only; see tests/release-gating.test.ts).
@@ -18,6 +19,9 @@ import { buyShopItem } from '@/server/game/shop';
 import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
+
+// The prices in ТрансКоин as on the day the test runs (−30 % on Black Friday, 27–30 Nov).
+const bf = (n: number, at = new Date()) => blackFridayCoins(n, isBlackFriday(at));
 
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : (e as Error).message));
 const account = async (userId: string) => (await db().select().from(companies).where(eq(companies.ownerId, userId)))[0]!;
@@ -96,7 +100,7 @@ describe('truck cosmetics', () => {
     const [v] = await db().select().from(vehicles).where(eq(vehicles.id, t.id));
     expect(v!.cosmetics.lights).toBe('blue');
     expect(v!.cosmetics.sticker).toMatch(/^ТЕСТ /);
-    expect((await db().select().from(users).where(eq(users.id, p.userId)))[0]!.coins).toBe(300 - 80 - 70);
+    expect((await db().select().from(users).where(eq(users.id, p.userId)))[0]!.coins).toBe(300 - bf(80) - bf(70));
 
     const solo = await newPlayer();
     await adjustCoins(db(), staff, solo.userId, 100, 'тест');
@@ -122,6 +126,6 @@ describe('trailer parts', () => {
     expect(await code(buyShopItem(db(), p.userId, { item: 'trailer_part', trailerId: t.id, cosmetic: 'stripe:gold' }))).toBe('already_fitted');
     const [row] = await db().select().from(trailers).where(eq(trailers.id, t.id));
     expect(row!.cosmetics.stripe).toBe('gold');
-    expect((await db().select().from(users).where(eq(users.id, p.userId)))[0]!.coins).toBe(200 - TRAILER_COSMETIC_PARTS.stripe.price);
+    expect((await db().select().from(users).where(eq(users.id, p.userId)))[0]!.coins).toBe(200 - bf(TRAILER_COSMETIC_PARTS.stripe.price));
   });
 });

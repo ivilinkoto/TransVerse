@@ -71,7 +71,14 @@ export const TICKET_CATEGORY = 'Отворени тикети';
 export const DISCORD_ROLES = {
   level10: { name: 'Шофьор 10+', color: 0x22d3ee },
   level20: { name: 'Легенда 20+', color: 0xf6c343 },
+  /** VIP time without a VIP level. */
   vip: { name: 'VIP', color: 0xa66bff },
+  /** 1.3.3: the VIP level (VIP1–VIP5), like next to the name in the game; it replaces „VIP“. */
+  vip1: { name: '👑 VIP1', color: 0xc4b5fd },
+  vip2: { name: '👑 VIP2', color: 0xa78bfa },
+  vip3: { name: '👑 VIP3', color: 0x8b5cf6 },
+  vip4: { name: '👑 VIP4', color: 0xf6c343 },
+  vip5: { name: '👑 VIP5', color: 0xf59e0b },
   owner: { name: 'Собственик на компания', color: 0xf97316 },
   linked: { name: 'Свързан с играта', color: 0x2fd27a },
   /** The company's division this month (v1.5). */
@@ -86,6 +93,9 @@ export const DISCORD_ROLES = {
   weekDriver: { name: '🏅 Шофьор на седмицата', color: 0xf6c343 },
 } as const;
 export type DiscordRole = keyof typeof DISCORD_ROLES;
+
+/** The role for a player's VIP tag (vipTag): VIP1–VIP5, or „VIP“ for VIP time without a level. */
+export const vipRole = (tag: number): DiscordRole => (tag >= 1 && tag <= 5 ? (`vip${tag}` as DiscordRole) : 'vip');
 
 /** Badges from the game that become a role in the server (given and taken by the bot like the roles above). */
 export const BADGE_ROLES: Record<string, { name: string; color: number }> = {

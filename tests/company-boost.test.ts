@@ -1,4 +1,5 @@
 import { and, eq, like } from 'drizzle-orm';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { afterAll, describe, expect, it } from 'vitest';
 import { FEATURES } from '@/lib/game/features';
 import { COMPANY_BOOST } from '@/lib/game/speed-up';
@@ -13,6 +14,9 @@ import { speedUpDelivery } from '@/server/game/speed-up';
 import { db, makeContract, newPlayer, playerWithCompany } from './helpers';
 
 afterAll(() => closeDb());
+
+// The prices in ТрансКоин as on the day the test runs (−30 % on Black Friday, 27–30 Nov).
+const bf = (n: number, at = new Date()) => blackFridayCoins(n, isBlackFriday(at));
 
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : String(e)));
 const coins = async (userId: string) => (await db().select({ c: users.coins }).from(users).where(eq(users.id, userId)))[0]!.c;
@@ -32,7 +36,7 @@ describe('1.3.2.2: the company booster', () => {
     expect(first.getTime() - now.getTime()).toBe(COMPANY_BOOST.hours * 3_600_000);
     const second = await buyCompanyBoost(db(), p.userId, new Date(now.getTime() + 1000));
     expect(second.getTime() - first.getTime()).toBe(COMPANY_BOOST.hours * 3_600_000);
-    expect(await coins(p.userId)).toBe(2_000 - 2 * COMPANY_BOOST.coins);
+    expect(await coins(p.userId)).toBe(2_000 - 2 * bf(COMPANY_BOOST.coins, now));
     const m = await membershipOf(db(), p.userId);
     expect((await companyBoostUntil(db(), m!.company.id))?.getTime()).toBe(second.getTime());
   });

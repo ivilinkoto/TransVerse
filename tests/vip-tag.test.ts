@@ -16,3 +16,11 @@ describe('1.3.3: the VIP level next to a name', () => {
     expect(hasVipTag(null)).toBe(false);
   });
 });
+
+describe('1.3.3: the VIP level as a role in Discord', () => {
+  it('VIP1–VIP5 have their own roles; VIP time without a level keeps „VIP“', async () => {
+    const { DISCORD_ROLES, vipRole } = await import('@/server/discord/config');
+    expect([1, 2, 3, 4, 5].map((n) => DISCORD_ROLES[vipRole(n)].name)).toEqual(['👑 VIP1', '👑 VIP2', '👑 VIP3', '👑 VIP4', '👑 VIP5']);
+    expect(vipRole(0)).toBe('vip');
+  });
+});
