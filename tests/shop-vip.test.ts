@@ -1,4 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 // These tests check the rules from before 1.2.3: the new shop (first pack ×2, bonus weekend, VIP prices)
@@ -23,6 +24,9 @@ import { createUrgentContract } from '@/server/urgent';
 import { cityByName, db, makeContract, newPlayer } from './helpers';
 
 afterAll(async () => closeDb());
+
+// The prices in ТрансКоин as on the day the test runs (−30 % on Black Friday, 27–30 Nov).
+const bf = (n: number, at = new Date()) => blackFridayCoins(n, isBlackFriday(at));
 
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : String(e)));
 const userRow = async (id: string) => (await db().select().from(users).where(eq(users.id, id)))[0]!;
@@ -93,11 +97,11 @@ describe('shop', () => {
     // Paint: standard colours cost coins, VIP colours are VIP-only (and free for VIP).
     const before = (await userRow(p.userId)).coins;
     await buyShopItem(db(), p.userId, { item: 'paint', vehicleId: own.id, color: '#b91c1c' });
-    expect((await userRow(p.userId)).coins).toBe(before - 50);
+    expect((await userRow(p.userId)).coins).toBe(before - bf(50));
     expect(await code(buyShopItem(db(), p.userId, { item: 'paint', vehicleId: own.id, color: '#d4af37' }))).toBe('vip_only');
     await setVip(db(), admin, p.userId, 10);
     await buyShopItem(db(), p.userId, { item: 'paint', vehicleId: own.id, color: '#d4af37' });
-    expect((await userRow(p.userId)).coins).toBe(before - 50);
+    expect((await userRow(p.userId)).coins).toBe(before - bf(50));
 
     // Repair and relocation.
     await db().update(vehicles).set({ condition: 40 }).where(eq(vehicles.id, own.id));

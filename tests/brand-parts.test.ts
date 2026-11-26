@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { blackFridayCoins, isBlackFriday } from '@/lib/game/prewinter';
 import { afterAll, describe, expect, it } from 'vitest';
 import { FEATURES } from '@/lib/game/features';
 import { COSMETIC_PARTS, cosmeticVip, parseCosmetic } from '@/lib/game/cosmetics';
@@ -10,6 +11,9 @@ import { buyShopItem } from '@/server/game/shop';
 import { db, newPlayer } from './helpers';
 
 afterAll(() => closeDb());
+
+// The prices in ТрансКоин as on the day the test runs (−30 % on Black Friday, 27–30 Nov).
+const bf = (n: number, at = new Date()) => blackFridayCoins(n, isBlackFriday(at));
 
 const code = async (p: Promise<unknown>) => p.then(() => 'ok', (e: unknown) => (e instanceof GameError ? e.code : String(e)));
 const coins = async (userId: string) => (await db().select({ c: users.coins }).from(users).where(eq(users.id, userId)))[0]!.c;
@@ -36,7 +40,7 @@ describe('1.3.2.3 „Части по марки“', () => {
     expect(await code(buy('stacks:chrome'))).toBe('tractor_only');
     const before = await coins(p.userId);
     expect(await code(buy('twotone:black'))).toBe('ok');
-    expect(await coins(p.userId)).toBe(before - COSMETIC_PARTS.twotone.price);
+    expect(await coins(p.userId)).toBe(before - bf(COSMETIC_PARTS.twotone.price, after));
     await db().update(users).set({ vipLevel: 2 }).where(eq(users.id, p.userId));
     expect(await code(buy('rims:gold'))).toBe('ok');
     const [row] = await db().select({ c: vehicles.cosmetics }).from(vehicles).where(eq(vehicles.id, truck!.id));
