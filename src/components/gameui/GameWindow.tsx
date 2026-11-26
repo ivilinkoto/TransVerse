@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { motionEnabled, playWindowClose, playWindowOpen } from '@/lib/client/motion';
@@ -14,7 +14,7 @@ import { t } from '@/i18n/t';
  * 1.3: on a phone the window is a bottom sheet — dragging its handle or header
  * down far enough (or flicking it) closes it.
  */
-export function GameWindow({
+function GameWindowPanel({
   title,
   icon,
   onClose,
@@ -137,4 +137,16 @@ export function GameWindow({
     </div>,
     document.body,
   );
+}
+
+const noop = () => () => {};
+
+/**
+ * The window is a portal to <body>, so it exists only in the browser: rendered on the
+ * server (a page opened with the window already open, e.g. /game/contracts?focus=…)
+ * it shows after hydration instead of failing with „document is not defined“.
+ */
+export function GameWindow(props: Parameters<typeof GameWindowPanel>[0]) {
+  const mounted = useSyncExternalStore(noop, () => true, () => false);
+  return mounted ? <GameWindowPanel {...props} /> : null;
 }

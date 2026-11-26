@@ -11,6 +11,9 @@ EnvironmentFile=/etc/transverse/transverse.env
 # Keep the JavaScript heap under MemoryMax: Node then cleans up memory in time instead of the
 # process being killed for it (a killed web process = 502 for every player until it is back).
 Environment=NODE_OPTIONS=--max-old-space-size=640
+# glibc gives every thread its own memory arena and seldom gives it back: the site grew to
+# 4+ GB of native memory with a 200 MB JavaScript heap. Two arenas keep it small.
+Environment=MALLOC_ARENA_MAX=2
 ExecStart=/usr/bin/node server.js
 Restart=always
 # A stop (a deploy, a restart) waits at most 10 s, then every process of the service is killed.

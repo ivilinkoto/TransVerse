@@ -1,5 +1,6 @@
 'use client';
 
+import { hasVipTag, vipLabel, type VipTag } from '@/lib/game/vip';
 import { Crown, ShieldCheck } from 'lucide-react';
 import { t, tx } from '@/i18n/t';
 import { useViewerStaff } from '@/components/game/Features';
@@ -12,11 +13,13 @@ export function openPlayerCard(username: string) {
 }
 
 /** A player's name with their badges: staff role and VIP. Clicking it opens their profile card. */
-export function PlayerName({ name, role, vip, className = '', card = true }: { name: string; role?: string | null; vip?: boolean; className?: string; card?: boolean }) {
+export function PlayerName({ name, role, vip, className = '', card = true }: { name: string; role?: string | null; vip?: VipTag | boolean; className?: string; card?: boolean }) {
   // v1.1.2: the staff badge is for the staff only; players see a plain name.
   const viewerStaff = useViewerStaff();
   const staff = viewerStaff && role ? tx(STAFF_SHORT[role]) : undefined;
-  const label = <span className={vip ? 'font-semibold text-gold-400' : undefined}>{name}</span>;
+  // 1.3.3: the badge shows the VIP level (VIP1–VIP5), or plain VIP for VIP time without a level.
+  const isVipNow = hasVipTag(vip);
+  const label = <span className={isVipNow ? 'font-semibold text-gold-400' : undefined}>{name}</span>;
   return (
     <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
       {card ? (
@@ -29,9 +32,9 @@ export function PlayerName({ name, role, vip, className = '', card = true }: { n
           <ShieldCheck className="h-3 w-3" />{staff}
         </span>
       )}
-      {vip && (
-        <span className="inline-flex items-center gap-0.5 rounded-full border border-gold-400/50 bg-gold-400/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-gold-400" title={t('VIP играч')}>
-          <Crown className="h-3 w-3" />VIP
+      {isVipNow && (
+        <span className="inline-flex items-center gap-0.5 rounded-full border border-gold-400/50 bg-gold-400/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-gold-400" title={typeof vip === 'number' && vip > 0 ? t('VIP ниво {0}', vip) : t('VIP играч')} data-testid="vip-badge">
+          <Crown className="h-3 w-3" />{vipLabel(vip)}
         </span>
       )}
     </span>

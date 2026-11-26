@@ -1,5 +1,6 @@
 'use client';
 
+import type { VipTag } from '@/lib/game/vip';
 import { TITLES } from '@/lib/game/first-snow';
 import { TitleChip } from '@/components/game/TitleChip';
 import { AtSign, Building2, Coffee, CornerUpLeft, Flag, Globe2, Hammer, MessageCircle, Pin, Send, Shield, Smile, Sparkles, Store, Trash2, X } from 'lucide-react';
@@ -21,7 +22,8 @@ interface Conversation {
   userId: string;
   username: string;
   role: string;
-  vip: boolean;
+  /** 1.3.3: the VIP level shown (VIP1–5), 0 for VIP time, null without VIP. */
+  vip: VipTag;
   online: boolean;
   lastSeen: string;
   unread: number;

@@ -1,4 +1,5 @@
 import { FIRST_SNOW } from '@/lib/game/first-snow';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { WINTER_TREK } from '@/lib/game/winter-trek';
 import { randomInt } from 'node:crypto';
 import { and, desc, eq, gt, inArray, isNull, notInArray, or, sql } from 'drizzle-orm';
@@ -54,7 +55,7 @@ async function checkCollections(tx: Tx, userId: string, itemId: ItemId) {
     paid = true;
     await tx.insert(userBadges).values({ userId, badge: c.badge, awardedAt: new Date() }).onConflictDoNothing();
     if (c.frame) await grantItem(tx, userId, c.frame, 1, `collection:${c.id}`, `collection-frame:${c.id}:${userId}`);
-    await notify(tx, userId, 'achievement', () => t('🧳 Колекцията е пълна!'), () => (c.frame ? t('„{0}“ — +{1} ТрансКоин, значка и {2}.', c.name, c.coins, ITEMS[c.frame].name) : t('„{0}“ — +{1} ТрансКоин и значка.', c.name, c.coins)), '/game/inventory/album');
+    await notify(tx, userId, 'achievement', () => t('🧳 Колекцията е пълна!'), () => (c.frame ? t('„{0}“ — +{1}, значка и {2}.', c.name, coinsAsMoney(c.coins), ITEMS[c.frame].name) : t('„{0}“ — +{1} и значка.', c.name, coinsAsMoney(c.coins))), '/game/inventory/album');
   }
   return paid;
 }
@@ -218,7 +219,7 @@ export async function applyItem(db: Database, userId: string, itemId: string, ta
       }
       case 'coin_pouch':
         await postCoins(tx, userId, { amount: ITEM_RULES.coinPouch, reason: 'items', description: t('Кесия с ТрансКоин'), idempotencyKey: `item-coins:${userId}:${now.getTime()}:${randomInt(0, 1e9)}` });
-        result = t('+{0} ТрансКоин.', ITEM_RULES.coinPouch);
+        result = t('+{0}.', coinsAsMoney(ITEM_RULES.coinPouch));
         break;
       case 'trucker_cap':
       case 'sunglasses':

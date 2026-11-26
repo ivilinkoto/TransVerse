@@ -1,4 +1,4 @@
-import { money } from '@/lib/format';
+import { int, money } from '@/lib/format';
 import { UNTAPERED_REASONS } from './coin-taper';
 import { weekEndsAt, weekKey } from './leagues';
 
@@ -11,11 +11,13 @@ import { weekEndsAt, weekKey } from './leagues';
 export const COIN_CAP = { weekly: 100, centsPerCoin: 200_00 } as const;
 
 /**
- * 1.3.2.1: the only rewards still paid in ТрансКоин — the season pass, the
- * events' and the league's places, the team's giveaways and inviting a friend.
- * Every other reward is paid in game money (COIN_CAP.centsPerCoin per TC).
+ * 1.3.2.1 / 1.3.3: the only rewards still paid in ТрансКоин — the premium line of
+ * the season pass (bought), the team's giveaways and a share of an invited
+ * friend's first purchase (real money behind it). Every other reward — events,
+ * leagues, the free line of the pass, inviting a friend — is paid in game money
+ * (COIN_CAP.centsPerCoin per TC).
  */
-export const TC_REWARDS: readonly string[] = ['season_pass', 'event_reward', 'league_reward', 'giveaway', 'referral_reward'];
+export const TC_REWARDS: readonly string[] = ['season_pass', 'giveaway', 'referral_purchase'];
 
 /** A reward of this kind is paid in game money instead of ТрансКоин. */
 export const paidInMoney = (reason: string) => capped(reason) && !TC_REWARDS.includes(reason);
@@ -38,3 +40,6 @@ export function splitByCap(amount: number, earnedThisWeek: number) {
 
 /** How a TC reward paid in money reads in the game: „1 000 лв.“. */
 export const coinsAsMoney = (coins: number) => money(moneyForCoins(coins));
+
+/** How a reward of `coins` for `reason` reads: in money when it is paid in money, else „N TC“. */
+export const rewardCoins = (reason: string, coins: number) => (paidInMoney(reason) ? coinsAsMoney(coins) : `${int(coins)} TC`);

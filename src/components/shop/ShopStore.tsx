@@ -1,5 +1,6 @@
 'use client';
 
+import { vipLabel } from '@/lib/game/vip';
 import { useState, type ReactNode } from 'react';
 import { ShopBuy, type VehicleOption } from './ShopBuy';
 import { SHOP_COLOURS, SHOP_EMOJI } from '@/lib/game/shop-look';
@@ -87,7 +88,7 @@ export function ShopStore({ coins, vip, vipUntil, friday, promo, tiles, buy, vip
             <button type="button" onClick={() => pick('coins')} className="game-action game-action-gold flex-row px-4 py-2.5 text-sm">💎 {t('Купи TC')}</button>
           </div>
         </div>
-        <p className={`relative mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${vip ? 'bg-gold-400/15 text-gold-300' : 'bg-white/5 text-mist-300'}`}>👑 {vip && vipUntil ? t('VIP до {0}', vipUntil) : t('Нямаш VIP')}</p>
+        <p className={`relative mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${vip || (buy.vipLevel ?? 0) > 0 ? 'bg-gold-400/15 text-gold-300' : 'bg-white/5 text-mist-300'}`}>👑 {(buy.vipLevel ?? 0) > 0 ? (vip && vipUntil ? t('{0} · VIP време до {1}', vipLabel(buy.vipLevel ?? 0), vipUntil) : vipLabel(buy.vipLevel ?? 0)) : vip && vipUntil ? t('VIP до {0}', vipUntil) : t('Нямаш VIP')}</p>
       </div>
       {friday > 0 && <div className="rounded-2xl border border-gold-400/50 bg-gradient-to-r from-black/70 to-gold-400/15 px-4 py-3 font-display font-bold text-gold-300" data-testid="black-friday">{t('🛍 Черен петък · −{0}%', friday)}</div>}
       <div className="shop-tabs -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="tablist" aria-label={t('Магазин')}>

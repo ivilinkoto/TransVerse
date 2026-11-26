@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import { fitMessage } from './fit';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { discordOutbox, organizations, users } from '@/server/db/schema';
 import { featureLive } from '@/lib/game/features';
@@ -41,7 +42,9 @@ async function quietDms(db: Database, rows: { target: string }[], now: Date) {
   return new Set(people.filter((p) => p.discordId && inQuietHours(p.quiet, now)).map((p) => `dm:${p.discordId}`));
 }
 
-async function send(db: Database, target: string, payload: Record<string, unknown>) {
+async function send(db: Database, target: string, raw: Record<string, unknown>) {
+  // Within Discord's size limits in whatever language the message ended up (fit.ts).
+  const payload = fitMessage(raw);
   const [kind, id] = [target.slice(0, target.indexOf(':')), target.slice(target.indexOf(':') + 1)];
   if (kind === 'channel') {
     const [key, lang] = id.split('@') as [DiscordChannel, 'en' | 'ru' | undefined];

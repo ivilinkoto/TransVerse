@@ -34,7 +34,7 @@ describe('1.2.6 coin taper', () => {
   it('postCoins pays the tapered reward when the moment is given', async () => {
     const p = await newPlayer();
     const before = await coins(p.userId);
-    await db().transaction((tx) => postCoins(tx, p.userId, { amount: 100, reason: 'event_reward', description: 'test', idempotencyKey: `taper-test:${p.userId}`, at: new Date('2026-12-05T12:00:00+02:00') }));
+    await db().transaction((tx) => postCoins(tx, p.userId, { amount: 100, reason: 'season_pass', description: 'test', idempotencyKey: `taper-test:${p.userId}`, at: new Date('2026-12-05T12:00:00+02:00') }));
     expect((await coins(p.userId)) - before).toBe(70);
   });
 });

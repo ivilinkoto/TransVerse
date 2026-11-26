@@ -3,7 +3,7 @@ import { PlayerName } from '@/components/game/PlayerName';
 import { Badge, Meter } from '@/components/ui';
 import { dateTime, duration, int } from '@/lib/format';
 import { eventStatus, formatAmount, goalText, rewardFor, rewardText, type EventMetric, type EventRewards } from '@/lib/game/events';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import type { EventDetail } from '@/server/game/events';
 import { t, tx } from '@/i18n/t';
 
@@ -61,7 +61,7 @@ export function EventCard({ detail, now, viewerId }: { detail: EventDetail; now:
               {detail.leaders.map((l, i) => (
                 <li key={l.userId} className={`flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm ${l.userId === viewerId ? 'bg-volt-500/15' : ''}`}>
                   <span className={`num w-6 text-right font-bold ${PLACE_TONE[i] ?? 'text-mist-400'}`}>{i < rewards.top.length ? <Crown className="inline h-3.5 w-3.5" /> : null}{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate"><PlayerName name={l.username} role={l.role} vip={isVip(l.vipUntil, now)} />{l.tag && <span className="ml-1.5 text-xs text-mist-400">[{tx(l.tag)}]</span>}</span>
+                  <span className="min-w-0 flex-1 truncate"><PlayerName name={l.username} role={l.role} vip={vipTag(l.vipUntil, l.vipLevel, now)} />{l.tag && <span className="ml-1.5 text-xs text-mist-400">[{tx(l.tag)}]</span>}</span>
                   <span className="num text-xs text-mist-400">{t('{0} дост.', int(l.deliveries))}</span>
                   <span className="num w-28 text-right font-semibold">{fmt(l.amount)}</span>
                 </li>

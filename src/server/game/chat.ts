@@ -1,7 +1,8 @@
+import type { VipTag } from '@/lib/game/vip';
 import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { isOnline, type ReactionSummary } from '@/lib/game/social';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import { rateLimit } from '@/server/auth/rate-limit';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companyMembers, companyMessages, companyRanks, users } from '@/server/db/schema';
@@ -21,7 +22,8 @@ export interface ChatMessage {
   userId: string;
   username: string;
   role: string;
-  vip: boolean;
+  /** 1.3.3: the VIP level shown (VIP1–5), 0 for VIP time, null without VIP. */
+  vip: VipTag;
   rank: string | null;
   body: string | null;
   deleted: boolean;
@@ -49,7 +51,7 @@ export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit
   const m = await membershipOf(db, userId);
   if (!m) fail('not_member', t('Чатът е само за членове на компанията.'), 403);
   const rows = await db
-    .select({ message: companyMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, lastSeenAt: users.lastSeenAt, rank: companyRanks.name })
+    .select({ message: companyMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, vipLevel: users.vipLevel, lastSeenAt: users.lastSeenAt, rank: companyRanks.name })
     .from(companyMessages)
     .innerJoin(users, eq(users.id, companyMessages.userId))
     .leftJoin(companyMembers, and(eq(companyMembers.userId, companyMessages.userId), eq(companyMembers.companyId, companyMessages.companyId)))
@@ -65,7 +67,7 @@ export async function companyChat(db: DbOrTx, userId: string, afterId = 0, limit
       userId: r.message.userId,
       username: r.username,
       role: r.role,
-      vip: isVip(r.vipUntil, now),
+      vip: vipTag(r.vipUntil, r.vipLevel, now),
       rank: r.rank,
       body: r.message.deletedAt ? null : r.message.body,
       deleted: !!r.message.deletedAt,

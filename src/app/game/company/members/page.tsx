@@ -1,6 +1,6 @@
 import { PlayerName } from '@/components/game/PlayerName';
 import { isOnline, lastSeenLabel } from '@/lib/game/social';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import { redirect } from 'next/navigation';
 import { Badge, Card, Table } from '@/components/ui';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -71,7 +71,7 @@ export default async function MembersPage() {
                   <span className="inline-flex items-center gap-2">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${isOnline(m.lastSeenAt, now) ? 'bg-profit' : 'bg-asphalt-500'}`} title={lastSeenLabel(m.lastSeenAt, now)} />
                     <span>
-                      <PlayerName name={m.username} role={m.role} vip={isVip(m.vipUntil, now)} />
+                      <PlayerName name={m.username} role={m.role} vip={vipTag(m.vipUntil, m.vipLevel, now)} />
                       <span className={`block text-[11px] font-normal ${isOnline(m.lastSeenAt, now) ? 'text-profit' : 'text-mist-400'}`}>{lastSeenLabel(m.lastSeenAt, now)}</span>
                     </span>
                   </span>

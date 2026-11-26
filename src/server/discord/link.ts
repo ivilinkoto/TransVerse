@@ -1,4 +1,5 @@
 import { and, eq, ne } from 'drizzle-orm';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { DISCORD_FRAMES } from '@/lib/game/together';
 import type { Database } from '@/server/db/client';
 import { discordMembers, userBadges, users } from '@/server/db/schema';
@@ -38,7 +39,7 @@ export async function linkDiscord(db: Database, userId: string, account: { id: s
     const badge = await tx.insert(userBadges).values({ userId, badge: 'discord', awardedAt: now }).onConflictDoNothing().returning({ badge: userBadges.badge });
     if (badge.length) {
       await postCoins(tx, userId, { amount: DISCORD_LINK_COINS, reason: 'discord_link', description: t('Свързан Discord'), idempotencyKey: `discord-link:${userId}` });
-      await notify(tx, userId, 'success', () => t('Discord е свързан!'), () => t('+{0} ТрансКоин и значка „Discord шофьор“.', DISCORD_LINK_COINS), '/game/settings#discord');
+      await notify(tx, userId, 'success', () => t('Discord е свързан!'), () => t('+{0} и значка „Discord шофьор“.', coinsAsMoney(DISCORD_LINK_COINS)), '/game/settings#discord');
     }
     // The frames for the level the member already has in the server.
     const [member] = await tx.select({ level: discordMembers.level }).from(discordMembers).where(eq(discordMembers.discordUserId, account.id));

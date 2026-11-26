@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { coinsAsMoney, moneyForCoins } from '@/lib/game/coin-cap';
 import { dec, int, km, money } from '@/lib/format';
 import { dailyState, DAILY_REWARDS } from '@/lib/game/daily';
 import { EVENT_METRIC_INFO, type EventMetric } from '@/lib/game/events';
@@ -98,7 +99,7 @@ export function dailyView(ctx: Ctx): Answer {
   const s = dailyState(me.loginStreak, me.dailyClaimKey, ctx.now);
   if (s.claimedToday) return answer(reply({ content: t('✅ Днешната награда е взета. Серия: **{0}** дни. Ела утре за ден {1}!', s.streak, (s.cycleDay % DAILY_REWARDS.length) + 1) }, true));
   return answer(reply({
-    content: t('🎁 Наградата за днес те чака — ден {0}: **{1}**{2}. Серия: {3} дни.', s.cycleDay, money(s.reward.cents), s.reward.coins ? t(' + {0} ТрансКоин', s.reward.coins) : '', s.streak),
+    content: t('🎁 Наградата за днес те чака — ден {0}: **{1}**{2}. Серия: {3} дни.', s.cycleDay, money(s.reward.cents + moneyForCoins(s.reward.coins ?? 0)), '', s.streak),
     components: rows(button(t('Вземи наградата'), 'daily:claim', STYLE.success, '🎁')),
   }, true));
 }
@@ -156,7 +157,7 @@ export async function codeCommand(ctx: Ctx): Promise<Answer> {
   const raw = (opt(ctx.i, 'код') ?? '').trim();
   const r = await act<{ kind: 'promo' | 'invite'; code: string; reward: PromoReward; inviter?: string }>(ctx, { type: 'redeemCode', code: raw, via: 'discord' });
   const parts = [
-    r.reward.coins ? t('+{0} ТрансКоин', r.reward.coins) : '',
+    r.reward.coins ? t('+{0}', coinsAsMoney(r.reward.coins)) : '',
     r.reward.cents ? `+${money(r.reward.cents)}` : '',
     r.reward.vipDays ? t('+{0} VIP дни', r.reward.vipDays) : '',
     ...(r.reward.items ?? []).map((i) => `${tx(ITEMS[i.itemId as ItemId]?.name ?? i.itemId)} ×${i.qty}`),

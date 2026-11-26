@@ -1,4 +1,5 @@
 import { and, avg, count, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { cities, companies, contracts, deliveries, deliveryExtras, jobState, routes, userBadges, vehicles } from '@/server/db/schema';
 import { FOG, fogAt } from '@/lib/game/fog';
@@ -198,7 +199,7 @@ export async function afterExtras(tx: Tx, f: TripFacts) {
     if (mystery && stars === 5) {
       await postCoins(tx, f.userId, { amount: MYSTERY.coins, reason: 'mystery_client', description: t('Тайният клиент: пет звезди'), idempotencyKey: `mystery:${f.deliveryId}` });
       await tx.insert(userBadges).values({ userId: f.userId, badge: MYSTERY.badge, awardedAt: at }).onConflictDoNothing();
-      await notify(tx, f.userId, 'achievement', () => t('🕵 Това беше тайният клиент!'), () => t('Пет звезди — +{0} ТрансКоин и значка.', MYSTERY.coins), '/game/reviews');
+      await notify(tx, f.userId, 'achievement', () => t('🕵 Това беше тайният клиент!'), () => t('Пет звезди — +{0} и значка.', coinsAsMoney(MYSTERY.coins)), '/game/reviews');
       await offerInterview(tx, f.userId, 'mystery', at);
       await announceMystery(tx, f.userId, f.deliveryId, at);
       await rewardCase(tx, f.userId, 'case_silver', 'mystery', `mystery-case:${f.deliveryId}`, at);
@@ -214,7 +215,7 @@ export async function afterExtras(tx: Tx, f: TripFacts) {
       const paid = await postCoins(tx, f.userId, { amount: FOG.coins, reason: 'fog_pilot', description: t('Пилот в мъглата {0}', year), idempotencyKey: `fog-pilot:${year}:${f.userId}` });
       if (paid) {
         await tx.insert(userBadges).values({ userId: f.userId, badge: FOG.badge, awardedAt: at }).onConflictDoNothing();
-        await notify(tx, f.userId, 'achievement', () => t('🌫 Пилот в мъглата'), () => t('Пет курса в мъглата — +{0} ТрансКоин и значка.', FOG.coins), '/game/progress');
+        await notify(tx, f.userId, 'achievement', () => t('🌫 Пилот в мъглата'), () => t('Пет курса в мъглата — +{0} и значка.', coinsAsMoney(FOG.coins)), '/game/progress');
       }
     }
   }

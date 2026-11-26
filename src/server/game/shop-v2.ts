@@ -167,7 +167,7 @@ export async function deliverExtras(tx: Tx, p: { id: string; userId: string; pro
     const [me] = await tx.select({ by: users.referredById, name: users.username }).from(users).where(eq(users.id, p.userId));
     const share = Math.round(p.coins * REFERRAL_PURCHASE_SHARE);
     if (me?.by && share > 0) {
-      await postCoins(tx, me.by, { amount: share, reason: 'referral_reward', description: t('{0} от първата покупка на {1}', `${Math.round(REFERRAL_PURCHASE_SHARE * 100)}%`, me.name), idempotencyKey: key('ref') });
+      await postCoins(tx, me.by, { amount: share, reason: 'referral_purchase', description: t('{0} от първата покупка на {1}', `${Math.round(REFERRAL_PURCHASE_SHARE * 100)}%`, me.name), idempotencyKey: key('ref') });
       await notify(tx, me.by, 'success', () => t('+{0} TC от поканен приятел', share), () => t('{0} направи първата си покупка.', me.name), '/game/invite');
     }
   }

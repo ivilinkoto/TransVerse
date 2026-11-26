@@ -90,7 +90,7 @@ export async function ticketThread(db: DbOrTx, actor: Actor, ticketId: string) {
 export async function staffTicketList(db: DbOrTx, status?: string) {
   const where = status && status in TICKET_STATUS ? eq(supportTickets.status, status) : undefined;
   return db
-    .select({ ticket: supportTickets, username: users.username, vip: sql<boolean>`coalesce(${users.vipUntil} > now(), false)` })
+    .select({ ticket: supportTickets, username: users.username, vip: sql<boolean>`coalesce(${users.vipUntil} > now(), false)`, vipLevel: users.vipLevel })
     .from(supportTickets)
     .innerJoin(users, eq(users.id, supportTickets.userId))
     .where(where)

@@ -2,7 +2,7 @@ import { and, desc, eq, or, sql } from 'drizzle-orm';
 import { memberCapacity, type UpgradeLevels } from '@/lib/game/company';
 import { levelProgress, reputationTier } from '@/lib/game/progression';
 import { isOnline, lastSeenLabel } from '@/lib/game/social';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import type { Database, DbOrTx } from '@/server/db/client';
 import { companies, companyApplications, companyInvites, companyMembers, friendships, organizations, userBlocks, users, haulerRatings, vehicles } from '@/server/db/schema';
 import { featureFor } from '@/server/features';
@@ -70,7 +70,7 @@ export async function playerCard(db: DbOrTx, viewerId: string, username: string,
     // 1.2.1: the (up to three) badges the player picked for the showcase; the card shows these first.
     featuredBadges: (u.showcase?.badges ?? []).slice(0, SHOWCASE_BADGES),
     medals: medals ? { counts: medalCounts(medals.map((m) => m.medal)), recent: medals.slice(0, 6).map((m) => ({ season: m.name, rank: m.rank!, medal: m.medal })) } : null,
-    vip: isVip(u.vipUntil, now),
+    vip: vipTag(u.vipUntil, u.vipLevel, now),
     level: u.level,
     levelShare: levelProgress(u.xp).share,
     online: isOnline(u.lastSeenAt, now),
@@ -145,12 +145,12 @@ export async function removeFriend(db: Database, userId: string, otherId: string
 /** Friends with their online status, and pending requests both ways. */
 export async function friendsOf(db: DbOrTx, userId: string, now = new Date()) {
   const rows = await db
-    .select({ f: friendships, other: { id: users.id, username: users.username, role: users.role, level: users.level, lastSeenAt: users.lastSeenAt, vipUntil: users.vipUntil, avatarVersion: users.avatarVersion } })
+    .select({ f: friendships, other: { id: users.id, username: users.username, role: users.role, level: users.level, lastSeenAt: users.lastSeenAt, vipUntil: users.vipUntil, vipLevel: users.vipLevel, avatarVersion: users.avatarVersion } })
     .from(friendships)
     .innerJoin(users, sql`${users.id} = case when ${friendships.requesterId} = ${userId} then ${friendships.addresseeId} else ${friendships.requesterId} end`)
     .where(or(eq(friendships.requesterId, userId), eq(friendships.addresseeId, userId)))
     .orderBy(desc(users.lastSeenAt));
-  const view = (r: (typeof rows)[number]) => ({ friendshipId: r.f.id, ...r.other, vip: isVip(r.other.vipUntil, now), online: isOnline(r.other.lastSeenAt, now), lastSeen: lastSeenLabel(r.other.lastSeenAt, now) });
+  const view = (r: (typeof rows)[number]) => ({ friendshipId: r.f.id, ...r.other, vip: vipTag(r.other.vipUntil, r.other.vipLevel, now), online: isOnline(r.other.lastSeenAt, now), lastSeen: lastSeenLabel(r.other.lastSeenAt, now) });
   return {
     friends: rows.filter((r) => r.f.status === 'accepted').map(view),
     received: rows.filter((r) => r.f.status === 'pending' && r.f.addresseeId === userId).map(view),

@@ -2,7 +2,7 @@ import { and, desc, gt, isNull } from 'drizzle-orm';
 import { Users } from 'lucide-react';
 import { PlayerName } from '@/components/game/PlayerName';
 import { ONLINE_MS } from '@/lib/game/social';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import type { DbOrTx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 import { t } from '@/i18n/t';
@@ -12,7 +12,7 @@ const SHOWN = 8;
 /** v1.1.1: who is in the game right now (the dashboard). Names open the player card. */
 export async function OnlineNow({ db, now }: { db: DbOrTx; now: Date }) {
   const rows = await db
-    .select({ username: users.username, role: users.role, vipUntil: users.vipUntil })
+    .select({ username: users.username, role: users.role, vipUntil: users.vipUntil, vipLevel: users.vipLevel })
     .from(users)
     .where(and(gt(users.lastSeenAt, new Date(now.getTime() - ONLINE_MS)), isNull(users.bannedAt)))
     .orderBy(desc(users.lastSeenAt))
@@ -27,7 +27,7 @@ export async function OnlineNow({ db, now }: { db: DbOrTx; now: Date }) {
       <div className="min-w-0 flex-1">
         <div className="font-semibold">{t('Онлайн сега: {0}', rows.length)}</div>
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-mist-300">
-          {rows.slice(0, SHOWN).map((r) => <PlayerName key={r.username} name={r.username} role={r.role === 'player' ? null : r.role} vip={isVip(r.vipUntil, now)} />)}
+          {rows.slice(0, SHOWN).map((r) => <PlayerName key={r.username} name={r.username} role={r.role === 'player' ? null : r.role} vip={vipTag(r.vipUntil, r.vipLevel, now)} />)}
           {rows.length > SHOWN && <span className="text-mist-400">{t('и още {0}', rows.length - SHOWN)}</span>}
         </div>
       </div>

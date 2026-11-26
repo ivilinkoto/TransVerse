@@ -1,4 +1,6 @@
+import { money } from '@/lib/format';
 import { createHash, randomBytes } from 'node:crypto';
+import { moneyForCoins } from '@/lib/game/coin-cap';
 import { and, count, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
 import { REFERRAL, REFERRAL_CODE } from '@/lib/game/referrals';
 import type { DbOrTx, Tx } from '@/server/db/client';
@@ -101,7 +103,7 @@ export async function rewardReferral(tx: Tx, userId: string, now = new Date()) {
   if (theirs) await post(tx, theirs.id, [{ category: 'referral_reward', amountCents: REFERRAL.inviterCents, description: t('Награда за поканен приятел: {0}', me.username), idempotencyKey: `${key}:inviter` }]);
   await postCoins(tx, inviter.id, { amount: REFERRAL.inviterCoins, reason: 'referral_reward', description: t('Поканен приятел: {0}', me.username), idempotencyKey: `${key}:coins` });
   await notify(tx, userId, 'success', () => t('Награда за добър старт'), () => t('{0} те покани в TransVerse — получаваш {1} лв.', inviter.username, (REFERRAL.inviteeCents / 100).toLocaleString(intlLocale())), '/game/finance');
-  await notify(tx, inviter.id, 'success', () => t('{0} вече кара!', me.username), () => t('Поканеният ти приятел направи {0} доставки. Получаваш {1} лв. и {2} TC.', REFERRAL.deliveriesNeeded, (REFERRAL.inviterCents / 100).toLocaleString(intlLocale()), REFERRAL.inviterCoins), '/game/invite');
+  await notify(tx, inviter.id, 'success', () => t('{0} вече кара!', me.username), () => t('Поканеният ти приятел направи {0} доставки. Получаваш {1}.', REFERRAL.deliveriesNeeded, money(REFERRAL.inviterCents + moneyForCoins(REFERRAL.inviterCoins))), '/game/invite');
   return true;
 }
 

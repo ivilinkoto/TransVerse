@@ -1,4 +1,5 @@
 import { randomInt } from 'node:crypto';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, desc, eq, isNull, lte, sql } from 'drizzle-orm';
 import { km } from '@/lib/format';
 import type { Database } from '@/server/db/client';
@@ -76,7 +77,7 @@ function view(q: typeof discordQuizzes.$inferSelect, done?: { winner: string | n
     embeds: [{
       title: `🧠 ${q.question}`,
       color: done ? 0x9aa3b2 : BRAND,
-      description: `${q.options.map((o, i) => `${LETTERS[i]} ${i === q.correct && done ? `**${o}** ✅` : o}`).join('\n')}${done ? `\n\n${done.winner ? t('🏆 Първи позна <@{0}> — +{1} ТрансКоин', done.winner, q.prizeCoins) : t('Никой не позна навреме.')}` : t('\n\nПървият верен отговор (свързан акаунт) печели **{0} ТрансКоин**. Един опит.', q.prizeCoins)}`,
+      description: `${q.options.map((o, i) => `${LETTERS[i]} ${i === q.correct && done ? `**${o}** ✅` : o}`).join('\n')}${done ? `\n\n${done.winner ? t('🏆 Първи позна <@{0}> — +{1}', done.winner, coinsAsMoney(q.prizeCoins)) : t('Никой не позна навреме.')}` : t('\n\nПървият верен отговор (свързан акаунт) печели **{0}**. Един опит.', coinsAsMoney(q.prizeCoins))}`,
       footer: { text: t('Градовете и пътищата са истински (GeoNames, OpenStreetMap)') },
     }],
     components: done ? [] : rows(...q.options.map((o, i) => button(o, `quiz:${q.id}:${i}`, STYLE.secondary, LETTERS[i]))),
@@ -115,12 +116,12 @@ export async function quizAnswer(ctx: Ctx, quizId: string, option: number): Prom
   const tried = await ctx.db.insert(discordQuizAnswers).values({ quizId, discordUserId: ctx.discordId, option, createdAt: ctx.now }).onConflictDoNothing().returning();
   if (!tried.length) stop(t('Вече отговори на този въпрос.'));
   if (option !== q!.correct) return answer(say(t('✖️ Грешно. Следващият въпрос е след няколко часа!')));
-  if (!ctx.me) return answer(say(t('✅ Вярно! Свържи акаунта си в играта, за да печелиш ТрансКоин.')));
+  if (!ctx.me) return answer(say(t('✅ Вярно! Свържи акаунта си в играта, за да печелиш награди.')));
   const won = await ctx.db.transaction(async (tx) => {
     const [w] = await tx.update(discordQuizzes).set({ winnerUserId: ctx.me!.id, winnerDiscordId: ctx.discordId, closedAt: ctx.now }).where(and(eq(discordQuizzes.id, quizId), isNull(discordQuizzes.closedAt))).returning();
     if (!w) return null;
     await postCoins(tx, ctx.me!.id, { amount: w.prizeCoins, reason: 'quiz', description: t('Викторина в Discord'), idempotencyKey: `quiz:${quizId}` });
-    await notify(tx, ctx.me!.id, 'success', () => t('Позна във викторината! 🧠'), () => t('+{0} ТрансКоин.', w.prizeCoins), '/game/shop');
+    await notify(tx, ctx.me!.id, 'success', () => t('Позна във викторината! 🧠'), () => t('+{0}.', coinsAsMoney(w.prizeCoins)), '/game/shop');
     return w;
   });
   if (!won) return answer(say(t('✅ Вярно — но някой те изпревари!')));

@@ -1,4 +1,5 @@
 import { randomInt } from 'node:crypto';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, desc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm';
 import { int } from '@/lib/format';
 import { featureLive } from '@/lib/game/features';
@@ -87,7 +88,7 @@ async function levelUp(db: Database, discordId: string, level: number, now: Date
   }
   await enqueue(db, `level-up:${discordId}:${level}`, 'channel:botCommands', {
     ping: false,
-    content: t('🎉 <@{0}> стигна **ниво {1}**!{2}', discordId, level, coins ? (u ? t(' +{0} ТрансКоин в играта.', coins) : t(' Свържи акаунта си, за да получаваш ТрансКоин за нивата.')) : ''),
+    content: t('🎉 <@{0}> стигна **ниво {1}**!{2}', discordId, level, coins ? (u ? t(' +{0} в играта.', coinsAsMoney(coins)) : t(' Свържи акаунта си, за да получаваш награди в играта за нивата.')) : ''),
     allowed_mentions: { parse: [], users: [discordId] },
   }, now);
 }
@@ -162,7 +163,7 @@ export async function rankView(ctx: Ctx): Promise<Answer> {
         { name: t('В гласов канал'), value: t('{0} ч {1} мин', Math.floor(r.voiceMinutes / 60), r.voiceMinutes % 60), inline: true },
       ],
       image: { url: `${appUrl()}/api/discord/card/rank/${id}?v=${Math.floor(Date.now() / 600_000)}` },
-      footer: { text: t('На всяко десето ниво — ТрансКоин в играта (свързан акаунт)') },
+      footer: { text: t('На всяко десето ниво — награда в играта (свързан акаунт)') },
     }],
   }));
 }

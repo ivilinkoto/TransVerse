@@ -1,4 +1,5 @@
 import { A11yApply } from '@/components/game/A11y';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import { and, eq, isNull, lte, sql } from 'drizzle-orm';
 import type { Metadata } from 'next';
 import { LookApply } from '@/components/game/LookApply';
@@ -46,7 +47,7 @@ import { gameContext } from '@/server/game/context';
 import { membershipOf } from '@/server/game/membership';
 import { claimableCount } from '@/server/game/missions';
 import { inventoryBadge } from '@/server/game/item-trade';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import { tutorialState } from '@/server/game/tutorial';
 import { isSpring } from '@/lib/game/spring';
 import { t as tr, tx } from '@/i18n/t';
@@ -112,7 +113,7 @@ export default async function GameLayout({ children, modal }: { children: React.
       <div className="flex min-h-dvh flex-col lg:flex-row" data-look={features.new_look ? '2' : undefined} data-skin={features.game_ui ? 'game' : undefined}>
         <Sidebar badges={navBadges} version={currentVersion(now, testing)} staff={isStaff(user.role)} holiday={holiday} attention={attention} />
         <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
-          <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={isVip(user.vipUntil, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
+          <TopBar title={membership?.company.name ?? user.username} kind={company.kind} company={company} user={user} vip={vipTag(user.vipUntil, user.vipLevel, now)} hqName={hq.nameBg} unread={unread} staff={isStaff(user.role)} attention={attention} dailyReady={!dailyState(user.loginStreak, user.dailyClaimKey, now).claimedToday} />
           <InstallAppBanner />
           {broadcast && <BroadcastBanner text={broadcast.text} tone={broadcast.tone} setAt={broadcast.setAt} />}
           {staff && !testing && (
@@ -125,7 +126,7 @@ export default async function GameLayout({ children, modal }: { children: React.
           {!user.emailVerifiedAt && mailConfig().enabled && (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-sig/30 bg-amber-sig/10 px-4 py-2 text-sm sm:px-6">
               <MailWarning className="h-4 w-4 text-amber-sig" />
-              <span>{tr('Потвърди имейла си')}{' '}<span className="font-semibold">{tx(user.email)}</span>{' '}{tr('— така ще можеш да си върнеш профила и да пазаруваш.')}{features.email_reward ? <>{' '}<span className="font-semibold text-gold-400">{tr('+{0} ТрансКоин за потвърждението.', EMAIL_REWARD_COINS)}</span></> : null}</span>
+              <span>{tr('Потвърди имейла си')}{' '}<span className="font-semibold">{tx(user.email)}</span>{' '}{tr('— така ще можеш да си върнеш профила и да пазаруваш.')}{features.email_reward ? <>{' '}<span className="font-semibold text-gold-400">{tr('+{0} за потвърждението.', coinsAsMoney(EMAIL_REWARD_COINS))}</span></> : null}</span>
               <ResendVerification />
               <span className="basis-full text-xs text-mist-400 sm:basis-auto">{tr('Не виждаш писмото? Провери „Спам“ / „Нежелана поща“.')}</span>
             </div>

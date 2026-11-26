@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/client/api';
 import { t as tr, tx } from '@/i18n/t';
+import { money } from '@/lib/format';
+import { COIN_CAP } from '@/lib/game/coin-cap';
 
 export interface MetricOption {
   id: string;
@@ -109,7 +111,7 @@ export function EventForm({ metrics, cargoTypes, countries, templates, defaults 
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block"><span className={field}>{tr('Пари (лв.)')}</span><input className="input" type="number" min={0} value={participant.eur} onChange={(e) => setParticipant({ ...participant, eur: num(e.target.value) })} /></label>
           <label className="block"><span className={field}>{tr('Опит')}</span><input className="input" type="number" min={0} value={participant.xp} onChange={(e) => setParticipant({ ...participant, xp: num(e.target.value) })} /></label>
-          <label className="block"><span className={field}>{tr('ТрансКоин')}</span><input className="input" type="number" min={0} value={participant.coins} onChange={(e) => setParticipant({ ...participant, coins: num(e.target.value) })} /></label>
+          <label className="block"><span className={field}>{tr('ТрансКоин (изплащат се в пари: {0} за 1 TC)', money(COIN_CAP.centsPerCoin))}</span><input className="input" type="number" min={0} value={participant.coins} onChange={(e) => setParticipant({ ...participant, coins: num(e.target.value) })} /></label>
         </div>
       </fieldset>
 

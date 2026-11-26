@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import type { Metadata } from 'next';
 import { Card, PageHeader } from '@/components/ui';
 import { ItemArt } from '@/components/game/ItemArt';
@@ -83,7 +84,7 @@ export default async function AlbumPage() {
               <div className="mt-3 space-y-1 text-xs text-mist-400">
                 <p>{tx(c.source)}{c.season && live && <span className="ml-1 font-semibold text-profit">{t('· пада сега')}</span>}</p>
                 <p className="flex flex-wrap items-center gap-2">
-                  <span>{t('Награда: значка, {0} ТрансКоин', c.coins)}</span>
+                  <span>{t('Награда: значка, {0}', coinsAsMoney(c.coins))}</span>
                   {c.frame && <span className="flex items-center gap-1">+ <ItemArt id={c.frame} className="h-6 w-6" />{tx(ITEMS[c.frame].name)}</span>}
                   {done && <span className="font-bold text-gold-300">{t('✓ Получена')}</span>}
                 </p>

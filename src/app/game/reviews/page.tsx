@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import type { Metadata } from 'next';
 import { Badge, Card, Empty, PageHeader } from '@/components/ui';
 import { Star } from 'lucide-react';
@@ -29,7 +30,7 @@ export default async function ReviewsPage() {
       <Card title={t('Средна оценка')}>
         <p className="font-display text-3xl text-gold-400">{summary.average != null ? `${summary.average} ★` : '—'}</p>
         <p className="mt-1 text-sm text-mist-400">{t('От последните {0} курса.', summary.trips)} {summary.good && <Badge tone="green">{t('Доволни клиенти · +{0}%', Math.round(REVIEWS.goodClientShare * 100))}</Badge>}</p>
-        <p className="mt-3 text-xs text-mist-400">{t('Веднъж седмично един курс е проверка от тайния клиент. Пет звезди носят +{0} ТрансКоин и значка.', MYSTERY.coins)}</p>
+        <p className="mt-3 text-xs text-mist-400">{t('Веднъж седмично един курс е проверка от тайния клиент. Пет звезди носят +{0} и значка.', coinsAsMoney(MYSTERY.coins))}</p>
       </Card>
       <Card title={t('Последни доставки')}>
         {!list.length ? <Empty icon={Star} title={t('Още няма отзиви')}>{t('Първата оценка идва с първата доставка.')}<EmptyAction href="/game/contracts" label="Намери курс" /></Empty> : (

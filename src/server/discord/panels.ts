@@ -1,4 +1,6 @@
 import type { DbOrTx } from '@/server/db/client';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
+import { DISCORD_LINK_COINS } from './link';
 import { discord, DiscordError } from './api';
 import { answer, type Answer, type Ctx } from './context';
 import { appUrl, BRAND, discordConfig, PING_ROLES, type PingRole } from './config';
@@ -38,7 +40,7 @@ const PANELS: { key: string; channel: string; onlyNew?: boolean; build: () => Pr
           '',
           t('**Първи стъпки**'),
           t('1️⃣ Прочети #правила'),
-          t('2️⃣ Свържи акаунта си в #свържи-акаунта — получаваш роли, канал на компанията и 10 ТрансКоин'),
+          t('2️⃣ Свържи акаунта си в #свържи-акаунта — получаваш роли, канал на компанията и {0} в играта', coinsAsMoney(DISCORD_LINK_COINS)),
           t('3️⃣ Избери известията си в #роли'),
           t('4️⃣ Нужна ти е помощ? Отвори тикет в #тикети'),
         ].join('\n'),
@@ -73,7 +75,7 @@ const PANELS: { key: string; channel: string; onlyNew?: boolean; build: () => Pr
           t('• частния канал на компанията, свързан с чата в играта'),
           t('• известията от играта като лично съобщение (по избор)'),
           t('• командите `/камиони`, `/курс`, `/дневна`, `/ивент`, `/битка`'),
-          t('• **10 ТрансКоин** и значка „Discord шофьор“ първия път'),
+          t('• **{0}** в играта и значка „Discord шофьор“ първия път', coinsAsMoney(DISCORD_LINK_COINS)),
         ].join('\n'),
       }],
       components: rows(linkButton(t('Свържи акаунта'), `${appUrl()}/game/settings#discord`, '🔗'), linkButton(t('Регистрация'), `${appUrl()}/register`, '🚚')),

@@ -1,4 +1,5 @@
 import { and, isNotNull, isNull, sql } from 'drizzle-orm';
+import { coinsAsMoney } from '@/lib/game/coin-cap';
 import type { Database, Tx } from '@/server/db/client';
 import { users } from '@/server/db/schema';
 import { postCoins } from '@/server/game/coins';
@@ -13,7 +14,7 @@ export const EMAIL_REWARD_COINS = 10;
 export async function rewardVerifiedEmail(tx: Tx, userId: string, now = new Date()) {
   if (!(await featureFor(tx, userId, 'email_reward', now))) return false;
   const paid = await postCoins(tx, userId, { amount: EMAIL_REWARD_COINS, reason: 'email_verified', description: t('Потвърден имейл'), idempotencyKey: `email-verified:${userId}` });
-  if (paid) await notify(tx, userId, 'success', () => t('Имейлът е потвърден'), () => t('+{0} ТрансКоин — благодарим! Вече можеш да си върнеш профила и да пазаруваш.', EMAIL_REWARD_COINS), '/game/shop');
+  if (paid) await notify(tx, userId, 'success', () => t('Имейлът е потвърден'), () => t('+{0} — благодарим! Вече можеш да си върнеш профила и да пазаруваш.', coinsAsMoney(EMAIL_REWARD_COINS)), '/game/shop');
   return paid;
 }
 

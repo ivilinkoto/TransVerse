@@ -1,4 +1,5 @@
 import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
+import { vipTag } from '@/lib/game/vip';
 import { money } from '@/lib/format';
 import { ACADEMY, ALLIANCE, ALLIANCE_HALL, COMPANY_CONTRACT, fuelDiscount, hallBonusShare, hallNextTons } from '@/lib/game/alliances';
 import type { UpgradeLevels } from '@/lib/game/company';
@@ -181,13 +182,13 @@ export async function allianceMessages(db: DbOrTx, allianceId: string, limit = 5
 /** The alliance's messages in the shape of the chat dock (the "Съюз" tab). */
 export async function allianceFeed(db: DbOrTx, allianceId: string, afterId = 0, limit = 60, now = new Date()) {
   const rows = await db
-    .select({ m: chatMessages, username: users.username, role: users.role, vipUntil: users.vipUntil })
+    .select({ m: chatMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, vipLevel: users.vipLevel })
     .from(chatMessages)
     .innerJoin(users, eq(users.id, chatMessages.userId))
     .where(and(eq(chatMessages.channel, allianceChannel(allianceId)), afterId ? gt(chatMessages.id, afterId) : undefined))
     .orderBy(desc(chatMessages.id))
     .limit(limit);
-  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: !!r.vipUntil && r.vipUntil > now, body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: null }));
+  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: vipTag(r.vipUntil, r.vipLevel, now), body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: null }));
 }
 
 /** The alliance of the player's company (for the chat dock), when alliances are out for them. */

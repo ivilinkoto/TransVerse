@@ -27,7 +27,7 @@ export function rewardLabel(r: PassReward): string {
 /** Rewards per level (1-based): the free one and the premium one. */
 export const PASS_REWARDS: { level: number; free: PassReward | null; premium: PassReward }[] = Array.from({ length: PASS_LEVELS }, (_, i) => {
   const level = i + 1;
-  const free: PassReward | null = level % 10 === 0 ? { cents: level * 400_00, coins: 15 } : level % 2 === 0 ? { cents: 500_00 + level * 100_00 } : null;
+  const free: PassReward | null = level % 10 === 0 ? { cents: level * 400_00 + 15 * 200_00 } : level % 2 === 0 ? { cents: 500_00 + level * 100_00 } : null;
   const premium: PassReward =
     level === PASS_LEVELS ? { coins: 200, vipDays: 7 }
     : level % 10 === 0 ? { coins: 80, vipDays: 3 }
@@ -100,7 +100,7 @@ const it = (itemId: string, qty = 1): PassRewardV2 => ({ items: [{ itemId, qty }
 const FREE_V2: Record<number, PassRewardV2> = {
   2: { cents: 2_000_00 }, 4: it('coffee', 2), 6: it('repair_kit'), 8: it('fuel_voucher', 2), 10: it('case_bronze'),
   12: { cents: 4_000_00 }, 14: it('energy_drink'), 16: it('cargo_cover'), 18: it('antifreeze'), 20: it('case_silver'),
-  22: it('paint_firstsnow'), 24: it('ice_scraper'), 26: { cents: 8_000_00 }, 28: it('coffee', 3), 30: { coins: 20 },
+  22: it('paint_firstsnow'), 24: it('ice_scraper'), 26: { cents: 8_000_00 }, 28: it('coffee', 3), 30: { cents: 4_000_00 },
   32: it('queue_ticket'), 34: it('driver_handbook'), 36: it('repair_kit', 2), 38: { cents: 12_000_00 }, 40: it('case_gold'),
   42: it('thermos'), 44: it('coin_pouch'), 46: it('case_silver'), 48: { cents: 20_000_00 }, 50: { title: 'first-snow-50', items: [{ itemId: 'case_gold', qty: 1 }] },
 };
@@ -134,7 +134,7 @@ export function rewardLabelV2(r: PassRewardV2, itemName: (id: string) => string,
 const FREE_CN: Record<number, PassRewardV2> = {
   2: { cents: 2_000_00 }, 4: it('coffee', 2), 6: it('repair_kit'), 8: it('fuel_voucher', 2), 10: it('case_bronze'),
   12: { cents: 4_000_00 }, 14: it('energy_drink'), 16: it('cargo_cover'), 18: it('thermos'), 20: it('case_silver'),
-  22: it('paint_christmasnight'), 24: it('queue_ticket'), 26: { cents: 8_000_00 }, 28: it('coffee', 3), 30: { coins: 20 },
+  22: it('paint_christmasnight'), 24: it('queue_ticket'), 26: { cents: 8_000_00 }, 28: it('coffee', 3), 30: { cents: 4_000_00 },
   32: it('fuel_voucher', 3), 34: it('driver_handbook'), 36: it('repair_kit', 2), 38: { cents: 12_000_00 }, 40: it('case_gold'),
   42: it('cab_coffee'), 44: it('coin_pouch'), 46: it('case_silver'), 48: { cents: 20_000_00 }, 50: { title: 'christmas-night-50', items: [{ itemId: 'case_gold', qty: 1 }] },
 };

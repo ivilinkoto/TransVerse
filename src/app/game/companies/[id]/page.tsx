@@ -7,7 +7,7 @@ import { companyShowcase } from '@/server/game/base-life';
 import { isWinter } from '@/lib/game/winter';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { publicPlot } from '@/server/game/plot';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import { Building, Building2, Landmark, ScrollText } from 'lucide-react';
 import { VehicleIllustration } from '@/components/vehicles/VehicleIllustration';
 import { LEGEND, legendTier } from '@/lib/game/heritage';
@@ -125,7 +125,7 @@ export default async function PublicCompanyPage({ params }: { params: Promise<{ 
             <Table head={[t('Играч'), t('Длъжност'), t('Ниво'), t('Курсове'), t('От')]}>
               {members.map((m) => (
                 <tr key={m.userId}>
-                  <td className="px-3 py-2 font-semibold"><span className="inline-flex items-center gap-2"><span className={`h-2 w-2 shrink-0 rounded-full ${isOnline(m.lastSeenAt, now) ? 'bg-profit' : 'bg-asphalt-500'}`} title={isOnline(m.lastSeenAt, now) ? t('В играта сега') : t('Не е в играта')} /><PlayerName name={m.username} role={m.role} vip={isVip(m.vipUntil, now)} /></span></td>
+                  <td className="px-3 py-2 font-semibold"><span className="inline-flex items-center gap-2"><span className={`h-2 w-2 shrink-0 rounded-full ${isOnline(m.lastSeenAt, now) ? 'bg-profit' : 'bg-asphalt-500'}`} title={isOnline(m.lastSeenAt, now) ? t('В играта сега') : t('Не е в играта')} /><PlayerName name={m.username} role={m.role} vip={vipTag(m.vipUntil, m.vipLevel, now)} /></span></td>
                   <td className="px-3 py-2"><Badge tone={m.rank.isOwner ? 'gold' : 'neutral'}>{tx(m.rank.name)}</Badge></td>
                   <td className="num px-3 py-2">{tx(m.level)}</td>
                   <td className="num px-3 py-2">{int(m.member.deliveries)}</td>

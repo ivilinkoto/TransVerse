@@ -1,10 +1,11 @@
+import type { VipTag } from '@/lib/game/vip';
 import { and, desc, eq, gt, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { featureFor } from '@/server/features';
 import { z } from 'zod';
 import { isStaff } from '@/server/auth/roles';
 import { rateLimit } from '@/server/auth/rate-limit';
 import { CHANNELS, MESSAGE_MAX, REPLY_SNIPPET, isOnline, lastSeenLabel, type Channel, type ReactionSummary } from '@/lib/game/social';
-import { isVip } from '@/lib/game/vip';
+import { isVip, vipTag } from '@/lib/game/vip';
 import type { Database, DbOrTx, Tx } from '@/server/db/client';
 import { chatMessages, companyMessages, directMessages, userBlocks, users } from '@/server/db/schema';
 import { extractMentions } from '@/lib/game/mentions';
@@ -24,7 +25,8 @@ export interface FeedMessage {
   userId: string;
   username: string;
   role: string;
-  vip: boolean;
+  /** 1.3.3: the VIP level shown (VIP1–5), 0 for VIP time, null without VIP. */
+  vip: VipTag;
   /** 1.2.5: the title the author shows (an id from TITLES), if any. */
   title?: string | null;
   body: string | null;
@@ -96,14 +98,14 @@ export async function notifyReply(tx: Tx, authorId: string, target: { userId: st
 
 export async function channelFeed(db: DbOrTx, channel: Channel | CafeChannel, afterId = 0, limit = 60, now = new Date()): Promise<FeedMessage[]> {
   const rows = await db
-    .select({ m: chatMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, title: users.title })
+    .select({ m: chatMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, vipLevel: users.vipLevel, title: users.title })
     .from(chatMessages)
     .innerJoin(users, eq(users.id, chatMessages.userId))
     .where(and(eq(chatMessages.channel, channel), afterId ? gt(chatMessages.id, afterId) : undefined))
     .orderBy(desc(chatMessages.id))
     .limit(Math.min(limit, 200));
   const replies = await replyRefs(db, 'channel', rows.map((r) => r.m.replyToId));
-  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), title: r.title, body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null, kind: r.m.kind, meta: r.m.meta }));
+  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.userId, username: r.username, role: r.role, vip: vipTag(r.vipUntil, r.vipLevel, now), title: r.title, body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null, kind: r.m.kind, meta: r.m.meta }));
 }
 
 /** 1.2.7: the café of a city — a chat for the players whose trucks are there. */
@@ -189,14 +191,14 @@ export async function sendDirectMessage(db: Database, userId: string, toId: stri
 
 export async function conversation(db: DbOrTx, userId: string, otherId: string, afterId = 0, limit = 80, now = new Date()): Promise<FeedMessage[]> {
   const rows = await db
-    .select({ m: directMessages, username: users.username, role: users.role, vipUntil: users.vipUntil })
+    .select({ m: directMessages, username: users.username, role: users.role, vipUntil: users.vipUntil, vipLevel: users.vipLevel })
     .from(directMessages)
     .innerJoin(users, eq(users.id, directMessages.senderId))
     .where(and(pair(userId, otherId), visibleTo(userId), afterId ? gt(directMessages.id, afterId) : undefined))
     .orderBy(desc(directMessages.id))
     .limit(Math.min(limit, 200));
   const replies = await replyRefs(db, 'dm', rows.map((r) => r.m.replyToId));
-  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.senderId, username: r.username, role: r.role, vip: isVip(r.vipUntil, now), body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), read: !!r.m.readAt, reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null }));
+  return rows.reverse().map((r) => ({ id: r.m.id, userId: r.m.senderId, username: r.username, role: r.role, vip: vipTag(r.vipUntil, r.vipLevel, now), body: r.m.deletedAt ? null : r.m.body, deleted: !!r.m.deletedAt, createdAt: r.m.createdAt.toISOString(), read: !!r.m.readAt, reply: r.m.replyToId ? (replies.get(r.m.replyToId) ?? null) : null }));
 }
 
 export async function markConversationRead(db: DbOrTx, userId: string, otherId: string, now = new Date()) {
@@ -237,13 +239,13 @@ export async function conversations(db: DbOrTx, userId: string, now = new Date()
     order by max(id) desc
     limit 30`);
   if (!rows.length) return [];
-  const others = await db.select({ id: users.id, username: users.username, role: users.role, vipUntil: users.vipUntil, lastSeenAt: users.lastSeenAt }).from(users).where(inArray(users.id, rows.map((r) => r.other_id)));
+  const others = await db.select({ id: users.id, username: users.username, role: users.role, vipUntil: users.vipUntil, vipLevel: users.vipLevel, lastSeenAt: users.lastSeenAt }).from(users).where(inArray(users.id, rows.map((r) => r.other_id)));
   const last = await db.select({ id: directMessages.id, body: directMessages.body, senderId: directMessages.senderId, deletedAt: directMessages.deletedAt }).from(directMessages).where(inArray(directMessages.id, rows.map((r) => Number(r.last_id))));
   return rows.flatMap((r) => {
     const o = others.find((x) => x.id === r.other_id);
     const l = last.find((x) => x.id === Number(r.last_id));
     if (!o) return [];
-    return [{ userId: o.id, username: o.username, role: o.role, vip: isVip(o.vipUntil, now), online: isOnline(o.lastSeenAt, now), lastSeen: lastSeenLabel(o.lastSeenAt, now), unread: Number(r.unread), last: l ? (l.deletedAt ? tr('Съобщението е изтрито.') : `${l.senderId === userId ? tr('Ти: ') : ''}${l.body}`) : '' }];
+    return [{ userId: o.id, username: o.username, role: o.role, vip: vipTag(o.vipUntil, o.vipLevel, now), online: isOnline(o.lastSeenAt, now), lastSeen: lastSeenLabel(o.lastSeenAt, now), unread: Number(r.unread), last: l ? (l.deletedAt ? tr('Съобщението е изтрито.') : `${l.senderId === userId ? tr('Ти: ') : ''}${l.body}`) : '' }];
   });
 }
 

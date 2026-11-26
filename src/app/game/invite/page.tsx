@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock, Gift, UserPlus, XCircle } from 'lucide-react';
+import { moneyForCoins } from '@/lib/game/coin-cap';
 import { InviteLink } from '@/components/game/InviteLink';
 import { Badge, Card, Empty, Meter, PageHeader } from '@/components/ui';
 import { date, money } from '@/lib/format';
@@ -36,7 +37,7 @@ export default async function InvitePage() {
         <div className="relative grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <h2 className="flex items-center gap-2 font-display text-xl font-bold"><Gift className="h-5 w-5 text-gold-400" />{t('Твоят линк за покана')}</h2>
-            <p className="mt-1 text-sm text-mist-300">{t('Ти получаваш')}{' '}<span className="font-semibold text-gold-400">{money(REFERRAL.inviterCents)}</span>{' '}{t('и')}{' '}<span className="font-semibold text-cyan-glow">{tx(REFERRAL.inviterCoins)} TC</span>{t(', приятелят ти —')}{' '}<span className="font-semibold text-gold-400">{money(REFERRAL.inviteeCents)}</span>{' '}{t('бонус за старта.')}</p>
+            <p className="mt-1 text-sm text-mist-300">{t('Ти получаваш')}{' '}<span className="font-semibold text-gold-400">{money(REFERRAL.inviterCents + moneyForCoins(REFERRAL.inviterCoins))}</span>{t(', приятелят ти —')}{' '}<span className="font-semibold text-gold-400">{money(REFERRAL.inviteeCents)}</span>{' '}{t('бонус за старта.')}</p>
             <div className="mt-4"><InviteLink url={`${origin}/r/${code}`} /></div>
           </div>
           <div className="grid grid-cols-2 gap-2 text-center md:w-56">

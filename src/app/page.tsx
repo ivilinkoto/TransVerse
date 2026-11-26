@@ -1,4 +1,5 @@
 import { ArrowRight, Bell, BellOff, CalendarRange, Coins, Download, Gavel, Globe2, MapPinned, MessagesSquare, Route, ScrollText, ShieldCheck, Smartphone, Sparkles, ThumbsUp, Ticket, Trophy, Truck, UserPlus, Users } from 'lucide-react';
+import { moneyForCoins } from '@/lib/game/coin-cap';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { DISCORD_URL, FACEBOOK_URL } from '@/lib/community';
 import Link from 'next/link';
@@ -246,7 +247,7 @@ export default async function HomePage() {
             { icon: Trophy, color: 'text-gold-400', title: tr('Сезони от {0} дни', DEFAULT_SEASON_RULES.lengthDays), text: tr('Сезонни точки и награден фонд до {0} за първото място. Компанията и активите ти остават.', money(DEFAULT_SEASON_RULES.prizesCents[0]!)) },
             { icon: CalendarRange, color: 'text-prestige', title: tr('Седмични лиги'), text: tr('Всяка седмица — група до {0} играчи в твоята лига. Най-добрите се качват, последните слизат: {1}.', LEAGUE_GROUP_SIZE, LEAGUE_TIERS.map((t) => t.name).join(' → ')) },
             { icon: Ticket, color: 'text-amber-sig', title: tr('Ивенти и сезонен пропуск'), text: tr('Общи цели за всички играчи с награди за участие, празнични ивенти, мисии всеки ден и сезонен пропуск с награди по нива.') },
-            { icon: UserPlus, color: 'text-profit', title: tr('Покани приятел'), text: tr('Изпрати личния си линк: след първите {0} доставки приятелят ти получава {1}, а ти — {2} и {3} TC.', REFERRAL.deliveriesNeeded, money(REFERRAL.inviteeCents), money(REFERRAL.inviterCents), REFERRAL.inviterCoins) },
+            { icon: UserPlus, color: 'text-profit', title: tr('Покани приятел'), text: tr('Изпрати личния си линк: след първите {0} доставки приятелят ти получава {1}, а ти — {2}.', REFERRAL.deliveriesNeeded, money(REFERRAL.inviteeCents), money(REFERRAL.inviterCents + moneyForCoins(REFERRAL.inviterCoins))) },
           ].map((c) => (
             <div key={c.title} className="panel p-5">
               <c.icon className={`h-6 w-6 ${c.color}`} />
