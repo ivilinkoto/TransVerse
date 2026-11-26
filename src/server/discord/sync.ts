@@ -1,12 +1,12 @@
 import { and, asc, eq, gt, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { featureLive } from '@/lib/game/features';
 import { PERFECT_ROLE_STREAK } from '@/lib/game/competition';
-import { isVip } from '@/lib/game/vip';
+import { vipTag } from '@/lib/game/vip';
 import { isStaff } from '@/server/auth/roles';
 import type { Database } from '@/server/db/client';
 import { allianceMembers, alliances, companyMembers, companyRanks, jobState, organizations, userBadges, users } from '@/server/db/schema';
 import { discord, DiscordError } from './api';
-import { BADGE_ROLES, COMPANY_CATEGORY, discordConfig } from './config';
+import { BADGE_ROLES, COMPANY_CATEGORY, discordConfig, vipRole } from './config';
 import { ensureRole, forgetGuild, gameRole, guild, managedRoleIds, verifiedRole } from './guild';
 import { layoutCategory, layoutState } from './layout';
 import { enqueue } from './outbox';
@@ -46,7 +46,9 @@ async function desiredRoles(db: Database, userId: string, now: Date) {
   const want = [await gameRole('linked')];
   if (u.level >= 10) want.push(await gameRole('level10'));
   if (u.level >= 20) want.push(await gameRole('level20'));
-  if (isVip(u.vipUntil, now)) want.push(await gameRole('vip'));
+  // 1.3.3: the VIP level's own role (VIP1–VIP5), or „VIP“ for VIP time without a level.
+  const vip = vipTag(u.vipUntil, u.vipLevel, now);
+  if (vip !== null) want.push(await gameRole(vipRole(vip)));
   if (m?.isOwner) want.push(await gameRole('owner'));
   if (isStaff(u.role)) want.push(await gameRole('staff'));
   if (m?.org.discordChannel && m.org.discordRoleId) want.push(m.org.discordRoleId);
