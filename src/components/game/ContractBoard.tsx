@@ -279,6 +279,16 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
   const [sent, setSent] = useState<string | null>(null);
   // 1.2.3: after a load is taken — the next trip from where the truck arrives.
   const [next, setNext] = useState<{ cityId: number; name: string; vehicleId: string } | null>(null);
+  // „Камионът тръгна“ in its window: kept by the board, so a refresh that drops the taken load from the list does not close it.
+  const [departedWin, setDepartedWin] = useState<{ head: BoardContract; text: string; next: { cityId: number; name: string; vehicleId: string } } | null>(null);
+  const boardRouter = useRouter();
+  const departedDone = () => {
+    if (!departedWin) return;
+    setSent(departedWin.text);
+    setNext(departedWin.next);
+    setDepartedWin(null);
+    boardRouter.refresh();
+  };
   const nextTrip = useFeature('next_trip');
   const [savedNote, setSavedNote] = useState<string | null>(null);
 
@@ -361,6 +371,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
 
   return (
     <div className="space-y-4">
+      {departedWin && <ContractWindow head={departedWin.head} departed={departedWin.text} onClose={departedDone} onDone={departedDone}>{null}</ContractWindow>}
       {sent && (
         <div role="status" className="sticky top-16 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-profit/40 bg-asphalt-900/95 px-4 py-3 text-sm shadow-lg backdrop-blur lg:top-20">
           <Truck className="h-4 w-4 shrink-0 text-profit" />
@@ -473,7 +484,7 @@ export function ContractBoard({ contracts, cargoTypes, localCityNames, vip = fal
         <>
           <ul className={gameUi ? 'grid gap-3 min-[1500px]:grid-cols-2' : 'space-y-2'} data-testid="board-list">
             {list.slice(0, shown).map((c) => (
-              <ContractRow key={`${c.id}-${truck}`} stars={gameUi ? starsOf(c) : 0} prefer={truck} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} />
+              <ContractRow key={`${c.id}-${truck}`} stars={gameUi ? starsOf(c) : 0} prefer={truck} contract={c} vip={vip} simple={simple} canAssign={canAssign} friends={friends} promise={promiseLive ? promise : 'normal'} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onAccepted={(text, nx) => { setSent(text); setNext(nx ?? null); setOpen(null); }} onDeparted={(d) => { setOpen(null); setDepartedWin(d); }} />
             ))}
           </ul>
           {list.length > shown && (
@@ -579,12 +590,11 @@ function whyNot(c: BoardContract): string | null {
   return [...c.options].sort((a, b) => a.emptyKm - b.emptyKm)[0]!.error;
 }
 
-function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, friends, promise, stars = 0, prefer = '' }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string, next?: { cityId: number; name: string; vehicleId: string }) => void; friends: { id: string; username: string }[]; promise: PromiseId; stars?: number; prefer?: string }) {
+function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAccepted, onDeparted, friends, promise, stars = 0, prefer = '' }: { contract: BoardContract; vip: boolean; simple: boolean; canAssign: boolean; open: boolean; onToggle: () => void; onAccepted: (text: string, next?: { cityId: number; name: string; vehicleId: string }) => void; onDeparted?: (d: { head: BoardContract; text: string; next: { cityId: number; name: string; vehicleId: string } }) => void; friends: { id: string; username: string }[]; promise: PromiseId; stars?: number; prefer?: string }) {
   const [hiring, setHiring] = useState(false);
   const router = useRouter();
   // 1.2.3.6 „Нов облик“: the details open as a game window; after taking the load it shows the truck leaving.
   const gameUi = useFeature('game_ui');
-  const [departed, setDeparted] = useState<{ text: string; next: { cityId: number; name: string; vehicleId: string } } | null>(null);
   const countdown = useFeature('countdowns');
   const lean = useFeature('simple_ui');
   const queueLive = useFeature('trip_queue');
@@ -653,10 +663,10 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
       await api('/api/game/action', { type: 'acceptContract', contractId: c.id, vehicleId, rush: rush && option?.rushMinutes != null, overload: needsOverload && overload, ...(part ? { tons: part.tons } : {}), ...(rail ? { rail } : {}), insure: insuranceLive && insure, route: routeChoice && cheap && !rail ? 'cheap' : 'fast', parking: parkingLive && secure ? 'secure' : 'free', refuel: refuelLive && refuel, ...(promise !== 'normal' ? { promise } : {}) });
       const text = t('Камионът тръгна: {0}{1}, {2} → {3}. Можеш да поемеш следващата поръчка.', part ? t('{0} т ', dec(part.tons)) : '', c.goods, c.origin.name, c.destination.name);
       const nx = { cityId: c.destination.id, name: c.destination.name, vehicleId };
-      if (gameUi && open) {
+      if (gameUi && open && onDeparted) {
         playCoin();
-        // The board refreshes after „Супер“: the taken load leaves the list and would close the window.
-        setDeparted({ text, next: nx });
+        // The board keeps the window (it refreshes after „Супер“): the taken load may leave the list before that.
+        onDeparted({ head: c, text, next: nx });
         setBusy(false);
         return;
       }
@@ -832,13 +842,9 @@ function ContractRow({ contract: c, vip, simple, canAssign, open, onToggle, onAc
         <ContractFrame
           gameUi={gameUi}
           head={c}
-          departed={departed?.text ?? null}
+          departed={null}
           onClose={onToggle}
-          onDone={() => {
-            if (!departed) return;
-            onAccepted(departed.text, departed.next);
-            router.refresh();
-          }}
+          onDone={onToggle}
         >
           {(c.tip || c.canTip) && <LaneTip tip={c.tip ?? null} originCityId={c.origin.id} destCityId={c.destination.id} canWrite={!!c.canTip} />}
           {friends.length > 0 && !c.reservedByOther && !c.tender && !c.alreadyTaken && <GiftLoad contractId={c.id} friends={friends} />}
