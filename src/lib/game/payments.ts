@@ -23,6 +23,13 @@ export interface PaidProduct {
 }
 
 /** 1.3.2.2: the plain ТрансКоин packs can be bought for another player (`gift_tc`). */
+/**
+ * A product shown by its name and description: everything except the plain packs of TC
+ * and the plain 30 days of VIP (those read as „550 TC“ / „VIP 30 дни“). Before, the
+ * newer packs (passes, cases, VIP+, Black Friday) read as „0 TC“ or „VIP 30 дни“.
+ */
+export const namedProduct = (p: Pick<PaidProduct, 'id' | 'v2'>) => !!p.v2 || !(p.id.startsWith('tc_') || p.id === 'vip_30_direct');
+
 export const giftable = (p: Pick<PaidProduct, 'id' | 'vipDays'>) => p.id.startsWith('tc_') && !p.vipDays;
 
 export const PAID_PRODUCTS: PaidProduct[] = [

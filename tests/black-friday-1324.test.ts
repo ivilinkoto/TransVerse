@@ -73,3 +73,14 @@ describe('1.3.2.4: Black Friday for the newer things', () => {
     expect(mine.length).toBe(1);
   });
 });
+
+describe('1.3.3: the shop shows every paid pack by its name', () => {
+  it('passes, cases, VIP+ and the Black Friday pack read by name and description; plain packs as „N TC“ / „VIP N дни“', async () => {
+    const { PAID_PRODUCTS, namedProduct } = await import('@/lib/game/payments');
+    const named = (id: string) => namedProduct(PAID_PRODUCTS.find((p) => p.id === id)!);
+    for (const id of ['black_friday_pack', 'pass_premium', 'pass_plus', 'gold_cases_10', 'vip_plus', 'speed_pack', 'level_offer', 'month_card', 'supporter_pack']) expect(named(id), id).toBe(true);
+    for (const id of ['tc_60', 'tc_100', 'tc_550', 'tc_1200', 'tc_3200', 'vip_30_direct']) expect(named(id), id).toBe(false);
+    // A pack with no TC is never shown as „0 TC“.
+    for (const p of PAID_PRODUCTS) if (!p.coins && !p.vipDays) expect(namedProduct(p), p.id).toBe(true);
+  });
+});

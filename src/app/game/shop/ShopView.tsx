@@ -20,7 +20,7 @@ import { spentCents } from '@/server/game/vip-levels';
 import { premiumPassOpen } from '@/server/game/season-pass';
 import { gameContext } from '@/server/game/context';
 import { BuyWithMoney } from '@/components/game/BuyWithMoney';
-import { euro, paidProduct, PAID_PRODUCTS, PAYMENT_STATUS_LABELS } from '@/lib/game/payments';
+import { euro, namedProduct, paidProduct, PAID_PRODUCTS, PAYMENT_STATUS_LABELS } from '@/lib/game/payments';
 import { paymentConfig, userPayments } from '@/server/payments';
 import { trailerModel } from '@/lib/game/catalog';
 import { isSpring } from '@/lib/game/spring';
@@ -139,7 +139,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
                   {products.map((p) => (
                     <li key={p.id} className="shop-tile flex flex-col items-center gap-1 rounded-2xl p-3 text-center" style={{ '--tile': '#22d3ee' } as React.CSSProperties}>
                       <span className="text-3xl" aria-hidden>{p.id === 'supporter_pack' ? '❤️' : '💎'}</span>
-                      <span className="num font-display text-lg font-bold text-cyan-glow">{p.v2 ? tx(p.label) : p.vipDays ? tr('VIP {0} дни', p.vipDays) : `${p.coins.toLocaleString(intlLocale())} TC`}</span>
+                      <span className="num font-display text-lg font-bold text-cyan-glow">{namedProduct(p) ? tx(p.label) : p.vipDays ? tr('VIP {0} дни', p.vipDays) : `${p.coins.toLocaleString(intlLocale())} TC`}</span>
                       {p.bonus > 0 && <span className="text-xs text-profit">{tr('+{0} подарък', p.bonus)}</span>}
                       <span className="num text-sm text-mist-300">{euro(p.priceCents)}</span>
                     </li>
@@ -299,7 +299,7 @@ export async function ShopView({ cancelled = false }: { cancelled?: boolean }) {
               <ul className="grid grid-cols-2 gap-3">
                 {products.map((p) => (
                   <li key={p.id} className="rounded-xl border border-asphalt-700 p-3 text-center opacity-80">
-                    <div className="num font-display text-xl font-bold text-cyan-glow">{p.v2 ? tx(p.label) : p.vipDays ? tr('VIP {0} дни', p.vipDays) : `${p.coins.toLocaleString(intlLocale())} TC`}</div>
+                    <div className="num font-display text-xl font-bold text-cyan-glow">{namedProduct(p) ? tx(p.label) : p.vipDays ? tr('VIP {0} дни', p.vipDays) : `${p.coins.toLocaleString(intlLocale())} TC`}</div>
                     {p.bonus > 0 && <div className="text-xs text-profit">{tr('+{0} подарък', p.bonus)}</div>}
                     <div className="num mt-1 text-sm text-mist-300">{euro(p.priceCents)}</div>
                   </li>
